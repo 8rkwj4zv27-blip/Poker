@@ -1,0 +1,25 @@
+{
+  "name": "Poker",
+  "short_name": "Poker",
+  "description": "A tactile pixel-art Texas Hold'em game.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#16090D",
+  "theme_color": "#16090D",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}

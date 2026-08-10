@@ -2,8 +2,8 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta name="theme-color" content="#0A1815">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#16090D">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Poker">
@@ -1233,6 +1233,22 @@ input[type=range]::-moz-range-thumb{
   .board{ gap:5px; }
 }
 </style>
+
+<meta name="format-detection" content="telephone=no">
+
+<style id="pwa-mobile-shell">
+html {
+  -webkit-text-size-adjust: 100%;
+  overscroll-behavior: none;
+}
+body {
+  -webkit-tap-highlight-color: transparent;
+}
+button, [role="button"], input[type="button"], input[type="submit"] {
+  touch-action: manipulation;
+}
+</style>
+
 </head>
 <body data-theme="emerald" data-deck="classic" data-cardback="table">
 <div id="app">
@@ -4676,5 +4692,16 @@ if (typeof window !== 'undefined'){
 
 })();
 </script>
+
+<script id="pwa-service-worker">
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js').catch(err => {
+      console.warn('Service worker registration failed:', err);
+    });
+  });
+}
+</script>
+
 </body>
 </html>
