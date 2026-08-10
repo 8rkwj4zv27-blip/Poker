@@ -403,7 +403,7 @@ button{ font-family:inherit; }
 .pot-stacks{ display:flex; align-items:flex-end; justify-content:center; gap:7px; min-height:2px; }
 .pot-stacks:empty{ display:none; }
 .pot-stack{ display:flex; flex-direction:column-reverse; align-items:center; }
-.pot-stack .chip-disc{ width:22px; height:22px; margin-top:-15px; }
+.pot-stack .chip-disc{ width:26px; height:11px; margin-top:-4px; }
 .pot-stack .chip-disc:first-child{ margin-top:0; }
 .chip-token{
   position:absolute; border-radius:50%;
@@ -520,80 +520,58 @@ button{ font-family:inherit; }
 }
 .seat.you .seat-name{ font-size:13px; }
 
-/* ---- pixel chip towers ---- */
-.stack-row{ display:flex; align-items:flex-end; gap:4px; margin-top:3px; }
+/* ---- pixel coin stacks ---- */
+.stack-row{ display:flex; align-items:center; gap:4px; }
 .chip-stack{
-  display:flex; flex-direction:column-reverse; align-items:center; width:15px; min-height:2px;
+  display:flex; flex-direction:column-reverse; align-items:center; width:24px; min-height:2px;
 }
+/* a coin: wide flat oval, gold face, hard rim, ridge highlight */
 .chip-disc{
-  position:relative; width:15px; height:15px; border-radius:50%; margin-top:-10px; flex-shrink:0;
+  position:relative; width:24px; height:10px; border-radius:50%; margin-top:-4px; flex-shrink:0;
   background:var(--accent);
   border:2px solid var(--px-ink);
-  box-shadow:0 2px 0 rgba(0,0,0,.5), inset 0 2px 0 rgba(255,255,255,.45), inset 0 -2px 0 rgba(0,0,0,.25);
+  box-shadow:0 2px 0 rgba(0,0,0,.5), inset 0 2px 0 rgba(255,255,255,.5), inset 0 -2px 0 rgba(0,0,0,.3);
 }
 .chip-disc:first-child{ margin-top:0; }
-/* edge stripes: hard conic spokes masked to the rim */
 .chip-disc::before{
-  content:''; position:absolute; inset:-1px; border-radius:50%;
-  background:repeating-conic-gradient(rgba(255,255,255,.85) 0 16deg, transparent 16deg 60deg);
-  -webkit-mask:radial-gradient(circle, transparent 0 52%, #000 52%);
-          mask:radial-gradient(circle, transparent 0 52%, #000 52%);
+  content:''; position:absolute; top:1px; left:5px; right:5px; height:2px; border-radius:2px;
+  background:rgba(255,255,255,.55);
 }
 .chip-disc.d-ivory{ background:#E8E0CC; }
-.chip-disc.d-ivory::before{ background:repeating-conic-gradient(rgba(60,50,30,.5) 0 16deg, transparent 16deg 60deg); }
 .chip-disc.d-crimson{ background:#B4423E; }
 .chip-disc.d-slate{ background:#5D7A71; }
 .chip-disc.disc-in{ animation:discIn .18s steps(3,end); }
 @keyframes discIn{ from{ transform:scale(.3); opacity:0; } to{ transform:scale(1); opacity:1; } }
-.seat.you .chip-stack{ width:18px; }
-.seat.you .chip-disc{ width:18px; height:18px; margin-top:-12px; }
 .seat-chips{ font-size:11px; color:var(--accent-bright); font-weight:800; text-shadow:1px 1px 0 var(--px-ink); }
-.seat.you .seat-chips{ font-size:13px; }
 .seat-cards{ display:flex; gap:2px; margin-top:5px; height:var(--card-h, 40px); perspective:400px; }
 
 .compact-seats .chip-stack{ display:none; }
-.compact-seats .seat-name{ margin-top:2px; font-size:10px; }
-.compact-seats .stack-row{ margin-top:1px; }
+.compact-seats .seat-name{ font-size:10px; }
 .compact-seats .seat-cards{ margin-top:3px; }
 .compact-seats .seat-tag{ margin-top:2px; font-size:9.5px; padding:1.5px 6px; }
 
-/* ---- ENEMY CARDS: portrait tile with hearts strip up top, a full-width
-   nameplate bar, and the chip bounty underneath — one solid game piece ---- */
-.seat-card{
-  display:flex; flex-direction:column; align-items:center; width:100%;
-  background:
-    linear-gradient(rgba(255,255,255,.14) 0 0) top 2px left 2px / 3px 3px no-repeat,
-    linear-gradient(rgba(255,255,255,.14) 0 0) top 2px right 2px / 3px 3px no-repeat,
-    var(--seat-bg);
-  border:2px solid var(--px-ink); border-radius:var(--radius); overflow:hidden;
-  box-shadow:0 4px 0 rgba(0,0,0,.5), inset 0 2px 0 rgba(255,255,255,.08), inset 0 -2px 0 rgba(0,0,0,.3);
+/* ---- ENEMY TOTEM: heart cells straddling a full-width face block, with a
+   name + bounty plate hanging beneath — the block IS the character ---- */
+.seat .avatar-wrap{ width:var(--avatar-w, 64px); height:var(--avatar-w, 64px); }
+.seat .hearts{
+  position:relative; z-index:3; margin-bottom:-7px; pointer-events:none;
 }
-.seat.active .seat-card{ border-color:var(--accent); }
-.seat.winner .seat-card{ border-color:var(--good); box-shadow:0 0 0 2px var(--good), 0 4px 0 rgba(0,0,0,.5); }
-/* hearts strip: slim recessed HP band across the top of the card */
-.seat-card .hearts{
-  width:100%; padding:2px 0 3px; margin:0; background:rgba(0,0,0,.4);
-  border-bottom:2px solid var(--px-ink); box-shadow:inset 0 2px 0 rgba(0,0,0,.4);
+.info-plate{
+  width:100%; margin-top:6px; padding:3px 3px 4px;
+  display:flex; flex-direction:column; align-items:center; gap:1px;
+  background:rgba(0,0,0,.55); border:2px solid var(--px-ink); border-radius:3px;
+  box-shadow:0 3px 0 rgba(0,0,0,.45), inset 0 1px 0 rgba(255,255,255,.06);
 }
-.seat-card .avatar-wrap{ margin-top:5px; }
-/* nameplate bar: edge-to-edge dark strip, battle-UI style */
-.seat-card .seat-name{
-  width:100%; margin-top:5px; padding:2px 4px; text-align:center;
-  background:rgba(0,0,0,.45); border-top:2px solid var(--px-ink);
-  box-shadow:inset 0 1px 0 rgba(255,255,255,.05);
-}
-.seat-card .stack-row{ margin:2px 0 4px; }
-/* tiny chip icon in front of the bounty */
-.seat-card .seat-chips::before{
-  content:''; display:inline-block; width:7px; height:7px; border-radius:50%;
+.info-plate .seat-name{ margin-top:0; }
+/* tiny coin in front of the bounty */
+.info-plate .seat-chips::before{
+  content:''; display:inline-block; width:8px; height:8px; border-radius:50%;
   background:var(--accent); border:1px solid rgba(0,0,0,.55);
-  box-shadow:inset 0 1px 0 rgba(255,255,255,.5); margin-right:3px; vertical-align:0;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.5); margin-right:3px;
 }
-.compact-seats .seat-card .seat-name{ margin-top:3px; }
-.compact-seats .seat-card .stack-row{ margin:1px 0 3px; }
-.compact-seats .seat-card .hearts{ padding:1px 0 2px; }
-.compact-seats .turn-ring{ inset:-3px; border-width:2px; }
-.compact-seats .dealer-btn{ top:-2px; right:-3px; width:15px; height:15px; font-size:8px; }
+.compact-seats .turn-ring{ inset:-4px; }
+.seat.dead .avatar{ filter:none; }
+.seat.dead{ opacity:.62; }
 
 .seat-tag{
   margin-top:4px; font-size:10.5px; font-weight:800; padding:2px 8px; border-radius:2px;
@@ -644,31 +622,31 @@ button{ font-family:inherit; }
 }
 
 .seat.you{
-  position:relative; width:min(94vw, 400px); margin:0; --avatar-w:48px; --card-h:60px;
-  flex-direction:column; align-items:stretch;
+  position:relative; width:100%; margin:0; --card-h:76px;
+  flex-direction:column; align-items:center;
 }
 #your-seat-dock{
-  flex-shrink:0; display:flex; justify-content:center; padding:2px 10px 6px; position:relative; z-index:8;
+  flex-shrink:0; display:flex; justify-content:center; padding:2px 8px 6px; position:relative; z-index:8;
 }
-.seat.you .card{ width:42px; height:60px; }
-.seat.you .card .r{ font-size:15px; }
-.seat.you .card .s{ font-size:11px; }
-.seat.you .card .pip{ font-size:20px; }
-.seat.you .action-bubble{ top:-16px; font-size:12px; }
-.seat.you .pos-btn{ font-size:8px; padding:1px 5px; }
+.seat.you .card{ width:54px; height:76px; border-radius:4px; }
+.seat.you .card .r{ font-size:19px; }
+.seat.you .card .s{ font-size:13px; }
+.seat.you .card .pip{ font-size:26px; }
+.seat.you .seat-cards{ gap:6px; }
+.seat.you .action-bubble{ top:-14px; font-size:12px; }
 
-/* ---- PLAYER INVENTORY: one raised panel, three recessed sockets —
-   portrait+lives (RPG party style), hand, stack ---- */
-.hud-desk{
-  display:flex; align-items:stretch; gap:7px; width:100%;
+/* ---- PLAYER HUD: one raised frame, three zones — coin-tower gauge on the
+   left, cards + status + jackpot centre stage, vitals column on the right ---- */
+#hud-frame{
+  display:grid; grid-template-columns:64px minmax(0,1fr) 96px; gap:8px; width:100%;
+  max-width:430px;
   background:var(--panel); border:2px solid var(--px-ink); border-radius:var(--radius);
-  padding:13px 8px 8px;
+  padding:9px 8px 8px;
   box-shadow:0 4px 0 rgba(0,0,0,.55), inset 0 2px 0 rgba(255,255,255,.08), inset 0 -2px 0 rgba(0,0,0,.3);
 }
-/* recessed socket: dark inner face, carved-in edge, pixel rivets in the corners */
-.hud-slot{
-  position:relative; display:flex; flex-direction:column; align-items:center; justify-content:center;
-  border:2px solid var(--px-ink); border-radius:2px; padding:7px 7px 6px; gap:3px;
+#hud-frame:has(.seat.you.active){ border-color:var(--accent); }
+.hud-recess{
+  border:2px solid var(--px-ink); border-radius:2px;
   background:
     linear-gradient(rgba(255,255,255,.16) 0 0) top 2px left 2px / 3px 3px no-repeat,
     linear-gradient(rgba(255,255,255,.16) 0 0) top 2px right 2px / 3px 3px no-repeat,
@@ -677,58 +655,79 @@ button{ font-family:inherit; }
     rgba(0,0,0,.36);
   box-shadow:inset 0 3px 0 rgba(0,0,0,.45), inset 0 -1px 0 rgba(255,255,255,.07);
 }
-/* equip-screen tab: sits astride the socket's top border */
-.slot-tab{
-  position:absolute; top:-9px; left:50%; transform:translateX(-50%); z-index:2;
-  display:flex; align-items:center; gap:3px; white-space:nowrap;
-  font-size:8px; font-weight:800; letter-spacing:.1em; text-transform:uppercase;
-  color:var(--ink-dim); background:var(--px-ink); border:1px solid rgba(255,255,255,.18);
-  border-radius:2px; padding:1px 6px; box-shadow:0 2px 0 rgba(0,0,0,.4);
+#hud-left{
+  display:flex; align-items:flex-end; justify-content:center; padding:6px 4px;
+  border:2px solid var(--px-ink); border-radius:2px;
+  background:rgba(0,0,0,.36);
+  box-shadow:inset 0 3px 0 rgba(0,0,0,.45), inset 0 -1px 0 rgba(255,255,255,.07);
 }
-.slot-tab .tab-chip{
-  width:7px; height:7px; border-radius:50%; background:var(--accent);
-  border:1px solid rgba(0,0,0,.5); box-shadow:inset 0 1px 0 rgba(255,255,255,.5);
+#hud-tower{ display:flex; align-items:flex-end; justify-content:center; gap:3px; min-height:24px; }
+#hud-tower .pot-stack{ display:flex; flex-direction:column-reverse; align-items:center; }
+#hud-mid{
+  display:flex; flex-direction:column; align-items:center; gap:6px; min-width:0;
 }
-.slot-tab .tab-heart{ color:var(--danger); font-style:normal; font-size:8px; line-height:1; }
-
-/* portrait socket: face on top, hearts as an HP row, nameplate under */
-.hud-portrait{ flex:0 0 auto; min-width:72px; justify-content:flex-start; padding-top:8px; }
-.hud-portrait .hearts{ margin:4px 0 0; }
-.hud-portrait .seat-name{ margin-top:3px; font-size:11px; max-width:66px; }
-
-/* hand socket: hole cards centre stage; IN HAND plate docks onto the
-   bottom border only while chips are committed */
-.hud-cards{ flex:1 1 auto; min-width:0; }
-.hud-cards .seat-cards{ margin-top:2px; }
-.hud-cards .invested-row{
-  position:absolute; bottom:-8px; left:50%; transform:translateX(-50%); z-index:2;
-  margin:0; padding:1px 7px; background:var(--px-ink); border:1px solid var(--accent);
-  box-shadow:0 2px 0 rgba(0,0,0,.4); white-space:nowrap;
+#hud-right{
+  display:flex; flex-direction:column; align-items:center; justify-content:flex-start; gap:6px;
+  padding:6px 4px;
+  border:2px solid var(--px-ink); border-radius:2px;
+  background:rgba(0,0,0,.36);
+  box-shadow:inset 0 3px 0 rgba(0,0,0,.45), inset 0 -1px 0 rgba(255,255,255,.07);
 }
-.hud-cards .invested-label{ font-size:7.5px; }
-.hud-cards .invested-val{ font-size:10px; color:var(--accent-bright); }
+.hud-nameplate{
+  width:100%; text-align:center; font-size:12px; font-weight:800; color:var(--ink);
+  background:rgba(0,0,0,.45); border:2px solid var(--px-ink); border-radius:2px;
+  padding:2px 3px; text-shadow:1px 1px 0 var(--px-ink);
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+}
+#hud-right .invested-row{
+  width:100%; justify-content:space-between; display:flex; align-items:center;
+  background:rgba(0,0,0,.45); border:2px solid var(--px-ink); border-radius:2px; padding:2px 5px;
+}
+#hud-right .invested-label{ font-size:8px; }
+#hud-right .invested-val{ font-size:12px; color:var(--accent-bright); }
+/* dealer + position rendered as poker chips */
+.hud-badges{ display:flex; gap:5px; align-items:center; justify-content:center; }
+#hud-dealer, #hud-pos{
+  position:static; transform:none; width:32px; height:32px; border-radius:50%;
+  display:flex; align-items:center; justify-content:center;
+  font-size:10px; font-weight:800; letter-spacing:0;
+  border:2px solid var(--px-ink);
+  box-shadow:0 2px 0 var(--px-ink), inset 0 0 0 3px rgba(255,255,255,.75), inset 0 2px 0 rgba(255,255,255,.4);
+  padding:0;
+}
+#hud-dealer{ background:var(--card-face); color:#241A06; }
+#hud-pos{ background:var(--danger); color:#fff; text-shadow:1px 1px 0 rgba(0,0,0,.4);
+  box-shadow:0 2px 0 var(--px-ink), inset 0 0 0 3px rgba(255,255,255,.65); }
 
-/* stack socket: chip tower beside the running total */
-.hud-stack{ flex:0 0 auto; min-width:76px; }
-.hud-stack .hud-stack-row{ display:flex; align-items:flex-end; gap:5px; }
-.seat.you .hud-stack .chip-disc{ margin-top:-14px; }
-.seat.you .hud-stack .chip-disc:first-child{ margin-top:0; }
-.hud-stack .seat-chips{ font-size:13px; padding-bottom:1px; }
+/* jackpot bankroll counter: slot-machine digit cells in a gold frame */
+#jackpot{
+  display:flex; gap:3px; align-items:stretch; padding:4px 5px;
+  background:rgba(0,0,0,.5); border:2px solid var(--accent); border-radius:3px;
+  box-shadow:0 3px 0 rgba(0,0,0,.5), inset 0 2px 0 rgba(0,0,0,.5);
+}
+.jp-cell{
+  min-width:20px; padding:2px 1px; text-align:center;
+  font-size:16px; font-weight:800; line-height:1.2; color:var(--accent-bright);
+  background:rgba(0,0,0,.55); border:1px solid rgba(255,255,255,.14); border-radius:2px;
+  box-shadow:inset 0 2px 0 rgba(0,0,0,.6);
+  text-shadow:0 0 6px rgba(217,169,59,.45), 1px 1px 0 var(--px-ink);
+}
+.jp-sym{ color:var(--accent); min-width:16px; }
+.jp-digit.dim{ color:rgba(255,255,255,.16); text-shadow:none; }
+.jp-digit.tick{ animation:jpTick .22s steps(3,end); }
+@keyframes jpTick{ 0%{ transform:translateY(-7px); opacity:.2; } 100%{ transform:translateY(0); opacity:1; } }
 
-/* badges around the portrait: dealer stays top-right, position moves
-   top-left so neither can sit on the hearts row below */
-.hud-portrait .pos-btn{ bottom:auto; top:-4px; left:-4px; transform:none; }
-
-.seat.you .avatar-wrap{ position:relative; }
-.seat.you .seat-name{ margin-top:0; }
+/* the banner + hand strength read as the HUD's status plate now */
+#hud-mid .banner{ width:100%; }
+#hud-mid .hand-strength{ width:100%; }
 
 .fly-chip{
-  position:fixed; width:16px; height:16px; border-radius:50%; z-index:60; pointer-events:none;
+  position:fixed; width:22px; height:10px; border-radius:50%; z-index:60; pointer-events:none;
   background:var(--accent);
   border:2px solid var(--px-ink);
-  box-shadow:inset 0 2px 0 rgba(255,255,255,.45);
+  box-shadow:inset 0 2px 0 rgba(255,255,255,.5);
   transition:transform var(--dur-slow) steps(9,end), opacity var(--dur-slow) steps(9,end);
-  margin-left:-8px; margin-top:-8px;
+  margin-left:-11px; margin-top:-5px;
 }
 
 .result-card{
@@ -928,34 +927,35 @@ input[type=range]::-moz-range-thumb{
 }
 .quick-bets button:active{ transform:translateY(2px); box-shadow:0 1px 0 var(--px-ink); background:var(--accent); color:var(--accent-ink); }
 
-/* ---- the three big arcade buttons ---- */
-.actions-row{ display:flex; gap:10px; }
+/* ---- the three big arcade buttons: fat sticker blocks, colour = meaning ---- */
+.actions-row{ display:flex; gap:10px; padding-top:2px; }
 .actions-row button{
-  flex:1; min-height:58px; padding:15px 6px; border-radius:var(--radius);
+  flex:1; min-height:62px; padding:16px 6px; border-radius:5px;
   border:2px solid var(--px-ink);
-  font-size:14px; font-weight:800; cursor:pointer; text-transform:uppercase; letter-spacing:.04em;
+  font-size:15px; font-weight:800; cursor:pointer; text-transform:uppercase; letter-spacing:.05em;
+  color:#1B120C; text-shadow:0 1px 0 rgba(255,255,255,.25);
 }
 .actions-row button:active{ transform:translateY(4px); }
 .btn-fold{
-  background:var(--act-fold); color:var(--act-fold-ink);
-  box-shadow:0 5px 0 var(--act-fold-lo), 0 5px 0 2px var(--px-ink), inset 0 3px 0 rgba(255,255,255,.14);
+  background:#C7524D;
+  box-shadow:0 6px 0 #7E2F2C, 0 6px 0 2px var(--px-ink), inset 0 3px 0 rgba(255,255,255,.28), inset 0 -3px 0 rgba(0,0,0,.18);
 }
-.btn-fold:active{ box-shadow:0 1px 0 var(--act-fold-lo), 0 1px 0 2px var(--px-ink), inset 0 3px 0 rgba(255,255,255,.14); }
+.btn-fold:active{ box-shadow:0 2px 0 #7E2F2C, 0 2px 0 2px var(--px-ink), inset 0 3px 0 rgba(255,255,255,.28); }
 .btn-check{
-  background:var(--panel-2); color:var(--ink);
-  box-shadow:0 5px 0 var(--px-ink), inset 0 3px 0 rgba(255,255,255,.1);
+  background:#D9A93B;
+  box-shadow:0 6px 0 #8A681F, 0 6px 0 2px var(--px-ink), inset 0 3px 0 rgba(255,255,255,.32), inset 0 -3px 0 rgba(0,0,0,.16);
 }
-.btn-check:active{ box-shadow:0 1px 0 var(--px-ink), inset 0 3px 0 rgba(255,255,255,.1); }
+.btn-check:active{ box-shadow:0 2px 0 #8A681F, 0 2px 0 2px var(--px-ink), inset 0 3px 0 rgba(255,255,255,.32); }
 .btn-call{
-  background:var(--act-call); color:var(--act-call-ink);
-  box-shadow:0 5px 0 var(--act-call-lo), 0 5px 0 2px var(--px-ink), inset 0 3px 0 rgba(255,255,255,.3);
+  background:#D9A93B;
+  box-shadow:0 6px 0 #8A681F, 0 6px 0 2px var(--px-ink), inset 0 3px 0 rgba(255,255,255,.32), inset 0 -3px 0 rgba(0,0,0,.16);
 }
-.btn-call:active{ box-shadow:0 1px 0 var(--act-call-lo), 0 1px 0 2px var(--px-ink), inset 0 3px 0 rgba(255,255,255,.3); }
+.btn-call:active{ box-shadow:0 2px 0 #8A681F, 0 2px 0 2px var(--px-ink), inset 0 3px 0 rgba(255,255,255,.32); }
 .btn-raise{
-  background:var(--act-raise); color:#FFF; text-shadow:1px 1px 0 var(--act-raise-lo);
-  box-shadow:0 5px 0 var(--act-raise-lo), 0 5px 0 2px var(--px-ink), inset 0 3px 0 rgba(255,255,255,.3);
+  background:#4E9B62;
+  box-shadow:0 6px 0 #2C5E3A, 0 6px 0 2px var(--px-ink), inset 0 3px 0 rgba(255,255,255,.3), inset 0 -3px 0 rgba(0,0,0,.16);
 }
-.btn-raise:active{ box-shadow:0 1px 0 var(--act-raise-lo), 0 1px 0 2px var(--px-ink), inset 0 3px 0 rgba(255,255,255,.3); }
+.btn-raise:active{ box-shadow:0 2px 0 #2C5E3A, 0 2px 0 2px var(--px-ink), inset 0 3px 0 rgba(255,255,255,.3); }
 .btn-disabled{ opacity:.32; pointer-events:none; }
 .wide-btn{
   width:100%; min-height:56px; padding:15px; border:2px solid var(--px-ink); border-radius:var(--radius);
@@ -1031,14 +1031,20 @@ input[type=range]::-moz-range-thumb{
 /* ============================================================
    FLOW & LIVES — hearts, thinking, death, shuffle, menus
    ============================================================ */
-/* Zelda hearts — remaining rebuys — now sit as a normal row inside the
-   seat's bordered profile card / hud slot instead of floating above it */
+/* Chunky heart cells — remaining rebuys as HP sockets: filled cells carry a
+   fat pixel heart, spent cells stay as empty dark sockets */
 .hearts{
-  display:flex; gap:2px; justify-content:center; margin-bottom:3px; pointer-events:none;
+  display:flex; gap:3px; justify-content:center; pointer-events:none;
 }
 .hearts.hidden{ display:none; }
-.hearts .h{ font-size:9px; line-height:1; color:var(--danger); text-shadow:1px 1px 0 var(--px-ink); }
-.hearts .h.off{ color:rgba(255,255,255,.18); text-shadow:none; }
+.hearts .h{
+  width:17px; height:16px; display:flex; align-items:center; justify-content:center;
+  font-size:11px; line-height:1; color:var(--danger); text-shadow:1px 1px 0 var(--px-ink);
+  background:rgba(8,12,10,.8); border:2px solid var(--px-ink); border-radius:2px;
+  box-shadow:inset 0 2px 0 rgba(0,0,0,.5), 0 1px 0 rgba(0,0,0,.4);
+}
+.hearts .h.off{ color:rgba(255,255,255,.1); text-shadow:none; }
+#hud-hearts .h{ width:24px; height:22px; font-size:15px; }
 .hearts.heart-hit{ animation:heartHit .6s steps(4,end); }
 @keyframes heartHit{
   0%{ transform:scale(1); }
@@ -1046,8 +1052,6 @@ input[type=range]::-moz-range-thumb{
   60%{ transform:scale(.9); }
   100%{ transform:scale(1); }
 }
-.seat.you .hearts{ margin-bottom:5px; }
-.seat.you .hearts .h{ font-size:12px; }
 
 /* thinking indicator: blinking dots by the deciding player's portrait */
 .seat.thinking .avatar-wrap::after{
@@ -1144,9 +1148,7 @@ input[type=range]::-moz-range-thumb{
   .banner{ min-height:32px; padding:5px 4px; }
   .actions-row button{ min-height:52px; }
   .seat{ width:78px; margin-left:-39px; }
-  .seat.you{ width:min(72vw, 320px); }
-  .hud-desk{ padding:11px 6px 6px; gap:4px; }
-  .hud-slot{ padding:4px 6px; }
+  #hud-frame{ padding:6px; gap:5px; }
   #log-drawer, .sheet{ max-width:340px; }
   .sheet{ left:auto; right:0; top:0; bottom:0; border-radius:8px 0 0 8px; width:340px;
           transform:translateX(105%); border-top:none; border-left:2px solid var(--px-ink);
@@ -1163,9 +1165,6 @@ input[type=range]::-moz-range-thumb{
   .seat-cards{ height:34px; } .seat.you .seat-cards{ height:48px; }
   .avatar-wrap{ width:44px; height:44px; } .seat.you .avatar-wrap{ width:38px; height:38px; }
   .avatar{ font-size:13px; }
-  .slot-tab{ display:none; }
-  .hud-desk{ padding-top:8px; }
-  .hud-portrait .seat-name{ display:none; }
   #coach{ padding:8px 11px; }
   .coach-metric .val{ font-size:15px; }
 }
@@ -1318,13 +1317,28 @@ input[type=range]::-moz-range-thumb{
           <div class="board" id="board" role="group" aria-label="Community cards"></div>
         </div>
       </div>
-      <div id="your-seat-dock"></div>
+      <div id="your-seat-dock">
+        <div id="hud-frame">
+          <div id="hud-left"><div id="hud-tower" aria-hidden="true"></div></div>
+          <div id="hud-mid">
+            <div class="banner" id="banner" role="status" aria-live="polite"></div>
+            <div class="hand-strength hidden" id="hand-strength"></div>
+            <div id="jackpot" aria-hidden="true"><span class="jp-cell jp-sym">$</span></div>
+          </div>
+          <div id="hud-right">
+            <div class="hearts hidden" id="hud-hearts" aria-hidden="true"></div>
+            <div class="hud-nameplate" id="hud-name"></div>
+            <div class="invested-row hidden" id="hud-bet"><span class="invested-label">Bet</span><span class="invested-val tabular">0</span></div>
+            <div class="hud-badges">
+              <div class="dealer-btn hidden" id="hud-dealer" title="Dealer">D</div>
+              <div class="pos-btn hidden" id="hud-pos"></div>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
 
     <div id="action-area">
-      <div class="banner" id="banner" role="status" aria-live="polite"></div>
-      <div class="hand-strength hidden" id="hand-strength"></div>
-
       <div id="coach" class="hidden" aria-live="polite">
         <div class="coach-head">
           <span class="coach-title">Coach</span>
@@ -1871,14 +1885,23 @@ function hslHex(h, s, l){
   return '#' + f(0) + f(8) + f(4);
 }
 
-/* Moods: idle, think, happy, sad, angry, smug, shock */
+/* Moods: idle, think, happy, sad, angry, smug, shock, dead */
 function faceSVG(mood, hue){
-  const skin  = hslHex(hue, 48, 66);
-  const shade = hslHex(hue, 44, 52);
+  let skin  = hslHex(hue, 48, 66);
+  let shade = hslHex(hue, 44, 52);
   const ink = '#20302c';
+  if (mood === 'dead'){ skin = '#A8ACA4'; shade = '#82867E'; }
 
   let eyes, brows, mouth, extra = '';
   switch(mood){
+    case 'dead':
+      // X eyes and a lolling tongue — properly, cartoonishly dead
+      eyes  = '<path d="M12 16 L18 22 M18 16 L12 22" stroke="'+ink+'" stroke-width="2.4" stroke-linecap="round"/>' +
+              '<path d="M22 16 L28 22 M28 16 L22 22" stroke="'+ink+'" stroke-width="2.4" stroke-linecap="round"/>';
+      brows = '';
+      mouth = '<path d="M13 28 h11" stroke="'+ink+'" stroke-width="2.2" stroke-linecap="round"/>' +
+              '<rect x="21" y="28" width="6" height="8" rx="3" fill="#C0453F" stroke="'+ink+'" stroke-width="1.6"/>';
+      break;
     case 'happy':
       eyes  = '<path d="M12 18.6 q3 -3.4 6 0" stroke="'+ink+'" stroke-width="2" fill="none" stroke-linecap="round"/>' +
               '<path d="M22 18.6 q3 -3.4 6 0" stroke="'+ink+'" stroke-width="2" fill="none" stroke-linecap="round"/>';
@@ -3029,7 +3052,7 @@ async function playDeath(p){
   }
   e._mood = null;
   e.avatar.classList.add('has-face');
-  e.avatar.innerHTML = skullSVG();
+  e.avatar.innerHTML = faceSVG('dead', aiHue(game.players.indexOf(p)));
   e.root.classList.add('dead');
   render();
 }
@@ -3389,6 +3412,52 @@ function syncPotStacks(container, layout){
     container.appendChild(col);
   });
 }
+
+/* The HUD coin tower: your stack rendered as real height. Sequential fill —
+   one tall column that spills into shorter neighbours, so the silhouette
+   reads like a bar gauge that drains as you bleed and climbs as you win. */
+function towerLayout(chips){
+  if (!chips || chips<=0) return [];
+  const bb = (game && game.bigBlind) || 20;
+  const total = Math.max(1, Math.min(30, Math.round(4*Math.log2(1 + chips/(bb*2)))));
+  const out = [];
+  let left = total;
+  while (left>0 && out.length<3){ const take = Math.min(12, left); out.push(take); left -= take; }
+  return out;
+}
+
+/* Jackpot bankroll counter: six inset digit cells, leading zeros dimmed,
+   changed digits get a one-step odometer tick. */
+function buildJackpot(){
+  const j = $('jackpot'); if (!j) return;
+  if (!j.querySelector('.jp-digit')){
+    for (let i=0;i<6;i++){
+      const c = document.createElement('span');
+      c.className = 'jp-cell jp-digit tabular';
+      c.textContent = '0';
+      j.appendChild(c);
+    }
+  }
+  j.dataset.v = '';
+}
+function updateJackpot(v){
+  const j = $('jackpot'); if (!j) return;
+  const s = String(Math.max(0, Math.min(999999, v|0))).padStart(6,'0');
+  if (j.dataset.v === s) return;
+  j.dataset.v = s;
+  const cells = j.querySelectorAll('.jp-digit');
+  let leading = true;
+  cells.forEach((c,i)=>{
+    const ch = s[i];
+    const isLeadZero = leading && ch==='0' && i<cells.length-1;
+    if (!isLeadZero) leading = false;
+    c.classList.toggle('dim', isLeadZero);
+    if (c.textContent !== ch){
+      c.textContent = ch;
+      if (!motionOff()){ c.classList.remove('tick'); void c.offsetWidth; c.classList.add('tick'); }
+    }
+  });
+}
 function syncTokenPile(container, count, positions){
   if (!container) return;
   while (container.children.length > count) container.lastElementChild.remove();
@@ -3428,26 +3497,20 @@ async function muckCards(){
 
 function initSeats(){
   const felt = $('felt');
-  const dock = $('your-seat-dock');
+  const hudMid = $('hud-mid');
   felt.querySelectorAll('.seat').forEach(el=>el.remove());
-  if (dock) dock.innerHTML = '';
+  if (hudMid) hudMid.querySelectorAll('.seat').forEach(el=>el.remove());
   seatEls = {};
   const n = game.players.length;
   const opponents = n - 1;
 
-  // shrink opponent seats/avatars/cards as the table grows, so 8-max doesn't
-  // need the same footprint as heads-up — computed once per table, not per seat
-  const scale = opponents<=3 ? 0.86 : opponents<=5 ? 0.78 : opponents===6 ? 0.68 : opponents===7 ? 0.58 : 0.50;
-  felt.style.setProperty('--seat-w', Math.round(80*scale)+'px');
-  felt.style.setProperty('--avatar-w', Math.round(58*scale)+'px');
+  // tuned for the 4-opponent portrait table — bigger blocks at <=4, then the
+  // old shrink curve for larger fields (functional but untuned)
+  const scale = opponents<=3 ? 0.95 : opponents===4 ? 0.9 : opponents===5 ? 0.78 : opponents===6 ? 0.68 : opponents===7 ? 0.58 : 0.50;
+  felt.style.setProperty('--seat-w', Math.round(84*scale)+'px');
+  // the face IS the block now: avatar fills the seat column edge-to-edge
+  felt.style.setProperty('--avatar-w', Math.round(84*scale - 8)+'px');
   felt.style.setProperty('--card-h', Math.round(43*scale)+'px');
-  // at 6-8 opponents there simply isn't room for the full chip tower graphic
-  // alongside everything else — drop it and keep just the number, which is
-  // what actually matters at a glance
-  // opponent seats never show the tower graphic — the felt doesn't have
-  // vertical room for it at any table size once the pot/board are accounted
-  // for. The human's own seat (in the separate dock below) keeps the full
-  // tower since it doesn't compete for that space.
   felt.classList.add('compact-seats');
 
   game.players.forEach((p, idx)=>{
@@ -3461,52 +3524,37 @@ function initSeats(){
     const initials = p.isHuman
       ? (p.name.trim().slice(0,2).toUpperCase() || 'YO')
       : p.name.split(' ').filter(w=>w!=='The').map(w=>w[0]).slice(0,2).join('');
-    const avatarBlock =
-      '<div class="avatar-wrap">' +
-        '<div class="turn-ring"></div>' +
-        '<div class="avatar">'+esc(initials)+'</div>' +
-        '<div class="dealer-btn hidden" title="Dealer">D</div>' +
-        '<div class="pos-btn hidden"></div>' +
-      '</div>';
     if (p.isHuman){
-      // player inventory: portrait+lives socket (RPG party style), hand
-      // socket with a contextual IN HAND plate, stack socket with the tower
+      // the human seat carries only the cards + action bubble; everything
+      // else (tower, jackpot, hearts, plates) lives in the static HUD frame.
+      // Hidden stubs keep every generic seatEls hook resolvable.
       root.innerHTML =
-        '<div class="hud-desk">' +
-          '<div class="hud-slot hud-portrait">' +
-            avatarBlock +
-            '<div class="hearts hidden" aria-hidden="true"></div>' +
-            '<div class="seat-name">'+esc(p.name)+'</div>' +
-          '</div>' +
-          '<div class="hud-slot hud-cards">' +
-            '<div class="slot-tab">Hand</div>' +
-            '<div class="seat-cards"></div>' +
-            '<div class="invested-row hidden"><span class="invested-label">In hand</span><span class="invested-val tabular">0</span></div>' +
-          '</div>' +
-          '<div class="hud-slot hud-stack">' +
-            '<div class="slot-tab"><span class="tab-chip"></span>Stack</div>' +
-            '<div class="hud-stack-row">' +
-              '<div class="chip-stack" aria-hidden="true"></div>' +
-              '<span class="seat-chips tabular">'+p.chips.toLocaleString()+'</span>' +
-            '</div>' +
-          '</div>' +
-        '</div>' +
+        '<div class="avatar-wrap hidden"><div class="turn-ring"></div><div class="avatar">'+esc(initials)+'</div></div>' +
+        '<span class="seat-chips hidden"></span>' +
+        '<div class="chip-stack hidden" aria-hidden="true"></div>' +
+        '<div class="seat-cards"></div>' +
         '<div class="seat-tag hidden"></div>' +
         '<div class="action-bubble"></div>';
     } else {
-      // bordered "profile card" — face, hearts and stack tidied into one tile
+      // enemy totem: heart cells straddling the block, square face block,
+      // name+bounty plate hanging beneath, then cards / bet tag
       root.innerHTML =
-        '<div class="seat-card">' +
-          '<div class="hearts hidden" aria-hidden="true"></div>' +
-          avatarBlock +
+        '<div class="hearts hidden" aria-hidden="true"></div>' +
+        '<div class="avatar-wrap">' +
+          '<div class="turn-ring"></div>' +
+          '<div class="avatar">'+esc(initials)+'</div>' +
+          '<div class="dealer-btn hidden" title="Dealer">D</div>' +
+          '<div class="pos-btn hidden"></div>' +
+        '</div>' +
+        '<div class="info-plate">' +
           '<div class="seat-name">'+esc(p.name)+'</div>' +
-          '<div class="stack-row"><div class="chip-stack" aria-hidden="true"></div><span class="seat-chips tabular">'+p.chips.toLocaleString()+'</span></div>' +
+          '<div class="stack-row"><div class="chip-stack hidden" aria-hidden="true"></div><span class="seat-chips tabular">'+p.chips.toLocaleString()+'</span></div>' +
         '</div>' +
         '<div class="seat-cards"></div>' +
         '<div class="seat-tag hidden"></div>' +
         '<div class="action-bubble"></div>';
     }
-    if (p.isHuman && dock) dock.appendChild(root); else felt.appendChild(root);
+    if (p.isHuman && hudMid) hudMid.insertBefore(root, hudMid.firstChild); else felt.appendChild(root);
     const avatar = root.querySelector('.avatar');
     if (p.isHuman){
       avatar.style.background = settings.avatarColour;
@@ -3528,6 +3576,19 @@ function initSeats(){
       investedVal: root.querySelector('.invested-val'),
       bubble: root.querySelector('.action-bubble')
     };
+    if (p.isHuman){
+      // repoint the human's hooks at the static HUD frame elements
+      const e = seatEls[p.id];
+      e.hearts = $('hud-hearts');
+      e.dealerBadge = $('hud-dealer');
+      e.posEl = $('hud-pos');
+      e.investedRow = $('hud-bet');
+      e.investedVal = $('hud-bet').querySelector('.invested-val');
+      const nameEl = $('hud-name');
+      if (nameEl) nameEl.textContent = p.name;
+      if (e.hearts) e.hearts.dataset.n = '';
+      buildJackpot();
+    }
   });
 }
 
@@ -3546,7 +3607,9 @@ function flyChipsFrom(playerId){
   const e = seatEls[playerId];
   const pot = $('pot-area');
   if (!e || !pot) return;
-  const a = e.root.getBoundingClientRect();
+  const p = game && game.players.find(x=>x.id===playerId);
+  const src = (p && p.isHuman && $('hud-tower')) ? $('hud-tower') : e.root;
+  const a = src.getBoundingClientRect();
   const b = pot.getBoundingClientRect();
   if (!a.width || !b.width) return;
   for (let i=0;i<3;i++){
@@ -3572,7 +3635,9 @@ function flyChipsToWinner(playerId){
   const e = seatEls[playerId];
   const pot = $('pot-area');
   if (!e || !pot) return;
-  const b = e.root.getBoundingClientRect();
+  const p = game && game.players.find(x=>x.id===playerId);
+  const dst = (p && p.isHuman && $('hud-tower')) ? $('hud-tower') : e.root;
+  const b = dst.getBoundingClientRect();
   const a = pot.getBoundingClientRect();
   if (!a.width || !b.width) return;
   for (let i=0;i<4;i++){
@@ -3653,7 +3718,12 @@ function render(){
       } else e.hearts.classList.add('hidden');
     }
     e.chips.textContent = p.chips.toLocaleString();
-    syncChipStack(e.chipStack, chipStackCount(p.chips));
+    if (p.isHuman){
+      syncPotStacks($('hud-tower'), towerLayout(p.chips));
+      updateJackpot(p.chips);
+    } else {
+      syncChipStack(e.chipStack, chipStackCount(p.chips));
+    }
     if (e.posEl){
       const label = g.positions && g.positions[p.id];
       if (label){ e.posEl.textContent = label; e.posEl.classList.remove('hidden'); }
