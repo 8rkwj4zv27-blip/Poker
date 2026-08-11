@@ -442,12 +442,9 @@ button{ font-family:inherit; }
 
 .pot-stacks{ display:flex; align-items:flex-end; justify-content:center; gap:3px; min-height:2px; }
 .pot-stacks:empty{ display:none; }
-/* a "clump" is the shared building block for both the pot mound and the
-   human bankroll heap (see syncClumps()) — a small overlapping chip-disc
-   column, optionally tilted a few degrees for the heap's "slightly
-   chaotic pile" read. Mound personality (denomination mixing, centre-
-   weighted height) comes entirely from what values JS feeds in per
-   clump, not from anything structural here. */
+/* a "clump" (really a tower — see renderPile()) is the shared building
+   block for both the pot mound and the human bankroll heap: a small
+   overlapping column of real chip-disc elements, one per visible chip. */
 .chip-clump{ display:flex; flex-direction:column-reverse; align-items:center; }
 .chip-clump .chip-disc{ width:24px; height:14px; margin-top:-10px; }
 .chip-clump .chip-disc:first-child{ margin-top:0; box-shadow:inset 0 2px 0 rgba(255,255,255,.4), inset 0 -1px 0 rgba(0,0,0,.35), 0 3px 0 rgba(0,0,0,.4); }
@@ -2877,13 +2874,18 @@ let bannerOverride = null;
 let coachToken = 0;
 let logDirty = true;
 let pendingNewTableAction = null;
-/* A timestamp only — never a money value, so it structurally cannot drift
-   from game.pot. While performance.now() is before this, render() leaves
-   the pot mound's DOM alone (holding its pre-arrival shape) so a chip
-   flight visually lands before the pile jumps to its new size, instead of
-   the mound instantly redrawing on the same tick the flight starts. See
-   flyChipsFrom()/flyChipsToWinner(). */
-let potMoundFreezeUntil = 0;
+/* Juice Pass 2B — perceptual chip-transfer state. bankChipsShown/
+   potChipsShown are what's currently drawn in each pile (allowed to lag
+   the true money value); bankPending/potPending count chip-events still
+   in flight for that pile. While a pile's pending>0, render() leaves its
+   ...Shown alone — it's owned by the in-flight transferPile() call, which
+   is the only thing allowed to change it, one chip at a time. Once
+   pending returns to 0, render()'s idle-snap path takes back over and
+   pops ...Shown to match the authoritative value exactly. Never anything
+   resembling a second money ledger — these are visual chip counts only,
+   always derived from and converging to p.chips/game.pot. */
+let bankChipsShown = 0, potChipsShown = 0;
+let bankPending = 0, potPending = 0;
 
 function sleep(ms){ return new Promise(r=>setTimeout(r, ms)); }
 function $(id){ return document.getElementById(id); }
@@ -3276,7 +3278,7 @@ function scheduleAutoDeal(){
 async function advancePhase(){
   const g = game;
   // Money already flew straight to the pot the instant each bet/call/raise
-  // happened (flyChipsFrom, called from applyAction) — there is no resting
+  // happened (the transferPile call in applyAction) — there is no resting
   // pile to sweep here any more, just the street-scoped bookkeeping reset.
   g.players.forEach(p=>{ p.betThisRound=0; });
   if (g.players.filter(p=>p.inHand && !p.folded).length<=1){ g.phase='foldwin'; return; }
@@ -3309,6 +3311,7 @@ function actionLabel(action, player, amt){
 function applyAction(player, decision){
   const g = game;
   const toCall = g.currentBet - player.betThisRound;
+  const chipsBefore = player.chips, potBefore = g.pot;
   let text='', shortAmt=0, action=decision.action;
 
   function commitTo(targetTotal){
@@ -3392,7 +3395,20 @@ function applyAction(player, decision){
   const streetLabel = actionLabel(action, player, shortAmt);
   player.streetAction = { type: player.allIn ? 'allin' : action, label: streetLabel, amount: shortAmt };
   flashAction(player.id, streetLabel);
-  if (action!=='fold' && action!=='check') flyChipsFrom(player.id, player.betThisRound, player.allIn);
+  if (action!=='fold' && action!=='check'){
+    if (player.isHuman){
+      const n = Math.max(1, bankChipCountFor(chipsBefore) - bankChipCountFor(player.chips));
+      transferPile(n, $('hud-tower'), $('pot-area'),
+        ()=>{ bankChipsShown--; renderBank(); }, ()=>{ potChipsShown++; renderPot(); },
+        (s,d)=>{ bankPending+=s; potPending+=d; });
+    } else {
+      const n = Math.max(1, potChipCountFor(g.pot) - potChipCountFor(potBefore));
+      const e = seatEls[player.id];
+      transferPile(n, (e && e.chips) || (e && e.root), $('pot-area'),
+        ()=>{}, ()=>{ potChipsShown++; renderPot(); },
+        (s,d)=>{ potPending+=d; });
+    }
+  }
 }
 
 function checkHandEndedByFold(){
@@ -3427,7 +3443,7 @@ async function handleFoldWin(){
   render();
   await sleep(motionOff() ? 150 : 500);
   winner.chips += amt; g.pot = 0;
-  flyChipsToWinner(winner.id, amt);
+  payoutTo(winner, potChipsShown);
   if (winner.isHuman){ stats.won++; Sound.win(); haptic(30); }
   if (!winner.isHuman){
     setMood(winner.id, 'happy');
@@ -3535,7 +3551,22 @@ async function handleShowdown(){
   await sleep(motionOff() ? 250 : 700);
 
   g.players.forEach(p=>{ if (p._award) p.chips += p._award; });
-  Array.from(winnerIds).forEach(id=>{ const w=g.players.find(p=>p.id===id); flyChipsToWinner(id, w ? (w._award||0) : 0); });
+  // Split pots: same largest-remainder proportional split as the money
+  // math above, but operating purely on the pot's current shown chip
+  // count (never on chip identity) — the last winner absorbs whatever
+  // rounding remainder is left so the pile counts sum exactly.
+  {
+    const ids = Array.from(winnerIds);
+    const startPool = potChipsShown;
+    const totalAward = ids.reduce((s,id)=>s+(g.players.find(p=>p.id===id)._award||0), 0);
+    let remaining = startPool;
+    ids.forEach((id,i)=>{
+      const w = g.players.find(p=>p.id===id);
+      const n = (i===ids.length-1) ? remaining : Math.min(remaining, Math.round(startPool*(w._award||0)/totalAward));
+      remaining -= n;
+      payoutTo(w, n);
+    });
+  }
   g.pot = 0;
   potResults.forEach(r=>{
     if (r.split){
@@ -4029,12 +4060,6 @@ function syncCardRow(container, cards, faceDownMask, small){
    ============================================================ */
 /* Every dealing/collecting duration lives here so the feel can be tuned
    from one place without hunting through the choreography functions. */
-/* How long the pot mound's DOM waits before catching up to a chip flight
-   that's still travelling (see potMoundFreezeUntil above) — matched to
-   flyChipVolley's own total per-chip travel time (~350ms) plus a small
-   margin, not tied to DEAL_TIMING since chips and cards fly on different
-   engines/timings. */
-const POT_MOUND_CATCH_MS = 380;
 const DEAL_TIMING = {
   dealMs: 520,                // punchy flick, ~0.5-0.55s target per card, pre-speedMult
   dealStaggerMs: 420,         // near-sequential: next card releases just before/around the previous one landing
@@ -4081,7 +4106,7 @@ const DealFX = (function(){
      (position + size, via getBoundingClientRect on both ends) of
      `fromEl` — on frame one it IS the source card, not a lookalike spawned
      nearby. It then runs a short chain of CSS transitions (the same
-     chained setTimeout/style.transition technique flyChipVolley already
+     chained setTimeout/style.transition technique settleGhost() already
      uses for its chip toss, just with more stages) that together read as
      one continuous physical motion, travelling in a TRUE STRAIGHT LINE
      (the ghost's centre moves directly from origin to destination — no
@@ -4271,128 +4296,104 @@ function chipTierForSlot(amount, total, i){
   const step = Math.min(span-1, Math.floor(frac*span));
   return CHIP_DENOMS[base+step].cls;
 }
-/* Flat colours matching each tier's --c-face, for the box-shadow "extra
-   chips" trick below (box-shadow can't read a colour scoped to a
-   different element's class, so these need to be plain values here).
-   The default gold tier stays var(--accent) so it still follows the
-   active table theme; the four explicit denominations are intentionally
-   fixed regardless of theme, same as their CSS counterparts. */
-const CHIP_FACE_HEX = {
-  '': 'var(--accent)', 'd-ivory':'#E8E0CC', 'd-crimson':'#B4423E',
-  'd-slate':'#5D7A71', 'd-onyx':'#4B2E63'
-};
-const CHIP_CLUMP_BASE_SHADOW = 'inset 0 2px 0 rgba(255,255,255,.4), inset 0 -1px 0 rgba(0,0,0,.35), 0 3px 0 rgba(0,0,0,.4)';
+/* Pile geometry, measured against the actual CSS (#hud-left's usable
+   width fits 4 towers of 18px .chip-disc at most; the pot has far more
+   room and isn't the binding constraint) — shared cap for both piles so
+   a pile's shown count never has to build a 5th tower. */
+const CHIP_MAX_TOWERS = 4;
+const CHIP_PER_TOWER = 9;
 
-/* Shared clump renderer for both the central pot mound and the human
-   bankroll heap. A clump is up to 3 real, fully-detailed chip-disc
-   elements; anything beyond that is implied via flat box-shadow layers
-   stacked under the base disc — a denser-looking pile without one DOM
-   node per visible chip (matters once bankrolls/pots run into the
-   thousands). `clumps`: [{count, amount, rot, maxExtra}] — count is the
-   total implied chips in that clump, amount is the money value used for
-   *that* clump's own denomination tiering (lets pot flanking clumps read
-   a smaller slice of the pot than the centre clump, for naturally mixed
-   denominations), rot is a fixed degree of tilt, maxExtra caps how many
-   shadow-only chips a clump may add (kept low for the space-constrained
-   HUD heap, higher for the open felt under the pot). */
-function syncClumps(container, clumps){
+/* Target chip counts a pile should show once everything settles — pure
+   functions of the authoritative money, never of the pile's current
+   (possibly lagging) shown count. render()'s idle-snap path pops
+   ...Shown to these the instant a pile has no pending transfer. */
+function bankChipCountFor(chips){
+  if (!chips || chips<=0) return 0;
+  const ref = (game && game.startingStack) || 1000;
+  return Math.max(1, Math.min(36, Math.round(30 * Math.sqrt(chips/ref))));
+}
+function potChipCountFor(amount){
+  if (!amount || amount<=0) return 0;
+  const bb = (game && game.bigBlind) || 20;
+  return Math.max(1, Math.min(32, Math.round(2 + 2.2*Math.log2(1 + amount/bb))));
+}
+
+/* Bank pile: plain ascending row, filled tower-by-tower left to right —
+   no clump-density trickery needed at this scale, since every visible
+   chip is now a real element. */
+function heapTowerHeights(shown){
+  shown = Math.max(0, Math.min(CHIP_MAX_TOWERS*CHIP_PER_TOWER, Math.round(shown)));
+  const out = [];
+  let remaining = shown;
+  while (remaining>0 && out.length<CHIP_MAX_TOWERS){
+    const h = Math.min(CHIP_PER_TOWER, remaining);
+    out.push(h);
+    remaining -= h;
+  }
+  return out;
+}
+/* Central pot mound: same centre-weighted placement 2A's potMoundLayout
+   used (tallest tower in the middle), now operating purely on the shown
+   count rather than on amount-derived clumps. */
+function potTowerHeights(shown){
+  shown = Math.max(0, Math.min(CHIP_MAX_TOWERS*CHIP_PER_TOWER, Math.round(shown)));
+  if (!shown) return [];
+  const towerCount = shown<=CHIP_PER_TOWER ? 1
+    : shown<=CHIP_PER_TOWER*2 ? 2
+    : shown<=CHIP_PER_TOWER*3 ? 3
+    : CHIP_MAX_TOWERS;
+  const heights = new Array(towerCount).fill(0);
+  for (let i=0;i<shown;i++) heights[i % towerCount]++;
+  heights.sort((a,b)=>b-a);
+  const out = new Array(towerCount);
+  const centreIdx = Math.floor((towerCount-1)/2);
+  let l = centreIdx, r = l+1, side = 0;
+  heights.forEach(h=>{
+    let idx;
+    if (side===0 && l>=0){ idx = l--; }
+    else if (r<towerCount){ idx = r++; }
+    else { idx = l--; }
+    side = 1-side;
+    out[idx] = h;
+  });
+  return out;
+}
+
+/* Shared tower-pile renderer for both the pot mound and the human
+   bankroll heap — every visible chip is a real .chip-disc (no shadow-
+   implied extras; 25-35 chips at a 36-chip hard cap doesn't need
+   density-faking). `amount` is only used for chipTierForSlot's
+   denomination colouring, never for the count — the count is always
+   `towerHeights`, which the caller derives from the pile's shown state,
+   not from `amount` directly, so a lagging pile draws its lagging count
+   at the right colours instead of snapping ahead. Tiering is per-tower
+   (same as 2A's per-clump tiering), not a running index across the whole
+   pile, so each tower independently tapers denomination base→tip. */
+function renderPile(container, towerHeights, amount){
   if (!container) return;
-  const sig = clumps.map(c=>c.count+':'+Math.round(c.amount||0)+':'+(c.rot||0)).join(',');
+  const sig = towerHeights.join(',') + ':' + Math.round(amount||0);
   if (container.dataset.sig === sig) return;
   container.dataset.sig = sig;
   container.innerHTML = '';
-  clumps.forEach(({count, amount, rot, maxExtra})=>{
-    const el = document.createElement('div');
-    el.className = 'chip-clump';
-    if (rot) el.style.transform = 'rotate('+rot+'deg)';
-    const real = Math.max(1, Math.min(3, count));
-    for (let i=0;i<real;i++){
+  towerHeights.forEach(h=>{
+    const tower = document.createElement('div');
+    tower.className = 'chip-clump';
+    for (let i=0;i<h;i++){
       const d = document.createElement('div');
-      const tier = chipTierForSlot(amount, count, i);
+      const tier = chipTierForSlot(amount, h, i);
       d.className = 'chip-disc' + (tier ? ' '+tier : '') + (motionOff() ? '' : ' disc-in');
-      el.appendChild(d);
+      tower.appendChild(d);
     }
-    const extra = Math.max(0, Math.min(maxExtra==null ? 6 : maxExtra, count - real));
-    if (extra>0 && el.firstElementChild){
-      const layers = [];
-      for (let k=1;k<=extra;k++){
-        const tier = chipTierForSlot(amount, count, real-1+k);
-        layers.push('0 '+(4*k)+'px 0 -1px '+(CHIP_FACE_HEX[tier] || CHIP_FACE_HEX['']));
-      }
-      el.firstElementChild.style.boxShadow = CHIP_CLUMP_BASE_SHADOW + ', ' + layers.join(', ');
-    }
-    container.appendChild(el);
+    container.appendChild(tower);
   });
 }
-
-/* Total chips implied by the pot — log-scaled so a 200 pot and a 20,000
-   pot are both readable. Split across clumps by potMoundLayout() below. */
-function potChipCount(amount){
-  if (!amount || amount<=0) return 0;
-  const bb = (game && game.bigBlind) || 20;
-  const n = 2 + 2.2*Math.log2(1 + amount/bb);
-  return Math.max(1, Math.min(24, Math.round(n)));
+function renderBank(){
+  const p = game && game.players.find(x=>x.isHuman);
+  renderPile($('hud-tower'), heapTowerHeights(bankChipsShown), p ? p.chips : 0);
 }
-/* Central pot mound: a small pot is one tidy clump; a big one spreads
-   into a centre-weighted mound of several clumps (tallest in the
-   middle, same ordering technique as the old column layout). Flanking
-   clumps are fed a reduced fraction of the true pot for their own
-   denomination tiering (chipTierForSlot), so they often land a tier
-   lower than the centre clump — mixed denominations, no new randomness,
-   entirely deterministic per pot amount. */
-function potMoundLayout(amount){
-  const total = potChipCount(amount);
-  if (!total) return [];
-  const bb = (game && game.bigBlind) || 20;
-  const ref = (game && game.startingStack) || 1000;
-  const big = amount >= 60*bb || amount >= 0.6*ref;
-  const clumpCount = amount < 2*bb ? 1
-    : amount < 15*bb ? (amount > 7*bb ? 3 : 2)
-    : big ? 5
-    : (amount > 30*bb ? 5 : 4);
-  const heights = new Array(clumpCount).fill(0);
-  for (let i=0;i<total;i++) heights[i % clumpCount]++;
-  heights.sort((a,b)=>b-a);
-  const out = new Array(clumpCount);
-  const centreIdx = Math.floor((clumpCount-1)/2);
-  let l = centreIdx, r = l+1, side = 0;
-  heights.forEach(count=>{
-    let idx;
-    if (side===0 && l>=0){ idx = l--; }
-    else if (r<clumpCount){ idx = r++; }
-    else { idx = l--; }
-    side = 1-side;
-    const clumpAmount = idx===centreIdx ? amount : Math.round(amount * (0.4 + 0.1*(idx % 3)));
-    out[idx] = { count: Math.min(12, count), amount: clumpAmount, maxExtra:6 };
-  });
-  return out;
-}
-
-/* Human bankroll heap: your stack as a loose, deterministic pile of
-   clumps inside the existing HUD box — the number of clumps and their
-   density both grow with your stack relative to the buy-in (same basis
-   the old tower used), so a doubled stack visibly looks heavier, not
-   just "one more pile." Rotation comes from a fixed small array keyed
-   only by clump position, never Math.random(), so the same bankroll
-   always renders the same pile — no crawling between renders. Clump
-   count is capped at 4 (not 5) and kept narrow (#hud-tower's own
-   .chip-disc override) specifically because #hud-left is a fixed
-   ~80px-usable-width column — a very rich stack reads as "impressive"
-   through clump *density* (more shadow-implied depth) rather than an
-   ever-wider row that would risk overflowing the HUD frame. */
-const HEAP_ROT = [-6, 4, -3, 6, -4];
-function heapLayout(chips){
-  if (!chips || chips<=0) return [];
-  const ref = (game && game.startingStack) || 1000;
-  const ratio = chips / ref;
-  const clumpCount = ratio<0.15 ? 1 : ratio<0.5 ? 2 : ratio<1.2 ? 3 : 4;
-  const perClump = Math.max(2, Math.min(9, Math.round(1 + 2.5*Math.sqrt(ratio))));
-  const out = [];
-  for (let i=0;i<clumpCount;i++){
-    const count = i===0 ? Math.min(9, perClump+1) : Math.max(2, perClump - (i>=3?1:0));
-    out.push({ count, amount:chips, rot:HEAP_ROT[i % HEAP_ROT.length], maxExtra:3 });
-  }
-  return out;
+function renderPot(){
+  const g = game;
+  renderPile($('pot-stacks'), potTowerHeights(potChipsShown), g ? g.pot : 0);
 }
 
 /* Jackpot bankroll counter: six inset digit cells, leading zeros dimmed,
@@ -4446,6 +4447,9 @@ function clearAllCardDOM(){
   if (board) board.innerHTML = '';
   const potStacks = $('pot-stacks');
   if (potStacks){ potStacks.innerHTML = ''; potStacks.dataset.sig = ''; }
+  // A hand boundary can't leave a stale pending count blocking future
+  // idle-snaps — any in-flight pot transfer is visually done by now.
+  potChipsShown = 0; potPending = 0;
   Object.values(seatEls).forEach(e=>{
     e.cardsContainer.innerHTML = '';
     e.root.classList.remove('winner');
@@ -4559,6 +4563,12 @@ function initSeats(){
       if (nameEl) nameEl.textContent = (p.name||'').split(' ')[0];
       if (e.hearts) e.hearts.dataset.n = '';
       buildJackpot();
+      // Fresh table/rebuy: no natural transfer source for the starting
+      // stack, so reset to empty and let render()'s idle-snap path pop
+      // the bank pile straight to its target — same as every other
+      // "money changed with no transfer" case.
+      bankChipsShown = 0; potChipsShown = 0;
+      bankPending = 0; potPending = 0;
     }
   });
 }
@@ -4574,107 +4584,94 @@ function flashAction(playerId, label){
   e._t = setTimeout(()=>e.bubble.classList.remove('show'), 1100);
 }
 
-/* Shared flight engine: each chip launches from the source and travels to
-   the target along its own slightly-scattered path — count scales with
-   the amount so a big bet visibly costs more chips. Quick decisive flick,
-   not a slow float: 3 stages (release hop, fast direct travel, hard-
-   decelerating landing) mirroring the technique DealFX.flyGhost already
-   uses for card deals — only the final stage fades opacity, and only the
-   final stage's easing actually "stops" (cubic-bezier(.15,.8,.25,1), a
-   front-loaded deceleration), rather than one near-symmetric ease that
-   never truly lands. */
-function flyChipVolley(srcEl, dstEl, count, opts){
-  const a = srcEl.getBoundingClientRect();
-  const b = dstEl.getBoundingClientRect();
-  if (!a.width || !b.width) return;
-  const sx = a.left + a.width/2, sy = a.top + Math.min(a.height*0.25, 20);
-  const tx = b.left + b.width/2, ty = b.top + b.height/2;
-  const gap = (opts && opts.gap) || 40;
-  for (let i=0;i<count;i++){
-    const chip = document.createElement('div');
-    chip.className = 'fly-chip';
-    const jx = Math.random()*14-7;
-    chip.style.left = (sx + jx) + 'px';
-    chip.style.top  = sy + 'px';
-    document.body.appendChild(chip);
-    const dx = tx - sx - jx + (Math.random()*10-5);
-    const dy = ty - sy + (Math.random()*6-3);
-    const hop = -(10 + Math.random()*10);
-    const spin = (Math.random()<.5?-1:1)*(60+Math.random()*100);
-    const delay = i*gap;
+/* Spawns one flight-ghost chip at srcRect's centre, primed to travel to
+   dstRect's centre — the same "IS the source chip on frame one" technique
+   DealFX.flyGhost uses for cards. settleGhost() below actually runs it. */
+function spawnFlightGhost(srcRect, dstRect){
+  const sx = srcRect.left + srcRect.width/2, sy = srcRect.top + Math.min(srcRect.height*0.25, 20);
+  const tx = dstRect.left + dstRect.width/2, ty = dstRect.top + dstRect.height/2;
+  const jx = Math.random()*14-7;
+  const chip = document.createElement('div');
+  chip.className = 'fly-chip';
+  chip.style.left = (sx + jx) + 'px';
+  chip.style.top  = sy + 'px';
+  document.body.appendChild(chip);
+  chip._dx = tx - sx - jx + (Math.random()*10-5);
+  chip._dy = ty - sy + (Math.random()*6-3);
+  chip._hop = -(10 + Math.random()*10);
+  chip._spin = (Math.random()<.5?-1:1)*(60+Math.random()*100);
+  return chip;
+}
+/* Runs one ghost through the proven 3-stage release/travel/landing flight
+   (release hop, fast direct travel, hard-decelerating landing — only the
+   final stage fades opacity, and only its easing (cubic-bezier(.15,.8,.25,1))
+   actually "stops" rather than approaching asymptotically). onLand fires
+   once the chip has visually arrived at its destination (350ms in), which
+   is the moment transferPile is allowed to grow the destination pile —
+   not the moment the flight merely begins. */
+function settleGhost(ghost, onLand){
+  const dx = ghost._dx, dy = ghost._dy, hop = ghost._hop, spin = ghost._spin;
+  ghost.style.transition = 'transform .08s cubic-bezier(.4,0,.7,.3)';
+  ghost.style.transform = 'translate('+(dx*0.08)+'px,'+hop+'px) rotate('+(spin*0.15)+'deg)';
+  setTimeout(()=>{
+    ghost.style.transition = 'transform .12s cubic-bezier(.35,0,.6,1)';
+    ghost.style.transform = 'translate('+(dx*0.7)+'px,'+(dy*0.55)+'px) rotate('+(spin*0.65)+'deg)';
     setTimeout(()=>{
-      chip.style.transition = 'transform .08s cubic-bezier(.4,0,.7,.3)';
-      chip.style.transform = 'translate('+(dx*0.08)+'px,'+hop+'px) rotate('+(spin*0.15)+'deg)';
-      setTimeout(()=>{
-        chip.style.transition = 'transform .12s cubic-bezier(.35,0,.6,1)';
-        chip.style.transform = 'translate('+(dx*0.7)+'px,'+(dy*0.55)+'px) rotate('+(spin*0.65)+'deg)';
-        setTimeout(()=>{
-          chip.style.transition = 'transform .15s cubic-bezier(.15,.8,.25,1), opacity .13s linear .06s';
-          chip.style.transform = 'translate('+dx+'px,'+dy+'px) rotate('+spin+'deg) scale(.7)';
-          chip.style.opacity = '0';
-        }, 120);
-      }, 80);
-    }, delay);
-    setTimeout(()=>chip.remove(), 370 + delay);
+      ghost.style.transition = 'transform .15s cubic-bezier(.15,.8,.25,1), opacity .13s linear .06s';
+      ghost.style.transform = 'translate('+dx+'px,'+dy+'px) rotate('+spin+'deg) scale(.7)';
+      ghost.style.opacity = '0';
+      setTimeout(()=>{ if (onLand) onLand(); }, 150);
+    }, 120);
+  }, 80);
+  setTimeout(()=>ghost.remove(), 370);
+}
+/* Individual chips stagger 35-60ms apart, tighter for a big transfer so a
+   36-chip payout doesn't take noticeably longer to release than a 3-chip
+   call. */
+function chipStaggerGap(n){ return Math.max(35, Math.min(60, Math.round(300/Math.max(1,n)))); }
+
+/* Moves `n` visual chips from one pile's shown-count to another's, as
+   individually staggered ghost flights. decSrc()/incDst() are called
+   exactly once per chip, at that chip's own launch/landing — never in
+   bulk — so the piles visibly shrink/grow gradually across the whole
+   transfer instead of jumping. srcContainer/dstContainer are re-measured
+   live per chip (matching how the old flight code already worked), so a
+   layout change mid-transfer (e.g. window resize) can't strand a chip
+   mid-air. Every mutation is a relative +=1/-=1, so overlapping transfers
+   (two opponents betting in quick succession, a bet immediately followed
+   by a fold-win) compose correctly for free — no cancel-tokens needed. */
+function transferPile(n, srcContainer, dstContainer, decSrc, incDst, addPending){
+  if (n<=0) return;
+  if (motionOff()){
+    for (let i=0;i<n;i++) decSrc();
+    for (let i=0;i<n;i++) incDst();
+    return;
+  }
+  addPending(n, n);
+  const gap = chipStaggerGap(n);
+  for (let i=0;i<n;i++){
+    setTimeout(()=>{
+      decSrc();
+      const a = srcContainer.getBoundingClientRect();
+      const b = dstContainer.getBoundingClientRect();
+      // A hidden/detached container (e.g. mid-teardown) can't host a
+      // flight — resolve this chip's landing immediately rather than
+      // stranding pendingDst above 0 forever.
+      if (!a.width || !b.width){ incDst(); return; }
+      const ghost = spawnFlightGhost(a, b);
+      settleGhost(ghost, ()=>{ incDst(); });
+    }, Math.min(i,11)*gap);
   }
 }
-/* Scale-invariant against blind level (like the old formula) but no
-   longer saturates by ~10bb — a huge all-in should look visibly denser
-   than a large raise, not identical to it. */
-function chipVolleyCount(amount){
-  const bb = (game && game.bigBlind) || 20;
-  const r = amount / bb;
-  return Math.max(2, Math.min(20, Math.round(1 + 2.6*Math.sqrt(r))));
-}
-/* Holds the pot mound's DOM at its current shape for POT_MOUND_CATCH_MS
-   (see potMoundFreezeUntil above), then forces one fresh sync reading
-   game.pot live at fire time — never a captured value, so it can't go
-   stale even if other renders happen in between (syncClumps' own
-   dataset.sig diff-guard makes this call idempotent against whatever a
-   normal render() may have already drawn by then). */
-function freezePotMound(){
-  potMoundFreezeUntil = performance.now() + POT_MOUND_CATCH_MS;
-  setTimeout(()=>{
-    const g = game;
-    syncClumps($('pot-stacks'), (g && g.pot>0) ? potMoundLayout(g.pot) : []);
-  }, POT_MOUND_CATCH_MS);
-}
-/* Bet flourish: one truthful flight per real action, straight from the
-   acting player to the pot — no resting intermediate pile. Opponent
-   chips launch from their bankroll number (the "off-board stack" the
-   number implies) rather than the whole seat, so the flight reads as
-   money leaving that player specifically, not their portrait/cards.
-   isAllIn gets a flat bump (mirroring flyChipsToWinner's own +5 payout
-   bump below) since a late-game short-stack shove has a much smaller
-   bb-relative amount than an early-game one of equal significance —
-   without this, only the number would tell you it was drastic. Gap
-   between each chip's launch is count-aware so a dense all-in volley
-   doesn't take noticeably longer to release than a small call. */
-function flyChipsFrom(playerId, amount, isAllIn){
-  if (motionOff()) return;
-  const e = seatEls[playerId];
-  const pot = $('pot-area');
-  if (!e || !pot) return;
-  const p = game && game.players.find(x=>x.id===playerId);
-  const src = (p && p.isHuman && $('hud-tower')) ? $('hud-tower') : (e.chips || e.root);
-  let n = chipVolleyCount(amount || (p ? p.betThisRound : 0));
-  if (isAllIn) n = Math.min(24, n + 4);
-  flyChipVolley(src, pot, n, {gap: Math.max(18, Math.min(55, Math.round(280/n)))});
-  freezePotMound();
-}
 
-/* Winnings flourish: the pot drains INTO the winner's pile — a longer,
-   heavier volley than a bet, so taking a pot lands as the payoff moment. */
-function flyChipsToWinner(playerId, amount){
-  if (motionOff()) return;
-  const e = seatEls[playerId];
-  const pot = $('pot-area');
-  if (!e || !pot) return;
-  const p = game && game.players.find(x=>x.id===playerId);
-  const dst = (p && p.isHuman && $('hud-tower')) ? $('hud-tower') : e.root;
-  const n = Math.max(6, Math.min(26, chipVolleyCount(amount || 0) + 5));
-  flyChipVolley(pot, dst, n, {gap: Math.max(18, Math.min(70, Math.round(320/n)))});
-  freezePotMound();
+/* Payout: chips leave the pot and travel to the winner's pile — shared by
+   handleFoldWin() and handleShowdown()'s proportional split loop. */
+function payoutTo(winner, n){
+  const e = seatEls[winner.id];
+  transferPile(n, $('pot-area'), winner.isHuman ? $('hud-tower') : ((e && e.chips) || (e && e.root)),
+    ()=>{ potChipsShown--; renderPot(); },
+    winner.isHuman ? ()=>{ bankChipsShown++; renderBank(); } : ()=>{},
+    (s,d)=>{ potPending+=s; if (winner.isHuman) bankPending+=d; });
 }
 
 function render(){
@@ -4692,21 +4689,22 @@ function render(){
     ['preflop','flop','turn','river'].includes(g.phase) && !g.over);
 
   const potArea = $('pot-area');
-  // While a chip flight is still travelling (see potMoundFreezeUntil),
-  // keep the plate visible and leave the mound's shape as-is even if
-  // g.pot has already dropped to 0 (a payout draining the pot) — the
-  // numeric readout below still updates immediately either way; only the
-  // mound's DOM rebuild is what's deferred, by freezePotMound()'s own
-  // timer, not by anything here re-checking on a later render().
-  const potFrozen = performance.now() < potMoundFreezeUntil;
-  if (g.pot>0 || potFrozen){
+  // The numeric readout always reflects the authoritative pot instantly.
+  // The mound's shown chip count is only snapped to match it here when no
+  // transfer owns it (potPending===0) — while a bet or payout's chips are
+  // still travelling, the mound keeps its pre-arrival shape and grows/
+  // shrinks one chip at a time as each ghost lands (see transferPile).
+  // Visibility also has to consider potChipsShown, not just g.pot, so the
+  // plate stays up while a payout's last chips are still draining out
+  // after g.pot has already dropped to 0.
+  if (potPending===0) potChipsShown = potChipCountFor(g.pot);
+  if (g.pot>0 || potChipsShown>0){
     potArea.classList.remove('hidden');
     $('pot-val').textContent = g.pot.toLocaleString();
-    if (!potFrozen) syncClumps($('pot-stacks'), potMoundLayout(g.pot));
   } else {
     potArea.classList.add('hidden');
-    syncClumps($('pot-stacks'), []);
   }
+  renderPot();
 
   syncCardRow($('board'), g.board, g.board.map(()=>false), false);
 
@@ -4744,7 +4742,8 @@ function render(){
     if (chipDigits >= 7) e.chips.classList.add('chip-sz3');
     else if (chipDigits >= 5) e.chips.classList.add('chip-sz2');
     if (p.isHuman){
-      syncClumps($('hud-tower'), heapLayout(p.chips));
+      if (bankPending===0) bankChipsShown = bankChipCountFor(p.chips);
+      renderBank();
       updateJackpot(p.chips);
     }
     if (e.posEl){
