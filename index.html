@@ -100,8 +100,18 @@
 [data-contrast="high"] .pot-plate{ border-color:rgba(255,255,255,.4); }
 
 *{ box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+/* height:100% is the fallback for engines without dvh support; 100dvh
+   (dynamic viewport height) is layered on top for iOS Safari/standalone
+   PWA specifically — it's the unit actually designed to represent the
+   true usable screen including safe-area insets, which plain 100%/
+   position:fixed;inset:0 alone has known real-device inconsistencies
+   with in standalone display mode (see #app below, same reasoning). If
+   an engine doesn't understand 100dvh the whole declaration is invalid
+   and ignored, leaving the 100% line as the effective value — a
+   standard, reversible progressive-enhancement pattern, not a
+   replacement for the existing sizing chain. */
 html,body{
-  margin:0; padding:0; height:100%; overflow:hidden;
+  margin:0; padding:0; height:100%; height:100dvh; overflow:hidden;
   background:var(--bg-deep); color:var(--ink);
   font-family:var(--font-px);
   -webkit-user-select:none; user-select:none;
@@ -114,7 +124,13 @@ html,body{
 [data-textsize="large"] .coach-note,[data-textsize="large"] .review-row{ font-size:14px; }
 .tabular{ font-family:var(--font-hdr); font-variant-numeric:tabular-nums; font-feature-settings:"tnum"; }
 .hidden{ display:none !important; }
-#app{ position:fixed; inset:0; }
+/* Same dvh-over-percentage reasoning as html,body above, applied to the
+   element the whole game actually renders inside — position:fixed's
+   containing block is the viewport, not html/body, so this needs its
+   own explicit dvh line rather than relying on inheriting the fix from
+   the rule above. inset:0 stays as the primary/fallback sizing; height
+   only takes over where 100dvh is understood. */
+#app{ position:fixed; inset:0; height:100dvh; }
 .screen{ position:absolute; inset:0; display:flex; flex-direction:column; }
 button{ font-family:inherit; }
 :focus{ outline:none; }
@@ -424,11 +440,17 @@ button{ font-family:inherit; }
    for the same spot. The human's own to-call amount is still surfaced in
    the action banner exactly when it matters (their turn). */
 
-.pot-stacks{ display:flex; align-items:flex-end; justify-content:center; gap:2px; min-height:2px; }
+.pot-stacks{ display:flex; align-items:flex-end; justify-content:center; gap:3px; min-height:2px; }
 .pot-stacks:empty{ display:none; }
-.pot-stack{ display:flex; flex-direction:column-reverse; align-items:center; }
-.pot-stack .chip-disc{ width:28px; height:10px; margin-top:1px; }
-.pot-stack .chip-disc:first-child{ margin-top:0; }
+/* a "clump" is the shared building block for both the pot mound and the
+   human bankroll heap (see syncClumps()) — a small overlapping chip-disc
+   column, optionally tilted a few degrees for the heap's "slightly
+   chaotic pile" read. Mound personality (denomination mixing, centre-
+   weighted height) comes entirely from what values JS feeds in per
+   clump, not from anything structural here. */
+.chip-clump{ display:flex; flex-direction:column-reverse; align-items:center; }
+.chip-clump .chip-disc{ width:24px; height:14px; margin-top:-10px; }
+.chip-clump .chip-disc:first-child{ margin-top:0; box-shadow:inset 0 2px 0 rgba(255,255,255,.4), inset 0 -1px 0 rgba(0,0,0,.35), 0 3px 0 rgba(0,0,0,.4); }
 .chip-token{
   position:absolute; border-radius:50%;
   background:var(--accent);
@@ -634,25 +656,52 @@ button{ font-family:inherit; }
 /* ---- chip towers: edge-on coin slabs, stacked flush into one solid
    column — the sketch's "tower of chips", not a row of floating circles ---- */
 .chip-stack{
-  display:flex; flex-direction:column-reverse; align-items:center; width:26px; min-height:2px;
+  display:flex; flex-direction:column-reverse; align-items:center; width:22px; min-height:2px;
 }
+/* Squat puck, not a pill: width:height is 1.7:1 (was 2.9:1) and the
+   border-radius is a modest fraction of the height (was ~44%, now ~23%)
+   so corners round off without the long edges curving into a capsule.
+   Stacking overlap (margin-top, below) is the other half of the read —
+   see .chip-disc:first-child + the sibling rule underneath it. */
 .chip-disc{
-  position:relative; width:26px; height:9px; border-radius:4px; margin-top:1px; flex-shrink:0;
-  background:var(--accent);
+  position:relative; width:22px; height:13px; border-radius:3px; margin-top:-9px; flex-shrink:0;
+  --c-hi:var(--accent-bright); --c-face:var(--accent); --c-lo:#A67A1E;
+  /* hard-banded face (not a smooth blend) — same chunky-gradient idiom as
+     the wood rail (.felt::before) — reads as a lit top face + a thin dark
+     lower rim, i.e. a puck with real thickness, not a flat coin */
+  background:linear-gradient(180deg, var(--c-hi) 0 50%, var(--c-face) 50% 74%, var(--c-lo) 74% 100%);
   border:2px solid var(--px-ink);
-  box-shadow:inset 0 2px 0 rgba(255,255,255,.45), inset 0 -2px 0 rgba(0,0,0,.3);
+  box-shadow:inset 0 2px 0 rgba(255,255,255,.4), inset 0 -1px 0 rgba(0,0,0,.35);
 }
-.chip-disc:first-child{ margin-top:0; }
+/* the base chip of a pile gets the extra contact shadow — putting it on
+   every disc would show as a seam between stacked chips. Heavy negative
+   overlap above means every chip but the base and the topmost is mostly
+   hidden — only its dark rim band peeks out beneath the chip above it,
+   which is what actually reads as "a stack" rather than a spaced column. */
+.chip-disc:first-child{
+  margin-top:0;
+  box-shadow:inset 0 2px 0 rgba(255,255,255,.4), inset 0 -1px 0 rgba(0,0,0,.35), 0 3px 0 rgba(0,0,0,.4);
+}
 /* edge stripes: the classic chip edge-marks, as flat pixel ticks */
 .chip-disc::before{
   content:''; position:absolute; inset:0; border-radius:2px;
   background:repeating-linear-gradient(90deg, transparent 0 4px, rgba(255,255,255,.55) 4px 7px, transparent 7px 11px);
   opacity:.8;
 }
-.chip-disc.d-ivory{ background:#E8E0CC; }
+/* small highlight puck — a tiny catch-light so the face reads as domed/
+   physical rather than a flat-printed sticker */
+.chip-disc::after{
+  content:''; position:absolute; left:4px; top:1px; width:5px; height:2px; border-radius:2px;
+  background:rgba(255,255,255,.6);
+}
+/* ---- fixed denomination palette — deliberately theme-independent, same
+   precedent as card suit colours, so a chip's value stays recognisable
+   no matter which table theme is active ---- */
+.chip-disc.d-ivory{ --c-hi:#F5EFDD; --c-face:#E8E0CC; --c-lo:#B9AF92; }
 .chip-disc.d-ivory::before{ background:repeating-linear-gradient(90deg, transparent 0 4px, rgba(60,50,30,.4) 4px 7px, transparent 7px 11px); }
-.chip-disc.d-crimson{ background:#B4423E; }
-.chip-disc.d-slate{ background:#5D7A71; }
+.chip-disc.d-crimson{ --c-hi:#D96F69; --c-face:#B4423E; --c-lo:#7A2723; }
+.chip-disc.d-slate{ --c-hi:#7FA69C; --c-face:#5D7A71; --c-lo:#3C4F49; }
+.chip-disc.d-onyx{ --c-hi:#8A6AA8; --c-face:#4B2E63; --c-lo:#2A1738; }
 .chip-disc.disc-in{ animation:discIn .18s steps(3,end); }
 @keyframes discIn{ from{ transform:scale(.3); opacity:0; } to{ transform:scale(1); opacity:1; } }
 .seat-chips{
@@ -685,24 +734,35 @@ button{ font-family:inherit; }
 .seat.winner .seat-card{ border-color:var(--good); box-shadow:0 0 0 2px var(--good), 0 4px 0 rgba(0,0,0,.5); }
 .seat-card .hearts{ margin:0; }
 .seat-card .seat-name{ margin-top:0; }
-/* tiny coin in front of the bounty — coin + number laid out as one flex
-   unit so they align regardless of the number font's own line metrics */
+/* Plain numeric bankroll — opponents don't get a permanent physical chip
+   icon (see the human bankroll heap and central pot for where the
+   physical money actually lives; a small pill next to every opponent's
+   number added clutter without adding readability). */
 .seat-card .seat-chips{
   display:flex; align-items:center; justify-content:center; width:100%;
   overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
 }
-.seat-card .seat-chips::before{
-  content:''; width:8px; height:8px; border-radius:50%; flex-shrink:0;
-  background:var(--accent); border:1px solid rgba(0,0,0,.55);
-  box-shadow:inset 0 1px 0 rgba(255,255,255,.5); margin-right:4px;
-}
-/* Cards protrude ~50% below the board's bottom edge — physical cards
+/* Scoped override, not an edit to the shared .card.small base rule —
+   .card.small is also used by the hand-strength reference popup
+   (.rank-cards) and a landscape-viewport override, both already isolated
+   from this the same way .dealer-deck .card is (own selector, wins on
+   specificity: 3 classes here vs. 2 on every other .card.small rule).
+   ~13%/12% larger than the shared base (30x43). Companion change: the
+   seat-cards protrusion below moves from -19px to -30px, and initSeats()'s
+   --card-h multiplier (currently sourced from 43) needs the same 43→48
+   update or the container's reserved height quietly falls behind the
+   actual (now larger) card size. */
+.seat-card .card.small{ width:34px; height:48px; border-radius:2px; }
+.seat-card .card.small .r{ font-size:12px; }
+.seat-card .card.small .s{ font-size:9px; }
+.seat-card .card.small .pip{ font-size:14px; }
+/* Cards protrude ~60-65% below the board's bottom edge — physical cards
    placed into the board rather than another contained UI row. Safe for
    the deal-flight system: flyGhost() always measures the destination
    element's live getBoundingClientRect() at flight time (see DealFX),
    so this CSS-only offset is picked up automatically with no JS changes,
    the same way .seat.you's existing card protrusion already works. */
-.seat-card .seat-cards{ margin-top:2px; margin-bottom:-19px; position:relative; z-index:3; filter:drop-shadow(0 3px 0 rgba(0,0,0,.35)); }
+.seat-card .seat-cards{ margin-top:2px; margin-bottom:-30px; position:relative; z-index:3; filter:drop-shadow(0 3px 0 rgba(0,0,0,.35)); }
 
 /* Folded: the player is out of the hand, not their board off the table.
    The board's own chrome (border/background/shadow) is left almost
@@ -751,6 +811,12 @@ button{ font-family:inherit; }
 .action-slot.act-raise{ background:var(--accent); color:var(--accent-ink); border-color:var(--px-ink); font-weight:700; }
 .action-slot.act-fold{ color:rgba(255,180,173,.75); border-color:rgba(217,83,74,.35); }
 .action-slot.act-allin{ background:var(--danger); color:#FFF; border-color:var(--px-ink); font-weight:700; }
+/* Longer labels ("Raise to 1,240") step down in size rather than
+   ellipsis-truncating a meaningful digit — text-overflow:ellipsis above
+   stays only as a defensive backstop that should never actually fire
+   once this + fmtActionAmount()'s abbreviation fallback are in place. */
+.action-slot.txt-sz2{ font-size:7.5px; }
+.action-slot.txt-sz3{ font-size:6.5px; }
 
 .invested-row{
   display:flex; align-items:baseline; gap:5px; margin-top:5px; padding:3px 9px;
@@ -834,9 +900,11 @@ button{ font-family:inherit; }
   background:rgba(0,0,0,.36);
   box-shadow:inset 0 3px 0 rgba(0,0,0,.45), inset 0 -1px 0 rgba(255,255,255,.07);
 }
+/* Narrower than the pot's chips — #hud-left is a fixed ~80px-usable-width
+   grid column, and the heap can have up to 4 clumps side by side. */
 #hud-tower{ display:flex; align-items:flex-end; justify-content:center; gap:2px; min-height:24px; }
-#hud-tower .pot-stack{ display:flex; flex-direction:column-reverse; align-items:center; }
-#hud-tower .chip-disc{ width:22px; height:8px; margin-top:1px; }
+#hud-tower .chip-clump{ display:flex; flex-direction:column-reverse; align-items:center; }
+#hud-tower .chip-disc{ width:18px; height:11px; margin-top:-7px; }
 #hud-tower .chip-disc:first-child{ margin-top:0; }
 #hud-mid{
   display:flex; flex-direction:column; align-items:center; gap:6px; min-width:0;
@@ -908,11 +976,11 @@ button{ font-family:inherit; }
 #hud-mid .hand-strength{ width:100%; }
 
 .fly-chip{
-  position:fixed; width:24px; height:9px; border-radius:4px; z-index:60; pointer-events:none;
-  background:var(--accent);
+  position:fixed; width:20px; height:12px; border-radius:3px; z-index:60; pointer-events:none;
+  background:linear-gradient(180deg, var(--accent-bright) 0 50%, var(--accent) 50% 74%, #A67A1E 74% 100%);
   border:2px solid var(--px-ink);
-  box-shadow:inset 0 2px 0 rgba(255,255,255,.45);
-  margin-left:-12px; margin-top:-5px; will-change:transform,opacity;
+  box-shadow:inset 0 2px 0 rgba(255,255,255,.4), inset 0 -1px 0 rgba(0,0,0,.35);
+  margin-left:-10px; margin-top:-6px; will-change:transform,opacity;
 }
 
 .result-card{
@@ -2809,6 +2877,13 @@ let bannerOverride = null;
 let coachToken = 0;
 let logDirty = true;
 let pendingNewTableAction = null;
+/* A timestamp only — never a money value, so it structurally cannot drift
+   from game.pot. While performance.now() is before this, render() leaves
+   the pot mound's DOM alone (holding its pre-arrival shape) so a chip
+   flight visually lands before the pile jumps to its new size, instead of
+   the mound instantly redrawing on the same tick the flight starts. See
+   flyChipsFrom()/flyChipsToWinner(). */
+let potMoundFreezeUntil = 0;
 
 function sleep(ms){ return new Promise(r=>setTimeout(r, ms)); }
 function $(id){ return document.getElementById(id); }
@@ -3200,13 +3275,11 @@ function scheduleAutoDeal(){
 
 async function advancePhase(){
   const g = game;
-  if (g.players.filter(p=>p.inHand && !p.folded).length<=1){ g.phase='foldwin'; return; }
-  // sweep this round's bets into the pot visually
-  const movers = g.players.filter(p=>p.betThisRound>0);
-  movers.forEach(p=>{ flyChipsFrom(p.id, p.betThisRound); });
+  // Money already flew straight to the pot the instant each bet/call/raise
+  // happened (flyChipsFrom, called from applyAction) — there is no resting
+  // pile to sweep here any more, just the street-scoped bookkeeping reset.
   g.players.forEach(p=>{ p.betThisRound=0; });
-  render();
-  await sleep(motionOff() ? 60 : 220);
+  if (g.players.filter(p=>p.inHand && !p.folded).length<=1){ g.phase='foldwin'; return; }
 
   if (g.phase==='preflop'){ logMsg('Flop', true); await dealCommunity(3); beginBettingRound('flop'); }
   else if (g.phase==='flop'){ logMsg('Turn', true); await dealCommunity(1); beginBettingRound('turn'); }
@@ -3214,13 +3287,22 @@ async function advancePhase(){
   else if (g.phase==='river'){ g.phase='showdown'; }
 }
 
+/* Comma-grouped like every other money readout in the UI (pot-val,
+   seat-chips) up to 99,999; past that, abbreviated to "120k" rather than
+   producing a label no font tier below could fit without truncating a
+   digit — see .action-slot.txt-sz2/.txt-sz3 for the tiers this feeds. */
+function fmtActionAmount(n){
+  n = Math.round(n);
+  if (n < 100000) return n.toLocaleString();
+  return Math.round(n/1000).toLocaleString() + 'k';
+}
 function actionLabel(action, player, amt){
   if (player.allIn) return 'All-In';
   if (action==='fold') return 'Fold';
   if (action==='check') return 'Check';
-  if (action==='call') return amt>0 ? 'Call ' + amt : 'Check';
-  if (action==='bet') return 'Bet ' + amt;
-  if (action==='raise') return 'Raise to ' + amt;
+  if (action==='call') return amt>0 ? 'Call ' + fmtActionAmount(amt) : 'Check';
+  if (action==='bet') return 'Bet ' + fmtActionAmount(amt);
+  if (action==='raise') return 'Raise to ' + fmtActionAmount(amt);
   return '';
 }
 
@@ -3310,7 +3392,7 @@ function applyAction(player, decision){
   const streetLabel = actionLabel(action, player, shortAmt);
   player.streetAction = { type: player.allIn ? 'allin' : action, label: streetLabel, amount: shortAmt };
   flashAction(player.id, streetLabel);
-  if (action!=='fold' && action!=='check') flyChipsFrom(player.id, player.betThisRound);
+  if (action!=='fold' && action!=='check') flyChipsFrom(player.id, player.betThisRound, player.allIn);
 }
 
 function checkHandEndedByFold(){
@@ -3336,6 +3418,10 @@ async function handleFoldWin(){
   const g = game;
   const winner = g.players.find(p=>p.inHand && !p.folded);
   const amt = g.pot;
+  // most fold-wins reach here directly (checkHandEndedByFold in the main
+  // loop), bypassing advancePhase() entirely — betThisRound still needs
+  // its street-scoped reset here even though there's no pile to sweep.
+  g.players.forEach(p=>{ p.betThisRound=0; });
   recordPot(amt);
   setBanner('<b>' + esc(winner.name) + '</b> takes the pot…');
   render();
@@ -3943,6 +4029,12 @@ function syncCardRow(container, cards, faceDownMask, small){
    ============================================================ */
 /* Every dealing/collecting duration lives here so the feel can be tuned
    from one place without hunting through the choreography functions. */
+/* How long the pot mound's DOM waits before catching up to a chip flight
+   that's still travelling (see potMoundFreezeUntil above) — matched to
+   flyChipVolley's own total per-chip travel time (~350ms) plus a small
+   margin, not tied to DEAL_TIMING since chips and cards fly on different
+   engines/timings. */
+const POT_MOUND_CATCH_MS = 380;
 const DEAL_TIMING = {
   dealMs: 520,                // punchy flick, ~0.5-0.55s target per card, pre-speedMult
   dealStaggerMs: 420,         // near-sequential: next card releases just before/around the previous one landing
@@ -4148,87 +4240,158 @@ function collectCardFlight(el){
   return DealFX.flyGhost(el, deckTop, { duration:DEAL_TIMING.collectMs, style:'return' });
 }
 
-/* Log-scaled chip pile: readable whether a stack is 40 chips or 40,000. */
-function chipStackCount(chips){
-  if (!chips || chips<=0) return 0;
-  const bb = (game && game.bigBlind) || 20;
-  const n = 2 + Math.log2(1 + chips/bb);
-  return Math.max(1, Math.min(12, Math.round(n)));
+/* ============================================================
+   CHIP DENOMINATIONS — a fixed, theme-independent palette (see the
+   .chip-disc.d-* CSS) used to colour a pile by the actual money it
+   represents. Numeric readouts (jackpot, seat-chips, pot-val) remain the
+   only authoritative source of truth; this only decides which tier class
+   a given disc gets. Values are pitched against BLIND_LEVELS (10/20 up
+   to 600/1200) and the starting-stack options (500-5000) so a handful of
+   chips can express anything from a small blind to a multi-thousand pot.
+   ============================================================ */
+const CHIP_DENOMS = [
+  { value:1000, cls:'d-onyx'    },
+  { value:500,  cls:''          },   // default face colour (--accent, gold)
+  { value:100,  cls:'d-slate'   },
+  { value:25,   cls:'d-crimson' },
+  { value:10,   cls:'d-ivory'   }
+];
+/* Which denomination tier the disc at position `i` (0 = base of the pile,
+   counting upward) should show, for a pile totalling `amount` across
+   `total` discs. Biggest denomination at the base, tapering to the
+   smallest in play near the top — like a pile actually gets built.
+   Pure/deterministic: same inputs always give the same tier, so piles
+   never visibly rearrange themselves between renders. */
+function chipTierForSlot(amount, total, i){
+  if (!amount || total<=0) return '';
+  const highestIdx = CHIP_DENOMS.findIndex(d=>amount>=d.value);
+  const base = highestIdx===-1 ? CHIP_DENOMS.length-1 : highestIdx;
+  const span = CHIP_DENOMS.length - base;
+  const frac = total<=1 ? 0 : i/(total-1);
+  const step = Math.min(span-1, Math.floor(frac*span));
+  return CHIP_DENOMS[base+step].cls;
 }
-function syncChipStack(container, count){
+/* Flat colours matching each tier's --c-face, for the box-shadow "extra
+   chips" trick below (box-shadow can't read a colour scoped to a
+   different element's class, so these need to be plain values here).
+   The default gold tier stays var(--accent) so it still follows the
+   active table theme; the four explicit denominations are intentionally
+   fixed regardless of theme, same as their CSS counterparts. */
+const CHIP_FACE_HEX = {
+  '': 'var(--accent)', 'd-ivory':'#E8E0CC', 'd-crimson':'#B4423E',
+  'd-slate':'#5D7A71', 'd-onyx':'#4B2E63'
+};
+const CHIP_CLUMP_BASE_SHADOW = 'inset 0 2px 0 rgba(255,255,255,.4), inset 0 -1px 0 rgba(0,0,0,.35), 0 3px 0 rgba(0,0,0,.4)';
+
+/* Shared clump renderer for both the central pot mound and the human
+   bankroll heap. A clump is up to 3 real, fully-detailed chip-disc
+   elements; anything beyond that is implied via flat box-shadow layers
+   stacked under the base disc — a denser-looking pile without one DOM
+   node per visible chip (matters once bankrolls/pots run into the
+   thousands). `clumps`: [{count, amount, rot, maxExtra}] — count is the
+   total implied chips in that clump, amount is the money value used for
+   *that* clump's own denomination tiering (lets pot flanking clumps read
+   a smaller slice of the pot than the centre clump, for naturally mixed
+   denominations), rot is a fixed degree of tilt, maxExtra caps how many
+   shadow-only chips a clump may add (kept low for the space-constrained
+   HUD heap, higher for the open felt under the pot). */
+function syncClumps(container, clumps){
   if (!container) return;
-  while (container.children.length > count) container.lastElementChild.remove();
-  while (container.children.length < count){
-    const d = document.createElement('div');
-    d.className = 'chip-disc' + (motionOff() ? '' : ' disc-in');
-    container.appendChild(d);
-  }
+  const sig = clumps.map(c=>c.count+':'+Math.round(c.amount||0)+':'+(c.rot||0)).join(',');
+  if (container.dataset.sig === sig) return;
+  container.dataset.sig = sig;
+  container.innerHTML = '';
+  clumps.forEach(({count, amount, rot, maxExtra})=>{
+    const el = document.createElement('div');
+    el.className = 'chip-clump';
+    if (rot) el.style.transform = 'rotate('+rot+'deg)';
+    const real = Math.max(1, Math.min(3, count));
+    for (let i=0;i<real;i++){
+      const d = document.createElement('div');
+      const tier = chipTierForSlot(amount, count, i);
+      d.className = 'chip-disc' + (tier ? ' '+tier : '') + (motionOff() ? '' : ' disc-in');
+      el.appendChild(d);
+    }
+    const extra = Math.max(0, Math.min(maxExtra==null ? 6 : maxExtra, count - real));
+    if (extra>0 && el.firstElementChild){
+      const layers = [];
+      for (let k=1;k<=extra;k++){
+        const tier = chipTierForSlot(amount, count, real-1+k);
+        layers.push('0 '+(4*k)+'px 0 -1px '+(CHIP_FACE_HEX[tier] || CHIP_FACE_HEX['']));
+      }
+      el.firstElementChild.style.boxShadow = CHIP_CLUMP_BASE_SHADOW + ', ' + layers.join(', ');
+    }
+    container.appendChild(el);
+  });
 }
 
-/* Scattered round-token pile for the pot — the bet-pile equivalent was removed:
-   it read as noise, not chips. Each player's own action-slot (see render())
-   carries the "what did they just do" signal instead. */
-const POT_DENOMS = ['', 'd-ivory', 'd-crimson', 'd-slate'];
-
-/* Total chips shown in the pot — log-scaled so a 200 pot and a 20,000 pot are
-   both readable, then split across up to 4 stacks so it grows outward as well
-   as upward (a tall single column would collide with the board). */
+/* Total chips implied by the pot — log-scaled so a 200 pot and a 20,000
+   pot are both readable. Split across clumps by potMoundLayout() below. */
 function potChipCount(amount){
   if (!amount || amount<=0) return 0;
   const bb = (game && game.bigBlind) || 20;
   const n = 2 + 2.2*Math.log2(1 + amount/bb);
   return Math.max(1, Math.min(24, Math.round(n)));
 }
-function potStackLayout(amount){
+/* Central pot mound: a small pot is one tidy clump; a big one spreads
+   into a centre-weighted mound of several clumps (tallest in the
+   middle, same ordering technique as the old column layout). Flanking
+   clumps are fed a reduced fraction of the true pot for their own
+   denomination tiering (chipTierForSlot), so they often land a tier
+   lower than the centre clump — mixed denominations, no new randomness,
+   entirely deterministic per pot amount. */
+function potMoundLayout(amount){
   const total = potChipCount(amount);
   if (!total) return [];
-  const stacks = Math.min(5, Math.ceil(total/6));
-  const heights = new Array(stacks).fill(0);
-  for (let i=0;i<total;i++) heights[i % stacks]++;
-  // mound ordering: tallest column centre, flanks descending outward
+  const bb = (game && game.bigBlind) || 20;
+  const ref = (game && game.startingStack) || 1000;
+  const big = amount >= 60*bb || amount >= 0.6*ref;
+  const clumpCount = amount < 2*bb ? 1
+    : amount < 15*bb ? (amount > 7*bb ? 3 : 2)
+    : big ? 5
+    : (amount > 30*bb ? 5 : 4);
+  const heights = new Array(clumpCount).fill(0);
+  for (let i=0;i<total;i++) heights[i % clumpCount]++;
   heights.sort((a,b)=>b-a);
-  const out = new Array(stacks);
-  let l = Math.floor((stacks-1)/2), r = l+1, side = 0;
-  for (const h of heights){
-    if (side===0 && l>=0){ out[l--] = h; }
-    else if (r<stacks){ out[r++] = h; }
-    else { out[l--] = h; }
+  const out = new Array(clumpCount);
+  const centreIdx = Math.floor((clumpCount-1)/2);
+  let l = centreIdx, r = l+1, side = 0;
+  heights.forEach(count=>{
+    let idx;
+    if (side===0 && l>=0){ idx = l--; }
+    else if (r<clumpCount){ idx = r++; }
+    else { idx = l--; }
     side = 1-side;
-  }
+    const clumpAmount = idx===centreIdx ? amount : Math.round(amount * (0.4 + 0.1*(idx % 3)));
+    out[idx] = { count: Math.min(12, count), amount: clumpAmount, maxExtra:6 };
+  });
   return out;
 }
-/* Rebuilds only when the shape actually changes, so render() staying cheap. */
-function syncPotStacks(container, layout){
-  if (!container) return;
-  const sig = layout.join(',');
-  if (container.dataset.sig === sig) return;
-  container.dataset.sig = sig;
-  container.innerHTML = '';
-  layout.forEach((height, si)=>{
-    const col = document.createElement('div');
-    col.className = 'pot-stack';
-    for (let i=0;i<height;i++){
-      const d = document.createElement('div');
-      d.className = 'chip-disc ' + POT_DENOMS[si % POT_DENOMS.length] + (motionOff() ? '' : ' disc-in');
-      col.appendChild(d);
-    }
-    container.appendChild(col);
-  });
-}
 
-/* The HUD coin tower: your stack rendered as real height. Scaled against
-   your buy-in (not the blind) so a doubled stack visibly doubles the tower
-   and a stack cut in half visibly shrinks it — a big-blind log scale was too
-   flat to read during ordinary play. Sequential fill: one tall column that
-   spills into shorter neighbours, so the silhouette reads like a bar gauge. */
-function towerLayout(chips){
+/* Human bankroll heap: your stack as a loose, deterministic pile of
+   clumps inside the existing HUD box — the number of clumps and their
+   density both grow with your stack relative to the buy-in (same basis
+   the old tower used), so a doubled stack visibly looks heavier, not
+   just "one more pile." Rotation comes from a fixed small array keyed
+   only by clump position, never Math.random(), so the same bankroll
+   always renders the same pile — no crawling between renders. Clump
+   count is capped at 4 (not 5) and kept narrow (#hud-tower's own
+   .chip-disc override) specifically because #hud-left is a fixed
+   ~80px-usable-width column — a very rich stack reads as "impressive"
+   through clump *density* (more shadow-implied depth) rather than an
+   ever-wider row that would risk overflowing the HUD frame. */
+const HEAP_ROT = [-6, 4, -3, 6, -4];
+function heapLayout(chips){
   if (!chips || chips<=0) return [];
   const ref = (game && game.startingStack) || 1000;
   const ratio = chips / ref;
-  const total = Math.max(1, Math.min(28, Math.round(11 * Math.sqrt(ratio))));
+  const clumpCount = ratio<0.15 ? 1 : ratio<0.5 ? 2 : ratio<1.2 ? 3 : 4;
+  const perClump = Math.max(2, Math.min(9, Math.round(1 + 2.5*Math.sqrt(ratio))));
   const out = [];
-  let left = total;
-  while (left>0 && out.length<3){ const take = Math.min(9, left); out.push(take); left -= take; }
+  for (let i=0;i<clumpCount;i++){
+    const count = i===0 ? Math.min(9, perClump+1) : Math.max(2, perClump - (i>=3?1:0));
+    out.push({ count, amount:chips, rot:HEAP_ROT[i % HEAP_ROT.length], maxExtra:3 });
+  }
   return out;
 }
 
@@ -4323,7 +4486,7 @@ function initSeats(){
   // grows faster than the seat box so it reads as the panel's focal point.
   // Sized to roughly match the width of the three-heart row above it.
   felt.style.setProperty('--avatar-w', Math.round(78*scale)+'px');
-  felt.style.setProperty('--card-h', Math.round(43*scale)+'px');
+  felt.style.setProperty('--card-h', Math.round(48*scale)+'px');
   felt.classList.add('compact-seats');
 
   game.players.forEach((p, idx)=>{
@@ -4411,54 +4574,93 @@ function flashAction(playerId, label){
   e._t = setTimeout(()=>e.bubble.classList.remove('show'), 1100);
 }
 
-/* Shared flight engine: each chip hops upward off the source, then dives to
-   the target along its own slightly-scattered path — a readable "chips
-   physically moving" arc rather than a straight fade. Count scales with the
-   amount so a big bet visibly costs more chips. */
+/* Shared flight engine: each chip launches from the source and travels to
+   the target along its own slightly-scattered path — count scales with
+   the amount so a big bet visibly costs more chips. Quick decisive flick,
+   not a slow float: 3 stages (release hop, fast direct travel, hard-
+   decelerating landing) mirroring the technique DealFX.flyGhost already
+   uses for card deals — only the final stage fades opacity, and only the
+   final stage's easing actually "stops" (cubic-bezier(.15,.8,.25,1), a
+   front-loaded deceleration), rather than one near-symmetric ease that
+   never truly lands. */
 function flyChipVolley(srcEl, dstEl, count, opts){
   const a = srcEl.getBoundingClientRect();
   const b = dstEl.getBoundingClientRect();
   if (!a.width || !b.width) return;
   const sx = a.left + a.width/2, sy = a.top + Math.min(a.height*0.25, 20);
   const tx = b.left + b.width/2, ty = b.top + b.height/2;
-  const gap = (opts && opts.gap) || 60;
+  const gap = (opts && opts.gap) || 40;
   for (let i=0;i<count;i++){
     const chip = document.createElement('div');
     chip.className = 'fly-chip';
-    const jx = Math.random()*18-9;
+    const jx = Math.random()*14-7;
     chip.style.left = (sx + jx) + 'px';
     chip.style.top  = sy + 'px';
     document.body.appendChild(chip);
-    const dx = tx - sx - jx + (Math.random()*14-7);
-    const dy = ty - sy + (Math.random()*8-4);
-    const hop = -(14 + Math.random()*14);            // rise off the pile first
-    const spin = (Math.random()<.5?-1:1)*(120+Math.random()*180);
+    const dx = tx - sx - jx + (Math.random()*10-5);
+    const dy = ty - sy + (Math.random()*6-3);
+    const hop = -(10 + Math.random()*10);
+    const spin = (Math.random()<.5?-1:1)*(60+Math.random()*100);
     const delay = i*gap;
     setTimeout(()=>{
-      chip.style.transition = 'transform .16s cubic-bezier(.3,.6,.5,1), opacity .16s linear';
-      chip.style.transform = 'translate('+(dx*0.18)+'px,'+hop+'px) rotate('+(spin*0.25)+'deg)';
+      chip.style.transition = 'transform .08s cubic-bezier(.4,0,.7,.3)';
+      chip.style.transform = 'translate('+(dx*0.08)+'px,'+hop+'px) rotate('+(spin*0.15)+'deg)';
       setTimeout(()=>{
-        chip.style.transition = 'transform .34s cubic-bezier(.45,.05,.55,1), opacity .34s linear';
-        chip.style.transform = 'translate('+dx+'px,'+dy+'px) rotate('+spin+'deg) scale(.6)';
-        chip.style.opacity = '0';
-      }, 160);
+        chip.style.transition = 'transform .12s cubic-bezier(.35,0,.6,1)';
+        chip.style.transform = 'translate('+(dx*0.7)+'px,'+(dy*0.55)+'px) rotate('+(spin*0.65)+'deg)';
+        setTimeout(()=>{
+          chip.style.transition = 'transform .15s cubic-bezier(.15,.8,.25,1), opacity .13s linear .06s';
+          chip.style.transform = 'translate('+dx+'px,'+dy+'px) rotate('+spin+'deg) scale(.7)';
+          chip.style.opacity = '0';
+        }, 120);
+      }, 80);
     }, delay);
-    setTimeout(()=>chip.remove(), 620 + delay);
+    setTimeout(()=>chip.remove(), 370 + delay);
   }
 }
+/* Scale-invariant against blind level (like the old formula) but no
+   longer saturates by ~10bb — a huge all-in should look visibly denser
+   than a large raise, not identical to it. */
 function chipVolleyCount(amount){
   const bb = (game && game.bigBlind) || 20;
   const r = amount / bb;
-  return Math.max(2, Math.min(9, Math.round(2 + r*0.8)));
+  return Math.max(2, Math.min(20, Math.round(1 + 2.6*Math.sqrt(r))));
 }
-function flyChipsFrom(playerId, amount){
+/* Holds the pot mound's DOM at its current shape for POT_MOUND_CATCH_MS
+   (see potMoundFreezeUntil above), then forces one fresh sync reading
+   game.pot live at fire time — never a captured value, so it can't go
+   stale even if other renders happen in between (syncClumps' own
+   dataset.sig diff-guard makes this call idempotent against whatever a
+   normal render() may have already drawn by then). */
+function freezePotMound(){
+  potMoundFreezeUntil = performance.now() + POT_MOUND_CATCH_MS;
+  setTimeout(()=>{
+    const g = game;
+    syncClumps($('pot-stacks'), (g && g.pot>0) ? potMoundLayout(g.pot) : []);
+  }, POT_MOUND_CATCH_MS);
+}
+/* Bet flourish: one truthful flight per real action, straight from the
+   acting player to the pot — no resting intermediate pile. Opponent
+   chips launch from their bankroll number (the "off-board stack" the
+   number implies) rather than the whole seat, so the flight reads as
+   money leaving that player specifically, not their portrait/cards.
+   isAllIn gets a flat bump (mirroring flyChipsToWinner's own +5 payout
+   bump below) since a late-game short-stack shove has a much smaller
+   bb-relative amount than an early-game one of equal significance —
+   without this, only the number would tell you it was drastic. Gap
+   between each chip's launch is count-aware so a dense all-in volley
+   doesn't take noticeably longer to release than a small call. */
+function flyChipsFrom(playerId, amount, isAllIn){
   if (motionOff()) return;
   const e = seatEls[playerId];
   const pot = $('pot-area');
   if (!e || !pot) return;
   const p = game && game.players.find(x=>x.id===playerId);
-  const src = (p && p.isHuman && $('hud-tower')) ? $('hud-tower') : e.root;
-  flyChipVolley(src, pot, chipVolleyCount(amount || (p ? p.betThisRound : 0)), {gap:55});
+  const src = (p && p.isHuman && $('hud-tower')) ? $('hud-tower') : (e.chips || e.root);
+  let n = chipVolleyCount(amount || (p ? p.betThisRound : 0));
+  if (isAllIn) n = Math.min(24, n + 4);
+  flyChipVolley(src, pot, n, {gap: Math.max(18, Math.min(55, Math.round(280/n)))});
+  freezePotMound();
 }
 
 /* Winnings flourish: the pot drains INTO the winner's pile — a longer,
@@ -4470,8 +4672,9 @@ function flyChipsToWinner(playerId, amount){
   if (!e || !pot) return;
   const p = game && game.players.find(x=>x.id===playerId);
   const dst = (p && p.isHuman && $('hud-tower')) ? $('hud-tower') : e.root;
-  const n = Math.max(6, Math.min(14, chipVolleyCount(amount || 0) + 5));
-  flyChipVolley(pot, dst, n, {gap:70});
+  const n = Math.max(6, Math.min(26, chipVolleyCount(amount || 0) + 5));
+  flyChipVolley(pot, dst, n, {gap: Math.max(18, Math.min(70, Math.round(320/n)))});
+  freezePotMound();
 }
 
 function render(){
@@ -4489,13 +4692,20 @@ function render(){
     ['preflop','flop','turn','river'].includes(g.phase) && !g.over);
 
   const potArea = $('pot-area');
-  if (g.pot>0){
+  // While a chip flight is still travelling (see potMoundFreezeUntil),
+  // keep the plate visible and leave the mound's shape as-is even if
+  // g.pot has already dropped to 0 (a payout draining the pot) — the
+  // numeric readout below still updates immediately either way; only the
+  // mound's DOM rebuild is what's deferred, by freezePotMound()'s own
+  // timer, not by anything here re-checking on a later render().
+  const potFrozen = performance.now() < potMoundFreezeUntil;
+  if (g.pot>0 || potFrozen){
     potArea.classList.remove('hidden');
     $('pot-val').textContent = g.pot.toLocaleString();
-    syncPotStacks($('pot-stacks'), potStackLayout(g.pot));
+    if (!potFrozen) syncClumps($('pot-stacks'), potMoundLayout(g.pot));
   } else {
     potArea.classList.add('hidden');
-    syncPotStacks($('pot-stacks'), []);
+    syncClumps($('pot-stacks'), []);
   }
 
   syncCardRow($('board'), g.board, g.board.map(()=>false), false);
@@ -4534,10 +4744,8 @@ function render(){
     if (chipDigits >= 7) e.chips.classList.add('chip-sz3');
     else if (chipDigits >= 5) e.chips.classList.add('chip-sz2');
     if (p.isHuman){
-      syncPotStacks($('hud-tower'), towerLayout(p.chips));
+      syncClumps($('hud-tower'), heapLayout(p.chips));
       updateJackpot(p.chips);
-    } else {
-      syncChipStack(e.chipStack, chipStackCount(p.chips));
     }
     if (e.posEl){
       const label = g.positions && g.positions[p.id];
@@ -4555,8 +4763,15 @@ function render(){
     // changes how the *label* is presented.
     if (e.actionSlot){
       const sa = p.streetAction;
-      e.actionSlot.className = 'action-slot ' + (sa ? 'act-' + sa.type : 'act-empty');
-      e.actionSlot.textContent = sa ? sa.label : '–';
+      const label = sa ? sa.label : '–';
+      // Character-length-keyed font steps (mirrors .seat-chips.chip-sz2/
+      // .chip-sz3) so "Raise to 1,240" always fits on one line at full
+      // digit precision instead of ellipsis-truncating meaningful info —
+      // see fmtActionAmount() for the abbreviation fallback that keeps
+      // even extreme values inside this smallest tier.
+      const sizeCls = !sa ? '' : label.length>=14 ? ' txt-sz3' : label.length>=10 ? ' txt-sz2' : '';
+      e.actionSlot.className = 'action-slot ' + (sa ? 'act-' + sa.type : 'act-empty') + sizeCls;
+      e.actionSlot.textContent = label;
     }
   });
 
@@ -5368,7 +5583,7 @@ if (typeof window !== 'undefined'){
     applyAction, isBettingRoundComplete, computePots, evaluate7, compareHands,
     estimateEquity, potSizedTotal, describeMade, equityAvailable: ()=>EquityService.available(),
     detectDraws, computeOuts, boardThreats, faceSVG, describeLine, buildReview, showShowdownCard,
-    computePositions, chipStackCount, evaluate7WithCards, render, handleShowdown, clearAllCardDOM,
+    computePositions, evaluate7WithCards, render, handleShowdown, clearAllCardDOM,
     highlightWinningCards, foldSnapshotNote, describeHole, cardKey,
     randomOpponentName, maybeTableTalk, TABLE_TALK, PERSONALITIES, newGame,
     seatPosition, aiThinkTime, speedMult, processLives, skullSVG, playDeath,
