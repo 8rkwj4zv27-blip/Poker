@@ -6,12 +6,12 @@
 <meta name="theme-color" content="#16090D">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="Poker">
+<meta name="apple-mobile-web-app-title" content="The Table">
 <meta name="mobile-web-app-capable" content="yes">
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icon-180.png">
 <link rel="icon" href="icon-192.png" type="image/png">
-<title>Poker — Texas Hold'em</title>
+<title>The Table — Texas Hold'em</title>
 <style>
 /* ---- embedded pixel fonts (self-contained, no network) ---- */
 @font-face{
@@ -83,7 +83,7 @@
   --dur-fast:.14s; --dur:.24s; --dur-slow:.46s;
   --font-px:'Pixelify Sans',ui-monospace,"SF Mono",Menlo,Consolas,monospace;
   --font-hdr:'Press Start 2P',ui-monospace,Menlo,monospace;
-  --font-rank:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+  --font-rank:'Press Start 2P',ui-monospace,Menlo,monospace;
   --dither:repeating-conic-gradient(var(--felt-1) 0% 25%, var(--felt-2) 0% 50%);
 }
 /* four-colour deck */
@@ -275,7 +275,7 @@ button{ font-family:inherit; }
 }
 .hero-suits .s-red{ color:var(--suit-heart); }
 .hero .brand{
-  font-family:var(--font-hdr); font-size:26px; letter-spacing:.12em; font-weight:400; margin:0; text-indent:.12em;
+  font-family:var(--font-hdr); font-size:20px; letter-spacing:.08em; font-weight:400; margin:0; text-indent:.08em;
   color:var(--accent-bright); text-transform:uppercase;
   text-shadow:3px 3px 0 var(--px-ink), 6px 6px 0 rgba(0,0,0,.35);
 }
@@ -405,7 +405,7 @@ button{ font-family:inherit; }
 
 /* ---- POT PLATE: the single most prominent object on the felt ---- */
 .pot-area{
-  position:absolute; top:74%; left:50%; transform:translate(-50%,-50%);
+  position:absolute; top:79%; left:50%; transform:translate(-50%,-50%);
   display:flex; flex-direction:column; align-items:center; gap:7px; z-index:5; pointer-events:none;
   transition:opacity var(--dur-fast);
 }
@@ -439,11 +439,11 @@ button{ font-family:inherit; }
 .chip-token.token-in{ animation:tokenIn .2s steps(3,end); }
 @keyframes tokenIn{ from{ transform:scale(.3); opacity:0; } to{ transform:scale(1); opacity:1; } }
 
-.board{ position:absolute; top:52%; left:50%; transform:translate(-50%,-50%); display:flex; gap:6px; z-index:4; perspective:600px; }
+.board{ position:absolute; top:55%; left:50%; transform:translate(-50%,-50%); display:flex; gap:7px; z-index:4; perspective:600px; }
 
 /* ---- PIXEL CARDS: corner index + big centre pip, 2px outline ---- */
 .card{
-  position:relative; width:38px; height:54px; border-radius:3px; flex-shrink:0;
+  position:relative; width:44px; height:62px; border-radius:3px; flex-shrink:0;
   background:var(--card-face);
   border:2px solid var(--card-ink);
   box-shadow:0 3px 0 rgba(0,0,0,.5), inset 0 2px 0 #FFFFFF;
@@ -452,10 +452,10 @@ button{ font-family:inherit; }
 .card .ci{
   position:absolute; top:2px; left:3px; display:flex; flex-direction:column; align-items:center;
 }
-.card .r{ font-family:var(--font-rank); font-size:13px; letter-spacing:-.03em; }
-.card .s{ font-size:10px; margin-top:0; }
+.card .r{ font-family:var(--font-rank); font-size:15px; font-weight:400; letter-spacing:0; }
+.card .s{ font-size:12px; margin-top:0; }
 .card .pip{
-  position:absolute; right:2px; bottom:1px; font-size:17px; line-height:1;
+  position:absolute; right:2px; bottom:1px; font-size:20px; line-height:1;
 }
 .card.small{ width:30px; height:43px; border-radius:2px; }
 .card.small .r{ font-size:11px; }
@@ -493,6 +493,35 @@ button{ font-family:inherit; }
 @keyframes flipIn{ from{ transform:scaleX(.05); } to{ transform:scaleX(1); } }
 @keyframes muckOut{ to{ opacity:0; transform:translateY(-24px) scale(.7); } }
 
+/* ---- dealer deck: a small persistent stack of backs sitting in a shallow
+   dip in the felt itself, tucked in a bottom corner away from the
+   opponent arc, board and pot — the physical source every dealt card
+   visually flies from and every collected card visibly returns to.
+   A soft indentation (radial shading + inset shadow only, no stroked
+   border), not a UI panel. */
+.dealer-deck{
+  position:absolute; left:13%; top:87%; transform:translate(-50%,-50%);
+  width:42px; height:55px; z-index:5; pointer-events:none;
+  box-sizing:border-box; padding:5px;
+  border-radius:14px;
+  background:radial-gradient(ellipse at 50% 42%, rgba(0,0,0,.40) 0%, rgba(0,0,0,.20) 62%, transparent 100%);
+  box-shadow:
+    inset 0 3px 5px rgba(0,0,0,.5),
+    inset 0 -1px 0 rgba(255,255,255,.05),
+    0 1px 1px rgba(255,255,255,.06);
+}
+.dealer-deck .card{ position:absolute; margin:0; }
+.dealer-deck .card:nth-child(1){ top:8px; left:8px; }
+.dealer-deck .card:nth-child(2){ top:7px; left:7px; }
+.dealer-deck .card:nth-child(3){ top:6px; left:6px; }
+
+/* ---- flying deal ghost: a body-appended card-back that travels from the
+   dealer deck to its destination, mirroring the .fly-chip technique ---- */
+.fly-card{
+  position:fixed; z-index:60; pointer-events:none; will-change:transform,opacity;
+  transform-origin:0 0; margin:0;
+}
+
 .seat{
   position:absolute; width:var(--seat-w, 80px); margin-left:calc(var(--seat-w, 80px) / -2); margin-top:-42px;
   display:flex; flex-direction:column; align-items:center; z-index:6;
@@ -503,15 +532,20 @@ button{ font-family:inherit; }
 
 /* ---- portrait tiles: square avatars in pixel frames ---- */
 .avatar-wrap{ position:relative; width:var(--avatar-w, 50px); height:var(--avatar-w, 50px); flex-shrink:0; }
+/* single turn indicator: a small blocky gold arrow floating above the
+   hearts row — no ring, no border swap, no ellipsis. Reuses the existing
+   .turn-ring element/toggle so no markup or JS changes are needed. */
 .turn-ring{
-  position:absolute; inset:-5px; border-radius:6px; opacity:0;
-  border:3px solid var(--accent);
+  position:absolute; left:50%; top:-32px; transform:translateX(-50%);
+  width:10px; height:6px; opacity:0;
   transition:opacity var(--dur-fast);
   pointer-events:none;
+  background:
+    linear-gradient(var(--accent-bright) 0 0) 0 0/10px 2px no-repeat,
+    linear-gradient(var(--accent-bright) 0 0) 2px 2px/6px 2px no-repeat,
+    linear-gradient(var(--accent-bright) 0 0) 4px 4px/2px 2px no-repeat;
 }
-.seat.active .turn-ring{ opacity:1; animation:pxblink .7s steps(2,end) infinite; }
-.seat.you.active .turn-ring{ animation:pxblink .7s steps(2,end) infinite; }
-@keyframes pxblink{ 0%,100%{ border-color:var(--accent); } 50%{ border-color:var(--accent-bright); } }
+.seat.active .turn-ring{ opacity:1; }
 
 .avatar{
   position:absolute; inset:2px; border-radius:var(--radius); background:var(--seat-bg);
@@ -521,7 +555,6 @@ button{ font-family:inherit; }
   transition:border-color var(--dur-fast), color var(--dur-fast);
   box-shadow:0 2px 0 rgba(0,0,0,.45), inset 0 2px 0 rgba(255,255,255,.07);
 }
-.seat.active .avatar{ border-color:var(--accent); color:var(--accent-bright); }
 .seat.winner .avatar{ border-color:var(--good); box-shadow:0 0 0 3px var(--good), 0 2px 0 rgba(0,0,0,.45); }
 .seat.winner .seat-name{ color:var(--good); }
 
@@ -542,6 +575,9 @@ button{ font-family:inherit; }
   white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
   transition:color var(--dur-fast);
   text-shadow:1px 1px 0 var(--px-ink);
+  text-transform:uppercase;
+  background:rgba(0,0,0,.4); border-radius:2px; border:1px solid rgba(255,255,255,.1);
+  padding:1px 7px; box-shadow:inset 0 2px 0 rgba(0,0,0,.4);
 }
 .seat.you .seat-name{ font-size:13px; }
 
@@ -588,21 +624,21 @@ button{ font-family:inherit; }
     linear-gradient(rgba(255,255,255,.14) 0 0) top 2px right 2px / 3px 3px no-repeat,
     var(--seat-bg);
   border:2px solid var(--px-ink); border-radius:var(--radius);
-  padding:5px 4px 5px; gap:4px;
+  padding:3px; gap:2px;
   box-shadow:0 4px 0 rgba(0,0,0,.5), inset 0 2px 0 rgba(255,255,255,.08), inset 0 -2px 0 rgba(0,0,0,.3);
 }
-.seat.active .seat-card{ border-color:var(--accent); }
 .seat.winner .seat-card{ border-color:var(--good); box-shadow:0 0 0 2px var(--good), 0 4px 0 rgba(0,0,0,.5); }
 .seat-card .hearts{ margin:0; }
 .seat-card .seat-name{ margin-top:0; }
-/* tiny coin in front of the bounty */
+/* tiny coin in front of the bounty — coin + number laid out as one flex
+   unit so they align regardless of the number font's own line metrics */
+.seat-card .seat-chips{ display:inline-flex; align-items:center; }
 .seat-card .seat-chips::before{
-  content:''; display:inline-block; width:8px; height:8px; border-radius:50%;
+  content:''; width:8px; height:8px; border-radius:50%; flex-shrink:0;
   background:var(--accent); border:1px solid rgba(0,0,0,.55);
-  box-shadow:inset 0 1px 0 rgba(255,255,255,.5); margin-right:3px;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.5); margin-right:4px;
 }
 .seat-card .seat-cards{ margin-top:0; }
-.compact-seats .turn-ring{ inset:-4px; }
 .seat.dead .avatar{ filter:none; }
 .seat.dead{ opacity:.62; }
 .seat.dead .seat-card{ border-color:rgba(255,255,255,.15); }
@@ -1115,14 +1151,6 @@ input[type=range]::-moz-range-thumb{
   100%{ transform:scale(1); }
 }
 
-/* thinking indicator: blinking dots by the deciding player's portrait */
-.seat.thinking .avatar-wrap::after{
-  content:'\00b7\00b7\00b7'; position:absolute; top:-24px; left:50%; transform:translateX(-50%); z-index:4;
-  font-size:13px; font-weight:800; letter-spacing:1px; color:var(--accent-bright);
-  text-shadow:1px 1px 0 var(--px-ink);
-  animation:thinkDots .9s steps(3,end) infinite;
-}
-@keyframes thinkDots{ 0%{ opacity:.25; } 50%{ opacity:1; } 100%{ opacity:.25; } }
 
 /* while a betting round runs, everyone but the actor steps back slightly */
 .felt.live .seat:not(.active):not(.folded):not(.out):not(.dead):not(.you){ opacity:.8; }
@@ -1268,7 +1296,7 @@ button, [role="button"], input[type="button"], input[type="submit"] {
         <div class="hero-suits" aria-hidden="true">
           <span class="s-red">&hearts;</span><span>&spades;</span><span class="s-red">&diams;</span><span>&clubs;</span>
         </div>
-        <h1 class="brand">Poker</h1>
+        <h1 class="brand">The Table</h1>
         <div class="brand-rule"></div>
         <div class="brand-sub">Texas Hold'em against the house</div>
       </div>
@@ -1395,6 +1423,11 @@ button, [role="button"], input[type="button"], input[type="submit"] {
             <div class="bet-chip hidden" id="bet-chip"><span class="bet-word">Bet</span><span class="v tabular" id="bet-val">0</span></div>
           </div>
           <div class="board" id="board" role="group" aria-label="Community cards"></div>
+          <div class="dealer-deck" id="dealer-deck" aria-hidden="true">
+            <div class="card back small"></div>
+            <div class="card back small"></div>
+            <div class="card back small"></div>
+          </div>
         </div>
       </div>
       <div id="your-seat-dock">
@@ -1532,7 +1565,7 @@ button, [role="button"], input[type="button"], input[type="submit"] {
             <button data-names="persona" class="active">Personas</button>
             <button data-names="random">Random names</button>
           </div>
-          <div class="hint">Personas gives each opponent a nickname like "The Shark". Random names uses ordinary names instead.</div>
+          <div class="hint">Personas gives each opponent a nickname like "Shark". Random names uses ordinary names instead.</div>
         </div>
         <div class="toggle-row">
           <div><div class="tl">Four-colour deck</div><div class="ts">Distinct colour per suit — easier to read at a glance.</div></div>
@@ -2261,14 +2294,14 @@ function haptic(pattern){
 /* sizing scales every bet the archetype makes (small-ball vs sledgehammer);
    thinkSpeed scales decision time (tight players deliberate, loose players snap) */
 const PERSONALITIES_ALL = [
-  {key:'rock',      name:'The Rock',      aggression:.20, tightness:.80, bluffFreq:.03, sizing:.55, thinkSpeed:1.35},
-  {key:'shark',     name:'The Shark',     aggression:.55, tightness:.55, bluffFreq:.13, sizing:.75, thinkSpeed:1.00},
-  {key:'maniac',    name:'The Maniac',    aggression:.88, tightness:.20, bluffFreq:.30, sizing:1.00, thinkSpeed:.70},
-  {key:'station',   name:'The Station',   aggression:.15, tightness:.15, bluffFreq:.02, sizing:.60, thinkSpeed:.85},
-  {key:'grinder',   name:'The Grinder',   aggression:.42, tightness:.62, bluffFreq:.09, sizing:.65, thinkSpeed:1.15},
-  {key:'wildcard',  name:'The Wildcard',  aggression:.68, tightness:.35, bluffFreq:.24, sizing:.90, thinkSpeed:.75},
-  {key:'professor', name:'The Professor', aggression:.50, tightness:.58, bluffFreq:.11, sizing:.70, thinkSpeed:1.30},
-  {key:'hammer',    name:'The Hammer',    aggression:.75, tightness:.45, bluffFreq:.16, sizing:.95, thinkSpeed:.90},
+  {key:'rock',      name:'Rock',      aggression:.20, tightness:.80, bluffFreq:.03, sizing:.55, thinkSpeed:1.35},
+  {key:'shark',     name:'Shark',     aggression:.55, tightness:.55, bluffFreq:.13, sizing:.75, thinkSpeed:1.00},
+  {key:'maniac',    name:'Maniac',    aggression:.88, tightness:.20, bluffFreq:.30, sizing:1.00, thinkSpeed:.70},
+  {key:'station',   name:'Station',   aggression:.15, tightness:.15, bluffFreq:.02, sizing:.60, thinkSpeed:.85},
+  {key:'grinder',   name:'Grinder',   aggression:.42, tightness:.62, bluffFreq:.09, sizing:.65, thinkSpeed:1.15},
+  {key:'wildcard',  name:'Wildcard',  aggression:.68, tightness:.35, bluffFreq:.24, sizing:.90, thinkSpeed:.75},
+  {key:'professor', name:'Prof',      aggression:.50, tightness:.58, bluffFreq:.11, sizing:.70, thinkSpeed:1.30},
+  {key:'hammer',    name:'Hammer',    aggression:.75, tightness:.45, bluffFreq:.16, sizing:.95, thinkSpeed:.90},
 ];
 // Roster trimmed to exactly the 4 personas with custom art (see CUSTOM_FACES
 // below), so every opponent seat always shows Tom's drawn faces rather than
@@ -2637,6 +2670,7 @@ function serializeTable(g){
   return {
     version: SAVE_VERSION,
     savedAt: Date.now(),
+    namesMode: settings.opponentNames,
     mode:g.mode, difficulty:g.difficulty, startingStack:g.startingStack,
     blindLevel:g.blindLevel, smallBlind:g.smallBlind, bigBlind:g.bigBlind,
     buyIns:g.buyIns, netStart:g.netStart, livesEnabled:g.livesEnabled,
@@ -2687,7 +2721,13 @@ function clearTableSave(){ Store.remove('felt.table'); }
 function restoreTable(save){
   const players = save.players.map(sp=>{
     const personality = sp.personalityKey ? PERSONALITIES_ALL.find(p=>p.key===sp.personalityKey) : null;
-    const p = makePlayer(sp.id, sp.name, sp.isHuman, sp.chips, personality);
+    // Persona display names are derived live from PERSONALITIES_ALL rather than
+    // trusted from the saved snapshot, so a table saved under an older persona
+    // naming scheme picks up current names on resume instead of freezing them.
+    // Random-mode names have no live source, so those are always kept as saved.
+    const usesLiveName = !sp.isHuman && personality && save.namesMode !== 'random';
+    const name = usesLiveName ? personality.name : sp.name;
+    const p = makePlayer(sp.id, name, sp.isHuman, sp.chips, personality);
     p.lives = sp.lives;
     p.eliminated = !!sp.eliminated;
     p.moodState = sp.moodState || null;
@@ -2806,9 +2846,52 @@ async function startNewHand(){
   await playShuffle();   // the ritual: deck riffles before every deal
   if (g.over) return;
   Sound.deal();
+  // beginBettingRound flips g.phase off 'setup' *before* the animated reveal
+  // renders anything — render() no-ops entirely while phase is still
+  // 'setup' (see its guard clause), which otherwise makes the very first
+  // hand of a new/resumed table skip the deal animation and pop straight
+  // to its final state. Pure phase/turn-order bookkeeping, doesn't touch
+  // cards, so reordering it here changes no game state or outcome.
   beginBettingRound('preflop');
+  await revealHoleCardsAnimated();   // hands are already fully dealt above; this only animates their reveal
   render();
   continueAction();
+}
+
+/* Animates the reveal of hole cards already assigned above, in standard
+   round-robin order (one card per active player starting left of the
+   dealer, then the second round) — a purely visual reveal sequence layered
+   over the real deal, which never changes who holds which card. */
+async function revealHoleCardsAnimated(){
+  const g = game;
+  render();
+  if (motionOff()) return;
+
+  g.players.forEach(p=>{
+    if (!p.inHand) return;
+    const e = seatEls[p.id];
+    if (!e) return;
+    Array.from(e.cardsContainer.children).forEach(el=>{ el.style.opacity = '0'; });
+  });
+
+  const order = [];
+  let idx = nextActiveIndex(g.dealerIndex);
+  const first = idx;
+  do { order.push(idx); idx = nextActiveIndex(idx); } while (idx !== first);
+
+  const STAGGER = Math.round(DEAL_TIMING.dealStaggerMs * speedMult());
+  const pending = [];
+  for (let round=0; round<2; round++){
+    for (const pIdx of order){
+      const p = g.players[pIdx];
+      if (!p.inHand || !p.hand[round]) continue;
+      const e = seatEls[p.id];
+      const el = e && e.cardsContainer.children[round];
+      if (el) pending.push(dealCardFlight(el, p.hand[round]));
+      await sleep(STAGGER);
+    }
+  }
+  await Promise.all(pending);
 }
 
 const POSITION_LADDER = ['UTG','UTG+1','MP1','MP2','HJ','CO','BTN'];
@@ -2868,22 +2951,39 @@ function isBettingRoundComplete(){
 }
 
 async function dealCommunity(n){
+  const g = game;
+  const cards = [];
+  const pending = [];
+  const batch = n > 1;   // flop: deal all three as backs, then flip together
   for (let i=0;i<n;i++){
-    game.board.push(game.deck.pop());
+    const card = g.deck.pop();
+    g.board.push(card);
+    cards.push(card);
     Sound.deal();
     render();
-    await sleep(motionOff() ? 90 : Math.round(300 * speedMult()));
+    const el = $('board').lastElementChild;
+    if (el) pending.push(dealCardFlight(el, card, { deferFlip: batch }));
+    if (motionOff()) await sleep(60);
+    else if (i < n-1) await sleep(Math.round(DEAL_TIMING.flopStaggerMs * speedMult()));
+  }
+  await Promise.all(pending);
+  if (batch && !motionOff()){
+    const boardEls = Array.from($('board').children).slice(-n);
+    for (let i=0;i<boardEls.length;i++){
+      flipCard(boardEls[i], false, cards[i], false);
+      if (i < boardEls.length-1) await sleep(Math.round(50 * speedMult()));
+    }
+    await sleep(Math.round(90 * speedMult()));
   }
 }
 
 async function playShuffle(){
-  if (motionOff()) return;
-  const el = $('shuffle-anim');
-  if (!el) return;
-  el.classList.remove('hidden');
-  Sound.deal();
-  await sleep(Math.round(640 * speedMult()));
-  el.classList.add('hidden');
+  // Visual shuffle ritual disabled — it doesn't connect to the physical
+  // dealer-deck dealing system yet. Actual deck randomisation is unrelated
+  // and happens elsewhere in startNewHand(); this only skips the old
+  // #shuffle-anim riffle animation. A physical shuffle using the visible
+  // deck can replace this later.
+  return;
 }
 
 /* Between-hand breathing room: results stay on screen for a beat, then the
@@ -3614,6 +3714,215 @@ function syncCardRow(container, cards, faceDownMask, small){
     }
   }
 }
+
+/* ============================================================
+   DEAL FX — physical card dealing/collecting, layered purely as a
+   visual reaction on top of already-authoritative game state.
+   syncCardRow above still owns every card's real content/position and
+   its own state diffing; these helpers only control how a card's DOM
+   element travels into (and later out of) view. Nothing here reads or
+   writes `game`, so a skipped, interrupted, or redundant animation call
+   can never duplicate a card or desync the board from the real hand —
+   worst case a card just appears/vanishes instantly instead of flying.
+   ============================================================ */
+/* Every dealing/collecting duration lives here so the feel can be tuned
+   from one place without hunting through the choreography functions. */
+const DEAL_TIMING = {
+  dealMs: 750,               // ~0.7-0.8s target per card, pre-speedMult
+  dealStaggerMs: 640,        // near-sequential: next card releases late in the previous one's landing
+  flopStaggerMs: 640,        // same one-at-a-time rhythm for community cards
+  settleBeforeFlipMs: 90,
+  collectMs: 650,
+  collectStaggerMaxMs: 140,  // randomized 0..this per card, for a lively non-uniform return
+  fadeMs: 110,
+};
+
+// Geometry knobs for the flight's curve/rotation character, kept separate
+// from DEAL_TIMING (durations) so both are easy to find and retune.
+const DEAL_MOTION = {
+  dealBulgeFactor: 0.045, dealBulgeMin: 3, dealBulgeMax: 14,     // shallow flick curve
+  returnBulgeFactor: 0.12, returnBulgeMin: 8, returnBulgeMax: 30, // return can curve more
+  returnFinalBulgeT: 0.2,    // residual curve kept through the suction landing so cards
+                             // converging on the deck from different origins stay visually
+                             // distinct instead of collapsing onto one shared line
+  yawCommon: [8, 25],       // deal-only rotation ranges, degrees — ~70% common
+  yawModerate: [25, 60],    // ~25% occasional
+  yawRare: [60, 120],       // ~5% rare flourish
+};
+
+const DealFX = (function(){
+  /* Weighted turn count for the END-OF-HAND RETURN only: 1 full rotation
+     is the common case, 2 is an occasional flourish, 3 is genuinely rare.
+     Always a clean multiple of 360 so the card is visually flat the
+     instant it lands. Untouched by the deal-motion refinement below —
+     the return's spin wasn't reported as a problem. */
+  function pickTurns(){
+    const r = Math.random();
+    const n = r < 0.72 ? 1 : r < 0.97 ? 2 : 3;
+    return n * 360 * (Math.random() < 0.5 ? -1 : 1);
+  }
+  /* Deal-only yaw: a small, controlled flick angle rather than a full
+     spin — mostly barely-there, occasionally a bit more, rarely a real
+     flourish. Always eases back to exactly 0deg for the landing stage
+     (see dealStages below), so the card settles flat regardless of how
+     far it yawed mid-flight — it loses its spin as it decelerates,
+     rather than stopping mid-tilt. */
+  function pickYaw(){
+    const r = Math.random();
+    const [lo, hi] = r < 0.70 ? DEAL_MOTION.yawCommon
+                   : r < 0.95 ? DEAL_MOTION.yawModerate
+                   : DEAL_MOTION.yawRare;
+    return (lo + Math.random()*(hi-lo)) * (Math.random() < 0.5 ? -1 : 1);
+  }
+
+  /* Spawns a body-appended card-back ghost that starts as an EXACT pixel
+     match (position + size, via getBoundingClientRect on both ends) of
+     `fromEl` — on frame one it IS the source card, not a lookalike spawned
+     nearby. It then runs a short chain of CSS transitions (the same
+     chained setTimeout/style.transition technique flyChipVolley already
+     uses for its chip toss, just with more stages) that together read as
+     one continuous physical motion:
+       deal  — brief release (still "attached") → sharp acceleration into
+               a shallow arc → fast confident travel → rapid deceleration
+               into a crisp, flat landing. A wrist flick, not a frisbee.
+       return — a brief tug toward the deck → an accelerating pull along
+               an arc (kept slightly curved all the way to arrival, so
+               cards converging from different directions stay visually
+               distinct) → a firm, no-overshoot suction landing.
+     The arc's direction comes from this specific flight's real geometry
+     (perpendicular to its own travel vector, scaled to its own distance),
+     so different destinations genuinely curve differently rather than
+     replaying one canned hop. Scale is interpolated the same way alongside
+     translate/rotate, since origin and destination card sizes can
+     legitimately differ (the deck's stack vs. a hole card).
+     `opts.thenFade` keeps the ghost fully opaque for the whole trip —
+     trajectory stays readable — and only fades it out in a final stage
+     strictly after it has actually arrived. */
+  function flyGhost(fromEl, toEl, opts){
+    opts = opts || {};
+    if (motionOff() || !fromEl || !toEl) return Promise.resolve();
+    const a = fromEl.getBoundingClientRect();
+    const b = toEl.getBoundingClientRect();
+    if (!a.width || !b.width) return Promise.resolve();
+
+    const ghost = document.createElement('div');
+    ghost.className = 'card back fly-card';
+    ghost.style.left = a.left + 'px';
+    ghost.style.top = a.top + 'px';
+    ghost.style.width = a.width + 'px';
+    ghost.style.height = a.height + 'px';
+    document.body.appendChild(ghost);
+
+    const isReturn = opts.style === 'return';
+    const dx = b.left - a.left, dy = b.top - a.top;
+    const sx = b.width / a.width, sy = b.height / a.height;
+    const dist = Math.hypot(dx, dy) || 1;
+    const ux = dx / dist, uy = dy / dist;      // unit vector along the travel line
+    const nx = -uy, ny = ux;                   // its perpendicular — the arc direction
+    const bulge = isReturn
+      ? Math.max(DEAL_MOTION.returnBulgeMin, Math.min(DEAL_MOTION.returnBulgeMax, dist*DEAL_MOTION.returnBulgeFactor))
+      : Math.max(DEAL_MOTION.dealBulgeMin, Math.min(DEAL_MOTION.dealBulgeMax, dist*DEAL_MOTION.dealBulgeFactor));
+    const bulgeSigned = bulge * (Math.random() < 0.5 ? 1 : -1);
+    const dur = Math.round((opts.duration || DEAL_TIMING.dealMs) * speedMult());
+    const fadeDur = Math.round(DEAL_TIMING.fadeMs * speedMult());
+
+    // A waypoint at fraction `distT` along the straight line, offset by the
+    // arc `bulgeT` (1 = full bulge, 0 = back on the line), with rotation at
+    // an explicit `rotDeg` and scale interpolated the same way as position.
+    function waypoint(distT, bulgeT, rotDeg){
+      const px = dx*distT + nx*bulgeSigned*bulgeT;
+      const py = dy*distT + ny*bulgeSigned*bulgeT;
+      const sxT = 1 + (sx-1)*distT, syT = 1 + (sy-1)*distT;
+      return 'translate('+px+'px,'+py+'px) scale('+sxT+','+syT+') rotate('+rotDeg+'deg)';
+    }
+    function nudgeTo(px){
+      return 'translate('+(ux*px)+'px,'+(uy*px)+'px) scale(1,1) rotate(0deg)';
+    }
+
+    let stages;
+    if (isReturn){
+      const turns = opts.rotate != null ? opts.rotate : pickTurns();
+      stages = [
+        { t: nudgeTo(Math.min(6, dist*0.25)),                        frac:.10, ease:'cubic-bezier(.6,0,.9,.2)' },   // tug
+        { t: waypoint(.75, 1, turns*.75),                            frac:.55, ease:'cubic-bezier(.55,0,.85,.35)' }, // accelerating pull
+        { t: waypoint(1, DEAL_MOTION.returnFinalBulgeT, turns),      frac:.35, ease:'cubic-bezier(.2,.8,.3,1)' },   // suction landing
+      ];
+    } else {
+      const yaw = opts.rotate != null ? opts.rotate : pickYaw();
+      stages = [
+        { t: nudgeTo(Math.min(2.5, dist*0.12)), frac:.07, ease:'cubic-bezier(.7,0,.95,.15)' },  // release — brief, still attached
+        { t: waypoint(.30, 1, yaw*0.85),        frac:.18, ease:'cubic-bezier(.2,.05,.3,.5)' },  // sharp acceleration
+        { t: waypoint(.88, 0, yaw),             frac:.42, ease:'cubic-bezier(.35,0,.55,1)' },   // fast confident travel
+        { t: waypoint(1, 0, 0),                 frac:.33, ease:'cubic-bezier(.1,.75,.2,1)' },   // rapid decel, crisp flat landing
+      ];
+    }
+
+    ghost.style.transform = 'translate(0,0) scale(1,1) rotate(0deg)';
+    void ghost.offsetWidth;
+
+    return new Promise(resolve=>{
+      const run = (i)=>{
+        if (i >= stages.length){
+          if (!opts.thenFade){ ghost.remove(); resolve(); return; }
+          ghost.style.transition = 'opacity '+fadeDur+'ms linear';
+          ghost.style.opacity = '0';
+          setTimeout(()=>{ ghost.remove(); resolve(); }, fadeDur + 20);
+          return;
+        }
+        const s = stages[i];
+        const stageDur = Math.max(1, Math.round(dur * s.frac));
+        ghost.style.transition = 'transform '+stageDur+'ms '+s.ease;
+        ghost.style.transform = s.t;
+        setTimeout(()=>run(i+1), stageDur);
+      };
+      run(0);
+    });
+  }
+  return { flyGhost };
+})();
+
+/* One dealt card's full choreography: hide the real (already
+   state-correct) element, fly a matching ghost from the dealer deck to
+   it, reveal it in place, then — unless deferred — flip it face-up a
+   beat after landing if its true target state is face-up. The element's
+   dataset.state is never touched here (syncCardRow already set it to
+   the correct final value when it created the element), so a render()
+   firing mid-flight always sees consistent state and safely no-ops. */
+async function dealCardFlight(el, card, opts){
+  opts = opts || {};
+  const deck = $('dealer-deck');
+  const deckTop = deck && deck.lastElementChild;   // the visible top card, not the wrapper
+  if (!el) return;
+  const small = el.classList.contains('small');
+  if (motionOff() || !deckTop){ el.style.opacity = ''; return; }
+  const wasFaceUp = !el.classList.contains('back');
+  if (wasFaceUp){
+    // travels as a back regardless of its eventual face; dataset.state
+    // already holds the true final value and is left untouched
+    el.className = cardClass(true, card, small);
+    el.innerHTML = '';
+  }
+  el.style.opacity = '0';
+  await DealFX.flyGhost(deckTop, el, { duration:DEAL_TIMING.dealMs, style:'deal' });
+  el.style.opacity = '';
+  if (wasFaceUp && !opts.deferFlip){
+    await sleep(Math.round(DEAL_TIMING.settleBeforeFlipMs * speedMult()));
+    flipCard(el, false, card, small);
+  }
+}
+/* Sweeps a card's element back toward the deck's exact top-card spot — a
+   tug, then an accelerating magnetic pull along a slight arc — staying
+   fully visible for the whole trip, and only fading once it has actually
+   arrived. Purely decorative: the real element is removed by
+   clearAllCardDOM() shortly after via the existing flow. */
+function collectCardFlight(el){
+  const deck = $('dealer-deck');
+  const deckTop = deck && deck.lastElementChild;
+  if (!el || motionOff() || !deckTop) return Promise.resolve();
+  el.style.opacity = '0';
+  return DealFX.flyGhost(el, deckTop, { thenFade:true, duration:DEAL_TIMING.collectMs, style:'return' });
+}
+
 /* Log-scaled chip pile: readable whether a stack is 40 chips or 40,000. */
 function chipStackCount(chips){
   if (!chips || chips<=0) return 0;
@@ -3763,8 +4072,13 @@ async function muckCards(){
   const board = $('board');
   if (board) all.push(...board.children);
   Object.values(seatEls).forEach(e=>all.push(...e.cardsContainer.children));
-  all.forEach(el=>el.classList.add('muck'));
-  await sleep(240);
+  if (!all.length) return;
+  // sweep every live card back toward the deck at once, with a small random
+  // per-card stagger so the return feels lively rather than perfectly uniform
+  await Promise.all(all.map(async el=>{
+    await sleep(Math.random() * DEAL_TIMING.collectStaggerMaxMs * speedMult());
+    await collectCardFlight(el);
+  }));
 }
 
 function initSeats(){
@@ -3781,9 +4095,11 @@ function initSeats(){
   // wider than the old totem version; then the old shrink curve for bigger
   // fields (functional but untuned since we're only shipping 4-max for now)
   const scale = opponents<=3 ? 1.0 : opponents===4 ? 0.88 : opponents===5 ? 0.8 : opponents===6 ? 0.7 : opponents===7 ? 0.6 : 0.52;
-  felt.style.setProperty('--seat-w', Math.round(90*scale)+'px');
-  // the face is a portrait inside the box now, not the block itself
-  felt.style.setProperty('--avatar-w', Math.round(52*scale)+'px');
+  felt.style.setProperty('--seat-w', Math.round(98*scale)+'px');
+  // the face is a portrait inside the box now, not the block itself — it
+  // grows faster than the seat box so it reads as the panel's focal point.
+  // Sized to roughly match the width of the three-heart row above it.
+  felt.style.setProperty('--avatar-w', Math.round(78*scale)+'px');
   felt.style.setProperty('--card-h', Math.round(43*scale)+'px');
   felt.classList.add('compact-seats');
 

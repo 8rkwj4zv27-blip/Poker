@@ -1,6 +1,6 @@
 {
-  "name": "Poker",
-  "short_name": "Poker",
+  "name": "The Table",
+  "short_name": "The Table",
   "description": "A tactile pixel-art Texas Hold'em game.",
   "start_url": "./",
   "scope": "./",
