@@ -96,7 +96,7 @@
   --card-face:#FFFFFF; --px-ink:#000000;
 }
 [data-contrast="high"] .panel-card,
-[data-contrast="high"] .seat-tag,
+[data-contrast="high"] .action-slot,
 [data-contrast="high"] .pot-plate{ border-color:rgba(255,255,255,.4); }
 
 *{ box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
@@ -417,13 +417,12 @@ button{ font-family:inherit; }
 }
 .pot-chip .pot-word{ font-family:var(--font-hdr); font-size:8px; letter-spacing:.06em; color:var(--accent); text-transform:uppercase; }
 .pot-chip .v{ font-family:var(--font-hdr); font-size:14px; color:var(--accent-bright); }
-/* live "price to play" readout under the pot */
-.bet-chip{
-  display:flex; align-items:baseline; gap:6px; background:rgba(6,10,8,.85);
-  padding:3px 10px; border-radius:var(--radius); border:2px solid rgba(255,255,255,.14);
-}
-.bet-chip .bet-word{ font-size:9px; letter-spacing:.12em; color:var(--ink-faint); text-transform:uppercase; font-weight:800; }
-.bet-chip .v{ font-size:12px; font-weight:800; color:var(--ink); }
+/* No separate "price to call" readout here any more — the centre of the
+   table communicates the pot only. Each player's own current-street action
+   (Check/Call N/Bet N/Raise to N/Fold/All-In) lives in their fixed
+   .action-slot instead (see render()), so the two numbers don't compete
+   for the same spot. The human's own to-call amount is still surfaced in
+   the action banner exactly when it matters (their turn). */
 
 .pot-stacks{ display:flex; align-items:flex-end; justify-content:center; gap:2px; min-height:2px; }
 .pot-stacks:empty{ display:none; }
@@ -439,7 +438,7 @@ button{ font-family:inherit; }
 .chip-token.token-in{ animation:tokenIn .2s steps(3,end); }
 @keyframes tokenIn{ from{ transform:scale(.3); opacity:0; } to{ transform:scale(1); opacity:1; } }
 
-.board{ position:absolute; top:55%; left:50%; transform:translate(-50%,-50%); display:flex; gap:7px; z-index:4; perspective:600px; }
+.board{ position:absolute; top:57%; left:50%; transform:translate(-50%,-50%); display:flex; gap:7px; z-index:4; perspective:600px; }
 
 /* ---- PIXEL CARDS: corner index + big centre pip, 2px outline ---- */
 .card{
@@ -493,41 +492,72 @@ button{ font-family:inherit; }
 @keyframes flipIn{ from{ transform:scaleX(.05); } to{ transform:scaleX(1); } }
 @keyframes muckOut{ to{ opacity:0; transform:translateY(-24px) scale(.7); } }
 
-/* ---- dealer deck: a small persistent stack of backs sitting in a shallow
-   dip in the felt itself, tucked in a bottom corner away from the
-   opponent arc, board and pot — the physical source every dealt card
-   visually flies from and every collected card visibly returns to.
-   A soft indentation (radial shading + inset shadow only, no stroked
-   border), not a UI panel. */
+/* ---- dealer deck: a small persistent stack of backs sitting in a tight,
+   card-shaped recess cut into the felt itself, tucked in a bottom corner
+   away from the opponent arc, board and pot — the physical source every
+   dealt card visually flies from and every collected card visibly returns
+   to. A precision-cut tray (tight corner radius matching the deck's own
+   cards, dark interior, inset shadows for depth, a faint lip highlight
+   where the felt meets the cut edge) — no outer border and no external
+   drop-shadow, so it reads as a recess in the table, not a panel sitting
+   on top of it. */
+.dealer-label{
+  position:absolute; left:13%; top:78%; transform:translate(-50%,-50%);
+  font-family:var(--font-hdr); font-size:7px; font-weight:400; letter-spacing:.12em;
+  text-transform:uppercase; color:rgba(255,255,255,.32);
+  text-shadow:1px 1px 0 rgba(0,0,0,.5); text-align:center;
+  pointer-events:none; z-index:5;
+}
 .dealer-deck{
   position:absolute; left:13%; top:87%; transform:translate(-50%,-50%);
-  width:42px; height:55px; z-index:5; pointer-events:none;
-  box-sizing:border-box; padding:5px;
-  border-radius:14px;
-  background:radial-gradient(ellipse at 50% 42%, rgba(0,0,0,.40) 0%, rgba(0,0,0,.20) 62%, transparent 100%);
+  width:46px; height:62px; z-index:5; pointer-events:none;
+  box-sizing:border-box; padding:3px;
+  border-radius:6px;
+  background:rgba(0,0,0,.42);
   box-shadow:
-    inset 0 3px 5px rgba(0,0,0,.5),
-    inset 0 -1px 0 rgba(255,255,255,.05),
-    0 1px 1px rgba(255,255,255,.06);
+    inset 0 4px 6px rgba(0,0,0,.6),
+    inset 0 1px 0 rgba(255,255,255,.10),
+    inset 0 -1px 0 rgba(0,0,0,.3);
 }
-.dealer-deck .card{ position:absolute; margin:0; }
-.dealer-deck .card:nth-child(1){ top:8px; left:8px; }
-.dealer-deck .card:nth-child(2){ top:7px; left:7px; }
-.dealer-deck .card:nth-child(3){ top:6px; left:6px; }
+/* ~20% larger than the shared .card.small it's based on — a dedicated
+   size override here only, so opponents' actual hole cards (which also
+   use .card.small) are untouched. The deal/collect animation always
+   measures deck.lastElementChild's real getBoundingClientRect() at
+   flight time, so resizing the static stack here is safe on its own. */
+.dealer-deck .card{ position:absolute; margin:0; width:36px; height:52px; }
+.dealer-deck .card:nth-child(1){ top:7px; left:7px; }
+.dealer-deck .card:nth-child(2){ top:6px; left:6px; }
+.dealer-deck .card:nth-child(3){ top:5px; left:5px; }
 
 /* ---- flying deal ghost: a body-appended card-back that travels from the
    dealer deck to its destination, mirroring the .fly-chip technique ---- */
 .fly-card{
   position:fixed; z-index:60; pointer-events:none; will-change:transform,opacity;
-  transform-origin:0 0; margin:0;
+  transform-origin:50% 50%; margin:0;
 }
+/* Return-to-deck ghosts live inside #felt instead of body — #app is itself
+   position:fixed (a stacking context of its own), so a body-level sibling
+   can never be placed behind anything inside it no matter its z-index.
+   Reparenting into #felt puts this ghost in the SAME local stacking
+   context as .dealer-deck (z-index:5), so z-index:4 here genuinely means
+   "behind the deck," not just "a smaller number." */
+.fly-card.return{ position:absolute; z-index:4; }
 
 .seat{
-  position:absolute; width:var(--seat-w, 80px); margin-left:calc(var(--seat-w, 80px) / -2); margin-top:-42px;
+  /* -38px (was -42px): the box grew a dedicated name row at the top but
+     gave back height at the bottom via the new card protrusion, so the
+     old centering constant needs a small retune — verify visually against
+     the final rendered box at 440x956, this is a starting value, not a
+     derived one. */
+  position:absolute; width:var(--seat-w, 80px); margin-left:calc(var(--seat-w, 80px) / -2); margin-top:-38px;
   display:flex; flex-direction:column; align-items:center; z-index:6;
   transition:opacity var(--dur);
 }
-.seat.folded{ opacity:.36; }
+/* Folding removes the player from the hand, not their physical board from
+   the table — so folded seats dim selectively (portrait/cards/secondary
+   info) rather than fading the whole module toward invisibility. See the
+   targeted .seat.folded rules below the seat-card box. Out/eliminated
+   stays the strongest treatment, unchanged. */
 .seat.out{ opacity:.2; }
 
 /* ---- portrait tiles: square avatars in pixel frames ---- */
@@ -558,21 +588,32 @@ button{ font-family:inherit; }
 .seat.winner .avatar{ border-color:var(--good); box-shadow:0 0 0 3px var(--good), 0 2px 0 rgba(0,0,0,.45); }
 .seat.winner .seat-name{ color:var(--good); }
 
-.dealer-btn{
-  position:absolute; top:-4px; right:-6px; width:19px; height:19px; border-radius:3px;
-  background:var(--card-face); color:#241A06; font-family:var(--font-hdr); font-size:8px; font-weight:400;
-  display:flex; align-items:center; justify-content:center; z-index:2;
-  box-shadow:0 2px 0 var(--px-ink); border:2px solid var(--px-ink);
-}
+/* SB/BB token — one coherent circular physical-marker design shared with
+   the human HUD's #hud-pos (see below), just sized for the compact seat
+   panel. No visual Dealer marker: the game's fiction is an unseen dealer
+   working from the physical deck, so the button position is tracked in
+   game state only (g.dealerIndex — see assignBlinds/computePositions)
+   and never rendered. Sits in the corner the old dealer badge used to
+   occupy, since that's now free. */
 .pos-btn{
-  position:absolute; bottom:-4px; left:50%; transform:translateX(-50%);
-  font-family:var(--font-hdr); font-size:7px; font-weight:400; letter-spacing:0; color:var(--accent-ink);
-  background:var(--accent); padding:2px 5px; border-radius:2px; white-space:nowrap; z-index:2;
-  border:1px solid var(--px-ink); box-shadow:0 1px 0 var(--px-ink);
+  position:absolute; top:-4px; right:-6px;
+  width:17px; height:17px; border-radius:50%;
+  display:flex; align-items:center; justify-content:center;
+  font-family:var(--font-hdr); font-size:8px; font-weight:700; letter-spacing:0;
+  color:#fff; text-shadow:1px 1px 0 rgba(0,0,0,.65);
+  background:var(--danger); z-index:2;
+  border:2px solid var(--px-ink);
+  /* thinner inset ring than before — gives the letters more of the 17px
+     circle to sit in while keeping the same physical-puck footprint */
+  box-shadow:0 1px 0 var(--px-ink), inset 0 0 0 1px rgba(255,255,255,.55);
 }
+/* Own full-width row, not shared with the stack — a name sharing a flex
+   row with the chip count only had ~25-35px of real space at phone width,
+   which is why names used to ellipsize to 1-2 characters. Owning the full
+   row gives it the ~80px the box actually has to offer. */
 .seat-name{
-  font-size:11px; font-weight:700; color:var(--ink); margin-top:5px; max-width:100%;
-  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+  font-size:10px; font-weight:700; color:var(--ink); margin-top:5px; width:100%;
+  text-align:center; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
   transition:color var(--dur-fast);
   text-shadow:1px 1px 0 var(--px-ink);
   text-transform:uppercase;
@@ -583,7 +624,6 @@ button{ font-family:inherit; }
 
 /* ---- chip towers: edge-on coin slabs, stacked flush into one solid
    column — the sketch's "tower of chips", not a row of floating circles ---- */
-.stack-row{ display:flex; align-items:center; gap:4px; }
 .chip-stack{
   display:flex; flex-direction:column-reverse; align-items:center; width:26px; min-height:2px;
 }
@@ -606,13 +646,19 @@ button{ font-family:inherit; }
 .chip-disc.d-slate{ background:#5D7A71; }
 .chip-disc.disc-in{ animation:discIn .18s steps(3,end); }
 @keyframes discIn{ from{ transform:scale(.3); opacity:0; } to{ transform:scale(1); opacity:1; } }
-.seat-chips{ font-size:11px; color:var(--accent-bright); font-weight:700; text-shadow:1px 1px 0 var(--px-ink); }
+.seat-chips{
+  font-size:11px; color:var(--accent-bright); font-weight:700; text-shadow:1px 1px 0 var(--px-ink);
+  font-variant-numeric:tabular-nums;
+}
+/* Discrete size steps keyed to digit count (set in render()), not
+   shrink-to-fit — keeps digits stable-width while guaranteeing a 5-7
+   digit stack never has to fight the name row for space. */
+.seat-chips.chip-sz2{ font-size:9.5px; }
+.seat-chips.chip-sz3{ font-size:8px; }
 .seat-cards{ display:flex; gap:2px; margin-top:5px; height:var(--card-h, 40px); perspective:400px; }
 
 .compact-seats .chip-stack{ display:none; }
-.compact-seats .seat-name{ font-size:10px; }
 .compact-seats .seat-cards{ margin-top:3px; }
-.compact-seats .seat-tag{ margin-top:2px; font-size:9.5px; padding:1.5px 6px; }
 
 /* ---- ENEMY BOX: hearts, face, name, chips, current bet and hole cards all
    inside one bordered card — nothing floats loose outside the frame ---- */
@@ -632,42 +678,61 @@ button{ font-family:inherit; }
 .seat-card .seat-name{ margin-top:0; }
 /* tiny coin in front of the bounty — coin + number laid out as one flex
    unit so they align regardless of the number font's own line metrics */
-.seat-card .seat-chips{ display:inline-flex; align-items:center; }
+.seat-card .seat-chips{
+  display:flex; align-items:center; justify-content:center; width:100%;
+  overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+}
 .seat-card .seat-chips::before{
   content:''; width:8px; height:8px; border-radius:50%; flex-shrink:0;
   background:var(--accent); border:1px solid rgba(0,0,0,.55);
   box-shadow:inset 0 1px 0 rgba(255,255,255,.5); margin-right:4px;
 }
-.seat-card .seat-cards{ margin-top:0; }
-.seat.dead .avatar{ filter:none; }
-.seat.dead{ opacity:.62; }
+/* Cards protrude ~50% below the board's bottom edge — physical cards
+   placed into the board rather than another contained UI row. Safe for
+   the deal-flight system: flyGhost() always measures the destination
+   element's live getBoundingClientRect() at flight time (see DealFX),
+   so this CSS-only offset is picked up automatically with no JS changes,
+   the same way .seat.you's existing card protrusion already works. */
+.seat-card .seat-cards{ margin-top:2px; margin-bottom:-19px; position:relative; z-index:3; filter:drop-shadow(0 3px 0 rgba(0,0,0,.35)); }
+
+/* Folded: the player is out of the hand, not their board off the table.
+   Chrome (border/background) stays visible; portrait and hole cards dim
+   more strongly as the "removed from play" cue; identity stays legible;
+   the action-slot (reading FOLD) stays at full contrast — it's the one
+   thing on a folded board that must still read clearly. */
+.seat.folded .seat-card{ filter:saturate(.55); }
+.seat.folded .avatar{ opacity:.5; filter:grayscale(.7); }
+.seat.folded .seat-cards{ opacity:.45; }
+.seat.folded .hearts{ opacity:.6; }
+.seat.folded .seat-name{ opacity:.85; }
+.seat.folded .seat-chips{ opacity:.85; }
+.seat.folded .action-slot{ opacity:1; }
+
+/* Eliminated (.dead, lives mode) stays a stronger treatment than folded,
+   as before — .seat.out{opacity:.2} above is stronger still. */
 .seat.dead .seat-card{ border-color:rgba(255,255,255,.15); }
 
-.seat-tag{
-  margin-top:0; font-size:10.5px; font-weight:800; padding:2px 8px; border-radius:2px;
-  white-space:nowrap; border:2px solid var(--px-ink);
+/* Fixed action-display slot — always rendered at the same footprint, so
+   the seat-card's own height never jitters between "someone checked" and
+   "someone bet." Replaces the old floating .seat-bet chip and the
+   .seat-tag All-In pill (merged into .act-allin below). Class-only state
+   changes (no animation yet) so a later split-flap/intensity pass can
+   hook transitions per class without any structural rework. */
+.action-slot{
+  width:100%; min-height:15px; margin-top:2px;
+  display:flex; align-items:center; justify-content:center;
+  font-family:var(--font-hdr); font-size:8.5px; font-weight:400; letter-spacing:.04em;
+  text-transform:uppercase; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+  border-radius:2px; border:2px solid rgba(255,255,255,.12);
+  padding:2px 4px; background:rgba(0,0,0,.3); color:var(--ink-faint);
+  box-shadow:inset 0 2px 0 rgba(0,0,0,.35);
 }
-.seat-tag.tag-bet{
-  background:var(--px-ink); color:var(--accent-bright);
-  border-color:var(--accent);
-  font-family:var(--font-hdr); font-size:9px; font-weight:400;
-}
-.seat-tag.pop{ animation:betPop .24s steps(4,end); }
-@keyframes betPop{ 0%{ transform:scale(.4); opacity:0; } 55%{ transform:scale(1.18); } 100%{ transform:scale(1); opacity:1; } }
-.seat-tag.tag-bet.bet-medium{ font-size:9.5px; }
-.seat-tag.tag-bet.bet-big{
-  font-size:10px; background:var(--accent); color:var(--accent-ink); border-color:var(--px-ink);
-}
-.seat-tag.tag-bet.bet-huge{
-  font-size:10.5px; background:var(--danger); color:#FFF; border-color:var(--px-ink);
-  animation:betPop .24s steps(4,end), betPulse .9s steps(2,end) .24s infinite;
-}
-@keyframes betPulse{ 0%,100%{ box-shadow:0 0 0 0 transparent; } 50%{ box-shadow:0 0 0 3px rgba(217,83,74,.5); } }
-.seat-tag.tag-status{
-  letter-spacing:.06em; text-transform:uppercase; color:var(--ink-faint);
-  background:rgba(0,0,0,.4); border-color:rgba(255,255,255,.14);
-}
-.seat-tag.tag-status.allin{ color:#FFD9D5; border-color:var(--danger); }
+.action-slot.act-check{ color:var(--ink-dim); border-color:rgba(255,255,255,.22); }
+.action-slot.act-call{ color:var(--accent-bright); border-color:var(--accent); }
+.action-slot.act-bet{ background:var(--accent); color:var(--accent-ink); border-color:var(--px-ink); }
+.action-slot.act-raise{ background:var(--accent); color:var(--accent-ink); border-color:var(--px-ink); font-weight:700; }
+.action-slot.act-fold{ color:rgba(255,180,173,.75); border-color:rgba(217,83,74,.35); }
+.action-slot.act-allin{ background:var(--danger); color:#FFF; border-color:var(--px-ink); font-weight:700; }
 
 .invested-row{
   display:flex; align-items:baseline; gap:5px; margin-top:5px; padding:3px 9px;
@@ -755,25 +820,36 @@ button{ font-family:inherit; }
   padding:2px 3px; text-shadow:1px 1px 0 var(--px-ink);
   white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
 }
-#hud-right .invested-row{
-  width:100%; justify-content:space-between; display:flex; align-items:center;
-  background:rgba(0,0,0,.45); border:2px solid var(--px-ink); border-radius:2px; padding:2px 5px;
+/* The human's own fixed action-display slot — same act-* state classes
+   and role as the opponents' .action-slot (see render()), sized up
+   slightly to match this column's other elements. Sits in the exact spot
+   the old live cumulative-bet readout (.invested-row/#hud-bet) used to
+   occupy; that display is retired (totalBetHand itself, and its use in
+   side-pot math/Hand Review, are untouched — only this live presentation
+   is gone). */
+#hud-action{ width:100%; min-height:18px; font-size:10px; }
+/* Quieter empty state, human slot only — stays physically present (same
+   footprint, same architecture for the later split-flap pass) but reads
+   as an inactive mechanical display rather than another assertive UI
+   element. The em-dash glyph is hidden via color rather than removed from
+   the DOM, so the box never changes size when it fills/empties. */
+#hud-action.act-empty{
+  color:transparent; background:rgba(0,0,0,.16);
+  border-color:rgba(255,255,255,.06); box-shadow:none;
 }
-#hud-right .invested-label{ font-size:8px; }
-#hud-right .invested-val{ font-size:12px; color:var(--accent-bright); }
-/* dealer + position rendered as poker chips */
+/* position rendered as a poker chip — no visual Dealer marker (see .pos-btn) */
 .hud-badges{ display:flex; gap:5px; align-items:center; justify-content:center; }
-#hud-dealer, #hud-pos{
+#hud-pos{
   position:static; transform:none; width:29px; height:29px; border-radius:50%;
   display:flex; align-items:center; justify-content:center;
-  font-size:9.5px; font-weight:800; letter-spacing:0;
+  font-size:11px; font-weight:800; letter-spacing:0;
   border:2px solid var(--px-ink);
-  box-shadow:0 2px 0 var(--px-ink), inset 0 0 0 3px rgba(255,255,255,.75), inset 0 2px 0 rgba(255,255,255,.4);
   padding:0;
+  background:var(--danger); color:#fff; text-shadow:1px 1px 0 rgba(0,0,0,.65);
+  /* thinner inset ring than before — gives the letters more of the 29px
+     circle to sit in while keeping the same physical-puck footprint */
+  box-shadow:0 2px 0 var(--px-ink), inset 0 0 0 2px rgba(255,255,255,.55);
 }
-#hud-dealer{ background:var(--card-face); color:#241A06; }
-#hud-pos{ background:var(--danger); color:#fff; text-shadow:1px 1px 0 rgba(0,0,0,.4);
-  box-shadow:0 2px 0 var(--px-ink), inset 0 0 0 3px rgba(255,255,255,.65); }
 
 /* jackpot bankroll counter: slot-machine digit cells in a gold frame */
 #jackpot{
@@ -812,6 +888,29 @@ button{ font-family:inherit; }
   box-shadow:0 6px 0 rgba(0,0,0,.55); opacity:0; animation:resultIn .24s steps(4,end) forwards;
 }
 @keyframes resultIn{ from{ opacity:0; transform:translate(-50%,-10px); } to{ opacity:1; transform:translate(-50%,0); } }
+/* Compact showdown result only (the separate game-over summary keeps the
+   base .result-card treatment above, untouched). Sits where .pot-area
+   was — g.pot resets to 0 and hides that plate right before this shows,
+   so there's no overlap — instead of floating over the top of the felt,
+   so the board and the win-card/dim-card highlighting stay fully
+   visible underneath it. The full side-pot explanation now lives in the
+   existing optional Hand Review panel (buildReview() already has a
+   "Side pots" lesson) instead of being duplicated here. */
+.result-card.sd-compact{
+  top:79%; transform:translate(-50%,-50%);
+  min-width:0; max-width:88%; padding:9px 16px; text-align:center;
+  animation:resultInCompact .24s steps(4,end) forwards;
+}
+@keyframes resultInCompact{ from{ opacity:0; transform:translate(-50%,-40%); } to{ opacity:1; transform:translate(-50%,-50%); } }
+.sd-line{ font-size:13px; color:var(--ink-dim); line-height:1.4; }
+.sd-line b{ color:var(--accent-bright); font-weight:800; }
+.sd-line.mine b{ color:var(--good); }
+.sd-line + .sd-line{ margin-top:4px; }
+.sd-pots{
+  margin-top:5px; font-family:var(--font-hdr); font-size:10px; font-weight:400;
+  color:var(--accent-bright); text-transform:uppercase; letter-spacing:.04em;
+}
+.sd-amt{ margin-left:6px; font-size:10.5px; color:var(--ink-faint); text-transform:uppercase; letter-spacing:.03em; }
 .result-card .rc-title{
   font-size:10.5px; text-transform:uppercase; letter-spacing:.15em;
   color:var(--accent); font-weight:800; margin-bottom:8px; text-align:center;
@@ -835,29 +934,6 @@ button{ font-family:inherit; }
   padding-top:8px; border-top:2px solid rgba(255,255,255,.09);
 }
 
-.pot-group{ padding:5px 0; border-bottom:2px solid rgba(255,255,255,.07); }
-.pot-group:last-of-type{ border-bottom:none; }
-.pot-group-head{ display:flex; align-items:center; gap:7px; margin-bottom:5px; }
-.pot-group-head .pl-tag{
-  font-size:9.5px; text-transform:uppercase; letter-spacing:.08em; color:var(--ink-faint); font-weight:800;
-}
-.split-badge{
-  font-size:9px; font-weight:800; letter-spacing:.06em; color:var(--accent-ink);
-  background:var(--accent); padding:1.5px 6px; border-radius:2px; border:1px solid var(--px-ink);
-}
-.pot-group-head .pl-amt{
-  margin-left:auto; font-size:13px; font-weight:800; color:var(--accent-bright);
-}
-.split-sub{
-  display:flex; align-items:baseline; gap:8px; padding:3px 0 3px 10px;
-  border-left:3px solid var(--accent); margin-left:2px;
-}
-.split-sub.mine{ border-left-color:var(--good); }
-.split-sub .pl-body{ flex:1; font-size:12px; color:var(--ink-dim); }
-.split-sub .pl-body b{ color:var(--accent-bright); font-weight:800; }
-.split-sub.mine .pl-body b{ color:var(--good); }
-.split-sub .pl-amt{ font-size:12px; font-weight:800; color:var(--ink-dim); }
-.split-sub.mine .pl-amt{ color:var(--good); }
 
 .card.win-card{
   box-shadow:0 0 0 3px var(--accent-bright), 0 3px 0 rgba(0,0,0,.5), inset 0 2px 0 #FFFFFF;
@@ -979,8 +1055,28 @@ button{ font-family:inherit; }
 .coach-note{ font-size:12.5px; color:var(--ink-dim); line-height:1.5; }
 .coach-foot{ font-size:10.5px; color:var(--ink-faint); margin-top:7px; line-height:1.45; }
 
-.raise-panel{ display:none; margin-bottom:9px; }
-.raise-panel.show{ display:block; }
+/* .actions-dock is the positioning context for the raise panel — sized
+   only by .actions-row (the panel is position:absolute, fully out of
+   flow), so opening/closing the panel can never change this box's height,
+   and therefore can never resize the felt above it (.felt-wrap is the
+   only flex:1 slack-absorber in the table-screen's layout chain — see the
+   felt-stabilization notes on .table-main/.felt-wrap). */
+.actions-dock{ position:relative; }
+/* A small physical compartment that opens above the action buttons rather
+   than a reserved block of empty space — folds/slides up from just above
+   the buttons with a short, slightly-overshooting settle, like a hinged
+   tray lid. Completely out of flow (position:absolute, anchored to
+   .actions-dock's own box via bottom:100%), so it can never affect
+   #action-area's layout height. */
+.raise-panel{
+  position:absolute; left:0; right:0; bottom:100%; margin-bottom:8px;
+  background:var(--panel); border:2px solid var(--px-ink); border-radius:var(--radius);
+  padding:11px 13px 9px; box-shadow:0 4px 0 rgba(0,0,0,.45);
+  transform-origin:50% 100%;
+  transform:scaleY(.08) translateY(10px); opacity:0; pointer-events:none;
+  transition:transform 260ms cubic-bezier(.34,1.56,.64,1), opacity 180ms ease-out;
+}
+.raise-panel.show{ transform:scaleY(1) translateY(0); opacity:1; pointer-events:auto; }
 .raise-row{ display:flex; align-items:center; gap:12px; margin-bottom:9px; }
 .raise-amt{
   font-size:15px; font-weight:400; color:var(--accent-bright); min-width:88px; text-align:center;
@@ -1026,8 +1122,14 @@ input[type=range]::-moz-range-thumb{
   border:3px solid var(--px-ink);
   font-family:var(--font-hdr); font-size:11px; font-weight:400; cursor:pointer; text-transform:uppercase; letter-spacing:.02em;
   color:#1B120C; text-shadow:0 1px 0 rgba(255,255,255,.3);
+  transition:opacity var(--dur-fast);
 }
 .actions-row button:active{ transform:translateY(4px); }
+/* Persistent bottom controls: stay in place and keep their layout height
+   through AI turns instead of disappearing, so the bottom UI doesn't
+   reflow every time the turn changes. Fully dimmed + non-interactive
+   until it's genuinely the human's turn. */
+.actions-row.disabled button{ opacity:.32; pointer-events:none; }
 .btn-fold{
   background:#C7524D;
   box-shadow:0 6px 0 #7E2F2C, 0 6px 0 2px var(--px-ink), inset 0 3px 0 rgba(255,255,255,.28), inset 0 -3px 0 rgba(0,0,0,.18);
@@ -1225,7 +1327,7 @@ input[type=range]::-moz-range-thumb{
 @media (orientation:landscape){
   #table-screen{ flex-direction:row; }
   .table-main{ flex:1; min-width:0; }
-  .felt{ aspect-ratio:1.5/1; max-width:none; border-radius:44px; }
+  .felt{ border-radius:44px; }
   .felt::before{ border-radius:54px; }
   .felt::after{ border-radius:36px; }
   .felt-wrap{ padding:0 6px 6px; }
@@ -1420,9 +1522,9 @@ button, [role="button"], input[type="button"], input[type="submit"] {
           <div class="pot-area hidden" id="pot-area">
             <div class="pot-stacks" id="pot-stacks" aria-hidden="true"></div>
             <div class="pot-chip"><span class="pot-word">Pot</span><span class="v tabular" id="pot-val">0</span></div>
-            <div class="bet-chip hidden" id="bet-chip"><span class="bet-word">Bet</span><span class="v tabular" id="bet-val">0</span></div>
           </div>
           <div class="board" id="board" role="group" aria-label="Community cards"></div>
+          <div class="dealer-label" aria-hidden="true">Dealer</div>
           <div class="dealer-deck" id="dealer-deck" aria-hidden="true">
             <div class="card back small"></div>
             <div class="card back small"></div>
@@ -1441,9 +1543,8 @@ button, [role="button"], input[type="button"], input[type="submit"] {
           <div id="hud-right">
             <div class="hearts hidden" id="hud-hearts" aria-hidden="true"></div>
             <div class="hud-nameplate" id="hud-name"></div>
-            <div class="invested-row hidden" id="hud-bet"><span class="invested-label">Bet</span><span class="invested-val tabular">0</span></div>
+            <div class="action-slot act-empty" id="hud-action">–</div>
             <div class="hud-badges">
-              <div class="dealer-btn hidden" id="hud-dealer" title="Dealer">D</div>
               <div class="pos-btn hidden" id="hud-pos"></div>
             </div>
           </div>
@@ -1484,25 +1585,27 @@ button, [role="button"], input[type="button"], input[type="submit"] {
         <div id="review-body"></div>
       </div>
 
-      <div class="raise-panel" id="raise-panel">
-        <div class="raise-row">
-          <div class="slider-wrap">
-            <input type="range" id="raise-slider" min="0" max="100" value="0" aria-label="Raise amount">
+      <div class="actions-dock">
+        <div class="raise-panel" id="raise-panel">
+          <div class="raise-row">
+            <div class="slider-wrap">
+              <input type="range" id="raise-slider" min="0" max="100" value="0" aria-label="Raise amount">
+            </div>
+            <div class="raise-amt tabular" id="raise-amt">0</div>
           </div>
-          <div class="raise-amt tabular" id="raise-amt">0</div>
+          <div class="quick-bets">
+            <button data-frac="0.5">½ Pot</button>
+            <button data-frac="0.75">¾ Pot</button>
+            <button data-frac="1">Pot</button>
+            <button data-frac="max">All-In</button>
+          </div>
         </div>
-        <div class="quick-bets">
-          <button data-frac="0.5">½ Pot</button>
-          <button data-frac="0.75">¾ Pot</button>
-          <button data-frac="1">Pot</button>
-          <button data-frac="max">All-In</button>
-        </div>
-      </div>
 
-      <div class="actions-row hidden" id="actions-row">
-        <button class="btn-fold" id="btn-fold">Fold</button>
-        <button class="btn-check" id="btn-checkcall">Check</button>
-        <button class="btn-raise" id="btn-raise">Raise</button>
+        <div class="actions-row disabled" id="actions-row">
+          <button class="btn-fold" id="btn-fold">Fold</button>
+          <button class="btn-check" id="btn-checkcall">Check</button>
+          <button class="btn-raise" id="btn-raise">Raise</button>
+        </div>
       </div>
 
       <button class="wide-btn hidden" id="btn-next-hand">Next Hand</button>
@@ -2378,8 +2481,22 @@ const TABLE_TALK = {
                win:['That\u2019s how you hit.','Blunt force works.'],
                lose:['Swung and missed.',"I'll hit the next one."] },
 };
+// Single reversible gate for both ordinary action bubbles and personality
+// table-talk — both are pure DOM/presentation (no game/AI/mood state lives
+// inside either function), so silencing rendering here touches nothing else.
+// Every seat now has a fixed, reliably-placed .action-slot showing exactly
+// what it just did, which is what the old floating bubbles were compensating
+// for; personality lines have no such replacement yet, so they're silenced
+// too, on purpose, until a dedicated "speech as a rare event" pass revisits
+// this. Threading `trigger` through here (rather than a flat boolean at each
+// call site) is what lets that future pass allow-list specific moments
+// (e.g. 'allin', 'showdown-win', a big pot) without touching any call site.
+function bubblesAllowed(trigger){
+  return false;
+}
 function maybeTableTalk(player, trigger){
   if (!settings.tableTalk || !player || player.isHuman) return;
+  if (!bubblesAllowed(trigger)) return;
   const key = player.personality && player.personality.key;
   const lines = key && TABLE_TALK[key] && TABLE_TALK[key][trigger];
   if (!lines || !lines.length) return;
@@ -2804,7 +2921,7 @@ async function startNewHand(){
 
   g.players.forEach(p=>{
     p.hand=[]; p.folded=false; p.allIn=false; p.betThisRound=0; p.totalBetHand=0;
-    p.acted=false; p.mayRaise=true;
+    p.acted=false; p.mayRaise=true; p.streetAction=null;
     p.inHand = p.chips>0 && !p.eliminated;
     delete p._reveal; delete p._award; delete p._handRes;
   });
@@ -2841,7 +2958,11 @@ async function startNewHand(){
   $('btn-next-hand').classList.add('hidden');
   $('btn-rebuy').classList.add('hidden');
   $('btn-new-table').classList.add('hidden');
-  $('actions-row').classList.add('hidden');
+  // Persistent controls: visible (dimmed) from the moment the hand starts,
+  // not hidden — only finishHand()/concludeGame() hide the row entirely,
+  // once the hand has actually ended.
+  $('actions-row').classList.remove('hidden');
+  $('actions-row').classList.add('disabled');
 
   await playShuffle();   // the ritual: deck riffles before every deal
   if (g.over) return;
@@ -2933,7 +3054,14 @@ function postBlind(p, amount){
 function beginBettingRound(phase){
   const g = game;
   g.phase = phase;
-  g.players.forEach(p=>{ p.acted=false; p.mayRaise=true; });
+  g.players.forEach(p=>{
+    p.acted=false; p.mayRaise=true;
+    // Fold/All-In are persistent player states, not street-scoped actions —
+    // their action-slot label should keep reading "Fold"/"All-In" for the
+    // rest of the hand. Check/Call/Bet/Raise are this-street-only and clear
+    // so a new street starts with every active seat back at .act-empty.
+    if (p.streetAction && p.streetAction.type!=='fold' && p.streetAction.type!=='allin') p.streetAction = null;
+  });
   if (phase!=='preflop'){ g.currentBet=0; g.minRaise=g.bigBlind; }
   const n = g.players.filter(p=>p.inHand).length;
   g.turnPointer = (phase==='preflop')
@@ -3099,6 +3227,11 @@ function applyAction(player, decision){
 
   player.acted = true;
   logMsg(text);
+  // The banner no longer narrates every action ("Sasha raises to 60") —
+  // each seat's fixed action-slot (see render()) now shows that reliably
+  // in the same place every time, so the banner stays on short phase/turn
+  // framing (updateActionControls()/describeCurrentTurn()) instead of
+  // growing to fit a full sentence every time someone acts.
   if (g.handActions){
     g.handActions.push({ id:player.id, name:player.name, street:g.phase, action, amount:player.betThisRound });
   }
@@ -3111,7 +3244,9 @@ function applyAction(player, decision){
     if (player.allIn) maybeTableTalk(player, 'allin');
     else if (action==='raise' || action==='bet') maybeTableTalk(player, 'raise');
   }
-  flashAction(player.id, actionLabel(action, player, shortAmt));
+  const streetLabel = actionLabel(action, player, shortAmt);
+  player.streetAction = { type: player.allIn ? 'allin' : action, label: streetLabel, amount: shortAmt };
+  flashAction(player.id, streetLabel);
   if (action!=='fold' && action!=='check') flyChipsFrom(player.id, player.betThisRound);
 }
 
@@ -3483,6 +3618,7 @@ async function continueAction(){
     const seatEl = seatEls[player.id];
     if (seatEl) seatEl.root.classList.add('thinking');
     setMood(player.id, 'think');
+    setBanner(esc(player.name) + ' is thinking…');
     const decision = await aiDecide(player, game);   // off the main thread
     await sleep(aiThinkTime(player, decision, game));
     if (seatEl) seatEl.root.classList.remove('thinking');
@@ -3501,7 +3637,8 @@ function humanAct(action, amount){
   coachToken++;                 // cancel any in-flight coach calculation
   clearHumanReadouts();
   $('raise-panel').classList.remove('show');
-  $('actions-row').classList.add('hidden');
+  // Row stays visible — the render() below calls updateActionControls(),
+  // which dims it automatically now that pendingHumanPlayer is null.
   applyAction(p, {action, amount});
   game.turnPointer = game.players.indexOf(p)+1;
   render();
@@ -3642,8 +3779,9 @@ function esc(s){ return String(s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;
 function seatPosition(seatIdx, total){
   if (seatIdx===0) return {left:'50%', top:'86%'};
   const k = total-1, i = seatIdx-1;
-  const rx = 42, ry = k>=6 ? 37 : k===5 ? 42 : 39;
-  if (k===1) return { left:'50%', top:(46-ry-4)+'%' };
+  const rx = 42, ry = k>=6 ? 37 : k===5 ? 42 : 32;
+  const baseline = 38;
+  if (k===1) return { left:'50%', top:(baseline-ry-4)+'%' };
 
   /* Seats are tall and narrow, so collision risk is fundamentally an X-axis
      problem. Spacing evenly in X (deriving Y from the ellipse) fixes the old
@@ -3656,11 +3794,25 @@ function seatPosition(seatIdx, total){
   const xSpreadFrac = k<=2 ? 0.62 : k===3 ? 0.66 : k===4 ? 0.86 : k===5 ? 0.85 : k===7 ? 0.97 : 1.0;
   const xMax = rx*xSpreadFrac;
   const x = -xMax + (2*xMax) * (i/(k-1));
+  const left = 50 + x;
+
+  // Shipped 4-opponent case: a hand-tuned shallow horseshoe instead of the
+  // generic ellipse. The ellipse formula put outer seats (i=0,3) at
+  // top≈21.7% vs inner seats (i=1,2) at top≈7.3% — a 14.3pt gap that reads
+  // as "two seats up top, two seats noticeably lower" rather than a
+  // horseshoe. This lookup narrows that gap directly; xSpreadFrac/left
+  // above (horizontal, collision-avoidance-tuned) are untouched — this is
+  // a vertical-only change. Starting values per the UI cleanup plan;
+  // re-tune visually against the final seat-card footprint if needed.
+  if (k===4){
+    const top4 = (i===0 || i===3) ? 12 : 7;
+    return { left: Math.max(9, Math.min(91, left))+'%', top: top4+'%' };
+  }
+
   const angle = Math.acos(Math.max(-1, Math.min(1, x/rx)));
   let y = -ry*Math.sin(angle);
   if (k>=6) y += (i%2===0) ? (k===8?-25:-19) : (k===8?9:4);
-  const left = 50 + x;
-  const top = 46 + y;
+  const top = baseline + y;
   // hard safety clamp: seats must never be able to render past the felt's
   // visible bounds, or (for the zigzagged large-table case) low enough to
   // reach the pot/board area, no matter what the placement math produces
@@ -3728,76 +3880,78 @@ function syncCardRow(container, cards, faceDownMask, small){
 /* Every dealing/collecting duration lives here so the feel can be tuned
    from one place without hunting through the choreography functions. */
 const DEAL_TIMING = {
-  dealMs: 750,               // ~0.7-0.8s target per card, pre-speedMult
-  dealStaggerMs: 640,        // near-sequential: next card releases late in the previous one's landing
-  flopStaggerMs: 640,        // same one-at-a-time rhythm for community cards
+  dealMs: 520,                // punchy flick, ~0.5-0.55s target per card, pre-speedMult
+  dealStaggerMs: 420,         // near-sequential: next card releases just before/around the previous one landing
+  flopStaggerMs: 420,         // same one-at-a-time rhythm for community cards
   settleBeforeFlipMs: 90,
   collectMs: 650,
-  collectStaggerMaxMs: 140,  // randomized 0..this per card, for a lively non-uniform return
-  fadeMs: 110,
-};
-
-// Geometry knobs for the flight's curve/rotation character, kept separate
-// from DEAL_TIMING (durations) so both are easy to find and retune.
-const DEAL_MOTION = {
-  dealBulgeFactor: 0.045, dealBulgeMin: 3, dealBulgeMax: 14,     // shallow flick curve
-  returnBulgeFactor: 0.12, returnBulgeMin: 8, returnBulgeMax: 30, // return can curve more
-  returnFinalBulgeT: 0.2,    // residual curve kept through the suction landing so cards
-                             // converging on the deck from different origins stay visually
-                             // distinct instead of collapsing onto one shared line
-  yawCommon: [8, 25],       // deal-only rotation ranges, degrees — ~70% common
-  yawModerate: [25, 60],    // ~25% occasional
-  yawRare: [60, 120],       // ~5% rare flourish
+  collectStaggerMaxMs: 140,   // randomized 0..this per card, for a lively non-uniform return
 };
 
 const DealFX = (function(){
   /* Weighted turn count for the END-OF-HAND RETURN only: 1 full rotation
      is the common case, 2 is an occasional flourish, 3 is genuinely rare.
      Always a clean multiple of 360 so the card is visually flat the
-     instant it lands. Untouched by the deal-motion refinement below —
-     the return's spin wasn't reported as a problem. */
+     instant it lands. */
   function pickTurns(){
     const r = Math.random();
     const n = r < 0.72 ? 1 : r < 0.97 ? 2 : 3;
     return n * 360 * (Math.random() < 0.5 ? -1 : 1);
   }
-  /* Deal-only yaw: a small, controlled flick angle rather than a full
-     spin — mostly barely-there, occasionally a bit more, rarely a real
-     flourish. Always eases back to exactly 0deg for the landing stage
-     (see dealStages below), so the card settles flat regardless of how
-     far it yawed mid-flight — it loses its spin as it decelerates,
-     rather than stopping mid-tilt. */
-  function pickYaw(){
+  /* Weighted spin for DEALT cards: a genuine full/half/double rotation
+     around the card's exact centre (`.fly-card`'s transform-origin is
+     50% 50%, not a corner — pivoting off-centre is what made rotation
+     swing the card's visual centre in an arc instead of spinning in
+     place). `peakDeg` is how far the card visibly spins during the fast
+     part of the flight (accelerate+travel) — this is the number that
+     actually differentiates "180" (a quick, light flick — most of its
+     motion happens in the FAST phase, covering only a half-turn) from
+     "360" (a full turn already complete by the time it's decelerating)
+     from "720" (two full turns, a rarer flourish). `landDeg` is always
+     the nearest clean multiple of 360, so every card is genuinely flat
+     the instant it lands: for 180 that means the deceleration stage
+     keeps rotating the SAME direction through the remaining half-turn
+     (interpolated smoothly as part of that stage's own easing, not a
+     separate snap) rather than reversing; for 360/720, landDeg equals
+     peakDeg already, so the deceleration stage adds no extra rotation. */
+  function pickSpin(){
     const r = Math.random();
-    const [lo, hi] = r < 0.70 ? DEAL_MOTION.yawCommon
-                   : r < 0.95 ? DEAL_MOTION.yawModerate
-                   : DEAL_MOTION.yawRare;
-    return (lo + Math.random()*(hi-lo)) * (Math.random() < 0.5 ? -1 : 1);
+    if (r < 0.60) return { peakDeg: 360, landDeg: 360 };
+    if (r < 0.90) return { peakDeg: 180, landDeg: 360 };
+    return { peakDeg: 720, landDeg: 720 };
   }
 
-  /* Spawns a body-appended card-back ghost that starts as an EXACT pixel
-     match (position + size, via getBoundingClientRect on both ends) of
+  /* Spawns a card-back ghost that starts as an EXACT pixel match
+     (position + size, via getBoundingClientRect on both ends) of
      `fromEl` — on frame one it IS the source card, not a lookalike spawned
      nearby. It then runs a short chain of CSS transitions (the same
      chained setTimeout/style.transition technique flyChipVolley already
      uses for its chip toss, just with more stages) that together read as
-     one continuous physical motion:
-       deal  — brief release (still "attached") → sharp acceleration into
-               a shallow arc → fast confident travel → rapid deceleration
-               into a crisp, flat landing. A wrist flick, not a frisbee.
-       return — a brief tug toward the deck → an accelerating pull along
-               an arc (kept slightly curved all the way to arrival, so
-               cards converging from different directions stay visually
-               distinct) → a firm, no-overshoot suction landing.
-     The arc's direction comes from this specific flight's real geometry
-     (perpendicular to its own travel vector, scaled to its own distance),
-     so different destinations genuinely curve differently rather than
-     replaying one canned hop. Scale is interpolated the same way alongside
-     translate/rotate, since origin and destination card sizes can
-     legitimately differ (the deck's stack vs. a hole card).
-     `opts.thenFade` keeps the ghost fully opaque for the whole trip —
-     trajectory stays readable — and only fades it out in a final stage
-     strictly after it has actually arrived. */
+     one continuous physical motion, travelling in a TRUE STRAIGHT LINE
+     (the ghost's centre moves directly from origin to destination — no
+     lateral arc/bulge) while it spins around its own centre:
+       deal   — very brief release (still "attached") → sharp acceleration
+                → fast confident travel → rapid deceleration into a crisp,
+                flat landing. A wrist flick, not a frisbee.
+       return — a brief tug toward the deck → an accelerating straight
+                pull, spinning several turns → a firm landing exactly at
+                the deck, fading out in that same final stage so nothing
+                lingers at the destination.
+     Scale is interpolated alongside translate/rotate, since origin and
+     destination card sizes can legitimately differ (the deck's stack vs.
+     a hole card).
+     Deal ghosts are appended to document.body (position:fixed, high
+     z-index) so they're clearly visible travelling across the felt.
+     Return ghosts are appended to #felt instead (position:absolute) — see
+     .fly-card.return in CSS for why: #app is itself position:fixed and so
+     establishes its own stacking context, which means a body-level sibling
+     can NEVER be placed behind anything inside #app by z-index alone, no
+     matter how low. Reparenting the return ghost into #felt puts it in
+     the SAME local stacking context as .dealer-deck, so a lower z-index
+     there genuinely means "behind the deck." This was the actual bug
+     behind cards appearing to queue near the deck instead of merging into
+     it — not the flight curve or transform-origin (those were real fixes
+     for real problems, but not this one). */
   function flyGhost(fromEl, toEl, opts){
     opts = opts || {};
     if (motionOff() || !fromEl || !toEl) return Promise.resolve();
@@ -3805,35 +3959,40 @@ const DealFX = (function(){
     const b = toEl.getBoundingClientRect();
     if (!a.width || !b.width) return Promise.resolve();
 
+    const isReturn = opts.style === 'return';
+    const felt = isReturn ? $('felt') : null;
+    const container = felt || document.body;
+
     const ghost = document.createElement('div');
-    ghost.className = 'card back fly-card';
-    ghost.style.left = a.left + 'px';
-    ghost.style.top = a.top + 'px';
+    ghost.className = 'card back fly-card' + (isReturn ? ' return' : '');
+    if (felt){
+      const cRect = felt.getBoundingClientRect();
+      ghost.style.left = (a.left - cRect.left) + 'px';
+      ghost.style.top = (a.top - cRect.top) + 'px';
+    } else {
+      ghost.style.left = a.left + 'px';
+      ghost.style.top = a.top + 'px';
+    }
     ghost.style.width = a.width + 'px';
     ghost.style.height = a.height + 'px';
-    document.body.appendChild(ghost);
+    container.appendChild(ghost);
 
-    const isReturn = opts.style === 'return';
     const dx = b.left - a.left, dy = b.top - a.top;
     const sx = b.width / a.width, sy = b.height / a.height;
     const dist = Math.hypot(dx, dy) || 1;
-    const ux = dx / dist, uy = dy / dist;      // unit vector along the travel line
-    const nx = -uy, ny = ux;                   // its perpendicular — the arc direction
-    const bulge = isReturn
-      ? Math.max(DEAL_MOTION.returnBulgeMin, Math.min(DEAL_MOTION.returnBulgeMax, dist*DEAL_MOTION.returnBulgeFactor))
-      : Math.max(DEAL_MOTION.dealBulgeMin, Math.min(DEAL_MOTION.dealBulgeMax, dist*DEAL_MOTION.dealBulgeFactor));
-    const bulgeSigned = bulge * (Math.random() < 0.5 ? 1 : -1);
+    const ux = dx / dist, uy = dy / dist;      // unit vector, for the small release/tug nudge
     const dur = Math.round((opts.duration || DEAL_TIMING.dealMs) * speedMult());
-    const fadeDur = Math.round(DEAL_TIMING.fadeMs * speedMult());
 
-    // A waypoint at fraction `distT` along the straight line, offset by the
-    // arc `bulgeT` (1 = full bulge, 0 = back on the line), with rotation at
-    // an explicit `rotDeg` and scale interpolated the same way as position.
-    function waypoint(distT, bulgeT, rotDeg){
-      const px = dx*distT + nx*bulgeSigned*bulgeT;
-      const py = dy*distT + ny*bulgeSigned*bulgeT;
+    // A waypoint at fraction `distT` straight along the line from origin to
+    // destination — no lateral offset — with rotation at an explicit
+    // `rotDeg` and scale interpolated the same way as position. (Delta
+    // math here is viewport-pixel-equivalent regardless of which
+    // container the ghost lives in, since translate() is an offset, not
+    // an absolute position — only the ghost's own untransformed left/top,
+    // set above, needs to already be correct for that container.)
+    function waypoint(distT, rotDeg){
       const sxT = 1 + (sx-1)*distT, syT = 1 + (sy-1)*distT;
-      return 'translate('+px+'px,'+py+'px) scale('+sxT+','+syT+') rotate('+rotDeg+'deg)';
+      return 'translate('+(dx*distT)+'px,'+(dy*distT)+'px) scale('+sxT+','+syT+') rotate('+rotDeg+'deg)';
     }
     function nudgeTo(px){
       return 'translate('+(ux*px)+'px,'+(uy*px)+'px) scale(1,1) rotate(0deg)';
@@ -3843,17 +4002,20 @@ const DealFX = (function(){
     if (isReturn){
       const turns = opts.rotate != null ? opts.rotate : pickTurns();
       stages = [
-        { t: nudgeTo(Math.min(6, dist*0.25)),                        frac:.10, ease:'cubic-bezier(.6,0,.9,.2)' },   // tug
-        { t: waypoint(.75, 1, turns*.75),                            frac:.55, ease:'cubic-bezier(.55,0,.85,.35)' }, // accelerating pull
-        { t: waypoint(1, DEAL_MOTION.returnFinalBulgeT, turns),      frac:.35, ease:'cubic-bezier(.2,.8,.3,1)' },   // suction landing
+        { t: nudgeTo(Math.min(6, dist*0.25)), frac:.10, ease:'cubic-bezier(.6,0,.9,.2)' },     // tug
+        { t: waypoint(.55, turns*.55),        frac:.35, ease:'cubic-bezier(.55,0,.85,.35)' },  // accelerating pull
+        { t: waypoint(1, turns),              frac:.55, ease:'cubic-bezier(.25,.4,.4,1)', fadeTo:0 }, // final approach — behind the deck, fading to gone in the same motion
       ];
     } else {
-      const yaw = opts.rotate != null ? opts.rotate : pickYaw();
+      const spin = opts.rotate != null
+        ? { peakDeg: opts.rotate, landDeg: Math.ceil(opts.rotate/360)*360 || 360 }
+        : pickSpin();
+      const dir = Math.random() < 0.5 ? 1 : -1;
       stages = [
-        { t: nudgeTo(Math.min(2.5, dist*0.12)), frac:.07, ease:'cubic-bezier(.7,0,.95,.15)' },  // release — brief, still attached
-        { t: waypoint(.30, 1, yaw*0.85),        frac:.18, ease:'cubic-bezier(.2,.05,.3,.5)' },  // sharp acceleration
-        { t: waypoint(.88, 0, yaw),             frac:.42, ease:'cubic-bezier(.35,0,.55,1)' },   // fast confident travel
-        { t: waypoint(1, 0, 0),                 frac:.33, ease:'cubic-bezier(.1,.75,.2,1)' },   // rapid decel, crisp flat landing
+        { t: nudgeTo(Math.min(2, dist*0.10)),      frac:.05, ease:'cubic-bezier(.5,0,.85,.2)' },    // release — very brief, still attached
+        { t: waypoint(.30, dir*spin.peakDeg*0.55), frac:.15, ease:'cubic-bezier(.15,.05,.25,.55)' }, // sharp acceleration
+        { t: waypoint(.90, dir*spin.peakDeg),      frac:.45, ease:'cubic-bezier(.3,0,.5,1)' },       // fast confident travel — reaches the named spin checkpoint
+        { t: waypoint(1, dir*spin.landDeg),        frac:.35, ease:'cubic-bezier(.1,.7,.2,1)' },      // decisive stop — resolves to a clean, flat landing
       ];
     }
 
@@ -3862,17 +4024,14 @@ const DealFX = (function(){
 
     return new Promise(resolve=>{
       const run = (i)=>{
-        if (i >= stages.length){
-          if (!opts.thenFade){ ghost.remove(); resolve(); return; }
-          ghost.style.transition = 'opacity '+fadeDur+'ms linear';
-          ghost.style.opacity = '0';
-          setTimeout(()=>{ ghost.remove(); resolve(); }, fadeDur + 20);
-          return;
-        }
+        if (i >= stages.length){ ghost.remove(); resolve(); return; }
         const s = stages[i];
         const stageDur = Math.max(1, Math.round(dur * s.frac));
-        ghost.style.transition = 'transform '+stageDur+'ms '+s.ease;
+        let transition = 'transform '+stageDur+'ms '+s.ease;
+        if (s.fadeTo != null) transition += ', opacity '+stageDur+'ms '+s.ease;
+        ghost.style.transition = transition;
         ghost.style.transform = s.t;
+        if (s.fadeTo != null) ghost.style.opacity = String(s.fadeTo);
         setTimeout(()=>run(i+1), stageDur);
       };
       run(0);
@@ -3911,16 +4070,18 @@ async function dealCardFlight(el, card, opts){
   }
 }
 /* Sweeps a card's element back toward the deck's exact top-card spot — a
-   tug, then an accelerating magnetic pull along a slight arc — staying
-   fully visible for the whole trip, and only fading once it has actually
-   arrived. Purely decorative: the real element is removed by
-   clearAllCardDOM() shortly after via the existing flow. */
+   tug, then an accelerating magnetic pull, spinning as it goes — fading
+   out during its final approach (see flyGhost's return stages) so it's
+   gone by the moment it visually reaches the deck, rather than sitting
+   fully visible at the destination first. Purely decorative: the real
+   element is removed by clearAllCardDOM() shortly after via the existing
+   flow. */
 function collectCardFlight(el){
   const deck = $('dealer-deck');
   const deckTop = deck && deck.lastElementChild;
   if (!el || motionOff() || !deckTop) return Promise.resolve();
   el.style.opacity = '0';
-  return DealFX.flyGhost(el, deckTop, { thenFade:true, duration:DEAL_TIMING.collectMs, style:'return' });
+  return DealFX.flyGhost(el, deckTop, { duration:DEAL_TIMING.collectMs, style:'return' });
 }
 
 /* Log-scaled chip pile: readable whether a stack is 40 chips or 40,000. */
@@ -3941,8 +4102,8 @@ function syncChipStack(container, count){
 }
 
 /* Scattered round-token pile for the pot — the bet-pile equivalent was removed:
-   it read as noise, not chips. The seat-tag's colour/size tiers now carry
-   the "how big is this bet" signal on their own. */
+   it read as noise, not chips. Each player's own action-slot (see render())
+   carries the "what did they just do" signal instead. */
 const POT_DENOMS = ['', 'd-ivory', 'd-crimson', 'd-slate'];
 
 /* Total chips shown in the pot — log-scaled so a 200 pot and a 20,000 pot are
@@ -4060,8 +4221,6 @@ function clearAllCardDOM(){
   if (potStacks){ potStacks.innerHTML = ''; potStacks.dataset.sig = ''; }
   Object.values(seatEls).forEach(e=>{
     e.cardsContainer.innerHTML = '';
-    if (e.tagEl){ e.tagEl.dataset.val=''; e.tagEl.classList.add('hidden'); }
-    if (e.investedRow) e.investedRow.classList.add('hidden');
     e.root.classList.remove('winner');
     e.bubble.classList.remove('show');
   });
@@ -4116,30 +4275,30 @@ function initSeats(){
       : p.name.split(' ').filter(w=>w!=='The').map(w=>w[0]).slice(0,2).join('');
     if (p.isHuman){
       // the human seat carries only the cards + action bubble; everything
-      // else (tower, jackpot, hearts, plates) lives in the static HUD frame.
-      // Hidden stubs keep every generic seatEls hook resolvable.
+      // else (tower, jackpot, hearts, plates, action-slot) lives in the
+      // static HUD frame. Hidden stubs keep every generic seatEls hook
+      // resolvable.
       root.innerHTML =
         '<div class="avatar-wrap hidden"><div class="turn-ring"></div><div class="avatar">'+esc(initials)+'</div></div>' +
         '<span class="seat-chips hidden"></span>' +
         '<div class="chip-stack hidden" aria-hidden="true"></div>' +
         '<div class="seat-cards"></div>' +
-        '<div class="seat-tag hidden"></div>' +
         '<div class="action-bubble"></div>';
     } else {
-      // one bordered box per opponent: hearts, face, name, chips, live bet
-      // and hole cards all live inside the same frame — nothing floats loose
+      // one bordered box per opponent: name, hearts, face, chips, fixed
+      // action-slot and protruding hole cards all live inside the same
+      // frame — nothing floats loose outside it.
       root.innerHTML =
         '<div class="seat-card">' +
+          '<span class="seat-name">'+esc(p.name)+'</span>' +
           '<div class="hearts hidden" aria-hidden="true"></div>' +
           '<div class="avatar-wrap">' +
             '<div class="turn-ring"></div>' +
             '<div class="avatar">'+esc(initials)+'</div>' +
-            '<div class="dealer-btn hidden" title="Dealer">D</div>' +
             '<div class="pos-btn hidden"></div>' +
           '</div>' +
-          '<div class="seat-name">'+esc(p.name)+'</div>' +
-          '<div class="stack-row"><div class="chip-stack hidden" aria-hidden="true"></div><span class="seat-chips tabular">'+p.chips.toLocaleString()+'</span></div>' +
-          '<div class="seat-tag hidden"></div>' +
+          '<span class="seat-chips tabular">'+p.chips.toLocaleString()+'</span>' +
+          '<div class="action-slot act-empty">–</div>' +
           '<div class="seat-cards"></div>' +
         '</div>' +
         '<div class="action-bubble"></div>';
@@ -4155,25 +4314,20 @@ function initSeats(){
     }
     seatEls[p.id] = {
       root, avatar,
-      dealerBadge: root.querySelector('.dealer-btn'),
       chips: root.querySelector('.seat-chips'),
       posEl: root.querySelector('.pos-btn'),
       chipStack: root.querySelector('.chip-stack'),
       hearts: root.querySelector('.hearts'),
       cardsContainer: root.querySelector('.seat-cards'),
-      tagEl: root.querySelector('.seat-tag'),
-      investedRow: root.querySelector('.invested-row'),
-      investedVal: root.querySelector('.invested-val'),
+      actionSlot: root.querySelector('.action-slot'),
       bubble: root.querySelector('.action-bubble')
     };
     if (p.isHuman){
       // repoint the human's hooks at the static HUD frame elements
       const e = seatEls[p.id];
       e.hearts = $('hud-hearts');
-      e.dealerBadge = $('hud-dealer');
       e.posEl = $('hud-pos');
-      e.investedRow = $('hud-bet');
-      e.investedVal = $('hud-bet').querySelector('.invested-val');
+      e.actionSlot = $('hud-action');
       const nameEl = $('hud-name');
       if (nameEl) nameEl.textContent = (p.name||'').split(' ')[0];
       if (e.hearts) e.hearts.dataset.n = '';
@@ -4183,6 +4337,7 @@ function initSeats(){
 }
 
 function flashAction(playerId, label){
+  if (!bubblesAllowed('action')) return;
   const e = seatEls[playerId];
   if (!e || !label) return;
   e.bubble.textContent = label;
@@ -4281,23 +4436,14 @@ function render(){
 
   syncCardRow($('board'), g.board, g.board.map(()=>false), false);
 
-  // live "price to play" readout — visible without any tap, per the pot plate
-  const betChip = $('bet-chip');
-  if (betChip){
-    const showBet = g.currentBet > 0 && !['showdown','foldwin'].includes(g.phase) && !g.over;
-    if (showBet){
-      $('bet-val').textContent = g.currentBet.toLocaleString();
-      betChip.classList.remove('hidden');
-    } else betChip.classList.add('hidden');
-  }
-
   g.players.forEach((p, idx)=>{
     const e = seatEls[p.id];
     if (!e) return;
     e.root.classList.toggle('folded', !!p.folded);
     e.root.classList.toggle('out', (!p.inHand || p.eliminated) && g.handNumber>0 && !p.folded);
     e.root.classList.toggle('active', idx===g.currentIndex && !['showdown','foldwin'].includes(g.phase) && !g.over);
-    e.dealerBadge.classList.toggle('hidden', idx!==g.dealerIndex);
+    // No visual Dealer marker (removed) — g.dealerIndex itself still drives
+    // assignBlinds()/computePositions() below and elsewhere, unchanged.
     e.root.classList.toggle('dead', !!p.eliminated && !!g.livesEnabled);
     if (e.hearts){
       if (g.livesEnabled && !p.eliminated){
@@ -4316,6 +4462,13 @@ function render(){
       } else e.hearts.classList.add('hidden');
     }
     e.chips.textContent = p.chips.toLocaleString();
+    // Discrete size steps keyed to digit count (not shrink-to-fit) keep a
+    // 5-7 digit stack contained and legible without ever escaping the
+    // seat-card — see .seat-chips.chip-sz2/.chip-sz3.
+    const chipDigits = String(Math.max(0, p.chips|0)).length;
+    e.chips.classList.remove('chip-sz2', 'chip-sz3');
+    if (chipDigits >= 7) e.chips.classList.add('chip-sz3');
+    else if (chipDigits >= 5) e.chips.classList.add('chip-sz2');
     if (p.isHuman){
       syncPotStacks($('hud-tower'), towerLayout(p.chips));
       updateJackpot(p.chips);
@@ -4331,35 +4484,15 @@ function render(){
     const mine = p.isHuman;
     syncCardRow(e.cardsContainer, p.hand, mine ? p.hand.map(()=>false) : p.hand.map(()=>!p._reveal), !mine);
 
-    // one tag shows either the live bet or a status — never both, that was the clutter
-    if (p.betThisRound > 0 && !p.folded){
-      const v = String(p.betThisRound);
-      const bbRatio = p.betThisRound / Math.max(1, g.bigBlind);
-      const tier = p.allIn ? 'huge' : bbRatio>=25 ? 'huge' : bbRatio>=10 ? 'big' : bbRatio>=3 ? 'medium' : 'small';
-      e.tagEl.textContent = v;
-      e.tagEl.className = 'seat-tag tag-bet bet-' + tier;
-      if (e.tagEl.dataset.val !== v){
-        e.tagEl.classList.remove('pop'); void e.tagEl.offsetWidth; e.tagEl.classList.add('pop');
-        e.tagEl.dataset.val = v;
-      }
-      e.tagEl.classList.remove('hidden');
-    } else {
-      let st = '', cls = 'seat-tag tag-status';
-      if (p.eliminated) st = 'Out';
-      else if (p.folded) st = 'Folded';
-      else if (p.allIn){ st = 'All-In'; cls += ' allin'; }
-      e.tagEl.dataset.val = '';
-      if (st){ e.tagEl.textContent = st; e.tagEl.className = cls; e.tagEl.classList.remove('hidden'); }
-      else e.tagEl.classList.add('hidden');
-    }
-
-    if (p.isHuman && e.investedRow){
-      if (p.totalBetHand > 0){
-        e.investedVal.textContent = p.totalBetHand.toLocaleString();
-        e.investedRow.classList.remove('hidden');
-      } else {
-        e.investedRow.classList.add('hidden');
-      }
+    // Fixed action-display slot — always rendered, same footprint whether
+    // a player just checked or just shoved. Replaces the old floating
+    // .seat-bet chip and .seat-tag All-In pill. betThisRound itself is
+    // untouched and still drives call/raise math elsewhere; this only
+    // changes how the *label* is presented.
+    if (e.actionSlot){
+      const sa = p.streetAction;
+      e.actionSlot.className = 'action-slot ' + (sa ? 'act-' + sa.type : 'act-empty');
+      e.actionSlot.textContent = sa ? sa.label : '–';
     }
   });
 
@@ -4377,10 +4510,21 @@ function syncSliderFill(){
 function updateActionControls(){
   const g = game;
   const banner = $('banner');
+  const row = $('actions-row');
   if (!pendingHumanPlayer){
     banner.innerHTML = bannerOverride !== null ? bannerOverride : describeCurrentTurn();
+    // Persistent-but-inert: the row stays in its fixed position through AI
+    // turns rather than disappearing (row visibility itself is only ever
+    // toggled with 'hidden' between hands, in finishHand/concludeGame).
+    // Labels reset to neutral defaults so a dimmed row never shows a stale
+    // call/raise amount left over from the player's last turn.
+    if (row) row.classList.add('disabled');
+    const cc0 = $('btn-checkcall');
+    cc0.textContent = 'Check'; cc0.className = 'btn-check';
+    $('btn-raise').textContent = 'Raise';
     return;
   }
+  if (row) row.classList.remove('disabled');
   const p = pendingHumanPlayer;
   const toCall = g.currentBet - p.betThisRound;
   banner.innerHTML = toCall>0
@@ -4422,7 +4566,7 @@ function describeCurrentTurn(){
   const g = game;
   if (g.over || ['showdown','foldwin'].includes(g.phase)) return '';
   const p = g.players[g.currentIndex];
-  return p ? 'Waiting for ' + esc(p.name) + '…' : '';
+  return p ? esc(p.name) + ' is thinking…' : '';
 }
 
 function renderLog(){
@@ -4434,48 +4578,47 @@ function renderLog(){
   logDirty = false;
 }
 
+/* Compact, table-driven result: title + winner/hand + pot amount(s),
+   nothing that would need to grow into a big card. The board and the
+   win-card/dim-card glow (set by highlightWinningCards() just before this
+   is called) stay visible underneath — this is meant to read alongside
+   the table, not replace it. Per-winner split-share breakdowns and the
+   side-pot explanation paragraph are intentionally left out: the former
+   isn't essential at a glance, the latter already lives in the optional
+   Hand Review panel (buildReview()'s "Side pots" lesson covers it). */
 function showShowdownCard(potResults, wasShowdown, foldWin){
   hideResultCard();
   const el = document.createElement('div');
-  el.className='result-card'; el.id='result-card';
+  el.className = 'result-card sd-compact'; el.id = 'result-card';
 
   const title = foldWin ? 'Everyone else folded' : (wasShowdown ? 'Showdown' : 'Hand complete');
   let html = '<div class="rc-title">' + esc(title) + '</div>';
 
-  potResults.forEach(r=>{
-    if (r.split && r.winnerShares && r.winnerShares.length > 1){
-      html += '<div class="pot-group">' +
-        '<div class="pot-group-head">' +
-          '<span class="pl-tag">' + esc(r.label) + '</span>' +
-          '<span class="split-badge">Split</span>' +
-          '<span class="pl-amt tabular">' + r.amount.toLocaleString() + '</span>' +
-        '</div>';
-      r.winnerShares.forEach(s=>{
-        const mine = s.id === 'you';
-        html += '<div class="split-sub' + (mine?' mine':'') + '">' +
-          '<span class="pl-body"><b>' + esc(s.name) + '</b>' + (r.hand ? ' — ' + esc(r.hand) : '') + '</span>' +
-          '<span class="pl-amt tabular">' + s.amount.toLocaleString() + '</span>' +
-        '</div>';
-      });
-      html += '</div>';
-      return;
-    }
-    const mine = r.winnerIds.indexOf('you') !== -1;
-    const who = r.winners.join(' & ');
-    const solo = r.winnerIds.length === 1;
-    const verb = (mine && solo) ? 'win' : 'wins';
-    html += '<div class="pot-line' + (mine?' mine':'') + '">' +
-      '<span class="pl-tag">' + esc(r.label) + '</span>' +
-      '<span class="pl-body"><b>' + esc(who) + '</b> ' + verb +
-        (r.hand ? ' with ' + esc(r.hand) : '') + '</span>' +
-      '<span class="pl-amt tabular">' + r.amount.toLocaleString() + '</span>' +
-    '</div>';
-  });
+  if (potResults.length){
+    // Same winner(s) across every pot — the common case — collapses into
+    // one "winner — hand" line plus a single combined pot summary
+    // ("Main Pot 30 · Side Pot 20"), like a dealer's one announcement,
+    // rather than repeating the same name/hand once per pot.
+    const sameWinnerKey = r=>r.winnerIds.slice().sort().join(',');
+    const firstKey = sameWinnerKey(potResults[0]);
+    const sameThroughout = potResults.length > 1 && potResults.every(r=>sameWinnerKey(r)===firstKey);
 
-  if (potResults.length > 1){
-    html += '<div class="rc-explain">There is more than one pot because someone was all-in for less than ' +
-            'the others bet. A player can only win the chips they actually matched, so the extra betting ' +
-            'forms a side pot contested by the remaining players.</div>';
+    if (sameThroughout){
+      const r0 = potResults[0];
+      const mine = r0.winnerIds.indexOf('you') !== -1;
+      html += '<div class="sd-line' + (mine?' mine':'') + '"><b>' + esc(r0.winners.join(' & ')) + '</b>' +
+        (r0.hand ? ' — ' + esc(r0.hand) : '') + '</div>';
+      html += '<div class="sd-pots">' +
+        potResults.map(r=>esc(r.label) + ' ' + r.amount.toLocaleString()).join(' · ') +
+        '</div>';
+    } else {
+      potResults.forEach(r=>{
+        const mine = r.winnerIds.indexOf('you') !== -1;
+        html += '<div class="sd-line' + (mine?' mine':'') + '"><b>' + esc(r.winners.join(' & ')) + '</b>' +
+          (r.hand ? ' — ' + esc(r.hand) : '') +
+          '<span class="sd-amt">' + esc(r.label) + ' ' + r.amount.toLocaleString() + '</span></div>';
+      });
+    }
   }
 
   el.innerHTML = html;
