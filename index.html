@@ -492,25 +492,36 @@ button{ font-family:inherit; }
 @keyframes flipIn{ from{ transform:scaleX(.05); } to{ transform:scaleX(1); } }
 @keyframes muckOut{ to{ opacity:0; transform:translateY(-24px) scale(.7); } }
 
-/* ---- dealer deck: a small persistent stack of backs sitting in a tight,
-   card-shaped recess cut into the felt itself, tucked in a bottom corner
-   away from the opponent arc, board and pot — the physical source every
-   dealt card visually flies from and every collected card visibly returns
-   to. A precision-cut tray (tight corner radius matching the deck's own
-   cards, dark interior, inset shadows for depth, a faint lip highlight
-   where the felt meets the cut edge) — no outer border and no external
-   drop-shadow, so it reads as a recess in the table, not a panel sitting
-   on top of it. */
+/* ---- dealer station: label + deck as one compact unit recessed into the
+   felt, tucked in a bottom corner away from the opponent arc, board and
+   pot — the physical source every dealt card visually flies from and
+   every collected card visibly returns to. Both pieces are positioned
+   from a single anchor and stacked with a small fixed gap (rather than
+   two independently-tuned percentages) specifically so they read as one
+   object instead of a label floating loose above the deck. The deck
+   itself is a precision-cut tray (tight corner radius matching its own
+   cards, dark interior, inset shadows for depth) — no outer border and
+   no external drop-shadow, so it reads as a recess in the table, not a
+   panel sitting on top of it. #dealer-deck keeps its id, its three
+   `.card` children and its own local geometry (just position:relative
+   now instead of position:absolute) — the deal/collect flight animation
+   only ever measures deck.lastElementChild's live getBoundingClientRect()
+   at flight time, so wrapping/resizing/repositioning the station here is
+   safe on its own; no JS changes needed. */
+.dealer-station{
+  position:absolute; left:15%; top:89%; transform:translate(-50%,-50%);
+  display:flex; flex-direction:column; align-items:center; gap:2px;
+  z-index:5; pointer-events:none;
+}
 .dealer-label{
-  position:absolute; left:13%; top:78%; transform:translate(-50%,-50%);
   font-family:var(--font-hdr); font-size:7px; font-weight:400; letter-spacing:.12em;
-  text-transform:uppercase; color:rgba(255,255,255,.32);
+  text-transform:uppercase; color:rgba(255,255,255,.4);
   text-shadow:1px 1px 0 rgba(0,0,0,.5); text-align:center;
-  pointer-events:none; z-index:5;
+  background:rgba(0,0,0,.42); border-radius:3px 3px 0 0; padding:2px 7px 3px;
 }
 .dealer-deck{
-  position:absolute; left:13%; top:87%; transform:translate(-50%,-50%);
-  width:46px; height:62px; z-index:5; pointer-events:none;
+  position:relative;
+  width:52px; height:70px; pointer-events:none;
   box-sizing:border-box; padding:3px;
   border-radius:6px;
   background:rgba(0,0,0,.42);
@@ -519,12 +530,10 @@ button{ font-family:inherit; }
     inset 0 1px 0 rgba(255,255,255,.10),
     inset 0 -1px 0 rgba(0,0,0,.3);
 }
-/* ~20% larger than the shared .card.small it's based on — a dedicated
-   size override here only, so opponents' actual hole cards (which also
-   use .card.small) are untouched. The deal/collect animation always
-   measures deck.lastElementChild's real getBoundingClientRect() at
-   flight time, so resizing the static stack here is safe on its own. */
-.dealer-deck .card{ position:absolute; margin:0; width:36px; height:52px; }
+/* ~13% larger than before, card proportions preserved (width:height
+   ratio unchanged). A dedicated size override here only, so opponents'
+   actual hole cards (which also use .card.small) are untouched. */
+.dealer-deck .card{ position:absolute; margin:0; width:41px; height:59px; }
 .dealer-deck .card:nth-child(1){ top:7px; left:7px; }
 .dealer-deck .card:nth-child(2){ top:6px; left:6px; }
 .dealer-deck .card:nth-child(3){ top:5px; left:5px; }
@@ -696,16 +705,25 @@ button{ font-family:inherit; }
 .seat-card .seat-cards{ margin-top:2px; margin-bottom:-19px; position:relative; z-index:3; filter:drop-shadow(0 3px 0 rgba(0,0,0,.35)); }
 
 /* Folded: the player is out of the hand, not their board off the table.
-   Chrome (border/background) stays visible; portrait and hole cards dim
-   more strongly as the "removed from play" cue; identity stays legible;
-   the action-slot (reading FOLD) stays at full contrast — it's the one
-   thing on a folded board that must still read clearly. */
-.seat.folded .seat-card{ filter:saturate(.55); }
-.seat.folded .avatar{ opacity:.5; filter:grayscale(.7); }
-.seat.folded .seat-cards{ opacity:.45; }
-.seat.folded .hearts{ opacity:.6; }
-.seat.folded .seat-name{ opacity:.85; }
-.seat.folded .seat-chips{ opacity:.85; }
+   The board's own chrome (border/background/shadow) is left almost
+   untouched on purpose, so the physical silhouette — "a player is still
+   sitting here" — survives at full strength. Everything that signals
+   *involvement in this pot* (portrait, hearts, hole cards) recedes hard
+   instead, targeted per element rather than one blanket opacity on
+   .seat, so with two players left the still-live boards dominate and the
+   folded ones read at a glance as out of the hand. Name/stack stay
+   legible but noticeably lower contrast. The action-slot (reading FOLD)
+   stays at full contrast — it's the one thing on a folded board that
+   must still read clearly, since it's what explains the rest of the
+   dimming. Hierarchy: active > folded > dead/out (.seat.out's blanket
+   opacity:.2 and .seat.dead below are both untouched, and both still
+   read as more receded than any of this). */
+.seat.folded .seat-card{ filter:saturate(.8); }
+.seat.folded .avatar{ opacity:.3; filter:grayscale(.9) brightness(.75); }
+.seat.folded .seat-cards{ opacity:.2; filter:grayscale(.6); }
+.seat.folded .hearts{ opacity:.25; filter:grayscale(.8); }
+.seat.folded .seat-name{ opacity:.55; }
+.seat.folded .seat-chips{ opacity:.55; }
 .seat.folded .action-slot{ opacity:1; }
 
 /* Eliminated (.dead, lives mode) stays a stronger treatment than folded,
@@ -763,7 +781,19 @@ button{ font-family:inherit; }
 }
 #your-seat-dock{
   flex-shrink:0; display:flex; justify-content:center; padding:2px 8px 6px; position:relative; z-index:8;
+  transition:transform var(--dur) steps(5,end);
 }
+/* Raise mode: the dashboard + betting tray act as one foreground assembly
+   sitting over the stable table. This lifts the dashboard by a transform
+   only (never a layout/height change), so .table-main's flex chain and
+   therefore the felt are completely unaffected — see openRaisePanel(),
+   which measures #raise-panel's real rendered height and writes it into
+   --raise-lift right before this class is added, so the lift always
+   clears the tray by construction regardless of tray content/viewport.
+   #action-area (z-index:30) already paints above #your-seat-dock
+   (z-index:8) in all states, so the tray sliding out from underneath
+   reads correctly as being "in front of" the lifted board. */
+#your-seat-dock.raise-open{ transform:translateY(calc(-1 * var(--raise-lift, 0px))); }
 .seat.you .card{ width:54px; height:76px; border-radius:4px; }
 .seat.you .card .r{ font-size:19px; }
 .seat.you .card .s{ font-size:13px; }
@@ -783,6 +813,10 @@ button{ font-family:inherit; }
   padding:9px 8px 8px;
   box-shadow:0 4px 0 rgba(0,0,0,.55), inset 0 2px 0 rgba(255,255,255,.08), inset 0 -2px 0 rgba(0,0,0,.3);
 }
+/* Colour-only swap on an already-2px border in both states — this was
+   never the source of the felt-resize-on-turn bug (see the
+   .hand-strength comment for the actual cause); kept dimensionless
+   on purpose so it stays that way. */
 #hud-frame:has(.seat.you.active){ border-color:var(--accent); }
 .hud-recess{
   border:2px solid var(--px-ink); border-radius:2px;
@@ -1012,9 +1046,17 @@ button{ font-family:inherit; }
   padding:9px 4px; min-height:38px; display:flex; align-items:center; justify-content:center;
 }
 .banner b{ color:var(--accent-bright); }
+/* Fixed footprint, always in flow (never display:none) — this row lives
+   inside #hud-frame, which is a natural-height sibling of the flex:1
+   .felt-wrap inside .table-main. Toggling it with display:none (the old
+   .hidden approach) changed #hud-frame's height every time it became the
+   human's turn, which stole/returned space from .felt-wrap and shrank the
+   felt itself. min-height reserves the same one-line box whether or not
+   there's text in it, exactly like the .action-slot/#hud-action pattern
+   above. */
 .hand-strength{
   text-align:center; font-size:12px; color:var(--ink-faint); margin:-4px 0 8px;
-  letter-spacing:.02em;
+  letter-spacing:.02em; min-height:14px;
 }
 .hand-strength b{ color:var(--ink-dim); font-weight:700; }
 
@@ -1062,21 +1104,36 @@ button{ font-family:inherit; }
    only flex:1 slack-absorber in the table-screen's layout chain — see the
    felt-stabilization notes on .table-main/.felt-wrap). */
 .actions-dock{ position:relative; }
-/* A small physical compartment that opens above the action buttons rather
-   than a reserved block of empty space — folds/slides up from just above
-   the buttons with a short, slightly-overshooting settle, like a hinged
-   tray lid. Completely out of flow (position:absolute, anchored to
-   .actions-dock's own box via bottom:100%), so it can never affect
-   #action-area's layout height. */
+/* A physical compartment that opens from directly beneath the player's
+   dashboard — a betting drawer sliding out, not a panel dropping down
+   over it. openRaisePanel()/closeRaisePanel() (see the JS) drive this in
+   lockstep with #your-seat-dock.raise-open, which lifts the dashboard by
+   this panel's own measured height at the same moment. Completely out of
+   flow (position:absolute, anchored to .actions-dock's own box via
+   bottom:100%), so it can never affect #action-area's layout height —
+   and #action-area's z-index:30 already paints above #your-seat-dock's
+   z-index:8, so the tray reads as sliding out in front of the lifted
+   board. A short stepped reveal (no overshoot) so it reads as one crisp
+   mechanical motion together with the dashboard lift, not a bounce. */
 .raise-panel{
   position:absolute; left:0; right:0; bottom:100%; margin-bottom:8px;
   background:var(--panel); border:2px solid var(--px-ink); border-radius:var(--radius);
   padding:11px 13px 9px; box-shadow:0 4px 0 rgba(0,0,0,.45);
   transform-origin:50% 100%;
   transform:scaleY(.08) translateY(10px); opacity:0; pointer-events:none;
-  transition:transform 260ms cubic-bezier(.34,1.56,.64,1), opacity 180ms ease-out;
+  transition:transform var(--dur) steps(5,end), opacity var(--dur-fast) steps(3,end);
 }
 .raise-panel.show{ transform:scaleY(1) translateY(0); opacity:1; pointer-events:auto; }
+.raise-head{ display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:9px; }
+.raise-title{
+  font-family:var(--font-hdr); font-size:10.5px; letter-spacing:.15em; text-transform:uppercase;
+  color:var(--accent); font-weight:400;
+}
+/* Compact but obvious — reuses .icon-btn's touch target/border/shadow
+   language so it reads as a real physical control, not an afterthought.
+   Cancel closes the tray and restores the dashboard with no poker action
+   of any kind; see closeRaisePanel()/the btn-raise handler in JS. */
+.raise-cancel{ width:32px; height:32px; font-size:13px; }
 .raise-row{ display:flex; align-items:center; gap:12px; margin-bottom:9px; }
 .raise-amt{
   font-size:15px; font-weight:400; color:var(--accent-bright); min-width:88px; text-align:center;
@@ -1524,11 +1581,13 @@ button, [role="button"], input[type="button"], input[type="submit"] {
             <div class="pot-chip"><span class="pot-word">Pot</span><span class="v tabular" id="pot-val">0</span></div>
           </div>
           <div class="board" id="board" role="group" aria-label="Community cards"></div>
-          <div class="dealer-label" aria-hidden="true">Dealer</div>
-          <div class="dealer-deck" id="dealer-deck" aria-hidden="true">
-            <div class="card back small"></div>
-            <div class="card back small"></div>
-            <div class="card back small"></div>
+          <div class="dealer-station" aria-hidden="true">
+            <div class="dealer-label">Dealer</div>
+            <div class="dealer-deck" id="dealer-deck">
+              <div class="card back small"></div>
+              <div class="card back small"></div>
+              <div class="card back small"></div>
+            </div>
           </div>
         </div>
       </div>
@@ -1537,7 +1596,7 @@ button, [role="button"], input[type="button"], input[type="submit"] {
           <div id="hud-left"><div id="hud-tower" aria-hidden="true"></div></div>
           <div id="hud-mid">
             <div class="banner" id="banner" role="status" aria-live="polite"></div>
-            <div class="hand-strength hidden" id="hand-strength"></div>
+            <div class="hand-strength" id="hand-strength"></div>
             <div id="jackpot" aria-hidden="true"><span class="jp-cell jp-sym">$</span></div>
           </div>
           <div id="hud-right">
@@ -1587,6 +1646,10 @@ button, [role="button"], input[type="button"], input[type="submit"] {
 
       <div class="actions-dock">
         <div class="raise-panel" id="raise-panel">
+          <div class="raise-head">
+            <span class="raise-title">Raise</span>
+            <button class="icon-btn raise-cancel" id="raise-cancel" aria-label="Cancel raise, keep my turn">✕</button>
+          </div>
           <div class="raise-row">
             <div class="slider-wrap">
               <input type="range" id="raise-slider" min="0" max="100" value="0" aria-label="Raise amount">
@@ -3452,7 +3515,7 @@ function recordPot(amount){
 function finishHand(outcome){
   const g = game;
   $('actions-row').classList.add('hidden');
-  $('raise-panel').classList.remove('show');
+  closeRaisePanel();
   clearHumanReadouts();
   showReview(outcome);
 
@@ -3636,7 +3699,7 @@ function humanAct(action, amount){
   pendingHumanPlayer = null;
   coachToken++;                 // cancel any in-flight coach calculation
   clearHumanReadouts();
-  $('raise-panel').classList.remove('show');
+  closeRaisePanel();
   // Row stays visible — the render() below calls updateActionControls(),
   // which dims it automatically now that pendingHumanPlayer is null.
   applyAction(p, {action, amount});
@@ -3661,18 +3724,19 @@ function hideCoach(){
 function clearHumanReadouts(){
   hideCoach();
   const s = $('hand-strength');
-  if (s){ s.classList.add('hidden'); s.innerHTML = ''; }
+  if (s) s.innerHTML = '';
 }
 
 async function updateCoach(){
   const strengthEl = $('hand-strength');
   const p = pendingHumanPlayer;
-  if (!p){ strengthEl.classList.add('hidden'); return; }
+  if (!p){ strengthEl.innerHTML = ''; return; }
 
-  if (settings.strength){
-    strengthEl.innerHTML = 'You have <b>' + esc(describePlayerHand(p.hand, game.board)) + '</b>';
-    strengthEl.classList.remove('hidden');
-  } else strengthEl.classList.add('hidden');
+  // Blanked via empty content, not display:none — see the .hand-strength
+  // CSS comment: this row must never leave the layout flow.
+  strengthEl.innerHTML = settings.strength
+    ? 'You have <b>' + esc(describePlayerHand(p.hand, game.board)) + '</b>'
+    : '';
 
   if (!settings.coach){ hideCoach(); return; }
 
@@ -4499,6 +4563,29 @@ function render(){
   updateActionControls();
 }
 
+/* Opens the raise tray AND lifts the dashboard by the tray's own measured
+   height in the same call, so the two always move together and the lift
+   can never fall short of what's needed to clear the tray (see the
+   #your-seat-dock.raise-open and .raise-panel CSS comments). offsetHeight
+   is read here rather than cached because it reflects the panel's real
+   box regardless of the 'show' transform (transforms never affect
+   layout size), so this is safe to call before the reveal animation
+   runs. */
+function openRaisePanel(){
+  const panel = $('raise-panel');
+  const dock = $('your-seat-dock');
+  panel.classList.add('show');
+  dock.style.setProperty('--raise-lift', (panel.offsetHeight + 6) + 'px');
+  dock.classList.add('raise-open');
+}
+/* Safe to call even when the tray is already closed (finishHand/humanAct
+   call it unconditionally as a reset). Performs no poker action and
+   touches no game state — purely a UI close. */
+function closeRaisePanel(){
+  $('raise-panel').classList.remove('show');
+  $('your-seat-dock').classList.remove('raise-open');
+}
+
 function syncSliderFill(){
   const s = $('raise-slider');
   if (!s) return;
@@ -5080,13 +5167,19 @@ function wireUI(){
   $('btn-checkcall').onclick = ()=>{ if (pendingHumanPlayer) humanAct('call'); };
   $('btn-raise').onclick = ()=>{
     if (!pendingHumanPlayer) return;
-    const panel = $('raise-panel');
-    if (!panel.classList.contains('show')){
-      panel.classList.add('show');
+    if (!$('raise-panel').classList.contains('show')){
+      openRaisePanel();
       updateActionControls();
       return;
     }
     humanAct('raise', parseInt($('raise-slider').value,10));
+  };
+  $('raise-cancel').onclick = ()=>{
+    // Genuine cancel: closes the tray and restores the dashboard, no
+    // poker action, stack/pot/bets/game state entirely untouched. The
+    // player's turn simply continues as if Raise had never been tapped.
+    closeRaisePanel();
+    updateActionControls();
   };
   $('raise-slider').oninput = e=>{
     $('raise-amt').textContent = parseInt(e.target.value,10).toLocaleString();
