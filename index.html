@@ -1035,7 +1035,6 @@ button{ font-family:inherit; }
   color:var(--accent-bright); text-shadow:1px 1px 0 var(--px-ink); margin-bottom:10px;
 }
 .wp-amount.mine{ color:var(--good); }
-.wp-award{ min-height:44px; padding:11px; font-size:12px; }
 .result-card .rc-title{
   font-size:10.5px; text-transform:uppercase; letter-spacing:.15em;
   color:var(--accent); font-weight:800; margin-bottom:8px; text-align:center;
@@ -1299,6 +1298,31 @@ input[type=range]::-moz-range-thumb{
 }
 .btn-raise:active{ box-shadow:0 2px 0 #2C5E3A, 0 2px 0 2px var(--px-ink), inset 0 3px 0 rgba(255,255,255,.3); }
 .btn-disabled{ opacity:.32; pointer-events:none; }
+
+/* Showdown polish — the bottom action console flips between the normal
+   FOLD/CHECK/RAISE row and a single full-width AWARD POT control, like a
+   split-flap panel changing modes rather than a card doing a flashy 3D
+   flip. .console-face-actions is the only face in normal flow, so it sets
+   .console-flip's height — .console-face-award sits absolutely over that
+   same box and always matches its footprint exactly. */
+.action-console{ perspective:900px; }
+.console-flip{
+  position:relative; transform-style:preserve-3d;
+  transition:transform .2s steps(6,end);
+}
+.console-flip.flipped{ transform:rotateX(180deg); }
+.console-face{ backface-visibility:hidden; -webkit-backface-visibility:hidden; }
+.console-face-award{ position:absolute; inset:0; transform:rotateX(180deg); pointer-events:none; }
+.console-flip.flipped .console-face-award{ pointer-events:auto; }
+.console-flip.flipped .console-face-actions{ pointer-events:none; }
+.btn-award-console{
+  width:100%; height:100%; min-height:62px; padding:16px 4px; border-radius:6px;
+  border:3px solid var(--px-ink); cursor:pointer;
+  font-family:var(--font-hdr); font-size:13px; font-weight:400; text-transform:uppercase; letter-spacing:.04em;
+  background:var(--accent); color:var(--accent-ink);
+  box-shadow:0 6px 0 var(--px-ink), inset 0 3px 0 rgba(255,255,255,.4), inset 0 -3px 0 rgba(0,0,0,.16);
+}
+.btn-award-console:active{ transform:translateY(4px); box-shadow:0 2px 0 var(--px-ink), inset 0 3px 0 rgba(255,255,255,.4); }
 .wide-btn{
   width:100%; min-height:56px; padding:15px; border:2px solid var(--px-ink); border-radius:var(--radius);
   font-family:var(--font-hdr); font-size:13px; font-weight:400; cursor:pointer; text-transform:uppercase; letter-spacing:.04em;
@@ -1755,10 +1779,19 @@ button, [role="button"], input[type="button"], input[type="submit"] {
           </div>
         </div>
 
-        <div class="actions-row disabled" id="actions-row">
-          <button class="btn-fold" id="btn-fold">Fold</button>
-          <button class="btn-check" id="btn-checkcall">Check</button>
-          <button class="btn-raise" id="btn-raise">Raise</button>
+        <div class="action-console" id="action-console">
+          <div class="console-flip" id="console-flip">
+            <div class="console-face console-face-actions">
+              <div class="actions-row disabled" id="actions-row">
+                <button class="btn-fold" id="btn-fold">Fold</button>
+                <button class="btn-check" id="btn-checkcall">Check</button>
+                <button class="btn-raise" id="btn-raise">Raise</button>
+              </div>
+            </div>
+            <div class="console-face console-face-award">
+              <button class="btn-award-console" id="btn-award-pot-console">Award Pot</button>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -5541,7 +5574,10 @@ function isGroupedHandCat(cat){ return cat===1 || cat===2 || cat===3 || cat===6 
    (already correct for mood/persona/settings.faces/avatarColour — no new
    face-rendering logic needed), and the five duplicated cards are built
    from the same cardInner()/cardClass() helpers real table cards use, just
-   at .small size — UI copies only, the real table cards never move. */
+   at .small size — UI copies only, the real table cards never move.
+   Pass 2 showdown polish — informational only now; AWARD POT lives in the
+   bottom action console (see showAwardConsole/waitForAwardPot) instead of
+   inside this panel. */
 function showWinnerPanel(pot, isMultiPot, potIndex){
   hideResultCard();
   const el = document.createElement('div');
@@ -5574,20 +5610,35 @@ function showWinnerPanel(pot, isMultiPot, potIndex){
   }
 
   html += '<div class="wp-amount' + (mine?' mine':'') + '">+' + pot.amount.toLocaleString() + '</div>';
-  html += '<button class="wide-btn wp-award" id="btn-award-pot">' +
-    esc(isMultiPot ? (potIndex===0 ? 'Award Main Pot' : 'Award Side Pot') : 'Award Pot') + '</button>';
 
   el.innerHTML = html;
   $('felt').appendChild(el);
 }
 function hideResultCard(){ const el=$('result-card'); if (el) el.remove(); }
-/* Resolves once the player presses the winner panel's own AWARD POT
-   button — the literal "wait as long as the player wants" mechanism. */
+/* Flips the bottom action console from the normal FOLD/CHECK/RAISE row
+   over to the single AWARD POT face (or back). The underlying
+   actions-row stays exactly as updateActionControls() left it — dimmed
+   and non-interactive — the whole time; flipping never re-enables it. */
+function showAwardConsole(label){
+  const btn = $('btn-award-pot-console');
+  if (btn) btn.textContent = label;
+  const flip = $('console-flip');
+  if (flip) flip.classList.add('flipped');
+}
+function hideAwardConsole(){
+  const flip = $('console-flip');
+  if (flip) flip.classList.remove('flipped');
+}
+/* Resolves once the player presses the bottom console's own AWARD POT
+   face — the literal "wait as long as the player wants" mechanism. The
+   press itself flips the console back to the normal row before
+   resolving; the existing hideResultCard()+220ms beat right after this
+   resolves gives that flip time to finish before payout continues. */
 function waitForAwardPot(){
   return new Promise(resolve=>{
-    const btn = $('btn-award-pot');
+    const btn = $('btn-award-pot-console');
     if (!btn){ resolve(); return; }
-    btn.onclick = ()=>resolve();
+    btn.onclick = ()=>{ hideAwardConsole(); resolve(); };
   });
 }
 /* How long to let one pot's payout "breathe" before continuing — reuses
@@ -5626,6 +5677,7 @@ async function runShowdownAwardSequence(potResults, contenders){
 
     if (pot.cards) highlightWinningCards(pot, contenders);
     showWinnerPanel(pot, potResults.length>1, i);
+    showAwardConsole(potResults.length>1 ? (i===0 ? 'Award Main Pot' : 'Award Side Pot') : 'Award Pot');
     await waitForAwardPot();
     hideResultCard();
     // keep the winning-five highlight visible a tiny beat longer before
