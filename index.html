@@ -458,8 +458,21 @@ button{ font-family:inherit; }
   position:absolute; left:0; bottom:0;
   display:flex; flex-direction:column-reverse; align-items:center;
 }
+/* In a column-reverse flex stack, an item's OWN margin-top controls the
+   gap toward the NEXT (later-DOM, visually-above) sibling — not toward
+   the previous one. Zeroing it on :first-child (as this used to) removes
+   the overlap between the base chip and chip #2, leaving the base
+   sitting flush/uncovered with a hard seam above it — exactly what read
+   as a detached single chip sitting in front of the real (correctly
+   overlapping) stack. The fix is simply to let the base chip keep the
+   same negative margin-top as every other chip, so chip #2 overlaps it
+   too; the drop-shadow (a contact shadow for wherever the tower touches
+   the felt) stays on :first-child, since that's still physically the
+   base regardless of how much of its own face ends up covered. The top
+   chip needs no special rule at all — being last in DOM order, nothing
+   is ever painted over it. */
 .chip-clump .chip-disc{ width:25px; height:25px; margin-top:-16px; }
-.chip-clump .chip-disc:first-child{ margin-top:0; filter:drop-shadow(0 3px 0 rgba(0,0,0,.4)); }
+.chip-clump .chip-disc:first-child{ filter:drop-shadow(0 3px 0 rgba(0,0,0,.4)); }
 .chip-token{
   position:absolute; border-radius:50%;
   background:var(--accent);
@@ -902,8 +915,12 @@ button{ font-family:inherit; }
    #hud-left's measured inner area exactly — chip towers inside it are
    absolutely positioned at fixed slots against that real size. */
 #hud-tower{ position:relative; min-height:24px; }
+/* No :first-child override here — see the .chip-clump .chip-disc:first-child
+   comment (same file, pot rules) for why the base chip needs to KEEP the
+   standard overlap margin rather than having it zeroed; the shadow it
+   still gets comes from that shared .chip-clump selector, which already
+   matches bank towers too (.chip-clump is the same class for both). */
 #hud-tower .chip-disc{ width:21px; height:21px; margin-top:-13px; }
-#hud-tower .chip-disc:first-child{ margin-top:0; }
 #hud-mid{
   display:flex; flex-direction:column; align-items:center; gap:6px; min-width:0;
 }
@@ -3431,7 +3448,7 @@ function applyAction(player, decision){
       // the full inventory total IS all of it.
       const container = $('hud-tower'), pile = bankPile();
       const betAmount = chipsBefore - player.chips;
-      const queue = buildTransferQueue(container, pile, betAmount);
+      const queue = buildTransferQueue(container, pile, betAmount, $('pot-stacks'), potPile());
       transferPile(queue.length, container, $('pot-area'),
         ()=>{ const v=queue.shift(); if (v==null) return ''; pileRemoveDenom(container, pile, v); return CHIP_CLS[v]; },
         (cls)=>{ const v=CHIP_VAL[cls]; if (v) pileAddDenom($('pot-stacks'), potPile(), v); },
@@ -3484,7 +3501,8 @@ async function handleFoldWin(){
   render();
   await sleep(motionOff() ? 150 : 500);
   winner.chips += amt; g.pot = 0;
-  payoutTo(winner, buildTransferQueue($('pot-stacks'), potPile(), amt));
+  payoutTo(winner, buildTransferQueue($('pot-stacks'), potPile(), amt,
+    winner.isHuman ? $('hud-tower') : null, winner.isHuman ? bankPile() : null));
   if (winner.isHuman){ stats.won++; Sound.win(); haptic(30); }
   if (!winner.isHuman){
     setMood(winner.id, 'happy');
@@ -3603,7 +3621,9 @@ async function handleShowdown(){
     const potContainer = $('pot-stacks'), pPile = potPile();
     const plans = planShowdownPayouts(potContainer, pPile, ids.map(id=>{
       const w = g.players.find(p=>p.id===id);
-      return { winner:w, award: w._award||0 };
+      return { winner:w, award: w._award||0,
+        destContainer: w.isHuman ? $('hud-tower') : null,
+        destPile: w.isHuman ? bankPile() : null };
     }));
     plans.forEach(({winner,queue})=>payoutTo(winner, queue));
   }
@@ -4352,37 +4372,78 @@ function targetChipCount(amount){
    being populated from scratch — table load, rebuy, save/resume — never
    for an ordinary transfer (see planQueueFromInventory for that; bets
    and payouts always move REAL chips already resting in a pile, never
-   invent new ones). Aims for targetChipCount(amount) chips by biasing a
-   weighted random pick toward whichever denomination sits closest to
-   the average value that count implies, tapering naturally toward
-   bigger chips for bigger piles — "many chips" without exploding into
-   hundreds for a rich bankroll. Always sums to EXACTLY the largest
-   multiple of 5 not exceeding `amount` (the loop only ever picks a
-   denomination that still fits the remainder, so it can't overshoot,
-   and cream=5 always fits down to the last unit, so it can't stall). */
+   invent new ones).
+   ROOT-CAUSE FIX (traced from the recurring singleton-tower bug): the
+   previous version picked ONE chip at a time via an independent weighted
+   random draw. That's an unconstrained random walk over 4 denominations
+   — nothing stopped it from picking some denomination exactly once
+   across the whole run (most commonly at the TAIL: once only a small
+   remainder like 5 was left and no cream had been picked yet, the loop
+   was FORCED to place a lone cream chip to zero out the remainder, since
+   cream is the only denomination guaranteed to fit any remainder). That
+   lone chip was a perfectly real, correctly-valued chip — the allocator
+   downstream (pileAddDenom) had nothing to fix, because there was
+   genuinely only one of that denomination in the whole composition. No
+   amount of retuning the SLOT-ASSIGNMENT layer (which is where every
+   earlier attempt looked) could have caught this, because the problem
+   was already baked into the composition before any slot was ever
+   chosen.
+   The fix: (1) pre-seed 2 cream chips whenever the total affords them,
+   so cream — the only denomination small enough to be forced into
+   existence by an awkward remainder — always already has an established
+   stack to top up; (2) never introduce a denomination that ISN'T already
+   present unless there's room to place a genuine run of it (v*2<=
+   remaining) — a fresh denomination is only ever born with 2+ chips.
+   Combined, no denomination can ever end up at count 1 in the returned
+   list (except the true amount===5 case, one real chip, handled
+   explicitly up front). Still sums to EXACTLY the largest multiple of 5
+   not exceeding `amount`, and still aims for targetChipCount(amount)
+   chips via the same avgValue-proximity weighting as before. */
 function decomposeAmount(amount, seed){
   const total = Math.floor(Math.max(0,amount)/5)*5;
   if (total<=0) return [];
+  if (total===5) return [5]; // genuinely one chip — the one allowed singleton
   const targetN = Math.max(1, targetChipCount(amount));
   const avgValue = Math.max(5, total/targetN);
   const weights = CHIP_DENOMS.map(d=>1/(0.35 + Math.abs(d.v-avgValue)/avgValue));
   let s = (seed>>>0) || 1;
   const rnd = ()=>{ s = (s*1103515245 + 12345) >>> 0; return (s >>> 8) / 0x1000000; };
-  const chips = [];
+  const counts = {5:0,10:0,25:0,100:0};
   let remaining = total;
+  // Pre-seed a safe cream float — see the comment above for why cream
+  // specifically is the one denomination that needs this guarantee.
+  counts[5] += 2; remaining -= 10;
   while (remaining>0){
-    const opts = CHIP_DENOMS.map((d,i)=>({v:d.v,w:weights[i]})).filter(o=>o.v<=remaining);
-    let pick;
-    if (!opts.length) pick = 5;
-    else {
-      const totalW = opts.reduce((s,o)=>s+o.w,0);
-      let r = rnd()*totalW;
-      pick = opts[opts.length-1].v;
-      for (const o of opts){ if (r<o.w){ pick=o.v; break; } r-=o.w; }
+    const opts = CHIP_DENOMS.filter(d=>{
+      if (d.v>remaining) return false;
+      if (counts[d.v]>0) return true;     // topping up an existing stack is always safe
+      return d.v*2<=remaining;            // otherwise only start a real run (2+)
+    });
+    const pool = opts.length ? opts : CHIP_DENOMS.filter(d=>d.v<=remaining); // defensive; see comment below
+    const idxOf = d => CHIP_DENOMS.indexOf(d);
+    const totalW = pool.reduce((s,d)=>s+weights[idxOf(d)],0);
+    let r = rnd()*totalW, picked = pool[pool.length-1];
+    for (const d of pool){ const w=weights[idxOf(d)]; if (r<w){ picked=d; break; } r-=w; }
+    const v = picked.v;
+    if (counts[v]>0){
+      counts[v] += 1; remaining -= v; // topping up — always safe
+    } else {
+      // Fresh denomination: `opts` only let this through if v*2<=
+      // remaining, so a run of at least 2 is guaranteed to fit.
+      const maxRun = Math.floor(remaining/v);
+      const run = Math.min(maxRun, 2 + Math.floor(rnd()*2)); // 2 or 3
+      counts[v] += run; remaining -= run*v;
     }
-    chips.push(pick);
-    remaining -= pick;
+    // `pool` is never actually empty here in practice — cream is
+    // pre-seeded above, so counts[5]>0 is true from the very first
+    // iteration, and 5<=remaining always holds while remaining>0 (every
+    // remaining value is a multiple of 5) — meaning cream alone always
+    // keeps `opts` non-empty. The fallback exists only as a defensive
+    // backstop against a future change to this logic, never exercised
+    // today.
   }
+  const chips = [];
+  for (const v of [5,10,25,100]) for (let k=0;k<counts[v];k++) chips.push(v);
   return chips;
 }
 /* Which denomination each slot in a `numSlots`-slot grid is permanently
@@ -4424,6 +4485,37 @@ function buildDenomPattern(numSlots){
    the bet" — never decorative, never inventing a denomination that
    isn't actually resting in the source pile. */
 
+/* Decomposes one chip of `value` (10/25/100) into smaller denominations
+   summing to the same value, WITHOUT ever introducing a fresh singleton
+   into `inv` — the shared piece of change-making logic used both when
+   breaking a chip to make a target representable and when breaking a
+   chip purely to eliminate a stranded singleton (see planQueueFromInventory).
+   Tries the standard largest-smaller-denomination-first split, but only
+   trusts it if every denomination it touches is either already present
+   in `inv` (safe to top up — by the invariant this pass establishes,
+   "already present" always means count>=2) or gets 2+ fresh pieces of
+   its own. If that split would leave anything at exactly 1 new piece
+   with nothing already there to join, falls back to an all-cream split
+   instead — value/5 chips, always 2 or more for any value>=10, so it's
+   unconditionally safe regardless of what else is in the pile. Pure
+   function of (value, inv); does not mutate `inv`. */
+function safeBreakdown(value, inv){
+  const denomsDesc = [25,10,5].filter(v=>v<value);
+  const plan = {};
+  let remaining = value;
+  for (const v of denomsDesc){
+    const take = Math.floor(remaining/v);
+    if (take>0){ plan[v]=take; remaining-=take*v; }
+  }
+  const safe = remaining===0 && Object.keys(plan).every(v=>plan[v]>=2 || (inv[Number(v)]||0)>0);
+  const pieces = [];
+  if (safe){
+    Object.keys(plan).forEach(v=>{ for (let k=0;k<plan[v];k++) pieces.push(Number(v)); });
+  } else {
+    for (let r=value; r>0; r-=5) pieces.push(5);
+  }
+  return pieces;
+}
 /* Bounded subset-sum: does SOME combination of the chips actually
    available in `inv` ({5:count,10:count,25:count,100:count}) sum to
    exactly `target`? If so, returns the combination that uses the MOST
@@ -4436,8 +4528,23 @@ function buildDenomPattern(numSlots){
    taking as many of each as possible while a feasibility check
    guarantees the remainder can still be finished by what's left — which
    is what maximises chip count without ever getting stuck needing a
-   denomination that isn't there. */
-function selectChipsFromInventory(inv, target){
+   denomination that isn't there.
+   ROOT-CAUSE FIX (2nd source of stranded singletons, alongside
+   decomposeAmount): maximising chip count alone can leave EXACTLY 1
+   chip of some denomination behind in the source pile (e.g. inv has 3
+   reds, the target only calls for 2 — the 3rd sits there alone), or send
+   EXACTLY 1 chip of a denomination into a destination pile (`destInv`,
+   optional) that currently has none of it — either way a fresh
+   singleton, and neither is fixable by retuning slot allocation, because
+   the composition itself is what's wrong. After the greedy reconstruction
+   picks a `take` for each denomination, this now checks both cases and,
+   if a small ±1/±2 adjustment to `take` still satisfies the DP's
+   reachability (i.e. is still an exact, valid selection), prefers that
+   adjusted value instead. Some inventories genuinely can't avoid a
+   residual singleton this way (e.g. a source holding exactly 3 of a
+   denomination with nothing else to move) — planQueueFromInventory's
+   own residual check (below) is the backstop for exactly that case. */
+function selectChipsFromInventory(inv, target, destInv){
   if (target<=0) return {5:0,10:0,25:0,100:0};
   const denoms=[5,10,25,100], n=denoms.length;
   const reach = new Array(n+1);
@@ -4461,6 +4568,14 @@ function selectChipsFromInventory(inv, target){
     const nextReach=reach[i+1];
     let take = Math.min(avail, Math.floor(remaining/v));
     while (take>0 && !nextReach[remaining-take*v]) take--;
+    const strandsSource = t => (avail-t)===1;
+    const strandsDest = t => t===1 && destInv && !(destInv[v]>0);
+    if (strandsSource(take) || strandsDest(take)){
+      const alt = [take+1, take-1, take+2, take-2, 0].find(t=>
+        t>=0 && t<=avail && remaining-t*v>=0 && nextReach[remaining-t*v] &&
+        !strandsSource(t) && !strandsDest(t));
+      if (alt!=null) take = alt;
+    }
     use[v]=take;
     remaining -= take*v;
   }
@@ -4472,17 +4587,27 @@ function selectChipsFromInventory(inv, target){
    same showdown split can each reserve their share from one shared,
    correctly-shrinking pool without racing each other (the real DOM
    removal for a queue only happens later, per chip, as each one's
-   flight launches — see buildTransferQueue/planShowdownPayouts). If no
-   exact combination exists in the current inventory (the pile's colour
-   mix doesn't happen to add up), makes change: breaks the biggest
-   available chip bigger than 5 into smaller denominations (mutating
-   `inv` and recording the break in `breaksOut`) and retries, smallest
-   number of breaks first. Returns the queue; `inv` and `breaksOut` are
-   both mutated as a side effect (by design — see the callers). */
-function planQueueFromInventory(inv, amount, breaksOut){
+   flight launches — see buildTransferQueue/planShowdownPayouts).
+   `destInv` (optional) is the destination pile's current inventory, used
+   only to steer selectChipsFromInventory away from landing a fresh
+   singleton there. If no exact combination exists in the current
+   inventory (the pile's colour mix doesn't happen to add up), makes
+   change via safeBreakdown: breaks the smallest chip bigger than 5 into
+   smaller denominations (mutating `inv` and recording the break in
+   `breaksOut`) and retries, smallest number of breaks first.
+   Backstop for the case selectChipsFromInventory's own ±1/±2 search
+   can't resolve (a source that genuinely can't reach the target without
+   leaving exactly one of some denomination behind — e.g. holding
+   exactly 3 of it with nothing else to move): once `use` is final, any
+   denomination left resting at exactly 1 chip in the source gets broken
+   too — the same "two $5 chips instead of an isolated $10" principle,
+   just applied to the chip that's staying rather than one being taken.
+   Returns the queue; `inv` and `breaksOut` are both mutated as a side
+   effect (by design — see the callers). */
+function planQueueFromInventory(inv, amount, breaksOut, destInv){
   const target = Math.floor(Math.max(0,amount)/5)*5;
   if (target<=0) return [];
-  let use = selectChipsFromInventory(inv, target);
+  let use = selectChipsFromInventory(inv, target, destInv);
   if (!use){
     // Try breaking the SMALLEST big-enough chip first — turning a 10
     // into 2×5 is a smaller local disruption than turning a 100 into
@@ -4494,18 +4619,26 @@ function planQueueFromInventory(inv, amount, breaksOut){
         guard++;
         inv[v]--;
         breaksOut.push(v);
-        let remaining=v;
-        while (remaining>0){
-          const sv=[25,10,5].find(x=>x<v && x<=remaining) || 5;
-          inv[sv]=(inv[sv]||0)+1;
-          remaining-=sv;
-        }
-        use = selectChipsFromInventory(inv, target);
+        safeBreakdown(v, inv).forEach(sv=>{ inv[sv]=(inv[sv]||0)+1; });
+        use = selectChipsFromInventory(inv, target, destInv);
         if (use) break outer;
       }
     }
   }
   if (!use) return [];
+  // Residual backstop: would any denomination be left resting at
+  // exactly 1 chip in the source after `use` leaves? Break it now (the
+  // shared `inv` is updated immediately so a later winner in the same
+  // showdown split, if any, can't also try to claim this same chip —
+  // see planShowdownPayouts).
+  for (const v of [100,25,10]){
+    const residual = (inv[v]||0) - (use[v]||0);
+    if (residual===1){
+      breaksOut.push(v);
+      inv[v] -= 1;
+      safeBreakdown(v, inv).forEach(sv=>{ inv[sv]=(inv[sv]||0)+1; });
+    }
+  }
   [5,10,25,100].forEach(v=>{ inv[v]-=use[v]; });
   // Round-robin the launch order across denominations rather than all-
   // of-one-then-all-of-next, so the flight reads as a mixed stream of
@@ -4896,21 +5029,20 @@ function pileRemoveDenom(container, pile, value){
   container._chipValue = Math.max(0, (container._chipValue||0) - value);
   return true;
 }
-/* Physically breaks one existing chip of `value` (10/20/50) into smaller
-   denominations of the same total value, added back immediately (no
-   animation — see the "change" comment on planQueueFromInventory: this
-   is the one place a "casino change" moment happens, and it's
-   deliberately instant and minimal, not a spectacle). Prefers the
-   largest smaller denomination first (100→25+25+25+25, not 100→twenty
-   5s) — "smallest local adjustment", not maximum fragmentation. */
+/* Physically breaks one existing chip of `value` (10/25/100) into
+   smaller denominations of the same total value, added back immediately
+   (no animation — see the "change" comment on planQueueFromInventory:
+   this is the one place a "casino change" moment happens, and it's
+   deliberately instant and minimal, not a spectacle). The actual split
+   comes from safeBreakdown (reading THIS pile's live inventory), which
+   is what guarantees the pieces added back never strand a fresh
+   singleton — breaking a 25 with no red or cream already present, for
+   instance, produces five safe 5s rather than the naive 10+10+5 (which
+   would leave a lone cream if none existed before). */
 function breakOneChip(container, pile, value){
   if (!pileRemoveDenom(container, pile, value)) return;
-  let remaining = value;
-  while (remaining>0){
-    const sv = [25,10,5].find(x=>x<value && x<=remaining) || 5;
-    pileAddDenom(container, pile, sv);
-    remaining -= sv;
-  }
+  const inv = inventoryOf(container, pile);
+  safeBreakdown(value, inv).forEach(v=>pileAddDenom(container, pile, v));
 }
 function applyBreaks(container, pile, breaks){
   breaks.forEach(v=>breakOneChip(container, pile, v));
@@ -4924,28 +5056,37 @@ function applyBreaks(container, pile, breaks){
    reserve each winner's share against a shared snapshot instead of
    re-reading the live DOM (still-in-flight chips from an earlier
    winner's queue haven't been removed from the real pile yet, so a
-   second live read could double-claim them). */
-function buildTransferQueue(container, pile, amount){
+   second live read could double-claim them).
+   `destContainer`/`destPile` (optional) identify where this queue is
+   headed — passed through to selectChipsFromInventory (via
+   planQueueFromInventory) purely so it can avoid landing a lone chip of
+   a denomination the destination doesn't already have resting. Omit for
+   transfers with no real destination pile to protect (e.g. an opponent's
+   invisible "bank"). */
+function buildTransferQueue(container, pile, amount, destContainer, destPile){
   const inv = inventoryOf(container, pile);
+  const destInv = (destContainer && destPile) ? inventoryOf(destContainer, destPile) : null;
   const breaks = [];
-  const queue = planQueueFromInventory(inv, amount, breaks);
+  const queue = planQueueFromInventory(inv, amount, breaks, destInv);
   applyBreaks(container, pile, breaks);
   return queue;
 }
 /* Multi-winner version for a showdown split: `winnerAwards` is
-   [{winner,award}, ...]. Plans every winner's queue against ONE shared
-   inventory snapshot (planQueueFromInventory mutates it as it goes, so
-   winner 2 never sees chips winner 1 already claimed), collects every
-   break needed across all of them, then applies those breaks to the
-   real pile once at the end — before any winner's transferPile() call
-   actually starts removing chips. Returns [{winner,queue}, ...] in the
-   same order. */
+   [{winner,award,destContainer,destPile}, ...] (dest fields optional,
+   same meaning as buildTransferQueue's). Plans every winner's queue
+   against ONE shared inventory snapshot (planQueueFromInventory mutates
+   it as it goes, so winner 2 never sees chips winner 1 already claimed),
+   collects every break needed across all of them, then applies those
+   breaks to the real pile once at the end — before any winner's
+   transferPile() call actually starts removing chips. Returns
+   [{winner,queue}, ...] in the same order. */
 function planShowdownPayouts(container, pile, winnerAwards){
   const inv = inventoryOf(container, pile);
   const allBreaks = [];
-  const plans = winnerAwards.map(({winner,award})=>{
+  const plans = winnerAwards.map(({winner,award,destContainer,destPile})=>{
+    const destInv = (destContainer && destPile) ? inventoryOf(destContainer, destPile) : null;
     const breaks = [];
-    const queue = planQueueFromInventory(inv, award, breaks);
+    const queue = planQueueFromInventory(inv, award, breaks, destInv);
     allBreaks.push(...breaks);
     return { winner, queue };
   });
