@@ -458,7 +458,7 @@ button{ font-family:inherit; }
   position:absolute; left:0; bottom:0;
   display:flex; flex-direction:column-reverse; align-items:center;
 }
-.chip-clump .chip-disc{ width:28px; height:28px; margin-top:-18px; }
+.chip-clump .chip-disc{ width:25px; height:25px; margin-top:-16px; }
 .chip-clump .chip-disc:first-child{ margin-top:0; filter:drop-shadow(0 3px 0 rgba(0,0,0,.4)); }
 .chip-token{
   position:absolute; border-radius:50%;
@@ -902,7 +902,7 @@ button{ font-family:inherit; }
    #hud-left's measured inner area exactly — chip towers inside it are
    absolutely positioned at fixed slots against that real size. */
 #hud-tower{ position:relative; min-height:24px; }
-#hud-tower .chip-disc{ width:24px; height:24px; margin-top:-15px; }
+#hud-tower .chip-disc{ width:21px; height:21px; margin-top:-13px; }
 #hud-tower .chip-disc:first-child{ margin-top:0; }
 #hud-mid{
   display:flex; flex-direction:column; align-items:center; gap:6px; min-width:0;
@@ -974,11 +974,11 @@ button{ font-family:inherit; }
 #hud-mid .hand-strength{ width:100%; }
 
 .fly-chip{
-  position:fixed; width:30px; height:30px; border-radius:50%; z-index:60; pointer-events:none;
+  position:fixed; width:27px; height:27px; border-radius:50%; z-index:60; pointer-events:none;
   background-repeat:no-repeat; background-size:100% 100%;
   image-rendering:pixelated; image-rendering:-moz-crisp-edges; image-rendering:crisp-edges;
   filter:drop-shadow(0 3px 0 rgba(0,0,0,.4));
-  margin-left:-15px; margin-top:-15px; will-change:transform,opacity;
+  margin-left:-13.5px; margin-top:-13.5px; will-change:transform,opacity;
 }
 
 .result-card{
@@ -4668,8 +4668,8 @@ function measureInner(el, fallbackW, fallbackH){
   const h = el.clientHeight - parseFloat(cs.paddingTop||0)   - parseFloat(cs.paddingBottom||0);
   return { w: w>0 ? w : fallbackW, h: h>0 ? h : fallbackH };
 }
-const BANK_CHIP_DIAM = 24, BANK_OVERLAP_STEP = 9;   // matches #hud-tower .chip-disc (24px, margin-top:-15px)
-const POT_CHIP_DIAM  = 28, POT_OVERLAP_STEP  = 10;  // matches .chip-clump .chip-disc (28px, margin-top:-18px)
+const BANK_CHIP_DIAM = 21, BANK_OVERLAP_STEP = 8;   // matches #hud-tower .chip-disc (21px, margin-top:-13px)
+const POT_CHIP_DIAM  = 25, POT_OVERLAP_STEP  = 9;   // matches .chip-clump .chip-disc (25px, margin-top:-16px)
 /* Genuine maximum stack height (in chips) for a tower rendered inside an
    `innerHeight`-px-tall area: how many `chipHeight`-tall, `overlapStep`-
    px-apart chips actually fit between a `topInset`/`bottomInset` safety
@@ -4697,27 +4697,35 @@ function measurePotHeadroom(fallback){
   if (!boardRect.height || !potRect.height) return fallback;
   const gap = potRect.top - boardRect.bottom;
   // Reserve room for the pot-chip label (and the gap above the mound)
-  // that also lives inside .pot-area above .pot-stacks, plus a visible
-  // safety margin before the boundary itself.
-  return gap>0 ? Math.max(50, Math.min(fallback, gap - 46)) : fallback;
+  // that also lives inside .pot-area above .pot-stacks, plus a generous
+  // safety margin before the boundary itself — Juice Pass 2C.2
+  // deliberately prefers a visibly lower mound over using every
+  // technically-available pixel.
+  return gap>0 ? Math.max(45, Math.min(fallback, gap - 56)) : fallback;
 }
 
 /* Built lazily (needs the real DOM) and cached — the bank compartment is
    a fixed-width HUD grid column, so one real measurement is as good as a
    thousand; recomputing on every render would risk the pile visibly
    reshuffling, which is explicitly not wanted.
-   Juice Pass 2C.1: maxPerSlot is now a genuine geometry calculation
+   Juice Pass 2C.1: maxPerSlot is a genuine geometry calculation
    (maxStackHeightFor), hard-capped at 14 — "the recessed bank box is a
-   hard physical container" — rather than the previous pass's flat 45,
-   which produced towers that visibly left the compartment. A 3rd depth
-   row (extraRow) gives the bank 4 physical slots (2 front + 1 back + 1
-   further back) instead of 3, purely so all four denominations —
-   including the 100-value green chip this pass leans on harder to keep
-   large bankrolls from needing dozens of chips — have a real slot to
-   live in; it reuses the back row's proven-safe x positions (only y/z
-   differ), and the height budget fed into maxStackHeightFor is reduced
-   by this row's own extra y-offset up front, so even its higher-
-   starting chips can't out-grow the box. */
+   hard physical container". A 3rd depth row (extraRow) gives the bank 4
+   physical slots (2 front + 1 back + 1 further back) instead of 3,
+   purely so all four denominations — including the 100-value green chip
+   this pass leans on harder to keep large bankrolls from needing dozens
+   of chips — have a real slot to live in; it reuses the back row's
+   proven-safe x positions (only y/z differ), and the height budget fed
+   into maxStackHeightFor is reduced by this row's own extra y-offset up
+   front, so even its higher-starting chips can't out-grow the box.
+   Juice Pass 2C.2: the rendered chip shrank ~11% (BANK_CHIP_DIAM
+   24→21px), which — at the still-mandatory exact 3px gap — is enough
+   for a 3rd FRONT column to legitimately fit the same measured width
+   that only fit 2 before (see buildPileGrid's own floor(usableW/
+   spacing) — this isn't a hardcoded redesign, maxCols:3 is just the new
+   ceiling and the real math still decides what actually fits). More
+   columns to spread real breathing room across, not a deeper single
+   tower. */
 let _bankPile = null;
 function bankPile(){
   if (_bankPile) return _bankPile;
@@ -4725,7 +4733,7 @@ function bankPile(){
   const backDy = 6;
   const effectiveH = area.h - backDy*2; // worst case: the extra row's own headroom
   const maxPerSlot = Math.min(14, maxStackHeightFor(effectiveH, BANK_CHIP_DIAM, BANK_OVERLAP_STEP, 4, 4));
-  const grid = buildPileGrid(area.w, area.h, BANK_CHIP_DIAM, BANK_OVERLAP_STEP, { maxCols:2, backDy, gap:3, inset:3, maxPerSlot, extraRow:true });
+  const grid = buildPileGrid(area.w, area.h, BANK_CHIP_DIAM, BANK_OVERLAP_STEP, { maxCols:3, backDy, gap:3, inset:3, maxPerSlot, extraRow:true });
   const { caps, order } = buildSlotCaps(grid.slots.length, grid.maxPerSlot);
   const pattern = buildDenomPattern(order.length);
   const slotDenom = {}; order.forEach((idx,i)=>{ slotDenom[idx] = pattern[i]; });
@@ -4741,28 +4749,42 @@ function bankPile(){
 }
 /* The pot floats on open felt with no hard edge to measure horizontally,
    so its WIDTH still gets a fixed compact-but-roomy budget — "a broad
-   mound", and per this pass, significantly more horizontal/depth slots
-   than the bank, since the felt actually has the room (maxCols:7 here
-   vs the bank's 2). Its HEIGHT, though, now comes from a genuine
-   measurement (measurePotHeadroom): the pot must never grow tall enough
-   to visually reach the community cards, so maxPerSlot is derived from
-   the real live gap between the board and the pot plate, additionally
-   hard-capped at 20 (taller than the bank's 14 — the felt has more
-   headroom than the tiny HUD box — but nowhere near the previous pass's
-   uncapped-feeling 40). Uses buildMoundCaps (not buildSlotCaps) so the
-   pile still reads as a wonky pyramid — tall centre, tapering to shorter
-   edge/back stacks — but with many more columns to spread into, a big
-   pot now grows outward long before any single tower could threaten the
-   height cap; see buildMoundCaps's comment for the centre-out fill-order
-   rationale that makes that happen naturally. */
+   mound", and per this pass, SIGNIFICANTLY more horizontal/depth slots
+   than the bank (maxCols:9 here vs the bank's 3 — up from 7 last pass,
+   both because the felt has the room and because the smaller chip
+   (POT_CHIP_DIAM 28→25px) fits more columns in the same budget). Its
+   HEIGHT comes from a genuine measurement (measurePotHeadroom): the pot
+   must never grow tall enough to visually reach the community cards, so
+   maxPerSlot is derived from the real live gap between the board and
+   the pot plate, hard-capped at 16 (down from 20 — Juice Pass 2C.2
+   deliberately lowers the PRACTICAL ceiling, not just the hard one).
+   Uses buildMoundCaps (not buildSlotCaps) so the pile still reads as a
+   wonky pyramid — tall centre, tapering to shorter edge/back stacks —
+   but with explicit baseFront/edgeFront overrides well below
+   maxPerSlot's own ceiling (see the call below) so even the CENTRE
+   column only grows to a moderate height before pileAddDenom's normal
+   "extend shortest, else start the next slot" logic is forced to open a
+   neighbouring stack — width before height — with the hard ceiling only
+   ever used as an absolute last resort once every slot for a
+   denomination is already at its own (lower) preferred cap. */
 let _potPile = null;
 function potPile(){
   if (_potPile) return _potPile;
-  const potW = 220;
-  const potH = measurePotHeadroom(120);
-  const maxPerSlot = Math.min(20, maxStackHeightFor(potH, POT_CHIP_DIAM, POT_OVERLAP_STEP, 4, 6));
-  const grid = buildPileGrid(potW, potH, POT_CHIP_DIAM, POT_OVERLAP_STEP, { maxCols:7, backDy:8, gap:3, maxPerSlot });
-  const { caps, order } = buildMoundCaps(grid, { seed:9137 });
+  const potW = 260;
+  const potH = measurePotHeadroom(100);
+  const maxPerSlot = Math.min(16, maxStackHeightFor(potH, POT_CHIP_DIAM, POT_OVERLAP_STEP, 4, 6));
+  const grid = buildPileGrid(potW, potH, POT_CHIP_DIAM, POT_OVERLAP_STEP, { maxCols:9, backDy:8, gap:3, maxPerSlot });
+  // Preferred (not hard) centre/edge heights — deliberately well under
+  // maxPerSlot so the mound spreads wide long before any tower nears the
+  // real ceiling. The edge:centre RATIO is also closer to 1 than before
+  // (edge is ~73% of centre height, was 45%) — a gentler falloff so the
+  // difference between neighbouring stacks is gradual, avoiding one or
+  // two dominant "skyscraper" columns against everything else short.
+  const { caps, order } = buildMoundCaps(grid, {
+    seed:9137,
+    baseFront: Math.max(3, Math.round(maxPerSlot*0.55)),
+    edgeFront: Math.max(2, Math.round(maxPerSlot*0.40))
+  });
   const pattern = buildDenomPattern(order.length);
   const slotDenom = {}; order.forEach((idx,i)=>{ slotDenom[idx] = pattern[i]; });
   const stacks = $('pot-stacks');
