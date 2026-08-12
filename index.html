@@ -1003,29 +1003,39 @@ button{ font-family:inherit; }
   box-shadow:0 6px 0 rgba(0,0,0,.55); opacity:0; animation:resultIn .24s steps(4,end) forwards;
 }
 @keyframes resultIn{ from{ opacity:0; transform:translate(-50%,-10px); } to{ opacity:1; transform:translate(-50%,0); } }
-/* Compact showdown result only (the separate game-over summary keeps the
-   base .result-card treatment above, untouched). Sits where .pot-area
-   was — g.pot resets to 0 and hides that plate right before this shows,
-   so there's no overlap — instead of floating over the top of the felt,
-   so the board and the win-card/dim-card highlighting stay fully
-   visible underneath it. The full side-pot explanation now lives in the
-   existing optional Hand Review panel (buildReview() already has a
-   "Side pots" lesson) instead of being duplicated here. */
-.result-card.sd-compact{
-  top:79%; transform:translate(-50%,-50%);
-  min-width:0; max-width:88%; padding:9px 16px; text-align:center;
-  animation:resultInCompact .24s steps(4,end) forwards;
+/* Pass 1 showdown revamp — the winner/result panel. Sits in the open felt
+   band between the opponent row and the board/pot (NOT the old .sd-compact
+   trick of borrowing .pot-area's slot — this pass deliberately shows the
+   panel WHILE the pot still visually holds its chips, since payout is now
+   deferred until AWARD POT is pressed) so the table, the board, and the
+   win-card/dim-card highlighting all stay visible around it rather than
+   being covered. Exact top% is a starting estimate — verify at 430×932
+   against the opponent row and board before shipping. */
+.result-card.winner-panel{
+  top:24%; max-height:58vh; overflow-y:auto; padding:10px 14px 12px;
 }
-@keyframes resultInCompact{ from{ opacity:0; transform:translate(-50%,-40%); } to{ opacity:1; transform:translate(-50%,-50%); } }
-.sd-line{ font-size:13px; color:var(--ink-dim); line-height:1.4; }
-.sd-line b{ color:var(--accent-bright); font-weight:800; }
-.sd-line.mine b{ color:var(--good); }
-.sd-line + .sd-line{ margin-top:4px; }
-.sd-pots{
-  margin-top:5px; font-family:var(--font-hdr); font-size:10px; font-weight:400;
-  color:var(--accent-bright); text-transform:uppercase; letter-spacing:.04em;
+.wp-title{
+  font-family:var(--font-hdr); font-size:13px; font-weight:400; text-transform:uppercase;
+  letter-spacing:.05em; text-align:center; color:var(--accent-bright);
+  text-shadow:1px 1px 0 var(--px-ink);
 }
-.sd-amt{ margin-left:6px; font-size:10.5px; color:var(--ink-faint); text-transform:uppercase; letter-spacing:.03em; }
+.wp-portrait{ display:flex; justify-content:center; margin:8px 0 6px; }
+/* Deliberately fixed/compact regardless of the table's own --avatar-w
+   scaling (which can run up to ~78px for a 3-opponent table) — the panel
+   stays a predictable height no matter how many opponents are seated. */
+.wp-portrait .avatar-wrap{ width:44px !important; height:44px !important; }
+.wp-hand{
+  text-align:center; font-size:13px; font-weight:800; color:var(--ink);
+  margin-bottom:8px;
+}
+.wp-cards{ display:flex; justify-content:center; gap:3px; margin-bottom:10px; }
+.wp-cards .card.wp-gap{ margin-left:7px; }
+.wp-amount{
+  text-align:center; font-family:var(--font-hdr); font-size:22px; font-weight:400;
+  color:var(--accent-bright); text-shadow:1px 1px 0 var(--px-ink); margin-bottom:10px;
+}
+.wp-amount.mine{ color:var(--good); }
+.wp-award{ min-height:44px; padding:11px; font-size:12px; }
 .result-card .rc-title{
   font-size:10.5px; text-transform:uppercase; letter-spacing:.15em;
   color:var(--accent); font-weight:800; margin-bottom:8px; text-align:center;
@@ -3477,26 +3487,26 @@ async function handleFoldWin(){
   recordPot(amt);
   setBanner('<b>' + esc(winner.name) + '</b> takes the pot…');
   render();
-  await sleep(motionOff() ? 150 : 500);
-  winner.chips += amt; g.pot = 0;
-  // Whole pot goes to the one winner — just move every visual chip
-  // currently resting in the pot pile.
-  payoutTo(winner, ($('pot-stacks')._chipCount||0));
+  await sleep(motionOff() ? 80 : 250);
   if (winner.isHuman){ stats.won++; Sound.win(); haptic(30); }
-  if (!winner.isHuman){
+  else {
     setMood(winner.id, 'happy');
     if (amt > 10*g.bigBlind) nudgeMood(winner, 'up', 0.5);
     maybeTableTalk(winner, 'win');
   }
   logMsg(winner.name + ' wins ' + amt + ' (everyone else folded)');
-  showShowdownCard([{
+
+  // No showdown occurred, so there's no evaluated hand/winning-five to show
+  // or highlight — hand/cat/cards stay null and runShowdownAwardSequence's
+  // per-pot panel skips those parts of the display accordingly. Money
+  // mutation and the visual payout both now happen inside that shared
+  // sequence, gated behind the player's own AWARD POT press.
+  const potResults = [{
     label:'Pot', amount:amt, winners:[winner.name], winnerIds:[winner.id],
-    hand:null, contested:1, split:false
-  }], false, true);
-  setBanner('<b>' + esc(winner.name) + '</b> wins ' + amt.toLocaleString());
-  render();
-  await sleep(300);
-  finishHand({ type:'foldwin', winner, amount:amt });
+    winnerShares:[{name:winner.name, id:winner.id, amount:amt}],
+    hand:null, cat:null, cards:null, contested:1, split:false
+  }];
+  await runShowdownAwardSequence(potResults, []);
 }
 
 async function handleShowdown(){
@@ -3505,22 +3515,25 @@ async function handleShowdown(){
   const pots = computePots(g.players);
   recordPot(pots.reduce((s,p)=>s+p.amount,0));
 
-  // evaluate everyone's final hand up front so the reveal order can build suspense
-  contenders.forEach(p=>{ p._handRes = evaluate7([...p.hand, ...g.board]); });
+  // evaluate everyone's final hand up front so the reveal order can build
+  // suspense — evaluate7WithCards (not the cardless evaluate7) so the exact
+  // 5-of-7 winning combo is available everywhere _handRes is, for every
+  // pot's highlighting/panel, not just recomputed ad hoc for the top pot.
+  contenders.forEach(p=>{ p._handRes = evaluate7WithCards([...p.hand, ...g.board]); });
 
   if (contenders.length>1){
     setBanner('Revealing hands…');
     render();
-    await sleep(motionOff() ? 100 : 350);
+    await sleep(motionOff() ? 60 : 200);
     const revealOrder = contenders.filter(p=>!p.isHuman)
-      .sort((a,b)=>compareHands(a._handRes, b._handRes)); // weakest first, winner lands last
+      .sort((a,b)=>compareHands(a._handRes.result, b._handRes.result)); // weakest first, winner lands last
     for (const p of revealOrder){
       p._reveal = true;
       Sound.deal();
       render();
-      await sleep(motionOff() ? 120 : 650);
+      await sleep(motionOff() ? 90 : 380);
     }
-    await sleep(motionOff() ? 80 : 250);
+    await sleep(motionOff() ? 60 : 150);
   }
 
   const potResults = [];
@@ -3530,16 +3543,16 @@ async function handleShowdown(){
     if (!eligible.length) return;
     let best=null, winners=[];
     for (const p of eligible){
-      const res = p._handRes || evaluate7([...p.hand, ...g.board]);
+      const res = p._handRes || evaluate7WithCards([...p.hand, ...g.board]);
       p._handRes = res;
-      if (!best || compareHands(res,best)>0){ best=res; winners=[p]; }
-      else if (compareHands(res,best)===0) winners.push(p);
+      if (!best || compareHands(res.result,best.result)>0){ best=res; winners=[p]; }
+      else if (compareHands(res.result,best.result)===0) winners.push(p);
     }
     const share = Math.floor(pot.amount / winners.length);
     const remainder = pot.amount - share*winners.length;
     const winnerShares = winners.map((w,k)=>{
       const amt = share + (k<remainder?1:0);
-      w._award = (w._award||0) + amt;
+      w._award = (w._award||0) + amt; // read by the mood-swing check below; actual chip mutation now happens per-pot in runShowdownAwardSequence
       winnerIds.add(w.id);
       return { name:w.name, id:w.id, amount:amt };
     });
@@ -3549,7 +3562,9 @@ async function handleShowdown(){
       winners: winners.map(w=>w.name),
       winnerIds: winners.map(w=>w.id),
       winnerShares,
-      hand: describeMade(best),
+      hand: describeMade(best.result),
+      cat: best.result.cat,
+      cards: best.cards,
       contested: eligible.length,
       split: winners.length > 1
     });
@@ -3568,7 +3583,7 @@ async function handleShowdown(){
       setMood(p.id, 'happy');
     } else {
       const lost = p.totalBetHand || 0;
-      const strong = p._handRes && p._handRes.cat >= 2;   // two pair or better, and it still lost
+      const strong = p._handRes && p._handRes.result.cat >= 2;   // two pair or better, and it still lost
       const stung = lost > 10*bbv || lost > (p.chips + lost)*0.3;
       if (stung) nudgeMood(p, strong ? 'steamed' : 'down', strong ? 0.8 : 0.6);
       setMood(p.id, (strong && stung) ? 'angry' : (Math.random()<0.5 ? 'sad' : 'angry'));
@@ -3576,37 +3591,8 @@ async function handleShowdown(){
     maybeTableTalk(p, won ? 'win' : 'lose');
   });
 
-  // glow the cards that actually made the best hand, dim everything else
-  if (potResults.length) highlightWinningCards(potResults[0], contenders);
-  await sleep(motionOff() ? 120 : 550);
-
-  const headline = potResults.length
-    ? potResults[0].winners.join(' & ') + (potResults[0].winners.length>1 ? ' split ' : ' win' + (potResults[0].winnerIds[0]==='you'&&potResults[0].winners.length===1?'':'s') + ' ') +
-      potResults[0].amount.toLocaleString() + ' with ' + potResults[0].hand
-    : 'Showdown';
-  setBanner(esc(headline));
-  render();
-  await sleep(motionOff() ? 250 : 700);
-
-  g.players.forEach(p=>{ if (p._award) p.chips += p._award; });
-  // Split pots: divide the pot pile's visual chips across winners by the
-  // same proportion as their money award (largest-remainder, so the
-  // counts always sum back to exactly the pile's starting count — no
-  // chip is invented or left behind).
-  {
-    const ids = Array.from(winnerIds);
-    const startPool = $('pot-stacks')._chipCount || 0;
-    const totalAward = ids.reduce((s,id)=>s+((g.players.find(p=>p.id===id)._award)||0), 0);
-    let remaining = startPool;
-    ids.forEach((id,i)=>{
-      const w = g.players.find(p=>p.id===id);
-      const n = (i===ids.length-1) ? remaining
-        : Math.min(remaining, Math.round(startPool * (w._award||0) / Math.max(1,totalAward)));
-      remaining -= n;
-      payoutTo(w, n);
-    });
-  }
-  g.pot = 0;
+  // Hand-history log entries are pure record-keeping — write them now,
+  // rather than deferring them into the player-paced award loop below.
   potResults.forEach(r=>{
     if (r.split){
       logMsg(r.winnerShares.map(s=>s.name+' '+s.amount).join(' / ') + ' split ' + r.label.toLowerCase() + ' (' + r.amount.toLocaleString() + ') with ' + r.hand);
@@ -3616,23 +3602,32 @@ async function handleShowdown(){
   });
   if (winnerIds.has('you')){ stats.won++; stats.showdownsWon++; Sound.win(); haptic(30); }
   else if (contenders.length>1){ Sound.lose(); }
-  render();
-  showShowdownCard(potResults, contenders.length>1);
-  await sleep(300);
-  finishHand({ type:'showdown', potResults, contenders, winnerIds });
+
+  // Pass 1 showdown revamp: reveal → per-pot highlight → winner panel →
+  // player-controlled AWARD POT → existing payout animation, sequenced
+  // once per pot (main pot first, side pots after). See
+  // runShowdownAwardSequence — chip mutation, the visual payout, and the
+  // finishHand()/busted-state call all now live there instead of here.
+  await runShowdownAwardSequence(potResults, contenders);
 }
 
-/* Marks the cards that actually made the winning hand(s) of a pot with a gold
-   glow, and dims every card that didn't contribute — including the losers'. */
-function highlightWinningCards(topPot, contenders){
+/* Marks the cards that actually made the winning hand(s) of ONE pot with a
+   gold glow, and dims every card that didn't contribute — including the
+   losers'. Called once per pot (main pot, then each side pot in turn) by
+   runShowdownAwardSequence, so a side-pot winner who differs from the main
+   pot's winner gets their own correct highlight moment instead of always
+   being dimmed like a loser. Reuses each player's own p._handRes.cards
+   (already the exact best-5-of-7 combo, computed once up front in
+   handleShowdown) rather than re-deriving it here — one evaluation path,
+   not two. */
+function highlightWinningCards(pot, contenders){
   const g = game;
   const boardUsed = new Set();
   const holeUsedByPlayer = {};
-  topPot.winnerIds.forEach(id=>{
+  pot.winnerIds.forEach(id=>{
     const p = g.players.find(x=>x.id===id);
-    if (!p) return;
-    const { cards } = evaluate7WithCards([...p.hand, ...g.board]);
-    const usedKeys = new Set(cards.map(cardKey));
+    if (!p || !p._handRes) return;
+    const usedKeys = new Set(p._handRes.cards.map(cardKey));
     holeUsedByPlayer[id] = p.hand.filter(c=>usedKeys.has(cardKey(c))).map(cardKey);
     g.board.forEach(c=>{ if (usedKeys.has(cardKey(c))) boardUsed.add(cardKey(c)); });
   });
@@ -3649,7 +3644,7 @@ function highlightWinningCards(topPot, contenders){
   contenders.forEach(p=>{
     const e = seatEls[p.id];
     if (!e) return;
-    const isWinner = topPot.winnerIds.indexOf(p.id) !== -1;
+    const isWinner = pot.winnerIds.indexOf(p.id) !== -1;
     Array.from(e.cardsContainer.children).forEach((el,i)=>{
       const c = p.hand[i];
       if (!c) return;
@@ -5514,53 +5509,162 @@ function renderLog(){
   logDirty = false;
 }
 
-/* Compact, table-driven result: title + winner/hand + pot amount(s),
-   nothing that would need to grow into a big card. The board and the
-   win-card/dim-card glow (set by highlightWinningCards() just before this
-   is called) stay visible underneath — this is meant to read alongside
-   the table, not replace it. Per-winner split-share breakdowns and the
-   side-pot explanation paragraph are intentionally left out: the former
-   isn't essential at a glance, the latter already lives in the optional
-   Hand Review panel (buildReview()'s "Side pots" lesson covers it). */
-function showShowdownCard(potResults, wasShowdown, foldWin){
+/* Pass 1 showdown revamp — pure DISPLAY reordering of an already-final
+   winning five (the poker math is done; this only decides which order to
+   lay them out in so the hand reads naturally). Straights/straight
+   flushes/royals become one ascending run; flushes/high-card become
+   descending rank; every grouped hand (pair, two pair, trips, full house,
+   quads) groups same-rank cards together — largest/highest group first —
+   with kickers trailing by descending rank. */
+function arrangeHandForDisplay(cat, cards){
+  if (cat===8 || cat===9 || cat===4) return cards.slice().sort((a,b)=>a.value-b.value);
+  if (cat===5 || cat===0) return cards.slice().sort((a,b)=>b.value-a.value);
+  const counts = {};
+  cards.forEach(c=>{ counts[c.value] = (counts[c.value]||0)+1; });
+  const groups = Object.keys(counts).map(v=>({value:+v, n:counts[v]}))
+    .sort((a,b)=> b.n-a.n || b.value-a.value);
+  const out = [];
+  groups.forEach(g=>{ out.push(...cards.filter(c=>c.value===g.value)); });
+  return out;
+}
+/* Whether arrangeHandForDisplay grouped this category (pair/two
+   pair/trips/full house/quads) — used purely to decide whether the panel's
+   duplicated five cards get a small gap between the made-hand group and
+   the kickers. Straights/flushes/high-card read as one continuous run. */
+function isGroupedHandCat(cat){ return cat===1 || cat===2 || cat===3 || cat===6 || cat===7; }
+
+/* The winner panel — Pass 1's replacement for the old compact result card.
+   Shown once per pot (main pot, then each side pot) by
+   runShowdownAwardSequence. Reuses the existing .result-card floating-card
+   idiom (see .result-card/.gameover) rather than a new overlay mechanism;
+   the portrait is a clone of the winner's own already-rendered seat avatar
+   (already correct for mood/persona/settings.faces/avatarColour — no new
+   face-rendering logic needed), and the five duplicated cards are built
+   from the same cardInner()/cardClass() helpers real table cards use, just
+   at .small size — UI copies only, the real table cards never move. */
+function showWinnerPanel(pot, isMultiPot, potIndex){
   hideResultCard();
   const el = document.createElement('div');
-  el.className = 'result-card sd-compact'; el.id = 'result-card';
+  el.className = 'result-card winner-panel'; el.id = 'result-card';
 
-  const title = foldWin ? 'Everyone else folded' : (wasShowdown ? 'Showdown' : 'Hand complete');
-  let html = '<div class="rc-title">' + esc(title) + '</div>';
+  const single = pot.winnerIds.length === 1;
+  const mine = pot.winnerIds.indexOf('you') !== -1;
+  const potLabel = isMultiPot ? (potIndex===0 ? 'Main Pot' : 'Side Pot') : null;
 
-  if (potResults.length){
-    // Same winner(s) across every pot — the common case — collapses into
-    // one "winner — hand" line plus a single combined pot summary
-    // ("Main Pot 30 · Side Pot 20"), like a dealer's one announcement,
-    // rather than repeating the same name/hand once per pot.
-    const sameWinnerKey = r=>r.winnerIds.slice().sort().join(',');
-    const firstKey = sameWinnerKey(potResults[0]);
-    const sameThroughout = potResults.length > 1 && potResults.every(r=>sameWinnerKey(r)===firstKey);
+  let html = '<div class="wp-title">' + esc(pot.winners.join(' & ')) +
+    (single ? ' WINS' : ' SPLIT') + (potLabel ? ' — ' + esc(potLabel).toUpperCase() : '') + '!</div>';
 
-    if (sameThroughout){
-      const r0 = potResults[0];
-      const mine = r0.winnerIds.indexOf('you') !== -1;
-      html += '<div class="sd-line' + (mine?' mine':'') + '"><b>' + esc(r0.winners.join(' & ')) + '</b>' +
-        (r0.hand ? ' — ' + esc(r0.hand) : '') + '</div>';
-      html += '<div class="sd-pots">' +
-        potResults.map(r=>esc(r.label) + ' ' + r.amount.toLocaleString()).join(' · ') +
-        '</div>';
-    } else {
-      potResults.forEach(r=>{
-        const mine = r.winnerIds.indexOf('you') !== -1;
-        html += '<div class="sd-line' + (mine?' mine':'') + '"><b>' + esc(r.winners.join(' & ')) + '</b>' +
-          (r.hand ? ' — ' + esc(r.hand) : '') +
-          '<span class="sd-amt">' + esc(r.label) + ' ' + r.amount.toLocaleString() + '</span></div>';
-      });
-    }
+  const srcAvatar = seatEls[pot.winnerIds[0]] && seatEls[pot.winnerIds[0]].avatar;
+  const wrap = srcAvatar && srcAvatar.parentElement;
+  if (wrap){
+    const clone = wrap.cloneNode(true);
+    clone.classList.remove('hidden');
+    html += '<div class="wp-portrait">' + clone.outerHTML + '</div>';
   }
+
+  if (pot.hand) html += '<div class="wp-hand">' + esc(pot.hand) + '</div>';
+
+  if (pot.cards){
+    const ordered = arrangeHandForDisplay(pot.cat, pot.cards);
+    const grouped = isGroupedHandCat(pot.cat);
+    html += '<div class="wp-cards">' + ordered.map((c,i)=>{
+      const gapBefore = grouped && i>0 && ordered[i-1].value !== c.value;
+      return '<div class="'+cardClass(false,c,true)+(gapBefore?' wp-gap':'')+'" aria-hidden="true">'+cardInner(c)+'</div>';
+    }).join('') + '</div>';
+  }
+
+  html += '<div class="wp-amount' + (mine?' mine':'') + '">+' + pot.amount.toLocaleString() + '</div>';
+  html += '<button class="wide-btn wp-award" id="btn-award-pot">' +
+    esc(isMultiPot ? (potIndex===0 ? 'Award Main Pot' : 'Award Side Pot') : 'Award Pot') + '</button>';
 
   el.innerHTML = html;
   $('felt').appendChild(el);
 }
 function hideResultCard(){ const el=$('result-card'); if (el) el.remove(); }
+/* Resolves once the player presses the winner panel's own AWARD POT
+   button — the literal "wait as long as the player wants" mechanism. */
+function waitForAwardPot(){
+  return new Promise(resolve=>{
+    const btn = $('btn-award-pot');
+    if (!btn){ resolve(); return; }
+    btn.onclick = ()=>resolve();
+  });
+}
+/* How long to let one pot's payout "breathe" before continuing — reuses
+   the flight system's OWN existing, unmodified constants (chipStaggerGap,
+   the 230ms fast-payout duration, speedMult) purely read-only, so the wait
+   always matches however long that many chips actually take to land
+   without adding any hook into flyChip/transferChips/payoutTo themselves. */
+function estimatePayoutWaitMs(n, fast){
+  if (n<=0) return 0;
+  const gap = chipStaggerGap(n, fast);
+  const dur = Math.round((fast ? 230 : 700) * speedMult());
+  return (n-1)*gap + dur + 150;
+}
+/* Pass 1 showdown revamp — the one shared award pipeline both
+   handleShowdown and handleFoldWin delegate to. Walks potResults in
+   computePots()'s own order (main pot first, side pots after); for each
+   pot: highlight its exact winning five on the table (skipped for a
+   fold-win pot, which has no evaluated hand), show the winner panel, wait
+   indefinitely for AWARD POT, then apply that pot's money and trigger the
+   existing, untouched payoutTo() for exactly that pot's share of the
+   visual pile before moving on. finishHand() (and therefore any
+   busted/rebuy UI) only runs after every pot has been through this —
+   see the approved-adjustments note above handleShowdown for why that
+   matters for a human who busts by losing. */
+async function runShowdownAwardSequence(potResults, contenders){
+  const g = game;
+  const winnerIds = new Set();
+  potResults.forEach(pot=>pot.winnerIds.forEach(id=>winnerIds.add(id)));
+
+  let remainingPile = $('pot-stacks')._chipCount || 0;
+  let remainingTotal = potResults.reduce((s,r)=>s+r.amount, 0);
+
+  for (let i=0;i<potResults.length;i++){
+    const pot = potResults[i];
+    const isLastPot = i === potResults.length-1;
+
+    if (pot.cards) highlightWinningCards(pot, contenders);
+    showWinnerPanel(pot, potResults.length>1, i);
+    await waitForAwardPot();
+    hideResultCard();
+    // keep the winning-five highlight visible a tiny beat longer before
+    // the pot becomes the focus, per the approved sequencing.
+    await sleep(motionOff() ? 0 : 220);
+
+    pot.winnerShares.forEach(s=>{
+      const w = g.players.find(p=>p.id===s.id);
+      if (w) w.chips += s.amount;
+    });
+    g.pot = Math.max(0, g.pot - pot.amount);
+
+    const potVisualShare = isLastPot ? remainingPile
+      : Math.min(remainingPile, Math.round(remainingPile * pot.amount / Math.max(1,remainingTotal)));
+    remainingPile -= potVisualShare;
+    remainingTotal -= pot.amount;
+
+    let remainInPot = potVisualShare;
+    pot.winnerShares.forEach((s,k)=>{
+      const w = g.players.find(p=>p.id===s.id);
+      if (!w) return;
+      const n = (k===pot.winnerShares.length-1) ? remainInPot
+        : Math.min(remainInPot, Math.round(potVisualShare * s.amount / Math.max(1,pot.amount)));
+      remainInPot -= n;
+      payoutTo(w, n);
+    });
+
+    render();
+    await sleep(estimatePayoutWaitMs(potVisualShare, true));
+  }
+
+  const wasShowdown = potResults.length!==1 || potResults[0].hand!==null;
+  if (wasShowdown){
+    finishHand({ type:'showdown', potResults, contenders, winnerIds });
+  } else {
+    const w = g.players.find(p=>p.id===potResults[0].winnerIds[0]);
+    finishHand({ type:'foldwin', winner:w, amount:potResults[0].amount });
+  }
+}
 
 
 /* ============================================================
@@ -6228,9 +6332,11 @@ if (typeof window !== 'undefined'){
     getSettings: ()=>settings,
     applyAction, isBettingRoundComplete, computePots, evaluate7, compareHands,
     estimateEquity, potSizedTotal, describeMade, equityAvailable: ()=>EquityService.available(),
-    detectDraws, computeOuts, boardThreats, faceSVG, describeLine, buildReview, showShowdownCard,
-    computePositions, evaluate7WithCards, render, handleShowdown, clearAllCardDOM,
+    detectDraws, computeOuts, boardThreats, faceSVG, describeLine, buildReview,
+    computePositions, evaluate7WithCards, render, handleShowdown, handleFoldWin, clearAllCardDOM,
     highlightWinningCards, foldSnapshotNote, describeHole, cardKey,
+    arrangeHandForDisplay, showWinnerPanel, hideResultCard, waitForAwardPot,
+    estimatePayoutWaitMs, runShowdownAwardSequence,
     randomOpponentName, maybeTableTalk, TABLE_TALK, PERSONALITIES, newGame,
     seatPosition, aiThinkTime, speedMult, processLives, skullSVG, playDeath,
     nudgeMood, decayMoods, buildRankings, scheduleAutoDeal, finishHand, aiDecide,

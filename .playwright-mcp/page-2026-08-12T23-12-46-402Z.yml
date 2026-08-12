@@ -1,0 +1,165 @@
+- generic [ref=f2e2]:
+  - generic [ref=f2e4]:
+    - button "Settings" [ref=f2e6] [cursor=pointer]: ⚙
+    - generic [ref=f2e7]:
+      - generic [ref=f2e13]:
+        - generic [ref=f2e14]: ♥
+        - generic [ref=f2e15]: ♠
+        - generic [ref=f2e16]: ♦
+        - generic [ref=f2e17]: ♣
+      - heading "The Table" [level=1] [ref=f2e18]
+      - generic [ref=f2e20]: Texas Hold'em against the house
+    - generic [ref=f2e22]:
+      - generic [ref=f2e23]:
+        - generic [ref=f2e24]: "6"
+        - generic [ref=f2e25]: Hands
+      - generic [ref=f2e26]:
+        - generic [ref=f2e27]: 17%
+        - generic [ref=f2e28]: Won
+      - generic [ref=f2e29]:
+        - generic [ref=f2e30]: 2,020
+        - generic [ref=f2e31]: Best pot
+    - generic [ref=f2e32]:
+      - generic [ref=f2e33]: Your seat
+      - generic [ref=f2e34]:
+        - generic [ref=f2e35]: YO
+        - textbox "Your name" [ref=f2e36]
+      - group "Seat colour" [ref=f2e37]:
+        - 'button "Seat colour #D9A93B" [pressed] [ref=f2e38] [cursor=pointer]'
+        - 'button "Seat colour #5FA8D3" [ref=f2e39] [cursor=pointer]'
+        - 'button "Seat colour #7FC79E" [ref=f2e40] [cursor=pointer]'
+        - 'button "Seat colour #E0716A" [ref=f2e41] [cursor=pointer]'
+        - 'button "Seat colour #B98BD3" [ref=f2e42] [cursor=pointer]'
+        - 'button "Seat colour #E0A458" [ref=f2e43] [cursor=pointer]'
+    - button "Continue Table" [ref=f2e44] [cursor=pointer]
+    - button "Play" [ref=f2e45] [cursor=pointer]
+    - generic [ref=f2e46]:
+      - button "Quick Deal" [ref=f2e47] [cursor=pointer]
+      - button "Hand Rankings" [ref=f2e48] [cursor=pointer]
+  - text: ◆
+  - generic [ref=f2e50]:
+    - heading "Hand Log" [level=3] [ref=f2e51]
+    - button "Close log" [ref=f2e52] [cursor=pointer]: ✕
+  - dialog "Settings" [ref=f2e54]:
+    - generic [ref=f2e56]:
+      - generic [ref=f2e57]:
+        - heading "Assistance" [level=3] [ref=f2e58]
+        - generic [ref=f2e59]:
+          - generic [ref=f2e60]:
+            - generic [ref=f2e61]: Coach
+            - generic [ref=f2e62]: Shows your win chance, pot odds, and a suggested action on your turn.
+          - switch "Coach" [ref=f2e63] [cursor=pointer]
+        - generic [ref=f2e64]:
+          - generic [ref=f2e65]:
+            - generic [ref=f2e66]: Hand strength
+            - generic [ref=f2e67]: Names your current best hand under the table.
+          - switch "Hand strength" [checked] [ref=f2e68] [cursor=pointer]
+        - generic [ref=f2e69]:
+          - generic [ref=f2e70]:
+            - generic [ref=f2e71]: Hand review
+            - generic [ref=f2e72]: After each hand, explains who won, why, and how the pot was played.
+          - switch "Hand review" [ref=f2e73] [cursor=pointer]
+      - generic [ref=f2e74]:
+        - heading "Table" [level=3] [ref=f2e75]
+        - generic [ref=f2e76]:
+          - generic [ref=f2e77]: Theme
+          - group "Theme" [ref=f2e78]:
+            - button "Emerald" [ref=f2e79] [cursor=pointer]
+            - button "Midnight" [ref=f2e80] [cursor=pointer]
+            - button "Burgundy" [ref=f2e81] [cursor=pointer]
+            - button "Slate" [ref=f2e82] [cursor=pointer]
+        - generic [ref=f2e83]:
+          - generic [ref=f2e84]: Card back
+          - group "Card back design" [ref=f2e85]:
+            - button "Table" [ref=f2e86] [cursor=pointer]
+            - button "Classic" [ref=f2e87] [cursor=pointer]
+        - generic [ref=f2e88]:
+          - generic [ref=f2e89]: Opponent names
+          - group "Opponent names" [ref=f2e90]:
+            - button "Personas" [ref=f2e91] [cursor=pointer]
+            - button "Random names" [ref=f2e92] [cursor=pointer]
+          - generic [ref=f2e93]: Personas gives each opponent a nickname like "Shark". Random names uses ordinary names instead.
+        - generic [ref=f2e94]:
+          - generic [ref=f2e95]:
+            - generic [ref=f2e96]: Four-colour deck
+            - generic [ref=f2e97]: Distinct colour per suit — easier to read at a glance.
+          - switch "Four-colour deck" [ref=f2e98] [cursor=pointer]
+        - generic [ref=f2e99]:
+          - generic [ref=f2e100]:
+            - generic [ref=f2e101]: Opponent faces
+            - generic [ref=f2e102]: Cartoon avatars that react to how the hand is going.
+          - switch "Opponent faces" [checked] [ref=f2e103] [cursor=pointer]
+        - generic [ref=f2e104]:
+          - generic [ref=f2e105]:
+            - generic [ref=f2e106]: Table talk
+            - generic [ref=f2e107]: Opponents occasionally chat in character during a hand.
+          - switch "Table talk" [checked] [ref=f2e108] [cursor=pointer]
+      - generic [ref=f2e109]:
+        - heading "Pacing & lives" [level=3] [ref=f2e110]
+        - generic [ref=f2e111]:
+          - generic [ref=f2e112]: Game speed
+          - group "Game speed" [ref=f2e113]:
+            - button "Relaxed" [ref=f2e114] [cursor=pointer]
+            - button "Normal" [ref=f2e115] [cursor=pointer]
+            - button "Fast" [ref=f2e116] [cursor=pointer]
+          - generic [ref=f2e117]: Sets how long opponents think and how quickly cards come out.
+        - generic [ref=f2e118]:
+          - generic [ref=f2e119]:
+            - generic [ref=f2e120]: Auto-deal
+            - generic [ref=f2e121]: Deals the next hand a moment after the last one ends. Paused while hand review is on.
+          - switch "Auto-deal" [checked] [ref=f2e122] [cursor=pointer]
+        - generic [ref=f2e123]:
+          - generic [ref=f2e124]:
+            - generic [ref=f2e125]: Lives
+            - generic [ref=f2e126]: "Cash games: three ♥ each. A rebuy costs one \\u2014 lose them all and you're out. Applies to new tables."
+          - switch "Lives" [checked] [ref=f2e127] [cursor=pointer]
+      - generic [ref=f2e128]:
+        - heading "Feedback" [level=3] [ref=f2e129]
+        - generic [ref=f2e130]:
+          - generic [ref=f2e131]:
+            - generic [ref=f2e132]: Sound
+            - generic [ref=f2e133]: Subtle cues for deals, chips, and results.
+          - switch "Sound" [ref=f2e134] [cursor=pointer]
+        - generic [ref=f2e135]:
+          - generic [ref=f2e136]:
+            - generic [ref=f2e137]: Haptics
+            - generic [ref=f2e138]: Vibration on your turn, where supported.
+          - switch "Haptics" [checked] [ref=f2e139] [cursor=pointer]
+        - generic [ref=f2e140]:
+          - generic [ref=f2e141]:
+            - generic [ref=f2e142]: Reduce motion
+            - generic [ref=f2e143]: Turns off card and chip animation.
+          - switch "Reduce motion" [ref=f2e144] [cursor=pointer]
+        - generic [ref=f2e145]:
+          - generic [ref=f2e146]:
+            - generic [ref=f2e147]: High contrast
+            - generic [ref=f2e148]: Brighter text and stronger outlines.
+          - switch "High contrast" [ref=f2e149] [cursor=pointer]
+        - generic [ref=f2e150]:
+          - generic [ref=f2e151]:
+            - generic [ref=f2e152]: Larger text
+            - generic [ref=f2e153]: Bumps up text size across the game.
+          - switch "Larger text" [ref=f2e154] [cursor=pointer]
+      - generic [ref=f2e155]:
+        - heading "Lifetime" [level=3] [ref=f2e156]
+        - generic [ref=f2e157]:
+          - generic [ref=f2e158]:
+            - generic [ref=f2e159]: "6"
+            - generic [ref=f2e160]: Hands
+          - generic [ref=f2e161]:
+            - generic [ref=f2e162]: 17%
+            - generic [ref=f2e163]: Won
+          - generic [ref=f2e164]:
+            - generic [ref=f2e165]: 2,020
+            - generic [ref=f2e166]: Best pot
+        - button "Reset statistics" [ref=f2e167] [cursor=pointer]
+      - generic [ref=f2e168]:
+        - button "Leave table" [ref=f2e169] [cursor=pointer]
+        - button "Done" [ref=f2e170] [cursor=pointer]
+  - dialog "Start new table" [ref=f2e171]:
+    - generic [ref=f2e174]:
+      - heading "Start a new table?" [level=3] [ref=f2e175]
+      - generic [ref=f2e176]: This will discard your saved table in progress.
+      - button "Discard & Start New" [ref=f2e177] [cursor=pointer]
+      - button "Cancel" [ref=f2e178] [cursor=pointer]
+  - text: ▸ ▸ ▸

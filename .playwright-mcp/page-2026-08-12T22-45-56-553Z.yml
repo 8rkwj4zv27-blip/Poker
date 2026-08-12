@@ -1,0 +1,220 @@
+- generic [ref=e2]:
+  - generic [ref=e180]:
+    - generic [ref=e181]:
+      - generic [ref=e182]:
+        - generic [ref=e183]:
+          - generic [ref=e184]: POKER
+          - generic [ref=e185]: Hand 1 · 10/20
+        - generic [ref=e186]:
+          - button "Toggle coach" [ref=e187] [cursor=pointer]: ◆ Coach
+          - button "Hand log" [ref=e188] [cursor=pointer]: ☰
+          - button "Settings" [ref=e189] [cursor=pointer]: ⚙
+      - generic [ref=e191]:
+        - generic:
+          - generic:
+            - generic: Pot
+            - generic: "30"
+        - group "Community cards"
+        - generic: Dealer
+        - generic [ref=e193]:
+          - generic [ref=e194]: Shark
+          - generic [ref=e195]: SB
+          - generic [ref=e198]: "990"
+          - generic [ref=e199]: –
+          - generic [ref=e200]:
+            - img "Face-down card" [ref=e201]
+            - img "Face-down card" [ref=e202]
+        - generic [ref=e204]:
+          - generic [ref=e205]: Maniac
+          - generic [ref=e206]: BB
+          - generic [ref=e209]: "980"
+          - generic [ref=e210]: –
+          - generic [ref=e211]:
+            - img "Face-down card" [ref=e212]
+            - img "Face-down card" [ref=e213]
+        - generic [ref=e215]:
+          - generic [ref=e216]: Prof
+          - generic [ref=e219]: 1,000
+          - generic [ref=e220]: Fold
+          - generic [ref=e221]:
+            - img "Face-down card" [ref=e222]
+            - img "Face-down card" [ref=e223]
+        - generic [ref=e225]:
+          - generic [ref=e226]: Wildcard
+          - generic [ref=e229]: 1,000
+          - generic [ref=e230]: Fold
+          - generic [ref=e231]:
+            - img "Face-down card" [ref=e232]
+            - img "Face-down card" [ref=e233]
+      - generic [ref=e235]:
+        - generic [ref=e269]:
+          - generic [ref=e271]:
+            - img "Ten of Diamonds" [ref=e272]:
+              - generic [ref=e298]:
+                - generic [ref=e299]: "10"
+                - generic [ref=e300]: ♦
+              - generic [ref=e301]: ♦
+            - img "Queen of Spades" [ref=e277]:
+              - generic [ref=e302]:
+                - generic [ref=e303]: Q
+                - generic [ref=e304]: ♠
+              - generic [ref=e305]: ♠
+          - status [ref=e282]:
+            - text: Your turn —
+            - generic [ref=e306]: 20 to call
+          - generic [ref=e283]: You have Queen-Ten offsuit
+          - generic [ref=e284]:
+            - generic [ref=e285]: $
+            - generic [ref=e286]: "0"
+            - generic [ref=e287]: "0"
+            - generic [ref=e288]: "1"
+            - generic [ref=e289]: "0"
+            - generic [ref=e290]: "0"
+            - generic [ref=e291]: "0"
+        - generic [ref=e292]:
+          - generic [ref=e293]: You
+          - generic [ref=e294]: –
+    - generic [ref=e296]:
+      - generic:
+        - generic:
+          - generic: Raise
+          - button "Cancel raise, keep my turn": ✕
+        - generic:
+          - generic:
+            - slider "Raise amount": "40"
+          - generic: "40"
+        - generic:
+          - button "½ Pot"
+          - button "¾ Pot"
+          - button "Pot"
+          - button "All-In"
+      - generic [ref=e297]:
+        - button "Fold" [ref=e307] [cursor=pointer]
+        - button "Call 20" [ref=e308] [cursor=pointer]
+        - button "Raise" [ref=e309] [cursor=pointer]
+  - generic [ref=e50]:
+    - heading "Hand Log" [level=3] [ref=e51]
+    - button "Close log" [ref=e52] [cursor=pointer]: ✕
+  - dialog "Settings" [ref=e54]:
+    - generic [ref=e56]:
+      - generic [ref=e57]:
+        - heading "Assistance" [level=3] [ref=e58]
+        - generic [ref=e59]:
+          - generic [ref=e60]:
+            - generic [ref=e61]: Coach
+            - generic [ref=e62]: Shows your win chance, pot odds, and a suggested action on your turn.
+          - switch "Coach" [ref=e63] [cursor=pointer]
+        - generic [ref=e64]:
+          - generic [ref=e65]:
+            - generic [ref=e66]: Hand strength
+            - generic [ref=e67]: Names your current best hand under the table.
+          - switch "Hand strength" [checked] [ref=e68] [cursor=pointer]
+        - generic [ref=e69]:
+          - generic [ref=e70]:
+            - generic [ref=e71]: Hand review
+            - generic [ref=e72]: After each hand, explains who won, why, and how the pot was played.
+          - switch "Hand review" [ref=e73] [cursor=pointer]
+      - generic [ref=e74]:
+        - heading "Table" [level=3] [ref=e75]
+        - generic [ref=e76]:
+          - generic [ref=e77]: Theme
+          - group "Theme" [ref=e78]:
+            - button "Emerald" [ref=e79] [cursor=pointer]
+            - button "Midnight" [ref=e80] [cursor=pointer]
+            - button "Burgundy" [ref=e81] [cursor=pointer]
+            - button "Slate" [ref=e82] [cursor=pointer]
+        - generic [ref=e83]:
+          - generic [ref=e84]: Card back
+          - group "Card back design" [ref=e85]:
+            - button "Table" [ref=e86] [cursor=pointer]
+            - button "Classic" [ref=e87] [cursor=pointer]
+        - generic [ref=e88]:
+          - generic [ref=e89]: Opponent names
+          - group "Opponent names" [ref=e90]:
+            - button "Personas" [ref=e91] [cursor=pointer]
+            - button "Random names" [ref=e92] [cursor=pointer]
+          - generic [ref=e93]: Personas gives each opponent a nickname like "Shark". Random names uses ordinary names instead.
+        - generic [ref=e94]:
+          - generic [ref=e95]:
+            - generic [ref=e96]: Four-colour deck
+            - generic [ref=e97]: Distinct colour per suit — easier to read at a glance.
+          - switch "Four-colour deck" [ref=e98] [cursor=pointer]
+        - generic [ref=e99]:
+          - generic [ref=e100]:
+            - generic [ref=e101]: Opponent faces
+            - generic [ref=e102]: Cartoon avatars that react to how the hand is going.
+          - switch "Opponent faces" [checked] [ref=e103] [cursor=pointer]
+        - generic [ref=e104]:
+          - generic [ref=e105]:
+            - generic [ref=e106]: Table talk
+            - generic [ref=e107]: Opponents occasionally chat in character during a hand.
+          - switch "Table talk" [checked] [ref=e108] [cursor=pointer]
+      - generic [ref=e109]:
+        - heading "Pacing & lives" [level=3] [ref=e110]
+        - generic [ref=e111]:
+          - generic [ref=e112]: Game speed
+          - group "Game speed" [ref=e113]:
+            - button "Relaxed" [ref=e114] [cursor=pointer]
+            - button "Normal" [ref=e115] [cursor=pointer]
+            - button "Fast" [ref=e116] [cursor=pointer]
+          - generic [ref=e117]: Sets how long opponents think and how quickly cards come out.
+        - generic [ref=e118]:
+          - generic [ref=e119]:
+            - generic [ref=e120]: Auto-deal
+            - generic [ref=e121]: Deals the next hand a moment after the last one ends. Paused while hand review is on.
+          - switch "Auto-deal" [checked] [ref=e122] [cursor=pointer]
+        - generic [ref=e123]:
+          - generic [ref=e124]:
+            - generic [ref=e125]: Lives
+            - generic [ref=e126]: "Cash games: three ♥ each. A rebuy costs one \\u2014 lose them all and you're out. Applies to new tables."
+          - switch "Lives" [checked] [ref=e127] [cursor=pointer]
+      - generic [ref=e128]:
+        - heading "Feedback" [level=3] [ref=e129]
+        - generic [ref=e130]:
+          - generic [ref=e131]:
+            - generic [ref=e132]: Sound
+            - generic [ref=e133]: Subtle cues for deals, chips, and results.
+          - switch "Sound" [ref=e134] [cursor=pointer]
+        - generic [ref=e135]:
+          - generic [ref=e136]:
+            - generic [ref=e137]: Haptics
+            - generic [ref=e138]: Vibration on your turn, where supported.
+          - switch "Haptics" [checked] [ref=e139] [cursor=pointer]
+        - generic [ref=e140]:
+          - generic [ref=e141]:
+            - generic [ref=e142]: Reduce motion
+            - generic [ref=e143]: Turns off card and chip animation.
+          - switch "Reduce motion" [ref=e144] [cursor=pointer]
+        - generic [ref=e145]:
+          - generic [ref=e146]:
+            - generic [ref=e147]: High contrast
+            - generic [ref=e148]: Brighter text and stronger outlines.
+          - switch "High contrast" [ref=e149] [cursor=pointer]
+        - generic [ref=e150]:
+          - generic [ref=e151]:
+            - generic [ref=e152]: Larger text
+            - generic [ref=e153]: Bumps up text size across the game.
+          - switch "Larger text" [ref=e154] [cursor=pointer]
+      - generic [ref=e155]:
+        - heading "Lifetime" [level=3] [ref=e156]
+        - generic [ref=e157]:
+          - generic [ref=e158]:
+            - generic [ref=e159]: "4"
+            - generic [ref=e160]: Hands
+          - generic [ref=e161]:
+            - generic [ref=e162]: 0%
+            - generic [ref=e163]: Won
+          - generic [ref=e164]:
+            - generic [ref=e165]: 2,020
+            - generic [ref=e166]: Best pot
+        - button "Reset statistics" [ref=e167] [cursor=pointer]
+      - generic [ref=e168]:
+        - button "Leave table" [ref=e169] [cursor=pointer]
+        - button "Done" [ref=e170] [cursor=pointer]
+  - dialog "Start new table" [ref=e171]:
+    - generic [ref=e174]:
+      - heading "Start a new table?" [level=3] [ref=e175]
+      - generic [ref=e176]: This will discard your saved table in progress.
+      - button "Discard & Start New" [ref=e177] [cursor=pointer]
+      - button "Cancel" [ref=e178] [cursor=pointer]
+  - text: ▸ ▸ ▸
