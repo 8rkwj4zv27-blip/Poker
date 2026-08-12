@@ -696,7 +696,6 @@ button{ font-family:inherit; }
    only its rim peeks out beneath the chip above it, which is what actually
    reads as "a stack" rather than a spaced column. */
 .chip-disc:first-child{
-  margin-top:0;
   filter:drop-shadow(0 3px 0 rgba(0,0,0,.4));
 }
 /* ---- chip colour variety — purely decorative, no monetary meaning.
@@ -3850,7 +3849,7 @@ async function continueAction(){
   }
 }
 
-function humanAct(action, amount){
+async function humanAct(action, amount){
   if (!pendingHumanPlayer) return;
   const p = pendingHumanPlayer;
   pendingHumanPlayer = null;
@@ -3862,6 +3861,19 @@ function humanAct(action, amount){
   applyAction(p, {action, amount});
   game.turnPointer = game.players.indexOf(p)+1;
   render();
+  // Pass 3D: a real yield here, before advancing to the next actor — the
+  // same breather continueAction()'s own AI loop already takes between
+  // turns (render(); await sleep(...)). Without it, a human bet/call/raise
+  // that doesn't end the betting round runs straight into continueAction()
+  // synchronously finding the next actor and rendering AGAIN, all in the
+  // same tick as the chip flight this action just launched (see
+  // applyAction/transferChips) — two renders back to back with no yield,
+  // right on top of the freshly-launched flight's own paint-guarantee
+  // window. Every other path that launches a flight (AI turns, payouts)
+  // already has a real yield immediately after its own render() call; this
+  // was the one place that didn't, and it's the one path users reported as
+  // visually unreliable.
+  await sleep(motionOff() ? 60 : 140);
   continueAction();
 }
 
@@ -4611,7 +4623,9 @@ function potPile(){
 
 /* Live height of a tower, read straight from the DOM rather than kept as
    separate bookkeeping — there's exactly one source of truth for "how
-   tall is this stack" (its actual child count). */
+   tall is this stack" (its actual child count). Includes reserved
+   placeholders (see claimDestSlot) as well as real chips — see
+   realTowerHeight below for the real-chips-only count. */
 function towerHeight(container, slotIdx){
   const t = container._towers && container._towers[slotIdx];
   return t ? t.children.length : 0;
@@ -4634,110 +4648,111 @@ function getOrCreateTower(container, pile, slotIdx){
   }
   return tower;
 }
-/* How many chips are already claimed (reserved) for a slot but not yet
-   actually resting there — real in-flight arrivals already assigned to
-   that slot by claimDestSlot(), below. Combined with the slot's real DOM
-   height this is what claimDestSlot reads, so several chips launched
-   close together in the same transfer spread across different towers
-   instead of all aiming for the exact same physical spot before any of
-   them have actually landed — the ONLY bookkeeping this pass adds beyond
-   Pass 3A's plain chip count, and it is nothing like the removed
-   denomination ledger: just a small per-slot integer tally, reset to 0
-   the moment each chip actually lands. */
-function reservedFor(pile, slotIdx){ return (pile.reserved && pile.reserved[slotIdx]) || 0; }
-function effectiveHeight(container, pile, slotIdx){ return towerHeight(container, slotIdx) + reservedFor(pile, slotIdx); }
+/* Real (non-placeholder) height of a tower — how many chips are actually
+   resting there right now, excluding reserved-but-not-yet-landed
+   placeholders (see claimDestSlot). Used when TAKING a chip from a pile,
+   so a slot that's merely reserved (not yet arrived) is never mistaken
+   for a source of a real chip to pluck. */
+function realTowerHeight(container, slotIdx){
+  const t = container._towers && container._towers[slotIdx];
+  if (!t) return 0;
+  let n = 0;
+  for (const c of t.children) if (c.style.visibility !== 'hidden') n++;
+  return n;
+}
 /* Same 3-tier slot-choice priority Pass 3A's pileAddChip always used
    (extend shortest under cap -> next empty slot -> grow shortest to hard
-   cap), but reading EFFECTIVE height (real + reserved) instead of raw
-   DOM height. Reserves the slot before returning (the caller must
-   eventually call releaseSlot() once the chip really lands). `ahead` is
-   how many OTHER reservations were already queued for this exact slot —
-   used by measureFutureSlotRect() to predict this chip's real landing
-   position even though those earlier arrivals haven't physically landed
-   yet either. */
+   cap), reading towerHeight (which already includes any reserved
+   placeholders below — see claimDestSlot). Picks a slot, then — Pass
+   3C.1 — immediately inserts a real, invisible `.chip-disc` placeholder
+   into that slot's tower rather than bumping an integer tally. Because
+   it's a genuine DOM child sharing the exact same box-model rules as a
+   real chip, three things follow for free: every later towerHeight()
+   read (including other concurrent claims on the same pile) already sees
+   this reservation as real height; the placeholder's own
+   getBoundingClientRect() IS this chip's true final resting box, laid
+   out by the browser exactly as it will be once the real chip takes its
+   place — not a guessed one; and because nothing else can alter that box
+   between reservation and landing (the placeholder physically holds the
+   space the whole time), measuring it at launch and again right before
+   landing (see flyChip) is guaranteed to agree. Caller must eventually
+   call settleSlot() to swap the placeholder for the real element. */
 function claimDestSlot(container, pile){
-  if (!pile.reserved) pile.reserved = {};
   let slotIdx=-1, best=Infinity;
   pile.order.forEach(idx=>{
-    const h = effectiveHeight(container, pile, idx);
+    const h = towerHeight(container, idx);
     if (h>0 && h<pile.caps[idx] && h<best){ best=h; slotIdx=idx; }
   });
   if (slotIdx===-1){
-    const found = pile.order.find(idx=>effectiveHeight(container, pile, idx)===0);
+    const found = pile.order.find(idx=>towerHeight(container, idx)===0);
     if (found!=null) slotIdx = found;
   }
   if (slotIdx===-1){
     best=Infinity;
     pile.order.forEach(idx=>{
-      const h = effectiveHeight(container, pile, idx);
+      const h = towerHeight(container, idx);
       if (h<pile.grid.maxPerSlot && h<best){ best=h; slotIdx=idx; }
     });
   }
   if (slotIdx===-1) slotIdx = pile.order[0]; // defensive: every slot already at absolute capacity
-  const ahead = pile.reserved[slotIdx] || 0;
-  pile.reserved[slotIdx] = ahead + 1;
-  return { slotIdx, ahead };
+  const tower = getOrCreateTower(container, pile, slotIdx);
+  const placeholder = document.createElement('div');
+  placeholder.className = 'chip-disc';
+  placeholder.style.visibility = 'hidden';
+  tower.appendChild(placeholder);
+  return { slotIdx, tower, placeholder };
 }
-function releaseSlot(pile, slotIdx){
-  if (!pile.reserved) return;
-  pile.reserved[slotIdx] = Math.max(0, (pile.reserved[slotIdx]||0) - 1);
+/* Swaps a reserved placeholder for the real chip element in the exact
+   DOM position it already occupied — a plain in-place replace, not a
+   re-layout, since the placeholder's box already IS the chip's rect. */
+function settleSlot(container, placeholder, el){
+  placeholder.replaceWith(el);
+  container._chipCount = (container._chipCount||0) + 1;
 }
 /* Removes and returns the REAL DOM chip element (plus its exact
    on-screen rect just before removal) that should physically depart a
-   pile next: always the shortest currently-resting tower's top chip —
-   same "no stray singles" priority Pass 3A's pileRemoveChip always used.
-   Real, immediate removal; no reservation bookkeeping needed on the
-   departure side, since by the time chip N's departure runs, every
-   earlier chip in the same staggered transfer has already been removed
-   for real (departures fire in strict launch order). Returns null if the
-   pile is genuinely empty. The caller owns the returned element from
-   here on — it is never destroyed, only ever moved. */
+   pile next: always the shortest currently-resting tower's top REAL chip
+   — same "no stray singles" priority Pass 3A's pileRemoveChip always
+   used (using realTowerHeight so a slot that's only holding a reserved
+   placeholder is never treated as a source). Walks back past any
+   placeholder sitting above the topmost real chip (possible if this same
+   tower is also someone else's reserved destination — never happens for
+   an ordinary bet, but flyChip's source/dest roles are generic). Real,
+   immediate removal; no reservation bookkeeping needed on the departure
+   side, since by the time chip N's departure runs, every earlier chip in
+   the same staggered transfer has already been removed for real
+   (departures fire in strict launch order). Returns null if the pile has
+   no real chip to give. The caller owns the returned element from here
+   on — it is never destroyed, only ever moved. */
 function takeChipFromPile(container, pile){
   if (!container._towers) return null;
   let slotIdx=-1, best=Infinity;
   pile.order.forEach(idx=>{
-    const h = towerHeight(container, idx);
+    const h = realTowerHeight(container, idx);
     if (h>0 && h<best){ best=h; slotIdx=idx; }
   });
   if (slotIdx===-1) return null;
   const tower = container._towers[slotIdx];
-  const el = tower.lastElementChild;
+  let el = tower.lastElementChild;
+  while (el && el.style.visibility==='hidden') el = el.previousElementSibling;
+  if (!el) return null;
+  // Pass 3C.4: strip the one-shot bootstrap pop-in class before this chip is
+  // ever reparented. CSS Animations tied to a class restart from their
+  // `from` keyframe whenever their element is removed from the render tree
+  // and reinserted — exactly what reparenting into the flight layer does —
+  // and while running, an Animation's value for a property overrides any
+  // inline style for that same property. Left in place, `disc-in`
+  // (animation:discIn, still matching this element forever since it's never
+  // otherwise removed) hijacks `transform` for its own 180ms on every single
+  // flight, which is what made chips look like they were fading/scaling in
+  // place instead of moving. Safe to strip unconditionally: by the time any
+  // chip is ever taken for a flight, its one-time pop-in has already long
+  // since played out.
+  el.classList.remove('disc-in');
   const rect = el.getBoundingClientRect();
   el.remove();
   container._chipCount = Math.max(0, (container._chipCount||0) - 1);
   return { el, rect };
-}
-/* Predicts the exact on-screen box a chip will occupy once it becomes
-   the (ahead+1)-th REAL arrival in `tower` — momentary, invisible
-   throwaway spacer elements with the exact same box (`.chip-disc`+
-   colour class, so the same width/height/margin rules apply) stand in
-   for reservations that haven't physically landed yet; the browser's own
-   flex/margin layout does the actual stacking math (no hand-rolled pixel
-   arithmetic here), then every spacer — including the measurement marker
-   itself — is removed again immediately, all synchronously (no paint
-   happens in between, so nothing ever flashes). This is what lets a
-   flying chip's landing position be exact even while several siblings
-   from the same transfer are simultaneously still mid-air. */
-function measureFutureSlotRect(tower, cls, ahead){
-  const spacers = [];
-  for (let i=0;i<ahead;i++){
-    const s = document.createElement('div');
-    s.className = 'chip-disc ' + cls;
-    s.style.visibility = 'hidden';
-    tower.appendChild(s);
-    spacers.push(s);
-  }
-  const marker = document.createElement('div');
-  marker.className = 'chip-disc ' + cls;
-  marker.style.visibility = 'hidden';
-  tower.appendChild(marker);
-  const rect = marker.getBoundingClientRect();
-  marker.remove();
-  spacers.forEach(s=>s.remove());
-  return rect;
-}
-function pickChipColorForEl(el){
-  return CHIP_COLOR_CLASSES.find(c=>el.classList.contains(c)) || 'd-blue';
 }
 /* Instantly creates and rests a brand-new chip in a pile — no flight, no
    source. Only for moments with genuinely no physical chip to move: cold
@@ -4745,27 +4760,21 @@ function pickChipColorForEl(el){
    never for an ordinary bank<->pot transfer, which always moves a real
    existing chip (see flyChip). */
 function createRestingChip(container, pile, forcedCls){
-  const { slotIdx } = claimDestSlot(container, pile);
-  const tower = getOrCreateTower(container, pile, slotIdx);
+  const { placeholder } = claimDestSlot(container, pile);
   const cls = forcedCls || pickChipColor(container);
   const d = document.createElement('div');
   d.className = 'chip-disc ' + cls + (motionOff() ? '' : ' disc-in');
-  tower.appendChild(d);
-  container._chipCount = (container._chipCount||0) + 1;
-  releaseSlot(pile, slotIdx);
+  settleSlot(container, placeholder, d);
   return d;
 }
 /* Hard-clears a pile back to empty — only for moments with genuinely no
    physical source for the new chips (fresh table/rebuy, or the pot
-   boundary between hands — see clearAllCardDOM()). Also drops any
-   in-flight slot reservations, so a pile that's about to be rebuilt from
-   scratch can't be left thinking slots are still claimed. */
+   boundary between hands — see clearAllCardDOM()). */
 function resetPile(container, pile){
   if (!container) return;
   container.innerHTML = '';
   container._chipCount = 0;
   container._towers = {};
-  if (pile) pile.reserved = {};
 }
 /* Cold-start/recovery only: populates an EMPTY pile with visualChipCount(amount)
    generic chips. Never used for an ordinary transfer — only table load,
@@ -4997,6 +5006,24 @@ function flashAction(playerId, label){
    never keeps a visible resting pile), fade it out and discard it.
    ============================================================ */
 
+/* A non-pile flight endpoint (an opponent's seat chip-count label, or
+   their whole seat card as a fallback) is just a screen ANCHOR — where
+   the chip should visually originate or arrive — not a chip-shaped box.
+   Chips are always square by construction (every .chip-disc CSS rule
+   enforces width===height), but a text label or seat card almost never
+   is; borrowing its raw rect directly for a flight endpoint pairs a
+   non-square box against the (always square) other end of the flight,
+   forcing scaleX and scaleY to diverge for most of the journey — visibly
+   stretching the circular chip artwork into an ellipse. Squaring the
+   anchor here (same centre point, a diameter derived from the anchor's
+   own footprint) guarantees every flight endpoint is square, so scaleX
+   and scaleY stay equal the whole time no matter what the anchor is. */
+function squareAnchor(rect){
+  if (!rect || !rect.width || !rect.height) return null;
+  const d = Math.min(rect.width, rect.height) || 24;
+  const cx = rect.left + rect.width/2, cy = rect.top + rect.height/2;
+  return { left: cx-d/2, top: cy-d/2, width: d, height: d };
+}
 /* Flies one real chip between two points on the table. Exactly one of
    {srcContainer+srcPile} / {srcEl} describes the start:
      - srcContainer+srcPile: take the actual chip already resting there
@@ -5022,25 +5049,20 @@ function flyChip(opts){
     if (!taken){ if (onLand) onLand(null); return; }
     el = taken.el; a = taken.rect;
   } else {
-    a = srcEl ? srcEl.getBoundingClientRect() : null;
-    if (!a || !a.width) a = { left: innerWidth/2, top: innerHeight/2, width:24, height:24 };
+    a = squareAnchor(srcEl ? srcEl.getBoundingClientRect() : null);
+    if (!a) a = { left: innerWidth/2, top: innerHeight/2, width:24, height:24 };
     el = document.createElement('div');
     el.className = 'chip-disc ' + pickChipColor(dstContainer || {_chipCount:0});
   }
-  const cls = pickChipColorForEl(el);
 
-  let tower=null, slotIdx=-1, ahead=0;
+  let placeholder=null;
   if (dstContainer && dstPile){
-    const claim = claimDestSlot(dstContainer, dstPile);
-    slotIdx = claim.slotIdx; ahead = claim.ahead;
-    tower = getOrCreateTower(dstContainer, dstPile, slotIdx);
+    placeholder = claimDestSlot(dstContainer, dstPile).placeholder;
   }
 
   const land = ()=>{
-    if (tower){
-      tower.appendChild(el);
-      dstContainer._chipCount = (dstContainer._chipCount||0) + 1;
-      releaseSlot(dstPile, slotIdx);
+    if (placeholder){
+      settleSlot(dstContainer, placeholder, el);
     } else {
       el.remove();
     }
@@ -5053,19 +5075,28 @@ function flyChip(opts){
     return;
   }
 
-  // The real target box — measured off the browser's own layout (see
-  // measureFutureSlotRect), never hand-computed pixel math — so bank
-  // (21px) vs pot (25px) chip sizing, stacking overlap and colour are
-  // all automatically correct with zero manual geometry here.
-  const b = tower ? measureFutureSlotRect(tower, cls, ahead)
-    : (dstEl ? dstEl.getBoundingClientRect() : a);
-  if (!b || !b.width){ land(); return; }
+  // The real target box — the reserved placeholder's own live layout
+  // (see claimDestSlot), never hand-computed pixel math or a prediction —
+  // so bank (21px) vs pot (25px) chip sizing, stacking overlap and
+  // colour are all automatically correct with zero manual geometry here.
+  // Its rect can't drift between now and landing (the placeholder
+  // physically holds that space in the tower the whole flight), so
+  // reading it now is trustworthy — it's read again fresh right before
+  // the final approach below purely as a belt-and-braces guarantee.
+  const rectOf = ()=> placeholder ? placeholder.getBoundingClientRect()
+    : (dstEl ? squareAnchor(dstEl.getBoundingClientRect()) : a);
+  const b0 = rectOf();
+  if (!b0 || !b0.width){ land(); return; }
 
   // Reparent into the unclipped flight layer, pinned to its exact old
   // position first (the "IS the source chip on frame one" technique
   // DealFX.flyGhost already uses for cards) — nothing jumps, because on
   // the very first frame it is pixel-identical to where it just was.
+  // transition is explicitly off here (Pass 3C.2) so this pin can never
+  // itself be animated, whatever this reused element's transition was
+  // left at by a previous flight.
   document.body.appendChild(el);
+  el.style.transition = 'none';
   el.style.position = 'fixed';
   el.style.margin = '0';
   el.style.left = a.left + 'px';
@@ -5075,51 +5106,151 @@ function flyChip(opts){
   el.style.zIndex = '500';
   el.style.pointerEvents = 'none';
   el.style.transformOrigin = '50% 50%';
+  el.style.willChange = 'transform';
   el.style.transform = 'translate(0,0) scale(1,1) rotate(0deg)';
   void el.offsetWidth;
 
-  const dx = b.left - a.left, dy = b.top - a.top;
-  const sx = b.width / a.width, sy = b.height / a.height;
-  const hop = -(8 + Math.random()*8);            // the "small arc" — a lift mid-flight, not a straight line
-  const spin = (Math.random()<.5?-1:1) * (30 + Math.random()*40);  // a modest tumble, always resolved flat by landing
-  const dur = Math.round((fast ? 230 : 320) * speedMult());
-  const s1 = Math.max(1, Math.round(dur*0.22)), s2 = Math.max(1, Math.round(dur*0.40)), s3 = Math.max(1, dur - s1 - s2);
+  // Every delta below is CENTRE-to-centre, not corner-to-corner. With
+  // transform-origin at the box's own centre (so ROTATION spins the chip
+  // in place rather than swinging it around a corner), translate(dx,dy)
+  // moves that centre by an exact px amount regardless of whatever scale
+  // is composed with it — so centre-to-centre math is what actually lands
+  // the box's edges on the destination rect exactly. Corner-to-corner
+  // math (the previous approach) is off by half the width/height
+  // difference between the source and destination chip sizes — e.g.
+  // bank's 21px vs the pot's 25px — which was exactly the small but
+  // consistent landing-snap this pass fixes: every single bank→pot flight
+  // was quietly resting ~2px away from where its final transform said it
+  // should be, because the browser's own flex layout (with no transform
+  // involved) doesn't have that corner-vs-centre pivot error.
+  const aCx = a.left + a.width/2, aCy = a.top + a.height/2;
+  const centerDelta = (r)=>({ dx:(r.left+r.width/2)-aCx, dy:(r.top+r.height/2)-aCy, sx:r.width/a.width, sy:r.height/a.height });
+  const d0 = centerDelta(b0);
+  const hop = -(6 + Math.random()*8);            // the "small arc" — a lift mid-flight, not a straight line
+  const spin = (Math.random()<.5?-1:1) * (18 + Math.random()*30);  // a modest tumble, always resolved flat by landing
+  const dur = Math.round((fast ? 230 : 700) * speedMult());
+  const s1 = Math.max(1, Math.round(dur*0.18)), s2 = Math.max(1, Math.round(dur*0.64)), s3 = Math.max(1, dur - s1 - s2);
   function waypoint(t, rotDeg){
-    const sxT = 1+(sx-1)*t, syT = 1+(sy-1)*t;
-    return 'translate('+(dx*t)+'px,'+(dy*t+hop*Math.sin(Math.PI*Math.min(1,t*1.15)))+'px) scale('+sxT+','+syT+') rotate('+rotDeg+'deg)';
+    const sxT = 1+(d0.sx-1)*t, syT = 1+(d0.sy-1)*t;
+    return 'translate('+(d0.dx*t)+'px,'+(d0.dy*t+hop*Math.sin(Math.PI*Math.min(1,t*1.15)))+'px) scale('+sxT+','+syT+') rotate('+rotDeg+'deg)';
   }
 
-  el.style.transition = 'transform '+s1+'ms cubic-bezier(.4,0,.7,.3)';
-  el.style.transform = waypoint(0.18, spin*0.25);
-  setTimeout(()=>{
-    el.style.transition = 'transform '+s2+'ms cubic-bezier(.35,0,.6,1)';
-    el.style.transform = waypoint(0.75, spin*0.85);
-    setTimeout(()=>{
-      el.style.transition = 'transform '+s3+'ms cubic-bezier(.15,.8,.25,1)';
-      el.style.transform = 'translate('+dx+'px,'+dy+'px) scale('+sx+','+sy+') rotate(0deg)';
-      setTimeout(()=>{
-        el.style.position=''; el.style.margin=''; el.style.left=''; el.style.top='';
-        el.style.width=''; el.style.height=''; el.style.zIndex=''; el.style.pointerEvents='';
-        el.style.transformOrigin=''; el.style.transform=''; el.style.transition='';
-        land();
-      }, s3);
-    }, s2);
-  }, s1);
+  // Pass 3C.2: the pin above (transition:none, at the source rect) has to
+  // actually be PAINTED before we switch the transition on and move the
+  // chip — a single requestAnimationFrame only guarantees we're at the
+  // start of a frame whose style has been committed, not that the
+  // browser has presented that frame to the screen yet. Nesting a second
+  // rAF inside the first is the standard guarantee that a full pinned
+  // frame has been committed AND painted first, so the animation below
+  // has a real, on-screen "before" state to animate away from. Without
+  // this, the browser can coalesce the pin and the first animated frame
+  // into a single frame, and the chip appears to blip straight to
+  // wherever the animation is partway through instead of visibly leaving
+  // its source position.
+  requestAnimationFrame(()=>{
+    requestAnimationFrame(()=>{
+      // Pass 3C.4: release+arc is ONE continuous Web Animations API
+      // timeline (was two separately re-triggered CSS transitions,
+      // reassigning `transition`+`transform` a second time via setTimeout
+      // mid-flight). Real captured on-device data showed that second
+      // reassignment could leave the browser without a properly-registered
+      // running transition — the chip would freeze at whatever value the
+      // cascade last resolved to for a few hundred ms instead of
+      // continuing to move. A single animate() call has no such handoff —
+      // it's one timeline the browser owns start to finish — while still
+      // tracing the same release-then-arc path (a keyframe at the old
+      // waypoint(0.16) fraction) with the same two per-segment easing
+      // curves as before, so the visual shape of the motion is unchanged.
+      const midOffset = 0.16 / 0.93;
+      const anim = el.animate([
+        { transform: 'translate(0,0) scale(1,1) rotate(0deg)', easing: 'cubic-bezier(.4,0,.7,.3)' },
+        { transform: waypoint(0.16, spin*0.25), offset: midOffset, easing: 'cubic-bezier(.35,0,.6,1)' },
+        { transform: waypoint(0.93, spin*0.9) }
+      ], { duration: s1+s2, fill: 'forwards' });
+      anim.onfinish = ()=>{
+        // commitStyles()+cancel() bakes the animation's current frame into
+        // a plain inline style and releases the animation's hold on
+        // `transform` — the exact same category of "an Animation outranks
+        // inline styles for a property it's controlling" that made the
+        // stale disc-in class hijack flights in the first place, so this
+        // handoff has to be explicit rather than left to fill:'forwards'
+        // lingering indefinitely.
+        anim.commitStyles();
+        anim.cancel();
+        // Re-measured fresh right here, immediately before the final
+        // approach, rather than reusing d0 from launch — the literal
+        // guarantee (not just an assumption) that the flying chip's last
+        // frame and the resting chip's first frame are pixel-identical. A
+        // gentle back-out ease gives a 1-2px settle/bounce on arrival: the
+        // curve overshoots slightly mid-transition, but a CSS transition
+        // always ENDS exactly on the value it's given, so the chip still
+        // comes to rest precisely on the real target — there's nothing
+        // left to snap to once it gets there. Nothing else is animating
+        // `transform` at this point (the WAAPI animation above was just
+        // explicitly cancelled), so this is a single, uncontested
+        // transition — the one stage the on-device capture already showed
+        // behaving correctly.
+        const d = centerDelta(rectOf());
+        el.style.transition = 'transform '+s3+'ms cubic-bezier(.3,1.15,.4,1)';
+        el.style.transform = 'translate('+d.dx+'px,'+d.dy+'px) scale('+d.sx+','+d.sy+') rotate(0deg)';
+        setTimeout(()=>{
+          el.style.position=''; el.style.margin=''; el.style.left=''; el.style.top='';
+          el.style.width=''; el.style.height=''; el.style.zIndex=''; el.style.pointerEvents='';
+          el.style.transformOrigin=''; el.style.transform=''; el.style.transition=''; el.style.willChange='';
+          land();
+        }, s3);
+      };
+    });
+  });
 }
 /* Per-chip launch stagger. Bets stay readable without dragging: a couple
-   of chips is a quick flick, a big bet stretches out enough to actually
-   register "that's a lot of my stack," and huge/all-in transfers are
-   capped (STAGGER_CAP) so a 16-chip shove doesn't get tedious. Payouts
-   pass fast:true for a noticeably snappier, more energetic release. */
+   of chips is a quick flick, ordinary bets land in the ~80-120ms band
+   (clearly readable as individual launches), and huge/all-in transfers
+   compress somewhat so they don't get tedious. Payouts pass fast:true for
+   a noticeably snappier, more energetic release — same shape, scaled
+   down. */
 function chipStaggerGap(n, fast){
-  const base = n<=2 ? 55 : n<=6 ? 70 : n<=12 ? 55 : 45;
-  return fast ? Math.max(22, Math.round(base*0.6)) : base;
+  const base = n<=2 ? 70 : n<=6 ? 110 : n<=12 ? 95 : n<=20 ? 80 : 65;
+  return fast ? Math.max(30, Math.round(base*0.55)) : base;
 }
-const STAGGER_CAP = 17;
+/* How many chips may be simultaneously mid-flight (launched, not yet
+   landed) at once. Pass 3C.3: NOT a launch-rate limiter — the gap above
+   already paces launches — this is a hard ceiling on concurrent
+   in-flight chips so a very large transfer (a 40+ chip all-in) can't
+   still end up with dozens of simultaneous CSS transitions / will-change
+   compositor layers / pending placeholder-swaps in flight together, even
+   though at ordinary pacing (duration ÷ gap ≈ 5) it almost never
+   actually binds. */
+const MAX_CONCURRENT_FLIGHTS = 6;
 
-/* Launches `n` individually staggered flyChip() calls — the batch
-   version of a bank<->pot (or pot<->opponent-seat) transfer. `src`/`dst`
-   are {container,pile} or {el}, exactly matching flyChip's own contract.
+/* Launches `n` flyChip() calls as one controlled, self-correcting queue —
+   the batch version of a bank<->pot (or pot<->opponent-seat) transfer.
+   `src`/`dst` are {container,pile} or {el}, exactly matching flyChip's
+   own contract.
+
+   Pass 3C.3 root-cause fix: this used to fire `n` INDEPENDENT
+   setTimeout(fn, i*gap) timers, all computed up front relative to a
+   single reference point. That has two concrete failures: (1) it hard-
+   capped the effective offset for large i, so a big transfer launched a
+   whole tail of chips at the exact same instant; and (2) independent
+   fixed-offset timers don't self-correct — if the main thread is busy
+   for any reason (another chip's forced layout read, a render() call,
+   anything), every timer whose due-time has already passed fires back to
+   back the instant the thread frees up, so several chips launch, claim a
+   slot, and pin in the same frame. Visually that's indistinguishable
+   from "the chip just appeared" — and it gets WORSE the more chips there
+   are, exactly matching what large transfers were doing.
+
+   The fix is a single lane: launch one chip, then wait `gap` ms AND for
+   an in-flight slot to free up (whichever is later) before launching the
+   next. Because each wait is scheduled off the PREVIOUS launch's own
+   real completion (not a precomputed cumulative offset), a stall delays
+   the whole queue instead of compressing it — there is no way for two
+   launches to end up sharing a frame except by genuine bad luck, not by
+   timer drift. Once a chip is actually launched it's just a running CSS
+   transition (see flyChip) — cheap, compositor-driven, costs nothing
+   further from this queue.
+
    addPending(s,d) mirrors the pre-3B transferPile's bookkeeping
    contract: called once up front with (n,n) so both piles read "busy"
    for the whole transfer, then (-1,0) at each chip's own launch and
@@ -5138,16 +5269,21 @@ function transferChips(n, src, dst, addPending, fast){
   }
   addPending(n, n);
   const gap = chipStaggerGap(n, fast);
-  for (let i=0;i<n;i++){
-    setTimeout(()=>{
-      addPending(-1, 0);
-      flyChip({
-        srcContainer:src.container, srcPile:src.pile, srcEl:src.el,
-        dstContainer:dst.container, dstPile:dst.pile, dstEl:dst.el,
-        fast, onLand: ()=>{ addPending(0,-1); }
-      });
-    }, Math.min(i, STAGGER_CAP)*gap);
-  }
+  let launched = 0, active = 0, gateOpen = true;
+
+  const pump = ()=>{
+    if (launched>=n || !gateOpen || active>=MAX_CONCURRENT_FLIGHTS) return;
+    gateOpen = false;
+    launched++; active++;
+    addPending(-1, 0);
+    flyChip({
+      srcContainer:src.container, srcPile:src.pile, srcEl:src.el,
+      dstContainer:dst.container, dstPile:dst.pile, dstEl:dst.el,
+      fast, onLand: ()=>{ active--; addPending(0,-1); pump(); }
+    });
+    if (launched<n) setTimeout(()=>{ gateOpen = true; pump(); }, gap);
+  };
+  pump();
 }
 
 /* Payout: `n` real pot chips leave the pot and travel to the winner's
