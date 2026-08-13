@@ -640,6 +640,22 @@ button{ font-family:inherit; }
 }
 .seat.winner .avatar{ border-color:var(--good); box-shadow:0 0 0 3px var(--good), 0 2px 0 rgba(0,0,0,.45); }
 .seat.winner .seat-name{ color:var(--good); }
+/* Showdown result console — opponent-seat celebration. A brief punch/pop
+   plus a finite (not infinite) rim pulse layered on top of the permanent
+   .seat.winner glow above, triggered once by celebrateWinnerSeat() right
+   after highlightWinningCards() so the eye lands on cards, then seat. A
+   NEW keyframe rather than reusing .face-pop (that one targets the SVG
+   face element specifically — coupling it to seat-box chrome risks
+   interfering with face-rendering internals). The opponent's seat IS
+   their celebration — see the separate, stronger .hud-frame win-* set
+   below for the human's own noticeably bigger moment. */
+.winner-pop{ animation:winnerPunch .3s steps(4,end); }
+@keyframes winnerPunch{ 0%{ transform:scale(1); } 45%{ transform:scale(1.08); } 100%{ transform:scale(1); } }
+.seat.winner-pulse .avatar, .seat.winner-pulse .seat-card{ animation:winnerRim .55s steps(6,end) 2; }
+@keyframes winnerRim{
+  0%,100%{ box-shadow:0 0 0 3px var(--good), 0 2px 0 rgba(0,0,0,.45); }
+  50%{ box-shadow:0 0 0 6px var(--good), 0 2px 0 rgba(0,0,0,.45); }
+}
 
 /* SB/BB token — one coherent circular physical-marker design shared with
    the human HUD's #hud-pos (see below), just sized for the compact seat
@@ -888,6 +904,52 @@ button{ font-family:inherit; }
    .hand-strength comment for the actual cause); kept dimensionless
    on purpose so it stays that way. */
 #hud-frame:has(.seat.you.active){ border-color:var(--accent); }
+/* Showdown result console — the bottom HUD temporarily becomes the result
+   display instead of a floating panel covering the felt. #hud-left/
+   #hud-right (chip tower, hearts/nameplate/action-slot/position) are pure
+   HUD chrome with no direct table-state ownership and recede entirely;
+   #hud-mid's own hole-card content (.seat.you, always its first child —
+   see initSeats()) is untouched by this rule since only its LATER sibling
+   (#hud-status) is affected. Both changes are needed together: hiding the
+   two side bays alone would NOT free their width, since CSS grid reserves
+   a fixed-length track (96px) regardless of whether its content is
+   visible — only changing grid-template-columns itself does that. */
+#hud-frame.result-mode{ grid-template-columns:1fr; }
+#hud-frame.result-mode #hud-left,
+#hud-frame.result-mode #hud-right{ display:none; }
+/* Human-win celebration — deliberately bigger than the opponent seat
+   pop/pulse above: the human's own .seat.you has no visible .seat-card/
+   .avatar to glow, and a win at MY table should feel noticeably better
+   than watching an opponent win. Triggered by celebrateWinnerSeat('you')
+   as a short-lived class on #hud-frame itself, right before it
+   transforms into the result console — the existing dashboard housing
+   getting a bigger moment, not a duplicated portrait or new element. A
+   brief mechanical shake/bounce plus a stepped rim-flash cycling between
+   the existing --good/--accent-bright tokens (never a hardcoded colour,
+   so this reads correctly in every theme), finite (2 flash cycles), then
+   settles straight into the normal .result-mode look. */
+.hud-frame-win{ animation:hudWinShake .45s steps(8,end); }
+@keyframes hudWinShake{
+  0%{ transform:translateY(0) scale(1); }
+  15%{ transform:translateY(-3px) scale(1.015); }
+  30%{ transform:translateY(1px) translateX(-2px) scale(1.01); }
+  45%{ transform:translateY(0) translateX(2px) scale(1.02); }
+  60%{ transform:translateY(-1px) translateX(-1px) scale(1.01); }
+  100%{ transform:translateY(0) translateX(0) scale(1); }
+}
+.hud-frame-win-flash{ animation:hudWinFlash .6s steps(6,end) 2; }
+@keyframes hudWinFlash{
+  0%,100%{ box-shadow:0 4px 0 rgba(0,0,0,.55), inset 0 2px 0 rgba(255,255,255,.08), inset 0 -2px 0 rgba(0,0,0,.3), 0 0 0 2px var(--good); }
+  50%{ box-shadow:0 4px 0 rgba(0,0,0,.55), inset 0 2px 0 rgba(255,255,255,.08), inset 0 -2px 0 rgba(0,0,0,.3), 0 0 0 6px var(--accent-bright); }
+}
+/* The human's own amount readout hits harder/brighter than a secondary
+   side-pot mention — a static stronger glow (no extra animation
+   complexity needed beyond the shared per-digit tick already used for
+   every readout, see revealResultAmount()). */
+.amt-readout.mine{
+  border-color:var(--good);
+  box-shadow:0 3px 0 rgba(0,0,0,.5), inset 0 2px 0 rgba(0,0,0,.5), 0 0 10px rgba(111,203,146,.55);
+}
 .hud-recess{
   border:2px solid var(--px-ink); border-radius:2px;
   background:
@@ -922,6 +984,63 @@ button{ font-family:inherit; }
 #hud-mid{
   display:flex; flex-direction:column; align-items:center; gap:6px; min-width:0;
 }
+/* The banner/hand-strength/jackpot trio (#hud-status-normal) and the
+   showdown result content (.hud-result) are two faces of the same box,
+   cross-faded rather than 3D-flipped like the AWARD POT console — that
+   flip only works there because both its faces are near-equal height; the
+   result face here is meaningfully taller and content-length-dependent,
+   so its real height is measured in JS (showHudResultConsole/
+   hideHudResultConsole, mirroring openRaisePanel()'s own --raise-lift
+   technique) and written to --status-h, which this transition animates
+   to. #hud-status-normal stays plain in-flow (position:static) at all
+   times except the brief .showing-result window, so ordinary betting-round
+   HUD sizing is completely unaffected the rest of the time. */
+#hud-status{ position:relative; width:100%; }
+#hud-status.animating-height{
+  height:var(--status-h, auto); overflow:hidden;
+  transition:height var(--dur) steps(6,end);
+}
+#hud-status-normal{
+  display:flex; flex-direction:column; align-items:center; gap:6px; width:100%;
+  transition:opacity var(--dur-fast) steps(3,end), transform var(--dur) steps(6,end);
+  transform-origin:50% 0;
+}
+.hud-result{
+  position:absolute; left:0; right:0; top:0; width:100%;
+  display:flex; flex-direction:column; align-items:center; gap:5px;
+  opacity:0; transform:scaleY(.08); transform-origin:50% 0; pointer-events:none;
+  transition:opacity var(--dur-fast) steps(3,end), transform var(--dur) steps(6,end);
+}
+#hud-status.showing-result #hud-status-normal{
+  position:absolute; left:0; right:0; top:0; width:100%;
+  opacity:0; transform:scaleY(.08); pointer-events:none;
+}
+#hud-status.showing-result .hud-result{ opacity:1; transform:scaleY(1); pointer-events:auto; }
+.hr-name{
+  font-family:var(--font-hdr); font-size:13px; font-weight:400; text-transform:uppercase;
+  letter-spacing:.05em; text-align:center; color:var(--accent-bright); text-shadow:1px 1px 0 var(--px-ink);
+}
+.hr-cat{
+  font-family:var(--font-hdr); font-size:11px; font-weight:400; letter-spacing:.04em;
+  text-transform:uppercase; text-align:center; color:var(--ink); text-shadow:1px 1px 0 var(--px-ink);
+}
+.hr-desc{ font-size:11px; color:var(--ink-dim); text-align:center; }
+.hr-label{
+  font-family:var(--font-hdr); font-size:8px; font-weight:400; letter-spacing:.08em;
+  text-transform:uppercase; color:var(--ink-faint); text-align:center;
+}
+/* One-shot payout readout — reuses .jp-cell/.jp-digit/.tick/jpTick
+   (below) verbatim, NOT #jackpot/buildJackpot/updateJackpot (those are
+   the player's own live, diffed, 6-digit-capped bankroll counter; this is
+   a fresh, uncapped, built-once-per-hand widget). No leading '+' — this
+   reads as a payout/jackpot amount, not a stat delta. */
+.amt-readout{
+  display:flex; gap:3px; align-items:stretch; padding:4px 5px;
+  background:rgba(0,0,0,.5); border:2px solid var(--accent); border-radius:3px;
+  box-shadow:0 3px 0 rgba(0,0,0,.5), inset 0 2px 0 rgba(0,0,0,.5);
+}
+/* .amt-readout.mine (the human-win stronger glow) is defined earlier,
+   alongside the other hud-frame-win-* human-celebration rules. */
 #hud-right{
   display:flex; flex-direction:column; align-items:center; justify-content:flex-start; gap:6px;
   padding:6px 4px;
@@ -980,6 +1099,10 @@ button{ font-family:inherit; }
   text-shadow:0 0 6px rgba(217,169,59,.45), 1px 1px 0 var(--px-ink);
 }
 .jp-sym{ color:var(--accent); min-width:16px; }
+/* Thousands-separator cell for the showdown result readout ($1,449) —
+   same static-symbol treatment as .jp-sym, just narrower since a comma
+   needs far less width than a digit or the $ sign. */
+.jp-cell.jp-comma{ min-width:7px; padding-left:0; padding-right:0; }
 .jp-digit.dim{ color:rgba(255,255,255,.16); text-shadow:none; }
 .jp-digit.tick{ animation:jpTick .22s steps(3,end); }
 @keyframes jpTick{ 0%{ transform:translateY(-7px); opacity:.2; } 100%{ transform:translateY(0); opacity:1; } }
@@ -1003,70 +1126,11 @@ button{ font-family:inherit; }
   box-shadow:0 6px 0 rgba(0,0,0,.55); opacity:0; animation:resultIn .24s steps(4,end) forwards;
 }
 @keyframes resultIn{ from{ opacity:0; transform:translate(-50%,-10px); } to{ opacity:1; transform:translate(-50%,0); } }
-/* Pass 1 showdown revamp — the winner/result panel. Sits in the open felt
-   band between the opponent row and the board/pot (NOT the old .sd-compact
-   trick of borrowing .pot-area's slot — this pass deliberately shows the
-   panel WHILE the pot still visually holds its chips, since payout is now
-   deferred until AWARD POT is pressed) so the table, the board, and the
-   win-card/dim-card highlighting all stay visible around it rather than
-   being covered. Exact top% is a starting estimate — verify at 430×932
-   against the opponent row and board before shipping. */
-/* Showdown polish, pass 2 — the winner panel restyled as a physical
-   SHOWDOWN MODULE built from the same construction grammar as the
-   opponent boards (.seat-card) and the player's own dashboard
-   (#hud-frame/.hud-recess/#hud-left/#hud-right), not a generic bordered
-   card: a raised outer housing with corner highlight dabs, containing
-   recessed instrument bays (dark fill, inset top shadow + inset bottom
-   sheen, matching corner dabs) for each piece of information — portrait,
-   hole cards, best hand, amount — instead of everything floating loose
-   in open padding. */
-.result-card.winner-panel{
-  top:24%; max-height:58vh; overflow-y:auto; padding:10px 14px 12px;
-  background:
-    linear-gradient(rgba(255,255,255,.14) 0 0) top 3px left 3px / 3px 3px no-repeat,
-    linear-gradient(rgba(255,255,255,.14) 0 0) top 3px right 3px / 3px 3px no-repeat,
-    var(--panel);
-  box-shadow:0 6px 0 rgba(0,0,0,.55), inset 0 2px 0 rgba(255,255,255,.08), inset 0 -2px 0 rgba(0,0,0,.3);
-}
-.wp-title{
-  font-family:var(--font-hdr); font-size:13px; font-weight:400; text-transform:uppercase;
-  letter-spacing:.05em; text-align:center; color:var(--accent-bright);
-  text-shadow:1px 1px 0 var(--px-ink); margin-bottom:8px;
-}
-/* One shared recessed-bay recipe (same corner-dab + inset-shadow grammar
-   as .hud-recess/#hud-left/#hud-right) for every instrument in the
-   module — portrait, hole cards, best hand, amount — so they read as
-   compartments machined into the same housing rather than separate
-   floating widgets. */
-.wp-bay{
-  border:2px solid var(--px-ink); border-radius:2px;
-  background:
-    linear-gradient(rgba(255,255,255,.16) 0 0) top 2px left 2px / 3px 3px no-repeat,
-    linear-gradient(rgba(255,255,255,.16) 0 0) top 2px right 2px / 3px 3px no-repeat,
-    linear-gradient(rgba(255,255,255,.16) 0 0) bottom 2px left 2px / 3px 3px no-repeat,
-    linear-gradient(rgba(255,255,255,.16) 0 0) bottom 2px right 2px / 3px 3px no-repeat,
-    rgba(0,0,0,.36);
-  box-shadow:inset 0 3px 0 rgba(0,0,0,.45), inset 0 -1px 0 rgba(255,255,255,.07);
-  padding:7px 8px; margin-bottom:7px;
-}
-.wp-bay:last-child{ margin-bottom:0; }
-.wp-bay-label{
-  font-family:var(--font-hdr); font-size:8px; font-weight:400; letter-spacing:.06em;
-  text-transform:uppercase; color:var(--ink-faint); text-align:center; margin-bottom:5px;
-}
-.wp-portrait-bay{ display:flex; justify-content:center; padding:8px; }
-/* Deliberately fixed/compact regardless of the table's own --avatar-w
-   scaling (which can run up to ~78px for a 3-opponent table) — the panel
-   stays a predictable height no matter how many opponents are seated. */
-.wp-portrait-bay .avatar-wrap{ width:44px !important; height:44px !important; }
-.wp-cards{ display:flex; justify-content:center; gap:3px; }
-.wp-cards .card.wp-gap{ margin-left:7px; }
-.wp-amount-bay{ text-align:center; }
-.wp-amount{
-  font-family:var(--font-hdr); font-size:22px; font-weight:400;
-  color:var(--accent-bright); text-shadow:1px 1px 0 var(--px-ink);
-}
-.wp-amount.mine{ color:var(--good); }
+/* Showdown result console, pass 4 — the floating winner-panel/plaque is
+   retired entirely; the result now lives in the bottom HUD (see
+   #hud-frame.result-mode / showHudResultConsole() in the JS) instead of a
+   panel covering the felt. .result-card itself (below) and .rc-title stay
+   — both are still used by the unrelated .result-card.gameover card. */
 .result-card .rc-title{
   font-size:10.5px; text-transform:uppercase; letter-spacing:.15em;
   color:var(--accent); font-weight:800; margin-bottom:8px; text-align:center;
@@ -1095,6 +1159,24 @@ button{ font-family:inherit; }
   box-shadow:0 0 0 3px var(--accent-bright), 0 3px 0 rgba(0,0,0,.5), inset 0 2px 0 #FFFFFF;
   transform:translateY(-4px);
   transition:box-shadow var(--dur) steps(2,end), transform var(--dur) steps(3,end), opacity var(--dur);
+}
+/* Within the already-highlighted winning five, a second tier calls out
+   specifically the cards that FORM the named made hand (see
+   strongWinningCardKeys) — kickers stay at the base .win-card ring above,
+   so the eye reads "these are why you won" rather than just "these five
+   are involved." color-mix() derives the glow from the theme's own
+   --accent-bright (same technique already used for the AWARD button's
+   shadow) rather than a hardcoded colour, so it reads correctly in every
+   theme, not just the default gold one. */
+.card.win-card.win-card-strong{
+  box-shadow:0 0 0 4px var(--accent-bright), 0 0 14px 2px color-mix(in srgb, var(--accent-bright) 65%, transparent), 0 4px 0 rgba(0,0,0,.5), inset 0 2px 0 #FFFFFF;
+  transform:translateY(-7px);
+}
+/* Full house only — the trips read as slightly more load-bearing than
+   the pair, both already at the .win-card-strong tier above. */
+.card.win-card.win-card-strong.win-card-hero{
+  box-shadow:0 0 0 5px var(--accent-bright), 0 0 18px 3px color-mix(in srgb, var(--accent-bright) 78%, transparent), 0 4px 0 rgba(0,0,0,.5), inset 0 2px 0 #FFFFFF;
+  transform:translateY(-9px);
 }
 .card.dim-card{ opacity:.4; transition:opacity var(--dur); }
 
@@ -1780,9 +1862,14 @@ button, [role="button"], input[type="button"], input[type="submit"] {
         <div id="hud-frame">
           <div id="hud-left"><div id="hud-tower" aria-hidden="true"></div></div>
           <div id="hud-mid">
-            <div class="banner" id="banner" role="status" aria-live="polite"></div>
-            <div class="hand-strength" id="hand-strength"></div>
-            <div id="jackpot" aria-hidden="true"><span class="jp-cell jp-sym">$</span></div>
+            <div id="hud-status">
+              <div id="hud-status-normal">
+                <div class="banner" id="banner" role="status" aria-live="polite"></div>
+                <div class="hand-strength" id="hand-strength"></div>
+                <div id="jackpot" aria-hidden="true"><span class="jp-cell jp-sym">$</span></div>
+              </div>
+              <div class="hud-result" id="hud-result"></div>
+            </div>
           </div>
           <div id="hud-right">
             <div class="hearts hidden" id="hud-hearts" aria-hidden="true"></div>
@@ -2618,29 +2705,342 @@ const Sound = (function(){
       osc.start(t); osc.stop(t+dur+0.02);
     } catch(e){}
   }
-  function noise(dur, vol){
+  /* Generalized from its original 2-arg form (dur,vol) — every pre-V1
+     call site (e.g. Sound.fold(), still 2-arg) behaves EXACTLY as
+     before (opts defaults reproduce the original fixed bandpass@1800Hz/
+     decayPow2.5 curve). The optional 3rd `opts` arg ({filterType, freq,
+     freqSweepTo, Q, decayPow}) is what SFX V1's card/button/counter
+     families below build on, so every noise-based sound in the game
+     — old and new — goes through this one buffer-fill implementation
+     rather than each duplicating it. */
+  function noise(dur, vol, opts){
     const c = ac(); if (!c) return;
     try{
-      const n = Math.floor(c.sampleRate*dur);
+      opts = opts || {};
+      const n = Math.max(1, Math.floor(c.sampleRate*dur));
       const buf = c.createBuffer(1, n, c.sampleRate);
       const d = buf.getChannelData(0);
-      for (let i=0;i<n;i++) d[i] = (Math.random()*2-1) * Math.pow(1-i/n, 2.5);
+      const decayPow = opts.decayPow!=null ? opts.decayPow : 2.5;
+      for (let i=0;i<n;i++) d[i] = (Math.random()*2-1) * Math.pow(1-i/n, decayPow);
       const s = c.createBufferSource(); s.buffer = buf;
       const g = c.createGain(); g.gain.value = vol||0.05;
-      const f = c.createBiquadFilter(); f.type='bandpass'; f.frequency.value=1800;
+      const f = c.createBiquadFilter();
+      f.type = opts.filterType || 'bandpass';
+      const freq = opts.freq!=null ? opts.freq : 1800;
+      f.frequency.setValueAtTime(freq, c.currentTime);
+      if (opts.freqSweepTo!=null) f.frequency.exponentialRampToValueAtTime(Math.max(40,opts.freqSweepTo), c.currentTime+dur);
+      if (opts.Q!=null) f.Q.value = opts.Q;
       s.connect(f); f.connect(g); g.connect(c.destination);
       s.start();
     } catch(e){}
   }
+
+  /* ---- Chip SFX v0.1 (experimental) ----
+     Procedural, retro/arcade "hard little impact" — a very short
+     bandpassed-noise transient (the strike) layered with one or two
+     brief, slightly detuned high-frequency tonal partials (the metallic
+     ring), NOT a clean pitched oscillator. Every parameter below is
+     randomized within a tight, restrained range per hit, so repeated
+     chips read as one irregular family (tik/tink/tk/klik) rather than
+     the same sample replayed. Reuses this module's own shared
+     AudioContext (ac()) — no second context, same settings.sound gate
+     as every other Sound.* call. chipSfxEnabled is a plain, directly
+     settable property (Sound.chipSfxEnabled = false) — a deliberately
+     dumb kill-switch for this experimental pass, ahead of a real
+     Settings UI. activeVoices/MAX_VOICES is a hard polyphony cap; the
+     density tracker below (see chipLand) softens hits before that cap
+     is ever likely to bind, so a 30-50 chip cascade tapers in perceived
+     loudness rather than either stacking full-volume gain or abruptly
+     going silent once the cap is hit. */
+  let chipActiveVoices = 0;
+  const CHIP_MAX_VOICES = 10;
+  let chipLandTimes = [];
+  const CHIP_DENSITY_WINDOW_MS = 140;
+  const CHIP_DENSITY_SOFTEN_AFTER = 4;
+
+  function chipClink(soft){
+    const c = ac(); if (!c) return;
+    if (chipActiveVoices >= CHIP_MAX_VOICES) return; // drop, don't stack — last-resort cap under the density taper
+    chipActiveVoices++;
+    let released = false;
+    const release = ()=>{ if (released) return; released = true; chipActiveVoices = Math.max(0, chipActiveVoices-1); };
+    setTimeout(release, 160); // safety net in case a node's own 'ended'/stop callback is ever missed — always frees the voice slot
+
+    try{
+      const t = c.currentTime;
+      const vol = 0.05 * (soft ? 0.55 : 1);
+
+      // the strike: a very short bandpassed noise burst, hard fast decay
+      const noiseDur = 0.014 + Math.random()*0.010;              // ~14-24ms
+      const n = Math.max(1, Math.floor(c.sampleRate*noiseDur));
+      const buf = c.createBuffer(1, n, c.sampleRate);
+      const d = buf.getChannelData(0);
+      const decayPow = 3.2 + Math.random()*1.6;                   // steeper = drier/harder
+      for (let i=0;i<n;i++) d[i] = (Math.random()*2-1) * Math.pow(1-i/n, decayPow);
+      const src = c.createBufferSource(); src.buffer = buf;
+      const nf = c.createBiquadFilter(); nf.type = 'bandpass';
+      nf.frequency.value = 2600 + Math.random()*2400;             // 2.6-5kHz: click, not boom
+      nf.Q.value = 1.1 + Math.random()*0.8;
+      const ng = c.createGain();
+      ng.gain.value = vol * (0.55 + Math.random()*0.35);
+      src.connect(nf); nf.connect(ng); ng.connect(c.destination);
+
+      // the ring: one or two short, inharmonically-related tonal partials
+      const partials = Math.random()<0.15 ? 1 : 2;
+      const f1 = 1500 + Math.random()*2200;                        // ~1.5-3.7kHz
+      const ratio = 2.1 + Math.random()*1.1;                        // inharmonic -> metallic, not a clean pitch
+      const freqs = partials===2 ? [f1, f1*ratio] : [f1];
+      freqs.forEach((f,i)=>{
+        const osc = c.createOscillator();
+        osc.type = Math.random()<0.5 ? 'triangle' : 'square';
+        osc.frequency.setValueAtTime(f, t);
+        const g = c.createGain();
+        const partialVol = vol * (i===0 ? 0.5 : 0.32) * (0.6 + Math.random()*0.5);
+        const dur = 0.02 + Math.random()*0.03;                      // ~20-50ms, extremely short
+        g.gain.setValueAtTime(0.0001, t);
+        g.gain.exponentialRampToValueAtTime(Math.max(0.0005, partialVol), t+0.002);
+        g.gain.exponentialRampToValueAtTime(0.0001, t+dur);
+        osc.connect(g); g.connect(c.destination);
+        osc.start(t); osc.stop(t+dur+0.02);
+      });
+
+      src.start(t);
+      src.stop(t+noiseDur+0.005);
+      src.onended = release;
+    } catch(e){ release(); }
+  }
+
+  /* ---- SFX V1 — physical/retro pass over the rest of the game ----
+     Same procedural-Web-Audio approach as the chip pass above, same
+     shared AudioContext/settings.sound gate, same "hook the real event,
+     never a fake timer" rule. Organized as one shared lightweight
+     polyphony guard (withVoiceCap — cards/buttons/results are far less
+     dense than chips, so a single generous cap across all of them is
+     enough; it does NOT need chip-land's precise real-onended tracking,
+     just a coarse duration-based release) plus one function per named
+     sound family below. CARD sounds are noise-only by design (no
+     oscillators) — papery/dry, never tonal. BUTTON/COUNTER/RESULT/ALLIN/
+     BUSTED sounds mix a noise "impact" with small tonal components for
+     character. Every per-family constants object near the top of its
+     section is the tuning surface — see the summary given to the user
+     after implementation for the full map. */
+  let miscActiveVoices = 0;
+  const MISC_MAX_VOICES = 14;
+  function withVoiceCap(approxDurMs, fn){
+    if (miscActiveVoices >= MISC_MAX_VOICES) return;
+    miscActiveVoices++;
+    setTimeout(()=>{ miscActiveVoices = Math.max(0, miscActiveVoices-1); }, approxDurMs);
+    try{ fn(); } catch(e){}
+  }
+
+  /* -- 2. Physical action buttons --
+     PRESS = chunky compression (noise + a low thump); RELEASE = a
+     smaller spring/catch tick. Both noise-and-tone, not pure oscillators
+     — the noise gives the "plastic/mechanical" body, the tiny tonal tail
+     gives it a catch/latch character. Weight (not pitch/melody) is what
+     differentiates actions — see BUTTON_WEIGHT. */
+  const BUTTON_WEIGHT = {
+    check:  { pFreq:1100, pDur:0.032, pThump:150, pGain:0.045, rFreq:1900, rGain:0.03 },
+    call:   { pFreq: 900, pDur:0.038, pThump:120, pGain:0.055, rFreq:1700, rGain:0.032 },
+    bet:    { pFreq: 650, pDur:0.048, pThump: 95, pGain:0.065, rFreq:1500, rGain:0.034 },
+    raise:  { pFreq: 600, pDur:0.052, pThump: 88, pGain:0.07,  rFreq:1450, rGain:0.036 },
+    fold:   { pFreq: 500, pDur:0.05,  pThump: 0,  pGain:0.05,  rFreq:1100, rGain:0.024, dull:true },
+    allin:  { pFreq: 420, pDur:0.075, pThump: 62, pGain:0.10,  rFreq:1300, rGain:0.05  },
+    award:  { pFreq: 460, pDur:0.07,  pThump: 72, pGain:0.095, rFreq:1600, rGain:0.05  }
+  };
+  function doButtonPress(kind){
+    const w = BUTTON_WEIGHT[kind] || BUTTON_WEIGHT.call;
+    withVoiceCap(140, ()=>{
+      const jitter = 0.9 + Math.random()*0.2;
+      noise(w.pDur*jitter, w.pGain*(0.85+Math.random()*0.3), {
+        filterType: w.dull ? 'lowpass' : 'bandpass',
+        freq: w.pFreq*(0.92+Math.random()*0.16),
+        freqSweepTo: w.dull ? w.pFreq*0.5 : undefined,
+        Q: w.dull ? undefined : 1.0+Math.random()*0.6,
+        decayPow: 2.2+Math.random()*0.8
+      });
+      if (w.pThump) blip(w.pThump*(0.94+Math.random()*0.12), 0.05+Math.random()*0.02, 'triangle', 0.05*(0.8+Math.random()*0.4));
+    });
+  }
+  function doButtonRelease(kind){
+    const w = BUTTON_WEIGHT[kind] || BUTTON_WEIGHT.call;
+    if (kind==='award'){
+      // KA-CHUNK: a short high 'K' transient immediately followed by a
+      // heavier low 'CHUNK' — the machine physically releasing the pot.
+      withVoiceCap(220, ()=>{
+        noise(0.012+Math.random()*0.006, 0.05, { filterType:'highpass', freq:3200 });
+        setTimeout(()=>{
+          noise(0.05+Math.random()*0.015, 0.09, { filterType:'lowpass', freq:500, freqSweepTo:220, decayPow:2.4 });
+          blip(70+Math.random()*10, 0.09, 'triangle', 0.06);
+        }, 16+Math.random()*8);
+      });
+      return;
+    }
+    withVoiceCap(90, ()=>{
+      noise(0.01+Math.random()*0.008, w.rGain*(0.8+Math.random()*0.4), { filterType:'highpass', freq:w.rFreq*(0.9+Math.random()*0.2) });
+      blip(w.rFreq*0.55*(0.95+Math.random()*0.1), 0.025+Math.random()*0.01, 'sine', w.rGain*0.7);
+    });
+  }
+
+  /* -- 3/4/5. Cards — dealt, landed, flipped, returned, deck settle --
+     Noise-only, by design: shaped/filtered transients suggest paper and
+     cardstock, never a pitched tone. Every call randomizes duration/
+     filter/gain a little so ten dealt cards don't sound identical. */
+  function cardDealSound(){        // FWIP/FLICK — leaves the dealer deck
+    withVoiceCap(90, ()=>noise(0.05+Math.random()*0.02, 0.04+Math.random()*0.015, {
+      filterType:'bandpass', freq:3200+Math.random()*1800, freqSweepTo:1400+Math.random()*600, Q:0.7+Math.random()*0.4, decayPow:2.0+Math.random()*0.6
+    }));
+  }
+  function cardLandSound(){        // soft PAP/TAK — reaches its destination
+    withVoiceCap(70, ()=>noise(0.035+Math.random()*0.015, 0.028+Math.random()*0.012, {
+      filterType:'lowpass', freq:1100+Math.random()*500, decayPow:2.6+Math.random()*0.8
+    }));
+  }
+  function cardFlipSound(strong){  // FWAP/SNAP — turns face-up
+    withVoiceCap(90, ()=>noise(0.045+Math.random()*0.02, (strong?0.05:0.04)+Math.random()*0.015, {
+      filterType:'bandpass', freq:2600+Math.random()*1600, freqSweepTo:5200+Math.random()*1200, Q:0.9+Math.random()*0.5, decayPow:1.8+Math.random()*0.5
+    }));
+  }
+  function cardReturnSound(){      // frrp/fwip — magnetic return flutter
+    withVoiceCap(80, ()=>{
+      noise(0.03+Math.random()*0.02, 0.03+Math.random()*0.012, {
+        filterType:'bandpass', freq:2800+Math.random()*2000, freqSweepTo:1200+Math.random()*600, Q:0.6+Math.random()*0.4, decayPow:2.2+Math.random()*0.6
+      });
+      if (Math.random()<0.35) setTimeout(()=>noise(0.018+Math.random()*0.012, 0.02, {
+        filterType:'bandpass', freq:2200+Math.random()*1400, decayPow:2.4
+      }), 20+Math.random()*20);
+    });
+  }
+  function deckSettleSound(){      // firmer THK — the return cascade completes
+    withVoiceCap(120, ()=>noise(0.05+Math.random()*0.015, 0.045, { filterType:'lowpass', freq:700, freqSweepTo:260, decayPow:2.3 }));
+  }
+
+  /* -- 6. Mechanical number / jackpot counter --
+     Small dry relay ticks as digits settle, a firmer CLACK on lock.
+     Restrained on purpose — this is only for the animated showdown
+     amount reveal, not every static number in the UI. */
+  function counterTickSound(mine){
+    withVoiceCap(50, ()=>noise(0.012+Math.random()*0.006, (mine?0.026:0.02)*(0.8+Math.random()*0.4), {
+      filterType:'highpass', freq:3600+Math.random()*1200, decayPow:3.0
+    }));
+  }
+  function counterLockSound(mine){
+    withVoiceCap(90, ()=>{
+      noise(0.03+Math.random()*0.01, mine?0.05:0.038, { filterType:'bandpass', freq:2200, Q:1.2, decayPow:2.4 });
+      blip(mine?900:760, 0.05, 'square', mine?0.035:0.026);
+    });
+  }
+
+  /* -- 7. Showdown begins -- a short "pay attention" cue, not a sting. */
+  function showdownBeginSound(){
+    withVoiceCap(260, ()=>{
+      noise(0.09+Math.random()*0.02, 0.07, { filterType:'lowpass', freq:380, freqSweepTo:150, decayPow:2.0 });
+      blip(96, 0.16, 'triangle', 0.045);
+      blip(91, 0.16, 'sine', 0.03, 0.01);
+    });
+  }
+
+  /* -- 8/9/10. Showdown result stings --
+     ONE function, one call per showdown — deliberately avoids ever
+     layering a separate opponent-win sound on top of a separate human-
+     loss sound for the same event (see the coordination note at the
+     handleShowdown() call site). 'humanWin' is the deliberately bigger
+     arcade-jackpot moment; 'opponentWin' is short/restrained; 'humanLose'
+     shares opponentWin's impact but ends on a small descending tone
+     instead of an upward one. */
+  function doResultSting(kind){
+    if (kind==='humanWin'){
+      withVoiceCap(650, ()=>{
+        noise(0.05, 0.075, { filterType:'lowpass', freq:500, freqSweepTo:220, decayPow:2.2 });
+        const notes = [392, 523, 659, 880];              // short crunchy ascending run — retro, not orchestral
+        notes.forEach((f,i)=>blip(f, 0.09, i%2?'square':'triangle', 0.05-i*0.004, 0.05+i*0.045));
+      });
+      return;
+    }
+    const humanLose = kind==='humanLose';
+    withVoiceCap(320, ()=>{
+      noise(0.05, humanLose?0.05:0.04, { filterType:'lowpass', freq:420, freqSweepTo:humanLose?140:220, decayPow:2.3 });
+      if (humanLose){
+        blip(220, 0.14, 'triangle', 0.032);
+        blip(165, 0.16, 'triangle', 0.028, 0.06);
+      } else {
+        blip(330, 0.09, 'square', 0.03);
+        blip(392, 0.1, 'triangle', 0.026, 0.05);
+      }
+    });
+  }
+
+  /* -- 11. All-in moment -- heavy physical hit + a very short low
+     retro punctuation note. Shared by both the human's own button-press
+     release (see buttonRelease('allin')) and an AI opponent's all-in
+     (see applyAction) — never both for the same event. */
+  function allInSound(mine){
+    withVoiceCap(220, ()=>{
+      noise(0.07, mine?0.1:0.075, { filterType:'lowpass', freq:340, freqSweepTo:130, decayPow:2.1 });
+      blip(mine?118:100, 0.09, 'square', mine?0.05:0.036);
+    });
+  }
+
+  /* -- 13. Busted / rebuy -- */
+  function bustedSound(mine){
+    withVoiceCap(400, ()=>{
+      noise(0.09, mine?0.09:0.065, { filterType:'lowpass', freq:300, freqSweepTo:90, decayPow:2.0 });
+      [220,175,130].forEach((f,i)=>blip(f, 0.11, 'triangle', (mine?0.04:0.028)-i*0.004, i*0.055));
+    });
+  }
+  function rebuyConfirmSound(){
+    withVoiceCap(150, ()=>{
+      noise(0.02, 0.03, { filterType:'highpass', freq:2400 });
+      blip(520, 0.08, 'triangle', 0.03, 0.03);
+    });
+  }
+
   return {
     unlock(){ ac(); },
-    deal(){ noise(0.09, 0.045); },
+    /* Gated to AI opponents only as of SFX V1 — the human's own fold/
+       check/call/bet/raise now comes from the physical button press/
+       release family below instead (see the applyAction() call sites,
+       which now guard these three with `if (!player.isHuman)`). Kept
+       exactly as they were for the AI case — no redesign. */
     chip(){ blip(320,0.09,'triangle',0.05); blip(220,0.11,'sine',0.035,0.02); },
     check(){ blip(180,0.07,'sine',0.045); },
     fold(){ noise(0.13, 0.03); },
     turn(){ blip(660,0.11,'sine',0.045); blip(880,0.13,'sine',0.035,0.07); },
-    win(){ [523,659,784,1046].forEach((f,i)=>blip(f,0.2,'sine',0.05,i*0.075)); },
-    lose(){ blip(300,0.18,'sine',0.04); blip(220,0.24,'sine',0.035,0.1); }
+    /* Chip SFX v0.1 kill-switch — set Sound.chipSfxEnabled = false to A/B
+       test with the experimental chip sound off, without touching the
+       main sound setting. */
+    chipSfxEnabled: true,
+    /* Call exactly once per REAL chip landing (see flyChip's land()) —
+       never from an independent timer, so the audio always follows the
+       actual visible rhythm. Tracks a short rolling window of recent
+       landings and, once several chips have landed within it, plays
+       subsequent hits softer — a perceptual taper that kicks in well
+       before the hard polyphony cap above, so a large cascade still
+       reads as many individual chips rather than one wall of noise. */
+    chipLand(){
+      if (!this.chipSfxEnabled) return;
+      const now = performance.now();
+      chipLandTimes = chipLandTimes.filter(t=>now-t < CHIP_DENSITY_WINDOW_MS);
+      chipLandTimes.push(now);
+      chipClink(chipLandTimes.length > CHIP_DENSITY_SOFTEN_AFTER);
+    },
+    /* SFX V1 kill-switch — mirrors chipSfxEnabled, separate flag so the
+       whole non-chip pass can be A/B'd off independently while testing. */
+    sfxV1Enabled: true,
+    buttonPress(kind){ if (this.sfxV1Enabled) doButtonPress(kind); },
+    buttonRelease(kind){ if (this.sfxV1Enabled) doButtonRelease(kind); },
+    cardDeal(){ if (this.sfxV1Enabled) cardDealSound(); },
+    cardLanded(){ if (this.sfxV1Enabled) cardLandSound(); },
+    cardFlip(strong){ if (this.sfxV1Enabled) cardFlipSound(strong); },
+    cardReturn(){ if (this.sfxV1Enabled) cardReturnSound(); },
+    deckSettle(){ if (this.sfxV1Enabled) deckSettleSound(); },
+    counterTick(mine){ if (this.sfxV1Enabled) counterTickSound(mine); },
+    counterLock(mine){ if (this.sfxV1Enabled) counterLockSound(mine); },
+    showdownBegin(){ if (this.sfxV1Enabled) showdownBeginSound(); },
+    resultSting(kind){ if (this.sfxV1Enabled) doResultSting(kind); },
+    allIn(mine){ if (this.sfxV1Enabled) allInSound(mine); },
+    busted(mine){ if (this.sfxV1Enabled) bustedSound(mine); },
+    rebuy(){ if (this.sfxV1Enabled) rebuyConfirmSound(); }
   };
 })();
 function haptic(pattern){
@@ -3158,6 +3558,7 @@ async function startNewHand(){
   const g = game;
   bannerOverride = null;
   hideResultCard();
+  hideHudResultConsole();
   clearAllCardDOM();
 
   // tournament: blinds climb; cash: AI top up so the table stays alive
@@ -3232,7 +3633,9 @@ async function startNewHand(){
 
   await playShuffle();   // the ritual: deck riffles before every deal
   if (g.over) return;
-  Sound.deal();
+  // SFX V1 — no blanket "dealing begins" cue here any more; each hole
+  // card's own real FWIP (see dealCardFlight) fires moments later and
+  // would otherwise double up against it.
   // beginBettingRound flips g.phase off 'setup' *before* the animated reveal
   // renders anything — render() no-ops entirely while phase is still
   // 'setup' (see its guard clause), which otherwise makes the very first
@@ -3367,10 +3770,14 @@ async function dealCommunity(n){
     const card = g.deck.pop();
     g.board.push(card);
     cards.push(card);
-    Sound.deal();
+    // SFX V1 — the per-card FWIP/PAP/FWAP family now lives inside
+    // dealCardFlight()/flipCard() themselves (real deal/land/flip
+    // events), so there's no separate blanket deal cue needed here any
+    // more — the old Sound.deal() call that used to sit here would just
+    // double up against the very next thing that happens.
     render();
     const el = $('board').lastElementChild;
-    if (el) pending.push(dealCardFlight(el, card, { deferFlip: batch }));
+    if (el) pending.push(dealCardFlight(el, card, { deferFlip: batch, board: true }));
     if (motionOff()) await sleep(60);
     else if (i < n-1) await sleep(Math.round(DEAL_TIMING.flopStaggerMs * speedMult()));
   }
@@ -3378,7 +3785,7 @@ async function dealCommunity(n){
   if (batch && !motionOff()){
     const boardEls = Array.from($('board').children).slice(-n);
     for (let i=0;i<boardEls.length;i++){
-      flipCard(boardEls[i], false, cards[i], false);
+      flipCard(boardEls[i], false, cards[i], false, 'board');
       if (i < boardEls.length-1) await sleep(Math.round(50 * speedMult()));
     }
     await sleep(Math.round(90 * speedMult()));
@@ -3480,7 +3887,10 @@ function applyAction(player, decision){
   if (action==='fold'){
     player.folded = true;
     text = player.name + ' folds';
-    Sound.fold();
+    // SFX V1 — the human's own fold now sounds via the physical button
+    // release (see resolveButtonKind/pressFeedback), not here; AI
+    // opponents keep this exact same sound they always had.
+    if (!player.isHuman) Sound.fold();
     if (player.isHuman){
       g.humanFoldSnapshot = {
         street: g.phase,
@@ -3490,12 +3900,12 @@ function applyAction(player, decision){
     }
   } else if (action==='check'){
     text = player.name + ' checks';
-    Sound.check();
+    if (!player.isHuman) Sound.check();
   } else if (action==='call'){
     const amt = commitTo(g.currentBet);
     shortAmt = amt;
-    if (amt>0){ text = player.name + ' calls ' + amt; Sound.chip(); }
-    else { action='check'; text = player.name + ' checks'; Sound.check(); }
+    if (amt>0){ text = player.name + ' calls ' + amt; if (!player.isHuman) Sound.chip(); }
+    else { action='check'; text = player.name + ' checks'; if (!player.isHuman) Sound.check(); }
   } else if (action==='bet' || action==='raise' || action==='allin'){
     const prevBet = g.currentBet;
     let target;
@@ -3509,7 +3919,12 @@ function applyAction(player, decision){
     action = prevBet<=0 ? 'bet' : 'raise';
     const verb = prevBet<=0 ? 'bets' : 'raises to';
     text = player.name + ' ' + verb + ' ' + player.betThisRound + (player.allIn ? ' (all-in)' : '');
-    Sound.chip();
+    if (!player.isHuman) Sound.chip();
+    // SFX V1 — all-in drama. The human's own all-in is already fully
+    // covered by the button-release sound above (kind resolves to
+    // 'allin' there); this specifically covers AI opponents shoving,
+    // which never touches a button at all.
+    if (player.allIn && !player.isHuman) Sound.allIn(false);
   }
 
   player.acted = true;
@@ -3587,23 +4002,34 @@ async function handleFoldWin(){
   // loop), bypassing advancePhase() entirely — betThisRound still needs
   // its street-scoped reset here even though there's no pile to sweep.
   g.players.forEach(p=>{ p.betThisRound=0; });
+  // Showdown cleanup, pass 2 — see the matching block in handleShowdown();
+  // same rule, so the winner's own last Call/Bet/Raise label doesn't
+  // linger through the pot-taking beat below. Fold labels (the reason the
+  // hand ended) are exactly what should stay visible here.
+  g.players.forEach(p=>{
+    if (p.streetAction && p.streetAction.type!=='fold' && p.streetAction.type!=='allin') p.streetAction = null;
+  });
   recordPot(amt);
   setBanner('<b>' + esc(winner.name) + '</b> takes the pot…');
   render();
   await sleep(motionOff() ? 80 : 250);
-  if (winner.isHuman){ stats.won++; Sound.win(); haptic(30); }
+  if (winner.isHuman){ stats.won++; Sound.resultSting('humanWin'); haptic(30); }
   else {
     setMood(winner.id, 'happy');
     if (amt > 10*g.bigBlind) nudgeMood(winner, 'up', 0.5);
     maybeTableTalk(winner, 'win');
+    // A fold-win is still a genuine "an opponent won" moment — short and
+    // restrained; the human wasn't beaten at showdown here (they may not
+    // even have been in the pot), so this is never the humanLose flavor.
+    Sound.resultSting('opponentWin');
   }
   logMsg(winner.name + ' wins ' + amt + ' (everyone else folded)');
 
   // No showdown occurred, so there's no evaluated hand/winning-five to show
   // or highlight — hand/cat/cards stay null and runShowdownAwardSequence's
-  // per-pot panel skips those parts of the display accordingly. Money
-  // mutation and the visual payout both now happen inside that shared
-  // sequence, gated behind the player's own AWARD POT press.
+  // plaque skips those parts of the display accordingly. Money mutation
+  // and the visual payout both now happen inside that shared sequence,
+  // gated behind the player's own AWARD POT press.
   const potResults = [{
     label:'Pot', amount:amt, winners:[winner.name], winnerIds:[winner.id],
     winnerShares:[{name:winner.name, id:winner.id, amount:amt}],
@@ -3618,6 +4044,17 @@ async function handleShowdown(){
   const pots = computePots(g.players);
   recordPot(pots.reduce((s,p)=>s+p.amount,0));
 
+  // Showdown cleanup, pass 2 — this street's Check/Call/Bet/Raise labels
+  // are done informing anything once betting has ended; leaving them up
+  // through the reveal/plaque/payout sequence made the table look like
+  // betting was still happening. Fold/All-In are real persistent state,
+  // not street-scoped, so they're deliberately left alone here — same
+  // rule beginBettingRound() already applies at the start of every new
+  // street (see there), just run here too since showdown never starts one.
+  g.players.forEach(p=>{
+    if (p.streetAction && p.streetAction.type!=='fold' && p.streetAction.type!=='allin') p.streetAction = null;
+  });
+
   // evaluate everyone's final hand up front so the reveal order can build
   // suspense — evaluate7WithCards (not the cardless evaluate7) so the exact
   // 5-of-7 winning combo is available everywhere _handRes is, for every
@@ -3626,17 +4063,26 @@ async function handleShowdown(){
 
   if (contenders.length>1){
     setBanner('Revealing hands…');
+    Sound.showdownBegin(); // "pay attention — we're showing the hands." Then the per-card FWAP flips (below) take over.
     render();
-    await sleep(motionOff() ? 60 : 200);
+    await sleep(motionOff() ? 70 : 220);
     const revealOrder = contenders.filter(p=>!p.isHuman)
       .sort((a,b)=>compareHands(a._handRes.result, b._handRes.result)); // weakest first, winner lands last
     for (const p of revealOrder){
       p._reveal = true;
-      Sound.deal();
+      // SFX V1 — no separate cue here any more: render() below drives
+      // syncCardRow → flipCard for each of this player's real cards,
+      // which now plays its own FWAP exactly at the true reveal moment
+      // (see flipCard). That naturally reproduces "FWAP … beat … FWAP"
+      // across this loop's own existing per-player sleep, with no new
+      // timing sequence invented for sound.
       render();
-      await sleep(motionOff() ? 90 : 380);
+      await sleep(motionOff() ? 110 : 560);
     }
-    await sleep(motionOff() ? 60 : 150);
+    // the dramatic beat between the last reveal and the winner being
+    // announced/highlighted — long enough to actually register who showed
+    // what before the result lands.
+    await sleep(motionOff() ? 90 : 520);
   }
 
   const potResults = [];
@@ -3655,7 +4101,7 @@ async function handleShowdown(){
     const remainder = pot.amount - share*winners.length;
     const winnerShares = winners.map((w,k)=>{
       const amt = share + (k<remainder?1:0);
-      w._award = (w._award||0) + amt; // read by the mood-swing check below; actual chip mutation now happens per-pot in runShowdownAwardSequence
+      w._award = (w._award||0) + amt; // read by the mood-swing check below; actual chip mutation happens in runShowdownAwardSequence
       winnerIds.add(w.id);
       return { name:w.name, id:w.id, amount:amt };
     });
@@ -3673,7 +4119,17 @@ async function handleShowdown(){
     });
   });
 
-  winnerIds.forEach(id=>{ const e=seatEls[id]; if (e) e.root.classList.add('winner'); });
+  // Showdown result console, pass 4 — the seat-emphasis class-add that
+  // used to happen right here now happens inside runShowdownAwardSequence
+  // (see celebrateWinnerSeat), timed AFTER highlightWinningCards rather
+  // than immediately after potResults is built — so cards react first,
+  // then the seat, matching the intended rhythm.
+
+  // Showdown cleanup, pass 2 — 'Revealing hands…' has done its job; once
+  // the winner is actually known, the banner should say so instead of
+  // sitting stale through the whole plaque/AWARD POT/payout sequence.
+  const mainResult = potResults[0];
+  setBanner('<b>' + esc(mainResult.winners.join(' & ')) + '</b> ' + (mainResult.split ? 'split' : 'wins') + ' the pot.');
 
   // faces react to the result — and big swings leave a lingering mood
   const bbv = g.bigBlind;
@@ -3703,8 +4159,18 @@ async function handleShowdown(){
       logMsg(r.winners.join(' & ') + ' win ' + r.label.toLowerCase() + ' ' + r.amount.toLocaleString() + ' with ' + r.hand);
     }
   });
-  if (winnerIds.has('you')){ stats.won++; stats.showdownsWon++; Sound.win(); haptic(30); }
-  else if (contenders.length>1){ Sound.lose(); }
+  if (winnerIds.has('you')){
+    stats.won++; stats.showdownsWon++;
+    Sound.resultSting('humanWin');
+    haptic(30);
+  } else if (contenders.length>1){
+    // ONE coordinated sting for "an opponent won this showdown" — never
+    // a separate opponent-win sound stacked on top of a separate human-
+    // loss sound. humanLose only when the human was actually a
+    // contender who lost (not just an onlooker who folded earlier).
+    const humanLost = contenders.some(p=>p.isHuman);
+    Sound.resultSting(humanLost ? 'humanLose' : 'opponentWin');
+  }
 
   // Pass 1 showdown revamp: reveal → per-pot highlight → winner panel →
   // player-controlled AWARD POT → existing payout animation, sequenced
@@ -3714,34 +4180,96 @@ async function handleShowdown(){
   await runShowdownAwardSequence(potResults, contenders);
 }
 
+/* Presentation-only: within an already-determined winning five (cards,
+   the exact combo evaluate7WithCards picked), which of those five FORM
+   the named made hand versus which are plain kickers — and, for a full
+   house specifically, whether the trips should read as slightly more
+   load-bearing than the pair. Driven entirely by the existing cat/
+   tiebreak data (see evaluate5's tiebreak shapes — t[0]/t[1] are rank
+   VALUES for the grouped categories) and card.value; no new evaluation,
+   no re-deriving the winning five. Returns two Sets of cardKeys: `strong`
+   (the made-hand cards — everything for a straight/flush/straight
+   flush/full house, just the matching-rank group for pair/two pair/
+   trips/quads, just the single highest card for high card) and `hero`
+   (full house's trips only, a strict subset of `strong`, empty
+   otherwise). Cards in `cards` not present in `strong` are kickers and
+   stay at the base .win-card tier — still part of the winning five, just
+   not what's being called out as "why you won." */
+function strongWinningCardKeys(cat, tiebreak, cards){
+  const strong = new Set(), hero = new Set();
+  if (cat===4 || cat===5 || cat===8 || cat===9){
+    // straight / flush / straight flush / royal flush: read together, no kicker
+    cards.forEach(c=>strong.add(cardKey(c)));
+  } else if (cat===6){
+    // full house: all five strong; trips allowed a touch more emphasis
+    const tripsVal = tiebreak[0], pairVal = tiebreak[1];
+    cards.forEach(c=>{
+      strong.add(cardKey(c));
+      if (c.value===tripsVal) hero.add(cardKey(c));
+    });
+  } else if (cat===7 || cat===3 || cat===1){
+    // quads / trips / pair: the matching-rank group is strong, kickers stay base
+    const groupVal = tiebreak[0];
+    cards.forEach(c=>{ if (c.value===groupVal) strong.add(cardKey(c)); });
+  } else if (cat===2){
+    // two pair: both pairs strong, the single kicker stays base
+    const p1 = tiebreak[0], p2 = tiebreak[1];
+    cards.forEach(c=>{ if (c.value===p1 || c.value===p2) strong.add(cardKey(c)); });
+  } else {
+    // high card (cat 0): just the single highest card
+    let top = null;
+    cards.forEach(c=>{ if (!top || c.value>top.value) top = c; });
+    if (top) strong.add(cardKey(top));
+  }
+  return { strong, hero };
+}
+
 /* Marks the cards that actually made the winning hand(s) of ONE pot with a
    gold glow, and dims every card that didn't contribute — including the
-   losers'. Called once per pot (main pot, then each side pot in turn) by
-   runShowdownAwardSequence, so a side-pot winner who differs from the main
-   pot's winner gets their own correct highlight moment instead of always
-   being dimmed like a loser. Reuses each player's own p._handRes.cards
-   (already the exact best-5-of-7 combo, computed once up front in
-   handleShowdown) rather than re-deriving it here — one evaluation path,
-   not two. */
+   losers'. Showdown revamp, pass 3: called exactly ONCE per hand by
+   runShowdownAwardSequence, against the MAIN pot only — a side-pot winner
+   who differs from the main pot's winner is deliberately left dimmed here
+   like everyone else (they're a "loser" of the highlight's own pot) and
+   communicated instead via the award plaque's muted secondary line plus
+   the existing .seat.winner seat-level accent, so there's never more than
+   one hero five-card glow competing for attention on the table at once.
+   Reuses each player's own p._handRes.cards (already the exact
+   best-5-of-7 combo, computed once up front in handleShowdown) rather
+   than re-deriving it here — one evaluation path, not two. Within that
+   winning five, a second tier (see strongWinningCardKeys) calls out
+   specifically the cards forming the named made hand — pure presentation
+   layered on top, same source data. */
 function highlightWinningCards(pot, contenders){
   const g = game;
-  const boardUsed = new Set();
-  const holeUsedByPlayer = {};
+  const boardUsed = new Set(), boardStrong = new Set(), boardHero = new Set();
+  const holeUsedByPlayer = {}, holeStrongByPlayer = {}, holeHeroByPlayer = {};
   pot.winnerIds.forEach(id=>{
     const p = g.players.find(x=>x.id===id);
     if (!p || !p._handRes) return;
     const usedKeys = new Set(p._handRes.cards.map(cardKey));
     holeUsedByPlayer[id] = p.hand.filter(c=>usedKeys.has(cardKey(c))).map(cardKey);
     g.board.forEach(c=>{ if (usedKeys.has(cardKey(c))) boardUsed.add(cardKey(c)); });
+
+    const { strong, hero } = strongWinningCardKeys(p._handRes.result.cat, p._handRes.result.tiebreak, p._handRes.cards);
+    holeStrongByPlayer[id] = p.hand.filter(c=>strong.has(cardKey(c))).map(cardKey);
+    holeHeroByPlayer[id] = p.hand.filter(c=>hero.has(cardKey(c))).map(cardKey);
+    g.board.forEach(c=>{
+      const key = cardKey(c);
+      if (strong.has(key)) boardStrong.add(key);
+      if (hero.has(key)) boardHero.add(key);
+    });
   });
 
   const boardEls = $('board') ? $('board').children : [];
   Array.from(boardEls).forEach((el,i)=>{
     const c = g.board[i];
     if (!c) return;
-    const used = boardUsed.has(cardKey(c));
+    const key = cardKey(c);
+    const used = boardUsed.has(key);
     el.classList.toggle('win-card', used);
     el.classList.toggle('dim-card', !used);
+    el.classList.toggle('win-card-strong', used && boardStrong.has(key));
+    el.classList.toggle('win-card-hero', used && boardHero.has(key));
   });
 
   contenders.forEach(p=>{
@@ -3752,14 +4280,51 @@ function highlightWinningCards(pot, contenders){
       const c = p.hand[i];
       if (!c) return;
       if (isWinner){
-        const used = (holeUsedByPlayer[p.id]||[]).indexOf(cardKey(c)) !== -1;
+        const key = cardKey(c);
+        const used = (holeUsedByPlayer[p.id]||[]).indexOf(key) !== -1;
         el.classList.toggle('win-card', used);
         el.classList.toggle('dim-card', !used);
+        el.classList.toggle('win-card-strong', used && (holeStrongByPlayer[p.id]||[]).indexOf(key)!==-1);
+        el.classList.toggle('win-card-hero', used && (holeHeroByPlayer[p.id]||[]).indexOf(key)!==-1);
       } else {
         el.classList.add('dim-card');
+        el.classList.remove('win-card-strong', 'win-card-hero');
       }
     });
   });
+}
+
+/* Showdown result console — the winning SEAT is the "who won" signal, not
+   a duplicated portrait. Called once per pot winner, right after
+   highlightWinningCards() so the eye lands on the cards first, then the
+   seat reacts — see runShowdownAwardSequence. Opponents get a brief
+   punch/pop plus a finite rim-pulse layered on their existing static
+   .seat.winner glow (their seat IS their celebration). The human is
+   deliberately bigger: .seat.you has no visible .seat-card/.avatar to
+   glow, and per explicit approval a win at the player's own table should
+   feel noticeably better than watching an opponent win — so instead the
+   existing #hud-frame housing itself gets a short mechanical shake plus a
+   stepped rim-flash (see .hud-frame-win/.hud-frame-win-flash), right
+   before it transforms into the result console. No new element/portrait
+   either way — only classes on DOM that already exists. */
+function celebrateWinnerSeat(id){
+  const e = seatEls[id];
+  if (!e) return;
+  e.root.classList.add('winner');
+
+  if (id === 'you'){
+    const frame = $('hud-frame');
+    if (frame && !motionOff()){
+      frame.classList.remove('hud-frame-win', 'hud-frame-win-flash');
+      void frame.offsetWidth;
+      frame.classList.add('hud-frame-win', 'hud-frame-win-flash');
+    }
+    return;
+  }
+
+  const box = e.root.querySelector('.seat-card') || e.root;
+  box.classList.remove('winner-pop'); void box.offsetWidth; box.classList.add('winner-pop');
+  e.root.classList.remove('winner-pulse'); void e.root.offsetWidth; e.root.classList.add('winner-pulse');
 }
 
 function recordPot(amount){
@@ -3789,6 +4354,7 @@ function finishHand(outcome){
     if (human.chips<=0){
       const place = alive.length + 1;
       setBanner('Knocked out in <b>' + ordinal(place) + '</b> place.');
+      Sound.busted(true);
       $('btn-new-table').classList.remove('hidden');
       g.over = true; clearTableSave(); render(); return;
     }
@@ -3802,6 +4368,7 @@ function finishHand(outcome){
     if (human.chips<=0){
       if (g.livesEnabled && human.lives<=0){ showGameOver(g, human); return; }
       setBanner("You're out of chips.");
+      Sound.busted(true);
       $('btn-rebuy').textContent = 'Rebuy ' + g.startingStack.toLocaleString() + (g.livesEnabled ? ' \u00b7 costs 1 \u2665' : '');
       $('btn-rebuy').classList.remove('hidden');
       $('btn-new-table').classList.remove('hidden');
@@ -3854,6 +4421,7 @@ async function playDeath(p){
   const e = seatEls[p.id];
   if (!e) return;
   flashAction(p.id, 'Busted!');
+  Sound.busted(false);
   if (!motionOff()){
     e.avatar.classList.add('dying');
     await sleep(950);
@@ -3872,6 +4440,7 @@ function showGameOver(g, human){
   clearTimeout(autoDealT);
   hideResultCard();
   setBanner('<b>Game over</b> \u2014 out of lives.');
+  Sound.busted(true);
   const el = document.createElement('div');
   el.className = 'result-card gameover'; el.id = 'result-card';
   const net = human.chips - g.buyIns;
@@ -4162,13 +4731,20 @@ function cardClass(faceDown, card, small){
 function cardLabel(faceDown, card){
   return faceDown ? 'Face-down card' : RANK_WORD[card.value] + ' of ' + SUIT_NAME[card.suit];
 }
-function flipCard(el, faceDown, card, small){
+/* SFX V1 — `kind` ('board'|'hole', default 'hole') only affects the
+   community-cards-read-slightly-stronger nuance in Sound.cardFlip(); it
+   changes nothing about the actual flip visuals/timing. Sound only ever
+   plays for a genuine reveal (!faceDown) — this codebase never actually
+   flips a card back to face-down, but the guard costs nothing and keeps
+   the contract honest. */
+function flipCard(el, faceDown, card, small, kind){
   if (motionOff()){
     el.className = cardClass(faceDown, card, small);
     el.innerHTML = faceDown ? '' : cardInner(card);
     el.setAttribute('aria-label', cardLabel(faceDown, card));
     return;
   }
+  if (!faceDown) Sound.cardFlip(kind==='board');
   el.classList.add('flip-out');
   setTimeout(()=>{
     el.className = cardClass(faceDown, card, small) + ' flip-in';
@@ -4177,7 +4753,7 @@ function flipCard(el, faceDown, card, small){
     setTimeout(()=>el.classList.remove('flip-in'), 190);
   }, 130);
 }
-function syncCardRow(container, cards, faceDownMask, small){
+function syncCardRow(container, cards, faceDownMask, small, kind){
   while (container.children.length > cards.length) container.lastElementChild.remove();
   for (let i=0;i<cards.length;i++){
     const card = cards[i], faceDown = faceDownMask[i];
@@ -4192,7 +4768,7 @@ function syncCardRow(container, cards, faceDownMask, small){
       if (!faceDown) el.innerHTML = cardInner(card);
       container.appendChild(el);
     } else if (el.dataset.state !== state){
-      flipCard(el, faceDown, card, small);
+      flipCard(el, faceDown, card, small, kind);
       el.dataset.state = state;
     }
   }
@@ -4393,11 +4969,13 @@ async function dealCardFlight(el, card, opts){
     el.innerHTML = '';
   }
   el.style.opacity = '0';
+  Sound.cardDeal();   // FWIP — leaves the dealer deck, right as the flight actually begins
   await DealFX.flyGhost(deckTop, el, { duration:DEAL_TIMING.dealMs, style:'deal' });
   el.style.opacity = '';
+  Sound.cardLanded(); // soft PAP/TAK — reaches its destination (fires even for a deferred-flip flop card; the flip's own FWAP comes later)
   if (wasFaceUp && !opts.deferFlip){
     await sleep(Math.round(DEAL_TIMING.settleBeforeFlipMs * speedMult()));
-    flipCard(el, false, card, small);
+    flipCard(el, false, card, small, opts.board ? 'board' : 'hole');
   }
 }
 /* Sweeps a card's element back toward the deck's exact top-card spot — a
@@ -4412,6 +4990,13 @@ function collectCardFlight(el){
   const deckTop = deck && deck.lastElementChild;
   if (!el || motionOff() || !deckTop) return Promise.resolve();
   el.style.opacity = '0';
+  // SFX V1 — the one discrete moment this flight actually has: it fades
+  // out during its own final approach (see the comment above), so there
+  // is no clean separate "arrival" instant to hook a second sound to —
+  // muckCards()' own existing random per-card stagger is what turns many
+  // of these firing close together into the requested little cascade,
+  // not any new timing invented here.
+  Sound.cardReturn();
   return DealFX.flyGhost(el, deckTop, { duration:DEAL_TIMING.collectMs, style:'return' });
 }
 
@@ -4958,9 +5543,11 @@ function clearAllCardDOM(){
   potPending = 0;
   Object.values(seatEls).forEach(e=>{
     e.cardsContainer.innerHTML = '';
-    e.root.classList.remove('winner');
+    e.root.classList.remove('winner', 'winner-pulse');
     e.bubble.classList.remove('show');
   });
+  const frame = $('hud-frame');
+  if (frame) frame.classList.remove('hud-frame-win', 'hud-frame-win-flash');
 }
 async function muckCards(){
   if (motionOff()) return;
@@ -4975,6 +5562,7 @@ async function muckCards(){
     await sleep(Math.random() * DEAL_TIMING.collectStaggerMaxMs * speedMult());
     await collectCardFlight(el);
   }));
+  Sound.deckSettle(); // the cascade's own capstone, once every card has genuinely finished returning
 }
 
 function initSeats(){
@@ -5164,6 +5752,14 @@ function flyChip(opts){
     } else {
       el.remove();
     }
+    // Chip SFX v0.1 — the one safe hook into flyChip(): fires exactly at
+    // the real landing moment, same as everything else land() already
+    // does, so audio always follows the true visible rhythm rather than
+    // an independent timer. Skipped under motionOff() — that path lands
+    // every queued chip synchronously in one tick (see transferChips),
+    // which would fire many chip sounds simultaneously with no visual
+    // motion to reinforce them.
+    if (!motionOff()) Sound.chipLand();
     if (onLand) onLand(el);
   };
 
@@ -5311,6 +5907,29 @@ function chipStaggerGap(n, fast){
   const base = n<=2 ? 70 : n<=6 ? 110 : n<=12 ? 95 : n<=20 ? 80 : 65;
   return fast ? Math.max(30, Math.round(base*0.55)) : base;
 }
+/* Large-transfer acceleration — v0.1. chipStaggerGap() above is
+   UNCHANGED and still anchors the pace — this only decides how that pace
+   is approached across a transfer instead of holding it flat from the
+   first chip. For a big payout/all-in, chipStaggerGap()'s own return
+   value was already the transfer's fast/dense end (e.g. ~36ms for a
+   40-chip fast payout) — the problem was the FRONT of the transfer using
+   that same tight spacing too, with no readable build-up first. This
+   scales that value up into a slower opening gap and eases back DOWN to
+   it (now effectively the floor/steady-state pace) as `launched`
+   progresses toward `n`, using an ease-in curve (progress²) so the
+   speed-up itself builds momentum rather than snapping partway through.
+   Ordinary small transfers (n<=10) are excluded entirely — they finish
+   well inside chipStaggerGap()'s own existing "couple chips"/"ordinary
+   bet" tiers, never long enough for a build-up to read as anything but
+   noise, and are returned completely unchanged. */
+function chipStaggerGapAt(n, launched, fast){
+  const floorGap = chipStaggerGap(n, fast);
+  if (n <= 10) return floorGap;
+  const startGap = Math.round(floorGap * 2.6);
+  const progress = Math.min(1, launched / (n-1));
+  const eased = progress*progress;
+  return Math.round(startGap - (startGap-floorGap)*eased);
+}
 /* How many chips may be simultaneously mid-flight (launched, not yet
    landed) at once. Pass 3C.3: NOT a launch-rate limiter — the gap above
    already paces launches — this is a hard ceiling on concurrent
@@ -5355,49 +5974,67 @@ const MAX_CONCURRENT_FLIGHTS = 6;
    (0,-1) at each landing — src pending reaches 0 once every chip has
    left, dst pending once every chip has arrived, which is what lets
    render()'s idle-snap safely resume correcting that pile again
-   afterwards (see the bankPending===0/potPending===0 checks). */
+   afterwards (see the bankPending===0/potPending===0 checks).
+
+   Showdown revamp — now returns a Promise that resolves once every one of
+   the `n` chips has genuinely landed (or, for n<=0/motionOff(), resolves
+   immediately once that's already true), so a caller can await REAL
+   completion instead of guessing a duration. Every exit path is covered
+   so this can never hang: n<=0 resolves before any bookkeeping starts;
+   motionOff() lands every chip synchronously (flyChip's own motionOff()
+   branch calls land() before returning) before the loop that produces
+   this Promise even exits; and on the normal path, flyChip's onLand
+   fires exactly once per chip on every one of its own exit paths,
+   including the takeChipFromPile source-exhaustion failure (onLand(null)
+   still counts), so the `landed` counter below is mathematically
+   guaranteed to reach `n`. */
 function transferChips(n, src, dst, addPending, fast){
-  if (n<=0) return;
+  if (n<=0) return Promise.resolve();
   if (motionOff()){
     for (let i=0;i<n;i++){
       flyChip({ srcContainer:src.container, srcPile:src.pile, srcEl:src.el,
         dstContainer:dst.container, dstPile:dst.pile, dstEl:dst.el, fast });
     }
-    return;
+    return Promise.resolve();
   }
-  addPending(n, n);
-  const gap = chipStaggerGap(n, fast);
-  let launched = 0, active = 0, gateOpen = true;
+  return new Promise(resolve=>{
+    addPending(n, n);
+    let launched = 0, active = 0, landed = 0, gateOpen = true;
 
-  const pump = ()=>{
-    if (launched>=n || !gateOpen || active>=MAX_CONCURRENT_FLIGHTS) return;
-    gateOpen = false;
-    launched++; active++;
-    addPending(-1, 0);
-    flyChip({
-      srcContainer:src.container, srcPile:src.pile, srcEl:src.el,
-      dstContainer:dst.container, dstPile:dst.pile, dstEl:dst.el,
-      fast, onLand: ()=>{ active--; addPending(0,-1); pump(); }
-    });
-    if (launched<n) setTimeout(()=>{ gateOpen = true; pump(); }, gap);
-  };
-  pump();
+    const pump = ()=>{
+      if (launched>=n || !gateOpen || active>=MAX_CONCURRENT_FLIGHTS) return;
+      gateOpen = false;
+      launched++; active++;
+      addPending(-1, 0);
+      flyChip({
+        srcContainer:src.container, srcPile:src.pile, srcEl:src.el,
+        dstContainer:dst.container, dstPile:dst.pile, dstEl:dst.el,
+        fast, onLand: ()=>{ active--; landed++; addPending(0,-1); if (landed>=n) resolve(); pump(); }
+      });
+      // chipStaggerGapAt (not the old flat chipStaggerGap) — see its own
+      // comment: large transfers accelerate as `launched` climbs toward
+      // `n`, small ones are returned unchanged.
+      if (launched<n) setTimeout(()=>{ gateOpen = true; pump(); }, chipStaggerGapAt(n, launched, fast));
+    };
+    pump();
+  });
 }
 
 /* Payout: `n` real pot chips leave the pot and travel to the winner's
-   pile — shared by handleFoldWin() and handleShowdown()'s split loop.
-   `n` is just a chip count (see the callers for how it's derived from
-   the money award). Faster/more energetic release than a bet (fast:true
-   — see chipStaggerGap). */
+   pile — shared by handleFoldWin() and handleShowdown()'s consolidated
+   award sequence. `n` is just a chip count (see the callers for how it's
+   derived from the money award). Faster/more energetic release than a
+   bet (fast:true — see chipStaggerGap). Returns transferChips()'s
+   completion Promise so callers can await every chip actually landing. */
 function payoutTo(winner, n){
-  if (!n || n<=0) return;
+  if (!n || n<=0) return Promise.resolve();
   const potContainer = $('pot-stacks'), pPile = potPile();
   const e = seatEls[winner.id];
   const src = { container: potContainer, pile: pPile };
   const dst = winner.isHuman
     ? { container: $('hud-tower'), pile: bankPile() }
     : { el: (e && e.chips) || (e && e.root) };
-  transferChips(n, src, dst, (s,d)=>{ potPending+=s; if (winner.isHuman) bankPending+=d; }, true);
+  return transferChips(n, src, dst, (s,d)=>{ potPending+=s; if (winner.isHuman) bankPending+=d; }, true);
 }
 
 function render(){
@@ -5434,7 +6071,7 @@ function render(){
     potArea.classList.add('hidden');
   }
 
-  syncCardRow($('board'), g.board, g.board.map(()=>false), false);
+  syncCardRow($('board'), g.board, g.board.map(()=>false), false, 'board');
 
   g.players.forEach((p, idx)=>{
     const e = seatEls[p.id];
@@ -5486,7 +6123,7 @@ function render(){
     }
 
     const mine = p.isHuman;
-    syncCardRow(e.cardsContainer, p.hand, mine ? p.hand.map(()=>false) : p.hand.map(()=>!p._reveal), !mine);
+    syncCardRow(e.cardsContainer, p.hand, mine ? p.hand.map(()=>false) : p.hand.map(()=>!p._reveal), !mine, 'hole');
 
     // Fixed action-display slot — always rendered, same footprint whether
     // a player just checked or just shoved. Replaces the old floating
@@ -5636,69 +6273,156 @@ function arrangeHandForDisplay(cat, cards){
    the kickers. Straights/flushes/high-card read as one continuous run. */
 function isGroupedHandCat(cat){ return cat===1 || cat===2 || cat===3 || cat===6 || cat===7; }
 
-/* The winner panel — Pass 1's replacement for the old compact result card.
-   Shown once per pot (main pot, then each side pot) by
-   runShowdownAwardSequence. Reuses the existing .result-card floating-card
-   idiom (see .result-card/.gameover) rather than a new overlay mechanism;
-   the portrait is a clone of the winner's own already-rendered seat avatar
-   (already correct for mood/persona/settings.faces/avatarColour — no new
-   face-rendering logic needed), and the five duplicated cards are built
-   from the same cardInner()/cardClass() helpers real table cards use, just
-   at .small size — UI copies only, the real table cards never move.
-   Pass 2 showdown polish — informational only now; AWARD POT lives in the
-   bottom action console (see showAwardConsole/waitForAwardPot) instead of
-   inside this panel. */
-function showWinnerPanel(pot, isMultiPot, potIndex){
-  hideResultCard();
-  const el = document.createElement('div');
-  el.className = 'result-card winner-panel'; el.id = 'result-card';
+/* Presentation-only split of describeMade()'s combined output into a
+   category line (from HAND_NAMES) and a plain descriptor line, for the
+   two-line HUD result console (e.g. "TWO PAIR" / "Fours & Twos"). Does
+   NOT touch hand evaluation — pure string derivation from data
+   evaluate7WithCards/describeMade already produced. */
+function splitHandText(cat, handStr){
+  if (cat == null || !handStr) return { category:'', descriptor:'' };
+  const category = HAND_NAMES[cat];
+  if (cat === 9) return { category, descriptor:'' };               // Royal Flush: describeMade returns just the name, no comma to split
+  if (cat === 0) return { category, descriptor: handStr };          // High Card: describeMade's default case has no category prefix at all
+  const prefix = category + ', ';
+  const descriptor = handStr.indexOf(prefix) === 0 ? handStr.slice(prefix.length) : handStr;
+  return { category, descriptor };
+}
 
-  const single = pot.winnerIds.length === 1;
-  const mine = pot.winnerIds.indexOf('you') !== -1;
-  const potLabel = isMultiPot ? (potIndex===0 ? 'Main Pot' : 'Side Pot') : null;
+/* Showdown result console — pass 4. Replaces the old floating winner
+   plaque entirely: builds the HUD result content (see
+   showHudResultConsole() below) instead of a separate .result-card
+   overlay. Ports the same main/side-pot consolidation the old
+   showAwardPlaque() used verbatim: primary = main pot; a side pot
+   entirely swept by the (sole) main-pot winner folds into the primary
+   amount instead of getting its own line; otherwise it's a secondary
+   .pot-line row, the same muted idiom the session-review/gameover card
+   already uses. No portrait here — see celebrateWinnerSeat(), the
+   winning SEAT (or, for the human, the HUD itself) is the "who won"
+   signal now, not a duplicated avatar. */
+function buildResultHTML(potResults){
+  const main = potResults[0];
+  const mainWinnerIds = new Set(main.winnerIds);
+  let primaryAmount = main.amount;
+  const secondary = [];
+  potResults.slice(1).forEach(pot=>{
+    const sweptByMainWinner = main.winnerIds.length===1 && pot.winnerIds.every(id=>mainWinnerIds.has(id));
+    if (sweptByMainWinner) primaryAmount += pot.amount;
+    else secondary.push(pot);
+  });
 
-  let html = '<div class="wp-title">' + esc(pot.winners.join(' & ')) +
-    (single ? ' WINS' : ' SPLIT') + (potLabel ? ' — ' + esc(potLabel).toUpperCase() : '') + '!</div>';
+  const single = main.winnerIds.length === 1;
+  const mine = main.winnerIds.indexOf('you') !== -1;
+  const { category, descriptor } = splitHandText(main.cat, main.hand);
 
-  const srcAvatar = seatEls[pot.winnerIds[0]] && seatEls[pot.winnerIds[0]].avatar;
-  const wrap = srcAvatar && srcAvatar.parentElement;
-  if (wrap){
-    const clone = wrap.cloneNode(true);
-    clone.classList.remove('hidden');
-    html += '<div class="wp-bay wp-portrait-bay">' + clone.outerHTML + '</div>';
-  }
+  let html = '<div class="hr-name">' + esc(main.winners.join(' & ')) + (single ? ' WINS' : ' SPLIT') + '</div>';
+  if (category) html += '<div class="hr-cat">' + esc(category.toUpperCase()) + '</div>';
+  if (descriptor) html += '<div class="hr-desc">' + esc(descriptor) + '</div>';
+  html += '<div class="hr-label">Won</div>';
+  html += '<div class="amt-readout' + (mine?' mine':'') + '" id="hud-result-amt"></div>';
 
-  // The winner's actual two hole cards, in their own labelled bay,
-  // separate from the arranged best-five below — only for a genuine
-  // single-winner showdown reveal (pot.cards is only set once a real
-  // evaluate7WithCards() has run; a fold-win pot never reaches this
-  // branch, so hole cards nobody chose to reveal are never shown here).
-  if (single && pot.cards){
-    const holder = game.players.find(p=>p.id===pot.winnerIds[0]);
-    if (holder && holder.hand && holder.hand.length){
-      html += '<div class="wp-bay wp-holecards-bay">' +
-        '<div class="wp-bay-label">' + esc(pot.winners[0]) + '&rsquo;s Cards</div>' +
-        '<div class="wp-cards">' + holder.hand.map(c=>
-          '<div class="'+cardClass(false,c,true)+'" aria-hidden="true">'+cardInner(c)+'</div>'
-        ).join('') + '</div></div>';
+  secondary.forEach(pot=>{
+    const potMine = pot.winnerIds.indexOf('you') !== -1;
+    const body = '<b>' + esc(pot.winners.join(' & ')) + '</b> ' + (pot.split ? 'split' : 'wins') + (pot.hand ? ' · ' + esc(pot.hand) : '');
+    html += '<div class="pot-line' + (potMine?' mine':'') + '"><span class="pl-tag">' + esc(pot.label).toUpperCase() +
+      '</span><span class="pl-body">' + body + '</span><span class="pl-amt">' + pot.amount.toLocaleString() + '</span></div>';
+  });
+
+  return { html, primaryAmount, mine };
+}
+/* One-shot payout digit-cell readout — reuses .jp-cell/.jp-digit/.tick/
+   jpTick/.jp-sym verbatim (see #jackpot/buildJackpot()/updateJackpot(),
+   the player's own live, diffed, 6-digit-capped bankroll counter). This
+   is a deliberately separate, fresh widget: built once per hand, dynamic
+   digit count (no clamp), a leading '$' cell (same static-symbol idiom
+   #jackpot itself already uses) rather than a '+', with comma cells
+   (.jp-comma, a narrow variant of the same static-symbol treatment) at
+   the usual thousands groupings — reads as a payout/jackpot amount
+   ($1,449), not a stat delta. Only the '$'/',' symbol cells are excluded
+   from the digit tick reveal (see revealResultAmount, which only ever
+   selects .jp-digit) — same convention #jackpot's own '$' cell follows. */
+function buildResultAmount(container, amount){
+  if (!container) return;
+  container.innerHTML = '';
+  const sym = document.createElement('span');
+  sym.className = 'jp-cell jp-sym';
+  sym.textContent = '$';
+  container.appendChild(sym);
+  Array.from(Math.max(0, amount|0).toLocaleString()).forEach(ch=>{
+    const c = document.createElement('span');
+    if (ch === ','){
+      c.className = 'jp-cell jp-sym jp-comma';
+      c.textContent = ',';
+    } else {
+      c.className = 'jp-cell jp-digit tabular';
+      c.textContent = ch;
     }
-  }
+    container.appendChild(c);
+  });
+}
+/* Staggered per-digit "tick" reveal, reusing jpTick as-is (no new
+   keyframes). The digits already show their correct final value the
+   instant they're built (see buildResultAmount) — this is a pure
+   flourish layered on top, never something correctness depends on. mine
+   plays a slightly slower/punchier stagger so the human's own reveal
+   hits harder, per the approved human-celebration adjustment. */
+function revealResultAmount(container, mine){
+  if (!container || motionOff()) return;
+  const gap = mine ? 60 : 45;
+  const digits = container.querySelectorAll('.jp-digit');
+  digits.forEach((c,i)=>{
+    c.classList.remove('tick');
+    setTimeout(()=>{ void c.offsetWidth; c.classList.add('tick'); Sound.counterTick(mine); }, i*gap);
+  });
+  // SFX V1 — the firmer CLACK once the LAST digit's own tick animation
+  // (jpTick, .22s) has actually finished settling, not before.
+  if (digits.length) setTimeout(()=>Sound.counterLock(mine), (digits.length-1)*gap + 220);
+}
+/* Showdown result console — the bottom HUD (#hud-frame) temporarily
+   transforms in place instead of a floating panel covering the felt.
+   #hud-status-normal (banner/hand-strength/jackpot) and .hud-result
+   cross-fade; #hud-status's own height is measured via offsetHeight and
+   written to --status-h (mirroring openRaisePanel()'s own --raise-lift
+   technique) since the two faces are not comparable heights, unlike the
+   AWARD POT console-flip's near-equal-height faces. Width MUST be
+   widened (frame.classList.add('result-mode')) before the result
+   content's height is measured — reading resultEl.offsetHeight forces
+   the browser to lay it out at whatever width is current, so measuring
+   before widening would capture the WRONG (pre-wrap) height. .seat.you's
+   hole cards — always the first child of #hud-mid, see initSeats() — sit
+   entirely outside #hud-status and are never touched by any of this. */
+function showHudResultConsole(potResults){
+  const frame = $('hud-frame'), status = $('hud-status'), resultEl = $('hud-result');
+  if (!frame || !status || !resultEl) return;
 
-  if (pot.cards){
-    const ordered = arrangeHandForDisplay(pot.cat, pot.cards);
-    const grouped = isGroupedHandCat(pot.cat);
-    html += '<div class="wp-bay wp-besthand-bay">' +
-      '<div class="wp-bay-label">Best Hand' + (pot.hand ? ' · ' + esc(pot.hand) : '') + '</div>' +
-      '<div class="wp-cards">' + ordered.map((c,i)=>{
-        const gapBefore = grouped && i>0 && ordered[i-1].value !== c.value;
-        return '<div class="'+cardClass(false,c,true)+(gapBefore?' wp-gap':'')+'" aria-hidden="true">'+cardInner(c)+'</div>';
-      }).join('') + '</div></div>';
-  }
+  status.style.setProperty('--status-h', status.offsetHeight + 'px');
+  status.classList.add('animating-height');
+  void status.offsetHeight; // commit the start-height frame before the target changes, so the transition has a real 'from' state (same technique as the chip-flight pin-then-animate code)
 
-  html += '<div class="wp-bay wp-amount-bay"><div class="wp-amount' + (mine?' mine':'') + '">+' + pot.amount.toLocaleString() + '</div></div>';
+  const { html, primaryAmount, mine } = buildResultHTML(potResults);
+  resultEl.innerHTML = html;
+  buildResultAmount($('hud-result-amt'), primaryAmount);
 
-  el.innerHTML = html;
-  $('felt').appendChild(el);
+  frame.classList.add('result-mode');           // widen BEFORE measuring (see comment above)
+  status.style.setProperty('--status-h', resultEl.offsetHeight + 'px');
+  status.classList.add('showing-result');
+
+  requestAnimationFrame(()=>revealResultAmount($('hud-result-amt'), mine));
+}
+function hideHudResultConsole(){
+  const frame = $('hud-frame'), status = $('hud-status'), normalEl = $('hud-status-normal');
+  if (!frame) return;
+  if (!status || !status.classList.contains('showing-result')){ frame.classList.remove('result-mode'); return; }
+
+  frame.classList.remove('result-mode');        // narrow the frame back BEFORE measuring, so the returning face's height reflects its real (narrow) wrap width
+  const normalH = normalEl.offsetHeight;         // still position:absolute (showing-result not removed yet), measurable without disturbing anything
+  status.style.setProperty('--status-h', normalH + 'px');
+  status.classList.remove('showing-result');     // triggers the actual cross-fade + height transition back
+
+  status.addEventListener('transitionend', function done(){
+    status.classList.remove('animating-height');
+    status.style.removeProperty('--status-h');
+    status.removeEventListener('transitionend', done);
+  });
 }
 function hideResultCard(){ const el=$('result-card'); if (el) el.remove(); }
 /* Flips the bottom action console from the normal FOLD/CHECK/RAISE row
@@ -5724,76 +6448,82 @@ function waitForAwardPot(){
   return new Promise(resolve=>{
     const btn = $('btn-award-pot-console');
     if (!btn){ resolve(); return; }
-    btn.onclick = ()=>{ hideAwardConsole(); resolve(); };
+    // SFX V1 — the KA-CHUNK: "the machine has released the pot." No
+    // victory flourish here (the winner sting already played earlier,
+    // see runShowdownAwardSequence) — this is purely the mechanical
+    // latch/release, then the chip cascade becomes the audio star.
+    btn.onclick = ()=>{ Sound.buttonRelease('award'); hideAwardConsole(); resolve(); };
   });
 }
-/* How long to let one pot's payout "breathe" before continuing — reuses
-   the flight system's OWN existing, unmodified constants (chipStaggerGap,
-   the 230ms fast-payout duration, speedMult) purely read-only, so the wait
-   always matches however long that many chips actually take to land
-   without adding any hook into flyChip/transferChips/payoutTo themselves. */
-function estimatePayoutWaitMs(n, fast){
-  if (n<=0) return 0;
-  const gap = chipStaggerGap(n, fast);
-  const dur = Math.round((fast ? 230 : 700) * speedMult());
-  return (n-1)*gap + dur + 150;
-}
-/* Pass 1 showdown revamp — the one shared award pipeline both
-   handleShowdown and handleFoldWin delegate to. Walks potResults in
-   computePots()'s own order (main pot first, side pots after); for each
-   pot: highlight its exact winning five on the table (skipped for a
-   fold-win pot, which has no evaluated hand), show the winner panel, wait
-   indefinitely for AWARD POT, then apply that pot's money and trigger the
-   existing, untouched payoutTo() for exactly that pot's share of the
-   visual pile before moving on. finishHand() (and therefore any
-   busted/rebuy UI) only runs after every pot has been through this —
-   see the approved-adjustments note above handleShowdown for why that
-   matters for a human who busts by losing. */
+/* Showdown revamp — the one shared award pipeline both handleShowdown and
+   handleFoldWin delegate to. ONE consolidated moment for the whole hand,
+   regardless of how many pots computePots() produced: hero-highlight the
+   main pot's exact winning five on the table (skipped for a fold-win pot,
+   which has no evaluated hand — see highlightWinningCards; side-pot-only
+   winners deliberately do NOT get their own five-card glow, so there's
+   never more than one competing highlight on the table at once — they're
+   represented on the result console's secondary lines instead), react on
+   the winning seat(s) (celebrateWinnerSeat), transform the bottom HUD into
+   the result console (showHudResultConsole — no floating panel any more),
+   wait for exactly ONE AWARD POT press, then settle every pot's money at
+   once and pay every distinct winner in one coordinated burst of
+   concurrent chip flights. finishHand() (and therefore any busted/rebuy
+   UI, and the next-hand timer/button it arms) only runs after every one
+   of those flights has genuinely finished landing — awaited for real via
+   transferChips()/payoutTo()'s completion Promise, not guessed at — which
+   is what makes it structurally impossible for the next hand to clear the
+   pot while a payout is still visually in flight. */
 async function runShowdownAwardSequence(potResults, contenders){
   const g = game;
   const winnerIds = new Set();
   potResults.forEach(pot=>pot.winnerIds.forEach(id=>winnerIds.add(id)));
 
-  let remainingPile = $('pot-stacks')._chipCount || 0;
-  let remainingTotal = potResults.reduce((s,r)=>s+r.amount, 0);
+  const main = potResults[0];
+  if (main.cards) highlightWinningCards(main, contenders);
 
-  for (let i=0;i<potResults.length;i++){
-    const pot = potResults[i];
-    const isLastPot = i === potResults.length-1;
+  winnerIds.forEach(id=>celebrateWinnerSeat(id));
 
-    if (pot.cards) highlightWinningCards(pot, contenders);
-    showWinnerPanel(pot, potResults.length>1, i);
-    showAwardConsole(potResults.length>1 ? (i===0 ? 'Award Main Pot' : 'Award Side Pot') : 'Award Pot');
-    await waitForAwardPot();
-    hideResultCard();
-    // keep the winning-five highlight visible a tiny beat longer before
-    // the pot becomes the focus, per the approved sequencing.
-    await sleep(motionOff() ? 0 : 220);
+  showHudResultConsole(potResults);
+  const totalAmount = potResults.reduce((s,r)=>s+r.amount, 0);
+  showAwardConsole('Award Pot · ' + totalAmount.toLocaleString());
+  await waitForAwardPot();
+  hideHudResultConsole();
+  // keep the winning-five highlight visible a tiny beat longer before
+  // the pot becomes the focus, per the approved sequencing.
+  await sleep(motionOff() ? 0 : 220);
 
+  potResults.forEach(pot=>{
     pot.winnerShares.forEach(s=>{
       const w = g.players.find(p=>p.id===s.id);
       if (w) w.chips += s.amount;
     });
     g.pot = Math.max(0, g.pot - pot.amount);
+  });
 
-    const potVisualShare = isLastPot ? remainingPile
-      : Math.min(remainingPile, Math.round(remainingPile * pot.amount / Math.max(1,remainingTotal)));
-    remainingPile -= potVisualShare;
-    remainingTotal -= pot.amount;
+  // Merge every pot's shares by player id so a player who won both the
+  // main pot and a side pot gets ONE coordinated chip flight instead of
+  // two separate bursts (requirement: correct multi-recipient payouts
+  // that still feel like one settlement, not several modal-ish steps).
+  const totalByPlayer = new Map();
+  potResults.forEach(pot=>pot.winnerShares.forEach(s=>{
+    totalByPlayer.set(s.id, (totalByPlayer.get(s.id)||0) + s.amount);
+  }));
 
-    let remainInPot = potVisualShare;
-    pot.winnerShares.forEach((s,k)=>{
-      const w = g.players.find(p=>p.id===s.id);
-      if (!w) return;
-      const n = (k===pot.winnerShares.length-1) ? remainInPot
-        : Math.min(remainInPot, Math.round(potVisualShare * s.amount / Math.max(1,pot.amount)));
-      remainInPot -= n;
-      payoutTo(w, n);
-    });
+  let remainingPile = $('pot-stacks')._chipCount || 0;
+  const ids = [...totalByPlayer.keys()];
+  const visualByPlayer = new Map();
+  ids.forEach((id,k)=>{
+    const amt = totalByPlayer.get(id);
+    const n = (k===ids.length-1) ? remainingPile
+      : Math.min(remainingPile, Math.round(remainingPile * amt / Math.max(1,totalAmount)));
+    remainingPile -= n;
+    visualByPlayer.set(id, n);
+  });
 
-    render();
-    await sleep(estimatePayoutWaitMs(potVisualShare, true));
-  }
+  render();
+  // fired concurrently, then genuinely awaited — finishHand() below is
+  // unreachable until every winner's chips have actually landed.
+  await Promise.all(ids.map(id=>payoutTo(g.players.find(p=>p.id===id), visualByPlayer.get(id))));
 
   const wasShowdown = potResults.length!==1 || potResults[0].hand!==null;
   if (wasShowdown){
@@ -6253,6 +6983,36 @@ function wireUI(){
   };
   $('confirm-newtable-no').onclick = closeOverlays;
 
+  // SFX V1 — physical button press/release. Kind is resolved from the
+  // button's OWN current live state (className/textContent), the exact
+  // same signal updateActionControls() already set for the player to
+  // read — never recomputed from betting logic, so it can't drift from
+  // what's actually on screen. btn-checkcall/btn-raise are one physical
+  // button playing multiple roles (see updateActionControls' own
+  // comment on reassigning btn-checkcall's className), so their kind is
+  // only knowable at the moment of the press, not from the element id
+  // alone.
+  function resolveButtonKind(el){
+    if (!el) return null;
+    if (el.id === 'btn-fold') return 'fold';
+    if (el.id === 'btn-award-pot-console') return 'award';
+    if (el.id === 'btn-checkcall') return el.classList.contains('btn-call') ? 'call' : 'check';
+    if (el.id === 'btn-raise'){
+      const label = el.textContent;
+      if (label === 'Bet') return 'bet';
+      if (label === 'Raise') return 'raise';
+      // 'Confirm' — resolve all-in from the live slider against the
+      // player's full stack, the same maxTotal math updateActionControls
+      // already used to size the slider.
+      const slider = $('raise-slider'), p = pendingHumanPlayer;
+      if (slider && p){
+        const committed = parseInt(slider.value,10) || 0;
+        if (committed >= p.chips + p.betThisRound) return 'allin';
+      }
+      return 'raise';
+    }
+    return null;
+  }
   // Tactile press feedback shared by all four arcade buttons — see the
   // .is-pressed CSS on .btn-fold/.btn-check/.btn-call/.btn-raise/
   // .btn-award-console. Pointer events (not :active) so touch and mouse
@@ -6261,10 +7021,17 @@ function wireUI(){
   // so each button's own onclick below still fires exactly as before.
   // pointerup/pointercancel/pointerleave all clear the class, so a finger
   // that drags off or a cancelled gesture can never leave a button stuck
-  // looking pressed.
+  // looking pressed. SFX V1 hooks the PRESS-DOWN sound here too — it's
+  // purely a "the finger pushed a physical button" sensation, so it fires
+  // on every genuine pointerdown regardless of whether the gesture later
+  // completes into a click; the RELEASE/activate sound is deliberately
+  // NOT here (see each button's own onclick below instead) — that one
+  // only makes sense tied to an action actually committing, and onclick
+  // is the single place that already happens, so there's no risk of it
+  // double-firing through overlapping pointer/click events.
   function pressFeedback(el){
     if (!el) return;
-    const press = ()=>el.classList.add('is-pressed');
+    const press = ()=>{ el.classList.add('is-pressed'); Sound.buttonPress(resolveButtonKind(el)); };
     const release = ()=>el.classList.remove('is-pressed');
     el.addEventListener('pointerdown', press);
     el.addEventListener('pointerup', release);
@@ -6274,11 +7041,20 @@ function wireUI(){
   ['btn-fold','btn-checkcall','btn-raise','btn-award-pot-console'].forEach(id=>pressFeedback($(id)));
 
   // table actions
-  $('btn-fold').onclick = ()=>{ if (pendingHumanPlayer) humanAct('fold'); };
-  $('btn-checkcall').onclick = ()=>{ if (pendingHumanPlayer) humanAct('call'); };
+  $('btn-fold').onclick = ()=>{
+    if (!pendingHumanPlayer) return;
+    Sound.buttonRelease('fold');
+    humanAct('fold');
+  };
+  $('btn-checkcall').onclick = ()=>{
+    if (!pendingHumanPlayer) return;
+    Sound.buttonRelease(resolveButtonKind($('btn-checkcall')));
+    humanAct('call');
+  };
   $('btn-raise').onclick = ()=>{
     if (!pendingHumanPlayer) return;
     if (!$('raise-panel').classList.contains('show')){
+      Sound.buttonRelease(resolveButtonKind($('btn-raise')));
       openRaisePanel();
       updateActionControls();
       return;
@@ -6286,6 +7062,7 @@ function wireUI(){
     const slider = $('raise-slider');
     const raw = parseInt(slider.value,10);
     const committed = Math.max(parseInt(slider.min,10), Math.min(raw, parseInt(slider.max,10)));
+    Sound.buttonRelease(resolveButtonKind($('btn-raise')));
     humanAct('raise', committed);
   };
   $('raise-cancel').onclick = ()=>{
@@ -6327,6 +7104,7 @@ function wireUI(){
     startNewHand();
   };
   $('btn-rebuy').onclick = async ()=>{
+    Sound.rebuy();
     const human = game.players.find(p=>p.id==='you');
     if (game.livesEnabled && human.lives>0) human.lives--;
     human.chips = game.startingStack;
@@ -6492,13 +7270,14 @@ if (typeof window !== 'undefined'){
     estimateEquity, potSizedTotal, describeMade, equityAvailable: ()=>EquityService.available(),
     detectDraws, computeOuts, boardThreats, faceSVG, describeLine, buildReview,
     computePositions, evaluate7WithCards, render, handleShowdown, handleFoldWin, clearAllCardDOM,
-    highlightWinningCards, foldSnapshotNote, describeHole, cardKey,
-    arrangeHandForDisplay, showWinnerPanel, hideResultCard, waitForAwardPot,
-    estimatePayoutWaitMs, runShowdownAwardSequence,
+    highlightWinningCards, strongWinningCardKeys, foldSnapshotNote, describeHole, cardKey,
+    arrangeHandForDisplay, showHudResultConsole, hideHudResultConsole, hideResultCard, waitForAwardPot,
+    runShowdownAwardSequence, celebrateWinnerSeat, splitHandText,
     randomOpponentName, maybeTableTalk, TABLE_TALK, PERSONALITIES, newGame,
     seatPosition, aiThinkTime, speedMult, processLives, skullSVG, playDeath,
     nudgeMood, decayMoods, buildRankings, scheduleAutoDeal, finishHand, aiDecide,
-    saveTable, loadTableSave, clearTableSave, restoreTable, continueTable
+    saveTable, loadTableSave, clearTableSave, restoreTable, continueTable,
+    Sound, chipStaggerGap, chipStaggerGapAt
   };
 }
 
