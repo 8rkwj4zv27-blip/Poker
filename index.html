@@ -85,6 +85,22 @@
   --font-hdr:'Press Start 2P',ui-monospace,Menlo,monospace;
   --font-rank:'Press Start 2P',ui-monospace,Menlo,monospace;
   --dither:repeating-conic-gradient(var(--felt-1) 0% 25%, var(--felt-2) 0% 50%);
+
+  /* Poker Contraption prototype primitives. These tokens are intentionally
+     inert until a `.pc-*` construction class uses them; this pass applies
+     them to the title screen only so later surfaces can adopt the approved
+     physical language deliberately, one module at a time. */
+  --pc-leather:#541B25; --pc-leather-hi:#7A2D38; --pc-leather-lo:#2A0D14;
+  --pc-plastic:#D9C894; --pc-plastic-hi:#FFF0BD; --pc-plastic-lo:#89764C;
+  --pc-plastic-dark:#25251B; --pc-plastic-dark-hi:#424433; --pc-plastic-dark-lo:#11130D;
+  --pc-felt:#174631; --pc-felt-hi:#245D43; --pc-felt-lo:#0D2A1D;
+  --pc-recess:#111811; --pc-recess-deep:#070B08;
+  --pc-display:#152A1E; --pc-display-ink:#B6E0AF; --pc-display-dim:#6E9272;
+  --pc-edge-hi:#FFF1C4; --pc-edge-mid:#9A895B; --pc-edge-lo:#16090D;
+  --pc-button:#E7B633; --pc-button-hi:#FFE17B; --pc-button-lo:#8D6818;
+  --pc-lamp-amber:#F2B431; --pc-lamp-green:#75C89B; --pc-lamp-off:#493C24;
+  --pc-travel:6px; --pc-shadow-1:3px; --pc-shadow-2:7px;
+  --pc-texture-strength:.12;
 }
 /* four-colour deck */
 [data-deck="four"]{
@@ -398,7 +414,7 @@ button{ font-family:inherit; }
   border-radius:52px;
   background:
     radial-gradient(60% 46% at 50% 40%, rgba(255,255,255,.045) 0 99%, transparent 99%),
-    var(--dither) 0 0 / 8px 8px;
+    repeating-conic-gradient(var(--felt-1) 0% 25%, var(--felt-2) 0% 50%) 0 0 / 8px 8px;
   background-color:var(--felt-2);
   border:2px solid var(--px-ink);
   box-shadow:
@@ -581,6 +597,143 @@ button{ font-family:inherit; }
 .dealer-deck .card:nth-child(1){ top:7px; left:7px; }
 .dealer-deck .card:nth-child(2){ top:6px; left:6px; }
 .dealer-deck .card:nth-child(3){ top:5px; left:5px; }
+
+/* Single-player round change: physical modules leave and return in discrete,
+   fully-awaited arcade beats. No opacity transition: these are solid table
+   parts being lifted from and dropped into slots. */
+.seat.run-pull-out{ animation:runSeatOut 620ms steps(10,end) both; animation-delay:var(--run-stagger,0ms); pointer-events:none; will-change:transform; }
+.seat.run-drop-in{ animation:runSeatIn 680ms steps(11,end) both; animation-delay:var(--run-stagger,0ms); pointer-events:none; will-change:transform; }
+@keyframes runSeatOut{ 0%{ transform:translateY(0); } 12%{ transform:translateY(5px); } 22%{ transform:translateY(-8px); } 100%{ transform:translateY(-125vh); } }
+@keyframes runSeatIn{ 0%{ transform:translateY(-125vh); } 78%{ transform:translateY(7px); } 90%{ transform:translateY(-3px); } 100%{ transform:translateY(0); } }
+.dealer-station.run-deck-out{ animation:runDeckOut 420ms steps(7,end) both; }
+.dealer-station.run-deck-in{ animation:runDeckIn 480ms steps(8,end) both; }
+@keyframes runDeckOut{ to{ transform:translate(-50%,-160%); opacity:0; } }
+@keyframes runDeckIn{ from{ transform:translate(-50%,-160%); opacity:0; } to{ transform:translate(-50%,-50%); opacity:1; } }
+.run-theme-wipe{
+  position:absolute; inset:0; z-index:19; pointer-events:none; overflow:hidden;
+  background:repeating-linear-gradient(0deg, var(--px-ink) 0 12px, var(--accent) 12px 16px, var(--felt-light) 16px 44px);
+  border-top:4px solid var(--accent); border-bottom:4px solid var(--accent);
+  animation:runThemeWipe var(--run-theme-ms,1100ms) steps(12,end) both;
+}
+@keyframes runThemeWipe{ 0%{ clip-path:inset(50% 0 50% 0); } 44%,58%{ clip-path:inset(0 0 0 0); } 100%{ clip-path:inset(50% 0 50% 0); } }
+/* Results dashboards — built from the same hard-edged instrument language as
+   the lower player console. Victory lives over the conquered felt; run-over
+   is a larger screen-level report floating above a dead monochrome world. */
+.result-card.run-results{
+  min-width:0; padding:0; border:0; border-radius:0; background:transparent;
+  box-shadow:none; color:var(--ink); opacity:1;
+}
+.table-clear-report{
+  top:2.5%; width:calc(100% - 20px); max-width:390px;
+  animation:tableReportIn 440ms steps(7,end) both;
+}
+@keyframes tableReportIn{
+  0%{ opacity:0; transform:translate(-50%,-28px) scale(.86); }
+  58%{ opacity:1; transform:translate(-50%,4px) scale(1.025); }
+  100%{ opacity:1; transform:translate(-50%,0) scale(1); }
+}
+.result-bezel{
+  position:relative; padding:8px; background:var(--panel); border:3px solid var(--px-ink);
+  box-shadow:0 0 0 3px var(--accent), 0 8px 0 var(--px-ink), inset 0 0 0 2px rgba(255,255,255,.08);
+}
+.result-bezel::before,.result-bezel::after{
+  content:''; position:absolute; top:5px; width:6px; height:6px; background:var(--accent); border:1px solid var(--px-ink);
+}
+.result-bezel::before{ left:5px; }.result-bezel::after{ right:5px; }
+.result-eyebrow{
+  display:flex; align-items:center; gap:7px; padding:3px 7px 5px; color:var(--ink-dim);
+  font-size:8px; font-weight:700; letter-spacing:.11em; text-transform:uppercase;
+}
+.result-eyebrow i{ height:2px; flex:1; background:repeating-linear-gradient(90deg,var(--accent) 0 8px,transparent 8px 12px); }
+.result-head{ border:2px solid var(--px-ink); text-align:center; text-transform:uppercase; }
+.result-head-win{
+  display:flex; align-items:baseline; justify-content:center; gap:8px; padding:10px 7px 8px;
+  background:var(--accent); color:var(--accent-ink); box-shadow:inset 0 -4px 0 rgba(0,0,0,.2),0 3px 0 var(--px-ink);
+  animation:resultHeadHit 520ms steps(6,end) both;
+}
+.result-head-win span{ font-family:var(--font-hdr); font-size:10px; letter-spacing:.08em; }
+.result-head-win strong{ font-family:var(--font-hdr); font-size:20px; letter-spacing:.1em; }
+@keyframes resultHeadHit{ 0%,25%{ filter:brightness(2); transform:translateX(-4px); } 40%{ transform:translateX(3px); } 60%{ transform:translateX(-1px); } 100%{ filter:none; transform:none; } }
+.table-result-hero{ display:grid; grid-template-columns:.78fr 1.22fr; gap:6px; margin-top:9px; }
+.result-stat{
+  min-width:0; padding:7px 6px; text-align:center; background:rgba(0,0,0,.4);
+  border:2px solid var(--px-ink); box-shadow:inset 0 2px 0 rgba(255,255,255,.07);
+  animation:resultModuleIn 360ms steps(5,end) both;
+}
+.result-stat-label,.result-section-label{ display:block; color:var(--ink-dim); font-size:8px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; }
+.result-stat-value{ display:block; margin-top:4px; color:var(--card-face); font-family:var(--font-hdr); font-size:12px; line-height:1.15; }
+.hero-ko{ background:var(--danger); color:#fff; box-shadow:inset 0 -3px 0 rgba(0,0,0,.24); }
+.hero-ko .result-stat-label,.hero-ko .result-stat-value{ color:#fff; }
+.hero-ko .result-stat-value{ font-size:20px; }
+.hero-record .result-stat-value{ color:var(--accent-bright); font-size:17px; }
+.table-result-instruments{ display:grid; grid-template-columns:1.25fr 1fr 1fr; gap:5px; margin-top:6px; }
+.table-result-instruments .result-stat{ padding:6px 3px; }
+.table-result-instruments .result-stat-value{ font-size:10px; }
+.accent-stat .result-stat-value{ color:var(--accent-bright); }
+@keyframes resultModuleIn{ from{ opacity:0; transform:translateY(-7px); } to{ opacity:1; transform:none; } }
+.result-best{
+  position:relative; margin-top:7px; min-height:84px; padding:7px 8px 8px 110px;
+  background:var(--panel-2); border:2px solid var(--px-ink); box-shadow:inset 4px 0 0 var(--accent);
+  animation:resultModuleIn 420ms 120ms steps(6,end) both;
+}
+.result-best-name{ margin-top:5px; color:var(--accent-bright); font-family:var(--font-hdr); font-size:11px; line-height:1.2; }
+.result-best-desc{ margin-top:2px; color:var(--ink-dim); font-size:9px; line-height:1.15; }
+.result-best-cards{ position:absolute; left:9px; top:22px; display:flex; gap:2px; }
+.result-best-cards .card.small{ width:18px; height:27px; border-width:1px; border-radius:2px; box-shadow:0 2px 0 rgba(0,0,0,.45); }
+.result-best-cards .card.small .r{ font-size:7px; top:1px; left:2px; }.result-best-cards .card.small .s{ font-size:5px; top:9px; left:2px; }
+.result-best-cards .card.small .pip{ font-size:8px; }
+.result-best.empty{ padding-left:10px; min-height:54px; }
+.result-best-empty{ margin-top:8px; color:var(--ink-faint); font-family:var(--font-hdr); font-size:8px; }
+.result-run-strip{
+  display:flex; justify-content:space-between; gap:8px; margin-top:6px; padding:6px 8px;
+  background:rgba(0,0,0,.35); border:1px solid rgba(255,255,255,.1); color:var(--ink-dim); font-size:8px; letter-spacing:.04em;
+}
+.result-run-strip b{ margin-left:3px; color:var(--accent-bright); font-family:var(--font-hdr); font-size:9px; }
+.result-primary,.result-secondary{ width:100%; min-height:48px; margin-top:8px; }
+
+/* The failed run drains the table/action machinery only. The report is a
+   sibling, so it stays fully saturated above the recognisable dead scene. */
+#table-screen.run-dead > .table-main,#table-screen.run-dead > #action-area{ animation:runWorldDie 320ms steps(5,end) forwards; pointer-events:none; }
+#table-screen.run-dead > .table-main *,#table-screen.run-dead > #action-area *{ animation-play-state:paused!important; transition:none!important; }
+@keyframes runWorldDie{ from{ filter:grayscale(0) brightness(1); } to{ filter:grayscale(1) brightness(.38) contrast(.92); } }
+.run-over-report{
+  position:absolute; z-index:120; left:50%; top:50%; width:calc(100% - 22px); max-width:408px;
+  max-height:calc(100% - 22px); overflow-y:auto; overscroll-behavior:contain;
+  transform:translate(-50%,-50%); animation:runOverReportIn 500ms steps(7,end) both;
+}
+@keyframes runOverReportIn{ 0%{ opacity:0; transform:translate(-50%,-43%) scale(.94); } 55%{ opacity:1; transform:translate(-50%,-51%) scale(1.01); } 100%{ opacity:1; transform:translate(-50%,-50%) scale(1); } }
+.result-bezel-loss{ padding:9px; background:#170B0F; box-shadow:0 0 0 3px var(--danger),0 8px 0 #050304,inset 0 0 0 2px rgba(255,255,255,.08); }
+.result-bezel-loss::before,.result-bezel-loss::after{ background:var(--danger); }
+.danger-eye{ color:#E9A3A0; }.danger-eye i{ background:repeating-linear-gradient(90deg,var(--danger) 0 8px,transparent 8px 12px); }
+.result-head-loss{ padding:11px 8px 9px; background:var(--danger); color:#fff; box-shadow:inset 0 -4px 0 rgba(0,0,0,.28),0 3px 0 var(--px-ink); }
+.result-head-loss strong{ display:block; font-family:var(--font-hdr); font-size:24px; letter-spacing:.12em; text-shadow:2px 2px 0 #4B0B0E; }
+.result-head-loss span{ display:block; margin-top:5px; font-family:var(--font-hdr); font-size:8px; letter-spacing:.1em; }
+.run-progress-hero{ display:grid; grid-template-columns:1.35fr .65fr; gap:6px; margin-top:9px; }
+.run-progress-hero>div{ min-height:76px; padding:8px; background:#0B1115; border:2px solid var(--px-ink); display:flex; align-items:center; justify-content:center; gap:7px; }
+.run-progress-hero>div:first-child{ box-shadow:inset 5px 0 0 var(--accent); }
+.run-progress-hero span,.run-progress-hero em{ color:var(--ink-dim); font-size:8px; font-style:normal; font-weight:700; letter-spacing:.08em; }
+.run-progress-hero strong{ color:var(--accent-bright); font-family:var(--font-hdr); font-size:30px; line-height:1; }
+.run-progress-hero>div:last-child strong{ color:#fff; font-size:22px; }.run-progress-hero>div:last-child span{ line-height:1.3; }
+.run-report-grid{ display:grid; grid-template-columns:1fr 1fr; gap:5px; margin-top:6px; }
+.run-report-grid .result-stat{ padding:6px 5px; }.run-report-grid .result-stat-value{ font-size:11px; }
+.run-report-grid .ko-stat{ box-shadow:inset 4px 0 0 var(--danger); }
+.run-highlight-row{ display:grid; grid-template-columns:1.15fr .85fr; gap:5px; margin-top:6px; }
+.run-highlight-row .result-stat-value{ font-size:12px; }
+.run-epitaph{ margin-top:6px; padding:6px 8px; display:grid; grid-template-columns:auto 1fr; gap:3px 8px; align-items:center; background:#08090A; border:2px solid var(--danger); }
+.run-epitaph span{ color:#E9A3A0; font-size:8px; font-weight:700; letter-spacing:.09em; }.run-epitaph strong{ color:#fff; font-family:var(--font-hdr); font-size:10px; }
+.run-epitaph em{ grid-column:2; color:var(--ink-dim); font-size:8px; font-style:normal; }
+.run-result-actions{ display:grid; grid-template-columns:1.3fr .7fr; gap:7px; margin-top:2px; }
+.run-result-actions .result-secondary{ color:var(--ink); background:var(--panel-2); border:2px solid var(--ink-faint); }
+.table-round-callout{
+  position:absolute; left:50%; top:38%; transform:translate(-50%,-50%); z-index:22;
+  font-family:var(--font-hdr); font-size:22px; letter-spacing:.12em; white-space:nowrap;
+  color:var(--accent); text-shadow:3px 3px 0 var(--px-ink); pointer-events:none;
+  animation:roundCallout var(--run-announce-ms,1200ms) steps(9,end) both;
+}
+@keyframes roundCallout{ 0%{ transform:translate(-50%,-50%) scale(.65); opacity:0; } 18%,78%{ transform:translate(-50%,-50%) scale(1); opacity:1; } 100%{ transform:translate(-50%,-50%) scale(1); opacity:0; } }
+[data-motion="off"] .seat.run-pull-out,[data-motion="off"] .seat.run-drop-in,
+[data-motion="off"] .dealer-station.run-deck-out,[data-motion="off"] .dealer-station.run-deck-in,
+[data-motion="off"] .run-theme-wipe,[data-motion="off"] .table-round-callout{ animation-duration:1ms; animation-delay:0ms; }
 
 /* ---- flying deal ghost: a body-appended card-back that travels from the
    dealer deck to its destination, mirroring the .fly-chip technique ---- */
@@ -1615,20 +1768,19 @@ input[type=range]::-moz-range-thumb{
    its own short one-shot animation toggled by JS between JS-timed
    pauses (see playElimination) rather than one long continuous
    animation, so the rhythm itself — HIT → HIT → HIT → HIT → CRITICAL →
-   POP — is authored in JS, not CSS. --elim-cur-scale/--hit-dx/--hit-dy/
-   --hit-rot are set fresh by JS before each individual hit. Deliberately
-   NOT deathSpin (fades the avatar away) and NOT the old smooth swell/
-   blur-smoke version — see the presentation refinement pass notes.
+   POP — is authored in JS, not CSS. --elim-cur-scale/--hit-dx/--hit-dy
+   are set fresh by JS before each individual hit. Deliberately NOT
+   deathSpin (fades the avatar away): this is hard horizontal hit-stun.
    ============================================================ */
 .seat-card{ position:relative; }
 
 @keyframes elimHit{
-  0%{ transform:translate(0,0) scale(var(--elim-cur-scale,1)) rotate(0); filter:brightness(1) contrast(1); }
-  35%{ transform:translate(var(--hit-dx,-6px), var(--hit-dy,2px)) scale(calc(var(--elim-cur-scale,1) + .015)) rotate(var(--hit-rot,-2deg)); filter:brightness(1.9) contrast(1.25); }
-  65%{ transform:translate(calc(var(--hit-dx,-6px)*-.55), calc(var(--hit-dy,2px)*-.45)) scale(var(--elim-cur-scale,1)) rotate(calc(var(--hit-rot,-2deg)*-.6)); filter:brightness(1.15) contrast(1.05); }
-  100%{ transform:translate(0,0) scale(var(--elim-cur-scale,1)) rotate(0); filter:brightness(1) contrast(1); }
+  0%,18%{ transform:translate(0,0) scale(var(--elim-cur-scale,1)); filter:brightness(1) contrast(1); }
+  19%,48%{ transform:translate(var(--hit-dx,-8px), var(--hit-dy,1px)) scale(calc(var(--elim-cur-scale,1) + .018)); filter:brightness(2.1) contrast(1.35); }
+  49%,72%{ transform:translate(calc(var(--hit-dx,-8px)*-.35),0) scale(var(--elim-cur-scale,1)); filter:brightness(1.2) contrast(1.08); }
+  73%,100%{ transform:translate(0,0) scale(var(--elim-cur-scale,1)); filter:brightness(1) contrast(1); }
 }
-.elim-hit{ animation:elimHit var(--hit-ms,140ms) steps(4,end); }
+.elim-hit{ animation:elimHit var(--hit-ms,140ms) steps(1,end); }
 
 /* CRITICAL — rapid stroboscopic micro-jitter, the instant before it all
    comes apart. `infinite` because JS decides how long this window lasts
@@ -1652,26 +1804,6 @@ input[type=range]::-moz-range-thumb{
 }
 .elim-pop{ animation:elimPop var(--elim-pop-ms,300ms) steps(5,end) forwards; }
 
-/* PIXEL FX SMOKE — hard-edged block clusters (via box-shadow, no extra
-   DOM per block), no blur/gradients/soft edges. Spawned/removed by JS
-   (spawnPixelPuff/burstPixelSmoke); each puff is a short one-shot
-   steps() animation that jumps between a few discrete frames rather
-   than fading smoothly. Kept small and off-center so the face stays
-   readable — see playElimination's puff placement. */
-.pixel-puff{
-  position:absolute; width:4px; height:4px; pointer-events:none; z-index:6;
-  background:#DCD6C2; outline:1px solid rgba(20,16,10,.5);
-  animation:pixelPuffRise var(--puff-ms,480ms) steps(3,end) forwards;
-}
-.pixel-puff-v1{ box-shadow:4px 0 0 0 #DCD6C2, 0 -4px 0 0 #C9C2AA, 4px -4px 0 0 #B0A78C; }
-.pixel-puff-v2{ box-shadow:-4px 0 0 0 #C9C2AA, 0 -4px 0 0 #DCD6C2, -4px -4px 0 0 #B0A78C, 4px 0 0 0 #B0A78C; }
-.pixel-puff-v3{ box-shadow:0 -4px 0 0 #DCD6C2, 4px -4px 0 0 #C9C2AA, -4px 0 0 0 #B0A78C; }
-@keyframes pixelPuffRise{
-  0%{ transform:translate(0,0) scale(var(--puff-scale,1)); opacity:1; }
-  50%{ transform:translate(var(--puff-dx,-4px),-8px) scale(calc(var(--puff-scale,1)*1.3)); opacity:1; }
-  100%{ transform:translate(calc(var(--puff-dx,-4px)*1.7),-18px) scale(calc(var(--puff-scale,1)*1.6)); opacity:0; }
-}
-
 /* the shuffle ritual before every deal */
 #shuffle-anim{ position:absolute; top:52%; left:50%; width:0; height:0; z-index:4; }
 .sh-card{
@@ -1693,6 +1825,297 @@ input[type=range]::-moz-range-thumb{
 /* home screen extras */
 .home-row{ display:flex; gap:10px; }
 .home-row .btn-secondary{ flex:1; }
+
+/* ============================================================
+   POKER CONTRAPTION — reusable physical construction primitives.
+   Prototype specimen: #home only. The generic `.pc-*` recipes are
+   deliberately not attached to any existing table/setup/settings UI.
+   ============================================================ */
+.pc-material-leather{
+  background:
+    repeating-conic-gradient(rgba(255,255,255,var(--pc-texture-strength)) 0 25%,transparent 0 50%) 0 0/8px 8px,
+    var(--pc-leather);
+}
+.pc-material-felt{
+  background:
+    repeating-conic-gradient(rgba(255,255,255,.045) 0 25%,rgba(0,0,0,.035) 0 50%) 0 0/7px 7px,
+    var(--pc-felt);
+}
+.pc-material-plastic{ background:var(--pc-plastic); color:#241D0E; }
+.pc-material-dark-plastic{ background:var(--pc-plastic-dark); color:#EFE3B7; }
+.pc-raised{
+  position:relative; border:3px solid var(--pc-edge-lo);
+  box-shadow:
+    inset 3px 3px 0 rgba(255,255,255,.42),
+    inset -3px -3px 0 rgba(57,42,19,.34),
+    0 var(--pc-shadow-1) 0 var(--pc-edge-lo);
+}
+.pc-recess{
+  position:relative; border:3px solid var(--pc-edge-lo); background:var(--pc-recess);
+  box-shadow:
+    inset 0 5px 0 var(--pc-recess-deep),
+    inset 4px 0 0 rgba(0,0,0,.38),
+    inset -2px -2px 0 rgba(255,255,255,.07);
+}
+.pc-display{
+  position:relative; color:var(--pc-display-ink); background:
+    repeating-linear-gradient(0deg,rgba(255,255,255,.025) 0 1px,transparent 1px 4px),
+    var(--pc-display);
+  border:2px solid #080B08;
+  box-shadow:inset 0 4px 0 #07100B,inset 3px 0 0 rgba(0,0,0,.3),0 2px 0 rgba(255,255,255,.12);
+}
+.pc-label{
+  font-family:var(--font-hdr); font-size:7px; line-height:1.35; letter-spacing:.1em;
+  text-transform:uppercase; color:#5D4D2B;
+}
+.pc-seam{ height:3px; background:repeating-linear-gradient(90deg,#17090D 0 10px,transparent 10px 15px); }
+.pc-lamp{
+  display:inline-block; width:9px; height:9px; border:2px solid #190C0B; background:var(--pc-lamp-off);
+  box-shadow:0 2px 0 #100807,inset 1px 1px 0 rgba(255,255,255,.28); vertical-align:middle;
+}
+.pc-lamp.is-amber{ background:var(--pc-lamp-amber); box-shadow:0 2px 0 #100807,0 0 7px rgba(242,180,49,.34),inset 1px 1px 0 #FFE49B; }
+.pc-lamp.is-green{ background:var(--pc-lamp-green); box-shadow:0 2px 0 #100807,0 0 7px rgba(117,200,155,.3),inset 1px 1px 0 #C9F5DD; }
+.pc-button{
+  position:relative; border:3px solid var(--pc-edge-lo); border-radius:5px; cursor:pointer;
+  font-family:var(--font-hdr); text-transform:uppercase;
+  transition:transform 80ms steps(2,end),box-shadow 80ms steps(2,end);
+}
+
+#home{
+  overflow:hidden; padding:max(10px,env(safe-area-inset-top)) 10px max(10px,env(safe-area-inset-bottom));
+  align-items:center; isolation:isolate; background:transparent;
+}
+#home::before{
+  content:''; position:absolute; inset:0; z-index:-2; pointer-events:none;
+  background:
+    radial-gradient(circle at 50% 42%,rgba(52,112,78,.28) 0 29%,transparent 63%),
+    repeating-conic-gradient(#153B2B 0 25%,#103324 0 50%) 0 0/9px 9px;
+  box-shadow:inset 0 0 0 6px #07140E,inset 0 0 0 9px #2F1518;
+}
+#home .lobby-card.pc-housing{
+  position:relative; z-index:2; width:100%; max-width:408px; height:100%; max-height:912px; min-height:0;
+  margin:auto; padding:11px; display:flex; flex-direction:column; gap:8px; overflow:hidden;
+  border:4px solid var(--pc-edge-lo); border-radius:12px;
+  box-shadow:
+    inset 4px 4px 0 var(--pc-leather-hi),inset -5px -5px 0 var(--pc-leather-lo),
+    0 0 0 3px #8B493F,0 9px 0 #090406;
+}
+#home .home-topbar{
+  position:relative; flex:0 0 43px; min-height:0; margin:0; padding:5px 6px 5px 10px;
+  display:grid; grid-template-columns:1fr auto auto; align-items:center; gap:8px;
+  background:var(--pc-plastic-dark); border:3px solid var(--pc-edge-lo);
+  box-shadow:inset 2px 2px 0 var(--pc-plastic-dark-hi),inset -2px -2px 0 var(--pc-plastic-dark-lo),0 3px 0 #17090D;
+}
+.pc-product-mark{ color:#E9DDAE; font-family:var(--font-hdr); font-size:7px; line-height:1.45; letter-spacing:.08em; text-transform:uppercase; }
+.pc-product-mark small{ display:block; color:#8E896B; font-family:var(--font-px); font-size:8px; letter-spacing:.12em; }
+.pc-ready-readout{ min-width:96px; padding:5px 7px 4px; color:var(--pc-display-ink); font-family:var(--font-hdr); font-size:6px; line-height:1.5; letter-spacing:.06em; text-align:center; }
+#home #home-settings{
+  width:40px; height:31px; min-height:0; border:2px solid #070806; border-radius:3px;
+  background:#D0C28F; color:#30270F; font-family:inherit; font-size:17px; line-height:1;
+  box-shadow:0 3px 0 #090806,inset 2px 2px 0 #FFF0BC,inset -2px -2px 0 #796B43;
+}
+#home #home-settings:active{ transform:translateY(2px); box-shadow:0 1px 0 #090806,inset 2px 2px 0 #FFF0BC; }
+
+#home .hero{
+  flex:0 0 342px; min-height:342px; margin:0; padding:8px 8px 12px;
+  display:flex; flex-direction:column; gap:8px; text-align:center;
+}
+.pc-title-well{
+  flex:1; min-height:0; padding:15px 10px 11px; overflow:hidden;
+  display:flex; flex-direction:column; justify-content:center; align-items:center;
+}
+#home .hero .brand{
+  position:relative; z-index:2; display:flex; flex-direction:column; align-items:center;
+  margin:4px 0 0; text-indent:0; color:#F4E3AE; font-family:var(--font-hdr); font-size:35px;
+  line-height:1.05; letter-spacing:.055em; text-transform:uppercase;
+  -webkit-text-stroke:1px #1A0A0C;
+  text-shadow:
+    2px 0 0 #1A0A0C,-2px 0 0 #1A0A0C,0 2px 0 #1A0A0C,0 -2px 0 #1A0A0C,
+    4px 4px 0 #7B2732,7px 7px 0 #10070A;
+}
+#home .hero .brand span:last-child{ transform:translateX(9px); color:#F2C755; }
+#home .hero .brand::before,#home .hero .brand::after{ content:none; }
+#home .hero .brand-rule{ width:176px; height:5px; margin:15px auto 0; background:repeating-linear-gradient(90deg,#D6534B 0 12px,#E8C85F 12px 24px,#0B1F16 24px 29px); }
+.pc-cast-drawer{
+  display:grid; grid-template-columns:auto 1fr auto; gap:8px; align-items:center; flex:0 0 116px;
+  padding:10px 12px; background:#111C15; border:3px solid #140B08;
+  box-shadow:inset 0 0 0 5px #B9AA78,inset 0 7px 0 #75663E,inset 0 -5px 0 #554A2E,0 4px 0 #160B08;
+}
+#home .hero-faces{ display:flex; gap:7px; justify-content:center; margin:0; }
+#home .hero-faces .hf{
+  width:64px; height:64px; border:3px solid #090806; border-radius:3px; background:#13281C;
+  box-shadow:0 4px 0 #100705,inset 0 3px 0 rgba(255,255,255,.12);
+}
+.pc-cast-index{ writing-mode:vertical-rl; transform:rotate(180deg); color:#D8C99A; font-family:var(--font-hdr); font-size:6px; letter-spacing:.1em; }
+@keyframes pcFaceStartle{
+  0%,100%{ transform:translateY(0) scale(1); }
+  28%{ transform:translateY(4px) scale(.96); }
+  48%{ transform:translateY(-6px) scale(1.08); }
+  72%{ transform:translateY(1px) scale(1.01); }
+}
+#home.menu-launching .hero-faces .hf{ animation:pcFaceStartle 360ms steps(6,end) both; }
+#home.menu-launching .hero-faces .hf:nth-child(2){ animation-delay:25ms; }
+#home.menu-launching .hero-faces .hf:nth-child(3){ animation-delay:50ms; }
+#home.menu-launching .hero-faces .hf:nth-child(4){ animation-delay:75ms; }
+
+.pc-readout-row{
+  flex:0 0 80px; display:block; padding:6px; background:#C8B985; border:3px solid var(--pc-edge-lo);
+  box-shadow:inset 3px 3px 0 #F5E5B0,inset -3px -3px 0 #73653E,0 4px 0 #17090D;
+}
+#home .stats-card{ height:100%; margin:0; padding:4px; border:3px solid #090B08; border-radius:0; background:var(--pc-display); box-shadow:inset 0 5px 0 #07100B,inset 3px 0 0 rgba(0,0,0,.3),0 2px 0 rgba(255,255,255,.11); }
+#home .stats-card .stat-strip{ height:100%; }
+#home .stats-card .stat-cell{
+  display:flex; flex-direction:column; justify-content:center; padding:6px 4px 4px;
+  background:#102219; border:2px solid #07100B; border-right-width:1px;
+  box-shadow:inset 0 3px 0 #09160F,inset 2px 0 0 rgba(255,255,255,.035);
+}
+#home .stats-card .stat-cell:last-child{ border-right-width:2px; }
+#home .stats-card .stat-cell .v{ color:var(--pc-display-ink); font-size:17px; line-height:1.2; text-shadow:0 0 6px rgba(182,224,175,.26); }
+#home .stats-card .stat-cell .k{ color:var(--pc-display-dim); font-family:var(--font-hdr); font-size:6px; letter-spacing:.05em; margin-top:4px; }
+
+#home .pc-seat-module{ flex:0 0 101px; margin:0; padding:8px 10px 7px; background:var(--pc-plastic); }
+.pc-seat-head{ display:flex; justify-content:space-between; align-items:center; margin-bottom:6px; }
+.pc-seat-head .pc-label:last-child{ color:#7B2A31; }
+#home .identity-row{ gap:8px; }
+#home .identity-preview{ width:45px; height:45px; border-radius:3px; font-size:16px; border:2px solid #170C08; box-shadow:0 3px 0 #120907,inset 0 3px 0 rgba(255,255,255,.34); }
+#home .pc-name-stack{ flex:1; min-width:0; display:flex; flex-direction:column; gap:5px; }
+#home .text-input{ min-height:45px; height:45px; padding:8px 11px; border:3px solid #130B08; border-radius:2px; background:#173A29; color:#F3E6B8; font-size:15px; box-shadow:inset 0 4px 0 #0A1D14,inset 3px 0 0 rgba(0,0,0,.28),inset -2px -2px 0 rgba(255,255,255,.07); }
+#home .text-input::placeholder{ color:#8BA18C; }
+#home .swatches{ height:14px; gap:5px; justify-content:flex-start; }
+#home .swatch{ flex:1 1 0; width:auto; max-width:none; height:14px; min-height:14px; aspect-ratio:auto; border:1px solid #1B100A; border-radius:1px; box-shadow:0 2px 0 #140A07,inset 0 2px 0 rgba(255,255,255,.28); }
+#home .swatch::before{ width:100%; height:22px; }
+#home .swatch[aria-pressed="true"]{ transform:translateY(1px); box-shadow:0 1px 0 #140A07,inset 0 2px 0 rgba(255,255,255,.28); }
+#home .swatch[aria-pressed="true"]::after{ inset:-3px -2px; border:1px solid #6A4A14; border-radius:2px; }
+
+.pc-control-bay{ flex:1 1 auto; min-height:0; padding:12px 10px 15px; display:flex; flex-direction:column; overflow:hidden; }
+.pc-control-head{ display:flex; align-items:center; justify-content:space-between; gap:9px; margin-bottom:10px; color:#B9B088; }
+.pc-control-head .pc-label{ color:#A99E73; }
+.pc-control-head .pc-seam{ flex:1; opacity:.65; }
+.pc-primary-cradle{
+  position:relative; isolation:isolate; overflow:hidden; padding:9px 7px 22px; margin-bottom:12px;
+  background:#B4A46F; border:4px solid #120907;
+  box-shadow:inset 4px 4px 0 #EEDDA5,inset -4px -3px 0 #756744,0 3px 0 #2A190F;
+}
+/* The cartridge body is fixed in the slot. Only its yellow face travels when
+   pressed, keeping the bottom edge anchored like the secondary controls. */
+.pc-primary-cradle::before{
+  content:''; position:absolute; z-index:0; left:7px; right:7px; top:16px; height:78px;
+  background:var(--pc-button-lo); border:3px solid var(--pc-edge-lo); border-radius:5px;
+  box-shadow:0 3px 0 #0D0805;
+}
+/* The mechanism has its own clipped viewport, aligned to the cartridge hole.
+   Nothing travelling inside it can cross the surrounding cream casing. */
+.pc-slot-aperture{
+  position:absolute; z-index:1; inset:9px 7px 12px; overflow:hidden; pointer-events:none;
+}
+.pc-slot-aperture::before{
+  content:''; position:absolute; inset:0; opacity:0;
+  background:#080A07; border:3px solid #070504;
+  box-shadow:inset 0 6px 0 #020302,inset 4px 0 0 rgba(0,0,0,.5),inset -4px 0 0 rgba(0,0,0,.5);
+}
+/* One solid top-mounted door descends behind the receding cartridge. */
+.pc-slot-door{
+  position:absolute; z-index:1; inset:0; opacity:0; transform:translateY(calc(-100% - 16px));
+  background:linear-gradient(180deg,#555440 0 6px,#34352A 6px calc(100% - 8px),#202118 calc(100% - 8px) 100%);
+  border:3px solid #080604;
+  box-shadow:inset 3px 3px 0 #5D5D48,inset -3px -3px 0 #15160F,0 3px 0 #050403;
+}
+#home .pc-button-primary{
+  position:relative; z-index:2; width:100%; min-height:78px; margin:0; padding:12px 38px 11px;
+  display:grid; grid-template-columns:12px 1fr 12px; align-items:center; gap:8px;
+  background:var(--pc-button); color:#2A1C05; font-size:14px; letter-spacing:.045em;
+  box-shadow:inset 3px 3px 0 var(--pc-button-hi),inset -3px -3px 0 rgba(81,49,5,.3);
+}
+#home .pc-button-primary .pc-lamp{ justify-self:center; }
+#home .pc-button-primary small{ display:block; margin-top:5px; color:#694C10; font-family:var(--font-px); font-size:9px; font-weight:800; letter-spacing:.11em; }
+#home .pc-button-primary:active{
+  transform:translateY(5px);
+  box-shadow:inset 3px 3px 0 var(--pc-button-hi);
+}
+@keyframes pcLaunchClunk{
+  0%{
+    transform:translateY(0);
+    box-shadow:inset 3px 3px 0 var(--pc-button-hi),inset -3px -3px 0 rgba(81,49,5,.3);
+    filter:brightness(1); opacity:1;
+  }
+  18%,40%{
+    transform:translateY(5px);
+    box-shadow:inset 3px 3px 0 var(--pc-button-hi);
+    filter:brightness(.98); opacity:1;
+  }
+  58%{
+    transform:translateY(7px) scale(.975);
+    box-shadow:inset 2px 2px 0 var(--pc-button-hi);
+    filter:brightness(.84); opacity:1;
+  }
+  78%{
+    transform:translateY(10px) scale(.93);
+    box-shadow:inset 1px 1px 0 var(--pc-button-hi);
+    filter:brightness(.62); opacity:.72;
+  }
+  100%{
+    transform:translateY(12px) scale(.88);
+    box-shadow:0 0 0 transparent;
+    filter:brightness(.42); opacity:0;
+  }
+}
+#home .pc-button-primary.pc-launch-clunk{ animation:pcLaunchClunk 520ms steps(10,end) both; }
+@keyframes pcSlotClose{
+  0%,22%{ opacity:0; transform:translateY(calc(-100% - 16px)); }
+  23%{ opacity:1; transform:translateY(calc(-100% - 16px)); }
+  82%{ opacity:1; transform:translateY(3px); }
+  91%{ opacity:1; transform:translateY(-2px); }
+  100%{ opacity:1; transform:translateY(0); }
+}
+#home.menu-launching .pc-slot-aperture::before{ opacity:1; }
+#home.menu-launching .pc-slot-door{ animation:pcSlotClose 700ms steps(9,end) both; }
+#home .pc-button-secondary{
+  width:100%; min-height:47px; margin:0 0 12px; padding:10px 13px;
+  background:#D2C28D; color:#30260D; font-size:9px; letter-spacing:.045em;
+  box-shadow:0 4px 0 #72623C,0 6px 0 #090605,inset 2px 2px 0 #F9E8B4,inset -2px -2px 0 #8B7A4C;
+}
+#home .pc-button-secondary:active{ transform:translateY(4px); box-shadow:0 1px 0 #72623C,0 3px 0 #090605,inset 2px 2px 0 #F9E8B4; }
+#home #continue-table{ min-height:44px; margin:0 0 7px; padding:10px; background:#77B690; color:#102619; font-size:9px; box-shadow:0 4px 0 #315E41,0 6px 0 #090605,inset 2px 2px 0 #BFE4CA; }
+#home .home-row{ display:grid; grid-template-columns:1fr 1fr; gap:7px; }
+#home .home-row .btn-secondary{
+  min-height:47px; margin:0; padding:8px 5px; border:2px solid #090806; border-radius:2px;
+  background:#29291F; color:#C8BD92; font-size:7px; line-height:1.35;
+  box-shadow:0 4px 0 #15150F,0 6px 0 #090605,inset 2px 2px 0 #4A4B39,inset -2px -2px 0 #171710;
+}
+#home .home-row .btn-secondary:active{
+  transform:translateY(4px);
+  box-shadow:0 1px 0 #15150F,0 3px 0 #090605,inset 2px 2px 0 #4A4B39;
+}
+
+/* Table entry: the whole title-screen contraption is one heavy foreground
+   object. It lowers out of the viewport intact while the already-initialised
+   real table is progressively uncovered behind it; no child module gets its
+   own competing exit choreography. */
+#home.menu-over-table{ z-index:80; pointer-events:none; }
+#home.menu-clearing::before{ animation:pcBackdropRelease 190ms steps(4,end) forwards; }
+#home.menu-clearing .pc-housing{ animation:pcMachineLower 980ms 70ms steps(16,end) both; }
+@keyframes pcBackdropRelease{ to{ opacity:0; } }
+@keyframes pcMachineLower{
+  0%{ transform:translateY(0); }
+  8%{ transform:translateY(-5px); }
+  16%{ transform:translateY(12px); }
+  100%{ transform:translateY(112vh); }
+}
+
+@media (max-width:389px){
+  #home{ padding-left:7px; padding-right:7px; }
+  #home .lobby-card.pc-housing{ padding:8px; gap:6px; }
+  #home .hero .brand{ font-size:29px; }
+  #home .hero-faces .hf{ width:54px; height:54px; }
+  #home .pc-button-primary{ font-size:12px; min-height:62px; padding-left:28px; padding-right:28px; }
+}
+@media (max-height:820px){
+  #home{ overflow-y:auto; align-items:flex-start; }
+  #home .lobby-card.pc-housing{ height:auto; min-height:790px; overflow:hidden; }
+  #home .hero{ min-height:292px; flex-basis:292px; }
+  .pc-cast-drawer{ flex-basis:94px; }
+  #home .hero-faces .hf{ width:52px; height:52px; }
+}
 
 /* hand rankings page */
 #rankings{
@@ -1824,39 +2247,51 @@ button, [role="button"], input[type="button"], input[type="submit"] {
 
   <!-- ============================ LOBBY ============================ -->
   <div id="home" class="screen">
-    <div class="lobby-card">
+    <div class="lobby-card pc-housing pc-material-leather" id="menu-contraption">
       <div class="home-topbar">
+        <div class="pc-product-mark">Poker Faces <small>Electronic table game</small></div>
+        <div class="pc-ready-readout pc-display"><span class="pc-lamp is-green"></span>&nbsp; DEALER READY</div>
         <button class="icon-btn" id="home-settings" aria-label="Settings">⚙</button>
       </div>
 
-      <div class="hero">
-        <div class="hero-faces" id="hero-faces" aria-hidden="true"></div>
-        <div class="hero-suits" aria-hidden="true">
-          <span class="s-red">&hearts;</span><span>&spades;</span><span class="s-red">&diams;</span><span>&clubs;</span>
+      <div class="hero pc-raised pc-material-plastic">
+        <div class="pc-title-well pc-recess pc-material-felt">
+          <h1 class="brand"><span>Poker</span><span>Faces</span></h1>
+          <div class="brand-rule"></div>
         </div>
-        <h1 class="brand">The Table</h1>
-        <div class="brand-rule"></div>
-        <div class="brand-sub">Texas Hold'em against the house</div>
-      </div>
-
-      <div class="panel-card stats-card">
-        <div class="stat-strip" id="stat-strip"></div>
-      </div>
-
-      <div class="panel-card">
-        <div class="card-label">Your seat</div>
-        <div class="identity-row">
-          <div class="identity-preview" id="identity-preview">YO</div>
-          <input class="text-input" id="player-name" maxlength="14" placeholder="Your name" aria-label="Your name">
+        <div class="pc-cast-drawer">
+          <span class="pc-cast-index">HOUSE</span>
+          <div class="hero-faces" id="hero-faces" aria-hidden="true"></div>
+          <span class="pc-cast-index">FACES</span>
         </div>
-        <div class="swatches" id="avatar-swatches" style="margin-top:14px;" role="group" aria-label="Seat colour"></div>
       </div>
 
-      <button class="btn-primary btn-hero hidden" id="continue-table">Continue Table</button>
-      <button class="btn-primary btn-hero" id="go-to-setup">Play</button>
-      <div class="home-row">
-        <button class="btn-secondary" id="quick-play">Quick Deal</button>
-        <button class="btn-secondary" id="open-rankings">Hand Rankings</button>
+      <div class="pc-readout-row">
+        <div class="panel-card stats-card pc-display">
+          <div class="stat-strip" id="stat-strip"></div>
+        </div>
+      </div>
+
+      <div class="pc-control-bay pc-recess">
+        <div class="pc-control-head">
+          <span class="pc-label">Select table</span>
+          <span class="pc-seam"></span>
+          <span class="pc-lamp is-amber"></span>
+        </div>
+        <button class="pc-button hidden" id="continue-table">Continue Table</button>
+        <div class="pc-primary-cradle">
+          <span class="pc-slot-aperture" aria-hidden="true"><span class="pc-slot-door"></span></span>
+          <button class="pc-button pc-button-primary" id="single-player">
+            <span class="pc-lamp is-amber"></span>
+            <span>Single Player<small>Start elimination run</small></span>
+            <span class="pc-lamp is-amber"></span>
+          </button>
+        </div>
+        <button class="pc-button pc-button-secondary" id="go-to-setup">Classic Table Setup</button>
+        <div class="home-row">
+          <button class="btn-secondary" id="quick-play">Quick Deal</button>
+          <button class="btn-secondary" id="open-rankings">Hand Rankings</button>
+        </div>
       </div>
     </div>
   </div>
@@ -2084,6 +2519,15 @@ button, [role="button"], input[type="button"], input[type="submit"] {
   <div class="sheet" id="settings-sheet" role="dialog" aria-label="Settings">
     <div class="sheet-grip"></div>
     <div class="sheet-body">
+      <div class="sheet-section">
+        <h3>Player</h3>
+        <div class="identity-row">
+          <div class="identity-preview" id="identity-preview">YO</div>
+          <input class="text-input" id="player-name" maxlength="14" placeholder="Your name" aria-label="Your name">
+        </div>
+        <div class="swatches" id="avatar-swatches" style="margin-top:14px;" role="group" aria-label="Seat colour"></div>
+      </div>
+
       <div class="sheet-section">
         <h3>Assistance</h3>
         <div class="toggle-row">
@@ -3566,20 +4010,58 @@ const ELIMINATION_CONFIG = {
   // CRITICAL->POP rhythm (not counting the opening shock jolt)
   hitCount: { ko:6, elim:3 },
 
-  // relative intensities the hit/pop/smoke keyframes scale against (1 = baseline)
+  // relative intensities the blocky horizontal hit/pop keyframes scale against
   shakeIntensity: { ko:1.6, elim:1.0 },
   scaleGrowth:    { ko:1.14, elim:1.06 },
-  smokeIntensity: { ko:1.5, elim:0.9 },
 
   // brief hold between the final K.O.'s defeated card settling and the
   // TABLE CLEARED banner appearing — never cut away mid-payoff
   clearedBeatMs: 900,
 };
 
+/* Endless single-player run progression. Gameplay values remain in
+   ELIMINATION_CONFIG; this object only owns round presentation/progression. */
+const ELIMINATION_RUN_CONFIG = {
+  themes: ['emerald','burgundy','midnight','slate'],
+  seatStaggerMs: 90,
+  seatExitMs: 620,
+  deckExitMs: 420,
+  themeSwapMs: 1100,
+  seatArrivalMs: 680,
+  announcementMs: 1200,
+  readyBeatMs: 220,
+};
+
+function makeEliminationRun(){
+  return {
+    active:true, tableNumber:1, highestTableReached:1, tablesCleared:0,
+    totalKOs:0, totalHands:0, totalHandsWon:0,
+    showdownsPlayed:0, showdownsWon:0, allInsPlayed:0, allInsWon:0,
+    biggestPotWon:0, highestStack:ELIMINATION_CONFIG.startingStack, bestHand:null, bustedBy:null,
+    tableKOs:0, tableHands:0, tableHandsWon:0,
+    tableShowdownsPlayed:0, tableShowdownsWon:0, tableAllInsPlayed:0, tableAllInsWon:0,
+    tableBiggestPotWon:0, tableHighestStack:ELIMINATION_CONFIG.startingStack, tableBestHand:null
+  };
+}
+function runTheme(tableNumber){
+  const themes = ELIMINATION_RUN_CONFIG.themes;
+  return themes[(Math.max(1, tableNumber)-1) % themes.length];
+}
+function applyRunTheme(){
+  const theme = game && game.mode==='elimination' && game.run && game.run.active
+    ? runTheme(game.run.tableNumber) : settings.theme;
+  document.body.setAttribute('data-theme', theme);
+  const meta = document.querySelector('meta[name="theme-color"]');
+  if (meta){
+    const bg = getComputedStyle(document.body).getPropertyValue('--bg-deep').trim();
+    if (bg) meta.setAttribute('content', bg);
+  }
+}
+
 // DEV-only test panel — flip to true locally to reach elimination mode and
 // its rapid-test controls without going through Setup (out of scope this
 // pass; see Phase 1 plan). Fully absent from the DOM/UI when false.
-const DEV_MODE = true;
+const DEV_MODE = false;
 
 // FAST DEV — a runtime toggle inside the DEV panel (not a build flag like
 // DEV_MODE above) that blitzes through the "boring setup" between real
@@ -3702,6 +4184,8 @@ function isValidTableSave(save){
 
 function saveTable(){
   if (!game || game.over) return;
+  // Single-player runs are intentionally live-session-only in this pass.
+  if (game.mode==='elimination' && game.run && game.run.active) return;
   Store.set('felt.table', serializeTable(game));
 }
 function loadTableSave(){
@@ -3834,10 +4318,12 @@ async function startNewHand(){
   for (const p of g.players) if (p.inHand) p.hand = [g.deck.pop(), g.deck.pop()];
 
   g._humanStart = g.players[0].chips;   // session best/worst tracking baseline
+  g._humanAllIn = false;
 
   assignBlinds();
   postBlind(g.players[g.sbIndex], g.smallBlind);
   postBlind(g.players[g.bbIndex], g.bigBlind);
+  if (g.players[0].allIn) g._humanAllIn = true;
   g.currentBet = g.bigBlind;
   g.minRaise = g.bigBlind;
   g.positions = computePositions();
@@ -4152,6 +4638,7 @@ function applyAction(player, decision){
   }
 
   player.acted = true;
+  if (player.isHuman && player.allIn) g._humanAllIn = true;
   logMsg(text);
   // The banner no longer narrates every action ("Sasha raises to 60") —
   // each seat's fixed action-slot (see render()) now shows that reliably
@@ -4558,6 +5045,70 @@ function celebrateWinnerSeat(id){
   e.root.classList.remove('winner-pulse'); void e.root.offsetWidth; e.root.classList.add('winner-pulse');
 }
 
+function copyTrackedHand(handRes){
+  if (!handRes || !handRes.result || !Array.isArray(handRes.cards)) return null;
+  return {
+    result:{ cat:handRes.result.cat, tiebreak:handRes.result.tiebreak.slice() },
+    name:describeMade(handRes.result),
+    cards:handRes.cards.map(c=>({rank:c.rank,suit:c.suit,value:c.value}))
+  };
+}
+function updateTrackedBest(run,key,handRes){
+  const candidate = copyTrackedHand(handRes);
+  if (!candidate) return;
+  const current = run[key];
+  if (!current || compareHands(candidate.result,current.result)>0) run[key]=candidate;
+}
+function humanWonOutcome(outcome){
+  if (!outcome) return false;
+  if (outcome.type==='showdown') return !!(outcome.winnerIds && outcome.winnerIds.has('you'));
+  return !!(outcome.type==='foldwin' && outcome.winner && outcome.winner.id==='you');
+}
+function humanAwardFromOutcome(outcome){
+  if (!outcome || outcome.type!=='showdown' || !Array.isArray(outcome.potResults)){
+    return outcome && outcome.type==='foldwin' && outcome.winner && outcome.winner.id==='you' ? (outcome.amount||0) : 0;
+  }
+  return outcome.potResults.reduce((sum,pot)=>sum + (pot.winnerShares||[])
+    .filter(s=>s.id==='you').reduce((n,s)=>n+s.amount,0),0);
+}
+function captureHumanBuster(g,outcome){
+  if (!outcome || outcome.type!=='showdown' || !Array.isArray(outcome.potResults)) return;
+  let decisivePot=null;
+  outcome.potResults.forEach(pot=>{ if (pot.eligible && pot.eligible.includes('you')) decisivePot=pot; });
+  if (!decisivePot) return;
+  const ids=decisivePot.winnerIds.filter(id=>id!=='you');
+  if (!ids.length) return;
+  const names=ids.map(id=>{ const p=g.players.find(x=>x.id===id); return p ? p.name : id; });
+  g.run.bustedBy={ names, hand:decisivePot.hand||'' };
+}
+function trackEliminationHand(g,outcome,human){
+  const run=g.run;
+  if (!run || !run.active) return;
+  const won=humanWonOutcome(outcome);
+  run.totalHands++; run.tableHands++;
+  if (won){ run.totalHandsWon++; run.tableHandsWon++; }
+
+  const humanContender=outcome && outcome.type==='showdown' && Array.isArray(outcome.contenders) &&
+    outcome.contenders.some(p=>p.id==='you');
+  if (humanContender){
+    run.showdownsPlayed++; run.tableShowdownsPlayed++;
+    if (won){ run.showdownsWon++; run.tableShowdownsWon++; }
+    const handRes=human._handRes;
+    updateTrackedBest(run,'bestHand',handRes);
+    updateTrackedBest(run,'tableBestHand',handRes);
+  }
+  if (g._humanAllIn){
+    run.allInsPlayed++; run.tableAllInsPlayed++;
+    if (won){ run.allInsWon++; run.tableAllInsWon++; }
+  }
+  const award=humanAwardFromOutcome(outcome);
+  run.biggestPotWon=Math.max(run.biggestPotWon,award);
+  run.tableBiggestPotWon=Math.max(run.tableBiggestPotWon,award);
+  run.highestStack=Math.max(run.highestStack,human.chips);
+  run.tableHighestStack=Math.max(run.tableHighestStack,human.chips);
+  if (human.chips<=0) captureHumanBuster(g,outcome);
+}
+
 function recordPot(amount){
   if (amount > stats.biggestPot) stats.biggestPot = amount;
 }
@@ -4571,6 +5122,7 @@ async function finishHand(outcome){
 
   stats.hands++;
   const human = g.players.find(p=>p.id==='you');
+  if (g.mode==='elimination') trackEliminationHand(g,outcome,human);
   stats.net = human.chips - g.buyIns;
   saveStats();
   renderStats();
@@ -4704,6 +5256,10 @@ function showGameOver(g, human){
 }
 
 function concludeGame(){
+  if (game.mode==='elimination' && game.run && game.run.active){
+    showTableCleared(game);
+    return;
+  }
   game.over = true;
   clearTableSave();
   clearTimeout(autoDealT);
@@ -4716,6 +5272,91 @@ function concludeGame(){
   $('actions-row').classList.add('hidden');
   $('btn-next-hand').classList.add('hidden');
   $('btn-new-table').classList.remove('hidden');
+  render();
+}
+
+function moneyResult(n){ return '$'+Math.max(0,n||0).toLocaleString(); }
+function ratioResult(won,played){ return (won||0)+' / '+(played||0); }
+function resultStat(label,value,cls){
+  return '<div class="result-stat '+(cls||'')+'"><span class="result-stat-label">'+esc(label)+'</span>'+
+    '<strong class="result-stat-value tabular">'+esc(String(value))+'</strong></div>';
+}
+function bestHandResultHTML(best){
+  if (!best){
+    return '<section class="result-best empty"><div class="result-section-label">BEST HAND</div>'+
+      '<div class="result-best-empty">NO SHOWDOWN HAND RECORDED</div></section>';
+  }
+  const split=splitHandText(best.result.cat,best.name);
+  const displayCards=arrangeHandForDisplay(best.result.cat,best.cards);
+  const cards=displayCards.map(c=>'<div class="'+cardClass(false,c,true)+'" aria-label="'+esc(cardLabel(false,c))+'">'+cardInner(c)+'</div>').join('');
+  return '<section class="result-best"><div class="result-section-label">BEST HAND</div>'+
+    '<div class="result-best-name">'+esc(split.category.toUpperCase())+'</div>'+
+    (split.descriptor?'<div class="result-best-desc">'+esc(split.descriptor)+'</div>':'')+
+    '<div class="result-best-cards">'+cards+'</div></section>';
+}
+function tableClearedHTML(g){
+  const r=g.run, human=g.players.find(p=>p.isHuman);
+  return '<div class="result-bezel result-bezel-win">' +
+    '<div class="result-eyebrow">ROUND COMPLETE <i></i> TABLE '+r.tableNumber+'</div>'+
+    '<header class="result-head result-head-win"><span>TABLE '+r.tableNumber+'</span><strong>CLEARED</strong></header>'+
+    '<div class="table-result-hero">'+
+      resultStat('K.O.s',r.tableKOs+' / '+ELIMINATION_CONFIG.opponents,'hero-ko')+
+      resultStat('Hands won',ratioResult(r.tableHandsWon,r.tableHands),'hero-record')+
+    '</div>'+
+    '<div class="table-result-instruments">'+
+      resultStat('Biggest pot won',moneyResult(r.tableBiggestPotWon),'accent-stat')+
+      resultStat('Peak stack',moneyResult(r.tableHighestStack),'')+
+      resultStat('Final stack',moneyResult(human?human.chips:0),'')+
+    '</div>'+
+    bestHandResultHTML(r.tableBestHand)+
+    '<div class="result-run-strip"><span>RUN K.O.s <b class="tabular">'+r.totalKOs+'</b></span>'+
+      '<span>NEXT <b>TABLE '+(r.tableNumber+1)+'</b></span></div>'+
+    '<button class="btn-primary result-primary" id="run-next-table" type="button">NEXT TABLE</button>'+
+  '</div>';
+}
+function runOverHTML(g){
+  const r=g.run;
+  const buster=r.bustedBy;
+  return '<div class="result-bezel result-bezel-loss">' +
+    '<div class="result-eyebrow danger-eye">RUN TERMINATED <i></i> NO REBUY</div>'+
+    '<header class="result-head result-head-loss"><strong>RUN OVER</strong><span>BUSTED ON TABLE '+r.tableNumber+'</span></header>'+
+    '<div class="run-progress-hero"><div><span>TABLE</span><strong class="tabular">'+r.highestTableReached+'</strong><em>REACHED</em></div>'+
+      '<div><strong class="tabular">'+r.tablesCleared+'</strong><span>TABLES<br>CLEARED</span></div></div>'+
+    '<div class="run-report-grid">'+
+      resultStat('Hands won',ratioResult(r.totalHandsWon,r.totalHands),'')+
+      resultStat('Showdowns won',ratioResult(r.showdownsWon,r.showdownsPlayed),'')+
+      resultStat('All-ins won',ratioResult(r.allInsWon,r.allInsPlayed),'')+
+      resultStat('Human K.O.s',r.totalKOs,'ko-stat')+
+    '</div>'+
+    '<div class="run-highlight-row">'+
+      resultStat('Biggest pot won',moneyResult(r.biggestPotWon),'accent-stat')+
+      resultStat('Highest stack',moneyResult(r.highestStack),'')+
+    '</div>'+
+    bestHandResultHTML(r.bestHand)+
+    (buster?'<div class="run-epitaph"><span>BUSTED BY</span><strong>'+esc(buster.names.join(' & ').toUpperCase())+'</strong>'+
+      (buster.hand?'<em>'+esc(buster.hand)+'</em>':'')+'</div>':'')+
+    '<div class="run-result-actions"><button class="btn-primary result-primary" id="run-new" type="button">NEW RUN</button>'+
+      '<button class="btn-secondary result-secondary" id="run-menu" type="button">MAIN MENU</button></div>'+
+  '</div>';
+}
+
+function showTableCleared(g){
+  if (g._tableClearedShown) return;
+  g._tableClearedShown = true;
+  g.over = true;
+  clearTableSave();
+  clearTimeout(autoDealT);
+  hideResultCard();
+  g.run.tablesCleared = Math.max(g.run.tablesCleared, g.run.tableNumber);
+  setBanner('<b>Table cleared.</b> Every opponent is eliminated.');
+  $('actions-row').classList.add('hidden');
+  $('btn-next-hand').classList.add('hidden');
+  $('btn-new-table').classList.add('hidden');
+  const el = document.createElement('div');
+  el.className = 'result-card run-results table-clear-report'; el.id = 'result-card';
+  el.innerHTML = tableClearedHTML(g);
+  $('felt').appendChild(el);
+  $('run-next-table').onclick = beginNextRunTable;
   render();
 }
 function ordinal(n){
@@ -4757,6 +5398,7 @@ async function resolveEliminations(g, outcome){
     }
     p.eliminated = true;
     p.inHand = false;
+    if (ko && g.run && g.run.active){ g.run.totalKOs++; g.run.tableKOs++; }
     logMsg(p.name + (ko ? ' is knocked out!' : ' is eliminated!'), true);
     await playElimination(p, { ko });
   }
@@ -4764,37 +5406,13 @@ async function resolveEliminations(g, outcome){
 
 /* Shared K.O.!/ELIMINATED! presentation — one pipeline for both variants
    (see resolveEliminations above for how `ko` is decided). Stage sequence:
-   recognition beat -> shock face + card jolt -> escalating shake/swell/
-   smoke -> brief anticipation hold -> POP (recoil, dead face, smoke burst,
-   stamp, sound) -> aftermath settle into the permanent .dead state.
+   recognition beat -> shock face + card jolt -> escalating horizontal
+   hit-stun -> brief anticipation hold -> POP (recoil, dead face, stamp,
+   sound) -> aftermath settle into the permanent .dead state.
    Deliberately not deathSpin() (which fades the avatar away) — this card
    swells and shakes before popping, per the Phase 1 plan. All timings/
    intensities come from ELIMINATION_CONFIG so the sequence can be retuned
    after playtesting without touching this function. */
-/* Pixel FX smoke — a single hard-edged block cluster (one div, shaped via
-   box-shadow so a whole chunky "puff" costs no extra DOM), jumping through
-   3 discrete frames via steps() rather than fading smoothly — see the
-   .pixel-puff rules. Self-removing; callers never track/clean these up.
-   Kept off to the sides near the top of the card, not dead-center over
-   the face. */
-function spawnPixelPuff(card, big){
-  const puff = document.createElement('div');
-  const variant = 1 + Math.floor(Math.random()*3);
-  puff.className = 'pixel-puff pixel-puff-v' + variant;
-  const side = Math.random()<0.5 ? -1 : 1;
-  puff.style.left = (50 + side*(6 + Math.random()*22)) + '%';
-  puff.style.top = (10 + Math.random()*20) + '%';
-  const ms = Math.round(340 + Math.random()*220);
-  puff.style.setProperty('--puff-dx', (side*(4+Math.random()*6)) + 'px');
-  puff.style.setProperty('--puff-scale', big ? '1.7' : '1');
-  puff.style.setProperty('--puff-ms', ms + 'ms');
-  card.appendChild(puff);
-  setTimeout(()=>puff.remove(), ms + 60);
-}
-function burstPixelSmoke(card, count){
-  for (let i=0;i<count;i++) spawnPixelPuff(card, true);
-}
-
 /* Shared K.O.!/ELIMINATED! presentation (see resolveEliminations above for
    how `ko` is decided). RETRO ARCADE DAMAGE: a little enemy panel taking
    repeated hits, going unstable, then breaking — authored as a sequence
@@ -4802,13 +5420,13 @@ function burstPixelSmoke(card, count){
    one long continuous animation), so the actual HIT -> HIT -> HIT -> HIT
    -> CRITICAL -> POP rhythm lives here in JS, not in CSS easing. Stage
    sequence: recognition beat -> shock face + opening jolt -> escalating,
-   discrete-scale-jumping HITs with occasional pixel-smoke puffs ->
+   discrete-scale-jumping horizontal HITs ->
    CRITICAL stroboscopic jitter -> a brief dead-still freeze (anticipation)
-   -> POP (hard snap: recoil, dead face swap, smoke burst, K.O.!/
+   -> POP (hard snap: recoil, dead face swap, K.O.!/
    ELIMINATED! stamped into the action bar — never over the face — plus
    sound) -> aftermath settle into the permanent .dead state. All timings/
    intensities come from ELIMINATION_CONFIG. Deliberately not deathSpin
-   (fades the avatar away) and not a smooth swell/blur-smoke version. */
+   (fades the avatar away) and not a smooth/floaty damage version. */
 async function playElimination(p, opts){
   const ko = !!(opts && opts.ko);
   const e = seatEls[p.id];
@@ -4854,9 +5472,8 @@ async function playElimination(p, opts){
   const hit = mult=>{
     const dir = Math.random()<0.5 ? -1 : 1;
     const ms = Math.round(110 + mult*16);
-    card.style.setProperty('--hit-dx', Math.round(dir*(4+3*mult)*shake) + 'px');
-    card.style.setProperty('--hit-dy', Math.round(-dir*(1+1.5*mult)*shake) + 'px');
-    card.style.setProperty('--hit-rot', (dir*(1+1.2*mult)*shake).toFixed(1) + 'deg');
+    card.style.setProperty('--hit-dx', Math.round(dir*(6+3.2*mult)*shake) + 'px');
+    card.style.setProperty('--hit-dy', Math.round((Math.random()<0.35 ? -1 : 0)*(1+mult*.5)) + 'px');
     card.style.setProperty('--hit-ms', ms + 'ms');
     card.classList.remove('elim-hit'); void card.offsetWidth; card.classList.add('elim-hit');
     return ms;
@@ -4888,7 +5505,7 @@ async function playElimination(p, opts){
 
   // REPEATED DAMAGE — discrete HITs; gaps shrink as it escalates (BAM …
   // pause … BAM … pause … BAM-BAM), card grows in visible steps (not a
-  // tween), pixel-smoke puffs get more frequent toward the end.
+  // tween). Late hits arrive faster and hold slightly harder.
   const hitMs = 130;
   const gapBudget = Math.max(hits*70, cfg.escalateMs - hits*hitMs);
   const gapUnit = gapBudget / ((hits*(hits+1))/2);
@@ -4899,17 +5516,14 @@ async function playElimination(p, opts){
     setScale(1 + (scaleTarget-1) * ((i+1)/hits));
     const ms = hit(1 + t*2.2);
     haptic(10 + Math.round(t*10));
-    if (Math.random() < 0.35 + t*0.55) spawnPixelPuff(card, false);
-    if (t>0.6 && Math.random()<0.4) spawnPixelPuff(card, false);
     const holdExtra = i >= hits-2 ? 55 : 0;   // harder late hits linger a beat longer — micro-freeze
     await sleep(ms + holdExtra);
     clearHit();
   }
 
   // CRITICAL — maximum instability: rapid stroboscopic jitter and the
-  // heaviest smoke output, right at the brink.
+  // brightest, tightest hit-stun, right at the brink.
   card.classList.add('elim-critical');
-  spawnPixelPuff(card, false); spawnPixelPuff(card, false); spawnPixelPuff(card, true);
   await sleep(Math.round(cfg.anticipateMs*0.55));
   card.classList.remove('elim-critical');
 
@@ -4925,7 +5539,6 @@ async function playElimination(p, opts){
   // frame, exactly in step with the recoil.
   showFace('dead');
   card.classList.add('elim-pop');
-  burstPixelSmoke(card, ko ? 6 : 3);
   Sound.busted(false);
   if (ko){ Sound.humanKO(); haptic(40); } else { haptic(20); }
   stampActionBar();
@@ -4942,6 +5555,7 @@ async function playElimination(p, opts){
    but without any lives/hearts framing (hearts are bypassed entirely in
    this mode, not spent down to zero). */
 function showBusted(g, human){
+  if (g.run && g.run.active){ showRunOver(g); return; }
   g.over = true;
   clearTableSave();
   clearTimeout(autoDealT);
@@ -4961,6 +5575,202 @@ function showBusted(g, human){
   $('btn-rebuy').classList.add('hidden');
   $('btn-new-table').classList.remove('hidden');
   render();
+}
+
+async function showRunOver(g){
+  g.over = true;
+  clearTableSave();
+  clearTimeout(autoDealT);
+  hideResultCard();
+  setBanner('<b>Run over.</b> Out of chips.');
+  Sound.busted(true);
+  $('table-screen').classList.add('run-dead');
+  await sleep(motionOff()?0:320);
+  if (game!==g) return;
+  const el = document.createElement('div');
+  el.className = 'result-card run-results gameover run-over-report'; el.id = 'result-card';
+  el.innerHTML = runOverHTML(g);
+  $('table-screen').appendChild(el);
+  $('actions-row').classList.add('hidden');
+  $('btn-next-hand').classList.add('hidden');
+  $('btn-rebuy').classList.add('hidden');
+  $('btn-new-table').classList.add('hidden');
+  $('run-new').onclick = startSinglePlayerRun;
+  $('run-menu').onclick = leaveTable;
+  render();
+}
+
+function resetForNextRunTable(g){
+  g.run.tableNumber++;
+  g.run.highestTableReached=Math.max(g.run.highestTableReached,g.run.tableNumber);
+  g.run.tableKOs = 0;
+  g.run.tableHands = 0;
+  g.run.tableHandsWon = 0;
+  g.run.tableShowdownsPlayed = 0;
+  g.run.tableShowdownsWon = 0;
+  g.run.tableAllInsPlayed = 0;
+  g.run.tableAllInsWon = 0;
+  g.run.tableBiggestPotWon = 0;
+  g.run.tableHighestStack = ELIMINATION_CONFIG.startingStack;
+  g.run.tableBestHand = null;
+  g.startingStack = ELIMINATION_CONFIG.startingStack;
+  g.smallBlind = ELIMINATION_CONFIG.smallBlind;
+  g.bigBlind = ELIMINATION_CONFIG.bigBlind;
+  g.blindLevel = 0;
+  g.board=[]; g.deck=[]; g.pot=0; g.currentBet=0; g.minRaise=g.bigBlind;
+  g.dealerIndex=-1; g.sbIndex=-1; g.bbIndex=-1; g.currentIndex=-1; g.turnPointer=0;
+  // Keep the game logically stopped for the entire presentation. This also
+  // guarantees an AI decision that was already awaiting when DEV END TABLE
+  // fired sees `over` and exits instead of waking inside the new-table swap.
+  g.phase='setup'; g.handNumber=0; g.log=[]; g.over=true;
+  g._transitioning = true;
+  delete g._tableClearedShown;
+  g.buyIns=g.startingStack; g.netStart=g.startingStack;
+  g.sess={bestWin:0,worstLoss:0};
+  g.players.forEach(p=>{
+    p.chips=g.startingStack; p.hand=[]; p.folded=false; p.allIn=false;
+    p.betThisRound=0; p.totalBetHand=0; p.acted=false; p.mayRaise=true;
+    p.inHand=false; p.eliminated=false; p.streetAction=null; p.moodState=null;
+    delete p._reveal; delete p._award; delete p._handRes;
+    delete p._devForceAllIn; delete p._devAutoCall; delete p._pendingRebuy;
+  });
+}
+
+/* The one canonical DOM reset for a revived run table. initSeats() creates
+   fresh modules, then this deliberately scrubs every state channel that can
+   otherwise outlive a hand: classes, animations, inline motion, expressions,
+   labels, cards and timer-backed seat effects. */
+function resetRunSeatDOM(g){
+  g.players.forEach((p,idx)=>{
+    const e = seatEls[p.id];
+    if (!e) return;
+    clearTimeout(e._t); clearTimeout(e._heartT);
+    e._mood = null;
+    e.root.getAnimations().forEach(a=>a.cancel());
+    e.root.classList.remove('folded','out','active','dead','winner','winner-pulse','thinking','run-pull-out','run-drop-in');
+    ['transform','opacity','visibility','animation','transition','pointer-events','will-change','--run-stagger'].forEach(k=>e.root.style.removeProperty(k));
+    if (!p.isHuman){
+      const pos = seatPosition(idx,g.players.length);
+      e.root.style.left = pos.left;
+      e.root.style.top = pos.top;
+    }
+    if (e.card){
+      e.card.getAnimations().forEach(a=>a.cancel());
+      e.card.classList.remove('elim-hit','elim-critical','elim-freeze','elim-pop','winner-pop');
+      ['transform','opacity','visibility','filter','animation','transition','--elim-cur-scale','--hit-dx','--hit-dy','--hit-ms'].forEach(k=>e.card.style.removeProperty(k));
+    }
+    if (e.cardsContainer) e.cardsContainer.innerHTML = '';
+    if (e.bubble){ e.bubble.textContent=''; e.bubble.className='action-bubble'; }
+    if (e.actionSlot){ e.actionSlot.textContent='–'; e.actionSlot.className='action-slot act-empty'; }
+    if (!p.isHuman && e.avatar){
+      e.avatar.getAnimations().forEach(a=>a.cancel());
+      e.avatar.className = 'avatar has-face';
+      e.avatar.removeAttribute('style');
+      e.avatar.innerHTML = renderFace(p.personality && p.personality.key,'idle',aiHue(idx));
+    }
+  });
+}
+
+function waitForRunAnimations(elements, expectedMs){
+  const els = elements.filter(Boolean);
+  if (!els.length || motionOff()) return Promise.resolve();
+  const waits = els.map(el=>new Promise(resolve=>{
+    let settled = false;
+    const finish = ()=>{
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      el.removeEventListener('animationend',onEnd);
+      el.removeEventListener('animationcancel',onEnd);
+      resolve();
+    };
+    const onEnd = ev=>{ if (ev.target===el) finish(); };
+    el.addEventListener('animationend',onEnd);
+    el.addEventListener('animationcancel',onEnd);
+    const timer = setTimeout(finish,Math.max(1,expectedMs||1000)+250);
+  }));
+  els.forEach(el=>void el.offsetWidth);
+  return Promise.all(waits);
+}
+
+function settleRunModules(g,station){
+  resetRunSeatDOM(g);
+  if (station){
+    station.getAnimations().forEach(a=>a.cancel());
+    station.classList.remove('run-deck-out','run-deck-in');
+    ['opacity','visibility','animation','will-change'].forEach(k=>station.style.removeProperty(k));
+    station.style.transform = '';
+  }
+}
+
+async function beginNextRunTable(){
+  const g = game;
+  if (!g || !g.run || !g.run.active || !g.over || g._transitioning) return;
+  g._transitioning = true;
+  const next = $('run-next-table');
+  if (next) next.disabled = true;
+  hideResultCard();
+  const opponents = g.players.filter(p=>!p.isHuman).map(p=>seatEls[p.id]).filter(Boolean);
+  opponents.forEach((e,i)=>{
+    e.root.style.setProperty('--run-stagger',(i*ELIMINATION_RUN_CONFIG.seatStaggerMs)+'ms');
+    e.root.classList.add('run-pull-out');
+  });
+  await waitForRunAnimations(opponents.map(e=>e.root),ELIMINATION_RUN_CONFIG.seatExitMs +
+    (opponents.length-1)*ELIMINATION_RUN_CONFIG.seatStaggerMs);
+
+  const station = document.querySelector('.dealer-station');
+  if (station) station.classList.add('run-deck-out');
+  await waitForRunAnimations([station],ELIMINATION_RUN_CONFIG.deckExitMs);
+
+  const wipe = document.createElement('div');
+  wipe.className = 'run-theme-wipe';
+  wipe.style.setProperty('--run-theme-ms',ELIMINATION_RUN_CONFIG.themeSwapMs+'ms');
+  $('felt').appendChild(wipe);
+  const wipeFinished = waitForRunAnimations([wipe],ELIMINATION_RUN_CONFIG.themeSwapMs);
+  resetForNextRunTable(g);
+  pendingHumanPlayer = null;
+  coachToken++;
+  clearAllCardDOM();
+  const potArea = $('pot-area');
+  if (potArea) potArea.classList.add('hidden');
+  if ($('pot-val')) $('pot-val').textContent = '0';
+  hideHudResultConsole();
+  hideReview();
+  setBanner('Preparing Table '+g.run.tableNumber+'…');
+  if ($('table-meta')) $('table-meta').textContent = 'Preparing Table '+g.run.tableNumber;
+  await sleep(motionOff() ? 0 : Math.round(ELIMINATION_RUN_CONFIG.themeSwapMs*.5));
+  applyRunTheme();
+  await wipeFinished;
+  wipe.remove();
+
+  initSeats();
+  resetRunSeatDOM(g);
+  const arriving = [];
+  g.players.filter(p=>!p.isHuman).forEach((p,i)=>{
+    const e = seatEls[p.id];
+    if (!e) return;
+    e.root.style.setProperty('--run-stagger',(i*ELIMINATION_RUN_CONFIG.seatStaggerMs)+'ms');
+    e.root.classList.add('run-drop-in');
+    arriving.push(e.root);
+  });
+  if (station){ station.classList.remove('run-deck-out'); station.classList.add('run-deck-in'); }
+  await waitForRunAnimations([...arriving,station],ELIMINATION_RUN_CONFIG.seatArrivalMs +
+    (arriving.length-1)*ELIMINATION_RUN_CONFIG.seatStaggerMs);
+  settleRunModules(g,station);
+
+  const callout = document.createElement('div');
+  callout.className = 'table-round-callout';
+  callout.textContent = 'TABLE '+g.run.tableNumber;
+  callout.style.setProperty('--run-announce-ms',ELIMINATION_RUN_CONFIG.announcementMs+'ms');
+  $('felt').appendChild(callout);
+  await waitForRunAnimations([callout],ELIMINATION_RUN_CONFIG.announcementMs);
+  callout.remove();
+  await sleep(motionOff() ? 0 : ELIMINATION_RUN_CONFIG.readyBeatMs);
+  if (game!==g || !g.run.active) return;
+  settleRunModules(g,station);
+  g._transitioning = false;
+  g.over = false;
+  startNewHand();
 }
 
 /* ---------------- main loop ---------------- */
@@ -6550,7 +7360,8 @@ function render(){
   const meta = $('table-meta');
   if (meta){
     meta.textContent = 'Hand ' + g.handNumber + ' · ' + g.smallBlind + '/' + g.bigBlind +
-      (g.mode==='tournament' ? ' · Tournament' : '');
+      (g.mode==='tournament' ? ' · Tournament' : '') +
+      (g.mode==='elimination' && g.run ? ' · Table '+g.run.tableNumber : '');
   }
 
   const feltEl = $('felt');
@@ -6934,7 +7745,12 @@ function hideHudResultConsole(){
     status.removeEventListener('transitionend', done);
   });
 }
-function hideResultCard(){ const el=$('result-card'); if (el) el.remove(); }
+function hideResultCard(){
+  const el=$('result-card');
+  if (el) el.remove();
+  const screen=$('table-screen');
+  if (screen) screen.classList.remove('run-dead');
+}
 /* Flips the bottom action console from the normal FOLD/CHECK/RAISE row
    over to the single AWARD POT face (or back). The underlying
    actions-row stays exactly as updateActionControls() left it — dimmed
@@ -7214,7 +8030,9 @@ function renderStats(){
    UI WIRING
    ============================================================ */
 function applyTheme(){
-  document.body.setAttribute('data-theme', settings.theme);
+  const theme = game && game.mode==='elimination' && game.run && game.run.active
+    ? runTheme(game.run.tableNumber) : settings.theme;
+  document.body.setAttribute('data-theme', theme);
   document.body.setAttribute('data-deck', settings.fourColour ? 'four' : 'classic');
   document.body.setAttribute('data-motion', settings.reduceMotion ? 'off' : 'on');
   document.body.setAttribute('data-cardback', settings.cardBack);
@@ -7389,6 +8207,118 @@ function startGame(){
   startNewHand();
 }
 
+let menuLaunchInFlight = false;
+
+function reconstructMainMenu(){
+  const home=$('home'), button=$('single-player');
+  menuLaunchInFlight=false;
+  if (home) home.classList.remove('menu-launching','menu-over-table','menu-clearing');
+  if (button){ button.disabled=false; button.classList.remove('pc-launch-clunk'); }
+}
+
+function stageInitialRunArrival(g){
+  if (!g || game!==g) return Promise.resolve();
+  resetRunSeatDOM(g);
+  const arriving=[];
+  g.players.filter(p=>!p.isHuman).forEach((p,i)=>{
+    const e=seatEls[p.id];
+    if (!e) return;
+    e.root.style.setProperty('--run-stagger',(i*ELIMINATION_RUN_CONFIG.seatStaggerMs)+'ms');
+    e.root.classList.add('run-drop-in');
+    arriving.push(e.root);
+  });
+  const station=document.querySelector('.dealer-station');
+  if (station) station.classList.add('run-deck-in');
+  return waitForRunAnimations([...arriving,station],ELIMINATION_RUN_CONFIG.seatArrivalMs+
+    Math.max(0,arriving.length-1)*ELIMINATION_RUN_CONFIG.seatStaggerMs).then(()=>settleRunModules(g,station));
+}
+
+async function announceInitialRunTable(g){
+  if (!g || game!==g) return;
+  const callout=document.createElement('div');
+  callout.className='table-round-callout';
+  callout.textContent='TABLE '+g.run.tableNumber;
+  const announceMs=900;
+  callout.style.setProperty('--run-announce-ms',announceMs+'ms');
+  $('felt').appendChild(callout);
+  await waitForRunAnimations([callout],announceMs);
+  callout.remove();
+}
+
+function prepareDeferredRunPresentation(g){
+  if (!g || game!==g) return;
+  pendingHumanPlayer=null;
+  coachToken++;
+  bannerOverride=null;
+  clearAllCardDOM();
+  resetPile($('hud-tower'), bankPile());
+  bankPending=0;
+  const potArea=$('pot-area');
+  if (potArea) potArea.classList.add('hidden');
+  if ($('pot-val')) $('pot-val').textContent='0';
+  hideHudResultConsole();
+  hideReview();
+  clearHumanReadouts();
+  closeRaisePanel();
+  $('actions-row').classList.add('hidden');
+  $('btn-next-hand').classList.add('hidden');
+  $('btn-rebuy').classList.add('hidden');
+  $('btn-new-table').classList.add('hidden');
+  if ($('banner')) $('banner').textContent='';
+  if ($('table-meta')) $('table-meta').textContent='Table '+g.run.tableNumber;
+}
+
+async function launchSinglePlayerFromMenu(){
+  if (menuLaunchInFlight) return;
+  const home=$('home'), button=$('single-player');
+  if (!home || home.classList.contains('hidden')){ startSinglePlayerRun(); return; }
+  menuLaunchInFlight=true;
+  button.disabled=true;
+  home.classList.add('menu-launching');
+  button.classList.add('pc-launch-clunk');
+  Sound.buttonPress('allin');
+  haptic([28,22,46]);
+  await sleep(motionOff()?0:730);
+  Sound.buttonRelease('award');
+  home.classList.add('menu-over-table');
+  const g=startSinglePlayerRun({keepMenuVisible:true,deferHand:true});
+  const arrival=stageInitialRunArrival(g);
+  home.classList.add('menu-clearing');
+  await Promise.all([arrival,sleep(motionOff()?0:1450)]);
+  if (game!==g) return;
+  home.classList.add('hidden');
+  await announceInitialRunTable(g);
+  if (game!==g || !g.run || !g.run.active) return;
+  g._transitioning=false;
+  g.over=false;
+  menuLaunchInFlight=false;
+  startNewHand();
+}
+
+function startSinglePlayerRun(options){
+  const keepMenuVisible=!!(options && options.keepMenuVisible===true);
+  const deferHand=!!(options && options.deferHand===true);
+  Sound.unlock();
+  clearTableSave();
+  hideResultCard();
+  newGame({ mode:'elimination', difficulty:settings.difficulty });
+  game.run = makeEliminationRun();
+  applyRunTheme();
+  if (!keepMenuVisible) $('home').classList.add('hidden');
+  $('setup').classList.add('hidden');
+  $('rankings').classList.add('hidden');
+  $('table-screen').classList.remove('hidden');
+  $('btn-new-table').classList.add('hidden');
+  initSeats();
+  if (deferHand){
+    game.over=true;
+    game._transitioning=true;
+    prepareDeferredRunPresentation(game);
+  }
+  else startNewHand();
+  return game;
+}
+
 function continueTable(){
   const save = loadTableSave();
   if (!save) return;
@@ -7405,11 +8335,17 @@ function continueTable(){
 function leaveTable(){
   clearTimeout(autoDealT);
   closeOverlays();
-  if (game) game.over = true;
+  hideResultCard();
+  if (game){
+    game.over = true;
+    if (game.run) game.run.active = false;
+  }
   pendingHumanPlayer = null;
   coachToken++;
   $('table-screen').classList.add('hidden');
   $('home').classList.remove('hidden');
+  reconstructMainMenu();
+  applyTheme();
   renderStats();
 }
 
@@ -7530,16 +8466,37 @@ function devClearTable(){
   refreshDevPanel();
 }
 
+/* Visual-progression shortcut: it skips poker prerequisites, then hands off
+   to the exact production cleared/results/NEXT TABLE path. It does not own
+   or duplicate any transition/result presentation. */
+function devEndTable(){
+  if (!game || game.mode!=='elimination' || !game.run || !game.run.active || game.over) return;
+  const g = game;
+  clearTimeout(autoDealT);
+  pendingHumanPlayer = null;
+  coachToken++;
+  closeRaisePanel();
+  clearHumanReadouts();
+  hideReview();
+  g.currentIndex = -1;
+  g.players.filter(p=>!p.isHuman).forEach((p,idx)=>{
+    p.chips=0; p.eliminated=true; p.inHand=false; p.folded=false; p.allIn=false;
+    p.betThisRound=0; p.totalBetHand=0; p.acted=true; p.mayRaise=false;
+    p.hand=[]; p.streetAction={type:'eliminated',label:'ELIMINATED!',amount:0};
+    delete p._devForceAllIn; delete p._devAutoCall;
+    const e=seatEls[p.id];
+    if (e && e.avatar){
+      e._mood=null;
+      e.avatar.classList.add('has-face');
+      e.avatar.innerHTML=renderFace(p.personality&&p.personality.key,'dead',aiHue(g.players.indexOf(p)));
+    }
+  });
+  logMsg('[DEV] Current table ended through production results flow',true);
+  showTableCleared(g);
+}
+
 function devNewEliminationTable(){
-  Sound.unlock();
-  clearTableSave();
-  newGame({ mode:'elimination', difficulty: settings.difficulty });
-  $('home').classList.add('hidden');
-  $('setup').classList.add('hidden');
-  $('rankings').classList.add('hidden');
-  $('table-screen').classList.remove('hidden');
-  initSeats();
-  startNewHand();
+  startSinglePlayerRun();
   refreshDevPanel();
 }
 
@@ -7557,6 +8514,7 @@ function initDevPanel(){
         '<button id="dev-ko-next" type="button">KO NEXT</button>' +
         '<button id="dev-bust-me" type="button">BUST ME</button>' +
         '<button id="dev-clear-table" type="button">CLEAR TABLE</button>' +
+        '<button id="dev-end-table" type="button">END TABLE</button>' +
       '</div>' +
       '<div id="dev-status"></div>' +
     '</div>';
@@ -7567,6 +8525,7 @@ function initDevPanel(){
   $('dev-ko-next').onclick = devKoNext;
   $('dev-bust-me').onclick = devBustMe;
   $('dev-clear-table').onclick = devClearTable;
+  $('dev-end-table').onclick = devEndTable;
   $('dev-fast-dev').onchange = e=>{ FAST_DEV = e.target.checked; refreshDevPanel(); };
   $('dev-collapse').onclick = ()=>{
     panel.classList.toggle('collapsed');
@@ -7588,8 +8547,10 @@ function refreshDevPanel(){
   $('dev-ko-next').disabled = !(inElim && hip);
   $('dev-bust-me').disabled = !(inElim && hip);
   $('dev-clear-table').disabled = !(inElim && bh);
+  $('dev-end-table').disabled = !(inElim && game.run && !game.over && !game._transitioning);
   const status = $('dev-status');
-  if (status) status.textContent = (FAST_DEV ? '[FAST] ' : '') + (game ? ('mode:' + game.mode + '  phase:' + game.phase + '  hand:' + game.handNumber) : 'no game');
+  if (status) status.textContent = (FAST_DEV ? '[FAST] ' : '') + (game ? ('mode:' + game.mode +
+    (game.run ? '  table:'+game.run.tableNumber : '') + '  phase:' + game.phase + '  hand:' + game.handNumber) : 'no game');
 }
 
 function mq(query){
@@ -7662,12 +8623,13 @@ function wireUI(){
 
   updateSetupSummary();
   $('deal-me-in').onclick = startGame;
+  $('single-player').onclick = ()=>withNewTableConfirm(launchSinglePlayerFromMenu);
   $('quick-play').onclick = ()=>withNewTableConfirm(startGame);
   $('open-rankings').onclick = ()=>{ buildRankings(); $('home').classList.add('hidden'); $('rankings').classList.remove('hidden'); };
-  $('rankings-back').onclick = ()=>{ $('rankings').classList.add('hidden'); $('home').classList.remove('hidden'); };
+  $('rankings-back').onclick = ()=>{ $('rankings').classList.add('hidden'); $('home').classList.remove('hidden'); reconstructMainMenu(); };
   $('home-settings').onclick = ()=>openOverlay('settings');
   $('go-to-setup').onclick = ()=>withNewTableConfirm(()=>{ $('home').classList.add('hidden'); $('setup').classList.remove('hidden'); });
-  $('setup-back').onclick = ()=>{ $('setup').classList.add('hidden'); $('home').classList.remove('hidden'); };
+  $('setup-back').onclick = ()=>{ $('setup').classList.add('hidden'); $('home').classList.remove('hidden'); reconstructMainMenu(); };
   $('continue-table').classList.toggle('hidden', !loadTableSave());
   $('continue-table').onclick = continueTable;
   $('confirm-newtable-yes').onclick = ()=>{
@@ -7914,6 +8876,7 @@ function wireUI(){
     document.removeEventListener('pointerdown', once);
   });
 
+  reconstructMainMenu();
   initHeroFaces();
   initDevPanel();
 }
