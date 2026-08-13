@@ -831,6 +831,19 @@ button{ font-family:inherit; }
 .action-slot.act-raise{ background:var(--accent); color:var(--accent-ink); border-color:var(--px-ink); font-weight:700; }
 .action-slot.act-fold{ color:rgba(255,180,173,.75); border-color:rgba(217,83,74,.35); }
 .action-slot.act-allin{ background:var(--danger); color:#FFF; border-color:var(--px-ink); font-weight:700; }
+/* K.O.!/ELIMINATED! — set via p.streetAction like every other action
+   label (see playElimination/render()), so it persists correctly across
+   re-renders instead of fighting render()'s own className rebuild. The
+   face stays the payoff; this status bar is where the stamp text lives. */
+.action-slot.act-ko{ background:var(--accent); color:var(--accent-ink); border-color:var(--px-ink); font-weight:700; box-shadow:inset 0 2px 0 rgba(0,0,0,.35), 0 0 0 2px rgba(255,255,255,.3); }
+.action-slot.act-eliminated{ background:var(--danger); color:#FFF; border-color:var(--px-ink); font-weight:700; }
+.action-slot.elim-slam{ animation:actionSlamStamp .32s steps(5,end); }
+@keyframes actionSlamStamp{
+  0%{ transform:scale(2.2) translateY(-3px); opacity:0; filter:brightness(1.9); }
+  40%{ transform:scale(.82) translateY(1px); opacity:1; filter:brightness(1.4); }
+  70%{ transform:scale(1.1); filter:brightness(1); }
+  100%{ transform:scale(1); }
+}
 /* Longer labels ("Raise to 1,240") step down in size rather than
    ellipsis-truncating a meaningful digit — text-overflow:ellipsis above
    stays only as a defensive backstop that should never actually fire
@@ -1594,6 +1607,71 @@ input[type=range]::-moz-range-thumb{
 .go-skull{ display:flex; justify-content:center; margin:2px 0 8px; }
 .go-skull .skull{ width:44px; height:44px; margin:0; }
 
+/* ============================================================
+   ELIMINATION MODE — K.O.!/ELIMINATED! presentation, driven by
+   playElimination(). RETRO ARCADE DAMAGE language: discrete, stepped
+   hits (never smooth easing/tweening/blur) — a little arcade enemy
+   getting repeatedly HIT, going unstable, then breaking. Every stage is
+   its own short one-shot animation toggled by JS between JS-timed
+   pauses (see playElimination) rather than one long continuous
+   animation, so the rhythm itself — HIT → HIT → HIT → HIT → CRITICAL →
+   POP — is authored in JS, not CSS. --elim-cur-scale/--hit-dx/--hit-dy/
+   --hit-rot are set fresh by JS before each individual hit. Deliberately
+   NOT deathSpin (fades the avatar away) and NOT the old smooth swell/
+   blur-smoke version — see the presentation refinement pass notes.
+   ============================================================ */
+.seat-card{ position:relative; }
+
+@keyframes elimHit{
+  0%{ transform:translate(0,0) scale(var(--elim-cur-scale,1)) rotate(0); filter:brightness(1) contrast(1); }
+  35%{ transform:translate(var(--hit-dx,-6px), var(--hit-dy,2px)) scale(calc(var(--elim-cur-scale,1) + .015)) rotate(var(--hit-rot,-2deg)); filter:brightness(1.9) contrast(1.25); }
+  65%{ transform:translate(calc(var(--hit-dx,-6px)*-.55), calc(var(--hit-dy,2px)*-.45)) scale(var(--elim-cur-scale,1)) rotate(calc(var(--hit-rot,-2deg)*-.6)); filter:brightness(1.15) contrast(1.05); }
+  100%{ transform:translate(0,0) scale(var(--elim-cur-scale,1)) rotate(0); filter:brightness(1) contrast(1); }
+}
+.elim-hit{ animation:elimHit var(--hit-ms,140ms) steps(4,end); }
+
+/* CRITICAL — rapid stroboscopic micro-jitter, the instant before it all
+   comes apart. `infinite` because JS decides how long this window lasts
+   (removes the class itself), not the animation. */
+@keyframes elimCritical{
+  0%,100%{ transform:translate(0,0) scale(var(--elim-cur-scale,1)); filter:brightness(1); }
+  50%{ transform:translate(2px,-1px) scale(var(--elim-cur-scale,1)); filter:brightness(1.35) contrast(1.1); }
+}
+.elim-critical{ animation:elimCritical 85ms steps(2,end) infinite; }
+
+/* FREEZE — the "oh no" hold: static, no animation, just a tense held pose. */
+.elim-freeze{ transform:scale(var(--elim-cur-scale,1)) translateY(-1px); filter:brightness(1.12) contrast(1.08); }
+
+/* POP — the hard snap: compress, overshoot, settle. Steps, not easing. */
+@keyframes elimPop{
+  0%{ transform:scale(var(--elim-cur-scale,1)); filter:brightness(1.1); }
+  25%{ transform:scale(calc(var(--elim-cur-scale,1)*.6)); filter:brightness(2.4) contrast(1.3); }
+  55%{ transform:scale(calc(var(--elim-cur-scale,1)*1.34)); filter:brightness(1.6); }
+  80%{ transform:scale(.93); filter:brightness(1.1); }
+  100%{ transform:scale(1); filter:brightness(1); }
+}
+.elim-pop{ animation:elimPop var(--elim-pop-ms,300ms) steps(5,end) forwards; }
+
+/* PIXEL FX SMOKE — hard-edged block clusters (via box-shadow, no extra
+   DOM per block), no blur/gradients/soft edges. Spawned/removed by JS
+   (spawnPixelPuff/burstPixelSmoke); each puff is a short one-shot
+   steps() animation that jumps between a few discrete frames rather
+   than fading smoothly. Kept small and off-center so the face stays
+   readable — see playElimination's puff placement. */
+.pixel-puff{
+  position:absolute; width:4px; height:4px; pointer-events:none; z-index:6;
+  background:#DCD6C2; outline:1px solid rgba(20,16,10,.5);
+  animation:pixelPuffRise var(--puff-ms,480ms) steps(3,end) forwards;
+}
+.pixel-puff-v1{ box-shadow:4px 0 0 0 #DCD6C2, 0 -4px 0 0 #C9C2AA, 4px -4px 0 0 #B0A78C; }
+.pixel-puff-v2{ box-shadow:-4px 0 0 0 #C9C2AA, 0 -4px 0 0 #DCD6C2, -4px -4px 0 0 #B0A78C, 4px 0 0 0 #B0A78C; }
+.pixel-puff-v3{ box-shadow:0 -4px 0 0 #DCD6C2, 4px -4px 0 0 #C9C2AA, -4px 0 0 0 #B0A78C; }
+@keyframes pixelPuffRise{
+  0%{ transform:translate(0,0) scale(var(--puff-scale,1)); opacity:1; }
+  50%{ transform:translate(var(--puff-dx,-4px),-8px) scale(calc(var(--puff-scale,1)*1.3)); opacity:1; }
+  100%{ transform:translate(calc(var(--puff-dx,-4px)*1.7),-18px) scale(calc(var(--puff-scale,1)*1.6)); opacity:0; }
+}
+
 /* the shuffle ritual before every deal */
 #shuffle-anim{ position:absolute; top:52%; left:50%; width:0; height:0; z-index:4; }
 .sh-card{
@@ -1689,6 +1767,40 @@ input[type=range]::-moz-range-thumb{
   .seat.you .card{ width:38px; height:54px; }
   .board{ gap:5px; }
 }
+
+/* ---- DEV MODE panel (see initDevPanel()) — never present unless
+   DEV_MODE is true; deliberately plain/utilitarian rather than styled to
+   match the game's own art direction, since it's a development tool, not
+   part of the product. ---- */
+#dev-panel{
+  position:fixed; left:6px; bottom:6px; z-index:999; width:150px;
+  font-family:monospace; font-size:10px; color:#eee;
+  background:rgba(10,10,10,.92); border:1px solid #6a6a6a; border-radius:4px;
+  box-shadow:0 2px 8px rgba(0,0,0,.6);
+}
+#dev-panel-head{
+  display:flex; align-items:center; justify-content:space-between;
+  padding:3px 6px; font-weight:700; letter-spacing:.05em;
+  background:#c0392b; color:#fff; border-radius:3px 3px 0 0;
+}
+#dev-panel-head button{
+  font-family:monospace; font-size:11px; line-height:1; padding:0 4px;
+  background:transparent; color:#fff; border:1px solid rgba(255,255,255,.5); border-radius:2px;
+}
+#dev-panel-body{ padding:5px; display:flex; flex-direction:column; gap:4px; }
+#dev-panel.collapsed #dev-panel-body{ display:none; }
+#dev-panel button{
+  font-family:monospace; font-size:10px; padding:4px 5px; cursor:pointer;
+  background:#2a2a2a; color:#eee; border:1px solid #666; border-radius:3px; text-align:left;
+}
+#dev-panel button:hover:not(:disabled){ background:#3a3a3a; }
+#dev-panel button:disabled{ opacity:.35; cursor:default; }
+#dev-controls{ display:flex; flex-direction:column; gap:3px; }
+#dev-controls.hidden{ display:none; }
+#dev-new-elim.hidden{ display:none; }
+#dev-status{ color:#9a9a9a; word-break:break-word; }
+#dev-fast-row{ display:flex; align-items:center; gap:4px; color:#f0c419; cursor:pointer; padding:1px 0; }
+#dev-fast-row input{ margin:0; }
 </style>
 
 <meta name="format-detection" content="telephone=no">
@@ -2995,6 +3107,17 @@ const Sound = (function(){
     });
   }
 
+  /* -- 14. Human K.O. stamp -- the "you personally defeated that opponent"
+     payoff, following bustedSound()'s procedural-synth pattern but bigger:
+     a harder noise thump plus a short descending three-note stamp, timed
+     to land under playElimination()'s POP stage (elimination mode only). */
+  function humanKOSound(){
+    withVoiceCap(480, ()=>{
+      noise(0.12, 0.13, { filterType:'lowpass', freq:360, freqSweepTo:80, decayPow:1.8 });
+      [294,220,147].forEach((f,i)=>blip(f, 0.13, 'square', 0.055-i*0.006, i*0.06));
+    });
+  }
+
   return {
     unlock(){ ac(); },
     /* Gated to AI opponents only as of SFX V1 — the human's own fold/
@@ -3040,6 +3163,7 @@ const Sound = (function(){
     resultSting(kind){ if (this.sfxV1Enabled) doResultSting(kind); },
     allIn(mine){ if (this.sfxV1Enabled) allInSound(mine); },
     busted(mine){ if (this.sfxV1Enabled) bustedSound(mine); },
+    humanKO(){ if (this.sfxV1Enabled) humanKOSound(); },
     rebuy(){ if (this.sfxV1Enabled) rebuyConfirmSound(); }
   };
 })();
@@ -3260,7 +3384,8 @@ async function aiDecide(player, g){
   const potOdds = toCall>0 ? toCall/(g.pot + toCall) : 0;
   const stack = player.chips;
   const bb = g.bigBlind;
-  const shortStack = stack <= 8*bb;              // shoving territory — caps don't apply
+  const bbLeft = stack / bb;
+  const shortStack = bbLeft <= ELIMINATION_CONFIG.shortStackBB;   // shoving territory — caps don't apply
   const preflop = g.board.length===0;
   const bluffRoll = Math.random() < bluffFreq * (preflop ? 0.5 : 1);
   const sizeMul = 0.85 + pers.sizing*0.30;       // archetype bet-size fingerprint
@@ -3295,8 +3420,17 @@ async function aiDecide(player, g){
   // ---------------- preflop: fold weak, raise strong, keep sizes honest ----------------
   if (preflop){
     const facingRaise = g.currentBet > bb;
-    const foldGate = 0.30 + tightness*0.14
+    let foldGate = 0.30 + tightness*0.14
       + (facingRaise ? 0.10 + Math.min(0.10, (toCall/Math.max(1,stack))*0.5) : 0);
+    // Elimination mode only — a short stack there is permanently short (no
+    // rebuy), so it needs to progressively widen rather than fold forever;
+    // cash/tournament AI stack-depth behaviour is deliberately left exactly
+    // as it was (cash rebuys almost immediately, tournament already has its
+    // own escalating-blind pressure — see the Phase 1 plan §9/§12).
+    if (g.mode === 'elimination'){
+      const widen = Math.max(0, ELIMINATION_CONFIG.shortStackBB - bbLeft) * ELIMINATION_CONFIG.foldGateWidenPerBB;
+      foldGate = Math.max(0, foldGate - widen);
+    }
     if (toCall>0 && perceived < foldGate && !bluffRoll){
       // cheap completes from the small blind still happen with playable stuff
       if (toCall <= bb*0.5 && perceived > foldGate-0.10 && Math.random()<0.6) return {action:'call'};
@@ -3307,6 +3441,12 @@ async function aiDecide(player, g){
       (perceived > raiseGate || (bluffRoll && !facingRaise && Math.random()<0.5)) &&
       Math.random() < 0.30 + aggression*0.45;
     if (wantsRaise){
+      // Critical stack (elimination mode, < ~5BB): cappedTotal()'s 28%/45%
+      // hand-start budget caps make no sense once the whole stack IS only
+      // a few BB — jam it. Push/fold framing instead of a sized raise.
+      if (g.mode === 'elimination' && bbLeft < ELIMINATION_CONFIG.criticalStackBB){
+        return raiseOrSettle(player.betThisRound + stack);
+      }
       const mult = (facingRaise ? 2.6 + aggression*0.8 : 2.2 + aggression*0.9) * sizeMul;
       let total = Math.max(Math.round(g.currentBet * mult), g.currentBet + g.minRaise);
       return raiseOrSettle(cappedTotal(total, perceived));
@@ -3359,6 +3499,12 @@ async function aiDecide(player, g){
    chunk of stack, anything all-in — get visibly longer pauses. Scaled by the
    archetype's thinkSpeed and by the player's chosen game speed. */
 function speedMult(){
+  // FAST DEV short-circuits the player's own speed setting entirely — see
+  // the FAST_DEV declaration above. Every one of this function's existing
+  // call sites (AI think time, deal/flip stagger, chip flight duration,
+  // auto-deal delay, …) benefits automatically; playElimination never
+  // calls speedMult(), so K.O./ELIMINATED timing is untouched either way.
+  if (DEV_MODE && FAST_DEV) return FAST_DEV_TIME_MULT;
   return settings.speed==='fast' ? 0.55 : settings.speed==='relaxed' ? 1.35 : 1;
 }
 function aiThinkTime(player, decision, g){
@@ -3394,6 +3540,58 @@ const BLIND_LEVELS = [
 const TOURNAMENT_HANDS_PER_LEVEL = 10;
 
 /* ============================================================
+   ELIMINATION MODE — Phase 1 single-table elimination. One fixed-blind
+   5-player (1 human + 4 AI) table; busting to $0 is permanent for this
+   table. Every gameplay/animation tunable for this mode lives here so it
+   can be retuned after playtesting without hunting through call sites.
+   ============================================================ */
+const ELIMINATION_CONFIG = {
+  opponents: 4,
+  startingStack: 500,
+  smallBlind: 10, bigBlind: 20,
+
+  // short-stack AI widening (see aiDecide's preflop branch)
+  shortStackBB: 8,        // existing shortStack threshold, now centralised/named
+  criticalStackBB: 5,     // below this: push/fold framing instead of sized raises
+  foldGateWidenPerBB: 0.018,
+
+  // playElimination() stage durations, ms — see index.html §6 in the Phase 1
+  // plan. `escalateMs` is the time budget for the whole repeated-damage hit
+  // loop (hits + the gaps between them); `anticipateMs` is the budget for
+  // the CRITICAL jitter + the following freeze hold.
+  koTimings:   { recognitionMs:400, shockMs:220, escalateMs:2500, anticipateMs:450, popMs:280, aftermathMs:1100 },
+  elimTimings: { recognitionMs:250, shockMs:160, escalateMs:1200, anticipateMs:280, popMs:220, aftermathMs:700 },
+
+  // number of discrete repeated-damage hits in the HIT->HIT->HIT->HIT->
+  // CRITICAL->POP rhythm (not counting the opening shock jolt)
+  hitCount: { ko:6, elim:3 },
+
+  // relative intensities the hit/pop/smoke keyframes scale against (1 = baseline)
+  shakeIntensity: { ko:1.6, elim:1.0 },
+  scaleGrowth:    { ko:1.14, elim:1.06 },
+  smokeIntensity: { ko:1.5, elim:0.9 },
+
+  // brief hold between the final K.O.'s defeated card settling and the
+  // TABLE CLEARED banner appearing — never cut away mid-payoff
+  clearedBeatMs: 900,
+};
+
+// DEV-only test panel — flip to true locally to reach elimination mode and
+// its rapid-test controls without going through Setup (out of scope this
+// pass; see Phase 1 plan). Fully absent from the DOM/UI when false.
+const DEV_MODE = true;
+
+// FAST DEV — a runtime toggle inside the DEV panel (not a build flag like
+// DEV_MODE above) that blitzes through the "boring setup" between real
+// hands — dealing, AI thinking, ordinary betting waits, showdown reveal
+// pacing, chip flights, auto-deal transitions — via speedMult()/
+// pacedSleep() (see below). It deliberately never touches playElimination
+// itself: the K.O./ELIMINATED sequence always runs at its real production
+// timing, regardless of this flag. Only meaningful when DEV_MODE is true.
+let FAST_DEV = false;
+const FAST_DEV_TIME_MULT = 0.08;
+
+/* ============================================================
    GAME STATE
    ============================================================ */
 let game = null;
@@ -3414,6 +3612,11 @@ let pendingNewTableAction = null;
 let bankPending = 0, potPending = 0;
 
 function sleep(ms){ return new Promise(r=>setTimeout(r, ms)); }
+// FAST DEV-aware sleep for the handful of fixed showdown/action pacing
+// beats that don't already run through speedMult() (see there) — never
+// used inside playElimination, which always calls plain sleep() with its
+// real config timings so K.O./ELIMINATED speed is never affected.
+function pacedSleep(ms){ return sleep((DEV_MODE && FAST_DEV) ? Math.round(ms * FAST_DEV_TIME_MULT) : ms); }
 function $(id){ return document.getElementById(id); }
 
 function makePlayer(id, name, isHuman, chips, personality){
@@ -3423,23 +3626,33 @@ function makePlayer(id, name, isHuman, chips, personality){
 }
 
 function newGame(opts){
+  const elim = opts.mode==='elimination';
+  // Elimination mode is fully config-driven (fixed 4 opponents, fixed
+  // starting stack/blinds, no rebuy) — see ELIMINATION_CONFIG. It never
+  // reads opts.opponents/opts.stack/opts.blindLevel, so callers (the DEV
+  // panel, for now) don't need to supply them correctly.
+  const stack = elim ? ELIMINATION_CONFIG.startingStack : opts.stack;
+  const numOpponents = elim ? ELIMINATION_CONFIG.opponents : opts.opponents;
+
   const players = [];
-  players.push(makePlayer('you', settings.playerName || 'You', true, opts.stack, null));
-  const personas = pickPersonalities(opts.opponents);
+  players.push(makePlayer('you', settings.playerName || 'You', true, stack, null));
+  const personas = pickPersonalities(numOpponents);
   const usedNames = new Set();
-  for (let i=0;i<opts.opponents;i++){
+  for (let i=0;i<numOpponents;i++){
     const displayName = settings.opponentNames === 'random' ? randomOpponentName(usedNames) : personas[i].name;
-    players.push(makePlayer('ai'+i, displayName, false, opts.stack, personas[i]));
+    players.push(makePlayer('ai'+i, displayName, false, stack, personas[i]));
   }
   const lvl = opts.mode==='tournament' ? 0 : opts.blindLevel;
+  const smallBlind = elim ? ELIMINATION_CONFIG.smallBlind : BLIND_LEVELS[lvl][0];
+  const bigBlind = elim ? ELIMINATION_CONFIG.bigBlind : BLIND_LEVELS[lvl][1];
   game = {
     players, difficulty:opts.difficulty, mode:opts.mode,
-    startingStack:opts.stack, blindLevel:lvl,
-    smallBlind:BLIND_LEVELS[lvl][0], bigBlind:BLIND_LEVELS[lvl][1],
-    board:[], deck:[], pot:0, currentBet:0, minRaise:BLIND_LEVELS[lvl][1],
+    startingStack:stack, blindLevel:lvl,
+    smallBlind, bigBlind,
+    board:[], deck:[], pot:0, currentBet:0, minRaise:bigBlind,
     dealerIndex:-1, sbIndex:-1, bbIndex:-1, currentIndex:-1, turnPointer:0,
     phase:'setup', handNumber:0, log:[], over:false,
-    buyIns:opts.stack, netStart:opts.stack,
+    buyIns:stack, netStart:stack,
     livesEnabled: opts.mode==='cash' && !!settings.lives,
     sess:{ bestWin:0, worstLoss:0 }
   };
@@ -3473,7 +3686,7 @@ function isValidTableSave(save){
   if (save.version !== SAVE_VERSION) return false;
   if (!Array.isArray(save.players) || save.players.length < 2) return false;
   if (!save.players.some(p=>p && p.isHuman)) return false;
-  if (save.mode !== 'cash' && save.mode !== 'tournament') return false;
+  if (save.mode !== 'cash' && save.mode !== 'tournament' && save.mode !== 'elimination') return false;
   if (!DIFFICULTY_PARAMS[save.difficulty]) return false;
   const numFields = ['startingStack','blindLevel','smallBlind','bigBlind','buyIns','netStart','dealerIndex','handNumber'];
   for (const f of numFields){ if (typeof save[f] !== 'number' || Number.isNaN(save[f])) return false; }
@@ -3571,6 +3784,13 @@ async function startNewHand(){
       logMsg('Blinds up — ' + g.smallBlind + ' / ' + g.bigBlind, true);
     }
     g.players.forEach(p=>{ if (p.chips<=0) p.eliminated = true; });
+  } else if (g.mode === 'elimination'){
+    // No rebuys, ever — $0 is permanent for this table. finishHand's
+    // resolveEliminations() already marks a busted player eliminated the
+    // moment they hit $0 (and plays their K.O./ELIMINATED presentation
+    // then), so this is just the same defensive safety-net tournament
+    // mode already applies above, not the primary mechanism.
+    g.players.forEach(p=>{ if (p.chips<=0) p.eliminated = true; });
   } else if (g.livesEnabled){
     g.players.forEach(p=>{
       if (p.isHuman || p.eliminated) return;
@@ -3588,7 +3808,11 @@ async function startNewHand(){
 
   g.players.forEach(p=>{
     p.hand=[]; p.folded=false; p.allIn=false; p.betThisRound=0; p.totalBetHand=0;
-    p.acted=false; p.mayRaise=true; p.streetAction=null;
+    p.acted=false; p.mayRaise=true;
+    // K.O.!/ELIMINATED! (see playElimination) is a permanent-for-the-table
+    // label, not a per-hand one — every other streetAction resets fresh
+    // each hand, this is the one exception.
+    if (!p.streetAction || (p.streetAction.type!=='ko' && p.streetAction.type!=='eliminated')) p.streetAction = null;
     p.inHand = p.chips>0 && !p.eliminated;
     delete p._reveal; delete p._award; delete p._handRes;
   });
@@ -3743,7 +3967,7 @@ function beginBettingRound(phase){
     // their action-slot label should keep reading "Fold"/"All-In" for the
     // rest of the hand. Check/Call/Bet/Raise are this-street-only and clear
     // so a new street starts with every active seat back at .act-empty.
-    if (p.streetAction && p.streetAction.type!=='fold' && p.streetAction.type!=='allin') p.streetAction = null;
+    if (p.streetAction && !['fold','allin','ko','eliminated'].includes(p.streetAction.type)) p.streetAction = null;
   });
   if (phase!=='preflop'){ g.currentBet=0; g.minRaise=g.bigBlind; }
   const n = g.players.filter(p=>p.inHand).length;
@@ -4007,7 +4231,7 @@ async function handleFoldWin(){
   // linger through the pot-taking beat below. Fold labels (the reason the
   // hand ended) are exactly what should stay visible here.
   g.players.forEach(p=>{
-    if (p.streetAction && p.streetAction.type!=='fold' && p.streetAction.type!=='allin') p.streetAction = null;
+    if (p.streetAction && !['fold','allin','ko','eliminated'].includes(p.streetAction.type)) p.streetAction = null;
   });
   recordPot(amt);
   setBanner('<b>' + esc(winner.name) + '</b> takes the pot…');
@@ -4032,6 +4256,7 @@ async function handleFoldWin(){
   // gated behind the player's own AWARD POT press.
   const potResults = [{
     label:'Pot', amount:amt, winners:[winner.name], winnerIds:[winner.id],
+    eligible:[winner.id],
     winnerShares:[{name:winner.name, id:winner.id, amount:amt}],
     hand:null, cat:null, cards:null, contested:1, split:false
   }];
@@ -4052,7 +4277,7 @@ async function handleShowdown(){
   // rule beginBettingRound() already applies at the start of every new
   // street (see there), just run here too since showdown never starts one.
   g.players.forEach(p=>{
-    if (p.streetAction && p.streetAction.type!=='fold' && p.streetAction.type!=='allin') p.streetAction = null;
+    if (p.streetAction && !['fold','allin','ko','eliminated'].includes(p.streetAction.type)) p.streetAction = null;
   });
 
   // evaluate everyone's final hand up front so the reveal order can build
@@ -4065,7 +4290,7 @@ async function handleShowdown(){
     setBanner('Revealing hands…');
     Sound.showdownBegin(); // "pay attention — we're showing the hands." Then the per-card FWAP flips (below) take over.
     render();
-    await sleep(motionOff() ? 70 : 220);
+    await (motionOff() ? sleep(70) : pacedSleep(220));
     const revealOrder = contenders.filter(p=>!p.isHuman)
       .sort((a,b)=>compareHands(a._handRes.result, b._handRes.result)); // weakest first, winner lands last
     for (const p of revealOrder){
@@ -4077,12 +4302,12 @@ async function handleShowdown(){
       // across this loop's own existing per-player sleep, with no new
       // timing sequence invented for sound.
       render();
-      await sleep(motionOff() ? 110 : 560);
+      await (motionOff() ? sleep(110) : pacedSleep(560));
     }
     // the dramatic beat between the last reveal and the winner being
     // announced/highlighted — long enough to actually register who showed
     // what before the result lands.
-    await sleep(motionOff() ? 90 : 520);
+    await (motionOff() ? sleep(90) : pacedSleep(520));
   }
 
   const potResults = [];
@@ -4110,6 +4335,12 @@ async function handleShowdown(){
       amount: pot.amount,
       winners: winners.map(w=>w.name),
       winnerIds: winners.map(w=>w.id),
+      // Every contender id this specific pot layer was contested among —
+      // preserved (not just its .length, kept separately as `contested`
+      // below) so elimination mode can find, per busted player, the exact
+      // pot layer built from their own final committed chips (see
+      // resolveEliminations). Plain id array, not a Set — small and JSON-safe.
+      eligible: pot.eligible,
       winnerShares,
       hand: describeMade(best.result),
       cat: best.result.cat,
@@ -4331,7 +4562,7 @@ function recordPot(amount){
   if (amount > stats.biggestPot) stats.biggestPot = amount;
 }
 
-function finishHand(outcome){
+async function finishHand(outcome){
   const g = game;
   $('actions-row').classList.add('hidden');
   closeRaisePanel();
@@ -4362,6 +4593,20 @@ function finishHand(outcome){
       setBanner('<b>Tournament won.</b> Every opponent is out.');
       $('btn-new-table').classList.remove('hidden');
       g.over = true; clearTableSave(); render(); return;
+    }
+  } else if (g.mode === 'elimination'){
+    // No rebuys: resolveEliminations() marks anyone at $0 permanently
+    // eliminated and plays their K.O.!/ELIMINATED! sequence for real,
+    // in full, before we check either end condition below — so the
+    // final human K.O. always gets to finish its whole payoff before
+    // TABLE CLEARED can appear (see the Phase 1 plan §13).
+    await resolveEliminations(g, outcome);
+    if (human.chips<=0){ showBusted(g, human); return; }
+    const aiRemaining = g.players.filter(p=>!p.isHuman && !p.eliminated);
+    if (aiRemaining.length===0){
+      await sleep(motionOff() ? 0 : ELIMINATION_CONFIG.clearedBeatMs);
+      concludeGame();
+      return;
     }
   } else {
     if (g.livesEnabled) processLives(g);
@@ -4464,7 +4709,10 @@ function concludeGame(){
   clearTimeout(autoDealT);
   const human = game.players.find(p=>p.id==='you');
   const humanAlive = human && human.chips>0 && !human.eliminated;
-  setBanner(humanAlive ? '<b>Table cleared.</b> Every opponent is out of lives.' : 'Not enough players to continue.');
+  const clearedCopy = game.mode==='elimination'
+    ? 'Every opponent is eliminated.'
+    : 'Every opponent is out of lives.';
+  setBanner(humanAlive ? '<b>Table cleared.</b> ' + clearedCopy : 'Not enough players to continue.');
   $('actions-row').classList.add('hidden');
   $('btn-next-hand').classList.add('hidden');
   $('btn-new-table').classList.remove('hidden');
@@ -4473,6 +4721,246 @@ function concludeGame(){
 function ordinal(n){
   const s=['th','st','nd','rd'], v=n%100;
   return n + (s[(v-20)%10] || s[v] || s[0]);
+}
+
+/* ---------------- elimination mode: bust resolution ----------------
+   A player can only reach exactly $0 by losing every pot layer they were
+   eligible for this hand — folding never drains a stack below what it had
+   already committed, and a blind that consumes a whole stack makes that
+   player allIn immediately (postBlind), so they can never fold afterward.
+   That means a newly-busted player was always a genuine contender, never
+   a fold-win bystander, and never won any pot layer they qualified for.
+
+   computePots()/handleShowdown() build pots smallest-level-first, and a
+   player is `eligible` for every pot layer up to their own totalBetHand —
+   so their eligible pots form a contiguous PREFIX of potResults, and the
+   LAST entry in that prefix is, by construction, the pot layer built from
+   their own final committed chips. Whoever won THAT specific pot is who
+   actually beat them — not just "the human, if the human won anything
+   this hand" (which could credit a K.O. for an unrelated side pot the
+   busted player was never part of). See the Phase 1 plan §5 for the full
+   reasoning. */
+async function resolveEliminations(g, outcome){
+  const busted = g.players.filter(p=>!p.isHuman && !p.eliminated && p.chips<=0);
+  for (const p of busted){
+    let ko = false;
+    if (outcome.type === 'showdown' && Array.isArray(outcome.potResults)){
+      let decisivePot = null;
+      outcome.potResults.forEach(pot=>{
+        if (pot.eligible && pot.eligible.includes(p.id)) decisivePot = pot;
+      });
+      ko = !!(decisivePot && decisivePot.winnerIds.includes('you'));
+    } else if (outcome.type === 'foldwin'){
+      // A fold-win can't actually bust anyone (see the argument above) —
+      // kept only as a defensive fallback, not expected to fire.
+      ko = !!(outcome.winner && outcome.winner.id === 'you');
+    }
+    p.eliminated = true;
+    p.inHand = false;
+    logMsg(p.name + (ko ? ' is knocked out!' : ' is eliminated!'), true);
+    await playElimination(p, { ko });
+  }
+}
+
+/* Shared K.O.!/ELIMINATED! presentation — one pipeline for both variants
+   (see resolveEliminations above for how `ko` is decided). Stage sequence:
+   recognition beat -> shock face + card jolt -> escalating shake/swell/
+   smoke -> brief anticipation hold -> POP (recoil, dead face, smoke burst,
+   stamp, sound) -> aftermath settle into the permanent .dead state.
+   Deliberately not deathSpin() (which fades the avatar away) — this card
+   swells and shakes before popping, per the Phase 1 plan. All timings/
+   intensities come from ELIMINATION_CONFIG so the sequence can be retuned
+   after playtesting without touching this function. */
+/* Pixel FX smoke — a single hard-edged block cluster (one div, shaped via
+   box-shadow so a whole chunky "puff" costs no extra DOM), jumping through
+   3 discrete frames via steps() rather than fading smoothly — see the
+   .pixel-puff rules. Self-removing; callers never track/clean these up.
+   Kept off to the sides near the top of the card, not dead-center over
+   the face. */
+function spawnPixelPuff(card, big){
+  const puff = document.createElement('div');
+  const variant = 1 + Math.floor(Math.random()*3);
+  puff.className = 'pixel-puff pixel-puff-v' + variant;
+  const side = Math.random()<0.5 ? -1 : 1;
+  puff.style.left = (50 + side*(6 + Math.random()*22)) + '%';
+  puff.style.top = (10 + Math.random()*20) + '%';
+  const ms = Math.round(340 + Math.random()*220);
+  puff.style.setProperty('--puff-dx', (side*(4+Math.random()*6)) + 'px');
+  puff.style.setProperty('--puff-scale', big ? '1.7' : '1');
+  puff.style.setProperty('--puff-ms', ms + 'ms');
+  card.appendChild(puff);
+  setTimeout(()=>puff.remove(), ms + 60);
+}
+function burstPixelSmoke(card, count){
+  for (let i=0;i<count;i++) spawnPixelPuff(card, true);
+}
+
+/* Shared K.O.!/ELIMINATED! presentation (see resolveEliminations above for
+   how `ko` is decided). RETRO ARCADE DAMAGE: a little enemy panel taking
+   repeated hits, going unstable, then breaking — authored as a sequence
+   of short one-shot CSS hit classes separated by JS-timed pauses (never
+   one long continuous animation), so the actual HIT -> HIT -> HIT -> HIT
+   -> CRITICAL -> POP rhythm lives here in JS, not in CSS easing. Stage
+   sequence: recognition beat -> shock face + opening jolt -> escalating,
+   discrete-scale-jumping HITs with occasional pixel-smoke puffs ->
+   CRITICAL stroboscopic jitter -> a brief dead-still freeze (anticipation)
+   -> POP (hard snap: recoil, dead face swap, smoke burst, K.O.!/
+   ELIMINATED! stamped into the action bar — never over the face — plus
+   sound) -> aftermath settle into the permanent .dead state. All timings/
+   intensities come from ELIMINATION_CONFIG. Deliberately not deathSpin
+   (fades the avatar away) and not a smooth swell/blur-smoke version. */
+async function playElimination(p, opts){
+  const ko = !!(opts && opts.ko);
+  const e = seatEls[p.id];
+  if (!e || !e.card) return;
+  const idx = game.players.indexOf(p);
+  const cfg = ko ? ELIMINATION_CONFIG.koTimings : ELIMINATION_CONFIG.elimTimings;
+  const shake = ko ? ELIMINATION_CONFIG.shakeIntensity.ko : ELIMINATION_CONFIG.shakeIntensity.elim;
+  const scaleTarget = ko ? ELIMINATION_CONFIG.scaleGrowth.ko : ELIMINATION_CONFIG.scaleGrowth.elim;
+  const hits = ko ? ELIMINATION_CONFIG.hitCount.ko : ELIMINATION_CONFIG.hitCount.elim;
+  const card = e.card;
+
+  const showFace = mood => {
+    e._mood = null;
+    e.avatar.classList.add('has-face');
+    e.avatar.innerHTML = renderFace(p.personality && p.personality.key, mood, aiHue(idx));
+  };
+  // Lives in the seat's existing action/status bar, not over the face —
+  // the shocked/dead expression is the payoff and stays fully visible.
+  // Driven through the real streetAction/render() pipeline (like every
+  // other action label) so it persists correctly across future
+  // re-renders instead of a one-off DOM write render() would overwrite.
+  const stampActionBar = ()=>{
+    p.streetAction = { type: ko ? 'ko' : 'eliminated', label: ko ? 'K.O.!' : 'ELIMINATED!', amount:0 };
+    render();
+    if (e.actionSlot){
+      e.actionSlot.classList.remove('elim-slam');
+      void e.actionSlot.offsetWidth;
+      e.actionSlot.classList.add('elim-slam');
+    }
+  };
+
+  let curScale = 1;
+  // The card's resting (non-animated) transform is always this inline
+  // value — .elim-hit/.elim-critical/.elim-pop are real CSS animations,
+  // which always take precedence over it while actively playing, and
+  // handing back to it cleanly the instant their class is removed. Never
+  // fought over with a competing CSS-class-based transform.
+  const setScale = v=>{
+    curScale = v;
+    card.style.setProperty('--elim-cur-scale', v.toFixed(3));
+    card.style.transform = 'scale(' + v.toFixed(3) + ')';
+  };
+  const hit = mult=>{
+    const dir = Math.random()<0.5 ? -1 : 1;
+    const ms = Math.round(110 + mult*16);
+    card.style.setProperty('--hit-dx', Math.round(dir*(4+3*mult)*shake) + 'px');
+    card.style.setProperty('--hit-dy', Math.round(-dir*(1+1.5*mult)*shake) + 'px');
+    card.style.setProperty('--hit-rot', (dir*(1+1.2*mult)*shake).toFixed(1) + 'deg');
+    card.style.setProperty('--hit-ms', ms + 'ms');
+    card.classList.remove('elim-hit'); void card.offsetWidth; card.classList.add('elim-hit');
+    return ms;
+  };
+  const clearHit = ()=> card.classList.remove('elim-hit');
+
+  if (motionOff()){
+    // Same accessibility contract as the rest of the game (see playDeath's
+    // own motionOff() guard): jump straight to the settled end state
+    // rather than skipping the reaction entirely.
+    showFace('dead');
+    e.root.classList.add('dead');
+    stampActionBar();
+    Sound.busted(false);
+    if (ko){ Sound.humanKO(); haptic(40); }
+    render();
+    return;
+  }
+
+  setScale(1);
+  await sleep(cfg.recognitionMs);
+
+  // SHOCK — snap face, one hard opening jolt
+  showFace('shock');
+  haptic(12);
+  const shockMs = hit(0.6);
+  await sleep(Math.max(cfg.shockMs, shockMs));
+  clearHit();
+
+  // REPEATED DAMAGE — discrete HITs; gaps shrink as it escalates (BAM …
+  // pause … BAM … pause … BAM-BAM), card grows in visible steps (not a
+  // tween), pixel-smoke puffs get more frequent toward the end.
+  const hitMs = 130;
+  const gapBudget = Math.max(hits*70, cfg.escalateMs - hits*hitMs);
+  const gapUnit = gapBudget / ((hits*(hits+1))/2);
+  for (let i=0;i<hits;i++){
+    const t = hits<=1 ? 1 : i/(hits-1);
+    const gap = Math.round(gapUnit * (hits - i));
+    await sleep(gap);
+    setScale(1 + (scaleTarget-1) * ((i+1)/hits));
+    const ms = hit(1 + t*2.2);
+    haptic(10 + Math.round(t*10));
+    if (Math.random() < 0.35 + t*0.55) spawnPixelPuff(card, false);
+    if (t>0.6 && Math.random()<0.4) spawnPixelPuff(card, false);
+    const holdExtra = i >= hits-2 ? 55 : 0;   // harder late hits linger a beat longer — micro-freeze
+    await sleep(ms + holdExtra);
+    clearHit();
+  }
+
+  // CRITICAL — maximum instability: rapid stroboscopic jitter and the
+  // heaviest smoke output, right at the brink.
+  card.classList.add('elim-critical');
+  spawnPixelPuff(card, false); spawnPixelPuff(card, false); spawnPixelPuff(card, true);
+  await sleep(Math.round(cfg.anticipateMs*0.55));
+  card.classList.remove('elim-critical');
+
+  // FREEZE — the "oh no…" beat: everything stops for a fraction of a
+  // second. Static, not an animation, so it can't be interrupted by one.
+  card.style.transform = 'scale(' + curScale.toFixed(3) + ') translateY(-1px)';
+  card.style.filter = 'brightness(1.12) contrast(1.08)';
+  await sleep(Math.round(cfg.anticipateMs*0.45));
+  card.style.filter = '';
+
+  // POP — the hard snap. No crossfade: the face swap is a straight
+  // innerHTML replace (see showFace), so it genuinely changes in one
+  // frame, exactly in step with the recoil.
+  showFace('dead');
+  card.classList.add('elim-pop');
+  burstPixelSmoke(card, ko ? 6 : 3);
+  Sound.busted(false);
+  if (ko){ Sound.humanKO(); haptic(40); } else { haptic(20); }
+  stampActionBar();
+  await sleep(cfg.popMs);
+  card.classList.remove('elim-pop');
+  card.style.transform = '';
+  e.root.classList.add('dead');
+
+  await sleep(cfg.aftermathMs);
+  render();
+}
+
+/* Human defeat state for elimination mode — modeled on showGameOver()
+   but without any lives/hearts framing (hearts are bypassed entirely in
+   this mode, not spent down to zero). */
+function showBusted(g, human){
+  g.over = true;
+  clearTableSave();
+  clearTimeout(autoDealT);
+  hideResultCard();
+  setBanner('<b>Busted.</b> Out of chips.');
+  Sound.busted(true);
+  const el = document.createElement('div');
+  el.className = 'result-card gameover'; el.id = 'result-card';
+  el.innerHTML =
+    '<div class="rc-title">Busted</div>' +
+    '<div class="go-skull">' + skullSVG() + '</div>' +
+    '<div class="pot-line"><span class="pl-tag">Hands</span><span class="pl-body">played this table</span><span class="pl-amt tabular">' + g.handNumber + '</span></div>' +
+    '<div class="pot-line"><span class="pl-tag">Best</span><span class="pl-body">biggest hand won</span><span class="pl-amt tabular">+' + (g.sess.bestWin||0).toLocaleString() + '</span></div>' +
+    '<div class="rc-explain">Out of chips — eliminated from this table. New Table starts fresh.</div>';
+  $('felt').appendChild(el);
+  $('btn-next-hand').classList.add('hidden');
+  $('btn-rebuy').classList.add('hidden');
+  $('btn-new-table').classList.remove('hidden');
+  render();
 }
 
 /* ---------------- main loop ---------------- */
@@ -4491,6 +4979,22 @@ async function continueAction(){
     game.currentIndex = idx;
     const player = game.players[idx];
     render();
+
+    // DEV MODE — a control (KO NEXT / WIN HAND / BUST ME) armed this
+    // player's next action ahead of time; consume it here with the exact
+    // same production applyAction() call a real decision would use, for
+    // whichever player's turn it now genuinely is (human or AI). See
+    // devForceAllIn()/devAutoResolveTurn(). No-ops entirely when unset.
+    if (DEV_MODE && (player._devForceAllIn || player._devAutoCall)){
+      const forcedAllIn = !!player._devForceAllIn;
+      player._devForceAllIn = false; player._devAutoCall = false;
+      const toCall = Math.max(0, game.currentBet - player.betThisRound);
+      applyAction(player, { action: forcedAllIn ? 'allin' : (toCall>0 ? 'call' : 'check') });
+      game.turnPointer = idx+1;
+      render();
+      await (motionOff() ? sleep(60) : pacedSleep(140));
+      continue;
+    }
 
     if (player.isHuman){
       pendingHumanPlayer = player;
@@ -4512,7 +5016,7 @@ async function continueAction(){
     applyAction(player, decision);
     game.turnPointer = idx+1;
     render();
-    await sleep(motionOff() ? 60 : 140);
+    await (motionOff() ? sleep(60) : pacedSleep(140));
   }
 }
 
@@ -4540,7 +5044,7 @@ async function humanAct(action, amount){
   // already has a real yield immediately after its own render() call; this
   // was the one place that didn't, and it's the one path users reported as
   // visually unreliable.
-  await sleep(motionOff() ? 60 : 140);
+  await (motionOff() ? sleep(60) : pacedSleep(140));
   continueAction();
 }
 
@@ -5645,7 +6149,8 @@ function initSeats(){
       hearts: root.querySelector('.hearts'),
       cardsContainer: root.querySelector('.seat-cards'),
       actionSlot: root.querySelector('.action-slot'),
-      bubble: root.querySelector('.action-bubble')
+      bubble: root.querySelector('.action-bubble'),
+      card: root.querySelector('.seat-card')
     };
     if (p.isHuman){
       // repoint the human's hooks at the static HUD frame elements
@@ -6038,6 +6543,7 @@ function payoutTo(winner, n){
 }
 
 function render(){
+  if (DEV_MODE) refreshDevPanel();
   if (!game || game.phase==='setup') return;
   const g = game;
 
@@ -6081,7 +6587,11 @@ function render(){
     e.root.classList.toggle('active', idx===g.currentIndex && !['showdown','foldwin'].includes(g.phase) && !g.over);
     // No visual Dealer marker (removed) — g.dealerIndex itself still drives
     // assignBlinds()/computePositions() below and elsewhere, unchanged.
-    e.root.classList.toggle('dead', !!p.eliminated && !!g.livesEnabled);
+    // Broadened beyond livesEnabled (cash+hearts) to also cover elimination
+    // mode's own eliminated players — playElimination() adds this class
+    // itself the moment its POP stage lands, and render() must not strip
+    // it back off on the very next redraw (g.livesEnabled is false there).
+    e.root.classList.toggle('dead', !!p.eliminated && (!!g.livesEnabled || g.mode==='elimination'));
     if (e.hearts){
       if (g.livesEnabled && !p.eliminated){
         const n = Math.max(0, p.lives|0);
@@ -6453,6 +6963,11 @@ function waitForAwardPot(){
     // see runShowdownAwardSequence) — this is purely the mechanical
     // latch/release, then the chip cascade becomes the audio star.
     btn.onclick = ()=>{ Sound.buttonRelease('award'); hideAwardConsole(); resolve(); };
+    // FAST DEV — this is the one pacing point that normally waits on a
+    // real tap with no timeout at all; a rapid KO-testing loop can't sit
+    // here forever, so synthesize the exact same click a real press would
+    // fire (same handler, same Sound/hideAwardConsole/resolve path).
+    if (DEV_MODE && FAST_DEV) setTimeout(()=>{ if (btn.onclick) btn.click(); }, 60);
   });
 }
 /* Showdown revamp — the one shared award pipeline both handleShowdown and
@@ -6490,7 +7005,7 @@ async function runShowdownAwardSequence(potResults, contenders){
   hideHudResultConsole();
   // keep the winning-five highlight visible a tiny beat longer before
   // the pot becomes the focus, per the approved sequencing.
-  await sleep(motionOff() ? 0 : 220);
+  await (motionOff() ? sleep(0) : pacedSleep(220));
 
   potResults.forEach(pot=>{
     pot.winnerShares.forEach(s=>{
@@ -6527,10 +7042,10 @@ async function runShowdownAwardSequence(potResults, contenders){
 
   const wasShowdown = potResults.length!==1 || potResults[0].hand!==null;
   if (wasShowdown){
-    finishHand({ type:'showdown', potResults, contenders, winnerIds });
+    await finishHand({ type:'showdown', potResults, contenders, winnerIds });
   } else {
     const w = g.players.find(p=>p.id===potResults[0].winnerIds[0]);
-    finishHand({ type:'foldwin', winner:w, amount:potResults[0].amount });
+    await finishHand({ type:'foldwin', winner:w, amount:potResults[0].amount });
   }
 }
 
@@ -6898,6 +7413,185 @@ function leaveTable(){
   renderStats();
 }
 
+/* ============================================================
+   DEV MODE — Phase 1 rapid elimination-mode test panel (see the Phase 1
+   plan §14). Entirely absent from the DOM/UI when DEV_MODE is false.
+   Every control mutates real `game` state and drives it through the
+   actual production resolution functions (applyAction, continueAction,
+   handleShowdown/handleFoldWin, finishHand, resolveEliminations) — never
+   a parallel fake-presentation path. Two shared primitives do the work:
+     - devForceAllIn(player): arms a REAL forced all-in for that player's
+       very next action (applied immediately via the same applyAction()/
+       humanAct() calls a real decision would use, if it's already their
+       turn; otherwise queued as a one-shot flag consumed by
+       continueAction() the moment it genuinely becomes their turn).
+     - devRigForWinner(player): rigs the still-undealt deck (and, pre-deal,
+       that player's hole cards) so their eventual best hand is
+       overwhelmingly likely to win — a deterministic starting position,
+       not a fabricated result; evaluate7WithCards/handleShowdown/
+       finishHand still run for real afterward.
+   WIN HAND / KO NEXT / BUST ME only ever fold (real applyAction('fold'))
+   or force-all-in remaining players, which is always safe mid-hand — pot
+   bookkeeping stays correct either way. CLEAR TABLE instead removes
+   players from the table entirely, which is only safe BETWEEN hands (no
+   live pot to corrupt), so it's gated separately from the other three. */
+function handInProgress(){
+  return !!game && !game.over && ['preflop','flop','turn','river'].includes(game.phase);
+}
+function betweenHands(){
+  return !!game && !game.over && !handInProgress();
+}
+
+function devAutoResolveTurn(player, action){
+  if (!game || !player || player.folded || player.allIn) return;
+  if (player.isHuman && pendingHumanPlayer === player){
+    if (action==='allin') humanAct('allin');
+    else humanAct(Math.max(0, game.currentBet-player.betThisRound) > 0 ? 'call' : 'check');
+  } else {
+    if (action==='allin') player._devForceAllIn = true;
+    else player._devAutoCall = true;
+  }
+}
+function devForceAllIn(player){ devAutoResolveTurn(player, 'allin'); }
+
+function devRigForWinner(targetPlayer){
+  if (!game || !targetPlayer) return;
+  const g = game;
+  const used = new Set();
+  g.players.forEach(p=>{ if (p.inHand) (p.hand||[]).forEach(c=>used.add(cardKey(c))); });
+  g.board.forEach(c=>used.add(cardKey(c)));
+  if (!targetPlayer.hand || targetPlayer.hand.length===0){
+    for (let i=RANKS.length-1; i>=0; i--){
+      const r = RANKS[i];
+      const avail = SUITS.filter(s=>!used.has(r+s));
+      if (avail.length>=2){
+        targetPlayer.hand = avail.slice(0,2).map(s=>({rank:r, suit:s, value:RANK_VALUES[r]}));
+        targetPlayer.hand.forEach(c=>used.add(cardKey(c)));
+        break;
+      }
+    }
+  }
+  const targetRanks = new Set(targetPlayer.hand.map(c=>c.rank));
+  // g.deck is dealt via .pop() (see dealCommunity/startNewHand), so cards
+  // that favour the target need to sort toward the END of the array.
+  g.deck.sort((a,b)=>{
+    const av = targetRanks.has(a.rank) ? 1 : 0, bv = targetRanks.has(b.rank) ? 1 : 0;
+    return av - bv;
+  });
+}
+
+function devWinHand(){
+  if (!handInProgress() || game.mode!=='elimination') return;
+  const g = game, human = g.players.find(p=>p.isHuman);
+  devRigForWinner(human);
+  g.players.forEach(p=>{
+    if (p.isHuman || !p.inHand || p.folded || p.allIn || p._devForceAllIn) return;
+    applyAction(p, {action:'fold'});
+  });
+  logMsg('[DEV] WIN HAND armed', true);
+  devAutoResolveTurn(human, 'call');
+  refreshDevPanel();
+}
+function devKoNext(){
+  if (!handInProgress() || game.mode!=='elimination') return;
+  const target = game.players.find(p=>!p.isHuman && p.inHand && !p.folded && !p.allIn && !p.eliminated && !p._devForceAllIn);
+  if (!target) return;
+  devForceAllIn(target);
+  logMsg('[DEV] ' + target.name + ' armed for a forced all-in', true);
+  refreshDevPanel();
+}
+function devBustMe(){
+  if (!handInProgress() || game.mode!=='elimination') return;
+  const g = game, human = g.players.find(p=>p.isHuman);
+  const target = g.players.find(p=>!p.isHuman && p.inHand && !p.folded && !p.eliminated);
+  if (!target) return;
+  devRigForWinner(target);
+  g.players.forEach(p=>{
+    if (p.isHuman || p===target || !p.inHand || p.folded || p.allIn || p._devForceAllIn) return;
+    applyAction(p, {action:'fold'});
+  });
+  logMsg('[DEV] BUST ME armed against ' + target.name, true);
+  devAutoResolveTurn(human, 'allin');
+  refreshDevPanel();
+}
+function devClearTable(){
+  if (!betweenHands() || game.mode!=='elimination') return;
+  const g = game;
+  const ais = g.players.filter(p=>!p.isHuman && !p.eliminated);
+  if (ais.length <= 1) return;
+  // Direct state mutation, not the real elimination pipeline — deliberate
+  // and safe here (see the file header above): these AI aren't part of any
+  // live pot right now (between hands), and we're not testing THEIR
+  // individual elimination, only the final opponent's real K.O./TABLE
+  // CLEARED sequence once play resumes.
+  ais.slice(1).forEach(p=>{ p.chips=0; p.eliminated=true; p.inHand=false; p.folded=true; p.allIn=false; p._devForceAllIn=false; });
+  logMsg('[DEV] Table trimmed to a final opponent', true);
+  render();
+  refreshDevPanel();
+}
+
+function devNewEliminationTable(){
+  Sound.unlock();
+  clearTableSave();
+  newGame({ mode:'elimination', difficulty: settings.difficulty });
+  $('home').classList.add('hidden');
+  $('setup').classList.add('hidden');
+  $('rankings').classList.add('hidden');
+  $('table-screen').classList.remove('hidden');
+  initSeats();
+  startNewHand();
+  refreshDevPanel();
+}
+
+function initDevPanel(){
+  if (!DEV_MODE) return;
+  const panel = document.createElement('div');
+  panel.id = 'dev-panel';
+  panel.innerHTML =
+    '<div id="dev-panel-head">DEV<button id="dev-collapse" type="button">_</button></div>' +
+    '<div id="dev-panel-body">' +
+      '<label id="dev-fast-row"><input type="checkbox" id="dev-fast-dev"> FAST DEV (skip setup, not K.O.)</label>' +
+      '<button id="dev-new-elim" type="button">New Elimination Table</button>' +
+      '<div id="dev-controls">' +
+        '<button id="dev-win-hand" type="button">WIN HAND</button>' +
+        '<button id="dev-ko-next" type="button">KO NEXT</button>' +
+        '<button id="dev-bust-me" type="button">BUST ME</button>' +
+        '<button id="dev-clear-table" type="button">CLEAR TABLE</button>' +
+      '</div>' +
+      '<div id="dev-status"></div>' +
+    '</div>';
+  document.body.appendChild(panel);
+
+  $('dev-new-elim').onclick = devNewEliminationTable;
+  $('dev-win-hand').onclick = devWinHand;
+  $('dev-ko-next').onclick = devKoNext;
+  $('dev-bust-me').onclick = devBustMe;
+  $('dev-clear-table').onclick = devClearTable;
+  $('dev-fast-dev').onchange = e=>{ FAST_DEV = e.target.checked; refreshDevPanel(); };
+  $('dev-collapse').onclick = ()=>{
+    panel.classList.toggle('collapsed');
+    $('dev-collapse').textContent = panel.classList.contains('collapsed') ? '+' : '_';
+  };
+
+  refreshDevPanel();
+}
+
+function refreshDevPanel(){
+  if (!DEV_MODE) return;
+  const panel = $('dev-panel');
+  if (!panel) return;
+  const inElim = !!game && game.mode==='elimination';
+  $('dev-new-elim').classList.toggle('hidden', inElim && !game.over);
+  $('dev-controls').classList.toggle('hidden', !inElim || game.over);
+  const hip = handInProgress(), bh = betweenHands();
+  $('dev-win-hand').disabled = !(inElim && hip);
+  $('dev-ko-next').disabled = !(inElim && hip);
+  $('dev-bust-me').disabled = !(inElim && hip);
+  $('dev-clear-table').disabled = !(inElim && bh);
+  const status = $('dev-status');
+  if (status) status.textContent = (FAST_DEV ? '[FAST] ' : '') + (game ? ('mode:' + game.mode + '  phase:' + game.phase + '  hand:' + game.handNumber) : 'no game');
+}
+
 function mq(query){
   try{ return !!(window.matchMedia && window.matchMedia(query).matches); }
   catch(e){ return false; }
@@ -7221,6 +7915,7 @@ function wireUI(){
   });
 
   initHeroFaces();
+  initDevPanel();
 }
 
 /* Title-screen cast: the four illustrated characters above the POKER brand,
