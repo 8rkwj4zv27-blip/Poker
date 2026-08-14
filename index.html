@@ -2591,12 +2591,173 @@ body #home #home-settings{ background:var(--theme-case-raised); color:var(--ink)
   .board{ gap:5px; }
 }
 
+/* ============================================================
+   ARCADE RUN LAYER — full-width score marquee and reward theatre
+   ============================================================ */
+.arcade-score-machine{
+  --score-brass:#D5A63B; --score-brass-hi:#F4D474; --score-brass-lo:#76531B;
+  position:relative; flex:0 0 auto; width:calc(100% - 16px); height:48px; min-width:0;
+  margin:0 8px 5px; padding:5px 7px; gap:7px;
+  display:grid; grid-template-columns:54px minmax(0,1fr) 78px; align-items:stretch;
+  background:linear-gradient(180deg,color-mix(in srgb,var(--panel-2) 82%,#453314 18%),var(--panel));
+  border:3px solid var(--score-brass); border-top-color:var(--score-brass-hi); border-bottom-color:var(--score-brass-lo);
+  box-shadow:0 4px 0 var(--px-ink),inset 2px 2px 0 rgba(255,255,255,.08),inset -2px -2px 0 rgba(0,0,0,.34);
+}
+.arcade-score-label{
+  display:flex; flex-direction:column; align-items:flex-start; justify-content:center; gap:3px;
+  color:var(--ink-faint); font-family:var(--font-hdr); font-size:5px; line-height:1.2; letter-spacing:.08em;
+}
+.arcade-score-label strong{ color:var(--score-brass-hi); font-size:7px; font-weight:400; text-shadow:2px 2px 0 var(--px-ink); }
+.arcade-score-digits{
+  min-width:0; display:grid; grid-template-columns:repeat(var(--score-digits,7),minmax(0,1fr)); gap:4px;
+}
+.arcade-score-digits>span{
+  position:relative; min-width:0; display:flex; align-items:center; justify-content:center; overflow:hidden;
+  color:var(--card-face); background:linear-gradient(180deg,#070A08,#111811 72%,#171D15);
+  border:2px solid var(--px-ink); border-top-color:#020302; border-bottom-color:color-mix(in srgb,var(--score-brass) 52%,var(--px-ink));
+  box-shadow:inset 0 5px 0 rgba(0,0,0,.7),inset 2px 0 0 rgba(0,0,0,.35),inset -1px 0 0 rgba(255,255,255,.06),0 1px 0 rgba(255,255,255,.08);
+  font-family:var(--font-hdr); font-size:15px; font-variant-numeric:tabular-nums; text-shadow:2px 2px 0 #000;
+}
+.arcade-score-digits>span::after{ content:''; position:absolute; left:2px; right:2px; top:2px; height:1px; background:rgba(255,255,255,.09); }
+.arcade-score-digits>span.digit-tick{ animation:arcadeDigitTick .18s steps(3,end); }
+@keyframes arcadeDigitTick{
+  0%{ transform:translateY(-2px); filter:brightness(1.85); }
+  45%{ transform:translateY(2px); filter:brightness(.72); }
+  100%{ transform:none; filter:brightness(1); }
+}
+.arcade-mult-unit{
+  min-width:0; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px;
+  background:color-mix(in srgb,var(--panel) 54%,black); border:2px solid var(--px-ink);
+  box-shadow:inset 0 4px 0 rgba(0,0,0,.6),inset 0 -1px 0 rgba(255,255,255,.07);
+}
+.arcade-mult-unit small{ color:var(--ink-faint); font-family:var(--font-hdr); font-size:5px; letter-spacing:.07em; }
+.arcade-mult-unit strong{ color:var(--score-brass-hi); font-family:var(--font-hdr); font-size:9px; font-weight:400; white-space:nowrap; text-shadow:2px 2px 0 var(--px-ink); }
+.arcade-score-machine.score-impact{ animation:arcadeMachineImpact .34s steps(5,end); }
+@keyframes arcadeMachineImpact{
+  0%,100%{ transform:translateY(0); filter:brightness(1); }
+  20%{ transform:translateY(2px) scale(.992); filter:brightness(1.65); }
+  48%{ transform:translateY(-1px) scale(1.008); }
+}
+.arcade-score-machine.score-jackpot{ animation:arcadeMachineJackpot .72s steps(9,end); }
+@keyframes arcadeMachineJackpot{
+  0%,100%{ transform:translate(0,0); filter:brightness(1); }
+  12%,36%,60%{ transform:translate(-2px,1px); filter:brightness(1.8); }
+  24%,48%,72%{ transform:translate(2px,-1px); }
+}
+
+.arcade-reward-layer{
+  position:fixed; z-index:72; left:50%; top:46%; width:min(94vw,620px); transform:translate(-50%,-50%);
+  display:flex; flex-direction:column; align-items:center; justify-content:center; gap:7px;
+  text-align:center; pointer-events:none; isolation:isolate;
+}
+.arcade-reward-layer::before{
+  content:''; position:absolute; z-index:-1; width:88%; height:150%; opacity:0;
+  background:radial-gradient(ellipse,color-mix(in srgb,var(--accent) 18%,transparent),transparent 66%);
+}
+.arcade-reward-layer.is-live::before{ animation:arcadeFlash .5s steps(4,end); }
+@keyframes arcadeFlash{ 0%{ opacity:0; transform:scale(.6); } 32%{ opacity:1; } 100%{ opacity:0; transform:scale(1.2); } }
+.arcade-luck{
+  min-height:16px; color:var(--ink); font-family:var(--font-hdr); font-size:clamp(8px,2.8vw,14px); letter-spacing:.08em;
+  text-shadow:2px 2px 0 var(--px-ink),0 0 8px color-mix(in srgb,var(--ink-dim) 65%,transparent);
+}
+.arcade-luck:empty{ display:none; }
+.arcade-reward-layer.luck-good .arcade-luck{ color:#FFE27A; transform:rotate(-2deg); }
+.arcade-reward-layer.luck-bad .arcade-luck{ color:color-mix(in srgb,#78BEE8 72%,var(--ink)); transform:rotate(1deg); }
+.arcade-reward-layer.luck-rare .arcade-luck{ color:#FFF; font-size:clamp(11px,3.8vw,18px); animation:arcadeRareLuck .58s steps(7,end); }
+@keyframes arcadeRareLuck{ 0%{ transform:scale(2.2) rotate(-4deg); opacity:0; } 42%{ transform:scale(.9) rotate(2deg); opacity:1; } 100%{ transform:scale(1); } }
+.arcade-hero{
+  max-width:100%; color:var(--card-face); font-family:var(--font-hdr); font-size:clamp(20px,7.7vw,48px); line-height:1.1;
+  letter-spacing:.025em; text-transform:uppercase; -webkit-text-stroke:1px var(--px-ink);
+  text-shadow:3px 0 0 var(--px-ink),-3px 0 0 var(--px-ink),0 3px 0 var(--px-ink),0 -3px 0 var(--px-ink),6px 6px 0 color-mix(in srgb,var(--accent) 65%,black),0 0 14px color-mix(in srgb,var(--accent) 58%,transparent);
+  overflow-wrap:anywhere;
+}
+.arcade-reward-layer.is-live .arcade-hero{ animation:arcadeHeroHit .52s steps(7,end); }
+@keyframes arcadeHeroHit{
+  0%{ transform:scale(2.15); opacity:0; filter:brightness(2.2); }
+  28%{ transform:scale(.88); opacity:1; }
+  48%{ transform:scale(1.09); }
+  68%{ transform:scale(.97); } 100%{ transform:scale(1); }
+}
+.arcade-reward-layer.cat-skill .arcade-hero{ color:var(--card-face); }
+.arcade-reward-layer.cat-achievement .arcade-hero{ color:var(--accent-bright); }
+.arcade-reward-layer.tier-major .arcade-hero{ font-size:clamp(26px,9vw,56px); }
+.arcade-reward-layer.tier-jackpot .arcade-hero{ font-size:clamp(30px,10.5vw,68px); animation-duration:.8s; }
+.arcade-reward-layer.tier-jackpot{ animation:arcadeScreenKick .62s steps(8,end); }
+@keyframes arcadeScreenKick{ 20%{ transform:translate(calc(-50% - 3px),calc(-50% + 2px)); } 40%{ transform:translate(calc(-50% + 3px),calc(-50% - 1px)); } 100%{ transform:translate(-50%,-50%); } }
+.arcade-secondaries{ display:flex; flex-wrap:wrap; justify-content:center; gap:5px 11px; min-height:14px; }
+.arcade-secondary{
+  color:var(--ink-dim); font-family:var(--font-hdr); font-size:clamp(6px,2.2vw,10px); line-height:1.4;
+  text-shadow:2px 2px 0 var(--px-ink); animation:arcadeSecondary .32s steps(4,end) both;
+}
+.arcade-secondary:nth-child(2){ animation-delay:.08s; }
+@keyframes arcadeSecondary{ from{ transform:translateY(9px) scale(.8); opacity:0; } to{ transform:none; opacity:1; } }
+.arcade-total{
+  color:var(--accent-bright); font-family:var(--font-hdr); font-size:clamp(18px,6.2vw,40px); line-height:1;
+  text-shadow:3px 3px 0 var(--px-ink),0 0 12px color-mix(in srgb,var(--accent) 72%,transparent);
+}
+.arcade-total:empty{ display:none; }
+.arcade-total.is-ready{ animation:arcadeTotalHit .38s steps(5,end); }
+@keyframes arcadeTotalHit{ from{ opacity:0; transform:translateY(10px) scale(.55); } 55%{ opacity:1; transform:translateY(-2px) scale(1.14); } to{ transform:none; } }
+.arcade-bank-flight{
+  position:fixed; z-index:78; pointer-events:none; color:var(--accent-bright); font-family:var(--font-hdr); font-size:24px;
+  text-shadow:3px 3px 0 var(--px-ink),0 0 12px var(--accent); white-space:nowrap;
+}
+
+#awards{
+  overflow-y:auto; -webkit-overflow-scrolling:touch; align-items:center;
+  background:repeating-conic-gradient(rgba(255,255,255,.016) 0 25%,transparent 0 50%) 0 0/10px 10px,var(--bg-deep);
+  padding:max(28px,env(safe-area-inset-top)) 18px max(28px,env(safe-area-inset-bottom));
+}
+.awards-card{ max-width:520px; margin:0 auto; }
+.awards-summary{ margin-bottom:14px; padding:11px; color:var(--ink-dim); text-align:center; font-size:11px; line-height:1.55; border:2px solid var(--px-ink); background:var(--panel); box-shadow:0 3px 0 var(--px-ink); }
+.award-glossary-row{ display:grid; grid-template-columns:1fr auto; gap:5px 10px; margin-bottom:8px; padding:11px 12px; background:var(--panel); border:2px solid var(--px-ink); box-shadow:0 3px 0 var(--px-ink); }
+.award-glossary-row.locked{ filter:saturate(.25); opacity:.72; }
+.award-glossary-name{ color:var(--accent-bright); font-family:var(--font-hdr); font-size:8px; }
+.award-glossary-points{ color:var(--ink); font-family:var(--font-hdr); font-size:7px; text-align:right; }
+.award-glossary-desc{ grid-column:1/-1; color:var(--ink-faint); font-size:11px; line-height:1.4; }
+.award-glossary-meta{ grid-column:1/-1; color:var(--ink-dim); font-family:var(--font-hdr); font-size:6px; line-height:1.6; }
+#home .home-row{ grid-template-columns:1fr 1fr 1fr; }
+
+.final-score-panel{ margin:9px 0 10px; padding:10px 8px; text-align:center; background:var(--machine-glass,var(--bg-deep)); border:3px solid var(--accent); box-shadow:inset 0 6px 0 rgba(0,0,0,.65),0 4px 0 var(--px-ink); }
+.final-score-panel span{ display:block; color:var(--ink-faint); font-family:var(--font-hdr); font-size:7px; letter-spacing:.08em; }
+.final-score-panel strong{ display:block; margin-top:8px; color:var(--accent-bright); font-family:var(--font-hdr); font-size:24px; letter-spacing:.06em; text-shadow:0 0 9px color-mix(in srgb,var(--accent) 65%,transparent); }
+.new-high-score{ margin-top:7px; color:#FFF1A0!important; animation:newHighBlink .72s steps(2,end) infinite; }
+@keyframes newHighBlink{ 50%{ opacity:.35; } }
+
+@media (max-width:389px){
+  .topbar{ gap:5px; padding-left:7px; padding-right:7px; }
+  #table-screen.arcade-active .topbar{ padding-bottom:3px; }
+  .arcade-score-machine{ width:calc(100% - 12px); height:45px; margin-left:6px; margin-right:6px; grid-template-columns:45px minmax(0,1fr) 68px; gap:5px; padding:4px 5px; }
+  .arcade-score-digits{ gap:2px; }
+  .arcade-score-digits>span{ font-size:12px; border-width:1px; }
+  .arcade-mult-unit strong{ font-size:7px; }
+  .arcade-hero{ letter-spacing:0; }
+  #home .home-row .btn-secondary{ font-size:6px; }
+}
+@media (orientation:landscape){
+  .arcade-score-machine{ height:42px; margin-bottom:3px; }
+  .arcade-reward-layer{ left:38%; top:50%; width:min(60vw,560px); }
+  #table-screen.arcade-active .topbar{
+    position:absolute; top:0; right:0; width:300px; min-height:48px;
+    padding:6px max(14px,env(safe-area-inset-right)) 2px 10px;
+  }
+  #table-screen.arcade-active .topbar>div:last-child{ gap:6px!important; }
+  #table-screen.arcade-active .felt .seat:not(.you){ margin-top:-14px; }
+}
+@media (orientation:landscape) and (max-height:430px){
+  #table-screen.arcade-active .topbar{ min-height:34px; padding-top:2px; }
+  .arcade-score-machine{ height:38px; grid-template-columns:48px minmax(0,1fr) 72px; padding-top:3px; padding-bottom:3px; }
+  .arcade-score-digits>span{ font-size:12px; }
+  #table-screen.arcade-active .felt .seat:not(.you){ margin-top:-10px; }
+}
+[data-motion="off"] .new-high-score{ animation:none!important; }
+
 /* ---- DEV MODE panel (see initDevPanel()) — never present unless
    DEV_MODE is true; deliberately plain/utilitarian rather than styled to
    match the game's own art direction, since it's a development tool, not
    part of the product. ---- */
 #dev-panel{
-  position:fixed; left:6px; bottom:6px; z-index:999; width:150px;
+  position:fixed; left:6px; bottom:6px; z-index:999; width:238px; max-height:92vh; overflow:auto;
   font-family:monospace; font-size:10px; color:#eee;
   background:rgba(10,10,10,.92); border:1px solid #6a6a6a; border-radius:4px;
   box-shadow:0 2px 8px rgba(0,0,0,.6);
@@ -2619,6 +2780,10 @@ body #home #home-settings{ background:var(--theme-case-raised); color:var(--ink)
 #dev-panel button:hover:not(:disabled){ background:#3a3a3a; }
 #dev-panel button:disabled{ opacity:.35; cursor:default; }
 #dev-controls{ display:flex; flex-direction:column; gap:3px; }
+#dev-arcade-controls{ display:grid; grid-template-columns:1fr 1fr; gap:3px; padding-top:4px; border-top:1px solid #555; }
+.dev-section-title,.dev-subtitle{ grid-column:1/-1; }
+.dev-section-title{ padding:4px 2px 2px; color:#ffd45a; font-weight:700; letter-spacing:.08em; }
+.dev-subtitle{ margin-top:3px; padding-top:4px; color:#a9a9a9; border-top:1px solid #444; font-size:9px; letter-spacing:.06em; }
 #dev-controls.hidden{ display:none; }
 #dev-new-elim.hidden{ display:none; }
 #dev-status{ color:#9a9a9a; word-break:break-word; }
@@ -2691,6 +2856,7 @@ button, [role="button"], input[type="button"], input[type="submit"] {
         <div class="home-row">
           <button class="btn-secondary" id="quick-play">Quick Deal</button>
           <button class="btn-secondary" id="open-rankings">Hand Rankings</button>
+          <button class="btn-secondary" id="open-awards">Score / Awards</button>
         </div>
       </div>
     </div>
@@ -2774,7 +2940,7 @@ button, [role="button"], input[type="button"], input[type="submit"] {
   <div id="table-screen" class="screen hidden">
     <div class="table-main">
       <div class="topbar">
-        <div>
+        <div class="table-identity">
           <div class="brandmini">POKER</div>
           <div class="meta" id="table-meta">Hand 1</div>
         </div>
@@ -2783,6 +2949,13 @@ button, [role="button"], input[type="button"], input[type="submit"] {
           <button class="icon-btn" id="open-log" aria-label="Hand log">☰</button>
           <button class="icon-btn" id="open-settings" aria-label="Settings">⚙</button>
         </div>
+      </div>
+      <div class="arcade-score-machine hidden" id="arcade-score-machine" aria-label="Run score 0, multiplier times 1">
+        <div class="arcade-score-label"><span>RUN</span><strong>SCORE</strong></div>
+        <div class="arcade-score-digits" id="arcade-score-value" aria-hidden="true">
+          <span>0</span><span>0</span><span>0</span><span>0</span><span>0</span><span>0</span><span>0</span>
+        </div>
+        <div class="arcade-mult-unit"><small>MULTI</small><strong id="arcade-mult-value">x1.0</strong></div>
       </div>
 
       <div class="felt-wrap">
@@ -2909,6 +3082,26 @@ button, [role="button"], input[type="button"], input[type="submit"] {
       <button class="wide-btn hidden" id="btn-next-hand">Next Hand</button>
       <button class="wide-btn hidden" id="btn-rebuy">Rebuy</button>
       <button class="wide-btn hidden" id="btn-new-table">New Table</button>
+    </div>
+  </div>
+
+  <div class="arcade-reward-layer hidden" id="arcade-reward-layer" aria-live="assertive" aria-atomic="true">
+    <div class="arcade-luck" id="arcade-luck"></div>
+    <div class="arcade-hero" id="arcade-hero"></div>
+    <div class="arcade-secondaries" id="arcade-secondaries"></div>
+    <div class="arcade-total" id="arcade-total"></div>
+  </div>
+
+  <!-- ============================ SCORE / AWARDS ============================ -->
+  <div id="awards" class="screen hidden">
+    <div class="lobby-card awards-card">
+      <div class="setup-head">
+        <button class="icon-btn" id="awards-back" aria-label="Back">&larr;</button>
+        <div class="setup-title">Score / Awards</div>
+        <div style="width:44px; flex-shrink:0;"></div>
+      </div>
+      <div class="awards-summary" id="awards-summary"></div>
+      <div id="awards-list"></div>
     </div>
   </div>
 
@@ -3969,6 +4162,33 @@ const Sound = (function(){
     });
   }
 
+  /* Arcade scoring hooks. These are deliberately synthesized from the
+     existing noise/tone toolkit so the feature has a complete event API
+     without adding assets or a second audio system. */
+  function arcadeRewardSound(tier,id){
+    const major=tier==='major'||tier==='jackpot';
+    withVoiceCap(major?620:300,()=>{
+      noise(major?.07:.025,major?.085:.04,{filterType:major?'lowpass':'bandpass',freq:major?480:2200,freqSweepTo:major?150:3400,decayPow:2.2});
+      if (id==='ko') [392,294,196].forEach((f,i)=>blip(f,.1,'square',.045,i*.045));
+      else {
+        const notes=major?[392,523,659,784]:[660,880];
+        notes.forEach((f,i)=>blip(f,major?.11:.07,i%2?'square':'triangle',major?.045:.03,i*.045));
+      }
+    });
+  }
+  function arcadeComboSound(up){
+    withVoiceCap(180,()=>{
+      noise(.025,.035,{filterType:'highpass',freq:2500,decayPow:3});
+      blip(up?740:260,.07,'square',.03);
+      blip(up?980:190,.08,'triangle',.025,.055);
+    });
+  }
+  function arcadeLuckSound(kind){
+    if (kind==='bad'||kind==='rare'){
+      blip(245,.12,'triangle',.028); blip(174,.15,'triangle',.024,.07);
+    } else { blip(740,.07,'square',.025); blip(988,.09,'triangle',.024,.06); }
+  }
+
   return {
     unlock(){ ac(); },
     /* Gated to AI opponents only as of SFX V1 — the human's own fold/
@@ -4015,7 +4235,12 @@ const Sound = (function(){
     allIn(mine){ if (this.sfxV1Enabled) allInSound(mine); },
     busted(mine){ if (this.sfxV1Enabled) bustedSound(mine); },
     humanKO(){ if (this.sfxV1Enabled) humanKOSound(); },
-    rebuy(){ if (this.sfxV1Enabled) rebuyConfirmSound(); }
+    rebuy(){ if (this.sfxV1Enabled) rebuyConfirmSound(); },
+    arcadeReward(tier,id){ if (this.sfxV1Enabled) arcadeRewardSound(tier,id); },
+    arcadeCombo(up){ if (this.sfxV1Enabled) arcadeComboSound(up); },
+    arcadeLuck(kind){ if (this.sfxV1Enabled) arcadeLuckSound(kind); },
+    arcadeBankTick(){ if (this.sfxV1Enabled) counterTickSound(true); },
+    arcadeBankLock(){ if (this.sfxV1Enabled) counterLockSound(true); }
   };
 })();
 function haptic(pattern){
@@ -4438,6 +4663,442 @@ const ELIMINATION_RUN_CONFIG = {
   readyBeatMs: 220,
 };
 
+/* ============================================================
+   ARCADE RUN SCORING — data, conservative evaluator and presenter
+
+   This observes completed elimination hands only. It never mutates cards,
+   chips, betting order or AI choices. Subjective skill awards are based on
+   range equity captured before the player's action; exact hidden cards are
+   consulted only after resolution for bluff/luck classification.
+   ============================================================ */
+const ARCADE_MULTIPLIERS = [1,1.25,1.5,2,2.5,3,4,5,6,8,10];
+const ARCADE_AWARDS = {
+  goodFold:    { name:'GOOD FOLD',    base:100,  type:'skill',       priority:10, combo:1, tier:'small',   description:'A disciplined fold in a meaningful, clearly unprofitable spot.' },
+  smartCall:   { name:'SMART CALL',   base:150,  type:'skill',       priority:8,  combo:1, tier:'small',   description:'A strong non-obvious call based on the price and estimated range.' },
+  strongBet:   { name:'STRONG BET',   base:150,  type:'skill',       priority:9,  combo:1, tier:'small',   description:'A meaningful, well-sized value or pressure bet.' },
+  bigBluff:    { name:'BIG BLUFF',    base:300,  type:'skill',       priority:6,  combo:1, tier:'medium',  description:'Force a materially better hand to fold with a significant bluff.' },
+  bluffCaught: { name:'BLUFF CAUGHT', base:350,  type:'skill',       priority:5,  combo:1, tier:'medium',  description:'Call a meaningful opponent bluff and beat it.' },
+  bigPot:      { name:'BIG POT',      base:250,  type:'achievement', priority:7,  combo:0, tier:'medium',  description:'Win a pot worth at least 25 big blinds.' },
+  monsterPot:  { name:'MONSTER POT',  base:500,  type:'achievement', priority:4,  combo:0, tier:'major',   description:'Win a pot worth at least 50 big blinds.' },
+  doubleUp:    { name:'DOUBLE UP',    base:500,  type:'achievement', priority:3,  combo:0, tier:'major',   description:'Roughly double your starting stack in one meaningful hand.' },
+  ko:          { name:'K.O.',         base:1000, type:'achievement', priority:2,  combo:0, tier:'major',   description:'Personally eliminate an opponent through the decisive pot.' },
+  tableClear:  { name:'TABLE CLEAR',  base:2500, type:'achievement', priority:1,  combo:0, tier:'jackpot', description:'Eliminate the final opponent and clear the table.' }
+};
+const ARCADE_LUCK = {
+  lucky:      { name:'LUCKY',       kind:'good', min:.30, max:.40, description:'Win after a major commitment with roughly 30–40% equity.' },
+  jammy:      { name:'JAMMY',       kind:'good', min:.20, max:.30, description:'Win after a major commitment with roughly 20–30% equity.' },
+  filthy:     { name:'FILTHY',      kind:'good', min:.10, max:.20, description:'Win after a major commitment with roughly 10–20% equity.' },
+  miracle:    { name:'MIRACLE',     kind:'good', min:0,   max:.10, description:'Win after a major commitment with less than roughly 10% equity.' },
+  unlucky:    { name:'UNLUCKY',     kind:'bad',  min:.70, max:.80, description:'Lose after a major commitment with roughly 70–80% equity.' },
+  rough:      { name:'ROUGH',       kind:'bad',  min:.80, max:.90, description:'Lose after a major commitment with roughly 80–90% equity.' },
+  brutal:     { name:'BRUTAL',      kind:'bad',  min:.90, max:.97, description:'Lose after a major commitment with roughly 90–97% equity.' },
+  sickener:   { name:'SICKENER',    kind:'bad',  min:.97, max:1.01,description:'Lose after a major commitment with roughly 97%+ equity.' },
+  oneOutered: { name:'ONE-OUTERED!',kind:'rare', min:0,   max:1,   description:'Lose when an opponent had approximately one river out.' },
+  runnerRunner:{ name:'RUNNER-RUNNER',kind:'rare',min:0,   max:1,   description:'A decisive outcome requiring favourable turn and river cards.' }
+};
+const ARCADE_PROFILE_DEFAULT = { highScore:0, discovered:{}, counts:{}, bestByEvent:{} };
+let arcadeProfile = Object.assign({}, ARCADE_PROFILE_DEFAULT, Store.get('felt.arcade', {}));
+arcadeProfile.discovered = Object.assign({}, arcadeProfile.discovered||{});
+arcadeProfile.counts = Object.assign({}, arcadeProfile.counts||{});
+arcadeProfile.bestByEvent = Object.assign({}, arcadeProfile.bestByEvent||{});
+let arcadePresentationQueue = Promise.resolve();
+
+function saveArcadeProfile(){ Store.set('felt.arcade',arcadeProfile); }
+function makeArcadeRunState(){
+  return {
+    score:0, comboStep:0, highestComboStep:0, biggestReward:0,
+    awardCounts:{}, decisionSnapshots:[], displayedScore:0, newHighScore:false
+  };
+}
+function arcadeMultiplier(step){ return ARCADE_MULTIPLIERS[Math.max(0,Math.min(10,step||0))]; }
+function formatArcadeMultiplier(n){ return 'x'+(Number.isInteger(n)?n.toFixed(1):String(n)); }
+function formatArcadeScore(n){ return Math.max(0,Math.round(n||0)).toString().padStart(7,'0'); }
+function setArcadeMode(active){
+  const screen=$('table-screen'), machine=$('arcade-score-machine');
+  if (screen) screen.classList.toggle('arcade-active',!!active);
+  if (machine) machine.classList.toggle('hidden',!active);
+  if (!active){ const layer=$('arcade-reward-layer'); if (layer) layer.classList.add('hidden'); }
+}
+function renderArcadeDigits(el,text){
+  if (!el) return;
+  const chars=[...text];
+  el.style.setProperty('--score-digits',chars.length);
+  if (el.children.length!==chars.length) el.innerHTML=chars.map(c=>'<span>'+c+'</span>').join('');
+  chars.forEach((char,i)=>{
+    const cell=el.children[i];
+    if (!cell||cell.dataset.digit===char) return;
+    cell.dataset.digit=char; cell.textContent=char;
+    if (!motionOff()){
+      cell.classList.remove('digit-tick'); void cell.offsetWidth; cell.classList.add('digit-tick');
+      clearTimeout(cell._digitT); cell._digitT=setTimeout(()=>cell.classList.remove('digit-tick'),190);
+    }
+  });
+}
+function updateArcadeHUD(){
+  const active=!!(game&&game.mode==='elimination'&&game.run&&game.run.arcade);
+  setArcadeMode(active);
+  if (!active) return;
+  const a=game.run.arcade, mult=arcadeMultiplier(a.comboStep);
+  if ($('arcade-score-value')){
+    const scoreText=formatArcadeScore(a.displayedScore==null?a.score:a.displayedScore), scoreEl=$('arcade-score-value');
+    renderArcadeDigits(scoreEl,scoreText);
+  }
+  if ($('arcade-mult-value')) $('arcade-mult-value').textContent=formatArcadeMultiplier(mult);
+  if ($('arcade-score-machine')) $('arcade-score-machine').setAttribute('aria-label','Run score '+a.score.toLocaleString()+', multiplier '+formatArcadeMultiplier(mult));
+}
+function noteArcadeDiscovery(id,count,bestScore){
+  const n=Math.max(1,count||1);
+  arcadeProfile.discovered[id]=true;
+  arcadeProfile.counts[id]=(arcadeProfile.counts[id]||0)+n;
+  if (bestScore!=null) arcadeProfile.bestByEvent[id]=Math.max(arcadeProfile.bestByEvent[id]||0,Math.round(bestScore));
+  saveArcadeProfile();
+}
+
+/* Capture only information available at decision time. Equity is against
+   random/tendency-adjusted ranges, never the opponents' hidden cards. The
+   worker promise resolves while ordinary poker animation continues. */
+function captureArcadeDecision(player,requestedAction,amount){
+  const g=game;
+  if (!g||g.mode!=='elimination'||!g.run||!g.run.arcade||!player||!player.isHuman) return;
+  const toCall=Math.max(0,g.currentBet-player.betThisRound);
+  let action=requestedAction;
+  if (action==='call'&&toCall===0) action='check';
+  const stackBefore=player.chips, startStack=g._humanStart!=null?g._humanStart:(player.chips+player.totalBetHand);
+  let commit=action==='call'?Math.min(toCall,stackBefore):0;
+  if (action==='raise') commit=Math.max(0,Math.min(stackBefore,(amount||0)-player.betThisRound));
+  const opponents=g.players.filter(p=>p.inHand&&!p.folded&&!p.isHuman);
+  const lastAggressor=(g.handActions||[]).slice().reverse().find(a=>a.street===g.phase&&a.id!=='you'&&(a.action==='bet'||a.action==='raise'));
+  const snap={
+    action, street:g.phase, board:g.board.map(c=>Object.assign({},c)), hole:player.hand.map(c=>Object.assign({},c)),
+    opponentIds:opponents.map(p=>p.id), lastAggressorId:lastAggressor?lastAggressor.id:null,
+    pot:g.pot, toCall, potOdds:toCall>0?toCall/(g.pot+toCall):0, commit,
+    stackBefore,startStack, totalCommittedBefore:player.totalBetHand, bigBlind:g.bigBlind,
+    allIn:commit>=stackBefore, handActionIndex:(g.handActions||[]).length
+  };
+  snap.equityPromise=EquityService.get(snap.hole,snap.board,Math.max(1,opponents.length),260)
+    .then(v=>typeof v==='number'?v:null).catch(()=>null);
+  g.run.arcade.decisionSnapshots.push(snap);
+}
+async function settleArcadeSnapshots(g){
+  const snaps=(g.run&&g.run.arcade&&g.run.arcade.decisionSnapshots)||[];
+  await Promise.all(snaps.map(async s=>{ if (s.equity==null) s.equity=await s.equityPromise; delete s.equityPromise; }));
+  return snaps;
+}
+function resolvedEquityShare(heroHole,opponentHoles,board){
+  const hero=evaluate7([...heroHole,...board]);
+  const hands=opponentHoles.map(h=>evaluate7([...h,...board]));
+  let best=hero, winners=1, heroBest=true;
+  for (const hand of hands){
+    const cmp=compareHands(hand,best);
+    if (cmp>0){ best=hand; winners=1; heroBest=false; }
+    else if (cmp===0){ winners++; }
+  }
+  return heroBest?1/winners:0;
+}
+function resolvedEquityAtSnapshot(s,g){
+  if (!s||!s.opponentIds||!s.opponentIds.length) return null;
+  const opponentHoles=s.opponentIds.map(id=>g.players.find(p=>p.id===id)).filter(Boolean).map(p=>p.hand);
+  if (!opponentHoles.length||opponentHoles.some(h=>!h||h.length<2)) return null;
+  const used=new Set([...s.hole,...s.board,...opponentHoles.flat()].map(cardKey));
+  const deck=createDeck().filter(c=>!used.has(cardKey(c))), need=5-s.board.length;
+  let total=0, share=0;
+  if (need===0) return resolvedEquityShare(s.hole,opponentHoles,s.board);
+  if (need===1){
+    deck.forEach(c=>{ share+=resolvedEquityShare(s.hole,opponentHoles,[...s.board,c]); total++; });
+  } else if (need===2){
+    for (let i=0;i<deck.length-1;i++) for (let j=i+1;j<deck.length;j++){
+      share+=resolvedEquityShare(s.hole,opponentHoles,[...s.board,deck[i],deck[j]]); total++;
+    }
+  } else {
+    const iterations=520;
+    for (let n=0;n<iterations;n++){
+      const sample=shuffle(deck.slice()).slice(0,need);
+      share+=resolvedEquityShare(s.hole,opponentHoles,[...s.board,...sample]); total++;
+    }
+  }
+  return total?share/total:null;
+}
+function classifyArcadeLuck(g,outcome,snapshots){
+  const won=humanWonOutcome(outcome);
+  const meaningful=snapshots.filter(s=>s.action!=='fold'&&s.action!=='check'&&(
+    s.allIn||s.commit>=Math.max(6*s.bigBlind,s.startStack*.22)||s.totalCommittedBefore+s.commit>=s.startStack*.45
+  )).sort((a,b)=>(b.commit/b.startStack)-(a.commit/a.startStack))[0];
+  if (!meaningful) return null;
+  const equity=resolvedEquityAtSnapshot(meaningful,g);
+  if (equity==null) return null;
+  if (!won&&meaningful.board.length===4&&equity>=.972) return {id:'oneOutered',equity};
+  if (won){
+    if (equity<.10) return {id:'miracle',equity};
+    if (equity<.20) return {id:'filthy',equity};
+    if (equity<.30) return {id:'jammy',equity};
+    if (equity<.40) return {id:'lucky',equity};
+  } else {
+    if (equity>=.97) return {id:'sickener',equity};
+    if (equity>=.90) return {id:'brutal',equity};
+    if (equity>=.80) return {id:'rough',equity};
+    if (equity>=.70) return {id:'unlucky',equity};
+  }
+  return null;
+}
+function addArcadeAward(list,id,count){
+  const def=ARCADE_AWARDS[id]; if (!def) return;
+  const existing=list.find(a=>a.id===id);
+  if (existing) existing.count+=count||1; else list.push({id,count:count||1,def});
+}
+function actualHandAtResolution(player,g){
+  if (!player||!player.hand||player.hand.length<2||player.hand.length+g.board.length<5) return null;
+  return evaluate7([...player.hand,...g.board]);
+}
+function evaluateArcadeSkill(g,outcome,snapshots){
+  const awards=[], human=g.players.find(p=>p.isHuman), won=humanWonOutcome(outcome);
+  const calls=snapshots.filter(s=>s.action==='call'&&s.toCall>0&&s.equity!=null);
+  const bets=snapshots.filter(s=>s.action==='raise'&&s.commit>0&&s.equity!=null);
+  const folds=snapshots.filter(s=>s.action==='fold'&&s.toCall>0&&s.equity!=null);
+
+  const bluffCall=calls.slice().reverse().find(s=>{
+    if (!won||!s.lastAggressorId||s.commit<Math.max(4*s.bigBlind,s.startStack*.14)) return false;
+    const villain=g.players.find(p=>p.id===s.lastAggressorId), vh=actualHandAtResolution(villain,g), hh=actualHandAtResolution(human,g);
+    return vh&&hh&&vh.cat===0&&compareHands(hh,vh)>0;
+  });
+  if (bluffCall) addArcadeAward(awards,'bluffCaught');
+  else if (calls.some(s=>s.commit>=Math.max(4*s.bigBlind,s.startStack*.14)&&s.equity>=s.potOdds+.13&&s.equity<=.72)) addArcadeAward(awards,'smartCall');
+
+  const bluffBet=outcome.type==='foldwin'&&won&&bets.slice().reverse().find(s=>{
+    if (s.street==='preflop'||s.commit<Math.max(6*s.bigBlind,s.startStack*.16)||s.pot<8*s.bigBlind||s.equity>.36) return false;
+    const heroNow=actualHandAtResolution(human,g); if (!heroNow) return false;
+    return g.players.some(p=>!p.isHuman&&p.folded&&s.opponentIds.includes(p.id)&&actualHandAtResolution(p,g)&&compareHands(actualHandAtResolution(p,g),heroNow)>0);
+  });
+  if (bluffBet) addArcadeAward(awards,'bigBluff');
+  else if (bets.some(s=>s.pot>=8*s.bigBlind&&s.commit>=4*s.bigBlind&&s.commit<=Math.max(s.pot*1.2,6*s.bigBlind)&&s.equity>=.66&&s.equity<=.88)) addArcadeAward(awards,'strongBet');
+
+  if (folds.some(s=>s.street!=='preflop'&&s.toCall>=Math.max(3*s.bigBlind,s.startStack*.12)&&s.pot>=7*s.bigBlind&&s.equity<=s.potOdds-.12)) addArcadeAward(awards,'goodFold');
+
+  let penalty=0;
+  calls.forEach(s=>{
+    const gap=s.potOdds-s.equity, invested=(s.totalCommittedBefore+s.commit)/Math.max(1,s.startStack);
+    if (s.commit>=5*s.bigBlind&&invested>=.18&&gap>=.13) penalty=Math.max(penalty,(gap>=.25&&invested>=.36)?2:1);
+  });
+  return {awards,penalty};
+}
+function evaluateArcadeAchievements(g,outcome,context,awards){
+  const human=g.players.find(p=>p.isHuman), won=humanWonOutcome(outcome), potWon=humanAwardFromOutcome(outcome);
+  if (won&&potWon>=50*g.bigBlind) addArcadeAward(awards,'monsterPot');
+  else if (won&&potWon>=25*g.bigBlind) addArcadeAward(awards,'bigPot');
+  const start=g._humanStart==null?human.chips:g._humanStart, gain=human.chips-start;
+  if (human.chips>=start*1.9&&gain>=10*g.bigBlind) addArcadeAward(awards,'doubleUp');
+  if (context&&context.koCount) addArcadeAward(awards,'ko',context.koCount);
+  if (context&&context.tableClear) addArcadeAward(awards,'tableClear');
+}
+function normalizeArcadeAwards(awards){
+  const ids=new Set(awards.map(a=>a.id));
+  if (ids.has('bluffCaught')) awards=awards.filter(a=>a.id!=='smartCall');
+  if (ids.has('bigBluff')) awards=awards.filter(a=>a.id!=='strongBet');
+  if (ids.has('monsterPot')) awards=awards.filter(a=>a.id!=='bigPot');
+  return awards.sort((a,b)=>a.def.priority-b.def.priority);
+}
+async function resolveArcadeHand(g,outcome,context){
+  if (!g||g.mode!=='elimination'||!g.run||!g.run.arcade) return;
+  const a=g.run.arcade, snapshots=await settleArcadeSnapshots(g);
+  const skill=evaluateArcadeSkill(g,outcome,snapshots), awards=skill.awards;
+  evaluateArcadeAchievements(g,outcome,context,awards);
+  const finalAwards=normalizeArcadeAwards(awards);
+  const luck=classifyArcadeLuck(g,outcome,snapshots);
+  const mult=arcadeMultiplier(a.comboStep);
+  const total=Math.round(finalAwards.reduce((sum,x)=>sum+x.def.base*x.count,0)*mult);
+  const comboGain=finalAwards.reduce((sum,x)=>sum+x.def.combo*x.count,0);
+  const oldStep=a.comboStep, newStep=Math.max(0,Math.min(10,oldStep+comboGain-skill.penalty));
+  const resolution={awards:finalAwards,luck,mult,total,oldStep,newStep,dev:false};
+  finalAwards.forEach(x=>{
+    a.awardCounts[x.id]=(a.awardCounts[x.id]||0)+x.count;
+    noteArcadeDiscovery(x.id,x.count,x.def.base*mult);
+  });
+  if (luck) noteArcadeDiscovery(luck.id,1,null);
+  if (!finalAwards.length&&!luck&&oldStep===newStep) return;
+  await queueArcadePresentation(()=>presentArcadeResolution(g,resolution));
+}
+function queueArcadePresentation(fn){
+  arcadePresentationQueue=arcadePresentationQueue.catch(()=>{}).then(fn);
+  return arcadePresentationQueue;
+}
+function arcadeDelay(ms){ return sleep(motionOff()?Math.min(30,ms):ms); }
+function clearArcadeLayer(){
+  const layer=$('arcade-reward-layer'); if (!layer) return;
+  layer.className='arcade-reward-layer hidden';
+  ['arcade-luck','arcade-hero','arcade-secondaries','arcade-total'].forEach(id=>{ if ($(id)) $(id).innerHTML=''; });
+}
+function rewardTier(awards,total){
+  if (awards.some(a=>a.id==='tableClear')||total>=2500) return 'jackpot';
+  if (awards.some(a=>a.def.tier==='major')||total>=500) return 'major';
+  if (awards.some(a=>a.def.tier==='medium')||total>=250) return 'medium';
+  return 'small';
+}
+async function rollArcadeCounter(a,target,tier){
+  const from=a.displayedScore||0, duration=motionOff()?0:(tier==='jackpot'?920:tier==='major'?680:480);
+  if (!duration){ a.displayedScore=target; updateArcadeHUD(); return; }
+  const start=performance.now(); let lastTick=0;
+  await new Promise(resolve=>{
+    function frame(now){
+      const t=Math.min(1,(now-start)/duration), eased=1-Math.pow(1-t,3);
+      a.displayedScore=Math.round(from+(target-from)*eased);
+      if (now-lastTick>55){ Sound.arcadeBankTick(); lastTick=now; }
+      updateArcadeHUD();
+      if (t<1) requestAnimationFrame(frame); else resolve();
+    }
+    requestAnimationFrame(frame);
+  });
+  a.displayedScore=target; updateArcadeHUD(); Sound.arcadeBankLock();
+}
+async function flyArcadeScore(total,tier){
+  const source=$('arcade-total'), target=$('arcade-score-machine');
+  if (!source||!target||motionOff()) return;
+  const sr=source.getBoundingClientRect(), tr=target.getBoundingClientRect(), flight=document.createElement('div');
+  flight.className='arcade-bank-flight'; flight.textContent='+'+total.toLocaleString();
+  flight.style.left=sr.left+'px'; flight.style.top=sr.top+'px'; document.body.appendChild(flight);
+  const dx=(tr.left+tr.width/2)-(sr.left+sr.width/2), dy=(tr.top+tr.height/2)-(sr.top+sr.height/2);
+  const dur=tier==='jackpot'?720:tier==='major'?600:480;
+  const anim=flight.animate([
+    {transform:'translate(0,0) scale(1)',opacity:1},
+    {transform:'translate('+(dx*.3)+'px,'+(dy*.18-22)+'px) scale(1.12)',opacity:1,offset:.32},
+    {transform:'translate('+dx+'px,'+dy+'px) scale(.34)',opacity:.25}
+  ],{duration:dur,easing:'cubic-bezier(.2,.75,.25,1)',fill:'forwards'});
+  try{ await anim.finished; }catch(e){}
+  flight.remove();
+}
+async function presentArcadeResolution(g,r){
+  if (!g||game!==g||!g.run||!g.run.arcade) return;
+  const a=g.run.arcade, layer=$('arcade-reward-layer'), tier=rewardTier(r.awards,r.total);
+  if (!layer) return;
+  const hero=r.awards[0], secondaries=r.awards.slice(1), luckDef=r.luck&&ARCADE_LUCK[r.luck.id];
+  layer.className='arcade-reward-layer tier-'+tier+' '+(hero?'cat-'+hero.def.type:'')+(luckDef?' luck-'+luckDef.kind:'');
+  layer.classList.remove('hidden');
+  if (luckDef){ $('arcade-luck').textContent=luckDef.name; Sound.arcadeLuck(luckDef.kind); await arcadeDelay(120); }
+  if (hero){
+    $('arcade-hero').textContent=hero.def.name;
+    $('arcade-secondaries').innerHTML=secondaries.map(x=>'<span class="arcade-secondary">'+esc(x.def.name)+' +'+Math.round(x.def.base*x.count*r.mult).toLocaleString()+'</span>').join('');
+    layer.classList.add('is-live'); Sound.arcadeReward(tier,hero.id); haptic(tier==='jackpot'?[45,25,65]:tier==='major'?40:22);
+    await arcadeDelay(tier==='jackpot'?560:360);
+    $('arcade-total').textContent='+'+r.total.toLocaleString(); $('arcade-total').classList.add('is-ready');
+    await arcadeDelay(tier==='jackpot'?640:440);
+    await flyArcadeScore(r.total,tier);
+    const target=a.score+r.total; a.score=target; a.biggestReward=Math.max(a.biggestReward,r.total);
+    const machine=$('arcade-score-machine');
+    if (machine){ machine.classList.remove('score-impact','score-jackpot'); void machine.offsetWidth; machine.classList.add(tier==='jackpot'?'score-jackpot':'score-impact'); }
+    clearArcadeLayer();
+    await rollArcadeCounter(a,target,tier);
+  } else if (luckDef){ await arcadeDelay(620); clearArcadeLayer(); }
+
+  if (r.oldStep!==r.newStep){
+    a.comboStep=r.newStep; a.highestComboStep=Math.max(a.highestComboStep,r.newStep);
+    updateArcadeHUD(); Sound.arcadeCombo(r.newStep>r.oldStep); haptic(18);
+    await arcadeDelay(120);
+  }
+}
+function finalizeArcadeRun(g){
+  if (!g||!g.run||!g.run.arcade) return;
+  const score=g.run.arcade.score, prior=arcadeProfile.highScore||0;
+  g.run.arcade.newHighScore=score>prior;
+  if (score>prior){ arcadeProfile.highScore=score; saveArcadeProfile(); }
+}
+function animateFinalArcadeScore(g){
+  const el=$('final-score-value'); if (!el||!g||!g.run||!g.run.arcade) return;
+  const target=g.run.arcade.score;
+  if (motionOff()){ el.textContent=formatArcadeScore(target); return; }
+  const start=performance.now(), duration=1050;
+  function frame(now){
+    const t=Math.min(1,(now-start)/duration), v=Math.round(target*(1-Math.pow(1-t,3)));
+    el.textContent=formatArcadeScore(v);
+    if (t<1) requestAnimationFrame(frame); else Sound.arcadeBankLock();
+  }
+  requestAnimationFrame(frame);
+}
+const DEV_ARCADE_SCENARIOS = {
+  goodPlay:    {awards:['goodFold']},
+  bluffCatch:  {awards:['bluffCaught']},
+  jammyDouble: {awards:['doubleUp'],luck:'jammy'},
+  brutalLoss:  {awards:['smartCall'],luck:'brutal'},
+  bigKo:       {awards:['ko','monsterPot','bluffCaught']},
+  tableClear:  {awards:['tableClear','ko','monsterPot']}
+};
+function devArcadePresent(ids,luckId){
+  if (!DEV_MODE||!game||game.mode!=='elimination'||!game.run||!game.run.arcade) return;
+  const g=game, a=g.run.arcade;
+  let awards=(ids||[]).map(id=>ARCADE_AWARDS[id]?{id,count:1,def:ARCADE_AWARDS[id]}:null).filter(Boolean);
+  awards=normalizeArcadeAwards(awards);
+  const mult=arcadeMultiplier(a.comboStep);
+  const total=Math.round(awards.reduce((sum,x)=>sum+x.def.base*x.count,0)*mult);
+  const oldStep=a.comboStep, gain=awards.reduce((sum,x)=>sum+x.def.combo*x.count,0);
+  const newStep=Math.min(10,oldStep+gain);
+  queueArcadePresentation(()=>presentArcadeResolution(g,{
+    awards,luck:luckId&&ARCADE_LUCK[luckId]?{id:luckId,equity:0}:null,
+    mult,total,oldStep,newStep,dev:true
+  }));
+}
+function devArcadeAward(id){ devArcadePresent([id],null); }
+function devArcadeLuck(id){ devArcadePresent([],id); }
+function devArcadeScenario(id){
+  const scenario=DEV_ARCADE_SCENARIOS[id];
+  if (scenario) devArcadePresent(scenario.awards,scenario.luck||null);
+}
+function devArcadeSetStep(step){
+  if (!DEV_MODE||!game||game.mode!=='elimination'||!game.run||!game.run.arcade) return;
+  const a=game.run.arcade, old=a.comboStep;
+  a.comboStep=Math.max(0,Math.min(10,Math.round(step)));
+  a.highestComboStep=Math.max(a.highestComboStep,a.comboStep);
+  updateArcadeHUD();
+  if (a.comboStep!==old){ Sound.arcadeCombo(a.comboStep>old); haptic(18); }
+  refreshDevPanel();
+}
+function devArcadeCombo(delta){
+  if (!game||!game.run||!game.run.arcade) return;
+  devArcadeSetStep(game.run.arcade.comboStep+delta);
+}
+function devArcadeSetMultiplier(value){
+  const step=ARCADE_MULTIPLIERS.indexOf(Number(value));
+  if (step>=0) devArcadeSetStep(step);
+}
+function devArcadeJackpot(){
+  devArcadeSetMultiplier(10);
+  devArcadePresent(['tableClear'],null);
+}
+function devArcadeAddScore(amount){
+  if (!DEV_MODE||!game||game.mode!=='elimination'||!game.run||!game.run.arcade) return;
+  const g=game, a=g.run.arcade, increment=Math.max(0,Math.round(amount||0));
+  queueArcadePresentation(async()=>{
+    if (game!==g||!g.run||!g.run.arcade) return;
+    const target=a.score+increment; a.score=target; a.biggestReward=Math.max(a.biggestReward,increment);
+    const machine=$('arcade-score-machine');
+    if (machine){ machine.classList.remove('score-impact'); void machine.offsetWidth; machine.classList.add('score-impact'); }
+    await rollArcadeCounter(a,target,increment>=10000?'jackpot':increment>=1000?'major':'small');
+    refreshDevPanel();
+  });
+}
+function devArcadeResetScore(){
+  if (!DEV_MODE||!game||game.mode!=='elimination'||!game.run||!game.run.arcade) return;
+  const g=game;
+  queueArcadePresentation(async()=>{
+    if (game!==g||!g.run||!g.run.arcade) return;
+    const a=g.run.arcade; a.score=0; a.displayedScore=0; a.biggestReward=0;
+    updateArcadeHUD(); refreshDevPanel();
+  });
+}
+function devArcadeReset(){
+  if (!DEV_MODE||!game||game.mode!=='elimination') return;
+  game.run.arcade=makeArcadeRunState(); clearArcadeLayer(); updateArcadeHUD(); refreshDevPanel();
+}
+function buildAwardsGlossary(){
+  const list=$('awards-list'), summary=$('awards-summary'); if (!list||!summary) return;
+  const entries=[...Object.entries(ARCADE_AWARDS),...Object.entries(ARCADE_LUCK)];
+  const unlocked=entries.filter(([id])=>arcadeProfile.discovered[id]).length;
+  summary.innerHTML='<b>HIGH SCORE '+formatArcadeScore(arcadeProfile.highScore||0)+'</b><br>'+unlocked+' / '+entries.length+' signals discovered';
+  list.innerHTML=entries.map(([id,def])=>{
+    const seen=!!arcadeProfile.discovered[id], luck=!('base' in def), count=arcadeProfile.counts[id]||0, best=arcadeProfile.bestByEvent[id]||0;
+    return '<div class="award-glossary-row '+(seen?'':'locked')+'"><div class="award-glossary-name">'+(seen?esc(def.name):'???')+'</div>'+
+      '<div class="award-glossary-points">'+(seen?(luck?'NO POINTS':def.base.toLocaleString()+' PTS'):'LOCKED')+'</div>'+
+      '<div class="award-glossary-desc">'+(seen?esc(def.description):'Discover this signal during an elimination run.')+'</div>'+
+      (seen?'<div class="award-glossary-meta">TRIGGERED '+count+(best?' · BEST '+best.toLocaleString():'')+(luck?' · LUCK EVENT':'')+'</div>':'')+'</div>';
+  }).join('');
+}
+
 function makeEliminationRun(){
   return {
     active:true, tableNumber:1, highestTableReached:1, tablesCleared:0,
@@ -4446,7 +5107,8 @@ function makeEliminationRun(){
     biggestPotWon:0, highestStack:ELIMINATION_CONFIG.startingStack, bestHand:null, bustedBy:null,
     tableKOs:0, tableHands:0, tableHandsWon:0,
     tableShowdownsPlayed:0, tableShowdownsWon:0, tableAllInsPlayed:0, tableAllInsWon:0,
-    tableBiggestPotWon:0, tableHighestStack:ELIMINATION_CONFIG.startingStack, tableBestHand:null
+    tableBiggestPotWon:0, tableHighestStack:ELIMINATION_CONFIG.startingStack, tableBestHand:null,
+    arcade:makeArcadeRunState()
   };
 }
 function applyRunTheme(){
@@ -4767,6 +5429,7 @@ async function startNewHand(){
   g.handNumber++;
   g.handActions = [];
   g.humanFoldSnapshot = null;
+  if (g.run&&g.run.arcade) g.run.arcade.decisionSnapshots=[];
   hideReview();
   decayMoods();
   applyLingeringFaces();
@@ -5616,9 +6279,13 @@ async function finishHand(outcome){
     // in full, before we check either end condition below — so the
     // final human K.O. always gets to finish its whole payoff before
     // TABLE CLEARED can appear (see the Phase 1 plan §13).
-    await resolveEliminations(g, outcome);
-    if (human.chips<=0){ showBusted(g, human); return; }
+    const eliminationResult=await resolveEliminations(g, outcome);
     const aiRemaining = g.players.filter(p=>!p.isHuman && !p.eliminated);
+    await resolveArcadeHand(g,outcome,{
+      koCount:eliminationResult?eliminationResult.koCount:0,
+      tableClear:human.chips>0&&aiRemaining.length===0
+    });
+    if (human.chips<=0){ showBusted(g, human); return; }
     if (aiRemaining.length===0){
       await sleep(motionOff() ? 0 : ELIMINATION_CONFIG.clearedBeatMs);
       concludeGame();
@@ -5773,7 +6440,8 @@ function tableClearedHTML(g){
       resultStat('Final stack',moneyResult(human?human.chips:0),'')+
     '</div>'+
     bestHandResultHTML(r.tableBestHand)+
-    '<div class="result-run-strip"><span>RUN K.O.s <b class="tabular">'+r.totalKOs+'</b></span>'+
+    '<div class="result-run-strip"><span>RUN SCORE <b class="tabular">'+formatArcadeScore(r.arcade?r.arcade.score:0)+'</b></span>'+
+      '<span>RUN K.O.s <b class="tabular">'+r.totalKOs+'</b></span>'+
       '<span>NEXT <b>TABLE '+(r.tableNumber+1)+'</b></span></div>'+
     '<button class="btn-primary result-primary" id="run-next-table" type="button">NEXT TABLE</button>'+
   '</div>';
@@ -5781,20 +6449,23 @@ function tableClearedHTML(g){
 function runOverHTML(g){
   const r=g.run;
   const buster=r.bustedBy;
+  const a=r.arcade||makeArcadeRunState();
   return '<div class="result-bezel result-bezel-loss">' +
     '<div class="result-eyebrow danger-eye">RUN TERMINATED <i></i> NO REBUY</div>'+
     '<header class="result-head result-head-loss"><strong>RUN OVER</strong><span>BUSTED ON TABLE '+r.tableNumber+'</span></header>'+
+    '<div class="final-score-panel"><span>FINAL SCORE</span><strong class="tabular" id="final-score-value">0000000</strong>'+
+      (a.newHighScore?'<span class="new-high-score">NEW HIGH SCORE</span>':'')+'</div>'+
     '<div class="run-progress-hero"><div><span>TABLE</span><strong class="tabular">'+r.highestTableReached+'</strong><em>REACHED</em></div>'+
       '<div><strong class="tabular">'+r.tablesCleared+'</strong><span>TABLES<br>CLEARED</span></div></div>'+
     '<div class="run-report-grid">'+
       resultStat('Hands won',ratioResult(r.totalHandsWon,r.totalHands),'')+
-      resultStat('Showdowns won',ratioResult(r.showdownsWon,r.showdownsPlayed),'')+
-      resultStat('All-ins won',ratioResult(r.allInsWon,r.allInsPlayed),'')+
-      resultStat('Human K.O.s',r.totalKOs,'ko-stat')+
+      resultStat('Highest multi',formatArcadeMultiplier(arcadeMultiplier(a.highestComboStep)),'')+
+      resultStat('Total hands',r.totalHands,'')+
+      resultStat('K.O.s',r.totalKOs,'ko-stat')+
     '</div>'+
     '<div class="run-highlight-row">'+
       resultStat('Biggest pot won',moneyResult(r.biggestPotWon),'accent-stat')+
-      resultStat('Highest stack',moneyResult(r.highestStack),'')+
+      resultStat('Biggest reward','+'+a.biggestReward.toLocaleString(),'')+
     '</div>'+
     bestHandResultHTML(r.bestHand)+
     (buster?'<div class="run-epitaph"><span>BUSTED BY</span><strong>'+esc(buster.names.join(' & ').toUpperCase())+'</strong>'+
@@ -5847,6 +6518,7 @@ function ordinal(n){
    reasoning. */
 async function resolveEliminations(g, outcome){
   const busted = g.players.filter(p=>!p.isHuman && !p.eliminated && p.chips<=0);
+  let humanKOs=0;
   for (const p of busted){
     let ko = false;
     if (outcome.type === 'showdown' && Array.isArray(outcome.potResults)){
@@ -5862,10 +6534,11 @@ async function resolveEliminations(g, outcome){
     }
     p.eliminated = true;
     p.inHand = false;
-    if (ko && g.run && g.run.active){ g.run.totalKOs++; g.run.tableKOs++; }
+    if (ko && g.run && g.run.active){ g.run.totalKOs++; g.run.tableKOs++; humanKOs++; }
     logMsg(p.name + (ko ? ' is knocked out!' : ' is eliminated!'), true);
     await playElimination(p, { ko });
   }
+  return {koCount:humanKOs};
 }
 
 /* Shared K.O.!/ELIMINATED! presentation — one pipeline for both variants
@@ -6043,6 +6716,7 @@ function showBusted(g, human){
 
 async function showRunOver(g){
   g.over = true;
+  finalizeArcadeRun(g);
   clearTableSave();
   clearTimeout(autoDealT);
   hideResultCard();
@@ -6062,6 +6736,7 @@ async function showRunOver(g){
   $('run-new').onclick = startSinglePlayerRun;
   $('run-menu').onclick = leaveTable;
   render();
+  animateFinalArcadeScore(g);
 }
 
 function resetForNextRunTable(g){
@@ -6299,6 +6974,7 @@ async function continueAction(){
 async function humanAct(action, amount){
   if (!pendingHumanPlayer) return;
   const p = pendingHumanPlayer;
+  captureArcadeDecision(p,action,amount);
   pendingHumanPlayer = null;
   coachToken++;                 // cancel any in-flight coach calculation
   clearHumanReadouts();
@@ -7540,7 +8216,10 @@ function initSeats(){
       // action slot remains only as an inert compatibility stub in markup.
       e.actionSlot = null;
       const nameEl = $('hud-name');
-      if (nameEl) nameEl.textContent = (p.name||'').split(' ')[0];
+      if (nameEl){
+        const first=(p.name||'').split(' ')[0];
+        nameEl.textContent=(game.mode==='elimination'&&/^you$/i.test(first))?'TABLE '+game.run.tableNumber:first;
+      }
       if (e.hearts) e.hearts.dataset.n = '';
       buildJackpot();
       // Fresh table/rebuy: no natural transfer source for the starting
@@ -7925,6 +8604,7 @@ function payoutTo(winner, n){
 
 function render(){
   if (DEV_MODE) refreshDevPanel();
+  updateArcadeHUD();
   if (!game || game.phase==='setup') return;
   const g = game;
 
@@ -8762,6 +9442,7 @@ function startGame(){
   $('home').classList.add('hidden');
   $('setup').classList.add('hidden');
   $('rankings').classList.add('hidden');
+  $('awards').classList.add('hidden');
   $('table-screen').classList.remove('hidden');
   initSeats();
   if (!settings.seenIntro){
@@ -8867,9 +9548,11 @@ function startSinglePlayerRun(options){
   newGame({ mode:'elimination', difficulty:settings.difficulty });
   game.run = makeEliminationRun();
   applyRunTheme();
+  updateArcadeHUD();
   if (!keepMenuVisible) $('home').classList.add('hidden');
   $('setup').classList.add('hidden');
   $('rankings').classList.add('hidden');
+  $('awards').classList.add('hidden');
   $('table-screen').classList.remove('hidden');
   $('btn-new-table').classList.add('hidden');
   initSeats();
@@ -8890,6 +9573,7 @@ function continueTable(){
   $('home').classList.add('hidden');
   $('setup').classList.add('hidden');
   $('rankings').classList.add('hidden');
+  $('awards').classList.add('hidden');
   $('table-screen').classList.remove('hidden');
   initSeats();
   startNewHand();
@@ -8905,6 +9589,7 @@ function leaveTable(){
   }
   pendingHumanPlayer = null;
   coachToken++;
+  setArcadeMode(false);
   $('table-screen').classList.add('hidden');
   $('home').classList.remove('hidden');
   reconstructMainMenu();
@@ -9079,6 +9764,54 @@ function initDevPanel(){
         '<button id="dev-clear-table" type="button">CLEAR TABLE</button>' +
         '<button id="dev-end-table" type="button">END TABLE</button>' +
       '</div>' +
+      '<div id="dev-arcade-controls">' +
+        '<div class="dev-section-title">ARCADE TEST</div>' +
+        '<div class="dev-subtitle">INDIVIDUAL AWARDS</div>' +
+        '<button data-arcade-award="goodFold" type="button">GOOD FOLD</button>' +
+        '<button data-arcade-award="smartCall" type="button">SMART CALL</button>' +
+        '<button data-arcade-award="strongBet" type="button">STRONG BET</button>' +
+        '<button data-arcade-award="bigBluff" type="button">BIG BLUFF</button>' +
+        '<button data-arcade-award="bluffCaught" type="button">BLUFF CAUGHT</button>' +
+        '<button data-arcade-award="bigPot" type="button">BIG POT</button>' +
+        '<button data-arcade-award="monsterPot" type="button">MONSTER POT</button>' +
+        '<button data-arcade-award="doubleUp" type="button">DOUBLE UP</button>' +
+        '<button data-arcade-award="ko" type="button">K.O. REWARD</button>' +
+        '<button data-arcade-award="tableClear" type="button">TABLE CLEAR</button>' +
+        '<div class="dev-subtitle">LUCK LABELS</div>' +
+        '<button data-arcade-luck="lucky" type="button">LUCKY</button>' +
+        '<button data-arcade-luck="jammy" type="button">JAMMY</button>' +
+        '<button data-arcade-luck="filthy" type="button">FILTHY</button>' +
+        '<button data-arcade-luck="miracle" type="button">MIRACLE</button>' +
+        '<button data-arcade-luck="unlucky" type="button">UNLUCKY</button>' +
+        '<button data-arcade-luck="rough" type="button">ROUGH</button>' +
+        '<button data-arcade-luck="brutal" type="button">BRUTAL</button>' +
+        '<button data-arcade-luck="sickener" type="button">SICKENER</button>' +
+        '<button data-arcade-luck="oneOutered" type="button">ONE-OUTERED!</button>' +
+        '<button data-arcade-luck="runnerRunner" type="button">RUNNER-RUNNER</button>' +
+        '<div class="dev-subtitle">STACKED SCENARIOS</div>' +
+        '<button data-arcade-scenario="goodPlay" type="button">GOOD PLAY</button>' +
+        '<button data-arcade-scenario="bluffCatch" type="button">BLUFF CATCH</button>' +
+        '<button data-arcade-scenario="jammyDouble" type="button">JAMMY DOUBLE-UP</button>' +
+        '<button data-arcade-scenario="brutalLoss" type="button">BRUTAL LOSS</button>' +
+        '<button data-arcade-scenario="bigKo" type="button">BIG K.O.</button>' +
+        '<button data-arcade-scenario="tableClear" type="button">TABLE CLEAR STACK</button>' +
+        '<div class="dev-subtitle">MULTIPLIER</div>' +
+        '<button id="dev-combo-up" type="button">MULTI +1 STEP</button>' +
+        '<button id="dev-combo-down" type="button">MULTI -1 STEP</button>' +
+        '<button data-arcade-mult="1" type="button">SET x1.0</button>' +
+        '<button data-arcade-mult="2" type="button">SET x2.0</button>' +
+        '<button data-arcade-mult="4" type="button">SET x4.0</button>' +
+        '<button data-arcade-mult="8" type="button">SET x8.0</button>' +
+        '<button data-arcade-mult="10" type="button">SET x10.0</button>' +
+        '<button id="dev-test-jackpot" type="button">TEST +25,000 JACKPOT</button>' +
+        '<div class="dev-subtitle">COUNTER</div>' +
+        '<button data-arcade-score="100" type="button">+100 SCORE</button>' +
+        '<button data-arcade-score="1000" type="button">+1,000 SCORE</button>' +
+        '<button data-arcade-score="10000" type="button">+10,000 SCORE</button>' +
+        '<button id="dev-reset-score" type="button">RESET SCORE</button>' +
+        '<div class="dev-subtitle">STATE</div>' +
+        '<button id="dev-reset-arcade" type="button">RESET ARCADE</button>' +
+      '</div>' +
       '<div id="dev-status"></div>' +
     '</div>';
   document.body.appendChild(panel);
@@ -9089,6 +9822,16 @@ function initDevPanel(){
   $('dev-bust-me').onclick = devBustMe;
   $('dev-clear-table').onclick = devClearTable;
   $('dev-end-table').onclick = devEndTable;
+  panel.querySelectorAll('[data-arcade-award]').forEach(b=>b.onclick=()=>devArcadeAward(b.dataset.arcadeAward));
+  panel.querySelectorAll('[data-arcade-luck]').forEach(b=>b.onclick=()=>devArcadeLuck(b.dataset.arcadeLuck));
+  panel.querySelectorAll('[data-arcade-scenario]').forEach(b=>b.onclick=()=>devArcadeScenario(b.dataset.arcadeScenario));
+  panel.querySelectorAll('[data-arcade-mult]').forEach(b=>b.onclick=()=>devArcadeSetMultiplier(b.dataset.arcadeMult));
+  panel.querySelectorAll('[data-arcade-score]').forEach(b=>b.onclick=()=>devArcadeAddScore(b.dataset.arcadeScore));
+  $('dev-combo-up').onclick=()=>devArcadeCombo(1);
+  $('dev-combo-down').onclick=()=>devArcadeCombo(-1);
+  $('dev-test-jackpot').onclick=devArcadeJackpot;
+  $('dev-reset-score').onclick=devArcadeResetScore;
+  $('dev-reset-arcade').onclick=devArcadeReset;
   $('dev-fast-dev').onchange = e=>{ FAST_DEV = e.target.checked; refreshDevPanel(); };
   $('dev-collapse').onclick = ()=>{
     panel.classList.toggle('collapsed');
@@ -9105,6 +9848,7 @@ function refreshDevPanel(){
   const inElim = !!game && game.mode==='elimination';
   $('dev-new-elim').classList.toggle('hidden', inElim && !game.over);
   $('dev-controls').classList.toggle('hidden', !inElim || game.over);
+  $('dev-arcade-controls').classList.toggle('hidden', !inElim);
   const hip = handInProgress(), bh = betweenHands();
   $('dev-win-hand').disabled = !(inElim && hip);
   $('dev-ko-next').disabled = !(inElim && hip);
@@ -9113,7 +9857,8 @@ function refreshDevPanel(){
   $('dev-end-table').disabled = !(inElim && game.run && !game.over && !game._transitioning);
   const status = $('dev-status');
   if (status) status.textContent = (FAST_DEV ? '[FAST] ' : '') + (game ? ('mode:' + game.mode +
-    (game.run ? '  table:'+game.run.tableNumber : '') + '  phase:' + game.phase + '  hand:' + game.handNumber) : 'no game');
+    (game.run ? '  table:'+game.run.tableNumber+(game.run.arcade?' score:'+game.run.arcade.score+' '+formatArcadeMultiplier(arcadeMultiplier(game.run.arcade.comboStep)):'') : '') +
+    '  phase:' + game.phase + '  hand:' + game.handNumber) : 'no game');
 }
 
 function mq(query){
@@ -9190,6 +9935,8 @@ function wireUI(){
   $('quick-play').onclick = ()=>withNewTableConfirm(startGame);
   $('open-rankings').onclick = ()=>{ buildRankings(); $('home').classList.add('hidden'); $('rankings').classList.remove('hidden'); };
   $('rankings-back').onclick = ()=>{ $('rankings').classList.add('hidden'); $('home').classList.remove('hidden'); reconstructMainMenu(); };
+  $('open-awards').onclick = ()=>{ buildAwardsGlossary(); $('home').classList.add('hidden'); $('awards').classList.remove('hidden'); };
+  $('awards-back').onclick = ()=>{ $('awards').classList.add('hidden'); $('home').classList.remove('hidden'); reconstructMainMenu(); };
   $('home-settings').onclick = ()=>openOverlay('settings');
   $('go-to-setup').onclick = ()=>withNewTableConfirm(()=>{ $('home').classList.add('hidden'); $('setup').classList.remove('hidden'); });
   $('setup-back').onclick = ()=>{ $('setup').classList.add('hidden'); $('home').classList.remove('hidden'); reconstructMainMenu(); };
