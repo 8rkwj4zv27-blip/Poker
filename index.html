@@ -151,6 +151,13 @@ html,body{
    the rule above. inset:0 stays as the primary/fallback sizing; height
    only takes over where 100dvh is understood. */
 #app{ position:fixed; inset:0; height:100dvh; }
+/* Installed iOS apps still report dvh without the full safe-area height when
+   viewport-fit=cover is active. In standalone mode WebKit's legacy vh unit
+   includes those insets, so use it for the root sizing chain and keep the
+   background edge-to-edge; individual controls already consume env(safe-area-*). */
+@media (display-mode:standalone){
+  html,body,#app{ height:100vh; }
+}
 .screen{ position:absolute; inset:0; display:flex; flex-direction:column; }
 button{ font-family:inherit; }
 :focus{ outline:none; }
