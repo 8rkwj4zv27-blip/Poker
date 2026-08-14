@@ -407,18 +407,6 @@ button{ font-family:inherit; }
 }
 .icon-btn:active{ transform:translateY(2px); box-shadow:0 1px 0 var(--px-ink); }
 
-/* quick coach toggle lives on the table itself — no menu dive */
-.coach-quick{
-  white-space:nowrap; min-height:var(--tap); padding:0 12px; border-radius:var(--radius); border:2px solid var(--px-ink);
-  background:var(--panel); color:var(--ink-faint); cursor:pointer;
-  font-family:var(--font-hdr); font-size:9px; font-weight:400; letter-spacing:.06em; text-transform:uppercase;
-  box-shadow:0 3px 0 var(--px-ink); display:flex; align-items:center; gap:6px;
-}
-.coach-quick::before{ content:'◆'; font-size:9px; color:var(--ink-faint); }
-.coach-quick[aria-pressed="true"]{ background:var(--accent); color:var(--accent-ink); }
-.coach-quick[aria-pressed="true"]::before{ color:var(--accent-ink); }
-.coach-quick:active{ transform:translateY(2px); box-shadow:0 1px 0 var(--px-ink); }
-
 .felt-wrap{ position:relative; flex:1; min-height:0; padding:0 10px; display:flex; align-items:stretch; justify-content:center; }
 .felt{
   position:relative; width:100%; max-width:560px; height:100%;
@@ -1043,19 +1031,7 @@ button{ font-family:inherit; }
 }
 #your-seat-dock{
   flex-shrink:0; display:flex; justify-content:center; padding:2px 8px 6px; position:relative; z-index:8;
-  transition:transform var(--dur) steps(5,end);
 }
-/* Raise mode: the dashboard + betting tray act as one foreground assembly
-   sitting over the stable table. This lifts the dashboard by a transform
-   only (never a layout/height change), so .table-main's flex chain and
-   therefore the felt are completely unaffected — see openRaisePanel(),
-   which measures #raise-panel's real rendered height and writes it into
-   --raise-lift right before this class is added, so the lift always
-   clears the tray by construction regardless of tray content/viewport.
-   #action-area (z-index:30) already paints above #your-seat-dock
-   (z-index:8) in all states, so the tray sliding out from underneath
-   reads correctly as being "in front of" the lifted board. */
-#your-seat-dock.raise-open{ transform:translateY(calc(-1 * var(--raise-lift, 0px))); }
 .seat.you .card{ width:54px; height:76px; border-radius:4px; }
 .seat.you .card .r{ font-size:19px; }
 .seat.you .card .s{ font-size:13px; }
@@ -1166,9 +1142,9 @@ button{ font-family:inherit; }
    flip only works there because both its faces are near-equal height; the
    result face here is meaningfully taller and content-length-dependent,
    so its real height is measured in JS (showHudResultConsole/
-   hideHudResultConsole, mirroring openRaisePanel()'s own --raise-lift
-   technique) and written to --status-h, which this transition animates
-   to. #hud-status-normal stays plain in-flow (position:static) at all
+   hideHudResultConsole) and written to --status-h for the internal face
+   transition. The containing dashboard region remains fixed.
+   #hud-status-normal stays plain in-flow (position:static) at all
    times except the brief .showing-result window, so ordinary betting-round
    HUD sizing is completely unaffected the rest of the time. */
 #hud-status{ position:relative; width:100%; }
@@ -1223,12 +1199,6 @@ button{ font-family:inherit; }
   border:2px solid var(--px-ink); border-radius:2px;
   background:rgba(0,0,0,.36);
   box-shadow:inset 0 3px 0 rgba(0,0,0,.45), inset 0 -1px 0 rgba(255,255,255,.07);
-}
-.hud-nameplate{
-  width:100%; text-align:center; font-size:12px; font-weight:800; color:var(--ink);
-  background:rgba(0,0,0,.45); border:2px solid var(--px-ink); border-radius:2px;
-  padding:2px 3px; text-shadow:1px 1px 0 var(--px-ink);
-  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
 }
 /* The human's own fixed action-display slot — same act-* state classes
    and role as the opponents' .action-slot (see render()), sized up
@@ -1520,16 +1490,8 @@ button{ font-family:inherit; }
    felt-stabilization notes on .table-main/.felt-wrap). */
 .actions-dock{ position:relative; }
 /* A physical compartment that opens from directly beneath the player's
-   dashboard — a betting drawer sliding out, not a panel dropping down
-   over it. openRaisePanel()/closeRaisePanel() (see the JS) drive this in
-   lockstep with #your-seat-dock.raise-open, which lifts the dashboard by
-   this panel's own measured height at the same moment. Completely out of
-   flow (position:absolute, anchored to .actions-dock's own box via
-   bottom:100%), so it can never affect #action-area's layout height —
-   and #action-area's z-index:30 already paints above #your-seat-dock's
-   z-index:8, so the tray reads as sliding out in front of the lifted
-   board. A short stepped reveal (no overshoot) so it reads as one crisp
-   mechanical motion together with the dashboard lift, not a bounce. */
+   dashboard. It is absolutely anchored above the fixed action console,
+   so opening it never changes the action area, dashboard or felt geometry. */
 .raise-panel{
   position:absolute; left:0; right:0; bottom:100%; margin-bottom:8px;
   background:var(--panel); border:2px solid var(--px-ink); border-radius:var(--radius);
@@ -1899,12 +1861,6 @@ body #home #home-settings{ background:var(--theme-case-raised); color:var(--ink)
   justify-content:flex-start; gap:5px; padding:6px 5px;
   background:repeating-conic-gradient(rgba(255,255,255,.024) 0 25%,transparent 0 50%) 0 0/6px 6px,var(--machine-case);
 }
-.hud-nameplate{
-  font-family:var(--font-hdr); font-size:8px; padding:4px 2px 3px; color:var(--ink);
-  background:var(--machine-glass); border-color:var(--px-ink);
-  box-shadow:inset 0 3px 0 rgba(0,0,0,.5),inset 0 -1px 0 rgba(255,255,255,.06);
-  text-shadow:0 0 6px color-mix(in srgb,var(--ink-dim) 46%,transparent);
-}
 #hud-right .hearts{ min-height:15px; }
 .blind-lamps{ display:flex; justify-content:center; gap:8px; width:100%; padding:3px 1px; }
 .blind-indicator{ display:flex; align-items:center; gap:3px; color:var(--ink-faint); font-family:var(--font-hdr); font-size:6px; }
@@ -2037,7 +1993,6 @@ body #home #home-settings{ background:var(--theme-case-raised); color:var(--ink)
   .stack-readout{ gap:1px; }
   #jackpot .jp-cell{ height:21px; min-width:18px; }
   #hud-right{ gap:3px; padding-top:4px; padding-bottom:4px; }
-  .hud-nameplate{ padding-top:3px; padding-bottom:2px; }
   #hud-right .hearts{ min-height:12px; }
   .blind-lamps{ padding:1px; }
   .bet-this-hand{ min-height:50px; gap:3px; padding-top:3px; padding-bottom:3px; }
@@ -2470,7 +2425,15 @@ body #home #home-settings{ background:var(--theme-case-raised); color:var(--ink)
   box-shadow:0 4px 0 #72623C,0 6px 0 #090605,inset 2px 2px 0 #F9E8B4,inset -2px -2px 0 #8B7A4C;
 }
 #home .pc-button-secondary:active{ transform:translateY(4px); box-shadow:0 1px 0 #72623C,0 3px 0 #090605,inset 2px 2px 0 #F9E8B4; }
-#home #continue-table{ min-height:44px; margin:0 0 7px; padding:10px; background:#77B690; color:#102619; font-size:9px; box-shadow:0 4px 0 #315E41,0 6px 0 #090605,inset 2px 2px 0 #BFE4CA; }
+#home #continue-table{ margin-bottom:10px; }
+.table-tools{ display:flex; align-items:center; gap:6px; }
+.table-save{
+  width:58px; height:30px; min-height:30px; padding:0 7px;
+  border:2px solid var(--px-ink); border-radius:2px; background:var(--panel); color:var(--accent-bright);
+  box-shadow:0 2px 0 var(--px-ink),inset 1px 1px 0 rgba(255,255,255,.08);
+  font-family:var(--font-hdr); font-size:6px; letter-spacing:.04em; text-transform:uppercase;
+}
+.table-save:active{ transform:translateY(1px); box-shadow:0 1px 0 var(--px-ink); }
 #home .home-row{ display:grid; grid-template-columns:1fr 1fr; gap:7px; }
 #home .home-row .btn-secondary{
   min-height:47px; margin:0; padding:8px 5px; border:2px solid #090806; border-radius:2px;
@@ -2750,7 +2713,204 @@ body #home #home-settings{ background:var(--theme-case-raised); color:var(--ink)
   .arcade-score-digits>span{ font-size:12px; }
   #table-screen.arcade-active .felt .seat:not(.you){ margin-top:-10px; }
 }
+
+/* ============================================================
+   GAMEPLAY GEOMETRY REFINEMENT — stable machine regions
+
+   Portrait HUD/action heights are viewport-derived once, never content-
+   derived. Turn copy, result consoles, review, next-hand and raise states
+   now change inside or over those regions instead of reallocating the felt.
+   ============================================================ */
+#table-screen{
+  --hud-dock-h:clamp(165px,20.62vh,174px);
+  --action-area-h:clamp(92px,12.33vh,104px);
+}
+.topbar{
+  height:42px; min-height:42px; box-sizing:border-box;
+  padding:max(4px,env(safe-area-inset-top)) 8px 2px;
+}
+.topbar .meta{ margin-top:2px; }
+.table-settings{
+  width:30px; height:30px; min-width:30px; min-height:30px;
+  font-size:14px; border-width:2px; box-shadow:0 2px 0 var(--px-ink);
+  opacity:.82;
+}
+.table-settings:active{ transform:translateY(1px); box-shadow:0 1px 0 var(--px-ink); }
+
+/* Scale each opponent as one manufactured object. Independent scale/
+   translate properties preserve existing winner/entry transform animations. */
+.felt .seat:not(.you){ scale:.91; translate:0 6px; transform-origin:50% 0; }
+
+#your-seat-dock{
+  flex:0 0 var(--hud-dock-h); height:var(--hud-dock-h); min-height:0;
+  box-sizing:border-box; padding:2px 8px 4px;
+}
+#hud-frame{
+  height:100%; min-height:0; box-sizing:border-box; padding:7px 7px 6px;
+  grid-template-columns:90px minmax(0,1fr) 90px;
+}
+#hud-left,#hud-mid,#hud-right{ min-height:0; }
+#hud-mid{ height:100%; gap:3px; }
+#hud-status{ flex:1 1 auto; min-height:0; }
+#hud-status.animating-height{ height:100%; transition:none; }
+#hud-status-normal{ gap:3px; }
+#hud-mid .hand-strength{ min-height:25px; padding:4px 4px 3px; }
+#hud-mid .banner{ min-height:34px; padding:4px 4px 3px; gap:3px; }
+.stack-readout{ gap:1px; }
+#jackpot{ gap:2px; padding:3px 4px; }
+#jackpot .jp-cell{ min-width:17px; height:23px; font-size:11px; }
+#jackpot .jp-sym{ min-width:14px; }
+.seat.you{ padding-bottom:10px; }
+
+/* One quiet supporting instrument: the bay is the housing, while blind
+   lamps and committed amount are readings within it, not extra boxes. */
+#hud-right{ justify-content:center; gap:5px; padding:5px 4px; }
+#hud-right .hearts{ min-height:15px; }
+.blind-lamps{ min-height:18px; padding:2px 1px 4px; border-bottom:1px solid rgba(255,255,255,.08); }
+#hud-right .bet-this-hand{
+  min-height:44px; flex:0 0 auto; gap:4px; padding:4px 1px 2px;
+  background:transparent; border:0; border-radius:0; box-shadow:none; animation:none;
+}
+#hud-right .bet-this-hand::before,#hud-right .bet-this-hand::after{ display:none; }
+
+/* Keep the action bay a fixed-height sibling of the table. Optional coach,
+   review and next-hand content is overlaid, never inserted into flex flow. */
+@media (orientation:portrait){
+  #action-area{
+    flex:0 0 var(--action-area-h); height:var(--action-area-h); min-height:0;
+    box-sizing:border-box; padding:0; overflow:visible;
+  }
+  #action-area>.actions-dock{
+    position:absolute; z-index:2; top:0; left:8px; right:8px;
+    bottom:max(8px,calc(env(safe-area-inset-bottom) - 10px));
+    width:auto; max-width:430px; height:auto; margin:0 auto;
+  }
+  .action-console{ height:100%; box-sizing:border-box; padding:5px 6px 8px; }
+  .console-flip{
+    height:100%; box-sizing:border-box; padding:4px 5px 6px;
+    background:transparent; border:0; box-shadow:none;
+  }
+  .console-face-actions,.actions-row{ height:100%; }
+  .actions-row{ align-items:center; padding-top:0; }
+  .btn-fold,.btn-check,.btn-call,.btn-raise,.btn-award-console{
+    height:54px; min-height:54px; padding:10px 4px;
+  }
+  .console-face-award .btn-award-console{ width:100%; height:100%; }
+  #coach,#review{
+    position:absolute; z-index:35; left:14px; right:14px;
+    bottom:calc(100% + 8px); max-height:min(42vh,330px); overflow:auto;
+  }
+  #btn-next-hand{
+    position:absolute; z-index:41; left:16px; right:16px; bottom:max(15px,env(safe-area-inset-bottom));
+    width:auto; max-width:402px; height:54px; min-height:54px; margin:0 auto;
+  }
+}
+@media (orientation:landscape){
+  #table-screen{ --hud-dock-h:154px; }
+  #table-screen.arcade-active .topbar{ height:42px; min-height:42px; padding-top:3px; }
+  #your-seat-dock{ flex-basis:var(--hud-dock-h); height:var(--hud-dock-h); }
+  .actions-row button{ min-height:46px; height:46px; padding-top:8px; padding-bottom:8px; }
+}
+@media (orientation:portrait) and (max-height:700px){
+  .btn-fold,.btn-check,.btn-call,.btn-raise,.btn-award-console{
+    height:50px; min-height:50px; padding-top:8px; padding-bottom:8px;
+  }
+}
+@media (max-width:389px){
+  .felt .seat:not(.you){ translate:0 8px; }
+  #hud-frame{ grid-template-columns:80px minmax(0,1fr) 80px; }
+  #jackpot{ gap:1px; padding-left:2px; padding-right:2px; }
+  #jackpot .jp-cell{ min-width:13px; width:13px; font-size:10px; }
+  #jackpot .jp-sym{ min-width:13px; width:13px; }
+}
 [data-motion="off"] .new-high-score{ animation:none!important; }
+
+/* Focused dashboard tidy-up: preserve the fixed three-bay silhouette while
+   tightening its housing and clarifying the centre/right instruments. */
+#your-seat-dock{ padding-top:4px; padding-bottom:2px; }
+#hud-frame{ padding:5px 6px; gap:6px; }
+#hud-mid{ justify-content:flex-start; gap:5px; }
+.seat.you{ padding-bottom:7px; }
+.seat.you .seat-cards{ margin-top:-58px; }
+.seat.you::before{ top:14px; }
+.seat.you::after{ top:22px; }
+#hud-status-normal{ gap:6px; }
+#hud-mid .hand-strength{ min-height:24px; margin-top:2px; padding:4px 3px 3px; }
+#hud-mid .banner{ min-height:35px; padding:5px 3px 4px; }
+.stack-readout{ width:100%; gap:2px; margin-top:2px; }
+.stack-readout .instrument-label{ font-size:6px; }
+#jackpot{ width:100%; justify-content:center; gap:2px; padding:3px 2px; }
+#jackpot .jp-cell{ min-width:18px; width:18px; height:27px; font-size:13px; }
+#jackpot .jp-sym{ min-width:13px; width:13px; }
+#hud-right{ justify-content:flex-start; gap:4px; padding:5px 5px 4px; }
+.blind-lamps{ gap:7px; min-height:31px; padding:2px 1px 4px; }
+.blind-indicator{
+  position:relative; overflow:hidden;
+  width:31px; height:27px; display:flex; align-items:center; justify-content:center;
+  color:rgba(149,177,191,.32); border:2px solid var(--px-ink); border-radius:3px;
+  background:linear-gradient(145deg,rgba(126,157,170,.16),rgba(12,25,33,.76));
+  box-shadow:inset 3px 3px 0 rgba(255,255,255,.06),inset -3px -3px 0 rgba(0,0,0,.42),0 2px 0 var(--machine-case-lo);
+  font-size:7px; letter-spacing:.04em; text-shadow:0 1px 0 #000;
+}
+.blind-indicator::before{ content:''; position:absolute; inset:2px 3px auto; height:5px; background:rgba(255,255,255,.045); border-radius:1px; pointer-events:none; }
+.blind-indicator.is-on{
+  color:#dcefff; background:linear-gradient(145deg,#77a9c5,#315f7c 72%);
+  box-shadow:inset 3px 3px 0 rgba(255,255,255,.3),inset -3px -3px 0 rgba(0,0,0,.28),0 2px 0 var(--machine-case-lo),0 0 6px rgba(91,163,207,.24);
+  text-shadow:0 0 5px rgba(216,242,255,.72),0 1px 0 #173143;
+}
+.blind-indicator.is-on::before{ background:rgba(255,255,255,.18); }
+#hud-right .bet-this-hand{ width:100%; min-height:47px; padding:3px 3px 4px; gap:3px; background:transparent; border:0; box-shadow:none; }
+#hud-invested{
+  width:100%; min-height:29px; display:flex; align-items:center; justify-content:center;
+  color:#bde9ff; background:linear-gradient(180deg,#071116,#0b1b24 72%,#102630);
+  border:2px solid var(--px-ink); border-radius:2px;
+  box-shadow:inset 0 5px 0 rgba(0,0,0,.58),inset 2px 0 0 rgba(0,0,0,.3),inset 0 -1px 0 rgba(255,255,255,.08);
+  font-family:var(--font-hdr); font-size:13px; letter-spacing:.07em; text-shadow:0 0 7px rgba(105,196,239,.62),2px 2px 0 #000;
+}
+.hud-speaker{
+  width:32px; height:32px; box-sizing:border-box; margin:0 auto; padding:5px; display:grid;
+  grid-template-columns:repeat(5,3px); grid-template-rows:repeat(4,3px); justify-content:space-between; align-content:space-between;
+  background:linear-gradient(180deg,rgba(0,0,0,.2),rgba(0,0,0,.32));
+  border:1px solid rgba(0,0,0,.6); border-radius:2px;
+  box-shadow:inset 0 2px 0 rgba(0,0,0,.38),inset 1px 0 0 rgba(0,0,0,.16),0 1px 0 rgba(255,255,255,.05);
+}
+.hud-speaker i{ display:block; width:3px; height:3px; border-radius:50%; background:#080b0b; box-shadow:inset 1px 1px 0 #000,0 1px 0 rgba(255,255,255,.07); }
+.action-console{ padding:4px; }
+.console-flip{ padding:0; }
+#hud-mid .crt-screen,#hud-invested{
+  background:linear-gradient(rgba(126,190,205,.09),transparent 48%),color-mix(in srgb,var(--machine-glass) 82%,#3c5660 18%);
+  box-shadow:inset 0 4px 0 rgba(0,0,0,.48),inset 2px 0 0 rgba(0,0,0,.2),inset 0 -1px 0 rgba(255,255,255,.1),0 0 5px rgba(108,178,201,.16),0 1px 0 color-mix(in srgb,var(--machine-case-hi) 38%,transparent);
+}
+#hud-right{ justify-content:space-evenly; gap:0; }
+#hud-right .bet-this-hand{ padding-top:0; padding-bottom:0; }
+@media (orientation:portrait){
+  #table-screen{ --action-area-h:clamp(78px,9.7vh,84px); }
+}
+.arcade-score-machine{ grid-template-columns:58px minmax(0,1fr); }
+.arcade-score-label{ align-items:center; }
+.arcade-score-label strong{ font-size:8px; }
+.arcade-score-digits>span.digit-unused{ color:rgba(232,225,202,.18); filter:brightness(.58); text-shadow:none; background:linear-gradient(180deg,#050706,#0a0d0a 72%,#10130f); }
+@media (max-width:389px){
+  .arcade-score-machine{ grid-template-columns:48px minmax(0,1fr); }
+  #hud-frame{ gap:5px; }
+  #jackpot .jp-cell{ min-width:14px; width:14px; font-size:11px; }
+  #jackpot .jp-sym{ min-width:11px; width:11px; }
+  .blind-indicator{ width:27px; }
+}
+@media (orientation:portrait) and (max-height:700px){
+  #hud-mid{ gap:3px; }
+  #hud-status-normal{ gap:4px; }
+  #hud-mid .hand-strength{ margin-top:1px; }
+  .stack-readout{ margin-top:1px; }
+  .seat.you .seat-cards{ margin-top:-47px; }
+  .seat.you::before{ top:7px; }
+  .seat.you::after{ top:12px; }
+  #jackpot .jp-cell{ height:23px; }
+  .blind-lamps{ min-height:27px; }
+  .blind-indicator{ height:23px; }
+  #hud-invested{ min-height:25px; font-size:11px; }
+  .hud-speaker{ display:none; }
+}
 
 /* ---- DEV MODE panel (see initDevPanel()) — never present unless
    DEV_MODE is true; deliberately plain/utilitarian rather than styled to
@@ -2843,7 +3003,11 @@ button, [role="button"], input[type="button"], input[type="submit"] {
           <span class="pc-seam"></span>
           <span class="pc-lamp is-amber"></span>
         </div>
-        <button class="pc-button hidden" id="continue-table">Continue Table</button>
+        <button class="pc-button pc-button-primary hidden" id="continue-table">
+          <span class="pc-lamp is-green"></span>
+          <span>Continue<small>Resume saved game</small></span>
+          <span class="pc-lamp is-green"></span>
+        </button>
         <div class="pc-primary-cradle">
           <span class="pc-slot-aperture" aria-hidden="true"><span class="pc-slot-door"></span></span>
           <button class="pc-button pc-button-primary" id="single-player">
@@ -2944,18 +3108,16 @@ button, [role="button"], input[type="button"], input[type="submit"] {
           <div class="brandmini">POKER</div>
           <div class="meta" id="table-meta">Hand 1</div>
         </div>
-        <div style="display:flex; gap:8px;">
-          <button class="coach-quick" id="coach-quick" aria-pressed="false" aria-label="Toggle coach">Coach</button>
-          <button class="icon-btn" id="open-log" aria-label="Hand log">☰</button>
-          <button class="icon-btn" id="open-settings" aria-label="Settings">⚙</button>
+        <div class="table-tools">
+          <button class="table-save" id="save-progress" type="button">Save</button>
+          <button class="icon-btn table-settings" id="open-settings" aria-label="Settings">⚙</button>
         </div>
       </div>
-      <div class="arcade-score-machine hidden" id="arcade-score-machine" aria-label="Run score 0, multiplier times 1">
-        <div class="arcade-score-label"><span>RUN</span><strong>SCORE</strong></div>
+      <div class="arcade-score-machine hidden" id="arcade-score-machine" aria-label="Score 0">
+        <div class="arcade-score-label"><strong>SCORE</strong></div>
         <div class="arcade-score-digits" id="arcade-score-value" aria-hidden="true">
           <span>0</span><span>0</span><span>0</span><span>0</span><span>0</span><span>0</span><span>0</span>
         </div>
-        <div class="arcade-mult-unit"><small>MULTI</small><strong id="arcade-mult-value">x1.0</strong></div>
       </div>
 
       <div class="felt-wrap">
@@ -2995,17 +3157,20 @@ button, [role="button"], input[type="button"], input[type="submit"] {
             </div>
           </div>
           <div id="hud-right">
-            <div class="hud-nameplate" id="hud-name"></div>
             <div class="hearts hidden" id="hud-hearts" aria-hidden="true"></div>
             <div class="blind-lamps" aria-label="Blind position">
-              <div class="blind-indicator" id="hud-sb-indicator"><i aria-hidden="true"></i><span>SB</span></div>
-              <div class="blind-indicator" id="hud-bb-indicator"><i aria-hidden="true"></i><span>BB</span></div>
+              <div class="blind-indicator" id="hud-sb-indicator"><span>SB</span></div>
+              <div class="blind-indicator" id="hud-bb-indicator"><span>BB</span></div>
             </div>
-            <div class="bet-this-hand crt-screen" aria-live="polite">
+            <div class="bet-this-hand" aria-live="polite">
               <span class="instrument-label">Bet this hand</span>
-              <div class="mini-jackpot" id="hud-invested" role="img" aria-label="Bet this hand: 0">
-                <span class="jp-cell jp-sym">$</span>
-              </div>
+              <div class="crt-screen" id="hud-invested" role="img" aria-label="Bet this hand: 0">$000</div>
+            </div>
+            <div class="hud-speaker" aria-hidden="true">
+              <i></i><i></i><i></i><i></i><i></i>
+              <i></i><i></i><i></i><i></i><i></i>
+              <i></i><i></i><i></i><i></i><i></i>
+              <i></i><i></i><i></i><i></i><i></i>
             </div>
             <div class="action-slot act-empty hidden" id="hud-action">–</div>
             <div class="pos-btn hidden" id="hud-pos"></div>
@@ -4724,8 +4889,11 @@ function renderArcadeDigits(el,text){
   const chars=[...text];
   el.style.setProperty('--score-digits',chars.length);
   if (el.children.length!==chars.length) el.innerHTML=chars.map(c=>'<span>'+c+'</span>').join('');
+  const firstLive=chars.findIndex(c=>c!=='0');
+  const liveStart=firstLive<0?chars.length-1:firstLive;
   chars.forEach((char,i)=>{
     const cell=el.children[i];
+    if (cell) cell.classList.toggle('digit-unused',i<liveStart);
     if (!cell||cell.dataset.digit===char) return;
     cell.dataset.digit=char; cell.textContent=char;
     if (!motionOff()){
@@ -4738,13 +4906,12 @@ function updateArcadeHUD(){
   const active=!!(game&&game.mode==='elimination'&&game.run&&game.run.arcade);
   setArcadeMode(active);
   if (!active) return;
-  const a=game.run.arcade, mult=arcadeMultiplier(a.comboStep);
+  const a=game.run.arcade;
   if ($('arcade-score-value')){
     const scoreText=formatArcadeScore(a.displayedScore==null?a.score:a.displayedScore), scoreEl=$('arcade-score-value');
     renderArcadeDigits(scoreEl,scoreText);
   }
-  if ($('arcade-mult-value')) $('arcade-mult-value').textContent=formatArcadeMultiplier(mult);
-  if ($('arcade-score-machine')) $('arcade-score-machine').setAttribute('aria-label','Run score '+a.score.toLocaleString()+', multiplier '+formatArcadeMultiplier(mult));
+  if ($('arcade-score-machine')) $('arcade-score-machine').setAttribute('aria-label','Score '+a.score.toLocaleString());
 }
 function noteArcadeDiscovery(id,count,bestScore){
   const n=Math.max(1,count||1);
@@ -5210,12 +5377,12 @@ function newGame(opts){
    cards, board, phase, or unfinished bets are ever persisted — a restored
    table always resumes at the pre-deal moment. */
 function serializeTable(g){
-  return {
+  const snapshot = {
     version: SAVE_VERSION,
     savedAt: Date.now(),
     namesMode: settings.opponentNames,
     mode:g.mode, difficulty:g.difficulty, startingStack:g.startingStack,
-    blindLevel:g.blindLevel, smallBlind:g.smallBlind, bigBlind:g.bigBlind,
+    blindLevel:Number.isFinite(g.blindLevel)?g.blindLevel:0, smallBlind:g.smallBlind, bigBlind:g.bigBlind,
     buyIns:g.buyIns, netStart:g.netStart, livesEnabled:g.livesEnabled,
     dealerIndex:g.dealerIndex, handNumber:g.handNumber,
     sess:{ bestWin:g.sess.bestWin, worstLoss:g.sess.worstLoss },
@@ -5226,6 +5393,8 @@ function serializeTable(g){
       moodState: p.moodState || null
     }))
   };
+  if (g.mode==='elimination' && g.run) snapshot.run=JSON.parse(JSON.stringify(g.run));
+  return snapshot;
 }
 
 function isValidTableSave(save){
@@ -5234,6 +5403,7 @@ function isValidTableSave(save){
   if (!Array.isArray(save.players) || save.players.length < 2) return false;
   if (!save.players.some(p=>p && p.isHuman)) return false;
   if (save.mode !== 'cash' && save.mode !== 'tournament' && save.mode !== 'elimination') return false;
+  if (save.mode==='elimination' && (!save.run || typeof save.run.tableNumber!=='number' || !save.run.arcade)) return false;
   if (!DIFFICULTY_PARAMS[save.difficulty]) return false;
   const numFields = ['startingStack','blindLevel','smallBlind','bigBlind','buyIns','netStart','dealerIndex','handNumber'];
   for (const f of numFields){ if (typeof save[f] !== 'number' || Number.isNaN(save[f])) return false; }
@@ -5249,9 +5419,16 @@ function isValidTableSave(save){
 
 function saveTable(){
   if (!game || game.over) return;
-  // Single-player runs are intentionally live-session-only in this pass.
-  if (game.mode==='elimination' && game.run && game.run.active) return;
-  Store.set('felt.table', serializeTable(game));
+  const snapshot=serializeTable(game);
+  game._safeSave=snapshot;
+  Store.set('felt.table', snapshot);
+  return true;
+}
+function saveProgress(){
+  if (!game || (game.over && !(game.run && game.run.active))) return false;
+  const snapshot=game._safeSave || serializeTable(game);
+  Store.set('felt.table', snapshot);
+  return true;
 }
 function loadTableSave(){
   const raw = Store.get('felt.table', null);
@@ -5289,6 +5466,7 @@ function restoreTable(save){
     livesEnabled:save.livesEnabled,
     sess:{ bestWin:(save.sess&&save.sess.bestWin)||0, worstLoss:(save.sess&&save.sess.worstLoss)||0 }
   };
+  if (save.mode==='elimination') game.run=JSON.parse(JSON.stringify(save.run));
 }
 
 function nextActiveIndex(fromIndex){
@@ -5375,6 +5553,9 @@ function updateHandInstrument(){
 /* ---------------- hand lifecycle ---------------- */
 async function startNewHand(){
   const g = game;
+  // A manual save during this hand resumes from this clean checkpoint,
+  // never from a half-settled pot or partially completed betting round.
+  g._safeSave=serializeTable(g);
   bannerOverride = null;
   g._humanCardsVisible = false;
   hideResultCard();
@@ -8059,7 +8240,9 @@ function updateSeatReels(el, value){
 function updateInvestedReel(value){
   const el=$('hud-invested');
   const amount=Math.max(0,Math.round(Number(value)||0));
-  updateFixedReel(el,amount,{label:'Bet this hand',mine:true,cascade:18,lock:true,digits:Math.max(4,String(amount).length),dynamic:true});
+  if (!el) return;
+  el.textContent='$'+String(amount).padStart(3,'0');
+  el.setAttribute('aria-label','Bet this hand: '+amount.toLocaleString());
 }
 
 function updateRaiseReel(value){
@@ -8215,11 +8398,6 @@ function initSeats(){
       // Human actions are narrated by the centre CRT; the old right-column
       // action slot remains only as an inert compatibility stub in markup.
       e.actionSlot = null;
-      const nameEl = $('hud-name');
-      if (nameEl){
-        const first=(p.name||'').split(' ')[0];
-        nameEl.textContent=(game.mode==='elimination'&&/^you$/i.test(first))?'TABLE '+game.run.tableNumber:first;
-      }
       if (e.hearts) e.hearts.dataset.n = '';
       buildJackpot();
       // Fresh table/rebuy: no natural transfer source for the starting
@@ -8717,27 +8895,18 @@ function render(){
   updateActionControls();
 }
 
-/* Opens the raise tray AND lifts the dashboard by the tray's own measured
-   height in the same call, so the two always move together and the lift
-   can never fall short of what's needed to clear the tray (see the
-   #your-seat-dock.raise-open and .raise-panel CSS comments). offsetHeight
-   is read here rather than cached because it reflects the panel's real
-   box regardless of the 'show' transform (transforms never affect
-   layout size), so this is safe to call before the reveal animation
-   runs. */
+/* The raise tray is an overlay belonging to the fixed action region. It
+   opens over the lower dashboard without changing or translating any of
+   the scoreboard/felt/dashboard/action boundaries. */
 function openRaisePanel(){
   const panel = $('raise-panel');
-  const dock = $('your-seat-dock');
   panel.classList.add('show');
-  dock.style.setProperty('--raise-lift', (panel.offsetHeight + 6) + 'px');
-  dock.classList.add('raise-open');
 }
 /* Safe to call even when the tray is already closed (finishHand/humanAct
    call it unconditionally as a reset). Performs no poker action and
    touches no game state — purely a UI close. */
 function closeRaisePanel(){
   $('raise-panel').classList.remove('show');
-  $('your-seat-dock').classList.remove('raise-open');
 }
 
 function syncSliderFill(){
@@ -8947,8 +9116,7 @@ function revealResultAmount(container, mine){
    transforms in place instead of a floating panel covering the felt.
    #hud-status-normal (banner/hand-strength/jackpot) and .hud-result
    cross-fade; #hud-status's own height is measured via offsetHeight and
-   written to --status-h (mirroring openRaisePanel()'s own --raise-lift
-   technique) since the two faces are not comparable heights, unlike the
+   written to --status-h since the two faces are not comparable heights, unlike the
    AWARD POT console-flip's near-equal-height faces. Width MUST be
    widened (frame.classList.add('result-mode')) before the result
    content's height is measured — reading resultEl.offsetHeight forces
@@ -9575,6 +9743,10 @@ function continueTable(){
   $('rankings').classList.add('hidden');
   $('awards').classList.add('hidden');
   $('table-screen').classList.remove('hidden');
+  if (game.mode==='elimination'){
+    applyRunTheme();
+    updateArcadeHUD();
+  }
   initSeats();
   startNewHand();
 }
@@ -10068,19 +10240,24 @@ function wireUI(){
   $('btn-new-table').onclick = leaveTable;
 
   // overlays
-  $('open-log').onclick = ()=>openOverlay('log');
   $('close-log').onclick = closeOverlays;
   $('open-settings').onclick = ()=>openOverlay('settings');
   $('close-settings').onclick = closeOverlays;
   $('scrim').onclick = closeOverlays;
   $('leave-table').onclick = leaveTable;
+  $('save-progress').onclick = ()=>{
+    if (saveProgress()){
+      Sound.buttonRelease('check');
+      haptic(18);
+      const button=$('save-progress');
+      button.textContent='Saved';
+      clearTimeout(button._savedT);
+      button._savedT=setTimeout(()=>{ button.textContent='Save'; },1200);
+    }
+  };
 
   // settings switches
   bindSwitch('sw-coach','coach', ()=>{ updateCoachQuick(); if (pendingHumanPlayer) updateCoach(); else hideCoach(); });
-  $('coach-quick').onclick = ()=>{
-    settings.coach = !settings.coach; saveSettings(); updateCoachQuick();
-    if (pendingHumanPlayer) updateCoach(); else hideCoach();
-  };
   updateCoachQuick();
   bindSwitch('sw-strength','strength', ()=>{ if (pendingHumanPlayer) updateCoach(); });
   bindSwitch('sw-review','review', ()=>{ if (!settings.review) hideReview(); });
