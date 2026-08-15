@@ -301,7 +301,6 @@ button{ font-family:inherit; }
   align-items:center;
 }
 .lobby-card{ width:100%; max-width:440px; margin:auto; }
-.app-build-tag{ width:100%; max-width:440px; margin:6px auto 0; text-align:center; font-family:var(--font-hdr); font-size:6px; letter-spacing:.06em; color:var(--ink-faint); opacity:.5; }
 .home-topbar{ display:flex; justify-content:flex-end; align-items:center; min-height:var(--tap); margin-bottom:2px; }
 .hero{ text-align:center; margin:6px 0 26px; }
 /* the illustrated cast, hanging out above the title and flicking moods */
@@ -2383,27 +2382,6 @@ body #home #home-settings{ background:var(--theme-case-raised); color:var(--ink)
   transform:translateY(5px);
   box-shadow:inset 3px 3px 0 var(--pc-button-hi);
 }
-.pc-continue-slot{
-  position:relative;
-  flex:0 0 78px;
-  height:78px;
-  margin-bottom:10px;
-}
-#home .pc-continue-slot #continue-table{
-  margin:0;
-  box-shadow:
-    0 6px 0 var(--pc-button-lo),
-    0 9px 0 var(--pc-edge-lo),
-    inset 3px 3px 0 var(--pc-button-hi),
-    inset -3px -3px 0 rgba(81,49,5,.3);
-}
-#home .pc-continue-slot #continue-table:active{
-  transform:translateY(5px);
-  box-shadow:
-    0 1px 0 var(--pc-button-lo),
-    0 4px 0 var(--pc-edge-lo),
-    inset 3px 3px 0 var(--pc-button-hi);
-}
 @keyframes pcLaunchClunk{
   0%{
     transform:translateY(0);
@@ -2487,11 +2465,10 @@ body #home #home-settings{ background:var(--theme-case-raised); color:var(--ink)
   #home .hero .brand{ font-size:29px; }
   #home .hero-faces .hf{ width:54px; height:54px; }
   #home .pc-button-primary{ font-size:12px; min-height:62px; padding-left:28px; padding-right:28px; }
-  .pc-continue-slot{ flex-basis:62px; height:62px; }
 }
 @media (max-height:820px){
   #home{ overflow-y:auto; align-items:flex-start; }
-  #home .lobby-card.pc-housing{ height:auto; min-height:790px; overflow:hidden; }
+  #home .lobby-card.pc-housing{ height:auto; overflow:visible; }
   #home .hero{ min-height:292px; flex-basis:292px; }
   .pc-cast-drawer{ flex-basis:94px; }
   #home .hero-faces .hf{ width:52px; height:52px; }
@@ -3014,7 +2991,7 @@ button, [role="button"], input[type="button"], input[type="submit"] {
   <div id="home" class="screen">
     <div class="lobby-card pc-housing pc-material-leather" id="menu-contraption">
       <div class="home-topbar">
-        <div class="pc-product-mark">Poker Faces <small>Electronic table game</small></div>
+        <div class="pc-product-mark"><span id="pc-version-mark"></span><small>Electronic table game</small></div>
         <div class="pc-ready-readout pc-display"><span class="pc-lamp is-green"></span>&nbsp; DEALER READY</div>
         <button class="icon-btn" id="home-settings" aria-label="Settings">⚙</button>
       </div>
@@ -3043,22 +3020,16 @@ button, [role="button"], input[type="button"], input[type="submit"] {
           <span class="pc-seam"></span>
           <span class="pc-lamp is-amber"></span>
         </div>
-        <div class="pc-continue-slot">
-          <button class="pc-button pc-button-primary hidden" id="continue-table">
-            <span class="pc-lamp is-green"></span>
-            <span>Continue<small>Resume saved game</small></span>
-            <span class="pc-lamp is-green"></span>
-          </button>
-        </div>
         <div class="pc-primary-cradle">
           <span class="pc-slot-aperture" aria-hidden="true"><span class="pc-slot-door"></span></span>
           <button class="pc-button pc-button-primary" id="single-player">
             <span class="pc-lamp is-amber"></span>
-            <span>Single Player<small>Start elimination run</small></span>
+            <span><span id="single-player-label">Single Player</span><small id="single-player-sub">Start elimination run</small></span>
             <span class="pc-lamp is-amber"></span>
           </button>
         </div>
         <button class="pc-button pc-button-secondary" id="go-to-setup">Classic Table Setup</button>
+        <button class="pc-button pc-button-secondary hidden" id="new-game-btn">New Game</button>
         <div class="home-row">
           <button class="btn-secondary" id="quick-play">Quick Deal</button>
           <button class="btn-secondary" id="open-rankings">Hand Rankings</button>
@@ -3066,7 +3037,6 @@ button, [role="button"], input[type="button"], input[type="submit"] {
         </div>
       </div>
     </div>
-    <div class="app-build-tag" id="app-build-tag"></div>
   </div>
 
   <!-- ============================ HAND RANKINGS ============================ -->
@@ -4031,8 +4001,8 @@ const DEFAULT_SETTINGS = {
 };
 const DEFAULT_STATS = { hands:0, won:0, showdownsWon:0, biggestPot:0, net:0 };
 const SAVE_VERSION = 1;
-/* Bump on every release so the main-menu footer shows what's actually installed. */
-const BUILD_VERSION = 'v0.12.4 · BUILD e5c0db6';
+/* Bump on every release so the main-menu header shows what's actually installed. */
+const BUILD_VERSION = 'v0.12.4 · f8aa3c8';
 
 let settings = Object.assign({}, DEFAULT_SETTINGS, Store.get('felt.settings', {}));
 let stats = Object.assign({}, DEFAULT_STATS, Store.get('felt.stats', {}));
@@ -9748,6 +9718,19 @@ function reconstructMainMenu(){
   menuLaunchInFlight=false;
   if (home) home.classList.remove('menu-launching','menu-over-table','menu-clearing');
   if (button){ button.disabled=false; button.classList.remove('pc-launch-clunk'); }
+  refreshMenuPrimaryButton();
+}
+
+// Single primary slot: SINGLE PLAYER when there's nothing to resume, or
+// CONTINUE (same button, same cartridge animation) when a save exists —
+// avoids ever stacking two giant primary buttons on the menu.
+function refreshMenuPrimaryButton(){
+  const hasResumable = !!loadTableSave();
+  const label = $('single-player-label'), sub = $('single-player-sub');
+  if (label) label.textContent = hasResumable ? 'Continue' : 'Single Player';
+  if (sub) sub.textContent = hasResumable ? 'Resume saved game' : 'Start elimination run';
+  const newGameBtn = $('new-game-btn');
+  if (newGameBtn) newGameBtn.classList.toggle('hidden', !hasResumable);
 }
 
 function stageInitialRunArrival(g){
@@ -9808,6 +9791,12 @@ async function launchSinglePlayerFromMenu(){
   if (!home || home.classList.contains('hidden')){ startSinglePlayerRun(); return; }
   menuLaunchInFlight=true;
   button.disabled=true;
+  // Optimistic: a fresh run is starting, so drop any stale CONTINUE label
+  // immediately rather than waiting on startSinglePlayerRun()'s clearTableSave().
+  const label=$('single-player-label'), sub=$('single-player-sub');
+  if (label) label.textContent='Single Player';
+  if (sub) sub.textContent='Start elimination run';
+  const newGameBtn=$('new-game-btn'); if (newGameBtn) newGameBtn.classList.add('hidden');
   home.classList.add('menu-launching');
   button.classList.add('pc-launch-clunk');
   Sound.buttonPress('allin');
@@ -10229,7 +10218,8 @@ function wireUI(){
 
   updateSetupSummary();
   $('deal-me-in').onclick = startGame;
-  $('single-player').onclick = ()=>withNewTableConfirm(launchSinglePlayerFromMenu);
+  $('single-player').onclick = ()=>{ if (loadTableSave()) continueTable(); else withNewTableConfirm(launchSinglePlayerFromMenu); };
+  $('new-game-btn').onclick = ()=>withNewTableConfirm(launchSinglePlayerFromMenu);
   $('quick-play').onclick = ()=>withNewTableConfirm(startGame);
   $('open-rankings').onclick = ()=>{ buildRankings(); $('home').classList.add('hidden'); $('rankings').classList.remove('hidden'); };
   $('rankings-back').onclick = ()=>{ $('rankings').classList.add('hidden'); $('home').classList.remove('hidden'); reconstructMainMenu(); };
@@ -10238,8 +10228,6 @@ function wireUI(){
   $('home-settings').onclick = ()=>openOverlay('settings');
   $('go-to-setup').onclick = ()=>withNewTableConfirm(()=>{ $('home').classList.add('hidden'); $('setup').classList.remove('hidden'); });
   $('setup-back').onclick = ()=>{ $('setup').classList.add('hidden'); $('home').classList.remove('hidden'); reconstructMainMenu(); };
-  $('continue-table').classList.toggle('hidden', !loadTableSave());
-  $('continue-table').onclick = continueTable;
   $('confirm-newtable-yes').onclick = ()=>{
     const action = pendingNewTableAction;
     closeOverlays();
@@ -10478,7 +10466,7 @@ function wireUI(){
   reconstructMainMenu();
   initHeroFaces();
   initDevPanel();
-  $('app-build-tag').textContent = BUILD_VERSION;
+  $('pc-version-mark').textContent = BUILD_VERSION;
 }
 
 /* Title-screen cast: the four illustrated characters above the POKER brand,
