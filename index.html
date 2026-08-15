@@ -2641,11 +2641,21 @@ body #home #home-settings{ background:var(--theme-case-raised); color:var(--ink)
   48%{ transform:scale(1.09); }
   68%{ transform:scale(.97); } 100%{ transform:scale(1); }
 }
+.arcade-reward-layer.cat-result .arcade-hero{ color:var(--card-face); }
 .arcade-reward-layer.cat-skill .arcade-hero{ color:var(--card-face); }
 .arcade-reward-layer.cat-achievement .arcade-hero{ color:var(--accent-bright); }
-.arcade-reward-layer.tier-major .arcade-hero{ font-size:clamp(26px,9vw,56px); }
-.arcade-reward-layer.tier-jackpot .arcade-hero{ font-size:clamp(30px,10.5vw,68px); animation-duration:.8s; }
-.arcade-reward-layer.tier-jackpot{ animation:arcadeScreenKick .62s steps(8,end); }
+.arcade-reward-layer.tier-small .arcade-hero{ font-size:clamp(18px,6.3vw,38px); }
+.arcade-reward-layer.tier-medium .arcade-hero{ font-size:clamp(24px,8vw,50px); }
+.arcade-reward-layer.tier-large .arcade-hero{ font-size:clamp(30px,10.5vw,68px); animation-duration:.68s; }
+.arcade-reward-layer.tier-large{ animation:arcadeScreenKick .56s steps(8,end); }
+.arcade-reward-layer.commentary-only .arcade-hero{
+  font-size:clamp(13px,4.3vw,25px); letter-spacing:.06em; color:var(--ink-dim);
+  -webkit-text-stroke:0; text-shadow:2px 2px 0 var(--px-ink),0 0 8px rgba(0,0,0,.5);
+}
+.arcade-reward-layer.comment-negative .arcade-hero{ color:#D9A09A; }
+.arcade-reward-layer.commentary-only.luck-good .arcade-hero{ color:#FFE27A; transform:rotate(-2deg); }
+.arcade-reward-layer.commentary-only.luck-bad .arcade-hero{ color:color-mix(in srgb,#78BEE8 72%,var(--ink)); }
+.arcade-reward-layer.commentary-only.luck-rare .arcade-hero{ color:#FFF; }
 @keyframes arcadeScreenKick{ 20%{ transform:translate(calc(-50% - 3px),calc(-50% + 2px)); } 40%{ transform:translate(calc(-50% + 3px),calc(-50% - 1px)); } 100%{ transform:translate(-50%,-50%); } }
 .arcade-secondaries{ display:flex; flex-wrap:wrap; justify-content:center; gap:5px 11px; min-height:14px; }
 .arcade-secondary{
@@ -2697,11 +2707,17 @@ body #home #home-settings{ background:var(--theme-case-raised); color:var(--ink)
   .arcade-hero{ letter-spacing:0; }
   #home .home-row .btn-secondary{ font-size:6px; }
 }
+@media (orientation:portrait){
+  /* Keep the complete punch/XP sequence on the lower felt, but safely
+     above the player's protruding hole cards on short phone screens. */
+  .arcade-reward-layer{ top:38%; }
+}
 @media (orientation:landscape){
   .arcade-score-machine{ height:42px; margin-bottom:3px; }
   .arcade-reward-layer{ left:38%; top:50%; width:min(60vw,560px); }
+  #table-screen.arcade-active .table-main{ position:relative; }
   #table-screen.arcade-active .topbar{
-    position:absolute; top:0; right:0; width:300px; min-height:48px;
+    position:absolute; top:0; left:100%; right:auto; width:300px; min-height:48px;
     padding:6px max(14px,env(safe-area-inset-right)) 2px 10px;
   }
   #table-screen.arcade-active .topbar>div:last-child{ gap:6px!important; }
@@ -2776,6 +2792,7 @@ body #home #home-settings{ background:var(--theme-case-raised); color:var(--ink)
 /* Keep the action bay a fixed-height sibling of the table. Optional coach,
    review and next-hand content is overlaid, never inserted into flex flow. */
 @media (orientation:portrait){
+  #hud-frame.result-mode #hud-status{ margin-top:10px; }
   #action-area{
     flex:0 0 var(--action-area-h); height:var(--action-area-h); min-height:0;
     box-sizing:border-box; padding:0; overflow:visible;
@@ -4331,7 +4348,7 @@ const Sound = (function(){
      existing noise/tone toolkit so the feature has a complete event API
      without adding assets or a second audio system. */
   function arcadeRewardSound(tier,id){
-    const major=tier==='major'||tier==='jackpot';
+    const major=tier==='large';
     withVoiceCap(major?620:300,()=>{
       noise(major?.07:.025,major?.085:.04,{filterType:major?'lowpass':'bandpass',freq:major?480:2200,freqSweepTo:major?150:3400,decayPow:2.2});
       if (id==='ko') [392,294,196].forEach((f,i)=>blip(f,.1,'square',.045,i*.045));
@@ -4836,30 +4853,51 @@ const ELIMINATION_RUN_CONFIG = {
    range equity captured before the player's action; exact hidden cards are
    consulted only after resolution for bluff/luck classification.
    ============================================================ */
-const ARCADE_MULTIPLIERS = [1,1.25,1.5,2,2.5,3,4,5,6,8,10];
 const ARCADE_AWARDS = {
-  goodFold:    { name:'GOOD FOLD',    base:100,  type:'skill',       priority:10, combo:1, tier:'small',   description:'A disciplined fold in a meaningful, clearly unprofitable spot.' },
-  smartCall:   { name:'SMART CALL',   base:150,  type:'skill',       priority:8,  combo:1, tier:'small',   description:'A strong non-obvious call based on the price and estimated range.' },
-  strongBet:   { name:'STRONG BET',   base:150,  type:'skill',       priority:9,  combo:1, tier:'small',   description:'A meaningful, well-sized value or pressure bet.' },
-  bigBluff:    { name:'BIG BLUFF',    base:300,  type:'skill',       priority:6,  combo:1, tier:'medium',  description:'Force a materially better hand to fold with a significant bluff.' },
-  bluffCaught: { name:'BLUFF CAUGHT', base:350,  type:'skill',       priority:5,  combo:1, tier:'medium',  description:'Call a meaningful opponent bluff and beat it.' },
-  bigPot:      { name:'BIG POT',      base:250,  type:'achievement', priority:7,  combo:0, tier:'medium',  description:'Win a pot worth at least 25 big blinds.' },
-  monsterPot:  { name:'MONSTER POT',  base:500,  type:'achievement', priority:4,  combo:0, tier:'major',   description:'Win a pot worth at least 50 big blinds.' },
-  doubleUp:    { name:'DOUBLE UP',    base:500,  type:'achievement', priority:3,  combo:0, tier:'major',   description:'Roughly double your starting stack in one meaningful hand.' },
-  ko:          { name:'K.O.',         base:1000, type:'achievement', priority:2,  combo:0, tier:'major',   description:'Personally eliminate an opponent through the decisive pot.' },
-  tableClear:  { name:'TABLE CLEAR',  base:2500, type:'achievement', priority:1,  combo:0, tier:'jackpot', description:'Eliminate the final opponent and clear the table.' }
+  scrappyWin:    { name:'SCRAPPY WIN',       base:75,   type:'result',      order:10, tier:'small',  description:'Win a weak, genuinely scrappy hand at showdown.' },
+  takeItDown:    { name:'TAKE IT DOWN',      base:75,   type:'result',      order:10, tier:'small',  description:'Collect a normal pot when every opponent folds.' },
+  steal:         { name:'STEAL!',            base:100,  type:'skill',       order:10, tier:'small',  description:'Take a small pre-flop pot with late-position pressure.' },
+  pressure:      { name:'PRESSURE!',         base:125,  type:'skill',       order:10, tier:'small',  description:'Meaningful aggression forces the remaining opponents out.' },
+  bigTake:       { name:'BIG TAKE!',         base:250,  type:'result',      order:10, tier:'medium', description:'Take down a substantial developed pot without showdown.' },
+  pair:          { name:'PAIR',              base:100,  type:'result',      order:10, tier:'small',  description:'Win at showdown with one pair.' },
+  twoPair:       { name:'TWO PAIR!',         base:175,  type:'result',      order:10, tier:'small',  description:'Win at showdown with two pair.' },
+  trips:         { name:'THREE OF A KIND!',  base:275,  type:'result',      order:10, tier:'medium', description:'Win at showdown with three of a kind.' },
+  straight:      { name:'STRAIGHT!',         base:400,  type:'result',      order:10, tier:'medium', description:'Win at showdown with a straight.' },
+  flush:         { name:'FLUSH!',            base:500,  type:'result',      order:10, tier:'medium', description:'Win at showdown with a flush.' },
+  fullHouse:     { name:'FULL HOUSE!!',      base:750,  type:'result',      order:10, tier:'large',  description:'Win at showdown with a full house.' },
+  quads:         { name:'FOUR OF A KIND!!!',base:1250, type:'result',      order:10, tier:'large',  description:'Win at showdown with four of a kind.' },
+  straightFlush: { name:'STRAIGHT FLUSH!!!',base:3000, type:'result',      order:10, tier:'large',  description:'Win at showdown with a straight flush.' },
+  royalFlush:    { name:'ROYAL FLUSH!!!',   base:5000, type:'result',      order:10, tier:'large',  description:'Win at showdown with a royal flush.' },
+  goodFold:      { name:'GOOD FOLD',         base:125,  type:'skill',       order:20, tier:'small',  description:'A disciplined fold in a meaningful, clearly unprofitable spot.' },
+  greatFold:     { name:'GREAT FOLD!',       base:250,  type:'skill',       order:20, tier:'medium', description:'Escape a large, clearly losing decision.' },
+  rightCall:     { name:'RIGHT CALL',        base:175,  type:'skill',       order:20, tier:'small',  description:'Make a non-obvious profitable call in a meaningful pot.' },
+  heroCall:      { name:'HERO CALL!!',       base:400,  type:'skill',       order:20, tier:'large',  description:'Call a large bluff with a hand that could reasonably fold.' },
+  bluff:         { name:'BLUFF!',            base:225,  type:'skill',       order:20, tier:'medium', description:'Force a better hand out with credible pressure.' },
+  greatBluff:    { name:'GREAT BLUFF!!',     base:425,  type:'skill',       order:20, tier:'large',  description:'Risk a large amount to force a materially better hand out.' },
+  value:         { name:'VALUE',             base:125,  type:'skill',       order:20, tier:'small',  description:'Make a well-sized value bet that gets called.' },
+  greatValue:    { name:'GREAT VALUE!',      base:225,  type:'skill',       order:20, tier:'medium', description:'Extract a large call while well ahead.' },
+  maxValue:      { name:'MAX VALUE!',        base:350,  type:'skill',       order:20, tier:'medium', description:'Extract a major river call with a very strong hand.' },
+  trap:          { name:'TRAP!',             base:250,  type:'skill',       order:20, tier:'medium', description:'Underplay a strong hand before extracting a meaningful later call.' },
+  bigPot:        { name:'BIG POT!',          base:250,  type:'achievement', order:30, tier:'medium', description:'Win a pot worth at least 20 big blinds.' },
+  massivePot:    { name:'MASSIVE POT!!',     base:500,  type:'achievement', order:30, tier:'large',  description:'Win a pot worth at least 45 big blinds.' },
+  doubleUp:      { name:'DOUBLE UP!!',       base:500,  type:'achievement', order:31, tier:'large',  description:'Roughly double the stack held at the start of the hand.' },
+  ko:            { name:'K.O.!',             base:750,  type:'achievement', order:32, tier:'large',  description:'Personally eliminate an opponent through the decisive pot.' },
+  tableClear:    { name:'TABLE CLEAR!!!',   base:1500, type:'achievement', order:33, tier:'large',  description:'Eliminate the final opponent and clear the table.' }
 };
 const ARCADE_LUCK = {
-  lucky:      { name:'LUCKY',       kind:'good', min:.30, max:.40, description:'Win after a major commitment with roughly 30–40% equity.' },
-  jammy:      { name:'JAMMY',       kind:'good', min:.20, max:.30, description:'Win after a major commitment with roughly 20–30% equity.' },
-  filthy:     { name:'FILTHY',      kind:'good', min:.10, max:.20, description:'Win after a major commitment with roughly 10–20% equity.' },
-  miracle:    { name:'MIRACLE',     kind:'good', min:0,   max:.10, description:'Win after a major commitment with less than roughly 10% equity.' },
+  lucky:      { name:'LUCKY',       kind:'good', min:.25, max:.40, description:'Win after a major commitment with roughly 25–40% equity.' },
+  veryLucky:  { name:'VERY LUCKY',  kind:'good', min:.10, max:.25, description:'Win after a major commitment with roughly 10–25% equity.' },
+  gotAway:    { name:'GOT AWAY WITH IT',kind:'good',min:0,max:.10, description:'Survive a major commitment with less than roughly 10% equity.' },
   unlucky:    { name:'UNLUCKY',     kind:'bad',  min:.70, max:.80, description:'Lose after a major commitment with roughly 70–80% equity.' },
-  rough:      { name:'ROUGH',       kind:'bad',  min:.80, max:.90, description:'Lose after a major commitment with roughly 80–90% equity.' },
   brutal:     { name:'BRUTAL',      kind:'bad',  min:.90, max:.97, description:'Lose after a major commitment with roughly 90–97% equity.' },
-  sickener:   { name:'SICKENER',    kind:'bad',  min:.97, max:1.01,description:'Lose after a major commitment with roughly 97%+ equity.' },
-  oneOutered: { name:'ONE-OUTERED!',kind:'rare', min:0,   max:1,   description:'Lose when an opponent had approximately one river out.' },
-  runnerRunner:{ name:'RUNNER-RUNNER',kind:'rare',min:0,   max:1,   description:'A decisive outcome requiring favourable turn and river cards.' }
+  badBeat:    { name:'BAD BEAT',    kind:'rare', min:.80, max:1.01,description:'Lose after a major commitment as a very large favourite.' }
+};
+const ARCADE_COMMENTARY = {
+  badCall:     { name:'BAD CALL',     kind:'negative', description:'Call a meaningful bet with equity clearly below the offered price.' },
+  missedValue: { name:'MISSED VALUE', kind:'negative', description:'Check back the river with a very strong hand against live opponents.' },
+  tooLoose:    { name:'TOO LOOSE',    kind:'negative', description:'Make more than one clearly loose, meaningful call in the same hand.' },
+  punt:        { name:'PUNT!',        kind:'negative', description:'Lose after a very large call with equity far below the price.' },
+  risky:       { name:'RISKY...',     kind:'negative', description:'Win despite a clearly questionable major call.' }
 };
 const ARCADE_PROFILE_DEFAULT = { highScore:0, discovered:{}, counts:{}, bestByEvent:{} };
 let arcadeProfile = Object.assign({}, ARCADE_PROFILE_DEFAULT, Store.get('felt.arcade', {}));
@@ -4875,8 +4913,6 @@ function makeArcadeRunState(){
     awardCounts:{}, decisionSnapshots:[], displayedScore:0, newHighScore:false
   };
 }
-function arcadeMultiplier(step){ return ARCADE_MULTIPLIERS[Math.max(0,Math.min(10,step||0))]; }
-function formatArcadeMultiplier(n){ return 'x'+(Number.isInteger(n)?n.toFixed(1):String(n)); }
 function formatArcadeScore(n){ return Math.max(0,Math.round(n||0)).toString().padStart(7,'0'); }
 function setArcadeMode(active){
   const screen=$('table-screen'), machine=$('arcade-score-machine');
@@ -4993,16 +5029,13 @@ function classifyArcadeLuck(g,outcome,snapshots){
   if (!meaningful) return null;
   const equity=resolvedEquityAtSnapshot(meaningful,g);
   if (equity==null) return null;
-  if (!won&&meaningful.board.length===4&&equity>=.972) return {id:'oneOutered',equity};
   if (won){
-    if (equity<.10) return {id:'miracle',equity};
-    if (equity<.20) return {id:'filthy',equity};
-    if (equity<.30) return {id:'jammy',equity};
+    if (equity<.10) return {id:'gotAway',equity};
+    if (equity<.25) return {id:'veryLucky',equity};
     if (equity<.40) return {id:'lucky',equity};
   } else {
-    if (equity>=.97) return {id:'sickener',equity};
     if (equity>=.90) return {id:'brutal',equity};
-    if (equity>=.80) return {id:'rough',equity};
+    if (equity>=.80) return {id:'badBeat',equity};
     if (equity>=.70) return {id:'unlucky',equity};
   }
   return null;
@@ -5016,41 +5049,76 @@ function actualHandAtResolution(player,g){
   if (!player||!player.hand||player.hand.length<2||player.hand.length+g.board.length<5) return null;
   return evaluate7([...player.hand,...g.board]);
 }
+const ARCADE_HAND_AWARD_IDS=['scrappyWin','pair','twoPair','trips','straight','flush','fullHouse','quads','straightFlush','royalFlush'];
+function findArcadeFoldBluff(g,outcome,snapshots){
+  if (!humanWonOutcome(outcome)||outcome.type!=='foldwin') return null;
+  const human=g.players.find(p=>p.isHuman);
+  return snapshots.filter(s=>s.action==='raise'&&s.street!=='preflop'&&s.commit>=Math.max(4*s.bigBlind,s.startStack*.12)&&s.pot>=6*s.bigBlind&&s.equity<=.40)
+    .reverse().find(s=>{
+      const heroNow=actualHandAtResolution(human,g); if (!heroNow) return false;
+      return g.players.some(p=>!p.isHuman&&p.folded&&s.opponentIds.includes(p.id)&&actualHandAtResolution(p,g)&&compareHands(actualHandAtResolution(p,g),heroNow)>0);
+    })||null;
+}
+function evaluateArcadeResult(g,outcome,snapshots,awards){
+  if (!humanWonOutcome(outcome)) return;
+  if (outcome.type==='foldwin'){
+    if ((outcome.amount||0)<2*g.bigBlind) return;
+    const bluff=findArcadeFoldBluff(g,outcome,snapshots);
+    if (bluff){
+      addArcadeAward(awards,bluff.commit>=Math.max(bluff.pot*.8,bluff.startStack*.25)?'greatBluff':'bluff');
+      return;
+    }
+    const aggression=snapshots.filter(s=>s.action==='raise').slice(-1)[0];
+    const position=g.positions&&g.positions.you;
+    if ((outcome.amount||0)>=20*g.bigBlind) addArcadeAward(awards,'bigTake');
+    else if (aggression&&aggression.street==='preflop'&&['BTN','CO','SB'].includes(position)&&(outcome.amount||0)<=8*g.bigBlind) addArcadeAward(awards,'steal');
+    else if (aggression&&aggression.commit>=Math.max(3*g.bigBlind,aggression.pot*.35)) addArcadeAward(awards,'pressure');
+    else addArcadeAward(awards,'takeItDown');
+    return;
+  }
+  const human=g.players.find(p=>p.isHuman), hand=actualHandAtResolution(human,g);
+  if (hand&&ARCADE_HAND_AWARD_IDS[hand.cat]) addArcadeAward(awards,ARCADE_HAND_AWARD_IDS[hand.cat]);
+}
+function actionWasCalled(g,snapshot){
+  return (g.handActions||[]).slice(snapshot.handActionIndex+1).some(a=>
+    a.street===snapshot.street&&a.id!=='you'&&a.action==='call'
+  );
+}
 function evaluateArcadeSkill(g,outcome,snapshots){
   const awards=[], human=g.players.find(p=>p.isHuman), won=humanWonOutcome(outcome);
   const calls=snapshots.filter(s=>s.action==='call'&&s.toCall>0&&s.equity!=null);
   const bets=snapshots.filter(s=>s.action==='raise'&&s.commit>0&&s.equity!=null);
   const folds=snapshots.filter(s=>s.action==='fold'&&s.toCall>0&&s.equity!=null);
 
-  const bluffCall=calls.slice().reverse().find(s=>{
-    if (!won||!s.lastAggressorId||s.commit<Math.max(4*s.bigBlind,s.startStack*.14)) return false;
+  const heroCall=calls.slice().reverse().find(s=>{
+    if (!won||outcome.type!=='showdown'||!s.lastAggressorId||s.commit<Math.max(5*s.bigBlind,s.startStack*.15)) return false;
     const villain=g.players.find(p=>p.id===s.lastAggressorId), vh=actualHandAtResolution(villain,g), hh=actualHandAtResolution(human,g);
-    return vh&&hh&&vh.cat===0&&compareHands(hh,vh)>0;
+    return vh&&hh&&compareHands(hh,vh)>0&&vh.cat<=1&&hh.cat<=2&&s.equity<=.58;
   });
-  if (bluffCall) addArcadeAward(awards,'bluffCaught');
-  else if (calls.some(s=>s.commit>=Math.max(4*s.bigBlind,s.startStack*.14)&&s.equity>=s.potOdds+.13&&s.equity<=.72)) addArcadeAward(awards,'smartCall');
+  if (heroCall) addArcadeAward(awards,'heroCall');
+  else if (calls.some(s=>s.commit>=Math.max(3*s.bigBlind,s.startStack*.10)&&s.equity>=s.potOdds+.12&&s.equity<=.72)) addArcadeAward(awards,'rightCall');
 
-  const bluffBet=outcome.type==='foldwin'&&won&&bets.slice().reverse().find(s=>{
-    if (s.street==='preflop'||s.commit<Math.max(6*s.bigBlind,s.startStack*.16)||s.pot<8*s.bigBlind||s.equity>.36) return false;
-    const heroNow=actualHandAtResolution(human,g); if (!heroNow) return false;
-    return g.players.some(p=>!p.isHuman&&p.folded&&s.opponentIds.includes(p.id)&&actualHandAtResolution(p,g)&&compareHands(actualHandAtResolution(p,g),heroNow)>0);
-  });
-  if (bluffBet) addArcadeAward(awards,'bigBluff');
-  else if (bets.some(s=>s.pot>=8*s.bigBlind&&s.commit>=4*s.bigBlind&&s.commit<=Math.max(s.pot*1.2,6*s.bigBlind)&&s.equity>=.66&&s.equity<=.88)) addArcadeAward(awards,'strongBet');
+  const bestFold=folds.filter(s=>s.street!=='preflop'&&s.toCall>=Math.max(3*s.bigBlind,s.startStack*.10)&&s.pot>=6*s.bigBlind&&s.equity<=s.potOdds-.11)
+    .sort((a,b)=>(b.potOdds-b.equity)-(a.potOdds-a.equity))[0];
+  if (bestFold) addArcadeAward(awards,(bestFold.potOdds-bestFold.equity>=.24&&bestFold.toCall>=bestFold.startStack*.2)?'greatFold':'goodFold');
 
-  if (folds.some(s=>s.street!=='preflop'&&s.toCall>=Math.max(3*s.bigBlind,s.startStack*.12)&&s.pot>=7*s.bigBlind&&s.equity<=s.potOdds-.12)) addArcadeAward(awards,'goodFold');
-
-  let penalty=0;
-  calls.forEach(s=>{
-    const gap=s.potOdds-s.equity, invested=(s.totalCommittedBefore+s.commit)/Math.max(1,s.startStack);
-    if (s.commit>=5*s.bigBlind&&invested>=.18&&gap>=.13) penalty=Math.max(penalty,(gap>=.25&&invested>=.36)?2:1);
-  });
-  return {awards,penalty};
+  if (won&&outcome.type==='showdown'){
+    const valueBet=bets.filter(s=>s.street!=='preflop'&&actionWasCalled(g,s)&&s.equity>=.67&&s.commit>=Math.max(2*s.bigBlind,s.pot*.28))
+      .sort((a,b)=>(b.street==='river')-(a.street==='river')||b.commit-a.commit)[0];
+    if (valueBet){
+      if (valueBet.street==='river'&&valueBet.equity>=.84&&valueBet.commit>=Math.max(6*valueBet.bigBlind,valueBet.pot*.6)) addArcadeAward(awards,'maxValue');
+      else if (valueBet.equity>=.76&&valueBet.commit>=Math.max(4*valueBet.bigBlind,valueBet.pot*.45)) addArcadeAward(awards,'greatValue');
+      else addArcadeAward(awards,'value');
+      const earlierTrap=snapshots.some(s=>s.action==='check'&&s.street!=='river'&&s.equity>=.72&&s.handActionIndex<valueBet.handActionIndex);
+      if (earlierTrap&&valueBet.commit>=4*valueBet.bigBlind) addArcadeAward(awards,'trap');
+    }
+  }
+  return awards;
 }
 function evaluateArcadeAchievements(g,outcome,context,awards){
   const human=g.players.find(p=>p.isHuman), won=humanWonOutcome(outcome), potWon=humanAwardFromOutcome(outcome);
-  if (won&&potWon>=50*g.bigBlind) addArcadeAward(awards,'monsterPot');
-  else if (won&&potWon>=25*g.bigBlind) addArcadeAward(awards,'bigPot');
+  if (won&&potWon>=45*g.bigBlind) addArcadeAward(awards,'massivePot');
+  else if (won&&potWon>=20*g.bigBlind) addArcadeAward(awards,'bigPot');
   const start=g._humanStart==null?human.chips:g._humanStart, gain=human.chips-start;
   if (human.chips>=start*1.9&&gain>=10*g.bigBlind) addArcadeAward(awards,'doubleUp');
   if (context&&context.koCount) addArcadeAward(awards,'ko',context.koCount);
@@ -5058,29 +5126,51 @@ function evaluateArcadeAchievements(g,outcome,context,awards){
 }
 function normalizeArcadeAwards(awards){
   const ids=new Set(awards.map(a=>a.id));
-  if (ids.has('bluffCaught')) awards=awards.filter(a=>a.id!=='smartCall');
-  if (ids.has('bigBluff')) awards=awards.filter(a=>a.id!=='strongBet');
-  if (ids.has('monsterPot')) awards=awards.filter(a=>a.id!=='bigPot');
-  return awards.sort((a,b)=>a.def.priority-b.def.priority);
+  if (ids.has('heroCall')) awards=awards.filter(a=>a.id!=='rightCall');
+  if (ids.has('greatBluff')) awards=awards.filter(a=>a.id!=='bluff');
+  if (ids.has('greatFold')) awards=awards.filter(a=>a.id!=='goodFold');
+  if (ids.has('maxValue')) awards=awards.filter(a=>!['greatValue','value'].includes(a.id));
+  else if (ids.has('greatValue')) awards=awards.filter(a=>a.id!=='value');
+  if (ids.has('massivePot')) awards=awards.filter(a=>a.id!=='bigPot');
+  awards.sort((a,b)=>a.def.order-b.def.order||b.def.base-a.def.base);
+  if (awards.length<=3) return awards;
+  const chosen=awards.slice(0,3), milestone=awards.find(a=>a.id==='tableClear')||awards.find(a=>a.id==='ko');
+  if (milestone&&!chosen.includes(milestone)) chosen[2]=milestone;
+  return chosen.sort((a,b)=>a.def.order-b.def.order);
+}
+function evaluateArcadeCommentary(g,outcome,snapshots,luck){
+  if (luck&&['unlucky','badBeat','brutal'].includes(luck.id)) return null;
+  const won=humanWonOutcome(outcome);
+  const loose=snapshots.filter(s=>s.action==='call'&&s.toCall>0&&s.equity!=null&&s.commit>=4*s.bigBlind&&s.potOdds-s.equity>=.14);
+  const worst=loose.sort((a,b)=>(b.potOdds-b.equity)-(a.potOdds-a.equity))[0];
+  if (worst){
+    const invested=(worst.totalCommittedBefore+worst.commit)/Math.max(1,worst.startStack);
+    if (!won&&invested>=.42&&worst.potOdds-worst.equity>=.25) return {id:'punt'};
+    if (!won&&loose.length>=2) return {id:'tooLoose'};
+    if (won&&invested>=.30&&worst.potOdds-worst.equity>=.20) return {id:'risky'};
+    if (!won) return {id:'badCall'};
+  }
+  const missed=snapshots.find(s=>s.action==='check'&&s.street==='river'&&s.equity!=null&&s.equity>=.84&&s.opponentIds.length>0);
+  return missed?{id:'missedValue'}:null;
 }
 async function resolveArcadeHand(g,outcome,context){
   if (!g||g.mode!=='elimination'||!g.run||!g.run.arcade) return;
-  const a=g.run.arcade, snapshots=await settleArcadeSnapshots(g);
-  const skill=evaluateArcadeSkill(g,outcome,snapshots), awards=skill.awards;
+  const a=g.run.arcade, snapshots=await settleArcadeSnapshots(g), awards=[];
+  evaluateArcadeResult(g,outcome,snapshots,awards);
+  evaluateArcadeSkill(g,outcome,snapshots).forEach(x=>addArcadeAward(awards,x.id,x.count));
   evaluateArcadeAchievements(g,outcome,context,awards);
   const finalAwards=normalizeArcadeAwards(awards);
   const luck=classifyArcadeLuck(g,outcome,snapshots);
-  const mult=arcadeMultiplier(a.comboStep);
-  const total=Math.round(finalAwards.reduce((sum,x)=>sum+x.def.base*x.count,0)*mult);
-  const comboGain=finalAwards.reduce((sum,x)=>sum+x.def.combo*x.count,0);
-  const oldStep=a.comboStep, newStep=Math.max(0,Math.min(10,oldStep+comboGain-skill.penalty));
-  const resolution={awards:finalAwards,luck,mult,total,oldStep,newStep,dev:false};
+  const commentary=evaluateArcadeCommentary(g,outcome,snapshots,luck);
+  const total=finalAwards.reduce((sum,x)=>sum+x.def.base*x.count,0);
+  const resolution={awards:finalAwards,luck,commentary,total,dev:false};
   finalAwards.forEach(x=>{
     a.awardCounts[x.id]=(a.awardCounts[x.id]||0)+x.count;
-    noteArcadeDiscovery(x.id,x.count,x.def.base*mult);
+    noteArcadeDiscovery(x.id,x.count,x.def.base*x.count);
   });
   if (luck) noteArcadeDiscovery(luck.id,1,null);
-  if (!finalAwards.length&&!luck&&oldStep===newStep) return;
+  if (commentary) noteArcadeDiscovery(commentary.id,1,null);
+  if (!finalAwards.length&&!luck&&!commentary) return;
   await queueArcadePresentation(()=>presentArcadeResolution(g,resolution));
 }
 function queueArcadePresentation(fn){
@@ -5093,14 +5183,8 @@ function clearArcadeLayer(){
   layer.className='arcade-reward-layer hidden';
   ['arcade-luck','arcade-hero','arcade-secondaries','arcade-total'].forEach(id=>{ if ($(id)) $(id).innerHTML=''; });
 }
-function rewardTier(awards,total){
-  if (awards.some(a=>a.id==='tableClear')||total>=2500) return 'jackpot';
-  if (awards.some(a=>a.def.tier==='major')||total>=500) return 'major';
-  if (awards.some(a=>a.def.tier==='medium')||total>=250) return 'medium';
-  return 'small';
-}
 async function rollArcadeCounter(a,target,tier){
-  const from=a.displayedScore||0, duration=motionOff()?0:(tier==='jackpot'?920:tier==='major'?680:480);
+  const from=a.displayedScore||0, duration=motionOff()?0:(tier==='large'?760:tier==='medium'?560:400);
   if (!duration){ a.displayedScore=target; updateArcadeHUD(); return; }
   const start=performance.now(); let lastTick=0;
   await new Promise(resolve=>{
@@ -5122,7 +5206,7 @@ async function flyArcadeScore(total,tier){
   flight.className='arcade-bank-flight'; flight.textContent='+'+total.toLocaleString();
   flight.style.left=sr.left+'px'; flight.style.top=sr.top+'px'; document.body.appendChild(flight);
   const dx=(tr.left+tr.width/2)-(sr.left+sr.width/2), dy=(tr.top+tr.height/2)-(sr.top+sr.height/2);
-  const dur=tier==='jackpot'?720:tier==='major'?600:480;
+  const dur=tier==='large'?680:tier==='medium'?560:440;
   const anim=flight.animate([
     {transform:'translate(0,0) scale(1)',opacity:1},
     {transform:'translate('+(dx*.3)+'px,'+(dy*.18-22)+'px) scale(1.12)',opacity:1,offset:.32},
@@ -5131,34 +5215,54 @@ async function flyArcadeScore(total,tier){
   try{ await anim.finished; }catch(e){}
   flight.remove();
 }
+async function presentArcadeAward(g,award){
+  if (!g||game!==g||!g.run||!g.run.arcade) return;
+  const a=g.run.arcade, layer=$('arcade-reward-layer'), tier=award.def.tier||'small';
+  if (!layer) return;
+  const points=award.def.base*award.count;
+  clearArcadeLayer();
+  layer.className='arcade-reward-layer tier-'+tier+' cat-'+award.def.type;
+  layer.classList.remove('hidden');
+  $('arcade-hero').textContent=award.def.name;
+  void layer.offsetWidth; layer.classList.add('is-live');
+  Sound.arcadeReward(tier,award.id); haptic(tier==='large'?[42,24,55]:tier==='medium'?32:18);
+  await arcadeDelay(tier==='large'?430:tier==='medium'?330:240);
+  $('arcade-total').textContent='+'+points.toLocaleString();
+  $('arcade-total').classList.add('is-ready');
+  await arcadeDelay(tier==='large'?440:tier==='medium'?330:250);
+  await flyArcadeScore(points,tier);
+  const target=a.score+points; a.score=target;
+  const machine=$('arcade-score-machine');
+  if (machine){
+    machine.classList.remove('score-impact','score-jackpot'); void machine.offsetWidth;
+    machine.classList.add(tier==='large'?'score-jackpot':'score-impact');
+  }
+  clearArcadeLayer();
+  await rollArcadeCounter(a,target,tier);
+  await arcadeDelay(tier==='large'?150:90);
+}
+async function presentArcadeCommentary(g,item,isLuck){
+  if (!item||!g||game!==g) return;
+  const def=isLuck?ARCADE_LUCK[item.id]:ARCADE_COMMENTARY[item.id];
+  if (!def) return;
+  const layer=$('arcade-reward-layer'); if (!layer) return;
+  clearArcadeLayer();
+  layer.className='arcade-reward-layer commentary-only '+(isLuck?'luck-'+def.kind:'comment-negative');
+  layer.classList.remove('hidden');
+  $('arcade-hero').textContent=def.name;
+  void layer.offsetWidth; layer.classList.add('is-live');
+  Sound.arcadeLuck(isLuck?def.kind:'bad');
+  await arcadeDelay(isLuck&&def.kind==='rare'?700:520);
+  clearArcadeLayer();
+  await arcadeDelay(80);
+}
 async function presentArcadeResolution(g,r){
   if (!g||game!==g||!g.run||!g.run.arcade) return;
-  const a=g.run.arcade, layer=$('arcade-reward-layer'), tier=rewardTier(r.awards,r.total);
-  if (!layer) return;
-  const hero=r.awards[0], secondaries=r.awards.slice(1), luckDef=r.luck&&ARCADE_LUCK[r.luck.id];
-  layer.className='arcade-reward-layer tier-'+tier+' '+(hero?'cat-'+hero.def.type:'')+(luckDef?' luck-'+luckDef.kind:'');
-  layer.classList.remove('hidden');
-  if (luckDef){ $('arcade-luck').textContent=luckDef.name; Sound.arcadeLuck(luckDef.kind); await arcadeDelay(120); }
-  if (hero){
-    $('arcade-hero').textContent=hero.def.name;
-    $('arcade-secondaries').innerHTML=secondaries.map(x=>'<span class="arcade-secondary">'+esc(x.def.name)+' +'+Math.round(x.def.base*x.count*r.mult).toLocaleString()+'</span>').join('');
-    layer.classList.add('is-live'); Sound.arcadeReward(tier,hero.id); haptic(tier==='jackpot'?[45,25,65]:tier==='major'?40:22);
-    await arcadeDelay(tier==='jackpot'?560:360);
-    $('arcade-total').textContent='+'+r.total.toLocaleString(); $('arcade-total').classList.add('is-ready');
-    await arcadeDelay(tier==='jackpot'?640:440);
-    await flyArcadeScore(r.total,tier);
-    const target=a.score+r.total; a.score=target; a.biggestReward=Math.max(a.biggestReward,r.total);
-    const machine=$('arcade-score-machine');
-    if (machine){ machine.classList.remove('score-impact','score-jackpot'); void machine.offsetWidth; machine.classList.add(tier==='jackpot'?'score-jackpot':'score-impact'); }
-    clearArcadeLayer();
-    await rollArcadeCounter(a,target,tier);
-  } else if (luckDef){ await arcadeDelay(620); clearArcadeLayer(); }
-
-  if (r.oldStep!==r.newStep){
-    a.comboStep=r.newStep; a.highestComboStep=Math.max(a.highestComboStep,r.newStep);
-    updateArcadeHUD(); Sound.arcadeCombo(r.newStep>r.oldStep); haptic(18);
-    await arcadeDelay(120);
-  }
+  const a=g.run.arcade;
+  a.biggestReward=Math.max(a.biggestReward,r.total||0);
+  for (const award of r.awards) await presentArcadeAward(g,award);
+  if (r.luck) await presentArcadeCommentary(g,r.luck,true);
+  else if (r.commentary) await presentArcadeCommentary(g,r.commentary,false);
 }
 function finalizeArcadeRun(g){
   if (!g||!g.run||!g.run.arcade) return;
@@ -5179,53 +5283,35 @@ function animateFinalArcadeScore(g){
   requestAnimationFrame(frame);
 }
 const DEV_ARCADE_SCENARIOS = {
-  goodPlay:    {awards:['goodFold']},
-  bluffCatch:  {awards:['bluffCaught']},
-  jammyDouble: {awards:['doubleUp'],luck:'jammy'},
-  brutalLoss:  {awards:['smartCall'],luck:'brutal'},
-  bigKo:       {awards:['ko','monsterPot','bluffCaught']},
-  tableClear:  {awards:['tableClear','ko','monsterPot']}
+  small:       {awards:['pair']},
+  medium:      {awards:['straight']},
+  huge:        {awards:['quads']},
+  stacked:     {awards:['flush','maxValue','bigPot']},
+  luckyWin:    {awards:['twoPair'],luck:'gotAway'},
+  badBeat:     {awards:['rightCall'],luck:'badBeat'},
+  badCall:     {awards:[],commentary:'badCall'}
 };
-function devArcadePresent(ids,luckId){
+function devArcadePresent(ids,luckId,commentaryId){
   if (!DEV_MODE||!game||game.mode!=='elimination'||!game.run||!game.run.arcade) return;
-  const g=game, a=g.run.arcade;
+  const g=game;
   let awards=(ids||[]).map(id=>ARCADE_AWARDS[id]?{id,count:1,def:ARCADE_AWARDS[id]}:null).filter(Boolean);
   awards=normalizeArcadeAwards(awards);
-  const mult=arcadeMultiplier(a.comboStep);
-  const total=Math.round(awards.reduce((sum,x)=>sum+x.def.base*x.count,0)*mult);
-  const oldStep=a.comboStep, gain=awards.reduce((sum,x)=>sum+x.def.combo*x.count,0);
-  const newStep=Math.min(10,oldStep+gain);
+  const total=awards.reduce((sum,x)=>sum+x.def.base*x.count,0);
   queueArcadePresentation(()=>presentArcadeResolution(g,{
     awards,luck:luckId&&ARCADE_LUCK[luckId]?{id:luckId,equity:0}:null,
-    mult,total,oldStep,newStep,dev:true
+    commentary:commentaryId&&ARCADE_COMMENTARY[commentaryId]?{id:commentaryId}:null,
+    total,dev:true
   }));
 }
 function devArcadeAward(id){ devArcadePresent([id],null); }
 function devArcadeLuck(id){ devArcadePresent([],id); }
+function devArcadeCommentary(id){ devArcadePresent([],null,id); }
 function devArcadeScenario(id){
   const scenario=DEV_ARCADE_SCENARIOS[id];
-  if (scenario) devArcadePresent(scenario.awards,scenario.luck||null);
-}
-function devArcadeSetStep(step){
-  if (!DEV_MODE||!game||game.mode!=='elimination'||!game.run||!game.run.arcade) return;
-  const a=game.run.arcade, old=a.comboStep;
-  a.comboStep=Math.max(0,Math.min(10,Math.round(step)));
-  a.highestComboStep=Math.max(a.highestComboStep,a.comboStep);
-  updateArcadeHUD();
-  if (a.comboStep!==old){ Sound.arcadeCombo(a.comboStep>old); haptic(18); }
-  refreshDevPanel();
-}
-function devArcadeCombo(delta){
-  if (!game||!game.run||!game.run.arcade) return;
-  devArcadeSetStep(game.run.arcade.comboStep+delta);
-}
-function devArcadeSetMultiplier(value){
-  const step=ARCADE_MULTIPLIERS.indexOf(Number(value));
-  if (step>=0) devArcadeSetStep(step);
+  if (scenario) devArcadePresent(scenario.awards,scenario.luck||null,scenario.commentary||null);
 }
 function devArcadeJackpot(){
-  devArcadeSetMultiplier(10);
-  devArcadePresent(['tableClear'],null);
+  devArcadePresent(['royalFlush'],null);
 }
 function devArcadeAddScore(amount){
   if (!DEV_MODE||!game||game.mode!=='elimination'||!game.run||!game.run.arcade) return;
@@ -5235,7 +5321,7 @@ function devArcadeAddScore(amount){
     const target=a.score+increment; a.score=target; a.biggestReward=Math.max(a.biggestReward,increment);
     const machine=$('arcade-score-machine');
     if (machine){ machine.classList.remove('score-impact'); void machine.offsetWidth; machine.classList.add('score-impact'); }
-    await rollArcadeCounter(a,target,increment>=10000?'jackpot':increment>=1000?'major':'small');
+    await rollArcadeCounter(a,target,increment>=1000?'large':increment>=250?'medium':'small');
     refreshDevPanel();
   });
 }
@@ -5254,15 +5340,15 @@ function devArcadeReset(){
 }
 function buildAwardsGlossary(){
   const list=$('awards-list'), summary=$('awards-summary'); if (!list||!summary) return;
-  const entries=[...Object.entries(ARCADE_AWARDS),...Object.entries(ARCADE_LUCK)];
+  const entries=[...Object.entries(ARCADE_AWARDS),...Object.entries(ARCADE_LUCK),...Object.entries(ARCADE_COMMENTARY)];
   const unlocked=entries.filter(([id])=>arcadeProfile.discovered[id]).length;
   summary.innerHTML='<b>HIGH SCORE '+formatArcadeScore(arcadeProfile.highScore||0)+'</b><br>'+unlocked+' / '+entries.length+' signals discovered';
   list.innerHTML=entries.map(([id,def])=>{
-    const seen=!!arcadeProfile.discovered[id], luck=!('base' in def), count=arcadeProfile.counts[id]||0, best=arcadeProfile.bestByEvent[id]||0;
+    const seen=!!arcadeProfile.discovered[id], commentary=!('base' in def), count=arcadeProfile.counts[id]||0, best=arcadeProfile.bestByEvent[id]||0;
     return '<div class="award-glossary-row '+(seen?'':'locked')+'"><div class="award-glossary-name">'+(seen?esc(def.name):'???')+'</div>'+
-      '<div class="award-glossary-points">'+(seen?(luck?'NO POINTS':def.base.toLocaleString()+' PTS'):'LOCKED')+'</div>'+
+      '<div class="award-glossary-points">'+(seen?(commentary?'NO POINTS':def.base.toLocaleString()+' PTS'):'LOCKED')+'</div>'+
       '<div class="award-glossary-desc">'+(seen?esc(def.description):'Discover this signal during an elimination run.')+'</div>'+
-      (seen?'<div class="award-glossary-meta">TRIGGERED '+count+(best?' · BEST '+best.toLocaleString():'')+(luck?' · LUCK EVENT':'')+'</div>':'')+'</div>';
+      (seen?'<div class="award-glossary-meta">TRIGGERED '+count+(best?' · BEST '+best.toLocaleString():'')+(commentary?' · COMMENTARY ONLY':'')+'</div>':'')+'</div>';
   }).join('');
 }
 
@@ -5293,7 +5379,9 @@ function applyRunTheme(){
 // DEV-only test panel — flip to true locally to reach elimination mode and
 // its rapid-test controls without going through Setup (out of scope this
 // pass; see Phase 1 plan). Fully absent from the DOM/UI when false.
-const DEV_MODE = false;
+// Development-only arcade harness. Normal launches never render it; append
+// ?dev to the local URL when deliberately testing scoring presentations.
+const DEV_MODE = new URLSearchParams(location.search).has('dev');
 
 // FAST DEV — a runtime toggle inside the DEV panel (not a build flag like
 // DEV_MODE above) that blitzes through the "boring setup" between real
@@ -6640,7 +6728,7 @@ function runOverHTML(g){
       '<div><strong class="tabular">'+r.tablesCleared+'</strong><span>TABLES<br>CLEARED</span></div></div>'+
     '<div class="run-report-grid">'+
       resultStat('Hands won',ratioResult(r.totalHandsWon,r.totalHands),'')+
-      resultStat('Highest multi',formatArcadeMultiplier(arcadeMultiplier(a.highestComboStep)),'')+
+      resultStat('Scoring events',Object.values(a.awardCounts||{}).reduce((sum,n)=>sum+(n||0),0),'')+
       resultStat('Total hands',r.totalHands,'')+
       resultStat('K.O.s',r.totalKOs,'ko-stat')+
     '</div>'+
@@ -9936,46 +10024,38 @@ function initDevPanel(){
         '<button id="dev-clear-table" type="button">CLEAR TABLE</button>' +
         '<button id="dev-end-table" type="button">END TABLE</button>' +
       '</div>' +
-      '<div id="dev-arcade-controls">' +
+        '<div id="dev-arcade-controls">' +
         '<div class="dev-section-title">ARCADE TEST</div>' +
         '<div class="dev-subtitle">INDIVIDUAL AWARDS</div>' +
+        '<button data-arcade-award="pair" type="button">PAIR +100</button>' +
+        '<button data-arcade-award="straight" type="button">STRAIGHT +400</button>' +
+        '<button data-arcade-award="quads" type="button">QUADS +1,250</button>' +
         '<button data-arcade-award="goodFold" type="button">GOOD FOLD</button>' +
-        '<button data-arcade-award="smartCall" type="button">SMART CALL</button>' +
-        '<button data-arcade-award="strongBet" type="button">STRONG BET</button>' +
-        '<button data-arcade-award="bigBluff" type="button">BIG BLUFF</button>' +
-        '<button data-arcade-award="bluffCaught" type="button">BLUFF CAUGHT</button>' +
+        '<button data-arcade-award="heroCall" type="button">HERO CALL</button>' +
+        '<button data-arcade-award="greatBluff" type="button">GREAT BLUFF</button>' +
+        '<button data-arcade-award="maxValue" type="button">MAX VALUE</button>' +
         '<button data-arcade-award="bigPot" type="button">BIG POT</button>' +
-        '<button data-arcade-award="monsterPot" type="button">MONSTER POT</button>' +
         '<button data-arcade-award="doubleUp" type="button">DOUBLE UP</button>' +
-        '<button data-arcade-award="ko" type="button">K.O. REWARD</button>' +
-        '<button data-arcade-award="tableClear" type="button">TABLE CLEAR</button>' +
         '<div class="dev-subtitle">LUCK LABELS</div>' +
         '<button data-arcade-luck="lucky" type="button">LUCKY</button>' +
-        '<button data-arcade-luck="jammy" type="button">JAMMY</button>' +
-        '<button data-arcade-luck="filthy" type="button">FILTHY</button>' +
-        '<button data-arcade-luck="miracle" type="button">MIRACLE</button>' +
+        '<button data-arcade-luck="veryLucky" type="button">VERY LUCKY</button>' +
+        '<button data-arcade-luck="gotAway" type="button">GOT AWAY</button>' +
         '<button data-arcade-luck="unlucky" type="button">UNLUCKY</button>' +
-        '<button data-arcade-luck="rough" type="button">ROUGH</button>' +
         '<button data-arcade-luck="brutal" type="button">BRUTAL</button>' +
-        '<button data-arcade-luck="sickener" type="button">SICKENER</button>' +
-        '<button data-arcade-luck="oneOutered" type="button">ONE-OUTERED!</button>' +
-        '<button data-arcade-luck="runnerRunner" type="button">RUNNER-RUNNER</button>' +
+        '<button data-arcade-luck="badBeat" type="button">BAD BEAT</button>' +
+        '<div class="dev-subtitle">ZERO-POINT COMMENTARY</div>' +
+        '<button data-arcade-comment="badCall" type="button">BAD CALL</button>' +
+        '<button data-arcade-comment="missedValue" type="button">MISSED VALUE</button>' +
+        '<button data-arcade-comment="punt" type="button">PUNT!</button>' +
         '<div class="dev-subtitle">STACKED SCENARIOS</div>' +
-        '<button data-arcade-scenario="goodPlay" type="button">GOOD PLAY</button>' +
-        '<button data-arcade-scenario="bluffCatch" type="button">BLUFF CATCH</button>' +
-        '<button data-arcade-scenario="jammyDouble" type="button">JAMMY DOUBLE-UP</button>' +
-        '<button data-arcade-scenario="brutalLoss" type="button">BRUTAL LOSS</button>' +
-        '<button data-arcade-scenario="bigKo" type="button">BIG K.O.</button>' +
-        '<button data-arcade-scenario="tableClear" type="button">TABLE CLEAR STACK</button>' +
-        '<div class="dev-subtitle">MULTIPLIER</div>' +
-        '<button id="dev-combo-up" type="button">MULTI +1 STEP</button>' +
-        '<button id="dev-combo-down" type="button">MULTI -1 STEP</button>' +
-        '<button data-arcade-mult="1" type="button">SET x1.0</button>' +
-        '<button data-arcade-mult="2" type="button">SET x2.0</button>' +
-        '<button data-arcade-mult="4" type="button">SET x4.0</button>' +
-        '<button data-arcade-mult="8" type="button">SET x8.0</button>' +
-        '<button data-arcade-mult="10" type="button">SET x10.0</button>' +
-        '<button id="dev-test-jackpot" type="button">TEST +25,000 JACKPOT</button>' +
+        '<button data-arcade-scenario="small" type="button">SMALL REWARD</button>' +
+        '<button data-arcade-scenario="medium" type="button">MEDIUM REWARD</button>' +
+        '<button data-arcade-scenario="huge" type="button">HUGE REWARD</button>' +
+        '<button data-arcade-scenario="stacked" type="button">3-EVENT QUEUE</button>' +
+        '<button data-arcade-scenario="luckyWin" type="button">REWARD + LUCK</button>' +
+        '<button data-arcade-scenario="badBeat" type="button">REWARD + BAD BEAT</button>' +
+        '<button data-arcade-scenario="badCall" type="button">NEGATIVE ONLY</button>' +
+        '<button id="dev-test-jackpot" type="button">ROYAL FLUSH +5,000</button>' +
         '<div class="dev-subtitle">COUNTER</div>' +
         '<button data-arcade-score="100" type="button">+100 SCORE</button>' +
         '<button data-arcade-score="1000" type="button">+1,000 SCORE</button>' +
@@ -9994,13 +10074,16 @@ function initDevPanel(){
   $('dev-bust-me').onclick = devBustMe;
   $('dev-clear-table').onclick = devClearTable;
   $('dev-end-table').onclick = devEndTable;
-  panel.querySelectorAll('[data-arcade-award]').forEach(b=>b.onclick=()=>devArcadeAward(b.dataset.arcadeAward));
-  panel.querySelectorAll('[data-arcade-luck]').forEach(b=>b.onclick=()=>devArcadeLuck(b.dataset.arcadeLuck));
-  panel.querySelectorAll('[data-arcade-scenario]').forEach(b=>b.onclick=()=>devArcadeScenario(b.dataset.arcadeScenario));
-  panel.querySelectorAll('[data-arcade-mult]').forEach(b=>b.onclick=()=>devArcadeSetMultiplier(b.dataset.arcadeMult));
+  const runArcadeDevTest=fn=>()=>{
+    fn();
+    panel.classList.add('collapsed');
+    $('dev-collapse').textContent='+';
+  };
+  panel.querySelectorAll('[data-arcade-award]').forEach(b=>b.onclick=runArcadeDevTest(()=>devArcadeAward(b.dataset.arcadeAward)));
+  panel.querySelectorAll('[data-arcade-luck]').forEach(b=>b.onclick=runArcadeDevTest(()=>devArcadeLuck(b.dataset.arcadeLuck)));
+  panel.querySelectorAll('[data-arcade-comment]').forEach(b=>b.onclick=runArcadeDevTest(()=>devArcadeCommentary(b.dataset.arcadeComment)));
+  panel.querySelectorAll('[data-arcade-scenario]').forEach(b=>b.onclick=runArcadeDevTest(()=>devArcadeScenario(b.dataset.arcadeScenario)));
   panel.querySelectorAll('[data-arcade-score]').forEach(b=>b.onclick=()=>devArcadeAddScore(b.dataset.arcadeScore));
-  $('dev-combo-up').onclick=()=>devArcadeCombo(1);
-  $('dev-combo-down').onclick=()=>devArcadeCombo(-1);
   $('dev-test-jackpot').onclick=devArcadeJackpot;
   $('dev-reset-score').onclick=devArcadeResetScore;
   $('dev-reset-arcade').onclick=devArcadeReset;
@@ -10029,7 +10112,7 @@ function refreshDevPanel(){
   $('dev-end-table').disabled = !(inElim && game.run && !game.over && !game._transitioning);
   const status = $('dev-status');
   if (status) status.textContent = (FAST_DEV ? '[FAST] ' : '') + (game ? ('mode:' + game.mode +
-    (game.run ? '  table:'+game.run.tableNumber+(game.run.arcade?' score:'+game.run.arcade.score+' '+formatArcadeMultiplier(arcadeMultiplier(game.run.arcade.comboStep)):'') : '') +
+    (game.run ? '  table:'+game.run.tableNumber+(game.run.arcade?' score:'+game.run.arcade.score:'') : '') +
     '  phase:' + game.phase + '  hand:' + game.handNumber) : 'no game');
 }
 
