@@ -301,6 +301,7 @@ button{ font-family:inherit; }
   align-items:center;
 }
 .lobby-card{ width:100%; max-width:440px; margin:auto; }
+.app-build-tag{ width:100%; max-width:440px; margin:6px auto 0; text-align:center; font-family:var(--font-hdr); font-size:6px; letter-spacing:.06em; color:var(--ink-faint); opacity:.5; }
 .home-topbar{ display:flex; justify-content:flex-end; align-items:center; min-height:var(--tap); margin-bottom:2px; }
 .hero{ text-align:center; margin:6px 0 26px; }
 /* the illustrated cast, hanging out above the title and flicking moods */
@@ -3065,6 +3066,7 @@ button, [role="button"], input[type="button"], input[type="submit"] {
         </div>
       </div>
     </div>
+    <div class="app-build-tag" id="app-build-tag"></div>
   </div>
 
   <!-- ============================ HAND RANKINGS ============================ -->
@@ -3437,6 +3439,10 @@ button, [role="button"], input[type="button"], input[type="submit"] {
         <div class="toggle-row">
           <div><div class="tl">Larger text</div><div class="ts">Bumps up text size across the game.</div></div>
           <button class="switch" id="sw-textsize" role="switch" aria-checked="false" aria-label="Larger text"></button>
+        </div>
+        <div class="toggle-row">
+          <div><div class="tl">Dev mode</div><div class="ts">Shows the developer test panel for scoring, hands and table states.</div></div>
+          <button class="switch" id="sw-devmode" role="switch" aria-checked="false" aria-label="Dev mode"></button>
         </div>
       </div>
 
@@ -4021,10 +4027,12 @@ const DEFAULT_SETTINGS = {
   speed:'normal', autoDeal:true, lives:true,
   playerName:'You', avatarColour:'#D9A93B', opponentNames:'persona',
   opponents:4, difficulty:'medium', mode:'cash', stack:1000, blindLevel:0,
-  seenIntro:false
+  seenIntro:false, devMode:false
 };
 const DEFAULT_STATS = { hands:0, won:0, showdownsWon:0, biggestPot:0, net:0 };
 const SAVE_VERSION = 1;
+/* Bump on every release so the main-menu footer shows what's actually installed. */
+const BUILD_VERSION = 'v0.12.4 · BUILD e5c0db6';
 
 let settings = Object.assign({}, DEFAULT_SETTINGS, Store.get('felt.settings', {}));
 let stats = Object.assign({}, DEFAULT_STATS, Store.get('felt.stats', {}));
@@ -5405,7 +5413,9 @@ function applyRunTheme(){
 // pass; see Phase 1 plan). Fully absent from the DOM/UI when false.
 // Development-only arcade harness. Normal launches never render it; append
 // ?dev to the local URL when deliberately testing scoring presentations.
-const DEV_MODE = new URLSearchParams(location.search).has('dev');
+// Also reachable at runtime via Settings > DEV MODE (persisted in
+// settings.devMode) — see bindSwitch('sw-devmode', ...) below.
+let DEV_MODE = new URLSearchParams(location.search).has('dev') || !!settings.devMode;
 
 // FAST DEV — a runtime toggle inside the DEV panel (not a build flag like
 // DEV_MODE above) that blitzes through the "boring setup" between real
@@ -10032,8 +10042,17 @@ function devNewEliminationTable(){
   refreshDevPanel();
 }
 
+function teardownDevPanel(){
+  const panel = $('dev-panel');
+  if (panel) panel.remove();
+}
+function setDevMode(on){
+  DEV_MODE = on;
+  if (on) initDevPanel(); else teardownDevPanel();
+}
 function initDevPanel(){
   if (!DEV_MODE) return;
+  if ($('dev-panel')) return;
   const panel = document.createElement('div');
   panel.id = 'dev-panel';
   panel.innerHTML =
@@ -10397,6 +10416,7 @@ function wireUI(){
   bindSwitch('sw-textsize','largeText', applyTheme);
   bindSwitch('sw-autodeal','autoDeal', ()=>{ if (!settings.autoDeal) clearTimeout(autoDealT); });
   bindSwitch('sw-lives','lives');
+  bindSwitch('sw-devmode','devMode', ()=>setDevMode(settings.devMode));
   document.querySelectorAll('#speed-seg button').forEach(b=>b.onclick=()=>{
     settings.speed = b.dataset.speed;
     setSegment('speed-seg','speed',settings.speed);
@@ -10458,6 +10478,7 @@ function wireUI(){
   reconstructMainMenu();
   initHeroFaces();
   initDevPanel();
+  $('app-build-tag').textContent = BUILD_VERSION;
 }
 
 /* Title-screen cast: the four illustrated characters above the POKER brand,
