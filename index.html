@@ -2382,6 +2382,27 @@ body #home #home-settings{ background:var(--theme-case-raised); color:var(--ink)
   transform:translateY(5px);
   box-shadow:inset 3px 3px 0 var(--pc-button-hi);
 }
+.pc-continue-slot{
+  position:relative;
+  flex:0 0 78px;
+  height:78px;
+  margin-bottom:10px;
+}
+#home .pc-continue-slot #continue-table{
+  margin:0;
+  box-shadow:
+    0 6px 0 var(--pc-button-lo),
+    0 9px 0 var(--pc-edge-lo),
+    inset 3px 3px 0 var(--pc-button-hi),
+    inset -3px -3px 0 rgba(81,49,5,.3);
+}
+#home .pc-continue-slot #continue-table:active{
+  transform:translateY(5px);
+  box-shadow:
+    0 1px 0 var(--pc-button-lo),
+    0 4px 0 var(--pc-edge-lo),
+    inset 3px 3px 0 var(--pc-button-hi);
+}
 @keyframes pcLaunchClunk{
   0%{
     transform:translateY(0);
@@ -2425,7 +2446,6 @@ body #home #home-settings{ background:var(--theme-case-raised); color:var(--ink)
   box-shadow:0 4px 0 #72623C,0 6px 0 #090605,inset 2px 2px 0 #F9E8B4,inset -2px -2px 0 #8B7A4C;
 }
 #home .pc-button-secondary:active{ transform:translateY(4px); box-shadow:0 1px 0 #72623C,0 3px 0 #090605,inset 2px 2px 0 #F9E8B4; }
-#home #continue-table{ margin-bottom:10px; }
 .table-tools{ display:flex; align-items:center; gap:6px; }
 .table-save{
   width:58px; height:30px; min-height:30px; padding:0 7px;
@@ -2466,6 +2486,7 @@ body #home #home-settings{ background:var(--theme-case-raised); color:var(--ink)
   #home .hero .brand{ font-size:29px; }
   #home .hero-faces .hf{ width:54px; height:54px; }
   #home .pc-button-primary{ font-size:12px; min-height:62px; padding-left:28px; padding-right:28px; }
+  .pc-continue-slot{ flex-basis:62px; height:62px; }
 }
 @media (max-height:820px){
   #home{ overflow-y:auto; align-items:flex-start; }
@@ -2708,6 +2729,7 @@ body #home #home-settings{ background:var(--theme-case-raised); color:var(--ink)
   #home .home-row .btn-secondary{ font-size:6px; }
 }
 @media (orientation:portrait){
+  #table-screen.arcade-active .arcade-score-machine{ margin-top:12px; }
   /* Keep the complete punch/XP sequence on the lower felt, but safely
      above the player's protruding hole cards on short phone screens. */
   .arcade-reward-layer{ top:38%; }
@@ -3020,11 +3042,13 @@ button, [role="button"], input[type="button"], input[type="submit"] {
           <span class="pc-seam"></span>
           <span class="pc-lamp is-amber"></span>
         </div>
-        <button class="pc-button pc-button-primary hidden" id="continue-table">
-          <span class="pc-lamp is-green"></span>
-          <span>Continue<small>Resume saved game</small></span>
-          <span class="pc-lamp is-green"></span>
-        </button>
+        <div class="pc-continue-slot">
+          <button class="pc-button pc-button-primary hidden" id="continue-table">
+            <span class="pc-lamp is-green"></span>
+            <span>Continue<small>Resume saved game</small></span>
+            <span class="pc-lamp is-green"></span>
+          </button>
+        </div>
         <div class="pc-primary-cradle">
           <span class="pc-slot-aperture" aria-hidden="true"><span class="pc-slot-door"></span></span>
           <button class="pc-button pc-button-primary" id="single-player">
