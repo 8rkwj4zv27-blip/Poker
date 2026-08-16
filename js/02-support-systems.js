@@ -328,7 +328,16 @@ const Sound = (function(){
   const CHIP_COLLECT_WINDOW_MS = 180;
   const CHIP_COLLECT_SOFTEN_AFTER = 5;
 
-  function chipClink(soft){
+  /* `power` (juice pass v2, item 9) — an optional intensity multiplier
+     around 1.0, only ever passed by Sound.chipBounce() so far (soft ping
+     ~0.7 / normal clack 1.0 / hard plonk ~1.4, see maybePlayBounceSound in
+     06-presentation.js). Every other existing caller (chipLand,
+     chipCollect) omits it and gets exactly the prior behaviour — louder
+     AND lower-pitched for a hard hit (plonkier), quieter and higher-
+     pitched for a soft one (crisper ping), rather than just a volume
+     change, so collision character actually varies with how hard the hit
+     was, not just how loud it is. */
+  function chipClink(soft, power){
     const c = ac(); if (!c) return;
     if (chipActiveVoices >= CHIP_MAX_VOICES) return; // drop, don't stack — last-resort cap under the density taper
     chipActiveVoices++;
@@ -338,7 +347,8 @@ const Sound = (function(){
 
     try{
       const t = c.currentTime;
-      const vol = 0.05 * (soft ? 0.55 : 1);
+      const p = power==null ? 1 : Math.max(0.5, Math.min(1.6, power));
+      const vol = 0.05 * (soft ? 0.55 : 1) * p;
 
       // the strike: a very short bandpassed noise burst, hard fast decay
       const noiseDur = 0.014 + Math.random()*0.010;              // ~14-24ms
@@ -349,7 +359,7 @@ const Sound = (function(){
       for (let i=0;i<n;i++) d[i] = (Math.random()*2-1) * Math.pow(1-i/n, decayPow);
       const src = c.createBufferSource(); src.buffer = buf;
       const nf = c.createBiquadFilter(); nf.type = 'bandpass';
-      nf.frequency.value = 2600 + Math.random()*2400;             // 2.6-5kHz: click, not boom
+      nf.frequency.value = (2600 + Math.random()*2400) / p;       // harder hit -> lower centre freq (plonkier), softer -> higher (pingier)
       nf.Q.value = 1.1 + Math.random()*0.8;
       const ng = c.createGain();
       ng.gain.value = vol * (0.55 + Math.random()*0.35);
@@ -357,7 +367,7 @@ const Sound = (function(){
 
       // the ring: one or two short, inharmonically-related tonal partials
       const partials = Math.random()<0.15 ? 1 : 2;
-      const f1 = 1500 + Math.random()*2200;                        // ~1.5-3.7kHz
+      const f1 = (1500 + Math.random()*2200) / p;                  // ~1.5-3.7kHz, shifted the same way as the strike above
       const ratio = 2.1 + Math.random()*1.1;                        // inharmonic -> metallic, not a clean pitch
       const freqs = partials===2 ? [f1, f1*ratio] : [f1];
       freqs.forEach((f,i)=>{
@@ -645,17 +655,20 @@ const Sound = (function(){
       chipLandTimes.push(now);
       chipClink(chipLandTimes.length > CHIP_DENSITY_SOFTEN_AFTER);
     },
-    /* Pot-smash physics — one boundary bounce. Caller (the physics
+    /* Pot-smash physics — one boundary bounce. `power` (~0.7 soft ping /
+       1.0 normal clack / ~1.4 hard plonk, see maybePlayBounceSound in
+       06-presentation.js) varies the hit's own character, on top of the
+       existing density-window softening below. Caller (the physics
        controller) already enforces a per-chip minimum re-trigger gap so a
        single chip rattling in a corner can't itself flood this; this
        density window is the cross-chip guard for a whole burst landing at
        once. */
-    chipBounce(){
+    chipBounce(power){
       if (!this.chipSfxEnabled) return;
       const now = performance.now();
       chipBounceTimes = chipBounceTimes.filter(t=>now-t < CHIP_BOUNCE_WINDOW_MS);
       chipBounceTimes.push(now);
-      chipClink(chipBounceTimes.length > CHIP_BOUNCE_SOFTEN_AFTER);
+      chipClink(chipBounceTimes.length > CHIP_BOUNCE_SOFTEN_AFTER, power);
     },
     /* Pot-smash physics — one chip settling into the bank during the
        magnetic collection phase. */

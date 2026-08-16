@@ -138,10 +138,45 @@
 .arcade-reward-layer.cat-result .arcade-hero{ color:var(--card-face); }
 .arcade-reward-layer.cat-skill .arcade-hero{ color:var(--card-face); }
 .arcade-reward-layer.cat-achievement .arcade-hero{ color:var(--accent-bright); }
+/* Reward intensity hierarchy (juice pass v2, item 2) — three tiers keyed
+   off each award's existing tier field (small/medium/large), which
+   already tracks value/importance (a pair vs. a royal flush, a small
+   steal vs. TABLE CLEAR), rather than inventing a new per-category
+   colour scheme — "the hierarchy should be based primarily on reward
+   importance/value". tier-small is the untouched baseline ("standard").
+   tier-medium ("strong") steps up size/outline/entrance. tier-large
+   ("premium") is reserved for genuinely big rewards (massive pots, rare
+   hand-strength/skill awards, K.O./TABLE CLEAR) and gets the full
+   treatment: thicker outline, a hotter glow built from the theme's own
+   --accent (never a hardcoded colour, so it stays correct across every
+   palette), a bigger scale punch and a longer, more emphatic entrance. */
 .arcade-reward-layer.tier-small .arcade-hero{ font-size:clamp(18px,6.3vw,38px); }
-.arcade-reward-layer.tier-medium .arcade-hero{ font-size:clamp(24px,8vw,50px); }
-.arcade-reward-layer.tier-large .arcade-hero{ font-size:clamp(30px,10.5vw,68px); animation-duration:.68s; }
+.arcade-reward-layer.tier-medium .arcade-hero{
+  font-size:clamp(25px,8.6vw,54px); -webkit-text-stroke:1.4px var(--px-ink);
+}
+.arcade-reward-layer.tier-medium.is-live .arcade-hero{ animation-name:arcadeHeroHitStrong; animation-duration:.58s; }
+.arcade-reward-layer.tier-large .arcade-hero{
+  font-size:clamp(32px,11.5vw,74px); -webkit-text-stroke:2.6px var(--px-ink); color:var(--accent-bright);
+  text-shadow:3px 0 0 var(--px-ink),-3px 0 0 var(--px-ink),0 3px 0 var(--px-ink),0 -3px 0 var(--px-ink),
+    7px 7px 0 color-mix(in srgb,var(--accent) 75%,black),
+    0 0 20px color-mix(in srgb,var(--accent) 90%,transparent),
+    0 0 40px color-mix(in srgb,var(--accent-bright) 65%,transparent);
+}
+.arcade-reward-layer.tier-large.is-live .arcade-hero{ animation-name:arcadeHeroHitPremium; animation-duration:.72s; }
 .arcade-reward-layer.tier-large{ animation:arcadeScreenKick .56s steps(8,end); }
+@keyframes arcadeHeroHitStrong{
+  0%{ transform:scale(2.3); opacity:0; filter:brightness(2.3); }
+  26%{ transform:scale(.86); opacity:1; }
+  46%{ transform:scale(1.13); }
+  66%{ transform:scale(.96); } 100%{ transform:scale(1); }
+}
+@keyframes arcadeHeroHitPremium{
+  0%{ transform:scale(2.8) rotate(-3deg); opacity:0; filter:brightness(3); }
+  24%{ transform:scale(.82) rotate(1deg); opacity:1; filter:brightness(1.7); }
+  42%{ transform:scale(1.24) rotate(-1deg); filter:brightness(1.25); }
+  62%{ transform:scale(.93) rotate(.5deg); }
+  100%{ transform:scale(1) rotate(0); filter:brightness(1); }
+}
 .arcade-reward-layer.commentary-only .arcade-hero{
   font-size:clamp(13px,4.3vw,25px); letter-spacing:.06em; color:var(--ink-dim);
   -webkit-text-stroke:0; text-shadow:2px 2px 0 var(--px-ink),0 0 8px rgba(0,0,0,.5);
@@ -174,12 +209,32 @@
    .arcade-secondaries/.arcade-total wholesale (see presentRewardBreakdown
    in 06-presentation.js); .arcade-total here doubles as the running
    subtotal during the per-item loop and the final "+N" TOTAL on the last
-   step (.is-total), so no separate subtotal element was needed. */
+   step (.is-total), so no separate subtotal element was needed.
+   TOTAL is deliberately styled well past even the tier-large treatment
+   above (juice pass v2, item 3) — "as if every previous reward line has
+   accumulated into one physical object" — bigger, thicker-outlined,
+   brighter glow, and a dedicated punchier entrance/impact keyframe on
+   both the "TOTAL" label and its number, while staying fully readable
+   right up until the smash. */
 .arcade-reward-layer.is-total .arcade-hero{
-  color:var(--accent-bright); font-size:clamp(26px,9vw,58px);
-  -webkit-text-stroke:0; text-shadow:3px 3px 0 var(--px-ink),0 0 16px color-mix(in srgb,var(--accent) 70%,transparent);
+  color:var(--accent-bright); font-size:clamp(30px,10.5vw,64px); -webkit-text-stroke:2.4px var(--px-ink);
+  text-shadow:3px 0 0 var(--px-ink),-3px 0 0 var(--px-ink),0 3px 0 var(--px-ink),0 -3px 0 var(--px-ink),
+    8px 8px 0 color-mix(in srgb,var(--accent) 78%,black),
+    0 0 24px color-mix(in srgb,var(--accent) 85%,transparent),
+    0 0 46px color-mix(in srgb,var(--accent-bright) 60%,transparent);
 }
-.arcade-reward-layer.is-total .arcade-total{ font-size:clamp(24px,8.4vw,54px); }
+.arcade-reward-layer.is-total.is-live .arcade-hero{ animation-name:arcadeHeroHitPremium; animation-duration:.76s; }
+.arcade-reward-layer.is-total .arcade-total{
+  font-size:clamp(28px,9.8vw,62px);
+  text-shadow:3px 3px 0 var(--px-ink),0 0 18px color-mix(in srgb,var(--accent) 80%,transparent);
+}
+.arcade-reward-layer.is-total .arcade-total.is-ready{ animation:arcadeTotalHitPremium .5s steps(6,end); }
+@keyframes arcadeTotalHitPremium{
+  0%{ opacity:0; transform:translateY(14px) scale(.4); }
+  50%{ opacity:1; transform:translateY(-4px) scale(1.22); }
+  74%{ transform:translateY(1px) scale(.94); }
+  100%{ transform:none; }
+}
 
 /* ============================================================
    POT SMASH — the TOTAL score value, styled as a chunky physical
@@ -198,13 +253,18 @@
    as an ordinary resting chip, just reparented and repositioned.
    ============================================================ */
 .score-smash-layer{ position:fixed; z-index:80; left:0; top:0; pointer-events:none; }
+/* Heavier than before (item 3) — thicker border, deeper drop-shadow
+   ("weight"), a wider size ceiling and an outer glow built from the
+   theme's own --accent, so the physical stamp itself carries some of the
+   same premium presence as the .is-total reward line it grew out of. */
 .score-smash-plate{
   position:absolute; left:0; top:0; white-space:nowrap;
-  padding:9px 20px; background:linear-gradient(180deg,color-mix(in srgb,var(--panel-2) 82%,#453314 18%),var(--panel));
-  border:3px solid var(--accent); border-top-color:var(--accent-bright); border-bottom-color:var(--px-ink);
-  box-shadow:0 6px 0 var(--px-ink), inset 2px 2px 0 rgba(255,255,255,.1), inset -2px -2px 0 rgba(0,0,0,.4);
-  color:var(--accent-bright); font-family:var(--font-hdr); font-size:clamp(20px,7.5vw,40px); line-height:1;
-  text-shadow:3px 3px 0 var(--px-ink);
+  padding:10px 22px; background:linear-gradient(180deg,color-mix(in srgb,var(--panel-2) 82%,#453314 18%),var(--panel));
+  border:4px solid var(--accent); border-top-color:var(--accent-bright); border-bottom-color:var(--px-ink);
+  box-shadow:0 8px 0 var(--px-ink), inset 2px 2px 0 rgba(255,255,255,.12), inset -2px -2px 0 rgba(0,0,0,.45),
+    0 0 26px color-mix(in srgb,var(--accent) 55%,transparent);
+  color:var(--accent-bright); font-family:var(--font-hdr); font-size:clamp(22px,8.4vw,46px); line-height:1;
+  text-shadow:3px 3px 0 var(--px-ink),0 0 16px color-mix(in srgb,var(--accent) 60%,transparent);
 }
 /* Table impact bump — a small physical reaction on the felt itself the
    instant the score plate lands, same class-triggered steps() keyframe

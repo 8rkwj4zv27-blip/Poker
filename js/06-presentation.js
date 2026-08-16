@@ -1603,31 +1603,51 @@ function payoutTo(winner, n){
    setup" to blitz through under FAST DEV.
    ============================================================ */
 
-/* Reward breakdown pacing — the whole sequential list (excluding the
-   TOTAL reveal/anticipation beats, which sit outside the budget) is
-   meant to land inside roughly budgetMs regardless of how many awards
-   were earned: a short list gets a deliberate, satisfying cadence, a long
-   one compresses per-item timing (never truncates the list) so nothing
-   gets tedious. See presentRewardBreakdown(). */
+/* Reward breakdown pacing — juice pass v2: more breathing room per line,
+   still adaptive (a long list compresses, never truncates). Per-item
+   duration uses budgetMs/sqrt(n) rather than a straight budgetMs/n split
+   — division alone would roughly halve the pace every time the list
+   grows by one more item; the gentler sqrt falloff is what lets a 1-2
+   item list sit near maxPerItemMs (a deliberate, satisfying beat) while a
+   6+ item list still tapers down toward minPerItemMs instead of racing
+   there. Roughly: n=1-2 -> ~750-900ms/item, n=3-5 -> ~550-700ms/item,
+   n=6+ -> ~400-500ms/item, keeping a long breakdown's total runtime in
+   the ~2.5-3.0s ballpark before TOTAL. totalRevealMs/anticipationMs sit
+   outside that budget entirely — TOTAL is the hero beat, not another
+   list item (see presentRewardBreakdown/item 3 of the juice pass). */
 const REWARD_BREAKDOWN_CONFIG = {
-  budgetMs: 1700, minPerItemMs: 180, maxPerItemMs: 650,
-  totalRevealMs: 260, anticipationMs: 350
+  budgetMs: 1200, minPerItemMs: 400, maxPerItemMs: 900,
+  totalRevealMs: 320, anticipationMs: 460
 };
 /* Free-bounce/attraction physics tuning — see runPotBreakPhysics() and
    its helpers. Deliberately simple (no chip-vs-chip collision, two static
    axis-aligned bounds) per the "controlled chaos, not a physics engine"
-   brief. */
+   brief. Juice pass v2: freeMs stretched from 850ms to ~2.5s, so
+   restitution/damping are retuned alongside it — the original values were
+   tuned for a sub-second burst and would have every chip settled to a
+   near-standstill long before a 2.5s window elapsed; higher restitution
+   and lower damping keep chips genuinely bouncing/rotating for most of
+   the extended window instead of just resting there. */
 const POT_SMASH_PHYSICS_CONFIG = {
-  freeMs: 850,              // shared free-bounce budget — one clock for every chip, so the burst reads as one event
-  gravity: 1500,            // px/s^2, a mild arcade toss rather than a realistic drop
-  restitution: 0.48,        // velocity retained (perpendicular component) on a boundary bounce
-  floorFriction: 0.72,      // extra horizontal damping specifically on a dashboard-floor contact
-  airDamping: 0.4,          // per-second velocity decay while airborne
-  angularDamping: 0.85,     // per-second spin decay
-  minBounceSoundVel: 55,    // px/s — below this a "bounce" is a silent graze
-  bounceSoundGapMs: 60,     // per-chip minimum re-trigger gap, independent of Sound.chipBounce's own cross-chip density window
-  attractStaggerMaxMs: 180, // collection begins slightly staggered per chip, not all at once
-  attractMs: 320            // per-chip ease-in duration once it starts homing to the bank
+  freeMs: 2500,              // shared free-bounce budget — one clock for every chip, so the burst reads as one event. Target range 2300-2700ms.
+  hitStopMs: 60,             // micro impact-freeze at the instant TOTAL lands, before anything reacts — felt more than seen
+  gravity: 1350,             // px/s^2 — slightly floatier arc than before, suited to the longer window
+  restitution: 0.64,         // velocity retained (perpendicular component) on a boundary bounce — raised so multiple bounces persist over 2.5s
+  floorFriction: 0.78,       // extra horizontal damping specifically on a dashboard-floor contact
+  airDamping: 0.22,          // per-second velocity decay while airborne — lowered so chips keep travelling/rattling, not just dying out
+  angularDamping: 0.5,       // per-second spin decay — lowered so chips keep visibly rotating through more of the free phase
+  minBounceSoundVel: 70,     // px/s — below this a "bounce" is a silent graze (raised: a longer bounce phase means far more collision events, so the floor is stricter)
+  softBounceVel: 150,        // below this: a small soft "ping"
+  hardBounceVel: 420,        // at/above this: a stronger "plonk" — edge/dashboard hits read heavier than a gentle mid-table graze
+  bounceSoundGapMs: 70,      // per-chip minimum re-trigger gap, independent of Sound.chipBounce's own cross-chip density window
+  releaseStaggerMaxMs: 120,  // tower-breakup stagger — upper/earlier-pulled chips pop free slightly before lower/later ones (item 6)
+  attractStaggerMaxMs: 260,  // collection begins slightly staggered per chip, not all at once — widened for the longer, larger bursts
+  attractMs: 340,            // per-chip ease-in duration once it starts homing to the bank
+  attractPow: 2.2,           // ease-in exponent — weak start, quickly ramping, "increasingly decisive" pull (item 10)
+  lateSnapFraction: 0.82,    // the last ~18% of chips (by attraction start order) get a faster, punchier "snap" finish
+  lateSnapMsMult: 0.68,      // their attractMs is shortened by this factor
+  lateSnapPow: 3.4,          // and eased with a steeper exponent — a harder final pull
+  attractBowMin: 14, attractBowMax: 40  // px — lateral "curve" bowed into the attraction path so it reads as being pulled in, not just sliding in a straight line
 };
 
 /* Landing point for the TOTAL stamp — centred on the pot plate itself
@@ -1684,7 +1704,7 @@ async function presentRewardBreakdown(early){
   const layer = $('arcade-reward-layer');
   if (!layer || !items || !items.length) return;
   const cfg = REWARD_BREAKDOWN_CONFIG;
-  const perItemMs = Math.max(cfg.minPerItemMs, Math.min(cfg.maxPerItemMs, Math.round(cfg.budgetMs/items.length)));
+  const perItemMs = Math.max(cfg.minPerItemMs, Math.min(cfg.maxPerItemMs, Math.round(cfg.budgetMs/Math.sqrt(items.length))));
   let subtotal = 0;
   for (const item of items){
     subtotal += item.def.base*item.count;
@@ -1719,13 +1739,37 @@ function applyChipTransform(c){
   c.el.style.top = (c.y - c.radius) + 'px';
   c.el.style.transform = 'rotate(' + c.rot + 'deg)';
 }
+/* Launch-class weighting for the initial burst (item 5 of the juice
+   pass) — a real tower breaking apart doesn't send every chip out at a
+   uniform speed: a few go flying, most get a solid medium shove, and a
+   handful near the bottom/sheltered barely escape before gravity/the
+   next bounce takes over. Picked independently per chip (not tied to
+   pull order) so the mix reads as physical variety, not a pattern. */
+function pickLaunchClass(){
+  const r = Math.random();
+  if (r < 0.14) return 'hard';
+  if (r < 0.82) return 'medium';
+  return 'soft';
+}
+const LAUNCH_CLASS_SPEED = {
+  hard:   { min:480, max:640, kickMin:190, kickMax:280, spinMin:260, spinMax:520 },
+  medium: { min:230, max:420, kickMin:100, kickMax:190, spinMin:150, spinMax:320 },
+  soft:   { min:70,  max:180, kickMin:20,  kickMax:80,  spinMin:70,  spinMax:170 }
+};
 /* Pulls one real chip off the pot pile, pins it at its exact resting rect
    (same "IS the chip on frame one" technique flyChip already uses), and
    gives it an outward velocity radial from the impact point relative to
    ITS OWN tower's actual on-screen position — different towers already
    sit at different distances/angles from the impact, so varied launch
-   vectors fall out naturally without any per-chip hand tuning. */
-function spawnPhysicsChip(taken, impactPoint, layer){
+   vectors fall out naturally without any per-chip hand tuning; the
+   launch-class speed above layers deliberate variety on top of that.
+   `pullIndex` (this chip's 0-based order among the whole burst — earlier
+   pulls tend to be a tower's own topmost chips, see takeChipFromPile) also
+   drives a small releaseDelay so the tower visibly breaks apart in a
+   quick stagger rather than every chip going free on the same frame
+   (item 6) — the chip stays pinned exactly at its resting rect, doing
+   nothing, until that delay elapses (see runPhysicsFreePhase). */
+function spawnPhysicsChip(taken, impactPoint, layer, pullIndex){
   const { el, rect } = taken;
   el.classList.remove('disc-in');
   el.style.transition = 'none';
@@ -1739,28 +1783,45 @@ function spawnPhysicsChip(taken, impactPoint, layer){
   el.style.willChange = 'left,top,transform';
   layer.appendChild(el);
 
+  const cfg = POT_SMASH_PHYSICS_CONFIG;
   const cx = rect.left+rect.width/2, cy = rect.top+rect.height/2;
   const dx = cx-impactPoint.x, dy = cy-impactPoint.y, dist = Math.hypot(dx,dy);
   let angle = dist<4 ? Math.random()*Math.PI*2 : Math.atan2(dy,dx);
   angle += (Math.random()-0.5)*0.9;                 // spread, so a tower's chips don't all launch in lockstep
-  const speed = 250 + Math.random()*260;
+  const lc = LAUNCH_CLASS_SPEED[pickLaunchClass()];
+  const speed = lc.min + Math.random()*(lc.max-lc.min);
+  const kick = lc.kickMin + Math.random()*(lc.kickMax-lc.kickMin);
+  const spin = lc.spinMin + Math.random()*(lc.spinMax-lc.spinMin);
+
+  const attractDelay = Math.random()*cfg.attractStaggerMaxMs;
+  const lateSnap = attractDelay > cfg.attractStaggerMaxMs*cfg.lateSnapFraction;
+
   return {
     el,
     x:cx, y:cy,
     vx: Math.cos(angle)*speed,
-    vy: Math.sin(angle)*speed - (110+Math.random()*150),  // small upward kick on top of the outward burst
-    rot:0, vrot:(Math.random()<0.5?-1:1)*(160+Math.random()*300),
+    vy: Math.sin(angle)*speed - kick,
+    rot:0, vrot:(Math.random()<0.5?-1:1)*spin,
     radius: rect.width/2,
     state:'free', lastBounceAt:0,
-    attractDelay: Math.random()*POT_SMASH_PHYSICS_CONFIG.attractStaggerMaxMs
+    releaseDelay: Math.min(cfg.releaseStaggerMaxMs, (pullIndex||0)*2) + Math.random()*40,
+    attractDelay,
+    attractMs: lateSnap ? cfg.attractMs*cfg.lateSnapMsMult : cfg.attractMs,
+    attractPow: lateSnap ? cfg.lateSnapPow : cfg.attractPow,
+    bowAmount: (Math.random()<0.5?-1:1) * (cfg.attractBowMin + Math.random()*(cfg.attractBowMax-cfg.attractBowMin))
   };
 }
 function maybePlayBounceSound(c, vel){
-  if (vel < POT_SMASH_PHYSICS_CONFIG.minBounceSoundVel) return;
+  const cfg = POT_SMASH_PHYSICS_CONFIG;
+  if (vel < cfg.minBounceSoundVel) return;
   const now = performance.now();
-  if (now-c.lastBounceAt < POT_SMASH_PHYSICS_CONFIG.bounceSoundGapMs) return;
+  if (now-c.lastBounceAt < cfg.bounceSoundGapMs) return;
   c.lastBounceAt = now;
-  Sound.chipBounce();
+  // soft ping / normal clack / stronger plonk, keyed off how hard this
+  // particular collision actually was (item 9) — not every bounce sounds
+  // the same.
+  const power = vel < cfg.softBounceVel ? 0.7 : vel < cfg.hardBounceVel ? 1.0 : 1.4;
+  Sound.chipBounce(power);
 }
 /* One free-flight integration step: gravity + air damping, then a simple
    circle-vs-edge clamp+restitution against the two static bounds — no
@@ -1789,15 +1850,23 @@ function stepFreeChip(c, dt, bounds){
 /* Shared rAF clock driving every free-flight chip for a fixed wall-clock
    budget — one clock, not per-chip timers, so the burst reads as one
    coordinated event rather than chips drifting out of sync with each
-   other. */
+   other. Each chip stays completely still at its exact pulled-from-the-
+   tower position until its own releaseDelay elapses (measured from this
+   phase's real start, t0) — that's the tower-breakup stagger (item 6):
+   chips pop free in a quick cascade instead of the whole tower vanishing
+   on one frame, without any dedicated stack-physics simulation. */
 function runPhysicsFreePhase(chips, bounds, budgetMs){
   return new Promise(resolve=>{
-    let last = performance.now();
-    const endAt = last + budgetMs;
+    const t0 = performance.now();
+    let last = t0;
+    const endAt = t0 + budgetMs;
     function frame(now){
       const dt = Math.min(0.032, (now-last)/1000);
       last = now;
-      chips.forEach(c=>stepFreeChip(c, dt, bounds));
+      chips.forEach(c=>{
+        if (now-t0 < c.releaseDelay) return;
+        stepFreeChip(c, dt, bounds);
+      });
       if (now < endAt) requestAnimationFrame(frame); else resolve();
     }
     requestAnimationFrame(frame);
@@ -1807,17 +1876,25 @@ function runPhysicsFreePhase(chips, bounds, budgetMs){
    into its own reserved bank slot — one clock driving all of them (not N
    independent per-chip rAF loops/timers), same efficiency reasoning as
    runPhysicsFreePhase above; a huge pot can mean dozens of chips
-   attracting inside the same ~500ms window, and this is a mobile PWA
-   first. Each chip only claims its real bank slot (claimDestSlot) the
-   instant ITS OWN stagger delay elapses — not all up front — so the
-   slot's real final rect is known before its ease starts (same guarantee
-   flyChip's placeholder trick relies on) and later-starting chips still
-   see earlier ones' reservations already reflected in tower height. A
-   plain accelerating ease-in lerp (simpler and more predictable than a
-   force-based magnet) carries each chip to its slot; settleSlot() on
-   arrival hands the element back to the real bank pile for good — same
-   primitive an ordinary payout uses, so nothing about the DOM handoff is
-   bespoke to this effect. */
+   attracting inside the same window, and this is a mobile PWA first.
+   Each chip only claims its real bank slot (claimDestSlot) the instant
+   ITS OWN stagger delay elapses — not all up front — so the slot's real
+   final rect is known before its ease starts (same guarantee flyChip's
+   placeholder trick relies on) and later-starting chips still see earlier
+   ones' reservations already reflected in tower height.
+   The ease itself uses each chip's own attractPow (item 10) — a power
+   curve rather than a straight lerp so early progress is barely
+   perceptible and the pull becomes visibly more decisive as it nears the
+   bank; a chip flagged as a "late snap" (the last ~18% to start, see
+   spawnPhysicsChip) gets a shorter attractMs and a steeper attractPow, so
+   the very last few chips visibly snap home harder/faster for a
+   satisfying finish rather than the whole burst just petering out evenly.
+   A small perpendicular "bow" (sine-shaped, zero at both ends) is layered
+   on top of the straight-line lerp so the path visibly curves in toward
+   the bank instead of sliding there in a flat line — reads as magnetism,
+   not a slide. settleSlot() on arrival hands the element back to the real
+   bank pile for good — same primitive an ordinary payout uses, so nothing
+   about the DOM handoff is bespoke to this effect. */
 function runPhysicsAttractionPhase(chips, bankContainer, bankP){
   if (!chips.length) return Promise.resolve();
   return new Promise(resolve=>{
@@ -1832,11 +1909,13 @@ function runPhysicsAttractionPhase(chips, bankContainer, bankP){
           c._placeholder = claimDestSlot(bankContainer, bankP).placeholder;
           c._startX = c.x; c._startY = c.y; c._startRot = c.rot; c._t0 = now;
         }
-        const t = Math.min(1, (now-c._t0)/POT_SMASH_PHYSICS_CONFIG.attractMs), eased = t*t;
+        const t = Math.min(1, (now-c._t0)/c.attractMs), eased = Math.pow(t, c.attractPow);
         const target = c._placeholder.getBoundingClientRect();
         const tx = target.left+target.width/2, ty = target.top+target.height/2;
-        c.x = c._startX + (tx-c._startX)*eased;
-        c.y = c._startY + (ty-c._startY)*eased;
+        const dxT = tx-c._startX, dyT = ty-c._startY;
+        const bow = Math.sin(Math.PI*t) * c.bowAmount, bowLen = Math.hypot(dxT,dyT) || 1;
+        c.x = c._startX + dxT*eased + (-dyT/bowLen)*bow;
+        c.y = c._startY + dyT*eased + (dxT/bowLen)*bow;
         c.rot = c._startRot + (0-c._startRot)*eased;
         applyChipTransform(c);
         if (t<1) return;
@@ -1879,7 +1958,7 @@ async function runPotBreakPhysics(potN, impactPoint){
     const taken = takeChipFromPile(potContainer, pPile);
     if (!taken){ potPending = Math.max(0, potPending-1); bankPending = Math.max(0, bankPending-1); continue; }
     potPending = Math.max(0, potPending-1);
-    chips.push(spawnPhysicsChip(taken, impactPoint, layer));
+    chips.push(spawnPhysicsChip(taken, impactPoint, layer, i));
   }
   if (!chips.length){ layer.remove(); return; }
 
@@ -1937,6 +2016,13 @@ async function runPotSmashSequence({ potN, scoreTotal, human }){
   try{ await dropAnim.finished; }catch(e){}
   dropAnim.commitStyles(); dropAnim.cancel();
 
+  // Micro impact-freeze (item 4 of the juice pass) — a very short hold
+  // right at contact, before anything reacts, so the hit reads as
+  // heavier. Meant to be felt more than consciously noticed; this branch
+  // only ever runs when motion is on, so reduced-motion users never see
+  // this pause at all (they take the instant fallback above instead).
+  await sleep(POT_SMASH_PHYSICS_CONFIG.hitStopMs);
+
   // IMPACT — felt thud, sound, haptic, the permanent SCORE HUD starting
   // to roll, and the real pot chips bursting into physics all fire off
   // this exact instant (the moment the plate's own fall says it landed).
@@ -1992,6 +2078,13 @@ function runHumanPotSmashCeremony(g, outcome, potN, preWinChips){
       humanBankDisplayFreeze = null;
       updateJackpot(human.chips);
     }
+    // Settle beat (item 11) — a small, deliberate breathing pause once the
+    // last physical chip has actually landed, so the payout reads as
+    // finished rather than immediately cutting into whatever's next
+    // (K.O./TABLE CLEAR presentation, the next-hand button). Placed after
+    // the freeze already cleared, so it never delays the money reveal
+    // itself — only what comes after it.
+    await sleep(motionOff() ? 0 : 200);
     if (early.luck) await presentArcadeCommentary(g, early.luck, true);
     else if (early.commentary) await presentArcadeCommentary(g, early.commentary, false);
   });
