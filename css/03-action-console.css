@@ -1,0 +1,584 @@
+/* ============================================================
+   ACTION AREA + COACH
+   ============================================================ */
+#action-area{
+  z-index:30; flex-shrink:0;
+  padding:8px 14px max(8px, calc(env(safe-area-inset-bottom) - 10px));
+  background:linear-gradient(180deg,transparent 0, rgba(4,8,6,.92) 34%);
+}
+.banner{
+  text-align:center; font-size:14px; font-weight:700; color:var(--ink-dim);
+  padding:9px 4px; min-height:38px; display:flex; align-items:center; justify-content:center;
+}
+.banner b{ color:var(--accent-bright); }
+/* Fixed footprint, always in flow (never display:none) — this row lives
+   inside #hud-frame, which is a natural-height sibling of the flex:1
+   .felt-wrap inside .table-main. Toggling it with display:none (the old
+   .hidden approach) changed #hud-frame's height every time it became the
+   human's turn, which stole/returned space from .felt-wrap and shrank the
+   felt itself. min-height reserves the same one-line box whether or not
+   there's text in it, exactly like the .action-slot/#hud-action pattern
+   above. */
+.hand-strength{
+  text-align:center; font-size:12px; color:var(--ink-faint); margin:-4px 0 8px;
+  letter-spacing:.02em; min-height:14px;
+}
+.hand-strength b{ color:var(--ink-dim); font-weight:700; }
+
+#coach{
+  background:var(--panel); border:2px solid var(--px-ink);
+  border-radius:var(--radius); padding:11px 13px; margin-bottom:9px;
+  box-shadow:0 3px 0 var(--px-ink);
+}
+.coach-head{
+  display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:9px;
+}
+.coach-title{
+  font-size:10.5px; text-transform:uppercase; letter-spacing:.15em; color:var(--accent); font-weight:800;
+}
+.coach-rec{
+  font-size:12px; font-weight:800; padding:3px 11px; border-radius:2px; text-transform:uppercase; letter-spacing:.05em;
+  background:var(--accent); color:var(--accent-ink);
+  border:2px solid var(--px-ink); box-shadow:0 2px 0 var(--px-ink);
+}
+.coach-rec.rec-fold{ background:var(--act-fold); color:var(--act-fold-ink); }
+.coach-rec.rec-call{ background:var(--act-call); color:var(--act-call-ink); }
+.coach-bars{ display:flex; gap:14px; margin-bottom:8px; }
+.coach-metric{ flex:1; }
+.coach-metric .lbl{ font-size:10px; color:var(--ink-faint); text-transform:uppercase; letter-spacing:.08em; font-weight:700; }
+.coach-metric .val{ font-size:18px; font-weight:800; color:var(--ink); margin-top:2px; }
+.coach-metric .val.dim{ color:var(--ink-faint); font-size:13px; font-weight:700; }
+/* segmented pixel meter — fills in hard blocks, not a smooth bar */
+.meter{
+  height:8px; background:rgba(0,0,0,.5); margin-top:5px; overflow:hidden;
+  border:2px solid var(--px-ink); border-radius:2px; position:relative;
+}
+.meter i{ display:block; height:100%; background:var(--accent); transition:width var(--dur) steps(6,end); }
+.meter::after{
+  content:''; position:absolute; inset:0; pointer-events:none;
+  background:repeating-linear-gradient(90deg, transparent 0 6px, rgba(0,0,0,.4) 6px 8px);
+}
+.meter.odds i{ background:var(--ink-faint); }
+.coach-note{ font-size:12.5px; color:var(--ink-dim); line-height:1.5; }
+.coach-foot{ font-size:10.5px; color:var(--ink-faint); margin-top:7px; line-height:1.45; }
+
+/* .actions-dock is the positioning context for the raise panel — sized
+   only by .actions-row (the panel is position:absolute, fully out of
+   flow), so opening/closing the panel can never change this box's height,
+   and therefore can never resize the felt above it (.felt-wrap is the
+   only flex:1 slack-absorber in the table-screen's layout chain — see the
+   felt-stabilization notes on .table-main/.felt-wrap). */
+.actions-dock{ position:relative; }
+/* A physical compartment that opens from directly beneath the player's
+   dashboard. It is absolutely anchored above the fixed action console,
+   so opening it never changes the action area, dashboard or felt geometry. */
+.raise-panel{
+  position:absolute; left:0; right:0; bottom:100%; margin-bottom:8px;
+  background:var(--panel); border:2px solid var(--px-ink); border-radius:var(--radius);
+  padding:11px 13px 9px; box-shadow:0 4px 0 rgba(0,0,0,.45);
+  transform-origin:50% 100%;
+  transform:scaleY(.08) translateY(10px); opacity:0; pointer-events:none;
+  transition:transform var(--dur) steps(5,end), opacity var(--dur-fast) steps(3,end);
+}
+.raise-panel.show{ transform:scaleY(1) translateY(0); opacity:1; pointer-events:auto; }
+.raise-head{ display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:9px; }
+.raise-title{
+  font-family:var(--font-hdr); font-size:10.5px; letter-spacing:.15em; text-transform:uppercase;
+  color:var(--accent); font-weight:400;
+}
+/* Compact but obvious — reuses .icon-btn's touch target/border/shadow
+   language so it reads as a real physical control, not an afterthought.
+   Cancel closes the tray and restores the dashboard with no poker action
+   of any kind; see closeRaisePanel()/the btn-raise handler in JS. */
+.raise-cancel{ width:32px; height:32px; font-size:13px; }
+.raise-row{ display:flex; align-items:center; gap:12px; margin-bottom:9px; }
+.raise-amt{
+  font-size:15px; font-weight:400; color:var(--accent-bright); min-width:88px; text-align:center;
+  background:var(--px-ink); border:2px solid var(--accent); border-radius:var(--radius); padding:6px 4px;
+}
+.slider-wrap{ position:relative; flex:1; }
+/* pixel slider: chunky filled track + square thumb. --fill is set from JS. */
+input[type=range]{
+  -webkit-appearance:none; appearance:none; width:100%; height:40px; background:transparent; outline:none;
+  --fill:0%;
+}
+input[type=range]::-webkit-slider-runnable-track{
+  height:12px; border-radius:2px; border:2px solid var(--px-ink);
+  background:linear-gradient(90deg, var(--accent) 0 var(--fill), rgba(0,0,0,.55) var(--fill) 100%);
+  box-shadow:inset 0 2px 0 rgba(0,0,0,.4);
+}
+input[type=range]::-webkit-slider-thumb{
+  -webkit-appearance:none; width:30px; height:30px; border-radius:3px; margin-top:-9px;
+  background:var(--card-face); border:3px solid var(--px-ink);
+  box-shadow:0 3px 0 var(--px-ink), inset 0 3px 0 #FFFFFF; cursor:pointer;
+}
+input[type=range]::-moz-range-track{
+  height:12px; border-radius:2px; border:2px solid var(--px-ink);
+  background:linear-gradient(90deg, var(--accent) 0 var(--fill), rgba(0,0,0,.55) var(--fill) 100%);
+}
+input[type=range]::-moz-range-thumb{
+  width:26px; height:26px; border-radius:3px; background:var(--card-face);
+  border:3px solid var(--px-ink); cursor:pointer;
+}
+/* ---- the four big arcade buttons: fat sticker blocks, colour = meaning.
+   This shared base — keyed off the buttons' own existing colour classes
+   rather than a separate marker class — carries the one physical housing
+   (size, border, radius, type treatment, press transition) FOLD/
+   CHECK-CALL/RAISE and the bottom console's AWARD POT face are all built
+   from, each only swapping in its own background + shadow recipe below,
+   so AWARD POT reads as manufactured from the same control panel rather
+   than a separate widget bolted on. (Keying off .btn-check/.btn-call
+   instead of a dedicated class is deliberate: updateActionControls()
+   reassigns btn-checkcall's className wholesale between those two on
+   every render — see $('btn-checkcall').className = ... — which would
+   silently drop an unrelated marker class the instant the human's turn
+   starts.) Press/release motion is driven by the .is-pressed class (see
+   pressFeedback() in JS, pointer-events-based so it works identically
+   for touch and mouse) rather than :active, which iOS Safari applies
+   unreliably to buttons without a live touch listener. Two transition
+   rules give press and release different character: pressing snaps down
+   fast (the .is-pressed rule below, 50ms linear), releasing springs back
+   slower with a small overshoot (this base rule's 150ms back-out
+   cubic-bezier, within the requested 100-180ms release window). */
+.btn-fold, .btn-check, .btn-call, .btn-raise, .btn-award-console{
+  min-height:62px; padding:16px 4px; border-radius:6px;
+  border:3px solid var(--px-ink);
+  font-family:var(--font-hdr); font-size:11px; font-weight:400; cursor:pointer; text-transform:uppercase; letter-spacing:.02em;
+  color:#1B120C; text-shadow:0 1px 0 rgba(255,255,255,.3);
+  transition:transform .15s cubic-bezier(.34,1.56,.64,1), box-shadow .12s ease-out, opacity var(--dur-fast);
+}
+.btn-fold.is-pressed, .btn-check.is-pressed, .btn-call.is-pressed, .btn-raise.is-pressed, .btn-award-console.is-pressed{
+  transform:translateY(4px) scale(.98);
+  transition:transform .05s linear, box-shadow .05s linear;
+}
+.actions-row{ display:flex; gap:10px; padding-top:2px; }
+.actions-row button{ flex:1; }
+/* Persistent bottom controls: stay in place and keep their layout height
+   through AI turns instead of disappearing, so the bottom UI doesn't
+   reflow every time the turn changes. Fully dimmed + non-interactive
+   until it's genuinely the human's turn. pointer-events:none here also
+   means a disabled button's pointerdown listener never fires, so
+   .is-pressed can never appear on it — it can't look pressable. */
+.actions-row.disabled button{ opacity:.32; pointer-events:none; }
+.btn-fold{
+  background:#C7524D;
+  box-shadow:0 6px 0 #7E2F2C, 0 6px 0 2px var(--px-ink), inset 0 3px 0 rgba(255,255,255,.28), inset 0 -3px 0 rgba(0,0,0,.18);
+}
+.btn-fold.is-pressed{ box-shadow:0 2px 0 #7E2F2C, 0 2px 0 2px var(--px-ink), inset 0 3px 0 rgba(255,255,255,.28); }
+.btn-check{
+  background:#D9A93B;
+  box-shadow:0 6px 0 #8A681F, 0 6px 0 2px var(--px-ink), inset 0 3px 0 rgba(255,255,255,.32), inset 0 -3px 0 rgba(0,0,0,.16);
+}
+.btn-check.is-pressed{ box-shadow:0 2px 0 #8A681F, 0 2px 0 2px var(--px-ink), inset 0 3px 0 rgba(255,255,255,.32); }
+.btn-call{
+  background:#D9A93B;
+  box-shadow:0 6px 0 #8A681F, 0 6px 0 2px var(--px-ink), inset 0 3px 0 rgba(255,255,255,.32), inset 0 -3px 0 rgba(0,0,0,.16);
+}
+.btn-call.is-pressed{ box-shadow:0 2px 0 #8A681F, 0 2px 0 2px var(--px-ink), inset 0 3px 0 rgba(255,255,255,.32); }
+.btn-raise{
+  background:#4E9B62;
+  box-shadow:0 6px 0 #2C5E3A, 0 6px 0 2px var(--px-ink), inset 0 3px 0 rgba(255,255,255,.3), inset 0 -3px 0 rgba(0,0,0,.16);
+}
+.btn-raise.is-pressed{ box-shadow:0 2px 0 #2C5E3A, 0 2px 0 2px var(--px-ink), inset 0 3px 0 rgba(255,255,255,.3); }
+.btn-disabled{ opacity:.32; pointer-events:none; }
+
+/* Showdown polish — the bottom action console flips between the normal
+   FOLD/CHECK/RAISE row and a single full-width AWARD POT control, like a
+   split-flap panel changing modes rather than a card doing a flashy 3D
+   flip. .console-face-actions is the only face in normal flow, so it sets
+   .console-flip's height — .console-face-award sits absolutely over that
+   same box and always matches its footprint exactly. */
+.action-console{ perspective:900px; }
+.console-flip{
+  position:relative; transform-style:preserve-3d;
+  transition:transform .2s steps(6,end);
+}
+.console-flip.flipped{ transform:rotateX(180deg); }
+.console-face{ backface-visibility:hidden; -webkit-backface-visibility:hidden; }
+.console-face-award{ position:absolute; inset:0; transform:rotateX(180deg); pointer-events:none; }
+.console-flip.flipped .console-face-award{ pointer-events:auto; }
+.console-flip.flipped .console-face-actions{ pointer-events:none; }
+/* Same construction recipe as .btn-fold/.btn-check/.btn-raise (double
+   box-shadow: colour-matched dark companion + ink outline, inset top
+   highlight, inset bottom shade) — only the hue changes, via the theme's
+   own accent colour rather than a fixed hex, so AWARD POT reads as built
+   from the same control panel in every theme, not a bespoke widget.
+   color-mix() derives the dark shadow companion from --accent the same
+   way #7E2F2C/#8A681F/#2C5E3A were hand-picked as dark companions of
+   their button's fixed background — safe here since the app already
+   requires :has() (Safari 16.4+), well past color-mix()'s Safari 16.2. */
+.btn-award-console{
+  width:100%; height:100%;
+  background:var(--accent); color:var(--accent-ink);
+  box-shadow:
+    0 6px 0 color-mix(in srgb, var(--accent) 55%, black), 0 6px 0 2px var(--px-ink),
+    inset 0 3px 0 rgba(255,255,255,.32), inset 0 -3px 0 rgba(0,0,0,.16);
+}
+.btn-award-console.is-pressed{
+  box-shadow:
+    0 2px 0 color-mix(in srgb, var(--accent) 55%, black), 0 2px 0 2px var(--px-ink),
+    inset 0 3px 0 rgba(255,255,255,.32);
+}
+.wide-btn{
+  width:100%; min-height:56px; padding:15px; border:2px solid var(--px-ink); border-radius:var(--radius);
+  font-family:var(--font-hdr); font-size:13px; font-weight:400; cursor:pointer; text-transform:uppercase; letter-spacing:.04em;
+  background:var(--accent); color:var(--accent-ink);
+  box-shadow:0 5px 0 var(--px-ink), inset 0 3px 0 rgba(255,255,255,.4);
+}
+.wide-btn:active{ transform:translateY(4px); box-shadow:0 1px 0 var(--px-ink), inset 0 3px 0 rgba(255,255,255,.4); }
+
+/* ============================================================
+   GAMEPLAY CONTRAPTION — the approved old layout with a restrained
+   layer of the title machine's texture, screens, lamps and physical
+   controls. All material colours resolve from the active table theme.
+   ============================================================ */
+body{
+  --machine-case:color-mix(in srgb,var(--panel-2) 78%,var(--theme-case-raised) 22%);
+  --machine-case-hi:var(--theme-case-raised);
+  --machine-case-lo:color-mix(in srgb,var(--panel) 55%,black);
+  --machine-recess:color-mix(in srgb,var(--panel) 52%,black);
+  --machine-glass:color-mix(in srgb,var(--bg-deep) 68%,black);
+  --crt-action-ink:color-mix(in srgb,var(--ink-dim) 82%,var(--accent-bright) 18%);
+  --crt-hand-ink:var(--accent-bright);
+  /* The title cabinet and table console are the same physical machine. */
+  --pc-leather:color-mix(in srgb,var(--felt-1) 72%,var(--panel-2) 28%);
+  --pc-leather-hi:color-mix(in srgb,var(--felt-1) 70%,white 18%);
+  --pc-leather-lo:color-mix(in srgb,var(--felt-2) 56%,black);
+  --pc-felt:var(--felt-1); --pc-felt-hi:var(--felt-2); --pc-felt-lo:var(--bg-deep);
+  --pc-recess:var(--machine-recess); --pc-recess-deep:color-mix(in srgb,var(--bg-deep) 60%,black);
+  --pc-display:color-mix(in srgb,var(--felt-2) 52%,black);
+  --pc-display-ink:color-mix(in srgb,var(--ink-dim) 78%,var(--accent-bright) 22%);
+  --pc-display-dim:var(--ink-faint);
+  --pc-edge-lo:color-mix(in srgb,var(--bg-deep) 65%,black);
+  --pc-edge-hi:var(--theme-case-hi); --pc-edge-mid:var(--theme-case-raised);
+  --pc-plastic:var(--theme-case-raised);
+  --pc-plastic-hi:var(--theme-case-hi);
+  --pc-plastic-lo:color-mix(in srgb,var(--theme-case-raised) 58%,black);
+  --pc-button:var(--accent); --pc-button-hi:var(--accent-bright);
+  --pc-button-lo:color-mix(in srgb,var(--accent) 58%,black);
+}
+
+#home::before{
+  background:
+    radial-gradient(circle at 50% 42%,color-mix(in srgb,var(--felt-1) 72%,transparent) 0 29%,transparent 63%),
+    repeating-conic-gradient(var(--felt-1) 0 25%,var(--felt-2) 0 50%) 0 0/9px 9px;
+  box-shadow:inset 0 0 0 6px var(--bg-deep),inset 0 0 0 9px var(--pc-leather-lo);
+}
+body #home .lobby-card.pc-housing{ box-shadow:inset 4px 4px 0 var(--pc-leather-hi),inset -5px -5px 0 var(--pc-leather-lo),0 0 0 2px var(--theme-rim),0 0 0 5px color-mix(in srgb,var(--pc-leather-hi) 70%,black),0 9px 0 #090406; }
+#home .pc-cast-drawer{ background:var(--pc-recess); }
+#home .hero-faces .hf,#home .stats-card .stat-cell{ background:var(--pc-display); }
+#home .text-input{ background:var(--pc-display); color:var(--pc-display-ink); }
+#home .pc-cast-drawer{
+  box-shadow:inset 0 0 0 5px var(--theme-case-raised),inset 0 7px 0 var(--theme-case-hi),inset 0 -5px 0 color-mix(in srgb,var(--theme-case-raised) 58%,black),0 4px 0 var(--pc-edge-lo);
+}
+#home .pc-readout-row{
+  background:var(--theme-case-raised);
+  box-shadow:inset 3px 3px 0 var(--theme-case-hi),inset -3px -3px 0 color-mix(in srgb,var(--theme-case-raised) 58%,black),0 4px 0 var(--pc-edge-lo);
+}
+#home .pc-primary-cradle{
+  background:var(--theme-case-raised);
+  box-shadow:inset 4px 4px 0 var(--theme-case-hi),inset -4px -3px 0 color-mix(in srgb,var(--theme-case-raised) 55%,black),0 3px 0 var(--pc-edge-lo);
+}
+body #home .pc-button-secondary{
+  background:var(--theme-case-raised); color:var(--ink);
+  box-shadow:0 4px 0 color-mix(in srgb,var(--theme-case-raised) 55%,black),0 6px 0 var(--pc-edge-lo),inset 2px 2px 0 var(--theme-case-hi),inset -2px -2px 0 rgba(0,0,0,.24);
+}
+body #home #home-settings{ background:var(--theme-case-raised); color:var(--ink); box-shadow:0 3px 0 var(--pc-edge-lo),inset 2px 2px 0 var(--theme-case-hi),inset -2px -2px 0 rgba(0,0,0,.25); }
+#home .pc-label,#home .pc-control-head,#home .pc-control-head .pc-label{ color:var(--ink-dim); }
+
+/* Lift the table's middle instruments to leave a deliberate pocket above
+   the raised player cards without shrinking the theatrical felt. */
+.board{ transform:translate(-50%,calc(-50% - 18px)); }
+.pot-area{ transform:translate(-50%,calc(-50% - 18px)); }
+
+/* Opponents stay illustrated character cards. Depth belongs to the whole
+   card and its small readouts, never to a deep socket around the face. */
+.seat:not(.you) .seat-card{
+  position:relative;
+  background:
+    repeating-conic-gradient(rgba(255,255,255,.025) 0 25%,transparent 0 50%) 0 0/6px 6px,
+    var(--machine-case);
+  border-color:var(--machine-case-lo);
+  box-shadow:0 6px 0 var(--machine-case-lo),0 10px 0 rgba(0,0,0,.42),
+    inset 2px 2px 0 color-mix(in srgb,var(--machine-case-hi) 62%,transparent),
+    inset -2px -2px 0 rgba(0,0,0,.34);
+}
+.seat:not(.you) .seat-card::after{
+  content:none;
+}
+.seat:not(.you) .seat-card > *{ position:relative; z-index:3; }
+.seat:not(.you) .avatar{
+  /* Keep the old flat portrait treatment: outline, print surface, shadow. */
+  border-color:var(--px-ink); box-shadow:0 3px 0 rgba(0,0,0,.48),inset 0 1px 0 rgba(255,255,255,.08);
+}
+.seat:not(.you) .seat-name,.seat:not(.you) .action-slot{
+  background:var(--machine-recess); border-color:var(--machine-case-lo);
+  box-shadow:inset 0 3px 0 rgba(0,0,0,.48),inset 0 -1px 0 rgba(255,255,255,.07);
+}
+.seat:not(.you) .seat-chips{
+  width:100%; min-height:23px; padding:3px 2px 2px; overflow:hidden;
+  background:var(--machine-glass); border:2px solid var(--machine-case-lo); border-radius:2px;
+  box-shadow:inset 0 4px 0 rgba(0,0,0,.55),inset 1px 0 0 rgba(0,0,0,.25),inset 0 -1px 0 rgba(255,255,255,.07);
+}
+.seat:not(.you) .seat-chips .jp-cell{ color:var(--accent-bright); }
+.seat:not(.you) .seat-chips .jp-sym{ color:var(--accent); }
+.seat.folded:not(.you) .avatar{ opacity:.48; filter:saturate(.55) brightness(.72); }
+.seat.active:not(.you) .seat-card{
+  border-color:var(--accent);
+  box-shadow:0 5px 0 color-mix(in srgb,var(--accent) 52%,black),0 8px 0 rgba(0,0,0,.34),
+    inset 1px 1px 0 color-mix(in srgb,var(--accent-bright) 42%,transparent);
+}
+.seat.winner:not(.you) .seat-card{
+  border-color:var(--good);
+  box-shadow:0 5px 0 color-mix(in srgb,var(--good) 48%,black),0 0 0 2px var(--good),0 8px 0 rgba(0,0,0,.34);
+}
+
+/* The lower dashboard is its own machine: a single textured housing with
+   three instrument bays. The existing grid and table geometry stay intact. */
+#hud-frame{
+  position:relative;
+  background:
+    repeating-conic-gradient(rgba(255,255,255,.025) 0 25%,transparent 0 50%) 0 0/7px 7px,
+    var(--machine-case);
+  border:3px solid var(--theme-case-raised); border-top-color:var(--theme-case-hi);
+  padding:10px 8px 9px;
+  box-shadow:0 5px 0 var(--machine-case-lo),0 9px 0 rgba(0,0,0,.5),
+    inset 2px 2px 0 rgba(255,255,255,.09),inset -2px -2px 0 rgba(0,0,0,.25);
+}
+#hud-frame:has(.seat.you.active){ border-color:var(--theme-case-raised); border-top-color:var(--theme-case-hi); }
+#hud-left,#hud-right{
+  background:var(--machine-recess); border-color:color-mix(in srgb,var(--theme-case-raised) 68%,black);
+  box-shadow:inset 0 5px 0 rgba(0,0,0,.55),inset 2px 0 0 rgba(0,0,0,.22),
+    inset 0 -2px 0 rgba(255,255,255,.08),0 0 0 1px var(--theme-case-hi),0 2px 0 rgba(0,0,0,.35);
+}
+#hud-mid{ gap:4px; }
+.seat.you::before{
+  content:''; position:absolute; z-index:1; left:50%; top:17px; width:148px; height:14px;
+  transform:translateX(-50%); border:2px solid var(--px-ink); border-radius:2px;
+  background:var(--machine-recess);
+  box-shadow:inset 0 6px 0 rgba(0,0,0,.72),inset 2px 0 0 rgba(0,0,0,.28),0 1px 0 var(--theme-case-hi);
+  pointer-events:none;
+}
+.seat.you::after{
+  content:''; position:absolute; z-index:4; left:50%; top:25px; width:144px; height:9px;
+  transform:translateX(-50%); border:2px solid var(--machine-case-lo); border-top-color:var(--theme-case-hi); border-radius:1px;
+  background:repeating-conic-gradient(rgba(255,255,255,.035) 0 25%,transparent 0 50%) 0 0/6px 6px,var(--theme-case-raised);
+  box-shadow:0 2px 0 rgba(0,0,0,.5),inset 0 2px 0 rgba(255,255,255,.08);
+  pointer-events:none;
+}
+.seat.you .card{ width:62px; height:88px; }
+.seat.you .card .r{ font-size:21px; }
+.seat.you .card .s{ font-size:15px; }
+.seat.you .card .pip{ font-size:30px; }
+.seat.you{ padding-bottom:14px; }
+.seat.you .seat-cards{ margin-top:-60px; gap:7px; z-index:3; }
+#hud-mid .hand-strength{ position:relative; z-index:5; }
+
+/* Miniature CRT glass: readable first, with scanlines, a small bloom and a
+   content-change flash. The two centre screens have distinct ink roles. */
+.crt-screen{
+  position:relative; overflow:hidden; isolation:isolate;
+  background:
+    linear-gradient(rgba(255,255,255,.025),transparent 38%),
+    var(--machine-glass);
+  border:2px solid var(--px-ink); border-radius:2px;
+  box-shadow:inset 0 4px 0 rgba(0,0,0,.58),inset 2px 0 0 rgba(0,0,0,.25),
+    inset 0 -1px 0 rgba(255,255,255,.07),0 1px 0 color-mix(in srgb,var(--machine-case-hi) 32%,transparent);
+  animation:crtIdleFlicker 5.8s steps(2,end) infinite;
+}
+.crt-screen::before{
+  content:''; position:absolute; z-index:4; inset:0; pointer-events:none; opacity:.24;
+  background:repeating-linear-gradient(180deg,transparent 0 2px,rgba(0,0,0,.32) 2px 3px);
+}
+.crt-screen::after{
+  content:''; position:absolute; z-index:4; left:3px; right:3px; top:2px; height:1px;
+  background:rgba(255,255,255,.09); pointer-events:none;
+}
+.crt-refresh{ animation:crtRefresh .23s steps(5,end); }
+@keyframes crtIdleFlicker{
+  0%,84%,86%,89%,92%,96%,100%{ filter:brightness(1); }
+  85%,93%{ filter:brightness(.84); }
+  87%,95%{ filter:brightness(1.1); }
+}
+@keyframes crtRefresh{
+  0%{ filter:brightness(2.1); opacity:.45; }
+  22%{ filter:brightness(.65); opacity:.88; }
+  48%{ filter:brightness(1.4); }
+  100%{ filter:brightness(1); opacity:1; }
+}
+.crt-cursor{ display:inline-block; margin-left:4px; animation:crtCursor .78s steps(2,end) infinite; }
+@keyframes crtCursor{ 50%{ opacity:.16; } }
+#hud-status-normal{ gap:5px; }
+#hud-mid .hand-strength{
+  min-height:28px; margin:0; padding:6px 4px 5px; display:flex; align-items:center; justify-content:center;
+  color:color-mix(in srgb,var(--crt-hand-ink) 70%,var(--ink-faint)); font-family:var(--font-hdr);
+  font-size:7px; line-height:1.35; text-transform:uppercase; text-shadow:0 0 7px color-mix(in srgb,var(--crt-hand-ink) 55%,transparent);
+}
+#hud-mid .hand-strength b{ color:var(--crt-hand-ink); font-weight:400; }
+.crt-hand.hand-tier-0{ --crt-hand-ink:color-mix(in srgb,var(--ink-dim) 78%,var(--accent-bright) 22%); }
+.crt-hand.hand-tier-1{ --crt-hand-ink:var(--accent-bright); background:linear-gradient(rgba(255,255,255,.025),transparent 38%),color-mix(in srgb,var(--machine-glass) 88%,var(--accent) 12%); }
+.crt-hand.hand-tier-2{ --crt-hand-ink:color-mix(in srgb,var(--accent-bright) 72%,#FFF1B0); box-shadow:inset 0 4px 0 rgba(0,0,0,.58),inset 2px 0 0 rgba(0,0,0,.25),inset 0 -1px 0 rgba(255,255,255,.07),0 0 7px color-mix(in srgb,var(--accent) 25%,transparent); }
+.crt-hand.hand-tier-3{ --crt-hand-ink:#FFF0A0; animation:crtIdleFlicker 5.8s steps(2,end) infinite,handJackpotGlow 1.8s steps(4,end) infinite; }
+@keyframes handJackpotGlow{ 50%{ box-shadow:inset 0 4px 0 rgba(0,0,0,.58),inset 2px 0 0 rgba(0,0,0,.25),0 0 10px color-mix(in srgb,var(--accent-bright) 48%,transparent); } }
+#hud-mid .banner{
+  min-height:39px; padding:5px 4px 4px; color:var(--crt-action-ink); font-family:var(--font-hdr);
+  font-size:7px; line-height:1.35; text-transform:uppercase; text-shadow:0 0 7px color-mix(in srgb,var(--crt-action-ink) 55%,transparent);
+  flex-direction:column; gap:4px;
+}
+#hud-mid .banner b{ color:var(--accent-bright); font-weight:400; }
+.crt-line-primary,.crt-line-secondary{ display:block; width:100%; text-align:center; white-space:nowrap; }
+.crt-line-primary{ color:var(--crt-action-ink); }
+.crt-line-secondary{ color:var(--accent-bright); }
+.stack-readout{ display:flex; flex-direction:column; align-items:center; gap:2px; }
+.instrument-label{
+  font-family:var(--font-hdr); font-size:6px; line-height:1.4; letter-spacing:.07em;
+  text-transform:uppercase; color:var(--ink-faint);
+}
+
+/* Right-side player instrumentation: identity, lives, two persistent blind
+   bulbs and the cumulative contribution for this hand. */
+#hud-right{
+  justify-content:flex-start; gap:5px; padding:6px 5px;
+  background:repeating-conic-gradient(rgba(255,255,255,.024) 0 25%,transparent 0 50%) 0 0/6px 6px,var(--machine-case);
+}
+#hud-right .hearts{ min-height:15px; }
+.blind-lamps{ display:flex; justify-content:center; gap:8px; width:100%; padding:3px 1px; }
+.blind-indicator{ display:flex; align-items:center; gap:3px; color:var(--ink-faint); font-family:var(--font-hdr); font-size:6px; }
+.blind-indicator i{
+  width:8px; height:8px; border:2px solid var(--px-ink); background:color-mix(in srgb,var(--machine-recess) 72%,black);
+  box-shadow:inset 1px 1px 0 rgba(255,255,255,.07); transition:background var(--dur-fast),box-shadow var(--dur-fast);
+}
+.blind-indicator.is-on{ color:var(--ink); }
+.blind-indicator.is-on i{
+  background:var(--accent-bright); box-shadow:inset 1px 1px 0 rgba(255,255,255,.45),0 0 6px color-mix(in srgb,var(--accent) 72%,transparent);
+}
+.bet-this-hand{
+  width:100%; min-height:72px; flex:1 1 auto; padding:6px 2px 5px; display:flex; flex-direction:column;
+  align-items:center; justify-content:center; gap:6px;
+}
+.bet-this-hand .instrument-label{ color:var(--crt-action-ink); text-align:center; line-height:1.5; }
+.bet-this-hand .instrument-label,.seat:not(.you) .seat-name,.seat:not(.you) .action-slot{
+  text-shadow:0 0 6px color-mix(in srgb,var(--crt-action-ink) 42%,transparent);
+}
+#hud-invested{
+  width:100%; color:var(--accent-bright); font-family:var(--font-hdr); font-weight:400;
+  text-shadow:0 0 6px color-mix(in srgb,var(--accent) 45%,transparent);
+}
+#hud-invested .jp-cell{ min-width:13px; width:13px; height:25px; font-size:10px; }
+#hud-invested .jp-sym{ min-width:10px; width:10px; }
+#hud-invested .reel-strip{ line-height:25px; }
+
+/* The actions form a lower bay rather than floating beneath the dashboard. */
+.actions-dock{ width:100%; max-width:430px; margin:0 auto; }
+.action-console{
+  position:relative; padding:8px 8px 13px; background:
+    repeating-conic-gradient(rgba(255,255,255,.022) 0 25%,transparent 0 50%) 0 0/7px 7px,
+    var(--machine-case);
+  border:3px solid var(--theme-case-raised); border-top:0; border-radius:0 0 5px 5px;
+  box-shadow:0 5px 0 var(--machine-case-lo),0 9px 0 rgba(0,0,0,.48),
+    inset 2px 2px 0 rgba(255,255,255,.08),inset -2px -2px 0 rgba(0,0,0,.24);
+}
+.action-console::before{
+  content:''; position:absolute; left:16px; right:16px; top:-3px; height:2px; z-index:2;
+  background:var(--machine-case-lo); border:0; border-radius:1px;
+  box-shadow:0 1px 0 rgba(255,255,255,.08),inset 0 1px 0 rgba(0,0,0,.35);
+}
+.console-flip{
+  position:relative; z-index:1;
+  padding:7px 7px 13px; background:var(--machine-recess); border:3px solid color-mix(in srgb,var(--theme-case-raised) 68%,black); border-radius:3px;
+  box-shadow:inset 0 5px 0 rgba(0,0,0,.58),inset 2px 0 0 rgba(0,0,0,.24),
+    inset 0 -1px 0 rgba(255,255,255,.08),0 0 0 1px var(--theme-case-hi);
+}
+.actions-row{ gap:8px; padding-top:1px; }
+.btn-fold,.btn-check,.btn-call,.btn-raise,.btn-award-console{ transform:translateY(-1px); }
+.btn-fold.is-pressed,.btn-check.is-pressed,.btn-call.is-pressed,.btn-raise.is-pressed,.btn-award-console.is-pressed{ transform:translateY(5px) scale(.985); }
+
+.raise-panel{
+  margin-bottom:5px; padding:7px 9px 6px;
+  background:repeating-conic-gradient(rgba(255,255,255,.02) 0 25%,transparent 0 50%) 0 0/7px 7px,var(--machine-case);
+  border:3px solid var(--machine-case-lo); border-top-color:var(--machine-case-hi);
+  box-shadow:0 4px 0 var(--machine-case-lo),inset 2px 2px 0 rgba(255,255,255,.07);
+}
+.raise-head{ display:grid; grid-template-columns:auto 1fr 32px; gap:8px; margin-bottom:2px; }
+.raise-title{ font-size:8px; color:var(--accent-bright); }
+.raise-amt{
+  justify-self:end; min-width:104px; padding:3px 4px; display:flex; flex-direction:row; align-items:center; justify-content:center;
+  background:var(--machine-glass); border-color:var(--accent);
+}
+.raise-amt .mini-jackpot .jp-cell{ min-width:11px; width:11px; height:21px; font-size:9px; }
+.raise-amt .mini-jackpot .jp-sym{ min-width:9px; width:9px; }
+.raise-row{ width:100%; margin:0; }
+.raise-panel .slider-wrap{ width:100%; flex:1 1 100%; }
+.raise-panel input[type=range]{ height:42px; }
+.raise-panel input[type=range]::-webkit-slider-runnable-track{
+  height:15px; border:3px solid var(--px-ink);
+  background:
+    repeating-linear-gradient(90deg,transparent 0 12px,rgba(0,0,0,.34) 12px 14px),
+    linear-gradient(90deg,var(--accent) 0 var(--fill),rgba(0,0,0,.62) var(--fill) 100%);
+  box-shadow:inset 0 4px 0 rgba(0,0,0,.45),0 1px 0 color-mix(in srgb,var(--machine-case-hi) 35%,transparent);
+}
+.raise-panel input[type=range]::-webkit-slider-thumb{
+  width:31px; height:33px; margin-top:-12px; border:3px solid var(--px-ink);
+  background:repeating-linear-gradient(90deg,transparent 0 7px,rgba(0,0,0,.14) 7px 9px),var(--card-face);
+  box-shadow:0 4px 0 var(--px-ink),inset 3px 3px 0 #FFFFFF,inset -3px -3px 0 rgba(0,0,0,.16);
+}
+.raise-panel input[type=range]::-moz-range-track{
+  height:15px; border:3px solid var(--px-ink);
+  background:repeating-linear-gradient(90deg,transparent 0 12px,rgba(0,0,0,.34) 12px 14px),linear-gradient(90deg,var(--accent) 0 var(--fill),rgba(0,0,0,.62) var(--fill) 100%);
+}
+.raise-panel input[type=range]::-moz-range-thumb{
+  width:27px; height:29px; background:repeating-linear-gradient(90deg,transparent 0 7px,rgba(0,0,0,.14) 7px 9px),var(--card-face);
+  box-shadow:0 4px 0 var(--px-ink),inset 3px 3px 0 #FFFFFF,inset -3px -3px 0 rgba(0,0,0,.16);
+}
+
+@media (orientation:portrait){
+  #action-area{ padding:0 8px max(8px,calc(env(safe-area-inset-bottom) - 10px)); }
+  .actions-dock{ max-width:430px; }
+}
+
+/* One continuous live rim: the upper half belongs to the dashboard dock,
+   the lower half to the action area, and their open edges meet without a
+   doubled line at the structural seam. */
+#your-seat-dock::after{
+  content:''; position:absolute; z-index:2; pointer-events:none;
+  left:7px; right:7px; top:1px; bottom:-7px;
+  border:2px solid var(--theme-rim); border-bottom:0; border-radius:5px 5px 0 0;
+  filter:drop-shadow(0 0 3px color-mix(in srgb,var(--theme-rim) 28%,transparent));
+}
+#action-area{ position:relative; }
+.actions-dock::after{
+  content:''; position:absolute; z-index:40; pointer-events:none;
+  left:-1px; right:-1px; top:-7px; bottom:-1px;
+  border:2px solid var(--theme-rim); border-top:0; border-radius:0 0 5px 5px;
+  filter:drop-shadow(0 0 3px color-mix(in srgb,var(--theme-rim) 28%,transparent));
+}
+.raise-panel{ outline:2px solid var(--theme-rim); outline-offset:-2px; }
+
+@media (max-width:389px){
+  #hud-frame{ grid-template-columns:86px minmax(0,1fr) 86px; gap:5px; padding-left:6px; padding-right:6px; }
+  #hud-right{ padding-left:3px; padding-right:3px; }
+  .blind-lamps{ gap:5px; }
+  #hud-mid .banner,#hud-mid .hand-strength{ font-size:6.5px; }
+  .action-console{ padding-left:5px; padding-right:5px; }
+  .console-flip{ padding-left:5px; padding-right:5px; }
+  .actions-row{ gap:6px; }
+  .seat.you::before{ width:136px; }
+  .seat.you::after{ width:132px; }
+}
+@media (orientation:portrait) and (max-height:700px){
+  #hud-frame{ padding:5px 6px 6px; }
+  #hud-status-normal{ gap:3px; }
+  #hud-mid .hand-strength{ min-height:22px; padding:4px 3px 3px; }
+  #hud-mid .banner{ min-height:34px; padding:4px 3px 3px; gap:3px; }
+  .stack-readout{ gap:1px; }
+  #jackpot .jp-cell{ height:21px; min-width:18px; }
+  #hud-right{ gap:3px; padding-top:4px; padding-bottom:4px; }
+  #hud-right .hearts{ min-height:12px; }
+  .blind-lamps{ padding:1px; }
+  .bet-this-hand{ min-height:50px; gap:3px; padding-top:3px; padding-bottom:3px; }
+  .action-console{ padding:5px 5px 8px; }
+  .console-flip{ padding:4px 4px 8px; }
+  .btn-fold,.btn-check,.btn-call,.btn-raise,.btn-award-console{ min-height:50px; padding:10px 3px; }
+}
+[data-motion="off"] .crt-screen,[data-motion="off"] .crt-refresh,[data-motion="off"] .crt-cursor{ animation:none; }
+

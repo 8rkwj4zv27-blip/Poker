@@ -1,11 +1,24 @@
-const CACHE_NAME = 'poker-v10-1';
+const CACHE_NAME = 'poker-v11-6';
 const APP_SHELL = [
   './',
   './index.html',
   './manifest.json',
   './icon-180.png',
   './icon-192.png',
-  './icon-512.png'
+  './icon-512.png',
+  './css/01-foundation.css',
+  './css/02-screens.css',
+  './css/03-action-console.css',
+  './css/04-overlays-and-modes.css',
+  './css/05-responsive-and-arcade.css',
+  './js/01-poker-math.js',
+  './js/02-support-systems.js',
+  './js/03-opponents.js',
+  './js/04-modes-and-scoring.js',
+  './js/05-game-engine.js',
+  './js/06-presentation.js',
+  './js/07-ui-wiring.js',
+  './js/08-dev-mode.js'
 ];
 
 self.addEventListener('install', event => {

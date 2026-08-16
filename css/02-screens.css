@@ -1,0 +1,1129 @@
+/* ============================================================
+   LOBBY
+   ============================================================ */
+#home, #setup{
+  overflow-y:auto; -webkit-overflow-scrolling:touch;
+  background:
+    repeating-conic-gradient(rgba(255,255,255,.016) 0% 25%, transparent 0% 50%) 0 0 / 10px 10px,
+    var(--bg-deep);
+  padding:max(28px,env(safe-area-inset-top)) 22px max(28px,env(safe-area-inset-bottom));
+  align-items:center;
+}
+.lobby-card{ width:100%; max-width:440px; margin:auto; }
+.home-topbar{ display:flex; justify-content:flex-end; align-items:center; min-height:var(--tap); margin-bottom:2px; }
+.hero{ text-align:center; margin:6px 0 26px; }
+/* the illustrated cast, hanging out above the title and flicking moods */
+.hero-faces{ display:flex; gap:8px; justify-content:center; margin-bottom:14px; }
+.hero-faces .hf{
+  width:52px; height:52px; border:2px solid var(--px-ink); border-radius:var(--radius);
+  overflow:hidden; background:var(--seat-bg); flex-shrink:0;
+  box-shadow:0 3px 0 rgba(0,0,0,.5), inset 0 2px 0 rgba(255,255,255,.08);
+}
+.hero-faces .hf .face-img{ display:block; }
+.hero-suits{
+  display:flex; justify-content:center; gap:12px; font-size:16px; margin-bottom:14px;
+  color:var(--accent);
+  text-shadow:2px 2px 0 var(--px-ink);
+}
+.hero-suits .s-red{ color:var(--suit-heart); }
+.hero .brand{
+  font-family:var(--font-hdr); font-size:20px; letter-spacing:.08em; font-weight:400; margin:0; text-indent:.08em;
+  color:var(--accent-bright); text-transform:uppercase;
+  text-shadow:3px 3px 0 var(--px-ink), 6px 6px 0 rgba(0,0,0,.35);
+}
+.hero .brand-rule{
+  width:120px; height:4px; margin:14px auto 12px;
+  background:repeating-linear-gradient(90deg, var(--accent) 0 6px, transparent 6px 12px);
+}
+.hero .brand-sub{ color:var(--ink-faint); font-size:12px; letter-spacing:.06em; text-transform:uppercase; }
+
+.panel-card{
+  background:var(--panel);
+  border:2px solid var(--px-ink);
+  border-radius:var(--radius); padding:15px 16px; margin-bottom:14px;
+  box-shadow:0 4px 0 var(--px-ink), inset 0 2px 0 rgba(255,255,255,.05);
+}
+.card-label{
+  font-family:var(--font-hdr); font-size:9px; text-transform:uppercase; letter-spacing:.1em;
+  color:var(--accent); font-weight:400; margin-bottom:12px;
+}
+.card-label .val{ font-family:var(--font-hdr); float:right; text-transform:none; letter-spacing:0; color:var(--accent-bright); font-size:10px; }
+.panel-card .field{ margin-bottom:0; }
+.panel-card .field + .field{ margin-top:18px; }
+.panel-card .hint{ margin-top:9px; }
+
+.stats-card{ padding:4px 0; }
+.stats-card .stat-strip{ margin-bottom:0; gap:0; }
+.stats-card .stat-cell{
+  background:transparent; border:none; border-radius:0; padding:12px 6px;
+  border-right:2px solid rgba(255,255,255,.06); box-shadow:none;
+}
+.stats-card .stat-cell:last-child{ border-right:none; }
+
+.identity-row{ display:flex; gap:12px; align-items:center; }
+.btn-hero{ margin-top:4px; }
+.setup-summary{
+  text-align:center; font-size:12px; color:var(--ink-faint);
+  margin:2px 0 14px; line-height:1.6;
+}
+.setup-summary b{ color:var(--ink-dim); font-weight:700; }
+.setup-head{ display:flex; align-items:center; justify-content:space-between; margin-bottom:24px; }
+.setup-title{ font-family:var(--font-hdr); font-size:11px; font-weight:400; letter-spacing:.1em; text-transform:uppercase; color:var(--accent); text-shadow:2px 2px 0 var(--px-ink); }
+.brand-wrap{ text-align:center; margin-bottom:30px; }
+.brand{
+  font-size:17px; letter-spacing:.44em; font-weight:800; color:var(--accent);
+  text-transform:uppercase; margin-bottom:7px; text-indent:.44em;
+}
+.brand-rule{
+  width:52px; height:3px; margin:0 auto 12px;
+  background:repeating-linear-gradient(90deg, var(--rail) 0 5px, transparent 5px 10px);
+}
+.brand-sub{ color:var(--ink-dim); font-size:13px; }
+
+.stat-strip{ display:flex; gap:8px; margin-bottom:26px; }
+.stat-cell{
+  flex:1; background:var(--panel); border:2px solid var(--px-ink);
+  border-radius:var(--radius); padding:11px 8px; text-align:center;
+  box-shadow:0 3px 0 var(--px-ink);
+}
+.stat-cell .v{ font-size:14px; font-weight:400; color:var(--accent-bright); }
+.stat-cell .k{ font-size:10px; color:var(--ink-faint); text-transform:uppercase; letter-spacing:.1em; margin-top:4px; }
+
+.identity-preview{
+  width:56px; height:56px; border-radius:var(--radius); flex-shrink:0;
+  display:flex; align-items:center; justify-content:center;
+  font-size:19px; font-weight:800; color:#1A1408;
+  border:2px solid var(--px-ink);
+  box-shadow:0 3px 0 var(--px-ink), inset 0 3px 0 rgba(255,255,255,.35);
+}
+
+/* ============================================================
+   TABLE
+   ============================================================ */
+#table-screen{ background:var(--bg-deep); }
+.table-main{ flex:1; display:flex; flex-direction:column; min-height:0; }
+.topbar{
+  display:flex; align-items:center; justify-content:space-between; gap:10px;
+  padding:max(8px,env(safe-area-inset-top)) 14px 6px 14px; z-index:20; flex-shrink:0;
+}
+.topbar .brandmini{ font-family:var(--font-hdr); font-size:10px; letter-spacing:.14em; color:var(--accent); font-weight:400; text-shadow:2px 2px 0 var(--px-ink); }
+.topbar .meta{ font-size:11px; color:var(--ink-faint); margin-top:3px; }
+.icon-btn{
+  width:var(--tap); height:var(--tap); border-radius:var(--radius); border:2px solid var(--px-ink);
+  background:var(--panel); color:var(--ink-dim);
+  display:flex; align-items:center; justify-content:center; font-size:17px; cursor:pointer;
+  box-shadow:0 3px 0 var(--px-ink);
+}
+.icon-btn:active{ transform:translateY(2px); box-shadow:0 1px 0 var(--px-ink); }
+
+.felt-wrap{ position:relative; flex:1; min-height:0; padding:0 10px; display:flex; align-items:stretch; justify-content:center; }
+.felt{
+  position:relative; width:100%; max-width:560px; height:100%;
+  border-radius:52px;
+  background:
+    radial-gradient(60% 46% at 50% 40%, rgba(255,255,255,.045) 0 99%, transparent 99%),
+    repeating-conic-gradient(var(--felt-1) 0% 25%, var(--felt-2) 0% 50%) 0 0 / 8px 8px;
+  background-color:var(--felt-2);
+  border:2px solid var(--px-ink);
+  box-shadow:
+    inset 0 4px 0 rgba(0,0,0,.3),
+    inset 0 -4px 0 rgba(0,0,0,.3),
+    0 8px 0 rgba(0,0,0,.4);
+}
+/* wood rail: hard three-band gradient, pixel-lit from the top */
+.felt::before{
+  content:''; position:absolute; inset:-12px; border-radius:62px; z-index:-1;
+  background:linear-gradient(180deg, var(--rail-hi) 0 14%, var(--rail) 14% 78%, var(--rail-lo) 78% 100%);
+  border:2px solid var(--px-ink);
+  box-shadow:0 6px 0 var(--px-ink);
+}
+/* inner betting line */
+.felt::after{
+  content:''; position:absolute; inset:10px; border-radius:44px; pointer-events:none;
+  border:2px dashed rgba(255,255,255,.10);
+}
+
+/* ---- POT PLATE: the single most prominent object on the felt ---- */
+.pot-area{
+  position:absolute; top:79%; left:50%; transform:translate(-50%,-50%);
+  display:flex; flex-direction:column; align-items:center; gap:7px; z-index:5; pointer-events:none;
+  transition:opacity var(--dur-fast);
+}
+.pot-chip{
+  display:flex; align-items:baseline; gap:8px; background:var(--px-ink);
+  padding:7px 16px; border-radius:var(--radius);
+  border:2px solid var(--accent);
+  box-shadow:0 3px 0 rgba(0,0,0,.5), inset 0 2px 0 rgba(255,255,255,.08);
+}
+.pot-chip .pot-word{ font-family:var(--font-hdr); font-size:8px; letter-spacing:.06em; color:var(--accent); text-transform:uppercase; }
+.pot-chip .v{ font-family:var(--font-hdr); font-size:14px; color:var(--accent-bright); }
+/* No separate "price to call" readout here any more — the centre of the
+   table communicates the pot only. Each player's own current-street action
+   (Check/Call N/Bet N/Raise to N/Fold/All-In) lives in their fixed
+   .action-slot instead (see render()), so the two numbers don't compete
+   for the same spot. The human's own to-call amount is still surfaced in
+   the action banner exactly when it matters (their turn). */
+
+/* overflow:hidden is a hard backstop matching #hud-left's — the mound's
+   real height budget is measured against the board/pot-label gap (see
+   measurePotHeadroom() in JS) so it shouldn't ever need this, but no
+   resting pot chip may ever visually reach the community-card area, so
+   clipping here guarantees it even if that measurement is ever off. */
+.pot-stacks{ position:relative; min-height:2px; overflow:hidden; }
+.pot-stacks:empty{ display:none; }
+/* a "clump" (really a tower — see takeChipFromPile()/flyChip()) is the
+   shared building block for both the pot mound and the human bankroll
+   heap: a small overlapping column of real chip-disc elements, one per
+   visible chip. Positioned absolutely at a fixed (left,bottom) slot
+   computed once by buildPileGrid() (see the JS pile-geometry block) —
+   every tower gets its own non-overlapping footprint, so neighbouring
+   stacks can never drift into or ghost through each other. */
+.chip-clump{
+  position:absolute; left:0; bottom:0;
+  display:flex; flex-direction:column-reverse; align-items:center;
+}
+/* In a column-reverse flex stack, an item's OWN margin-top controls the
+   gap toward the NEXT (later-DOM, visually-above) sibling — not toward
+   the previous one. Zeroing it on :first-child (as this used to) removes
+   the overlap between the base chip and chip #2, leaving the base
+   sitting flush/uncovered with a hard seam above it — exactly what read
+   as a detached single chip sitting in front of the real (correctly
+   overlapping) stack. The fix is simply to let the base chip keep the
+   same negative margin-top as every other chip, so chip #2 overlaps it
+   too; the drop-shadow (a contact shadow for wherever the tower touches
+   the felt) stays on :first-child, since that's still physically the
+   base regardless of how much of its own face ends up covered. The top
+   chip needs no special rule at all — being last in DOM order, nothing
+   is ever painted over it. */
+.chip-clump .chip-disc{ width:25px; height:25px; margin-top:-16px; }
+.chip-clump .chip-disc:first-child{ filter:drop-shadow(0 3px 0 rgba(0,0,0,.4)); }
+.chip-token{
+  position:absolute; border-radius:50%;
+  background:var(--accent);
+  border:2px solid var(--px-ink);
+  box-shadow:0 2px 0 rgba(0,0,0,.4), inset 0 2px 0 rgba(255,255,255,.4);
+}
+.chip-token.token-in{ animation:tokenIn .2s steps(3,end); }
+@keyframes tokenIn{ from{ transform:scale(.3); opacity:0; } to{ transform:scale(1); opacity:1; } }
+
+.board{ position:absolute; top:57%; left:50%; transform:translate(-50%,-50%); display:flex; gap:7px; z-index:4; perspective:600px; }
+
+/* ---- PIXEL CARDS: corner index + big centre pip, 2px outline ---- */
+.card{
+  position:relative; width:44px; height:62px; border-radius:3px; flex-shrink:0;
+  background:var(--card-face);
+  border:2px solid var(--card-ink);
+  box-shadow:0 3px 0 rgba(0,0,0,.5), inset 0 2px 0 #FFFFFF;
+  font-weight:800; line-height:1;
+}
+.card .ci{
+  position:absolute; top:2px; left:3px; display:flex; flex-direction:column; align-items:center;
+}
+.card .r{ font-family:var(--font-rank); font-size:15px; font-weight:400; letter-spacing:0; }
+.card .s{ font-size:12px; margin-top:0; }
+.card .pip{
+  position:absolute; right:2px; bottom:1px; font-size:20px; line-height:1;
+}
+.card.small{ width:30px; height:43px; border-radius:2px; }
+.card.small .r{ font-size:11px; }
+.card.small .s{ font-size:8px; }
+.card.small .pip{ font-size:13px; }
+.card.spade{ color:var(--suit-spade); }
+.card.club{ color:var(--suit-club); }
+.card.heart{ color:var(--suit-heart); }
+.card.diamond{ color:var(--suit-diamond); }
+.card.back{
+  background:
+    repeating-conic-gradient(rgba(255,255,255,.13) 0% 25%, transparent 0% 50%) 0 0 / 6px 6px,
+    var(--felt-2);
+  border:2px solid var(--px-ink);
+  box-shadow:0 3px 0 rgba(0,0,0,.5), inset 0 0 0 2px var(--rail);
+  position:relative;
+}
+[data-cardback="classic"] .card.back{
+  background:
+    repeating-conic-gradient(rgba(0,0,0,.18) 0% 25%, transparent 0% 50%) 0 0 / 6px 6px,
+    #8F2029;
+  border:2px solid var(--px-ink);
+  box-shadow:0 3px 0 rgba(0,0,0,.5), inset 0 0 0 2px #D9A93B;
+}
+[data-cardback="classic"] .card.back::after{
+  content:''; position:absolute; inset:4px; border:1px solid rgba(217,169,59,.6); pointer-events:none;
+}
+[data-cardback="classic"] .card.back.small::after{ inset:3px; }
+.card.deal-anim{ animation:dealIn .26s steps(5,end); }
+.card.flip-out{ animation:flipOut .12s steps(3,end) forwards; }
+.card.flip-in{ animation:flipIn .15s steps(3,end) forwards; }
+.card.muck{ animation:muckOut .3s steps(5,end) forwards; }
+@keyframes dealIn{ from{ opacity:0; transform:translateY(-20px); } to{ opacity:1; transform:none; } }
+@keyframes flipOut{ from{ transform:scaleX(1); } to{ transform:scaleX(.05); } }
+@keyframes flipIn{ from{ transform:scaleX(.05); } to{ transform:scaleX(1); } }
+@keyframes muckOut{ to{ opacity:0; transform:translateY(-24px) scale(.7); } }
+
+/* ---- dealer station: label + deck as one compact unit recessed into the
+   felt, tucked in a bottom corner away from the opponent arc, board and
+   pot — the physical source every dealt card visually flies from and
+   every collected card visibly returns to. Both pieces are positioned
+   from a single anchor and stacked with a small fixed gap (rather than
+   two independently-tuned percentages) specifically so they read as one
+   object instead of a label floating loose above the deck. The deck
+   itself is a precision-cut tray (tight corner radius matching its own
+   cards, dark interior, inset shadows for depth) — no outer border and
+   no external drop-shadow, so it reads as a recess in the table, not a
+   panel sitting on top of it. #dealer-deck keeps its id, its three
+   `.card` children and its own local geometry (just position:relative
+   now instead of position:absolute) — the deal/collect flight animation
+   only ever measures deck.lastElementChild's live getBoundingClientRect()
+   at flight time, so wrapping/resizing/repositioning the station here is
+   safe on its own; no JS changes needed. */
+.dealer-station{
+  position:absolute; left:15%; top:89%; transform:translate(-50%,-50%);
+  display:flex; flex-direction:column; align-items:center; gap:2px;
+  z-index:5; pointer-events:none;
+}
+.dealer-label{
+  font-family:var(--font-hdr); font-size:7px; font-weight:400; letter-spacing:.12em;
+  text-transform:uppercase; color:rgba(255,255,255,.4);
+  text-shadow:1px 1px 0 rgba(0,0,0,.5); text-align:center;
+  background:rgba(0,0,0,.42); border-radius:3px 3px 0 0; padding:2px 7px 3px;
+}
+.dealer-deck{
+  position:relative;
+  width:52px; height:70px; pointer-events:none;
+  box-sizing:border-box; padding:3px;
+  border-radius:6px;
+  background:rgba(0,0,0,.42);
+  box-shadow:
+    inset 0 4px 6px rgba(0,0,0,.6),
+    inset 0 1px 0 rgba(255,255,255,.10),
+    inset 0 -1px 0 rgba(0,0,0,.3);
+}
+/* ~13% larger than before, card proportions preserved (width:height
+   ratio unchanged). A dedicated size override here only, so opponents'
+   actual hole cards (which also use .card.small) are untouched. */
+.dealer-deck .card{ position:absolute; margin:0; width:41px; height:59px; }
+.dealer-deck .card:nth-child(1){ top:7px; left:7px; }
+.dealer-deck .card:nth-child(2){ top:6px; left:6px; }
+.dealer-deck .card:nth-child(3){ top:5px; left:5px; }
+
+/* Single-player round change: physical modules leave and return in discrete,
+   fully-awaited arcade beats. No opacity transition: these are solid table
+   parts being lifted from and dropped into slots. */
+.seat.run-pull-out{ animation:runSeatOut 620ms steps(10,end) both; animation-delay:var(--run-stagger,0ms); pointer-events:none; will-change:transform; }
+.seat.run-drop-in{ animation:runSeatIn 680ms steps(11,end) both; animation-delay:var(--run-stagger,0ms); pointer-events:none; will-change:transform; }
+@keyframes runSeatOut{ 0%{ transform:translateY(0); } 12%{ transform:translateY(5px); } 22%{ transform:translateY(-8px); } 100%{ transform:translateY(-125vh); } }
+@keyframes runSeatIn{ 0%{ transform:translateY(-125vh); } 78%{ transform:translateY(7px); } 90%{ transform:translateY(-3px); } 100%{ transform:translateY(0); } }
+.dealer-station.run-deck-out{ animation:runDeckOut 420ms steps(7,end) both; }
+.dealer-station.run-deck-in{ animation:runDeckIn 480ms steps(8,end) both; }
+@keyframes runDeckOut{ to{ transform:translate(-50%,-160%); opacity:0; } }
+@keyframes runDeckIn{ from{ transform:translate(-50%,-160%); opacity:0; } to{ transform:translate(-50%,-50%); opacity:1; } }
+.run-theme-wipe{
+  position:absolute; inset:0; z-index:19; pointer-events:none; overflow:hidden;
+  background:repeating-linear-gradient(0deg, var(--px-ink) 0 12px, var(--accent) 12px 16px, var(--felt-light) 16px 44px);
+  border-top:4px solid var(--accent); border-bottom:4px solid var(--accent);
+  animation:runThemeWipe var(--run-theme-ms,1100ms) steps(12,end) both;
+}
+@keyframes runThemeWipe{ 0%{ clip-path:inset(50% 0 50% 0); } 44%,58%{ clip-path:inset(0 0 0 0); } 100%{ clip-path:inset(50% 0 50% 0); } }
+/* Results dashboards — built from the same hard-edged instrument language as
+   the lower player console. Victory lives over the conquered felt; run-over
+   is a larger screen-level report floating above a dead monochrome world. */
+.result-card.run-results{
+  min-width:0; padding:0; border:0; border-radius:0; background:transparent;
+  box-shadow:none; color:var(--ink); opacity:1;
+}
+.table-clear-report{
+  top:2.5%; width:calc(100% - 20px); max-width:390px;
+  animation:tableReportIn 440ms steps(7,end) both;
+}
+@keyframes tableReportIn{
+  0%{ opacity:0; transform:translate(-50%,-28px) scale(.86); }
+  58%{ opacity:1; transform:translate(-50%,4px) scale(1.025); }
+  100%{ opacity:1; transform:translate(-50%,0) scale(1); }
+}
+.result-bezel{
+  position:relative; padding:8px; background:var(--panel); border:3px solid var(--px-ink);
+  box-shadow:0 0 0 3px var(--accent), 0 8px 0 var(--px-ink), inset 0 0 0 2px rgba(255,255,255,.08);
+}
+.result-bezel::before,.result-bezel::after{
+  content:''; position:absolute; top:5px; width:6px; height:6px; background:var(--accent); border:1px solid var(--px-ink);
+}
+.result-bezel::before{ left:5px; }.result-bezel::after{ right:5px; }
+.result-eyebrow{
+  display:flex; align-items:center; gap:7px; padding:3px 7px 5px; color:var(--ink-dim);
+  font-size:8px; font-weight:700; letter-spacing:.11em; text-transform:uppercase;
+}
+.result-eyebrow i{ height:2px; flex:1; background:repeating-linear-gradient(90deg,var(--accent) 0 8px,transparent 8px 12px); }
+.result-head{ border:2px solid var(--px-ink); text-align:center; text-transform:uppercase; }
+.result-head-win{
+  display:flex; align-items:baseline; justify-content:center; gap:8px; padding:10px 7px 8px;
+  background:var(--accent); color:var(--accent-ink); box-shadow:inset 0 -4px 0 rgba(0,0,0,.2),0 3px 0 var(--px-ink);
+  animation:resultHeadHit 520ms steps(6,end) both;
+}
+.result-head-win span{ font-family:var(--font-hdr); font-size:10px; letter-spacing:.08em; }
+.result-head-win strong{ font-family:var(--font-hdr); font-size:20px; letter-spacing:.1em; }
+@keyframes resultHeadHit{ 0%,25%{ filter:brightness(2); transform:translateX(-4px); } 40%{ transform:translateX(3px); } 60%{ transform:translateX(-1px); } 100%{ filter:none; transform:none; } }
+.table-result-hero{ display:grid; grid-template-columns:.78fr 1.22fr; gap:6px; margin-top:9px; }
+.result-stat{
+  min-width:0; padding:7px 6px; text-align:center; background:rgba(0,0,0,.4);
+  border:2px solid var(--px-ink); box-shadow:inset 0 2px 0 rgba(255,255,255,.07);
+  animation:resultModuleIn 360ms steps(5,end) both;
+}
+.result-stat-label,.result-section-label{ display:block; color:var(--ink-dim); font-size:8px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; }
+.result-stat-value{ display:block; margin-top:4px; color:var(--card-face); font-family:var(--font-hdr); font-size:12px; line-height:1.15; }
+.hero-ko{ background:var(--danger); color:#fff; box-shadow:inset 0 -3px 0 rgba(0,0,0,.24); }
+.hero-ko .result-stat-label,.hero-ko .result-stat-value{ color:#fff; }
+.hero-ko .result-stat-value{ font-size:20px; }
+.hero-record .result-stat-value{ color:var(--accent-bright); font-size:17px; }
+.table-result-instruments{ display:grid; grid-template-columns:1.25fr 1fr 1fr; gap:5px; margin-top:6px; }
+.table-result-instruments .result-stat{ padding:6px 3px; }
+.table-result-instruments .result-stat-value{ font-size:10px; }
+.accent-stat .result-stat-value{ color:var(--accent-bright); }
+@keyframes resultModuleIn{ from{ opacity:0; transform:translateY(-7px); } to{ opacity:1; transform:none; } }
+.result-best{
+  position:relative; margin-top:7px; min-height:84px; padding:7px 8px 8px 110px;
+  background:var(--panel-2); border:2px solid var(--px-ink); box-shadow:inset 4px 0 0 var(--accent);
+  animation:resultModuleIn 420ms 120ms steps(6,end) both;
+}
+.result-best-name{ margin-top:5px; color:var(--accent-bright); font-family:var(--font-hdr); font-size:11px; line-height:1.2; }
+.result-best-desc{ margin-top:2px; color:var(--ink-dim); font-size:9px; line-height:1.15; }
+.result-best-cards{ position:absolute; left:9px; top:22px; display:flex; gap:2px; }
+.result-best-cards .card.small{ width:18px; height:27px; border-width:1px; border-radius:2px; box-shadow:0 2px 0 rgba(0,0,0,.45); }
+.result-best-cards .card.small .r{ font-size:7px; top:1px; left:2px; }.result-best-cards .card.small .s{ font-size:5px; top:9px; left:2px; }
+.result-best-cards .card.small .pip{ font-size:8px; }
+.result-best.empty{ padding-left:10px; min-height:54px; }
+.result-best-empty{ margin-top:8px; color:var(--ink-faint); font-family:var(--font-hdr); font-size:8px; }
+.result-run-strip{
+  display:flex; justify-content:space-between; gap:8px; margin-top:6px; padding:6px 8px;
+  background:rgba(0,0,0,.35); border:1px solid rgba(255,255,255,.1); color:var(--ink-dim); font-size:8px; letter-spacing:.04em;
+}
+.result-run-strip b{ margin-left:3px; color:var(--accent-bright); font-family:var(--font-hdr); font-size:9px; }
+.result-primary,.result-secondary{ width:100%; min-height:48px; margin-top:8px; }
+
+/* The failed run drains the table/action machinery only. The report is a
+   sibling, so it stays fully saturated above the recognisable dead scene. */
+#table-screen.run-dead > .table-main,#table-screen.run-dead > #action-area{ animation:runWorldDie 320ms steps(5,end) forwards; pointer-events:none; }
+#table-screen.run-dead > .table-main *,#table-screen.run-dead > #action-area *{ animation-play-state:paused!important; transition:none!important; }
+@keyframes runWorldDie{ from{ filter:grayscale(0) brightness(1); } to{ filter:grayscale(1) brightness(.38) contrast(.92); } }
+.run-over-report{
+  position:absolute; z-index:120; left:50%; top:50%; width:calc(100% - 22px); max-width:408px;
+  max-height:calc(100% - 22px); overflow-y:auto; overscroll-behavior:contain;
+  transform:translate(-50%,-50%); animation:runOverReportIn 500ms steps(7,end) both;
+}
+@keyframes runOverReportIn{ 0%{ opacity:0; transform:translate(-50%,-43%) scale(.94); } 55%{ opacity:1; transform:translate(-50%,-51%) scale(1.01); } 100%{ opacity:1; transform:translate(-50%,-50%) scale(1); } }
+.result-bezel-loss{ padding:9px; background:#170B0F; box-shadow:0 0 0 3px var(--danger),0 8px 0 #050304,inset 0 0 0 2px rgba(255,255,255,.08); }
+.result-bezel-loss::before,.result-bezel-loss::after{ background:var(--danger); }
+.danger-eye{ color:#E9A3A0; }.danger-eye i{ background:repeating-linear-gradient(90deg,var(--danger) 0 8px,transparent 8px 12px); }
+.result-head-loss{ padding:11px 8px 9px; background:var(--danger); color:#fff; box-shadow:inset 0 -4px 0 rgba(0,0,0,.28),0 3px 0 var(--px-ink); }
+.result-head-loss strong{ display:block; font-family:var(--font-hdr); font-size:24px; letter-spacing:.12em; text-shadow:2px 2px 0 #4B0B0E; }
+.result-head-loss span{ display:block; margin-top:5px; font-family:var(--font-hdr); font-size:8px; letter-spacing:.1em; }
+.run-progress-hero{ display:grid; grid-template-columns:1.35fr .65fr; gap:6px; margin-top:9px; }
+.run-progress-hero>div{ min-height:76px; padding:8px; background:#0B1115; border:2px solid var(--px-ink); display:flex; align-items:center; justify-content:center; gap:7px; }
+.run-progress-hero>div:first-child{ box-shadow:inset 5px 0 0 var(--accent); }
+.run-progress-hero span,.run-progress-hero em{ color:var(--ink-dim); font-size:8px; font-style:normal; font-weight:700; letter-spacing:.08em; }
+.run-progress-hero strong{ color:var(--accent-bright); font-family:var(--font-hdr); font-size:30px; line-height:1; }
+.run-progress-hero>div:last-child strong{ color:#fff; font-size:22px; }.run-progress-hero>div:last-child span{ line-height:1.3; }
+.run-report-grid{ display:grid; grid-template-columns:1fr 1fr; gap:5px; margin-top:6px; }
+.run-report-grid .result-stat{ padding:6px 5px; }.run-report-grid .result-stat-value{ font-size:11px; }
+.run-report-grid .ko-stat{ box-shadow:inset 4px 0 0 var(--danger); }
+.run-highlight-row{ display:grid; grid-template-columns:1.15fr .85fr; gap:5px; margin-top:6px; }
+.run-highlight-row .result-stat-value{ font-size:12px; }
+.run-epitaph{ margin-top:6px; padding:6px 8px; display:grid; grid-template-columns:auto 1fr; gap:3px 8px; align-items:center; background:#08090A; border:2px solid var(--danger); }
+.run-epitaph span{ color:#E9A3A0; font-size:8px; font-weight:700; letter-spacing:.09em; }.run-epitaph strong{ color:#fff; font-family:var(--font-hdr); font-size:10px; }
+.run-epitaph em{ grid-column:2; color:var(--ink-dim); font-size:8px; font-style:normal; }
+.run-result-actions{ display:grid; grid-template-columns:1.3fr .7fr; gap:7px; margin-top:2px; }
+.run-result-actions .result-secondary{ color:var(--ink); background:var(--panel-2); border:2px solid var(--ink-faint); }
+.table-round-callout{
+  position:absolute; left:50%; top:38%; transform:translate(-50%,-50%); z-index:22;
+  font-family:var(--font-hdr); font-size:22px; letter-spacing:.12em; white-space:nowrap;
+  color:var(--accent); text-shadow:3px 3px 0 var(--px-ink); pointer-events:none;
+  animation:roundCallout var(--run-announce-ms,1200ms) steps(9,end) both;
+}
+@keyframes roundCallout{ 0%{ transform:translate(-50%,-50%) scale(.65); opacity:0; } 18%,78%{ transform:translate(-50%,-50%) scale(1); opacity:1; } 100%{ transform:translate(-50%,-50%) scale(1); opacity:0; } }
+[data-motion="off"] .seat.run-pull-out,[data-motion="off"] .seat.run-drop-in,
+[data-motion="off"] .dealer-station.run-deck-out,[data-motion="off"] .dealer-station.run-deck-in,
+[data-motion="off"] .run-theme-wipe,[data-motion="off"] .table-round-callout{ animation-duration:1ms; animation-delay:0ms; }
+
+/* ---- flying deal ghost: a body-appended card-back that travels from the
+   dealer deck to its destination, mirroring the .fly-chip technique ---- */
+.fly-card{
+  position:fixed; z-index:60; pointer-events:none; will-change:transform,opacity;
+  transform-origin:50% 50%; margin:0;
+}
+/* Return-to-deck ghosts live inside #felt instead of body — #app is itself
+   position:fixed (a stacking context of its own), so a body-level sibling
+   can never be placed behind anything inside it no matter its z-index.
+   Reparenting into #felt puts this ghost in the SAME local stacking
+   context as .dealer-deck (z-index:5), so z-index:4 here genuinely means
+   "behind the deck," not just "a smaller number." */
+.fly-card.return{ position:absolute; z-index:4; }
+
+.seat{
+  /* -38px (was -42px): the box grew a dedicated name row at the top but
+     gave back height at the bottom via the new card protrusion, so the
+     old centering constant needs a small retune — verify visually against
+     the final rendered box at 440x956, this is a starting value, not a
+     derived one. */
+  position:absolute; width:var(--seat-w, 80px); margin-left:calc(var(--seat-w, 80px) / -2); margin-top:-38px;
+  display:flex; flex-direction:column; align-items:center; z-index:6;
+  transition:opacity var(--dur);
+}
+/* Folding removes the player from the hand, not their physical board from
+   the table — so folded seats dim selectively (portrait/cards/secondary
+   info) rather than fading the whole module toward invisibility. See the
+   targeted .seat.folded rules below the seat-card box. Out/eliminated
+   stays the strongest treatment, unchanged. */
+.seat.out{ opacity:.2; }
+
+/* ---- portrait tiles: square avatars in pixel frames ---- */
+.avatar-wrap{ position:relative; width:var(--avatar-w, 50px); height:var(--avatar-w, 50px); flex-shrink:0; }
+/* single turn indicator: a small blocky gold arrow floating above the
+   hearts row — no ring, no border swap, no ellipsis. Reuses the existing
+   .turn-ring element/toggle so no markup or JS changes are needed. */
+.turn-ring{
+  position:absolute; left:50%; top:-32px; transform:translateX(-50%);
+  width:10px; height:6px; opacity:0;
+  transition:opacity var(--dur-fast);
+  pointer-events:none;
+  background:
+    linear-gradient(var(--accent-bright) 0 0) 0 0/10px 2px no-repeat,
+    linear-gradient(var(--accent-bright) 0 0) 2px 2px/6px 2px no-repeat,
+    linear-gradient(var(--accent-bright) 0 0) 4px 4px/2px 2px no-repeat;
+}
+.seat.active .turn-ring{ opacity:1; }
+
+.avatar{
+  position:absolute; inset:2px; border-radius:var(--radius); background:var(--seat-bg);
+  border:2px solid var(--px-ink);
+  display:flex; align-items:center; justify-content:center;
+  font-size:15px; font-weight:800; color:var(--ink-dim);
+  transition:border-color var(--dur-fast), color var(--dur-fast);
+  box-shadow:0 2px 0 rgba(0,0,0,.45), inset 0 2px 0 rgba(255,255,255,.07);
+}
+.seat.winner .avatar{ border-color:var(--good); box-shadow:0 0 0 3px var(--good), 0 2px 0 rgba(0,0,0,.45); }
+.seat.winner .seat-name{ color:var(--good); }
+/* Showdown result console — opponent-seat celebration. A brief punch/pop
+   plus a finite (not infinite) rim pulse layered on top of the permanent
+   .seat.winner glow above, triggered once by celebrateWinnerSeat() right
+   after highlightWinningCards() so the eye lands on cards, then seat. A
+   NEW keyframe rather than reusing .face-pop (that one targets the SVG
+   face element specifically — coupling it to seat-box chrome risks
+   interfering with face-rendering internals). The opponent's seat IS
+   their celebration — see the separate, stronger .hud-frame win-* set
+   below for the human's own noticeably bigger moment. */
+.winner-pop{ animation:winnerPunch .3s steps(4,end); }
+@keyframes winnerPunch{ 0%{ transform:scale(1); } 45%{ transform:scale(1.08); } 100%{ transform:scale(1); } }
+.seat.winner-pulse .avatar, .seat.winner-pulse .seat-card{ animation:winnerRim .55s steps(6,end) 2; }
+@keyframes winnerRim{
+  0%,100%{ box-shadow:0 0 0 3px var(--good), 0 2px 0 rgba(0,0,0,.45); }
+  50%{ box-shadow:0 0 0 6px var(--good), 0 2px 0 rgba(0,0,0,.45); }
+}
+
+/* SB/BB token — one coherent circular physical-marker design shared with
+   the human HUD's #hud-pos (see below), just sized for the compact seat
+   panel. No visual Dealer marker: the game's fiction is an unseen dealer
+   working from the physical deck, so the button position is tracked in
+   game state only (g.dealerIndex — see assignBlinds/computePositions)
+   and never rendered. Sits in the corner the old dealer badge used to
+   occupy, since that's now free. */
+.pos-btn{
+  position:absolute; top:-4px; right:-6px;
+  width:17px; height:17px; border-radius:50%;
+  display:flex; align-items:center; justify-content:center;
+  font-family:var(--font-hdr); font-size:8px; font-weight:700; letter-spacing:0;
+  color:#fff; text-shadow:1px 1px 0 rgba(0,0,0,.65);
+  background:var(--danger); z-index:2;
+  border:2px solid var(--px-ink);
+  /* thinner inset ring than before — gives the letters more of the 17px
+     circle to sit in while keeping the same physical-puck footprint */
+  box-shadow:0 1px 0 var(--px-ink), inset 0 0 0 1px rgba(255,255,255,.55);
+}
+/* Own full-width row, not shared with the stack — a name sharing a flex
+   row with the chip count only had ~25-35px of real space at phone width,
+   which is why names used to ellipsize to 1-2 characters. Owning the full
+   row gives it the ~80px the box actually has to offer. */
+.seat-name{
+  font-size:10px; font-weight:700; color:var(--ink); margin-top:5px; width:100%;
+  text-align:center; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+  transition:color var(--dur-fast);
+  text-shadow:1px 1px 0 var(--px-ink);
+  text-transform:uppercase;
+  background:rgba(0,0,0,.4); border-radius:2px; border:1px solid rgba(255,255,255,.1);
+  padding:1px 7px; box-shadow:inset 0 2px 0 rgba(0,0,0,.4);
+}
+.seat.you .seat-name{ font-size:13px; }
+
+/* ---- chip towers: face-on pixel-art chip sprites, stacked with heavy
+   negative overlap into one solid column — the sketch's "tower of chips",
+   not a row of floating circles ---- */
+.chip-stack{
+  display:flex; flex-direction:column-reverse; align-items:center; width:22px; min-height:2px;
+}
+/* Circular sprite chip: artwork (face, rim, edge marks) comes entirely
+   from the supplied PNG, so this rule is just geometry — size, stacking
+   overlap and pixelated scaling. See .chip-disc.d-* below for which PNG
+   a given tier uses. */
+.chip-disc{
+  position:relative; width:26px; height:26px; border-radius:50%; margin-top:-16px; flex-shrink:0;
+  background-repeat:no-repeat; background-size:100% 100%;
+  image-rendering:pixelated; image-rendering:-moz-crisp-edges; image-rendering:crisp-edges;
+}
+/* the base chip of a pile gets a contact shadow — putting it on every
+   disc would show as a seam between stacked chips. Heavy negative overlap
+   above means every chip but the base and the topmost is mostly hidden —
+   only its rim peeks out beneath the chip above it, which is what actually
+   reads as "a stack" rather than a spaced column. */
+.chip-disc:first-child{
+  filter:drop-shadow(0 3px 0 rgba(0,0,0,.4));
+}
+/* ---- chip colour variety — purely decorative, no monetary meaning.
+   Theme-independent (colours don't shift with the active table theme).
+   Maps to the four supplied chip PNGs; also used directly by .fly-chip
+   so a flying chip matches the pile it just left. ---- */
+.chip-disc.d-cream, .fly-chip.d-cream{ background-image:url('../assets/chips/chip-cream.png'); }
+.chip-disc.d-red, .fly-chip.d-red{ background-image:url('../assets/chips/chip-red.png'); }
+.chip-disc.d-blue, .fly-chip.d-blue{ background-image:url('../assets/chips/chip-blue.png'); }
+.chip-disc.d-green, .fly-chip.d-green{ background-image:url('../assets/chips/chip-green.png'); }
+.chip-disc.disc-in{ animation:discIn .18s steps(3,end); }
+@keyframes discIn{ from{ transform:scale(.3); opacity:0; } to{ transform:scale(1); opacity:1; } }
+.seat-chips{
+  font-size:11px; color:var(--accent-bright); font-weight:700; text-shadow:1px 1px 0 var(--px-ink);
+  font-variant-numeric:tabular-nums;
+}
+/* Discrete size steps keyed to digit count (set in render()), not
+   shrink-to-fit — keeps digits stable-width while guaranteeing a 5-7
+   digit stack never has to fight the name row for space. */
+.seat-chips.chip-sz2{ font-size:9.5px; }
+.seat-chips.chip-sz3{ font-size:8px; }
+.seat-cards{ display:flex; gap:2px; margin-top:5px; height:var(--card-h, 40px); perspective:400px; }
+
+.compact-seats .chip-stack{ display:none; }
+.compact-seats .seat-cards{ margin-top:3px; }
+
+/* ---- ENEMY BOX: hearts, face, name, chips, current bet and hole cards all
+   inside one bordered card — nothing floats loose outside the frame ---- */
+.seat .avatar-wrap{ width:var(--avatar-w, 52px); height:var(--avatar-w, 52px); flex-shrink:0; }
+.seat-card{
+  display:flex; flex-direction:column; align-items:center; width:100%;
+  background:
+    linear-gradient(rgba(255,255,255,.14) 0 0) top 2px left 2px / 3px 3px no-repeat,
+    linear-gradient(rgba(255,255,255,.14) 0 0) top 2px right 2px / 3px 3px no-repeat,
+    var(--seat-bg);
+  border:2px solid var(--px-ink); border-radius:var(--radius);
+  padding:3px; gap:2px;
+  box-shadow:0 4px 0 rgba(0,0,0,.5), inset 0 2px 0 rgba(255,255,255,.08), inset 0 -2px 0 rgba(0,0,0,.3);
+}
+.seat.winner .seat-card{ border-color:var(--good); box-shadow:0 0 0 2px var(--good), 0 4px 0 rgba(0,0,0,.5); }
+.seat-card .hearts{ margin:0; }
+.seat-card .seat-name{ margin-top:0; }
+/* Opponent bankroll aperture. The stable six-reel instrument is built by
+   updateSeatReels(); physical chip piles remain exclusive to the human
+   bank and central pot. */
+.seat-card .seat-chips{
+  display:flex; align-items:center; justify-content:center; width:100%;
+  overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+}
+/* Scoped override, not an edit to the shared .card.small base rule —
+   .card.small is also used by the hand-strength reference popup
+   (.rank-cards) and a landscape-viewport override, both already isolated
+   from this the same way .dealer-deck .card is (own selector, wins on
+   specificity: 3 classes here vs. 2 on every other .card.small rule).
+   ~13%/12% larger than the shared base (30x43). Companion change: the
+   seat-cards protrusion below moves from -19px to -30px, and initSeats()'s
+   --card-h multiplier (currently sourced from 43) needs the same 43→48
+   update or the container's reserved height quietly falls behind the
+   actual (now larger) card size. */
+.seat-card .card.small{ width:34px; height:48px; border-radius:2px; }
+.seat-card .card.small .r{ font-size:12px; }
+.seat-card .card.small .s{ font-size:9px; }
+.seat-card .card.small .pip{ font-size:14px; }
+/* Cards protrude ~60-65% below the board's bottom edge — physical cards
+   placed into the board rather than another contained UI row. Safe for
+   the deal-flight system: flyGhost() always measures the destination
+   element's live getBoundingClientRect() at flight time (see DealFX),
+   so this CSS-only offset is picked up automatically with no JS changes,
+   the same way .seat.you's existing card protrusion already works. */
+.seat-card .seat-cards{ margin-top:2px; margin-bottom:-30px; position:relative; z-index:3; filter:drop-shadow(0 3px 0 rgba(0,0,0,.35)); }
+
+/* Folded: the player is out of the hand, not their board off the table.
+   The board's own chrome (border/background/shadow) is left almost
+   untouched on purpose, so the physical silhouette — "a player is still
+   sitting here" — survives at full strength. Everything that signals
+   *involvement in this pot* (portrait, hearts, hole cards) recedes hard
+   instead, targeted per element rather than one blanket opacity on
+   .seat, so with two players left the still-live boards dominate and the
+   folded ones read at a glance as out of the hand. Name/stack stay
+   legible but noticeably lower contrast. The action-slot (reading FOLD)
+   stays at full contrast — it's the one thing on a folded board that
+   must still read clearly, since it's what explains the rest of the
+   dimming. Hierarchy: active > folded > dead/out (.seat.out's blanket
+   opacity:.2 and .seat.dead below are both untouched, and both still
+   read as more receded than any of this). */
+.seat.folded .seat-card{ filter:saturate(.8); }
+.seat.folded .avatar{ opacity:.3; filter:grayscale(.9) brightness(.75); }
+.seat.folded .seat-cards{ opacity:.2; filter:grayscale(.6); }
+.seat.folded .hearts{ opacity:.25; filter:grayscale(.8); }
+.seat.folded .seat-name{ opacity:.55; }
+.seat.folded .seat-chips{ opacity:.55; }
+.seat.folded .action-slot{ opacity:1; }
+
+/* Eliminated (.dead, lives mode) stays a stronger treatment than folded,
+   as before — .seat.out{opacity:.2} above is stronger still. */
+.seat.dead .seat-card{ border-color:rgba(255,255,255,.15); }
+
+/* Fixed action-display slot — always rendered at the same footprint, so
+   the seat-card's own height never jitters between "someone checked" and
+   "someone bet." Replaces the old floating .seat-bet chip and the
+   .seat-tag All-In pill (merged into .act-allin below). Class-only state
+   changes (no animation yet) so a later split-flap/intensity pass can
+   hook transitions per class without any structural rework. */
+.action-slot{
+  width:100%; min-height:15px; margin-top:2px;
+  display:flex; align-items:center; justify-content:center;
+  font-family:var(--font-hdr); font-size:8.5px; font-weight:400; letter-spacing:.04em;
+  text-transform:uppercase; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+  border-radius:2px; border:2px solid rgba(255,255,255,.12);
+  padding:2px 4px; background:rgba(0,0,0,.3); color:var(--ink-faint);
+  box-shadow:inset 0 2px 0 rgba(0,0,0,.35);
+}
+.action-slot.act-check{ color:var(--ink-dim); border-color:rgba(255,255,255,.22); }
+.action-slot.act-call{ color:var(--accent-bright); border-color:var(--accent); }
+.action-slot.act-bet{ background:var(--accent); color:var(--accent-ink); border-color:var(--px-ink); }
+.action-slot.act-raise{ background:var(--accent); color:var(--accent-ink); border-color:var(--px-ink); font-weight:700; }
+.action-slot.act-fold{ color:rgba(255,180,173,.75); border-color:rgba(217,83,74,.35); }
+.action-slot.act-allin{ background:var(--danger); color:#FFF; border-color:var(--px-ink); font-weight:700; }
+/* K.O.!/ELIMINATED! — set via p.streetAction like every other action
+   label (see playElimination/render()), so it persists correctly across
+   re-renders instead of fighting render()'s own className rebuild. The
+   face stays the payoff; this status bar is where the stamp text lives. */
+.action-slot.act-ko{ background:var(--accent); color:var(--accent-ink); border-color:var(--px-ink); font-weight:700; box-shadow:inset 0 2px 0 rgba(0,0,0,.35), 0 0 0 2px rgba(255,255,255,.3); }
+.action-slot.act-eliminated{ background:var(--danger); color:#FFF; border-color:var(--px-ink); font-weight:700; }
+.action-slot.elim-slam{ animation:actionSlamStamp .32s steps(5,end); }
+@keyframes actionSlamStamp{
+  0%{ transform:scale(2.2) translateY(-3px); opacity:0; filter:brightness(1.9); }
+  40%{ transform:scale(.82) translateY(1px); opacity:1; filter:brightness(1.4); }
+  70%{ transform:scale(1.1); filter:brightness(1); }
+  100%{ transform:scale(1); }
+}
+/* Longer labels ("Raise to 1,240") step down in size rather than
+   ellipsis-truncating a meaningful digit — text-overflow:ellipsis above
+   stays only as a defensive backstop that should never actually fire
+   once this + fmtActionAmount()'s abbreviation fallback are in place. */
+.action-slot.txt-sz2{ font-size:7.5px; }
+.action-slot.txt-sz3{ font-size:6.5px; }
+
+.invested-row{
+  display:flex; align-items:baseline; gap:5px; margin-top:5px; padding:3px 9px;
+  background:rgba(0,0,0,.4); border-radius:2px; border:2px solid rgba(255,255,255,.1);
+}
+.invested-label{ font-size:9px; color:var(--ink-faint); text-transform:uppercase; letter-spacing:.05em; }
+.invested-val{ font-size:11px; font-weight:800; color:var(--ink-dim); }
+
+.action-bubble{
+  position:absolute; top:-18px; left:50%; z-index:9; white-space:nowrap;
+  transform:translateX(-50%) translateY(4px); opacity:0; pointer-events:none;
+  background:var(--px-ink); color:var(--accent-bright);
+  border:2px solid var(--accent);
+  font-size:11px; font-weight:800; padding:3px 10px; border-radius:2px;
+  transition:opacity var(--dur-fast) steps(2,end), transform var(--dur-fast) steps(2,end);
+  box-shadow:0 2px 0 rgba(0,0,0,.5);
+}
+.action-bubble.show{ opacity:1; transform:translateX(-50%) translateY(-2px); }
+.action-bubble.is-fold{ color:#FFB4AD; border-color:var(--danger); }
+.action-bubble.talk{
+  color:var(--ink-dim); font-weight:600; font-style:normal; font-size:11px;
+  border-color:rgba(255,255,255,.25); white-space:normal; max-width:150px; text-align:center; line-height:1.35;
+}
+
+.seat.you{
+  position:relative; width:100%; margin:0; --card-h:76px;
+  flex-direction:column; align-items:center;
+}
+#your-seat-dock{
+  flex-shrink:0; display:flex; justify-content:center; padding:2px 8px 6px; position:relative; z-index:8;
+}
+.seat.you .card{ width:54px; height:76px; border-radius:4px; }
+.seat.you .card .r{ font-size:19px; }
+.seat.you .card .s{ font-size:13px; }
+.seat.you .card .pip{ font-size:26px; }
+.seat.you .seat-cards{
+  gap:6px; margin-top:-26px; position:relative; z-index:3;
+  filter:drop-shadow(0 4px 0 rgba(0,0,0,.35));
+}
+.seat.you .action-bubble{ top:-40px; font-size:12px; }
+
+/* ---- PLAYER HUD: one raised frame, three zones — coin-tower gauge on the
+   left, cards + status + jackpot centre stage, vitals column on the right ---- */
+#hud-frame{
+  display:grid; grid-template-columns:96px minmax(0,1fr) 96px; gap:7px; width:100%;
+  max-width:430px;
+  background:var(--panel); border:2px solid var(--px-ink); border-radius:var(--radius);
+  padding:9px 8px 8px;
+  box-shadow:0 4px 0 rgba(0,0,0,.55), inset 0 2px 0 rgba(255,255,255,.08), inset 0 -2px 0 rgba(0,0,0,.3);
+}
+/* Colour-only swap on an already-2px border in both states — this was
+   never the source of the felt-resize-on-turn bug (see the
+   .hand-strength comment for the actual cause); kept dimensionless
+   on purpose so it stays that way. */
+#hud-frame:has(.seat.you.active){ border-color:var(--accent); }
+/* Showdown result console — the bottom HUD temporarily becomes the result
+   display instead of a floating panel covering the felt. #hud-left/
+   #hud-right (chip tower, hearts/nameplate/action-slot/position) are pure
+   HUD chrome with no direct table-state ownership and recede entirely;
+   #hud-mid's own hole-card content (.seat.you, always its first child —
+   see initSeats()) is untouched by this rule since only its LATER sibling
+   (#hud-status) is affected. Both changes are needed together: hiding the
+   two side bays alone would NOT free their width, since CSS grid reserves
+   a fixed-length track (96px) regardless of whether its content is
+   visible — only changing grid-template-columns itself does that. */
+#hud-frame.result-mode{ grid-template-columns:1fr; }
+#hud-frame.result-mode #hud-left,
+#hud-frame.result-mode #hud-right{ display:none; }
+/* Human-win celebration — deliberately bigger than the opponent seat
+   pop/pulse above: the human's own .seat.you has no visible .seat-card/
+   .avatar to glow, and a win at MY table should feel noticeably better
+   than watching an opponent win. Triggered by celebrateWinnerSeat('you')
+   as a short-lived class on #hud-frame itself, right before it
+   transforms into the result console — the existing dashboard housing
+   getting a bigger moment, not a duplicated portrait or new element. A
+   brief mechanical shake/bounce plus a stepped rim-flash cycling between
+   the existing --good/--accent-bright tokens (never a hardcoded colour,
+   so this reads correctly in every theme), finite (2 flash cycles), then
+   settles straight into the normal .result-mode look. */
+.hud-frame-win{ animation:hudWinShake .45s steps(8,end); }
+@keyframes hudWinShake{
+  0%{ transform:translateY(0) scale(1); }
+  15%{ transform:translateY(-3px) scale(1.015); }
+  30%{ transform:translateY(1px) translateX(-2px) scale(1.01); }
+  45%{ transform:translateY(0) translateX(2px) scale(1.02); }
+  60%{ transform:translateY(-1px) translateX(-1px) scale(1.01); }
+  100%{ transform:translateY(0) translateX(0) scale(1); }
+}
+.hud-frame-win-flash{ animation:hudWinFlash .6s steps(6,end) 2; }
+@keyframes hudWinFlash{
+  0%,100%{ box-shadow:0 4px 0 rgba(0,0,0,.55), inset 0 2px 0 rgba(255,255,255,.08), inset 0 -2px 0 rgba(0,0,0,.3), 0 0 0 2px var(--good); }
+  50%{ box-shadow:0 4px 0 rgba(0,0,0,.55), inset 0 2px 0 rgba(255,255,255,.08), inset 0 -2px 0 rgba(0,0,0,.3), 0 0 0 6px var(--accent-bright); }
+}
+/* The human's own amount readout hits harder/brighter than a secondary
+   side-pot mention — a static stronger glow (no extra animation
+   complexity needed beyond the shared per-digit tick already used for
+   every readout, see revealResultAmount()). */
+.amt-readout.mine{
+  border-color:var(--good);
+  box-shadow:0 3px 0 rgba(0,0,0,.5), inset 0 2px 0 rgba(0,0,0,.5), 0 0 10px rgba(111,203,146,.55);
+}
+.hud-recess{
+  border:2px solid var(--px-ink); border-radius:2px;
+  background:
+    linear-gradient(rgba(255,255,255,.16) 0 0) top 2px left 2px / 3px 3px no-repeat,
+    linear-gradient(rgba(255,255,255,.16) 0 0) top 2px right 2px / 3px 3px no-repeat,
+    linear-gradient(rgba(255,255,255,.16) 0 0) bottom 2px left 2px / 3px 3px no-repeat,
+    linear-gradient(rgba(255,255,255,.16) 0 0) bottom 2px right 2px / 3px 3px no-repeat,
+    rgba(0,0,0,.36);
+  box-shadow:inset 0 3px 0 rgba(0,0,0,.45), inset 0 -1px 0 rgba(255,255,255,.07);
+}
+#hud-left{
+  display:flex; align-items:flex-end; justify-content:center; padding:6px 4px;
+  border:2px solid var(--px-ink); border-radius:2px;
+  background:rgba(0,0,0,.36);
+  box-shadow:inset 0 3px 0 rgba(0,0,0,.45), inset 0 -1px 0 rgba(255,255,255,.07);
+  /* Hard backstop for the bankroll pile: chip slot positions are computed
+     from this box's real measured inner area (see bankPile() in JS), but
+     this guarantees a resting chip can never visually spill past the
+     recessed compartment's border even if that measurement is ever off. */
+  overflow:hidden;
+}
+/* #hud-tower's own width/height are set inline by bankPile() to match
+   #hud-left's measured inner area exactly — chip towers inside it are
+   absolutely positioned at fixed slots against that real size. */
+#hud-tower{ position:relative; min-height:24px; }
+/* No :first-child override here — see the .chip-clump .chip-disc:first-child
+   comment (same file, pot rules) for why the base chip needs to KEEP the
+   standard overlap margin rather than having it zeroed; the shadow it
+   still gets comes from that shared .chip-clump selector, which already
+   matches bank towers too (.chip-clump is the same class for both). */
+#hud-tower .chip-disc{ width:21px; height:21px; margin-top:-13px; }
+#hud-mid{
+  display:flex; flex-direction:column; align-items:center; gap:6px; min-width:0;
+}
+/* The banner/hand-strength/jackpot trio (#hud-status-normal) and the
+   showdown result content (.hud-result) are two faces of the same box,
+   cross-faded rather than 3D-flipped like the AWARD POT console — that
+   flip only works there because both its faces are near-equal height; the
+   result face here is meaningfully taller and content-length-dependent,
+   so its real height is measured in JS (showHudResultConsole/
+   hideHudResultConsole) and written to --status-h for the internal face
+   transition. The containing dashboard region remains fixed.
+   #hud-status-normal stays plain in-flow (position:static) at all
+   times except the brief .showing-result window, so ordinary betting-round
+   HUD sizing is completely unaffected the rest of the time. */
+#hud-status{ position:relative; width:100%; }
+#hud-status.animating-height{
+  height:var(--status-h, auto); overflow:hidden;
+  transition:height var(--dur) steps(6,end);
+}
+#hud-status-normal{
+  display:flex; flex-direction:column; align-items:center; gap:6px; width:100%;
+  transition:opacity var(--dur-fast) steps(3,end), transform var(--dur) steps(6,end);
+  transform-origin:50% 0;
+}
+.hud-result{
+  position:absolute; left:0; right:0; top:0; width:100%;
+  display:flex; flex-direction:column; align-items:center; gap:5px;
+  opacity:0; transform:scaleY(.08); transform-origin:50% 0; pointer-events:none;
+  transition:opacity var(--dur-fast) steps(3,end), transform var(--dur) steps(6,end);
+}
+#hud-status.showing-result #hud-status-normal{
+  position:absolute; left:0; right:0; top:0; width:100%;
+  opacity:0; transform:scaleY(.08); pointer-events:none;
+}
+#hud-status.showing-result .hud-result{ opacity:1; transform:scaleY(1); pointer-events:auto; }
+.hr-name{
+  font-family:var(--font-hdr); font-size:13px; font-weight:400; text-transform:uppercase;
+  letter-spacing:.05em; text-align:center; color:var(--accent-bright); text-shadow:1px 1px 0 var(--px-ink);
+}
+.hr-cat{
+  font-family:var(--font-hdr); font-size:11px; font-weight:400; letter-spacing:.04em;
+  text-transform:uppercase; text-align:center; color:var(--ink); text-shadow:1px 1px 0 var(--px-ink);
+}
+.hr-desc{ font-size:11px; color:var(--ink-dim); text-align:center; }
+.hr-label{
+  font-family:var(--font-hdr); font-size:8px; font-weight:400; letter-spacing:.08em;
+  text-transform:uppercase; color:var(--ink-faint); text-align:center;
+}
+/* One-shot payout readout — reuses .jp-cell/.jp-digit/.tick/jpTick
+   (below) verbatim, NOT #jackpot/buildJackpot/updateJackpot (those are
+   the player's own live, diffed, 6-digit-capped bankroll counter; this is
+   a fresh, uncapped, built-once-per-hand widget). No leading '+' — this
+   reads as a payout/jackpot amount, not a stat delta. */
+.amt-readout{
+  display:flex; gap:3px; align-items:stretch; padding:4px 5px;
+  background:rgba(0,0,0,.5); border:2px solid var(--accent); border-radius:3px;
+  box-shadow:0 3px 0 rgba(0,0,0,.5), inset 0 2px 0 rgba(0,0,0,.5);
+}
+/* .amt-readout.mine (the human-win stronger glow) is defined earlier,
+   alongside the other hud-frame-win-* human-celebration rules. */
+#hud-right{
+  display:flex; flex-direction:column; align-items:center; justify-content:flex-start; gap:6px;
+  padding:6px 4px;
+  border:2px solid var(--px-ink); border-radius:2px;
+  background:rgba(0,0,0,.36);
+  box-shadow:inset 0 3px 0 rgba(0,0,0,.45), inset 0 -1px 0 rgba(255,255,255,.07);
+}
+/* The human's own fixed action-display slot — same act-* state classes
+   and role as the opponents' .action-slot (see render()), sized up
+   slightly to match this column's other elements. Sits in the exact spot
+   the old live cumulative-bet readout (.invested-row/#hud-bet) used to
+   occupy; that display is retired (totalBetHand itself, and its use in
+   side-pot math/Hand Review, are untouched — only this live presentation
+   is gone). */
+#hud-action{ width:100%; min-height:18px; font-size:10px; }
+/* Quieter empty state, human slot only — stays physically present (same
+   footprint, same architecture for the later split-flap pass) but reads
+   as an inactive mechanical display rather than another assertive UI
+   element. The em-dash glyph is hidden via color rather than removed from
+   the DOM, so the box never changes size when it fills/empties. */
+#hud-action.act-empty{
+  color:transparent; background:rgba(0,0,0,.16);
+  border-color:rgba(255,255,255,.06); box-shadow:none;
+}
+/* position rendered as a poker chip — no visual Dealer marker (see .pos-btn) */
+.hud-badges{ display:flex; gap:5px; align-items:center; justify-content:center; }
+#hud-pos{
+  position:static; transform:none; width:29px; height:29px; border-radius:50%;
+  display:flex; align-items:center; justify-content:center;
+  font-size:11px; font-weight:800; letter-spacing:0;
+  border:2px solid var(--px-ink);
+  padding:0;
+  background:var(--danger); color:#fff; text-shadow:1px 1px 0 rgba(0,0,0,.65);
+  /* thinner inset ring than before — gives the letters more of the 29px
+     circle to sit in while keeping the same physical-puck footprint */
+  box-shadow:0 2px 0 var(--px-ink), inset 0 0 0 2px rgba(255,255,255,.55);
+}
+
+/* jackpot bankroll counter: slot-machine digit cells in a gold frame */
+#jackpot{
+  display:flex; gap:3px; align-items:stretch; padding:4px 5px;
+  background:rgba(0,0,0,.5); border:2px solid var(--accent); border-radius:3px;
+  box-shadow:0 3px 0 rgba(0,0,0,.5), inset 0 2px 0 rgba(0,0,0,.5);
+}
+.jp-cell{
+  position:relative; overflow:hidden; min-width:20px; height:25px; padding:0 1px; text-align:center;
+  font-family:var(--font-hdr); font-size:12px; font-weight:400; line-height:1.2; color:var(--accent-bright);
+  background:rgba(0,0,0,.55); border:1px solid rgba(255,255,255,.14); border-radius:2px;
+  box-shadow:inset 0 2px 0 rgba(0,0,0,.6);
+  text-shadow:0 0 6px rgba(217,169,59,.45), 1px 1px 0 var(--px-ink);
+}
+.jp-sym{ color:var(--accent); min-width:16px; display:flex; align-items:center; justify-content:center; }
+/* Thousands-separator cell for the showdown result readout ($1,449) —
+   same static-symbol treatment as .jp-sym, just narrower since a comma
+   needs far less width than a digit or the $ sign. */
+.jp-cell.jp-comma{ min-width:7px; padding-left:0; padding-right:0; }
+.jp-digit.dim{ color:rgba(255,255,255,.16); text-shadow:none; }
+.reel-strip{
+  display:flex; flex-direction:column; width:100%; height:200%; transform:translateY(0);
+  will-change:transform;
+}
+.reel-strip > span{ height:50%; flex:0 0 50%; display:flex; align-items:center; justify-content:center; }
+.reel-cell.rolling-up .reel-strip{ animation:reelRollUp .3s steps(8,end) forwards; }
+.reel-cell.rolling-down .reel-strip{ animation:reelRollDown .3s steps(8,end) forwards; }
+@keyframes reelRollUp{
+  0%{ transform:translateY(0); }
+  78%{ transform:translateY(-53%); }
+  90%{ transform:translateY(-48.5%); }
+  100%{ transform:translateY(-50%); }
+}
+@keyframes reelRollDown{
+  0%{ transform:translateY(-50%); }
+  78%{ transform:translateY(3%); }
+  90%{ transform:translateY(-1.5%); }
+  100%{ transform:translateY(0); }
+}
+/* Fresh result amounts are built once rather than diffed, so their old
+   one-shot reveal remains a simple vertical arrival. */
+.jp-digit.tick:not(.reel-cell){ animation:jpTick .22s steps(3,end); }
+@keyframes jpTick{ 0%{ transform:translateY(-7px); opacity:.2; } 100%{ transform:translateY(0); opacity:1; } }
+.mini-jackpot{ display:flex; align-items:stretch; justify-content:center; gap:1px; }
+.mini-jackpot .jp-cell{
+  min-width:11px; width:11px; height:21px; padding:0; font-size:9px; line-height:1;
+  border-color:rgba(255,255,255,.1); text-shadow:0 0 4px color-mix(in srgb,var(--accent) 48%,transparent);
+}
+.mini-jackpot .jp-sym{ min-width:9px; width:9px; }
+.mini-jackpot .reel-strip{ line-height:21px; }
+.mini-jackpot[data-reel-digits="6"] .jp-cell{ min-width:10px; width:10px; font-size:8px; }
+.mini-jackpot[data-reel-digits="7"] .jp-cell{ min-width:9px; width:9px; font-size:7px; }
+.reel-added{ animation:reelSlotIn .2s steps(4,end); transform-origin:right center; }
+@keyframes reelSlotIn{ from{ transform:scaleX(.1); opacity:.15; } to{ transform:scaleX(1); opacity:1; } }
+.seat-chips .mini-jackpot{ width:100%; }
+[data-motion="off"] .reel-cell.rolling-up .reel-strip{ animation:none; transform:translateY(-50%); }
+[data-motion="off"] .reel-cell.rolling-down .reel-strip{ animation:none; transform:translateY(0); }
+
+/* the banner + hand strength read as the HUD's status plate now */
+#hud-mid .banner{ width:100%; }
+#hud-mid .hand-strength{ width:100%; }
+
+.fly-chip{
+  position:fixed; width:27px; height:27px; border-radius:50%; z-index:60; pointer-events:none;
+  background-repeat:no-repeat; background-size:100% 100%;
+  image-rendering:pixelated; image-rendering:-moz-crisp-edges; image-rendering:crisp-edges;
+  filter:drop-shadow(0 3px 0 rgba(0,0,0,.4));
+  margin-left:-13.5px; margin-top:-13.5px; will-change:transform,opacity;
+}
+
+.result-card{
+  position:absolute; left:50%; top:11%; transform:translate(-50%,0); z-index:15;
+  background:var(--px-ink); border:2px solid var(--accent);
+  border-radius:var(--radius); padding:12px 16px; text-align:left; max-width:90%; min-width:60%;
+  box-shadow:0 6px 0 rgba(0,0,0,.55); opacity:0; animation:resultIn .24s steps(4,end) forwards;
+}
+@keyframes resultIn{ from{ opacity:0; transform:translate(-50%,-10px); } to{ opacity:1; transform:translate(-50%,0); } }
+/* Showdown result console, pass 4 — the floating winner-panel/plaque is
+   retired entirely; the result now lives in the bottom HUD (see
+   #hud-frame.result-mode / showHudResultConsole() in the JS) instead of a
+   panel covering the felt. .result-card itself (below) and .rc-title stay
+   — both are still used by the unrelated .result-card.gameover card. */
+.result-card .rc-title{
+  font-size:10.5px; text-transform:uppercase; letter-spacing:.15em;
+  color:var(--accent); font-weight:800; margin-bottom:8px; text-align:center;
+}
+.pot-line{
+  display:flex; align-items:baseline; gap:8px; padding:5px 0;
+  border-bottom:2px solid rgba(255,255,255,.07);
+}
+.pot-line:last-of-type{ border-bottom:none; }
+.pot-line .pl-tag{
+  font-size:9.5px; text-transform:uppercase; letter-spacing:.08em; color:var(--ink-faint);
+  font-weight:800; min-width:56px; flex-shrink:0;
+}
+.pot-line .pl-body{ flex:1; font-size:12.5px; color:var(--ink-dim); line-height:1.4; }
+.pot-line .pl-body b{ color:var(--accent-bright); font-weight:800; }
+.pot-line.mine .pl-body b{ color:var(--good); }
+.pot-line .pl-amt{ font-size:13px; font-weight:800; color:var(--accent-bright); flex-shrink:0; }
+.pot-line.mine .pl-amt{ color:var(--good); }
+.rc-explain{
+  font-size:11.5px; color:var(--ink-faint); line-height:1.5; margin-top:9px;
+  padding-top:8px; border-top:2px solid rgba(255,255,255,.09);
+}
+
+
+.card.win-card{
+  box-shadow:0 0 0 3px var(--accent-bright), 0 3px 0 rgba(0,0,0,.5), inset 0 2px 0 #FFFFFF;
+  transform:translateY(-4px);
+  transition:box-shadow var(--dur) steps(2,end), transform var(--dur) steps(3,end), opacity var(--dur);
+}
+/* Within the already-highlighted winning five, a second tier calls out
+   specifically the cards that FORM the named made hand (see
+   strongWinningCardKeys) — kickers stay at the base .win-card ring above,
+   so the eye reads "these are why you won" rather than just "these five
+   are involved." color-mix() derives the glow from the theme's own
+   --accent-bright (same technique already used for the AWARD button's
+   shadow) rather than a hardcoded colour, so it reads correctly in every
+   theme, not just the default gold one. */
+.card.win-card.win-card-strong{
+  box-shadow:0 0 0 4px var(--accent-bright), 0 0 14px 2px color-mix(in srgb, var(--accent-bright) 65%, transparent), 0 4px 0 rgba(0,0,0,.5), inset 0 2px 0 #FFFFFF;
+  transform:translateY(-7px);
+}
+/* Full house only — the trips read as slightly more load-bearing than
+   the pair, both already at the .win-card-strong tier above. */
+.card.win-card.win-card-strong.win-card-hero{
+  box-shadow:0 0 0 5px var(--accent-bright), 0 0 18px 3px color-mix(in srgb, var(--accent-bright) 78%, transparent), 0 4px 0 rgba(0,0,0,.5), inset 0 2px 0 #FFFFFF;
+  transform:translateY(-9px);
+}
+.card.dim-card{ opacity:.4; transition:opacity var(--dur); }
+
+.coach-insight{
+  display:flex; gap:7px; align-items:flex-start; font-size:12px; line-height:1.45;
+  padding:6px 0; border-top:2px solid rgba(255,255,255,.06); margin-top:7px;
+}
+.coach-insight .ci-tag{
+  font-size:9.5px; text-transform:uppercase; letter-spacing:.08em; font-weight:800;
+  padding:2px 7px; border-radius:2px; flex-shrink:0; margin-top:1px; border:1px solid var(--px-ink);
+}
+.ci-draw .ci-tag{ background:var(--act-call); color:var(--act-call-ink); }
+.ci-watch .ci-tag{ background:var(--danger); color:#FFF; }
+.coach-insight .ci-text{ color:var(--ink-dim); flex:1; }
+
+#review{
+  background:var(--panel); border:2px solid var(--px-ink);
+  border-radius:var(--radius); padding:11px 13px; margin-bottom:9px;
+  box-shadow:0 3px 0 var(--px-ink);
+}
+.review-head{
+  font-size:10.5px; text-transform:uppercase; letter-spacing:.15em;
+  color:var(--accent); font-weight:800; margin-bottom:8px;
+}
+.review-row{ font-size:12.5px; color:var(--ink-dim); line-height:1.5; margin-bottom:7px; }
+.review-row:last-child{ margin-bottom:0; }
+.review-row b{ color:var(--ink); font-weight:700; }
+.review-lesson{
+  font-size:12px; color:var(--ink-dim); line-height:1.5; margin-top:8px;
+  padding-top:8px; border-top:2px solid rgba(255,255,255,.07);
+}
+.review-lesson .rl-tag{
+  display:inline-block; font-size:9.5px; text-transform:uppercase; letter-spacing:.08em;
+  font-weight:800; color:var(--accent); margin-right:6px;
+}
+
+/* ---- cartoon faces in their new square frames ---- */
+.face{ width:112%; height:112%; display:block; margin:-6% 0 0 -6%; }
+/* Tom's uploaded art has no bleed (drawn exactly edge-to-edge), so it must
+   NOT inherit the procedural SVG's 112%/-6% overscan above — that rule was
+   cropping ~6% off every side of the custom faces. Full square, no offset. */
+.face-img{ width:100%; height:100%; margin:0; object-fit:cover; image-rendering:auto; user-select:none; -webkit-user-drag:none; }
+.face-pop{ animation:facePop .3s steps(4,end); }
+@keyframes facePop{ 0%{ transform:scale(1); } 45%{ transform:scale(1.16); } 100%{ transform:scale(1); } }
+.face-jolt{ animation:faceJolt .4s steps(6,end); }
+@keyframes faceJolt{
+  0%{ transform:scale(1) translateX(0); }
+  16%{ transform:scale(1.2) translateX(-4px); }
+  33%{ transform:scale(1.1) translateX(4px); }
+  50%{ transform:scale(1.18) translateX(-3px); }
+  67%{ transform:scale(1.06) translateX(2px); }
+  100%{ transform:scale(1) translateX(0); }
+}
+/* subtle ambient life so a seated face never looks totally static */
+.seat:not(.you) .avatar.has-face{ animation:avatarBob 2.6s steps(8,end) infinite; }
+@keyframes avatarBob{ 0%,100%{ transform:translateY(0); } 50%{ transform:translateY(-2px); } }
+.seat.dead .avatar.has-face, .seat.thinking .avatar.has-face{ animation:none; }
+.seat .avatar.has-face{ background:var(--seat-bg); border-color:var(--px-ink); padding:0; overflow:hidden; }
+.seat.active .avatar.has-face{ border-color:var(--accent); }
+
