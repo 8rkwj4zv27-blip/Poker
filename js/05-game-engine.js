@@ -19,6 +19,12 @@ let pendingNewTableAction = null;
    approximation of p.chips/game.pot (see visualChipCount), never
    required to sum to it exactly. */
 let bankPending = 0, potPending = 0;
+/* Pot-smash bank-display freeze (see runHumanPotSmashCeremony in
+   06-presentation.js) — while non-null, render()'s human stack reel shows
+   this frozen pre-win value instead of the player's real (already
+   correct) chips, so the visual bankroll only ever catches up once the
+   physical chips finish being collected into the bank, never before. */
+let humanBankDisplayFreeze = null;
 
 function sleep(ms){ return new Promise(r=>setTimeout(r, ms)); }
 // FAST DEV-aware sleep for the handful of fixed showdown/action pacing
@@ -1157,7 +1163,7 @@ async function finishHand(outcome){
     // TABLE CLEARED can appear (see the Phase 1 plan §13).
     const eliminationResult=await resolveEliminations(g, outcome);
     const aiRemaining = g.players.filter(p=>!p.isHuman && !p.eliminated);
-    await resolveArcadeHand(g,outcome,{
+    await resolveArcadeHandLate(g,outcome,{
       koCount:eliminationResult?eliminationResult.koCount:0,
       tableClear:human.chips>0&&aiRemaining.length===0
     });

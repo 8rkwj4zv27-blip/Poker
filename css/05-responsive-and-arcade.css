@@ -170,6 +170,61 @@
   text-shadow:3px 3px 0 var(--px-ink),0 0 12px var(--accent); white-space:nowrap;
 }
 
+/* Pot-smash reward breakdown — reuses .arcade-reward-layer/.arcade-hero/
+   .arcade-secondaries/.arcade-total wholesale (see presentRewardBreakdown
+   in 06-presentation.js); .arcade-total here doubles as the running
+   subtotal during the per-item loop and the final "+N" TOTAL on the last
+   step (.is-total), so no separate subtotal element was needed. */
+.arcade-reward-layer.is-total .arcade-hero{
+  color:var(--accent-bright); font-size:clamp(26px,9vw,58px);
+  -webkit-text-stroke:0; text-shadow:3px 3px 0 var(--px-ink),0 0 16px color-mix(in srgb,var(--accent) 70%,transparent);
+}
+.arcade-reward-layer.is-total .arcade-total{ font-size:clamp(24px,8.4vw,54px); }
+
+/* ============================================================
+   POT SMASH — the TOTAL score value, styled as a chunky physical
+   tile/stamp rather than floating UI text, and the free-physics layer the
+   real pot chips burst into on impact (see runPotSmashSequence/
+   runPotBreakPhysics in 06-presentation.js). The plate's own drop/impact/
+   rebound/fade timeline is driven from JS via WAAPI, not CSS keyframes on
+   this class — the "impact" instant has to trigger the felt bump/sound/
+   physics burst/SCORE roll at an exact moment, so it lives in JS where
+   that can be guaranteed. The physics chips themselves are positioned by
+   plain JS-driven left/top (see applyChipTransform) every animation
+   frame, not CSS transitions — arbitrary bounce physics can't be
+   pre-baked into keyframes. Palette/border/shadow language matches the
+   existing .arcade-score-machine/.arcade-total instrumentation — no new
+   colours; the chips themselves reuse the exact same .chip-disc styling
+   as an ordinary resting chip, just reparented and repositioned.
+   ============================================================ */
+.score-smash-layer{ position:fixed; z-index:80; left:0; top:0; pointer-events:none; }
+.score-smash-plate{
+  position:absolute; left:0; top:0; white-space:nowrap;
+  padding:9px 20px; background:linear-gradient(180deg,color-mix(in srgb,var(--panel-2) 82%,#453314 18%),var(--panel));
+  border:3px solid var(--accent); border-top-color:var(--accent-bright); border-bottom-color:var(--px-ink);
+  box-shadow:0 6px 0 var(--px-ink), inset 2px 2px 0 rgba(255,255,255,.1), inset -2px -2px 0 rgba(0,0,0,.4);
+  color:var(--accent-bright); font-family:var(--font-hdr); font-size:clamp(20px,7.5vw,40px); line-height:1;
+  text-shadow:3px 3px 0 var(--px-ink);
+}
+/* Table impact bump — a small physical reaction on the felt itself the
+   instant the score plate lands, same class-triggered steps() keyframe
+   technique .hud-frame-win/.score-impact already use elsewhere. */
+.felt-impact{ animation:feltImpactBump .3s steps(6,end); }
+@keyframes feltImpactBump{
+  0%{ transform:translateY(0) scale(1,1); }
+  20%{ transform:translateY(3px) scale(1.008,.988); }
+  46%{ transform:translateY(-1px) scale(.995,1.006); }
+  100%{ transform:translateY(0) scale(1,1); }
+}
+/* Free-physics chip layer — unclipped, viewport-fixed, sits above seats/
+   board (opponent panels are explicitly allowed to be flown over) but
+   below the TOTAL plate itself while both are briefly on screen together.
+   Chips inside keep their normal .chip-disc sprite/size (set inline from
+   their captured resting rect at spawn — see spawnPhysicsChip) so they
+   stay fully opaque and readable, exactly like the pot they came from. */
+.chip-physics-layer{ position:fixed; z-index:79; left:0; top:0; pointer-events:none; }
+.chip-physics-layer .chip-disc{ position:fixed; margin:0; }
+
 #awards{
   overflow-y:auto; -webkit-overflow-scrolling:touch; align-items:center;
   background:repeating-conic-gradient(rgba(255,255,255,.016) 0 25%,transparent 0 50%) 0 0/10px 10px,var(--bg-deep);

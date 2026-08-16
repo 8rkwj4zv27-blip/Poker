@@ -213,6 +213,10 @@ function initDevPanel(){
         '<button data-arcade-score="1000" type="button">+1,000 SCORE</button>' +
         '<button data-arcade-score="10000" type="button">+10,000 SCORE</button>' +
         '<button id="dev-reset-score" type="button">RESET SCORE</button>' +
+        '<div class="dev-subtitle">TEST POT SMASH</div>' +
+        '<button data-pot-smash="small" type="button">TEST SMALL POT</button>' +
+        '<button data-pot-smash="medium" type="button">TEST MEDIUM POT</button>' +
+        '<button data-pot-smash="huge" type="button">TEST HUGE POT</button>' +
         '<div class="dev-subtitle">STATE</div>' +
         '<button id="dev-reset-arcade" type="button">RESET ARCADE</button>' +
       '</div>' +
@@ -236,6 +240,7 @@ function initDevPanel(){
   panel.querySelectorAll('[data-arcade-comment]').forEach(b=>b.onclick=runArcadeDevTest(()=>devArcadeCommentary(b.dataset.arcadeComment)));
   panel.querySelectorAll('[data-arcade-scenario]').forEach(b=>b.onclick=runArcadeDevTest(()=>devArcadeScenario(b.dataset.arcadeScenario)));
   panel.querySelectorAll('[data-arcade-score]').forEach(b=>b.onclick=()=>devArcadeAddScore(b.dataset.arcadeScore));
+  panel.querySelectorAll('[data-pot-smash]').forEach(b=>b.onclick=runArcadeDevTest(()=>devTestPotSmash(b.dataset.potSmash)));
   $('dev-test-jackpot').onclick=devArcadeJackpot;
   $('dev-reset-score').onclick=devArcadeResetScore;
   $('dev-reset-arcade').onclick=devArcadeReset;

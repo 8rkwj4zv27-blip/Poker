@@ -312,6 +312,21 @@ const Sound = (function(){
   let chipLandTimes = [];
   const CHIP_DENSITY_WINDOW_MS = 140;
   const CHIP_DENSITY_SOFTEN_AFTER = 4;
+  /* Independent rolling windows for the pot-smash physics chips (bounce
+     off a boundary / settle into the bank) — separate arrays from
+     chipLandTimes so a burst of physics bounces never cross-throttles an
+     unrelated concurrent AI payout's ordinary chipLand() hits, and vice
+     versa. Same taper shape as chipLand's own density gate, just tuned
+     per-moment: bounces soften a bit sooner (a burst is denser than an
+     ordinary payout), collection is allowed a slightly wider window since
+     the whole pot settling into the bank is the payoff beat and should
+     read as a satisfying cascade rather than being over-silenced. */
+  let chipBounceTimes = [];
+  const CHIP_BOUNCE_WINDOW_MS = 140;
+  const CHIP_BOUNCE_SOFTEN_AFTER = 3;
+  let chipCollectTimes = [];
+  const CHIP_COLLECT_WINDOW_MS = 180;
+  const CHIP_COLLECT_SOFTEN_AFTER = 5;
 
   function chipClink(soft){
     const c = ac(); if (!c) return;
@@ -588,6 +603,19 @@ const Sound = (function(){
     } else { blip(740,.07,'square',.025); blip(988,.09,'triangle',.024,.06); }
   }
 
+  /* Pot smash — the moment the TOTAL plate stamps down and breaks the pot
+     apart. A heavier, drier hit than allInSound/humanKOSound (this is a
+     physical OBJECT landing, not a betting action or a stamp), plus a
+     short high metallic rattle right behind it standing in for the chips
+     it's about to send bursting outward. */
+  function scoreSmashSound(major){
+    withVoiceCap(major?560:380,()=>{
+      noise(major?.1:.075,major?.16:.12,{filterType:'lowpass',freq:major?260:320,freqSweepTo:major?70:100,decayPow:1.7});
+      blip(major?58:74,major?.15:.12,'square',major?.08:.065);
+      setTimeout(()=>noise(.03+Math.random()*.015,.035,{filterType:'highpass',freq:3000+Math.random()*1200,decayPow:2.6}),20+Math.random()*12);
+    });
+  }
+
   return {
     unlock(){ ac(); },
     /* Gated to AI opponents only as of SFX V1 — the human's own fold/
@@ -617,6 +645,27 @@ const Sound = (function(){
       chipLandTimes.push(now);
       chipClink(chipLandTimes.length > CHIP_DENSITY_SOFTEN_AFTER);
     },
+    /* Pot-smash physics — one boundary bounce. Caller (the physics
+       controller) already enforces a per-chip minimum re-trigger gap so a
+       single chip rattling in a corner can't itself flood this; this
+       density window is the cross-chip guard for a whole burst landing at
+       once. */
+    chipBounce(){
+      if (!this.chipSfxEnabled) return;
+      const now = performance.now();
+      chipBounceTimes = chipBounceTimes.filter(t=>now-t < CHIP_BOUNCE_WINDOW_MS);
+      chipBounceTimes.push(now);
+      chipClink(chipBounceTimes.length > CHIP_BOUNCE_SOFTEN_AFTER);
+    },
+    /* Pot-smash physics — one chip settling into the bank during the
+       magnetic collection phase. */
+    chipCollect(){
+      if (!this.chipSfxEnabled) return;
+      const now = performance.now();
+      chipCollectTimes = chipCollectTimes.filter(t=>now-t < CHIP_COLLECT_WINDOW_MS);
+      chipCollectTimes.push(now);
+      chipClink(chipCollectTimes.length > CHIP_COLLECT_SOFTEN_AFTER);
+    },
     /* SFX V1 kill-switch — mirrors chipSfxEnabled, separate flag so the
        whole non-chip pass can be A/B'd off independently while testing. */
     sfxV1Enabled: true,
@@ -639,7 +688,8 @@ const Sound = (function(){
     arcadeCombo(up){ if (this.sfxV1Enabled) arcadeComboSound(up); },
     arcadeLuck(kind){ if (this.sfxV1Enabled) arcadeLuckSound(kind); },
     arcadeBankTick(){ if (this.sfxV1Enabled) counterTickSound(true); },
-    arcadeBankLock(){ if (this.sfxV1Enabled) counterLockSound(true); }
+    arcadeBankLock(){ if (this.sfxV1Enabled) counterLockSound(true); },
+    scoreSmash(major){ if (this.sfxV1Enabled) scoreSmashSound(major); }
   };
 })();
 function haptic(pattern){

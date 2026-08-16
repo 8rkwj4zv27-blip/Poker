@@ -327,12 +327,25 @@ function evaluateArcadeSkill(g,outcome,snapshots){
   }
   return awards;
 }
-function evaluateArcadeAchievements(g,outcome,context,awards){
+/* Pot-size/stack achievements — knowable immediately once the real money
+   mutation has happened, no elimination context required. Split out of
+   the old evaluateArcadeAchievements so the pot-smash early phase (see
+   evaluateArcadeAwardsEarly below) can compute these before
+   resolveEliminations() has even run. */
+function evaluateArcadePotAchievements(g,outcome,awards){
   const human=g.players.find(p=>p.isHuman), won=humanWonOutcome(outcome), potWon=humanAwardFromOutcome(outcome);
   if (won&&potWon>=45*g.bigBlind) addArcadeAward(awards,'massivePot');
   else if (won&&potWon>=20*g.bigBlind) addArcadeAward(awards,'bigPot');
   const start=g._humanStart==null?human.chips:g._humanStart, gain=human.chips-start;
   if (human.chips>=start*1.9&&gain>=10*g.bigBlind) addArcadeAward(awards,'doubleUp');
+}
+/* K.O./TABLE CLEAR — the other half of the old evaluateArcadeAchievements.
+   These genuinely need resolveEliminations()'s output (context.koCount/
+   tableClear), which only exists inside finishHand(), structurally after
+   the pot-smash sequence has already run — so they always stay a late,
+   separate stinger (see resolveArcadeHandLate) rather than folding into
+   the pre-smash TOTAL. */
+function evaluateArcadeMilestoneAchievements(context,awards){
   if (context&&context.koCount) addArcadeAward(awards,'ko',context.koCount);
   if (context&&context.tableClear) addArcadeAward(awards,'tableClear');
 }
@@ -344,11 +357,11 @@ function normalizeArcadeAwards(awards){
   if (ids.has('maxValue')) awards=awards.filter(a=>!['greatValue','value'].includes(a.id));
   else if (ids.has('greatValue')) awards=awards.filter(a=>a.id!=='value');
   if (ids.has('massivePot')) awards=awards.filter(a=>a.id!=='bigPot');
-  awards.sort((a,b)=>a.def.order-b.def.order||b.def.base-a.def.base);
-  if (awards.length<=3) return awards;
-  const chosen=awards.slice(0,3), milestone=awards.find(a=>a.id==='tableClear')||awards.find(a=>a.id==='ko');
-  if (milestone&&!chosen.includes(milestone)) chosen[2]=milestone;
-  return chosen.sort((a,b)=>a.def.order-b.def.order);
+  // No item cap — every earned award is shown; the pot-smash reward
+  // breakdown (see presentRewardBreakdown in 06-presentation.js) budgets
+  // TIME instead, compressing per-item pacing for a long list rather than
+  // truncating it.
+  return awards.sort((a,b)=>a.def.order-b.def.order||b.def.base-a.def.base);
 }
 function evaluateArcadeCommentary(g,outcome,snapshots,luck){
   if (luck&&['unlucky','badBeat','brutal'].includes(luck.id)) return null;
@@ -365,15 +378,64 @@ function evaluateArcadeCommentary(g,outcome,snapshots,luck){
   const missed=snapshots.find(s=>s.action==='check'&&s.street==='river'&&s.equity!=null&&s.equity>=.84&&s.opponentIds.length>0);
   return missed?{id:'missedValue'}:null;
 }
-async function resolveArcadeHand(g,outcome,context){
-  if (!g||g.mode!=='elimination'||!g.run||!g.run.arcade) return;
+function potWinningsTier(amount){ return amount>=1000?'large':amount>=250?'medium':'small'; }
+/* Early phase — human-pot-win only. Called from runShowdownAwardSequence
+   (js/06-presentation.js) right after the real money mutation, well
+   before resolveEliminations() runs, so it deliberately never touches
+   ko/tableClear (see evaluateArcadeMilestoneAchievements). Prepends a
+   synthetic POT WINNINGS line (the actual $ the human won this hand,
+   1:1 into score) ahead of the normal bonus-award catalog so the smash's
+   reward breakdown reads as one coherent list. Records awardCounts/
+   discovery exactly like the old unified resolveArcadeHand did, but never
+   touches a.score itself — folding points into the permanent SCORE HUD
+   is the smash sequence's own job (see runPotSmashSequence), timed to the
+   impact moment rather than to this evaluation. */
+async function evaluateArcadeAwardsEarly(g,outcome){
+  if (!g||g.mode!=='elimination'||!g.run||!g.run.arcade||!humanWonOutcome(outcome)) return null;
   const a=g.run.arcade, snapshots=await settleArcadeSnapshots(g), awards=[];
   evaluateArcadeResult(g,outcome,snapshots,awards);
   evaluateArcadeSkill(g,outcome,snapshots).forEach(x=>addArcadeAward(awards,x.id,x.count));
-  evaluateArcadeAchievements(g,outcome,context,awards);
+  evaluateArcadePotAchievements(g,outcome,awards);
   const finalAwards=normalizeArcadeAwards(awards);
   const luck=classifyArcadeLuck(g,outcome,snapshots);
   const commentary=evaluateArcadeCommentary(g,outcome,snapshots,luck);
+  const potWon=humanAwardFromOutcome(outcome);
+  const bonusTotal=finalAwards.reduce((sum,x)=>sum+x.def.base*x.count,0);
+  const potWinnings={id:'potWinnings',count:1,def:{name:'POT WINNINGS',base:potWon,tier:potWinningsTier(potWon),type:'pot'}};
+  finalAwards.forEach(x=>{
+    a.awardCounts[x.id]=(a.awardCounts[x.id]||0)+x.count;
+    noteArcadeDiscovery(x.id,x.count,x.def.base*x.count);
+  });
+  if (luck) noteArcadeDiscovery(luck.id,1,null);
+  if (commentary) noteArcadeDiscovery(commentary.id,1,null);
+  return { awards:[potWinnings,...finalAwards], luck, commentary, total:potWon+bonusTotal };
+}
+/* Late phase — always runs from finishHand(), same call site/timing the
+   original resolveArcadeHand used, after resolveEliminations(). If the
+   human already won this hand's pot, evaluateArcadeAwardsEarly() above
+   has already evaluated+presented everything except K.O./TABLE CLEAR, so
+   this only adds those as a late stinger on top (still through the
+   unchanged presentArcadeAward/rollArcadeCounter per-item flow). If the
+   human did NOT win this hand's pot (a loss, or no pot awarded to them),
+   nothing ran early, so this computes and presents the full picture in
+   one pass — identical behaviour/timing to the original resolveArcadeHand
+   for every non-win hand. */
+async function resolveArcadeHandLate(g,outcome,context){
+  if (!g||g.mode!=='elimination'||!g.run||!g.run.arcade) return;
+  const a=g.run.arcade, awards=[];
+  let luck=null, commentary=null;
+  if (humanWonOutcome(outcome)){
+    evaluateArcadeMilestoneAchievements(context,awards);
+  } else {
+    const snapshots=await settleArcadeSnapshots(g);
+    evaluateArcadeResult(g,outcome,snapshots,awards);
+    evaluateArcadeSkill(g,outcome,snapshots).forEach(x=>addArcadeAward(awards,x.id,x.count));
+    evaluateArcadePotAchievements(g,outcome,awards);
+    evaluateArcadeMilestoneAchievements(context,awards);
+    luck=classifyArcadeLuck(g,outcome,snapshots);
+    commentary=evaluateArcadeCommentary(g,outcome,snapshots,luck);
+  }
+  const finalAwards=normalizeArcadeAwards(awards);
   const total=finalAwards.reduce((sum,x)=>sum+x.def.base*x.count,0);
   const resolution={awards:finalAwards,luck,commentary,total,dev:false};
   finalAwards.forEach(x=>{
@@ -549,6 +611,50 @@ function devArcadeResetScore(){
 function devArcadeReset(){
   if (!DEV_MODE||!game||game.mode!=='elimination') return;
   game.run.arcade=makeArcadeRunState(); clearArcadeLayer(); updateArcadeHUD(); refreshDevPanel();
+}
+/* POT SMASH DEV TEST — PHYSICAL POT SCALE presets, replacing the old
+   score-only SMALL +180/MEDIUM +750/LARGE +2,200 buttons (see
+   js/08-dev-mode.js). Each preset is a representative pot dollar amount
+   plus a representative bonus-award list; devTestPotSmash builds (or
+   reuses) a genuinely intact pot via the normal pot-rendering system
+   (bootstrapPile/potPile — the same primitives cold-start/rebuy use),
+   only if the pot pile happens to already be empty, then runs the exact
+   real building blocks a live hand uses (presentRewardBreakdown ->
+   runPotSmashSequence, both in 06-presentation.js) with a synthetic
+   breakdown shaped exactly like evaluateArcadeAwardsEarly's real return
+   value. No real hand/pot/outcome is involved, so this deliberately calls
+   those two building blocks directly rather than
+   runHumanPotSmashCeremony (which expects a real `outcome` to evaluate).
+   Never touches game.pot/player.chips; explicitly resets both decorative
+   piles back to empty afterward so the next real render() idle-
+   bootstraps them correctly from real state instead of being left
+   holding this test's decorative amount. */
+const DEV_POT_SMASH_SCALES = {
+  small:  { amount:180,  awardIds:['pair'] },
+  medium: { amount:900,  awardIds:['flush','pressure'] },
+  huge:   { amount:2600, awardIds:['fullHouse','bigPot','heroCall'] }
+};
+function devTestPotSmash(scale){
+  if (!DEV_MODE||!game||game.mode!=='elimination'||!game.run||!game.run.arcade||!betweenHands()) return;
+  const g=game, cfg=DEV_POT_SMASH_SCALES[scale]; if (!cfg) return;
+  const potContainer=$('pot-stacks'), pPile=potPile();
+  if ((potContainer._chipCount||0)===0) bootstrapPile(potContainer, pPile, cfg.amount);
+  const potN=potContainer._chipCount||0;
+  if (!potN) return;
+  let awards=cfg.awardIds.map(id=>ARCADE_AWARDS[id]?{id,count:1,def:ARCADE_AWARDS[id]}:null).filter(Boolean);
+  awards=normalizeArcadeAwards(awards);
+  const bonusTotal=awards.reduce((sum,x)=>sum+x.def.base*x.count,0);
+  const potWinnings={id:'potWinnings',count:1,def:{name:'POT WINNINGS',base:cfg.amount,tier:potWinningsTier(cfg.amount),type:'pot'}};
+  const early={awards:[potWinnings,...awards],luck:null,commentary:null,total:cfg.amount+bonusTotal};
+  queueArcadePresentation(async()=>{
+    if (game!==g||!g.run||!g.run.arcade) return;
+    await presentRewardBreakdown(early);
+    await runPotSmashSequence({ potN, scoreTotal:early.total, human:g.players.find(p=>p.isHuman) });
+    resetPile($('hud-tower'), bankPile());
+    resetPile($('pot-stacks'), potPile());
+    render();
+    refreshDevPanel();
+  });
 }
 function buildAwardsGlossary(){
   const list=$('awards-list'), summary=$('awards-summary'); if (!list||!summary) return;

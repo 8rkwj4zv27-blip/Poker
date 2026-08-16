@@ -1584,6 +1584,419 @@ function payoutTo(winner, n){
   return transferChips(n, src, dst, (s,d)=>{ potPending+=s; if (winner.isHuman) bankPending+=d; }, true);
 }
 
+/* ============================================================
+   POT SMASH — the human pot-win reward breakdown, TOTAL stamp and real
+   pot-chip physics burst. Replaces the earlier score-smash prototype,
+   whose smash always ran AFTER payoutTo() had already flown every real
+   pot chip into the bank — so it had nothing left to smash and fell back
+   to yanking already-arrived bank chips instead. Here the human's own
+   share of the pot is deliberately NOT sent through payoutTo() at all;
+   this whole module owns those chips instead, from the moment they leave
+   #pot-stacks (still full, organised towers) to the moment they're
+   settled for real into #hud-tower — see runHumanPotSmashCeremony's
+   caller in runShowdownAwardSequence for how the normal payoutTo() path
+   is bypassed for the human specifically while every other winner still
+   uses it, unchanged, concurrently.
+   Timings are deliberately NOT run through speedMult()/pacedSleep() —
+   same reasoning as playElimination()'s K.O./ELIMINATED sequence (see
+   FAST_DEV's own comment): this is a real payoff moment, not "boring
+   setup" to blitz through under FAST DEV.
+   ============================================================ */
+
+/* Reward breakdown pacing — the whole sequential list (excluding the
+   TOTAL reveal/anticipation beats, which sit outside the budget) is
+   meant to land inside roughly budgetMs regardless of how many awards
+   were earned: a short list gets a deliberate, satisfying cadence, a long
+   one compresses per-item timing (never truncates the list) so nothing
+   gets tedious. See presentRewardBreakdown(). */
+const REWARD_BREAKDOWN_CONFIG = {
+  budgetMs: 1700, minPerItemMs: 180, maxPerItemMs: 650,
+  totalRevealMs: 260, anticipationMs: 350
+};
+/* Free-bounce/attraction physics tuning — see runPotBreakPhysics() and
+   its helpers. Deliberately simple (no chip-vs-chip collision, two static
+   axis-aligned bounds) per the "controlled chaos, not a physics engine"
+   brief. */
+const POT_SMASH_PHYSICS_CONFIG = {
+  freeMs: 850,              // shared free-bounce budget — one clock for every chip, so the burst reads as one event
+  gravity: 1500,            // px/s^2, a mild arcade toss rather than a realistic drop
+  restitution: 0.48,        // velocity retained (perpendicular component) on a boundary bounce
+  floorFriction: 0.72,      // extra horizontal damping specifically on a dashboard-floor contact
+  airDamping: 0.4,          // per-second velocity decay while airborne
+  angularDamping: 0.85,     // per-second spin decay
+  minBounceSoundVel: 55,    // px/s — below this a "bounce" is a silent graze
+  bounceSoundGapMs: 60,     // per-chip minimum re-trigger gap, independent of Sound.chipBounce's own cross-chip density window
+  attractStaggerMaxMs: 180, // collection begins slightly staggered per chip, not all at once
+  attractMs: 320            // per-chip ease-in duration once it starts homing to the bank
+};
+
+/* Landing point for the TOTAL stamp — centred on the pot plate itself
+   ("over the felt near the pot position"), falling back to the felt's own
+   centre if the pot plate isn't laid out for some reason. */
+function scoreSmashImpactPoint(){
+  const rect = ($('pot-area') && $('pot-area').getBoundingClientRect())
+    || ($('felt') && $('felt').getBoundingClientRect());
+  if (!rect || !rect.width) return null;
+  return { x: rect.left + rect.width/2, y: rect.top + rect.height/2 };
+}
+/* Small physical "thud" on the table itself — the one existing mechanism
+   this reuses is the class-triggered CSS keyframe technique already used
+   by .hud-frame-win (celebrateWinnerSeat) and .score-impact, just aimed
+   at #felt instead. */
+function feltImpactBump(){
+  const felt = $('felt');
+  if (!felt || motionOff()) return;
+  felt.classList.remove('felt-impact'); void felt.offsetWidth; felt.classList.add('felt-impact');
+}
+/* Two static axis-aligned bounds, measured once per sequence rather than
+   per frame (a ~1s ceremony doesn't need to react to mid-flight resizes).
+   `left`/`right`/`top` come from the felt itself — the edges chips bounce
+   off. `bottom` is the player's own dashboard's TOP edge (#your-seat-dock,
+   the dense console CLAUDE.md calls out — cards/chips/meters/controls) —
+   chips bounce off it like a physical shelf instead of visually plowing
+   into the button row underneath. No geometry for opponent seats/board —
+   chips are explicitly allowed to fly over them (see the design brief);
+   this is controlled chaos against two simple boundaries, not real
+   per-element collision. */
+function potSmashBounds(){
+  const felt = $('felt'), dash = $('your-seat-dock');
+  const feltRect = felt && felt.getBoundingClientRect();
+  const dashRect = dash && dash.getBoundingClientRect();
+  return {
+    left: feltRect && feltRect.width ? feltRect.left : 0,
+    right: feltRect && feltRect.width ? feltRect.right : innerWidth,
+    top: feltRect && feltRect.width ? feltRect.top : 0,
+    bottom: dashRect && dashRect.width ? dashRect.top : innerHeight
+  };
+}
+/* One reward line's worth of sequential presentation — hero name, its own
+   point value, then the running subtotal so far. Reuses the existing
+   #arcade-reward-layer/#arcade-hero/#arcade-secondaries/#arcade-total DOM
+   (previously only #arcade-hero/#arcade-total were ever written to;
+   #arcade-secondaries — present in the markup, never wired up — now
+   carries each item's own "+N" so the hero name and its point value read
+   together while #arcade-total carries the running subtotal). Deliberately
+   does NOT touch a.score/#arcade-score-machine — the permanent SCORE HUD
+   only starts moving at the smash's own impact instant (see
+   runPotSmashSequence), not per breakdown line. */
+async function presentRewardBreakdown(early){
+  const items = early && early.awards;
+  const layer = $('arcade-reward-layer');
+  if (!layer || !items || !items.length) return;
+  const cfg = REWARD_BREAKDOWN_CONFIG;
+  const perItemMs = Math.max(cfg.minPerItemMs, Math.min(cfg.maxPerItemMs, Math.round(cfg.budgetMs/items.length)));
+  let subtotal = 0;
+  for (const item of items){
+    subtotal += item.def.base*item.count;
+    clearArcadeLayer();
+    layer.className = 'arcade-reward-layer pot-smash-breakdown tier-'+(item.def.tier||'small')+' cat-'+(item.def.type||'result');
+    layer.classList.remove('hidden');
+    $('arcade-hero').textContent = item.def.name;
+    $('arcade-secondaries').innerHTML = '<span class="arcade-secondary">+'+(item.def.base*item.count).toLocaleString()+'</span>';
+    $('arcade-total').textContent = subtotal.toLocaleString();
+    void layer.offsetWidth; layer.classList.add('is-live');
+    Sound.arcadeReward(item.def.tier||'small', item.id);
+    await arcadeDelay(perItemMs);
+  }
+  clearArcadeLayer();
+  layer.className = 'arcade-reward-layer pot-smash-breakdown is-total';
+  layer.classList.remove('hidden');
+  $('arcade-hero').textContent = 'TOTAL';
+  $('arcade-total').textContent = '+'+Math.round(early.total).toLocaleString();
+  $('arcade-total').classList.remove('is-ready'); void $('arcade-total').offsetWidth; $('arcade-total').classList.add('is-ready');
+  void layer.offsetWidth; layer.classList.add('is-live');
+  await arcadeDelay(cfg.totalRevealMs);
+  await arcadeDelay(cfg.anticipationMs);
+  clearArcadeLayer();
+}
+/* Applies one physics chip's current x/y/rot state to its DOM element.
+   Elements are position:fixed inside #chip-physics-layer, positioned by
+   plain left/top (not transform:translate) so the per-frame physics math
+   stays simple absolute coordinates — transform is reserved for rotation
+   only. */
+function applyChipTransform(c){
+  c.el.style.left = (c.x - c.radius) + 'px';
+  c.el.style.top = (c.y - c.radius) + 'px';
+  c.el.style.transform = 'rotate(' + c.rot + 'deg)';
+}
+/* Pulls one real chip off the pot pile, pins it at its exact resting rect
+   (same "IS the chip on frame one" technique flyChip already uses), and
+   gives it an outward velocity radial from the impact point relative to
+   ITS OWN tower's actual on-screen position — different towers already
+   sit at different distances/angles from the impact, so varied launch
+   vectors fall out naturally without any per-chip hand tuning. */
+function spawnPhysicsChip(taken, impactPoint, layer){
+  const { el, rect } = taken;
+  el.classList.remove('disc-in');
+  el.style.transition = 'none';
+  el.style.position = 'fixed';
+  el.style.margin = '0';
+  el.style.left = rect.left + 'px';
+  el.style.top = rect.top + 'px';
+  el.style.width = rect.width + 'px';
+  el.style.height = rect.height + 'px';
+  el.style.pointerEvents = 'none';
+  el.style.willChange = 'left,top,transform';
+  layer.appendChild(el);
+
+  const cx = rect.left+rect.width/2, cy = rect.top+rect.height/2;
+  const dx = cx-impactPoint.x, dy = cy-impactPoint.y, dist = Math.hypot(dx,dy);
+  let angle = dist<4 ? Math.random()*Math.PI*2 : Math.atan2(dy,dx);
+  angle += (Math.random()-0.5)*0.9;                 // spread, so a tower's chips don't all launch in lockstep
+  const speed = 250 + Math.random()*260;
+  return {
+    el,
+    x:cx, y:cy,
+    vx: Math.cos(angle)*speed,
+    vy: Math.sin(angle)*speed - (110+Math.random()*150),  // small upward kick on top of the outward burst
+    rot:0, vrot:(Math.random()<0.5?-1:1)*(160+Math.random()*300),
+    radius: rect.width/2,
+    state:'free', lastBounceAt:0,
+    attractDelay: Math.random()*POT_SMASH_PHYSICS_CONFIG.attractStaggerMaxMs
+  };
+}
+function maybePlayBounceSound(c, vel){
+  if (vel < POT_SMASH_PHYSICS_CONFIG.minBounceSoundVel) return;
+  const now = performance.now();
+  if (now-c.lastBounceAt < POT_SMASH_PHYSICS_CONFIG.bounceSoundGapMs) return;
+  c.lastBounceAt = now;
+  Sound.chipBounce();
+}
+/* One free-flight integration step: gravity + air damping, then a simple
+   circle-vs-edge clamp+restitution against the two static bounds — no
+   chip-vs-chip collision (deliberately out of scope; "controlled chaos,
+   not a physics engine"). */
+function stepFreeChip(c, dt, bounds){
+  const cfg = POT_SMASH_PHYSICS_CONFIG;
+  c.vy += cfg.gravity*dt;
+  c.x += c.vx*dt; c.y += c.vy*dt;
+  const damp = Math.max(0, 1-cfg.airDamping*dt);
+  c.vx *= damp; c.vy *= damp;
+  c.rot += c.vrot*dt;
+  c.vrot *= Math.max(0, 1-cfg.angularDamping*dt);
+
+  let bounceVel = 0;
+  if (c.x-c.radius < bounds.left){ c.x = bounds.left+c.radius; c.vx = -c.vx*cfg.restitution; bounceVel = Math.abs(c.vx); }
+  else if (c.x+c.radius > bounds.right){ c.x = bounds.right-c.radius; c.vx = -c.vx*cfg.restitution; bounceVel = Math.abs(c.vx); }
+  if (c.y-c.radius < bounds.top){ c.y = bounds.top+c.radius; c.vy = -c.vy*cfg.restitution; bounceVel = Math.max(bounceVel, Math.abs(c.vy)); }
+  else if (c.y+c.radius > bounds.bottom){
+    c.y = bounds.bottom-c.radius; c.vy = -c.vy*cfg.restitution; c.vx *= cfg.floorFriction;
+    bounceVel = Math.max(bounceVel, Math.abs(c.vy));
+  }
+  if (bounceVel>0) maybePlayBounceSound(c, bounceVel);
+  applyChipTransform(c);
+}
+/* Shared rAF clock driving every free-flight chip for a fixed wall-clock
+   budget — one clock, not per-chip timers, so the burst reads as one
+   coordinated event rather than chips drifting out of sync with each
+   other. */
+function runPhysicsFreePhase(chips, bounds, budgetMs){
+  return new Promise(resolve=>{
+    let last = performance.now();
+    const endAt = last + budgetMs;
+    function frame(now){
+      const dt = Math.min(0.032, (now-last)/1000);
+      last = now;
+      chips.forEach(c=>stepFreeChip(c, dt, bounds));
+      if (now < endAt) requestAnimationFrame(frame); else resolve();
+    }
+    requestAnimationFrame(frame);
+  });
+}
+/* Shared rAF clock easing every chip from wherever the free phase left it
+   into its own reserved bank slot — one clock driving all of them (not N
+   independent per-chip rAF loops/timers), same efficiency reasoning as
+   runPhysicsFreePhase above; a huge pot can mean dozens of chips
+   attracting inside the same ~500ms window, and this is a mobile PWA
+   first. Each chip only claims its real bank slot (claimDestSlot) the
+   instant ITS OWN stagger delay elapses — not all up front — so the
+   slot's real final rect is known before its ease starts (same guarantee
+   flyChip's placeholder trick relies on) and later-starting chips still
+   see earlier ones' reservations already reflected in tower height. A
+   plain accelerating ease-in lerp (simpler and more predictable than a
+   force-based magnet) carries each chip to its slot; settleSlot() on
+   arrival hands the element back to the real bank pile for good — same
+   primitive an ordinary payout uses, so nothing about the DOM handoff is
+   bespoke to this effect. */
+function runPhysicsAttractionPhase(chips, bankContainer, bankP){
+  if (!chips.length) return Promise.resolve();
+  return new Promise(resolve=>{
+    const start = performance.now();
+    let remaining = chips.length;
+    function frame(now){
+      chips.forEach(c=>{
+        if (c.state==='collected') return;
+        if (c.state==='free'){
+          if (now-start < c.attractDelay) return;
+          c.state = 'attracting';
+          c._placeholder = claimDestSlot(bankContainer, bankP).placeholder;
+          c._startX = c.x; c._startY = c.y; c._startRot = c.rot; c._t0 = now;
+        }
+        const t = Math.min(1, (now-c._t0)/POT_SMASH_PHYSICS_CONFIG.attractMs), eased = t*t;
+        const target = c._placeholder.getBoundingClientRect();
+        const tx = target.left+target.width/2, ty = target.top+target.height/2;
+        c.x = c._startX + (tx-c._startX)*eased;
+        c.y = c._startY + (ty-c._startY)*eased;
+        c.rot = c._startRot + (0-c._startRot)*eased;
+        applyChipTransform(c);
+        if (t<1) return;
+        c.state = 'collected';
+        c.el.style.position=''; c.el.style.left=''; c.el.style.top=''; c.el.style.width='';
+        c.el.style.height=''; c.el.style.margin=''; c.el.style.transform=''; c.el.style.willChange='';
+        c.el.style.pointerEvents=''; c.el.style.transition='';
+        settleSlot(bankContainer, c._placeholder, c.el);
+        bankPending = Math.max(0, bankPending-1);
+        Sound.chipCollect();
+        remaining--;
+      });
+      if (remaining>0) requestAnimationFrame(frame); else resolve();
+    }
+    requestAnimationFrame(frame);
+  });
+}
+/* Full free-physics burst for the human's own `potN` real pot chips:
+   pulls them for real off #pot-stacks (the SAME takeChipFromPile()
+   primitive flyChip() uses — never a decorative clone), bounces them for
+   a fixed budget, then magnetically collects them into the real bank
+   pile. potPending/bankPending are held busy for the whole operation —
+   the exact same mutual-exclusion convention transferChips()'s
+   addPending callback already uses — so render()'s renderPot()/
+   renderBank() idle-bootstrap checks can never fight this in-flight
+   physics layer for the same DOM elements. */
+async function runPotBreakPhysics(potN, impactPoint){
+  if (!(potN>0)) return;
+  const potContainer = $('pot-stacks'), pPile = potPile();
+  const bankContainer = $('hud-tower'), bankP = bankPile();
+  potPending += potN; bankPending += potN;
+
+  const layer = document.createElement('div');
+  layer.className = 'chip-physics-layer';
+  document.body.appendChild(layer);
+
+  const bounds = potSmashBounds();
+  const chips = [];
+  for (let i=0;i<potN;i++){
+    const taken = takeChipFromPile(potContainer, pPile);
+    if (!taken){ potPending = Math.max(0, potPending-1); bankPending = Math.max(0, bankPending-1); continue; }
+    potPending = Math.max(0, potPending-1);
+    chips.push(spawnPhysicsChip(taken, impactPoint, layer));
+  }
+  if (!chips.length){ layer.remove(); return; }
+
+  await runPhysicsFreePhase(chips, bounds, POT_SMASH_PHYSICS_CONFIG.freeMs);
+  await runPhysicsAttractionPhase(chips, bankContainer, bankP);
+  layer.remove();
+}
+/* Top-level pot-smash orchestrator: TOTAL plate drop -> impact (felt
+   thud/sound/haptic, permanent SCORE HUD begins rolling here, real pot
+   chips burst into free physics) -> plate rebound/hold/fade (cosmetic,
+   runs concurrently with the physics/score work below it, not gating it)
+   -> awaits both the physics burst/collection and the score roll before
+   returning, so the caller can safely treat this as one atomic beat.
+   Reduced motion takes a fully separate, much shorter branch (see below)
+   rather than trying to run the same timeline at 0ms — it reuses the
+   ordinary, already-motionOff-aware payoutTo() to move the human's chips
+   instantly and correctly instead. */
+async function runPotSmashSequence({ potN, scoreTotal, human }){
+  const g = game, a = g && g.run && g.run.arcade;
+  if (!a) return;
+  const tier = scoreTotal>=1000 ? 'large' : scoreTotal>=250 ? 'medium' : 'small';
+
+  const rollScore = async()=>{
+    const target = a.score+scoreTotal; a.score = target;
+    const machine = $('arcade-score-machine');
+    if (machine){
+      machine.classList.remove('score-impact','score-jackpot'); void machine.offsetWidth;
+      machine.classList.add(tier==='large'?'score-jackpot':'score-impact');
+    }
+    await rollArcadeCounter(a, target, tier);
+  };
+
+  const point = scoreSmashImpactPoint();
+  if (motionOff() || !point){
+    Sound.scoreSmash(scoreTotal>=1000);
+    haptic(scoreTotal>=1000?[46,22,60]:[36,18,48]);
+    await Promise.all([ payoutTo(human, potN), rollScore() ]);
+    return;
+  }
+
+  const layer = document.createElement('div');
+  layer.className = 'score-smash-layer';
+  const plate = document.createElement('div');
+  plate.className = 'score-smash-plate';
+  plate.textContent = '+' + Math.round(scoreTotal).toLocaleString();
+  plate.style.left = point.x+'px'; plate.style.top = point.y+'px';
+  layer.appendChild(plate);
+  document.body.appendChild(layer);
+
+  const dropAnim = plate.animate([
+    { transform:'translate(-50%,-50%) translateY(-150px) scale(.7,1.2) rotate(-3deg)', opacity:0, offset:0 },
+    { transform:'translate(-50%,-50%) translateY(-12px) scale(.8,1.12) rotate(-2deg)', opacity:1, offset:.74, easing:'cubic-bezier(.55,0,.85,.35)' },
+    { transform:'translate(-50%,-50%) translateY(3px) scale(1.34,.62) rotate(0deg)', opacity:1, offset:1 }
+  ], { duration:190, easing:'cubic-bezier(.3,0,.75,.15)', fill:'forwards' });
+  try{ await dropAnim.finished; }catch(e){}
+  dropAnim.commitStyles(); dropAnim.cancel();
+
+  // IMPACT — felt thud, sound, haptic, the permanent SCORE HUD starting
+  // to roll, and the real pot chips bursting into physics all fire off
+  // this exact instant (the moment the plate's own fall says it landed).
+  feltImpactBump();
+  Sound.scoreSmash(scoreTotal>=1000);
+  haptic(scoreTotal>=1000?[46,22,60,18,34]:[36,18,48]);
+  const scorePromise = rollScore();
+  const physicsPromise = runPotBreakPhysics(potN, point);
+
+  const reboundAnim = plate.animate([
+    { transform:'translate(-50%,-50%) translateY(3px) scale(1.34,.62) rotate(0deg)' },
+    { transform:'translate(-50%,-50%) translateY(-7px) scale(.9,1.09) rotate(0deg)', offset:.5, easing:'cubic-bezier(.2,.7,.3,1)' },
+    { transform:'translate(-50%,-50%) translateY(0) scale(1,1) rotate(0deg)' }
+  ], { duration:130, easing:'cubic-bezier(.3,.9,.4,1)', fill:'forwards' });
+  try{ await reboundAnim.finished; }catch(e){}
+  reboundAnim.commitStyles(); reboundAnim.cancel();
+
+  await sleep(200);
+
+  const fadeAnim = plate.animate([
+    { transform:'translate(-50%,-50%) translateY(0) scale(1,1)', opacity:1 },
+    { transform:'translate(-50%,-50%) translateY(-16px) scale(.8,.8)', opacity:0 }
+  ], { duration:170, easing:'cubic-bezier(.4,0,.8,1)', fill:'forwards' });
+  try{ await fadeAnim.finished; }catch(e){}
+  layer.remove();
+
+  await Promise.all([physicsPromise, scorePromise]);
+}
+/* Whole-ceremony entry point for a human pot win: freezes the bank
+   readout at its pre-win value (amendment 1 — the visual story must stay
+   "chips enter bank -> money appears", never the reverse, even though
+   player.chips itself is already correct underneath), presents the
+   uncapped reward breakdown, runs the smash/physics/collection, then
+   unfreezes the readout and rolls it to the true value right as
+   collection finishes. Wrapped in queueArcadePresentation so it can never
+   visually overlap a DEV-triggered test or a second real hand. */
+function runHumanPotSmashCeremony(g, outcome, potN, preWinChips){
+  return queueArcadePresentation(async()=>{
+    if (game!==g || !g.run || !g.run.arcade) return;
+    const human = g.players.find(p=>p.isHuman);
+    const early = await evaluateArcadeAwardsEarly(g, outcome);
+    if (!early){ await payoutTo(human, potN); return; }
+    humanBankDisplayFreeze = preWinChips;
+    updateJackpot(preWinChips);
+    // finally, not just a trailing pair of statements — if anything above
+    // throws mid-ceremony, the stack reel must never be left permanently
+    // stuck on the pre-win value (amendment 1 is about a brief, correct
+    // delay, not a silently wrong display).
+    try{
+      await presentRewardBreakdown(early);
+      await runPotSmashSequence({ potN, scoreTotal: early.total, human });
+    } finally {
+      humanBankDisplayFreeze = null;
+      updateJackpot(human.chips);
+    }
+    if (early.luck) await presentArcadeCommentary(g, early.luck, true);
+    else if (early.commentary) await presentArcadeCommentary(g, early.commentary, false);
+  });
+}
+
 function render(){
   if (DEV_MODE) refreshDevPanel();
   updateArcadeHUD();
@@ -1661,7 +2074,15 @@ function render(){
       // completed bet's landed chips could get silently trimmed right
       // after arriving.
       renderBank();
-      updateJackpot(p.chips);
+      // Pot-smash bank-display freeze (amendment 1) — while a human
+      // pot-smash ceremony is in flight (see runHumanPotSmashCeremony in
+      // this file), the real p.chips is already correct, but the reel
+      // readout must keep showing its pre-win value until the physical
+      // chips finish being collected, so the visual story stays "chips
+      // enter bank -> money appears" and never the reverse. Every render()
+      // call funnels through this one line, so it doesn't matter how many
+      // times render() fires during the ceremony.
+      updateJackpot(humanBankDisplayFreeze!=null ? humanBankDisplayFreeze : p.chips);
       updateInvestedReel(p.totalBetHand);
       const position = g.positions && g.positions[p.id];
       $('hud-sb-indicator').classList.toggle('is-on',position==='SB');
@@ -2034,6 +2455,13 @@ async function runShowdownAwardSequence(potResults, contenders){
   // the pot becomes the focus, per the approved sequencing.
   await (motionOff() ? sleep(0) : pacedSleep(220));
 
+  // Captured BEFORE the real money mutation below — the one thing a
+  // human pot-smash ceremony needs that isn't derivable afterwards: what
+  // the stack reel should keep showing while it's frozen (see amendment 1
+  // / runHumanPotSmashCeremony).
+  const human = g.players.find(p=>p.isHuman);
+  const preWinHumanChips = human ? human.chips : 0;
+
   potResults.forEach(pot=>{
     pot.winnerShares.forEach(s=>{
       const w = g.players.find(p=>p.id===s.id);
@@ -2062,18 +2490,38 @@ async function runShowdownAwardSequence(potResults, contenders){
     visualByPlayer.set(id, n);
   });
 
+  const wasShowdown = potResults.length!==1 || potResults[0].hand!==null;
+  const outcome = wasShowdown
+    ? { type:'showdown', potResults, contenders, winnerIds }
+    : { type:'foldwin', winner:g.players.find(p=>p.id===potResults[0].winnerIds[0]), amount:potResults[0].amount };
+
+  // Human pot-smash ceremony (elimination/arcade mode, human won at least
+  // one pot layer this hand) replaces the ordinary payoutTo() flight for
+  // the human's own share only — see runHumanPotSmashCeremony/
+  // runPotSmashSequence above. It owns the human's real pot-chip DOM
+  // elements from #pot-stacks all the way to #hud-tower; every OTHER
+  // winner this hand (any AI, on a side pot the human didn't also win)
+  // still goes through the unchanged payoutTo() path, fired concurrently
+  // — they have no shared pile with the human's own ceremony to contend
+  // over. The freeze is armed before the FIRST render() below so the
+  // stack reel never flashes the post-win amount even on that very first
+  // redraw (see amendment 1).
+  const humanArcadeWin = g.mode==='elimination' && g.run && g.run.arcade && totalByPlayer.has('you');
+  if (humanArcadeWin) humanBankDisplayFreeze = preWinHumanChips;
+
   render();
   // fired concurrently, then genuinely awaited — finishHand() below is
   // unreachable until every winner's chips have actually landed.
-  await Promise.all(ids.map(id=>payoutTo(g.players.find(p=>p.id===id), visualByPlayer.get(id))));
-
-  const wasShowdown = potResults.length!==1 || potResults[0].hand!==null;
-  if (wasShowdown){
-    await finishHand({ type:'showdown', potResults, contenders, winnerIds });
+  if (humanArcadeWin){
+    const aiIds = ids.filter(id=>id!=='you');
+    const aiPayout = Promise.all(aiIds.map(id=>payoutTo(g.players.find(p=>p.id===id), visualByPlayer.get(id))));
+    await runHumanPotSmashCeremony(g, outcome, visualByPlayer.get('you'), preWinHumanChips);
+    await aiPayout;
   } else {
-    const w = g.players.find(p=>p.id===potResults[0].winnerIds[0]);
-    await finishHand({ type:'foldwin', winner:w, amount:potResults[0].amount });
+    await Promise.all(ids.map(id=>payoutTo(g.players.find(p=>p.id===id), visualByPlayer.get(id))));
   }
+
+  await finishHand(outcome);
 }
 
 
