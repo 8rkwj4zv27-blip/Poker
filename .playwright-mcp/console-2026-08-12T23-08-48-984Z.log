@@ -1,3 +1,0 @@
-[     153ms] ReferenceError: showShowdownCard is not defined
-    at http://localhost:8934/index.html:6335:81
-    at http://localhost:8934/index.html:6345:3
