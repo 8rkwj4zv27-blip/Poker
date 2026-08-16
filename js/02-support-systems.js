@@ -217,7 +217,7 @@ const DEFAULT_SETTINGS = {
 const DEFAULT_STATS = { hands:0, won:0, showdownsWon:0, biggestPot:0, net:0 };
 const SAVE_VERSION = 1;
 /* Bump on every release so the main-menu header shows what's actually installed. */
-const BUILD_VERSION = 'v0.12.5 · 31ad4ad';
+const BUILD_VERSION = 'v0.13.0 · ba9c304';
 
 let settings = Object.assign({}, DEFAULT_SETTINGS, Store.get('felt.settings', {}));
 let stats = Object.assign({}, DEFAULT_STATS, Store.get('felt.stats', {}));
