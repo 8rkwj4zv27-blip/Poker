@@ -87,6 +87,30 @@ function devKoNext(){
   logMsg('[DEV] ' + target.name + ' armed for a forced all-in', true);
   refreshDevPanel();
 }
+/* Presentation-only preview of the redesigned opponent-ejection sequence
+   (physical-polish pass) — calls the exact real playElimination() a live
+   hand uses, on a live (non-eliminated) opponent, WITHOUT touching
+   p.eliminated/p.chips or going through resolveEliminations() at all, so
+   it can never corrupt real elimination state. Resets that seat's own
+   presentation state (hit/fail/eject classes, face, streetAction, .dead)
+   right before each run so the same seat can be previewed repeatedly
+   without a table reset in between. */
+function devTestKoEject(){
+  if (!DEV_MODE || !game || game.mode!=='elimination') return;
+  const target = game.players.find(p=>!p.isHuman && !p.eliminated);
+  if (!target) return;
+  const e = seatEls[target.id];
+  if (!e || !e.card || !e.root) return;
+  e.card.classList.remove('elim-hit','elim-critical','elim-pop','elim-fail','elim-eject');
+  e.card.style.cssText = '';
+  e.root.classList.remove('dead');
+  target.streetAction = null;
+  e.avatar.classList.add('has-face');
+  e.avatar.innerHTML = renderFace(target.personality && target.personality.key, 'idle', aiHue(game.players.indexOf(target)));
+  render();
+  logMsg('[DEV] Previewing K.O. eject on ' + target.name, true);
+  playElimination(target, { ko:true });
+}
 function devBustMe(){
   if (!handInProgress() || game.mode!=='elimination') return;
   const g = game, human = g.players.find(p=>p.isHuman);
@@ -175,6 +199,7 @@ function initDevPanel(){
         '<button id="dev-bust-me" type="button">BUST ME</button>' +
         '<button id="dev-clear-table" type="button">CLEAR TABLE</button>' +
         '<button id="dev-end-table" type="button">END TABLE</button>' +
+        '<button id="dev-ko-eject" type="button">TEST KO EJECT</button>' +
       '</div>' +
         '<div id="dev-arcade-controls">' +
         '<div class="dev-section-title">ARCADE TEST</div>' +
@@ -229,6 +254,7 @@ function initDevPanel(){
   $('dev-ko-next').onclick = devKoNext;
   $('dev-bust-me').onclick = devBustMe;
   $('dev-clear-table').onclick = devClearTable;
+  $('dev-ko-eject').onclick = devTestKoEject;
   $('dev-end-table').onclick = devEndTable;
   const runArcadeDevTest=fn=>()=>{
     fn();
@@ -266,6 +292,7 @@ function refreshDevPanel(){
   $('dev-ko-next').disabled = !(inElim && hip);
   $('dev-bust-me').disabled = !(inElim && hip);
   $('dev-clear-table').disabled = !(inElim && bh);
+  $('dev-ko-eject').disabled = !(inElim && bh);
   $('dev-end-table').disabled = !(inElim && game.run && !game.over && !game._transitioning);
   const status = $('dev-status');
   if (status) status.textContent = (FAST_DEV ? '[FAST] ' : '') + (game ? ('mode:' + game.mode +

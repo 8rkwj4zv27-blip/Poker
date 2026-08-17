@@ -1621,33 +1621,39 @@ const REWARD_BREAKDOWN_CONFIG = {
 };
 /* Free-bounce/attraction physics tuning — see runPotBreakPhysics() and
    its helpers. Deliberately simple (no chip-vs-chip collision, two static
-   axis-aligned bounds) per the "controlled chaos, not a physics engine"
-   brief. Juice pass v2: freeMs stretched from 850ms to ~2.5s, so
-   restitution/damping are retuned alongside it — the original values were
-   tuned for a sub-second burst and would have every chip settled to a
-   near-standstill long before a 2.5s window elapsed; higher restitution
-   and lower damping keep chips genuinely bouncing/rotating for most of
-   the extended window instead of just resting there. */
+   axis-aligned bounds plus the player's own hole cards) per the
+   "controlled chaos, not a physics engine" brief.
+   Physical-polish pass: launches/rebounds retuned to hit noticeably
+   harder and keep chips genuinely alive across the felt for the ~2.5s
+   free-bounce window instead of most of them settling into the dashboard
+   gutter early — lower gravity (floatier arcs, more hang time), higher
+   restitution (bounces keep more energy), lower damping (motion persists
+   longer), and a dashboard-specific floorRestitution so a hard dashboard
+   hit can genuinely kick a chip back up into play (item 4) rather than
+   just deadening it like every other surface. */
 const POT_SMASH_PHYSICS_CONFIG = {
   freeMs: 2500,              // shared free-bounce budget — one clock for every chip, so the burst reads as one event. Target range 2300-2700ms.
   hitStopMs: 60,             // micro impact-freeze at the instant TOTAL lands, before anything reacts — felt more than seen
-  gravity: 1350,             // px/s^2 — slightly floatier arc than before, suited to the longer window
-  restitution: 0.64,         // velocity retained (perpendicular component) on a boundary bounce — raised so multiple bounces persist over 2.5s
-  floorFriction: 0.78,       // extra horizontal damping specifically on a dashboard-floor contact
-  airDamping: 0.22,          // per-second velocity decay while airborne — lowered so chips keep travelling/rattling, not just dying out
-  angularDamping: 0.5,       // per-second spin decay — lowered so chips keep visibly rotating through more of the free phase
-  minBounceSoundVel: 70,     // px/s — below this a "bounce" is a silent graze (raised: a longer bounce phase means far more collision events, so the floor is stricter)
-  softBounceVel: 150,        // below this: a small soft "ping"
-  hardBounceVel: 420,        // at/above this: a stronger "plonk" — edge/dashboard hits read heavier than a gentle mid-table graze
+  gravity: 950,              // px/s^2 — floatier arc, more hang time, so chips cross meaningful portions of the felt before landing
+  restitution: 0.74,         // velocity retained on a felt/wall boundary bounce — raised further for more energetic rebounds
+  floorRestitution: 0.82,    // dashboard contact specifically — deliberately higher than the wall restitution so hard hits can kick a chip back upward, not just settle it
+  floorFriction: 0.87,       // horizontal damping on a dashboard contact — raised toward 1 (less friction) so it isn't a dead gutter
+  airDamping: 0.13,          // per-second velocity decay while airborne — lowered further so horizontal motion persists across the table
+  angularDamping: 0.4,       // per-second spin decay — lowered so chips keep visibly rotating through more of the free phase
+  cardRestitution: 0.7,      // bounce off the player's own hole-card edges (item 3) — close to the wall value, a believable glancing/corner rebound
+  cardPad: 5,                // px — the hole-card AABBs are expanded slightly so a graze still reads as a believable hit, not a razor-exact pixel edge
+  minBounceSoundVel: 80,     // px/s — below this a "bounce" is a silent graze (many more collisions now happen with cards/boundaries, so the floor stays strict)
+  softBounceVel: 170,        // below this: a small soft "ping"
+  hardBounceVel: 480,        // at/above this: a stronger "plonk" — edge/dashboard/card hits read heavier than a gentle mid-table graze
   bounceSoundGapMs: 70,      // per-chip minimum re-trigger gap, independent of Sound.chipBounce's own cross-chip density window
-  releaseStaggerMaxMs: 120,  // tower-breakup stagger — upper/earlier-pulled chips pop free slightly before lower/later ones (item 6)
-  attractStaggerMaxMs: 260,  // collection begins slightly staggered per chip, not all at once — widened for the longer, larger bursts
-  attractMs: 340,            // per-chip ease-in duration once it starts homing to the bank
-  attractPow: 2.2,           // ease-in exponent — weak start, quickly ramping, "increasingly decisive" pull (item 10)
-  lateSnapFraction: 0.82,    // the last ~18% of chips (by attraction start order) get a faster, punchier "snap" finish
-  lateSnapMsMult: 0.68,      // their attractMs is shortened by this factor
-  lateSnapPow: 3.4,          // and eased with a steeper exponent — a harder final pull
-  attractBowMin: 14, attractBowMax: 40  // px — lateral "curve" bowed into the attraction path so it reads as being pulled in, not just sliding in a straight line
+  releaseStaggerMaxMs: 120,  // tower-breakup stagger — upper/earlier-pulled chips pop free slightly before lower/later ones
+  attractStaggerMaxMs: 300,  // collection begins slightly staggered per chip, not all at once — widened further for a more theatrical cascade (item 7)
+  attractMsMin: 260, attractMsMax: 420,  // per-chip ease-in duration — chips that start attracting EARLY (weak, just-opened suction) ease slowly; LATE starters get pulled in faster
+  attractPowMin: 1.6, attractPowMax: 2.6, // ease-in exponent — early starters ramp gently, late starters "increasingly decisive" (item 10)
+  lateSnapFraction: 0.85,    // the last ~15% of chips (by attraction start order) get an even faster, punchier "snap" finish — the "aggressively yanked in" rogue chips (item 7)
+  lateSnapMsMult: 0.62,      // their attractMs is shortened further still
+  lateSnapPow: 3.6,          // and eased with the steepest exponent — the hardest final pull
+  hatchApproachJitterX: 26, hatchApproachJitterY: 16  // px — small per-chip variation on the "point above the hatch" waypoint so multiple chips don't trace an identical curve
 };
 
 /* Landing point for the TOTAL stamp — centred on the pot plate itself
@@ -1667,6 +1673,40 @@ function feltImpactBump(){
   const felt = $('felt');
   if (!felt || motionOff()) return;
   felt.classList.remove('felt-impact'); void felt.offsetWidth; felt.classList.add('felt-impact');
+}
+/* Bank intake hatch (item 5) — a small seam built into the existing
+   recessed bank compartment (#hud-left; see the .bank-hatch rules in
+   css/02-screens.css), toggled by these two class changes only. Never a
+   new floating component — it reads as hardware the machine already had. */
+function openHatch(){
+  const hatch = $('bank-hatch');
+  if (!hatch) return;
+  hatch.classList.remove('is-closing');
+  hatch.classList.add('is-open');
+}
+function closeHatch(){
+  const hatch = $('bank-hatch');
+  if (!hatch) return;
+  hatch.classList.remove('is-open');
+  hatch.classList.add('is-closing');
+  // Strip the one-shot closing class once it's genuinely had time to
+  // finish, so a later openHatch() (the next hand's own payout, or a DEV
+  // re-test) always starts from a clean, fully-closed resting state
+  // rather than mid-transition.
+  setTimeout(()=>{ if (hatch) hatch.classList.remove('is-closing'); }, 150);
+}
+/* The bezier control point every attracting chip arcs through — "a point
+   ABOVE the hatch" (item 5) — plus the Y threshold at which a chip has
+   visibly crossed into the hatch and should vanish (see
+   runPhysicsAttractionPhase). Measured once per sequence, like
+   potSmashBounds/playerCardRects above. Returns null if the hatch isn't
+   laid out for some reason; the caller falls back to a plain straight-
+   line lerp in that case rather than breaking. */
+function hatchApproachGeometry(){
+  const hatch = $('bank-hatch');
+  const rect = hatch && hatch.getBoundingClientRect();
+  if (!rect || !rect.width) return null;
+  return { point: { x: rect.left+rect.width/2, y: rect.top-50 }, diveY: rect.bottom };
 }
 /* Two static axis-aligned bounds, measured once per sequence rather than
    per frame (a ~1s ceremony doesn't need to react to mid-flight resizes).
@@ -1688,6 +1728,24 @@ function potSmashBounds(){
     top: feltRect && feltRect.width ? feltRect.top : 0,
     bottom: dashRect && dashRect.width ? dashRect.top : innerHeight
   };
+}
+/* Item 3 — the player's own visible hole cards, measured once per
+   sequence (same one-shot-measurement convention as potSmashBounds
+   above), as simple expanded AABBs a loose chip can strike/glance off/
+   rebound from (see resolveCardCollisions). Deliberately ONLY the
+   player's own cards — opponents' cards/panels higher up the table are
+   explicitly still fine to fly over (see the design brief); this is the
+   player-side physical illusion specifically. */
+function playerCardRects(){
+  const cfg = POT_SMASH_PHYSICS_CONFIG;
+  const pad = cfg.cardPad;
+  const rects = [];
+  document.querySelectorAll('.seat.you .seat-cards .card').forEach(el=>{
+    const r = el.getBoundingClientRect();
+    if (!r.width) return;
+    rects.push({ left:r.left-pad, right:r.right+pad, top:r.top-pad, bottom:r.bottom+pad });
+  });
+  return rects;
 }
 /* One reward line's worth of sequential presentation — hero name, its own
    point value, then the running subtotal so far. Reuses the existing
@@ -1747,14 +1805,21 @@ function applyChipTransform(c){
    pull order) so the mix reads as physical variety, not a pattern. */
 function pickLaunchClass(){
   const r = Math.random();
-  if (r < 0.14) return 'hard';
+  if (r < 0.15) return 'hard';
   if (r < 0.82) return 'medium';
   return 'soft';
 }
+/* Item 1 of the physical-polish pass: substantially harder across the
+   board (not a uniform multiply — the three classes were re-spread so
+   "hard" now genuinely rockets, "medium" — still the majority pick —
+   travels decisively rather than just drifting, and "soft" is still
+   noticeably weaker than the other two but no longer trivial, so even a
+   sheltered chip crosses real distance before its first bounce instead of
+   dropping straight down). */
 const LAUNCH_CLASS_SPEED = {
-  hard:   { min:480, max:640, kickMin:190, kickMax:280, spinMin:260, spinMax:520 },
-  medium: { min:230, max:420, kickMin:100, kickMax:190, spinMin:150, spinMax:320 },
-  soft:   { min:70,  max:180, kickMin:20,  kickMax:80,  spinMin:70,  spinMax:170 }
+  hard:   { min:640, max:880, kickMin:250, kickMax:350, spinMin:340, spinMax:620 },
+  medium: { min:360, max:580, kickMin:150, kickMax:240, spinMin:190, spinMax:400 },
+  soft:   { min:130, max:260, kickMin:55,  kickMax:130, spinMin:100, spinMax:230 }
 };
 /* Pulls one real chip off the pot pile, pins it at its exact resting rect
    (same "IS the chip on frame one" technique flyChip already uses), and
@@ -1762,13 +1827,25 @@ const LAUNCH_CLASS_SPEED = {
    ITS OWN tower's actual on-screen position — different towers already
    sit at different distances/angles from the impact, so varied launch
    vectors fall out naturally without any per-chip hand tuning; the
-   launch-class speed above layers deliberate variety on top of that.
+   launch-class speed above layers deliberate variety on top of that. The
+   angular spread was also widened (item 1's "wider spread"/"stronger
+   lateral velocity") so chips from the same tower fan out across more of
+   the felt rather than launching in a tight cone.
    `pullIndex` (this chip's 0-based order among the whole burst — earlier
    pulls tend to be a tower's own topmost chips, see takeChipFromPile) also
    drives a small releaseDelay so the tower visibly breaks apart in a
-   quick stagger rather than every chip going free on the same frame
-   (item 6) — the chip stays pinned exactly at its resting rect, doing
-   nothing, until that delay elapses (see runPhysicsFreePhase). */
+   quick stagger rather than every chip going free on the same frame —
+   the chip stays pinned exactly at its resting rect, doing nothing, until
+   that delay elapses (see runPhysicsFreePhase).
+   Attraction pacing (item 7/10) is assigned here too, as a continuous
+   function of this chip's own stagger position (`u`, 0 = first to start
+   attracting, 1 = last) rather than a hard two-tier split: early starters
+   ease in slowly with a gentle curve (the suction "just twitching"),
+   later starters get faster/steeper "increasingly decisive" pulls, and
+   the very last ~15% get an extra "late snap" on top — the aggressively-
+   yanked-in rogue chips. hatchJitterX/Y give each chip's approach-the-
+   hatch waypoint (see runPhysicsAttractionPhase) a small, independent
+   variation so a burst of chips doesn't all trace one identical curve. */
 function spawnPhysicsChip(taken, impactPoint, layer, pullIndex){
   const { el, rect } = taken;
   el.classList.remove('disc-in');
@@ -1787,14 +1864,17 @@ function spawnPhysicsChip(taken, impactPoint, layer, pullIndex){
   const cx = rect.left+rect.width/2, cy = rect.top+rect.height/2;
   const dx = cx-impactPoint.x, dy = cy-impactPoint.y, dist = Math.hypot(dx,dy);
   let angle = dist<4 ? Math.random()*Math.PI*2 : Math.atan2(dy,dx);
-  angle += (Math.random()-0.5)*0.9;                 // spread, so a tower's chips don't all launch in lockstep
+  angle += (Math.random()-0.5)*1.3;                 // wider spread, so a tower's chips fan out rather than launch in a tight cone
   const lc = LAUNCH_CLASS_SPEED[pickLaunchClass()];
   const speed = lc.min + Math.random()*(lc.max-lc.min);
   const kick = lc.kickMin + Math.random()*(lc.kickMax-lc.kickMin);
   const spin = lc.spinMin + Math.random()*(lc.spinMax-lc.spinMin);
 
   const attractDelay = Math.random()*cfg.attractStaggerMaxMs;
-  const lateSnap = attractDelay > cfg.attractStaggerMaxMs*cfg.lateSnapFraction;
+  const u = attractDelay/cfg.attractStaggerMaxMs;
+  const lateSnap = u > cfg.lateSnapFraction;
+  const baseMs = cfg.attractMsMax - (cfg.attractMsMax-cfg.attractMsMin)*u;
+  const basePow = cfg.attractPowMin + (cfg.attractPowMax-cfg.attractPowMin)*u;
 
   return {
     el,
@@ -1805,10 +1885,11 @@ function spawnPhysicsChip(taken, impactPoint, layer, pullIndex){
     radius: rect.width/2,
     state:'free', lastBounceAt:0,
     releaseDelay: Math.min(cfg.releaseStaggerMaxMs, (pullIndex||0)*2) + Math.random()*40,
-    attractDelay,
-    attractMs: lateSnap ? cfg.attractMs*cfg.lateSnapMsMult : cfg.attractMs,
-    attractPow: lateSnap ? cfg.lateSnapPow : cfg.attractPow,
-    bowAmount: (Math.random()<0.5?-1:1) * (cfg.attractBowMin + Math.random()*(cfg.attractBowMax-cfg.attractBowMin))
+    attractDelay, lateSnap,
+    attractMs: lateSnap ? baseMs*cfg.lateSnapMsMult : baseMs,
+    attractPow: lateSnap ? cfg.lateSnapPow : basePow,
+    hatchJitterX: (Math.random()*2-1) * cfg.hatchApproachJitterX,
+    hatchJitterY: (Math.random()*2-1) * cfg.hatchApproachJitterY
   };
 }
 function maybePlayBounceSound(c, vel){
@@ -1823,11 +1904,42 @@ function maybePlayBounceSound(c, vel){
   const power = vel < cfg.softBounceVel ? 0.7 : vel < cfg.hardBounceVel ? 1.0 : 1.4;
   Sound.chipBounce(power);
 }
+/* Simple circle-vs-static-AABB collision (item 3) — the closest-point-on-
+   rectangle technique, so a chip can strike a flat edge OR a corner with
+   the same one check. `rects` are the player's own hole-card boxes,
+   expanded by cardPad (see playerCardRects()) — nowhere near pixel-
+   perfect, which is exactly the brief ("simple static AABBs / expanded
+   rectangles" are sufficient). Only pushes/reflects when the chip is
+   actually moving INTO the card (vn<0) so a chip already separating from
+   a card on a later frame isn't repeatedly nudged. */
+function resolveCardCollisions(c, rects){
+  if (!rects || !rects.length) return;
+  const cfg = POT_SMASH_PHYSICS_CONFIG;
+  for (const r of rects){
+    const nx0 = Math.max(r.left, Math.min(c.x, r.right));
+    const ny0 = Math.max(r.top, Math.min(c.y, r.bottom));
+    const dx = c.x-nx0, dy = c.y-ny0, distSq = dx*dx+dy*dy;
+    if (distSq >= c.radius*c.radius) continue;
+    const dist = Math.sqrt(distSq) || 0.001;
+    const nx = dx/dist, ny = dy/dist;
+    c.x += nx*(c.radius-dist); c.y += ny*(c.radius-dist);
+    const vn = c.vx*nx + c.vy*ny;
+    if (vn >= 0) continue;
+    c.vx -= (1+cfg.cardRestitution)*vn*nx;
+    c.vy -= (1+cfg.cardRestitution)*vn*ny;
+    maybePlayBounceSound(c, Math.abs(vn));
+  }
+}
 /* One free-flight integration step: gravity + air damping, then a simple
-   circle-vs-edge clamp+restitution against the two static bounds — no
-   chip-vs-chip collision (deliberately out of scope; "controlled chaos,
-   not a physics engine"). */
-function stepFreeChip(c, dt, bounds){
+   circle-vs-edge clamp+restitution against the two static playfield
+   bounds, plus the player's own hole-card obstacles above — no chip-vs-
+   chip collision (deliberately out of scope; "controlled chaos, not a
+   physics engine"). The dashboard (bounds.bottom) uses its own
+   floorRestitution, deliberately higher than the felt/wall restitution,
+   so a hard dashboard hit can send a chip back up into play rather than
+   just settling there (item 4) — floorFriction still damps the
+   horizontal slide on that same contact so it doesn't skate forever. */
+function stepFreeChip(c, dt, bounds, cardRects){
   const cfg = POT_SMASH_PHYSICS_CONFIG;
   c.vy += cfg.gravity*dt;
   c.x += c.vx*dt; c.y += c.vy*dt;
@@ -1841,10 +1953,11 @@ function stepFreeChip(c, dt, bounds){
   else if (c.x+c.radius > bounds.right){ c.x = bounds.right-c.radius; c.vx = -c.vx*cfg.restitution; bounceVel = Math.abs(c.vx); }
   if (c.y-c.radius < bounds.top){ c.y = bounds.top+c.radius; c.vy = -c.vy*cfg.restitution; bounceVel = Math.max(bounceVel, Math.abs(c.vy)); }
   else if (c.y+c.radius > bounds.bottom){
-    c.y = bounds.bottom-c.radius; c.vy = -c.vy*cfg.restitution; c.vx *= cfg.floorFriction;
+    c.y = bounds.bottom-c.radius; c.vy = -c.vy*cfg.floorRestitution; c.vx *= cfg.floorFriction;
     bounceVel = Math.max(bounceVel, Math.abs(c.vy));
   }
   if (bounceVel>0) maybePlayBounceSound(c, bounceVel);
+  resolveCardCollisions(c, cardRects);
   applyChipTransform(c);
 }
 /* Shared rAF clock driving every free-flight chip for a fixed wall-clock
@@ -1852,10 +1965,10 @@ function stepFreeChip(c, dt, bounds){
    coordinated event rather than chips drifting out of sync with each
    other. Each chip stays completely still at its exact pulled-from-the-
    tower position until its own releaseDelay elapses (measured from this
-   phase's real start, t0) — that's the tower-breakup stagger (item 6):
-   chips pop free in a quick cascade instead of the whole tower vanishing
-   on one frame, without any dedicated stack-physics simulation. */
-function runPhysicsFreePhase(chips, bounds, budgetMs){
+   phase's real start, t0) — that's the tower-breakup stagger: chips pop
+   free in a quick cascade instead of the whole tower vanishing on one
+   frame, without any dedicated stack-physics simulation. */
+function runPhysicsFreePhase(chips, bounds, budgetMs, cardRects){
   return new Promise(resolve=>{
     const t0 = performance.now();
     let last = t0;
@@ -1865,7 +1978,7 @@ function runPhysicsFreePhase(chips, bounds, budgetMs){
       last = now;
       chips.forEach(c=>{
         if (now-t0 < c.releaseDelay) return;
-        stepFreeChip(c, dt, bounds);
+        stepFreeChip(c, dt, bounds, cardRects);
       });
       if (now < endAt) requestAnimationFrame(frame); else resolve();
     }
@@ -1882,20 +1995,31 @@ function runPhysicsFreePhase(chips, bounds, budgetMs){
    final rect is known before its ease starts (same guarantee flyChip's
    placeholder trick relies on) and later-starting chips still see earlier
    ones' reservations already reflected in tower height.
-   The ease itself uses each chip's own attractPow (item 10) — a power
-   curve rather than a straight lerp so early progress is barely
-   perceptible and the pull becomes visibly more decisive as it nears the
-   bank; a chip flagged as a "late snap" (the last ~18% to start, see
-   spawnPhysicsChip) gets a shorter attractMs and a steeper attractPow, so
-   the very last few chips visibly snap home harder/faster for a
-   satisfying finish rather than the whole burst just petering out evenly.
-   A small perpendicular "bow" (sine-shaped, zero at both ends) is layered
-   on top of the straight-line lerp so the path visibly curves in toward
-   the bank instead of sliding there in a flat line — reads as magnetism,
-   not a slide. settleSlot() on arrival hands the element back to the real
-   bank pile for good — same primitive an ordinary payout uses, so nothing
-   about the DOM handoff is bespoke to this effect. */
-function runPhysicsAttractionPhase(chips, bankContainer, bankP){
+   The ease itself uses each chip's own attractPow — a power curve rather
+   than a straight lerp, continuously derived from this chip's own place
+   in the stagger order (see spawnPhysicsChip): early starters ramp
+   gently (the suction "just twitching"), later starters pull in faster/
+   more decisively, and the last ~15% ("late snap") get a shorter
+   attractMs and the steepest attractPow on top — the rogue chips
+   aggressively yanked in at the end (item 7).
+   The path itself is a quadratic bezier through `hatchGeo.point` — "a
+   point ABOVE the hatch" — rather than a straight line or a generic bow:
+   chips arc up/sideways toward that point first, then visibly dive DOWN
+   from it into the real claimed slot (item 5), each with its own small
+   hatchJitterX/Y so a whole burst doesn't trace one identical curve. The
+   instant a chip's path crosses `hatchGeo.diveY` (the hatch's own bottom
+   edge) it's considered to have visibly entered the hatch and is snapped
+   invisible right there (opacity:0, a discrete state change — not a
+   fade, and never before this exact crossing, per the "fully visible
+   until they enter the hatch" brief) — it keeps moving invisibly through
+   its last stretch inside the recessed compartment and reappears as a
+   perfectly normal resting chip the instant settleSlot() hands it back
+   to the real pile below. If the hatch isn't laid out for some reason,
+   hatchGeo is null and this falls back to a plain straight-line lerp
+   instead of breaking. settleSlot() on arrival hands the element back to
+   the real bank pile for good — same primitive an ordinary payout uses,
+   so nothing about the DOM handoff is bespoke to this effect. */
+function runPhysicsAttractionPhase(chips, bankContainer, bankP, hatchGeo){
   if (!chips.length) return Promise.resolve();
   return new Promise(resolve=>{
     const start = performance.now();
@@ -1911,21 +2035,27 @@ function runPhysicsAttractionPhase(chips, bankContainer, bankP){
         }
         const t = Math.min(1, (now-c._t0)/c.attractMs), eased = Math.pow(t, c.attractPow);
         const target = c._placeholder.getBoundingClientRect();
-        const tx = target.left+target.width/2, ty = target.top+target.height/2;
-        const dxT = tx-c._startX, dyT = ty-c._startY;
-        const bow = Math.sin(Math.PI*t) * c.bowAmount, bowLen = Math.hypot(dxT,dyT) || 1;
-        c.x = c._startX + dxT*eased + (-dyT/bowLen)*bow;
-        c.y = c._startY + dyT*eased + (dxT/bowLen)*bow;
+        const p2x = target.left+target.width/2, p2y = target.top+target.height/2;
+        if (hatchGeo){
+          const it = 1-eased;
+          const p1x = hatchGeo.point.x+c.hatchJitterX, p1y = hatchGeo.point.y+c.hatchJitterY;
+          c.x = it*it*c._startX + 2*it*eased*p1x + eased*eased*p2x;
+          c.y = it*it*c._startY + 2*it*eased*p1y + eased*eased*p2y;
+        } else {
+          c.x = c._startX + (p2x-c._startX)*eased;
+          c.y = c._startY + (p2y-c._startY)*eased;
+        }
         c.rot = c._startRot + (0-c._startRot)*eased;
+        if (!c._vanished && hatchGeo && c.y >= hatchGeo.diveY){ c._vanished = true; c.el.style.opacity = '0'; }
         applyChipTransform(c);
         if (t<1) return;
         c.state = 'collected';
         c.el.style.position=''; c.el.style.left=''; c.el.style.top=''; c.el.style.width='';
         c.el.style.height=''; c.el.style.margin=''; c.el.style.transform=''; c.el.style.willChange='';
-        c.el.style.pointerEvents=''; c.el.style.transition='';
+        c.el.style.pointerEvents=''; c.el.style.transition=''; c.el.style.opacity='';
         settleSlot(bankContainer, c._placeholder, c.el);
         bankPending = Math.max(0, bankPending-1);
-        Sound.chipCollect();
+        Sound.chipCollect(c.lateSnap ? 1.3 : 1);
         remaining--;
       });
       if (remaining>0) requestAnimationFrame(frame); else resolve();
@@ -1935,13 +2065,15 @@ function runPhysicsAttractionPhase(chips, bankContainer, bankP){
 }
 /* Full free-physics burst for the human's own `potN` real pot chips:
    pulls them for real off #pot-stacks (the SAME takeChipFromPile()
-   primitive flyChip() uses — never a decorative clone), bounces them for
-   a fixed budget, then magnetically collects them into the real bank
-   pile. potPending/bankPending are held busy for the whole operation —
-   the exact same mutual-exclusion convention transferChips()'s
-   addPending callback already uses — so render()'s renderPot()/
-   renderBank() idle-bootstrap checks can never fight this in-flight
-   physics layer for the same DOM elements. */
+   primitive flyChip() uses — never a decorative clone), bounces them
+   (against the felt/dashboard boundaries AND the player's own hole
+   cards — item 3) for a fixed budget, opens the bank's intake hatch
+   (item 5), magnetically collects them into the real bank pile through
+   it, then closes the hatch. potPending/bankPending are held busy for
+   the whole operation — the exact same mutual-exclusion convention
+   transferChips()'s addPending callback already uses — so render()'s
+   renderPot()/renderBank() idle-bootstrap checks can never fight this
+   in-flight physics layer for the same DOM elements. */
 async function runPotBreakPhysics(potN, impactPoint){
   if (!(potN>0)) return;
   const potContainer = $('pot-stacks'), pPile = potPile();
@@ -1953,6 +2085,7 @@ async function runPotBreakPhysics(potN, impactPoint){
   document.body.appendChild(layer);
 
   const bounds = potSmashBounds();
+  const cardRects = playerCardRects();
   const chips = [];
   for (let i=0;i<potN;i++){
     const taken = takeChipFromPile(potContainer, pPile);
@@ -1962,8 +2095,19 @@ async function runPotBreakPhysics(potN, impactPoint){
   }
   if (!chips.length){ layer.remove(); return; }
 
-  await runPhysicsFreePhase(chips, bounds, POT_SMASH_PHYSICS_CONFIG.freeMs);
-  await runPhysicsAttractionPhase(chips, bankContainer, bankP);
+  await runPhysicsFreePhase(chips, bounds, POT_SMASH_PHYSICS_CONFIG.freeMs, cardRects);
+
+  // Collection beat: a small mechanical CLICK, the hatch opens, a brief
+  // beat to let that read before anything dives in, then the staggered
+  // suction cascade, then a heavier CLUNK as it shuts again.
+  Sound.hatchOpen();
+  openHatch();
+  await sleep(160);
+  await runPhysicsAttractionPhase(chips, bankContainer, bankP, hatchApproachGeometry());
+  Sound.hatchClose();
+  closeHatch();
+  await sleep(140);
+
   layer.remove();
 }
 /* Top-level pot-smash orchestrator: TOTAL plate drop -> impact (felt

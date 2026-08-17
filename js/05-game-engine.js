@@ -1423,29 +1423,23 @@ async function resolveEliminations(g, outcome){
   return {koCount:humanKOs};
 }
 
-/* Shared K.O.!/ELIMINATED! presentation — one pipeline for both variants
-   (see resolveEliminations above for how `ko` is decided). Stage sequence:
-   recognition beat -> shock face + card jolt -> escalating horizontal
-   hit-stun -> brief anticipation hold -> POP (recoil, dead face, stamp,
-   sound) -> aftermath settle into the permanent .dead state.
-   Deliberately not deathSpin() (which fades the avatar away) — this card
-   swells and shakes before popping, per the Phase 1 plan. All timings/
-   intensities come from ELIMINATION_CONFIG so the sequence can be retuned
-   after playtesting without touching this function. */
 /* Shared K.O.!/ELIMINATED! presentation (see resolveEliminations above for
-   how `ko` is decided). RETRO ARCADE DAMAGE: a little enemy panel taking
-   repeated hits, going unstable, then breaking — authored as a sequence
-   of short one-shot CSS hit classes separated by JS-timed pauses (never
-   one long continuous animation), so the actual HIT -> HIT -> HIT -> HIT
-   -> CRITICAL -> POP rhythm lives here in JS, not in CSS easing. Stage
-   sequence: recognition beat -> shock face + opening jolt -> escalating,
-   discrete-scale-jumping horizontal HITs ->
-   CRITICAL stroboscopic jitter -> a brief dead-still freeze (anticipation)
-   -> POP (hard snap: recoil, dead face swap, K.O.!/
-   ELIMINATED! stamped into the action bar — never over the face — plus
-   sound) -> aftermath settle into the permanent .dead state. All timings/
-   intensities come from ELIMINATION_CONFIG. Deliberately not deathSpin
-   (fades the avatar away) and not a smooth/floaty damage version. */
+   how `ko` is decided). Physical-polish redesign: a failed player module
+   getting violently ejected from the machine, not a long theatrical damage
+   ladder. Stage sequence: brief settle -> defeated expression -> 2-3 short
+   brutal THUNKs -> K.O./ELIMINATED stamp (established action-bar slot,
+   never over the face) -> hardware powers down (flicker, dim) -> a short
+   "unlatching" glitch (reuses the existing stroboscopic .elim-critical
+   jitter) -> a brief anticipation beat -> the whole panel is violently
+   EJECTED from its slot (.elim-eject, a fast rotate+translate+fade with a
+   forwards fill, so the panel simply stays gone afterward — no DOM removal
+   needed). All timings/intensities come from ELIMINATION_CONFIG. This
+   always runs strictly after the pot-smash payout ceremony has fully
+   resolved (resolveEliminations is only ever called once
+   runShowdownAwardSequence's payout has completed — untouched by this
+   pass) and TABLE CLEARED still can't appear until every busted player's
+   full sequence here, including the eject, has resolved (resolveEliminations
+   awaits this function in a loop — also untouched). */
 async function playElimination(p, opts){
   const ko = !!(opts && opts.ko);
   const e = seatEls[p.id];
@@ -1453,7 +1447,6 @@ async function playElimination(p, opts){
   const idx = game.players.indexOf(p);
   const cfg = ko ? ELIMINATION_CONFIG.koTimings : ELIMINATION_CONFIG.elimTimings;
   const shake = ko ? ELIMINATION_CONFIG.shakeIntensity.ko : ELIMINATION_CONFIG.shakeIntensity.elim;
-  const scaleTarget = ko ? ELIMINATION_CONFIG.scaleGrowth.ko : ELIMINATION_CONFIG.scaleGrowth.elim;
   const hits = ko ? ELIMINATION_CONFIG.hitCount.ko : ELIMINATION_CONFIG.hitCount.elim;
   const card = e.card;
 
@@ -1476,34 +1469,26 @@ async function playElimination(p, opts){
       e.actionSlot.classList.add('elim-slam');
     }
   };
-
-  let curScale = 1;
-  // The card's resting (non-animated) transform is always this inline
-  // value — .elim-hit/.elim-critical/.elim-pop are real CSS animations,
-  // which always take precedence over it while actively playing, and
-  // handing back to it cleanly the instant their class is removed. Never
-  // fought over with a competing CSS-class-based transform.
-  const setScale = v=>{
-    curScale = v;
-    card.style.setProperty('--elim-cur-scale', v.toFixed(3));
-    card.style.transform = 'scale(' + v.toFixed(3) + ')';
-  };
   const hit = mult=>{
     const dir = Math.random()<0.5 ? -1 : 1;
-    const ms = Math.round(110 + mult*16);
-    card.style.setProperty('--hit-dx', Math.round(dir*(6+3.2*mult)*shake) + 'px');
-    card.style.setProperty('--hit-dy', Math.round((Math.random()<0.35 ? -1 : 0)*(1+mult*.5)) + 'px');
-    card.style.setProperty('--hit-ms', ms + 'ms');
+    card.style.setProperty('--hit-dx', Math.round(dir*(9+4*mult)*shake) + 'px');
+    card.style.setProperty('--hit-dy', Math.round((Math.random()<0.4 ? -1 : 0)*(1+mult)) + 'px');
+    card.style.setProperty('--hit-ms', cfg.hitMs + 'ms');
     card.classList.remove('elim-hit'); void card.offsetWidth; card.classList.add('elim-hit');
-    return ms;
+    Sound.koThunk(1+mult*0.35);
+    haptic(18+Math.round(mult*10));
   };
   const clearHit = ()=> card.classList.remove('elim-hit');
 
   if (motionOff()){
     // Same accessibility contract as the rest of the game (see playDeath's
     // own motionOff() guard): jump straight to the settled end state
-    // rather than skipping the reaction entirely.
+    // rather than skipping the reaction entirely. The panel is simply
+    // gone (elim-eject's own forwards fill resolves instantly under the
+    // global [data-motion="off"]/prefers-reduced-motion CSS override) —
+    // no violent motion is ever forced on a reduced-motion user.
     showFace('dead');
+    card.classList.add('elim-eject');
     e.root.classList.add('dead');
     stampActionBar();
     Sound.busted(false);
@@ -1512,60 +1497,57 @@ async function playElimination(p, opts){
     return;
   }
 
-  setScale(1);
-  await sleep(cfg.recognitionMs);
+  // SETTLE — a brief beat right as the payout ceremony has just finished.
+  await sleep(cfg.settleMs);
 
-  // SHOCK — snap face, one hard opening jolt
+  // DEFEATED EXPRESSION
   showFace('shock');
-  haptic(12);
-  const shockMs = hit(0.6);
-  await sleep(Math.max(cfg.shockMs, shockMs));
-  clearHit();
 
-  // REPEATED DAMAGE — discrete HITs; gaps shrink as it escalates (BAM …
-  // pause … BAM … pause … BAM-BAM), card grows in visible steps (not a
-  // tween). Late hits arrive faster and hold slightly harder.
-  const hitMs = 130;
-  const gapBudget = Math.max(hits*70, cfg.escalateMs - hits*hitMs);
-  const gapUnit = gapBudget / ((hits*(hits+1))/2);
+  // THUNK -> THUNK (-> THUNK for a K.O.) — a few short, brutal jolts, not
+  // an escalating hit ladder.
   for (let i=0;i<hits;i++){
-    const t = hits<=1 ? 1 : i/(hits-1);
-    const gap = Math.round(gapUnit * (hits - i));
-    await sleep(gap);
-    setScale(1 + (scaleTarget-1) * ((i+1)/hits));
-    const ms = hit(1 + t*2.2);
-    haptic(10 + Math.round(t*10));
-    const holdExtra = i >= hits-2 ? 55 : 0;   // harder late hits linger a beat longer — micro-freeze
-    await sleep(ms + holdExtra);
+    hit(1 + i*0.6);
+    await sleep(cfg.hitMs + cfg.hitHoldMs);
     clearHit();
+    if (i<hits-1) await sleep(cfg.hitGapMs);
   }
 
-  // CRITICAL — maximum instability: rapid stroboscopic jitter and the
-  // brightest, tightest hit-stun, right at the brink.
+  // K.O./ELIMINATED stamp — same established action-bar slot as before.
+  // No crossfade: the face swap is a straight innerHTML replace (see
+  // showFace), so it genuinely changes in one frame.
+  showFace('dead');
+  stampActionBar();
+  Sound.busted(false);
+  if (ko){ Sound.humanKO(); haptic(40); }
+
+  // HARDWARE DIES — lights/readouts flicker, then fail dim.
+  card.style.setProperty('--fail-ms', cfg.failMs + 'ms');
+  card.classList.add('elim-fail');
+  await sleep(cfg.failMs);
+
+  // CLICK/FAIL — the panel looks momentarily broken/unlatched. Reuses the
+  // existing stroboscopic .elim-critical jitter (JS still owns how long
+  // this window lasts, same as the old design).
   card.classList.add('elim-critical');
-  await sleep(Math.round(cfg.anticipateMs*0.55));
+  Sound.koFailClick();
+  await sleep(cfg.glitchMs);
   card.classList.remove('elim-critical');
 
-  // FREEZE — the "oh no…" beat: everything stops for a fraction of a
-  // second. Static, not an animation, so it can't be interrupted by one.
-  card.style.transform = 'scale(' + curScale.toFixed(3) + ') translateY(-1px)';
-  card.style.filter = 'brightness(1.12) contrast(1.08)';
-  await sleep(Math.round(cfg.anticipateMs*0.45));
-  card.style.filter = '';
+  await sleep(cfg.anticipateMs);
 
-  // POP — the hard snap. No crossfade: the face swap is a straight
-  // innerHTML replace (see showFace), so it genuinely changes in one
-  // frame, exactly in step with the recoil.
-  showFace('dead');
-  card.classList.add('elim-pop');
-  Sound.busted(false);
-  if (ko){ Sound.humanKO(); haptic(40); } else { haptic(20); }
-  stampActionBar();
-  await sleep(cfg.popMs);
-  card.classList.remove('elim-pop');
-  card.style.transform = '';
+  // EJECT — the whole panel violently expelled from its slot, like a
+  // spent shell casing. --eject-dir mirrors the direction per opponent so
+  // a run of several K.O.s in the same TABLE CLEAR doesn't look identical
+  // every time. forwards fill means the panel just stays gone — nothing
+  // to remove from the DOM, nothing for a later render() to fight over.
+  card.style.setProperty('--eject-dir', Math.random()<0.5 ? '-1' : '1');
+  card.style.setProperty('--eject-ms', cfg.ejectMs + 'ms');
+  card.classList.add('elim-eject');
+  Sound.koEject();
+  haptic(ko ? [30,20,45] : [24,16,30]);
+  await sleep(cfg.ejectMs);
+
   e.root.classList.add('dead');
-
   await sleep(cfg.aftermathMs);
   render();
 }
@@ -1677,8 +1659,8 @@ function resetRunSeatDOM(g){
     }
     if (e.card){
       e.card.getAnimations().forEach(a=>a.cancel());
-      e.card.classList.remove('elim-hit','elim-critical','elim-freeze','elim-pop','winner-pop');
-      ['transform','opacity','visibility','filter','animation','transition','--elim-cur-scale','--hit-dx','--hit-dy','--hit-ms'].forEach(k=>e.card.style.removeProperty(k));
+      e.card.classList.remove('elim-hit','elim-critical','elim-freeze','elim-pop','elim-fail','elim-eject','winner-pop');
+      ['transform','opacity','visibility','filter','animation','transition','--elim-cur-scale','--hit-dx','--hit-dy','--hit-ms','--fail-ms','--eject-dir','--eject-ms'].forEach(k=>e.card.style.removeProperty(k));
     }
     if (e.cardsContainer) e.cardsContainer.innerHTML = '';
     if (e.bubble){ e.bubble.textContent=''; e.bubble.className='action-bubble'; }

@@ -143,7 +143,10 @@
 /* FREEZE — the "oh no" hold: static, no animation, just a tense held pose. */
 .elim-freeze{ transform:scale(var(--elim-cur-scale,1)) translateY(-1px); filter:brightness(1.12) contrast(1.08); }
 
-/* POP — the hard snap: compress, overshoot, settle. Steps, not easing. */
+/* POP — the hard snap: compress, overshoot, settle. Steps, not easing.
+   No longer used by playElimination() itself (replaced by the fail/eject
+   sequence below), left in place since it costs nothing and nothing else
+   references it being removed. */
 @keyframes elimPop{
   0%{ transform:scale(var(--elim-cur-scale,1)); filter:brightness(1.1); }
   25%{ transform:scale(calc(var(--elim-cur-scale,1)*.6)); filter:brightness(2.4) contrast(1.3); }
@@ -152,6 +155,37 @@
   100%{ transform:scale(1); filter:brightness(1); }
 }
 .elim-pop{ animation:elimPop var(--elim-pop-ms,300ms) steps(5,end) forwards; }
+
+/* HARDWARE FAILURE — lights/readouts flicker then dim, right after the
+   K.O./ELIMINATED stamp: one last power flare, a hard dip, a brief
+   flicker recovery, then a dim, desaturated dead-hardware look that
+   persists (forwards) through the following unlatch/eject beats. */
+@keyframes elimPowerFail{
+  0%{ filter:brightness(1) saturate(1); }
+  20%{ filter:brightness(1.9) saturate(1.35); }
+  38%{ filter:brightness(.22) saturate(.35); }
+  54%{ filter:brightness(.9) saturate(.75); }
+  76%{ filter:brightness(.18) saturate(.3); }
+  100%{ filter:brightness(.16) saturate(.22) contrast(.85); }
+}
+.elim-fail{ animation:elimPowerFail var(--fail-ms,220ms) steps(6,end) forwards; }
+
+/* EJECT — the whole opponent panel violently expelled from its slot, like
+   a spent shell casing or a cartridge kicked out. --eject-dir (-1 or 1,
+   set by JS per opponent) mirrors the launch left/right so several K.O.s
+   in the same TABLE CLEAR don't all look identical. Steps(), not smooth
+   easing, matching every other stage in this family — a snap, not a
+   glide. Rotation stays well short of a full spin so it still reads as
+   the panel, not a generic spinning rectangle. forwards fill means the
+   panel simply stays gone afterward — nothing to remove from the DOM. */
+@keyframes elimEject{
+  0%{ transform:translate(0,0) rotate(0deg) scale(1); opacity:1; }
+  10%{ transform:translate(calc(var(--eject-dir,1)*-3px),4px) rotate(calc(var(--eject-dir,1)*-3deg)) scale(1.03); opacity:1; }
+  40%{ transform:translate(calc(var(--eject-dir,1)*22px),-70px) rotate(calc(var(--eject-dir,1)*22deg)) scale(.92); opacity:1; }
+  74%{ transform:translate(calc(var(--eject-dir,1)*46px),-170px) rotate(calc(var(--eject-dir,1)*38deg)) scale(.76); opacity:.8; }
+  100%{ transform:translate(calc(var(--eject-dir,1)*66px),-280px) rotate(calc(var(--eject-dir,1)*48deg)) scale(.58); opacity:0; }
+}
+.elim-eject{ animation:elimEject var(--eject-ms,420ms) steps(7,end) forwards; }
 
 /* the shuffle ritual before every deal */
 #shuffle-anim{ position:absolute; top:52%; left:50%; width:0; height:0; z-index:4; }

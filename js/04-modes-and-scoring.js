@@ -25,20 +25,20 @@ const ELIMINATION_CONFIG = {
   criticalStackBB: 5,     // below this: push/fold framing instead of sized raises
   foldGateWidenPerBB: 0.018,
 
-  // playElimination() stage durations, ms — see index.html §6 in the Phase 1
-  // plan. `escalateMs` is the time budget for the whole repeated-damage hit
-  // loop (hits + the gaps between them); `anticipateMs` is the budget for
-  // the CRITICAL jitter + the following freeze hold.
-  koTimings:   { recognitionMs:400, shockMs:220, escalateMs:2500, anticipateMs:450, popMs:280, aftermathMs:1100 },
-  elimTimings: { recognitionMs:250, shockMs:160, escalateMs:1200, anticipateMs:280, popMs:220, aftermathMs:700 },
+  // playElimination() stage durations, ms — physical-polish pass: a
+  // concentrated "settle -> THUNK -> THUNK (-> THUNK) -> stamp -> hardware
+  // fails -> unlatch glitch -> violent eject" rhythm, replacing the old
+  // long escalating-hit-ladder version (~2.8s/~5s). Target total runtime
+  // is roughly 2-2.5s (elim) / 2.3-2.8s (ko) — a brutal punctuation mark
+  // after the payout ceremony, not a second theatrical set piece.
+  koTimings:   { settleMs:190, hitMs:160, hitHoldMs:65, hitGapMs:100, failMs:300, glitchMs:140, anticipateMs:110, ejectMs:480, aftermathMs:160 },
+  elimTimings: { settleMs:150, hitMs:140, hitHoldMs:50, hitGapMs:90,  failMs:230, glitchMs:110, anticipateMs:90,  ejectMs:410, aftermathMs:130 },
 
-  // number of discrete repeated-damage hits in the HIT->HIT->HIT->HIT->
-  // CRITICAL->POP rhythm (not counting the opening shock jolt)
-  hitCount: { ko:6, elim:3 },
+  // number of discrete THUNKs (a K.O. lands one harder than a plain elimination)
+  hitCount: { ko:3, elim:2 },
 
-  // relative intensities the blocky horizontal hit/pop keyframes scale against
-  shakeIntensity: { ko:1.6, elim:1.0 },
-  scaleGrowth:    { ko:1.14, elim:1.06 },
+  // relative intensity the blocky horizontal hit keyframe scales against
+  shakeIntensity: { ko:1.7, elim:1.1 },
 
   // brief hold between the final K.O.'s defeated card settling and the
   // TABLE CLEARED banner appearing — never cut away mid-payoff

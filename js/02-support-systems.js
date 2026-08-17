@@ -328,13 +328,13 @@ const Sound = (function(){
   const CHIP_COLLECT_WINDOW_MS = 180;
   const CHIP_COLLECT_SOFTEN_AFTER = 5;
 
-  /* `power` (juice pass v2, item 9) — an optional intensity multiplier
-     around 1.0, only ever passed by Sound.chipBounce() so far (soft ping
-     ~0.7 / normal clack 1.0 / hard plonk ~1.4, see maybePlayBounceSound in
-     06-presentation.js). Every other existing caller (chipLand,
-     chipCollect) omits it and gets exactly the prior behaviour — louder
-     AND lower-pitched for a hard hit (plonkier), quieter and higher-
-     pitched for a soft one (crisper ping), rather than just a volume
+  /* `power` — an optional intensity multiplier around 1.0, passed by
+     Sound.chipBounce() (soft ping ~0.7 / normal clack 1.0 / hard plonk
+     ~1.4, see maybePlayBounceSound in 06-presentation.js) and by
+     Sound.chipCollect() for its own "late snap" chips (~1.3). Every other
+     caller (chipLand) omits it and gets exactly the prior behaviour —
+     louder AND lower-pitched for a hard hit (plonkier), quieter and
+     higher-pitched for a soft one (crisper ping), rather than just a volume
      change, so collision character actually varies with how hard the hit
      was, not just how loud it is. */
   function chipClink(soft, power){
@@ -578,11 +578,58 @@ const Sound = (function(){
   /* -- 14. Human K.O. stamp -- the "you personally defeated that opponent"
      payoff, following bustedSound()'s procedural-synth pattern but bigger:
      a harder noise thump plus a short descending three-note stamp, timed
-     to land under playElimination()'s POP stage (elimination mode only). */
+     to land under playElimination()'s stamp stage (elimination mode only). */
   function humanKOSound(){
     withVoiceCap(480, ()=>{
       noise(0.12, 0.13, { filterType:'lowpass', freq:360, freqSweepTo:80, decayPow:1.8 });
       [294,220,147].forEach((f,i)=>blip(f, 0.13, 'square', 0.055-i*0.006, i*0.06));
+    });
+  }
+
+  /* -- 14b. K.O. physical-panel beats (physical-polish pass) — the panel
+     itself, not the human-specific fanfare above. `mult` scales a THUNK's
+     weight the same way playElimination()'s own hit escalation already
+     does. koFailClick is the tiny "unlatching" tick right before the
+     panel gets ejected; koEject is the short mechanical clack/whoosh of
+     it actually leaving — a spent-casing character (a quick bandpassed
+     sweep plus a metallic double-blip), not a sci-fi whoosh. */
+  function koThunkSound(mult){
+    const m = mult||1;
+    withVoiceCap(200, ()=>{
+      noise(0.05+m*0.008, 0.075*Math.min(1.5,m), { filterType:'lowpass', freq:310-m*18, freqSweepTo:85, decayPow:1.9 });
+      blip(Math.max(58,84-m*7), 0.1, 'square', 0.042*Math.min(1.5,m));
+    });
+  }
+  function koFailClickSound(){
+    withVoiceCap(90, ()=>{
+      noise(0.018, 0.045, { filterType:'highpass', freq:3200, decayPow:3 });
+      blip(1400, 0.03, 'square', 0.02, 0.006);
+    });
+  }
+  function koEjectSound(){
+    withVoiceCap(220, ()=>{
+      noise(0.035, 0.09, { filterType:'bandpass', freq:1900, freqSweepTo:650, decayPow:2.4 });
+      blip(680, 0.055, 'square', 0.04, 0.008);
+      blip(230, 0.08, 'triangle', 0.032, 0.03);
+    });
+  }
+
+  /* -- 14c. Bank intake hatch (physical-polish pass) — open is a small
+     mechanical unlock click (light, high, brief); close is a heavier
+     CLUNK (low thump + a couple of low blips) so the two ends of the
+     hatch's motion are clearly distinct beats, not mirror images of each
+     other. */
+  function hatchOpenSound(){
+    withVoiceCap(140, ()=>{
+      noise(0.02, 0.05, { filterType:'highpass', freq:2600, decayPow:2.6 });
+      blip(920, 0.05, 'square', 0.03, 0.01);
+    });
+  }
+  function hatchCloseSound(){
+    withVoiceCap(260, ()=>{
+      noise(0.08, 0.12, { filterType:'lowpass', freq:260, freqSweepTo:75, decayPow:1.8 });
+      blip(150, 0.12, 'square', 0.055);
+      blip(90, 0.1, 'triangle', 0.04, 0.05);
     });
   }
 
@@ -671,13 +718,15 @@ const Sound = (function(){
       chipClink(chipBounceTimes.length > CHIP_BOUNCE_SOFTEN_AFTER, power);
     },
     /* Pot-smash physics — one chip settling into the bank during the
-       magnetic collection phase. */
-    chipCollect(){
+       magnetic collection phase. `power` (item 7) lets the last few
+       "late snap" chips land with a more pronounced clack than the
+       steady early cascade. */
+    chipCollect(power){
       if (!this.chipSfxEnabled) return;
       const now = performance.now();
       chipCollectTimes = chipCollectTimes.filter(t=>now-t < CHIP_COLLECT_WINDOW_MS);
       chipCollectTimes.push(now);
-      chipClink(chipCollectTimes.length > CHIP_COLLECT_SOFTEN_AFTER);
+      chipClink(chipCollectTimes.length > CHIP_COLLECT_SOFTEN_AFTER, power);
     },
     /* SFX V1 kill-switch — mirrors chipSfxEnabled, separate flag so the
        whole non-chip pass can be A/B'd off independently while testing. */
@@ -702,7 +751,12 @@ const Sound = (function(){
     arcadeLuck(kind){ if (this.sfxV1Enabled) arcadeLuckSound(kind); },
     arcadeBankTick(){ if (this.sfxV1Enabled) counterTickSound(true); },
     arcadeBankLock(){ if (this.sfxV1Enabled) counterLockSound(true); },
-    scoreSmash(major){ if (this.sfxV1Enabled) scoreSmashSound(major); }
+    scoreSmash(major){ if (this.sfxV1Enabled) scoreSmashSound(major); },
+    koThunk(mult){ if (this.sfxV1Enabled) koThunkSound(mult); },
+    koFailClick(){ if (this.sfxV1Enabled) koFailClickSound(); },
+    koEject(){ if (this.sfxV1Enabled) koEjectSound(); },
+    hatchOpen(){ if (this.sfxV1Enabled) hatchOpenSound(); },
+    hatchClose(){ if (this.sfxV1Enabled) hatchCloseSound(); }
   };
 })();
 function haptic(pattern){

@@ -275,9 +275,19 @@
    now instead of position:absolute) — the deal/collect flight animation
    only ever measures deck.lastElementChild's live getBoundingClientRect()
    at flight time, so wrapping/resizing/repositioning the station here is
-   safe on its own; no JS changes needed. */
+   safe on its own; no JS changes needed.
+   Physical-polish pass, item 6: shifted from left:15% to left:27% — at
+   15% the deck sat almost directly above the bank compartment (#hud-left
+   is the dashboard's own left ~96px column, roughly the same horizontal
+   band), crowding the bank intake hatch's own "arc up to a point above
+   the hatch" approach path for collected chips (see
+   hatchApproachGeometry in 06-presentation.js). A modest rightward shift
+   gives the hatch a clear dedicated corridor while the deck keeps its
+   exact size/styling/dealing behaviour and stays well clear of the board
+   (left:50%) and every opponent seat (all up at top:7-12%, nowhere near
+   this bottom corner). */
 .dealer-station{
-  position:absolute; left:15%; top:89%; transform:translate(-50%,-50%);
+  position:absolute; left:27%; top:89%; transform:translate(-50%,-50%);
   display:flex; flex-direction:column; align-items:center; gap:2px;
   z-index:5; pointer-events:none;
 }
@@ -822,6 +832,7 @@
   box-shadow:inset 0 3px 0 rgba(0,0,0,.45), inset 0 -1px 0 rgba(255,255,255,.07);
 }
 #hud-left{
+  position:relative;
   display:flex; align-items:flex-end; justify-content:center; padding:6px 4px;
   border:2px solid var(--px-ink); border-radius:2px;
   background:rgba(0,0,0,.36);
@@ -829,7 +840,11 @@
   /* Hard backstop for the bankroll pile: chip slot positions are computed
      from this box's real measured inner area (see bankPile() in JS), but
      this guarantees a resting chip can never visually spill past the
-     recessed compartment's border even if that measurement is ever off. */
+     recessed compartment's border even if that measurement is ever off.
+     Also what makes a physics chip diving down from above the hatch
+     visually vanish the instant it crosses this box's top edge (see
+     runPhysicsAttractionPhase in 06-presentation.js) — no manual fade
+     needed, it's the same clip this compartment already relied on. */
   overflow:hidden;
 }
 /* #hud-tower's own width/height are set inline by bankPile() to match
@@ -842,6 +857,35 @@
    still gets comes from that shared .chip-clump selector, which already
    matches bank towers too (.chip-clump is the same class for both). */
 #hud-tower .chip-disc{ width:21px; height:21px; margin-top:-13px; }
+/* Bank intake hatch (physical-polish pass, item 5) — a small seam built
+   into the TOP of the existing recessed bank compartment, not a new
+   floating component: two thin leaves meeting at a centre seam by
+   default (closed), sliding apart to reveal a gap when the pot-smash
+   physics controller opens it for collection (see openHatch/closeHatch
+   in 06-presentation.js). Sits above #hud-tower's own chip stacks (which
+   rest at the BOTTOM of this box — see #hud-left's align-items:flex-end)
+   so it never visually competes with them. Purely a JS-toggled class;
+   the leaves themselves have no independent state beyond open/closed. */
+.bank-hatch{
+  position:absolute; left:5px; right:5px; top:3px; height:8px; z-index:3;
+  display:flex; gap:0; pointer-events:none;
+}
+.bank-hatch-leaf{
+  flex:1; background:linear-gradient(180deg,#000,rgba(0,0,0,.65));
+  border:1px solid var(--px-ink);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.09);
+}
+.bank-hatch-leaf-l{ border-right:none; border-radius:2px 0 0 2px; transform-origin:left center; }
+.bank-hatch-leaf-r{ border-left:none; border-radius:0 2px 2px 0; transform-origin:right center; }
+.bank-hatch.is-open .bank-hatch-leaf{ box-shadow:inset 0 1px 0 rgba(255,255,255,.09), 0 0 6px color-mix(in srgb,var(--accent) 55%,transparent); }
+.bank-hatch.is-open .bank-hatch-leaf-l{ animation:hatchOpenL 160ms steps(4,end) forwards; }
+.bank-hatch.is-open .bank-hatch-leaf-r{ animation:hatchOpenR 160ms steps(4,end) forwards; }
+@keyframes hatchOpenL{ to{ transform:translateX(-68%); } }
+@keyframes hatchOpenR{ to{ transform:translateX(68%); } }
+.bank-hatch.is-closing .bank-hatch-leaf-l{ animation:hatchCloseL 130ms steps(4,end) forwards; }
+.bank-hatch.is-closing .bank-hatch-leaf-r{ animation:hatchCloseR 130ms steps(4,end) forwards; }
+@keyframes hatchCloseL{ from{ transform:translateX(-68%); } to{ transform:translateX(0); } }
+@keyframes hatchCloseR{ from{ transform:translateX(68%); } to{ transform:translateX(0); } }
 #hud-mid{
   display:flex; flex-direction:column; align-items:center; gap:6px; min-width:0;
 }
