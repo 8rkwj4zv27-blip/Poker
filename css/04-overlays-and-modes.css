@@ -170,22 +170,70 @@
 }
 .elim-fail{ animation:elimPowerFail var(--fail-ms,220ms) steps(6,end) forwards; }
 
-/* EJECT — the whole opponent panel violently expelled from its slot, like
-   a spent shell casing or a cartridge kicked out. --eject-dir (-1 or 1,
-   set by JS per opponent) mirrors the launch left/right so several K.O.s
-   in the same TABLE CLEAR don't all look identical. Steps(), not smooth
-   easing, matching every other stage in this family — a snap, not a
-   glide. Rotation stays well short of a full spin so it still reads as
-   the panel, not a generic spinning rectangle. forwards fill means the
-   panel simply stays gone afterward — nothing to remove from the DOM. */
-@keyframes elimEject{
-  0%{ transform:translate(0,0) rotate(0deg) scale(1); opacity:1; }
-  10%{ transform:translate(calc(var(--eject-dir,1)*-3px),4px) rotate(calc(var(--eject-dir,1)*-3deg)) scale(1.03); opacity:1; }
-  40%{ transform:translate(calc(var(--eject-dir,1)*22px),-70px) rotate(calc(var(--eject-dir,1)*22deg)) scale(.92); opacity:1; }
-  74%{ transform:translate(calc(var(--eject-dir,1)*46px),-170px) rotate(calc(var(--eject-dir,1)*38deg)) scale(.76); opacity:.8; }
-  100%{ transform:translate(calc(var(--eject-dir,1)*66px),-280px) rotate(calc(var(--eject-dir,1)*48deg)) scale(.58); opacity:0; }
+/* PORTRAIT EJECTION — replaces the old whole-panel `.elim-eject` fly-off
+   (a `.seat-card` translate/rotate/fade that read as a DOM panel being
+   slid away, not a machine ejecting something). The panel/socket now
+   never moves; only the portrait leaves, as an independent free-physics
+   object (see ejectPortrait/.ko-portrait in 06-presentation.js and
+   05-responsive-and-arcade.css). What's left here is just the socket's
+   own "dead" treatment. */
+
+/* EMPTY SOCKET — the real .avatar element right after its portrait has
+   been cloned off into physics (see ejectPortrait): dark, desaturated,
+   no border glow, reading as a dead recess rather than a lit component.
+   Persists until the seat is reset for the next table/DEV preview.
+   Selector deliberately scoped as `.seat:not(.you) .avatar.socket-dead`
+   (not just `.avatar.socket-dead`) — `.seat:not(.you) .avatar` in
+   03-action-console.css already sets border-color/box-shadow on every
+   opponent avatar at higher specificity, so a plain two-class selector
+   here would lose that cascade and never actually show. */
+.seat:not(.you) .avatar.socket-dead{
+  background:#0b0704; border-color:rgba(255,255,255,.12);
+  box-shadow:inset 0 3px 6px rgba(0,0,0,.65), 0 2px 0 rgba(0,0,0,.45);
 }
-.elim-eject{ animation:elimEject var(--eject-ms,420ms) steps(7,end) forwards; }
+
+/* SOCKET SPARK — a tiny, brief electrical sputter from the socket right
+   as the module gets forcibly expelled (item 7's "tiny spark", not a
+   particle show). One-shot, toggled by JS re-adding the class. */
+@keyframes socketSpark{
+  0%,100%{ box-shadow:inset 0 3px 6px rgba(0,0,0,.65), 0 2px 0 rgba(0,0,0,.45); }
+  15%,45%{ box-shadow:inset 0 3px 6px rgba(0,0,0,.65), 0 2px 0 rgba(0,0,0,.45), 0 0 7px 1px rgba(255,241,181,.85); }
+  30%{ box-shadow:inset 0 3px 6px rgba(0,0,0,.65), 0 2px 0 rgba(0,0,0,.45); }
+}
+.avatar-wrap.socket-spark .avatar{ animation:socketSpark 260ms steps(5,end); }
+
+/* PRELOAD/COMPRESSION — a clearly readable "something's being compressed
+   in there, about to let go" squash right before the K.O. blast (pop-
+   emphasis pass — replaces an earlier, too-subtle 1-2% version). The
+   portrait visibly flattens/preloads inside its socket: a real squash
+   (noticeably shorter + a touch wider), not a bulge. forwards fill holds
+   it at the compressed peak through the still/anticipation beat;
+   launchPortrait() removes the class in the same synchronous instant the
+   BLAM fires, and since nothing here declares a transition, that removal
+   snaps the socket back to normal instantly rather than easing back
+   ("housing snaps immediately back to normal"). --pressure-ms is set by
+   JS to match that beat's own anticipateMs so the squash finishes
+   compressing exactly as the blast lands, never before or after. */
+@keyframes portraitPreload{
+  0%{ transform:scale(1,1); }
+  60%{ transform:scale(1.05,0.9); }
+  100%{ transform:scale(1.08,0.86); }
+}
+.avatar-wrap.pressure-build{ animation:portraitPreload var(--pressure-ms,140ms) steps(5,end) forwards; }
+
+/* PANEL RECOIL — the opponent card/housing kicks up a few px and snaps
+   back the instant a portrait fires out of it (pop-emphasis pass): a
+   small, fast, physical reaction to the force of the ejection, not a
+   cosmetic flourish. Triggered by launchPortrait() re-adding this class
+   at the exact BLAM instant — same one-shot re-trigger pattern as
+   .elim-hit/.socket-spark elsewhere in this file. */
+@keyframes panelRecoil{
+  0%{ transform:translateY(0); }
+  25%{ transform:translateY(-4px); }
+  55%{ transform:translateY(1px); }
+  100%{ transform:translateY(0); }
+}
+.elim-recoil{ animation:panelRecoil 180ms steps(6,end); }
 
 /* the shuffle ritual before every deal */
 #shuffle-anim{ position:absolute; top:52%; left:50%; width:0; height:0; z-index:4; }

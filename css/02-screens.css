@@ -867,8 +867,17 @@
    so it never visually competes with them. Purely a JS-toggled class;
    the leaves themselves have no independent state beyond open/closed. */
 .bank-hatch{
+  /* TEMPORARILY HIDDEN (intake-polish pass) — the decorative leaf open/
+     close animation was making the open-top intake harder to read, not
+     easier, while the underlying physics (hatchApproachGeometry/
+     buildBankWalls, both measured off #hud-left directly, never off this
+     element) is completely unaffected by this. openHatch()/closeHatch()
+     in 06-presentation.js still run and still toggle these classes — they
+     just have nothing visible to animate right now. Revisit/redesign the
+     physical hatch once intake behaviour itself is fully final. */
+  display:none;
   position:absolute; left:5px; right:5px; top:3px; height:8px; z-index:3;
-  display:flex; gap:0; pointer-events:none;
+  gap:0; pointer-events:none;
 }
 .bank-hatch-leaf{
   flex:1; background:linear-gradient(180deg,#000,rgba(0,0,0,.65));

@@ -590,9 +590,7 @@ const Sound = (function(){
      itself, not the human-specific fanfare above. `mult` scales a THUNK's
      weight the same way playElimination()'s own hit escalation already
      does. koFailClick is the tiny "unlatching" tick right before the
-     panel gets ejected; koEject is the short mechanical clack/whoosh of
-     it actually leaving — a spent-casing character (a quick bandpassed
-     sweep plus a metallic double-blip), not a sci-fi whoosh. */
+     portrait gets blasted out (see 14d below for the ejection itself). */
   function koThunkSound(mult){
     const m = mult||1;
     withVoiceCap(200, ()=>{
@@ -606,11 +604,68 @@ const Sound = (function(){
       blip(1400, 0.03, 'square', 0.02, 0.006);
     });
   }
-  function koEjectSound(){
+
+  /* -- 14d. K.O. portrait ejection (physical-polish rework) — the module
+     itself getting kicked out, not the panel. koBlast is the one big
+     initial punch (heavier/lower than koEjectSound's old whoosh — this is
+     the whole portrait leaving, not a small panel-trim sound); each
+     koPortraitImpact is one meaningful mid-air ricochet, `power` scaled
+     from that bounce's own velocity (see maybePlayPortraitImpact) so a
+     glancing tap and a hard wall CLONK read differently, and `isExit`
+     marks the final forced-exit collision with an extra bright crack on
+     top. koSocketSpark is deliberately tiny — a brief contact short, not
+     a particle-show sting. */
+  /* THUNK-POP/BLAM — two distinct layers, not one blob: a low mechanical
+     "THUNK" body (the noise sweep + low square blips, as before, just
+     louder — this should read as the loudest of the three K.O. sound
+     families) plus a genuinely sharp, bright "POP" transient on top (the
+     new high blip) standing in for the plastic module actually releasing.
+     Small per-call pitch jitter — a rapid multi-K.O. sequence fires this
+     several times ~80-140ms apart, and identical repeats of one sample
+     read as a stutter rather than a rhythm; a ~±10% wobble is enough that
+     "POP - POP - POP - POP" sounds like a sequence of distinct hits. */
+  function koBlastSound(){
+    const j = 0.9 + Math.random()*0.2;
+    withVoiceCap(300, ()=>{
+      noise(0.06, 0.17, { filterType:'lowpass', freq:230*j, freqSweepTo:55*j, decayPow:1.5 });
+      blip(78*j, 0.13, 'square', 0.11);
+      blip(48*j, 0.16, 'square', 0.09, 0.02);
+      blip(1200*j, 0.025, 'square', 0.05, 0.004); // the sharp plastic-release "POP" on top of the low body
+    });
+  }
+  /* Heavy plastic/cabinet CLONK/KRAK/TOK/THUD — noticeably heavier than a
+     poker-chip bounce (lower frequencies, longer noise body). Small
+     per-call pitch jitter layered ON TOP of the existing power-based
+     scaling so two hits at similar velocity still sound like distinct
+     impacts, not one sample retriggered — same reasoning as koBlastSound.
+     `isExit` (final boundary release) gets a distinctly stronger, brighter
+     WHACK/KLANG on top — the portrait's actual send-off, not just another
+     bounce. */
+  function koPortraitImpactSound(power, isExit){
+    const p = power||1;
+    const j = 0.92 + Math.random()*0.16;
+    withVoiceCap(isExit?340:220, ()=>{
+      noise(0.04+p*0.02, (isExit?0.14:0.08)*Math.min(1.6,p), { filterType:'lowpass', freq:(260-p*20)*j, freqSweepTo:70*j, decayPow:1.8 });
+      blip(Math.max(70,110-p*14)*j, 0.09, 'square', 0.06*Math.min(1.6,p));
+      if (isExit){ blip(380, 0.07, 'triangle', 0.05, 0.02); blip(620, 0.03, 'square', 0.03, 0.045); }
+    });
+  }
+  /* Multi-K.O. only — two ejected portraits colliding mid-air. Heavier/
+     duller than a wall impact (a thicker double-thunk, no bright top
+     note) since it's plastic-on-plastic rather than plastic-on-machine. */
+  function koPortraitClackSound(power){
+    const p = power||1;
+    const j = 0.92 + Math.random()*0.16;
     withVoiceCap(220, ()=>{
-      noise(0.035, 0.09, { filterType:'bandpass', freq:1900, freqSweepTo:650, decayPow:2.4 });
-      blip(680, 0.055, 'square', 0.04, 0.008);
-      blip(230, 0.08, 'triangle', 0.032, 0.03);
+      noise(0.05+p*0.015, 0.09*Math.min(1.5,p), { filterType:'lowpass', freq:(200-p*12)*j, freqSweepTo:55*j, decayPow:1.7 });
+      blip(Math.max(55,90-p*10)*j, 0.1, 'square', 0.055*Math.min(1.5,p));
+      blip(Math.max(40,64-p*8)*j, 0.09, 'square', 0.038*Math.min(1.5,p), 0.02);
+    });
+  }
+  function koSocketSparkSound(){
+    withVoiceCap(70, ()=>{
+      noise(0.02, 0.04, { filterType:'highpass', freq:3800, decayPow:3.2 });
+      blip(1800, 0.02, 'square', 0.018, 0.004);
     });
   }
 
@@ -754,7 +809,10 @@ const Sound = (function(){
     scoreSmash(major){ if (this.sfxV1Enabled) scoreSmashSound(major); },
     koThunk(mult){ if (this.sfxV1Enabled) koThunkSound(mult); },
     koFailClick(){ if (this.sfxV1Enabled) koFailClickSound(); },
-    koEject(){ if (this.sfxV1Enabled) koEjectSound(); },
+    koBlast(){ if (this.sfxV1Enabled) koBlastSound(); },
+    koPortraitImpact(power,isExit){ if (this.sfxV1Enabled) koPortraitImpactSound(power,isExit); },
+    koPortraitClack(power){ if (this.sfxV1Enabled) koPortraitClackSound(power); },
+    koSocketSpark(){ if (this.sfxV1Enabled) koSocketSparkSound(); },
     hatchOpen(){ if (this.sfxV1Enabled) hatchOpenSound(); },
     hatchClose(){ if (this.sfxV1Enabled) hatchCloseSound(); }
   };

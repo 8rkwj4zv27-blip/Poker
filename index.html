@@ -516,11 +516,26 @@
 
 <script id="pwa-service-worker">
 if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js').catch(err => {
-      console.warn('Service worker registration failed:', err);
+  // Local development must never be shadowed by a stale service-worker
+  // cache: on localhost the SW previously behaved exactly like production
+  // (cache-first for JS/CSS), so an edited file could sit stale in Cache
+  // Storage indefinitely — a normal reload doesn't bypass it, only a
+  // manual "unregister service worker" / "empty caches" did. Detecting
+  // localhost here and actively unregistering + clearing on every load
+  // means dev changes are always testable with a plain reload, with zero
+  // manual cache-clearing, while production (a real hostname) keeps the
+  // real SW registered exactly as before.
+  const isLocalDev = ['localhost', '127.0.0.1', '[::1]'].includes(location.hostname);
+  if (isLocalDev) {
+    navigator.serviceWorker.getRegistrations().then(regs => regs.forEach(r => r.unregister()));
+    if (window.caches && caches.keys) caches.keys().then(keys => keys.forEach(k => caches.delete(k)));
+  } else {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('./sw.js').catch(err => {
+        console.warn('Service worker registration failed:', err);
+      });
     });
-  });
+  }
 }
 </script>
 

@@ -25,20 +25,29 @@ const ELIMINATION_CONFIG = {
   criticalStackBB: 5,     // below this: push/fold framing instead of sized raises
   foldGateWidenPerBB: 0.018,
 
-  // playElimination() stage durations, ms — physical-polish pass: a
-  // concentrated "settle -> THUNK -> THUNK (-> THUNK) -> stamp -> hardware
-  // fails -> unlatch glitch -> violent eject" rhythm, replacing the old
-  // long escalating-hit-ladder version (~2.8s/~5s). Target total runtime
-  // is roughly 2-2.5s (elim) / 2.3-2.8s (ko) — a brutal punctuation mark
-  // after the payout ceremony, not a second theatrical set piece.
-  koTimings:   { settleMs:190, hitMs:160, hitHoldMs:65, hitGapMs:100, failMs:300, glitchMs:140, anticipateMs:110, ejectMs:480, aftermathMs:160 },
-  elimTimings: { settleMs:150, hitMs:140, hitHoldMs:50, hitGapMs:90,  failMs:230, glitchMs:110, anticipateMs:90,  ejectMs:410, aftermathMs:130 },
-
-  // number of discrete THUNKs (a K.O. lands one harder than a plain elimination)
-  hitCount: { ko:3, elim:2 },
+  // playElimination() stage durations, ms — ejector-seat pass: a
+  // concentrated "settle -> nasty shake -> smaller second shake -> stamp
+  // -> internal THUNK (hardware fails + unlatch glitch) -> COMPLETE
+  // STILLNESS -> anticipation -> BLAM -> aftermath" rhythm (item 14).
+  // anticipateMs is the held, dead-calm pause immediately before the
+  // portrait fires — deliberately 100-160ms, nothing animates during it.
+  // The eject stage itself has no fixed duration here — it's however
+  // long ejectPortrait()'s own physics take to land 3-6 ricochets and
+  // clear the screen (see KO_PORTRAIT_PHYSICS_CONFIG in
+  // 06-presentation.js), typically ~1-2s. Target total sequence runtime
+  // (everything below, including that variable eject) is roughly
+  // 2.5-4s for a K.O., a touch less for a plain elimination.
+  koTimings:   { settleMs:190, hitMs:150, hitHoldMs:60, hitGapMs:90, thunkGapMs:70, failMs:220, glitchMs:90, anticipateMs:150, aftermathMs:170 },
+  elimTimings: { settleMs:150, hitMs:130, hitHoldMs:45, hitGapMs:75, thunkGapMs:55, failMs:170, glitchMs:70, anticipateMs:120, aftermathMs:140 },
 
   // relative intensity the blocky horizontal hit keyframe scales against
   shakeIntensity: { ko:1.7, elim:1.1 },
+
+  // multi-KO batching (pop-emphasis pass) — see playEliminationGroup,
+  // 05-game-engine.js: how far apart consecutive portrait launches fire
+  // within one grouped build-up, e.g. "shake together -> POP -> POP ->
+  // POP -> POP".
+  multiKoPopGapMin: 80, multiKoPopGapMax: 140,
 
   // brief hold between the final K.O.'s defeated card settling and the
   // TABLE CLEARED banner appearing — never cut away mid-payoff

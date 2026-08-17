@@ -285,6 +285,26 @@
 .chip-physics-layer{ position:fixed; z-index:79; left:0; top:0; pointer-events:none; }
 .chip-physics-layer .chip-disc{ position:fixed; margin:0; }
 
+/* K.O. PORTRAIT EJECTION — the free-physics layer an ejected opponent
+   portrait lives in (see ejectPortrait in 06-presentation.js). Same
+   z-index tier as the chip layer (they never run at once — a K.O. only
+   ever fires after that hand's own pot-smash/collection has fully
+   finished) so the flying portrait reads exactly like the flying chips
+   do: above seats/board/dashboard, free to ricochet across all of them.
+   .ko-portrait replicates the resting `.avatar`/`.avatar.has-face` look
+   directly (border/background/radius/shadow, has-face's padding/overflow)
+   rather than reusing those classes, since the portrait now lives outside
+   any `.seat` ancestor those rules are scoped under. */
+.ko-physics-layer{ position:fixed; z-index:79; left:0; top:0; pointer-events:none; }
+.ko-portrait{
+  position:fixed; margin:0; will-change:left,top,transform; pointer-events:none;
+  display:flex; align-items:center; justify-content:center;
+  border-radius:var(--radius); background:var(--seat-bg); border:2px solid var(--px-ink);
+  font-size:15px; font-weight:800; color:var(--ink-dim);
+  box-shadow:0 3px 0 rgba(0,0,0,.5), inset 0 2px 0 rgba(255,255,255,.07);
+}
+.ko-portrait.has-face{ padding:0; overflow:hidden; }
+
 #awards{
   overflow-y:auto; -webkit-overflow-scrolling:touch; align-items:center;
   background:repeating-conic-gradient(rgba(255,255,255,.016) 0 25%,transparent 0 50%) 0 0/10px 10px,var(--bg-deep);

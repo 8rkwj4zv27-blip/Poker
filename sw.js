@@ -1,4 +1,4 @@
-const CACHE_NAME = 'poker-v11-6';
+const CACHE_NAME = 'poker-v12-0';
 const APP_SHELL = [
   './',
   './index.html',
@@ -54,19 +54,28 @@ self.addEventListener('fetch', event => {
     return;
   }
 
-  // Cache-first for local static assets; refresh cache in the background.
+  // Network-first for local static assets too (JS/CSS/images), falling
+  // back to the cache only when the network request actually fails —
+  // same philosophy as the navigation handler above, now applied
+  // consistently everywhere. This used to be cache-first with a
+  // background refetch ("stale-while-revalidate"): a real deploy's new
+  // JS/CSS would sit unseen in Cache Storage until a SECOND load
+  // (whichever page load triggered the background refetch never itself
+  // benefited from it), which is what let a stale build linger
+  // indefinitely for anyone who doesn't reload repeatedly. Network-first
+  // means an online visit always gets the current deployed file
+  // immediately; the cache is now purely an offline fallback, not a
+  // freshness bottleneck — offline play is unaffected, since a failed
+  // fetch (no network) still falls back to whatever was last cached.
   if (new URL(req.url).origin === self.location.origin) {
     event.respondWith(
-      caches.match(req).then(cached => {
-        const network = fetch(req).then(response => {
-          if (response && response.ok) {
-            const copy = response.clone();
-            caches.open(CACHE_NAME).then(cache => cache.put(req, copy));
-          }
-          return response;
-        }).catch(() => cached);
-        return cached || network;
-      })
+      fetch(req).then(response => {
+        if (response && response.ok) {
+          const copy = response.clone();
+          caches.open(CACHE_NAME).then(cache => cache.put(req, copy));
+        }
+        return response;
+      }).catch(() => caches.match(req))
     );
   }
 });

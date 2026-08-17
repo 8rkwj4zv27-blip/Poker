@@ -938,6 +938,26 @@ function renderPot(){
     bootstrapPile(container, potPile(), g.pot);
   }
 }
+/* Pot-smash architectural simplification: the ONE authoritative rebuild
+   of the resting bank pile, called once after every payout chip's
+   physics has finished (see runPotBreakPhysics) — never incrementally
+   per physics chip. player.chips is already the correct monetary value
+   (payout logic elsewhere owns that); this only ever resyncs the
+   DECORATIVE pile to match it, via the exact same reset+bootstrap
+   primitives table-load/rebuy/renderBank()'s own idle-bootstrap already
+   use, so it automatically respects the pile's real capacity/layout
+   (visualChipCount's cap, bankPile()'s grid) with no bespoke logic here.
+   Unconditional (not gated on the pile being empty first) since the
+   caller already knows a real payout just landed and wants a fresh
+   rebuild regardless of whatever transient DOM state physics left
+   behind. */
+function rebuildBankPileFromState(){
+  const human = game && game.players.find(p=>p.isHuman);
+  const container = $('hud-tower');
+  if (!container || !human) return;
+  resetPile(container, bankPile());
+  if (human.chips>0) bootstrapPile(container, bankPile(), human.chips);
+}
 
 /* Vertical fruit-machine reels. Game values change immediately; this one
    display system is shared by the player, opponents, hand investment and
@@ -1648,12 +1668,140 @@ const POT_SMASH_PHYSICS_CONFIG = {
   bounceSoundGapMs: 70,      // per-chip minimum re-trigger gap, independent of Sound.chipBounce's own cross-chip density window
   releaseStaggerMaxMs: 120,  // tower-breakup stagger — upper/earlier-pulled chips pop free slightly before lower/later ones
   attractStaggerMaxMs: 300,  // collection begins slightly staggered per chip, not all at once — widened further for a more theatrical cascade (item 7)
-  attractMsMin: 260, attractMsMax: 420,  // per-chip ease-in duration — chips that start attracting EARLY (weak, just-opened suction) ease slowly; LATE starters get pulled in faster
-  attractPowMin: 1.6, attractPowMax: 2.6, // ease-in exponent — early starters ramp gently, late starters "increasingly decisive" (item 10)
-  lateSnapFraction: 0.85,    // the last ~15% of chips (by attraction start order) get an even faster, punchier "snap" finish — the "aggressively yanked in" rogue chips (item 7)
-  lateSnapMsMult: 0.62,      // their attractMs is shortened further still
+  attractRampMsMin: 260, attractRampMsMax: 420,  // per-chip ramp-to-full-strength duration — chips that start attracting EARLY (weak, just-opened suction) ramp slowly; LATE starters get decisive fast. NOT a completion deadline — the spring just holds at full strength once ramped; completion is purely geometric (see runPhysicsAttractionPhase).
+  attractPowMin: 1.6, attractPowMax: 2.6, // ramp exponent — early starters ramp gently, late starters "increasingly decisive" (item 10)
+  lateSnapFraction: 0.85,    // the last ~15% of chips (by attraction start order) get an even faster, punchier "snap" ramp — the "aggressively yanked in" rogue chips (item 7)
+  lateSnapMsMult: 0.62,      // their ramp is shortened further still
   lateSnapPow: 3.6,          // and eased with the steepest exponent — the hardest final pull
-  hatchApproachJitterX: 26, hatchApproachJitterY: 16  // px — small per-chip variation on the "point above the hatch" waypoint so multiple chips don't trace an identical curve
+  hatchApproachJitterX: 26, hatchApproachJitterY: 16, // px — small per-chip variation on the "point above the hatch" waypoint so multiple chips don't trace an identical curve
+
+  // Magnetic-attraction rework — see runPhysicsAttractionPhase. Position
+  // is never assigned directly; a damped-spring steering force is applied
+  // to the chip's real vx/vy every frame, so a chip still travelling hard
+  // in one direction keeps drifting that way for a moment before the pull
+  // visibly wins, and its incoming free-flight momentum keeps
+  // contributing to the path.
+  magnetKMin: 3.5, magnetKMax: 46,   // spring "stiffness" toward the current aim point — grows over each chip's own attraction ramp (weak tug -> decisive yank), then holds at magnetKMax
+  magnetDamp: 5.4,                   // spring damping — keeps the pull from overshooting/oscillating once it's strong
+
+  // UP -> OVER -> DOWN staging (bank-geometry pass). The aim point is no
+  // longer a continuous lerp from "above the hatch" to "the final slot" —
+  // that could cut a diagonal path low across the dashboard/cards for a
+  // meaningful stretch of the journey. Instead there are two literal
+  // waypoints: while the chip is still more than overToDiveRadius away
+  // (horizontally) from the point above the hatch, it's steered AT that
+  // point with z held at its peak (the "OVER" leg, held for however long
+  // the real distance takes — not a fixed fraction of a timer, so a chip
+  // launched right next to the bank and one launched clear across the
+  // felt each naturally get however long they actually need). Once close,
+  // it switches to diving straight down through the hatch, z released.
+  overToDiveRadius: 60,        // px — how close (horizontally) to the above-hatch point before the dive leg begins — widened (intake-reliability pass) so a chip commits to the descent sooner/more forgivingly rather than needing to be nearly exact first
+
+  // CAPTURE ZONE (intake-reliability pass) — replaces the old "capture
+  // funnel". A real, named zone above the bank: once a diving chip's
+  // rendered position comes within captureZoneHeight of the rim
+  // (hatchGeo.captureZoneHeight — 60-120px, resolved from real viewport
+  // height once per burst, see hatchApproachGeometry), it latches
+  // `_captured` (one-way, like `_diving`) and the system becomes
+  // deliberately biased toward guaranteed entry rather than staying fully
+  // organic: extra horizontal centering + lateral damping (growing with
+  // how deep into the zone it is, `capturedT` 0->1) and extra downward
+  // acceleration, still applied as continuous forces on vx/vy — never a
+  // position snap. captureKMax/captureLateralDampMax are reached only at
+  // capturedT=1 (the very threshold of the rim), which is also what makes
+  // "final descent" decisive (item 7) without a separate mechanism: old
+  // lateral momentum gets aggressively damped away specifically where it
+  // would otherwise carry the chip back out.
+  captureKMin: 0, captureKMax: 90,
+  captureLateralDampMax: 12,
+  captureDownAccelMax: 1400,   // px/s^2 — extra downward pull layered on top of the base spring, growing to this at capturedT=1
+
+  // ANTI-SETTLE (intake-reliability pass, item 5 — "the most important
+  // reliability rule"): a captured chip is never allowed to coast below a
+  // minimum speed. Below captureMinSpeedVh*vh px/s, a small recovery
+  // impulse fires — biased upward (off the rim/roof) and inward (toward
+  // the aperture centre) — so gravity/friction/a dead-on rim graze can
+  // never leave it resting above the bank. Still a continuous velocity
+  // change, not a teleport; the very next frame's normal capture forces
+  // take back over.
+  captureMinSpeedVh: 0.05,
+  captureRecoveryImpulseVh: 0.3, captureRecoveryInwardK: 3.2,
+
+  // INTAKE COMMITTED (straggler-elimination pass) — once a captured chip
+  // is descending and SUFFICIENTLY aligned with the real aperture (looser
+  // than requiring its full disc already inside — see
+  // committedEntryRadiusPad below; this is what rescues the last 1-3
+  // straggler chips that used to bounce indefinitely off a rim wall
+  // rather than ever committing at all), all bank-side/rim and dashboard/
+  // card collision is disabled for it — the top of the bank becomes a
+  // genuine one-way capture corridor: a deliberate arcade cheat, reliable
+  // entry over another possible rim bounce. Three forces run for the rest
+  // of its short life: committedMinDescendVh (a hard floor on vy, so it
+  // can never stall/reverse), and the X CORRIDOR pair below — a
+  // continuous centering spring/damp toward the corridor's own centre
+  // PLUS a zero-restitution containment clamp (absorbs, never bounces)
+  // so its centre genuinely cannot drift back outside the safe band once
+  // committed. No upward recovery impulse is ever applied once committed.
+  committedMinDescendVh: 0.12,
+  committedEntryRadiusPad: 1.4,   // multiplies the chip's own radius when deciding "sufficiently aligned" to commit — >1 deliberately loose, rescuing a chip that's still grazing a rim wall rather than leaving it to keep bouncing
+  committedCorridorMargin: 3,     // px — extra safety margin (beyond the chip's own radius) kept between the corridor's edge and the true aperture edge
+  committedCenterK: 60, committedLateralDamp: 14, // spring stiffness / damping pulling a committed chip toward the corridor's own centre — continuous force, not a snap
+
+  // MISSED-RIM BOUNCE BIAS (item 6): every bank-wall collision (not just
+  // once captured) gets a small extra inward/upward nudge on top of its
+  // normal reflection, so a miss reads as "TINK -> redirected -> another
+  // attempt" rather than a dead, undirected carom that might wander away
+  // from the opening. Arcade-assisted on purpose — reliability over
+  // perfect realism.
+  bankBounceInwardKick: 90, bankBounceUpwardKickVh: 0.05,
+
+  // INTAKE BAND (item 3 — wide and forgiving). Every chip's own hatch-
+  // approach jitter (hatchApproachJitterX/Y below) is still randomised per
+  // chip for organic variety, but is now CLAMPED — at the moment it's
+  // used to aim the dive leg — to a band that's provably safe: the
+  // housing's own inner half-width minus this chip's own radius minus a
+  // small edge margin, so the full disc can pass through without clipping
+  // the opening's left/right edge. Margin trimmed further (was 6) to use
+  // more of the real available top width. See hatchApproachGeometry's own
+  // intakeHalfWidth.
+  intakeEdgeMargin: 4,
+
+  // Lift height as a fraction of viewport height rather than a blind
+  // fixed px range — a tall phone viewport needs visibly more lift to
+  // clear hole cards/dashboard/dealer deck than a short one would.
+  // Resolved to actual px once per burst (see runPotBreakPhysics), then
+  // varied per chip within that resolved range so a burst doesn't lift
+  // in lockstep. Clamped so it's never comically small or large.
+  liftPeakMinVh: 0.12, liftPeakMaxVh: 0.24, liftPeakClampMin: 90, liftPeakClampMax: 260,
+  zFollowRate: 6.5,                  // per-second follow rate z chases its shaped target height at
+  airborneZThreshold: 16,            // px — once z crosses this, the chip is "in the air": player-card/dashboard collisions turn off and it's free to fly over them (item 3)
+  airborneScaleBoost: 0.07,          // subtle "closer to camera" scale-up at peak lift — restrained, per the brief
+  hatchAboveClearance: 64,           // px — how far above the hatch the "OVER" waypoint sits (was a fixed 50 in hatchApproachGeometry; now tunable here)
+
+  // PHYSICAL BANK WALLS (fail-safe pass) — see buildBankWalls/
+  // resolveBankWalls. The magnet spring/funnel above still steers the
+  // AIM point, but these are real solid obstacles: a chip that approaches
+  // wrong physically bounces off the rim/side walls instead of being
+  // "supposed to" avoid them via spring convergence alone.
+  bankWallThickness: 14,       // px — AABB wall thickness; thick enough that a normal per-frame chip displacement can't tunnel through it
+  bankWallRestitution: 0.55,   // energy kept on a rim/wall clank — duller than a felt bounce (it's hitting the machine's own case), still a real live bounce, never a dead stop
+
+  // Per-chip completion is geometric ONLY: a chip finishes the instant
+  // its FULL disc has crossed below the hatch's own top rim AND is within
+  // the physical aperture — never on a timer. attractStuckWarnMs is a
+  // lightweight DIAGNOSTIC: past this duration a chip gets exactly one
+  // loud console.error/DEV logMsg warning, but nothing about its own
+  // state changes — it stays a fully live physics chip, still being
+  // pulled by the magnet and still physically blocked by the walls above,
+  // until it genuinely enters. burstMaxMs is the separate, harder
+  // recovery valve for the WHOLE burst (architectural-simplification
+  // pass) — a generous ceiling past which every still-outstanding chip in
+  // the burst is force-finished (element removed) and the promise
+  // resolves regardless, so a genuine physics bug can never permanently
+  // hang gameplay. Error-recovery only, never expected to fire in normal
+  // play — see runPhysicsAttractionPhase.
+  attractStuckWarnMs: 3000,
+  burstMaxMs: 8000
 };
 
 /* Landing point for the TOTAL stamp — centred on the pot plate itself
@@ -1695,18 +1843,138 @@ function closeHatch(){
   // rather than mid-transition.
   setTimeout(()=>{ if (hatch) hatch.classList.remove('is-closing'); }, 150);
 }
-/* The bezier control point every attracting chip arcs through — "a point
-   ABOVE the hatch" (item 5) — plus the Y threshold at which a chip has
-   visibly crossed into the hatch and should vanish (see
+/* Bank-box geometry (bank-geometry pass): the bank compartment (#hud-left)
+   is a physical open-topped box — left/right/bottom are the closed sides
+   (its own border plus overflow:hidden), the TOP edge (rect.top) is the
+   ONLY legal entrance. Geometry is deliberately measured off #hud-left
+   itself, not the decorative `.bank-hatch` seam (a few px inset from that
+   same top edge, purely a visual click/clunk flourish) — the physical
+   entry LINE a chip must cross is the housing's own top boundary.
+   `point` is the "fly to a spot above the box" waypoint every attracting
+   chip aims at during its OVER leg (see runPhysicsAttractionPhase);
+   `diveY` is that top boundary itself — the earliest Y a chip's own
+   TOPMOST pixel may cross before any part of it may be treated as
+   entered; `diveTargetY` is a point just inside the box, pulling a
+   diving chip decisively down through the opening rather than letting it
+   hover exactly at the boundary line. `intakeHalfWidth` is the housing's
+   own inner half-width, minus a small edge margin — the safe horizontal
+   band a chip's CENTRE may sit in at the boundary line such that its full
+   disc still clears the opening; callers clamp their own per-chip radius
+   out of it (see runPhysicsAttractionPhase) since it depends on that
+   chip's own size, not just the housing's. `captureZoneHeight`
+   (intake-reliability pass) is the real capture-zone depth — 60-120px,
+   resolved from the actual viewport height once per burst rather than a
+   blind constant — the vertical distance from the rim at which a diving
+   chip latches into the guaranteed-entry `_captured` regime (see
    runPhysicsAttractionPhase). Measured once per sequence, like
-   potSmashBounds/playerCardRects above. Returns null if the hatch isn't
-   laid out for some reason; the caller falls back to a plain straight-
-   line lerp in that case rather than breaking. */
+   potSmashBounds/playerCardRects above. Returns null if the housing isn't
+   laid out for some reason; callers degrade gracefully rather than
+   breaking. */
 function hatchApproachGeometry(){
-  const hatch = $('bank-hatch');
-  const rect = hatch && hatch.getBoundingClientRect();
+  const cfg = POT_SMASH_PHYSICS_CONFIG;
+  const housing = $('hud-left');
+  const rect = housing && housing.getBoundingClientRect();
   if (!rect || !rect.width) return null;
-  return { point: { x: rect.left+rect.width/2, y: rect.top-50 }, diveY: rect.bottom };
+  return {
+    point: { x: rect.left+rect.width/2, y: rect.top-cfg.hatchAboveClearance },
+    diveY: rect.top,
+    diveTargetY: rect.top + Math.min(40, rect.height*0.4),
+    intakeHalfWidth: Math.max(4, rect.width/2 - cfg.intakeEdgeMargin),
+    boxLeft: rect.left, boxRight: rect.right, boxBottom: rect.bottom,
+    captureZoneHeight: Math.max(60, Math.min(120, innerHeight*0.11))
+  };
+}
+/* Physical-fail-safe pass: the bank box's SOLID surfaces as real
+   collidable obstacles — left wall, right wall, bottom, and the top rim
+   split into two segments by the open aperture — rather than trusting the
+   magnet spring alone to land a chip in the right place. Built once per
+   burst (like hatchApproachGeometry itself) using `radius`, a
+   representative chip radius for this burst (pot chips are all the same
+   size in practice), so the aperture used for WALL placement already has
+   genuine clearance for a full disc, independent of the softer per-chip
+   funnel/jitter clamp in runPhysicsAttractionPhase (that one shapes the
+   AIM point; this shapes what can physically pass). Walls are modelled as
+   thick AABBs (bankWallThickness) rather than zero-width line segments —
+   simpler collision math, and comfortably thick enough relative to
+   per-frame chip movement that tunnelling through a wall in one step is
+   not a practical concern at this framerate/speed. */
+function buildBankWalls(hatchGeo, radius){
+  const cfg = POT_SMASH_PHYSICS_CONFIG;
+  const t = cfg.bankWallThickness;
+  const apHalf = Math.max(radius+4, hatchGeo.intakeHalfWidth-radius);
+  const apL = hatchGeo.point.x-apHalf, apR = hatchGeo.point.x+apHalf;
+  const rimY = hatchGeo.diveY, L = hatchGeo.boxLeft, R = hatchGeo.boxRight, B = hatchGeo.boxBottom;
+  return {
+    apertureLeft: apL, apertureRight: apR,
+    walls: [
+      { tag:'bank-left',      rect:{ left:L-t, right:L, top:rimY, bottom:B+t } },
+      { tag:'bank-right',     rect:{ left:R, right:R+t, top:rimY, bottom:B+t } },
+      { tag:'bank-bottom',    rect:{ left:L-t, right:R+t, top:B, bottom:B+t } },
+      { tag:'bank-rim-left',  rect:{ left:L-t, right:apL, top:rimY-t, bottom:rimY } },
+      { tag:'bank-rim-right', rect:{ left:apR, right:R+t, top:rimY-t, bottom:rimY } }
+    ]
+  };
+}
+/* Circle-vs-solid-AABB resolution against the bank's own walls, using the
+   chip's RENDERED (screen) position — c.y - c.z, same convention the
+   hide/done check uses — so a sufficiently airborne chip (large z, well
+   above the rim on screen) never registers a false collision with walls
+   it's visually flying over; only as it actually descends toward the rim
+   does contact become geometrically possible. A rim/wall hit reflects the
+   chip back into play as a live, still-attracting physics object — never
+   a dead stop, never a removal. Same closest-point-on-rect technique as
+   resolveCardCollisions, a distinct (harder, more "clank") restitution,
+   PLUS a deliberate inward/upward bounce bias (item 6, intake-reliability
+   pass) on top of the plain reflection — every miss gets nudged back
+   toward another attempt at the opening (toward the aperture's own
+   centre X, and a little upward off the rim) instead of caroming off in
+   an arbitrary, possibly-away-from-the-bank direction. Arcade-assisted on
+   purpose: "TINK -> bounce upward/inward -> magnet catches it again", not
+   a physically pure but unreliable carom. */
+function resolveBankWalls(c, bankGeo, cfg){
+  if (!bankGeo) return;
+  const screenY = c.y-c.z;
+  const apCenterX = (bankGeo.apertureLeft+bankGeo.apertureRight)/2;
+  for (const w of bankGeo.walls){
+    const r = w.rect;
+    const nx0 = Math.max(r.left, Math.min(c.x, r.right));
+    const ny0 = Math.max(r.top, Math.min(screenY, r.bottom));
+    const dx = c.x-nx0, dy = screenY-ny0, distSq = dx*dx+dy*dy;
+    if (distSq >= c.radius*c.radius) continue;
+    const dist = Math.sqrt(distSq) || 0.001;
+    const nx = dx/dist, ny = dy/dist;
+    const push = c.radius-dist;
+    c.x += nx*push; c.y += ny*push;
+    const vn = c.vx*nx + c.vy*ny;
+    if (vn >= 0) continue;
+    c.vx -= (1+cfg.bankWallRestitution)*vn*nx;
+    c.vy -= (1+cfg.bankWallRestitution)*vn*ny;
+    // Inward/upward bounce bias — a real velocity change (not a snap),
+    // layered on top of the reflection above.
+    const inwardDir = apCenterX>c.x ? 1 : -1;
+    c.vx += inwardDir*cfg.bankBounceInwardKick;
+    c.vy -= (innerHeight*cfg.bankBounceUpwardKickVh);
+    maybePlayBounceSound(c, Math.abs(vn));
+  }
+}
+/* The outer machine/screen edges — left/right/top — as a hard, always-on
+   boundary during attraction/dive (item A: "outer playfield/screen bounds
+   must also remain solid"). Wider than the felt (potSmashBounds) on
+   purpose: a chip travelling to the bank routinely leaves the felt's own
+   rect, but it must never leave the visible table screen itself. */
+function arenaBounds(){
+  const el = $('table-screen') || $('felt');
+  const r = el && el.getBoundingClientRect();
+  if (r && r.width) return { left:r.left, right:r.right, top:r.top };
+  return { left:0, right:innerWidth, top:0 };
+}
+function resolveArenaBounds(c, arena, cfg){
+  const screenY = c.y-c.z;
+  let bounced=false, bounceVel=0;
+  if (c.x-c.radius < arena.left){ c.x = arena.left+c.radius; c.vx=-c.vx*cfg.restitution; bounced=true; bounceVel=Math.abs(c.vx); }
+  else if (c.x+c.radius > arena.right){ c.x = arena.right-c.radius; c.vx=-c.vx*cfg.restitution; bounced=true; bounceVel=Math.abs(c.vx); }
+  if (screenY-c.radius < arena.top){ c.y = arena.top+c.radius+c.z; c.vy=-c.vy*cfg.restitution; bounced=true; bounceVel=Math.max(bounceVel,Math.abs(c.vy)); }
+  if (bounced) maybePlayBounceSound(c, bounceVel);
 }
 /* Two static axis-aligned bounds, measured once per sequence rather than
    per frame (a ~1s ceremony doesn't need to react to mid-flight resizes).
@@ -1787,15 +2055,22 @@ async function presentRewardBreakdown(early){
   await arcadeDelay(cfg.anticipationMs);
   clearArcadeLayer();
 }
-/* Applies one physics chip's current x/y/rot state to its DOM element.
+/* Applies one physics chip's current x/y/rot(/z) state to its DOM element.
    Elements are position:fixed inside #chip-physics-layer, positioned by
    plain left/top (not transform:translate) so the per-frame physics math
-   stays simple absolute coordinates — transform is reserved for rotation
-   only. */
+   stays simple absolute coordinates — rotate/scale is all transform
+   carries. `z` (item 2 of the collection rework — fake height/lift) is a
+   free chip's implicit 0 or an attracting chip's cosmetic rise: it's
+   subtracted from screen Y (so a "higher" chip draws further up) with a
+   very small companion scale bump — the only two visual cues lift gets,
+   deliberately restrained rather than turning chips into flying coins. */
 function applyChipTransform(c){
+  const cfg = POT_SMASH_PHYSICS_CONFIG;
+  const z = c.z || 0;
   c.el.style.left = (c.x - c.radius) + 'px';
-  c.el.style.top = (c.y - c.radius) + 'px';
-  c.el.style.transform = 'rotate(' + c.rot + 'deg)';
+  c.el.style.top = (c.y - z - c.radius) + 'px';
+  const scale = 1 + Math.min(1, z / cfg.liftPeakClampMax) * cfg.airborneScaleBoost;
+  c.el.style.transform = 'rotate(' + c.rot + 'deg)' + (z > 0.5 ? ' scale(' + scale.toFixed(3) + ')' : '');
 }
 /* Launch-class weighting for the initial burst (item 5 of the juice
    pass) — a real tower breaking apart doesn't send every chip out at a
@@ -1840,13 +2115,18 @@ const LAUNCH_CLASS_SPEED = {
    Attraction pacing (item 7/10) is assigned here too, as a continuous
    function of this chip's own stagger position (`u`, 0 = first to start
    attracting, 1 = last) rather than a hard two-tier split: early starters
-   ease in slowly with a gentle curve (the suction "just twitching"),
-   later starters get faster/steeper "increasingly decisive" pulls, and
-   the very last ~15% get an extra "late snap" on top — the aggressively-
-   yanked-in rogue chips. hatchJitterX/Y give each chip's approach-the-
-   hatch waypoint (see runPhysicsAttractionPhase) a small, independent
-   variation so a burst of chips doesn't all trace one identical curve. */
-function spawnPhysicsChip(taken, impactPoint, layer, pullIndex){
+   ramp UP TO FULL MAGNET STRENGTH slowly with a gentle curve (the suction
+   "just twitching"), later starters ramp faster/steeper — "increasingly
+   decisive" — and the very last ~15% get an extra "late snap" on top —
+   the aggressively-yanked-in rogue chips. This only paces how fast the
+   spring reaches full strength, never how long the chip is allowed to
+   take to physically arrive (see runPhysicsAttractionPhase — completion
+   is geometric, not timer-driven). hatchJitterX/Y give each chip's
+   approach-the-hatch waypoint a small, independent variation so a burst
+   of chips doesn't all trace one identical curve. `liftRange` (resolved
+   once per burst from viewport height — see runPotBreakPhysics) is where
+   this chip's own liftPeak is drawn from. */
+function spawnPhysicsChip(taken, impactPoint, layer, pullIndex, liftRange){
   const { el, rect } = taken;
   el.classList.remove('disc-in');
   el.style.transition = 'none';
@@ -1873,12 +2153,13 @@ function spawnPhysicsChip(taken, impactPoint, layer, pullIndex){
   const attractDelay = Math.random()*cfg.attractStaggerMaxMs;
   const u = attractDelay/cfg.attractStaggerMaxMs;
   const lateSnap = u > cfg.lateSnapFraction;
-  const baseMs = cfg.attractMsMax - (cfg.attractMsMax-cfg.attractMsMin)*u;
+  const baseRampMs = cfg.attractRampMsMax - (cfg.attractRampMsMax-cfg.attractRampMsMin)*u;
   const basePow = cfg.attractPowMin + (cfg.attractPowMax-cfg.attractPowMin)*u;
+  const lift = liftRange || { min:cfg.liftPeakClampMin, max:cfg.liftPeakClampMax };
 
   return {
     el,
-    x:cx, y:cy,
+    x:cx, y:cy, z:0, vz:0,
     vx: Math.cos(angle)*speed,
     vy: Math.sin(angle)*speed - kick,
     rot:0, vrot:(Math.random()<0.5?-1:1)*spin,
@@ -1886,10 +2167,12 @@ function spawnPhysicsChip(taken, impactPoint, layer, pullIndex){
     state:'free', lastBounceAt:0,
     releaseDelay: Math.min(cfg.releaseStaggerMaxMs, (pullIndex||0)*2) + Math.random()*40,
     attractDelay, lateSnap,
-    attractMs: lateSnap ? baseMs*cfg.lateSnapMsMult : baseMs,
+    attractRampMs: lateSnap ? baseRampMs*cfg.lateSnapMsMult : baseRampMs,
     attractPow: lateSnap ? cfg.lateSnapPow : basePow,
     hatchJitterX: (Math.random()*2-1) * cfg.hatchApproachJitterX,
-    hatchJitterY: (Math.random()*2-1) * cfg.hatchApproachJitterY
+    hatchJitterY: (Math.random()*2-1) * cfg.hatchApproachJitterY,
+    liftPeak: lift.min + Math.random()*(lift.max-lift.min),
+    _attractStartAt: 0
   };
 }
 function maybePlayBounceSound(c, vel){
@@ -2002,61 +2285,326 @@ function runPhysicsFreePhase(chips, bounds, budgetMs, cardRects){
    more decisively, and the last ~15% ("late snap") get a shorter
    attractMs and the steepest attractPow on top — the rogue chips
    aggressively yanked in at the end (item 7).
-   The path itself is a quadratic bezier through `hatchGeo.point` — "a
-   point ABOVE the hatch" — rather than a straight line or a generic bow:
-   chips arc up/sideways toward that point first, then visibly dive DOWN
-   from it into the real claimed slot (item 5), each with its own small
-   hatchJitterX/Y so a whole burst doesn't trace one identical curve. The
-   instant a chip's path crosses `hatchGeo.diveY` (the hatch's own bottom
-   edge) it's considered to have visibly entered the hatch and is snapped
-   invisible right there (opacity:0, a discrete state change — not a
-   fade, and never before this exact crossing, per the "fully visible
-   until they enter the hatch" brief) — it keeps moving invisibly through
-   its last stretch inside the recessed compartment and reappears as a
-   perfectly normal resting chip the instant settleSlot() hands it back
-   to the real pile below. If the hatch isn't laid out for some reason,
-   hatchGeo is null and this falls back to a plain straight-line lerp
-   instead of breaking. settleSlot() on arrival hands the element back to
-   the real bank pile for good — same primitive an ordinary payout uses,
-   so nothing about the DOM handoff is bespoke to this effect. */
-function runPhysicsAttractionPhase(chips, bankContainer, bankP, hatchGeo){
+   Collection rework (magnet-freeze fix): a waiting chip (state 'free',
+   still inside its own attractStagger delay) is now kept fully live —
+   stepFreeChip still runs on it every frame, same bounds/cardRects as the
+   free phase, so it keeps bouncing/rolling right up to the exact frame
+   its own delay elapses. There is no gap where a chip sits still waiting
+   its turn.
+   Once attracting, position is never assigned directly. Each frame
+   computes a moving "aim point" — blended from a point ABOVE the hatch
+   (hatchGeo.point, jittered per chip) toward the chip's real claimed bank
+   slot, by this chip's own eased progress — and steers the chip's EXISTING
+   vx/vy toward it with a damped spring (magnetKMin -> magnetKMax as
+   eased grows, per item 10's "increasingly decisive" pull). Velocity is
+   integrated, not overwritten, so a chip still carrying real momentum
+   from the free-bounce phase keeps drifting along it for a moment before
+   the pull visibly wins — that continuity is the whole point of item 1.
+   A cosmetic z (item 2 — fake lift, see applyChipTransform) rises and
+   falls with the same eased progress, via liftPeak*sin(pi*eased): the
+   chip visibly climbs off the felt early, arcs over the table, then
+   settles back toward 0 right as it reaches the hatch. While z stays
+   below airborneZThreshold, player-card/dashboard collisions (item 3)
+   still apply — "on the felt, objects still block it" — exactly like the
+   free phase; once truly airborne those checks are skipped so it can fly
+   straight over cards/dashboard/pot geometry (item 3's "readable rule").
+   UP -> OVER -> DOWN staging: while a chip is still more than
+   overToDiveRadius away (horizontally) from the point above the hatch,
+   it's steered AT that point with z held near its own liftPeak — the
+   OVER leg, held for however long the real distance actually takes (not
+   a fixed fraction of a timer), so a chip launched right next to the
+   bank and one launched clear across the felt each naturally get however
+   long they need without either looking rushed or dawdling. Once close
+   (the DIVE leg), the aim point drops to a spot just inside the box
+   (hatchGeo.diveTargetY) and z is released back toward 0 — the chip
+   visibly commits to falling straight down through the opening.
+   Completion is GEOMETRIC, not timer-driven: the instant a chip's own
+   TOPMOST pixel — (y - z) - radius, the full disc accounted for, never
+   just its centre — has crossed below hatchGeo.diveY AND its centre sits
+   within the physical aperture (bankGeo.apertureLeft/Right — the same gap
+   the solid rim walls actually leave open, so this can only ever be true
+   for a chip that really did pass through the opening), that chip's
+   PHYSICAL JOURNEY ENDS: its element is removed outright and it's counted
+   'inside'. There is no per-chip DOM handoff to the bank pile here at all
+   — see the "architectural simplification" pass comment on
+   runPotBreakPhysics for why: individual payout-chip identity ends at the
+   hatch, full stop, never travels on to a claimed tower slot. A chip
+   that's approaching wrong physically bounces off bankGeo's solid walls
+   (resolveBankWalls) or the outer arenaBounds and keeps being pulled by
+   the magnet; nothing force-finalizes it early. attractStuckWarnMs is a
+   lightweight per-chip diagnostic only (logs once, changes nothing about
+   the chip). burstMaxMs below is the hard recovery valve for a genuinely
+   stuck burst. If the housing isn't laid out at all, hatchGeo/bankGeo are
+   null and a chip instead completes once it's simply arrived near the
+   bank container's own rect (no arc waypoint, no wall geometry to
+   fail-safe against) rather than breaking.
+   Each chip's own `c.state` is an explicit, inspectable 4-value chain —
+   'free' -> 'attracting' -> 'diving' -> 'inside'. The promise this
+   function returns resolves once every chip has reached 'inside' — either
+   genuinely (the common case) or via the burstMaxMs recovery valve, which
+   forces every remaining chip 'inside' (removing its element) and resolves
+   immediately, guaranteeing this promise NEVER hangs indefinitely even if
+   a real physics bug prevented normal completion. The caller's hatch-close
+   beat is gated on this same promise either way — see runPotBreakPhysics,
+   which does the ONE post-burst bank-pile rebuild this function
+   deliberately no longer does per-chip. */
+function runPhysicsAttractionPhase(chips, bounds, cardRects, bankContainer, bankP, hatchGeo, bankGeo, arena){
   if (!chips.length) return Promise.resolve();
+  const cfg = POT_SMASH_PHYSICS_CONFIG;
   return new Promise(resolve=>{
     const start = performance.now();
+    let last = start;
     let remaining = chips.length;
+    let recovered = false;
+    // Architectural simplification: a payout chip's PHYSICS identity ends
+    // the instant it's fully inside the bank — no claimDestSlot(), no
+    // settleSlot(), no reserved/targeted tower slot, ever. player.chips is
+    // already the authoritative monetary value; the resting pile is only
+    // ever a REPRESENTATION of it, rebuilt once (from scratch, via the
+    // exact same bootstrap mechanism table-load/rebuy already use) after
+    // every payout chip has physically crossed the intake — see
+    // runPotBreakPhysics. That single post-burst rebuild is what actually
+    // "respects the bank's capacity/layout" (visualChipCount's own cap),
+    // not per-chip slot bookkeeping racing a still-in-flight burst.
+    const finalizeChip = c=>{
+      c.state = 'inside';
+      c.el.remove();
+      bankPending = Math.max(0, bankPending-1);
+      Sound.chipCollect(c.lateSnap ? 1.3 : 1);
+      remaining--;
+    };
     function frame(now){
+      // RECOVERY VALVE — not normal collection behaviour. A cosmetic
+      // payout animation must never permanently block gameplay: past this
+      // generous ceiling, force every still-outstanding chip 'inside'
+      // (element removed, exactly like a genuine completion) and resolve
+      // immediately, so the caller's post-burst rebuild/hatch-close/
+      // pending-release still runs. Logged loudly since this should never
+      // fire in normal successful collection.
+      if (!recovered && now-start > cfg.burstMaxMs){
+        recovered = true;
+        const ms = Math.round(now-start);
+        console.error('[pot-smash] payout physics exceeded '+ms+'ms — forcing recovery. This should never happen during normal collection; investigate bank/hatch geometry.');
+        if (typeof DEV_MODE!=='undefined' && DEV_MODE && typeof logMsg==='function') logMsg('[DEV ERROR] pot-smash payout timed out after '+ms+'ms — forced recovery, see console', true);
+        chips.forEach(c=>{ if (c.state!=='inside') finalizeChip(c); });
+        resolve();
+        return;
+      }
+      const dt = Math.min(0.032, (now-last)/1000);
+      last = now;
       chips.forEach(c=>{
-        if (c.state==='collected') return;
+        if (c.state==='inside') return;
         if (c.state==='free'){
+          // Still fully physical while it waits its turn — no freeze.
+          stepFreeChip(c, dt, bounds, cardRects);
           if (now-start < c.attractDelay) return;
           c.state = 'attracting';
-          c._placeholder = claimDestSlot(bankContainer, bankP).placeholder;
-          c._startX = c.x; c._startY = c.y; c._startRot = c.rot; c._t0 = now;
+          c._t0 = now;
+          c._attractStartAt = now;
+          return; // begin the magnet integration proper next frame
         }
-        const t = Math.min(1, (now-c._t0)/c.attractMs), eased = Math.pow(t, c.attractPow);
-        const target = c._placeholder.getBoundingClientRect();
-        const p2x = target.left+target.width/2, p2y = target.top+target.height/2;
+
+        // DIAGNOSTIC ONLY — a chip taking suspiciously long gets exactly
+        // one loud warning so a real bug is impossible to miss, but its
+        // state, visibility and physics are completely
+        // untouched: it keeps being simulated, pulled, and blocked by the
+        // walls below exactly like any other attracting chip, until it
+        // genuinely enters. Never hides or force-completes a visible chip.
+        if (!c._warnedStuck && now-c._attractStartAt > cfg.attractStuckWarnMs){
+          c._warnedStuck = true;
+          const ms = Math.round(now-c._attractStartAt);
+          console.error('[pot-smash] chip still not inside the bank after '+ms+'ms — still live, still trying, not hidden. Investigate bank/hatch geometry.');
+          if (typeof DEV_MODE!=='undefined' && DEV_MODE && typeof logMsg==='function') logMsg('[DEV WARN] chip stuck '+ms+'ms outside the bank — see console (chip remains visible)', true);
+        }
+
+        // Magnet strength ramps to full over this chip's own attractRampMs,
+        // then holds — never itself a completion deadline.
+        const rampT = Math.min(1, (now-c._t0)/c.attractRampMs);
+        const kEase = Math.pow(rampT, c.attractPow);
+        const k = cfg.magnetKMin + (cfg.magnetKMax-cfg.magnetKMin)*kEase;
+
+        let aimX, aimY, targetZ, geometric = false;
         if (hatchGeo){
-          const it = 1-eased;
-          const p1x = hatchGeo.point.x+c.hatchJitterX, p1y = hatchGeo.point.y+c.hatchJitterY;
-          c.x = it*it*c._startX + 2*it*eased*p1x + eased*eased*p2x;
-          c.y = it*it*c._startY + 2*it*eased*p1y + eased*eased*p2y;
+          // Intake-band clamp (item 3 -- wide/forgiving): this chip's own organic jitter,
+          // capped so its CENTRE can never aim outside the housing's own
+          // safe inner band once its own radius is subtracted — the full
+          // disc always has room to clear the opening's left/right edge.
+          const maxJitter = Math.max(0, hatchGeo.intakeHalfWidth - c.radius);
+          const jitterX = Math.max(-maxJitter, Math.min(maxJitter, c.hatchJitterX));
+          const aboveX = hatchGeo.point.x+jitterX, aboveY = hatchGeo.point.y+c.hatchJitterY;
+          // One-way latch: once close enough to commit to the dive, never
+          // flip back to the OVER leg even if the spring briefly overshoots
+          // back out past overToDiveRadius — a clean single commitment,
+          // not a flicker back and forth right at the threshold.
+          if (!c._diving && Math.abs(c.x-aboveX) <= cfg.overToDiveRadius){
+            c._diving = true;
+            c.state = 'diving';
+          }
+          aimX = aboveX;
+          aimY = c._diving ? hatchGeo.diveTargetY : aboveY;
+          targetZ = c._diving ? 0 : c.liftPeak;
+          geometric = true;
+
+          // CAPTURE ZONE (item 4): a real, named zone above the rim
+          // (hatchGeo.captureZoneHeight, 60-120px, viewport-resolved), not
+          // a fraction of this chip's own travel distance. One-way latch,
+          // same pattern as _diving: once vertically this close to the
+          // rim, the chip is `captured` and stays that way.
+          if (c._diving && !c._captured){
+            const distToRim = hatchGeo.diveY - (c.y-c.z);
+            if (distToRim <= hatchGeo.captureZoneHeight) c._captured = true;
+          }
         } else {
-          c.x = c._startX + (p2x-c._startX)*eased;
-          c.y = c._startY + (p2y-c._startY)*eased;
+          // Degraded fallback only (housing never laid out) — aims at the
+          // bank container's own stable rect directly. Never a claimed
+          // tower slot: nothing in this whole phase depends on tower
+          // placement until AFTER a chip is already 'inside' (see
+          // finalizeChip) — the physical journey has no idea a slot
+          // system even exists.
+          const target = bankContainer.getBoundingClientRect();
+          aimX = target.left+target.width/2; aimY = target.top+target.height/2;
+          targetZ = 0;
         }
-        c.rot = c._startRot + (0-c._startRot)*eased;
-        if (!c._vanished && hatchGeo && c.y >= hatchGeo.diveY){ c._vanished = true; c.el.style.opacity = '0'; }
+
+        // Damped spring toward the moving aim point — pulls on the chip's
+        // OWN vx/vy rather than assigning position, so its incoming
+        // free-flight momentum keeps contributing to the path.
+        c.vx += (k*(aimX-c.x) - cfg.magnetDamp*c.vx) * dt;
+        c.vy += (k*(aimY-c.y) - cfg.magnetDamp*c.vy) * dt;
+
+        if (c._captured){
+          // Deliberately biased toward guaranteed entry (item 4): extra
+          // horizontal centering + lateral damping and extra downward
+          // pull, both growing with how deep into the zone the chip is
+          // (capturedT 0->1) -- still continuous forces on vx/vy, never a
+          // position snap. At capturedT->1 (right at the rim) the lateral
+          // damping is strong enough that old free-bounce momentum simply
+          // can't carry the chip back out through the side (item 7's
+          // "decisive final descent" falls out of this same curve, not a
+          // separate mechanism).
+          const distToRim = Math.max(0, hatchGeo.diveY-(c.y-c.z));
+          const capturedT = 1 - Math.min(1, distToRim/hatchGeo.captureZoneHeight);
+          const capK = cfg.captureKMin + (cfg.captureKMax-cfg.captureKMin)*capturedT;
+          c.vx += capK*(aimX-c.x)*dt;
+          c.vx *= Math.max(0, 1 - cfg.captureLateralDampMax*capturedT*dt);
+          c.vy += cfg.captureDownAccelMax*capturedT*dt;
+
+          // INTAKE COMMITTED (straggler-elimination pass) -- a one-way
+          // latch, arming once the chip is captured, actually descending,
+          // and SUFFICIENTLY aligned with the real aperture -- loose on
+          // purpose (committedEntryRadiusPad > 1): a chip that's still
+          // grazing a rim wall still commits here, rather than being left
+          // to keep bouncing indefinitely off it. From here the top of
+          // the bank is a genuine one-way capture corridor for THIS chip
+          // -- see the skipped collision checks below, plus the X
+          // corridor containment right below this.
+          const apCenterX = (bankGeo.apertureLeft+bankGeo.apertureRight)/2;
+          const apHalfWidth = (bankGeo.apertureRight-bankGeo.apertureLeft)/2;
+          if (!c._committed && c.vy > 0 &&
+              Math.abs(c.x-apCenterX) <= apHalfWidth + c.radius*cfg.committedEntryRadiusPad){
+            c._committed = true;
+          }
+
+          if (c._committed){
+            // SAFE X CORRIDOR -- continuous centering spring/damp toward
+            // the corridor's own centre, PLUS a zero-restitution
+            // containment clamp: if the centre would still drift past the
+            // corridor edge despite that force, its outward velocity is
+            // simply absorbed (never reflected/bounced) and position held
+            // right at the edge -- the same boundary-clamp idiom already
+            // used throughout this file (resolveArenaBounds etc.), not a
+            // teleport across any real distance. This is what guarantees
+            // a committed chip's centre can never again end up outside
+            // the safe band, closing off the exact gap that used to leave
+            // 1-3 chips straggling near the lip.
+            const corridorLeft = bankGeo.apertureLeft + c.radius + cfg.committedCorridorMargin;
+            const corridorRight = bankGeo.apertureRight - c.radius - cfg.committedCorridorMargin;
+            const corridorCenter = (corridorLeft+corridorRight)/2;
+            c.vx += cfg.committedCenterK*(corridorCenter-c.x)*dt;
+            c.vx *= Math.max(0, 1 - cfg.committedLateralDamp*dt);
+            if (c.x < corridorLeft){ c.x = corridorLeft; if (c.vx < 0) c.vx = 0; }
+            else if (c.x > corridorRight){ c.x = corridorRight; if (c.vx > 0) c.vx = 0; }
+
+            // Strongly guide it downward -- a hard floor on vy so it can
+            // never stall or reverse while committed.
+            const minDescendVy = innerHeight*cfg.committedMinDescendVh;
+            if (c.vy < minDescendVy) c.vy = minDescendVy;
+          } else {
+            // ANTI-SETTLE (item 5) -- only relevant BEFORE commitment.
+            // Once committed the guaranteed downward floor above already
+            // makes a stall physically impossible, and an upward recovery
+            // impulse here would directly fight the trapdoor rule ("do
+            // not allow any upward recovery impulse" once committed).
+            const speed = Math.hypot(c.vx, c.vy);
+            if (speed < innerHeight*cfg.captureMinSpeedVh){
+              c.vy -= innerHeight*cfg.captureRecoveryImpulseVh;
+              c.vx += (aimX-c.x)*cfg.captureRecoveryInwardK;
+            }
+          }
+        }
+
+        c.x += c.vx*dt; c.y += c.vy*dt;
+        c.rot += c.vrot*dt*(1-kEase); // spin winds down as the magnet takes over, never assigned directly
+
+        // Fake lift — cosmetic only, drives screen offset/scale in
+        // applyChipTransform.
+        c.vz = (targetZ - c.z) * cfg.zFollowRate;
+        c.z += c.vz*dt;
+
+        // Grounded (low-z) collisions still apply — airborne suction
+        // clears cards/dashboard once truly lifted (item 3) — EXCEPT for
+        // a committed chip. Diagnosis (collision-geometry pass): in the
+        // real layout, #hud-left (the bank) is nested only ~13px inside
+        // #your-seat-dock (whose own top edge is `bounds.bottom`, the
+        // dashboard "floor" this check enforces) -- 4px of the dock's own
+        // padding-top plus 9px of #hud-frame's padding-top. That's
+        // comfortably inside a chip's own radius (~13px), so this floor
+        // line was functioning as an INVISIBLE SECOND RIM sitting right
+        // at/above the bank's real rim -- a committed chip descending
+        // toward the bank hit this dashboard-floor clamp and bounced
+        // (floorRestitution 0.82) before it ever reached the bank's own
+        // wall geometry, then got pulled back down by the capture forces
+        // and bounced again: the exact "sits on top of the bank and
+        // repeatedly bounces up/down" symptom. A committed chip is no
+        // longer anywhere near the dashboard in any sense that check was
+        // meant to guard against -- it's diving through a specific,
+        // already-verified-open trapdoor -- so it's fully exempt here.
+        if (!c._committed && c.z < cfg.airborneZThreshold){
+          resolveCardCollisions(c, cardRects);
+          if (c.y + c.radius > bounds.bottom){
+            c.y = bounds.bottom - c.radius;
+            if (c.vy > 0) c.vy = -c.vy*cfg.floorRestitution;
+            c.vx *= cfg.floorFriction;
+          }
+        }
+
+        // PHYSICAL FAIL-SAFE: the bank's own solid walls/rim and the
+        // outer screen edges are real obstacles for an UNCOMMITTED chip —
+        // a chip approaching wrong bounces off them and stays live for
+        // the magnet to try again. A COMMITTED chip skips the bank's own
+        // wall/rim collision entirely (item: "disable all top/rim
+        // collision... allow it to physically cross the bank's top
+        // boundary") — it's already verified centred in the real
+        // aperture and descending, so from here the top of the bank is a
+        // genuine open trapdoor, not a surface. Outer arena (screen)
+        // bounds stay active regardless — unchanged, per the brief.
+        if (geometric){
+          if (!c._committed) resolveBankWalls(c, bankGeo, cfg);
+          resolveArenaBounds(c, arena, cfg);
+        }
+
         applyChipTransform(c);
-        if (t<1) return;
-        c.state = 'collected';
-        c.el.style.position=''; c.el.style.left=''; c.el.style.top=''; c.el.style.width='';
-        c.el.style.height=''; c.el.style.margin=''; c.el.style.transform=''; c.el.style.willChange='';
-        c.el.style.pointerEvents=''; c.el.style.transition=''; c.el.style.opacity='';
-        settleSlot(bankContainer, c._placeholder, c.el);
-        bankPending = Math.max(0, bankPending-1);
-        Sound.chipCollect(c.lateSnap ? 1.3 : 1);
-        remaining--;
+
+        const done = geometric
+          // Full disc — topmost pixel — below the rim, AND its centre
+          // within the physical aperture the walls actually leave open —
+          // the latter can in practice only ever be false here as a
+          // defensive backstop (the walls above already prevent crossing
+          // anywhere else), never relied on as the primary guarantee.
+          ? ((c.y-c.z)-c.radius) >= hatchGeo.diveY &&
+            c.x >= bankGeo.apertureLeft-2 && c.x <= bankGeo.apertureRight+2
+          : Math.hypot(c.x-aimX, c.y-aimY) < 6 && c.z < 1;
+        if (done) finalizeChip(c);
       });
       if (remaining>0) requestAnimationFrame(frame); else resolve();
     }
@@ -2086,12 +2634,21 @@ async function runPotBreakPhysics(potN, impactPoint){
 
   const bounds = potSmashBounds();
   const cardRects = playerCardRects();
+  // Lift height resolved once per burst from real viewport height (item 6
+  // of the bank-geometry pass) — a tall phone needs visibly more lift to
+  // clear hole cards/dashboard/dealer deck than a short one would; a
+  // blind fixed px range wouldn't scale across devices.
+  const cfg = POT_SMASH_PHYSICS_CONFIG;
+  const liftRange = {
+    min: Math.max(cfg.liftPeakClampMin, Math.min(cfg.liftPeakClampMax, innerHeight*cfg.liftPeakMinVh)),
+    max: Math.max(cfg.liftPeakClampMin, Math.min(cfg.liftPeakClampMax, innerHeight*cfg.liftPeakMaxVh))
+  };
   const chips = [];
   for (let i=0;i<potN;i++){
     const taken = takeChipFromPile(potContainer, pPile);
     if (!taken){ potPending = Math.max(0, potPending-1); bankPending = Math.max(0, bankPending-1); continue; }
     potPending = Math.max(0, potPending-1);
-    chips.push(spawnPhysicsChip(taken, impactPoint, layer, i));
+    chips.push(spawnPhysicsChip(taken, impactPoint, layer, i, liftRange));
   }
   if (!chips.length){ layer.remove(); return; }
 
@@ -2099,15 +2656,577 @@ async function runPotBreakPhysics(potN, impactPoint){
 
   // Collection beat: a small mechanical CLICK, the hatch opens, a brief
   // beat to let that read before anything dives in, then the staggered
-  // suction cascade, then a heavier CLUNK as it shuts again.
+  // suction cascade. The awaited promise only ever resolves once every
+  // payout chip has either genuinely crossed the intake or been force-
+  // finished by its own internal recovery valve — never on a timer, never
+  // "most of them" (see runPhysicsAttractionPhase). Individual chip
+  // identity is gone at that point (never reconciled per-chip into the
+  // pile); rebuildBankPileFromState() does the one authoritative rebuild,
+  // entirely behind the still-open hatch, before the settle beat + CLUNK.
   Sound.hatchOpen();
   openHatch();
   await sleep(160);
-  await runPhysicsAttractionPhase(chips, bankContainer, bankP, hatchApproachGeometry());
+  const hatchGeo = hatchApproachGeometry();
+  const bankGeo = hatchGeo ? buildBankWalls(hatchGeo, chips[0].radius) : null;
+  const arena = arenaBounds();
+  await runPhysicsAttractionPhase(chips, bounds, cardRects, bankContainer, bankP, hatchGeo, bankGeo, arena);
+
+  // Every payout chip's physical journey is over — rebuild the resting
+  // pile ONCE from player.chips (already authoritative; this never
+  // changes it), via the exact same bootstrap primitives table-load/rebuy
+  // already use. The player only ever sees loose chips vanish through the
+  // top; this reconstruction happens invisibly behind the closed housing.
+  rebuildBankPileFromState();
+  bankPending = 0;
+  if (typeof DEV_MODE!=='undefined' && DEV_MODE && layer.children.length && typeof logMsg==='function'){
+    logMsg('[DEV WARN] '+layer.children.length+' stray physics element(s) left in the pot-smash layer — see console', true);
+    console.warn('[pot-smash] stray physics layer children after rebuild:', layer.children);
+  }
+
+  await sleep(90);
   Sound.hatchClose();
   closeHatch();
   await sleep(140);
 
+  layer.remove();
+}
+
+/* ============================================================
+   K.O. PORTRAIT EJECTION — ejector-seat rework. The panel itself (the
+   socket/housing) stays completely in place; only the opponent's
+   PORTRAIT is violently ejected, as a full oriented-square rigid body
+   (real rotated corners collide, not a point/centre) reusing the same
+   rAF-driven, real-velocity philosophy as the chip physics above rather
+   than another pile of CSS transform keyframes. Every distance/speed
+   constant is resolved from the real viewport at ejection time (item 16)
+   rather than fixed desktop-sized px values.
+   ============================================================ */
+const KO_PORTRAIT_PHYSICS_CONFIG = {
+  // "Vh"/"Vw" suffixes are fractions of innerHeight/innerWidth, resolved
+  // to real px once per K.O. in launchPortrait().
+  gravityVh: 1.55,                  // px/s^2 per vh — lowered again (pinball pass) so a hard rebound can genuinely cross the screen before gravity drags it back into vertical motion
+  restitution: 0.8,                 // energetic arcade bounce — still short of a superball
+  dashboardRestitution: 0.95,       // the dashboard specifically kicks harder — "fired high back into play"
+  dashboardKickVh: 0.44,            // flat extra upward boost on a dashboard hit, on top of the reflected velocity
+  minBounceSpeedFactor: 0.68,       // energy floor: a resolved bounce is never allowed to lose more than this fraction of its incoming speed along the hit normal — nothing dies into a weak graze
+  tangentKickFactor: 0.34,          // every meaningful impact gets a stronger random kick ALONG the hit surface (pinball pass — raised again) so consecutive hits don't degenerate into vertical ping-pong
+  minHorizRatio: 0.38,              // pinball pass: after ANY meaningful impact, at least this fraction of the resulting speed is forced horizontal if it isn't already — the direct fix for "still mostly moves up/down", not just a hope that restitution/tangent kick alone produce it
+  angularDamping: 0.14,             // low — spin persists across many bounces, reads as violent tumbling, not settling
+  airDamping: 0.02,
+  ejectSpeedMinVh: 2.2, ejectSpeedMaxVh: 3.0,   // initial downward BLAST out of the socket — substantially harder again (pinball/pop pass): "shot from the socket", clears the housing in ~60-100ms
+  ejectLateralMaxVw: 0.32,
+  ejectSpinMin: 480, ejectSpinMax: 820,         // strong initial tumble — still controlled, not an unreadable blur
+  minImpacts: 3, maxImpacts: 6,     // "3-6 meaningful physical impacts" before the guaranteed exit — unchanged
+  impactVelThresholdVh: 0.09,       // below this a graze doesn't count as one of the "meaningful" impacts
+  hardImpactFactor: 1.8,            // an impact at/above impactVelThreshold*this triggers the brief squash pulse (see applyPortraitTransform)
+  impactSoundGapMs: 55,
+  // Torque from an off-centre impact: converts the lever arm between this
+  // portrait's own centre and the actual contact corner, crossed with the
+  // impulse just applied, into a change in angular velocity — a flat/
+  // centred hit contributes little (small lever arm), a corner hit
+  // contributes a lot, naturally without special-casing either case. See
+  // stepPortrait/contactCorner. spinImpulseGain converts the resulting
+  // (px^2/s) torque scalar into deg/s; maxSpin clamps the result so a run
+  // of hard corner hits can't compound into an unreadable blur.
+  spinImpulseGain: 0.0085, maxSpin: 1050,
+  exitSpeedMinVh: 1.6, exitSpeedMaxVh: 2.3,     // forced launch speed on the exit-triggering FRAME collision
+  exitMarginPx: 160,                // how far past the viewport edge counts as "fully gone"
+  maxDurationMs: 4200,              // safety valve only — guarantees eventual removal even in a pathological trajectory
+  elimIntensity: 0.84,              // plain (non-K.O.) elimination gets a slightly tamer version of the same blast
+  emergeSlackPx: 2,                 // sub-pixel tolerance so the under-housing mask doesn't hang open forever on a rounding error
+  hitStopMs: 45,                    // tiny impact-freeze at the BLAM instant, before the portrait moves at all — non-blocking (see launchPortrait's _activeAt), so it never throws off a multi-KO's own POP-to-POP stagger
+  squashMs: 40, squashAmt: 0.1,     // brief (item: "30-50ms") impact compression pulse on a hard hit — axis-agnostic (simple x/y squash under the existing rotation), kept small so it reads as a chunky plastic thump, not cartoon rubber
+  portraitPortraitRestitution: 0.72, // multi-KO only — how energetic a portrait-vs-portrait "heavy plastic clack" is
+
+  // READABILITY PASS — launch stays exactly as fast/violent as before;
+  // everything below only shapes what happens AFTER the portrait has
+  // already cleared the socket and had its first real hit.
+  postFirstHitEnergyMult: 0.75,     // one-time ~25% cut to vx/vy/vrot the instant the FIRST meaningful collision resolves (see stepPortrait) — lets the opening BLAM stay maximally violent while everything after it settles into a genuinely trackable travel speed, without touching restitution/gravity (which still govern bounce-to-bounce energy loss normally from that new, lower baseline)
+  // Per-impact, NON-BLOCKING hit-stop (reuses the exact same `_activeAt`
+  // freeze mechanism the initial launch already uses — see
+  // runPortraitGroupPhysics — so one portrait's impact-stop can never
+  // stall a sibling's motion in a multi-KO). Duration scales with this
+  // hit's own power (see maybePlayPortraitImpact's `power`, 0-1.8):
+  // ordinary hit ~25-35ms, a hard one ~45-60ms, a huge frame/dashboard
+  // smash tops out at impactHitStopMaxMs.
+  impactHitStopMinMs: 25, impactHitStopMaxMs: 78
+};
+/* The portrait's 4 real corners in world space, from its own rotation —
+   used by satPortraitVsRect below so an actual spinning CORNER touching
+   a wall counts as a hit (item 17), not just its centre point. */
+function obbCorners(c){
+  const rad = c.rot*Math.PI/180, cs = Math.cos(rad), sn = Math.sin(rad);
+  const hw = c.halfW, hh = c.halfH;
+  return [[-hw,-hh],[hw,-hh],[hw,hh],[-hw,hh]].map(([lx,ly])=>({
+    x: c.x + lx*cs - ly*sn,
+    y: c.y + lx*sn + ly*cs
+  }));
+}
+function projectExtent(points, axis){
+  let min=Infinity, max=-Infinity;
+  for (const p of points){ const d = p.x*axis.x+p.y*axis.y; if (d<min) min=d; if (d>max) max=d; }
+  return [min, max];
+}
+/* The corner of the portrait deepest "inside" the obstacle along the hit
+   axis — used as an approximate contact point for torque (item 7/8). A
+   flat/centred hit's nearest corner sits close to the centreline of the
+   axis (small lever arm -> little torque); an actual corner strike sits
+   well off it (large lever arm -> real spin) — this falls out naturally
+   from picking the true minimal-projection corner, no special-casing
+   "was this a corner hit" needed. */
+function contactCorner(corners, axis){
+  let best = corners[0], bestProj = Infinity;
+  for (const p of corners){ const proj = p.x*axis.x+p.y*axis.y; if (proj < bestProj){ bestProj = proj; best = p; } }
+  return best;
+}
+/* Separating-axis test between the portrait's rotated square and one
+   axis-aligned obstacle rect — a lightweight oriented-square
+   approximation appropriate for a single object (item 17), not an
+   external physics engine. Four candidate axes suffice for two
+   rectangles in 2D: the portrait's own two (rotated) edge normals plus
+   the obstacle's two (world X/Y). Returns the minimum-translation-vector
+   (a push-out axis + overlap depth) on overlap, or null if any axis
+   separates them. */
+function satPortraitVsRect(corners, rect){
+  const rectCorners = [{x:rect.left,y:rect.top},{x:rect.right,y:rect.top},{x:rect.right,y:rect.bottom},{x:rect.left,y:rect.bottom}];
+  const e0x = corners[1].x-corners[0].x, e0y = corners[1].y-corners[0].y, l0 = Math.hypot(e0x,e0y)||1;
+  const e1x = corners[3].x-corners[0].x, e1y = corners[3].y-corners[0].y, l1 = Math.hypot(e1x,e1y)||1;
+  const axes = [ {x:e0x/l0,y:e0y/l0}, {x:e1x/l1,y:e1y/l1}, {x:1,y:0}, {x:0,y:1} ];
+  let minOverlap = Infinity, minAxis = null;
+  for (const axis of axes){
+    const [aMin,aMax] = projectExtent(corners, axis);
+    const [bMin,bMax] = projectExtent(rectCorners, axis);
+    const overlap = Math.min(aMax,bMax) - Math.max(aMin,bMin);
+    if (overlap <= 0) return null;
+    if (overlap < minOverlap){ minOverlap = overlap; minAxis = axis; }
+  }
+  const cx=(corners[0].x+corners[2].x)/2, cy=(corners[0].y+corners[2].y)/2;
+  const rcx=(rect.left+rect.right)/2, rcy=(rect.top+rect.bottom)/2;
+  if ((cx-rcx)*minAxis.x+(cy-rcy)*minAxis.y < 0) minAxis = {x:-minAxis.x, y:-minAxis.y};
+  return { axis:minAxis, overlap:minOverlap };
+}
+/* Same SAT idea as satPortraitVsRect, but BOTH shapes are rotated squares
+   (multi-KO portrait-vs-portrait) — four axes total, two from each
+   square's own edge normals, no world-X/Y shortcut available since
+   neither shape is axis-aligned. Still just closest-projection-overlap,
+   the same lightweight technique, not a physics engine. */
+function satPortraitVsPortrait(cornersA, cornersB){
+  const axes = [];
+  [cornersA, cornersB].forEach(corners=>{
+    const e0x=corners[1].x-corners[0].x, e0y=corners[1].y-corners[0].y, l0=Math.hypot(e0x,e0y)||1;
+    const e1x=corners[3].x-corners[0].x, e1y=corners[3].y-corners[0].y, l1=Math.hypot(e1x,e1y)||1;
+    axes.push({x:e0x/l0,y:e0y/l0}, {x:e1x/l1,y:e1y/l1});
+  });
+  let minOverlap = Infinity, minAxis = null;
+  for (const axis of axes){
+    const [aMin,aMax] = projectExtent(cornersA, axis);
+    const [bMin,bMax] = projectExtent(cornersB, axis);
+    const overlap = Math.min(aMax,bMax) - Math.max(aMin,bMin);
+    if (overlap <= 0) return null;
+    if (overlap < minOverlap){ minOverlap = overlap; minAxis = axis; }
+  }
+  return { axis:minAxis, overlap:minOverlap };
+}
+/* One portrait-vs-portrait resolution (multi-KO — "occasional hilarious
+   mid-air collisions", not a full rigid-body engine): equal-mass impulse
+   split (each pushed/accelerated half as much), independent torque for
+   each side from its own contact-corner lever arm, and a heavy "clack".
+   Deliberately does NOT feed into either portrait's impactCount/
+   readyToExit — the 3-6 ricochet target and guaranteed exit stay keyed to
+   ENVIRONMENT hits only, so two portraits colliding can't stall or
+   accelerate either one's own exit logic. Exiting/already-done portraits
+   are skipped entirely, same rule environment collision already uses. */
+function resolvePortraitPair(a, b){
+  if (a.done || b.done || a.exiting || b.exiting) return;
+  const cfg = KO_PORTRAIT_PHYSICS_CONFIG;
+  const cornersA = obbCorners(a), cornersB = obbCorners(b);
+  const hit = satPortraitVsPortrait(cornersA, cornersB);
+  if (!hit) return;
+  let axis = hit.axis;
+  if ((a.x-b.x)*axis.x + (a.y-b.y)*axis.y < 0) axis = {x:-axis.x, y:-axis.y}; // points from b toward a
+  const half = hit.overlap/2;
+  a.x += axis.x*half; a.y += axis.y*half;
+  b.x -= axis.x*half; b.y -= axis.y*half;
+  const vn = (a.vx-b.vx)*axis.x + (a.vy-b.vy)*axis.y;
+  if (vn >= 0) return; // already separating
+  const impulse = -(1+cfg.portraitPortraitRestitution)*vn/2; // equal mass split
+  const impulseX = impulse*axis.x, impulseY = impulse*axis.y;
+  a.vx += impulseX; a.vy += impulseY;
+  b.vx -= impulseX; b.vy -= impulseY;
+  // axis points from b toward a (away from b). A's own deepest-penetrating
+  // corner is found the same way satPortraitVsRect/stepPortrait already
+  // find a portrait's contact corner against a rect — using the axis that
+  // points AWAY FROM THE OTHER SHAPE, which for a is `axis` itself; for
+  // b (the other side) it's the reverse.
+  const contactA = contactCorner(cornersA, axis);
+  const contactB = contactCorner(cornersB, {x:-axis.x,y:-axis.y});
+  a.vrot += ((contactA.x-a.x)*impulseY - (contactA.y-a.y)*impulseX) * cfg.spinImpulseGain;
+  b.vrot -= ((contactB.x-b.x)*impulseY - (contactB.y-b.y)*impulseX) * cfg.spinImpulseGain;
+  a.vrot = Math.max(-cfg.maxSpin, Math.min(cfg.maxSpin, a.vrot));
+  b.vrot = Math.max(-cfg.maxSpin, Math.min(cfg.maxSpin, b.vrot));
+  const bounceVel = Math.abs(vn);
+  if (bounceVel >= Math.min(a.impactVelThreshold, b.impactVelThreshold)){
+    triggerSquash(a, bounceVel); triggerSquash(b, bounceVel);
+    const power = maybePlayPortraitImpact(a, bounceVel, false, true);
+    // Each portrait gets its OWN independent freeze (same non-blocking
+    // _activeAt mechanism as environment impacts) — one portrait's
+    // impact-stop can never stall the other's motion.
+    triggerImpactHitStop(a, power);
+    triggerImpactHitStop(b, power);
+  }
+}
+/* The physical surfaces an ejected portrait collides with (item 18): the
+   outer machine/frame (left/right/top of the whole table screen — the
+   ONLY edges eligible to become the guaranteed exit, item 22 — tagged
+   'frame-*'), the player's dashboard (a solid floor, extra-energetic per
+   item 21), the player's own hole cards (reusing playerCardRects — the
+   exact same obstacles the chip physics already treat as solid, so cards
+   never look like transparent graphics the portrait floats through), and
+   the pot/result hardware. Frame edges are modelled as huge rects
+   extending off past the visible edge rather than infinite half-planes,
+   so the same generic SAT routine handles every obstacle uniformly.
+   Measured once per K.O., same one-shot-measurement convention as
+   potSmashBounds/playerCardRects elsewhere in this file. */
+function koObstacles(){
+  const screenEl = $('table-screen') || $('felt');
+  const sRect = screenEl && screenEl.getBoundingClientRect();
+  const frame = (sRect && sRect.width) ? sRect : { left:0, top:0, right:innerWidth, bottom:innerHeight };
+  const HUGE = 20000;
+  const obstacles = [
+    { tag:'frame-left',  rect:{ left:frame.left-HUGE, right:frame.left, top:frame.top-HUGE, bottom:frame.bottom+HUGE } },
+    { tag:'frame-right', rect:{ left:frame.right, right:frame.right+HUGE, top:frame.top-HUGE, bottom:frame.bottom+HUGE } },
+    { tag:'frame-top',   rect:{ left:frame.left-HUGE, right:frame.right+HUGE, top:frame.top-HUGE, bottom:frame.top } }
+  ];
+  const dash = $('your-seat-dock'), dashRect = dash && dash.getBoundingClientRect();
+  if (dashRect && dashRect.width) obstacles.push({ tag:'dashboard', rect:{ left:dashRect.left, right:dashRect.right, top:dashRect.top, bottom:dashRect.top+HUGE } });
+  const pot = $('pot-area'), potRect = pot && pot.getBoundingClientRect();
+  if (potRect && potRect.width) obstacles.push({ tag:'pot', rect:{ left:potRect.left, right:potRect.right, top:potRect.top, bottom:potRect.bottom } });
+  playerCardRects().forEach(r=>obstacles.push({ tag:'card', rect:r }));
+  return obstacles;
+}
+/* Arms a brief (squashMs) axis-agnostic compression pulse on a hard
+   impact — a simple x/y scale under the existing rotation, not aligned to
+   the exact collision normal (that would need composing extra rotate()
+   calls into the transform string); "if this can be done cleanly" per
+   the brief, and this reads fine since the portrait's own rotation is
+   already effectively randomised hit to hit. Restrained on purpose —
+   chunky plastic thump, not cartoon rubber. */
+function triggerSquash(c, vel){
+  const cfg = KO_PORTRAIT_PHYSICS_CONFIG;
+  if (vel < c.impactVelThreshold*cfg.hardImpactFactor) return;
+  c._squashT0 = performance.now();
+}
+/* Positions the clone AND, until it has physically cleared the housing,
+   masks it with a clip-path so only the portion that has fallen past the
+   housing's own bottom edge is visible — the ejector-seat illusion of
+   item 15/19 (the portrait is BEHIND/UNDER the housing until it clears
+   it, never a top-layer image that was simply cloned in place). Once
+   `hiddenPx` reaches ~0 the mask is dropped for good and never
+   recomputed — later physics don't need to keep respecting the housing,
+   only the initial emergence does. */
+function applyPortraitTransform(c){
+  c.el.style.left = (c.x - c.halfW) + 'px';
+  c.el.style.top = (c.y - c.halfH) + 'px';
+  const cfg = KO_PORTRAIT_PHYSICS_CONFIG;
+  let squash = '';
+  if (c._squashT0){
+    const t = (performance.now()-c._squashT0)/cfg.squashMs;
+    if (t < 1){
+      const amt = (1-t)*cfg.squashAmt;
+      squash = ' scale(' + (1+amt).toFixed(3) + ',' + (1-amt).toFixed(3) + ')';
+    } else {
+      c._squashT0 = 0;
+    }
+  }
+  c.el.style.transform = 'rotate(' + c.rot + 'deg)' + squash;
+  if (!c.emerged){
+    const elTop = c.y - c.halfH;
+    const hiddenPx = Math.max(0, Math.min(c.halfH*2, c.housingBottomY - elTop));
+    if (hiddenPx <= cfg.emergeSlackPx){ c.emerged = true; c.el.style.clipPath = ''; }
+    else c.el.style.clipPath = 'inset(' + hiddenPx.toFixed(1) + 'px 0 0 0)';
+  }
+}
+/* Plays (or skips, per the density-gap window) the impact sound/haptic,
+   and ALWAYS returns this hit's own `power` (0-1.8) regardless — the
+   caller uses that for impact-dependent hit-stop duration even on a
+   sound-gapped hit, since the physical pause should track the actual
+   collision, not the audio density window. */
+function maybePlayPortraitImpact(c, vel, isExit, isPortraitClack){
+  const now = performance.now();
+  const power = Math.min(1.8, vel/(c.impactVelThreshold*3));
+  const gapped = !isExit && now-c.lastImpactAt < KO_PORTRAIT_PHYSICS_CONFIG.impactSoundGapMs;
+  if (!gapped){
+    c.lastImpactAt = now;
+    if (isPortraitClack) Sound.koPortraitClack(power);
+    else {
+      Sound.koPortraitImpact(power, !!isExit);
+      haptic(isExit ? [30,18,42] : Math.min(28, 10+Math.round(power*14)));
+    }
+  }
+  return power;
+}
+/* Non-blocking per-portrait impact freeze (readability pass) — reuses the
+   exact `_activeAt` mechanism the initial launch hit-stop already relies
+   on (see runPortraitGroupPhysics), so freezing ONE portrait after ITS
+   impact can never stall a sibling's motion in a multi-KO. Duration scales
+   with this hit's own power: ordinary ~25-35ms, hard ~45-60ms, a huge
+   frame/dashboard smash tops out at impactHitStopMaxMs. */
+function triggerImpactHitStop(c, power){
+  const cfg = KO_PORTRAIT_PHYSICS_CONFIG;
+  const ms = cfg.impactHitStopMinMs + Math.min(1, power/1.8)*(cfg.impactHitStopMaxMs-cfg.impactHitStopMinMs);
+  c._activeAt = Math.max(c._activeAt||0, performance.now()+ms);
+}
+/* One integration step, resolved against every obstacle in `obstacles`
+   with a lightweight oriented-square-vs-AABB SAT test — the portrait's
+   actual rotated corners are what collide (item 17). A hard collision
+   reflects velocity across the hit normal with restitution, tops up with
+   a flat energy floor (item 21 — never a weak dying graze) and, on the
+   dashboard specifically, an extra upward kick so a hard floor hit can
+   rocket it back into play. Once the portrait has racked up its
+   randomly-chosen impact target (3-6), `readyToExit` arms; the very next
+   collision that's specifically tagged as an OUTER FRAME edge (not the
+   dashboard/cards/pot — item 22) becomes the guaranteed exit: momentum
+   is preserved, a strong outward kick is added along that same normal,
+   and all further collision checks stop (`c.exiting`) so nothing pulls
+   it back into play. */
+function stepPortrait(c, dt, obstacles){
+  const cfg = KO_PORTRAIT_PHYSICS_CONFIG;
+  c.vy += c.gravity*dt;
+  c.x += c.vx*dt; c.y += c.vy*dt;
+  const damp = Math.max(0, 1-cfg.airDamping*dt);
+  c.vx *= damp; c.vy *= damp;
+  c.rot += c.vrot*dt;
+  c.vrot *= Math.max(0, 1-cfg.angularDamping*dt);
+
+  if (!c.exiting){
+    for (const obs of obstacles){
+      const corners = obbCorners(c);
+      const hit = satPortraitVsRect(corners, obs.rect);
+      if (!hit) continue;
+      c.x += hit.axis.x*hit.overlap; c.y += hit.axis.y*hit.overlap;
+      const vn = c.vx*hit.axis.x + c.vy*hit.axis.y;
+      if (vn >= 0) continue; // already separating after push-out
+      const bounceVel = Math.abs(vn);
+      const isFrame = obs.tag.indexOf('frame-')===0;
+      if (c.readyToExit && isFrame){
+        c.exiting = true;
+        const kick = c.exitSpeedMin + Math.random()*(c.exitSpeedMax-c.exitSpeedMin);
+        c.vx += hit.axis.x*kick; c.vy += hit.axis.y*kick;
+        maybePlayPortraitImpact(c, kick, true);
+        break;
+      }
+      const rest = obs.tag==='dashboard' ? cfg.dashboardRestitution : cfg.restitution;
+      const impulseX = -(1+rest)*vn*hit.axis.x, impulseY = -(1+rest)*vn*hit.axis.y;
+      c.vx += impulseX; c.vy += impulseY;
+      if (obs.tag==='dashboard') c.vy -= c.dashboardKick;
+
+      // Torque (item 7/8) — lever arm from centre to the actual contact
+      // corner, crossed with the impulse just applied. A corner strike
+      // (large lever arm) kicks spin hard, possibly reversing direction;
+      // a flat/centred hit (small lever arm) barely touches it — this is
+      // the ACTUAL collision geometry driving rotation, not a random spin
+      // bump, so it stays physically legible hit to hit.
+      const contact = contactCorner(corners, hit.axis);
+      const rx = contact.x-c.x, ry = contact.y-c.y;
+      const torque = rx*impulseY - ry*impulseX;
+      c.vrot += torque*cfg.spinImpulseGain;
+      c.vrot = Math.max(-cfg.maxSpin, Math.min(cfg.maxSpin, c.vrot));
+
+      // Tangent kick — a small random nudge ALONG the hit surface on top
+      // of the reflected normal, so consecutive hits between two roughly
+      // parallel obstacles (e.g. dashboard <-> top frame) don't degenerate
+      // into a repetitive straight vertical ping-pong (item 8/9).
+      if (bounceVel >= c.impactVelThreshold){
+        const tangent = { x:-hit.axis.y, y:hit.axis.x };
+        const tangentKick = bounceVel*cfg.tangentKickFactor*(Math.random()<0.5?-1:1);
+        c.vx += tangent.x*tangentKick; c.vy += tangent.y*tangentKick;
+      }
+
+      const vnAfter = c.vx*hit.axis.x + c.vy*hit.axis.y;
+      const floorVn = Math.abs(vn)*cfg.minBounceSpeedFactor;
+      if (vnAfter < floorVn){ const add = floorVn-vnAfter; c.vx += add*hit.axis.x; c.vy += add*hit.axis.y; }
+
+      if (bounceVel >= c.impactVelThreshold){
+        // Pinball pass — after ANY meaningful impact, force at least
+        // minHorizRatio of the resulting speed to be horizontal if it
+        // isn't already. This is the direct fix for "still mostly moves
+        // up/down": restitution + tangent kick alone don't GUARANTEE
+        // directional variety, they just make it likely — this makes it
+        // actually true every time, so consecutive hits naturally route
+        // dashboard -> side frame -> across -> opposite frame -> roof
+        // instead of settling into a vertical rhythm.
+        const speed = Math.hypot(c.vx, c.vy) || 1;
+        const horizRatio = Math.abs(c.vx)/speed;
+        if (horizRatio < cfg.minHorizRatio){
+          c.vx += (cfg.minHorizRatio-horizRatio)*speed*(Math.random()<0.5?-1:1);
+        }
+        triggerSquash(c, bounceVel);
+        const isFirstHit = c.impactCount===0;
+        c.impactCount++;
+        const power = maybePlayPortraitImpact(c, bounceVel, false);
+        triggerImpactHitStop(c, power);
+        if (isFirstHit){
+          // READABILITY PASS — the launch itself stays exactly as fast/
+          // violent as before; this one-time cut right after the FIRST
+          // real hit is what actually slows the rest of the sequence down
+          // into something trackable, without touching restitution/
+          // gravity (bounce-to-bounce energy loss still works normally
+          // from this new, lower baseline).
+          c.vx *= cfg.postFirstHitEnergyMult;
+          c.vy *= cfg.postFirstHitEnergyMult;
+          c.vrot *= cfg.postFirstHitEnergyMult;
+        }
+        if (c.impactCount >= c.impactsTarget) c.readyToExit = true;
+      }
+    }
+  }
+  applyPortraitTransform(c);
+}
+/* Shared rAF clock driving a WHOLE GROUP of ejected portraits together
+   (multi-KO pass) — a single KO is simply a group of one, so this is now
+   the only physics loop; ejectPortrait below is a thin single-portrait
+   wrapper around it. Each frame: individual environment collision per
+   portrait (stepPortrait, unchanged), THEN one pairwise pass resolving
+   portrait-vs-portrait contact (resolvePortraitPair) so a rapid multi-KO
+   sequence can produce genuine mid-air collisions between the ejected
+   faces — solid rotating squares colliding with each other, not just the
+   environment. `_activeAt` is the non-blocking hit-stop: a portrait whose
+   own BLAM is still "frozen" for its brief hitStopMs simply isn't
+   stepped yet (still rendered/masked in place) — this lets a multi-KO's
+   own 80-140ms POP-to-POP stagger stay accurate without each portrait's
+   own hit-stop eating into that gap. Resolves once EVERY portrait in the
+   group has genuinely left the viewport (or hit the safety valve) —
+   TABLE CLEAR/subsequent flow can only proceed once this whole group is
+   done (see playEliminationGroup/resolveEliminations). */
+function runPortraitGroupPhysics(cs, obstacles){
+  const cfg = KO_PORTRAIT_PHYSICS_CONFIG;
+  if (!cs.length) return Promise.resolve();
+  return new Promise(resolve=>{
+    let last = performance.now();
+    function frame(now){
+      const dt = Math.min(0.032, (now-last)/1000);
+      last = now;
+      cs.forEach(c=>{
+        if (c.done) return;
+        if (now < c._activeAt){ applyPortraitTransform(c); return; }
+        stepPortrait(c, dt, obstacles);
+      });
+      for (let i=0;i<cs.length;i++){
+        for (let j=i+1;j<cs.length;j++) resolvePortraitPair(cs[i], cs[j]);
+      }
+      let allDone = true;
+      cs.forEach(c=>{
+        if (c.done) return;
+        const m = cfg.exitMarginPx;
+        const offscreen = c.exiting && (
+          c.x+c.halfW < -m || c.x-c.halfW > innerWidth+m ||
+          c.y+c.halfH < -m || c.y-c.halfH > innerHeight+m
+        );
+        if (offscreen || (now-c._t0) > cfg.maxDurationMs) c.done = true;
+        if (!c.done) allDone = false;
+      });
+      if (!allDone) requestAnimationFrame(frame); else resolve();
+    }
+    requestAnimationFrame(frame);
+  });
+}
+/* Detaches one opponent's portrait from its socket and turns it into a
+   free-physics object, appending it into the SHARED `layer` the caller
+   provides (a single KO gets its own private layer; a multi-KO group
+   shares one, so every ejected portrait lives in the same physics arena
+   and can collide with each other). The real `.avatar` element (e.avatar)
+   is NOT the thing that flies: it has a permanent home in the panel
+   (seatEls/DEV-preview/table-reset code all hold a live reference to it),
+   so — same reasoning flyChip already uses for an opponent's seat, which
+   has no persistent visible pile of its own and spawns a fresh element
+   instead — this clones its current on-screen frame (identical rect,
+   identical innerHTML: same "IS the thing on frame one" trick) into a
+   standalone physics object, and in the SAME frame empties the real
+   avatar into a dead/dark socket look (`.socket-dead`), snaps back any
+   pressure/preload build-up, and gives the panel a small readable recoil
+   (`.elim-recoil`). The clone starts masked under the housing's own
+   bottom edge (see applyPortraitTransform) — it does NOT simply appear as
+   an already-visible top-layer image. This function does NOT run physics
+   itself — it's synchronous (no await), so a caller staggering several of
+   these across a multi-KO group gets an accurate POP-to-POP gap; physics
+   for the resulting `c` is the caller's job (see runPortraitGroupPhysics).
+   Returns null (after tidying the socket to its dead state) if the
+   avatar had no live rect to launch from. */
+function launchPortrait(e, ko, layer){
+  const avatar = e.avatar;
+  const rect = avatar && avatar.getBoundingClientRect();
+  const wrap = avatar && avatar.closest('.avatar-wrap');
+  if (!avatar || !rect || !rect.width){
+    if (avatar){ avatar.classList.remove('has-face'); avatar.innerHTML=''; avatar.classList.add('socket-dead'); }
+    if (wrap) wrap.classList.remove('pressure-build');
+    return null;
+  }
+  const housingRect = e.card && e.card.getBoundingClientRect();
+  const housingBottomY = (housingRect && housingRect.height) ? housingRect.bottom : rect.bottom;
+
+  const clone = document.createElement('div');
+  clone.className = 'ko-portrait' + (avatar.classList.contains('has-face') ? ' has-face' : '');
+  clone.innerHTML = avatar.innerHTML;
+  clone.style.left = rect.left+'px'; clone.style.top = rect.top+'px';
+  clone.style.width = rect.width+'px'; clone.style.height = rect.height+'px';
+  layer.appendChild(clone);
+
+  // The socket goes dark the instant the clone takes over — same frame,
+  // so there's never a moment with two portraits or an empty gap. Any
+  // pressure/preload build-up snaps back to normal in this same instant —
+  // the BLAM is when the housing releases, not before — and the panel
+  // itself gets a small, fast, readable recoil (a few px) as the physical
+  // reaction to firing the portrait out.
+  avatar.classList.remove('has-face');
+  avatar.innerHTML = '';
+  avatar.classList.add('socket-dead');
+  if (wrap) wrap.classList.remove('pressure-build');
+  if (e.card){ e.card.classList.remove('elim-recoil'); void e.card.offsetWidth; e.card.classList.add('elim-recoil'); }
+
+  const cfg = KO_PORTRAIT_PHYSICS_CONFIG;
+  const intensity = ko ? 1 : cfg.elimIntensity;
+  const vh = innerHeight, vw = innerWidth;
+  const cx = rect.left+rect.width/2, cy = rect.top+rect.height/2;
+  const now = performance.now();
+  const c = {
+    el: clone,
+    x: cx, y: cy,
+    vx: (Math.random()*2-1)*vw*cfg.ejectLateralMaxVw*intensity,
+    vy: (vh*cfg.ejectSpeedMinVh + Math.random()*vh*(cfg.ejectSpeedMaxVh-cfg.ejectSpeedMinVh))*intensity,
+    rot: 0, vrot: (Math.random()<0.5?-1:1)*(cfg.ejectSpinMin+Math.random()*(cfg.ejectSpinMax-cfg.ejectSpinMin)),
+    halfW: rect.width/2, halfH: rect.height/2,
+    impactCount: 0,
+    impactsTarget: cfg.minImpacts + Math.floor(Math.random()*(cfg.maxImpacts-cfg.minImpacts+1)),
+    readyToExit: false, exiting: false, done: false, lastImpactAt: 0,
+    emerged: false, housingBottomY, _squashT0: 0,
+    _t0: now, _activeAt: now + (cfg.hitStopMs||0), // non-blocking hit-stop — stepping just skips this portrait until _activeAt
+    // Resolved once from the real viewport rather than fixed px.
+    gravity: vh*cfg.gravityVh,
+    dashboardKick: vh*cfg.dashboardKickVh,
+    impactVelThreshold: vh*cfg.impactVelThresholdVh,
+    exitSpeedMin: vh*cfg.exitSpeedMinVh, exitSpeedMax: vh*cfg.exitSpeedMaxVh
+  };
+  applyPortraitTransform(c); // establish the under-housing mask before the first paint
+
+  // BLAM, then the socket spark right behind it (spark trails the blast,
+  // not the other way round).
+  Sound.koBlast();
+  haptic(ko ? [40,22,58] : [28,18,44]);
+  if (wrap){ wrap.classList.remove('socket-spark'); void wrap.offsetWidth; wrap.classList.add('socket-spark'); }
+  Sound.koSocketSpark();
+
+  return c;
+}
+/* Single-K.O. entry point — unchanged behaviour, now implemented as a
+   group of one sharing the exact same launch/physics machinery a
+   multi-KO group uses. */
+async function ejectPortrait(e, ko){
+  const layer = document.createElement('div');
+  layer.className = 'ko-physics-layer';
+  document.body.appendChild(layer);
+  const c = launchPortrait(e, ko, layer);
+  if (!c){ layer.remove(); return; }
+  await runPortraitGroupPhysics([c], koObstacles());
   layer.remove();
 }
 /* Top-level pot-smash orchestrator: TOTAL plate drop -> impact (felt

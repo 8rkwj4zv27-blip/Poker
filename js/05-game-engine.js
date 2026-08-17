@@ -1398,9 +1398,19 @@ function ordinal(n){
    this hand" (which could credit a K.O. for an unrelated side pot the
    busted player was never part of). See the Phase 1 plan §5 for the full
    reasoning. */
+/* KO-attribution/elimination-state logic is entirely unchanged here — the
+   only thing this pass touches is HOW the resulting group is presented
+   (see playEliminationGroup, 06-presentation.js). All bookkeeping (ko
+   attribution, p.eliminated/p.inHand, run KO counters, logMsg) still
+   happens per player, up front, exactly as before — only the awaited
+   presentation call moved from "one full sequence per player, serially"
+   to "one batched call for the whole group" (a single-player hand still
+   produces a group of one, and playEliminationGroup's own single-entry
+   path is presentation-identical to the old per-player call). */
 async function resolveEliminations(g, outcome){
   const busted = g.players.filter(p=>!p.isHuman && !p.eliminated && p.chips<=0);
   let humanKOs=0;
+  const entries = [];
   for (const p of busted){
     let ko = false;
     if (outcome.type === 'showdown' && Array.isArray(outcome.potResults)){
@@ -1418,28 +1428,32 @@ async function resolveEliminations(g, outcome){
     p.inHand = false;
     if (ko && g.run && g.run.active){ g.run.totalKOs++; g.run.tableKOs++; humanKOs++; }
     logMsg(p.name + (ko ? ' is knocked out!' : ' is eliminated!'), true);
-    await playElimination(p, { ko });
+    entries.push({ p, ko });
   }
+  await playEliminationGroup(entries);
   return {koCount:humanKOs};
 }
 
 /* Shared K.O.!/ELIMINATED! presentation (see resolveEliminations above for
-   how `ko` is decided). Physical-polish redesign: a failed player module
-   getting violently ejected from the machine, not a long theatrical damage
-   ladder. Stage sequence: brief settle -> defeated expression -> 2-3 short
-   brutal THUNKs -> K.O./ELIMINATED stamp (established action-bar slot,
-   never over the face) -> hardware powers down (flicker, dim) -> a short
-   "unlatching" glitch (reuses the existing stroboscopic .elim-critical
-   jitter) -> a brief anticipation beat -> the whole panel is violently
-   EJECTED from its slot (.elim-eject, a fast rotate+translate+fade with a
-   forwards fill, so the panel simply stays gone afterward — no DOM removal
-   needed). All timings/intensities come from ELIMINATION_CONFIG. This
-   always runs strictly after the pot-smash payout ceremony has fully
+   how `ko` is decided). Physical-polish redesign: a failed portrait MODULE
+   getting violently ejected from the machine — the opponent panel itself
+   is the socket/housing and never moves. Stage sequence: brief settle ->
+   defeated expression -> 2-3 short brutal THUNKs -> K.O./ELIMINATED stamp
+   (established action-bar slot, never over the face) -> hardware powers
+   down (flicker, dim) -> a short "unlatching" glitch (reuses the existing
+   stroboscopic .elim-critical jitter) -> a brief anticipation beat -> the
+   portrait is blasted out through the bottom of its socket and becomes a
+   free-physics object that ricochets 3-6 times before a guaranteed forced
+   exit off-screen (see ejectPortrait, 06-presentation.js) — the socket
+   itself is left behind in a dark/dead `.socket-dead` state. All non-eject
+   timings/intensities come from ELIMINATION_CONFIG; the eject stage's own
+   duration is physics-driven (see KO_PORTRAIT_PHYSICS_CONFIG), not fixed.
+   This always runs strictly after the pot-smash payout ceremony has fully
    resolved (resolveEliminations is only ever called once
    runShowdownAwardSequence's payout has completed — untouched by this
    pass) and TABLE CLEARED still can't appear until every busted player's
-   full sequence here, including the eject, has resolved (resolveEliminations
-   awaits this function in a loop — also untouched). */
+   full sequence here, including the portrait's exit, has resolved
+   (resolveEliminations awaits this function in a loop — also untouched). */
 async function playElimination(p, opts){
   const ko = !!(opts && opts.ko);
   const e = seatEls[p.id];
@@ -1447,7 +1461,6 @@ async function playElimination(p, opts){
   const idx = game.players.indexOf(p);
   const cfg = ko ? ELIMINATION_CONFIG.koTimings : ELIMINATION_CONFIG.elimTimings;
   const shake = ko ? ELIMINATION_CONFIG.shakeIntensity.ko : ELIMINATION_CONFIG.shakeIntensity.elim;
-  const hits = ko ? ELIMINATION_CONFIG.hitCount.ko : ELIMINATION_CONFIG.hitCount.elim;
   const card = e.card;
 
   const showFace = mood => {
@@ -1483,12 +1496,10 @@ async function playElimination(p, opts){
   if (motionOff()){
     // Same accessibility contract as the rest of the game (see playDeath's
     // own motionOff() guard): jump straight to the settled end state
-    // rather than skipping the reaction entirely. The panel is simply
-    // gone (elim-eject's own forwards fill resolves instantly under the
-    // global [data-motion="off"]/prefers-reduced-motion CSS override) —
+    // rather than skipping the reaction entirely. The panel stays put; the
+    // portrait/socket just jumps straight to its dead/empty end state —
     // no violent motion is ever forced on a reduced-motion user.
-    showFace('dead');
-    card.classList.add('elim-eject');
+    if (e.avatar){ e.avatar.classList.remove('has-face'); e.avatar.innerHTML=''; e.avatar.classList.add('socket-dead'); }
     e.root.classList.add('dead');
     stampActionBar();
     Sound.busted(false);
@@ -1503,14 +1514,15 @@ async function playElimination(p, opts){
   // DEFEATED EXPRESSION
   showFace('shock');
 
-  // THUNK -> THUNK (-> THUNK for a K.O.) — a few short, brutal jolts, not
-  // an escalating hit ladder.
-  for (let i=0;i<hits;i++){
-    hit(1 + i*0.6);
-    await sleep(cfg.hitMs + cfg.hitHoldMs);
-    clearHit();
-    if (i<hits-1) await sleep(cfg.hitGapMs);
-  }
+  // RATTLE -> stronger shake — escalating magnitude (pop-emphasis pass:
+  // reads more like genuine building tension than a decaying hit ladder).
+  hit(1.0);
+  await sleep(cfg.hitMs + cfg.hitHoldMs);
+  clearHit();
+  await sleep(cfg.hitGapMs);
+  hit(1.8);
+  await sleep(cfg.hitMs + cfg.hitHoldMs);
+  clearHit();
 
   // K.O./ELIMINATED stamp — same established action-bar slot as before.
   // No crossfade: the face swap is a straight innerHTML replace (see
@@ -1520,34 +1532,174 @@ async function playElimination(p, opts){
   Sound.busted(false);
   if (ko){ Sound.humanKO(); haptic(40); }
 
-  // HARDWARE DIES — lights/readouts flicker, then fail dim.
+  await sleep(cfg.thunkGapMs);
+
+  // INTERNAL THUNK — hardware dies (flicker -> dim) paired with one
+  // heavier, distinct thump, then a brief unlatch glitch. This is its own
+  // beat, separate from the two shakes above.
   card.style.setProperty('--fail-ms', cfg.failMs + 'ms');
   card.classList.add('elim-fail');
+  Sound.koThunk(2.4);
+  haptic(ko ? 50 : 34);
   await sleep(cfg.failMs);
-
-  // CLICK/FAIL — the panel looks momentarily broken/unlatched. Reuses the
-  // existing stroboscopic .elim-critical jitter (JS still owns how long
-  // this window lasts, same as the old design).
   card.classList.add('elim-critical');
   Sound.koFailClick();
   await sleep(cfg.glitchMs);
   card.classList.remove('elim-critical');
 
+  // PRELOAD/COMPRESSION -> COMPLETE STILLNESS -> anticipation -> BLAM. A
+  // clearly readable squash on the socket itself — "something's being
+  // compressed in there, about to let go" — grows in over this same beat
+  // and then HOLDS (forwards fill), which is the "complete stillness":
+  // nothing else animates during this pause, it's a held, dead-calm beat
+  // right before the portrait fires. ejectPortrait() removes the class in
+  // the same synchronous instant the BLAM fires — an immediate snap back,
+  // never an eased return — and resolves once the portrait has genuinely
+  // ricocheted its way off-screen, so TABLE CLEAR (resolveEliminations
+  // awaits this whole function) can never appear while it's still
+  // bouncing.
+  if (e.avatar){
+    const wrap = e.avatar.closest('.avatar-wrap');
+    if (wrap){
+      wrap.style.setProperty('--pressure-ms', cfg.anticipateMs + 'ms');
+      wrap.classList.remove('pressure-build'); void wrap.offsetWidth; wrap.classList.add('pressure-build');
+    }
+  }
   await sleep(cfg.anticipateMs);
-
-  // EJECT — the whole panel violently expelled from its slot, like a
-  // spent shell casing. --eject-dir mirrors the direction per opponent so
-  // a run of several K.O.s in the same TABLE CLEAR doesn't look identical
-  // every time. forwards fill means the panel just stays gone — nothing
-  // to remove from the DOM, nothing for a later render() to fight over.
-  card.style.setProperty('--eject-dir', Math.random()<0.5 ? '-1' : '1');
-  card.style.setProperty('--eject-ms', cfg.ejectMs + 'ms');
-  card.classList.add('elim-eject');
-  Sound.koEject();
-  haptic(ko ? [30,20,45] : [24,16,30]);
-  await sleep(cfg.ejectMs);
+  await ejectPortrait(e, ko);
 
   e.root.classList.add('dead');
+  await sleep(cfg.aftermathMs);
+  render();
+}
+
+/* Multi-KO batching (pop-emphasis pass): when a single hand eliminates
+   several opponents at once, they no longer each run the full sequence
+   above serially, one after another. Instead every eliminated seat's
+   build-up (shake -> rattle -> stronger shake -> stamp -> internal THUNK
+   -> preload squash -> shared stillness) runs TOGETHER, then their
+   portraits POP in rapid succession (ELIMINATION_CONFIG.multiKoPopGapMin
+   -Max apart) into ONE shared physics arena where they can ricochet off
+   the environment AND off each other (see launchPortrait/
+   runPortraitGroupPhysics, 06-presentation.js). A single-entry group is
+   presentation-identical to playElimination() above (same beats, same
+   timings) — this exists purely for genuine multi-KO hands. */
+async function playEliminationGroup(entries){
+  if (!entries.length) return;
+  if (entries.length === 1){ await playElimination(entries[0].p, {ko:entries[0].ko}); return; }
+
+  const anyKo = entries.some(x=>x.ko);
+  const cfg = anyKo ? ELIMINATION_CONFIG.koTimings : ELIMINATION_CONFIG.elimTimings;
+  const shake = anyKo ? ELIMINATION_CONFIG.shakeIntensity.ko : ELIMINATION_CONFIG.shakeIntensity.elim;
+
+  const live = entries.map(({p,ko})=>{
+    const e = seatEls[p.id];
+    return (e && e.card) ? { p, ko, e, idx: game.players.indexOf(p) } : null;
+  }).filter(Boolean);
+  if (!live.length) return;
+
+  if (motionOff()){
+    live.forEach(le=>{
+      le.e._mood = null;
+      if (le.e.avatar){ le.e.avatar.classList.remove('has-face'); le.e.avatar.innerHTML=''; le.e.avatar.classList.add('socket-dead'); }
+      le.e.root.classList.add('dead');
+      le.p.streetAction = { type: le.ko?'ko':'eliminated', label: le.ko?'K.O.!':'ELIMINATED!', amount:0 };
+    });
+    Sound.busted(false);
+    if (anyKo){ Sound.humanKO(); haptic(40); }
+    render();
+    return;
+  }
+
+  const showFace = (le, mood)=>{
+    le.e._mood = null;
+    le.e.avatar.classList.add('has-face');
+    le.e.avatar.innerHTML = renderFace(le.p.personality && le.p.personality.key, mood, aiHue(le.idx));
+  };
+  const hitAll = mult=>{
+    live.forEach(le=>{
+      const dir = Math.random()<0.5 ? -1 : 1;
+      const card = le.e.card;
+      card.style.setProperty('--hit-dx', Math.round(dir*(9+4*mult)*shake) + 'px');
+      card.style.setProperty('--hit-dy', Math.round((Math.random()<0.4 ? -1 : 0)*(1+mult)) + 'px');
+      card.style.setProperty('--hit-ms', cfg.hitMs + 'ms');
+      card.classList.remove('elim-hit'); void card.offsetWidth; card.classList.add('elim-hit');
+    });
+    Sound.koThunk(1+mult*0.35);
+    haptic(18+Math.round(mult*10));
+  };
+  const clearHitAll = ()=>live.forEach(le=>le.e.card.classList.remove('elim-hit'));
+
+  // SETTLE -> DEFEATED EXPRESSION, together.
+  await sleep(cfg.settleMs);
+  live.forEach(le=>showFace(le,'shock'));
+
+  // RATTLE -> stronger shake, together (same escalating rhythm as the
+  // single-elimination path above).
+  hitAll(1.0);
+  await sleep(cfg.hitMs + cfg.hitHoldMs);
+  clearHitAll();
+  await sleep(cfg.hitGapMs);
+  hitAll(1.8);
+  await sleep(cfg.hitMs + cfg.hitHoldMs);
+  clearHitAll();
+
+  // K.O./ELIMINATED stamp, together — one render() covers every seat.
+  live.forEach(le=>{
+    showFace(le,'dead');
+    le.p.streetAction = { type: le.ko?'ko':'eliminated', label: le.ko?'K.O.!':'ELIMINATED!', amount:0 };
+    if (le.e.actionSlot){ le.e.actionSlot.classList.remove('elim-slam'); void le.e.actionSlot.offsetWidth; le.e.actionSlot.classList.add('elim-slam'); }
+  });
+  render();
+  Sound.busted(false);
+  if (anyKo){ Sound.humanKO(); haptic(40); }
+
+  await sleep(cfg.thunkGapMs);
+
+  // INTERNAL THUNK, together.
+  live.forEach(le=>{
+    le.e.card.style.setProperty('--fail-ms', cfg.failMs + 'ms');
+    le.e.card.classList.add('elim-fail');
+  });
+  Sound.koThunk(2.4);
+  haptic(anyKo ? 50 : 34);
+  await sleep(cfg.failMs);
+  live.forEach(le=>le.e.card.classList.add('elim-critical'));
+  Sound.koFailClick();
+  await sleep(cfg.glitchMs);
+  live.forEach(le=>le.e.card.classList.remove('elim-critical'));
+
+  // PRELOAD/COMPRESSION -> shared COMPLETE STILLNESS -> anticipation,
+  // together — every socket compresses and holds at once.
+  live.forEach(le=>{
+    if (!le.e.avatar) return;
+    const wrap = le.e.avatar.closest('.avatar-wrap');
+    if (wrap){
+      wrap.style.setProperty('--pressure-ms', cfg.anticipateMs + 'ms');
+      wrap.classList.remove('pressure-build'); void wrap.offsetWidth; wrap.classList.add('pressure-build');
+    }
+  });
+  await sleep(cfg.anticipateMs);
+
+  // Staggered POPs — every launch shares ONE physics layer/arena so the
+  // ejected portraits can pinball off each other, but each still gets its
+  // own BLAM/spark/recoil at the instant it fires (see launchPortrait).
+  const layer = document.createElement('div');
+  layer.className = 'ko-physics-layer';
+  document.body.appendChild(layer);
+  const cs = [];
+  for (let i=0;i<live.length;i++){
+    const c = launchPortrait(live[i].e, live[i].ko, layer);
+    if (c) cs.push(c);
+    if (i < live.length-1){
+      const gap = ELIMINATION_CONFIG.multiKoPopGapMin + Math.random()*(ELIMINATION_CONFIG.multiKoPopGapMax-ELIMINATION_CONFIG.multiKoPopGapMin);
+      await sleep(gap);
+    }
+  }
+  if (cs.length) await runPortraitGroupPhysics(cs, koObstacles());
+  layer.remove();
+
+  live.forEach(le=>le.e.root.classList.add('dead'));
   await sleep(cfg.aftermathMs);
   render();
 }
@@ -1644,6 +1796,10 @@ function resetForNextRunTable(g){
    otherwise outlive a hand: classes, animations, inline motion, expressions,
    labels, cards and timer-backed seat effects. */
 function resetRunSeatDOM(g){
+  // A run/table reset can land mid-K.O. (e.g. DEV END TABLE fired while a
+  // portrait was still ricocheting) — strip any in-flight ejection layer
+  // so a stale free-physics portrait never survives into the next table.
+  document.querySelectorAll('.ko-physics-layer').forEach(l=>l.remove());
   g.players.forEach((p,idx)=>{
     const e = seatEls[p.id];
     if (!e) return;
@@ -1659,7 +1815,7 @@ function resetRunSeatDOM(g){
     }
     if (e.card){
       e.card.getAnimations().forEach(a=>a.cancel());
-      e.card.classList.remove('elim-hit','elim-critical','elim-freeze','elim-pop','elim-fail','elim-eject','winner-pop');
+      e.card.classList.remove('elim-hit','elim-critical','elim-freeze','elim-pop','elim-fail','elim-eject','elim-recoil','winner-pop');
       ['transform','opacity','visibility','filter','animation','transition','--elim-cur-scale','--hit-dx','--hit-dy','--hit-ms','--fail-ms','--eject-dir','--eject-ms'].forEach(k=>e.card.style.removeProperty(k));
     }
     if (e.cardsContainer) e.cardsContainer.innerHTML = '';
@@ -1670,6 +1826,8 @@ function resetRunSeatDOM(g){
       e.avatar.className = 'avatar has-face';
       e.avatar.removeAttribute('style');
       e.avatar.innerHTML = renderFace(p.personality && p.personality.key,'idle',aiHue(idx));
+      const wrap = e.avatar.closest('.avatar-wrap');
+      if (wrap){ wrap.classList.remove('socket-spark', 'pressure-build'); wrap.style.removeProperty('--pressure-ms'); }
     }
   });
 }

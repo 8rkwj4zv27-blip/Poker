@@ -100,16 +100,54 @@ function devTestKoEject(){
   const target = game.players.find(p=>!p.isHuman && !p.eliminated);
   if (!target) return;
   const e = seatEls[target.id];
-  if (!e || !e.card || !e.root) return;
-  e.card.classList.remove('elim-hit','elim-critical','elim-pop','elim-fail','elim-eject');
+  if (!e || !e.card || !e.root || !e.avatar) return;
+  // Strip any physics layer left over from an interrupted previous
+  // preview so repeated TEST KO EJECT presses never stack ejected
+  // portraits on top of each other.
+  document.querySelectorAll('.ko-physics-layer').forEach(l=>l.remove());
+  e.card.classList.remove('elim-hit','elim-critical','elim-fail','elim-recoil');
   e.card.style.cssText = '';
   e.root.classList.remove('dead');
+  e.avatar.classList.remove('socket-dead');
+  const wrap = e.avatar.closest('.avatar-wrap');
+  if (wrap) wrap.classList.remove('socket-spark', 'pressure-build');
   target.streetAction = null;
   e.avatar.classList.add('has-face');
   e.avatar.innerHTML = renderFace(target.personality && target.personality.key, 'idle', aiHue(game.players.indexOf(target)));
   render();
-  logMsg('[DEV] Previewing K.O. eject on ' + target.name, true);
+  logMsg('[DEV] Previewing K.O. portrait ejection on ' + target.name, true);
   playElimination(target, { ko:true });
+}
+/* Multi-KO batching preview (pop-emphasis pass) — same "presentation-only,
+   never touches real p.eliminated/p.chips/resolveEliminations" contract
+   as devTestKoEject above, just for N seats at once so the grouped
+   shake-together/staggered-POP/shared-physics-arena behaviour can be
+   judged directly without needing a genuine multi-way all-in. `n` is
+   clamped to however many live (non-eliminated) opponents actually exist
+   (2 or 3 opponents at the table can only ever preview a double, not a
+   quad) — repeatable without a table reset, same reset-then-run pattern
+   as the single-target preview. */
+function devTestKoEjectGroup(n){
+  if (!DEV_MODE || !game || game.mode!=='elimination') return;
+  const targets = game.players.filter(p=>!p.isHuman && !p.eliminated).slice(0, n);
+  if (targets.length < 2) { logMsg('[DEV] Not enough live opponents for a '+n+'-KO preview', true); return; }
+  document.querySelectorAll('.ko-physics-layer').forEach(l=>l.remove());
+  targets.forEach(target=>{
+    const e = seatEls[target.id];
+    if (!e || !e.card || !e.root || !e.avatar) return;
+    e.card.classList.remove('elim-hit','elim-critical','elim-fail','elim-recoil');
+    e.card.style.cssText = '';
+    e.root.classList.remove('dead');
+    e.avatar.classList.remove('socket-dead');
+    const wrap = e.avatar.closest('.avatar-wrap');
+    if (wrap) wrap.classList.remove('socket-spark', 'pressure-build');
+    target.streetAction = null;
+    e.avatar.classList.add('has-face');
+    e.avatar.innerHTML = renderFace(target.personality && target.personality.key, 'idle', aiHue(game.players.indexOf(target)));
+  });
+  render();
+  logMsg('[DEV] Previewing '+targets.length+'-way grouped K.O. ejection on '+targets.map(t=>t.name).join(', '), true);
+  playEliminationGroup(targets.map(p=>({ p, ko:true })));
 }
 function devBustMe(){
   if (!handInProgress() || game.mode!=='elimination') return;
@@ -154,6 +192,7 @@ function devEndTable(){
   clearHumanReadouts();
   hideReview();
   g.currentIndex = -1;
+  document.querySelectorAll('.ko-physics-layer').forEach(l=>l.remove());
   g.players.filter(p=>!p.isHuman).forEach((p,idx)=>{
     p.chips=0; p.eliminated=true; p.inHand=false; p.folded=false; p.allIn=false;
     p.betThisRound=0; p.totalBetHand=0; p.acted=true; p.mayRaise=false;
@@ -162,6 +201,7 @@ function devEndTable(){
     const e=seatEls[p.id];
     if (e && e.avatar){
       e._mood=null;
+      e.avatar.classList.remove('socket-dead');
       e.avatar.classList.add('has-face');
       e.avatar.innerHTML=renderFace(p.personality&&p.personality.key,'dead',aiHue(g.players.indexOf(p)));
     }
@@ -200,6 +240,8 @@ function initDevPanel(){
         '<button id="dev-clear-table" type="button">CLEAR TABLE</button>' +
         '<button id="dev-end-table" type="button">END TABLE</button>' +
         '<button id="dev-ko-eject" type="button">TEST KO EJECT</button>' +
+        '<button id="dev-ko-eject-2" type="button">TEST DOUBLE KO</button>' +
+        '<button id="dev-ko-eject-4" type="button">TEST QUAD KO</button>' +
       '</div>' +
         '<div id="dev-arcade-controls">' +
         '<div class="dev-section-title">ARCADE TEST</div>' +
@@ -255,6 +297,8 @@ function initDevPanel(){
   $('dev-bust-me').onclick = devBustMe;
   $('dev-clear-table').onclick = devClearTable;
   $('dev-ko-eject').onclick = devTestKoEject;
+  $('dev-ko-eject-2').onclick = ()=>devTestKoEjectGroup(2);
+  $('dev-ko-eject-4').onclick = ()=>devTestKoEjectGroup(4);
   $('dev-end-table').onclick = devEndTable;
   const runArcadeDevTest=fn=>()=>{
     fn();
@@ -293,6 +337,8 @@ function refreshDevPanel(){
   $('dev-bust-me').disabled = !(inElim && hip);
   $('dev-clear-table').disabled = !(inElim && bh);
   $('dev-ko-eject').disabled = !(inElim && bh);
+  $('dev-ko-eject-2').disabled = !(inElim && bh);
+  $('dev-ko-eject-4').disabled = !(inElim && bh);
   $('dev-end-table').disabled = !(inElim && game.run && !game.over && !game._transitioning);
   const status = $('dev-status');
   if (status) status.textContent = (FAST_DEV ? '[FAST] ' : '') + (game ? ('mode:' + game.mode +
