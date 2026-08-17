@@ -219,6 +219,21 @@ input[type=range]::-moz-range-thumb{
     0 2px 0 color-mix(in srgb, var(--accent) 55%, black), 0 2px 0 2px var(--px-ink),
     inset 0 3px 0 rgba(255,255,255,.32);
 }
+/* NEXT TABLE reuses the exact same physical face/shell as AWARD POT (see
+   enterResultsConsole(), 06-presentation.js) — this is the one thing that
+   actually distinguishes it: bigger type, wider tracking, and a slow
+   restrained pulse on the rim so the machine reads as "ready and
+   waiting for you" rather than a one-shot momentary control. */
+.btn-award-console.next-table-mode{
+  font-size:15px; letter-spacing:.08em;
+  animation:nextTablePulse 2.2s steps(8,end) infinite;
+}
+@keyframes nextTablePulse{
+  0%,100%{ box-shadow:0 6px 0 color-mix(in srgb, var(--accent) 55%, black), 0 6px 0 2px var(--px-ink), inset 0 3px 0 rgba(255,255,255,.32), inset 0 -3px 0 rgba(0,0,0,.16), 0 0 0 0 transparent; }
+  50%{ box-shadow:0 6px 0 color-mix(in srgb, var(--accent) 55%, black), 0 6px 0 2px var(--px-ink), inset 0 3px 0 rgba(255,255,255,.32), inset 0 -3px 0 rgba(0,0,0,.16), 0 0 14px 2px color-mix(in srgb, var(--accent-bright) 55%, transparent); }
+}
+.btn-award-console.next-table-mode.is-pressed{ animation:none; }
+[data-motion="off"] .btn-award-console.next-table-mode{ animation:none; }
 .wide-btn{
   width:100%; min-height:56px; padding:15px; border:2px solid var(--px-ink); border-radius:var(--radius);
   font-family:var(--font-hdr); font-size:13px; font-weight:400; cursor:pointer; text-transform:uppercase; letter-spacing:.04em;

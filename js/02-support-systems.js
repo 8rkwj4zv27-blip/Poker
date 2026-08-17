@@ -217,7 +217,7 @@ const DEFAULT_SETTINGS = {
 const DEFAULT_STATS = { hands:0, won:0, showdownsWon:0, biggestPot:0, net:0 };
 const SAVE_VERSION = 1;
 /* Bump on every release so the main-menu header shows what's actually installed. */
-const BUILD_VERSION = 'v0.13.2 · 95e180c';
+const BUILD_VERSION = 'v0.13.4-dev · results-stage';
 
 let settings = Object.assign({}, DEFAULT_SETTINGS, Store.get('felt.settings', {}));
 let stats = Object.assign({}, DEFAULT_STATS, Store.get('felt.stats', {}));
@@ -688,6 +688,47 @@ const Sound = (function(){
     });
   }
 
+  /* -- 14e. Central stage roll (mechanical loader, table-cleared/next-table
+     transition) — a small physical event family, matching the hatch's
+     click/clunk pairing rather than inventing new language. unlock is the
+     tiny latch-release tick (same shape as hatchOpenSound, brighter/
+     shorter). roll is a scheduled series of low ratchet ticks spread
+     across the travel time — this module has no real audio-loop
+     primitive, so a sustained mechanical texture is built the same way
+     doButtonRelease()'s 'award' case schedules a follow-up hit: several
+     noise ticks fired via setTimeout across the given duration, each with
+     a little jitter so it doesn't read as a repeating sample. lock is the
+     heavy final clunk
+     when the new stage seats into the bay — deliberately the weightiest
+     of the three, distinct from hatchCloseSound (lower, longer body). */
+  function stageUnlockSound(){
+    withVoiceCap(120, ()=>{
+      noise(0.016, 0.05, { filterType:'highpass', freq:3000, decayPow:2.8 });
+      blip(1500, 0.035, 'square', 0.025, 0.008);
+    });
+  }
+  function stageRollSound(durationMs){
+    const c = ac(); if (!c) return;
+    const durMs = Math.max(120, durationMs||600);
+    const tickGapMs = 75; // ~13 ticks/sec — a slow, chunky ratchet, not a whir
+    const count = Math.max(2, Math.floor(durMs / tickGapMs));
+    withVoiceCap(durMs+120, ()=>{
+      for (let i=0;i<count;i++){
+        const atMs = i*tickGapMs * (0.94+Math.random()*0.12);
+        if (atMs >= durMs) break;
+        const j = 0.9+Math.random()*0.2;
+        setTimeout(()=>noise(0.03+Math.random()*0.012, 0.045*j, { filterType:'lowpass', freq:340*j, freqSweepTo:150*j, decayPow:2.4 }), atMs);
+      }
+    });
+  }
+  function stageLockSound(){
+    withVoiceCap(300, ()=>{
+      noise(0.09, 0.13, { filterType:'lowpass', freq:220, freqSweepTo:65, decayPow:1.7 });
+      blip(130, 0.12, 'square', 0.07);
+      blip(78, 0.14, 'triangle', 0.05, 0.045);
+    });
+  }
+
   /* Arcade scoring hooks. These are deliberately synthesized from the
      existing noise/tone toolkit so the feature has a complete event API
      without adding assets or a second audio system. */
@@ -814,7 +855,10 @@ const Sound = (function(){
     koPortraitClack(power){ if (this.sfxV1Enabled) koPortraitClackSound(power); },
     koSocketSpark(){ if (this.sfxV1Enabled) koSocketSparkSound(); },
     hatchOpen(){ if (this.sfxV1Enabled) hatchOpenSound(); },
-    hatchClose(){ if (this.sfxV1Enabled) hatchCloseSound(); }
+    hatchClose(){ if (this.sfxV1Enabled) hatchCloseSound(); },
+    stageUnlock(){ if (this.sfxV1Enabled) stageUnlockSound(); },
+    stageRoll(durationMs){ if (this.sfxV1Enabled) stageRollSound(durationMs); },
+    stageLock(){ if (this.sfxV1Enabled) stageLockSound(); }
   };
 })();
 function haptic(pattern){

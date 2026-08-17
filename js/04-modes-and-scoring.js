@@ -58,12 +58,21 @@ const ELIMINATION_CONFIG = {
    ELIMINATION_CONFIG; this object only owns round presentation/progression. */
 const ELIMINATION_RUN_CONFIG = {
   seatStaggerMs: 90,
-  seatExitMs: 620,
-  deckExitMs: 420,
-  themeSwapMs: 1100,
   seatArrivalMs: 680,
   announcementMs: 1200,
   readyBeatMs: 220,
+};
+
+/* Mechanical stage-roll transition (table-cleared <-> results <-> next
+   table) — the whole central playfield unlocking, rolling out/down and
+   being replaced by the next stage rolling in/down from above, as one
+   rigid unit. See rollStageTransition() in 06-presentation.js. */
+const STAGE_ROLL_CONFIG = {
+  breatheMs: 260,   // brief clean-table pause after cards finish returning, before the unlock click
+  unlockMs: 200,    // latch-release micro-jolt on the outgoing stage
+  rollMs: 680,      // outgoing/incoming stages travelling, concurrently
+  lockMs: 220,      // overshoot + settle as the incoming stage seats into the bay
+  consoleFlipBeatMs: 180, // short pause after the stage locks, before the action console flips mode
 };
 
 /* ============================================================

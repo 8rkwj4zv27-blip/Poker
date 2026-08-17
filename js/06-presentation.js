@@ -1131,6 +1131,77 @@ async function muckCards(){
   Sound.deckSettle(); // the cascade's own capstone, once every card has genuinely finished returning
 }
 
+/* ---- Mechanical stage-roll transition ----
+   The whole central playfield — #felt inside #stage-bay — unlocking,
+   rolling down out of the bay, and being replaced by the next stage
+   rolling down from above and locking in, as one rigid unit. Used both
+   for live-table -> TABLE CLEARED and TABLE CLEARED -> next table, always
+   in the same direction (down and out, down and in) — see showTableCleared
+   and beginNextRunTable (05-game-engine.js).
+
+   #felt's id/identity never moves — it's referenced by id far too widely
+   across the game to ever have a second element race for it mid-transition.
+   Instead, the OUTGOING content is a disposable cloneNode(true) snapshot
+   (ids stripped from the clone and every descendant, so it's never
+   addressable by $()/getElementById and never authoritative), rolled away
+   and discarded, while `populateFn` mutates the real #felt's content in
+   place and that's what rolls in from above and stays.
+
+   Callers are only ever expected to run this while the stage is otherwise
+   idle (no live hand in progress) — populateFn should leave #felt in
+   whatever state (poker table or results) is meant to be current. */
+async function rollStageTransition(populateFn){
+  const felt = $('felt'), bay = $('stage-bay');
+  if (!felt || !bay){ populateFn(felt); return; }
+
+  // Resilience: a resumed-from-background tab shouldn't inherit a
+  // half-played animation from an interrupted prior transition.
+  [felt, bay].forEach(el=>el.getAnimations().forEach(a=>a.cancel()));
+
+  // 1. Unlock — the outgoing stage releases its latch before it moves.
+  felt.classList.add('stage-unlock');
+  bay.classList.add('stage-unlock-flash');
+  Sound.stageUnlock();
+  await waitForRunAnimations([felt, bay], STAGE_ROLL_CONFIG.unlockMs);
+  felt.classList.remove('stage-unlock');
+  bay.classList.remove('stage-unlock-flash');
+
+  // 2. Snapshot the now-settled outgoing content as a disposable ghost.
+  const clone = felt.cloneNode(true);
+  clone.removeAttribute('id');
+  clone.querySelectorAll('[id]').forEach(node=>node.removeAttribute('id'));
+  clone.setAttribute('aria-hidden', 'true');
+  // Preserve felt's own current skin (e.g. results-mode) — only append the
+  // outgoing marker, don't replace it, or a themed stage would visually
+  // revert to plain felt while rolling away.
+  clone.className = felt.className;
+  clone.classList.add('stage-outgoing');
+  bay.insertBefore(clone, felt);
+
+  // 3. Swap the REAL felt's content instantly (this is the actual state
+  // change — the roll below just sells it), parked above ready to enter.
+  felt.className = 'felt';
+  populateFn(felt);
+
+  // 4. Roll — outgoing clone falls away as the real felt arrives, concurrently.
+  bay.classList.add('stage-rolling');
+  clone.classList.add('stage-rolling-out');
+  felt.classList.add('stage-rolling-in');
+  Sound.stageRoll(STAGE_ROLL_CONFIG.rollMs);
+  await waitForRunAnimations([clone, felt], STAGE_ROLL_CONFIG.rollMs);
+  clone.remove();
+  felt.classList.remove('stage-rolling-in');
+  bay.classList.remove('stage-rolling');
+
+  // 5. Lock — the incoming stage seats into the bay.
+  felt.classList.add('stage-lock');
+  bay.classList.add('stage-lock-flash');
+  Sound.stageLock();
+  await waitForRunAnimations([felt, bay], STAGE_ROLL_CONFIG.lockMs);
+  felt.classList.remove('stage-lock');
+  bay.classList.remove('stage-lock-flash');
+}
+
 function initSeats(){
   const felt = $('felt');
   const hudMid = $('hud-mid');
@@ -3752,6 +3823,58 @@ function showAwardConsole(label){
 function hideAwardConsole(){
   const flip = $('console-flip');
   if (flip) flip.classList.remove('flipped');
+}
+/* ---- RESULTS/dormant dashboard standby (table-cleared) ----
+   The fixed dashboard shell never moves or resizes for this — only its
+   gameplay-specific instruments go dark in place (see the #hud-frame.dormant
+   CSS, css/02-screens.css). BANKROLL (#jackpot) is deliberately never
+   touched here — it's persistent, run-carrying information and stays lit
+   throughout. Clearing the underlying per-player fields (not just DOM) is
+   what makes this safe against a stray render() call re-lighting anything:
+   updateHandInstrument()/updateInvestedReel() both read straight from
+   game/player state every time they're called, so once that state is
+   neutral there's nothing left for them to redraw. */
+function powerDownDashboard(g){
+  const frame = $('hud-frame');
+  if (!frame) return;
+  hideHudResultConsole();
+  g.players.forEach(p=>{ p.hand=[]; p.betThisRound=0; p.totalBetHand=0; });
+  g.positions = {};
+  const sb = $('hud-sb-indicator'), bb = $('hud-bb-indicator');
+  if (sb) sb.classList.remove('is-on');
+  if (bb) bb.classList.remove('is-on');
+  const action = $('hud-action'), pos = $('hud-pos');
+  if (action) action.classList.add('hidden');
+  if (pos) pos.classList.add('hidden');
+  frame.classList.add('dormant');
+}
+function powerUpDashboard(){
+  const frame = $('hud-frame');
+  if (frame) frame.classList.remove('dormant');
+}
+/* ---- RESULTS-mode action console (table-cleared -> NEXT TABLE) ----
+   Reuses the exact same physical flip as the per-hand AWARD POT face
+   (showAwardConsole/hideAwardConsole/#btn-award-pot-console) rather than
+   building a second mechanism — the two never overlap in time (award-pot
+   only fires mid-payout while a hand is live; results mode only begins
+   once the whole table is over), so the one flipped face can safely serve
+   both. waitForAwardPot() always re-wires btn.onclick fresh the next time
+   it's genuinely called, so a leftover NEXT TABLE handler here can never
+   leak into a real award-pot moment — but the label/class WOULD leak
+   without exitResultsConsole() explicitly cleaning them up, since nothing
+   else resets those between tables. */
+function enterResultsConsole(onNextTable){
+  const btn = $('btn-award-pot-console');
+  if (btn){
+    btn.classList.add('next-table-mode');
+    btn.onclick = ()=>{ Sound.buttonRelease('award'); onNextTable(); };
+  }
+  showAwardConsole('NEXT TABLE');
+}
+function exitResultsConsole(){
+  const btn = $('btn-award-pot-console');
+  if (btn){ btn.classList.remove('next-table-mode'); btn.onclick = null; }
+  hideAwardConsole();
 }
 /* Resolves once the player presses the bottom console's own AWARD POT
    face — the literal "wait as long as the player wants" mechanism. The

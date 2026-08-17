@@ -1307,26 +1307,68 @@ function bestHandResultHTML(best){
     (split.descriptor?'<div class="result-best-desc">'+esc(split.descriptor)+'</div>':'')+
     '<div class="result-best-cards">'+cards+'</div></section>';
 }
-function tableClearedHTML(g){
-  const r=g.run, human=g.players.find(p=>p.isHuman);
-  return '<div class="result-bezel result-bezel-win">' +
-    '<div class="result-eyebrow">ROUND COMPLETE <i></i> TABLE '+r.tableNumber+'</div>'+
-    '<header class="result-head result-head-win"><span>TABLE '+r.tableNumber+'</span><strong>CLEARED</strong></header>'+
-    '<div class="table-result-hero">'+
-      resultStat('K.O.s',r.tableKOs+' / '+ELIMINATION_CONFIG.opponents,'hero-ko')+
-      resultStat('Hands won',ratioResult(r.tableHandsWon,r.tableHands),'hero-record')+
-    '</div>'+
-    '<div class="table-result-instruments">'+
-      resultStat('Biggest pot won',moneyResult(r.tableBiggestPotWon),'accent-stat')+
-      resultStat('Peak stack',moneyResult(r.tableHighestStack),'')+
-      resultStat('Final stack',moneyResult(human?human.chips:0),'')+
-    '</div>'+
-    bestHandResultHTML(r.tableBestHand)+
-    '<div class="result-run-strip"><span>RUN SCORE <b class="tabular">'+formatArcadeScore(r.arcade?r.arcade.score:0)+'</b></span>'+
-      '<span>RUN K.O.s <b class="tabular">'+r.totalKOs+'</b></span>'+
-      '<span>NEXT <b>TABLE '+(r.tableNumber+1)+'</b></span></div>'+
-    '<button class="btn-primary result-primary" id="run-next-table" type="button">NEXT TABLE</button>'+
+/* BEST HAND trophy case for the results stage — deliberately NOT
+   bestHandResultHTML()/.result-best (that markup is shared with
+   runOverHTML's dense run-report grid and stays untouched). Pure normal
+   flow, no absolute positioning: label, then the five cards, then the
+   hand name, then its subtype, stacked and centred — nothing can overlap
+   because nothing is pulled out of flow. */
+function tableBestHandTrophyHTML(best){
+  if (!best){
+    return '<div class="stage-trophy pc-recess">'+
+      '<div class="stage-trophy-label">Best hand</div>'+
+      '<div class="stage-trophy-empty">No showdown hand recorded</div></div>';
+  }
+  const split=splitHandText(best.result.cat,best.name);
+  const displayCards=arrangeHandForDisplay(best.result.cat,best.cards);
+  const cards=displayCards.map(c=>'<div class="'+cardClass(false,c,true)+'" aria-label="'+esc(cardLabel(false,c))+'">'+cardInner(c)+'</div>').join('');
+  return '<div class="stage-trophy pc-recess">'+
+    '<div class="stage-trophy-label">Best hand</div>'+
+    '<div class="stage-trophy-cards">'+cards+'</div>'+
+    '<div class="stage-trophy-name">'+esc(split.category.toUpperCase())+'</div>'+
+    (split.descriptor?'<div class="stage-trophy-desc">'+esc(split.descriptor)+'</div>':'')+
   '</div>';
+}
+/* The results stage itself — not a card floating over the felt, not a
+   cleared poker table with stats on it. See .felt.results-mode /
+   rollStageTransition() in 06-presentation.js, which places this into the
+   real #felt (reskinned but keeping the felt's own curved-corner
+   silhouette) as the incoming stage. Built from the .pc-* physical-cabinet
+   primitives shared with the main menu and the live HUD's --machine-*
+   tokens — both resolve to the active table theme already, nothing new to
+   theme here. RUN SCORE is deliberately NOT repeated here — the fixed
+   SCORE cabinet directly above the bay already shows it. BANKROLL is the
+   one persistent, forward-carrying number, so it gets the strongest
+   instrument treatment (the same digit-cell readout as the live stack
+   readout); its '$' placeholder digits are filled for real by
+   buildResultAmount() right after this HTML is inserted (see
+   showTableCleared()) — string-built zeros here would otherwise flash
+   before being replaced. Returns the INNER content only — the caller's own
+   element carries class="stage-results" id="result-card" directly, so this
+   never nests a second .stage-results/.result-card box inside itself. */
+function tableClearedHTML(g){
+  const r=g.run;
+  const opponents = ELIMINATION_CONFIG.opponents;
+  const koLamps = Array.from({length:opponents}, (_,i)=>
+    '<span class="stage-ko-slot'+(i<r.tableKOs?' lit':'')+'"></span>').join('');
+  const perfect = r.tableKOs===opponents && r.tableShowdownsPlayed>0 && r.tableShowdownsWon===r.tableShowdownsPlayed;
+  return '<header class="result-head result-head-win stage-results-head"><span>TABLE '+r.tableNumber+'</span><strong>CLEARED</strong></header>'+
+    '<div class="stage-results-instruments">'+
+      '<div class="stage-instrument pc-recess"><span class="stage-instrument-label">Bankroll</span>'+
+        '<div class="amt-readout" id="stage-results-stack"></div></div>'+
+      '<div class="stage-instrument pc-recess"><span class="stage-instrument-label">K.O.s</span>'+
+        '<div class="stage-ko-lamps">'+koLamps+'</div>'+
+        '<div class="stage-ko-readout tabular">'+r.tableKOs+' / '+opponents+'</div></div>'+
+    '</div>'+
+    '<div class="stage-results-recap">'+
+      '<div class="stage-recap-cell pc-recess"><span class="stage-instrument-label">Hands won</span>'+
+        '<strong class="stage-recap-value tabular">'+ratioResult(r.tableHandsWon,r.tableHands)+'</strong></div>'+
+      '<div class="stage-recap-cell pc-recess"><span class="stage-instrument-label">Biggest pot</span>'+
+        '<strong class="stage-recap-value tabular">'+moneyResult(r.tableBiggestPotWon)+'</strong></div>'+
+      (perfect ? '<div class="stage-recap-lamp pc-recess"><span class="pc-lamp is-amber"></span>'+
+        '<span class="stage-recap-lamp-text">Perfect table<br>never lost a showdown</span></div>' : '')+
+    '</div>'+
+    tableBestHandTrophyHTML(r.tableBestHand);
 }
 function runOverHTML(g){
   const r=g.run;
@@ -1357,7 +1399,7 @@ function runOverHTML(g){
   '</div>';
 }
 
-function showTableCleared(g){
+async function showTableCleared(g){
   if (g._tableClearedShown) return;
   g._tableClearedShown = true;
   g.over = true;
@@ -1369,12 +1411,42 @@ function showTableCleared(g){
   $('actions-row').classList.add('hidden');
   $('btn-next-hand').classList.add('hidden');
   $('btn-new-table').classList.add('hidden');
-  const el = document.createElement('div');
-  el.className = 'result-card run-results table-clear-report'; el.id = 'result-card';
-  el.innerHTML = tableClearedHTML(g);
-  $('felt').appendChild(el);
-  $('run-next-table').onclick = beginNextRunTable;
+
+  // Clean the felt before the mechanical beats start — no cards travelling
+  // mid-roll. muckCards() flicks every remaining board/hole card (the
+  // human's own included, even though it lives in the fixed HUD dock, not
+  // on the stage) back into the deck and fully resolves before we move on.
+  await muckCards();
+  // Dashboard begins powering down (hand-strength/bet/blind lamps go dark
+  // in place; BANKROLL stays lit) while the felt still has its breathing
+  // beat — one pause serves both "let the dormant transition settle" and
+  // "brief clean-machine beat before the latch clicks".
+  powerDownDashboard(g);
+  await sleep(motionOff() ? 0 : STAGE_ROLL_CONFIG.breatheMs);
+
+  const human = g.players.find(p=>p.isHuman);
+  await rollStageTransition(felt=>{
+    clearAllCardDOM();
+    felt.querySelectorAll('.seat').forEach(s=>s.remove());
+    const potArea = felt.querySelector('#pot-area');
+    if (potArea) potArea.classList.add('hidden');
+    if ($('pot-val')) $('pot-val').textContent = '0';
+    g.board = []; g.pot = 0;
+    felt.classList.add('results-mode');
+    const el = document.createElement('div');
+    el.className = 'stage-results'; el.id = 'result-card';
+    el.innerHTML = tableClearedHTML(g);
+    felt.appendChild(el);
+    buildResultAmount(document.getElementById('stage-results-stack'), human ? human.chips : 0);
+  });
+
   render();
+
+  // Only once the stage has genuinely locked does the action console
+  // change mode — never expose NEXT TABLE (or leave FOLD/CHECK/RAISE
+  // reachable) while anything is still moving.
+  await sleep(motionOff() ? 0 : STAGE_ROLL_CONFIG.consoleFlipBeatMs);
+  enterResultsConsole(beginNextRunTable);
 }
 function ordinal(n){
   const s=['th','st','nd','rd'], v=n%100;
@@ -1868,42 +1940,51 @@ async function beginNextRunTable(){
   const g = game;
   if (!g || !g.run || !g.run.active || !g.over || g._transitioning) return;
   g._transitioning = true;
-  const next = $('run-next-table');
-  if (next) next.disabled = true;
+  // NEXT TABLE depresses -> the action console becomes unavailable
+  // immediately: hideAwardConsole() (inside exitResultsConsole) drops the
+  // console-face-award's pointer-events the instant the class is removed,
+  // well before the flip's own visual transition finishes, so a second
+  // tap can't land — combined with the _transitioning guard above, this
+  // can't re-enter mid-transition either way.
+  exitResultsConsole();
   hideResultCard();
-  const opponents = g.players.filter(p=>!p.isHuman).map(p=>seatEls[p.id]).filter(Boolean);
-  opponents.forEach((e,i)=>{
-    e.root.style.setProperty('--run-stagger',(i*ELIMINATION_RUN_CONFIG.seatStaggerMs)+'ms');
-    e.root.classList.add('run-pull-out');
+
+  // Defensive no-op in the normal path — everything was already mucked
+  // before the results stage rolled in (see showTableCleared). Kept so any
+  // future/dev entry point that reaches here directly still starts clean.
+  await muckCards();
+
+  // The results stage rolls out/down; a fresh, empty table stage rolls
+  // down from above and locks in — same direction, same mechanism as
+  // live-table -> TABLE CLEARED (see rollStageTransition, 06-presentation.js).
+  // Opponents are NOT part of this move: they populate onto the
+  // already-static stage afterward, below.
+  await rollStageTransition(felt=>{
+    // orchestrator already reset felt to its bare 'felt' class (no
+    // results-mode) before calling this — just tear down its content.
+    const rc = felt.querySelector('#result-card');
+    if (rc) rc.remove();
+    resetForNextRunTable(g);
+    pendingHumanPlayer = null;
+    coachToken++;
+    clearAllCardDOM();
+    const potArea = felt.querySelector('#pot-area');
+    if (potArea) potArea.classList.add('hidden');
+    if ($('pot-val')) $('pot-val').textContent = '0';
+    applyRunTheme();
+    hideHudResultConsole();
+    hideReview();
+    setBanner('Preparing Table '+g.run.tableNumber+'…');
+    if ($('table-meta')) $('table-meta').textContent = 'Preparing Table '+g.run.tableNumber;
   });
-  await waitForRunAnimations(opponents.map(e=>e.root),ELIMINATION_RUN_CONFIG.seatExitMs +
-    (opponents.length-1)*ELIMINATION_RUN_CONFIG.seatStaggerMs);
+
+  // The dashboard only wakes once the fresh stage has actually locked in —
+  // never while it's still moving. Actual poker controls (FOLD/CHECK/RAISE
+  // becoming pressable) come later still, via the normal continueAction()/
+  // updateActionControls() path once startNewHand() genuinely deals in.
+  powerUpDashboard();
 
   const station = document.querySelector('.dealer-station');
-  if (station) station.classList.add('run-deck-out');
-  await waitForRunAnimations([station],ELIMINATION_RUN_CONFIG.deckExitMs);
-
-  const wipe = document.createElement('div');
-  wipe.className = 'run-theme-wipe';
-  wipe.style.setProperty('--run-theme-ms',ELIMINATION_RUN_CONFIG.themeSwapMs+'ms');
-  $('felt').appendChild(wipe);
-  const wipeFinished = waitForRunAnimations([wipe],ELIMINATION_RUN_CONFIG.themeSwapMs);
-  resetForNextRunTable(g);
-  pendingHumanPlayer = null;
-  coachToken++;
-  clearAllCardDOM();
-  const potArea = $('pot-area');
-  if (potArea) potArea.classList.add('hidden');
-  if ($('pot-val')) $('pot-val').textContent = '0';
-  hideHudResultConsole();
-  hideReview();
-  setBanner('Preparing Table '+g.run.tableNumber+'…');
-  if ($('table-meta')) $('table-meta').textContent = 'Preparing Table '+g.run.tableNumber;
-  await sleep(motionOff() ? 0 : Math.round(ELIMINATION_RUN_CONFIG.themeSwapMs*.5));
-  applyRunTheme();
-  await wipeFinished;
-  wipe.remove();
-
   initSeats();
   resetRunSeatDOM(g);
   const arriving = [];
@@ -1914,7 +1995,7 @@ async function beginNextRunTable(){
     e.root.classList.add('run-drop-in');
     arriving.push(e.root);
   });
-  if (station){ station.classList.remove('run-deck-out'); station.classList.add('run-deck-in'); }
+  if (station) station.classList.add('run-deck-in');
   await waitForRunAnimations([...arriving,station],ELIMINATION_RUN_CONFIG.seatArrivalMs +
     (arriving.length-1)*ELIMINATION_RUN_CONFIG.seatStaggerMs);
   settleRunModules(g,station);
