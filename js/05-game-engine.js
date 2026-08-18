@@ -305,6 +305,14 @@ async function startNewHand(){
     if (!p.streetAction || (p.streetAction.type!=='ko' && p.streetAction.type!=='eliminated')) p.streetAction = null;
     p.inHand = p.chips>0 && !p.eliminated;
     delete p._reveal; delete p._award; delete p._handRes;
+    // Card ownership (p.hand, assigned below) and visual reveal are
+    // deliberately separate: p._holeRevealed tracks, per hole-card index,
+    // whether THIS hand's deal animation has actually flipped that card
+    // face-up yet. render() (see syncCardRow's `mine` mask) treats any
+    // index missing from this array as still face-down, no matter how
+    // early or how often render() fires before revealHoleCardsAnimated
+    // gets to run — a stray render() can never paint a real face early.
+    p._holeRevealed = [];
   });
   g.board=[]; g.pot=0; g.currentBet=0; g.minRaise=g.bigBlind;
   g.deck = shuffle(createDeck());
@@ -371,8 +379,22 @@ async function startNewHand(){
    over the real deal, which never changes who holds which card. */
 async function revealHoleCardsAnimated(){
   const g = game;
+  // Guards the per-card completion callbacks below against a stale
+  // continuation from an interrupted/superseded hand (e.g. a rapid-fire
+  // forced next-hand mid-flight) marking the WRONG hand's card revealed.
+  const handAtDeal = g.handNumber;
+
+  if (motionOff()){
+    // No animation to wait for — reveal the human's own cards immediately,
+    // same end state as before, just via the explicit reveal flag rather
+    // than a hardcoded "always face up" mask.
+    g.players.forEach(p=>{ if (p.isHuman && p.inHand) p._holeRevealed = p.hand.map(()=>true); });
+    render();
+    g._humanCardsVisible=true;
+    return;
+  }
+
   render();
-  if (motionOff()){ g._humanCardsVisible=true; return; }
 
   g.players.forEach(p=>{
     if (!p.inHand) return;
@@ -394,7 +416,23 @@ async function revealHoleCardsAnimated(){
       if (!p.inHand || !p.hand[round]) continue;
       const e = seatEls[p.id];
       const el = e && e.cardsContainer.children[round];
-      if (el) pending.push(dealCardFlight(el, p.hand[round]));
+      if (el){
+        const isHuman = p.isHuman, card = p.hand[round];
+        // The human's own cards are dealt genuinely face-down (see the
+        // render() mask) and must be told to flip up once they land —
+        // opponents/board cards keep relying on dealCardFlight's own
+        // wasFaceUp check, unchanged.
+        const flight = dealCardFlight(el, card, isHuman ? {revealAfter:true} : undefined).then(()=>{
+          if (!isHuman || game!==g || g.handNumber!==handAtDeal) return;
+          // Marks the true state immediately (even though flipCard's own
+          // visual swap lands a beat later via its internal timeout) so
+          // any render() firing in that gap sees a consistent target and
+          // safely no-ops instead of re-triggering a duplicate flip.
+          p._holeRevealed[round] = true;
+          el.dataset.state = card.rank + card.suit;
+        });
+        pending.push(flight);
+      }
       await sleep(STAGGER);
     }
   }

@@ -177,12 +177,6 @@ function applyTheme(){
   }
 }
 function setSwitch(el, on){ el.setAttribute('aria-checked', on ? 'true' : 'false'); }
-function updateCoachQuick(){
-  const b = $('coach-quick');
-  if (b) b.setAttribute('aria-pressed', settings.coach ? 'true' : 'false');
-  const sw = $('sw-coach');
-  if (sw) setSwitch(sw, !!settings.coach);
-}
 function bindSwitch(id, key, after){
   const el = $(id);
   setSwitch(el, !!settings[key]);
@@ -203,13 +197,14 @@ function openOverlay(which){
   clearTimeout(autoDealT);   // overlays pause the between-hand clock
   $('scrim').classList.add('open');
   if (which==='log'){ logDirty = true; renderLog(); $('log-drawer').classList.add('open'); }
-  if (which==='settings'){ renderStats(); renderSessionStats(); $('settings-sheet').classList.add('open'); }
+  if (which==='settings'){ $('settings-sheet').classList.add('open'); }
   if (which==='newtable'){ $('confirm-newtable').classList.add('open'); }
 }
 function closeOverlays(){
   $('scrim').classList.remove('open');
   $('log-drawer').classList.remove('open');
   $('settings-sheet').classList.remove('open');
+  $('scoring-guide-sheet').classList.remove('open');
   $('confirm-newtable').classList.remove('open');
   pendingNewTableAction = null;
   if (game && !game.over && !$('btn-next-hand').classList.contains('hidden')) scheduleAutoDeal();
@@ -250,48 +245,6 @@ function buildRankings(){
       '<div class="rank-cards">'+cards+'</div>' +
     '</div>';
   }).join('');
-}
-
-function renderSessionStats(){
-  const wrap = $('settings-session-wrap');
-  if (!wrap) return;
-  const inGame = !!game && !$('table-screen').classList.contains('hidden');
-  wrap.classList.toggle('hidden', !inGame);
-  if (!inGame) return;
-  const human = game.players.find(p=>p.id==='you');
-  const net = human.chips - game.buyIns;
-  const cell = (v,k)=>'<div class="stat-cell"><div class="v tabular">'+v+'</div><div class="k">'+k+'</div></div>';
-  $('session-stats').innerHTML =
-    cell(game.handNumber, 'Hands') +
-    cell((net>=0?'+':'') + net.toLocaleString(), 'Net') +
-    cell('+' + (game.sess ? game.sess.bestWin : 0).toLocaleString(), 'Best hand') +
-    cell((game.sess ? game.sess.worstLoss : 0).toLocaleString(), 'Worst hand');
-}
-
-function updateIdentityPreview(){
-  const name = ($('player-name').value || 'You').trim();
-  const el = $('identity-preview');
-  el.textContent = (name.slice(0,2) || 'YO').toUpperCase();
-  el.style.background = settings.avatarColour;
-}
-
-function buildSwatches(){
-  const wrap = $('avatar-swatches');
-  wrap.innerHTML = '';
-  AVATAR_COLOURS.forEach(col=>{
-    const b = document.createElement('button');
-    b.className = 'swatch';
-    b.style.background = col;
-    b.setAttribute('aria-label','Seat colour '+col);
-    b.setAttribute('aria-pressed', settings.avatarColour===col ? 'true':'false');
-    b.onclick = ()=>{
-      settings.avatarColour = col; saveSettings();
-      wrap.querySelectorAll('.swatch').forEach(s=>s.setAttribute('aria-pressed','false'));
-      b.setAttribute('aria-pressed','true');
-      updateIdentityPreview();
-    };
-    wrap.appendChild(b);
-  });
 }
 
 const DIFF_COPY = {
@@ -507,5 +460,35 @@ function leaveTable(){
   reconstructMainMenu();
   applyTheme();
   renderStats();
+}
+
+/* Settings > Reset Current Run — unlike Leave Table, also discards the
+   resumable save so there's nothing left to continue. Lifetime stats
+   (js/02-support-systems.js DEFAULT_STATS) are a separate store and are
+   never touched here. */
+function resetCurrentRun(){
+  clearTableSave();
+  leaveTable();
+}
+
+/* Generic centered confirmation dialog (see #confirm-dialog) — sits above
+   everything via its own backdrop/z-index, so it works whether it's
+   triggered from inside the Settings sheet (Reset Current Run) or from a
+   live hand (Confirm All-In). Only one instance is ever shown at a time. */
+function showConfirmDialog(opts){
+  const dlg = $('confirm-dialog');
+  $('confirm-dialog-title').textContent = opts.title;
+  $('confirm-dialog-body').textContent = opts.body;
+  const yes = $('confirm-dialog-yes');
+  yes.textContent = opts.confirmLabel;
+  yes.classList.toggle('btn-danger', !!opts.danger);
+  const cleanup = ()=>{
+    dlg.classList.add('hidden');
+    yes.onclick = null;
+    $('confirm-dialog-no').onclick = null;
+  };
+  yes.onclick = ()=>{ cleanup(); opts.onConfirm(); };
+  $('confirm-dialog-no').onclick = ()=>{ cleanup(); if (opts.onCancel) opts.onCancel(); };
+  dlg.classList.remove('hidden');
 }
 

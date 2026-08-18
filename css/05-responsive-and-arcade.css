@@ -37,6 +37,14 @@
   #coach{ padding:8px 11px; }
   .coach-metric .val{ font-size:15px; }
 }
+/* Sensible max-width for the bottom sheets (Settings/Scoring Guide/newtable
+   confirm) on wide portrait viewports — iPad portrait, a resized desktop
+   browser window — instead of stretching edge-to-edge. Landscape already
+   gets its own narrower side-drawer treatment above. */
+@media (orientation:portrait) and (min-width:560px){
+  .sheet{ left:50%; right:auto; width:100%; max-width:440px; transform:translate(-50%,105%); }
+  .sheet.open{ transform:translate(-50%,0); }
+}
 @media (orientation:portrait) and (max-height:700px){
   .card{ width:33px; height:47px; } .card .r{ font-size:12px; } .card .s{ font-size:9px; } .card .pip{ font-size:14px; }
   .seat.you .card{ width:46px; height:65px; }
@@ -118,15 +126,23 @@
   text-shadow:2px 2px 0 var(--px-ink),0 0 8px color-mix(in srgb,var(--ink-dim) 65%,transparent);
 }
 .arcade-luck:empty{ display:none; }
-.arcade-reward-layer.luck-good .arcade-luck{ color:#FFE27A; transform:rotate(-2deg); }
-.arcade-reward-layer.luck-bad .arcade-luck{ color:color-mix(in srgb,#78BEE8 72%,var(--ink)); transform:rotate(1deg); }
-.arcade-reward-layer.luck-rare .arcade-luck{ color:#FFF; font-size:clamp(11px,3.8vw,18px); animation:arcadeRareLuck .58s steps(7,end); }
+/* Luck tags (section 17) — secondary annotations, always smaller and
+   quieter than a skill/event reward headline. LUCKY family reads cool
+   cyan; UNLUCKY family reads muted violet/blue-grey, matching neither
+   the STANDARD/STRONG/ELITE/JACKPOT reward palette nor each other, so a
+   luck tag never gets mistaken for a skill judgement. Extreme tags
+   (FILTHY/BRUTAL) step up slightly but stay well under tier-elite's or
+   tier-jackpot's own scale. */
+.arcade-reward-layer.luck-good .arcade-luck{ color:#7FE0EA; transform:rotate(-2deg); }
+.arcade-reward-layer.luck-extreme-good .arcade-luck{ color:#C3F5F9; font-size:clamp(10px,3.4vw,17px); animation:arcadeRareLuck .58s steps(7,end); }
+.arcade-reward-layer.luck-bad .arcade-luck{ color:#9C93C4; transform:rotate(1deg); }
+.arcade-reward-layer.luck-extreme-bad .arcade-luck{ color:#B7ABDD; font-size:clamp(10px,3.4vw,17px); animation:arcadeRareLuck .58s steps(7,end); }
 @keyframes arcadeRareLuck{ 0%{ transform:scale(2.2) rotate(-4deg); opacity:0; } 42%{ transform:scale(.9) rotate(2deg); opacity:1; } 100%{ transform:scale(1); } }
 .arcade-hero{
   max-width:100%; color:var(--card-face); font-family:var(--font-hdr); font-size:clamp(20px,7.7vw,48px); line-height:1.1;
   letter-spacing:.025em; text-transform:uppercase; -webkit-text-stroke:1px var(--px-ink);
   text-shadow:3px 0 0 var(--px-ink),-3px 0 0 var(--px-ink),0 3px 0 var(--px-ink),0 -3px 0 var(--px-ink),6px 6px 0 color-mix(in srgb,var(--accent) 65%,black),0 0 14px color-mix(in srgb,var(--accent) 58%,transparent);
-  overflow-wrap:anywhere;
+  white-space:nowrap;   /* never wraps (section 18) — fitArcadeHeroText() shrinks it to fit instead */
 }
 .arcade-reward-layer.is-live .arcade-hero{ animation:arcadeHeroHit .52s steps(7,end); }
 @keyframes arcadeHeroHit{
@@ -135,35 +151,57 @@
   48%{ transform:scale(1.09); }
   68%{ transform:scale(.97); } 100%{ transform:scale(1); }
 }
-.arcade-reward-layer.cat-result .arcade-hero{ color:var(--card-face); }
-.arcade-reward-layer.cat-skill .arcade-hero{ color:var(--card-face); }
-.arcade-reward-layer.cat-achievement .arcade-hero{ color:var(--accent-bright); }
-/* Reward intensity hierarchy (juice pass v2, item 2) — three tiers keyed
-   off each award's existing tier field (small/medium/large), which
-   already tracks value/importance (a pair vs. a royal flush, a small
-   steal vs. TABLE CLEAR), rather than inventing a new per-category
-   colour scheme — "the hierarchy should be based primarily on reward
-   importance/value". tier-small is the untouched baseline ("standard").
-   tier-medium ("strong") steps up size/outline/entrance. tier-large
-   ("premium") is reserved for genuinely big rewards (massive pots, rare
-   hand-strength/skill awards, K.O./TABLE CLEAR) and gets the full
-   treatment: thicker outline, a hotter glow built from the theme's own
-   --accent (never a hardcoded colour, so it stays correct across every
-   palette), a bigger scale punch and a longer, more emphatic entrance. */
-.arcade-reward-layer.tier-small .arcade-hero{ font-size:clamp(18px,6.3vw,38px); }
-.arcade-reward-layer.tier-medium .arcade-hero{
-  font-size:clamp(25px,8.6vw,54px); -webkit-text-stroke:1.4px var(--px-ink);
+/* ============================================================
+   REWARD PRESENTATION TIERS — STANDARD < STRONG < ELITE < JACKPOT
+   (section 15). The colour hierarchy is fixed/theme-independent on
+   purpose (WHITE -> GREEN -> RED/CORAL -> GOLD): if JACKPOT borrowed the
+   player's own theme --accent it could land on any hue depending on
+   their palette choice and stop reliably reading as "the top tier".
+   Each step up adds outline weight, glow, hold time and (from ELITE up)
+   a small radial impact / starburst behind the text — never a generic
+   RGB rainbow. Presentation weight only — the id's own `base` in
+   js/04-modes-and-scoring.js is always the real point value. */
+.arcade-reward-layer.tier-standard .arcade-hero{
+  font-size:clamp(18px,6.3vw,38px); color:#F2F6F1; -webkit-text-stroke:1px #10131C;
+  text-shadow:3px 0 0 #10131C,-3px 0 0 #10131C,0 3px 0 #10131C,0 -3px 0 #10131C,4px 4px 0 rgba(0,0,0,.4);
 }
-.arcade-reward-layer.tier-medium.is-live .arcade-hero{ animation-name:arcadeHeroHitStrong; animation-duration:.58s; }
-.arcade-reward-layer.tier-large .arcade-hero{
-  font-size:clamp(32px,11.5vw,74px); -webkit-text-stroke:2.6px var(--px-ink); color:var(--accent-bright);
-  text-shadow:3px 0 0 var(--px-ink),-3px 0 0 var(--px-ink),0 3px 0 var(--px-ink),0 -3px 0 var(--px-ink),
-    7px 7px 0 color-mix(in srgb,var(--accent) 75%,black),
-    0 0 20px color-mix(in srgb,var(--accent) 90%,transparent),
-    0 0 40px color-mix(in srgb,var(--accent-bright) 65%,transparent);
+.arcade-reward-layer.tier-strong .arcade-hero{
+  font-size:clamp(25px,8.6vw,54px); color:#4FDD82; -webkit-text-stroke:1.5px #0E1B10;
+  text-shadow:3px 0 0 #0E1B10,-3px 0 0 #0E1B10,0 3px 0 #0E1B10,0 -3px 0 #0E1B10,
+    6px 6px 0 rgba(10,40,18,.85), 0 0 16px rgba(79,221,130,.55);
 }
-.arcade-reward-layer.tier-large.is-live .arcade-hero{ animation-name:arcadeHeroHitPremium; animation-duration:.72s; }
-.arcade-reward-layer.tier-large{ animation:arcadeScreenKick .56s steps(8,end); }
+.arcade-reward-layer.tier-strong.is-live .arcade-hero{ animation-name:arcadeHeroHitStrong; animation-duration:.58s; }
+.arcade-reward-layer.tier-elite .arcade-hero{
+  font-size:clamp(30px,10.2vw,66px); color:#FF6B49; -webkit-text-stroke:2px #240804;
+  text-shadow:3px 0 0 #240804,-3px 0 0 #240804,0 3px 0 #240804,0 -3px 0 #240804,
+    7px 7px 0 rgba(60,10,4,.85), 0 0 22px rgba(255,107,73,.65), 0 0 40px rgba(255,150,110,.4);
+}
+.arcade-reward-layer.tier-elite.is-live .arcade-hero{ animation-name:arcadeHeroHitStrong; animation-duration:.62s; }
+.arcade-reward-layer.tier-elite{ animation:arcadeScreenKick .5s steps(7,end); }
+.arcade-reward-layer.tier-elite::before{ width:74%; height:150%; background:radial-gradient(ellipse,rgba(255,107,73,.42),transparent 62%); }
+.arcade-reward-layer.tier-jackpot .arcade-hero{
+  font-size:clamp(34px,11.8vw,76px); color:#FFCB3E; -webkit-text-stroke:2.6px #241000;
+  text-shadow:3px 0 0 #241000,-3px 0 0 #241000,0 3px 0 #241000,0 -3px 0 #241000,
+    2px 2px 0 #6E1B18,
+    8px 8px 0 rgba(70,32,0,.9), 0 0 26px rgba(255,203,62,.85), 0 0 48px rgba(255,224,140,.55);
+}
+.arcade-reward-layer.tier-jackpot.is-live .arcade-hero{ animation-name:arcadeHeroHitPremium; animation-duration:.74s; }
+.arcade-reward-layer.tier-jackpot{ animation:arcadeScreenKick .58s steps(8,end); }
+/* JACKPOT's own tasteful pixel starburst behind the text — a fixed
+   radial+spoke burst, not a spinning/rainbow effect — overriding the
+   base ::before's accent-tinted flash with a fixed gold one. */
+.arcade-reward-layer.tier-jackpot::before{
+  width:100%; height:180%;
+  background:
+    radial-gradient(ellipse,rgba(255,203,62,.35),transparent 60%),
+    repeating-conic-gradient(from 0deg,rgba(255,224,140,.22) 0deg 4deg,transparent 4deg 18deg);
+}
+.arcade-reward-layer.tier-jackpot.is-live::before{ animation:arcadeJackpotBurst .74s steps(8,end); }
+@keyframes arcadeJackpotBurst{
+  0%{ opacity:0; transform:scale(.5) rotate(0deg); }
+  35%{ opacity:1; }
+  100%{ opacity:0; transform:scale(1.4) rotate(24deg); }
+}
 @keyframes arcadeHeroHitStrong{
   0%{ transform:scale(2.3); opacity:0; filter:brightness(2.3); }
   26%{ transform:scale(.86); opacity:1; }
@@ -177,15 +215,30 @@
   62%{ transform:scale(.93) rotate(.5deg); }
   100%{ transform:scale(1) rotate(0); filter:brightness(1); }
 }
+@keyframes arcadeScreenKick{ 20%{ transform:translate(calc(-50% - 3px),calc(-50% + 2px)); } 40%{ transform:translate(calc(-50% + 3px),calc(-50% - 1px)); } 100%{ transform:translate(-50%,-50%); } }
+/* Negative feedback (section 16) — deliberately the OPPOSITE treatment
+   of a reward: dirty cream/grey fill, a muted rust warning outline, a
+   small judder instead of a scale explosion, no particles, no score
+   number, shorter hold. Must never resemble a reward tier. */
 .arcade-reward-layer.commentary-only .arcade-hero{
   font-size:clamp(13px,4.3vw,25px); letter-spacing:.06em; color:var(--ink-dim);
   -webkit-text-stroke:0; text-shadow:2px 2px 0 var(--px-ink),0 0 8px rgba(0,0,0,.5);
 }
-.arcade-reward-layer.comment-negative .arcade-hero{ color:#D9A09A; }
-.arcade-reward-layer.commentary-only.luck-good .arcade-hero{ color:#FFE27A; transform:rotate(-2deg); }
-.arcade-reward-layer.commentary-only.luck-bad .arcade-hero{ color:color-mix(in srgb,#78BEE8 72%,var(--ink)); }
-.arcade-reward-layer.commentary-only.luck-rare .arcade-hero{ color:#FFF; }
-@keyframes arcadeScreenKick{ 20%{ transform:translate(calc(-50% - 3px),calc(-50% + 2px)); } 40%{ transform:translate(calc(-50% + 3px),calc(-50% - 1px)); } 100%{ transform:translate(-50%,-50%); } }
+.arcade-reward-layer.comment-negative .arcade-hero{
+  color:#C9C0A6; -webkit-text-stroke:1px #4A2C22;
+  text-shadow:2px 0 0 #4A2C22,-2px 0 0 #4A2C22,0 2px 0 #4A2C22,0 -2px 0 #4A2C22,3px 3px 0 rgba(0,0,0,.45);
+}
+.arcade-reward-layer.comment-negative.is-live .arcade-hero{ animation:arcadeNegativeJudder .3s steps(4,end); }
+@keyframes arcadeNegativeJudder{
+  0%{ transform:translate(0,0); opacity:0; }
+  30%{ transform:translate(-3px,2px); opacity:1; }
+  60%{ transform:translate(2px,0); }
+  100%{ transform:translate(0,0); }
+}
+.arcade-reward-layer.commentary-only.luck-good .arcade-hero{ color:#7FE0EA; transform:rotate(-2deg); }
+.arcade-reward-layer.commentary-only.luck-extreme-good .arcade-hero{ color:#C3F5F9; }
+.arcade-reward-layer.commentary-only.luck-bad .arcade-hero{ color:#9C93C4; }
+.arcade-reward-layer.commentary-only.luck-extreme-bad .arcade-hero{ color:#B7ABDD; }
 .arcade-secondaries{ display:flex; flex-wrap:wrap; justify-content:center; gap:5px 11px; min-height:14px; }
 .arcade-secondary{
   color:var(--ink-dim); font-family:var(--font-hdr); font-size:clamp(6px,2.2vw,10px); line-height:1.4;
@@ -210,7 +263,7 @@
    in 06-presentation.js); .arcade-total here doubles as the running
    subtotal during the per-item loop and the final "+N" TOTAL on the last
    step (.is-total), so no separate subtotal element was needed.
-   TOTAL is deliberately styled well past even the tier-large treatment
+   TOTAL is deliberately styled well past even the tier-jackpot treatment
    above (juice pass v2, item 3) — "as if every previous reward line has
    accumulated into one physical object" — bigger, thicker-outlined,
    brighter glow, and a dedicated punchier entrance/impact keyframe on

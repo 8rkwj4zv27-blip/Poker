@@ -23,18 +23,79 @@
 #log-list div.marker{ color:var(--accent); font-weight:800; letter-spacing:.05em; }
 
 .sheet{
-  position:absolute; left:0; right:0; bottom:0; z-index:46; max-height:88%;
+  position:absolute; left:0; right:0; bottom:0; z-index:46; max-height:88%; max-width:100%;
   background:var(--bg-deep); border-top:2px solid var(--px-ink);
   box-shadow:0 -4px 0 rgba(0,0,0,.4);
   border-radius:8px 8px 0 0; transform:translateY(105%); transition:transform var(--dur) steps(5,end);
   display:flex; flex-direction:column;
-  padding:14px 20px max(20px,env(safe-area-inset-bottom));
+  padding:14px max(20px,env(safe-area-inset-right)) max(20px,env(safe-area-inset-bottom)) max(20px,env(safe-area-inset-left));
+  overscroll-behavior:contain;
+  /* The actual cause of the sideways "looseness": with touch-action left at
+     its default (auto), the browser's compositor treats a vertically
+     scrolling panel as fair game for a gesture in ANY direction — it decides
+     this before JS or overflow-x ever gets a say, so even with no horizontal
+     scroll content, a diagonal drag reads as a few px of real horizontal
+     rubber-band slop on the sheet itself. pan-y tells the compositor up
+     front that this element only ever pans vertically, so a sideways drag
+     is never accepted as a gesture at all — nothing to spring back from,
+     because it never moved. Vertical scroll/tap-to-close are untouched. */
+  touch-action: pan-y;
 }
 .sheet.open{ transform:translateY(0); }
 .sheet-grip{ width:44px; height:5px; border-radius:2px; background:rgba(255,255,255,.25); margin:0 auto 14px; flex-shrink:0; }
 .sheet h3{ font-family:var(--font-hdr); font-size:10px; letter-spacing:.08em; text-transform:uppercase; color:var(--accent); margin:0 0 12px; font-weight:400; }
-.sheet-body{ overflow-y:auto; -webkit-overflow-scrolling:touch; }
-.sheet-section{ margin-bottom:22px; }
+/* Explicit overflow-x:hidden matters here, not just style — leaving it
+   unset (visible) next to overflow-y:auto silently computes to auto on
+   both axes per spec, so a single row overflowing by even a pixel turns
+   the whole sheet into a horizontally-swipeable surface. */
+.sheet-body{ overflow-y:auto; overflow-x:hidden; -webkit-overflow-scrolling:touch; min-width:0; touch-action: pan-y; }
+.sheet-section{ margin-bottom:22px; min-width:0; }
+.sheet-title-wrap{ text-align:center; margin-bottom:18px; }
+.sheet-title{
+  font-family:var(--font-hdr); font-size:14px; font-weight:400; letter-spacing:.08em;
+  text-transform:uppercase; color:var(--accent); margin:0;
+}
+.sheet-dev-toggle{ padding-top:10px; border-top:2px solid rgba(255,255,255,.06); opacity:.6; }
+.sheet-dev-toggle .tl{ font-size:12px; font-weight:400; }
+
+/* ---- Menu-over-gameplay layering (see js/06-presentation.js's DealFX/
+   flyChip/ejectPortrait and js/04-modes-and-scoring.js's flyArcadeScore) —
+   deal/chip/K.O./score FX are deliberately appended straight to
+   document.body as position:fixed, escaping #app entirely, specifically so
+   they can render above the felt during a live hand. #app itself has no
+   explicit z-index, so nothing living inside it (this sheet included) can
+   ever outrank those body-level layers by raising its own z-index — the
+   number is compared against #app as a whole, not against the layer.
+   Bumping a menu's z-index further can't fix that, so instead these FX are
+   hidden outright whenever a menu sits over the table, or the table isn't
+   even the visible screen. That's a real state check (:has() reflecting
+   actual DOM), not a cosmetic cover-up: an animation hidden this way is
+   genuinely not rendering, so nothing pops or restarts when the menu
+   closes — the JS driving it (timers/promises) is completely untouched,
+   only whether the result gets painted. */
+body:has(.scrim.open) .fly-card,
+body:has(.scrim.open) .fly-chip,
+body:has(.scrim.open) > .chip-disc,
+body:has(.scrim.open) .chip-physics-layer,
+body:has(.scrim.open) .ko-physics-layer,
+body:has(.scrim.open) .score-smash-layer,
+body:has(.scrim.open) .arcade-bank-flight,
+body:has(#confirm-dialog:not(.hidden)) .fly-card,
+body:has(#confirm-dialog:not(.hidden)) .fly-chip,
+body:has(#confirm-dialog:not(.hidden)) > .chip-disc,
+body:has(#confirm-dialog:not(.hidden)) .chip-physics-layer,
+body:has(#confirm-dialog:not(.hidden)) .ko-physics-layer,
+body:has(#confirm-dialog:not(.hidden)) .score-smash-layer,
+body:has(#confirm-dialog:not(.hidden)) .arcade-bank-flight,
+body:has(#table-screen.hidden) .fly-card,
+body:has(#table-screen.hidden) .fly-chip,
+body:has(#table-screen.hidden) > .chip-disc,
+body:has(#table-screen.hidden) .chip-physics-layer,
+body:has(#table-screen.hidden) .ko-physics-layer,
+body:has(#table-screen.hidden) .score-smash-layer,
+body:has(#table-screen.hidden) .arcade-bank-flight{
+  display:none !important;
+}
 
 #rotate-hint{
   position:absolute; inset:0; z-index:70; display:none;
@@ -59,6 +120,39 @@
 .fr-list li{ font-size:13px; color:var(--ink-dim); line-height:1.55; margin-bottom:9px; padding-left:16px; position:relative; }
 .fr-list li::before{ content:'▸'; position:absolute; left:2px; color:var(--accent); font-weight:800; }
 .fr-list b{ color:var(--ink); }
+
+#confirm-dialog{
+  position:absolute; inset:0; z-index:80; display:flex; align-items:center; justify-content:center;
+  background:rgba(3,8,7,.86); padding:26px;
+}
+#confirm-dialog.hidden{ display:none; }
+.confirm-dialog-card{ text-align:center; }
+.confirm-dialog-card h4{ margin:0; }
+
+/* ---- Scoring Guide (Settings > Help) — tier colours mirror the real
+   arcade reward presentation (js/05-responsive-and-arcade.css's
+   tier-standard/strong/elite/jackpot) so the guide reads consistently
+   with what actually flashes on screen. ---- */
+.sg-tier{ margin-bottom:18px; }
+.sg-tier-label{
+  font-family:var(--font-hdr); font-size:10px; letter-spacing:.08em; text-transform:uppercase;
+  font-weight:400; margin-bottom:6px; padding-bottom:6px; border-bottom:2px solid rgba(255,255,255,.08);
+}
+.sg-tier-standard .sg-tier-label{ color:#F2F6F1; }
+.sg-tier-strong .sg-tier-label{ color:#4FDD82; }
+.sg-tier-elite .sg-tier-label{ color:#FF6B49; }
+.sg-tier-jackpot .sg-tier-label{ color:#FFCB3E; }
+.sg-row{
+  display:flex; align-items:baseline; justify-content:space-between; gap:12px;
+  padding:7px 0; border-bottom:1px solid rgba(255,255,255,.05);
+}
+.sg-row:last-child{ border-bottom:none; }
+.sg-name{ font-size:13px; font-weight:700; }
+.sg-pts{ font-family:var(--font-hdr); font-size:11px; color:var(--accent); flex-shrink:0; }
+.sg-section-label{
+  font-family:var(--font-hdr); font-size:10px; letter-spacing:.08em; text-transform:uppercase;
+  color:var(--ink-faint); margin:18px 0 6px;
+}
 
 
 /* ============================================================

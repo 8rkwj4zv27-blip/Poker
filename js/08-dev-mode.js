@@ -87,6 +87,51 @@ function devKoNext(){
   logMsg('[DEV] ' + target.name + ' armed for a forced all-in', true);
   refreshDevPanel();
 }
+/* Real gameplay test (section 20/21) — a genuine preflop all-in that only
+   steals the blinds, for verifying the scoring regression case directly:
+   the shove itself must contribute zero score, only the real net profit
+   (arcadePotWinningsScore in js/04-modes-and-scoring.js) should. Folds
+   every other live opponent for real via applyAction, same pattern as
+   devWinHand/devBustMe above, then forces the human's own pending
+   preflop action to a genuine all-in instead of a call. */
+function devShoveSteal(){
+  if (!handInProgress() || game.mode!=='elimination' || game.phase!=='preflop') return;
+  const g = game, human = g.players.find(p=>p.isHuman);
+  if (!human.inHand || human.folded || human.allIn) return;
+  g.players.forEach(p=>{
+    if (p.isHuman || !p.inHand || p.folded || p.allIn || p._devForceAllIn) return;
+    applyAction(p, {action:'fold'});
+  });
+  logMsg('[DEV] SHOVE STEAL armed — human shoves preflop, table folds', true);
+  devAutoResolveTurn(human, 'allin');
+  refreshDevPanel();
+}
+/* Real gameplay test (section 20/21) — stress-tests the pre-deal
+   hole-card fix (see startNewHand/revealHoleCardsAnimated in
+   js/05-game-engine.js) by cycling several real hands back to back as
+   fast as the production flow allows, via the exact same WIN HAND path
+   above on every hand where the human still has a live decision. Enables
+   FAST DEV for the duration so hands turn over quickly; leaves it on
+   afterward (matching the existing FAST DEV checkbox behaviour) rather
+   than silently reverting a setting the user may have already chosen. */
+function devRapidHands(n){
+  if (!DEV_MODE || !game || game.mode!=='elimination') return;
+  const targetCount = Math.max(1, n||8);
+  let done = 0;
+  FAST_DEV = true;
+  refreshDevPanel();
+  logMsg('[DEV] RAPID HANDS x' + targetCount + ' — stress-testing hole-card reveal timing', true);
+  const tick = ()=>{
+    if (!DEV_MODE || !game || game.mode!=='elimination' || game.over || !game.run || !game.run.active || done>=targetCount) return;
+    const human = game.players.find(p=>p.isHuman);
+    if (handInProgress() && human && human.inHand && !human.folded && !human.allIn){
+      devWinHand();
+      done++;
+    }
+    if (done<targetCount) setTimeout(tick, 140);
+  };
+  setTimeout(tick, 140);
+}
 /* Presentation-only preview of the redesigned opponent-ejection sequence
    (physical-polish pass) — calls the exact real playElimination() a live
    hand uses, on a live (non-eliminated) opponent, WITHOUT touching
@@ -223,6 +268,16 @@ function setDevMode(on){
   DEV_MODE = on;
   if (on) initDevPanel(); else teardownDevPanel();
 }
+/* Settings' own DEVELOPER section — kept out of the normal player-facing
+   rows entirely (see #settings-dev-section), only ever shown once
+   Developer Mode is switched on via the quiet toggle above it. */
+function syncDevSection(){
+  const section = $('settings-dev-section');
+  if (!section) return;
+  section.classList.toggle('hidden', !settings.devMode);
+  const readout = $('dev-build-readout');
+  if (readout) readout.textContent = 'Build ' + BUILD_VERSION;
+}
 function initDevPanel(){
   if (!DEV_MODE) return;
   if ($('dev-panel')) return;
@@ -237,6 +292,8 @@ function initDevPanel(){
         '<button id="dev-win-hand" type="button">WIN HAND</button>' +
         '<button id="dev-ko-next" type="button">KO NEXT</button>' +
         '<button id="dev-bust-me" type="button">BUST ME</button>' +
+        '<button id="dev-shove-steal" type="button">SHOVE STEAL (preflop)</button>' +
+        '<button id="dev-rapid-hands" type="button">RAPID HANDS x8 (card-flash test)</button>' +
         '<button id="dev-clear-table" type="button">CLEAR TABLE</button>' +
         '<button id="dev-end-table" type="button">END TABLE</button>' +
         '<button id="dev-ko-eject" type="button">TEST KO EJECT</button>' +
@@ -245,43 +302,62 @@ function initDevPanel(){
       '</div>' +
         '<div id="dev-arcade-controls">' +
         '<div class="dev-section-title">ARCADE TEST</div>' +
+        '<div class="dev-subtitle">PRESENTATION TIERS (visual only)</div>' +
+        '<button data-arcade-scenario="standard" type="button">STANDARD — GOOD FOLD</button>' +
+        '<button data-arcade-scenario="strong" type="button">STRONG — GOOD BLUFF</button>' +
+        '<button data-arcade-scenario="elite" type="button">ELITE — HERO CALL</button>' +
+        '<button data-arcade-scenario="jackpot" type="button">JACKPOT — MONSTER BLUFF</button>' +
         '<div class="dev-subtitle">INDIVIDUAL AWARDS</div>' +
-        '<button data-arcade-award="pair" type="button">PAIR +100</button>' +
-        '<button data-arcade-award="straight" type="button">STRAIGHT +400</button>' +
-        '<button data-arcade-award="quads" type="button">QUADS +1,250</button>' +
-        '<button data-arcade-award="goodFold" type="button">GOOD FOLD</button>' +
-        '<button data-arcade-award="heroCall" type="button">HERO CALL</button>' +
-        '<button data-arcade-award="greatBluff" type="button">GREAT BLUFF</button>' +
-        '<button data-arcade-award="maxValue" type="button">MAX VALUE</button>' +
-        '<button data-arcade-award="bigPot" type="button">BIG POT</button>' +
-        '<button data-arcade-award="doubleUp" type="button">DOUBLE UP</button>' +
-        '<div class="dev-subtitle">LUCK LABELS</div>' +
+        '<button data-arcade-award="goodFold" type="button">GOOD FOLD +100</button>' +
+        '<button data-arcade-award="goodPressure" type="button">GOOD PRESSURE +100</button>' +
+        '<button data-arcade-award="punish" type="button">PUNISH +150</button>' +
+        '<button data-arcade-award="trapWorked" type="button">TRAP WORKED +250</button>' +
+        '<button data-arcade-award="goodShove" type="button">GOOD SHOVE +250</button>' +
+        '<button data-arcade-award="greatShove" type="button">GREAT SHOVE +600</button>' +
+        '<button data-arcade-award="maxValue" type="button">MAX VALUE +650</button>' +
+        '<button data-arcade-award="heroCall" type="button">HERO CALL +700</button>' +
+        '<button data-arcade-award="greatBluff" type="button">GREAT BLUFF +700</button>' +
+        '<button data-arcade-award="monsterBluff" type="button">MONSTER BLUFF +1,500</button>' +
+        '<button data-arcade-award="monsterHand" type="button">MONSTER HAND +200</button>' +
+        '<button data-arcade-award="doubleUp" type="button">DOUBLE UP +300</button>' +
+        '<button data-arcade-award="ko" type="button">K.O.! +400</button>' +
+        '<button data-arcade-award="bigPot" type="button">BIG POT +150</button>' +
+        '<button data-arcade-award="massivePot" type="button">MASSIVE POT +500</button>' +
+        '<button data-arcade-award="tableClear" type="button">TABLE CLEARED +1,000</button>' +
+        '<div class="dev-subtitle">LUCK LABELS (zero points)</div>' +
         '<button data-arcade-luck="lucky" type="button">LUCKY</button>' +
         '<button data-arcade-luck="veryLucky" type="button">VERY LUCKY</button>' +
-        '<button data-arcade-luck="gotAway" type="button">GOT AWAY</button>' +
+        '<button data-arcade-luck="filthy" type="button">FILTHY</button>' +
         '<button data-arcade-luck="unlucky" type="button">UNLUCKY</button>' +
         '<button data-arcade-luck="brutal" type="button">BRUTAL</button>' +
-        '<button data-arcade-luck="badBeat" type="button">BAD BEAT</button>' +
-        '<div class="dev-subtitle">ZERO-POINT COMMENTARY</div>' +
-        '<button data-arcade-comment="badCall" type="button">BAD CALL</button>' +
-        '<button data-arcade-comment="missedValue" type="button">MISSED VALUE</button>' +
-        '<button data-arcade-comment="punt" type="button">PUNT!</button>' +
+        '<div class="dev-subtitle">NEGATIVE (zero points)</div>' +
+        '<button data-arcade-negative="looseCall" type="button">LOOSE CALL</button>' +
+        '<button data-arcade-negative="badCall" type="button">BAD CALL</button>' +
+        '<button data-arcade-negative="paidThemOff" type="button">PAID THEM OFF</button>' +
+        '<button data-arcade-negative="badFold" type="button">BAD FOLD</button>' +
+        '<button data-arcade-negative="tooTight" type="button">TOO TIGHT</button>' +
+        '<button data-arcade-negative="badBluff" type="button">BAD BLUFF</button>' +
+        '<button data-arcade-negative="reckless" type="button">RECKLESS</button>' +
+        '<button data-arcade-negative="badShove" type="button">BAD SHOVE</button>' +
+        '<button data-arcade-negative="overplayed" type="button">OVERPLAYED</button>' +
+        '<button data-arcade-negative="missedValue" type="button">MISSED VALUE</button>' +
+        '<button data-arcade-negative="tooPassive" type="button">TOO PASSIVE</button>' +
         '<div class="dev-subtitle">STACKED SCENARIOS</div>' +
-        '<button data-arcade-scenario="small" type="button">SMALL REWARD</button>' +
-        '<button data-arcade-scenario="medium" type="button">MEDIUM REWARD</button>' +
-        '<button data-arcade-scenario="huge" type="button">HUGE REWARD</button>' +
-        '<button data-arcade-scenario="stacked" type="button">3-EVENT QUEUE</button>' +
-        '<button data-arcade-scenario="luckyWin" type="button">REWARD + LUCK</button>' +
-        '<button data-arcade-scenario="badBeat" type="button">REWARD + BAD BEAT</button>' +
-        '<button data-arcade-scenario="badCall" type="button">NEGATIVE ONLY</button>' +
-        '<button id="dev-test-jackpot" type="button">ROYAL FLUSH +5,000</button>' +
+        '<button data-arcade-scenario="escalating" type="button">ESCALATING PAYOUT (7 rewards)</button>' +
+        '<button data-arcade-scenario="massivePot" type="button">MASSIVE POT</button>' +
+        '<button data-arcade-scenario="heroCall" type="button">HERO CALL</button>' +
+        '<button data-arcade-scenario="monsterBluff" type="button">MONSTER BLUFF</button>' +
+        '<button data-arcade-scenario="ko" type="button">K.O.!</button>' +
+        '<button data-arcade-scenario="luckyWin" type="button">REWARD + LUCKY</button>' +
+        '<button data-arcade-scenario="badBeat" type="button">REWARD + BRUTAL</button>' +
+        '<button data-arcade-scenario="negative" type="button">NEGATIVE ONLY</button>' +
         '<div class="dev-subtitle">COUNTER</div>' +
         '<button data-arcade-score="100" type="button">+100 SCORE</button>' +
         '<button data-arcade-score="1000" type="button">+1,000 SCORE</button>' +
         '<button data-arcade-score="10000" type="button">+10,000 SCORE</button>' +
         '<button id="dev-reset-score" type="button">RESET SCORE</button>' +
         '<div class="dev-subtitle">TEST POT SMASH</div>' +
-        '<button data-pot-smash="small" type="button">TEST SMALL POT</button>' +
+        '<button data-pot-smash="small" type="button">TEST SMALL POT (normal)</button>' +
         '<button data-pot-smash="medium" type="button">TEST MEDIUM POT</button>' +
         '<button data-pot-smash="huge" type="button">TEST HUGE POT</button>' +
         '<div class="dev-subtitle">STATE</div>' +
@@ -295,6 +371,8 @@ function initDevPanel(){
   $('dev-win-hand').onclick = devWinHand;
   $('dev-ko-next').onclick = devKoNext;
   $('dev-bust-me').onclick = devBustMe;
+  $('dev-shove-steal').onclick = devShoveSteal;
+  $('dev-rapid-hands').onclick = ()=>devRapidHands(8);
   $('dev-clear-table').onclick = devClearTable;
   $('dev-ko-eject').onclick = devTestKoEject;
   $('dev-ko-eject-2').onclick = ()=>devTestKoEjectGroup(2);
@@ -307,11 +385,10 @@ function initDevPanel(){
   };
   panel.querySelectorAll('[data-arcade-award]').forEach(b=>b.onclick=runArcadeDevTest(()=>devArcadeAward(b.dataset.arcadeAward)));
   panel.querySelectorAll('[data-arcade-luck]').forEach(b=>b.onclick=runArcadeDevTest(()=>devArcadeLuck(b.dataset.arcadeLuck)));
-  panel.querySelectorAll('[data-arcade-comment]').forEach(b=>b.onclick=runArcadeDevTest(()=>devArcadeCommentary(b.dataset.arcadeComment)));
+  panel.querySelectorAll('[data-arcade-negative]').forEach(b=>b.onclick=runArcadeDevTest(()=>devArcadeNegative(b.dataset.arcadeNegative)));
   panel.querySelectorAll('[data-arcade-scenario]').forEach(b=>b.onclick=runArcadeDevTest(()=>devArcadeScenario(b.dataset.arcadeScenario)));
   panel.querySelectorAll('[data-arcade-score]').forEach(b=>b.onclick=()=>devArcadeAddScore(b.dataset.arcadeScore));
   panel.querySelectorAll('[data-pot-smash]').forEach(b=>b.onclick=runArcadeDevTest(()=>devTestPotSmash(b.dataset.potSmash)));
-  $('dev-test-jackpot').onclick=devArcadeJackpot;
   $('dev-reset-score').onclick=devArcadeResetScore;
   $('dev-reset-arcade').onclick=devArcadeReset;
   $('dev-fast-dev').onchange = e=>{ FAST_DEV = e.target.checked; refreshDevPanel(); };
@@ -335,6 +412,8 @@ function refreshDevPanel(){
   $('dev-win-hand').disabled = !(inElim && hip);
   $('dev-ko-next').disabled = !(inElim && hip);
   $('dev-bust-me').disabled = !(inElim && hip);
+  $('dev-shove-steal').disabled = !(inElim && hip && game.phase==='preflop');
+  $('dev-rapid-hands').disabled = !inElim;
   $('dev-clear-table').disabled = !(inElim && bh);
   $('dev-ko-eject').disabled = !(inElim && bh);
   $('dev-ko-eject-2').disabled = !(inElim && bh);
@@ -364,14 +443,6 @@ function wireUI(){
   EquityService.init();
   applyTheme();
   renderStats();
-  buildSwatches();
-
-  $('player-name').value = settings.playerName === 'You' ? '' : settings.playerName;
-  updateIdentityPreview();
-  $('player-name').oninput = ()=>{
-    settings.playerName = ($('player-name').value || 'You').trim() || 'You';
-    saveSettings(); updateIdentityPreview();
-  };
 
   // lobby selections
   setSegment('diff-seg','diff',settings.difficulty);
@@ -513,6 +584,17 @@ function wireUI(){
     const raw = parseInt(slider.value,10);
     const committed = Math.max(parseInt(slider.min,10), Math.min(raw, parseInt(slider.max,10)));
     Sound.buttonRelease(resolveButtonKind($('btn-raise')));
+    const p = pendingHumanPlayer;
+    if (settings.confirmAllIn && committed >= p.chips + p.betThisRound){
+      showConfirmDialog({
+        title:'Go all-in?',
+        body:'You are about to commit your entire stack.',
+        confirmLabel:'Confirm All-In',
+        danger:true,
+        onConfirm:()=>humanAct('raise', committed)
+      });
+      return;
+    }
     humanAct('raise', committed);
   };
   $('raise-cancel').onclick = ()=>{
@@ -569,40 +651,13 @@ function wireUI(){
   };
 
   // settings switches
-  bindSwitch('sw-coach','coach', ()=>{ updateCoachQuick(); if (pendingHumanPlayer) updateCoach(); else hideCoach(); });
-  updateCoachQuick();
-  bindSwitch('sw-strength','strength', ()=>{ if (pendingHumanPlayer) updateCoach(); });
   bindSwitch('sw-review','review', ()=>{ if (!settings.review) hideReview(); });
-  bindSwitch('sw-faces','faces', ()=>{
-    if (!game) return;
-    game.players.forEach((p,i)=>{
-      const e = seatEls[p.id];
-      if (!e || p.isHuman) return;
-      e._mood = null;
-      if (p.eliminated){
-        e.avatar.classList.add('has-face');
-        e.avatar.innerHTML = renderFace(p.personality && p.personality.key, 'dead', aiHue(i));
-        return;
-      }
-      if (settings.faces){
-        e.avatar.classList.add('has-face');
-        e.avatar.innerHTML = renderFace(p.personality && p.personality.key, 'idle', aiHue(i));
-      } else {
-        e.avatar.classList.remove('has-face');
-        e.avatar.innerHTML = esc(p.name.split(' ').filter(w=>w!=='The').map(w=>w[0]).slice(0,2).join(''));
-      }
-    });
-  });
-  bindSwitch('sw-deck','fourColour', applyTheme);
-  bindSwitch('sw-talk','tableTalk');
   bindSwitch('sw-sound','sound', ()=>{ if (settings.sound){ Sound.unlock(); Sound.check(); } });
-  bindSwitch('sw-haptics','haptics', ()=>haptic(15));
   bindSwitch('sw-motion','reduceMotion', applyTheme);
-  bindSwitch('sw-contrast','highContrast', applyTheme);
-  bindSwitch('sw-textsize','largeText', applyTheme);
   bindSwitch('sw-autodeal','autoDeal', ()=>{ if (!settings.autoDeal) clearTimeout(autoDealT); });
-  bindSwitch('sw-lives','lives');
-  bindSwitch('sw-devmode','devMode', ()=>setDevMode(settings.devMode));
+  bindSwitch('sw-confirm-allin','confirmAllIn');
+  bindSwitch('sw-devmode','devMode', ()=>{ setDevMode(settings.devMode); syncDevSection(); });
+  syncDevSection();
   document.querySelectorAll('#speed-seg button').forEach(b=>b.onclick=()=>{
     settings.speed = b.dataset.speed;
     setSegment('speed-seg','speed',settings.speed);
@@ -618,23 +673,24 @@ function wireUI(){
   });
   setSegment('theme-seg','theme',settings.theme);
 
-  document.querySelectorAll('#cardback-seg button').forEach(b=>b.onclick=()=>{
-    settings.cardBack = b.dataset.cardback;
-    setSegment('cardback-seg','cardback',settings.cardBack);
-    applyTheme(); saveSettings();
-  });
-  setSegment('cardback-seg','cardback',settings.cardBack);
+  $('open-scoring-guide').onclick = ()=>{
+    buildScoringGuide();
+    $('settings-sheet').classList.remove('open');
+    $('scoring-guide-sheet').classList.add('open');
+  };
+  $('close-scoring-guide').onclick = ()=>{
+    $('scoring-guide-sheet').classList.remove('open');
+    $('settings-sheet').classList.add('open');
+  };
 
-  document.querySelectorAll('#names-seg button').forEach(b=>b.onclick=()=>{
-    settings.opponentNames = b.dataset.names;
-    setSegment('names-seg','names',settings.opponentNames);
-    saveSettings();
-  });
-  setSegment('names-seg','names',settings.opponentNames);
-
-  $('reset-stats').onclick = ()=>{
-    stats = Object.assign({}, DEFAULT_STATS);
-    saveStats(); renderStats();
+  $('reset-run').onclick = ()=>{
+    showConfirmDialog({
+      title:'Reset Current Run?',
+      body:'Deletes your current run progress and starts fresh.',
+      confirmLabel:'Reset Current Run',
+      danger:true,
+      onConfirm:resetCurrentRun
+    });
   };
 
   $('fr-dismiss').onclick = ()=>{

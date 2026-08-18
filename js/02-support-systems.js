@@ -209,7 +209,7 @@ const DEFAULT_SETTINGS = {
   coach:false, strength:true, review:false, faces:true,
   theme:'emerald', fourColour:false, cardBack:'table', tableTalk:true,
   sound:false, haptics:true, reduceMotion:false, highContrast:false, largeText:false,
-  speed:'normal', autoDeal:true, lives:true,
+  speed:'normal', autoDeal:true, lives:true, confirmAllIn:false,
   playerName:'You', avatarColour:'#D9A93B', opponentNames:'persona',
   opponents:4, difficulty:'medium', mode:'cash', stack:1000, blindLevel:0,
   seenIntro:false, devMode:false
@@ -217,9 +217,13 @@ const DEFAULT_SETTINGS = {
 const DEFAULT_STATS = { hands:0, won:0, showdownsWon:0, biggestPot:0, net:0 };
 const SAVE_VERSION = 1;
 /* Bump on every release so the main-menu header shows what's actually installed. */
-const BUILD_VERSION = 'v0.13.4-dev · results-stage';
+const BUILD_VERSION = 'v0.13.7-dev · settings-layering-fix';
 
 let settings = Object.assign({}, DEFAULT_SETTINGS, Store.get('felt.settings', {}));
+// The Settings menu cleanup dropped RELAXED from the Game Speed control
+// (now just NORMAL/FAST) — migrate anyone still on it so the segmented
+// control has a matching active state instead of showing nothing selected.
+if (settings.speed === 'relaxed') settings.speed = 'normal';
 let stats = Object.assign({}, DEFAULT_STATS, Store.get('felt.stats', {}));
 function saveSettings(){ Store.set('felt.settings', settings); }
 function saveStats(){ Store.set('felt.stats', stats); }
@@ -732,16 +736,35 @@ const Sound = (function(){
   /* Arcade scoring hooks. These are deliberately synthesized from the
      existing noise/tone toolkit so the feature has a complete event API
      without adding assets or a second audio system. */
+  /* Four-step escalation matching the STANDARD/STRONG/ELITE/JACKPOT
+     presentation tiers — quiet crisp ding, stronger two-note hit, a
+     punchier three-note sweep, then a full five-note fanfare with the
+     heaviest low end, reserved for JACKPOT so it actually means
+     something (section 15/20). */
   function arcadeRewardSound(tier,id){
-    const major=tier==='large';
-    withVoiceCap(major?620:300,()=>{
-      noise(major?.07:.025,major?.085:.04,{filterType:major?'lowpass':'bandpass',freq:major?480:2200,freqSweepTo:major?150:3400,decayPow:2.2});
-      if (id==='ko') [392,294,196].forEach((f,i)=>blip(f,.1,'square',.045,i*.045));
-      else {
-        const notes=major?[392,523,659,784]:[660,880];
-        notes.forEach((f,i)=>blip(f,major?.11:.07,i%2?'square':'triangle',major?.045:.03,i*.045));
-      }
-    });
+    if (tier==='jackpot'){
+      withVoiceCap(680,()=>{
+        noise(.09,.11,{filterType:'lowpass',freq:520,freqSweepTo:160,decayPow:2.1});
+        if (id==='ko') [392,294,196].forEach((f,i)=>blip(f,.1,'square',.045,i*.045));
+        else [392,523,659,784,988].forEach((f,i)=>blip(f,.12,i%2?'square':'triangle',.05,i*.04));
+      });
+    } else if (tier==='elite'){
+      withVoiceCap(460,()=>{
+        noise(.05,.07,{filterType:'bandpass',freq:900,freqSweepTo:2600,decayPow:2.3});
+        if (id==='ko') [392,294,196].forEach((f,i)=>blip(f,.09,'square',.04,i*.04));
+        else [523,659,880].forEach((f,i)=>blip(f,.09,i%2?'square':'triangle',.038,i*.04));
+      });
+    } else if (tier==='strong'){
+      withVoiceCap(320,()=>{
+        noise(.03,.045,{filterType:'bandpass',freq:1800,freqSweepTo:3000,decayPow:2.2});
+        [660,880].forEach((f,i)=>blip(f,.08,i%2?'square':'triangle',.032,i*.045));
+      });
+    } else {
+      withVoiceCap(220,()=>{
+        noise(.02,.03,{filterType:'bandpass',freq:2200,freqSweepTo:3400,decayPow:2.2});
+        blip(740,.06,'triangle',.026);
+      });
+    }
   }
   function arcadeComboSound(up){
     withVoiceCap(180,()=>{
@@ -750,10 +773,18 @@ const Sound = (function(){
       blip(up?980:190,.08,'triangle',.025,.055);
     });
   }
+  /* kind: 'good'/'extreme-good'/'bad'/'extreme-bad' (luck tags) or
+     'negative' (a mistake message) — negative gets its own quieter, duller
+     "duk" so a pointed-out mistake never sounds like a bad-luck sting. */
   function arcadeLuckSound(kind){
-    if (kind==='bad'||kind==='rare'){
-      blip(245,.12,'triangle',.028); blip(174,.15,'triangle',.024,.07);
-    } else { blip(740,.07,'square',.025); blip(988,.09,'triangle',.024,.06); }
+    if (kind==='negative'){
+      blip(160,.1,'triangle',.02); blip(120,.12,'triangle',.018,.06);
+      return;
+    }
+    const extreme=kind==='extreme-good'||kind==='extreme-bad';
+    if (kind==='bad'||kind==='extreme-bad'){
+      blip(245,extreme?.15:.12,'triangle',extreme?.034:.028); blip(174,extreme?.18:.15,'triangle',extreme?.03:.024,.07);
+    } else { blip(740,extreme?.09:.07,'square',extreme?.03:.025); blip(988,extreme?.11:.09,'triangle',extreme?.03:.024,.06); }
   }
 
   /* Pot smash — the moment the TOTAL plate stamps down and breaks the pot

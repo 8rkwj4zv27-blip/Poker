@@ -424,7 +424,11 @@ async function dealCardFlight(el, card, opts){
   await DealFX.flyGhost(deckTop, el, { duration:DEAL_TIMING.dealMs, style:'deal' });
   el.style.opacity = '';
   Sound.cardLanded(); // soft PAP/TAK — reaches its destination (fires even for a deferred-flip flop card; the flip's own FWAP comes later)
-  if (wasFaceUp && !opts.deferFlip){
+  // opts.revealAfter: the human's own hole cards are now dealt genuinely
+  // face-down (see revealHoleCardsAnimated/render's mine mask) rather than
+  // disguised-then-restored, so wasFaceUp alone no longer tells us they
+  // need to flip up on landing — the caller says so explicitly instead.
+  if ((wasFaceUp || opts.revealAfter) && !opts.deferFlip){
     await sleep(Math.round(DEAL_TIMING.settleBeforeFlipMs * speedMult()));
     flipCard(el, false, card, small, opts.board ? 'board' : 'hole');
   }
@@ -2106,13 +2110,14 @@ async function presentRewardBreakdown(early){
   for (const item of items){
     subtotal += item.def.base*item.count;
     clearArcadeLayer();
-    layer.className = 'arcade-reward-layer pot-smash-breakdown tier-'+(item.def.tier||'small')+' cat-'+(item.def.type||'result');
+    layer.className = 'arcade-reward-layer pot-smash-breakdown tier-'+(item.def.tier||'standard')+' cat-'+(item.def.type||'event');
     layer.classList.remove('hidden');
     $('arcade-hero').textContent = item.def.name;
+    fitArcadeHeroText($('arcade-hero'));
     $('arcade-secondaries').innerHTML = '<span class="arcade-secondary">+'+(item.def.base*item.count).toLocaleString()+'</span>';
     $('arcade-total').textContent = subtotal.toLocaleString();
     void layer.offsetWidth; layer.classList.add('is-live');
-    Sound.arcadeReward(item.def.tier||'small', item.id);
+    Sound.arcadeReward(item.def.tier||'standard', item.id);
     await arcadeDelay(perItemMs);
   }
   clearArcadeLayer();
@@ -3313,14 +3318,14 @@ async function ejectPortrait(e, ko){
 async function runPotSmashSequence({ potN, scoreTotal, human }){
   const g = game, a = g && g.run && g.run.arcade;
   if (!a) return;
-  const tier = scoreTotal>=1000 ? 'large' : scoreTotal>=250 ? 'medium' : 'small';
+  const tier = scoreTotal>=1000 ? 'jackpot' : scoreTotal>=400 ? 'elite' : scoreTotal>=100 ? 'strong' : 'standard';
 
   const rollScore = async()=>{
     const target = a.score+scoreTotal; a.score = target;
     const machine = $('arcade-score-machine');
     if (machine){
       machine.classList.remove('score-impact','score-jackpot'); void machine.offsetWidth;
-      machine.classList.add(tier==='large'?'score-jackpot':'score-impact');
+      machine.classList.add(tier==='jackpot'?'score-jackpot':'score-impact');
     }
     await rollArcadeCounter(a, target, tier);
   };
@@ -3522,7 +3527,13 @@ function render(){
     }
 
     const mine = p.isHuman;
-    syncCardRow(e.cardsContainer, p.hand, mine ? p.hand.map(()=>false) : p.hand.map(()=>!p._reveal), !mine, 'hole');
+    // The human's own hole cards are only ever painted face-up for the
+    // specific indices this hand's deal animation has actually revealed
+    // (see p._holeRevealed, reset synchronously per-hand in startNewHand)
+    // — never simply because p.hand already holds the logically-dealt
+    // cards. This is what stops a render() firing before/mid-deal from
+    // flashing the real faces early.
+    syncCardRow(e.cardsContainer, p.hand, mine ? p.hand.map((_,i)=>!(p._holeRevealed&&p._holeRevealed[i])) : p.hand.map(()=>!p._reveal), !mine, 'hole');
 
     // Fixed action-display slot — always rendered, same footprint whether
     // a player just checked or just shoved. Replaces the old floating

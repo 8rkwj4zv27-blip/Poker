@@ -343,135 +343,110 @@
   <div class="sheet" id="settings-sheet" role="dialog" aria-label="Settings">
     <div class="sheet-grip"></div>
     <div class="sheet-body">
-      <div class="sheet-section">
-        <h3>Player</h3>
-        <div class="identity-row">
-          <div class="identity-preview" id="identity-preview">YO</div>
-          <input class="text-input" id="player-name" maxlength="14" placeholder="Your name" aria-label="Your name">
-        </div>
-        <div class="swatches" id="avatar-swatches" style="margin-top:14px;" role="group" aria-label="Seat colour"></div>
+      <div class="sheet-section sheet-title-wrap">
+        <h2 class="sheet-title">Settings</h2>
       </div>
 
       <div class="sheet-section">
-        <h3>Assistance</h3>
-        <div class="toggle-row">
-          <div><div class="tl">Coach</div><div class="ts">Shows your win chance, pot odds, and a suggested action on your turn.</div></div>
-          <button class="switch" id="sw-coach" role="switch" aria-checked="false" aria-label="Coach"></button>
+        <h3>Game</h3>
+        <div class="field" style="margin-bottom:16px;">
+          <div class="field-label">Game speed</div>
+          <div class="segmented compact" id="speed-seg" role="group" aria-label="Game speed">
+            <button data-speed="normal" class="active">Normal</button>
+            <button data-speed="fast">Fast</button>
+          </div>
+          <div class="hint">Controls pauses between dealing and opponent actions. Poker rules are unchanged.</div>
         </div>
         <div class="toggle-row">
-          <div><div class="tl">Hand strength</div><div class="ts">Names your current best hand under the table.</div></div>
-          <button class="switch" id="sw-strength" role="switch" aria-checked="true" aria-label="Hand strength"></button>
+          <div><div class="tl">Auto-Continue</div><div class="ts">Automatically starts the next hand after the reward sequence.</div></div>
+          <button class="switch" id="sw-autodeal" role="switch" aria-checked="true" aria-label="Auto-Continue"></button>
         </div>
         <div class="toggle-row">
           <div><div class="tl">Hand review</div><div class="ts">After each hand, explains who won, why, and how the pot was played.</div></div>
           <button class="switch" id="sw-review" role="switch" aria-checked="false" aria-label="Hand review"></button>
         </div>
+        <div class="toggle-row">
+          <div><div class="tl">Confirm All-In</div><div class="ts">Ask for confirmation before committing your entire stack.</div></div>
+          <button class="switch" id="sw-confirm-allin" role="switch" aria-checked="false" aria-label="Confirm All-In"></button>
+        </div>
       </div>
 
       <div class="sheet-section">
-        <h3>Table</h3>
+        <h3>Audio</h3>
+        <div class="toggle-row">
+          <div><div class="tl">Sound</div><div class="ts">Turns game sound effects on or off.</div></div>
+          <button class="switch" id="sw-sound" role="switch" aria-checked="false" aria-label="Sound"></button>
+        </div>
+      </div>
+
+      <div class="sheet-section">
+        <h3>Visual</h3>
         <div class="field" style="margin-bottom:16px;">
-          <div class="field-label">Theme</div>
+          <div class="field-label">Colour theme</div>
           <div class="segmented compact" id="theme-seg" role="group" aria-label="Theme">
             <button data-theme="emerald" class="active">Emerald</button>
             <button data-theme="midnight">Midnight</button>
             <button data-theme="burgundy">Burgundy</button>
             <button data-theme="slate">Slate</button>
           </div>
-        </div>
-        <div class="field" style="margin-bottom:16px;">
-          <div class="field-label">Card back</div>
-          <div class="segmented compact" id="cardback-seg" role="group" aria-label="Card back design">
-            <button data-cardback="table" class="active">Table</button>
-            <button data-cardback="classic">Classic</button>
-          </div>
-        </div>
-        <div class="field" style="margin-bottom:16px;">
-          <div class="field-label">Opponent names</div>
-          <div class="segmented compact" id="names-seg" role="group" aria-label="Opponent names">
-            <button data-names="persona" class="active">Personas</button>
-            <button data-names="random">Random names</button>
-          </div>
-          <div class="hint">Personas gives each opponent a nickname like "Shark". Random names uses ordinary names instead.</div>
+          <div class="hint">Changes the colour scheme of the poker machine.</div>
         </div>
         <div class="toggle-row">
-          <div><div class="tl">Four-colour deck</div><div class="ts">Distinct colour per suit — easier to read at a glance.</div></div>
-          <button class="switch" id="sw-deck" role="switch" aria-checked="false" aria-label="Four-colour deck"></button>
-        </div>
-        <div class="toggle-row">
-          <div><div class="tl">Opponent faces</div><div class="ts">Cartoon avatars that react to how the hand is going.</div></div>
-          <button class="switch" id="sw-faces" role="switch" aria-checked="true" aria-label="Opponent faces"></button>
-        </div>
-        <div class="toggle-row">
-          <div><div class="tl">Table talk</div><div class="ts">Opponents occasionally chat in character during a hand.</div></div>
-          <button class="switch" id="sw-talk" role="switch" aria-checked="true" aria-label="Table talk"></button>
+          <div><div class="tl">Reduced Motion</div><div class="ts">Reduces screen shake and large arcade motion effects.</div></div>
+          <button class="switch" id="sw-motion" role="switch" aria-checked="false" aria-label="Reduced Motion"></button>
         </div>
       </div>
 
       <div class="sheet-section">
-        <h3>Pacing &amp; lives</h3>
-        <div class="field" style="margin-bottom:16px;">
-          <div class="field-label">Game speed</div>
-          <div class="segmented compact" id="speed-seg" role="group" aria-label="Game speed">
-            <button data-speed="relaxed">Relaxed</button>
-            <button data-speed="normal" class="active">Normal</button>
-            <button data-speed="fast">Fast</button>
-          </div>
-          <div class="hint">Sets how long opponents think and how quickly cards come out.</div>
-        </div>
-        <div class="toggle-row">
-          <div><div class="tl">Auto-deal</div><div class="ts">Deals the next hand a moment after the last one ends. Paused while hand review is on.</div></div>
-          <button class="switch" id="sw-autodeal" role="switch" aria-checked="true" aria-label="Auto-deal"></button>
-        </div>
-        <div class="toggle-row">
-          <div><div class="tl">Lives</div><div class="ts">Cash games: three &hearts; each. A rebuy costs one \u2014 lose them all and you're out. Applies to new tables.</div></div>
-          <button class="switch" id="sw-lives" role="switch" aria-checked="true" aria-label="Lives"></button>
-        </div>
-      </div>
-
-      <div class="sheet-section hidden" id="settings-session-wrap">
-        <h3>This session</h3>
-        <div class="stat-strip" id="session-stats"></div>
+        <h3>Help</h3>
+        <button class="btn-secondary" id="open-scoring-guide" type="button">Scoring Guide</button>
       </div>
 
       <div class="sheet-section">
-        <h3>Feedback</h3>
+        <h3>System</h3>
+        <button class="btn-secondary btn-danger" id="reset-run" type="button">Reset Current Run</button>
+        <div class="hint" style="margin-bottom:14px;">Deletes your current run progress and starts fresh.</div>
+        <button class="btn-secondary" id="leave-table" type="button">Leave table</button>
+      </div>
+
+      <div class="sheet-section sheet-dev-toggle">
         <div class="toggle-row">
-          <div><div class="tl">Sound</div><div class="ts">Subtle cues for deals, chips, and results.</div></div>
-          <button class="switch" id="sw-sound" role="switch" aria-checked="false" aria-label="Sound"></button>
-        </div>
-        <div class="toggle-row">
-          <div><div class="tl">Haptics</div><div class="ts">Vibration on your turn, where supported.</div></div>
-          <button class="switch" id="sw-haptics" role="switch" aria-checked="true" aria-label="Haptics"></button>
-        </div>
-        <div class="toggle-row">
-          <div><div class="tl">Reduce motion</div><div class="ts">Turns off card and chip animation.</div></div>
-          <button class="switch" id="sw-motion" role="switch" aria-checked="false" aria-label="Reduce motion"></button>
-        </div>
-        <div class="toggle-row">
-          <div><div class="tl">High contrast</div><div class="ts">Brighter text and stronger outlines.</div></div>
-          <button class="switch" id="sw-contrast" role="switch" aria-checked="false" aria-label="High contrast"></button>
-        </div>
-        <div class="toggle-row">
-          <div><div class="tl">Larger text</div><div class="ts">Bumps up text size across the game.</div></div>
-          <button class="switch" id="sw-textsize" role="switch" aria-checked="false" aria-label="Larger text"></button>
-        </div>
-        <div class="toggle-row">
-          <div><div class="tl">Dev mode</div><div class="ts">Shows the developer test panel for scoring, hands and table states.</div></div>
-          <button class="switch" id="sw-devmode" role="switch" aria-checked="false" aria-label="Dev mode"></button>
+          <div><div class="tl">Developer Mode</div></div>
+          <button class="switch" id="sw-devmode" role="switch" aria-checked="false" aria-label="Developer Mode"></button>
         </div>
       </div>
 
-      <div class="sheet-section" id="settings-stats-wrap">
-        <h3>Lifetime</h3>
-        <div class="stat-strip" id="settings-stats"></div>
-        <button class="btn-secondary" id="reset-stats">Reset statistics</button>
+      <div class="sheet-section hidden" id="settings-dev-section">
+        <h3>Developer</h3>
+        <div class="hint">The developer test panel is available in the corner while Developer Mode is on.</div>
+        <div class="hint" id="dev-build-readout" style="margin-top:8px;"></div>
       </div>
 
       <div class="sheet-section">
-        <button class="btn-secondary" id="leave-table">Leave table</button>
         <button class="btn-secondary" id="close-settings">Done</button>
       </div>
+    </div>
+  </div>
+
+  <div class="sheet" id="scoring-guide-sheet" role="dialog" aria-label="Scoring Guide">
+    <div class="sheet-grip"></div>
+    <div class="sheet-body">
+      <div class="sheet-section sheet-title-wrap">
+        <h2 class="sheet-title">Scoring Guide</h2>
+      </div>
+      <div class="sheet-section" id="scoring-guide-list"></div>
+      <div class="sheet-section">
+        <button class="btn-secondary" id="close-scoring-guide">Back</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="confirm-dialog" class="hidden" role="alertdialog" aria-modal="true">
+    <div class="fr-card confirm-dialog-card">
+      <h4 id="confirm-dialog-title"></h4>
+      <div class="hint" id="confirm-dialog-body" style="margin:6px 0 18px;"></div>
+      <button class="btn-primary" id="confirm-dialog-yes"></button>
+      <button class="btn-secondary" id="confirm-dialog-no">Cancel</button>
     </div>
   </div>
 
