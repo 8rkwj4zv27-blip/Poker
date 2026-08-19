@@ -16,6 +16,10 @@ const TOURNAMENT_HANDS_PER_LEVEL = 10;
    can be retuned after playtesting without hunting through call sites.
    ============================================================ */
 const ELIMINATION_CONFIG = {
+  // Safe default/fallback opponent count. The live count for a run is
+  // carried on the run itself (g.run.opponentCount — see makeEliminationRun
+  // and normalizeOpponentCount below); this value is only ever the answer
+  // to "nobody told us, or told us something impossible".
   opponents: 4,
   startingStack: 500,
   smallBlind: 10, bigBlind: 20,
@@ -53,6 +57,24 @@ const ELIMINATION_CONFIG = {
   // TABLE CLEARED banner appearing — never cut away mid-payoff
   clearedBeatMs: 900,
 };
+
+/* ---- Single Player table size ----
+   The only opponent counts Single Player supports. These are OPPONENTS,
+   not seats: 4 -> 5-handed, 5 -> 6-handed, 6 -> 7-handed (the human is
+   always the extra seat). Anything else — a missing field on an old save,
+   a corrupted value, a stray truthy string — must resolve to the safe
+   4-opponent table rather than building an unsupported elimination
+   table, so this is a whitelist check, never a truthiness fallback. */
+const ELIMINATION_OPPONENT_CHOICES = [4,5,6];
+function isOpponentChoice(n){ return ELIMINATION_OPPONENT_CHOICES.indexOf(n) !== -1; }
+function normalizeOpponentCount(n){
+  // Numbers and numeric strings only — an object/array/boolean that
+  // happens to stringify into a digit is still garbage, not a choice.
+  const v = typeof n === 'number' ? n
+          : typeof n === 'string' ? parseInt(n, 10)
+          : NaN;
+  return (Number.isFinite(v) && isOpponentChoice(v)) ? v : ELIMINATION_CONFIG.opponents;
+}
 
 /* Endless single-player run progression. Gameplay values remain in
    ELIMINATION_CONFIG; this object only owns round presentation/progression. */
@@ -941,9 +963,12 @@ function buildScoringGuide(){
   list.innerHTML = html;
 }
 
-function makeEliminationRun(){
+function makeEliminationRun(opponentCount){
   return {
     active:true, tableNumber:1, highestTableReached:1, tablesCleared:0,
+    // Belongs to the RUN, not the table: every table in this run is dealt
+    // with the same number of opponents the player picked at the start.
+    opponentCount:normalizeOpponentCount(opponentCount),
     totalKOs:0, totalHands:0, totalHandsWon:0,
     showdownsPlayed:0, showdownsWon:0, allInsPlayed:0, allInsWon:0,
     biggestPotWon:0, highestStack:ELIMINATION_CONFIG.startingStack, bestHand:null, bustedBy:null,

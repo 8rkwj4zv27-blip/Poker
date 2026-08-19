@@ -73,6 +73,22 @@
           <button class="btn-secondary" id="open-rankings">Hand Rankings</button>
           <button class="btn-secondary" id="open-awards">Score / Awards</button>
         </div>
+        <!-- Table-size step for a NEW single-player run. Lives inside the
+             existing control bay and takes it over (see .picking-opponents)
+             rather than being another screen. -->
+        <div class="pc-opponent-picker hidden" id="opponent-picker">
+          <div class="pc-control-head">
+            <span class="pc-label">Opponents</span>
+            <span class="pc-seam"></span>
+            <span class="pc-lamp is-amber"></span>
+          </div>
+          <div class="opp-choice-row" id="opp-choice-row">
+            <button class="pc-button pc-button-primary opp-choice" id="opp-choice-4" data-opponents="4" type="button"><strong>4</strong><small>5&#8209;handed</small></button>
+            <button class="pc-button pc-button-primary opp-choice" id="opp-choice-5" data-opponents="5" type="button"><strong>5</strong><small>6&#8209;handed</small></button>
+            <button class="pc-button pc-button-primary opp-choice" id="opp-choice-6" data-opponents="6" type="button"><strong>6</strong><small>7&#8209;handed</small></button>
+          </div>
+          <button class="pc-button pc-button-secondary" id="opp-picker-back" type="button">&larr; Back</button>
+        </div>
       </div>
     </div>
   </div>

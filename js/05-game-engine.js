@@ -43,12 +43,15 @@ function makePlayer(id, name, isHuman, chips, personality){
 
 function newGame(opts){
   const elim = opts.mode==='elimination';
-  // Elimination mode is fully config-driven (fixed 4 opponents, fixed
-  // starting stack/blinds, no rebuy) — see ELIMINATION_CONFIG. It never
-  // reads opts.opponents/opts.stack/opts.blindLevel, so callers (the DEV
-  // panel, for now) don't need to supply them correctly.
+  // Elimination mode is config-driven for stakes (fixed starting stack/
+  // blinds, no rebuy) — see ELIMINATION_CONFIG — and never reads
+  // opts.stack/opts.blindLevel. Table SIZE is the one thing the caller
+  // owns: Single Player lets the player pick 4/5/6 opponents at the start
+  // of a run. It's put through normalizeOpponentCount() rather than
+  // trusted, so a missing or nonsense value lands on the safe 4-opponent
+  // table instead of building an unsupported one.
   const stack = elim ? ELIMINATION_CONFIG.startingStack : opts.stack;
-  const numOpponents = elim ? ELIMINATION_CONFIG.opponents : opts.opponents;
+  const numOpponents = elim ? normalizeOpponentCount(opts.opponents) : opts.opponents;
 
   const players = [];
   players.push(makePlayer('you', settings.playerName || 'You', true, stack, null));
@@ -174,7 +177,33 @@ function restoreTable(save){
     livesEnabled:save.livesEnabled,
     sess:{ bestWin:(save.sess&&save.sess.bestWin)||0, worstLoss:(save.sess&&save.sess.worstLoss)||0 }
   };
-  if (save.mode==='elimination') game.run=JSON.parse(JSON.stringify(save.run));
+  if (save.mode==='elimination'){
+    game.run=JSON.parse(JSON.stringify(save.run));
+    // Opponent count is a run property, so it has to survive save/reload/
+    // Continue exactly as chosen. A save written before this existed has
+    // no field at all — fall back to the seat count the save itself
+    // carries (eliminated players stay in the array, so that IS the
+    // original table size), which resolves an old 4-opponent save to 4.
+    // Anything not on the supported list normalises to 4.
+    const storedCount = game.run.opponentCount;
+    game.run.opponentCount = isOpponentChoice(storedCount)
+      ? storedCount
+      : normalizeOpponentCount(save.players.filter(p=>!p.isHuman).length);
+  }
+}
+
+/* The authoritative opponent count for a live elimination run — run state
+   first, then the table's own AI seat count (which stays constant for the
+   table's whole life: eliminated players are never spliced out of
+   g.players), then the config default. Everything that used to read the
+   fixed ELIMINATION_CONFIG.opponents goes through here. */
+function runOpponentCount(g){
+  if (g && g.run && isOpponentChoice(g.run.opponentCount)) return g.run.opponentCount;
+  if (g && Array.isArray(g.players)){
+    const seats = g.players.filter(p=>!p.isHuman).length;
+    if (seats > 0) return seats;
+  }
+  return ELIMINATION_CONFIG.opponents;
 }
 
 function nextActiveIndex(fromIndex){
@@ -310,6 +339,24 @@ async function startNewHand(){
     // label, not a per-hand one — every other streetAction resets fresh
     // each hand, this is the one exception.
     if (!p.streetAction || (p.streetAction.type!=='ko' && p.streetAction.type!=='eliminated')) p.streetAction = null;
+    // EMERGENCY invariant only — NOT the normal elimination mechanism.
+    // resolveEliminations() and its recoverMissedEliminations() safety
+    // net (both in finishHand(), while the hand's outcome/potResults are
+    // still available) are supposed to be the only place a genuine bust
+    // ever gets marked eliminated, with real KO attribution, run KO
+    // stats, arcade reward and the death ceremony. If a non-human AI
+    // still reaches the START of the NEXT hand at stack<=0 and not
+    // eliminated despite that, every earlier check already failed — none
+    // of that bookkeeping can be recovered this late (there's no hand
+    // outcome left to attribute a KO to), so this only corrects the flag
+    // for correct display/aiRemaining counting and logs loudly. It can
+    // never let them be dealt in regardless of whether this fires: the
+    // inHand assignment right below already requires chips>0 on its own.
+    if (!p.isHuman && !p.eliminated && p.chips<=0){
+      console.error('[elimination] EMERGENCY: '+p.name+' reached the next hand at stack<=0 and still not eliminated — this should be impossible after finishHand()\'s recovery pass. KO stats/reward/ceremony for this bust cannot be recovered here.');
+      logMsg('[EMERGENCY] '+p.name+' force-eliminated at deal time — this indicates a missed invariant upstream, please report', true);
+      p.eliminated = true;
+    }
     p.inHand = p.chips>0 && !p.eliminated;
     delete p._reveal; delete p._award; delete p._handRes;
     // Card ownership (p.hand, assigned below) and visual reveal are
@@ -415,7 +462,16 @@ async function revealHoleCardsAnimated(){
   const first = idx;
   do { order.push(idx); idx = nextActiveIndex(idx); } while (idx !== first);
 
-  const STAGGER = Math.round(DEAL_TIMING.dealStaggerMs * speedMult());
+  // Each card keeps its exact existing flick (DEAL_TIMING.dealMs) — only
+  // the RELEASE GAP between cards tightens a little once more than five
+  // players are being dealt in, so a 7-handed deal (14 cards) doesn't run
+  // ~1.7s longer than the 5-handed one the player already knows. Keyed to
+  // how many seats are actually being dealt THIS hand, not the original
+  // table size, so a 6-opponent table drifts back to the familiar rhythm
+  // as opponents are knocked out. 5-handed and smaller are untouched.
+  const dealtSeats = order.length;
+  const staggerScale = dealtSeats<=5 ? 1 : dealtSeats===6 ? 0.9 : 0.8;
+  const STAGGER = Math.round(DEAL_TIMING.dealStaggerMs * staggerScale * speedMult());
   const pending = [];
   for (let round=0; round<2; round++){
     for (const pIdx of order){
@@ -806,7 +862,12 @@ async function handleFoldWin(){
 
 async function handleShowdown(){
   const g = game;
-  const contenders = g.players.filter(p=>p.inHand && !p.folded);
+  // Defensive: inHand/folded should already exclude an eliminated player
+  // from ever reaching here (see resolveEliminations/startNewHand), but
+  // showdown eligibility is the one place a missed elimination would do
+  // real damage (an eliminated seat winning a pot) — the explicit
+  // !p.eliminated guard costs nothing and makes that impossible.
+  const contenders = g.players.filter(p=>p.inHand && !p.folded && !p.eliminated);
   const pots = computePots(g.players);
   recordPot(pots.reduce((s,p)=>s+p.amount,0));
 
@@ -1212,9 +1273,19 @@ async function finishHand(outcome){
     // final human K.O. always gets to finish its whole payoff before
     // TABLE CLEARED can appear (see the Phase 1 plan §13).
     const eliminationResult=await resolveEliminations(g, outcome);
+    // Post-elimination invariant/recovery pass — see
+    // recoverMissedEliminations() below. Runs immediately after the
+    // primary pass, still within this same hand's finishHand() call, so
+    // `outcome` (potResults/winnerIds) is still available for correct KO
+    // attribution if it ever actually finds anyone. Every downstream
+    // read of `eliminated` this hand (aiRemaining right below, the
+    // table-clear check, next hand's dealing) sees the fully-corrected
+    // state either way.
+    const recoveredResult = await recoverMissedEliminations(g, outcome);
+    const koCount = (eliminationResult?eliminationResult.koCount:0) + (recoveredResult?recoveredResult.koCount:0);
     const aiRemaining = g.players.filter(p=>!p.isHuman && !p.eliminated);
     await resolveArcadeHandLate(g,outcome,{
-      koCount:eliminationResult?eliminationResult.koCount:0,
+      koCount,
       tableClear:human.chips>0&&aiRemaining.length===0
     });
     if (human.chips<=0){ showBusted(g, human); return; }
@@ -1398,7 +1469,7 @@ function tableBestHandTrophyHTML(best){
    never nests a second .stage-results/.result-card box inside itself. */
 function tableClearedHTML(g){
   const r=g.run;
-  const opponents = ELIMINATION_CONFIG.opponents;
+  const opponents = runOpponentCount(g);
   const koLamps = Array.from({length:opponents}, (_,i)=>
     '<span class="stage-ko-slot'+(i<r.tableKOs?' lit':'')+'"></span>').join('');
   const perfect = r.tableKOs===opponents && r.tableShowdownsPlayed>0 && r.tableShowdownsWon===r.tableShowdownsPlayed;
@@ -1554,6 +1625,34 @@ async function resolveEliminations(g, outcome){
   }
   await playEliminationGroup(entries);
   return {koCount:humanKOs};
+}
+/* Post-elimination invariant/recovery pass — the safety net for finishHand
+   asking "did resolveEliminations() above actually catch everyone busted
+   this hand?" rather than a second, competing elimination system. Its own
+   check IS resolveEliminations()'s own `busted` filter
+   (!isHuman && !eliminated && chips<=0) — anyone the primary pass already
+   caught is inherently excluded (it just set eliminated=true on them), so
+   calling resolveEliminations() again here is naturally idempotent: a
+   normal hand where nothing was missed finds zero busted players, does
+   nothing, and returns null — no duplicate KO/ceremony/reward is possible.
+   The point of running this as an explicit, separately-logged pass (Bug 1
+   hardening rework — the previous version of this fix wrongly tried to
+   patch the symptom at deal time in startNewHand(), a hand later, with no
+   outcome left to attribute a KO to; see that function's own comment)
+   is that IF the primary pass ever does miss someone, this still runs
+   while `outcome` (this hand's potResults/winnerIds) is in scope, so a
+   recovered bust still gets genuine human-KO attribution, real
+   g.run.totalKOs/tableKOs credit, the actual K.O./ELIMINATED! ceremony,
+   and correctly-timed hand-history logging — everything a deal-time-only
+   fix could never recover. Distinct from resolveEliminations()'s own
+   per-player log lines so a real recurrence is unmistakable in the log. */
+async function recoverMissedEliminations(g, outcome){
+  const missed = g.players.filter(p=>!p.isHuman && !p.eliminated && p.chips<=0);
+  if (!missed.length) return null;
+  const names = missed.map(p=>p.name).join(', ');
+  console.error('[elimination] invariant violation: '+names+' had stack<=0 but resolveEliminations() did not mark them eliminated — running recovery now, still within the same hand, before it closes out.');
+  logMsg('[SAFETY] recovering missed elimination(s): '+names, true);
+  return resolveEliminations(g, outcome);
 }
 
 /* Shared K.O.!/ELIMINATED! presentation (see resolveEliminations above for
@@ -1871,7 +1970,10 @@ async function showRunOver(g){
   $('btn-next-hand').classList.add('hidden');
   $('btn-rebuy').classList.add('hidden');
   $('btn-new-table').classList.add('hidden');
-  $('run-new').onclick = startSinglePlayerRun;
+  // A fresh run straight off RUN OVER keeps the table size the player was
+  // already playing — it's a retry, not a trip back through the picker.
+  const sameSizeAgain = runOpponentCount(g);
+  $('run-new').onclick = ()=>startSinglePlayerRun({opponentCount:sameSizeAgain});
   $('run-menu').onclick = leaveTable;
   render();
   animateFinalArcadeScore(g);
@@ -1921,7 +2023,13 @@ function resetRunSeatDOM(g){
   // A run/table reset can land mid-K.O. (e.g. DEV END TABLE fired while a
   // portrait was still ricocheting) — strip any in-flight ejection layer
   // so a stale free-physics portrait never survives into the next table.
-  document.querySelectorAll('.ko-physics-layer').forEach(l=>l.remove());
+  // Same risk applies to an in-flight pot-smash chip burst/score plate
+  // (runPotBreakPhysics/runPotSmashSequence, 06-presentation.js) — those
+  // already carry their own burstMaxMs recovery valve that finalizes and
+  // removes every chip even if interrupted, but stripping any surviving
+  // layer here too closes the same class of gap defensively, exactly like
+  // the K.O. layer above, instead of relying solely on that valve.
+  document.querySelectorAll('.ko-physics-layer, .chip-physics-layer, .score-smash-layer').forEach(l=>l.remove());
   g.players.forEach((p,idx)=>{
     const e = seatEls[p.id];
     if (!e) return;

@@ -127,9 +127,49 @@ async function updateCoach(){
    ============================================================ */
 function esc(s){ return String(s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 
+/* ---- authored Single Player seat maps ----
+   5 and 6 opponents each get an explicit hand-authored arc instead of the
+   generic ellipse below, the same way 4 already has its own hand-tuned
+   branch further down. Percentages are of the felt itself and were
+   authored against the real felt box (viewport width - 20px, capped at
+   560; height = viewport minus topbar/score cabinet/HUD dock/action bay),
+   so the same numbers hold from a 375px phone up to a 430px one.
+
+   The vertical band is the binding constraint, not the horizontal one: an
+   opponent module is ~150px tall on screen and the felt only offers ~236px
+   between its top edge and the top of the community-card lane, so these
+   are deliberately ONE composed arc each — outer seats sitting lower and
+   nearer the side rail, inner seats riding higher — rather than two
+   stacked rows, which would have to drop seats over the board. Cards stay
+   upright, nothing rotates, and the centre lane is left open. */
+const SEAT_MAPS = {
+  // 5 opponents: shallow horseshoe, centre seat highest, the two outer
+  // seats dropped to the side perimeter and just clearing the board.
+  5: [
+    {left:8,  top:17},
+    {left:29, top:10.5},
+    {left:50, top:7},
+    {left:71, top:10.5},
+    {left:92, top:17}
+  ],
+  // 6 opponents: symmetrical wrap. The two centre seats pair off across
+  // the top, the flanking pair steps down, the outer pair hugs the side
+  // rail lowest — the sequence reads clockwise as left, upper-left,
+  // upper-right, right, lower-right, lower-left once eyes follow the arc.
+  6: [
+    {left:7,    top:18},
+    {left:24.2, top:10},
+    {left:41.4, top:6.5},
+    {left:58.6, top:6.5},
+    {left:75.8, top:10},
+    {left:93,   top:18}
+  ]
+};
 function seatPosition(seatIdx, total){
   if (seatIdx===0) return {left:'50%', top:'86%'};
   const k = total-1, i = seatIdx-1;
+  const authored = SEAT_MAPS[k];
+  if (authored && authored[i]) return { left:authored[i].left+'%', top:authored[i].top+'%' };
   const rx = 42, ry = k>=6 ? 37 : k===5 ? 42 : 32;
   const baseline = 38;
   if (k===1) return { left:'50%', top:(baseline-ry-4)+'%' };
@@ -461,15 +501,45 @@ function collectCardFlight(el){
    sole authority; visible chips are an approximate physical
    representation of it and never have to add up to it exactly.
    ============================================================ */
-const CHIP_COLOR_CLASSES = ['d-cream','d-red','d-blue','d-green'];
-/* Cycles through the four chip sprites purely for visual variety as a
-   pile grows — colour carries no value/denomination meaning. The
-   'd-cream' class now points at the newer chip-yellow.png art (see
-   CSS) — kept as 'd-cream' rather than renamed so nothing else here
-   has to change, but the old cream artwork is no longer used. */
+const CHIP_COLOR_CLASSES = ['d-black','d-blue','d-green','d-purple','d-red','d-white','d-yellow'];
+/* Cycles through the full 7-colour illustrated set purely for visual
+   variety as a pile grows — colour carries no value/denomination
+   meaning. The old 4-colour set (chip-red/blue/green/yellow.png, plus
+   the retired 'cream'->yellow standin) is gone entirely; every entry
+   here now names one of the 7 real assets. */
 function pickChipColor(container){
   const i = (container._chipCount||0) % CHIP_COLOR_CLASSES.length;
   return CHIP_COLOR_CLASSES[i];
+}
+/* Each colour ships 3 rotated visual variants (chip-<colour>-0{1,2,3}.png)
+   purely so a tall single-colour tower doesn't read as one chip stamped
+   out repeatedly. Picked once per chip, at the same moment/call site as
+   its colour (createRestingChip, flyChip) — the resulting 'v-1'/'v-2'/
+   'v-3' class rides on the element's className exactly like its colour
+   class does, so it's automatically stable through flight, pot-smash
+   physics reparenting and payout (same DOM element throughout — see
+   flyChip/spawnPhysicsChip). Never re-picked for an existing element.
+
+   `tower` is the destination chip-clump this chip is entering (see
+   claimDestSlot) — passing it lets this look at the tower's current
+   last REAL chip (skipping any hidden reservation placeholder sitting
+   above it) and steer away from repeating that one exact variant, so
+   adjacent chips in the same physical stack don't commonly show
+   "01/01/01/01". `tower` is null for a chip with no persistent pile to
+   join (e.g. a payout fading out at an opponent's seat) — there's no
+   stack to read, so it just picks freely. Deliberately lightweight: a
+   flat forbid-the-immediate-neighbour rule, not a shuffled-bag or a
+   longer-history scheme. */
+const CHIP_VARIANT_CLASSES = ['v-1','v-2','v-3'];
+function pickChipVariant(tower){
+  let forbidden = null;
+  if (tower){
+    let last = tower.lastElementChild;
+    while (last && last.style.visibility === 'hidden') last = last.previousElementSibling;
+    if (last) forbidden = CHIP_VARIANT_CLASSES.find(v=>last.classList.contains(v)) || null;
+  }
+  const choices = forbidden ? CHIP_VARIANT_CLASSES.filter(v=>v!==forbidden) : CHIP_VARIANT_CLASSES;
+  return choices[Math.floor(Math.random()*choices.length)];
 }
 /* Deterministic, sub-linear mapping from a money amount to an
    approximate number of visual chips — richer piles get proportionally
@@ -901,8 +971,12 @@ function takeChipFromPile(container, pile){
    never for an ordinary bank<->pot transfer, which always moves a real
    existing chip (see flyChip). */
 function createRestingChip(container, pile, forcedCls){
-  const { placeholder } = claimDestSlot(container, pile);
-  const cls = forcedCls || pickChipColor(container);
+  const { tower, placeholder } = claimDestSlot(container, pile);
+  // Colour/variant picked AFTER the placeholder is already reserved in
+  // `tower` (claimDestSlot just appended it), so pickChipVariant can see
+  // this stack's real last chip immediately below where this one is
+  // about to land.
+  const cls = forcedCls || (pickChipColor(container) + ' ' + pickChipVariant(tower));
   const d = document.createElement('div');
   d.className = 'chip-disc ' + cls + (motionOff() ? '' : ' disc-in');
   settleSlot(container, placeholder, d);
@@ -1221,15 +1295,39 @@ function initSeats(){
   // tuned for the 4-opponent portrait table, boxed layout — the box needs
   // interior room for two small cards side by side, so seats are a touch
   // wider than the old totem version; then the old shrink curve for bigger
-  // fields (functional but untuned since we're only shipping 4-max for now)
-  const scale = opponents<=3 ? 1.0 : opponents===4 ? 0.88 : opponents===5 ? 0.8 : opponents===6 ? 0.7 : opponents===7 ? 0.6 : 0.52;
-  felt.style.setProperty('--seat-w', Math.round(98*scale)+'px');
+  // fields. 5 and 6 are now shipped Single Player table sizes with their
+  // own authored seat maps (see SEAT_MAPS/seatPosition), so their scales
+  // are deliberately gentle — 0.80 and 0.77 against the 4-opponent 0.88
+  // baseline — and the density problem is solved by seat placement and by
+  // the box-width tightening just below, not by shrinking the portraits.
+  const scale = opponents<=3 ? 1.0 : opponents===4 ? 0.88 : opponents===5 ? 0.80 : opponents===6 ? 0.77 : opponents===7 ? 0.6 : 0.52;
+  const avatarW = Math.round(78*scale);
+  // Box width: at 4-max and below the box keeps its familiar generous
+  // 98/78 proportion. At 5/6 it's the SPARE horizontal padding around the
+  // portrait that gets tightened, never the portrait — padding before
+  // faces. 5 keeps a slim version of the familiar chrome (12px); 6 goes
+  // further to 6px and also drops the seat-card's interior padding to 1px
+  // in CSS, so its frame is border-plus-portrait and nothing else. That
+  // last few px is exactly what turns six touching modules into six with a
+  // real visible gap on a 393px screen, at full 0.77 portrait scale.
+  const seatW = opponents<=4 ? Math.round(98*scale)
+              : opponents===5 ? avatarW+12
+              : opponents===6 ? avatarW+6
+              : Math.round(98*scale);
+  felt.style.setProperty('--seat-w', seatW+'px');
   // the face is a portrait inside the box now, not the block itself — it
   // grows faster than the seat box so it reads as the panel's focal point.
   // Sized to roughly match the width of the three-heart row above it.
-  felt.style.setProperty('--avatar-w', Math.round(78*scale)+'px');
+  felt.style.setProperty('--avatar-w', avatarW+'px');
   felt.style.setProperty('--card-h', Math.round(48*scale)+'px');
   felt.classList.add('compact-seats');
+  // Table-size class: the ONLY hook the 5/6 seat styling hangs off, so
+  // nothing here can reach the shipped 4-opponent table. Set from the
+  // table's original seat count, never from how many are still alive —
+  // eliminated players stay in g.players, so this stays put for the whole
+  // table and seats never reflow as opponents are knocked out.
+  felt.classList.remove('opponents-4','opponents-5','opponents-6');
+  if (opponents>=4 && opponents<=6) felt.classList.add('opponents-'+opponents);
 
   game.players.forEach((p, idx)=>{
     const root = document.createElement('div');
@@ -1238,6 +1336,15 @@ function initSeats(){
       const pos = seatPosition(idx, n);
       root.style.left = pos.left;
       root.style.top = pos.top;
+      // Perimeter seats bias their speech/action bubble inward so a wide
+      // table-talk bubble can't run off the side of the screen. Purely a
+      // bubble-anchoring hint — it never moves the seat.
+      const leftPct = parseFloat(pos.left);
+      // Thresholds sit deliberately inside the shipped 4-opponent map's
+      // outermost seats (13.9% / 86.1%), so that table's bubbles behave
+      // exactly as they always have.
+      if (leftPct <= 10) root.classList.add('seat-edge-l');
+      else if (leftPct >= 90) root.classList.add('seat-edge-r');
     }
     const initials = p.isHuman
       ? (p.name.trim().slice(0,2).toUpperCase() || 'YO')
@@ -1374,7 +1481,7 @@ function squareAnchor(rect){
    discarded) — used for pending-counter bookkeeping by transferChips. */
 function flyChip(opts){
   const { srcContainer, srcPile, srcEl, dstContainer, dstPile, dstEl, fast, onLand } = opts;
-  let el, a;
+  let el, a, needsChipClass=false;
   if (srcContainer && srcPile){
     const taken = takeChipFromPile(srcContainer, srcPile);
     if (!taken){ if (onLand) onLand(null); return; }
@@ -1383,12 +1490,26 @@ function flyChip(opts){
     a = squareAnchor(srcEl ? srcEl.getBoundingClientRect() : null);
     if (!a) a = { left: innerWidth/2, top: innerHeight/2, width:24, height:24 };
     el = document.createElement('div');
-    el.className = 'chip-disc ' + pickChipColor(dstContainer || {_chipCount:0});
+    needsChipClass = true;
   }
 
+  // Reserve the destination slot BEFORE picking a brand-new chip's
+  // colour/variant (only relevant when needsChipClass — a chip taken from
+  // an existing pile above already has its class and keeps it unchanged).
+  // claimDestSlot appends its reservation placeholder into `tower` first,
+  // so pickChipVariant can see that stack's real last chip immediately
+  // below where this one is about to land.
   let placeholder=null;
   if (dstContainer && dstPile){
-    placeholder = claimDestSlot(dstContainer, dstPile).placeholder;
+    const claimed = claimDestSlot(dstContainer, dstPile);
+    placeholder = claimed.placeholder;
+    if (needsChipClass) el.className = 'chip-disc ' + pickChipColor(dstContainer) + ' ' + pickChipVariant(claimed.tower);
+  }
+  // No persistent destination pile (e.g. a payout fading out at an
+  // opponent's seat, which never keeps a visible resting pile) — no
+  // stack to read, so colour/variant are picked with no tower context.
+  if (needsChipClass && !placeholder){
+    el.className = 'chip-disc ' + pickChipColor(dstContainer || {_chipCount:0}) + ' ' + pickChipVariant(null);
   }
 
   const land = ()=>{

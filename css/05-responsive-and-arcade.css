@@ -440,6 +440,107 @@
    translate properties preserve existing winner/entry transform animations. */
 .felt .seat:not(.you){ scale:.91; translate:0 6px; transform-origin:50% 0; }
 
+/* ============================================================
+   LARGER SINGLE PLAYER TABLES — 5 and 6 opponents
+
+   Everything below is gated behind .opponents-5 / .opponents-6, set once
+   per table by initSeats() from the table's ORIGINAL seat count. The
+   shipped 4-opponent table carries .opponents-4 and matches none of these
+   rules, so its geometry is untouched.
+
+   The seat box is narrowed by tightening the chrome around the portrait
+   (initSeats), not the portrait; the hole cards that live inside the box
+   come down with it so two of them still sit side by side inside the
+   narrower frame. Board, pot, scoreboard and dashboard are not touched by
+   anything here.
+   ============================================================ */
+/* Six-up frame: chrome trimmed to the border, so the portrait keeps its
+   full 0.77 scale and the extra width comes out of empty padding instead
+   of out of the face. */
+.felt.opponents-6 .seat-card{ padding:1px; gap:1px; }
+.felt.opponents-6 .seat-name{ font-size:9px; }
+
+/* ---- compact action/status bar ----
+   CALL 20 / FOLD / CHECK / RAISE TO 120 / ELIMINATED! read as too heavy
+   inside a narrowed module — at 8.5px the label was competing with the
+   portrait for attention rather than annotating it. The step-down is sized
+   so CHARACTER CAPACITY is preserved, not just made smaller: the text area
+   narrows by 12.5% at 5-up and 18.8% at 6-up (the box loses width and the
+   horizontal padding drops 4px -> 2px), and the font drops by the matching
+   11.8% / 17.6%, so every label that fitted at 4-up still fits here — it
+   simply stops shouting. The .txt-sz2/.txt-sz3 length tiers come down with
+   it, and letter-spacing eases .04em -> .02em to hand the glyphs that
+   width back. Press Start 2P is exactly 1em per character (measured off
+   the embedded woff2), so this is arithmetic, not eyeballing.
+
+   .txt-sz3 is deliberately floored at 6px on both sizes rather than
+   tracking the ratio down to ~5.3px. That is the one tier that ends up
+   below 4-up capacity (95% at 5-up, 90% at 6-up), and it only fires on
+   14-character labels like "Raise to 1,240" — which already overrun the
+   bar at 4-up and lean on the same text-overflow:ellipsis backstop.
+   Legibility wins over one more character.
+
+   Vertical padding, min-height, border and colour states are untouched:
+   this is a type change inside the bar, not a resize of it. */
+.felt.opponents-5 .action-slot{ font-size:7.5px; padding:2px; letter-spacing:.02em; }
+.felt.opponents-5 .action-slot.txt-sz2{ font-size:6.5px; }
+.felt.opponents-5 .action-slot.txt-sz3{ font-size:6px; }
+.felt.opponents-6 .action-slot{ font-size:7px; padding:2px; letter-spacing:.02em; }
+.felt.opponents-6 .action-slot.txt-sz2{ font-size:6.25px; }
+.felt.opponents-6 .action-slot.txt-sz3{ font-size:6px; }
+
+/* ---- compact stack reel fit ----
+   The opponent bankroll is a drum readout, not text: updateCompactReel()
+   adds one physical drum per digit (plus a dim ghost drum) and stamps the
+   count on data-reel-digits, and every drum carries a fixed min-width so
+   it cannot flex. At 4-up the panel is wide enough for the existing 11px
+   drums up to five of them; a narrowed 5/6-up module is not, so a 4-digit
+   stack (everyday here — a 7-handed table has 3,500 chips on it) would
+   have pushed the outer drums under .seat-chips' overflow:hidden and
+   silently clipped digits off the ends.
+
+   So the same discrete step-down the shared rules already use for 6 and 7
+   drums is extended down to 5 drums and retuned per table size. Widths are
+   solved against the real interior width — 64px at 5-up, 60px at 6-up —
+   as (drums + 1) * w + gaps, leaving ~2px of slack. Panel width, drum
+   height, spacing, colour and the roll animation are all untouched: only
+   how wide each drum is once the number gets long. */
+.felt.opponents-5 .seat-chips .mini-jackpot[data-reel-digits="5"] .jp-cell{ min-width:9.5px; width:9.5px; font-size:8px; }
+.felt.opponents-5 .seat-chips .mini-jackpot[data-reel-digits="6"] .jp-cell{ min-width:8px;   width:8px;   font-size:7px; }
+.felt.opponents-5 .seat-chips .mini-jackpot[data-reel-digits="7"] .jp-cell{ min-width:6.5px; width:6.5px; font-size:6px; }
+.felt.opponents-6 .seat-chips .mini-jackpot[data-reel-digits="5"] .jp-cell{ min-width:8.5px; width:8.5px; font-size:7px; }
+.felt.opponents-6 .seat-chips .mini-jackpot[data-reel-digits="6"] .jp-cell{ min-width:7px;   width:7px;   font-size:6px; }
+.felt.opponents-6 .seat-chips .mini-jackpot[data-reel-digits="7"] .jp-cell{ min-width:6px;   width:6px;   font-size:6px; }
+
+/* Hole-card sizing is portrait-only: landscape already has its own tuned
+   compact card set (see the landscape block at the top of this file) and
+   its own fixed 78px seat width, so it is left entirely alone here. */
+@media (orientation:portrait){
+  .felt.opponents-5 .seat-card .card.small{ width:27px; height:38px; }
+  .felt.opponents-5 .seat-card .card.small .r{ font-size:10px; }
+  .felt.opponents-5 .seat-card .card.small .s{ font-size:8px; }
+  .felt.opponents-5 .seat-card .card.small .pip{ font-size:11px; }
+  .felt.opponents-5 .seat-card .seat-cards{ margin-bottom:-24px; }
+
+  .felt.opponents-6 .seat-card .card.small{ width:26px; height:37px; }
+  .felt.opponents-6 .seat-card .card.small .r{ font-size:9px; }
+  .felt.opponents-6 .seat-card .card.small .s{ font-size:7px; }
+  .felt.opponents-6 .seat-card .card.small .pip{ font-size:10px; }
+  .felt.opponents-6 .seat-card .seat-cards{ margin-bottom:-23px; }
+}
+
+/* Perimeter seats: a wide table-talk bubble centred on a seat sitting at
+   7-8% of the felt would hang off the side of the screen, so the outermost
+   seats anchor their bubble to their own inner edge and let it grow toward
+   the middle of the table instead. Only the authored 5/6 maps ever place a
+   seat far enough out to earn these classes (see initSeats). */
+.seat.seat-edge-l .action-bubble{ left:2px; transform:translateX(0) translateY(4px); }
+.seat.seat-edge-l .action-bubble.show{ transform:translateX(0) translateY(-2px); }
+.seat.seat-edge-r .action-bubble{ left:auto; right:2px; transform:translateX(0) translateY(4px); }
+.seat.seat-edge-r .action-bubble.show{ transform:translateX(0) translateY(-2px); }
+.seat.seat-edge-l .action-bubble.talk,
+.seat.seat-edge-r .action-bubble.talk{ max-width:118px; }
+
 #your-seat-dock{
   flex:0 0 var(--hud-dock-h); height:var(--hud-dock-h); min-height:0;
   box-sizing:border-box; padding:2px 8px 4px;
@@ -518,6 +619,13 @@
 }
 @media (max-width:389px){
   .felt .seat:not(.you){ translate:0 8px; }
+  /* Six seats across a 355px felt is the one genuinely tight case in the
+     supported range — even with the frame trimmed to the border, six
+     modules leave only ~1px between neighbours here. One small step down
+     (60.1px -> 57.4px rendered) restores a ~4.7px gap, and is scoped so it
+     can never reach the 393px/430px phones that don't need it, nor 4- or
+     5-opponent tables at any width. */
+  .felt.opponents-6 .seat:not(.you){ scale:.87; }
   #hud-frame{ grid-template-columns:80px minmax(0,1fr) 80px; }
   #jackpot{ gap:1px; padding-left:2px; padding-right:2px; }
   #jackpot .jp-cell{ min-width:13px; width:13px; font-size:10px; }
@@ -645,6 +753,10 @@
 .dev-section-title{ padding:4px 2px 2px; color:#ffd45a; font-weight:700; letter-spacing:.08em; }
 .dev-subtitle{ margin-top:3px; padding-top:4px; color:#a9a9a9; border-top:1px solid #444; font-size:9px; letter-spacing:.06em; }
 #dev-controls.hidden{ display:none; }
+/* DEV-only Single Player table-size shortcuts (4/5/6 opponents). */
+#dev-table-size{ padding-top:4px; border-top:1px solid #555; }
+#dev-table-size-row{ display:grid; grid-template-columns:repeat(3,1fr); gap:3px; }
+#dev-table-size.hidden{ display:none; }
 #dev-new-elim.hidden{ display:none; }
 #dev-status{ color:#9a9a9a; word-break:break-word; }
 #dev-fast-row{ display:flex; align-items:center; gap:4px; color:#f0c419; cursor:pointer; padding:1px 0; }

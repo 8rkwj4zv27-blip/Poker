@@ -149,28 +149,90 @@ const FACE_SVG_FALLBACK = {
   dead1:'dead', dead2:'dead', dead3:'dead'
 };
 
-/* Curated palette an opponent's portrait can be recoloured into. A plain
-   hue-rotate() alone (still what `hue` below is, kept only for the inert
-   faceSVG fallback further down) drags several stops of this particular
-   red source through a muddy, dark, desaturated band — gold/green/teal
-   in particular came out looking olive/brown/navy rather than bright.
-   Each entry's `filter` therefore also leans on saturate()/brightness()
-   as needed, chosen by rendering the actual filter chain over real face
-   art and eyeballing it (see PR notes) rather than trusting hue math
-   alone. saturate()/brightness() are both grayscale-invariant the same
-   way hue-rotate() is (their matrices' rows also sum to 1, and 0*anything
-   stays 0) — verified numerically — so black linework and white
-   eyes/teeth still come out exactly black/white, not just approximately. */
+/* ---- opponent portrait recolouring ----
+   Every portrait in FACE_ART is the same flat three-colour drawing: the
+   character fill #E92A2A, near-black linework #0E0E18, near-white eyes
+   and teeth #F3F3FF (plus #913535, a shaded fill, in the dead variants).
+   Verified across all 19 shipped files, red-* and legacy-* alike.
+
+   Recolouring used to be a hue-rotate()/saturate()/brightness() chain.
+   That can only push the source around — it can't be aimed at a specific
+   colour — and the saturate/brightness needed to drag this dark red
+   source out of the muddy band it passes through is exactly what made
+   several stops read neon or olive. So each entry now declares the exact
+   colour its FILL should become, and the recolouring matrix is DERIVED
+   from that target instead of being eyeballed.
+
+   The matrix rows are [k, (1-k)/2, (1-k)/2] — one free parameter per
+   output channel, solved so the fill lands precisely on the target:
+
+       out_c = k_c * r + (1 - k_c) * (g + b) / 2
+       k_c   = (target_c - mid0) / (r0 - mid0)      mid0 = (g0 + b0) / 2
+
+   Two properties fall out of this for free, with no saturation or
+   brightness pushing anywhere:
+     - every row sums to 1, so any neutral pixel maps to itself: black
+       linework stays black and white stays white BY CONSTRUCTION, not by
+       being checked afterwards;
+     - the map is linear, so shading (#913535) becomes a proportionally
+       darker version of the new colour rather than being crushed dark or
+       blown out bright.
+
+   `hue` is now only the true hue angle of each target, used solely by the
+   inert procedural faceSVG() fallback — nothing recolours through it.
+
+   Index order note: `indigo` deliberately sits at index 2, the slot the
+   retired `gold` used to hold, so every other saved faceColorIdx keeps
+   the colour it already had. Only the one genuinely replaced stop moves.
+   Colour is still assigned per player and never derived from persona. */
+const FACE_SOURCE_FILL = [233, 42, 42];
 const FACE_COLORS = [
-  { name:'red',    hue:10,  filter:'hue-rotate(10deg) saturate(1.3)' },
-  { name:'orange', hue:25,  filter:'hue-rotate(25deg) brightness(1.5)' },
-  { name:'gold',   hue:65,  filter:'hue-rotate(65deg) saturate(1.6) brightness(1.7)' },
-  { name:'green',  hue:125, filter:'hue-rotate(125deg) saturate(1.6) brightness(1.7)' },
-  { name:'teal',   hue:195, filter:'hue-rotate(195deg) brightness(1.7)' },
-  { name:'blue',   hue:215, filter:'hue-rotate(215deg) brightness(1.3)' },
-  { name:'purple', hue:275, filter:'hue-rotate(275deg) saturate(2.4)' },
-  { name:'pink',   hue:330, filter:'hue-rotate(330deg) saturate(2.0)' }
+  { name:'red',    hue:0,   fill:'#E92A2A', filter:'' },  // the source art itself — no recolour, so it renders pristine
+  { name:'orange', hue:32,  fill:'#DF8E2F', filter:'url(#face-tint-1)' },
+  { name:'indigo', hue:240, fill:'#6969C9', filter:'url(#face-tint-2)' },
+  { name:'green',  hue:136, fill:'#4E9F63', filter:'url(#face-tint-3)' },
+  { name:'teal',   hue:179, fill:'#4B9D9C', filter:'url(#face-tint-4)' },
+  { name:'blue',   hue:217, fill:'#6EA6FF', filter:'url(#face-tint-5)' },
+  { name:'purple', hue:279, fill:'#AB55D8', filter:'url(#face-tint-6)' },
+  { name:'pink',   hue:335, fill:'#D3578B', filter:'url(#face-tint-7)' }
 ];
+/* Solves the three k values for one target fill (see the block above). */
+function faceTintK(hex){
+  const r0 = FACE_SOURCE_FILL[0]/255;
+  const mid0 = (FACE_SOURCE_FILL[1] + FACE_SOURCE_FILL[2]) / 510;
+  return [1,3,5].map(i=>((parseInt(hex.slice(i,i+2),16)/255) - mid0) / (r0 - mid0));
+}
+/* Builds the <filter> defs the palette's url(#face-tint-N) entries point
+   at, once, into a zero-size hidden <svg> on the document. Idempotent.
+   color-interpolation-filters MUST be sRGB — SVG's default is linearRGB,
+   which would miss every target by a wide margin. */
+function installFaceTintFilters(){
+  if (typeof document === 'undefined' || document.getElementById('face-tint-defs')) return;
+  const filters = FACE_COLORS.map((c,i)=>{
+    if (!c.filter) return '';
+    const rows = faceTintK(c.fill).map(k=>{
+      const off = ((1-k)/2).toFixed(4);
+      return k.toFixed(4)+' '+off+' '+off+' 0 0';
+    }).join(' ');
+    return '<filter id="face-tint-'+i+'" color-interpolation-filters="sRGB">'+
+      '<feColorMatrix type="matrix" values="'+rows+' 0 0 0 1 0"/></filter>';
+  }).join('');
+  // Built as an HTML string inside a plain <div> rather than via
+  // createElementNS + innerHTML: the HTML parser's own foreign-content
+  // rules put <svg>/<filter>/<feColorMatrix> in the SVG namespace and fix
+  // the camelCase tag names for us, which is the better-supported path.
+  const host = document.createElement('div');
+  host.id = 'face-tint-defs';
+  host.setAttribute('aria-hidden','true');
+  host.style.cssText = 'position:absolute;width:0;height:0;overflow:hidden;pointer-events:none';
+  host.innerHTML = '<svg width="0" height="0"><defs>'+filters+'</defs></svg>';
+  document.body.appendChild(host);
+}
+if (typeof document !== 'undefined'){
+  if (document.body) installFaceTintFilters();
+  else document.addEventListener('DOMContentLoaded', installFaceTintFilters);
+}
+
 /* Assigns every opponent still missing one a stable FACE_COLORS index —
    called once when a table's players are created (newGame) and again on
    resume (restoreTable) to backfill any player a save from before this
@@ -207,16 +269,44 @@ function faceArtPath(mood){
 /* Every opponent seat renders through here. Art no longer keys off
    personality.key — see FACE_ART above — and colour comes from the
    player's own faceColorIdx (assignFaceColors), not their personality
-   either. Falls back to the procedural SVG face only if a mood somehow
-   has no file at all. */
+   either. faceArtPath() always resolves to SOME file (idle is the final
+   fallback), so the procedural SVG branch below is otherwise dead — the
+   img can still fail at the network/decode level though (uncached
+   expression variant while offline, a corrupted fetch, a genuinely
+   missing file), and nothing was catching that: a broken <img> just
+   renders as an empty box, an empty seat. onerror on the tag below
+   routes any such failure through faceImgFallback (idle image first,
+   then the fully offline-safe procedural SVG), so a load failure can
+   never produce a blank portrait. */
 function renderFace(p, mood){
   const path = faceArtPath(mood);
   const filter = faceFilter(p);
+  const hue = faceHue(p);
   if (path){
     const style = filter ? ' style="filter:'+filter+'"' : '';
-    return '<img class="face face-img" src="'+path+'"'+style+' alt="" draggable="false">';
+    return '<img class="face face-img" src="'+path+'"'+style+' alt="" draggable="false"' +
+      ' onerror="faceImgFallback(this,'+hue+')">';
   }
-  return faceSVG(FACE_SVG_FALLBACK[mood] || mood, faceHue(p));
+  return faceSVG(FACE_SVG_FALLBACK[mood] || mood, hue);
+}
+/* Runtime rescue for a face <img> that failed to load (see renderFace).
+   Step 1: retry once against the idle portrait — cheap, and almost
+   certainly already cached (it's the default/most-shown expression).
+   Step 2: if THAT also fails (or was already the image that just failed),
+   drop the whole <img> for the procedural SVG face, which draws itself
+   from vector paths and needs no network/cache at all — the guaranteed
+   last resort, so a broken/missing asset can never leave an empty seat. */
+function faceImgFallback(img, hue){
+  if (!img || !img.parentNode) return;
+  if (img.dataset.faceFallback !== 'idle' && img.src.indexOf(FACE_ART.idle) === -1){
+    img.dataset.faceFallback = 'idle';
+    img.src = FACE_ART.idle;
+    return;
+  }
+  const wrap = document.createElement('span');
+  wrap.innerHTML = faceSVG('idle', hue||0);
+  const svg = wrap.firstElementChild;
+  if (svg) img.parentNode.replaceChild(svg, img);
 }
 
 function setMood(playerId, mood){
@@ -285,7 +375,7 @@ const DEFAULT_SETTINGS = {
 const DEFAULT_STATS = { hands:0, won:0, showdownsWon:0, biggestPot:0, net:0 };
 const SAVE_VERSION = 1;
 /* Bump on every release so the main-menu header shows what's actually installed. */
-const BUILD_VERSION = 'v0.13.8-dev · face-chip-assets';
+const BUILD_VERSION = 'v0.14.0-dev · table-size';
 
 let settings = Object.assign({}, DEFAULT_SETTINGS, Store.get('felt.settings', {}));
 // The Settings menu cleanup dropped RELAXED from the Game Speed control

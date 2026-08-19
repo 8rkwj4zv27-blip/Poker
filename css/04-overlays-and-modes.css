@@ -597,6 +597,33 @@ body:has(#table-screen.hidden) .arcade-bank-flight{
   box-shadow:0 4px 0 #72623C,0 6px 0 #090605,inset 2px 2px 0 #F9E8B4,inset -2px -2px 0 #8B7A4C;
 }
 #home .pc-button-secondary:active{ transform:translateY(4px); box-shadow:0 1px 0 #72623C,0 3px 0 #090605,inset 2px 2px 0 #F9E8B4; }
+
+/* ---- OPPONENTS 4/5/6 step ----
+   The control bay is one physical panel with one job at a time: while a
+   table size is being chosen it swaps its whole face for the picker
+   instead of growing a second column of controls. Everything here reuses
+   the bay's own primitives (pc-control-head, the cream primary button
+   face, the secondary slab for BACK) so it reads as another position of
+   the same machine, not a form. */
+.pc-control-bay.picking-opponents>*:not(.pc-opponent-picker){ display:none; }
+.pc-opponent-picker{ flex:1 1 auto; min-height:0; display:flex; flex-direction:column; }
+.pc-opponent-picker.hidden{ display:none; }
+.opp-choice-row{
+  flex:0 0 auto; display:grid; grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:9px; margin-bottom:12px; height:clamp(96px,20vh,132px);
+}
+#home .pc-button-primary.opp-choice{
+  min-height:0; height:100%; padding:10px 4px 12px; margin:0;
+  display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px;
+  letter-spacing:0;
+}
+#home .pc-button-primary.opp-choice strong{
+  font-family:var(--font-hdr); font-size:26px; font-weight:400; line-height:1;
+  text-shadow:2px 2px 0 rgba(81,49,5,.28);
+}
+#home .pc-button-primary.opp-choice small{ margin-top:7px; font-size:7.5px; letter-spacing:.06em; }
+/* BACK sits on the bay floor, where every other secondary control lives. */
+.pc-opponent-picker>.pc-button-secondary{ margin-top:auto; }
 .table-tools{ display:flex; align-items:center; gap:6px; }
 .table-save{
   width:58px; height:30px; min-height:30px; padding:0 7px;

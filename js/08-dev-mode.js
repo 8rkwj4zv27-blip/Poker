@@ -237,7 +237,7 @@ function devEndTable(){
   clearHumanReadouts();
   hideReview();
   g.currentIndex = -1;
-  document.querySelectorAll('.ko-physics-layer').forEach(l=>l.remove());
+  document.querySelectorAll('.ko-physics-layer, .chip-physics-layer, .score-smash-layer').forEach(l=>l.remove());
   g.players.filter(p=>!p.isHuman).forEach((p,idx)=>{
     p.chips=0; p.eliminated=true; p.inHand=false; p.folded=false; p.allIn=false;
     p.betThisRound=0; p.totalBetHand=0; p.acted=true; p.mayRaise=false;
@@ -255,8 +255,12 @@ function devEndTable(){
   showTableCleared(g);
 }
 
-function devNewEliminationTable(){
-  startSinglePlayerRun();
+/* DEV-only fast entry into a Single Player run at an explicit table size.
+   Bypasses the menu picker entirely; `opponentCount` is still normalised
+   downstream by startSinglePlayerRun, so a bad value can't build an
+   unsupported table even from here. */
+function devNewEliminationTable(opponentCount){
+  startSinglePlayerRun({opponentCount:normalizeOpponentCount(opponentCount)});
   refreshDevPanel();
 }
 
@@ -298,7 +302,16 @@ function initDevPanel(){
         '<button id="dev-end-table" type="button">END TABLE</button>' +
         '<button id="dev-ko-eject" type="button">TEST KO EJECT</button>' +
         '<button id="dev-ko-eject-2" type="button">TEST DOUBLE KO</button>' +
-        '<button id="dev-ko-eject-4" type="button">TEST QUAD KO</button>' +
+        '<button id="dev-ko-eject-4" type="button">TEST MULTI KO x4</button>' +
+      '</div>' +
+      '<div id="dev-table-size">' +
+        '<div class="dev-section-title">TABLE SIZE</div>' +
+        '<div class="dev-subtitle">START A SINGLE PLAYER RUN</div>' +
+        '<div id="dev-table-size-row">' +
+          '<button data-dev-opponents="4" type="button">4 OPP</button>' +
+          '<button data-dev-opponents="5" type="button">5 OPP</button>' +
+          '<button data-dev-opponents="6" type="button">6 OPP</button>' +
+        '</div>' +
       '</div>' +
         '<div id="dev-arcade-controls">' +
         '<div class="dev-section-title">ARCADE TEST</div>' +
@@ -367,7 +380,7 @@ function initDevPanel(){
     '</div>';
   document.body.appendChild(panel);
 
-  $('dev-new-elim').onclick = devNewEliminationTable;
+  $('dev-new-elim').onclick = ()=>devNewEliminationTable(game && game.run ? runOpponentCount(game) : 4);
   $('dev-win-hand').onclick = devWinHand;
   $('dev-ko-next').onclick = devKoNext;
   $('dev-bust-me').onclick = devBustMe;
@@ -377,6 +390,9 @@ function initDevPanel(){
   $('dev-ko-eject').onclick = devTestKoEject;
   $('dev-ko-eject-2').onclick = ()=>devTestKoEjectGroup(2);
   $('dev-ko-eject-4').onclick = ()=>devTestKoEjectGroup(4);
+  document.querySelectorAll('#dev-table-size-row button').forEach(b=>{
+    b.onclick = ()=>devNewEliminationTable(parseInt(b.dataset.devOpponents,10));
+  });
   $('dev-end-table').onclick = devEndTable;
   const runArcadeDevTest=fn=>()=>{
     fn();
@@ -487,8 +503,17 @@ function wireUI(){
 
   updateSetupSummary();
   $('deal-me-in').onclick = startGame;
-  $('single-player').onclick = ()=>{ if (loadTableSave()) continueTable(); else withNewTableConfirm(launchSinglePlayerFromMenu); };
-  $('new-game-btn').onclick = ()=>withNewTableConfirm(launchSinglePlayerFromMenu);
+  // CONTINUE resumes straight into the saved run at its own table size —
+  // no picker, no size question. Only a genuinely NEW run goes through the
+  // OPPONENTS step, and NEW GAME still shows the progress-loss warning
+  // first (the save isn't actually discarded until a size is chosen, so
+  // backing out of the picker leaves the run intact).
+  $('single-player').onclick = ()=>{ if (loadTableSave()) continueTable(); else openOpponentPicker(); };
+  $('new-game-btn').onclick = ()=>withNewTableConfirm(openOpponentPicker);
+  document.querySelectorAll('#opp-choice-row .opp-choice').forEach(b=>{
+    b.onclick = ()=>launchSinglePlayerFromMenu(parseInt(b.dataset.opponents,10));
+  });
+  $('opp-picker-back').onclick = cancelOpponentPicker;
   $('quick-play').onclick = ()=>withNewTableConfirm(startGame);
   $('open-rankings').onclick = ()=>{ buildRankings(); $('home').classList.add('hidden'); $('rankings').classList.remove('hidden'); };
   $('rankings-back').onclick = ()=>{ $('rankings').classList.add('hidden'); $('home').classList.remove('hidden'); reconstructMainMenu(); };
@@ -781,6 +806,7 @@ if (typeof window !== 'undefined'){
     seatPosition, aiThinkTime, speedMult, processLives, skullSVG, playDeath,
     nudgeMood, decayMoods, buildRankings, scheduleAutoDeal, finishHand, aiDecide,
     saveTable, loadTableSave, clearTableSave, restoreTable, continueTable,
+    normalizeOpponentCount, runOpponentCount, startSinglePlayerRun,
     Sound, chipStaggerGap, chipStaggerGapAt
   };
 }

@@ -15,19 +15,23 @@ const PERSONALITIES_ALL = [
   {key:'professor', name:'Prof',      aggression:.50, tightness:.58, bluffFreq:.11, sizing:.70, thinkSpeed:1.30},
   {key:'hammer',    name:'Hammer',    aggression:.75, tightness:.45, bluffFreq:.16, sizing:.95, thinkSpeed:.90},
 ];
-// Active roster deliberately kept to these 4 for now — this is a gameplay
-// choice, not an art constraint: illustrated face art is fully decoupled
-// from persona (see FACE_ART in 02-support-systems.js) and works for any
-// entry in PERSONALITIES_ALL, so widening this roster later needs no face-
-// system changes, just changing this filter.
+// Preferred roster: the four archetypes a normal table is built from
+// first. This is a gameplay choice, not an art constraint — illustrated
+// face art is fully decoupled from persona (see FACE_ART in
+// 02-support-systems.js) and works for any entry in PERSONALITIES_ALL.
+// A 5- or 6-opponent Single Player table simply draws its extra seats
+// from the rest of PERSONALITIES_ALL below (rock/station/grinder/hammer),
+// so every seat is a real, distinct AI character — no duplicates, and
+// nothing about their faces depends on which persona they got.
 const PERSONALITIES = PERSONALITIES_ALL.filter(p => ['maniac','professor','wildcard','shark'].includes(p.key));
 function pickPersonalities(n){
   const pool = PERSONALITIES.slice();
   for (let i=pool.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); const t=pool[i]; pool[i]=pool[j]; pool[j]=t; }
   if (n <= pool.length) return pool.slice(0,n);
-  // more opponents requested than illustrated personas — top up from the
-  // full roster so extra seats still get a valid personality rather than
-  // running out (those extra seats fall back to the procedural face)
+  // more opponents requested than the preferred roster holds — top up from
+  // the full roster (shuffled) so every extra seat still gets its own
+  // distinct personality rather than repeating one. PERSONALITIES_ALL has
+  // 8 entries, comfortably covering the largest supported table (6).
   const extra = PERSONALITIES_ALL.filter(p => !pool.includes(p));
   for (let i=extra.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); const t=extra[i]; extra[i]=extra[j]; extra[j]=t; }
   return pool.concat(extra).slice(0,n);

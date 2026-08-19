@@ -713,15 +713,39 @@
 }
 /* ---- chip colour variety — purely decorative, no monetary meaning.
    Theme-independent (colours don't shift with the active table theme).
-   Maps to the four active chip PNGs; also used directly by .fly-chip
-   so a flying chip matches the pile it just left. 'd-cream' keeps its
-   original class name but now points at the newer chip-yellow.png art
-   — that replaced the old cream chip outright rather than adding a
-   5th colour to the cycle; chip-cream.png itself is no longer used. ---- */
-.chip-disc.d-cream, .fly-chip.d-cream{ background-image:url('../assets/chips/chip-yellow.png'); }
-.chip-disc.d-red, .fly-chip.d-red{ background-image:url('../assets/chips/chip-red.png'); }
-.chip-disc.d-blue, .fly-chip.d-blue{ background-image:url('../assets/chips/chip-blue.png'); }
-.chip-disc.d-green, .fly-chip.d-green{ background-image:url('../assets/chips/chip-green.png'); }
+   Full illustrated set: 7 colours (d-black/d-blue/d-green/d-purple/
+   d-red/d-white/d-yellow) x 3 rotated visual variants each (v-1/v-2/v-3)
+   — see assets/chips/chip-<colour>-0<n>.png. A chip element carries
+   exactly one colour class and one variant class together, assigned once
+   at creation (pickChipColor/pickChipVariant, 06-presentation.js) and
+   never reassigned for that element's lifetime — flight, pot-smash
+   physics and payout all reuse the same DOM element/className, so the
+   artwork a chip shows never changes mid-journey. Also matched directly
+   by .fly-chip so a flying chip (if that class is ever used standalone)
+   matches the pile it just left. Retired 4-colour set (chip-red/blue/
+   green/yellow.png, the 'cream'->yellow rename) is fully gone — no rule
+   below references it. ---- */
+.chip-disc.d-black.v-1, .fly-chip.d-black.v-1{ background-image:url('../assets/chips/chip-black-01.png'); }
+.chip-disc.d-black.v-2, .fly-chip.d-black.v-2{ background-image:url('../assets/chips/chip-black-02.png'); }
+.chip-disc.d-black.v-3, .fly-chip.d-black.v-3{ background-image:url('../assets/chips/chip-black-03.png'); }
+.chip-disc.d-blue.v-1, .fly-chip.d-blue.v-1{ background-image:url('../assets/chips/chip-blue-01.png'); }
+.chip-disc.d-blue.v-2, .fly-chip.d-blue.v-2{ background-image:url('../assets/chips/chip-blue-02.png'); }
+.chip-disc.d-blue.v-3, .fly-chip.d-blue.v-3{ background-image:url('../assets/chips/chip-blue-03.png'); }
+.chip-disc.d-green.v-1, .fly-chip.d-green.v-1{ background-image:url('../assets/chips/chip-green-01.png'); }
+.chip-disc.d-green.v-2, .fly-chip.d-green.v-2{ background-image:url('../assets/chips/chip-green-02.png'); }
+.chip-disc.d-green.v-3, .fly-chip.d-green.v-3{ background-image:url('../assets/chips/chip-green-03.png'); }
+.chip-disc.d-purple.v-1, .fly-chip.d-purple.v-1{ background-image:url('../assets/chips/chip-purple-01.png'); }
+.chip-disc.d-purple.v-2, .fly-chip.d-purple.v-2{ background-image:url('../assets/chips/chip-purple-02.png'); }
+.chip-disc.d-purple.v-3, .fly-chip.d-purple.v-3{ background-image:url('../assets/chips/chip-purple-03.png'); }
+.chip-disc.d-red.v-1, .fly-chip.d-red.v-1{ background-image:url('../assets/chips/chip-red-01.png'); }
+.chip-disc.d-red.v-2, .fly-chip.d-red.v-2{ background-image:url('../assets/chips/chip-red-02.png'); }
+.chip-disc.d-red.v-3, .fly-chip.d-red.v-3{ background-image:url('../assets/chips/chip-red-03.png'); }
+.chip-disc.d-white.v-1, .fly-chip.d-white.v-1{ background-image:url('../assets/chips/chip-white-01.png'); }
+.chip-disc.d-white.v-2, .fly-chip.d-white.v-2{ background-image:url('../assets/chips/chip-white-02.png'); }
+.chip-disc.d-white.v-3, .fly-chip.d-white.v-3{ background-image:url('../assets/chips/chip-white-03.png'); }
+.chip-disc.d-yellow.v-1, .fly-chip.d-yellow.v-1{ background-image:url('../assets/chips/chip-yellow-01.png'); }
+.chip-disc.d-yellow.v-2, .fly-chip.d-yellow.v-2{ background-image:url('../assets/chips/chip-yellow-02.png'); }
+.chip-disc.d-yellow.v-3, .fly-chip.d-yellow.v-3{ background-image:url('../assets/chips/chip-yellow-03.png'); }
 .chip-disc.disc-in{ animation:discIn .18s steps(3,end); }
 @keyframes discIn{ from{ transform:scale(.3); opacity:0; } to{ transform:scale(1); opacity:1; } }
 .seat-chips{

@@ -298,6 +298,7 @@ let menuLaunchInFlight = false;
 function reconstructMainMenu(){
   const home=$('home'), button=$('single-player');
   menuLaunchInFlight=false;
+  closeOpponentPicker();
   if (home) home.classList.remove('menu-launching','menu-over-table','menu-clearing');
   if (button){ button.disabled=false; button.classList.remove('pc-launch-clunk'); }
   refreshMenuPrimaryButton();
@@ -313,6 +314,35 @@ function refreshMenuPrimaryButton(){
   if (sub) sub.textContent = hasResumable ? 'Resume saved game' : 'Start elimination run';
   const newGameBtn = $('new-game-btn');
   if (newGameBtn) newGameBtn.classList.toggle('hidden', !hasResumable);
+}
+
+/* ---- OPPONENTS 4/5/6 picker ----
+   Not a new setup screen: the existing control bay simply swaps its
+   contents for one labelled OPPONENTS panel plus a BACK control, using the
+   same pc-* physical primitives as the rest of the menu. Deliberately
+   non-destructive — nothing about the existing run is touched until a size
+   is actually chosen, so BACK out of it (even from NEW GAME) still leaves
+   a resumable save intact. */
+function openOpponentPicker(){
+  const bay=document.querySelector('#home .pc-control-bay');
+  const picker=$('opponent-picker');
+  if (!bay || !picker) { launchSinglePlayerFromMenu(); return; }
+  picker.classList.remove('hidden');
+  bay.classList.add('picking-opponents');
+  Sound.buttonPress('check');
+  haptic(12);
+}
+function closeOpponentPicker(){
+  const bay=document.querySelector('#home .pc-control-bay');
+  const picker=$('opponent-picker');
+  if (bay) bay.classList.remove('picking-opponents');
+  if (picker) picker.classList.add('hidden');
+}
+function cancelOpponentPicker(){
+  closeOpponentPicker();
+  refreshMenuPrimaryButton();
+  Sound.buttonRelease('fold');
+  haptic(10);
 }
 
 function stageInitialRunArrival(g){
@@ -367,10 +397,12 @@ function prepareDeferredRunPresentation(g){
   if ($('table-meta')) $('table-meta').textContent='Table '+g.run.tableNumber;
 }
 
-async function launchSinglePlayerFromMenu(){
+async function launchSinglePlayerFromMenu(opponentCount){
   if (menuLaunchInFlight) return;
+  const opponents=normalizeOpponentCount(opponentCount);
   const home=$('home'), button=$('single-player');
-  if (!home || home.classList.contains('hidden')){ startSinglePlayerRun(); return; }
+  if (!home || home.classList.contains('hidden')){ startSinglePlayerRun({opponentCount:opponents}); return; }
+  closeOpponentPicker();
   menuLaunchInFlight=true;
   button.disabled=true;
   // Optimistic: a fresh run is starting, so drop any stale CONTINUE label
@@ -386,7 +418,7 @@ async function launchSinglePlayerFromMenu(){
   await sleep(motionOff()?0:730);
   Sound.buttonRelease('award');
   home.classList.add('menu-over-table');
-  const g=startSinglePlayerRun({keepMenuVisible:true,deferHand:true});
+  const g=startSinglePlayerRun({keepMenuVisible:true,deferHand:true,opponentCount:opponents});
   const arrival=stageInitialRunArrival(g);
   home.classList.add('menu-clearing');
   await Promise.all([arrival,sleep(motionOff()?0:1450)]);
@@ -401,13 +433,19 @@ async function launchSinglePlayerFromMenu(){
 }
 
 function startSinglePlayerRun(options){
-  const keepMenuVisible=!!(options && options.keepMenuVisible===true);
-  const deferHand=!!(options && options.deferHand===true);
+  const opts = (options && typeof options === 'object' && !(options instanceof Event)) ? options : null;
+  const keepMenuVisible=!!(opts && opts.keepMenuVisible===true);
+  const deferHand=!!(opts && opts.deferHand===true);
+  // One validated number feeds both halves of the run: the table that gets
+  // built (newGame) and the run state that outlives it (makeEliminationRun,
+  // which normalises again on its own so no caller can smuggle a bad value
+  // into a save).
+  const opponentCount=normalizeOpponentCount(opts && opts.opponentCount);
   Sound.unlock();
   clearTableSave();
   hideResultCard();
-  newGame({ mode:'elimination', difficulty:settings.difficulty });
-  game.run = makeEliminationRun();
+  newGame({ mode:'elimination', difficulty:settings.difficulty, opponents:opponentCount });
+  game.run = makeEliminationRun(opponentCount);
   applyRunTheme();
   updateArcadeHUD();
   if (!keepMenuVisible) $('home').classList.add('hidden');
