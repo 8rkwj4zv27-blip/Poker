@@ -713,9 +713,12 @@
 }
 /* ---- chip colour variety — purely decorative, no monetary meaning.
    Theme-independent (colours don't shift with the active table theme).
-   Maps to the four supplied chip PNGs; also used directly by .fly-chip
-   so a flying chip matches the pile it just left. ---- */
-.chip-disc.d-cream, .fly-chip.d-cream{ background-image:url('../assets/chips/chip-cream.png'); }
+   Maps to the four active chip PNGs; also used directly by .fly-chip
+   so a flying chip matches the pile it just left. 'd-cream' keeps its
+   original class name but now points at the newer chip-yellow.png art
+   — that replaced the old cream chip outright rather than adding a
+   5th colour to the cycle; chip-cream.png itself is no longer used. ---- */
+.chip-disc.d-cream, .fly-chip.d-cream{ background-image:url('../assets/chips/chip-yellow.png'); }
 .chip-disc.d-red, .fly-chip.d-red{ background-image:url('../assets/chips/chip-red.png'); }
 .chip-disc.d-blue, .fly-chip.d-blue{ background-image:url('../assets/chips/chip-blue.png'); }
 .chip-disc.d-green, .fly-chip.d-green{ background-image:url('../assets/chips/chip-green.png'); }

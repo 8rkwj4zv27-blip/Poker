@@ -463,7 +463,10 @@ function collectCardFlight(el){
    ============================================================ */
 const CHIP_COLOR_CLASSES = ['d-cream','d-red','d-blue','d-green'];
 /* Cycles through the four chip sprites purely for visual variety as a
-   pile grows — colour carries no value/denomination meaning. */
+   pile grows — colour carries no value/denomination meaning. The
+   'd-cream' class now points at the newer chip-yellow.png art (see
+   CSS) — kept as 'd-cream' rather than renamed so nothing else here
+   has to change, but the old cream artwork is no longer used. */
 function pickChipColor(container){
   const i = (container._chipCount||0) % CHIP_COLOR_CLASSES.length;
   return CHIP_COLOR_CLASSES[i];
@@ -1276,7 +1279,7 @@ function initSeats(){
       avatar.style.color = '#1a1408';
     } else if (settings.faces){
       avatar.classList.add('has-face');
-      avatar.innerHTML = renderFace(p.personality && p.personality.key, 'idle', aiHue(idx));
+      avatar.innerHTML = renderFace(p, 'idle');
     }
     seatEls[p.id] = {
       root, avatar,

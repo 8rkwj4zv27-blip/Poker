@@ -15,9 +15,11 @@ const PERSONALITIES_ALL = [
   {key:'professor', name:'Prof',      aggression:.50, tightness:.58, bluffFreq:.11, sizing:.70, thinkSpeed:1.30},
   {key:'hammer',    name:'Hammer',    aggression:.75, tightness:.45, bluffFreq:.16, sizing:.95, thinkSpeed:.90},
 ];
-// Roster trimmed to exactly the 4 personas with custom art (see CUSTOM_FACES
-// below), so every opponent seat always shows Tom's drawn faces rather than
-// randomly mixing in personas that still use the procedural fallback face.
+// Active roster deliberately kept to these 4 for now — this is a gameplay
+// choice, not an art constraint: illustrated face art is fully decoupled
+// from persona (see FACE_ART in 02-support-systems.js) and works for any
+// entry in PERSONALITIES_ALL, so widening this roster later needs no face-
+// system changes, just changing this filter.
 const PERSONALITIES = PERSONALITIES_ALL.filter(p => ['maniac','professor','wildcard','shark'].includes(p.key));
 function pickPersonalities(n){
   const pool = PERSONALITIES.slice();
@@ -171,13 +173,66 @@ function restingMood(p){
   if (m.kind==='down') return 'sad';
   return m.intensity>0.35 ? 'happy' : 'idle';
 }
+/* Between hands, faces carry whatever mood lingers instead of snapping to
+   idle — restingMood() plus an occasional, non-deterministic short-stack
+   flicker of worry. This only ever runs once per hand gap (applyLingeringFaces
+   below), never on every action, so a re-roll can't read as portrait
+   flicker — see FACE TIMING notes on setMood. */
+function betweenHandsMood(p, g){
+  const base = restingMood(p);
+  if (p.isHuman || p.eliminated) return base;
+  const shortStacked = g && g.bigBlind && p.chips < g.bigBlind*8;
+  if (shortStacked && Math.random()<0.18) return Math.random()<0.5 ? 'worried' : 'tilted';
+  return base;
+}
 /* Between hands, faces carry whatever mood lingers instead of snapping to idle. */
 function applyLingeringFaces(){
   if (!game) return;
   game.players.forEach(p=>{
     if (p.isHuman) return;
-    setMood(p.id, restingMood(p));
+    setMood(p.id, betweenHandsMood(p, game));
   });
+}
+
+/* ---- illustrated-face reaction pools ----------------------------------
+   Every pick here is driven only by information the human player can
+   already see (visible chip amounts, public pot outcomes, whose turn it
+   visibly is) — never hole cards, equity, bluff status or intended
+   action. See the call sites in 05-game-engine.js for exactly when each
+   of these fires. */
+
+/* Turn-start "thinking" portrait — chosen before aiDecide() computes a
+   decision, so there is nothing yet for the pick to correlate with. */
+function pickThinkMood(){
+  if (Math.random() < 0.10) return 'sly';
+  const pool = ['think','thinking1','thinking2'];
+  return pool[Math.floor(Math.random()*pool.length)];
+}
+/* swingBB is the pot just won, in big blinds — a purely public quantity
+   (everyone sees the pot size and who took it). */
+function pickWinMood(swingBB){
+  if (swingBB > 20) return Math.random()<0.35 ? 'gloating' : (Math.random()<0.5 ? 'happy' : 'smug');
+  if (swingBB > 6) return Math.random()<0.5 ? 'happy' : 'smug';
+  return Math.random()<0.6 ? 'happy' : 'idle';
+}
+/* lostBB is what THIS player just put in and lost, in big blinds — again
+   public once the pot is awarded. `stung` mirrors the existing
+   nudgeMood() threshold (big relative to their own stack). `wasRattled`
+   means this losing streak already existed BEFORE this hand — a real
+   repeat, not just this one loss being big enough to start it — so
+   'tilted' reads as "this keeps happening", never as a same-hand tell
+   for how badly they just lost (that's shocked/furious below). */
+function pickLossMood(p, lostBB, stung, wasRattled){
+  if (wasRattled && Math.random()<0.3) return 'tilted';
+  if (lostBB > 20) return Math.random()<0.5 ? 'shocked' : 'furious';
+  if (stung) return ['worried','angry','sad'][Math.floor(Math.random()*3)];
+  return Math.random()<0.5 ? 'sad' : 'idle';
+}
+/* The three new dead-0X variants plus the original dead pose are treated
+   as pure visual variety, not different meanings — see ELIMINATION docs. */
+function pickDeadMood(){
+  const pool = ['dead','dead1','dead2','dead3'];
+  return pool[Math.floor(Math.random()*pool.length)];
 }
 
 async function aiDecide(player, g){

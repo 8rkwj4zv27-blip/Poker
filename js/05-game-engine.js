@@ -36,6 +36,7 @@ function $(id){ return document.getElementById(id); }
 
 function makePlayer(id, name, isHuman, chips, personality){
   return { id, name, isHuman, chips, personality, lives:3, moodState:null,
+    faceColorIdx:null,
     hand:[], folded:false, allIn:false, betThisRound:0, totalBetHand:0,
     acted:false, mayRaise:true, inHand:false, eliminated:false };
 }
@@ -57,6 +58,7 @@ function newGame(opts){
     const displayName = settings.opponentNames === 'random' ? randomOpponentName(usedNames) : personas[i].name;
     players.push(makePlayer('ai'+i, displayName, false, stack, personas[i]));
   }
+  assignFaceColors(players);
   const lvl = opts.mode==='tournament' ? 0 : opts.blindLevel;
   const smallBlind = elim ? ELIMINATION_CONFIG.smallBlind : BLIND_LEVELS[lvl][0];
   const bigBlind = elim ? ELIMINATION_CONFIG.bigBlind : BLIND_LEVELS[lvl][1];
@@ -91,7 +93,8 @@ function serializeTable(g){
       id:p.id, name:p.name, isHuman:p.isHuman, chips:p.chips,
       lives:p.lives, eliminated:p.eliminated,
       personalityKey: p.personality ? p.personality.key : null,
-      moodState: p.moodState || null
+      moodState: p.moodState || null,
+      faceColorIdx: Number.isInteger(p.faceColorIdx) ? p.faceColorIdx : null
     }))
   };
   if (g.mode==='elimination' && g.run) snapshot.run=JSON.parse(JSON.stringify(g.run));
@@ -154,8 +157,12 @@ function restoreTable(save){
     p.lives = sp.lives;
     p.eliminated = !!sp.eliminated;
     p.moodState = sp.moodState || null;
+    p.faceColorIdx = Number.isInteger(sp.faceColorIdx) ? sp.faceColorIdx : null;
     return p;
   });
+  // Backfills anyone missing a colour (a save from before this system
+  // existed) without disturbing players who already have one.
+  assignFaceColors(players);
   game = {
     players, difficulty:save.difficulty, mode:save.mode,
     startingStack:save.startingStack, blindLevel:save.blindLevel,
@@ -694,12 +701,12 @@ function applyAction(player, decision){
   if (g.handActions){
     g.handActions.push({ id:player.id, name:player.name, street:g.phase, action, amount:player.betThisRound });
   }
-  // facial reaction to their own action
+  // Facial reaction is driven by visible pot outcomes elsewhere (see
+  // pickWinMood/pickLossMood at handleFoldWin/handleShowdown), never by
+  // the action just taken — a fold/raise/all-in -> fixed-expression
+  // mapping here would read as a predictable tell.
   if (!player.isHuman){
-    if (action==='fold') setMood(player.id, 'sad');
-    else if (player.allIn) setMood(player.id, 'shock');
-    else if (action==='raise' || action==='bet') setMood(player.id, 'smug');
-    else setMood(player.id, restingMood(player));
+    setMood(player.id, restingMood(player));
     if (player.allIn) maybeTableTalk(player, 'allin');
     else if (action==='raise' || action==='bet') maybeTableTalk(player, 'raise');
   }
@@ -773,7 +780,7 @@ async function handleFoldWin(){
   await sleep(motionOff() ? 80 : 250);
   if (winner.isHuman){ stats.won++; Sound.resultSting('humanWin'); haptic(30); }
   else {
-    setMood(winner.id, 'happy');
+    setMood(winner.id, pickWinMood(amt / g.bigBlind));
     if (amt > 10*g.bigBlind) nudgeMood(winner, 'up', 0.5);
     maybeTableTalk(winner, 'win');
     // A fold-win is still a genuine "an opponent won" moment — short and
@@ -904,13 +911,18 @@ async function handleShowdown(){
     if (won){
       const swing = p._award || 0;
       if (swing > 12*bbv) nudgeMood(p, 'up', Math.min(1, swing/(30*bbv) + 0.4));
-      setMood(p.id, 'happy');
+      setMood(p.id, pickWinMood(swing / bbv));
     } else {
       const lost = p.totalBetHand || 0;
-      const strong = p._handRes && p._handRes.result.cat >= 2;   // two pair or better, and it still lost
+      const strong = p._handRes && p._handRes.result.cat >= 2;   // two pair or better, and it still lost — public by now, showdown reveals hands
       const stung = lost > 10*bbv || lost > (p.chips + lost)*0.3;
+      // Captured before nudgeMood touches it — pickLossMood's tilted pick
+      // needs to know this losing streak already existed BEFORE this hand
+      // (a genuine repeat), not just that this one loss was big enough to
+      // set the mood state for the first time.
+      const wasAlreadyRattled = !!(p.moodState && (p.moodState.kind==='steamed' || p.moodState.kind==='down') && p.moodState.intensity>0.5);
       if (stung) nudgeMood(p, strong ? 'steamed' : 'down', strong ? 0.8 : 0.6);
-      setMood(p.id, (strong && stung) ? 'angry' : (Math.random()<0.5 ? 'sad' : 'angry'));
+      setMood(p.id, pickLossMood(p, lost / bbv, stung, wasAlreadyRattled));
     }
     maybeTableTalk(p, won ? 'win' : 'lose');
   });
@@ -1277,7 +1289,7 @@ async function playDeath(p){
   }
   e._mood = null;
   e.avatar.classList.add('has-face');
-  e.avatar.innerHTML = renderFace(p.personality && p.personality.key, 'dead', aiHue(game.players.indexOf(p)));
+  e.avatar.innerHTML = renderFace(p, pickDeadMood());
   e.root.classList.add('dead');
   render();
 }
@@ -1576,7 +1588,7 @@ async function playElimination(p, opts){
   const showFace = mood => {
     e._mood = null;
     e.avatar.classList.add('has-face');
-    e.avatar.innerHTML = renderFace(p.personality && p.personality.key, mood, aiHue(idx));
+    e.avatar.innerHTML = renderFace(p, mood);
   };
   // Lives in the seat's existing action/status bar, not over the face —
   // the shocked/dead expression is the payoff and stays fully visible.
@@ -1622,7 +1634,7 @@ async function playElimination(p, opts){
   await sleep(cfg.settleMs);
 
   // DEFEATED EXPRESSION
-  showFace('shock');
+  showFace(Math.random()<0.5 ? 'shock' : 'shocked');
 
   // RATTLE -> stronger shake — escalating magnitude (pop-emphasis pass:
   // reads more like genuine building tension than a decaying hit ladder).
@@ -1637,7 +1649,7 @@ async function playElimination(p, opts){
   // K.O./ELIMINATED stamp — same established action-bar slot as before.
   // No crossfade: the face swap is a straight innerHTML replace (see
   // showFace), so it genuinely changes in one frame.
-  showFace('dead');
+  showFace(pickDeadMood());
   stampActionBar();
   Sound.busted(false);
   if (ko){ Sound.humanKO(); haptic(40); }
@@ -1724,7 +1736,7 @@ async function playEliminationGroup(entries){
   const showFace = (le, mood)=>{
     le.e._mood = null;
     le.e.avatar.classList.add('has-face');
-    le.e.avatar.innerHTML = renderFace(le.p.personality && le.p.personality.key, mood, aiHue(le.idx));
+    le.e.avatar.innerHTML = renderFace(le.p, mood);
   };
   const hitAll = mult=>{
     live.forEach(le=>{
@@ -1742,7 +1754,7 @@ async function playEliminationGroup(entries){
 
   // SETTLE -> DEFEATED EXPRESSION, together.
   await sleep(cfg.settleMs);
-  live.forEach(le=>showFace(le,'shock'));
+  live.forEach(le=>showFace(le, Math.random()<0.5 ? 'shock' : 'shocked'));
 
   // RATTLE -> stronger shake, together (same escalating rhythm as the
   // single-elimination path above).
@@ -1756,7 +1768,7 @@ async function playEliminationGroup(entries){
 
   // K.O./ELIMINATED stamp, together — one render() covers every seat.
   live.forEach(le=>{
-    showFace(le,'dead');
+    showFace(le, pickDeadMood());
     le.p.streetAction = { type: le.ko?'ko':'eliminated', label: le.ko?'K.O.!':'ELIMINATED!', amount:0 };
     if (le.e.actionSlot){ le.e.actionSlot.classList.remove('elim-slam'); void le.e.actionSlot.offsetWidth; le.e.actionSlot.classList.add('elim-slam'); }
   });
@@ -1935,7 +1947,7 @@ function resetRunSeatDOM(g){
       e.avatar.getAnimations().forEach(a=>a.cancel());
       e.avatar.className = 'avatar has-face';
       e.avatar.removeAttribute('style');
-      e.avatar.innerHTML = renderFace(p.personality && p.personality.key,'idle',aiHue(idx));
+      e.avatar.innerHTML = renderFace(p,'idle');
       const wrap = e.avatar.closest('.avatar-wrap');
       if (wrap){ wrap.classList.remove('socket-spark', 'pressure-build'); wrap.style.removeProperty('--pressure-ms'); }
     }
@@ -2098,7 +2110,7 @@ async function continueAction(){
 
     const seatEl = seatEls[player.id];
     if (seatEl) seatEl.root.classList.add('thinking');
-    setMood(player.id, 'think');
+    setMood(player.id, pickThinkMood());
     setActionRows(player.name,'IS THINKING…',true);
     const decision = await aiDecide(player, game);   // off the main thread
     await sleep(aiThinkTime(player, decision, game));

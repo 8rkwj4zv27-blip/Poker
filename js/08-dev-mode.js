@@ -158,7 +158,7 @@ function devTestKoEject(){
   if (wrap) wrap.classList.remove('socket-spark', 'pressure-build');
   target.streetAction = null;
   e.avatar.classList.add('has-face');
-  e.avatar.innerHTML = renderFace(target.personality && target.personality.key, 'idle', aiHue(game.players.indexOf(target)));
+  e.avatar.innerHTML = renderFace(target, 'idle');
   render();
   logMsg('[DEV] Previewing K.O. portrait ejection on ' + target.name, true);
   playElimination(target, { ko:true });
@@ -188,7 +188,7 @@ function devTestKoEjectGroup(n){
     if (wrap) wrap.classList.remove('socket-spark', 'pressure-build');
     target.streetAction = null;
     e.avatar.classList.add('has-face');
-    e.avatar.innerHTML = renderFace(target.personality && target.personality.key, 'idle', aiHue(game.players.indexOf(target)));
+    e.avatar.innerHTML = renderFace(target, 'idle');
   });
   render();
   logMsg('[DEV] Previewing '+targets.length+'-way grouped K.O. ejection on '+targets.map(t=>t.name).join(', '), true);
@@ -248,7 +248,7 @@ function devEndTable(){
       e._mood=null;
       e.avatar.classList.remove('socket-dead');
       e.avatar.classList.add('has-face');
-      e.avatar.innerHTML=renderFace(p.personality&&p.personality.key,'dead',aiHue(g.players.indexOf(p)));
+      e.avatar.innerHTML=renderFace(p,pickDeadMood());
     }
   });
   logMsg('[DEV] Current table ended through production results flow',true);
@@ -730,20 +730,24 @@ function wireUI(){
    reduced-motion. */
 function initHeroFaces(){
   const wrap = $('hero-faces');
-  if (!wrap || typeof CUSTOM_FACES === 'undefined') return;
-  const keys = ['maniac','professor','wildcard','shark'].filter(k=>CUSTOM_FACES[k]);
-  const MOODS = ['idle','smug','happy','think','shock'];
-  const faces = keys.map(k=>{
+  if (!wrap || typeof FACE_ART === 'undefined') return;
+  // Four distinct colours from the same curated palette every opponent
+  // seat draws from (see FACE_COLORS) — this row isn't tied to any
+  // persona, so there's nothing persona-specific left to pick here.
+  const colorIdxs = shuffle(FACE_COLORS.map((_,i)=>i)).slice(0,4);
+  const MOODS = ['idle','smug','happy','think','shock','sly'];
+  const faces = colorIdxs.map(colorIdx=>{
     const cell = document.createElement('div');
     cell.className = 'hf';
     const img = document.createElement('img');
     img.className = 'face-img';
-    img.src = CUSTOM_FACES[k].idle;
+    img.src = faceArtPath('idle');
+    img.style.filter = FACE_COLORS[colorIdx].filter;
     img.alt = '';
     img.draggable = false;
     cell.appendChild(img);
     wrap.appendChild(cell);
-    return {img, key:k, mood:'idle'};
+    return {img, colorIdx, mood:'idle'};
   });
   if (!faces.length || motionOff()) return;
   setInterval(()=>{
@@ -754,7 +758,7 @@ function initHeroFaces(){
     let next = MOODS[Math.floor(Math.random()*MOODS.length)];
     if (next === f.mood) next = (f.mood === 'idle') ? 'smug' : 'idle';
     f.mood = next;
-    f.img.src = CUSTOM_FACES[f.key][next] || CUSTOM_FACES[f.key].idle;
+    f.img.src = faceArtPath(next);
     f.img.classList.remove('face-pop'); void f.img.offsetWidth; f.img.classList.add('face-pop');
   }, 1400);
 }
