@@ -35,7 +35,11 @@ function pacedSleep(ms){ return sleep((DEV_MODE && FAST_DEV) ? Math.round(ms * F
 function $(id){ return document.getElementById(id); }
 
 function makePlayer(id, name, isHuman, chips, personality){
+  // moodState = gameplay mood (read by aiDecide). faceMood = presentation
+  // mood (portraits only, never read by aiDecide). Two separate objects on
+  // purpose — see the PRESENTATION MOOD block in 03-opponents.js.
   return { id, name, isHuman, chips, personality, lives:3, moodState:null,
+    faceMood:{ family:'neutral', intensity:0 },
     faceColorIdx:null,
     hand:[], folded:false, allIn:false, betThisRound:0, totalBetHand:0,
     acted:false, mayRaise:true, inHand:false, eliminated:false };
@@ -97,6 +101,7 @@ function serializeTable(g){
       lives:p.lives, eliminated:p.eliminated,
       personalityKey: p.personality ? p.personality.key : null,
       moodState: p.moodState || null,
+      faceMood: p.faceMood || null,
       faceColorIdx: Number.isInteger(p.faceColorIdx) ? p.faceColorIdx : null
     }))
   };
@@ -160,6 +165,12 @@ function restoreTable(save){
     p.lives = sp.lives;
     p.eliminated = !!sp.eliminated;
     p.moodState = sp.moodState || null;
+    // Saves written before faceMood existed simply have no field here, and
+    // a hand-edited/corrupt one may name a family that no longer exists —
+    // both land on neutral rather than failing the whole Continue restore.
+    p.faceMood = (sp.faceMood && FACE_MOOD_POOLS[sp.faceMood.family])
+      ? { family: sp.faceMood.family, intensity: clamp01(sp.faceMood.intensity) }
+      : { family:'neutral', intensity:0 };
     p.faceColorIdx = Number.isInteger(sp.faceColorIdx) ? sp.faceColorIdx : null;
     return p;
   });
@@ -375,7 +386,17 @@ async function startNewHand(){
   g.humanFoldSnapshot = null;
   if (g.run&&g.run.arcade) g.run.arcade.decisionSnapshots=[];
   hideReview();
+  // Order matters. A reaction chain from the previous hand may still be
+  // mid-flight (they are fire-and-forget), and while it holds a seat's
+  // lock every ordinary setMood() call for that seat is suppressed. So
+  // the locks are released FIRST — before any new-hand portrait update —
+  // or applyLingeringFaces() below would be silently swallowed and the
+  // stale expression would freeze into the new hand. The abandoned chain
+  // stops on its own at its next step (its token no longer owns the seat).
+  //   clear locks -> decay moods -> paint lingering faces -> turn flow
+  g.players.forEach(p=>{ if (!p.isHuman) clearFaceLock(p.id); });
   decayMoods();
+  decayFaceMoods();
   applyLingeringFaces();
 
   if (g.players.filter(p=>p.inHand).length < 2){ concludeGame(); return; }
@@ -758,9 +779,10 @@ function applyAction(player, decision){
     g.handActions.push({ id:player.id, name:player.name, street:g.phase, action, amount:player.betThisRound });
   }
   // Facial reaction is driven by visible pot outcomes elsewhere (see
-  // pickWinMood/pickLossMood at handleFoldWin/handleShowdown), never by
+  // reactToWin/reactToLoss at handleFoldWin/handleShowdown), never by
   // the action just taken — a fold/raise/all-in -> fixed-expression
-  // mapping here would read as a predictable tell.
+  // mapping here would read as a predictable tell. restingMood() below
+  // reads only the player's public-history faceMood, not this action.
   if (!player.isHuman){
     setMood(player.id, restingMood(player));
     if (player.allIn) maybeTableTalk(player, 'allin');
@@ -836,7 +858,7 @@ async function handleFoldWin(){
   await sleep(motionOff() ? 80 : 250);
   if (winner.isHuman){ stats.won++; Sound.resultSting('humanWin'); haptic(30); }
   else {
-    setMood(winner.id, pickWinMood(amt / g.bigBlind));
+    reactToWin(winner, amt / g.bigBlind);
     if (amt > 10*g.bigBlind) nudgeMood(winner, 'up', 0.5);
     maybeTableTalk(winner, 'win');
     // A fold-win is still a genuine "an opponent won" moment — short and
@@ -972,18 +994,19 @@ async function handleShowdown(){
     if (won){
       const swing = p._award || 0;
       if (swing > 12*bbv) nudgeMood(p, 'up', Math.min(1, swing/(30*bbv) + 0.4));
-      setMood(p.id, pickWinMood(swing / bbv));
+      reactToWin(p, swing / bbv);
     } else {
       const lost = p.totalBetHand || 0;
       const strong = p._handRes && p._handRes.result.cat >= 2;   // two pair or better, and it still lost — public by now, showdown reveals hands
       const stung = lost > 10*bbv || lost > (p.chips + lost)*0.3;
-      // Captured before nudgeMood touches it — pickLossMood's tilted pick
-      // needs to know this losing streak already existed BEFORE this hand
-      // (a genuine repeat), not just that this one loss was big enough to
-      // set the mood state for the first time.
-      const wasAlreadyRattled = !!(p.moodState && (p.moodState.kind==='steamed' || p.moodState.kind==='down') && p.moodState.intensity>0.5);
       if (stung) nudgeMood(p, strong ? 'steamed' : 'down', strong ? 0.8 : 0.6);
-      setMood(p.id, pickLossMood(p, lost / bbv, stung, wasAlreadyRattled));
+      // Visible reaction takes only public quantities (loss in BB, and
+      // whether it stung relative to their own stack). Whether this is a
+      // genuine repeat — and so deserves a deepening beat — is decided
+      // inside reactToLoss from faceMood, not from `strong` above: `strong`
+      // is a hand-strength read and must never steer a portrait, even
+      // though the cards are already face-up by this point.
+      reactToLoss(p, lost / bbv, stung);
     }
     maybeTableTalk(p, won ? 'win' : 'lose');
   });
@@ -1360,7 +1383,7 @@ async function playDeath(p){
   }
   e._mood = null;
   e.avatar.classList.add('has-face');
-  e.avatar.innerHTML = renderFace(p, pickDeadMood());
+  swapFace(e, p, pickDeadMood(), false);
   e.root.classList.add('dead');
   render();
 }
@@ -1687,7 +1710,7 @@ async function playElimination(p, opts){
   const showFace = mood => {
     e._mood = null;
     e.avatar.classList.add('has-face');
-    e.avatar.innerHTML = renderFace(p, mood);
+    swapFace(e, p, mood, false);
   };
   // Lives in the seat's existing action/status bar, not over the face —
   // the shocked/dead expression is the payoff and stays fully visible.
@@ -1835,7 +1858,7 @@ async function playEliminationGroup(entries){
   const showFace = (le, mood)=>{
     le.e._mood = null;
     le.e.avatar.classList.add('has-face');
-    le.e.avatar.innerHTML = renderFace(le.p, mood);
+    swapFace(le.e, le.p, mood, false);
   };
   const hitAll = mult=>{
     live.forEach(le=>{
@@ -2010,6 +2033,8 @@ function resetForNextRunTable(g){
     p.chips=g.startingStack; p.hand=[]; p.folded=false; p.allIn=false;
     p.betThisRound=0; p.totalBetHand=0; p.acted=false; p.mayRaise=true;
     p.inHand=false; p.eliminated=false; p.streetAction=null; p.moodState=null;
+    p.faceMood={ family:'neutral', intensity:0 };
+    delete p._faceKey; delete p._faceSig;
     delete p._reveal; delete p._award; delete p._handRes;
     delete p._devForceAllIn; delete p._devAutoCall; delete p._pendingRebuy;
   });
@@ -2055,7 +2080,13 @@ function resetRunSeatDOM(g){
       e.avatar.getAnimations().forEach(a=>a.cancel());
       e.avatar.className = 'avatar has-face';
       e.avatar.removeAttribute('style');
-      e.avatar.innerHTML = renderFace(p,'idle');
+      // A table reset can land mid-reaction-chain. Releasing the lock here
+      // (the seat is being repainted to idle unconditionally) stops the
+      // abandoned chain at its next step and re-opens ordinary mood
+      // updates for the new table.
+      e._faceLock = null;
+      e._mood = null;
+      swapFace(e, p, 'idle', false);
       const wrap = e.avatar.closest('.avatar-wrap');
       if (wrap){ wrap.classList.remove('socket-spark', 'pressure-build'); wrap.style.removeProperty('--pressure-ms'); }
     }
@@ -2218,7 +2249,7 @@ async function continueAction(){
 
     const seatEl = seatEls[player.id];
     if (seatEl) seatEl.root.classList.add('thinking');
-    setMood(player.id, pickThinkMood());
+    setMood(player.id, pickThinkMood(player));
     setActionRows(player.name,'IS THINKING…',true);
     const decision = await aiDecide(player, game);   // off the main thread
     await sleep(aiThinkTime(player, decision, game));

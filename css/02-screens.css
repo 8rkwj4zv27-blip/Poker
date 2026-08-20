@@ -206,7 +206,7 @@
    base regardless of how much of its own face ends up covered. The top
    chip needs no special rule at all — being last in DOM order, nothing
    is ever painted over it. */
-.chip-clump .chip-disc{ width:25px; height:25px; margin-top:-16px; }
+.chip-clump .chip-disc{ width:25px; height:25px; margin-top:-22px; }
 .chip-clump .chip-disc:first-child{ filter:drop-shadow(0 3px 0 rgba(0,0,0,.4)); }
 .chip-token{
   position:absolute; border-radius:50%;
@@ -1025,7 +1025,7 @@
    standard overlap margin rather than having it zeroed; the shadow it
    still gets comes from that shared .chip-clump selector, which already
    matches bank towers too (.chip-clump is the same class for both). */
-#hud-tower .chip-disc{ width:21px; height:21px; margin-top:-13px; }
+#hud-tower .chip-disc{ width:21px; height:21px; margin-top:-18px; }
 /* Bank intake hatch (physical-polish pass, item 5) — a small seam built
    into the TOP of the existing recessed bank compartment, not a new
    floating component: two thin leaves meeting at a centre seam by

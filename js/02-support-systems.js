@@ -138,7 +138,49 @@ const FACE_ART = {
   gloating:  'assets/faces/red-gloating01.PNG',
   dead1:     'assets/faces/red-dead01.PNG',
   dead2:     'assets/faces/red-dead02.PNG',
-  dead3:     'assets/faces/red-dead03.PNG'
+  dead3:     'assets/faces/red-dead03.PNG',
+
+  /* ---- expression pack 0242-0275 ------------------------------------
+     Deliberately keyed under NEW names rather than repointing the keys
+     above: every pre-existing key keeps resolving to exactly the art it
+     always did, so nothing that still asks for 'happy'/'smug'/'angry'
+     changes appearance. Numeric suffixes mark genuine duplicate
+     drawings of one expression (cosmetic variants), not intensity
+     steps — intensity banding lives in FACE_MOOD_POOLS below. */
+  neutral1:      'assets/faces/0249-neutral.PNG',
+  neutral2:      'assets/faces/0250-neutral.PNG',
+  neutral3:      'assets/faces/0264-neutral.PNG',
+  neutral4:      'assets/faces/0265-neutral.PNG',
+  neutral5:      'assets/faces/0266-neutral.PNG',
+  worried1:      'assets/faces/0242-worried.PNG',
+  nervous1:      'assets/faces/0243-nervous.PNG',
+  nervous2:      'assets/faces/0261-nervous.PNG',
+  nervous3:      'assets/faces/0269-nervous.PNG',
+  veryNervous1:  'assets/faces/0247-very-nervous.PNG',
+  veryNervous2:  'assets/faces/0270-very-nervous.PNG',
+  terrified1:    'assets/faces/0273-terrified.PNG',
+  panic1:        'assets/faces/0244-panic.PNG',
+  shocked1:      'assets/faces/0272-shocked.PNG',
+  suspicious1:   'assets/faces/0245-suspicious.PNG',
+  suspicious2:   'assets/faces/0262-suspicious.PNG',
+  confused1:     'assets/faces/0253-confused.PNG',
+  confused2:     'assets/faces/0254-confused.PNG',
+  baffled1:      'assets/faces/0268-baffled.PNG',
+  happyConfused1:'assets/faces/0255-happy-confused.PNG',
+  smug1:         'assets/faces/0246-smug.PNG',
+  cocky1:        'assets/faces/0248-cocky.PNG',
+  cocky2:        'assets/faces/0257-cocky.PNG',
+  scheming1:     'assets/faces/0251-scheming.PNG',
+  sly1:          'assets/faces/0258-sly.PNG',
+  gloating1:     'assets/faces/0259-gloating.PNG',
+  manic1:        'assets/faces/0260-manic.PNG',
+  happy1:        'assets/faces/0252-happy.PNG',
+  happy2:        'assets/faces/0267-happy.PNG',
+  relieved1:     'assets/faces/0263-relieved.PNG',
+  joyful1:       'assets/faces/0274-joyful.PNG',
+  ecstatic1:     'assets/faces/0256-ecstatic.PNG',
+  angry1:        'assets/faces/0271-angry.PNG',
+  displeased1:   'assets/faces/0275-displeased.PNG'
 };
 // Last-resort mapping down to the 8 moods faceSVG() actually knows how to
 // draw, for the (shouldn't-happen-now) case a mood key has no FACE_ART
@@ -146,20 +188,130 @@ const FACE_ART = {
 const FACE_SVG_FALLBACK = {
   thinking1:'think', thinking2:'think', sly:'smug', worried:'sad',
   tilted:'angry', shocked:'shock', furious:'angry', gloating:'smug',
-  dead1:'dead', dead2:'dead', dead3:'dead'
+  dead1:'dead', dead2:'dead', dead3:'dead',
+  // expression pack 0242-0275 — same last-resort role as the rows above
+  neutral1:'idle', neutral2:'idle', neutral3:'idle', neutral4:'idle', neutral5:'idle',
+  worried1:'sad', nervous1:'sad', nervous2:'sad', nervous3:'sad',
+  veryNervous1:'sad', veryNervous2:'sad', terrified1:'shock',
+  panic1:'shock', shocked1:'shock',
+  suspicious1:'think', suspicious2:'think',
+  confused1:'think', confused2:'think', baffled1:'think', happyConfused1:'happy',
+  smug1:'smug', cocky1:'smug', cocky2:'smug', scheming1:'smug', sly1:'smug',
+  gloating1:'smug', manic1:'happy',
+  happy1:'happy', happy2:'happy', relieved1:'happy', joyful1:'happy', ecstatic1:'happy',
+  angry1:'angry', displeased1:'angry'
 };
 
+/* Which moods get swapFace()'s hard face-jolt shake rather than the softer
+   face-pop. Extracted from an inline array literal so that wiring a new
+   expression in is a one-line addition HERE rather than a silently-missed
+   edit inside swapFace() — a new punchy face that isn't listed just gets
+   the gentle pop, which reads as a bug but never throws. */
+const FACE_JOLT_MOODS = [
+  'shock','angry','shocked','furious','tilted',
+  'angry1','shocked1','panic1','terrified1','manic1'
+];
+
+/* ---- presentation mood -> candidate art ------------------------------
+   Family AND intensity together choose the candidate pool; cosmetic
+   variant selection then happens only WITHIN that band. This is why the
+   bands exist rather than one pool per family: an opponent at the top of
+   the NERVOUS ladder must never randomly show 'worried', and one mildly
+   pleased must never flash 'ecstatic'. Bands are ordered ascending and
+   read as "up to this intensity"; the last band catches 1.0.
+
+   Every pool here is a list of MOOD KEYS in FACE_ART above — no file
+   paths, so the art can be re-pointed without touching mood logic.
+
+   NOTE (anti-tell): nothing in this file ever sees hole cards, equity,
+   bluff state or a pending decision. Pools are indexed purely by
+   (family, intensity), and both of those are computed from public
+   events only — see faceMood/nudgeFaceMood in 03-opponents.js. */
+const FACE_MOOD_POOLS = {
+  neutral: [
+    { max: 1.01, pool: ['neutral1','neutral2','neutral3','neutral4','neutral5','idle'] }
+  ],
+  positive: [
+    { max: 0.35, pool: ['relieved1','happy1'] },
+    { max: 0.70, pool: ['happy1','happy2','joyful1'] },
+    { max: 1.01, pool: ['ecstatic1','joyful1'] }
+  ],
+  confident: [
+    { max: 0.35, pool: ['smug1','sly1'] },
+    { max: 0.70, pool: ['cocky1','cocky2','scheming1'] },
+    { max: 1.01, pool: ['gloating1','manic1'] }
+  ],
+  irritated: [
+    { max: 0.55, pool: ['displeased1'] },
+    { max: 1.01, pool: ['angry1'] }
+  ],
+  nervous: [
+    { max: 0.30, pool: ['worried1'] },
+    { max: 0.60, pool: ['nervous1','nervous2','nervous3'] },
+    { max: 0.85, pool: ['veryNervous1','veryNervous2'] },
+    { max: 1.01, pool: ['terrified1'] }
+  ],
+  uncertain: [
+    { max: 0.50, pool: ['suspicious1','suspicious2','confused1','confused2'] },
+    { max: 1.01, pool: ['baffled1','confused1','confused2'] }
+  ],
+  shock: [
+    { max: 0.75, pool: ['shocked1'] },
+    { max: 1.01, pool: ['panic1'] }
+  ]
+};
+const FACE_MOOD_FAMILIES = Object.keys(FACE_MOOD_POOLS);
+
+/* The candidate pool for a (family, intensity) pair. Unknown families
+   fall back to neutral rather than throwing — a bad family name should
+   degrade to a plain portrait, never to an empty seat. */
+function faceMoodPool(family, intensity){
+  const bands = FACE_MOOD_POOLS[family] || FACE_MOOD_POOLS.neutral;
+  const i = Math.max(0, Math.min(1, Number(intensity) || 0));
+  for (const b of bands){ if (i < b.max) return b.pool; }
+  return bands[bands.length-1].pool;
+}
+/* Picks one mood key from the (family, intensity) band, avoiding an
+   immediate repeat of whatever that seat last showed so repeated events
+   don't always produce the identical drawing. Degrades gracefully when a
+   band holds only one entry (most of them do) — then repetition is
+   simply correct, not something to work around.
+
+   `lastKey` is cosmetic memory only. The draw is Math.random() over an
+   already-decided band, so it can never carry information: it selects
+   WHICH drawing of a mood the player can already infer, never which
+   mood. */
+function pickFaceExpression(family, intensity, lastKey){
+  const pool = faceMoodPool(family, intensity);
+  if (!pool.length) return 'idle';
+  if (pool.length === 1) return pool[0];
+  const choices = pool.filter(k=>k !== lastKey);
+  const from = choices.length ? choices : pool;
+  return from[Math.floor(Math.random()*from.length)];
+}
+
 /* ---- opponent portrait recolouring ----
-   Every portrait in FACE_ART is the same flat three-colour drawing: the
-   character fill #E92A2A, near-black linework #0E0E18, near-white eyes
-   and teeth #F3F3FF (plus #913535, a shaded fill, in the dead variants).
-   Verified across all 19 shipped files, red-* and legacy-* alike.
+   Every portrait in FACE_ART is a flat three-colour drawing: a character
+   fill, near-black linework #0E0E18, near-white eyes/teeth #F3F3FF, plus
+   a darker shaded fill for cheeks/shading. BUT there are now TWO batches
+   authored in two different reference hues, confirmed by sampling the
+   shipped PNGs' actual pixels — not assumed:
+     - the original red-/legacy- batch:   fill (233,42,42)
+     - the newer 0242-0275 batch:         fill (171,85,216) = #AB55D8,
+       which is exactly FACE_COLORS's own 'purple' target below.
+   A recolour matrix solved for one batch's fill, fed the OTHER batch's
+   pixels, does not land on the target — it produces a de-saturated
+   near-grey (verified: e.g. solving for 'orange' against the red fill
+   and then applying that same matrix to the purple fill's actual RGB
+   yields (170,161,151), not orange). So which matrix applies depends on
+   which batch supplied the art being shown, not just on the opponent's
+   target colour — see FACE_SOURCE_FAMILIES/FACE_ART_PURPLE_SOURCE below.
 
    Recolouring used to be a hue-rotate()/saturate()/brightness() chain.
    That can only push the source around — it can't be aimed at a specific
-   colour — and the saturate/brightness needed to drag this dark red
+   colour — and the saturate/brightness needed to drag a dark, desaturated
    source out of the muddy band it passes through is exactly what made
-   several stops read neon or olive. So each entry now declares the exact
+   several stops read neon or olive. So each entry declares the exact
    colour its FILL should become, and the recolouring matrix is DERIVED
    from that target instead of being eyeballed.
 
@@ -170,11 +322,12 @@ const FACE_SVG_FALLBACK = {
        k_c   = (target_c - mid0) / (r0 - mid0)      mid0 = (g0 + b0) / 2
 
    Two properties fall out of this for free, with no saturation or
-   brightness pushing anywhere:
+   brightness pushing anywhere, REGARDLESS of which batch's source fill r0
+   was solved from:
      - every row sums to 1, so any neutral pixel maps to itself: black
        linework stays black and white stays white BY CONSTRUCTION, not by
        being checked afterwards;
-     - the map is linear, so shading (#913535) becomes a proportionally
+     - the map is linear, so a shaded/cheek fill becomes a proportionally
        darker version of the new colour rather than being crushed dark or
        blown out bright.
 
@@ -184,39 +337,78 @@ const FACE_SVG_FALLBACK = {
    Index order note: `indigo` deliberately sits at index 2, the slot the
    retired `gold` used to hold, so every other saved faceColorIdx keeps
    the colour it already had. Only the one genuinely replaced stop moves.
-   Colour is still assigned per player and never derived from persona. */
-const FACE_SOURCE_FILL = [233, 42, 42];
+   Colour is still assigned per player and never derived from persona —
+   FACE_COLORS/faceColorIdx are the opponent's colour IDENTITY and are
+   untouched by anything below; only which FILTER expresses that identity
+   for a given piece of art changes. */
 const FACE_COLORS = [
-  { name:'red',    hue:0,   fill:'#E92A2A', filter:'' },  // the source art itself — no recolour, so it renders pristine
+  { name:'red',    hue:0,   fill:'#E92A2A', filter:'' },  // pristine for the red batch — see FACE_SOURCE_FAMILIES.red.pristineIndex
   { name:'orange', hue:32,  fill:'#DF8E2F', filter:'url(#face-tint-1)' },
   { name:'indigo', hue:240, fill:'#6969C9', filter:'url(#face-tint-2)' },
   { name:'green',  hue:136, fill:'#4E9F63', filter:'url(#face-tint-3)' },
   { name:'teal',   hue:179, fill:'#4B9D9C', filter:'url(#face-tint-4)' },
   { name:'blue',   hue:217, fill:'#6EA6FF', filter:'url(#face-tint-5)' },
-  { name:'purple', hue:279, fill:'#AB55D8', filter:'url(#face-tint-6)' },
+  { name:'purple', hue:279, fill:'#AB55D8', filter:'url(#face-tint-6)' },  // pristine for the purple batch — see FACE_SOURCE_FAMILIES.purple.pristineIndex
   { name:'pink',   hue:335, fill:'#D3578B', filter:'url(#face-tint-7)' }
 ];
-/* Solves the three k values for one target fill (see the block above). */
-function faceTintK(hex){
-  const r0 = FACE_SOURCE_FILL[0]/255;
-  const mid0 = (FACE_SOURCE_FILL[1] + FACE_SOURCE_FILL[2]) / 510;
+/* One entry per art batch: its measured source fill, and which
+   FACE_COLORS index that fill already equals (so that one target can
+   skip filtering — an identity matrix through the DOM for no reason). */
+const FACE_SOURCE_FAMILIES = {
+  red:    { sourceFill:[233, 42, 42],  pristineIndex:0, idPrefix:'face-tint'        },
+  purple: { sourceFill:[171, 85, 216], pristineIndex:6, idPrefix:'face-tint-purple' }
+};
+/* Which FACE_ART keys are drawn from the 0242-0275 (purple-fill) batch
+   rather than the original red-/legacy- batch. An explicit list rather
+   than inferring from the semantic mood name, so mis-tagging a key's
+   source family can't happen silently when a mood is renamed or a new
+   one is added — see requirement to keep source-family lookup explicit. */
+const FACE_ART_PURPLE_SOURCE = new Set([
+  'neutral1','neutral2','neutral3','neutral4','neutral5',
+  'worried1','nervous1','nervous2','nervous3',
+  'veryNervous1','veryNervous2','terrified1','panic1','shocked1',
+  'suspicious1','suspicious2','confused1','confused2','baffled1','happyConfused1',
+  'smug1','cocky1','cocky2','scheming1','sly1','gloating1','manic1',
+  'happy1','happy2','relieved1','joyful1','ecstatic1',
+  'angry1','displeased1'
+]);
+/* Solves the three k values retargeting ONE source fill to ONE target
+   fill (see the block above). */
+function faceTintK(hex, sourceFill){
+  const r0 = sourceFill[0]/255;
+  const mid0 = (sourceFill[1] + sourceFill[2]) / 510;
   return [1,3,5].map(i=>((parseInt(hex.slice(i,i+2),16)/255) - mid0) / (r0 - mid0));
 }
-/* Builds the <filter> defs the palette's url(#face-tint-N) entries point
-   at, once, into a zero-size hidden <svg> on the document. Idempotent.
+/* The purple batch's filter per FACE_COLORS index — the batch's own
+   analogue of each entry's `.filter` field above (which is, and remains,
+   the red-batch filter; kept there rather than moved, so the one existing
+   direct read of it — the home-screen hero faces in 08-dev-mode.js, which
+   only ever cycle red-batch moods — needs no change). Plain id strings,
+   computable eagerly with no DOM dependency. */
+const FACE_TINT_PURPLE = FACE_COLORS.map((c,i)=>
+  i === FACE_SOURCE_FAMILIES.purple.pristineIndex ? '' : 'url(#'+FACE_SOURCE_FAMILIES.purple.idPrefix+'-'+i+')'
+);
+/* Builds one batch's set of <filter> defs — the same shape as the
+   original single-batch version, just parameterised over which source
+   family it's solving from. */
+function buildTintFilterDefs(family){
+  return FACE_COLORS.map((c,i)=>{
+    if (i === family.pristineIndex) return '';
+    const rows = faceTintK(c.fill, family.sourceFill).map(k=>{
+      const off = ((1-k)/2).toFixed(4);
+      return k.toFixed(4)+' '+off+' '+off+' 0 0';
+    }).join(' ');
+    return '<filter id="'+family.idPrefix+'-'+i+'" color-interpolation-filters="sRGB">'+
+      '<feColorMatrix type="matrix" values="'+rows+' 0 0 0 1 0"/></filter>';
+  }).join('');
+}
+/* Builds the <filter> defs BOTH batches' url(#...) entries point at, once,
+   into a zero-size hidden <svg> on the document. Idempotent.
    color-interpolation-filters MUST be sRGB — SVG's default is linearRGB,
    which would miss every target by a wide margin. */
 function installFaceTintFilters(){
   if (typeof document === 'undefined' || document.getElementById('face-tint-defs')) return;
-  const filters = FACE_COLORS.map((c,i)=>{
-    if (!c.filter) return '';
-    const rows = faceTintK(c.fill).map(k=>{
-      const off = ((1-k)/2).toFixed(4);
-      return k.toFixed(4)+' '+off+' '+off+' 0 0';
-    }).join(' ');
-    return '<filter id="face-tint-'+i+'" color-interpolation-filters="sRGB">'+
-      '<feColorMatrix type="matrix" values="'+rows+' 0 0 0 1 0"/></filter>';
-  }).join('');
+  const filters = buildTintFilterDefs(FACE_SOURCE_FAMILIES.red) + buildTintFilterDefs(FACE_SOURCE_FAMILIES.purple);
   // Built as an HTML string inside a plain <div> rather than via
   // createElementNS + innerHTML: the HTML parser's own foreign-content
   // rules put <svg>/<filter>/<feColorMatrix> in the SVG namespace and fix
@@ -258,9 +450,14 @@ function faceHue(p){
   const c = p && Number.isInteger(p.faceColorIdx) && FACE_COLORS[p.faceColorIdx];
   return c ? c.hue : 0;
 }
-function faceFilter(p){
-  const c = p && Number.isInteger(p.faceColorIdx) && FACE_COLORS[p.faceColorIdx];
-  return c ? c.filter : '';
+/* The opponent's target colour always comes from p.faceColorIdx alone —
+   mood/art never changes WHICH colour an opponent is. `mood` here only
+   selects which of the two calibrated filter sets expresses that same
+   target colour correctly for the batch the art was drawn in. */
+function faceFilter(p, mood){
+  const idx = p && Number.isInteger(p.faceColorIdx) ? p.faceColorIdx : null;
+  if (idx === null || !FACE_COLORS[idx]) return '';
+  return FACE_ART_PURPLE_SOURCE.has(mood) ? FACE_TINT_PURPLE[idx] : FACE_COLORS[idx].filter;
 }
 
 function faceArtPath(mood){
@@ -280,7 +477,7 @@ function faceArtPath(mood){
    never produce a blank portrait. */
 function renderFace(p, mood){
   const path = faceArtPath(mood);
-  const filter = faceFilter(p);
+  const filter = faceFilter(p, mood);
   const hue = faceHue(p);
   if (path){
     const style = filter ? ' style="filter:'+filter+'"' : '';
@@ -309,21 +506,156 @@ function faceImgFallback(img, hue){
   if (svg) img.parentNode.replaceChild(svg, img);
 }
 
+/* Preloads one image and reports whether it's genuinely paintable — used
+   by swapFace() so a portrait's currently-visible art is never torn down
+   before its replacement has actually finished loading. `img.complete`
+   can already be true synchronously right after `src` is set when the
+   browser already has the image decoded (warm cache) — that's what lets
+   the common case swap with no perceptible delay; onload/onerror cover
+   the case where a real fetch is still in flight. */
+function loadImage(path, onOk, onFail){
+  const img = new Image();
+  let settled = false;
+  const done = ok=>{
+    if (settled) return;
+    settled = true;
+    if (ok) onOk(); else onFail();
+  };
+  img.onload = ()=>done(true);
+  img.onerror = ()=>done(false);
+  img.src = path;
+  if (img.complete) done(!!img.naturalWidth);
+}
+
+/* Atomic portrait swap — the single place a live opponent's face actually
+   gets written to the DOM (setMood, resetRunSeatDOM's idle reset,
+   playDeath, playElimination/playEliminationGroup's shock/dead beats).
+   Preloads the target mood's art via loadImage() and only replaces
+   e.avatar's innerHTML once it's confirmed paintable, so the
+   currently-visible portrait is never removed while its replacement is
+   still loading — closing the blank-portrait gap a bare
+   `avatar.innerHTML = renderFace(...)` leaves open on anything slower
+   than an already-warm cache hit.
+
+   A per-seat monotonic token (e._faceReq) guards every async completion
+   below: if a newer swapFace() call for the same seat has started since
+   this one began, its result is silently dropped instead of landing over
+   the newer mood — this is what stops a slow "think" load from clobbering
+   a "shock" that was requested (and already painted) after it.
+
+   Falls back through the same idle -> procedural-SVG ladder
+   faceImgFallback() already provides for a failure discovered
+   post-insertion, just resolved here BEFORE anything is written, so a
+   load failure never produces a blank portrait either.
+
+   `animate` mirrors setMood's existing face-pop/face-jolt beat — passed
+   false from the elimination/reset paths below, none of which ever
+   triggered that animation. */
+function swapFace(e, p, mood, animate){
+  if (!e || !e.avatar) return;
+  const token = (e._faceReq = (e._faceReq||0) + 1);
+  const stillCurrent = ()=> e._faceReq === token && e.avatar;
+  const paint = renderMood=>{
+    if (!stillCurrent()) return;
+    e.avatar.innerHTML = renderFace(p, renderMood);
+    if (animate && !motionOff()){
+      const f = e.avatar.querySelector('.face');
+      const jolt = FACE_JOLT_MOODS.includes(mood);
+      if (f){
+        f.classList.remove('face-pop','face-jolt'); void f.offsetWidth;
+        f.classList.add(jolt ? 'face-jolt' : 'face-pop');
+      }
+    }
+  };
+  const finalFallback = ()=>{
+    if (!stillCurrent()) return;
+    e.avatar.innerHTML = faceSVG('idle', faceHue(p));
+  };
+  const path = faceArtPath(mood);
+  loadImage(path,
+    ()=>paint(mood),
+    ()=>{
+      if (path === FACE_ART.idle){ finalFallback(); return; }
+      loadImage(FACE_ART.idle, ()=>paint('idle'), finalFallback);
+    }
+  );
+}
+
+/* ---- reaction-sequence lock ------------------------------------------
+   While a seat holds a lock, ordinary mood updates are suppressed, so a
+   routine resting-face update can't cut a deliberate multi-step reaction
+   in half. Exactly ONE field (e._faceLock, holding the owning sequence's
+   token) does this — there is deliberately no priority ladder, because
+   the only thing that must outrank a reaction is elimination, and
+   elimination already wins two other ways: it bypasses setMood()
+   entirely, and every sequence step re-checks p.eliminated, which
+   resolveEliminations()/processLives() set SYNCHRONOUSLY before their
+   ceremony's first await.
+
+   e._faceLock is orthogonal to swapFace()'s e._faceReq: _faceReq answers
+   "is this the newest image load for this seat", _faceLock answers
+   "which chain owns this seat's expression right now". */
+let faceSeqCounter = 0;
+function clearFaceLock(playerId){
+  const e = seatEls[playerId];
+  if (e) e._faceLock = null;
+}
+
 function setMood(playerId, mood){
   const e = seatEls[playerId];
   if (!e || !e.avatar || !settings.faces) return;
   const p = game && game.players.find(x=>x.id===playerId);
   if (!p || p.isHuman || p.eliminated) return;
+  if (e._faceLock != null) return;   // a reaction sequence owns this seat
   if (e._mood === mood) return;
   e._mood = mood;
-  e.avatar.innerHTML = renderFace(p, mood);
-  if (!motionOff()){
-    const f = e.avatar.querySelector('.face');
-    const jolt = ['shock','angry','shocked','furious','tilted'].includes(mood);
-    if (f){
-      f.classList.remove('face-pop','face-jolt'); void f.offsetWidth;
-      f.classList.add(jolt ? 'face-jolt' : 'face-pop');
+  swapFace(e, p, mood, true);
+}
+
+/* Plays a short expression chain (e.g. shocked -> angry -> displeased)
+   for one opponent. `steps` is [{mood, ms}, ...]; the LAST step is the
+   one that stays on screen, and its ms is how long ordinary mood updates
+   stay suppressed afterwards, i.e. the hold.
+
+   Deliberately fire-and-forget: callers do not await it, so the pot
+   payout/chip-flight beats and the next deal never wait on a face. A
+   sequence still running when the next hand begins is cut short there
+   (startNewHand clears every lock before any new-hand portrait update),
+   which is why an abandoned sequence can never freeze a stale face into
+   a new hand.
+
+   Respects settings.faces exactly like setMood() does — a player who has
+   turned faces off must not start seeing reaction chains. */
+async function playReactionSequence(playerId, steps){
+  const e = seatEls[playerId];
+  if (!e || !e.avatar || !settings.faces) return;
+  if (!Array.isArray(steps) || !steps.length) return;
+  const p = game && game.players.find(x=>x.id===playerId);
+  if (!p || p.isHuman || p.eliminated) return;
+
+  const mine = ++faceSeqCounter;
+  e._faceLock = mine;                     // claimed BEFORE the first await
+  const owns = ()=> e._faceLock === mine && !p.eliminated && e.avatar;
+  const paint = mood=>{ e._mood = mood; swapFace(e, p, mood, true); };
+
+  try{
+    if (motionOff()){
+      // Reduced motion: land straight on the expression the chain was
+      // heading for, no intermediate beats — same convention
+      // playEliminationGroup already uses.
+      const last = steps[steps.length-1];
+      if (owns() && last) paint(last.mood);
+      return;
     }
+    for (const step of steps){
+      if (!owns()) return;
+      paint(step.mood);
+      await sleep(step.ms);
+    }
+  } finally {
+    // Only the owner releases: if a newer sequence (or a reset) took the
+    // seat mid-chain, its lock must survive this one unwinding.
+    if (e._faceLock === mine) e._faceLock = null;
   }
 }
 const Store = (function(){
@@ -375,7 +707,7 @@ const DEFAULT_SETTINGS = {
 const DEFAULT_STATS = { hands:0, won:0, showdownsWon:0, biggestPot:0, net:0 };
 const SAVE_VERSION = 1;
 /* Bump on every release so the main-menu header shows what's actually installed. */
-const BUILD_VERSION = 'v0.14.0-dev · table-size';
+const BUILD_VERSION = 'v0.14.0-dev · portrait moods';
 
 let settings = Object.assign({}, DEFAULT_SETTINGS, Store.get('felt.settings', {}));
 // The Settings menu cleanup dropped RELAXED from the Game Speed control

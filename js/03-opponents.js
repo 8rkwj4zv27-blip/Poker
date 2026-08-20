@@ -167,26 +167,103 @@ function decayMoods(){
     if (m.intensity < 0.15) p.moodState = null;
   });
 }
-/* A player's "neutral" face once any immediate reaction has passed — reflects
-   recent form (moodState, built up by nudgeMood on wins/losses) rather than
-   always snapping back to plain idle. */
+/* ============================================================
+   PRESENTATION MOOD (faceMood) — deliberately SEPARATE from moodState
+   ============================================================
+   moodState above is gameplay state: aiDecide() reads it and it biases
+   aggression/tightness. faceMood below is presentation state: it decides
+   which portrait an opponent wears and NOTHING ELSE. The two are fed by
+   the same public events but are never the same object, and there is no
+   path from faceMood into aiDecide().
+
+   The field names differ on purpose (`family`/`intensity` here vs
+   `kind`/`intensity` there): if a future refactor ever tries to merge or
+   copy one into the other, the mismatch fails loudly instead of quietly
+   coupling the visible face to the AI's decisions — which is exactly the
+   poker tell this whole system exists to prevent.
+
+   Families are the keys of FACE_MOOD_POOLS (02-support-systems.js);
+   intensity 0-1 selects the band WITHIN a family, so an opponent deep in
+   a bad run can't randomly flash their mildest worried face. */
+
+const FACE_NEGATIVE_FAMILIES = ['irritated','nervous'];
+
+function faceMoodOf(p){
+  const m = p && p.faceMood;
+  if (!m || !FACE_MOOD_POOLS[m.family]) return { family:'neutral', intensity:0 };
+  return m;
+}
+/* Unknown families are rejected at the WRITE site, not tolerated at the
+   read site — a typo'd family name lands on neutral immediately rather
+   than silently persisting into a save. */
+function setFaceMood(p, family, intensity){
+  if (!p || p.isHuman) return;
+  const fam = FACE_MOOD_POOLS[family] ? family : 'neutral';
+  p.faceMood = { family: fam, intensity: clamp01(intensity) };
+}
+function nudgeFaceMood(p, family, amount){
+  if (!p || p.isHuman) return;
+  const cur = faceMoodOf(p);
+  if (cur.family === family) setFaceMood(p, family, cur.intensity + amount*0.6);
+  else if (amount >= cur.intensity) setFaceMood(p, family, amount);
+  // otherwise a stronger existing mood in another family simply holds
+}
+/* Which way a publicly-visible loss pushes this opponent. Once a negative
+   direction has formed, further losses DEEPEN it rather than flip-flopping
+   — someone who has gone sour stays sour, someone rattled stays rattled.
+   From neutral (or from a positive mood) the branch is a coin flip, which
+   is purely cosmetic: it is chosen from faceMood alone and can never
+   correlate with cards, equity, bluff state or the AI's intent. */
+function negativeFaceFamily(p){
+  const cur = faceMoodOf(p);
+  if (FACE_NEGATIVE_FAMILIES.includes(cur.family)) return cur.family;
+  return Math.random()<0.5 ? 'irritated' : 'nervous';
+}
+/* Mirrors decayMoods()'s cadence (once per hand) on the presentation
+   side, so a mood fades over a few hands instead of resetting instantly. */
+function decayFaceMoods(){
+  if (!game) return;
+  game.players.forEach(p=>{
+    if (p.isHuman) return;
+    const m = p.faceMood;
+    if (!m) return;
+    m.intensity *= 0.75;
+    if (m.intensity < 0.12) p.faceMood = { family:'neutral', intensity:0 };
+  });
+}
+
+/* The expression a player currently "wears" for their baseline mood.
+   The cosmetic variant is re-rolled ONLY when the mood signature (family
+   + which intensity band) actually changes — otherwise the same drawing
+   is held. That's what stops the portrait flickering between neutral
+   variants on every single action while still letting repeated events
+   land on a different face later. */
+function baselineFaceExpression(p){
+  const m = faceMoodOf(p);
+  const pool = faceMoodPool(m.family, m.intensity);
+  const sig = m.family + '|' + pool.join(',');
+  if (p._faceSig !== sig || !p._faceKey){
+    p._faceSig = sig;
+    p._faceKey = pickFaceExpression(m.family, m.intensity, p._faceKey);
+  }
+  return p._faceKey;
+}
+/* A player's "neutral" face once any immediate reaction has passed —
+   reflects recent public form rather than always snapping back to idle. */
 function restingMood(p){
-  const m = p.moodState;
-  if (!m) return 'idle';
-  if (m.kind==='steamed') return 'angry';
-  if (m.kind==='down') return 'sad';
-  return m.intensity>0.35 ? 'happy' : 'idle';
+  return baselineFaceExpression(p);
 }
 /* Between hands, faces carry whatever mood lingers instead of snapping to
-   idle — restingMood() plus an occasional, non-deterministic short-stack
-   flicker of worry. This only ever runs once per hand gap (applyLingeringFaces
-   below), never on every action, so a re-roll can't read as portrait
-   flicker — see FACE TIMING notes on setMood. */
+   idle — the baseline expression plus an occasional, non-deterministic
+   short-stack flicker of nerves. Stack depth is public, and this only
+   runs once per hand gap (applyLingeringFaces below), never per action. */
 function betweenHandsMood(p, g){
-  const base = restingMood(p);
+  const base = baselineFaceExpression(p);
   if (p.isHuman || p.eliminated) return base;
   const shortStacked = g && g.bigBlind && p.chips < g.bigBlind*8;
-  if (shortStacked && Math.random()<0.18) return Math.random()<0.5 ? 'worried' : 'tilted';
+  if (shortStacked && Math.random()<0.18){
+    return pickFaceExpression('nervous', Math.max(0.45, faceMoodOf(p).intensity), p._faceKey);
+  }
   return base;
 }
 /* Between hands, faces carry whatever mood lingers instead of snapping to idle. */
@@ -205,32 +282,103 @@ function applyLingeringFaces(){
    action. See the call sites in 05-game-engine.js for exactly when each
    of these fires. */
 
-/* Turn-start "thinking" portrait — chosen before aiDecide() computes a
-   decision, so there is nothing yet for the pick to correlate with. */
-function pickThinkMood(){
-  if (Math.random() < 0.10) return 'sly';
-  const pool = ['think','thinking1','thinking2'];
+/* Turn-start "thinking" portrait. "Thinking" is not an emotion here — an
+   opponent on their turn wears whatever their CURRENT PUBLIC MOOD would
+   have them wear while deliberating. A nervous-looking think face means
+   "this player has been losing", never "this player has a weak hand".
+
+   Still chosen before aiDecide() computes anything (05-game-engine.js
+   :2221 vs :2223), and it reads only faceMood, so there is nothing
+   private in scope for it to correlate with even by accident. */
+const FACE_THINK_POOLS = {
+  neutral:   ['think','thinking1','thinking2','suspicious1','suspicious2','neutral1','neutral3'],
+  positive:  ['thinking1','neutral2','suspicious1','happy1'],
+  confident: ['smug1','scheming1','sly1','cocky1'],
+  irritated: ['displeased1','suspicious2','thinking2'],
+  nervous:   ['worried1','nervous1','baffled1','thinking2'],
+  uncertain: ['confused1','confused2','baffled1','suspicious1'],
+  shock:     ['shocked1','baffled1','thinking2']
+};
+function pickThinkMood(p){
+  const m = faceMoodOf(p);
+  // deep moods think in their own register rather than the mild pool
+  if (m.family==='nervous' && m.intensity>0.6) return Math.random()<0.6 ? 'veryNervous1' : 'nervous2';
+  if (m.family==='confident' && m.intensity>0.7) return Math.random()<0.5 ? 'gloating1' : 'scheming1';
+  const pool = FACE_THINK_POOLS[m.family] || FACE_THINK_POOLS.neutral;
   return pool[Math.floor(Math.random()*pool.length)];
 }
-/* swingBB is the pot just won, in big blinds — a purely public quantity
-   (everyone sees the pot size and who took it). */
-function pickWinMood(swingBB){
-  if (swingBB > 20) return Math.random()<0.35 ? 'gloating' : (Math.random()<0.5 ? 'happy' : 'smug');
-  if (swingBB > 6) return Math.random()<0.5 ? 'happy' : 'smug';
-  return Math.random()<0.6 ? 'happy' : 'idle';
+
+/* ---- public-event reactions -------------------------------------------
+   The only entry points that change a visible mood from a hand result.
+   Every argument is public — the swing/loss in big blinds, which the
+   player watched happen. Hole cards, equity, bluff state and the AI's
+   decision are not passed in and are not in scope, so no amount of later
+   editing here can leak them without someone deliberately adding a new
+   parameter.
+
+   Landing expressions are BASELINE-DERIVED, not hardcoded: each chain's
+   final step is computed AFTER the mood nudge, so the sequence and the
+   baseline system agree on what the seat looks like once it ends. */
+const REACTION_TIMING = { beat: 380, mid: 500, hold: 900 };
+
+function reactToWin(p, swingBB){
+  if (!p || p.isHuman) return;
+  const before = faceMoodOf(p);
+  const wasNegative = FACE_NEGATIVE_FAMILIES.includes(before.family) && before.intensity > 0.4;
+
+  // a real win after a rough run — relief, then settling back
+  if (wasNegative && swingBB > 6){
+    setFaceMood(p, 'positive', 0.45);
+    playReactionSequence(p.id, [
+      { mood:'relieved1', ms: REACTION_TIMING.beat },
+      { mood: pickFaceExpression('positive', 0.5, 'relieved1'), ms: REACTION_TIMING.mid },
+      { mood: baselineFaceExpression(p), ms: REACTION_TIMING.hold }
+    ]);
+    return;
+  }
+  if (swingBB > 20){
+    nudgeFaceMood(p, 'confident', 0.55);
+    playReactionSequence(p.id, [
+      { mood: pickFaceExpression('positive', 0.8, null), ms: REACTION_TIMING.beat },
+      { mood: baselineFaceExpression(p), ms: REACTION_TIMING.hold }
+    ]);
+    return;
+  }
+  // ordinary pots get a mood nudge only — no chain, or faces get twitchy
+  nudgeFaceMood(p, swingBB > 6 ? 'confident' : 'positive', swingBB > 6 ? 0.30 : 0.18);
+  setMood(p.id, baselineFaceExpression(p));
 }
-/* lostBB is what THIS player just put in and lost, in big blinds — again
-   public once the pot is awarded. `stung` mirrors the existing
-   nudgeMood() threshold (big relative to their own stack). `wasRattled`
-   means this losing streak already existed BEFORE this hand — a real
-   repeat, not just this one loss being big enough to start it — so
-   'tilted' reads as "this keeps happening", never as a same-hand tell
-   for how badly they just lost (that's shocked/furious below). */
-function pickLossMood(p, lostBB, stung, wasRattled){
-  if (wasRattled && Math.random()<0.3) return 'tilted';
-  if (lostBB > 20) return Math.random()<0.5 ? 'shocked' : 'furious';
-  if (stung) return ['worried','angry','sad'][Math.floor(Math.random()*3)];
-  return Math.random()<0.5 ? 'sad' : 'idle';
+
+function reactToLoss(p, lostBB, stung){
+  if (!p || p.isHuman) return;
+  const before = faceMoodOf(p);
+  const family = negativeFaceFamily(p);
+
+  if (lostBB > 20){
+    nudgeFaceMood(p, family, 0.75);
+    playReactionSequence(p.id, [
+      { mood:'shocked1', ms: REACTION_TIMING.beat },
+      { mood: family==='irritated' ? 'angry1' : 'veryNervous1', ms: REACTION_TIMING.mid },
+      { mood: baselineFaceExpression(p), ms: REACTION_TIMING.hold }
+    ]);
+    return;
+  }
+  if (stung){
+    // already sour and it happened AGAIN — a short deepening beat
+    const deepening = before.family === family && before.intensity > 0.45;
+    nudgeFaceMood(p, family, 0.45);
+    if (deepening){
+      playReactionSequence(p.id, [
+        { mood: pickFaceExpression(family, Math.min(1, before.intensity + 0.2), null), ms: REACTION_TIMING.beat },
+        { mood: baselineFaceExpression(p), ms: REACTION_TIMING.hold }
+      ]);
+    } else {
+      setMood(p.id, baselineFaceExpression(p));
+    }
+    return;
+  }
+  nudgeFaceMood(p, family, 0.18);
+  setMood(p.id, baselineFaceExpression(p));
 }
 /* The three new dead-0X variants plus the original dead pose are treated
    as pure visual variety, not different meanings — see ELIMINATION docs. */

@@ -1,4 +1,4 @@
-const CACHE_NAME = 'poker-v12-0';
+const CACHE_NAME = 'poker-v14-1';
 const APP_SHELL = [
   './',
   './index.html',
@@ -18,7 +18,68 @@ const APP_SHELL = [
   './js/05-game-engine.js',
   './js/06-presentation.js',
   './js/07-ui-wiring.js',
-  './js/08-dev-mode.js'
+  './js/08-dev-mode.js',
+  // FACE_ART (js/02-support-systems.js) — every illustrated portrait an
+  // opponent can wear, precached so a live seat's expression can always
+  // swap from Cache Storage rather than depending on a network round-trip
+  // (see swapFace()/loadImage() in 02-support-systems.js for the atomic
+  // swap itself, which is what actually guarantees no blank portrait —
+  // this precache only shrinks how often that swap has to wait at all).
+  './assets/faces/legacy-idle.jpg',
+  './assets/faces/legacy-think.jpg',
+  './assets/faces/legacy-happy.jpg',
+  './assets/faces/legacy-smug.jpg',
+  './assets/faces/legacy-sad.jpg',
+  './assets/faces/legacy-shock.jpg',
+  './assets/faces/legacy-angry.jpg',
+  './assets/faces/legacy-dead.jpg',
+  './assets/faces/red-thinking01.PNG',
+  './assets/faces/red-thinking02.PNG',
+  './assets/faces/red-worried01.PNG',
+  './assets/faces/red-shocked01.PNG',
+  './assets/faces/red-furious01.PNG',
+  './assets/faces/red-tilted01.PNG',
+  './assets/faces/red-sly01.PNG',
+  './assets/faces/red-gloating01.PNG',
+  './assets/faces/red-dead01.PNG',
+  './assets/faces/red-dead02.PNG',
+  './assets/faces/red-dead03.PNG',
+  // expression pack 0242-0275 — the mood/reaction system draws from these
+  // constantly, so they precache alongside the originals above
+  './assets/faces/0242-worried.PNG',
+  './assets/faces/0243-nervous.PNG',
+  './assets/faces/0244-panic.PNG',
+  './assets/faces/0245-suspicious.PNG',
+  './assets/faces/0246-smug.PNG',
+  './assets/faces/0247-very-nervous.PNG',
+  './assets/faces/0248-cocky.PNG',
+  './assets/faces/0249-neutral.PNG',
+  './assets/faces/0250-neutral.PNG',
+  './assets/faces/0251-scheming.PNG',
+  './assets/faces/0252-happy.PNG',
+  './assets/faces/0253-confused.PNG',
+  './assets/faces/0254-confused.PNG',
+  './assets/faces/0255-happy-confused.PNG',
+  './assets/faces/0256-ecstatic.PNG',
+  './assets/faces/0257-cocky.PNG',
+  './assets/faces/0258-sly.PNG',
+  './assets/faces/0259-gloating.PNG',
+  './assets/faces/0260-manic.PNG',
+  './assets/faces/0261-nervous.PNG',
+  './assets/faces/0262-suspicious.PNG',
+  './assets/faces/0263-relieved.PNG',
+  './assets/faces/0264-neutral.PNG',
+  './assets/faces/0265-neutral.PNG',
+  './assets/faces/0266-neutral.PNG',
+  './assets/faces/0267-happy.PNG',
+  './assets/faces/0268-baffled.PNG',
+  './assets/faces/0269-nervous.PNG',
+  './assets/faces/0270-very-nervous.PNG',
+  './assets/faces/0271-angry.PNG',
+  './assets/faces/0272-shocked.PNG',
+  './assets/faces/0273-terrified.PNG',
+  './assets/faces/0274-joyful.PNG',
+  './assets/faces/0275-displeased.PNG'
 ];
 
 self.addEventListener('install', event => {

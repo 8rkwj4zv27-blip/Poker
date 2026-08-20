@@ -752,27 +752,40 @@ function wireUI(){
    flicking between moods one at a time — steps() pop, no smooth easing, in
    keeping with the pixel language. Does nothing when the home screen is
    hidden or the tab is backgrounded; stays a static idle row under
-   reduced-motion. */
+   reduced-motion.
+
+   Decorative only — this is NOT the in-table mood system. There is no
+   faceMood/reaction-sequence/_faceLock state here, no poker events, no AI:
+   just a random pool of expressions cycling for showcase. Colour still has
+   to be correct though, so rendering goes through the exact same
+   renderFace(p, mood) the table uses (02-support-systems.js) rather than
+   re-deriving a filter locally — that's what makes each face's colour
+   automatically source-aware (red-batch legacy art vs the newer
+   purple-batch 0242-0275 pack) without this file needing to know or care
+   which batch a given mood key came from. */
+const HERO_LEGACY_MOODS = ['idle','smug','happy','think','shock','sly'];
 function initHeroFaces(){
   const wrap = $('hero-faces');
   if (!wrap || typeof FACE_ART === 'undefined') return;
+  // Full showcase pool: the original hand-picked legacy set plus every one
+  // of the newer expressions. FACE_ART_PURPLE_SOURCE (02-support-systems.js)
+  // already enumerates exactly those 34 keys for colour calibration —
+  // reused here rather than hand-typing a second list that could drift out
+  // of sync with it as expressions are added/renamed.
+  const HERO_MOODS = HERO_LEGACY_MOODS.concat([...FACE_ART_PURPLE_SOURCE]);
   // Four distinct colours from the same curated palette every opponent
   // seat draws from (see FACE_COLORS) — this row isn't tied to any
   // persona, so there's nothing persona-specific left to pick here.
   const colorIdxs = shuffle(FACE_COLORS.map((_,i)=>i)).slice(0,4);
-  const MOODS = ['idle','smug','happy','think','shock','sly'];
   const faces = colorIdxs.map(colorIdx=>{
     const cell = document.createElement('div');
     cell.className = 'hf';
-    const img = document.createElement('img');
-    img.className = 'face-img';
-    img.src = faceArtPath('idle');
-    img.style.filter = FACE_COLORS[colorIdx].filter;
-    img.alt = '';
-    img.draggable = false;
-    cell.appendChild(img);
+    // A minimal player-shaped object — renderFace only ever reads
+    // faceColorIdx off it, never anything gameplay-related.
+    const p = { faceColorIdx: colorIdx };
+    cell.innerHTML = renderFace(p, 'idle');
     wrap.appendChild(cell);
-    return {img, colorIdx, mood:'idle'};
+    return { cell, p, mood:'idle' };
   });
   if (!faces.length || motionOff()) return;
   setInterval(()=>{
@@ -780,11 +793,18 @@ function initHeroFaces(){
     const home = $('home');
     if (!home || home.classList.contains('hidden')) return;
     const f = faces[Math.floor(Math.random()*faces.length)];
-    let next = MOODS[Math.floor(Math.random()*MOODS.length)];
-    if (next === f.mood) next = (f.mood === 'idle') ? 'smug' : 'idle';
+    // Prefer a mood none of the OTHER hero faces are currently showing, so
+    // the row reads as varied rather than two portraits syncing up by
+    // chance — falls back to "just not what this face already shows" if
+    // that ever empties the pool (never happens at this pool size).
+    const shownElsewhere = new Set(faces.filter(o=>o!==f).map(o=>o.mood));
+    const pool = HERO_MOODS.filter(m=>m!==f.mood && !shownElsewhere.has(m));
+    const choices = pool.length ? pool : HERO_MOODS.filter(m=>m!==f.mood);
+    const next = choices[Math.floor(Math.random()*choices.length)];
     f.mood = next;
-    f.img.src = faceArtPath(next);
-    f.img.classList.remove('face-pop'); void f.img.offsetWidth; f.img.classList.add('face-pop');
+    f.cell.innerHTML = renderFace(f.p, next);
+    const img = f.cell.querySelector('.face');
+    if (img){ void img.offsetWidth; img.classList.add('face-pop'); }
   }, 1400);
 }
 

@@ -712,8 +712,27 @@ function measureInner(el, fallbackW, fallbackH){
   const h = el.clientHeight - parseFloat(cs.paddingTop||0)   - parseFloat(cs.paddingBottom||0);
   return { w: w>0 ? w : fallbackW, h: h>0 ? h : fallbackH };
 }
-const BANK_CHIP_DIAM = 21, BANK_OVERLAP_STEP = 8;   // matches #hud-tower .chip-disc (21px, margin-top:-13px)
-const POT_CHIP_DIAM  = 25, POT_OVERLAP_STEP  = 9;   // matches .chip-clump .chip-disc (25px, margin-top:-16px)
+// Stack density: the chip art is a face-on disc with essentially no
+// transparent padding (verified against the source PNGs — the drawn circle
+// fills its canvas edge to edge), so showing much of a covered chip's face
+// reads as chips floating above one another rather than pressed onto each
+// other.
+//
+// BANK_OVERLAP_STEP/POT_OVERLAP_STEP below are STACK-CAPACITY geometry
+// only — the assumed px cost of each additional chip when buildPileGrid()/
+// maxStackHeightFor() decide how many chips fit in one tower before a new
+// one starts (see bankPile()/potPile()). They deliberately no longer match
+// the real on-screen overlap: the actual VISUAL step — how much of each
+// chip is actually left showing — is controlled purely by the CSS
+// margin-top on `.chip-clump .chip-disc`/`#hud-tower .chip-disc`
+// (currently ~1px visible, i.e. margin-top ≈ -(diam-1)), independent of
+// these constants. Tightening the CSS alone shrinks each tower's real
+// rendered height without changing how many chips it's allowed to hold —
+// pushing the visual overlap further only ever needs a CSS change here,
+// never these two numbers, or every tower's chip-count/column layout
+// shifts along with it.
+const BANK_CHIP_DIAM = 21, BANK_OVERLAP_STEP = 4;   // capacity geometry only — see #hud-tower .chip-disc for the real visual step
+const POT_CHIP_DIAM  = 25, POT_OVERLAP_STEP  = 5;   // capacity geometry only — see .chip-clump .chip-disc for the real visual step
 /* Genuine maximum stack height (in chips) for a tower rendered inside an
    `innerHeight`-px-tall area: how many `chipHeight`-tall, `overlapStep`-
    px-apart chips actually fit between a `topInset`/`bottomInset` safety
