@@ -191,13 +191,24 @@ input[type=range]::-moz-range-thumb{
 .action-console{ perspective:900px; }
 .console-flip{
   position:relative; transform-style:preserve-3d;
-  transition:transform .2s steps(6,end);
+  transition:transform .24s cubic-bezier(.58,.04,.34,.98);
 }
 .console-flip.flipped{ transform:rotateX(180deg); }
 .console-face{ backface-visibility:hidden; -webkit-backface-visibility:hidden; }
 .console-face-award{ position:absolute; inset:0; transform:rotateX(180deg); pointer-events:none; }
 .console-flip.flipped .console-face-award{ pointer-events:auto; }
 .console-flip.flipped .console-face-actions{ pointer-events:none; }
+.action-console.results-pending .console-face-actions{
+  filter:brightness(.34) saturate(.38); transform:translateY(2px) scale(.994);
+  transition:filter 170ms steps(4,end),transform 170ms steps(4,end);
+}
+.action-console.mode-shift-in,.action-console.mode-shift-out{ animation:consoleModeSeat 280ms steps(7,end); }
+@keyframes consoleModeSeat{
+  0%{ transform:translateY(2px); filter:brightness(.58); }
+  38%{ transform:translateY(4px) scale(.994); filter:brightness(.46); }
+  72%{ transform:translateY(-1px) scale(1.002); filter:brightness(1.08); }
+  100%{ transform:none; filter:none; }
+}
 /* Same construction recipe as .btn-fold/.btn-check/.btn-raise (double
    box-shadow: colour-matched dark companion + ink outline, inset top
    highlight, inset bottom shade) — only the hue changes, via the theme's
@@ -229,8 +240,8 @@ input[type=range]::-moz-range-thumb{
   animation:nextTablePulse 2.2s steps(8,end) infinite;
 }
 @keyframes nextTablePulse{
-  0%,100%{ box-shadow:0 6px 0 color-mix(in srgb, var(--accent) 55%, black), 0 6px 0 2px var(--px-ink), inset 0 3px 0 rgba(255,255,255,.32), inset 0 -3px 0 rgba(0,0,0,.16), 0 0 0 0 transparent; }
-  50%{ box-shadow:0 6px 0 color-mix(in srgb, var(--accent) 55%, black), 0 6px 0 2px var(--px-ink), inset 0 3px 0 rgba(255,255,255,.32), inset 0 -3px 0 rgba(0,0,0,.16), 0 0 14px 2px color-mix(in srgb, var(--accent-bright) 55%, transparent); }
+  0%,100%{ filter:brightness(1); box-shadow:0 6px 0 color-mix(in srgb, var(--accent) 55%, black), 0 6px 0 2px var(--px-ink), inset 0 3px 0 rgba(255,255,255,.32), inset 0 -3px 0 rgba(0,0,0,.16); }
+  50%{ filter:brightness(1.1); box-shadow:0 6px 0 color-mix(in srgb, var(--accent) 55%, black), 0 6px 0 2px var(--px-ink), inset 0 3px 0 rgba(255,255,255,.4), inset 0 -3px 0 rgba(0,0,0,.16), inset 0 0 0 2px color-mix(in srgb,var(--accent-bright) 30%,transparent); }
 }
 .btn-award-console.next-table-mode.is-pressed{ animation:none; }
 [data-motion="off"] .btn-award-console.next-table-mode{ animation:none; }
@@ -596,4 +607,3 @@ body #home #home-settings{ background:var(--theme-case-raised); color:var(--ink)
   .btn-fold,.btn-check,.btn-call,.btn-raise,.btn-award-console{ min-height:50px; padding:10px 3px; }
 }
 [data-motion="off"] .crt-screen,[data-motion="off"] .crt-refresh,[data-motion="off"] .crt-cursor{ animation:none; }
-

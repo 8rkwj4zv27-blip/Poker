@@ -124,7 +124,7 @@
    clipped for the duration of a roll (see .stage-bay.stage-rolling below),
    so the bay itself never affects normal-play rendering. */
 .stage-bay{ position:relative; width:100%; max-width:560px; height:100%; overflow:visible; }
-.stage-bay.stage-rolling{ overflow:hidden; }
+.stage-bay.stage-rolling,.stage-bay.stage-moving{ overflow:hidden; }
 .felt{
   position:absolute; inset:0;
   border-radius:52px;
@@ -347,41 +347,82 @@
    the real #felt (unlock, roll-in, lock) plus a disposable cloned
    .stage-outgoing layer (roll-out only) — see rollStageTransition() for
    why the clone exists and how its ids are stripped. */
-.felt.stage-unlock{ animation:stageUnlock 200ms steps(5,end) both; }
-@keyframes stageUnlock{
-  0%{ transform:translateY(0); }
-  35%{ transform:translateY(2px); }
-  55%{ transform:translateY(-3px); }
-  100%{ transform:translateY(4px); }
+.stage-bay.stage-moving > .felt:not(.stage-outgoing){ z-index:4; }
+/* A dark, chunky drum edge behind the two stage faces. The faces almost
+   entirely cover it; only the moving seam exposes a narrow passing band. */
+.stage-machinery{
+  position:absolute; inset:0; z-index:2; pointer-events:none;
+  background:
+    repeating-linear-gradient(90deg,transparent 0 16px,rgba(232,184,58,.14) 16px 20px,transparent 20px 36px),
+    repeating-linear-gradient(0deg,#070706 0 9px,#15130e 9px 18px);
+  box-shadow:inset 0 18px 0 rgba(0,0,0,.72),inset 0 -18px 0 rgba(0,0,0,.8);
+  animation:stageMachineryPass var(--stage-roll-ms,840ms) steps(12,end) both;
 }
-.stage-bay.stage-unlock-flash{ animation:stageUnlockFlash 200ms steps(4,end); }
+@keyframes stageMachineryPass{
+  0%,18%,88%,100%{ filter:brightness(.38); }
+  43%,67%{ filter:brightness(.78); }
+}
+/* Fixed cabinet lips stay above both moving faces. Their top/bottom shadows
+   are the occluding boundary that makes the contents disappear into a bay
+   rather than slide across a webpage. */
+.stage-bay.stage-moving::after{
+  content:''; position:absolute; inset:0; z-index:20; pointer-events:none;
+  background:linear-gradient(180deg,
+    color-mix(in srgb,var(--panel) 75%,black) 0 7px,
+    rgba(0,0,0,.65) 7px 11px,
+    transparent 11px calc(100% - 13px),
+    rgba(0,0,0,.72) calc(100% - 13px) calc(100% - 8px),
+    color-mix(in srgb,var(--panel) 78%,black) calc(100% - 8px) 100%);
+  box-shadow:inset 0 2px 0 color-mix(in srgb,var(--accent) 20%,transparent),inset 0 -2px 0 rgba(0,0,0,.8);
+}
+.felt.stage-unlock{ animation:stageUnlock var(--stage-unlock-ms,230ms) steps(6,end) both; }
+@keyframes stageUnlock{
+  0%{ transform:translateY(0) scale(1); filter:brightness(1) saturate(1); }
+  28%{ transform:translateY(2px) scale(.998); filter:brightness(.92) saturate(.96); }
+  52%{ transform:translateY(-1px) scale(.994); }
+  100%{ transform:translateY(4px) scale(.982); filter:brightness(.68) saturate(.72); }
+}
+.felt.stage-recessed{ transform:translateY(4px) scale(.982); filter:brightness(.68) saturate(.72); }
+.stage-bay.stage-unlock-flash{ animation:stageUnlockFlash var(--stage-unlock-ms,230ms) steps(5,end); }
 @keyframes stageUnlockFlash{
   0%,100%{ box-shadow:none; }
-  20%,55%{ box-shadow:0 0 0 3px rgba(255,241,181,.55); }
+  18%,42%{ box-shadow:inset 0 0 0 2px rgba(255,241,181,.32); }
 }
-.stage-outgoing.stage-rolling-out{ animation:stageRollOut 680ms steps(10,end) both; will-change:transform; }
+.stage-outgoing.stage-rolling-out{ animation:stageRollOut var(--stage-roll-ms,840ms) both; will-change:transform,filter; transform-origin:50% 12%; }
 @keyframes stageRollOut{
-  0%{ transform:translateY(0); }
-  40%{ transform:translateY(38%); }
-  100%{ transform:translateY(calc(100% + 24px)); }
+  0%{ transform:translateY(4px) scale(.982,1); filter:brightness(.68) saturate(.72); animation-timing-function:cubic-bezier(.72,0,.9,.35); }
+  12%{ transform:translateY(7px) scale(.979,.992); filter:brightness(.62) saturate(.68); animation-timing-function:cubic-bezier(.16,.62,.24,1); }
+  68%{ transform:translateY(70%) scale(.955,.92); filter:brightness(.43) saturate(.5); animation-timing-function:cubic-bezier(.32,0,.7,1); }
+  100%{ transform:translateY(calc(108% + 24px)) scale(.92,.82); filter:brightness(.25) saturate(.3); }
 }
-.felt.stage-rolling-in{ animation:stageRollIn 680ms steps(10,end) both; will-change:transform; }
+.felt.stage-rolling-in{ animation:stageRollIn var(--stage-roll-ms,840ms) both; will-change:transform,filter; transform-origin:50% 88%; }
 @keyframes stageRollIn{
-  0%{ transform:translateY(calc(-100% - 24px)); }
-  60%{ transform:translateY(-38%); }
-  100%{ transform:translateY(0); }
+  0%{ transform:translateY(calc(-108% - 24px)) scale(.92,.82); filter:brightness(.25) saturate(.3); animation-timing-function:cubic-bezier(.64,0,.84,.38); }
+  13%{ transform:translateY(calc(-105% - 18px)) scale(.93,.84); filter:brightness(.3) saturate(.36); animation-timing-function:cubic-bezier(.18,.68,.25,1); }
+  70%{ transform:translateY(-25%) scale(.965,.95); filter:brightness(.64) saturate(.75); animation-timing-function:cubic-bezier(.2,.74,.22,1); }
+  92%{ transform:translateY(1px) scale(.989); filter:brightness(.84) saturate(.92); animation-timing-function:cubic-bezier(.25,0,.5,1); }
+  100%{ transform:translateY(3px) scale(.988); filter:brightness(.82) saturate(.9); }
 }
-.felt.stage-lock{ animation:stageLock 200ms steps(5,end) both; }
+.felt.stage-seated{ transform:translateY(3px) scale(.988); filter:brightness(.82) saturate(.9); }
+.felt.stage-lock{ animation:stageLock var(--stage-lock-ms,190ms) steps(6,end) both; }
 @keyframes stageLock{
-  0%{ transform:translateY(0); }
-  45%{ transform:translateY(6px); }
-  75%{ transform:translateY(-2px); }
-  100%{ transform:translateY(0); }
+  0%{ transform:translateY(3px) scale(.988); filter:brightness(.82) saturate(.9); }
+  40%{ transform:translateY(5px) scale(.994); filter:brightness(.92) saturate(.96); }
+  55%{ transform:translateY(-1px) scale(1.002); filter:brightness(1.08) saturate(1); }
+  76%{ transform:translateY(1px) scale(.999); filter:brightness(.98); }
+  100%{ transform:translateY(0) scale(1); filter:brightness(1) saturate(1); }
 }
-.stage-bay.stage-lock-flash{ animation:stageLockFlash 220ms steps(4,end); }
+.stage-bay.stage-lock-flash{ animation:stageLockFlash var(--stage-lock-ms,190ms) steps(5,end); }
 @keyframes stageLockFlash{
   0%,100%{ box-shadow:none; }
-  25%,50%{ box-shadow:0 0 0 3px var(--accent-bright); }
+  40%,58%{ box-shadow:inset 0 0 0 2px color-mix(in srgb,var(--accent-bright) 58%,transparent); }
+}
+.stage-bay.stage-lock-impact{ animation:stageCabinetImpact 120ms steps(4,end); }
+@keyframes stageCabinetImpact{
+  0%{ translate:0 0; }
+  25%{ translate:0 2px; }
+  52%{ translate:0 -1px; }
+  100%{ translate:0 0; }
 }
 
 /* Results dashboards — built from the same hard-edged instrument language as
@@ -412,7 +453,6 @@
 .result-head-win{
   display:flex; align-items:baseline; justify-content:center; gap:8px; padding:10px 7px 8px;
   background:var(--accent); color:var(--accent-ink); box-shadow:inset 0 -4px 0 rgba(0,0,0,.2),0 3px 0 var(--px-ink);
-  animation:resultHeadHit 520ms steps(6,end) both;
 }
 .result-head-win span{ font-family:var(--font-hdr); font-size:10px; letter-spacing:.08em; }
 .result-head-win strong{ font-family:var(--font-hdr); font-size:20px; letter-spacing:.1em; }
@@ -464,16 +504,47 @@
 .felt.results-mode .pot-area,
 .felt.results-mode .board{ display:none; }
 .stage-results{
-  position:absolute; inset:0; display:flex; flex-direction:column; justify-content:space-evenly;
-  padding:14px 14px calc(14px + env(safe-area-inset-bottom,0px));
+  position:absolute; inset:0; display:flex; flex-direction:column; justify-content:center; gap:8px;
+  padding:12px 14px calc(12px + env(safe-area-inset-bottom,0px));
   overflow-y:auto; overscroll-behavior:contain;
 }
-.stage-results-head{ flex-shrink:0; }
+.stage-results-head{ flex-shrink:0; opacity:.32; filter:brightness(.42) saturate(.4); }
+.stage-results.wake-head .stage-results-head{ animation:resultHeadHit 420ms steps(6,end) both; opacity:1; filter:none; }
+
+/* Results stay electrically dormant while the face itself is travelling.
+   The wake classes are added only after the heavy stage lock completes. */
+.stage-score-hero,
+.stage-results [data-result-beat]{
+  opacity:.12; transform:translateY(3px); filter:brightness(.38) saturate(.45);
+}
+.stage-results.wake-score .stage-score-hero,
+.stage-results.wake-instruments [data-result-beat="instruments"],
+.stage-results.wake-recap [data-result-beat="recap"],
+.stage-results.wake-trophy [data-result-beat="trophy"],
+.stage-results.wake-progress [data-result-beat="progress"]{
+  opacity:1; transform:none; filter:none;
+  transition:opacity 130ms steps(3,end),transform 150ms steps(4,end),filter 150ms steps(4,end);
+}
+
+/* The one major table result: a mechanical counter, with the persistent
+   run total as its small carry-forward legend rather than another panel. */
+.stage-score-hero{
+  flex-shrink:0; min-height:58px; padding:7px 10px 8px;
+  display:grid; grid-template-columns:auto 1fr; grid-template-rows:auto auto; align-items:center; gap:3px 9px;
+  border-color:color-mix(in srgb,var(--accent) 68%,var(--px-ink));
+  box-shadow:inset 4px 0 0 var(--accent),inset 0 3px 0 rgba(0,0,0,.48),0 2px 0 rgba(0,0,0,.4);
+}
+.stage-score-hero .stage-instrument-label{ grid-column:1; grid-row:1; align-self:end; margin:0; }
+.stage-score-readout{ grid-column:2; grid-row:1 / span 2; justify-self:end; justify-content:flex-end; flex-wrap:wrap; }
+.stage-score-readout .jp-cell{ height:28px; min-width:16px; font-size:13px; }
+.stage-score-carry{
+  grid-column:1; grid-row:2; color:var(--pc-display-dim); font-family:var(--font-hdr); font-size:6px; letter-spacing:.06em;
+}
 
 /* BANKROLL + K.O.s — the two primary machine instruments, side by side in
    one recessed bay. */
 .stage-results-instruments{
-  flex-shrink:0; display:grid; grid-template-columns:1.35fr 1fr; gap:8px; margin-top:10px;
+  flex-shrink:0; display:grid; grid-template-columns:1.35fr 1fr; gap:8px;
 }
 .stage-instrument{
   min-width:0; padding:9px 8px 10px; display:flex; flex-direction:column; align-items:center; gap:3px;
@@ -498,14 +569,17 @@
   background:var(--pc-lamp-amber);
   box-shadow:0 2px 0 #100807, 0 0 7px rgba(242,180,49,.4), inset 1px 1px 0 #FFE49B;
 }
+.stage-results:not(.wake-instruments) .stage-ko-slot.lit{
+  background:var(--pc-lamp-off); box-shadow:0 2px 0 #100807,inset 1px 1px 0 rgba(255,255,255,.12);
+}
 .stage-ko-readout{ margin-top:6px; font-family:var(--font-hdr); font-size:11px; color:var(--pc-display-ink); }
 
 /* Table recap — small paired readouts, plus an optional bonus lamp that
    only ever appears when the underlying result genuinely earns it. */
 .stage-results-recap{
-  flex-shrink:0; display:flex; flex-wrap:wrap; gap:8px; margin-top:10px;
+  flex-shrink:0; display:flex; flex-wrap:wrap; gap:6px;
 }
-.stage-recap-cell{ flex:1 1 0; min-width:84px; padding:7px 8px 8px; text-align:center; }
+.stage-recap-cell{ flex:1 1 0; min-width:78px; padding:7px 6px 8px; text-align:center; }
 .stage-recap-cell .stage-instrument-label{ align-self:center; }
 .stage-recap-value{ display:block; margin-top:4px; font-family:var(--font-hdr); font-size:13px; color:var(--pc-display-ink); }
 .stage-recap-lamp{
@@ -518,7 +592,7 @@
 /* BEST HAND trophy case — pure normal flow (label, then cards, then name,
    then subtype), stacked and centred, deliberately NOT the dense
    absolute-positioned .result-best layout the run-report grid uses. */
-.stage-trophy{ flex-shrink:0; margin-top:10px; display:flex; flex-direction:column; align-items:center; gap:7px; padding:12px 10px; }
+.stage-trophy{ flex-shrink:0; display:flex; flex-direction:column; align-items:center; gap:6px; padding:9px 10px; }
 .stage-trophy-label{
   align-self:center;
   font-family:var(--font-hdr); font-size:7px; font-weight:400; letter-spacing:.09em;
@@ -532,6 +606,15 @@
 .stage-trophy-name{ font-family:var(--font-hdr); font-size:14px; letter-spacing:.04em; color:var(--accent-bright); text-align:center; }
 .stage-trophy-desc{ font-size:10px; color:var(--ink-dim); text-align:center; }
 .stage-trophy-empty{ font-family:var(--font-hdr); font-size:8px; color:var(--ink-faint); letter-spacing:.04em; }
+.stage-run-progress{
+  flex-shrink:0; min-height:34px; padding:6px 8px; display:grid; grid-template-columns:auto 1fr auto; align-items:center; gap:8px;
+  border-color:color-mix(in srgb,var(--accent) 42%,var(--px-ink));
+}
+.stage-run-progress span,.stage-run-progress em{
+  font-family:var(--font-hdr); font-size:6px; font-style:normal; letter-spacing:.06em; color:var(--ink-dim);
+}
+.stage-run-progress strong{ justify-self:center; font-family:var(--font-hdr); font-size:8px; color:var(--pc-display-ink); }
+.stage-run-progress em{ justify-self:end; color:var(--accent-bright); }
 
 /* The failed run drains the table/action machinery only. The report is a
    sibling, so it stays fully saturated above the recognisable dead scene. */
@@ -577,7 +660,9 @@
 [data-motion="off"] .table-round-callout,
 [data-motion="off"] .felt.stage-unlock,[data-motion="off"] .felt.stage-rolling-in,[data-motion="off"] .felt.stage-lock,
 [data-motion="off"] .stage-outgoing.stage-rolling-out,
-[data-motion="off"] .stage-bay.stage-unlock-flash,[data-motion="off"] .stage-bay.stage-lock-flash{ animation-duration:1ms; animation-delay:0ms; }
+[data-motion="off"] .stage-machinery,
+[data-motion="off"] .stage-bay.stage-unlock-flash,[data-motion="off"] .stage-bay.stage-lock-flash,[data-motion="off"] .stage-bay.stage-lock-impact{ animation-duration:1ms; animation-delay:0ms; }
+[data-motion="off"] .stage-results-head,[data-motion="off"] .stage-score-hero,[data-motion="off"] .stage-results [data-result-beat]{ transition:none!important; animation:none!important; }
 
 /* ---- flying deal ghost: a body-appended card-back that travels from the
    dealer deck to its destination, mirroring the .fly-chip technique ---- */
@@ -1348,4 +1433,3 @@
 .seat.dead .avatar.has-face, .seat.thinking .avatar.has-face{ animation:none; }
 .seat .avatar.has-face{ background:var(--seat-bg); border-color:var(--px-ink); padding:0; overflow:hidden; }
 .seat.active .avatar.has-face{ border-color:var(--accent); }
-

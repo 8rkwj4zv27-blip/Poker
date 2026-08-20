@@ -54,8 +54,10 @@ const ELIMINATION_CONFIG = {
   multiKoPopGapMin: 80, multiKoPopGapMax: 140,
 
   // brief hold between the final K.O.'s defeated card settling and the
-  // TABLE CLEARED banner appearing — never cut away mid-payoff
-  clearedBeatMs: 900,
+  // TABLE CLEARED machinery engaging — long enough to register the clear,
+  // but short enough that the already-complete reward sequence does not
+  // acquire a second, sluggish pause of its own.
+  clearedBeatMs: 460,
 };
 
 /* ---- Single Player table size ----
@@ -79,10 +81,10 @@ function normalizeOpponentCount(n){
 /* Endless single-player run progression. Gameplay values remain in
    ELIMINATION_CONFIG; this object only owns round presentation/progression. */
 const ELIMINATION_RUN_CONFIG = {
-  seatStaggerMs: 90,
-  seatArrivalMs: 680,
-  announcementMs: 1200,
-  readyBeatMs: 220,
+  seatStaggerMs: 55,
+  seatArrivalMs: 500,
+  announcementMs: 760,
+  readyBeatMs: 110,
 };
 
 /* Mechanical stage-roll transition (table-cleared <-> results <-> next
@@ -90,11 +92,14 @@ const ELIMINATION_RUN_CONFIG = {
    being replaced by the next stage rolling in/down from above, as one
    rigid unit. See rollStageTransition() in 06-presentation.js. */
 const STAGE_ROLL_CONFIG = {
-  breatheMs: 260,   // brief clean-table pause after cards finish returning, before the unlock click
-  unlockMs: 200,    // latch-release micro-jolt on the outgoing stage
-  rollMs: 680,      // outgoing/incoming stages travelling, concurrently
-  lockMs: 220,      // overshoot + settle as the incoming stage seats into the bay
-  consoleFlipBeatMs: 180, // short pause after the stage locks, before the action console flips mode
+  breatheMs: 300,   // clean-table acknowledgement after cards return, before the latch releases
+  unlockMs: 230,    // face recedes/darkens and remains physically disengaged
+  mechanicalPauseMs: 150, // separates the release from the drum overcoming its weight
+  rollMs: 840,      // main table -> results: deliberately weighty full drum travel
+  nextRollMs: 760,  // player-triggered results -> next table: same machine, slightly brisker
+  lockMs: 190,      // final few pixels into the stop, with a restrained cabinet reaction
+  lockImpactMs: 76, // exact visual seating beat for the heavy CLACK/haptic
+  consoleFlipBeatMs: 120, // final breath before the local action panel changes mode
 };
 
 /* ============================================================
@@ -975,6 +980,7 @@ function makeEliminationRun(opponentCount){
     tableKOs:0, tableHands:0, tableHandsWon:0,
     tableShowdownsPlayed:0, tableShowdownsWon:0, tableAllInsPlayed:0, tableAllInsWon:0,
     tableBiggestPotWon:0, tableHighestStack:ELIMINATION_CONFIG.startingStack, tableBestHand:null,
+    tableScoreStart:0,
     arcade:makeArcadeRunState()
   };
 }
@@ -1008,4 +1014,3 @@ let DEV_MODE = new URLSearchParams(location.search).has('dev') || !!settings.dev
 // timing, regardless of this flag. Only meaningful when DEV_MODE is true.
 let FAST_DEV = false;
 const FAST_DEV_TIME_MULT = 0.08;
-

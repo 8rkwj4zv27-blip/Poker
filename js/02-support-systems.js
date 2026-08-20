@@ -1204,15 +1204,23 @@ const Sound = (function(){
   function stageRollSound(durationMs){
     const c = ac(); if (!c) return;
     const durMs = Math.max(120, durationMs||600);
-    const tickGapMs = 75; // ~13 ticks/sec — a slow, chunky ratchet, not a whir
-    const count = Math.max(2, Math.floor(durMs / tickGapMs));
+    // One authored ratchet rhythm follows the drum's visible inertia:
+    // reluctant widely-spaced teeth, a tightening run through the middle,
+    // then opening gaps as the face brakes toward its stop. Keeping these
+    // as individual impacts (rather than a loop) makes every tick belong to
+    // an actual point in the travel curve.
+    const beats = [0.035,0.17,0.285,0.385,0.47,0.545,0.61,0.67,0.725,0.78,0.845,0.925];
     withVoiceCap(durMs+120, ()=>{
-      for (let i=0;i<count;i++){
-        const atMs = i*tickGapMs * (0.94+Math.random()*0.12);
-        if (atMs >= durMs) break;
-        const j = 0.9+Math.random()*0.2;
-        setTimeout(()=>noise(0.03+Math.random()*0.012, 0.045*j, { filterType:'lowpass', freq:340*j, freqSweepTo:150*j, decayPow:2.4 }), atMs);
-      }
+      beats.forEach((beat,i)=>{
+        const atMs = beat*durMs;
+        const middle = 1-Math.abs((i/(beats.length-1))*2-1);
+        setTimeout(()=>{
+          const j = 0.92+Math.random()*0.16;
+          noise(0.026+middle*0.012+Math.random()*0.007, (0.038+middle*0.012)*j, {
+            filterType:'lowpass', freq:(310+middle*70)*j, freqSweepTo:(125+middle*35)*j, decayPow:2.5
+          });
+        }, atMs);
+      });
     });
   }
   function stageLockSound(){
@@ -1220,6 +1228,13 @@ const Sound = (function(){
       noise(0.09, 0.13, { filterType:'lowpass', freq:220, freqSweepTo:65, decayPow:1.7 });
       blip(130, 0.12, 'square', 0.07);
       blip(78, 0.14, 'triangle', 0.05, 0.045);
+    });
+  }
+  function consoleShiftSound(){
+    withVoiceCap(180, ()=>{
+      noise(0.025, 0.035, { filterType:'bandpass', freq:1250, freqSweepTo:720, Q:1.2, decayPow:2.8 });
+      blip(420, 0.055, 'square', 0.025);
+      blip(180, 0.07, 'triangle', 0.022, 0.045);
     });
   }
 
@@ -1379,11 +1394,11 @@ const Sound = (function(){
     hatchClose(){ if (this.sfxV1Enabled) hatchCloseSound(); },
     stageUnlock(){ if (this.sfxV1Enabled) stageUnlockSound(); },
     stageRoll(durationMs){ if (this.sfxV1Enabled) stageRollSound(durationMs); },
-    stageLock(){ if (this.sfxV1Enabled) stageLockSound(); }
+    stageLock(){ if (this.sfxV1Enabled) stageLockSound(); },
+    consoleShift(){ if (this.sfxV1Enabled) consoleShiftSound(); }
   };
 })();
 function haptic(pattern){
   if (!settings.haptics) return;
   try{ if (navigator.vibrate) navigator.vibrate(pattern); } catch(e){}
 }
-

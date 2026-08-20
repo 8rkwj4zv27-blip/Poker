@@ -1258,7 +1258,13 @@ function recordPot(amount){
 
 async function finishHand(outcome){
   const g = game;
-  $('actions-row').classList.add('hidden');
+  // In a Single Player run the physical controls remain in their bay and
+  // visibly lose power while the payout/K.O. sequence resolves. Other
+  // modes keep their existing between-hand behaviour.
+  if (g.mode==='elimination' && g.run && g.run.active){
+    $('actions-row').classList.remove('hidden');
+    $('actions-row').classList.add('disabled');
+  } else $('actions-row').classList.add('hidden');
   closeRaisePanel();
   clearHumanReadouts();
   showReview(outcome);
@@ -1459,14 +1465,14 @@ function bestHandResultHTML(best){
    because nothing is pulled out of flow. */
 function tableBestHandTrophyHTML(best){
   if (!best){
-    return '<div class="stage-trophy pc-recess">'+
+    return '<div class="stage-trophy pc-recess" data-result-beat="trophy">'+
       '<div class="stage-trophy-label">Best hand</div>'+
       '<div class="stage-trophy-empty">No showdown hand recorded</div></div>';
   }
   const split=splitHandText(best.result.cat,best.name);
   const displayCards=arrangeHandForDisplay(best.result.cat,best.cards);
   const cards=displayCards.map(c=>'<div class="'+cardClass(false,c,true)+'" aria-label="'+esc(cardLabel(false,c))+'">'+cardInner(c)+'</div>').join('');
-  return '<div class="stage-trophy pc-recess">'+
+  return '<div class="stage-trophy pc-recess" data-result-beat="trophy">'+
     '<div class="stage-trophy-label">Best hand</div>'+
     '<div class="stage-trophy-cards">'+cards+'</div>'+
     '<div class="stage-trophy-name">'+esc(split.category.toUpperCase())+'</div>'+
@@ -1492,27 +1498,63 @@ function tableBestHandTrophyHTML(best){
    never nests a second .stage-results/.result-card box inside itself. */
 function tableClearedHTML(g){
   const r=g.run;
+  const a=r.arcade||makeArcadeRunState();
   const opponents = runOpponentCount(g);
+  const trackedStart=Number.isFinite(r.tableScoreStart) ? r.tableScoreStart : null;
+  const scoreLabel=trackedStart==null ? 'Run score' : 'Table score';
   const koLamps = Array.from({length:opponents}, (_,i)=>
     '<span class="stage-ko-slot'+(i<r.tableKOs?' lit':'')+'"></span>').join('');
   const perfect = r.tableKOs===opponents && r.tableShowdownsPlayed>0 && r.tableShowdownsWon===r.tableShowdownsPlayed;
   return '<header class="result-head result-head-win stage-results-head"><span>TABLE '+r.tableNumber+'</span><strong>CLEARED</strong></header>'+
-    '<div class="stage-results-instruments">'+
-      '<div class="stage-instrument pc-recess"><span class="stage-instrument-label">Bankroll</span>'+
+    '<div class="stage-score-hero pc-recess">'+
+      '<span class="stage-instrument-label">'+scoreLabel+'</span>'+
+      '<div class="amt-readout stage-score-readout" id="stage-results-score"></div>'+
+      '<span class="stage-score-carry">RUN TOTAL&nbsp; '+formatArcadeScore(a.score)+'</span></div>'+
+    '<div class="stage-results-instruments" data-result-beat="instruments">'+
+      '<div class="stage-instrument pc-recess"><span class="stage-instrument-label">Finish stack</span>'+
         '<div class="amt-readout" id="stage-results-stack"></div></div>'+
       '<div class="stage-instrument pc-recess"><span class="stage-instrument-label">K.O.s</span>'+
         '<div class="stage-ko-lamps">'+koLamps+'</div>'+
         '<div class="stage-ko-readout tabular">'+r.tableKOs+' / '+opponents+'</div></div>'+
     '</div>'+
-    '<div class="stage-results-recap">'+
+    '<div class="stage-results-recap" data-result-beat="recap">'+
       '<div class="stage-recap-cell pc-recess"><span class="stage-instrument-label">Hands won</span>'+
         '<strong class="stage-recap-value tabular">'+ratioResult(r.tableHandsWon,r.tableHands)+'</strong></div>'+
+      '<div class="stage-recap-cell pc-recess"><span class="stage-instrument-label">Showdowns</span>'+
+        '<strong class="stage-recap-value tabular">'+ratioResult(r.tableShowdownsWon,r.tableShowdownsPlayed)+'</strong></div>'+
       '<div class="stage-recap-cell pc-recess"><span class="stage-instrument-label">Biggest pot</span>'+
         '<strong class="stage-recap-value tabular">'+moneyResult(r.tableBiggestPotWon)+'</strong></div>'+
       (perfect ? '<div class="stage-recap-lamp pc-recess"><span class="pc-lamp is-amber"></span>'+
         '<span class="stage-recap-lamp-text">Perfect table<br>never lost a showdown</span></div>' : '')+
     '</div>'+
-    tableBestHandTrophyHTML(r.tableBestHand);
+    tableBestHandTrophyHTML(r.tableBestHand)+
+    '<div class="stage-run-progress pc-recess" data-result-beat="progress">'+
+      '<span>RUN PROGRESS</span><strong class="tabular">'+r.tablesCleared+' CLEARED</strong>'+
+      '<em>NEXT&nbsp; TABLE '+(r.tableNumber+1)+'</em></div>';
+}
+async function wakeTableResults(g){
+  const el=$('result-card');
+  if (!el || game!==g) return false;
+  if (motionOff()){
+    el.classList.add('wake-head','wake-score','wake-instruments','wake-recap','wake-trophy','wake-progress');
+    return true;
+  }
+  const beat=async (cls,ms)=>{
+    if (game!==g || !el.isConnected) return false;
+    el.classList.add(cls);
+    await sleep(ms);
+    return game===g && el.isConnected;
+  };
+  if (!await beat('wake-head',110)) return false;
+  el.classList.add('wake-score');
+  revealResultAmount($('stage-results-score'),true);
+  await sleep(180);
+  if (game!==g || !el.isConnected) return false;
+  if (!await beat('wake-instruments',170)) return false;
+  revealResultAmount($('stage-results-stack'),false);
+  if (!await beat('wake-recap',150)) return false;
+  if (!await beat('wake-trophy',140)) return false;
+  return beat('wake-progress',110);
 }
 function runOverHTML(g){
   const r=g.run;
@@ -1552,7 +1594,9 @@ async function showTableCleared(g){
   hideResultCard();
   g.run.tablesCleared = Math.max(g.run.tablesCleared, g.run.tableNumber);
   setBanner('<b>Table cleared.</b> Every opponent is eliminated.');
-  $('actions-row').classList.add('hidden');
+  $('actions-row').classList.remove('hidden');
+  $('actions-row').classList.add('disabled');
+  if ($('action-console')) $('action-console').classList.add('results-pending');
   $('btn-next-hand').classList.add('hidden');
   $('btn-new-table').classList.add('hidden');
 
@@ -1582,9 +1626,13 @@ async function showTableCleared(g){
     el.innerHTML = tableClearedHTML(g);
     felt.appendChild(el);
     buildResultAmount(document.getElementById('stage-results-stack'), human ? human.chips : 0);
+    const scoreStart=Number.isFinite(g.run.tableScoreStart) ? g.run.tableScoreStart : null;
+    const tableScore=scoreStart==null ? g.run.arcade.score : Math.max(0,g.run.arcade.score-scoreStart);
+    buildResultCounter(document.getElementById('stage-results-score'),tableScore,'+');
   });
 
   render();
+  await wakeTableResults(g);
 
   // Only once the stage has genuinely locked does the action console
   // change mode — never expose NEXT TABLE (or leave FOLD/CHECK/RAISE
@@ -2015,6 +2063,7 @@ function resetForNextRunTable(g){
   g.run.tableBiggestPotWon = 0;
   g.run.tableHighestStack = ELIMINATION_CONFIG.startingStack;
   g.run.tableBestHand = null;
+  g.run.tableScoreStart = g.run.arcade ? g.run.arcade.score : 0;
   g.startingStack = ELIMINATION_CONFIG.startingStack;
   g.smallBlind = ELIMINATION_CONFIG.smallBlind;
   g.bigBlind = ELIMINATION_CONFIG.bigBlind;
@@ -2136,7 +2185,7 @@ async function beginNextRunTable(){
   // tap can't land — combined with the _transitioning guard above, this
   // can't re-enter mid-transition either way.
   exitResultsConsole();
-  hideResultCard();
+  await sleep(motionOff() ? 0 : 120);
 
   // Defensive no-op in the normal path — everything was already mucked
   // before the results stage rolled in (see showTableCleared). Kept so any
@@ -2165,7 +2214,7 @@ async function beginNextRunTable(){
     hideReview();
     setBanner('Preparing Table '+g.run.tableNumber+'…');
     if ($('table-meta')) $('table-meta').textContent = 'Preparing Table '+g.run.tableNumber;
-  });
+  },{brisk:true});
 
   // The dashboard only wakes once the fresh stage has actually locked in —
   // never while it's still moving. Actual poker controls (FOLD/CHECK/RAISE
@@ -2292,4 +2341,3 @@ async function humanAct(action, amount){
   bannerOverride = null;
   continueAction();
 }
-

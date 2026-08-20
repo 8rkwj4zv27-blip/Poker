@@ -1250,56 +1250,97 @@ async function muckCards(){
    Callers are only ever expected to run this while the stage is otherwise
    idle (no live hand in progress) — populateFn should leave #felt in
    whatever state (poker table or results) is meant to be current. */
-async function rollStageTransition(populateFn){
+async function rollStageTransition(populateFn, options){
   const felt = $('felt'), bay = $('stage-bay');
   if (!felt || !bay){ populateFn(felt); return; }
+  const opts = options || {};
+  const rollMs = opts.brisk ? STAGE_ROLL_CONFIG.nextRollMs : STAGE_ROLL_CONFIG.rollMs;
+  let clone = null, machinery = null;
+
+  const clearTransitionState = ()=>{
+    [felt, bay].forEach(el=>el.getAnimations().forEach(a=>a.cancel()));
+    if (clone) clone.remove();
+    if (machinery) machinery.remove();
+    bay.querySelectorAll('.stage-outgoing,.stage-machinery').forEach(el=>el.remove());
+    felt.classList.remove('stage-unlock','stage-recessed','stage-rolling-in','stage-seated','stage-lock');
+    bay.classList.remove('stage-moving','stage-unlock-flash','stage-rolling','stage-lock-flash','stage-lock-impact');
+  };
 
   // Resilience: a resumed-from-background tab shouldn't inherit a
   // half-played animation from an interrupted prior transition.
-  [felt, bay].forEach(el=>el.getAnimations().forEach(a=>a.cancel()));
+  clearTransitionState();
+  bay.style.setProperty('--stage-unlock-ms',STAGE_ROLL_CONFIG.unlockMs+'ms');
+  bay.style.setProperty('--stage-roll-ms',rollMs+'ms');
+  bay.style.setProperty('--stage-lock-ms',STAGE_ROLL_CONFIG.lockMs+'ms');
 
-  // 1. Unlock — the outgoing stage releases its latch before it moves.
-  felt.classList.add('stage-unlock');
-  bay.classList.add('stage-unlock-flash');
-  Sound.stageUnlock();
-  await waitForRunAnimations([felt, bay], STAGE_ROLL_CONFIG.unlockMs);
-  felt.classList.remove('stage-unlock');
-  bay.classList.remove('stage-unlock-flash');
+  try{
+    // 1. Unlock — release, recede and remain dark in the back position.
+    // stage-recessed exactly matches stageUnlock's final frame, so removing
+    // the animation never produces the old one-frame snap back to the front.
+    bay.classList.add('stage-moving','stage-unlock-flash');
+    felt.classList.add('stage-unlock');
+    Sound.stageUnlock();
+    await waitForRunAnimations([felt, bay], STAGE_ROLL_CONFIG.unlockMs);
+    felt.classList.add('stage-recessed');
+    felt.classList.remove('stage-unlock');
+    bay.classList.remove('stage-unlock-flash');
 
-  // 2. Snapshot the now-settled outgoing content as a disposable ghost.
-  const clone = felt.cloneNode(true);
-  clone.removeAttribute('id');
-  clone.querySelectorAll('[id]').forEach(node=>node.removeAttribute('id'));
-  clone.setAttribute('aria-hidden', 'true');
-  // Preserve felt's own current skin (e.g. results-mode) — only append the
-  // outgoing marker, don't replace it, or a themed stage would visually
-  // revert to plain felt while rolling away.
-  clone.className = felt.className;
-  clone.classList.add('stage-outgoing');
-  bay.insertBefore(clone, felt);
+    // 2. A dead-still pawl gap makes the subsequent travel feel like a
+    // large mechanism overcoming weight rather than a continuous UI tween.
+    await sleep(motionOff() ? 0 : STAGE_ROLL_CONFIG.mechanicalPauseMs);
 
-  // 3. Swap the REAL felt's content instantly (this is the actual state
-  // change — the roll below just sells it), parked above ready to enter.
-  felt.className = 'felt';
-  populateFn(felt);
+    // 3. Snapshot the settled outgoing content as a disposable ghost.
+    clone = felt.cloneNode(true);
+    clone.removeAttribute('id');
+    clone.querySelectorAll('[id]').forEach(node=>node.removeAttribute('id'));
+    clone.setAttribute('aria-hidden', 'true');
+    clone.className = felt.className;
+    clone.classList.add('stage-outgoing');
+    bay.insertBefore(clone, felt);
 
-  // 4. Roll — outgoing clone falls away as the real felt arrives, concurrently.
-  bay.classList.add('stage-rolling');
-  clone.classList.add('stage-rolling-out');
-  felt.classList.add('stage-rolling-in');
-  Sound.stageRoll(STAGE_ROLL_CONFIG.rollMs);
-  await waitForRunAnimations([clone, felt], STAGE_ROLL_CONFIG.rollMs);
-  clone.remove();
-  felt.classList.remove('stage-rolling-in');
-  bay.classList.remove('stage-rolling');
+    // A restrained dark drum band lives behind both faces. It is normally
+    // occluded, only flashing through the narrow seam as the two curved
+    // surfaces pass the cabinet lip.
+    machinery = document.createElement('div');
+    machinery.className = 'stage-machinery';
+    machinery.setAttribute('aria-hidden','true');
+    bay.insertBefore(machinery, felt);
 
-  // 5. Lock — the incoming stage seats into the bay.
-  felt.classList.add('stage-lock');
-  bay.classList.add('stage-lock-flash');
-  Sound.stageLock();
-  await waitForRunAnimations([felt, bay], STAGE_ROLL_CONFIG.lockMs);
-  felt.classList.remove('stage-lock');
-  bay.classList.remove('stage-lock-flash');
+    // 4. Swap the authoritative felt in place, parked above and unpowered.
+    felt.className = 'felt';
+    populateFn(felt);
+
+    // 5. Roll — both faces follow the same inertia curve while the ratchet
+    // sound uses authored beats tied to this exact duration.
+    bay.classList.add('stage-rolling');
+    clone.classList.add('stage-rolling-out');
+    felt.classList.add('stage-rolling-in');
+    Sound.stageRoll(rollMs);
+    await waitForRunAnimations([clone, felt], rollMs);
+    clone.remove(); clone = null;
+    felt.classList.add('stage-seated');
+    felt.classList.remove('stage-rolling-in');
+    bay.classList.remove('stage-rolling');
+    machinery.remove(); machinery = null;
+
+    // 6. Lock — the CLACK lands at the keyframe where the last few pixels
+    // hit the stop, not at the beginning of the seating animation.
+    felt.classList.add('stage-lock');
+    bay.classList.add('stage-lock-flash');
+    const lockWait = waitForRunAnimations([felt, bay], STAGE_ROLL_CONFIG.lockMs);
+    await sleep(motionOff() ? 0 : STAGE_ROLL_CONFIG.lockImpactMs);
+    bay.classList.add('stage-lock-impact');
+    Sound.stageLock();
+    haptic([8,18,28]);
+    await lockWait;
+    felt.classList.remove('stage-lock','stage-seated');
+    bay.classList.remove('stage-lock-flash','stage-lock-impact','stage-moving');
+  } finally {
+    // DEV shortcuts, backgrounding and thrown populate callbacks may all
+    // interrupt a presentation. Never leave a clone, mask or transform in
+    // control of the authoritative table after the promise settles.
+    clearTransitionState();
+  }
 }
 
 function initSeats(){
@@ -3875,13 +3916,13 @@ function buildResultHTML(potResults){
    ($1,449), not a stat delta. Only the '$'/',' symbol cells are excluded
    from the digit tick reveal (see revealResultAmount, which only ever
    selects .jp-digit) — same convention #jackpot's own '$' cell follows. */
-function buildResultAmount(container, amount){
+function buildResultCounter(container, amount, prefix){
   if (!container) return;
   container.innerHTML = '';
   const sym = document.createElement('span');
   sym.className = 'jp-cell jp-sym';
-  sym.textContent = '$';
-  container.appendChild(sym);
+  sym.textContent = prefix || '';
+  if (prefix) container.appendChild(sym);
   Array.from(Math.max(0, amount|0).toLocaleString()).forEach(ch=>{
     const c = document.createElement('span');
     if (ch === ','){
@@ -3893,6 +3934,9 @@ function buildResultAmount(container, amount){
     }
     container.appendChild(c);
   });
+}
+function buildResultAmount(container, amount){
+  buildResultCounter(container, amount, '$');
 }
 /* Staggered per-digit "tick" reveal, reusing jpTick as-is (no new
    keyframes). The digits already show their correct final value the
@@ -4019,16 +4063,30 @@ function powerUpDashboard(){
    else resets those between tables. */
 function enterResultsConsole(onNextTable){
   const btn = $('btn-award-pot-console');
+  const row = $('actions-row'), consoleEl = $('action-console');
+  if (row){ row.classList.remove('hidden'); row.classList.add('disabled'); }
   if (btn){
     btn.classList.add('next-table-mode');
     btn.onclick = ()=>{ Sound.buttonRelease('award'); onNextTable(); };
   }
+  if (consoleEl){
+    consoleEl.classList.remove('results-pending','mode-shift-out');
+    consoleEl.classList.add('mode-shift-in');
+  }
+  Sound.consoleShift();
   showAwardConsole('NEXT TABLE');
+  setTimeout(()=>{ if (consoleEl) consoleEl.classList.remove('mode-shift-in'); },280);
 }
 function exitResultsConsole(){
-  const btn = $('btn-award-pot-console');
-  if (btn){ btn.classList.remove('next-table-mode'); btn.onclick = null; }
+  const btn = $('btn-award-pot-console'), consoleEl = $('action-console');
+  if (btn){ btn.classList.remove('next-table-mode'); btn.onclick = null; btn.textContent = 'Award Pot'; }
+  if (consoleEl){
+    consoleEl.classList.remove('mode-shift-in','results-pending');
+    consoleEl.classList.add('mode-shift-out');
+  }
+  Sound.consoleShift();
   hideAwardConsole();
+  setTimeout(()=>{ if (consoleEl) consoleEl.classList.remove('mode-shift-out'); },280);
 }
 /* Resolves once the player presses the bottom console's own AWARD POT
    face — the literal "wait as long as the player wants" mechanism. The
@@ -4156,5 +4214,3 @@ async function runShowdownAwardSequence(potResults, contenders){
 
   await finishHand(outcome);
 }
-
-
