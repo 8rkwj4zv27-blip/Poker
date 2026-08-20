@@ -1233,10 +1233,9 @@ async function muckCards(){
 
 /* ---- Mechanical stage-roll transition ----
    The whole central playfield — #felt inside #stage-bay — unlocking,
-   rolling down out of the bay, and being replaced by the next stage
-   rolling down from above and locking in, as one rigid unit. Used both
-   for live-table -> TABLE CLEARED and TABLE CLEARED -> next table, always
-   in the same direction (down and out, down and in) — see showTableCleared
+   climbing up out of the bay, and pulling the next joined face upward
+   from below before locking in. Used both for live-table -> TABLE CLEARED
+   and TABLE CLEARED -> next table, always in the same direction — see showTableCleared
    and beginNextRunTable (05-game-engine.js).
 
    #felt's id/identity never moves — it's referenced by id far too widely
@@ -1245,7 +1244,7 @@ async function muckCards(){
    (ids stripped from the clone and every descendant, so it's never
    addressable by $()/getElementById and never authoritative), rolled away
    and discarded, while `populateFn` mutates the real #felt's content in
-   place and that's what rolls in from above and stays.
+   place and that's what climbs in from below and stays.
 
    Callers are only ever expected to run this while the stage is otherwise
    idle (no live hand in progress) — populateFn should leave #felt in
@@ -1255,13 +1254,17 @@ async function rollStageTransition(populateFn, options){
   if (!felt || !bay){ populateFn(felt); return; }
   const opts = options || {};
   const rollMs = opts.brisk ? STAGE_ROLL_CONFIG.nextRollMs : STAGE_ROLL_CONFIG.rollMs;
-  let clone = null, machinery = null;
+  let clone = null, machinery = null, joint = null, detents = null;
+  const ratchetTimers=[];
 
   const clearTransitionState = ()=>{
     [felt, bay].forEach(el=>el.getAnimations().forEach(a=>a.cancel()));
     if (clone) clone.remove();
     if (machinery) machinery.remove();
-    bay.querySelectorAll('.stage-outgoing,.stage-machinery').forEach(el=>el.remove());
+    if (joint) joint.remove();
+    if (detents) detents.remove();
+    ratchetTimers.splice(0).forEach(clearTimeout);
+    bay.querySelectorAll('.stage-outgoing,.stage-machinery,.stage-drum-joint,.stage-detents').forEach(el=>el.remove());
     felt.classList.remove('stage-unlock','stage-recessed','stage-rolling-in','stage-seated','stage-lock');
     bay.classList.remove('stage-moving','stage-unlock-flash','stage-rolling','stage-lock-flash','stage-lock-impact');
   };
@@ -1272,6 +1275,7 @@ async function rollStageTransition(populateFn, options){
   bay.style.setProperty('--stage-unlock-ms',STAGE_ROLL_CONFIG.unlockMs+'ms');
   bay.style.setProperty('--stage-roll-ms',rollMs+'ms');
   bay.style.setProperty('--stage-lock-ms',STAGE_ROLL_CONFIG.lockMs+'ms');
+  bay.style.setProperty('--stage-travel',Math.ceil(bay.getBoundingClientRect().height+24)+'px');
 
   try{
     // 1. Unlock — release, recede and remain dark in the back position.
@@ -1298,15 +1302,25 @@ async function rollStageTransition(populateFn, options){
     clone.classList.add('stage-outgoing');
     bay.insertBefore(clone, felt);
 
-    // A restrained dark drum band lives behind both faces. It is normally
-    // occluded, only flashing through the narrow seam as the two curved
-    // surfaces pass the cabinet lip.
+    // A dark wheel cavity lives behind both faces. The common hinge and
+    // side pawls make the two screens read as one linked strip rather than
+    // unrelated page-sized layers.
     machinery = document.createElement('div');
     machinery.className = 'stage-machinery';
     machinery.setAttribute('aria-hidden','true');
     bay.insertBefore(machinery, felt);
+    joint = document.createElement('div');
+    joint.className = 'stage-drum-joint';
+    joint.setAttribute('aria-hidden','true');
+    joint.innerHTML = '<i></i><i></i><i></i><i></i><i></i><i></i><i></i>';
+    bay.appendChild(joint);
+    detents = document.createElement('div');
+    detents.className = 'stage-detents';
+    detents.setAttribute('aria-hidden','true');
+    detents.innerHTML = '<i></i><i></i>';
+    bay.appendChild(detents);
 
-    // 4. Swap the authoritative felt in place, parked above and unpowered.
+    // 4. Swap the authoritative felt in place, parked below and unpowered.
     felt.className = 'felt';
     populateFn(felt);
 
@@ -1316,12 +1330,23 @@ async function rollStageTransition(populateFn, options){
     clone.classList.add('stage-rolling-out');
     felt.classList.add('stage-rolling-in');
     Sound.stageRoll(rollMs);
+    if (!motionOff()) (Sound.stageRatchetBeats||[]).forEach(beat=>{
+      ratchetTimers.push(setTimeout(()=>{
+        if (!detents || !detents.isConnected) return;
+        detents.classList.remove('is-hit');
+        void detents.offsetWidth;
+        detents.classList.add('is-hit');
+        ratchetTimers.push(setTimeout(()=>detents && detents.classList.remove('is-hit'),58));
+      },Math.round(beat*rollMs)));
+    });
     await waitForRunAnimations([clone, felt], rollMs);
     clone.remove(); clone = null;
     felt.classList.add('stage-seated');
     felt.classList.remove('stage-rolling-in');
     bay.classList.remove('stage-rolling');
     machinery.remove(); machinery = null;
+    joint.remove(); joint = null;
+    detents.remove(); detents = null;
 
     // 6. Lock — the CLACK lands at the keyframe where the last few pixels
     // hit the stop, not at the beginning of the seating animation.
@@ -1331,7 +1356,7 @@ async function rollStageTransition(populateFn, options){
     await sleep(motionOff() ? 0 : STAGE_ROLL_CONFIG.lockImpactMs);
     bay.classList.add('stage-lock-impact');
     Sound.stageLock();
-    haptic([8,18,28]);
+    haptic([12,22,38]);
     await lockWait;
     felt.classList.remove('stage-lock','stage-seated');
     bay.classList.remove('stage-lock-flash','stage-lock-impact','stage-moving');

@@ -1465,14 +1465,14 @@ function bestHandResultHTML(best){
    because nothing is pulled out of flow. */
 function tableBestHandTrophyHTML(best){
   if (!best){
-    return '<div class="stage-trophy pc-recess" data-result-beat="trophy">'+
+    return '<div class="stage-trophy pc-display" data-result-beat="trophy">'+
       '<div class="stage-trophy-label">Best hand</div>'+
       '<div class="stage-trophy-empty">No showdown hand recorded</div></div>';
   }
   const split=splitHandText(best.result.cat,best.name);
   const displayCards=arrangeHandForDisplay(best.result.cat,best.cards);
   const cards=displayCards.map(c=>'<div class="'+cardClass(false,c,true)+'" aria-label="'+esc(cardLabel(false,c))+'">'+cardInner(c)+'</div>').join('');
-  return '<div class="stage-trophy pc-recess" data-result-beat="trophy">'+
+  return '<div class="stage-trophy pc-display" data-result-beat="trophy">'+
     '<div class="stage-trophy-label">Best hand</div>'+
     '<div class="stage-trophy-cards">'+cards+'</div>'+
     '<div class="stage-trophy-name">'+esc(split.category.toUpperCase())+'</div>'+
@@ -1484,9 +1484,10 @@ function tableBestHandTrophyHTML(best){
    rollStageTransition() in 06-presentation.js, which places this into the
    real #felt (reskinned but keeping the felt's own curved-corner
    silhouette) as the incoming stage. Built from the .pc-* physical-cabinet
-   primitives shared with the main menu and the live HUD's --machine-*
-   tokens — both resolve to the active table theme already, nothing new to
-   theme here. RUN SCORE is deliberately NOT repeated here — the fixed
+   primitives shared with the main menu, using that screen's fixed leather,
+   cream-plastic, green-display and amber-lamp palette so a table theme can
+   never make the intermission feel like a different game. RUN SCORE is
+   deliberately NOT repeated here — the fixed
    SCORE cabinet directly above the bay already shows it. BANKROLL is the
    one persistent, forward-carrying number, so it gets the strongest
    instrument treatment (the same digit-cell readout as the live stack
@@ -1505,32 +1506,37 @@ function tableClearedHTML(g){
   const koLamps = Array.from({length:opponents}, (_,i)=>
     '<span class="stage-ko-slot'+(i<r.tableKOs?' lit':'')+'"></span>').join('');
   const perfect = r.tableKOs===opponents && r.tableShowdownsPlayed>0 && r.tableShowdownsWon===r.tableShowdownsPlayed;
-  return '<header class="result-head result-head-win stage-results-head"><span>TABLE '+r.tableNumber+'</span><strong>CLEARED</strong></header>'+
-    '<div class="stage-score-hero pc-recess">'+
+  return '<div class="stage-results-machine pc-material-leather">'+
+    '<header class="stage-results-head pc-raised pc-material-plastic">'+
+      '<span>TABLE '+r.tableNumber+'</span><strong>CLEARED</strong><i aria-hidden="true"></i></header>'+
+    '<div class="stage-score-hero pc-display">'+
       '<span class="stage-instrument-label">'+scoreLabel+'</span>'+
       '<div class="amt-readout stage-score-readout" id="stage-results-score"></div>'+
       '<span class="stage-score-carry">RUN TOTAL&nbsp; '+formatArcadeScore(a.score)+'</span></div>'+
-    '<div class="stage-results-instruments" data-result-beat="instruments">'+
-      '<div class="stage-instrument pc-recess"><span class="stage-instrument-label">Finish stack</span>'+
-        '<div class="amt-readout" id="stage-results-stack"></div></div>'+
-      '<div class="stage-instrument pc-recess"><span class="stage-instrument-label">K.O.s</span>'+
-        '<div class="stage-ko-lamps">'+koLamps+'</div>'+
-        '<div class="stage-ko-readout tabular">'+r.tableKOs+' / '+opponents+'</div></div>'+
-    '</div>'+
-    '<div class="stage-results-recap" data-result-beat="recap">'+
-      '<div class="stage-recap-cell pc-recess"><span class="stage-instrument-label">Hands won</span>'+
-        '<strong class="stage-recap-value tabular">'+ratioResult(r.tableHandsWon,r.tableHands)+'</strong></div>'+
-      '<div class="stage-recap-cell pc-recess"><span class="stage-instrument-label">Showdowns</span>'+
-        '<strong class="stage-recap-value tabular">'+ratioResult(r.tableShowdownsWon,r.tableShowdownsPlayed)+'</strong></div>'+
-      '<div class="stage-recap-cell pc-recess"><span class="stage-instrument-label">Biggest pot</span>'+
-        '<strong class="stage-recap-value tabular">'+moneyResult(r.tableBiggestPotWon)+'</strong></div>'+
-      (perfect ? '<div class="stage-recap-lamp pc-recess"><span class="pc-lamp is-amber"></span>'+
-        '<span class="stage-recap-lamp-text">Perfect table<br>never lost a showdown</span></div>' : '')+
+    '<div class="stage-results-deck pc-raised pc-material-plastic">'+
+      '<div class="stage-results-instruments" data-result-beat="instruments">'+
+        '<div class="stage-instrument pc-display"><span class="stage-instrument-label">Finish stack</span>'+
+          '<div class="amt-readout" id="stage-results-stack"></div></div>'+
+        '<div class="stage-instrument pc-display"><span class="stage-instrument-label">K.O.s</span>'+
+          '<div class="stage-ko-lamps">'+koLamps+'</div>'+
+          '<div class="stage-ko-readout tabular">'+r.tableKOs+' / '+opponents+'</div></div>'+
+      '</div>'+
+      '<div class="stage-results-recap" data-result-beat="recap">'+
+        '<div class="stage-recap-cell"><span class="stage-instrument-label">Hands won</span>'+
+          '<strong class="stage-recap-value tabular">'+ratioResult(r.tableHandsWon,r.tableHands)+'</strong></div>'+
+        '<div class="stage-recap-cell"><span class="stage-instrument-label">Showdowns</span>'+
+          '<strong class="stage-recap-value tabular">'+ratioResult(r.tableShowdownsWon,r.tableShowdownsPlayed)+'</strong></div>'+
+        '<div class="stage-recap-cell"><span class="stage-instrument-label">Biggest pot</span>'+
+          '<strong class="stage-recap-value tabular">'+moneyResult(r.tableBiggestPotWon)+'</strong></div>'+
+      '</div>'+
+      (perfect ? '<div class="stage-recap-lamp"><span class="pc-lamp is-amber"></span>'+
+        '<span class="stage-recap-lamp-text">FLAWLESS SHOWDOWNS</span></div>' : '')+
     '</div>'+
     tableBestHandTrophyHTML(r.tableBestHand)+
-    '<div class="stage-run-progress pc-recess" data-result-beat="progress">'+
-      '<span>RUN PROGRESS</span><strong class="tabular">'+r.tablesCleared+' CLEARED</strong>'+
-      '<em>NEXT&nbsp; TABLE '+(r.tableNumber+1)+'</em></div>';
+    '<div class="stage-run-progress pc-display" data-result-beat="progress">'+
+      '<span>TABLES CLEARED</span><strong class="tabular">'+r.tablesCleared+'</strong>'+
+      '<em>NEXT: TABLE '+(r.tableNumber+1)+'</em></div>'+
+  '</div>';
 }
 async function wakeTableResults(g){
   const el=$('result-card');
@@ -2192,8 +2198,8 @@ async function beginNextRunTable(){
   // future/dev entry point that reaches here directly still starts clean.
   await muckCards();
 
-  // The results stage rolls out/down; a fresh, empty table stage rolls
-  // down from above and locks in — same direction, same mechanism as
+  // The results face climbs upward and pulls a fresh, empty table face
+  // up from below — same direction, same joined-wheel mechanism as
   // live-table -> TABLE CLEARED (see rollStageTransition, 06-presentation.js).
   // Opponents are NOT part of this move: they populate onto the
   // already-static stage afterward, below.

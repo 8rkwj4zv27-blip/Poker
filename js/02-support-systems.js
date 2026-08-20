@@ -1201,6 +1201,7 @@ const Sound = (function(){
       blip(1500, 0.035, 'square', 0.025, 0.008);
     });
   }
+  const STAGE_RATCHET_BEATS = [0.035,0.17,0.29,0.395,0.49,0.575,0.65,0.72,0.785,0.845,0.905,0.958];
   function stageRollSound(durationMs){
     const c = ac(); if (!c) return;
     const durMs = Math.max(120, durationMs||600);
@@ -1209,25 +1210,33 @@ const Sound = (function(){
     // then opening gaps as the face brakes toward its stop. Keeping these
     // as individual impacts (rather than a loop) makes every tick belong to
     // an actual point in the travel curve.
-    const beats = [0.035,0.17,0.285,0.385,0.47,0.545,0.61,0.67,0.725,0.78,0.845,0.925];
     withVoiceCap(durMs+120, ()=>{
-      beats.forEach((beat,i)=>{
+      STAGE_RATCHET_BEATS.forEach((beat,i)=>{
         const atMs = beat*durMs;
-        const middle = 1-Math.abs((i/(beats.length-1))*2-1);
+        const middle = 1-Math.abs((i/(STAGE_RATCHET_BEATS.length-1))*2-1);
         setTimeout(()=>{
           const j = 0.92+Math.random()*0.16;
-          noise(0.026+middle*0.012+Math.random()*0.007, (0.038+middle*0.012)*j, {
-            filterType:'lowpass', freq:(310+middle*70)*j, freqSweepTo:(125+middle*35)*j, decayPow:2.5
+          // A dry pawl strike is layered over the wheel's low wooden body.
+          // The bright transient is what lets each visible marker read as
+          // a real tooth passing beneath it on a phone speaker.
+          noise(0.012+middle*0.006, (0.034+middle*0.01)*j, {
+            filterType:'bandpass', freq:(1850+middle*850)*j, freqSweepTo:(980+middle*300)*j, Q:2.2, decayPow:3.2
           });
+          noise(0.035+middle*0.014+Math.random()*0.006, (0.052+middle*0.014)*j, {
+            filterType:'lowpass', freq:(430+middle*90)*j, freqSweepTo:(115+middle*30)*j, decayPow:2.2
+          });
+          blip((520+middle*180)*j, 0.025, 'square', 0.018+middle*0.007);
         }, atMs);
       });
     });
   }
   function stageLockSound(){
-    withVoiceCap(300, ()=>{
-      noise(0.09, 0.13, { filterType:'lowpass', freq:220, freqSweepTo:65, decayPow:1.7 });
-      blip(130, 0.12, 'square', 0.07);
-      blip(78, 0.14, 'triangle', 0.05, 0.045);
+    withVoiceCap(420, ()=>{
+      noise(0.13, 0.17, { filterType:'lowpass', freq:290, freqSweepTo:52, decayPow:1.55 });
+      noise(0.026, 0.075, { filterType:'bandpass', freq:1350, freqSweepTo:520, Q:1.4, decayPow:2.8 });
+      blip(118, 0.17, 'square', 0.085);
+      blip(61, 0.24, 'triangle', 0.07, 0.028);
+      setTimeout(()=>noise(0.065,0.065,{filterType:'lowpass',freq:170,freqSweepTo:55,decayPow:2}),34);
     });
   }
   function consoleShiftSound(){
@@ -1392,6 +1401,7 @@ const Sound = (function(){
     koSocketSpark(){ if (this.sfxV1Enabled) koSocketSparkSound(); },
     hatchOpen(){ if (this.sfxV1Enabled) hatchOpenSound(); },
     hatchClose(){ if (this.sfxV1Enabled) hatchCloseSound(); },
+    stageRatchetBeats: STAGE_RATCHET_BEATS,
     stageUnlock(){ if (this.sfxV1Enabled) stageUnlockSound(); },
     stageRoll(durationMs){ if (this.sfxV1Enabled) stageRollSound(durationMs); },
     stageLock(){ if (this.sfxV1Enabled) stageLockSound(); },

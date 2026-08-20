@@ -88,17 +88,17 @@ const ELIMINATION_RUN_CONFIG = {
 };
 
 /* Mechanical stage-roll transition (table-cleared <-> results <-> next
-   table) — the whole central playfield unlocking, rolling out/down and
-   being replaced by the next stage rolling in/down from above, as one
-   rigid unit. See rollStageTransition() in 06-presentation.js. */
+   table) — joined stage faces climb upward around a hidden wheel, with
+   their common hinge crossing the aperture before the new face locks.
+   See rollStageTransition() in 06-presentation.js. */
 const STAGE_ROLL_CONFIG = {
   breatheMs: 300,   // clean-table acknowledgement after cards return, before the latch releases
-  unlockMs: 230,    // face recedes/darkens and remains physically disengaged
-  mechanicalPauseMs: 150, // separates the release from the drum overcoming its weight
-  rollMs: 840,      // main table -> results: deliberately weighty full drum travel
-  nextRollMs: 760,  // player-triggered results -> next table: same machine, slightly brisker
-  lockMs: 190,      // final few pixels into the stop, with a restrained cabinet reaction
-  lockImpactMs: 76, // exact visual seating beat for the heavy CLACK/haptic
+  unlockMs: 260,    // face recedes/darkens and remains physically disengaged
+  mechanicalPauseMs: 180, // separates the release from the wheel overcoming its weight
+  rollMs: 1080,     // main table -> results: a long, weighty full-face climb
+  nextRollMs: 940,  // player-triggered results -> next table: same machine, slightly brisker
+  lockMs: 270,      // final few pixels into the stop, with a pronounced cabinet reaction
+  lockImpactMs: 108,// exact visual seating beat for the deep CLUNK/haptic
   consoleFlipBeatMs: 120, // final breath before the local action panel changes mode
 };
 

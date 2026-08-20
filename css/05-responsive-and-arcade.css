@@ -718,38 +718,46 @@
   .blind-indicator{ height:23px; }
   #hud-invested{ min-height:25px; font-size:11px; }
   .hud-speaker{ display:none; }
-  .stage-results{ justify-content:flex-start; gap:4px; padding:8px 10px; }
-  .stage-results-head{ padding:7px 6px 6px; }
-  .result-head-win strong{ font-size:16px; }
-  .stage-score-hero{ min-height:48px; padding:5px 8px 6px; }
-  .stage-score-readout .jp-cell{ height:23px; min-width:14px; font-size:11px; }
-  .stage-results-instruments{ gap:5px; }
-  .stage-instrument{ padding:6px 6px 7px; }
-  .stage-instrument .amt-readout .jp-cell{ height:22px; min-width:13px; font-size:10px; }
-  .stage-ko-slot{ width:10px; height:10px; }
-  .stage-ko-lamps{ gap:4px; margin-top:3px; }
-  .stage-results-recap{ gap:4px; }
-  .stage-recap-cell{ min-width:72px; padding:5px 4px 6px; }
-  .stage-recap-value{ font-size:11px; }
-  .stage-recap-lamp{ min-width:92px; padding:5px; }
-  .stage-trophy{ gap:4px; padding:6px 8px; }
-  .stage-trophy-cards{ gap:3px; }
-  .stage-trophy-cards .card.small{ width:24px; height:35px; }
+  .stage-results{ padding:7px 9px; }
+  .stage-results-machine{ gap:3px; padding:4px; grid-template-rows:auto auto auto minmax(44px,1fr) auto; }
+  .stage-results-head{ min-height:35px; padding:4px 7px; }
+  .stage-results-head strong{ font-size:14px; }
+  .stage-results-head i{ width:11px; height:11px; }
+  .stage-score-hero{ min-height:39px; padding:4px 7px; }
+  .stage-score-readout .jp-cell{ height:20px; min-width:13px; font-size:10px; }
+  .stage-results-instruments{ gap:4px; }
+  .stage-results-deck{ padding:3px; gap:3px; }
+  .stage-instrument{ padding:4px 5px; }
+  .stage-instrument .amt-readout{ margin-top:1px; }
+  .stage-instrument .amt-readout .jp-cell{ height:18px; min-width:12px; font-size:9px; }
+  .stage-ko-slot{ width:9px; height:9px; }
+  .stage-ko-lamps{ gap:3px; margin-top:1px; }
+  .stage-ko-readout{ margin-top:2px; font-size:9px; }
+  .stage-results-recap{ gap:0; }
+  .stage-recap-cell{ padding:4px 3px; }
+  .stage-recap-value{ margin-top:2px; font-size:10px; }
+  .stage-recap-lamp{ min-height:20px; padding:3px; }
+  .stage-trophy{ min-height:44px; gap:2px 7px; padding:4px 7px; }
+  .stage-trophy-cards{ gap:2px; }
+  .stage-trophy-cards .card.small{ width:20px; height:29px; }
   .stage-trophy-cards .card.small .r{ font-size:8px; }
-  .stage-trophy-cards .card.small .s{ top:11px; font-size:6px; }
-  .stage-trophy-cards .card.small .pip{ font-size:10px; }
-  .stage-trophy-name{ font-size:11px; }
-  .stage-run-progress{ min-height:30px; padding:5px 6px; gap:5px; }
+  .stage-trophy-cards .card.small .s{ top:10px; font-size:5px; }
+  .stage-trophy-cards .card.small .pip{ font-size:8px; }
+  .stage-trophy-name{ font-size:10px; }
+  .stage-trophy-desc{ font-size:8px; }
+  .stage-run-progress{ min-height:24px; padding:4px 5px; gap:4px; }
 }
 
 @media (orientation:landscape) and (max-height:430px){
-  .stage-results{ justify-content:flex-start; gap:5px; padding:7px 9px; }
-  .stage-results-head{ padding:6px; }
-  .result-head-win strong{ font-size:15px; }
+  .stage-results{ padding:7px 9px; }
+  .stage-results-machine{ gap:4px; padding:6px; grid-template-rows:auto auto auto minmax(52px,1fr) auto; }
+  .stage-results-head{ min-height:38px; padding:6px; }
+  .stage-results-head strong{ font-size:15px; }
   .stage-score-hero{ min-height:44px; padding:5px 7px; }
   .stage-results-instruments,.stage-results-recap{ gap:4px; }
+  .stage-results-deck{ padding:4px; gap:4px; }
   .stage-instrument,.stage-recap-cell{ padding:5px; }
-  .stage-trophy{ padding:5px 7px; gap:3px; }
+  .stage-trophy{ min-height:54px; padding:5px 7px; gap:3px 7px; }
   .stage-trophy-cards .card.small{ width:22px; height:32px; }
   .stage-trophy-name{ font-size:10px; }
   .stage-run-progress{ min-height:28px; padding:4px 6px; }

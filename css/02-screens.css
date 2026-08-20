@@ -339,23 +339,18 @@
 @keyframes runDeckIn{ from{ transform:translate(-50%,-160%); opacity:0; } to{ transform:translate(-50%,-50%); opacity:1; } }
 
 /* ---- Mechanical stage-roll transition ----
-   The whole central playfield unlocking, rolling down out of the bay, and
-   being replaced by the next stage rolling down from above and locking in
-   — used for both live-table -> TABLE CLEARED, and TABLE CLEARED -> next
-   table. Orchestrated by rollStageTransition() in 06-presentation.js,
-   timed by STAGE_ROLL_CONFIG (04-modes-and-scoring.js). Always plays on
-   the real #felt (unlock, roll-in, lock) plus a disposable cloned
-   .stage-outgoing layer (roll-out only) — see rollStageTransition() for
-   why the clone exists and how its ids are stripped. */
+   The old face and new face are one linked strip climbing upward around a
+   hidden wheel. Their shared hinge crosses the aperture and the fixed side
+   pawls kick on the same beats as the ratchet clicks. Orchestrated by
+   rollStageTransition() in 06-presentation.js. */
 .stage-bay.stage-moving > .felt:not(.stage-outgoing){ z-index:4; }
-/* A dark, chunky drum edge behind the two stage faces. The faces almost
-   entirely cover it; only the moving seam exposes a narrow passing band. */
+/* Dark wheel cavity behind the linked faces. */
 .stage-machinery{
   position:absolute; inset:0; z-index:2; pointer-events:none;
   background:
-    repeating-linear-gradient(90deg,transparent 0 16px,rgba(232,184,58,.14) 16px 20px,transparent 20px 36px),
-    repeating-linear-gradient(0deg,#070706 0 9px,#15130e 9px 18px);
-  box-shadow:inset 0 18px 0 rgba(0,0,0,.72),inset 0 -18px 0 rgba(0,0,0,.8);
+    radial-gradient(ellipse at 50% 50%,#30271a 0 18%,#12100c 55%,#050504 100%),
+    repeating-linear-gradient(90deg,transparent 0 18px,rgba(232,184,58,.16) 18px 21px,transparent 21px 39px);
+  box-shadow:inset 0 28px 22px rgba(0,0,0,.82),inset 0 -28px 22px rgba(0,0,0,.88);
   animation:stageMachineryPass var(--stage-roll-ms,840ms) steps(12,end) both;
 }
 @keyframes stageMachineryPass{
@@ -375,6 +370,36 @@
     color-mix(in srgb,var(--panel) 78%,black) calc(100% - 8px) 100%);
   box-shadow:inset 0 2px 0 color-mix(in srgb,var(--accent) 20%,transparent),inset 0 -2px 0 rgba(0,0,0,.8);
 }
+.stage-drum-joint{
+  position:absolute; z-index:12; left:-3px; right:-3px; top:calc(100% - 12px); height:24px;
+  display:flex; align-items:center; justify-content:space-around; pointer-events:none;
+  background:linear-gradient(180deg,#100c08 0 3px,#75613b 3px 7px,#2e2618 7px 17px,#927744 17px 20px,#0b0906 20px 24px);
+  border:2px solid #080604; box-shadow:0 -3px 0 rgba(0,0,0,.55),0 4px 0 rgba(0,0,0,.75),inset 0 2px 0 #c7a55e;
+  animation:stageJointClimb var(--stage-roll-ms,840ms) both;
+}
+.stage-drum-joint i{
+  width:10px; height:10px; transform:rotate(45deg); background:#d5ad51; border:2px solid #171008;
+  box-shadow:inset 2px 2px 0 #ffe380,2px 2px 0 rgba(0,0,0,.5);
+}
+@keyframes stageJointClimb{
+  0%{ transform:translateY(0); animation-timing-function:cubic-bezier(.72,0,.9,.35); }
+  12%{ transform:translateY(calc(var(--stage-travel) * -.06)); animation-timing-function:cubic-bezier(.16,.62,.24,1); }
+  70%{ transform:translateY(calc(var(--stage-travel) * -.74)); animation-timing-function:cubic-bezier(.2,.74,.22,1); }
+  92%{ transform:translateY(calc(var(--stage-travel) * -.985)); animation-timing-function:cubic-bezier(.25,0,.5,1); }
+  100%{ transform:translateY(calc(var(--stage-travel) * -1)); }
+}
+.stage-detents{ position:absolute; z-index:18; inset:0; pointer-events:none; }
+.stage-detents i{
+  position:absolute; top:50%; width:22px; height:38px; margin-top:-19px;
+  background:linear-gradient(180deg,#dfbb62,#806936 45%,#332817 48% 100%);
+  border:2px solid #100b07; box-shadow:inset 0 3px 0 #ffe39a,0 4px 0 rgba(0,0,0,.7);
+}
+.stage-detents i:first-child{ left:-9px; clip-path:polygon(0 0,100% 18%,100% 82%,0 100%); transform-origin:0 50%; }
+.stage-detents i:last-child{ right:-9px; clip-path:polygon(0 18%,100% 0,100% 100%,0 82%); transform-origin:100% 50%; }
+.stage-detents.is-hit i:first-child{ animation:stageDetentLeft 58ms steps(2,end); }
+.stage-detents.is-hit i:last-child{ animation:stageDetentRight 58ms steps(2,end); }
+@keyframes stageDetentLeft{ 50%{ transform:translateX(-4px) rotate(-7deg); filter:brightness(1.4); } }
+@keyframes stageDetentRight{ 50%{ transform:translateX(4px) rotate(7deg); filter:brightness(1.4); } }
 .felt.stage-unlock{ animation:stageUnlock var(--stage-unlock-ms,230ms) steps(6,end) both; }
 @keyframes stageUnlock{
   0%{ transform:translateY(0) scale(1); filter:brightness(1) saturate(1); }
@@ -388,20 +413,21 @@
   0%,100%{ box-shadow:none; }
   18%,42%{ box-shadow:inset 0 0 0 2px rgba(255,241,181,.32); }
 }
-.stage-outgoing.stage-rolling-out{ animation:stageRollOut var(--stage-roll-ms,840ms) both; will-change:transform,filter; transform-origin:50% 12%; }
+.stage-outgoing.stage-rolling-out{ animation:stageRollOut var(--stage-roll-ms,840ms) both; will-change:transform,filter; transform-origin:50% 0; }
 @keyframes stageRollOut{
-  0%{ transform:translateY(4px) scale(.982,1); filter:brightness(.68) saturate(.72); animation-timing-function:cubic-bezier(.72,0,.9,.35); }
-  12%{ transform:translateY(7px) scale(.979,.992); filter:brightness(.62) saturate(.68); animation-timing-function:cubic-bezier(.16,.62,.24,1); }
-  68%{ transform:translateY(70%) scale(.955,.92); filter:brightness(.43) saturate(.5); animation-timing-function:cubic-bezier(.32,0,.7,1); }
-  100%{ transform:translateY(calc(108% + 24px)) scale(.92,.82); filter:brightness(.25) saturate(.3); }
+  0%{ transform:translateY(0) scaleX(.982); filter:brightness(.68) saturate(.72); animation-timing-function:cubic-bezier(.72,0,.9,.35); }
+  12%{ transform:translateY(calc(var(--stage-travel) * -.06)) scaleX(.974); filter:brightness(.58) saturate(.64); animation-timing-function:cubic-bezier(.16,.62,.24,1); }
+  70%{ transform:translateY(calc(var(--stage-travel) * -.74)) scaleX(.955); filter:brightness(.4) saturate(.48); animation-timing-function:cubic-bezier(.2,.74,.22,1); }
+  92%{ transform:translateY(calc(var(--stage-travel) * -.985)) scaleX(.972); filter:brightness(.3) saturate(.36); animation-timing-function:cubic-bezier(.25,0,.5,1); }
+  100%{ transform:translateY(calc(var(--stage-travel) * -1)) scaleX(.982); filter:brightness(.26) saturate(.3); }
 }
-.felt.stage-rolling-in{ animation:stageRollIn var(--stage-roll-ms,840ms) both; will-change:transform,filter; transform-origin:50% 88%; }
+.felt.stage-rolling-in{ animation:stageRollIn var(--stage-roll-ms,840ms) both; will-change:transform,filter; transform-origin:50% 100%; }
 @keyframes stageRollIn{
-  0%{ transform:translateY(calc(-108% - 24px)) scale(.92,.82); filter:brightness(.25) saturate(.3); animation-timing-function:cubic-bezier(.64,0,.84,.38); }
-  13%{ transform:translateY(calc(-105% - 18px)) scale(.93,.84); filter:brightness(.3) saturate(.36); animation-timing-function:cubic-bezier(.18,.68,.25,1); }
-  70%{ transform:translateY(-25%) scale(.965,.95); filter:brightness(.64) saturate(.75); animation-timing-function:cubic-bezier(.2,.74,.22,1); }
-  92%{ transform:translateY(1px) scale(.989); filter:brightness(.84) saturate(.92); animation-timing-function:cubic-bezier(.25,0,.5,1); }
-  100%{ transform:translateY(3px) scale(.988); filter:brightness(.82) saturate(.9); }
+  0%{ transform:translateY(var(--stage-travel)) scaleX(.982); filter:brightness(.26) saturate(.3); animation-timing-function:cubic-bezier(.72,0,.9,.35); }
+  12%{ transform:translateY(calc(var(--stage-travel) * .94)) scaleX(.974); filter:brightness(.32) saturate(.38); animation-timing-function:cubic-bezier(.16,.62,.24,1); }
+  70%{ transform:translateY(calc(var(--stage-travel) * .26)) scaleX(.955); filter:brightness(.52) saturate(.62); animation-timing-function:cubic-bezier(.2,.74,.22,1); }
+  92%{ transform:translateY(calc(var(--stage-travel) * .015)) scaleX(.972); filter:brightness(.74) saturate(.82); animation-timing-function:cubic-bezier(.25,0,.5,1); }
+  100%{ transform:translateY(3px) scaleX(.988); filter:brightness(.82) saturate(.9); }
 }
 .felt.stage-seated{ transform:translateY(3px) scale(.988); filter:brightness(.82) saturate(.9); }
 .felt.stage-lock{ animation:stageLock var(--stage-lock-ms,190ms) steps(6,end) both; }
@@ -482,33 +508,43 @@
 .result-primary,.result-secondary{ width:100%; min-height:48px; margin-top:8px; }
 
 /* ---- TABLE CLEARED results stage ----
-   A purpose-built intermission module loaded into the same physical slot
-   — not a poker table with stats laid over it. #felt carries the
-   .results-mode modifier: same border-radius/border/box-shadow/rail
-   silhouette (the physical slot is unchanged), reskinned from green baize
-   to dark cabinet housing, with every live-hand fixture (dealer deck, pot
-   plate, board) hidden outright — see the .felt.results-mode rules below.
-   Built from the same .pc-* physical-cabinet primitives as the main menu
-   (css/04-overlays-and-modes.css) and the live HUD's --machine-* tokens
-   (css/03-action-console.css body{} remap) — both already resolve to the
-   active table theme, so no new color logic is needed here. Composition
-   uses justify-content:space-evenly to spread a handful of distinct
-   grouped modules across the full bay height (real negative space between
-   groups) rather than one dense block up top and a dead void below. */
+   This is a second physical face of the same poker machine. It deliberately
+   uses the lobby's fixed burgundy leather, cream plastic, green display and
+   mustard lamp palette instead of inheriting the active table theme. */
 .felt.results-mode{
   background:
-    radial-gradient(60% 46% at 50% 8%, rgba(255,255,255,.05) 0 99%, transparent 99%),
-    linear-gradient(180deg, var(--panel-2) 0%, var(--panel) 100%);
+    radial-gradient(circle at 18% 12%,rgba(255,255,255,.055) 0 1px,transparent 1.5px) 0 0/7px 7px,
+    linear-gradient(180deg,#6b2430 0%,#46141e 55%,#2a0d14 100%);
+  border-color:#16090d;
+  box-shadow:inset 0 4px 0 #7a2d38,inset 0 -7px 0 #250b11,0 8px 0 rgba(0,0,0,.5);
+}
+.felt.results-mode::before{
+  background:linear-gradient(180deg,#e7b633 0 8%,#80631d 8% 16%,#541b25 16% 82%,#2a0d14 82% 100%);
+  border-color:#16090d; box-shadow:0 6px 0 #16090d,inset 0 2px 0 #ffe28a;
 }
 .felt.results-mode .dealer-station,
 .felt.results-mode .pot-area,
 .felt.results-mode .board{ display:none; }
 .stage-results{
-  position:absolute; inset:0; display:flex; flex-direction:column; justify-content:center; gap:8px;
-  padding:12px 14px calc(12px + env(safe-area-inset-bottom,0px));
+  position:absolute; inset:0; padding:12px 14px calc(12px + env(safe-area-inset-bottom,0px));
+  overflow:hidden;
+}
+.stage-results-machine{
+  width:100%; height:100%; min-height:0; padding:10px;
+  display:grid; grid-template-rows:auto auto auto minmax(90px,1fr) auto; gap:8px;
+  border:3px solid #16090d; box-shadow:inset 0 3px 0 #7a2d38,inset 0 -4px 0 #2a0d14,0 5px 0 #16090d;
   overflow-y:auto; overscroll-behavior:contain;
 }
-.stage-results-head{ flex-shrink:0; opacity:.32; filter:brightness(.42) saturate(.4); }
+.stage-results-head{
+  min-height:54px; padding:7px 12px; display:grid; grid-template-columns:auto 1fr auto; align-items:center; gap:10px;
+  color:#2a1710; border-color:#16090d; opacity:.32; filter:brightness(.42) saturate(.4);
+}
+.stage-results-head span{ font-family:var(--font-hdr); font-size:10px; letter-spacing:.08em; }
+.stage-results-head strong{ justify-self:center; font-family:var(--font-hdr); font-size:22px; letter-spacing:.1em; text-shadow:2px 2px 0 rgba(255,255,255,.42); }
+.stage-results-head i{
+  width:14px; height:14px; border:2px solid #27180d; background:#e7b633;
+  box-shadow:inset 2px 2px 0 #ffe697,0 2px 0 #6b4a0b,0 0 8px rgba(231,182,51,.55);
+}
 .stage-results.wake-head .stage-results-head{ animation:resultHeadHit 420ms steps(6,end) both; opacity:1; filter:none; }
 
 /* Results stay electrically dormant while the face itself is travelling.
@@ -531,32 +567,30 @@
 .stage-score-hero{
   flex-shrink:0; min-height:58px; padding:7px 10px 8px;
   display:grid; grid-template-columns:auto 1fr; grid-template-rows:auto auto; align-items:center; gap:3px 9px;
-  border-color:color-mix(in srgb,var(--accent) 68%,var(--px-ink));
-  box-shadow:inset 4px 0 0 var(--accent),inset 0 3px 0 rgba(0,0,0,.48),0 2px 0 rgba(0,0,0,.4);
+  color:#b6e0af; background-color:#152a1e; border-color:#090b08;
+  box-shadow:inset 4px 0 0 #e7b633,inset 0 4px 5px rgba(0,0,0,.65),0 3px 0 #16090d;
 }
 .stage-score-hero .stage-instrument-label{ grid-column:1; grid-row:1; align-self:end; margin:0; }
 .stage-score-readout{ grid-column:2; grid-row:1 / span 2; justify-self:end; justify-content:flex-end; flex-wrap:wrap; }
 .stage-score-readout .jp-cell{ height:28px; min-width:16px; font-size:13px; }
 .stage-score-carry{
-  grid-column:1; grid-row:2; color:var(--pc-display-dim); font-family:var(--font-hdr); font-size:6px; letter-spacing:.06em;
+  grid-column:1; grid-row:2; color:#87a785; font-family:var(--font-hdr); font-size:7px; letter-spacing:.06em;
 }
 
-/* BANKROLL + K.O.s — the two primary machine instruments, side by side in
-   one recessed bay. */
+.stage-results-deck{
+  padding:8px; display:flex; flex-direction:column; gap:7px; color:#2a1710; border-color:#16090d;
+}
 .stage-results-instruments{
   flex-shrink:0; display:grid; grid-template-columns:1.35fr 1fr; gap:8px;
 }
 .stage-instrument{
   min-width:0; padding:9px 8px 10px; display:flex; flex-direction:column; align-items:center; gap:3px;
+  color:#b6e0af; background-color:#152a1e; border-color:#090b08;
 }
-/* .pc-label's fixed dark-brown ink assumes a light plastic/leather
-   housing (its #home usage) — illegible on these dark recessed panels, so
-   labels here get their own light-on-dark treatment instead, matching the
-   .result-stat-label convention used elsewhere in this file. */
 .stage-instrument-label{
   align-self:flex-start; margin-bottom:2px;
   font-family:var(--font-hdr); font-size:7px; font-weight:400; letter-spacing:.09em;
-  text-transform:uppercase; color:var(--ink-dim);
+  text-transform:uppercase; color:#87a785;
 }
 .stage-instrument .amt-readout{ justify-content:center; flex-wrap:wrap; margin-top:4px; width:fit-content; }
 .stage-instrument .amt-readout .jp-cell{ height:26px; min-width:15px; font-size:12px; }
@@ -572,49 +606,53 @@
 .stage-results:not(.wake-instruments) .stage-ko-slot.lit{
   background:var(--pc-lamp-off); box-shadow:0 2px 0 #100807,inset 1px 1px 0 rgba(255,255,255,.12);
 }
-.stage-ko-readout{ margin-top:6px; font-family:var(--font-hdr); font-size:11px; color:var(--pc-display-ink); }
+.stage-ko-readout{ margin-top:6px; font-family:var(--font-hdr); font-size:11px; color:#b6e0af; }
 
 /* Table recap — small paired readouts, plus an optional bonus lamp that
    only ever appears when the underlying result genuinely earns it. */
 .stage-results-recap{
-  flex-shrink:0; display:flex; flex-wrap:wrap; gap:6px;
+  flex-shrink:0; display:grid; grid-template-columns:repeat(3,1fr); border:2px solid #89764c; background:#c9b77e;
 }
-.stage-recap-cell{ flex:1 1 0; min-width:78px; padding:7px 6px 8px; text-align:center; }
-.stage-recap-cell .stage-instrument-label{ align-self:center; }
-.stage-recap-value{ display:block; margin-top:4px; font-family:var(--font-hdr); font-size:13px; color:var(--pc-display-ink); }
+.stage-recap-cell{ min-width:0; padding:7px 5px 8px; text-align:center; border-right:2px solid #89764c; }
+.stage-recap-cell:last-child{ border-right:0; }
+.stage-recap-cell .stage-instrument-label{ align-self:center; color:#5b4c2f; }
+.stage-recap-value{ display:block; margin-top:4px; font-family:var(--font-hdr); font-size:12px; color:#2a1710; }
 .stage-recap-lamp{
-  flex:1 1 0; min-width:104px; padding:7px 8px 8px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px;
-  border-color:var(--pc-lamp-amber);
+  min-height:28px; padding:5px 8px; display:flex; align-items:center; justify-content:center; gap:7px;
+  background:#302518; border:2px solid #16090d;
 }
 .stage-recap-lamp .pc-lamp{ width:11px; height:11px; }
-.stage-recap-lamp-text{ font-family:var(--font-hdr); font-size:9px; letter-spacing:.06em; color:var(--pc-lamp-amber); text-align:center; }
+.stage-recap-lamp-text{ font-family:var(--font-hdr); font-size:8px; letter-spacing:.08em; color:#f2b431; text-align:center; white-space:nowrap; }
 
 /* BEST HAND trophy case — pure normal flow (label, then cards, then name,
    then subtype), stacked and centred, deliberately NOT the dense
    absolute-positioned .result-best layout the run-report grid uses. */
-.stage-trophy{ flex-shrink:0; display:flex; flex-direction:column; align-items:center; gap:6px; padding:9px 10px; }
-.stage-trophy-label{
-  align-self:center;
-  font-family:var(--font-hdr); font-size:7px; font-weight:400; letter-spacing:.09em;
-  text-transform:uppercase; color:var(--ink-dim);
+.stage-trophy{
+  min-height:90px; display:grid; grid-template-columns:auto 1fr; grid-template-rows:auto 1fr auto auto;
+  align-items:center; column-gap:12px; padding:9px 12px; color:#b6e0af; background-color:#152a1e; border-color:#090b08;
 }
-.stage-trophy-cards{ display:flex; gap:5px; flex-wrap:wrap; justify-content:center; }
+.stage-trophy-label{
+  grid-column:1 / -1; align-self:center;
+  font-family:var(--font-hdr); font-size:7px; font-weight:400; letter-spacing:.09em;
+  text-transform:uppercase; color:#87a785;
+}
+.stage-trophy-cards{ grid-column:1; grid-row:2 / 5; display:flex; gap:4px; flex-wrap:nowrap; justify-content:center; }
 .stage-trophy-cards .card.small{ width:30px; height:44px; border-width:2px; border-radius:3px; box-shadow:0 2px 0 rgba(0,0,0,.45); }
 .stage-trophy-cards .card.small .r{ font-size:10px; top:2px; left:3px; }
 .stage-trophy-cards .card.small .s{ font-size:7px; top:14px; left:3px; }
 .stage-trophy-cards .card.small .pip{ font-size:12px; }
-.stage-trophy-name{ font-family:var(--font-hdr); font-size:14px; letter-spacing:.04em; color:var(--accent-bright); text-align:center; }
-.stage-trophy-desc{ font-size:10px; color:var(--ink-dim); text-align:center; }
-.stage-trophy-empty{ font-family:var(--font-hdr); font-size:8px; color:var(--ink-faint); letter-spacing:.04em; }
+.stage-trophy-name{ grid-column:2; grid-row:2 / 4; align-self:end; font-family:var(--font-hdr); font-size:14px; line-height:1.18; letter-spacing:.04em; color:#f2b431; text-align:left; }
+.stage-trophy-desc{ grid-column:2; grid-row:4; align-self:start; margin-top:3px; font-size:10px; color:#b6e0af; text-align:left; }
+.stage-trophy-empty{ grid-column:1 / -1; font-family:var(--font-hdr); font-size:8px; color:#87a785; letter-spacing:.04em; text-align:center; }
 .stage-run-progress{
   flex-shrink:0; min-height:34px; padding:6px 8px; display:grid; grid-template-columns:auto 1fr auto; align-items:center; gap:8px;
-  border-color:color-mix(in srgb,var(--accent) 42%,var(--px-ink));
+  color:#b6e0af; background-color:#152a1e; border-color:#090b08;
 }
 .stage-run-progress span,.stage-run-progress em{
-  font-family:var(--font-hdr); font-size:6px; font-style:normal; letter-spacing:.06em; color:var(--ink-dim);
+  font-family:var(--font-hdr); font-size:6px; font-style:normal; letter-spacing:.06em; color:#87a785;
 }
-.stage-run-progress strong{ justify-self:center; font-family:var(--font-hdr); font-size:8px; color:var(--pc-display-ink); }
-.stage-run-progress em{ justify-self:end; color:var(--accent-bright); }
+.stage-run-progress strong{ justify-self:center; font-family:var(--font-hdr); font-size:11px; color:#b6e0af; }
+.stage-run-progress em{ justify-self:end; color:#f2b431; }
 
 /* The failed run drains the table/action machinery only. The report is a
    sibling, so it stays fully saturated above the recognisable dead scene. */
@@ -660,7 +698,7 @@
 [data-motion="off"] .table-round-callout,
 [data-motion="off"] .felt.stage-unlock,[data-motion="off"] .felt.stage-rolling-in,[data-motion="off"] .felt.stage-lock,
 [data-motion="off"] .stage-outgoing.stage-rolling-out,
-[data-motion="off"] .stage-machinery,
+[data-motion="off"] .stage-machinery,[data-motion="off"] .stage-drum-joint,
 [data-motion="off"] .stage-bay.stage-unlock-flash,[data-motion="off"] .stage-bay.stage-lock-flash,[data-motion="off"] .stage-bay.stage-lock-impact{ animation-duration:1ms; animation-delay:0ms; }
 [data-motion="off"] .stage-results-head,[data-motion="off"] .stage-score-hero,[data-motion="off"] .stage-results [data-result-beat]{ transition:none!important; animation:none!important; }
 
