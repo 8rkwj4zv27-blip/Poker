@@ -720,11 +720,14 @@
   .hud-speaker{ display:none; }
   .stage-results{ padding:7px 9px; }
   .stage-results-machine{ gap:3px; padding:4px; grid-template-rows:auto auto auto minmax(44px,1fr) auto; }
-  .stage-results-head{ min-height:35px; padding:4px 7px; }
+  .stage-results-head{ min-height:35px; padding:2px 7px; }
+  .stage-results-head span{ font-size:7px; }
   .stage-results-head strong{ font-size:14px; }
   .stage-results-head i{ width:11px; height:11px; }
   .stage-score-hero{ min-height:39px; padding:4px 7px; }
   .stage-score-readout .jp-cell{ height:20px; min-width:13px; font-size:10px; }
+  .stage-score-carry{ gap:5px; font-size:6px; }
+  .stage-score-carry strong{ font-size:7px; }
   .stage-results-instruments{ gap:4px; }
   .stage-results-deck{ padding:3px; gap:3px; }
   .stage-instrument{ padding:4px 5px; }
@@ -734,7 +737,7 @@
   .stage-ko-lamps{ gap:3px; margin-top:1px; }
   .stage-ko-readout{ margin-top:2px; font-size:9px; }
   .stage-results-recap{ gap:0; }
-  .stage-recap-cell{ padding:4px 3px; }
+  .stage-recap-cell{ min-height:32px; padding:4px 3px; }
   .stage-recap-value{ margin-top:2px; font-size:10px; }
   .stage-recap-lamp{ min-height:20px; padding:3px; }
   .stage-trophy{ min-height:44px; gap:2px 7px; padding:4px 7px; }
@@ -751,7 +754,8 @@
 @media (orientation:landscape) and (max-height:430px){
   .stage-results{ padding:7px 9px; }
   .stage-results-machine{ gap:4px; padding:6px; grid-template-rows:auto auto auto minmax(52px,1fr) auto; }
-  .stage-results-head{ min-height:38px; padding:6px; }
+  .stage-results-head{ min-height:38px; padding:3px 6px; }
+  .stage-results-head span{ font-size:7px; }
   .stage-results-head strong{ font-size:15px; }
   .stage-score-hero{ min-height:44px; padding:5px 7px; }
   .stage-results-instruments,.stage-results-recap{ gap:4px; }

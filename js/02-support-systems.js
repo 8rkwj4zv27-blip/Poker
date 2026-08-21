@@ -707,7 +707,7 @@ const DEFAULT_SETTINGS = {
 const DEFAULT_STATS = { hands:0, won:0, showdownsWon:0, biggestPot:0, net:0 };
 const SAVE_VERSION = 1;
 /* Bump on every release so the main-menu header shows what's actually installed. */
-const BUILD_VERSION = 'v0.15.0-dev · table drum';
+const BUILD_VERSION = 'v0.16.0-dev · cabinet rise';
 
 let settings = Object.assign({}, DEFAULT_SETTINGS, Store.get('felt.settings', {}));
 // The Settings menu cleanup dropped RELAXED from the Game Speed control
@@ -1182,52 +1182,28 @@ const Sound = (function(){
     });
   }
 
-  /* -- 14e. Central stage roll (mechanical loader, table-cleared/next-table
-     transition) — a small physical event family, matching the hatch's
-     click/clunk pairing rather than inventing new language. unlock is the
-     tiny latch-release tick (same shape as hatchOpenSound, brighter/
-     shorter). roll is a scheduled series of low ratchet ticks spread
-     across the travel time — this module has no real audio-loop
-     primitive, so a sustained mechanical texture is built the same way
-     doButtonRelease()'s 'award' case schedules a follow-up hit: several
-     noise ticks fired via setTimeout across the given duration, each with
-     a little jitter so it doesn't read as a repeating sample. lock is the
-     heavy final clunk
-     when the new stage seats into the bay — deliberately the weightiest
-     of the three, distinct from hatchCloseSound (lower, longer body). */
+  /* -- 14e. Central stage roll. Unlock and lock are authored events; every
+     ratchet click is requested by rollStageTransition only when the moving
+     face crosses a real distance notch. Audio therefore cannot continue
+     after the visual wheel has stopped. */
   function stageUnlockSound(){
     withVoiceCap(120, ()=>{
       noise(0.016, 0.05, { filterType:'highpass', freq:3000, decayPow:2.8 });
       blip(1500, 0.035, 'square', 0.025, 0.008);
     });
   }
-  const STAGE_RATCHET_BEATS = [0.035,0.17,0.29,0.395,0.49,0.575,0.65,0.72,0.785,0.845,0.905,0.958];
-  function stageRollSound(durationMs){
-    const c = ac(); if (!c) return;
-    const durMs = Math.max(120, durationMs||600);
-    // One authored ratchet rhythm follows the drum's visible inertia:
-    // reluctant widely-spaced teeth, a tightening run through the middle,
-    // then opening gaps as the face brakes toward its stop. Keeping these
-    // as individual impacts (rather than a loop) makes every tick belong to
-    // an actual point in the travel curve.
-    withVoiceCap(durMs+120, ()=>{
-      STAGE_RATCHET_BEATS.forEach((beat,i)=>{
-        const atMs = beat*durMs;
-        const middle = 1-Math.abs((i/(STAGE_RATCHET_BEATS.length-1))*2-1);
-        setTimeout(()=>{
-          const j = 0.92+Math.random()*0.16;
-          // A dry pawl strike is layered over the wheel's low wooden body.
-          // The bright transient is what lets each visible marker read as
-          // a real tooth passing beneath it on a phone speaker.
-          noise(0.012+middle*0.006, (0.034+middle*0.01)*j, {
-            filterType:'bandpass', freq:(1850+middle*850)*j, freqSweepTo:(980+middle*300)*j, Q:2.2, decayPow:3.2
-          });
-          noise(0.035+middle*0.014+Math.random()*0.006, (0.052+middle*0.014)*j, {
-            filterType:'lowpass', freq:(430+middle*90)*j, freqSweepTo:(115+middle*30)*j, decayPow:2.2
-          });
-          blip((520+middle*180)*j, 0.025, 'square', 0.018+middle*0.007);
-        }, atMs);
+  function stageRollClick(speed,final){
+    const energy=Math.max(0,Math.min(1,Number(speed)||0));
+    const weight=final ? 1.32 : .72+energy*.32;
+    withVoiceCap(95, ()=>{
+      const j=.96+Math.random()*.08;
+      noise(.011+weight*.005,.032+weight*.012,{
+        filterType:'bandpass',freq:(1450+energy*1050)*j,freqSweepTo:(760+energy*360)*j,Q:2.25,decayPow:3.1
       });
+      noise(.025+weight*.012,.038+weight*.015,{
+        filterType:'lowpass',freq:(330+energy*150)*j,freqSweepTo:(105+energy*30)*j,decayPow:2.25
+      });
+      blip((420+energy*210)*j,.024,'square',.014+weight*.007);
     });
   }
   function stageLockSound(){
@@ -1401,9 +1377,8 @@ const Sound = (function(){
     koSocketSpark(){ if (this.sfxV1Enabled) koSocketSparkSound(); },
     hatchOpen(){ if (this.sfxV1Enabled) hatchOpenSound(); },
     hatchClose(){ if (this.sfxV1Enabled) hatchCloseSound(); },
-    stageRatchetBeats: STAGE_RATCHET_BEATS,
     stageUnlock(){ if (this.sfxV1Enabled) stageUnlockSound(); },
-    stageRoll(durationMs){ if (this.sfxV1Enabled) stageRollSound(durationMs); },
+    stageRollClick(speed,final){ if (this.sfxV1Enabled) stageRollClick(speed,final); },
     stageLock(){ if (this.sfxV1Enabled) stageLockSound(); },
     consoleShift(){ if (this.sfxV1Enabled) consoleShiftSound(); }
   };

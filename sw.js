@@ -1,4 +1,4 @@
-const CACHE_NAME = 'poker-v15-2';
+const CACHE_NAME = 'poker-v16-0';
 const APP_SHELL = [
   './',
   './index.html',

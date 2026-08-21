@@ -1233,9 +1233,10 @@ async function muckCards(){
 
 /* ---- Mechanical stage-roll transition ----
    The whole central playfield — #felt inside #stage-bay — unlocking,
-   climbing up out of the bay, and pulling the next joined face upward
-   from below before locking in. Used both for live-table -> TABLE CLEARED
-   and TABLE CLEARED -> next table, always in the same direction — see showTableCleared
+   retracting, then dropping away while the next joined face descends from
+   above before pushing forward into its lock. This visual direction reads
+   as advancing one position upward around a hidden vertical carousel. Used
+   both for live-table -> TABLE CLEARED and TABLE CLEARED -> next table — see showTableCleared
    and beginNextRunTable (05-game-engine.js).
 
    #felt's id/identity never moves — it's referenced by id far too widely
@@ -1244,7 +1245,7 @@ async function muckCards(){
    (ids stripped from the clone and every descendant, so it's never
    addressable by $()/getElementById and never authoritative), rolled away
    and discarded, while `populateFn` mutates the real #felt's content in
-   place and that's what climbs in from below and stays.
+   place and that's what descends from above and stays.
 
    Callers are only ever expected to run this while the stage is otherwise
    idle (no live hand in progress) — populateFn should leave #felt in
@@ -1254,18 +1255,17 @@ async function rollStageTransition(populateFn, options){
   if (!felt || !bay){ populateFn(felt); return; }
   const opts = options || {};
   const rollMs = opts.brisk ? STAGE_ROLL_CONFIG.nextRollMs : STAGE_ROLL_CONFIG.rollMs;
-  let clone = null, machinery = null, joint = null, detents = null;
-  const ratchetTimers=[];
+  let clone = null, machinery = null, joint = null, ratchetRaf = 0;
 
   const clearTransitionState = ()=>{
     [felt, bay].forEach(el=>el.getAnimations().forEach(a=>a.cancel()));
     if (clone) clone.remove();
     if (machinery) machinery.remove();
     if (joint) joint.remove();
-    if (detents) detents.remove();
-    ratchetTimers.splice(0).forEach(clearTimeout);
-    bay.querySelectorAll('.stage-outgoing,.stage-machinery,.stage-drum-joint,.stage-detents').forEach(el=>el.remove());
-    felt.classList.remove('stage-unlock','stage-recessed','stage-rolling-in','stage-seated','stage-lock');
+    if (ratchetRaf) cancelAnimationFrame(ratchetRaf);
+    ratchetRaf = 0;
+    bay.querySelectorAll('.stage-outgoing,.stage-machinery,.stage-drum-joint').forEach(el=>el.remove());
+    felt.classList.remove('stage-unlock','stage-recessed','stage-rolling-in','stage-aligned','stage-lock');
     bay.classList.remove('stage-moving','stage-unlock-flash','stage-rolling','stage-lock-flash','stage-lock-impact');
   };
 
@@ -1289,8 +1289,8 @@ async function rollStageTransition(populateFn, options){
     felt.classList.remove('stage-unlock');
     bay.classList.remove('stage-unlock-flash');
 
-    // 2. A dead-still pawl gap makes the subsequent travel feel like a
-    // large mechanism overcoming weight rather than a continuous UI tween.
+    // 2. Just enough clearance for the latch to release. Kept deliberately
+    // short so it reads as one mechanism, not a paused animation.
     await sleep(motionOff() ? 0 : STAGE_ROLL_CONFIG.mechanicalPauseMs);
 
     // 3. Snapshot the settled outgoing content as a disposable ghost.
@@ -1302,9 +1302,9 @@ async function rollStageTransition(populateFn, options){
     clone.classList.add('stage-outgoing');
     bay.insertBefore(clone, felt);
 
-    // A dark wheel cavity lives behind both faces. The common hinge and
-    // side pawls make the two screens read as one linked strip rather than
-    // unrelated page-sized layers.
+    // A dark wheel cavity and common hinge make the two screens read as one
+    // linked strip. The old decorative side pawls were removed: they read
+    // as stray gold UI tabs rather than necessary machinery.
     machinery = document.createElement('div');
     machinery.className = 'stage-machinery';
     machinery.setAttribute('aria-hidden','true');
@@ -1314,42 +1314,49 @@ async function rollStageTransition(populateFn, options){
     joint.setAttribute('aria-hidden','true');
     joint.innerHTML = '<i></i><i></i><i></i><i></i><i></i><i></i><i></i>';
     bay.appendChild(joint);
-    detents = document.createElement('div');
-    detents.className = 'stage-detents';
-    detents.setAttribute('aria-hidden','true');
-    detents.innerHTML = '<i></i><i></i>';
-    bay.appendChild(detents);
 
-    // 4. Swap the authoritative felt in place, parked below and unpowered.
+    // 4. Swap the authoritative felt in place, parked above and unpowered.
     felt.className = 'felt';
     populateFn(felt);
 
-    // 5. Roll — both faces follow the same inertia curve while the ratchet
-    // sound uses authored beats tied to this exact duration.
+    // 5. Roll — both joined faces share one smooth transform curve. Ratchet
+    // audio is driven by actual measured distance here, not an independent
+    // timer: each equal physical notch clicks only when the incoming face
+    // crosses it, naturally tightening while fast and opening as it brakes.
     bay.classList.add('stage-rolling');
     clone.classList.add('stage-rolling-out');
     felt.classList.add('stage-rolling-in');
-    Sound.stageRoll(rollMs);
-    if (!motionOff()) (Sound.stageRatchetBeats||[]).forEach(beat=>{
-      ratchetTimers.push(setTimeout(()=>{
-        if (!detents || !detents.isConnected) return;
-        detents.classList.remove('is-hit');
-        void detents.offsetWidth;
-        detents.classList.add('is-hit');
-        ratchetTimers.push(setTimeout(()=>detents && detents.classList.remove('is-hit'),58));
-      },Math.round(beat*rollMs)));
-    });
+    const travel=parseFloat(getComputedStyle(bay).getPropertyValue('--stage-travel')) || bay.clientHeight+24;
+    const startTop=bay.getBoundingClientRect().top-travel;
+    let lastTop=startTop, lastAt=0, notchIndex=0;
+    const notches=Array.from({length:13},(_,i)=>(i+1)/14).concat(.965);
+    if (!motionOff()){
+      const followTravel=now=>{
+        if (!felt.isConnected || !felt.classList.contains('stage-rolling-in')) return;
+        const top=felt.getBoundingClientRect().top;
+        const progress=Math.max(0,Math.min(1,(top-startTop)/travel));
+        const velocity=lastAt ? Math.abs(top-lastTop)/Math.max(1,now-lastAt) : 0;
+        let crossed=false;
+        while (notchIndex<notches.length && progress>=notches[notchIndex]){ notchIndex++; crossed=true; }
+        if (crossed) Sound.stageRollClick(Math.min(1,velocity/.7),notchIndex===notches.length);
+        lastTop=top; lastAt=now;
+        ratchetRaf=requestAnimationFrame(followTravel);
+      };
+      ratchetRaf=requestAnimationFrame(followTravel);
+    }
     await waitForRunAnimations([clone, felt], rollMs);
+    if (ratchetRaf) cancelAnimationFrame(ratchetRaf);
+    ratchetRaf=0;
+    if (!motionOff() && notchIndex<notches.length) Sound.stageRollClick(.12,true);
     clone.remove(); clone = null;
-    felt.classList.add('stage-seated');
+    felt.classList.add('stage-aligned');
     felt.classList.remove('stage-rolling-in');
     bay.classList.remove('stage-rolling');
     machinery.remove(); machinery = null;
     joint.remove(); joint = null;
-    detents.remove(); detents = null;
 
-    // 6. Lock — the CLACK lands at the keyframe where the last few pixels
-    // hit the stop, not at the beginning of the seating animation.
+    // 6. Lock — the animation itself contains the short aligned settle,
+    // then pushes the face forward. The CLUNK lands at the foreground stop.
     felt.classList.add('stage-lock');
     bay.classList.add('stage-lock-flash');
     const lockWait = waitForRunAnimations([felt, bay], STAGE_ROLL_CONFIG.lockMs);
@@ -1358,7 +1365,7 @@ async function rollStageTransition(populateFn, options){
     Sound.stageLock();
     haptic([12,22,38]);
     await lockWait;
-    felt.classList.remove('stage-lock','stage-seated');
+    felt.classList.remove('stage-lock','stage-aligned');
     bay.classList.remove('stage-lock-flash','stage-lock-impact','stage-moving');
   } finally {
     // DEV shortcuts, backgrounding and thrown populate callbacks may all

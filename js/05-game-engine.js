@@ -1479,6 +1479,29 @@ function tableBestHandTrophyHTML(best){
     (split.descriptor?'<div class="stage-trophy-desc">'+esc(split.descriptor)+'</div>':'')+
   '</div>';
 }
+function tableReportStatPages(r){
+  const hands=Math.max(0,r.tableHands||0);
+  const won=Math.max(0,r.tableHandsWon||0);
+  const core=[
+    {label:'Hands won',value:ratioResult(won,hands)},
+    {label:'Showdowns won',value:ratioResult(r.tableShowdownsWon,r.tableShowdownsPlayed)},
+    {label:'Biggest pot',value:moneyResult(r.tableBiggestPotWon)}
+  ];
+  const context=[];
+  if ((r.tableAllInsPlayed||0)>0){
+    context.push({label:'All-ins won',value:ratioResult(r.tableAllInsWon,r.tableAllInsPlayed)});
+  }
+  context.push({label:'High water',value:moneyResult(r.tableHighestStack)});
+  context.push({label:'Win rate',value:hands ? Math.round((won/hands)*100)+'%' : '—'});
+  if (context.length<3) context.push({label:'Table length',value:hands+' HAND'+(hands===1?'':'S')});
+  return [core,context.slice(0,3)];
+}
+function tableReportStatBankHTML(r){
+  return tableReportStatPages(r)[0].map((stat,i)=>
+    '<div class="stage-recap-cell" data-stage-stat="'+i+'"><span class="stage-instrument-label">'+esc(stat.label)+'</span>'+
+      '<strong class="stage-recap-value tabular">'+esc(stat.value)+'</strong></div>'
+  ).join('');
+}
 /* The results stage itself — not a card floating over the felt, not a
    cleared poker table with stats on it. See .felt.results-mode /
    rollStageTransition() in 06-presentation.js, which places this into the
@@ -1512,7 +1535,7 @@ function tableClearedHTML(g){
     '<div class="stage-score-hero pc-display">'+
       '<span class="stage-instrument-label">'+scoreLabel+'</span>'+
       '<div class="amt-readout stage-score-readout" id="stage-results-score"></div>'+
-      '<span class="stage-score-carry">RUN TOTAL&nbsp; '+formatArcadeScore(a.score)+'</span></div>'+
+      '<span class="stage-score-carry"><span>RUN TOTAL</span><strong class="tabular">'+formatArcadeScore(a.score)+'</strong></span></div>'+
     '<div class="stage-results-deck pc-raised pc-material-plastic">'+
       '<div class="stage-results-instruments" data-result-beat="instruments">'+
         '<div class="stage-instrument pc-display"><span class="stage-instrument-label">Finish stack</span>'+
@@ -1521,14 +1544,8 @@ function tableClearedHTML(g){
           '<div class="stage-ko-lamps">'+koLamps+'</div>'+
           '<div class="stage-ko-readout tabular">'+r.tableKOs+' / '+opponents+'</div></div>'+
       '</div>'+
-      '<div class="stage-results-recap" data-result-beat="recap">'+
-        '<div class="stage-recap-cell"><span class="stage-instrument-label">Hands won</span>'+
-          '<strong class="stage-recap-value tabular">'+ratioResult(r.tableHandsWon,r.tableHands)+'</strong></div>'+
-        '<div class="stage-recap-cell"><span class="stage-instrument-label">Showdowns</span>'+
-          '<strong class="stage-recap-value tabular">'+ratioResult(r.tableShowdownsWon,r.tableShowdownsPlayed)+'</strong></div>'+
-        '<div class="stage-recap-cell"><span class="stage-instrument-label">Biggest pot</span>'+
-          '<strong class="stage-recap-value tabular">'+moneyResult(r.tableBiggestPotWon)+'</strong></div>'+
-      '</div>'+
+      '<div class="stage-results-recap pc-display" id="stage-stat-bank" data-result-beat="recap">'+
+        tableReportStatBankHTML(r)+'</div>'+
       (perfect ? '<div class="stage-recap-lamp"><span class="pc-lamp is-amber"></span>'+
         '<span class="stage-recap-lamp-text">FLAWLESS SHOWDOWNS</span></div>' : '')+
     '</div>'+
@@ -1560,7 +1577,36 @@ async function wakeTableResults(g){
   revealResultAmount($('stage-results-stack'),false);
   if (!await beat('wake-recap',150)) return false;
   if (!await beat('wake-trophy',140)) return false;
-  return beat('wake-progress',110);
+  if (!await beat('wake-progress',110)) return false;
+  startTableStatCycle(g,el);
+  return true;
+}
+function startTableStatCycle(g,el){
+  const bank=el && el.querySelector('#stage-stat-bank');
+  const pages=g && g.run ? tableReportStatPages(g.run) : [];
+  if (!bank || pages.length<2 || motionOff()) return;
+  let page=0;
+  const swap=()=>{
+    if (game!==g || !el.isConnected || !bank.isConnected) return;
+    bank.classList.add('is-switching');
+    Sound.counterTick(false);
+    el._stageStatsSwapT=setTimeout(()=>{
+      if (game!==g || !el.isConnected || !bank.isConnected) return;
+      page=(page+1)%pages.length;
+      bank.querySelectorAll('[data-stage-stat]').forEach((cell,i)=>{
+        const stat=pages[page][i];
+        if (!stat) return;
+        const label=cell.querySelector('.stage-instrument-label');
+        const value=cell.querySelector('.stage-recap-value');
+        if (label) label.textContent=stat.label;
+        if (value) value.textContent=stat.value;
+      });
+      Sound.counterLock(false);
+      el._stageStatsClearT=setTimeout(()=>bank.classList.remove('is-switching'),150);
+      el._stageStatsCycleT=setTimeout(swap,3900);
+    },140);
+  };
+  el._stageStatsCycleT=setTimeout(swap,2700);
 }
 function runOverHTML(g){
   const r=g.run;
@@ -2198,8 +2244,8 @@ async function beginNextRunTable(){
   // future/dev entry point that reaches here directly still starts clean.
   await muckCards();
 
-  // The results face climbs upward and pulls a fresh, empty table face
-  // up from below — same direction, same joined-wheel mechanism as
+  // The results face drops away while a fresh, empty table face descends
+  // from above — same direction, same joined-wheel mechanism as
   // live-table -> TABLE CLEARED (see rollStageTransition, 06-presentation.js).
   // Opponents are NOT part of this move: they populate onto the
   // already-static stage afterward, below.
