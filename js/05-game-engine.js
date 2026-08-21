@@ -235,6 +235,20 @@ function serializeTable(g){
     }))
   };
   if (g.mode==='elimination' && g.run) snapshot.run=JSON.parse(JSON.stringify(g.run));
+  // Career carries its event the same way an elimination run carries g.run.
+  // The reward state rides along deliberately: the event TOTAL is ephemeral
+  // in the sense that it dies when the event settles, NOT in the sense that
+  // it resets on every refresh — a player fifteen hands in must not come
+  // back to a zeroed score. equityPromise-bearing decisionSnapshots are
+  // dropped, since a snapshot is only ever taken between hands.
+  if (g.mode==='career' && g.event){
+    snapshot.event = {
+      id:g.event.id, buyIn:g.event.buyIn, prize:g.event.prize,
+      reward: g.event.reward
+        ? Object.assign({}, g.event.reward, { decisionSnapshots:[] })
+        : null
+    };
+  }
   return snapshot;
 }
 
@@ -280,6 +294,57 @@ function loadTableSave(){
   return raw;
 }
 function clearTableSave(){ Store.remove('felt.table'); }
+
+/* ---------------- Career table persistence ----------------
+   A Career event's table lives under its OWN key. It deliberately never
+   goes near 'felt.table':
+     - writing there would silently destroy the player's Single Player save,
+       since there is only one slot and no per-mode namespacing;
+     - and a Career table that happened to validate would make the menu
+       offer "Continue", restoring a Career event as a Single Player run.
+   isValidTableSave()'s mode whitelist is also left without 'career' as
+   defence in depth, so even a misrouted Career blob could never load there.
+
+   This is a between-hand checkpoint, exactly like the Single Player save
+   (see the note above serializeTable): no deck, board, hole cards or live
+   betting state. Resuming re-deals the current hand. Exact current-hand
+   resume is deferred work, not solved here. */
+const CAREER_TABLE_KEY = 'felt.career.table';
+
+function isValidCareerTableSave(save){
+  if (!save || typeof save !== 'object') return false;
+  if (save.version !== SAVE_VERSION) return false;
+  if (save.mode !== 'career') return false;
+  if (!Array.isArray(save.players) || save.players.length < 2) return false;
+  if (!save.players.some(p=>p && p.isHuman)) return false;
+  if (!DIFFICULTY_PARAMS[save.difficulty]) return false;
+  const numFields = ['startingStack','blindLevel','smallBlind','bigBlind','buyIns','netStart','dealerIndex','handNumber'];
+  for (const f of numFields){ if (typeof save[f] !== 'number' || Number.isNaN(save[f])) return false; }
+  if (save.dealerIndex < -1 || save.dealerIndex >= save.players.length) return false;
+  for (const p of save.players){
+    if (typeof p.id !== 'string' || typeof p.chips !== 'number' || Number.isNaN(p.chips)) return false;
+    if (p.personalityKey && !PERSONALITIES_ALL.some(pp=>pp.key===p.personalityKey)) return false;
+  }
+  return !!save.event;
+}
+
+/* Prefers _safeSave (the clean pre-deal checkpoint startNewHand records) so
+   a mid-hand write rewinds to the start of the current hand rather than
+   persisting a half-played one — same rule as saveProgress(). */
+function saveCareerTable(){
+  if (!game || game.mode !== 'career') return false;
+  Store.set(CAREER_TABLE_KEY, game._safeSave || serializeTable(game));
+  return true;
+}
+function loadCareerTable(){
+  const raw = Store.get(CAREER_TABLE_KEY, null);
+  if (!isValidCareerTableSave(raw)){
+    if (raw) clearCareerTable();
+    return null;
+  }
+  return raw;
+}
+function clearCareerTable(){ Store.remove(CAREER_TABLE_KEY); }
 
 function restoreTable(save){
   const players = save.players.map(sp=>{
@@ -330,6 +395,24 @@ function restoreTable(save){
       ? storedCount
       : normalizeOpponentCount(save.players.filter(p=>!p.isHuman).length);
   }
+  if (save.mode==='career'){
+    const ev = save.event || {};
+    game.event = {
+      id: ev.id || CAREER_EVENT.id,
+      buyIn: Number.isFinite(ev.buyIn) ? ev.buyIn : CAREER_EVENT.buyIn,
+      prize: Number.isFinite(ev.prize) ? ev.prize : CAREER_EVENT.prize,
+      // Restore the accumulated TOTAL when the save carries a usable one;
+      // build a fresh state only when it is absent or malformed.
+      reward: isValidEventReward(ev.reward) ? ev.reward : makeEventRewardState()
+    };
+    if (!Array.isArray(game.event.reward.decisionSnapshots)) game.event.reward.decisionSnapshots = [];
+  }
+}
+
+function isValidEventReward(r){
+  return !!r && typeof r === 'object'
+    && typeof r.score === 'number' && !Number.isNaN(r.score)
+    && !!r.awardCounts && typeof r.awardCounts === 'object';
 }
 
 /* The authoritative opponent count for a live elimination run — run state
@@ -442,8 +525,12 @@ async function startNewHand(){
   clearAllCardDOM();
   updateHandInstrument();
 
-  // tournament: blinds climb; cash: AI top up so the table stays alive
-  if (g.mode === 'tournament'){
+  // tournament/career: blinds climb; cash: AI top up so the table stays alive
+  // NOTE: this runs BEFORE g.handNumber++ below, so handNumber reads as
+  // hands *completed*. floor(9/10)=0 keeps hand #10 at 10/20 and
+  // floor(10/10)=1 raises hand #11 to 15/30 — the intended boundary. The
+  // arithmetic is correct as-is; only the mode test was widened for Career.
+  if (g.mode === 'tournament' || g.mode === 'career'){
     const target = Math.min(BLIND_LEVELS.length-1, Math.floor(g.handNumber / TOURNAMENT_HANDS_PER_LEVEL));
     if (target !== g.blindLevel){
       g.blindLevel = target;
@@ -515,7 +602,7 @@ async function startNewHand(){
   g.handNumber++;
   g.handActions = [];
   g.humanFoldSnapshot = null;
-  if (g.run&&g.run.arcade) g.run.arcade.decisionSnapshots=[];
+  const _reward = rewardState(g); if (_reward) _reward.decisionSnapshots=[];
   hideReview();
   // Order matters. A reaction chain from the previous hand may still be
   // mid-flight (they are fire-and-forget), and while it holds a seat's
@@ -915,7 +1002,12 @@ function applyAction(player, decision){
   // mapping here would read as a predictable tell. restingMood() below
   // reads only the player's public-history faceMood, not this action.
   if (!player.isHuman){
-    setMood(player.id, restingMood(player));
+    // A fold is public, so it gets its own public-safe reaction (chosen
+    // from personality + chance only — see reactToFold). Everything else
+    // still resolves to the resting/public-mood face, deliberately with no
+    // action -> expression mapping that could read as a hand-strength tell.
+    if (action==='fold') reactToFold(player);
+    else setMood(player.id, restingMood(player));
     if (player.allIn) maybeTableTalk(player, 'allin');
     else if (action==='raise' || action==='bet') maybeTableTalk(player, 'raise');
   }
@@ -968,6 +1060,54 @@ function computePots(players){
   return pots;
 }
 
+/* Where a contender will actually stand once runShowdownAwardSequence pays
+   out — derived ENTIRELY from the awards already resolved above
+   (potResults + p._award). It recomputes no pot maths and mutates nothing;
+   it only reads what the payout is going to do.
+
+   This exists because `p.chips <= 0` at winner-declaration time is NOT
+   evidence of elimination. Committed chips have been deducted by then, but
+   nothing has been paid back yet — including the single-eligible pot layer
+   computePots() builds for an uncalled all-in. A player can sit at $0,
+   lose the contested pot, and still be handed their unmatched bet straight
+   back, surviving the hand.
+
+   `contested` distinguishes the two: a layer contested by 2+ players is a
+   real win, a layer with one eligible player is that player's own money
+   being returned. Winning only the latter is a LOSS that happens to come
+   with change. */
+function projectedSettlement(p, potResults){
+  const rows = Array.isArray(potResults)
+    ? potResults.filter(r=>Array.isArray(r.winnerIds) && r.winnerIds.includes(p.id))
+    : [];
+  const shareOf = r=>{
+    const s = (r.winnerShares||[]).find(w=>w.id===p.id);
+    return s ? (s.amount||0) : 0;
+  };
+  const contestedRows = rows.filter(r=>r.contested > 1);
+  const contestedAward = contestedRows.reduce((sum,r)=>sum+shareOf(r), 0);
+  const uncalledReturn = rows.filter(r=>r.contested <= 1).reduce((sum,r)=>sum+shareOf(r), 0);
+  const projected = (p.chips||0) + (p._award||0);
+  // Without usable award data we cannot prove elimination, so we decline to
+  // claim it: the caller falls back to a strong all-in loss and lets
+  // resolveEliminations() confirm the real outcome after settlement.
+  const resolvable = Array.isArray(potResults) && potResults.length > 0;
+  return {
+    wonContested: contestedRows.length > 0,
+    contestedAward, uncalledReturn, projected, resolvable,
+    busted: resolvable && projected <= 0
+  };
+}
+
+/* Result-banner grammar is a tiny rule, but keeping it named makes both
+   branches independently testable: the human is second person (YOU WIN),
+   while named opponents remain third person (WILDCARD WINS). */
+function showdownPotVerb(result){
+  if (result && result.split) return 'split';
+  const ids = result && Array.isArray(result.winnerIds) ? result.winnerIds : [];
+  return ids.length === 1 && ids[0] === 'you' ? 'win' : 'wins';
+}
+
 async function handleFoldWin(){
   const g = game;
   // Back to normal speed before a single frame of result presentation —
@@ -988,7 +1128,9 @@ async function handleFoldWin(){
     if (p.streetAction && !['fold','allin','ko','eliminated'].includes(p.streetAction.type)) p.streetAction = null;
   });
   recordPot(amt);
-  setBanner('<b>' + esc(winner.name) + '</b> takes the pot…');
+  // Same person agreement as the showdown banner below: "You take", not
+  // "You takes"; named opponents keep "takes".
+  setBanner('<b>' + esc(winner.name) + '</b> ' + (winner.isHuman ? 'take' : 'takes') + ' the pot…');
   render();
   await sleep(motionOff() ? 80 : 250);
   if (winner.isHuman){ stats.won++; Sound.resultSting('humanWin'); haptic(30); }
@@ -1121,29 +1263,52 @@ async function handleShowdown(){
   // the winner is actually known, the banner should say so instead of
   // sitting stale through the whole plaque/AWARD POT/payout sequence.
   const mainResult = potResults[0];
-  setBanner('<b>' + esc(mainResult.winners.join(' & ')) + '</b> ' + (mainResult.split ? 'split' : 'wins') + ' the pot.');
+  // "You wins the pot" — the human's seat name is second person, so it
+  // needs the second-person verb. Named opponents are third person and
+  // keep "wins" ("Wildcard wins the pot"). A split reads the same either
+  // way, so only the singular verb is person-dependent.
+  const winnerNames = mainResult.winners.join(' & ');
+  const winVerb = showdownPotVerb(mainResult);
+  setBanner('<b>' + esc(winnerNames) + '</b> ' + winVerb + ' the pot.');
 
   // faces react to the result — and big swings leave a lingering mood
   const bbv = g.bigBlind;
   contenders.forEach(p=>{
     if (p.isHuman) return;
     const won = winnerIds.has(p.id);
+    const swing = p._award || 0;
+    const lost = p.totalBetHand || 0;
+    const strong = p._handRes && p._handRes.result.cat >= 2;   // two pair or better, and it still lost — public by now, showdown reveals hands
+    const stung = lost > 10*bbv || lost > (p.chips + lost)*0.3;
+
+    // GAMEPLAY mood (moodState — read by aiDecide) is deliberately left
+    // exactly as it was, still keyed on plain `won`. The settlement
+    // projection below steers the PORTRAIT only, so nothing here can shift
+    // an AI's aggression or tightness.
     if (won){
-      const swing = p._award || 0;
       if (swing > 12*bbv) nudgeMood(p, 'up', Math.min(1, swing/(30*bbv) + 0.4));
-      reactToWin(p, swing / bbv);
+    } else if (stung){
+      nudgeMood(p, strong ? 'steamed' : 'down', strong ? 0.8 : 0.6);
+    }
+
+    // PRESENTATION reaction, from the projected post-settlement position.
+    const settle = projectedSettlement(p, potResults);
+    if (settle.wonContested){
+      reactToWin(p, settle.contestedAward / bbv);
     } else {
-      const lost = p.totalBetHand || 0;
-      const strong = p._handRes && p._handRes.result.cat >= 2;   // two pair or better, and it still lost — public by now, showdown reveals hands
-      const stung = lost > 10*bbv || lost > (p.chips + lost)*0.3;
-      if (stung) nudgeMood(p, strong ? 'steamed' : 'down', strong ? 0.8 : 0.6);
       // Visible reaction takes only public quantities (loss in BB, and
       // whether it stung relative to their own stack). Whether this is a
       // genuine repeat — and so deserves a deepening beat — is decided
       // inside reactToLoss from faceMood, not from `strong` above: `strong`
       // is a hand-strength read and must never steer a portrait, even
       // though the cards are already face-up by this point.
-      reactToLoss(p, lost / bbv, stung);
+      reactToLoss(p, lost / bbv, stung, {
+        busted: settle.busted,
+        // Shoved and lost the contested pot. Still a strong beat even when
+        // an uncalled return keeps them alive — and the honest reaction
+        // when award data is missing and elimination cannot be proven.
+        allInLoss: settle.uncalledReturn > 0 || (p.chips <= 0 && !settle.resolvable)
+      });
     }
     maybeTableTalk(p, won ? 'win' : 'lose');
   });
@@ -1398,7 +1563,7 @@ async function finishHand(outcome){
   // In a Single Player run the physical controls remain in their bay and
   // visibly lose power while the payout/K.O. sequence resolves. Other
   // modes keep their existing between-hand behaviour.
-  if (g.mode==='elimination' && g.run && g.run.active){
+  if ((g.mode==='elimination' && g.run && g.run.active) || g.mode==='career'){
     $('actions-row').classList.remove('hidden');
     $('actions-row').classList.add('disabled');
   } else $('actions-row').classList.add('hidden');
@@ -1409,7 +1574,11 @@ async function finishHand(outcome){
   stats.hands++;
   const human = g.players.find(p=>p.id==='you');
   if (g.mode==='elimination') trackEliminationHand(g,outcome,human);
-  stats.net = human.chips - g.buyIns;
+  // Career table chips are not a Single Player session net, and this is an
+  // assignment rather than an accumulation — letting a Career hand through
+  // would overwrite the player's real figure. The lifetime counters above
+  // stay mode-blind: a Career hand genuinely is a hand played.
+  if (g.mode !== 'career') stats.net = human.chips - g.buyIns;
   saveStats();
   renderStats();
 
@@ -1460,6 +1629,27 @@ async function finishHand(outcome){
       concludeGame();
       return;
     }
+  } else if (g.mode === 'career'){
+    // A Career event is a freezeout, so it uses the same no-rebuy K.O.
+    // lifecycle as elimination — the ceremony is reached through
+    // resolveEliminations() exactly as it is there. What it does NOT reuse
+    // is the run: no g.run, no table counters, no arcade persistence.
+    const eliminationResult = await resolveEliminations(g, outcome);
+    const recoveredResult = await recoverMissedEliminations(g, outcome);
+    const koCount = (eliminationResult?eliminationResult.koCount:0) + (recoveredResult?recoveredResult.koCount:0);
+    const aiRemaining = g.players.filter(p=>!p.isHuman && !p.eliminated);
+    await resolveArcadeHandLate(g,outcome,{
+      koCount,
+      tableClear: human.chips>0 && aiRemaining.length===0
+    });
+    // finishHand owns terminal settlement. endCareerEvent() is guarded and
+    // is the ONLY function permitted to start result presentation.
+    if (human.chips<=0){ endCareerEvent(g,'loss'); return; }
+    if (aiRemaining.length===0){
+      await sleep(motionOff() ? 0 : ELIMINATION_CONFIG.clearedBeatMs);
+      endCareerEvent(g,'win');
+      return;
+    }
   } else {
     if (g.livesEnabled) processLives(g);
     if (human.chips<=0){
@@ -1477,7 +1667,7 @@ async function finishHand(outcome){
   $('btn-next-hand').classList.remove('hidden');
   setBanner('Hand complete.');
   render();
-  saveTable();
+  if (g.mode==='career') saveCareerTable(); else saveTable();
   scheduleAutoDeal();
 }
 
@@ -1555,10 +1745,145 @@ function showGameOver(g, human){
   render();
 }
 
+/* ---------------- Career event ending ----------------
+   ONE authoritative terminal path. Two independent guards:
+     - the money guard lives inside settleCareerEvent(), which returns true
+       only if it actually performed the settlement;
+     - the presentation guard is _careerResultShown on the game object,
+       mirroring showTableCleared's own _tableClearedShown.
+   Either alone would prevent a double credit; together they also cover the
+   case where settlement succeeded but presentation was interrupted. A second
+   call can never credit the prize, clear state, start a second drum, show a
+   second result card, or rebind the return button. */
+function endCareerEvent(g, outcome){
+  if (!g || g.mode !== 'career') return;
+  if (g._careerResultShown) return;
+  if (!settleCareerEvent(outcome)) return;   // someone else already owns this ending
+  g._careerResultShown = true;
+  g.over = true;
+  // Snapshot every displayed value ONCE, immediately after settlement and
+  // before any presentation begins. The result animation must never read
+  // live Career state: settlement has already cleared career.active, and a
+  // multi-second drum transition is exactly the window in which live reads
+  // go stale or throw. This object is display data only — it recalculates
+  // nothing and can alter no settlement.
+  const model = buildCareerResultModel(g, outcome);
+  showCareerEventResult(g, model);
+}
+
+function buildCareerResultModel(g, outcome){
+  const ev = g.event || CAREER_EVENT;
+  const reward = g.event && g.event.reward;
+  const won = outcome === 'win';
+  return {
+    outcome, won,
+    eventName: ev.name || CAREER_EVENT.name,
+    prize: ev.prize || 0,
+    buyIn: ev.buyIn || 0,
+    bankroll: careerBankroll(),                                  // read once, post-settlement
+    eventScore: reward ? Math.max(0, Math.round(reward.score||0)) : 0,
+    hands: g.handNumber || 0
+  };
+}
+
+/* Plain, atomic strings. Every amount is ONE text node with its currency
+   symbol and thousands separators attached, so nothing can wrap or
+   fragment mid-number. Deliberately NOT the mechanical per-digit reel
+   builders (buildResultAmount/buildResultCounter): those emit a separate
+   element per glyph, which is what split TOTAL into loose +, digits and
+   commas across several lines. Those builders remain untouched for the
+   Arcade results they were designed for. */
+function careerResultRow(label, value){
+  return '<div class="career-res-row"><span class="career-res-k">' + esc(label) +
+         '</span><span class="career-res-v tabular">' + esc(value) + '</span></div>';
+}
+function careerResultHTML(model){
+  const money = n => '$' + Math.abs(Math.round(n)).toLocaleString();
+  const rows = model.won
+    ? careerResultRow('PRIZE', '+' + money(model.prize))
+    : careerResultRow('BUY-IN LOST', '-' + money(model.buyIn));
+  return '<section class="career-result-panel" aria-label="Career event result">' +
+    '<div class="career-res-title">' + (model.won ? 'EVENT WON' : 'EVENT LOST') + '</div>' +
+    '<div class="career-res-event">' + esc(model.eventName) + '</div>' +
+    rows +
+    careerResultRow('EVENT SCORE', model.eventScore.toLocaleString()) +
+    careerResultRow('HANDS', String(model.hands)) +
+    careerResultRow('BANKROLL', money(model.bankroll)) +
+    '</section>';
+}
+
+/* Reuses the stage machinery rather than showTableCleared() itself, which is
+   welded to g.run (tablesCleared/tableNumber/run.arcade.score). A win earns
+   the full drum; a loss reports plainly on the existing .result-card path,
+   the same way showBusted does — real ceremony for the K.O., plain report
+   after it. */
+async function showCareerEventResult(g, model){
+  clearTimeout(autoDealT);
+  endQuickResolve();          // no table action may survive into the result
+  hideResultCard();
+  closeRaisePanel();
+  clearHumanReadouts();
+  hideReview();
+  pendingHumanPlayer = null;
+  coachToken++;
+  bannerOverride = null;
+  $('btn-next-hand').classList.add('hidden');
+  $('btn-rebuy').classList.add('hidden');
+  $('btn-new-table').classList.add('hidden');
+  // Row stays in its bay but fully inert: .disabled is pointer-events:none,
+  // so Fold/Check/Raise cannot be pressed while a result is up.
+  $('actions-row').classList.remove('hidden');
+  $('actions-row').classList.add('disabled');
+  if ($('action-console')) $('action-console').classList.add('results-pending');
+  powerDownCompletedEvent(g);
+
+  if (!model.won){
+    // A loss has already had its full K.O. ceremony; it does not take the
+    // win drum. Plain card, same data model, same return behaviour.
+    setBanner('<b>Event over.</b> You were eliminated.');
+    clearCompletedEventTable(g);
+    const el = document.createElement('div');
+    el.className = 'result-card gameover career-event-result';
+    el.id = 'result-card';
+    el.innerHTML = careerResultHTML(model);
+    $('felt').appendChild(el);
+    render();
+    enterCareerResultsConsole(returnToCareer);
+    return;
+  }
+
+  setBanner('<b>Event won.</b> Every opponent is out.');
+  await muckCards();
+  await sleep(motionOff() ? 0 : STAGE_ROLL_CONFIG.breatheMs);
+  await rollStageTransition(felt=>{
+    clearAllCardDOM();
+    felt.querySelectorAll('.seat').forEach(s=>s.remove());
+    const potArea = felt.querySelector('#pot-area');
+    if (potArea) potArea.classList.add('hidden');
+    if ($('pot-val')) $('pot-val').textContent = '0';
+    g.board = []; g.pot = 0;
+    felt.classList.add('results-mode');
+    const el = document.createElement('div');
+    el.className = 'stage-results career-event-result'; el.id = 'result-card';
+    el.innerHTML = careerResultHTML(model);
+    felt.appendChild(el);
+  });
+  enterCareerResultsConsole(returnToCareer);
+}
+
 function concludeGame(){
   endQuickResolve();
   if (game.mode==='elimination' && game.run && game.run.active){
     showTableCleared(game);
+    return;
+  }
+  // Career should never reach here — finishHand sets g.over before
+  // startNewHand could re-enter — but if it ever does, it routes through the
+  // same guarded owner rather than becoming a second presentation site.
+  // endCareerEvent() no-ops unless it genuinely owns the settlement.
+  if (game.mode==='career'){
+    const human = game.players.find(p=>p.id==='you');
+    endCareerEvent(game, (human && human.chips>0) ? 'win' : 'loss');
     return;
   }
   game.over = true;

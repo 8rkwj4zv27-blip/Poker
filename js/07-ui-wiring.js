@@ -285,6 +285,7 @@ function startGame(){
   $('setup').classList.add('hidden');
   $('rankings').classList.add('hidden');
   $('awards').classList.add('hidden');
+  $('career').classList.add('hidden');
   $('table-screen').classList.remove('hidden');
   initSeats();
   if (!settings.seenIntro){
@@ -302,11 +303,22 @@ function reconstructMainMenu(){
   if (home) home.classList.remove('menu-launching','menu-over-table','menu-clearing');
   if (button){ button.disabled=false; button.classList.remove('pc-launch-clunk'); }
   refreshMenuPrimaryButton();
+  refreshCareerMenuButton();
 }
 
 // Single primary slot: SINGLE PLAYER when there's nothing to resume, or
 // CONTINUE (same button, same cartridge animation) when a save exists —
 // avoids ever stacking two giant primary buttons on the menu.
+/* The main menu must advertise a paused event, since leaving the table no
+   longer forfeits it and the player needs to know it is still waiting. */
+function refreshCareerMenuButton(){
+  const btn = $('open-career');
+  if (!btn) return;
+  const active = careerHasActiveEvent();
+  btn.textContent = active ? 'Career \u00b7 Event in Progress' : 'Career';
+  btn.classList.toggle('career-active', active);
+}
+
 function refreshMenuPrimaryButton(){
   const hasResumable = !!loadTableSave();
   const label = $('single-player-label'), sub = $('single-player-sub');
@@ -432,6 +444,253 @@ async function launchSinglePlayerFromMenu(opponentCount){
   startNewHand();
 }
 
+/* ============================================================
+   CAREER — bankroll, event transactions, launch/resume.
+
+   Money rules, all enforced here and nowhere else:
+     - the buy-in is deducted AND persisted before the table exists, so a
+       refresh can never un-pay it;
+     - settlement happens exactly once, guarded by career.active;
+     - the bankroll credit and active:null land in the SAME Store.set, and
+       that write happens BEFORE the table key is cleared — if anything
+       interrupts between the two, an active:null Career with a stale
+       (ignored) table is recoverable, whereas an active event whose table
+       was already deleted is not.
+   Table chips never touch the bankroll: chips are g.players[].chips, the
+   bankroll is off-table money in 'felt.career'.
+   ============================================================ */
+const CAREER_KEY = 'felt.career';
+const CAREER_SAVE_VERSION = 1;   // independent of SAVE_VERSION — never bump that one
+
+function defaultCareer(){
+  return { v:CAREER_SAVE_VERSION, bankroll:CAREER_START_BANKROLL, active:null, lastResult:null };
+}
+function isValidCareer(c){
+  return !!c && typeof c === 'object'
+    && c.v === CAREER_SAVE_VERSION
+    && typeof c.bankroll === 'number' && !Number.isNaN(c.bankroll) && c.bankroll >= 0
+    && (c.active === null || (!!c.active && typeof c.active === 'object'
+        && typeof c.active.buyIn === 'number' && typeof c.active.prize === 'number'));
+}
+let career = (function(){
+  const raw = Store.get(CAREER_KEY, null);
+  if (raw && !isValidCareer(raw)) Store.remove(CAREER_KEY);   // Store has no corrupt-value recovery of its own
+  return isValidCareer(raw) ? raw : defaultCareer();
+})();
+function saveCareer(){ Store.set(CAREER_KEY, career); }
+function careerBankroll(){ return career.bankroll; }
+function careerHasActiveEvent(){ return !!career.active; }
+
+/* The entry rule, enforced at Career-state level rather than in the UI, so
+   that when the event board grows past one event every choice is disabled
+   by the same test. While career.active is set, NO event may be entered or
+   paid for — the player must continue or abandon the one they are in. */
+function careerCanEnterEvent(ev){
+  if (career.active) return false;
+  return career.bankroll >= ((ev || CAREER_EVENT).buyIn);
+}
+
+/* Deduct and persist BEFORE the table is built. Returns false when the
+   event is unaffordable or one is already live — the two states that must
+   never produce a second charge. */
+function enterCareerEvent(){
+  if (!careerCanEnterEvent(CAREER_EVENT)) return false;
+  career.bankroll -= CAREER_EVENT.buyIn;
+  career.active = { eventId:CAREER_EVENT.id, buyIn:CAREER_EVENT.buyIn, prize:CAREER_EVENT.prize };
+  career.lastResult = null;
+  saveCareer();
+  return true;
+}
+
+/* Returns true ONLY if this call performed the settlement. endCareerEvent()
+   in 05-game-engine.js relies on that to decide who owns the ceremony. */
+function settleCareerEvent(outcome){
+  if (!career.active) return false;
+  const stake = career.active;
+  if (outcome === 'win') career.bankroll += stake.prize;
+  career.lastResult = {
+    outcome,
+    delta: outcome === 'win' ? stake.prize : -stake.buyIn,
+    bankroll: career.bankroll
+  };
+  career.active = null;
+  saveCareer();        // credit + active:null in one write, and it lands first
+  clearCareerTable();  // only once settlement is durable
+  return true;
+}
+
+function startCareerEvent(){
+  Sound.unlock();
+  hideResultCard();
+  // Deliberately NO clearTableSave() — a Career event must never disturb the
+  // player's Single Player save.
+  newGame({
+    mode:'career', difficulty:CAREER_EVENT.difficulty,
+    opponents:CAREER_EVENT.seats - 1, stack:CAREER_EVENT.stack,
+    blindLevel:CAREER_EVENT.blindLevel
+  });
+  game.event = {
+    id:CAREER_EVENT.id, buyIn:CAREER_EVENT.buyIn, prize:CAREER_EVENT.prize,
+    reward: makeEventRewardState()
+  };
+  // The first checkpoint. saveTable() only fires at the END of a hand, so
+  // without this a refresh during hand 1 would find career.active set with
+  // no table to resume — stranding the player behind a dead RESUME button.
+  saveCareerTable();
+  updateArcadeHUD();
+  showTableScreen();
+  initSeats();
+  startNewHand();
+  return game;
+}
+
+/* Resume an in-progress event. Never touches the bankroll: the buy-in was
+   taken at entry. This is a between-hand checkpoint resume — the current
+   hand is re-dealt (see the note above serializeTable). */
+function continueCareerEvent(){
+  if (!career.active) return;
+  const save = loadCareerTable();
+  if (!save){
+    // career.active set but no usable table. After the entry checkpoint
+    // above, the only window that produces this is the few milliseconds
+    // between the buy-in write and that checkpoint — during which zero
+    // hands have been played, so rebuilding loses and gains nothing. It
+    // never credits money and never charges again, which also makes it the
+    // conservative branch for the (vanishingly rare) corrupt-save case.
+    startCareerEvent();
+    return;
+  }
+  Sound.unlock();
+  hideResultCard();
+  restoreTable(save);
+  if (!game.event) game.event = { id:CAREER_EVENT.id, buyIn:CAREER_EVENT.buyIn, prize:CAREER_EVENT.prize, reward:makeEventRewardState() };
+  if (!game.event.reward) game.event.reward = makeEventRewardState();
+  updateArcadeHUD();
+  showTableScreen();
+  initSeats();
+  startNewHand();
+}
+
+function showTableScreen(){
+  $('home').classList.add('hidden');
+  $('setup').classList.add('hidden');
+  $('rankings').classList.add('hidden');
+  $('awards').classList.add('hidden');
+  $('career').classList.add('hidden');
+  $('table-screen').classList.remove('hidden');
+  $('btn-new-table').classList.add('hidden');
+}
+
+function showCareerScreen(){
+  renderCareerScreen();
+  $('home').classList.add('hidden');
+  $('setup').classList.add('hidden');
+  $('rankings').classList.add('hidden');
+  $('awards').classList.add('hidden');
+  $('table-screen').classList.add('hidden');
+  $('career').classList.remove('hidden');
+}
+
+/* Returning from a finished event. The event is already settled by then
+   (endCareerEvent owns that), so this only tears the table down. */
+/* BACK TO EVENTS. One-shot: the button stays bound while the console
+   animates out, so a second press must be inert. It performs no money
+   operation of any kind — settlement completed before the result was ever
+   shown (endCareerEvent), so this cannot re-credit or re-settle even if it
+   somehow ran twice. */
+let careerReturnInFlight = false;
+function returnToCareer(){
+  if (careerReturnInFlight || (game && game._careerReturnDone)) return;
+  careerReturnInFlight = true;
+  clearTimeout(autoDealT);
+  endQuickResolve();
+  closeOverlays();
+  hideResultCard();
+  exitResultsConsole();
+  clearCompletedEventConsole();
+  if (game){ game.over = true; game._careerReturnDone = true; }
+  pendingHumanPlayer = null;
+  coachToken++;
+  setArcadeMode(false);
+  const felt = $('felt');
+  if (felt) felt.classList.remove('results-mode');
+  $('btn-new-table').textContent = 'New Table';
+  $('btn-new-table').classList.add('hidden');
+  applyTheme();
+  showCareerScreen();
+  careerReturnInFlight = false;
+}
+
+function renderCareerScreen(){
+  const bank = $('career-bankroll');
+  if (bank) buildResultAmount(bank, career.bankroll);
+
+  const active = careerHasActiveEvent();
+  const canEnter = careerCanEnterEvent(CAREER_EVENT);
+  const affordable = career.bankroll >= CAREER_EVENT.buyIn;
+  const enterBtn = $('career-enter'), newBtn = $('career-new'), note = $('career-note');
+  const abandonBtn = $('career-abandon'), statusEl = $('career-event-status');
+  const resultEl = $('career-last-result');
+
+  if (statusEl) statusEl.classList.toggle('hidden', !active);
+  // ABANDON exists only while an event is live — it is the single
+  // deliberate route to forfeiting a buy-in.
+  if (abandonBtn) abandonBtn.classList.toggle('hidden', !active);
+
+  if (enterBtn){
+    enterBtn.classList.toggle('hidden', !active && !canEnter);
+    enterBtn.textContent = active ? 'Continue Event' : 'Enter Event';
+  }
+  if (newBtn) newBtn.classList.toggle('hidden', active || affordable);
+
+  if (note){
+    note.textContent = active
+      ? 'Your $' + CAREER_EVENT.buyIn + ' buy-in is staked. Continue where you left off.'
+      : affordable
+        ? 'Winner takes the full $' + CAREER_EVENT.prize + ' pool.'
+        : 'Not enough for the buy-in. Start a fresh career to keep playing.';
+  }
+
+  if (resultEl){
+    const r = career.lastResult;
+    resultEl.classList.toggle('hidden', !r);
+    if (r){
+      const sign = r.delta >= 0 ? '+' : '-';
+      resultEl.innerHTML = '<span class="cr-tag">' + (r.outcome === 'win' ? 'Event won' : 'Event lost') + '</span>' +
+        '<span class="cr-amt tabular">' + sign + '$' + Math.abs(r.delta).toLocaleString() + '</span>';
+    }
+  }
+}
+
+function careerEnterPressed(){
+  if (careerHasActiveEvent()){ continueCareerEvent(); return; }
+  if (!enterCareerEvent()){ renderCareerScreen(); return; }
+  renderCareerScreen();       // bankroll visibly drops before the table appears
+  startCareerEvent();
+}
+
+/* The ONLY path that forfeits a buy-in. Confirmation is mandatory and the
+   consequence is stated plainly. */
+function careerAbandonPressed(){
+  if (!careerHasActiveEvent()) return;
+  showConfirmDialog({
+    title:'Abandon event?',
+    body:'Your $' + CAREER_EVENT.buyIn + ' buy-in is lost and the event ends immediately. This cannot be undone.',
+    confirmLabel:'Abandon', danger:true,
+    onConfirm:()=>{
+      settleCareerEvent('forfeit');   // clears active + the table save
+      renderCareerScreen();
+    }
+  });
+}
+
+function startFreshCareer(){
+  career = defaultCareer();
+  saveCareer();
+  clearCareerTable();
+  renderCareerScreen();
+}
+
 function startSinglePlayerRun(options){
   const opts = (options && typeof options === 'object' && !(options instanceof Event)) ? options : null;
   const keepMenuVisible=!!(opts && opts.keepMenuVisible===true);
@@ -452,6 +711,7 @@ function startSinglePlayerRun(options){
   $('setup').classList.add('hidden');
   $('rankings').classList.add('hidden');
   $('awards').classList.add('hidden');
+  $('career').classList.add('hidden');
   $('table-screen').classList.remove('hidden');
   $('btn-new-table').classList.add('hidden');
   initSeats();
@@ -473,6 +733,7 @@ function continueTable(){
   $('setup').classList.add('hidden');
   $('rankings').classList.add('hidden');
   $('awards').classList.add('hidden');
+  $('career').classList.add('hidden');
   $('table-screen').classList.remove('hidden');
   if (game.mode==='elimination'){
     applyRunTheme();
@@ -482,7 +743,20 @@ function continueTable(){
   startNewHand();
 }
 
+/* Leaving a live Career event PAUSES it. This is a resumable single-player
+   Career, not a one-sitting run: the checkpoint is written, career.active
+   and the already-deducted buy-in are both retained, and nothing settles.
+   Quitting for good is a separate, explicit act — ABANDON EVENT on the
+   Career screen (see careerAbandonPressed), which is the only caller that
+   ever passes 'forfeit' to settleCareerEvent(). */
 function leaveTable(){
+  if (game && game.mode==='career' && careerHasActiveEvent() && !game._careerResultShown){
+    saveCareerTable();
+  }
+  doLeaveTable();
+}
+
+function doLeaveTable(){
   clearTimeout(autoDealT);
   endQuickResolve();   // also releases any AI think wait still pending
   closeOverlays();
@@ -494,10 +768,19 @@ function leaveTable(){
   pendingHumanPlayer = null;
   coachToken++;
   setArcadeMode(false);
+  // A *finished* Career event returns to the Career screen (its result is
+  // waiting there). A *paused* one goes to the main menu, which advertises
+  // the event as still active — see refreshCareerMenuButton().
+  const careerFinished = !!(game && game.mode==='career') && !careerHasActiveEvent();
+  const felt = $('felt');
+  if (felt) felt.classList.remove('results-mode');
+  clearCompletedEventConsole();
+  $('btn-new-table').textContent = 'New Table';
   $('table-screen').classList.add('hidden');
+  applyTheme();
+  if (careerFinished){ showCareerScreen(); renderStats(); return; }
   $('home').classList.remove('hidden');
   reconstructMainMenu();
-  applyTheme();
   renderStats();
 }
 
@@ -530,4 +813,3 @@ function showConfirmDialog(opts){
   $('confirm-dialog-no').onclick = ()=>{ cleanup(); if (opts.onCancel) opts.onCancel(); };
   dlg.classList.remove('hidden');
 }
-

@@ -298,12 +298,21 @@ input[type=range]::-moz-range-thumb{
   font-size:15px; letter-spacing:.08em;
   animation:nextTablePulse 2.2s steps(8,end) infinite;
 }
+/* Career owns a distinct result-console state. It may look like the same
+   physical button, but it is never marked as NEXT TABLE and never receives
+   the Arcade progression callback. */
+.btn-award-console.career-return-mode{
+  font-size:15px; letter-spacing:.06em;
+  animation:nextTablePulse 2.2s steps(8,end) infinite;
+}
 @keyframes nextTablePulse{
   0%,100%{ filter:brightness(1); box-shadow:0 6px 0 color-mix(in srgb, var(--accent) 55%, black), 0 6px 0 2px var(--px-ink), inset 0 3px 0 rgba(255,255,255,.32), inset 0 -3px 0 rgba(0,0,0,.16); }
   50%{ filter:brightness(1.1); box-shadow:0 6px 0 color-mix(in srgb, var(--accent) 55%, black), 0 6px 0 2px var(--px-ink), inset 0 3px 0 rgba(255,255,255,.4), inset 0 -3px 0 rgba(0,0,0,.16), inset 0 0 0 2px color-mix(in srgb,var(--accent-bright) 30%,transparent); }
 }
 .btn-award-console.next-table-mode.is-pressed{ animation:none; }
-[data-motion="off"] .btn-award-console.next-table-mode{ animation:none; }
+.btn-award-console.career-return-mode.is-pressed{ animation:none; }
+[data-motion="off"] .btn-award-console.next-table-mode,
+[data-motion="off"] .btn-award-console.career-return-mode{ animation:none; }
 .wide-btn{
   width:100%; min-height:56px; padding:15px; border:2px solid var(--px-ink); border-radius:var(--radius);
   font-family:var(--font-hdr); font-size:13px; font-weight:400; cursor:pointer; text-transform:uppercase; letter-spacing:.04em;

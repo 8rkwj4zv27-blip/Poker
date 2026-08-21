@@ -67,8 +67,20 @@ function devRigForWinner(targetPlayer){
   });
 }
 
+/* Which modes the TABLE-testing controls may drive. These controls work by
+   playing the real game — rigging the deck, folding opponents, forcing a
+   real all-in — so they are safe anywhere the ordinary table lifecycle
+   runs. They never create or mutate an Arcade run and never write to
+   felt.arcade; Career settlement stays behind endCareerEvent()'s guards.
+   Controls that genuinely depend on Arcade RUN state (devRapidHands' run
+   loop) or the Arcade PROFILE keep their own narrower checks. */
+function devTableTestable(g){
+  g = g || game;
+  return !!g && (g.mode === 'elimination' || g.mode === 'career');
+}
+
 function devWinHand(){
-  if (!handInProgress() || game.mode!=='elimination') return;
+  if (!handInProgress() || !devTableTestable()) return;
   const g = game, human = g.players.find(p=>p.isHuman);
   devRigForWinner(human);
   g.players.forEach(p=>{
@@ -80,7 +92,7 @@ function devWinHand(){
   refreshDevPanel();
 }
 function devKoNext(){
-  if (!handInProgress() || game.mode!=='elimination') return;
+  if (!handInProgress() || !devTableTestable()) return;
   const target = game.players.find(p=>!p.isHuman && p.inHand && !p.folded && !p.allIn && !p.eliminated && !p._devForceAllIn);
   if (!target) return;
   devForceAllIn(target);
@@ -95,7 +107,7 @@ function devKoNext(){
    devWinHand/devBustMe above, then forces the human's own pending
    preflop action to a genuine all-in instead of a call. */
 function devShoveSteal(){
-  if (!handInProgress() || game.mode!=='elimination' || game.phase!=='preflop') return;
+  if (!handInProgress() || !devTableTestable() || game.phase!=='preflop') return;
   const g = game, human = g.players.find(p=>p.isHuman);
   if (!human.inHand || human.folded || human.allIn) return;
   g.players.forEach(p=>{
@@ -114,6 +126,8 @@ function devShoveSteal(){
    FAST DEV for the duration so hands turn over quickly; leaves it on
    afterward (matching the existing FAST DEV checkbox behaviour) rather
    than silently reverting a setting the user may have already chosen. */
+/* Arcade-only: the loop below is bounded by run.active, and a Career event
+   is a single freezeout that ends rather than rolling into another table. */
 function devRapidHands(n){
   if (!DEV_MODE || !game || game.mode!=='elimination') return;
   const targetCount = Math.max(1, n||8);
@@ -141,7 +155,7 @@ function devRapidHands(n){
    right before each run so the same seat can be previewed repeatedly
    without a table reset in between. */
 function devTestKoEject(){
-  if (!DEV_MODE || !game || game.mode!=='elimination') return;
+  if (!DEV_MODE || !devTableTestable()) return;
   const target = game.players.find(p=>!p.isHuman && !p.eliminated);
   if (!target) return;
   const e = seatEls[target.id];
@@ -173,7 +187,7 @@ function devTestKoEject(){
    quad) — repeatable without a table reset, same reset-then-run pattern
    as the single-target preview. */
 function devTestKoEjectGroup(n){
-  if (!DEV_MODE || !game || game.mode!=='elimination') return;
+  if (!DEV_MODE || !devTableTestable()) return;
   const targets = game.players.filter(p=>!p.isHuman && !p.eliminated).slice(0, n);
   if (targets.length < 2) { logMsg('[DEV] Not enough live opponents for a '+n+'-KO preview', true); return; }
   document.querySelectorAll('.ko-physics-layer').forEach(l=>l.remove());
@@ -195,7 +209,7 @@ function devTestKoEjectGroup(n){
   playEliminationGroup(targets.map(p=>({ p, ko:true })));
 }
 function devBustMe(){
-  if (!handInProgress() || game.mode!=='elimination') return;
+  if (!handInProgress() || !devTableTestable()) return;
   const g = game, human = g.players.find(p=>p.isHuman);
   const target = g.players.find(p=>!p.isHuman && p.inHand && !p.folded && !p.eliminated);
   if (!target) return;
@@ -209,7 +223,7 @@ function devBustMe(){
   refreshDevPanel();
 }
 function devClearTable(){
-  if (!betweenHands() || game.mode!=='elimination') return;
+  if (!betweenHands() || !devTableTestable()) return;
   const g = game;
   const ais = g.players.filter(p=>!p.isHuman && !p.eliminated);
   if (ais.length <= 1) return;
@@ -228,7 +242,11 @@ function devClearTable(){
    to the exact production cleared/results/NEXT TABLE path. It does not own
    or duplicate any transition/result presentation. */
 function devEndTable(){
-  if (!game || game.mode!=='elimination' || !game.run || !game.run.active || game.over) return;
+  if (!game || game.over) return;
+  // Arcade needs a live run to have somewhere to go next; Career just needs
+  // to be a Career table.
+  if (game.mode === 'elimination'){ if (!game.run || !game.run.active) return; }
+  else if (!devTableTestable()) return;
   const g = game;
   clearTimeout(autoDealT);
   pendingHumanPlayer = null;
@@ -252,7 +270,12 @@ function devEndTable(){
     }
   });
   logMsg('[DEV] Current table ended through production results flow',true);
-  showTableCleared(g);
+  // Hands off to whichever production ending owns this mode. For Career
+  // that is endCareerEvent(), so DEV wins go through the exact same
+  // settle-once guards a real win does — pressing this twice cannot credit
+  // the prize twice.
+  if (g.mode === 'career') endCareerEvent(g, 'win');
+  else showTableCleared(g);
 }
 
 /* DEV-only fast entry into a Single Player run at an explicit table size.
@@ -421,23 +444,28 @@ function refreshDevPanel(){
   const panel = $('dev-panel');
   if (!panel) return;
   const inElim = !!game && game.mode==='elimination';
-  $('dev-new-elim').classList.toggle('hidden', inElim && !game.over);
-  $('dev-controls').classList.toggle('hidden', !inElim || game.over);
-  $('dev-arcade-controls').classList.toggle('hidden', !inElim);
+  const onTable = devTableTestable();                 // Arcade run OR Career event
+  const rewardable = !!rewardState(game);             // reward presentation available
+  $('dev-new-elim').classList.toggle('hidden', onTable && !game.over);
+  $('dev-controls').classList.toggle('hidden', !onTable || game.over);
+  $('dev-arcade-controls').classList.toggle('hidden', !rewardable);
   const hip = handInProgress(), bh = betweenHands();
-  $('dev-win-hand').disabled = !(inElim && hip);
-  $('dev-ko-next').disabled = !(inElim && hip);
-  $('dev-bust-me').disabled = !(inElim && hip);
-  $('dev-shove-steal').disabled = !(inElim && hip && game.phase==='preflop');
-  $('dev-rapid-hands').disabled = !inElim;
-  $('dev-clear-table').disabled = !(inElim && bh);
-  $('dev-ko-eject').disabled = !(inElim && bh);
-  $('dev-ko-eject-2').disabled = !(inElim && bh);
-  $('dev-ko-eject-4').disabled = !(inElim && bh);
-  $('dev-end-table').disabled = !(inElim && game.run && !game.over && !game._transitioning);
+  $('dev-win-hand').disabled = !(onTable && hip);
+  $('dev-ko-next').disabled = !(onTable && hip);
+  $('dev-bust-me').disabled = !(onTable && hip);
+  $('dev-shove-steal').disabled = !(onTable && hip && game.phase==='preflop');
+  $('dev-rapid-hands').disabled = !inElim;            // Arcade-only, see devRapidHands
+  $('dev-clear-table').disabled = !(onTable && bh);
+  $('dev-ko-eject').disabled = !(onTable && bh);
+  $('dev-ko-eject-2').disabled = !(onTable && bh);
+  $('dev-ko-eject-4').disabled = !(onTable && bh);
+  $('dev-end-table').disabled = !(onTable && !game.over && !game._transitioning
+    && (game.mode!=='elimination' || !!game.run));
   const status = $('dev-status');
+  const rs = rewardState(game);
   if (status) status.textContent = (FAST_DEV ? '[FAST] ' : '') + (game ? ('mode:' + game.mode +
-    (game.run ? '  table:'+game.run.tableNumber+(game.run.arcade?' score:'+game.run.arcade.score:'') : '') +
+    (game.run ? '  table:'+game.run.tableNumber : '') +
+    (rs ? '  score:'+rs.score : '') +
     '  phase:' + game.phase + '  hand:' + game.handNumber) : 'no game');
 }
 
@@ -515,6 +543,22 @@ function wireUI(){
   });
   $('opp-picker-back').onclick = cancelOpponentPicker;
   $('quick-play').onclick = ()=>withNewTableConfirm(startGame);
+  $('open-career').onclick = ()=>{ showCareerScreen(); };
+  $('career-back').onclick = ()=>{
+    $('career').classList.add('hidden');
+    $('home').classList.remove('hidden');
+    reconstructMainMenu();
+  };
+  $('career-enter').onclick = ()=>{ Sound.buttonRelease('award'); careerEnterPressed(); };
+  $('career-abandon').onclick = ()=>{ careerAbandonPressed(); };
+  $('career-new').onclick = ()=>{
+    showConfirmDialog({
+      title:'Start a new career?',
+      body:'Your bankroll resets to $' + CAREER_START_BANKROLL + '.',
+      confirmLabel:'Start New', danger:false,
+      onConfirm:startFreshCareer
+    });
+  };
   $('open-rankings').onclick = ()=>{ buildRankings(); $('home').classList.add('hidden'); $('rankings').classList.remove('hidden'); };
   $('rankings-back').onclick = ()=>{ $('rankings').classList.add('hidden'); $('home').classList.remove('hidden'); reconstructMainMenu(); };
   $('open-awards').onclick = ()=>{ buildAwardsGlossary(); $('home').classList.add('hidden'); $('awards').classList.remove('hidden'); };

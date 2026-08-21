@@ -68,6 +68,7 @@
         </div>
         <button class="pc-button pc-button-secondary" id="go-to-setup">Classic Table Setup</button>
         <button class="pc-button pc-button-secondary hidden" id="new-game-btn">New Game</button>
+        <button class="pc-button pc-button-secondary" id="open-career">Career</button>
         <div class="home-row">
           <button class="btn-secondary" id="quick-play">Quick Deal</button>
           <button class="btn-secondary" id="open-rankings">Hand Rankings</button>
@@ -349,6 +350,39 @@
       </div>
       <div class="awards-summary" id="awards-summary"></div>
       <div id="awards-list"></div>
+    </div>
+  </div>
+
+  <div id="career" class="screen hidden">
+    <div class="lobby-card">
+      <div class="setup-head">
+        <button class="icon-btn" id="career-back" aria-label="Back">&larr;</button>
+        <div class="setup-title">Career</div>
+        <div style="width:44px; flex-shrink:0;"></div>
+      </div>
+
+      <div class="panel-card career-bank-card">
+        <div class="card-label"><span>Bankroll</span></div>
+        <div class="stack-readout career-bank">
+          <div id="career-bankroll" role="img" aria-label="Career bankroll"></div>
+        </div>
+        <div class="career-last-result hidden" id="career-last-result"></div>
+      </div>
+
+      <div class="panel-card career-event-card">
+        <div class="card-label"><span>Event</span></div>
+        <div class="career-event-status hidden" id="career-event-status">Event in Progress</div>
+        <div class="career-event-name">Back Room Freezeout</div>
+        <div class="career-event-stats">
+          <div class="career-stat"><span class="cs-k">Players</span><span class="cs-v tabular">3</span></div>
+          <div class="career-stat"><span class="cs-k">Buy-in</span><span class="cs-v tabular">$100</span></div>
+          <div class="career-stat"><span class="cs-k">Prize</span><span class="cs-v tabular">$300</span></div>
+        </div>
+        <div class="hint" id="career-note"></div>
+        <button class="btn-primary" id="career-enter">Enter Event</button>
+        <button class="btn-primary hidden" id="career-new">Start New Career</button>
+        <button class="btn-secondary btn-danger hidden career-abandon" id="career-abandon">Abandon Event</button>
+      </div>
     </div>
   </div>
 

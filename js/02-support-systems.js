@@ -460,8 +460,27 @@ function faceFilter(p, mood){
   return FACE_ART_PURPLE_SOURCE.has(mood) ? FACE_TINT_PURPLE[idx] : FACE_COLORS[idx].filter;
 }
 
+/* Unknown emotion keys must degrade to the character's valid neutral
+   portrait, never to an empty socket. The resolution order is: the exact
+   art, then the FACE_SVG_FALLBACK mapping for it, then idle. A key that
+   reaches the last step is a bug — a typo, or a mood removed from
+   FACE_ART without updating its callers — so DEV_MODE says so out loud
+   instead of letting it silently render a generic face forever.
+   Warn-once per key: this runs on every portrait paint. */
+const _warnedFaceMoods = new Set();
 function faceArtPath(mood){
-  return FACE_ART[mood] || FACE_ART[FACE_SVG_FALLBACK[mood]] || FACE_ART.idle;
+  const direct = FACE_ART[mood];
+  if (direct) return direct;
+  const mapped = FACE_ART[FACE_SVG_FALLBACK[mood]];
+  if (mapped) return mapped;
+  if (!_warnedFaceMoods.has(mood)){
+    _warnedFaceMoods.add(mood);
+    let dev = false;
+    try{ dev = !!DEV_MODE; }catch(e){ dev = false; }   // DEV_MODE lives in 04, loaded later
+    if (dev) console.warn('[DEV] Unknown face mood ' + JSON.stringify(mood) +
+      ' — falling back to the neutral portrait. Add it to FACE_ART or FACE_SVG_FALLBACK.');
+  }
+  return FACE_ART.idle;
 }
 /* Every opponent seat renders through here. Art no longer keys off
    personality.key — see FACE_ART above — and colour comes from the
@@ -707,7 +726,7 @@ const DEFAULT_SETTINGS = {
 const DEFAULT_STATS = { hands:0, won:0, showdownsWon:0, biggestPot:0, net:0 };
 const SAVE_VERSION = 1;
 /* Bump on every release so the main-menu header shows what's actually installed. */
-const BUILD_VERSION = 'v0.16.1-dev · quick resolve';
+const BUILD_VERSION = 'v0.17.0-dev · career vertical slice';
 
 let settings = Object.assign({}, DEFAULT_SETTINGS, Store.get('felt.settings', {}));
 // The Settings menu cleanup dropped RELAXED from the Game Speed control

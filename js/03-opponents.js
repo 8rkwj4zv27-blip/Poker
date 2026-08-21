@@ -201,11 +201,18 @@ function setFaceMood(p, family, intensity){
   const fam = FACE_MOOD_POOLS[family] ? family : 'neutral';
   p.faceMood = { family: fam, intensity: clamp01(intensity) };
 }
-function nudgeFaceMood(p, family, amount){
+function nudgeFaceMood(p, family, amount, opts){
   if (!p || p.isHuman) return;
   const cur = faceMoodOf(p);
   if (cur.family === family) setFaceMood(p, family, cur.intensity + amount*0.6);
   else if (amount >= cur.intensity) setFaceMood(p, family, amount);
+  // A publicly visible reversal must land even against a stronger stale
+  // mood in another family. Without this, an opponent who won a big pot
+  // earlier (confident 0.55) kept smiling through a later showdown loss,
+  // because an ordinary loss only nudges 0.18 and lost the comparison
+  // above. `override` is only ever passed for real, publicly observed
+  // reversals (see reactToLoss), never for routine drift.
+  else if (opts && opts.override) setFaceMood(p, family, Math.max(amount, cur.intensity * 0.75));
   // otherwise a stronger existing mood in another family simply holds
 }
 /* Which way a publicly-visible loss pushes this opponent. Once a negative
@@ -349,13 +356,70 @@ function reactToWin(p, swingBB){
   setMood(p.id, baselineFaceExpression(p));
 }
 
-function reactToLoss(p, lostBB, stung){
+/* ---- fold reactions ----------------------------------------------------
+   A fold is fully public, so reacting to it leaks nothing about the cards
+   — but the reaction MUST be chosen from public information only
+   (personality + chance), never from hole cards, equity or why the AI
+   folded. That is the distinction the original "no reaction on action"
+   rule was protecting, and it is preserved here.
+
+   Deliberately does NOT write faceMood: this paints the fold beat only,
+   leaving the persistent mood system driven by pot outcomes exactly as
+   before. That also means a later showdown or elimination reaction always
+   wins, since those go through playReactionSequence/swapFace. */
+const FOLD_FACE_POOLS = {
+  annoyed:  ['displeased1','angry1'],
+  resigned: ['neutral1','neutral3','think','thinking2'],
+  relieved: ['relieved1','neutral2']
+};
+function pickFromPool(pool){ return pool[Math.floor(Math.random()*pool.length)]; }
+function foldFaceExpression(p){
+  const pers = p.personality || {};
+  const aggro = typeof pers.aggression === 'number' ? pers.aggression : 0.5;
+  const r = Math.random();
+  // Aggressive characters hate folding; passive ones shrug it off.
+  if (r < aggro * 0.55) return pickFromPool(FOLD_FACE_POOLS.annoyed);
+  if (r > 0.82) return pickFromPool(FOLD_FACE_POOLS.relieved);
+  return pickFromPool(FOLD_FACE_POOLS.resigned);
+}
+function reactToFold(p){
+  if (!p || p.isHuman || p.eliminated) return;
+  setMood(p.id, foldFaceExpression(p));
+}
+
+/* How long a busted opponent holds their defeated face. The AWARD POT gate
+   is player-paced and unbounded, so this deliberately outlasts any
+   plausible wait; it is cut short by startNewHand's clearFaceLock sweep,
+   and playElimination paints through it via swapFace (which bypasses the
+   lock), so the K.O. ceremony still owns the seat at its normal moment. */
+const BUSTED_FACE_HOLD_MS = 45000;
+
+function reactToLoss(p, lostBB, stung, opts){
   if (!p || p.isHuman) return;
   const before = faceMoodOf(p);
   const family = negativeFaceFamily(p);
 
-  if (lostBB > 20){
-    nudgeFaceMood(p, family, 0.75);
+  // Busted: lost everything on this pot and sits at $0. This is the
+  // strongest publicly-visible reversal there is, so it overrides any
+  // lingering positive mood outright and holds through the winner
+  // announcement and the AWARD POT wait.
+  if (opts && opts.busted){
+    nudgeFaceMood(p, family, 1, {override:true});
+    playReactionSequence(p.id, [
+      { mood:'shocked1', ms: REACTION_TIMING.beat },
+      { mood: family==='irritated' ? 'angry1' : 'terrified1', ms: REACTION_TIMING.mid },
+      { mood: family==='irritated' ? 'angry1' : 'veryNervous1', ms: BUSTED_FACE_HOLD_MS }
+    ]);
+    return;
+  }
+
+  // A lost all-in is always a strong beat, whatever the raw BB figure says
+  // — a short stack shoving 12 BB and losing it all reads as bigger than
+  // the number. Folded in here rather than given its own chain so the
+  // "survived on an uncalled return" case looks like the real reversal it
+  // is, without claiming the finality of the busted branch above.
+  if ((opts && opts.allInLoss) || lostBB > 20){
+    nudgeFaceMood(p, family, 0.75, {override:true});
     playReactionSequence(p.id, [
       { mood:'shocked1', ms: REACTION_TIMING.beat },
       { mood: family==='irritated' ? 'angry1' : 'veryNervous1', ms: REACTION_TIMING.mid },
@@ -366,7 +430,7 @@ function reactToLoss(p, lostBB, stung){
   if (stung){
     // already sour and it happened AGAIN — a short deepening beat
     const deepening = before.family === family && before.intensity > 0.45;
-    nudgeFaceMood(p, family, 0.45);
+    nudgeFaceMood(p, family, 0.45, {override:true});
     if (deepening){
       playReactionSequence(p.id, [
         { mood: pickFaceExpression(family, Math.min(1, before.intensity + 0.2), null), ms: REACTION_TIMING.beat },
@@ -377,7 +441,10 @@ function reactToLoss(p, lostBB, stung){
     }
     return;
   }
-  nudgeFaceMood(p, family, 0.18);
+  // Even a small loss must not leave a victory face on a revealed loser —
+  // override drops a stale positive/confident mood into the negative
+  // family so the baseline expression below is actually a losing one.
+  nudgeFaceMood(p, family, 0.18, {override:true});
   setMood(p.id, baselineFaceExpression(p));
 }
 /* The three new dead-0X variants plus the original dead pose are treated

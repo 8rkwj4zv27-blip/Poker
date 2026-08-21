@@ -1,7 +1,7 @@
 /* ============================================================
    LOBBY
    ============================================================ */
-#home, #setup{
+#home, #setup, #career{
   overflow-y:auto; -webkit-overflow-scrolling:touch;
   background:
     repeating-conic-gradient(rgba(255,255,255,.016) 0% 25%, transparent 0% 50%) 0 0 / 10px 10px,
@@ -994,6 +994,19 @@
    as before — .seat.out{opacity:.2} above is stronger still. */
 .seat.dead .seat-card{ border-color:rgba(255,255,255,.15); }
 
+/* A seat rebuilt from a serialized elimination (resume / CONTINUE) is an
+   empty socket, not a player sitting at $0. It reuses the same dark
+   .socket-dead avatar a live K.O. leaves behind, but without
+   reconstructing the person: no name, no stack readout, no cards, no
+   position marker. See the p.eliminated branch in initSeats(). */
+.seat.seat-vacated .seat-name,
+.seat.seat-vacated .seat-chips,
+.seat.seat-vacated .seat-cards,
+.seat.seat-vacated .pos-btn,
+.seat.seat-vacated .action-slot,
+.seat.seat-vacated .action-bubble,
+.seat.seat-vacated .hearts{ display:none !important; }
+
 /* Fixed action-display slot — always rendered at the same footprint, so
    the seat-card's own height never jitters between "someone checked" and
    "someone bet." Replaces the old floating .seat-bet chip and the
@@ -1142,6 +1155,19 @@
   transition:filter 180ms steps(4,end);
 }
 #hud-frame.dormant #hud-invested{ transition-delay:70ms; }
+/* COMPLETED CAREER EVENT — stronger than .dormant above. That state dims
+   instruments for an Arcade table clear because the run continues; a
+   finished Career event has no continuation, so the table-scoped
+   instruments are removed from the readout entirely. The Career result
+   itself carries the only numbers that still matter. Never applied in
+   Arcade or Classic. */
+#hud-frame.event-complete #hand-strength,
+#hud-frame.event-complete .stack-readout,
+#hud-frame.event-complete .bet-this-hand,
+#hud-frame.event-complete .blind-lamps,
+#hud-frame.event-complete #hud-action,
+#hud-frame.event-complete #hud-pos,
+#hud-frame.event-complete #hud-hearts{ display:none !important; }
 #hud-frame.dormant .blind-indicator i{ transition-delay:130ms; }
 /* The human's own amount readout hits harder/brighter than a secondary
    side-pot mention — a static stronger glow (no extra animation
@@ -1509,3 +1535,111 @@
 .seat.dead .avatar.has-face, .seat.thinking .avatar.has-face{ animation:none; }
 .seat .avatar.has-face{ background:var(--seat-bg); border-color:var(--px-ink); padding:0; overflow:hidden; }
 .seat.active .avatar.has-face{ border-color:var(--accent); }
+
+
+/* ============================================================
+   CAREER — vertical slice. Deliberately plain and functional, built only
+   from existing primitives (.lobby-card / .panel-card / .card-label /
+   .stack-readout / .btn-primary / .hint) so it reads as the same machine
+   without pre-empting the real event-board design.
+   ============================================================ */
+.career-bank-card{ text-align:center; }
+.career-bank{ justify-content:center; margin:4px 0 2px; }
+.career-bank #career-bankroll{
+  display:flex; gap:2px; justify-content:center; align-items:center;
+}
+.career-last-result{
+  display:flex; justify-content:space-between; align-items:baseline; gap:10px;
+  margin-top:12px; padding-top:10px; border-top:2px solid var(--px-ink);
+}
+.career-last-result .cr-tag{
+  font-family:var(--font-hdr); font-size:8px; text-transform:uppercase;
+  letter-spacing:.1em; color:var(--ink-faint);
+}
+.career-last-result .cr-amt{ font-size:13px; color:var(--accent-bright); }
+.career-event-card{ margin-top:16px; }
+.career-event-status{
+  display:inline-block; margin-bottom:8px; padding:4px 8px;
+  font-family:var(--font-hdr); font-size:7px; text-transform:uppercase; letter-spacing:.12em;
+  color:var(--accent-ink); background:var(--accent);
+  border:2px solid var(--px-ink); border-radius:3px;
+  box-shadow:0 2px 0 var(--px-ink);
+}
+.career-abandon{ margin-top:10px; }
+#open-career.career-active{ color:var(--accent-bright); }
+.career-event-name{
+  font-family:var(--font-hdr); font-size:15px; text-transform:uppercase;
+  letter-spacing:.04em; color:var(--ink); margin:2px 0 12px;
+}
+.career-event-stats{
+  display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-bottom:12px;
+}
+.career-stat{
+  display:flex; flex-direction:column; gap:3px; align-items:center;
+  padding:8px 4px; background:var(--panel); border:2px solid var(--px-ink);
+  border-radius:var(--radius); box-shadow:inset 0 2px 0 rgba(255,255,255,.05);
+}
+.career-stat .cs-k{
+  font-family:var(--font-hdr); font-size:7px; text-transform:uppercase;
+  letter-spacing:.1em; color:var(--ink-faint);
+}
+.career-stat .cs-v{ font-size:13px; color:var(--accent-bright); }
+#career-note{ margin-bottom:14px; }
+#career .btn-primary{ margin-top:0; }
+@media (orientation:landscape) and (max-height:520px){
+  .career-event-name{ font-size:13px; margin-bottom:8px; }
+  .career-event-stats{ margin-bottom:8px; }
+  #career-note{ margin-bottom:10px; }
+}
+
+
+/* ============================================================
+   CAREER EVENT RESULT — functional prototype presentation. This is kept
+   completely separate from #career-last-result on the Career screen: the
+   former failed state used one .career-result class for both surfaces,
+   causing the compact bankroll summary and the full-stage report to fight
+   over width, direction and padding.
+
+   The outer element owns placement (full-stage for a win, ordinary result
+   card for a loss); the inner panel owns one compact, glanceable report.
+   Every value remains one atomic text node — no mechanical digit cells.
+   ============================================================ */
+.stage-results.career-event-result{
+  display:flex; align-items:center; justify-content:center;
+  width:100%; min-width:0; max-width:none;
+}
+.result-card.career-event-result{
+  width:min(360px,calc(100% - 28px)); min-width:0; max-width:360px;
+  padding:0; background:transparent; border:0; box-shadow:none;
+}
+.career-result-panel{
+  box-sizing:border-box; width:min(100%,360px);
+  display:flex; flex-direction:column; gap:7px;
+  padding:16px 18px; text-align:left;
+  background:var(--px-ink); border:2px solid var(--accent);
+  border-radius:var(--radius); box-shadow:0 6px 0 rgba(0,0,0,.55);
+}
+.career-res-title{
+  font-family:var(--font-hdr); font-size:19px; text-transform:uppercase;
+  letter-spacing:.05em; color:var(--accent-bright); text-align:center;
+}
+.career-res-event{
+  font-family:var(--font-hdr); font-size:9px; text-transform:uppercase;
+  letter-spacing:.12em; color:var(--ink-faint); text-align:center;
+  margin-bottom:10px; padding-bottom:10px;
+  border-bottom:2px solid var(--px-ink);
+}
+.career-res-row{
+  display:flex; align-items:baseline; justify-content:space-between; gap:14px;
+}
+.career-res-k{
+  font-family:var(--font-hdr); font-size:8px; text-transform:uppercase;
+  letter-spacing:.1em; color:var(--ink-faint);
+  white-space:nowrap;
+}
+/* white-space:nowrap is the point of this whole block: an amount is one
+   unbreakable string, symbol and separators included. */
+.career-res-v{
+  font-size:15px; color:var(--ink); white-space:nowrap;
+}
+.career-res-row:last-child .career-res-v{ color:var(--accent-bright); font-size:17px; }

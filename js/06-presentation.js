@@ -1476,6 +1476,17 @@ function initSeats(){
     if (p.isHuman){
       avatar.style.background = settings.avatarColour;
       avatar.style.color = '#1a1408';
+    } else if (p.eliminated){
+      // Already eliminated and ejected before this rebuild — reconstruct the
+      // empty socket the K.O. left behind rather than a fresh portrait.
+      // p.eliminated is serialized (serializeTable) but the ejection itself
+      // was DOM-only, so a resume/refresh used to repaint a live idle face
+      // here and render() then merely dimmed it: the "faded smiling ghost".
+      // Saves only ever happen between hands, after resolveEliminations has
+      // finished, so a serialized `eliminated` always means "ejected".
+      avatar.classList.remove('has-face');
+      avatar.innerHTML = '';
+      avatar.classList.add('socket-dead');
     } else if (settings.faces){
       avatar.classList.add('has-face');
       avatar.innerHTML = renderFace(p, 'idle');
@@ -3532,7 +3543,7 @@ async function ejectPortrait(e, ko){
    ordinary, already-motionOff-aware payoutTo() to move the human's chips
    instantly and correctly instead. */
 async function runPotSmashSequence({ potN, scoreTotal, human }){
-  const g = game, a = g && g.run && g.run.arcade;
+  const g = game, a = rewardState(g);
   if (!a) return;
   const tier = scoreTotal>=1000 ? 'jackpot' : scoreTotal>=400 ? 'elite' : scoreTotal>=100 ? 'strong' : 'standard';
 
@@ -3616,7 +3627,7 @@ async function runPotSmashSequence({ potN, scoreTotal, human }){
    visually overlap a DEV-triggered test or a second real hand. */
 function runHumanPotSmashCeremony(g, outcome, potN, preWinChips){
   return queueArcadePresentation(async()=>{
-    if (game!==g || !g.run || !g.run.arcade) return;
+    if (game!==g || !rewardState(g)) return;
     const human = g.players.find(p=>p.isHuman);
     const early = await evaluateArcadeAwardsEarly(g, outcome);
     if (!early){ await payoutTo(human, potN); return; }
@@ -3713,7 +3724,15 @@ function render(){
         }
       } else e.hearts.classList.add('hidden');
     }
-    if (!p.isHuman) updateSeatReels(e.chips,p.chips);
+    // An eliminated seat is an empty socket, not a player at $0: no stack
+    // readout, no name, no cards, no position marker. render() runs before
+    // any of those could be repainted by a later update.
+    if (p.eliminated && !p.isHuman){
+      e.root.classList.add('seat-vacated');
+      if (e.chips) e.chips.textContent = '';
+      if (e.posEl) e.posEl.classList.add('hidden');
+      if (e.actionSlot && !p.streetAction){ e.actionSlot.textContent = '\u2013'; e.actionSlot.className = 'action-slot act-empty'; }
+    } else if (!p.isHuman) updateSeatReels(e.chips,p.chips);
     if (p.isHuman){
       // renderBank() only ever populates a genuinely empty pile (a
       // fresh table, a rebuy, or blinds posted while it happens to be
@@ -3942,11 +3961,10 @@ function buildResultHTML(potResults){
     else secondary.push(pot);
   });
 
-  const single = main.winnerIds.length === 1;
   const mine = main.winnerIds.indexOf('you') !== -1;
   const { category, descriptor } = splitHandText(main.cat, main.hand);
 
-  let html = '<div class="hr-name">' + esc(main.winners.join(' & ')) + (single ? ' WINS' : ' SPLIT') + '</div>';
+  let html = '<div class="hr-name">' + esc(main.winners.join(' & ')) + ' ' + showdownPotVerb(main).toUpperCase() + '</div>';
   if (category) html += '<div class="hr-cat">' + esc(category.toUpperCase()) + '</div>';
   if (descriptor) html += '<div class="hr-desc">' + esc(descriptor) + '</div>';
   html += '<div class="hr-label">Won</div>';
@@ -3954,7 +3972,7 @@ function buildResultHTML(potResults){
 
   secondary.forEach(pot=>{
     const potMine = pot.winnerIds.indexOf('you') !== -1;
-    const body = '<b>' + esc(pot.winners.join(' & ')) + '</b> ' + (pot.split ? 'split' : 'wins') + (pot.hand ? ' · ' + esc(pot.hand) : '');
+    const body = '<b>' + esc(pot.winners.join(' & ')) + '</b> ' + showdownPotVerb(pot) + (pot.hand ? ' · ' + esc(pot.hand) : '');
     html += '<div class="pot-line' + (potMine?' mine':'') + '"><span class="pl-tag">' + esc(pot.label).toUpperCase() +
       '</span><span class="pl-body">' + body + '</span><span class="pl-amt">' + pot.amount.toLocaleString() + '</span></div>';
   });
@@ -4088,6 +4106,73 @@ function hideAwardConsole(){
    updateHandInstrument()/updateInvestedReel() both read straight from
    game/player state every time they're called, so once that state is
    neutral there's nothing left for them to redraw. */
+/* A finished Career event is not a table between hands: the tournament is
+   over, so its instruments are hidden outright rather than dimmed the way
+   powerDownDashboard() dims them for an Arcade table clear (that table's
+   run continues; this event does not). Stack, blinds, BET THIS HAND and
+   hand strength all describe chips that have ceased to matter — only the
+   Career bankroll carries forward, and it lives on the Career screen.
+   Purely a class toggle, cleared by clearCompletedEventConsole(). */
+function setCompletedEventActions(disabled){
+  ['btn-fold','btn-checkcall','btn-raise','raise-cancel','raise-slider','save-progress'].forEach(id=>{
+    const control = $(id);
+    if (!control) return;
+    control.disabled = !!disabled;
+    control.setAttribute('aria-disabled', disabled ? 'true' : 'false');
+  });
+  const quick = $('btn-quick-resolve');
+  if (quick){
+    // Quick Resolve owns its own normal-state enablement in
+    // syncQuickResolveControl(); completed events may only force it off.
+    if (disabled) quick.disabled = true;
+    quick.setAttribute('aria-disabled', disabled ? 'true' : String(quick.disabled));
+  }
+}
+
+function powerDownCompletedEvent(g){
+  const frame = $('hud-frame');
+  if (frame) frame.classList.add('event-complete');
+  if (g){
+    g.players.forEach(p=>{ p.hand=[]; p.betThisRound=0; p.totalBetHand=0; });
+    g.positions = {};
+  }
+  closeRaisePanel();
+  setCompletedEventActions(true);
+  const row = $('actions-row');
+  if (row) row.classList.add('disabled');
+  hideHudResultConsole();
+  const hs = $('hand-strength');
+  if (hs) hs.innerHTML = '';            // stale hand-result messaging
+  const inv = $('hud-invested');
+  if (inv) inv.textContent = '$000';
+  const sb = $('hud-sb-indicator'), bb = $('hud-bb-indicator');
+  if (sb) sb.classList.remove('is-on');
+  if (bb) bb.classList.remove('is-on');
+  const action = $('hud-action'), pos = $('hud-pos');
+  if (action) action.classList.add('hidden');
+  if (pos) pos.classList.add('hidden');
+}
+
+/* Destructive only to the completed table's transient presentation. The
+   event is already settled before this runs, so cards, pot and position
+   data can be cleared without touching Career bankroll or result data. */
+function clearCompletedEventTable(g){
+  clearAllCardDOM();
+  if (g){
+    g.board=[]; g.pot=0; g.currentBet=0; g.positions={};
+  }
+  const potArea = $('pot-area');
+  if (potArea) potArea.classList.add('hidden');
+  if ($('pot-val')) $('pot-val').textContent = '0';
+}
+function clearCompletedEventConsole(){
+  const frame = $('hud-frame');
+  if (frame) frame.classList.remove('event-complete','dormant');
+  setCompletedEventActions(false);
+  const btn = $('btn-award-pot-console');
+  if (btn) btn.classList.remove('next-table-mode','career-return-mode');
+}
+
 function powerDownDashboard(g){
   const frame = $('hud-frame');
   if (!frame) return;
@@ -4117,25 +4202,50 @@ function powerUpDashboard(){
    leak into a real award-pot moment — but the label/class WOULD leak
    without exitResultsConsole() explicitly cleaning them up, since nothing
    else resets those between tables. */
-function enterResultsConsole(onNextTable){
+function activateResultsConsole(onAction, label, modeClass, once){
   const btn = $('btn-award-pot-console');
   const row = $('actions-row'), consoleEl = $('action-console');
   if (row){ row.classList.remove('hidden'); row.classList.add('disabled'); }
   if (btn){
-    btn.classList.add('next-table-mode');
-    btn.onclick = ()=>{ Sound.buttonRelease('award'); onNextTable(); };
+    btn.classList.remove('next-table-mode','career-return-mode');
+    btn.classList.add(modeClass);
+    btn.disabled = false;
+    let used = false;
+    btn.onclick = ()=>{
+      if (once && used) return;
+      if (once){ used=true; btn.disabled=true; btn.onclick=null; }
+      Sound.buttonRelease('award');
+      onAction();
+    };
   }
   if (consoleEl){
     consoleEl.classList.remove('results-pending','mode-shift-out');
     consoleEl.classList.add('mode-shift-in');
   }
   Sound.consoleShift();
-  showAwardConsole('NEXT TABLE');
+  showAwardConsole(label);
   setTimeout(()=>{ if (consoleEl) consoleEl.classList.remove('mode-shift-in'); },280);
+}
+
+/* Arcade's existing progression entry point remains exactly NEXT TABLE and
+   is still bound only to beginNextRunTable. */
+function enterResultsConsole(onNextTable){
+  activateResultsConsole(onNextTable, 'NEXT TABLE', 'next-table-mode', false);
+}
+
+/* Career never passes through enterResultsConsole(), never receives its
+   class and never sees its progression callback. The one-shot binding is
+   disabled and cleared before returnToCareer() runs, closing the rapid
+   double-press window as well as the ordinary repeated-click case. */
+function enterCareerResultsConsole(onBackToEvents){
+  activateResultsConsole(onBackToEvents, 'BACK TO EVENTS', 'career-return-mode', true);
 }
 function exitResultsConsole(){
   const btn = $('btn-award-pot-console'), consoleEl = $('action-console');
-  if (btn){ btn.classList.remove('next-table-mode'); btn.onclick = null; btn.textContent = 'Award Pot'; }
+  if (btn){
+    btn.classList.remove('next-table-mode','career-return-mode');
+    btn.onclick = null; btn.disabled = false; btn.textContent = 'Award Pot';
+  }
   if (consoleEl){
     consoleEl.classList.remove('mode-shift-in','results-pending');
     consoleEl.classList.add('mode-shift-out');
@@ -4253,7 +4363,9 @@ async function runShowdownAwardSequence(potResults, contenders){
   // over. The freeze is armed before the FIRST render() below so the
   // stack reel never flashes the post-win amount even on that very first
   // redraw (see amendment 1).
-  const humanArcadeWin = g.mode==='elimination' && g.run && g.run.arcade && totalByPlayer.has('you');
+  // Reward PRESENTATION capability, not "is this an arcade run" — a Career
+  // event earns the same ceremony (see rewardState in 04-modes-and-scoring.js).
+  const humanArcadeWin = !!rewardState(g) && totalByPlayer.has('you');
   if (humanArcadeWin) humanBankDisplayFreeze = preWinHumanChips;
 
   render();

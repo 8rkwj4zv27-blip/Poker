@@ -10,6 +10,26 @@ const BLIND_LEVELS = [
 const TOURNAMENT_HANDS_PER_LEVEL = 10;
 
 /* ============================================================
+   CAREER — vertical slice. One event, one persistent bankroll, and
+   nothing else: no Reputation, no venues, no cash tables. A Career event
+   is a real freezeout played on the ordinary table with the ordinary AI.
+   Table chips and the off-table bankroll are deliberately separate ideas:
+   the bankroll lives in localStorage under 'felt.career' and is only ever
+   touched by enterCareerEvent()/settleCareerEvent() (07-ui-wiring.js).
+   ============================================================ */
+const CAREER_START_BANKROLL = 500;
+const CAREER_EVENT = {
+  id:'back-room-freezeout',
+  name:'BACK ROOM FREEZEOUT',
+  seats:3,            // 1 human + 2 AI
+  buyIn:100,
+  prize:300,          // 3 x buyIn, winner takes all
+  stack:500,          // 25 BB at the opening level
+  blindLevel:0,       // BLIND_LEVELS[0] = 10/20, climbing every 10 hands
+  difficulty:'medium'
+};
+
+/* ============================================================
    ELIMINATION MODE — Phase 1 single-table elimination. One fixed-blind
    5-player (1 human + 4 AI) table; busting to $0 is permanent for this
    table. Every gameplay/animation tunable for this mode lives here so it
@@ -238,6 +258,51 @@ function makeArcadeRunState(){
     awardCounts:{}, decisionSnapshots:[], displayedScore:0, newHighScore:false
   };
 }
+/* ---------------- REWARD CAPABILITY vs ARCADE PERSISTENCE ----------------
+   These two used to be the same expression — g.mode==='elimination' && g.run
+   && g.run.arcade — doing three unrelated jobs at once: "show the reward
+   spectacle", "write to the felt.arcade profile", and "this is a multi-table
+   run". Career events need the first and must never touch the second, so the
+   ideas are now named separately. Widening the wrong one is how Career would
+   silently corrupt the Arcade high score, so read the distinction before
+   adding any new call site. */
+
+/* PRESENTATION capability — reward breakdown, TOTAL, pot smash, SCORE
+   readout. True for Arcade elimination runs AND Career events. Returns the
+   mode's own reward-state object (never a shared or faked one), or null. */
+function rewardState(g){
+  g = g || game;
+  if (!g) return null;
+  if (g.mode === 'elimination') return (g.run && g.run.arcade) || null;
+  if (g.mode === 'career')      return (g.event && g.event.reward) || null;
+  return null;
+}
+
+/* PERSISTENCE capability — the felt.arcade profile: high score, discoveries,
+   per-award bests. Strictly narrower than rewardState(). Only the existing
+   elimination run may ever write there; a Career event shows the identical
+   spectacle and persists none of it.
+
+   Note on AI: Career deliberately does NOT opt into aiDecide's
+   elimination-only short-stack push/fold widening (03-opponents.js) — a
+   Career event uses standard AI. Career is not "elimination mode with a
+   different name". */
+function arcadePersists(g){
+  g = g || game;
+  return !!(g && g.mode === 'elimination' && g.run && g.run.arcade);
+}
+
+/* Career's own ephemeral reward state. Separate factory from
+   makeArcadeRunState() on purpose — it carries only what the presentation
+   path reads, and omits newHighScore, which exists solely to serve Arcade
+   persistence. It is serialised with the event so a resumed event keeps its
+   accumulated TOTAL, and is discarded when the event settles. */
+function makeEventRewardState(){
+  return {
+    score:0, comboStep:0, highestComboStep:0, biggestReward:0,
+    awardCounts:{}, decisionSnapshots:[], displayedScore:0
+  };
+}
 function formatArcadeScore(n){ return Math.max(0,Math.round(n||0)).toString().padStart(7,'0'); }
 function setArcadeMode(active){
   const screen=$('table-screen'), machine=$('arcade-score-machine');
@@ -264,10 +329,9 @@ function renderArcadeDigits(el,text){
   });
 }
 function updateArcadeHUD(){
-  const active=!!(game&&game.mode==='elimination'&&game.run&&game.run.arcade);
-  setArcadeMode(active);
-  if (!active) return;
-  const a=game.run.arcade;
+  const a=rewardState(game);
+  setArcadeMode(!!a);
+  if (!a) return;
   if ($('arcade-score-value')){
     const scoreText=formatArcadeScore(a.displayedScore==null?a.score:a.displayedScore), scoreEl=$('arcade-score-value');
     renderArcadeDigits(scoreEl,scoreText);
@@ -287,7 +351,8 @@ function noteArcadeDiscovery(id,count,bestScore){
    worker promise resolves while ordinary poker animation continues. */
 function captureArcadeDecision(player,requestedAction,amount){
   const g=game;
-  if (!g||g.mode!=='elimination'||!g.run||!g.run.arcade||!player||!player.isHuman) return;
+  const a=rewardState(g);
+  if (!a||!player||!player.isHuman) return;
   const toCall=Math.max(0,g.currentBet-player.betThisRound);
   let action=requestedAction;
   if (action==='call'&&toCall===0) action='check';
@@ -305,10 +370,11 @@ function captureArcadeDecision(player,requestedAction,amount){
   };
   snap.equityPromise=EquityService.get(snap.hole,snap.board,Math.max(1,opponents.length),260)
     .then(v=>typeof v==='number'?v:null).catch(()=>null);
-  g.run.arcade.decisionSnapshots.push(snap);
+  a.decisionSnapshots.push(snap);
 }
 async function settleArcadeSnapshots(g){
-  const snaps=(g.run&&g.run.arcade&&g.run.arcade.decisionSnapshots)||[];
+  const a=rewardState(g);
+  const snaps=(a&&a.decisionSnapshots)||[];
   await Promise.all(snaps.map(async s=>{ if (s.equity==null) s.equity=await s.equityPromise; delete s.equityPromise; }));
   return snaps;
 }
@@ -624,8 +690,9 @@ function evaluateArcadeNegative(g,outcome,snapshots,luck){
    sequence's own job (see runPotSmashSequence), timed to the impact
    moment rather than to this evaluation. */
 async function evaluateArcadeAwardsEarly(g,outcome){
-  if (!g||g.mode!=='elimination'||!g.run||!g.run.arcade||!humanWonOutcome(outcome)) return null;
-  const a=g.run.arcade, snapshots=await settleArcadeSnapshots(g), awards=[];
+  const a=rewardState(g);
+  if (!a||!humanWonOutcome(outcome)) return null;
+  const snapshots=await settleArcadeSnapshots(g), awards=[];
   evaluateArcadeSkill(g,outcome,snapshots).forEach(x=>addArcadeAward(awards,x.id,x.count));
   evaluateArcadeEvents(g,outcome,awards);
   const finalAwards=normalizeArcadeAwards(awards);
@@ -636,12 +703,15 @@ async function evaluateArcadeAwardsEarly(g,outcome){
   const potScore=arcadePotWinningsScore(g,netProfit);
   const bonusTotal=finalAwards.reduce((sum,x)=>sum+x.def.base*x.count,0);
   const potWinnings={id:'potWinnings',count:1,def:{name:'POT WINNINGS',base:potScore,tier:'standard',type:'pot'}};
-  finalAwards.forEach(x=>{
-    a.awardCounts[x.id]=(a.awardCounts[x.id]||0)+x.count;
-    noteArcadeDiscovery(x.id,x.count,x.def.base*x.count);
-  });
-  if (luck) noteArcadeDiscovery(luck.id,1,null);
-  if (negative) noteArcadeDiscovery(negative.id,1,null);
+  // awardCounts lives on the mode's own reward state, so it tracks for
+  // Career too. The discovery/profile writes below are Arcade-only — see
+  // arcadePersists(): a Career event must never touch felt.arcade.
+  finalAwards.forEach(x=>{ a.awardCounts[x.id]=(a.awardCounts[x.id]||0)+x.count; });
+  if (arcadePersists(g)){
+    finalAwards.forEach(x=>noteArcadeDiscovery(x.id,x.count,x.def.base*x.count));
+    if (luck) noteArcadeDiscovery(luck.id,1,null);
+    if (negative) noteArcadeDiscovery(negative.id,1,null);
+  }
   const awardsOut=potScore>0?[potWinnings,...finalAwards]:finalAwards;
   return { awards:awardsOut, luck, commentary:negative, total:potScore+bonusTotal };
 }
@@ -656,8 +726,9 @@ async function evaluateArcadeAwardsEarly(g,outcome){
    one pass — identical behaviour/timing to the original resolveArcadeHand
    for every non-win hand. */
 async function resolveArcadeHandLate(g,outcome,context){
-  if (!g||g.mode!=='elimination'||!g.run||!g.run.arcade) return;
-  const a=g.run.arcade, awards=[];
+  const a=rewardState(g);
+  if (!a) return;
+  const awards=[];
   let luck=null, commentary=null;
   if (humanWonOutcome(outcome)){
     evaluateArcadeMilestoneAchievements(context,awards);
@@ -671,12 +742,12 @@ async function resolveArcadeHandLate(g,outcome,context){
   const finalAwards=normalizeArcadeAwards(awards);
   const total=finalAwards.reduce((sum,x)=>sum+x.def.base*x.count,0);
   const resolution={awards:finalAwards,luck,commentary,total,dev:false};
-  finalAwards.forEach(x=>{
-    a.awardCounts[x.id]=(a.awardCounts[x.id]||0)+x.count;
-    noteArcadeDiscovery(x.id,x.count,x.def.base*x.count);
-  });
-  if (luck) noteArcadeDiscovery(luck.id,1,null);
-  if (commentary) noteArcadeDiscovery(commentary.id,1,null);
+  finalAwards.forEach(x=>{ a.awardCounts[x.id]=(a.awardCounts[x.id]||0)+x.count; });
+  if (arcadePersists(g)){
+    finalAwards.forEach(x=>noteArcadeDiscovery(x.id,x.count,x.def.base*x.count));
+    if (luck) noteArcadeDiscovery(luck.id,1,null);
+    if (commentary) noteArcadeDiscovery(commentary.id,1,null);
+  }
   if (!finalAwards.length&&!luck&&!commentary) return;
   await queueArcadePresentation(()=>presentArcadeResolution(g,resolution));
 }
@@ -745,8 +816,9 @@ async function flyArcadeScore(total,tier){
   flight.remove();
 }
 async function presentArcadeAward(g,award){
-  if (!g||game!==g||!g.run||!g.run.arcade) return;
-  const a=g.run.arcade, layer=$('arcade-reward-layer'), tier=award.def.tier||'standard';
+  const a=rewardState(g);
+  if (!g||game!==g||!a) return;
+  const layer=$('arcade-reward-layer'), tier=award.def.tier||'standard';
   if (!layer) return;
   const timing=arcadeTierTiming(tier);
   const points=award.def.base*award.count;
@@ -790,15 +862,17 @@ async function presentArcadeCommentary(g,item,isLuck){
   await arcadeDelay(80);
 }
 async function presentArcadeResolution(g,r){
-  if (!g||game!==g||!g.run||!g.run.arcade) return;
-  const a=g.run.arcade;
+  const a=rewardState(g);
+  if (!g||game!==g||!a) return;
   a.biggestReward=Math.max(a.biggestReward,r.total||0);
   for (const award of r.awards) await presentArcadeAward(g,award);
   if (r.luck) await presentArcadeCommentary(g,r.luck,true);
   else if (r.commentary) await presentArcadeCommentary(g,r.commentary,false);
 }
 function finalizeArcadeRun(g){
-  if (!g||!g.run||!g.run.arcade) return;
+  // Arcade persistence only — never reached for a Career event. Explicit
+  // rather than incidental: see arcadePersists().
+  if (!arcadePersists(g)) return;
   const score=g.run.arcade.score, prior=arcadeProfile.highScore||0;
   g.run.arcade.newHighScore=score>prior;
   if (score>prior){ arcadeProfile.highScore=score; saveArcadeProfile(); }
@@ -836,8 +910,13 @@ const DEV_ARCADE_SCENARIOS = {
   badBeat:     {awards:['greatCall'],luck:'brutal'},
   negative:    {awards:[],commentary:'badCall'}
 };
+/* Reward-PRESENTATION dev tools. These drive the same breakdown/TOTAL/pot
+   smash path a real hand does and never touch the felt.arcade profile
+   (noteArcadeDiscovery is only reached from the two real evaluators, both
+   gated on arcadePersists), so they run wherever rewardState() does —
+   Arcade runs and Career events alike. */
 function devArcadePresent(ids,luckId,negativeId){
-  if (!DEV_MODE||!game||game.mode!=='elimination'||!game.run||!game.run.arcade) return;
+  if (!DEV_MODE||!rewardState(game)) return;
   const g=game;
   let awards=(ids||[]).map(id=>ARCADE_AWARDS[id]?{id,count:1,def:ARCADE_AWARDS[id]}:null).filter(Boolean);
   awards=normalizeArcadeAwards(awards);
@@ -856,10 +935,11 @@ function devArcadeScenario(id){
   if (scenario) devArcadePresent(scenario.awards,scenario.luck||null,scenario.commentary||null);
 }
 function devArcadeAddScore(amount){
-  if (!DEV_MODE||!game||game.mode!=='elimination'||!game.run||!game.run.arcade) return;
-  const g=game, a=g.run.arcade, increment=Math.max(0,Math.round(amount||0));
+  const a0=rewardState(game);
+  if (!DEV_MODE||!a0) return;
+  const g=game, a=a0, increment=Math.max(0,Math.round(amount||0));
   queueArcadePresentation(async()=>{
-    if (game!==g||!g.run||!g.run.arcade) return;
+    if (game!==g||rewardState(g)!==a) return;
     const target=a.score+increment; a.score=target; a.biggestReward=Math.max(a.biggestReward,increment);
     const machine=$('arcade-score-machine');
     if (machine){ machine.classList.remove('score-impact'); void machine.offsetWidth; machine.classList.add('score-impact'); }
@@ -868,17 +948,23 @@ function devArcadeAddScore(amount){
   });
 }
 function devArcadeResetScore(){
-  if (!DEV_MODE||!game||game.mode!=='elimination'||!game.run||!game.run.arcade) return;
+  if (!DEV_MODE||!rewardState(game)) return;
   const g=game;
   queueArcadePresentation(async()=>{
-    if (game!==g||!g.run||!g.run.arcade) return;
-    const a=g.run.arcade; a.score=0; a.displayedScore=0; a.biggestReward=0;
+    const a=rewardState(g);
+    if (game!==g||!a) return;
+    a.score=0; a.displayedScore=0; a.biggestReward=0;
     updateArcadeHUD(); refreshDevPanel();
   });
 }
 function devArcadeReset(){
-  if (!DEV_MODE||!game||game.mode!=='elimination') return;
-  game.run.arcade=makeArcadeRunState(); clearArcadeLayer(); updateArcadeHUD(); refreshDevPanel();
+  if (!DEV_MODE||!game) return;
+  // Rebuilds whichever reward state the mode owns — an Arcade run's, or a
+  // Career event's ephemeral one. Never crosses between them.
+  if (game.mode==='elimination'){ if (!game.run) return; game.run.arcade=makeArcadeRunState(); }
+  else if (game.mode==='career'){ if (!game.event) return; game.event.reward=makeEventRewardState(); }
+  else return;
+  clearArcadeLayer(); updateArcadeHUD(); refreshDevPanel();
 }
 /* POT SMASH DEV TEST — PHYSICAL POT SCALE presets, replacing the old
    score-only SMALL +180/MEDIUM +750/LARGE +2,200 buttons (see
@@ -903,7 +989,7 @@ const DEV_POT_SMASH_SCALES = {
   huge:   { amount:2600, awardIds:['monsterHand','bigPot','heroCall'] }
 };
 function devTestPotSmash(scale){
-  if (!DEV_MODE||!game||game.mode!=='elimination'||!game.run||!game.run.arcade||!betweenHands()) return;
+  if (!DEV_MODE||!rewardState(game)||!betweenHands()) return;
   const g=game, cfg=DEV_POT_SMASH_SCALES[scale]; if (!cfg) return;
   const potContainer=$('pot-stacks'), pPile=potPile();
   if ((potContainer._chipCount||0)===0) bootstrapPile(potContainer, pPile, cfg.amount);
@@ -915,7 +1001,7 @@ function devTestPotSmash(scale){
   const potWinnings={id:'potWinnings',count:1,def:{name:'POT WINNINGS',base:cfg.amount,tier:'standard',type:'pot'}};
   const early={awards:[potWinnings,...awards],luck:null,commentary:null,total:cfg.amount+bonusTotal};
   queueArcadePresentation(async()=>{
-    if (game!==g||!g.run||!g.run.arcade) return;
+    if (game!==g||!rewardState(g)) return;
     await presentRewardBreakdown(early);
     await runPotSmashSequence({ potN, scoreTotal:early.total, human:g.players.find(p=>p.isHuman) });
     resetPile($('hud-tower'), bankPile());
