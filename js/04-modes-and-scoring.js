@@ -10,24 +10,91 @@ const BLIND_LEVELS = [
 const TOURNAMENT_HANDS_PER_LEVEL = 10;
 
 /* ============================================================
-   CAREER — vertical slice. One event, one persistent bankroll, and
-   nothing else: no Reputation, no venues, no cash tables. A Career event
-   is a real freezeout played on the ordinary table with the ordinary AI.
-   Table chips and the off-table bankroll are deliberately separate ideas:
-   the bankroll lives in localStorage under 'felt.career' and is only ever
-   touched by enterCareerEvent()/settleCareerEvent() (07-ui-wiring.js).
+   CAREER EVENTS — data only. A Career event is a real freezeout played on
+   the ordinary table with the ordinary AI. Table chips and the off-table
+   bankroll remain deliberately separate ideas: the bankroll lives under
+   'felt.career' and is only touched by the transaction functions in
+   07-ui-wiring.js.
+
+   The registry is the live catalogue. enterCareerEvent() copies a plain
+   immutable-in-practice snapshot of its selected descriptor into the
+   active save; table launch, resume and settlement then use that snapshot,
+   not mutable catalogue values. This is what makes an already-paid event
+   safe if a later build retunes its buy-in or prize.
    ============================================================ */
 const CAREER_START_BANKROLL = 500;
-const CAREER_EVENT = {
-  id:'back-room-freezeout',
-  name:'BACK ROOM FREEZEOUT',
-  seats:3,            // 1 human + 2 AI
-  buyIn:100,
-  prize:300,          // 3 x buyIn, winner takes all
-  stack:500,          // 25 BB at the opening level
-  blindLevel:0,       // BLIND_LEVELS[0] = 10/20, climbing every 10 hands
-  difficulty:'medium'
-};
+const CAREER_EVENT_LIST = Object.freeze([
+  Object.freeze({
+    id:'back-room-freezeout',
+    venue:'BACK ROOM',
+    name:'BACK ROOM FREEZEOUT',
+    format:'Freezeout',
+    playerCount:3,
+    opponentCount:2,
+    buyIn:100,
+    prize:300,
+    stack:500,
+    initialBlindLevel:0,
+    handsPerBlindLevel:10,
+    difficulty:'medium',
+    unlockRequirement:null
+  }),
+  Object.freeze({
+    id:'pub-freezeout',
+    venue:'PUB CIRCUIT',
+    name:'PUB CIRCUIT FREEZEOUT',
+    format:'Freezeout',
+    playerCount:4,
+    opponentCount:3,
+    buyIn:300,
+    prize:1200,
+    stack:750,
+    initialBlindLevel:0,
+    handsPerBlindLevel:10,
+    difficulty:'hard',
+    unlockRequirement:Object.freeze({ type:'event-win', eventId:'back-room-freezeout' })
+  })
+]);
+const CAREER_EVENTS = Object.freeze(CAREER_EVENT_LIST.reduce((registry,event)=>{
+  registry[event.id] = event;
+  return registry;
+}, {}));
+
+function careerEventById(id){
+  return typeof id === 'string' ? (CAREER_EVENTS[id] || null) : null;
+}
+function careerEventSnapshot(event){
+  if (!event) return null;
+  return {
+    id:event.id,
+    venue:event.venue,
+    name:event.name,
+    format:event.format,
+    playerCount:event.playerCount,
+    opponentCount:event.opponentCount,
+    buyIn:event.buyIn,
+    prize:event.prize,
+    stack:event.stack,
+    initialBlindLevel:event.initialBlindLevel,
+    handsPerBlindLevel:event.handsPerBlindLevel,
+    difficulty:event.difficulty,
+    unlockRequirement:event.unlockRequirement
+      ? { type:event.unlockRequirement.type, eventId:event.unlockRequirement.eventId }
+      : null
+  };
+}
+function isValidCareerEventSnapshot(event){
+  if (!event || typeof event !== 'object') return false;
+  const strings = ['id','venue','name','format','difficulty'];
+  if (strings.some(key=>typeof event[key] !== 'string' || !event[key])) return false;
+  const nonNegative = ['buyIn','prize','stack','initialBlindLevel','handsPerBlindLevel','playerCount','opponentCount'];
+  if (nonNegative.some(key=>!Number.isFinite(event[key]) || event[key] < 0)) return false;
+  if (!Number.isInteger(event.playerCount) || !Number.isInteger(event.opponentCount)) return false;
+  if (event.playerCount !== event.opponentCount + 1 || event.opponentCount < 1) return false;
+  if (!Number.isInteger(event.initialBlindLevel) || event.initialBlindLevel >= BLIND_LEVELS.length) return false;
+  if (!Number.isInteger(event.handsPerBlindLevel) || event.handsPerBlindLevel < 1) return false;
+  return true;
+}
 
 /* ============================================================
    ELIMINATION MODE — Phase 1 single-table elimination. One fixed-blind

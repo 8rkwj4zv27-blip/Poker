@@ -460,43 +460,114 @@ async function launchSinglePlayerFromMenu(opponentCount){
    bankroll is off-table money in 'felt.career'.
    ============================================================ */
 const CAREER_KEY = 'felt.career';
-const CAREER_SAVE_VERSION = 1;   // independent of SAVE_VERSION — never bump that one
+const CAREER_SAVE_VERSION = 2;   // independent of the table SAVE_VERSION
 
 function defaultCareer(){
-  return { v:CAREER_SAVE_VERSION, bankroll:CAREER_START_BANKROLL, active:null, lastResult:null };
+  const unlocks = {};
+  CAREER_EVENT_LIST.forEach(event=>{ unlocks[event.id] = !event.unlockRequirement; });
+  return {
+    v:CAREER_SAVE_VERSION,
+    bankroll:CAREER_START_BANKROLL,
+    active:null,
+    unlocks,
+    lastResult:null
+  };
+}
+function normalizeActiveCareerEvent(active){
+  if (!active || typeof active !== 'object') return null;
+  const full = active.snapshot || active.event;
+  if (isValidCareerEventSnapshot(full)){
+    return { eventId:full.id, snapshot:Object.assign({}, full) };
+  }
+  // Version 1 only knew Back Room and stored eventId/buyIn/prize. Merge in
+  // the missing launch fields, but keep the paid financial terms verbatim.
+  const descriptor = careerEventById(active.eventId || 'back-room-freezeout');
+  if (!descriptor) return null;
+  const snapshot = careerEventSnapshot(descriptor);
+  if (Number.isFinite(active.buyIn)) snapshot.buyIn = active.buyIn;
+  if (Number.isFinite(active.prize)) snapshot.prize = active.prize;
+  return { eventId:snapshot.id, snapshot };
+}
+function migrateCareer(raw){
+  if (!raw || typeof raw !== 'object') return defaultCareer();
+  const migrated = defaultCareer();
+  if (Number.isFinite(raw.bankroll) && raw.bankroll >= 0) migrated.bankroll = raw.bankroll;
+  migrated.active = normalizeActiveCareerEvent(raw.active);
+  if (raw.lastResult && typeof raw.lastResult === 'object') migrated.lastResult = Object.assign({}, raw.lastResult);
+  if (raw.unlocks && typeof raw.unlocks === 'object'){
+    CAREER_EVENT_LIST.forEach(event=>{
+      if (raw.unlocks[event.id] === true) migrated.unlocks[event.id] = true;
+    });
+  }
+  // A version-1 lastResult could only have come from Back Room. Preserve
+  // the progression implied by a recorded win instead of relocking Pub.
+  if (raw.v === 1 && raw.lastResult && raw.lastResult.outcome === 'win'){
+    CAREER_EVENT_LIST.forEach(event=>{
+      const requirement = event.unlockRequirement;
+      if (requirement && requirement.type === 'event-win' && requirement.eventId === 'back-room-freezeout'){
+        migrated.unlocks[event.id] = true;
+      }
+    });
+  }
+  return migrated;
 }
 function isValidCareer(c){
   return !!c && typeof c === 'object'
     && c.v === CAREER_SAVE_VERSION
     && typeof c.bankroll === 'number' && !Number.isNaN(c.bankroll) && c.bankroll >= 0
+    && !!c.unlocks && typeof c.unlocks === 'object'
+    && CAREER_EVENT_LIST.every(event=>typeof c.unlocks[event.id] === 'boolean'
+        && (!!event.unlockRequirement || c.unlocks[event.id] === true))
     && (c.active === null || (!!c.active && typeof c.active === 'object'
-        && typeof c.active.buyIn === 'number' && typeof c.active.prize === 'number'));
+        && !!c.active.snapshot
+        && c.active.eventId === c.active.snapshot.id
+        && isValidCareerEventSnapshot(c.active.snapshot)));
 }
 let career = (function(){
   const raw = Store.get(CAREER_KEY, null);
-  if (raw && !isValidCareer(raw)) Store.remove(CAREER_KEY);   // Store has no corrupt-value recovery of its own
-  return isValidCareer(raw) ? raw : defaultCareer();
+  const migrated = isValidCareer(raw) ? raw : migrateCareer(raw);
+  if (raw && !isValidCareer(raw)) Store.set(CAREER_KEY, migrated);
+  return migrated;
 })();
 function saveCareer(){ Store.set(CAREER_KEY, career); }
 function careerBankroll(){ return career.bankroll; }
 function careerHasActiveEvent(){ return !!career.active; }
+function careerActiveEventSnapshot(){
+  return career.active ? career.active.snapshot : null;
+}
+function careerEventUnlocked(event, state){
+  const c = state || career;
+  if (!event || !event.unlockRequirement) return true;
+  return c.unlocks[event.id] === true;
+}
+function careerEventState(eventId){
+  const event = careerEventById(eventId);
+  if (!event) return 'missing';
+  if (career.active){
+    return career.active.eventId === event.id ? 'active' : 'blocked';
+  }
+  if (!careerEventUnlocked(event)) return 'locked';
+  if (career.bankroll < event.buyIn) return 'unaffordable';
+  return 'available';
+}
 
 /* The entry rule, enforced at Career-state level rather than in the UI, so
    that when the event board grows past one event every choice is disabled
    by the same test. While career.active is set, NO event may be entered or
    paid for — the player must continue or abandon the one they are in. */
-function careerCanEnterEvent(ev){
-  if (career.active) return false;
-  return career.bankroll >= ((ev || CAREER_EVENT).buyIn);
+function careerCanEnterEvent(eventId){
+  return careerEventState(eventId) === 'available';
 }
 
 /* Deduct and persist BEFORE the table is built. Returns false when the
    event is unaffordable or one is already live — the two states that must
    never produce a second charge. */
-function enterCareerEvent(){
-  if (!careerCanEnterEvent(CAREER_EVENT)) return false;
-  career.bankroll -= CAREER_EVENT.buyIn;
-  career.active = { eventId:CAREER_EVENT.id, buyIn:CAREER_EVENT.buyIn, prize:CAREER_EVENT.prize };
+function enterCareerEvent(eventId){
+  if (!careerCanEnterEvent(eventId)) return false;
+  const event = careerEventById(eventId);
+  const snapshot = careerEventSnapshot(event);
+  career.bankroll -= snapshot.buyIn;
+  career.active = { eventId:snapshot.id, snapshot };
   career.lastResult = null;
   saveCareer();
   return true;
@@ -506,10 +577,21 @@ function enterCareerEvent(){
    in 05-game-engine.js relies on that to decide who owns the ceremony. */
 function settleCareerEvent(outcome){
   if (!career.active) return false;
-  const stake = career.active;
+  const stake = career.active.snapshot;
   if (outcome === 'win') career.bankroll += stake.prize;
+  if (outcome === 'win'){
+    CAREER_EVENT_LIST.forEach(event=>{
+      const requirement = event.unlockRequirement;
+      if (requirement && requirement.type === 'event-win' && requirement.eventId === stake.id){
+        career.unlocks[event.id] = true; // idempotent; settlement's active guard owns the one write
+      }
+    });
+  }
   career.lastResult = {
     outcome,
+    eventId:stake.id,
+    eventName:stake.name,
+    venue:stake.venue,
     delta: outcome === 'win' ? stake.prize : -stake.buyIn,
     bankroll: career.bankroll
   };
@@ -520,19 +602,18 @@ function settleCareerEvent(outcome){
 }
 
 function startCareerEvent(){
+  const event = careerActiveEventSnapshot();
+  if (!event) return false;
   Sound.unlock();
   hideResultCard();
   // Deliberately NO clearTableSave() — a Career event must never disturb the
   // player's Single Player save.
   newGame({
-    mode:'career', difficulty:CAREER_EVENT.difficulty,
-    opponents:CAREER_EVENT.seats - 1, stack:CAREER_EVENT.stack,
-    blindLevel:CAREER_EVENT.blindLevel
+    mode:'career', difficulty:event.difficulty,
+    opponents:event.opponentCount, stack:event.stack,
+    blindLevel:event.initialBlindLevel
   });
-  game.event = {
-    id:CAREER_EVENT.id, buyIn:CAREER_EVENT.buyIn, prize:CAREER_EVENT.prize,
-    reward: makeEventRewardState()
-  };
+  game.event = Object.assign({}, event, { reward:makeEventRewardState() });
   // The first checkpoint. saveTable() only fires at the END of a hand, so
   // without this a refresh during hand 1 would find career.active set with
   // no table to resume — stranding the player behind a dead RESUME button.
@@ -563,7 +644,7 @@ function continueCareerEvent(){
   Sound.unlock();
   hideResultCard();
   restoreTable(save);
-  if (!game.event) game.event = { id:CAREER_EVENT.id, buyIn:CAREER_EVENT.buyIn, prize:CAREER_EVENT.prize, reward:makeEventRewardState() };
+  if (!game.event){ startCareerEvent(); return; }
   if (!game.event.reward) game.event.reward = makeEventRewardState();
   updateArcadeHUD();
   showTableScreen();
@@ -624,32 +705,58 @@ function returnToCareer(){
 function renderCareerScreen(){
   const bank = $('career-bankroll');
   if (bank) buildResultAmount(bank, career.bankroll);
-
-  const active = careerHasActiveEvent();
-  const canEnter = careerCanEnterEvent(CAREER_EVENT);
-  const affordable = career.bankroll >= CAREER_EVENT.buyIn;
-  const enterBtn = $('career-enter'), newBtn = $('career-new'), note = $('career-note');
-  const abandonBtn = $('career-abandon'), statusEl = $('career-event-status');
+  const board = $('career-events');
+  const newBtn = $('career-new');
   const resultEl = $('career-last-result');
+  const money = value=>'$' + value.toLocaleString();
+  const stateCopy = {
+    available:['AVAILABLE · AFFORDABLE','Winner takes the full prize pool.'],
+    unaffordable:['AVAILABLE · UNAFFORDABLE','Your bankroll does not cover this buy-in.'],
+    locked:['LOCKED · PROGRESSION','Complete the required event win to unlock this event.'],
+    active:['CURRENTLY ACTIVE','Your buy-in is staked. Continue where you left off.'],
+    blocked:['BLOCKED · EVENT ACTIVE','Finish or abandon the active event first.']
+  };
 
-  if (statusEl) statusEl.classList.toggle('hidden', !active);
-  // ABANDON exists only while an event is live — it is the single
-  // deliberate route to forfeiting a buy-in.
-  if (abandonBtn) abandonBtn.classList.toggle('hidden', !active);
-
-  if (enterBtn){
-    enterBtn.classList.toggle('hidden', !active && !canEnter);
-    enterBtn.textContent = active ? 'Continue Event' : 'Enter Event';
+  if (board){
+    board.innerHTML = CAREER_EVENT_LIST.map(event=>{
+      const state = careerEventState(event.id);
+      const copy = stateCopy[state].slice();
+      if (state === 'locked' && event.unlockRequirement){
+        const required = careerEventById(event.unlockRequirement.eventId);
+        if (required) copy[1] = 'Win ' + required.name + ' to unlock this event.';
+      }
+      const primary = state === 'active'
+        ? '<button class="btn-primary" data-career-continue="' + esc(event.id) + '">Continue Event</button>'
+        : '<button class="btn-primary" data-career-enter="' + esc(event.id) + '"' +
+          (state === 'available' ? '' : ' disabled') + '>Enter Event</button>';
+      const abandon = state === 'active'
+        ? '<button class="btn-secondary btn-danger career-abandon" data-career-abandon="' + esc(event.id) + '">Abandon Event</button>'
+        : '';
+      return '<section class="panel-card career-event-card is-' + state + '" data-career-event="' + esc(event.id) + '">' +
+        '<div class="card-label"><span>' + esc(event.venue) + '</span></div>' +
+        '<div class="career-event-status">' + esc(copy[0]) + '</div>' +
+        '<div class="career-event-name">' + esc(event.name) + '</div>' +
+        '<div class="career-event-stats">' +
+          '<div class="career-stat"><span class="cs-k">Players</span><span class="cs-v tabular">' + event.playerCount + '</span></div>' +
+          '<div class="career-stat"><span class="cs-k">Format</span><span class="cs-v">' + esc(event.format) + '</span></div>' +
+          '<div class="career-stat"><span class="cs-k">Buy-in</span><span class="cs-v tabular">' + money(event.buyIn) + '</span></div>' +
+          '<div class="career-stat"><span class="cs-k">Prize</span><span class="cs-v tabular">' + money(event.prize) + '</span></div>' +
+        '</div><div class="hint career-note">' + esc(copy[1]) + '</div>' + primary + abandon + '</section>';
+    }).join('');
+    board.querySelectorAll('[data-career-enter]').forEach(button=>{
+      button.onclick = ()=>{ Sound.buttonRelease('award'); careerEnterPressed(button.dataset.careerEnter); };
+    });
+    board.querySelectorAll('[data-career-continue]').forEach(button=>{
+      button.onclick = ()=>{ Sound.buttonRelease('award'); careerEnterPressed(button.dataset.careerContinue); };
+    });
+    board.querySelectorAll('[data-career-abandon]').forEach(button=>{
+      button.onclick = ()=>careerAbandonPressed(button.dataset.careerAbandon);
+    });
   }
-  if (newBtn) newBtn.classList.toggle('hidden', active || affordable);
 
-  if (note){
-    note.textContent = active
-      ? 'Your $' + CAREER_EVENT.buyIn + ' buy-in is staked. Continue where you left off.'
-      : affordable
-        ? 'Winner takes the full $' + CAREER_EVENT.prize + ' pool.'
-        : 'Not enough for the buy-in. Start a fresh career to keep playing.';
-  }
+  const hasAffordableUnlocked = CAREER_EVENT_LIST.some(event=>
+    careerEventUnlocked(event) && career.bankroll >= event.buyIn);
+  if (newBtn) newBtn.classList.toggle('hidden', careerHasActiveEvent() || hasAffordableUnlocked);
 
   if (resultEl){
     const r = career.lastResult;
@@ -662,20 +769,24 @@ function renderCareerScreen(){
   }
 }
 
-function careerEnterPressed(){
-  if (careerHasActiveEvent()){ continueCareerEvent(); return; }
-  if (!enterCareerEvent()){ renderCareerScreen(); return; }
+function careerEnterPressed(eventId){
+  if (careerHasActiveEvent()){
+    if (career.active.eventId === eventId) continueCareerEvent();
+    return;
+  }
+  if (!enterCareerEvent(eventId)){ renderCareerScreen(); return; }
   renderCareerScreen();       // bankroll visibly drops before the table appears
   startCareerEvent();
 }
 
 /* The ONLY path that forfeits a buy-in. Confirmation is mandatory and the
    consequence is stated plainly. */
-function careerAbandonPressed(){
-  if (!careerHasActiveEvent()) return;
+function careerAbandonPressed(eventId){
+  if (!careerHasActiveEvent() || career.active.eventId !== eventId) return;
+  const event = careerActiveEventSnapshot();
   showConfirmDialog({
     title:'Abandon event?',
-    body:'Your $' + CAREER_EVENT.buyIn + ' buy-in is lost and the event ends immediately. This cannot be undone.',
+    body:'Your $' + event.buyIn.toLocaleString() + ' buy-in is lost and the event ends immediately. This cannot be undone.',
     confirmLabel:'Abandon', danger:true,
     onConfirm:()=>{
       settleCareerEvent('forfeit');   // clears active + the table save

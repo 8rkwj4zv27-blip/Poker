@@ -549,8 +549,6 @@ function wireUI(){
     $('home').classList.remove('hidden');
     reconstructMainMenu();
   };
-  $('career-enter').onclick = ()=>{ Sound.buttonRelease('award'); careerEnterPressed(); };
-  $('career-abandon').onclick = ()=>{ careerAbandonPressed(); };
   $('career-new').onclick = ()=>{
     showConfirmDialog({
       title:'Start a new career?',

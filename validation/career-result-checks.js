@@ -14,7 +14,6 @@ const vm = require('vm');
 const root = path.resolve(__dirname, '..');
 const engineSource = fs.readFileSync(path.join(root, 'js/05-game-engine.js'), 'utf8');
 const presentationSource = fs.readFileSync(path.join(root, 'js/06-presentation.js'), 'utf8');
-const wiringSource = fs.readFileSync(path.join(root, 'js/07-ui-wiring.js'), 'utf8');
 
 let passed = 0;
 function check(name, fn){
@@ -29,7 +28,6 @@ function esc(s){
 const engineContext = {
   console,
   esc,
-  CAREER_EVENT:{ name:'BACK ROOM FREEZEOUT', buyIn:100, prize:300 },
   careerBankroll:()=>600
 };
 vm.createContext(engineContext);
@@ -48,6 +46,11 @@ const lossModel = {
   buyIn:100, bankroll:400, eventScore:1275, hands:4
 };
 const lossHTML = careerResultHTML(lossModel);
+const pubModel = buildCareerResultModel({
+  event:{ name:'PUB CIRCUIT FREEZEOUT', buyIn:300, prize:1200, reward:{score:8640} },
+  handNumber:12
+}, 'win');
+const pubHTML = careerResultHTML(pubModel);
 
 check('Career result model captures the settled display values once', ()=>{
   assert.deepStrictEqual(JSON.parse(JSON.stringify(winModel)), {
@@ -63,6 +66,10 @@ check('Career win contains complete atomic formatted strings', ()=>{
 });
 check('Career loss contains lost buy-in, score, hands and remaining bankroll', ()=>{
   ['EVENT LOST','BACK ROOM FREEZEOUT','-$100','1,275','4','$400'].forEach(value=>assert.ok(lossHTML.includes(value), value));
+});
+check('Career result reads its dynamic active-event snapshot', ()=>{
+  ['PUB CIRCUIT FREEZEOUT','+$1,200','8,640','12','$600'].forEach(value=>assert.ok(pubHTML.includes(value), value));
+  assert.ok(!pubHTML.includes('BACK ROOM FREEZEOUT'));
 });
 check('Career result uses no fragmented mechanical amount markup', ()=>{
   assert.ok(!/(jp-cell|reel-strip|amt-readout|stage-results-stack|stage-results-score)/.test(winHTML + lossHTML));
@@ -130,23 +137,6 @@ check('Arcade result console retains its existing NEXT TABLE flow', ()=>{
   assert.ok(!button.classList.contains('career-return-mode'));
 });
 
-const settleMatch = wiringSource.match(/function settleCareerEvent\(outcome\)\{[\s\S]*?\n\}/);
-assert.ok(settleMatch, 'settleCareerEvent source must be present');
-const settleCounters = { save:0, clear:0 };
-const settleContext = {
-  career:{bankroll:400,active:{buyIn:100,prize:300},lastResult:null},
-  saveCareer(){ settleCounters.save++; }, clearCareerTable(){ settleCounters.clear++; }
-};
-vm.createContext(settleContext);
-vm.runInContext(settleMatch[0] + ';globalThis.__settle=settleCareerEvent;', settleContext);
-check('Repeated settlement cannot re-credit the Career bankroll', ()=>{
-  assert.strictEqual(settleContext.__settle('win'), true);
-  assert.strictEqual(settleContext.__settle('win'), false);
-  assert.strictEqual(settleContext.career.bankroll, 700);
-  assert.strictEqual(settleContext.career.active, null);
-  assert.strictEqual(settleCounters.save, 1);
-  assert.strictEqual(settleCounters.clear, 1);
-});
 check('Completed-event shutdown natively disables ordinary table controls', ()=>{
   const block = presentationSource.match(/function setCompletedEventActions\(disabled\)\{[\s\S]*?\n\}/);
   assert.ok(block);

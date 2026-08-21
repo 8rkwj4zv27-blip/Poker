@@ -242,12 +242,11 @@ function serializeTable(g){
   // back to a zeroed score. equityPromise-bearing decisionSnapshots are
   // dropped, since a snapshot is only ever taken between hands.
   if (g.mode==='career' && g.event){
-    snapshot.event = {
-      id:g.event.id, buyIn:g.event.buyIn, prize:g.event.prize,
+    snapshot.event = Object.assign(careerEventSnapshot(g.event), {
       reward: g.event.reward
         ? Object.assign({}, g.event.reward, { decisionSnapshots:[] })
         : null
-    };
+    });
   }
   return snapshot;
 }
@@ -281,6 +280,10 @@ function saveTable(){
 }
 function saveProgress(){
   if (!game || (game.over && !(game.run && game.run.active))) return false;
+  // The shared SAVE button must respect Career's dedicated checkpoint key
+  // just as finishHand()/leaveTable() do. It must never overwrite the
+  // player's independent Classic/Arcade resume slot.
+  if (game.mode === 'career') return saveCareerTable();
   const snapshot=game._safeSave || serializeTable(game);
   Store.set('felt.table', snapshot);
   return true;
@@ -325,7 +328,28 @@ function isValidCareerTableSave(save){
     if (typeof p.id !== 'string' || typeof p.chips !== 'number' || Number.isNaN(p.chips)) return false;
     if (p.personalityKey && !PERSONALITIES_ALL.some(pp=>pp.key===p.personalityKey)) return false;
   }
-  return !!save.event;
+  return isValidCareerEventSnapshot(save.event);
+}
+
+/* Version-1 Career table saves carried only id/buyIn/prize. Enrich those
+   saves from the matching descriptor while retaining the paid buy-in and
+   promised prize from the old snapshot. Full snapshots are already the
+   authority and are never overwritten from the live registry. */
+function normalizeCareerSavedEvent(saved){
+  if (isValidCareerEventSnapshot(saved)) return Object.assign({}, saved);
+  const descriptor = careerEventById(saved && saved.id);
+  if (!descriptor) return null;
+  const event = careerEventSnapshot(descriptor);
+  if (Number.isFinite(saved.buyIn)) event.buyIn = saved.buyIn;
+  if (Number.isFinite(saved.prize)) event.prize = saved.prize;
+  if (saved.reward) event.reward = saved.reward;
+  return event;
+}
+function normalizeCareerTableSave(raw){
+  if (!raw || typeof raw !== 'object') return null;
+  const event = normalizeCareerSavedEvent(raw.event);
+  if (!event) return null;
+  return Object.assign({}, raw, { event });
 }
 
 /* Prefers _safeSave (the clean pre-deal checkpoint startNewHand records) so
@@ -338,11 +362,13 @@ function saveCareerTable(){
 }
 function loadCareerTable(){
   const raw = Store.get(CAREER_TABLE_KEY, null);
-  if (!isValidCareerTableSave(raw)){
+  const normalized = normalizeCareerTableSave(raw);
+  if (!isValidCareerTableSave(normalized)){
     if (raw) clearCareerTable();
     return null;
   }
-  return raw;
+  if (!isValidCareerEventSnapshot(raw.event)) Store.set(CAREER_TABLE_KEY, normalized);
+  return normalized;
 }
 function clearCareerTable(){ Store.remove(CAREER_TABLE_KEY); }
 
@@ -396,16 +422,13 @@ function restoreTable(save){
       : normalizeOpponentCount(save.players.filter(p=>!p.isHuman).length);
   }
   if (save.mode==='career'){
-    const ev = save.event || {};
-    game.event = {
-      id: ev.id || CAREER_EVENT.id,
-      buyIn: Number.isFinite(ev.buyIn) ? ev.buyIn : CAREER_EVENT.buyIn,
-      prize: Number.isFinite(ev.prize) ? ev.prize : CAREER_EVENT.prize,
+    const ev = normalizeCareerSavedEvent(save.event);
+    if (ev) game.event = Object.assign({}, ev, {
       // Restore the accumulated TOTAL when the save carries a usable one;
       // build a fresh state only when it is absent or malformed.
       reward: isValidEventReward(ev.reward) ? ev.reward : makeEventRewardState()
-    };
-    if (!Array.isArray(game.event.reward.decisionSnapshots)) game.event.reward.decisionSnapshots = [];
+    });
+    if (game.event && !Array.isArray(game.event.reward.decisionSnapshots)) game.event.reward.decisionSnapshots = [];
   }
 }
 
@@ -531,7 +554,12 @@ async function startNewHand(){
   // floor(10/10)=1 raises hand #11 to 15/30 — the intended boundary. The
   // arithmetic is correct as-is; only the mode test was widened for Career.
   if (g.mode === 'tournament' || g.mode === 'career'){
-    const target = Math.min(BLIND_LEVELS.length-1, Math.floor(g.handNumber / TOURNAMENT_HANDS_PER_LEVEL));
+    const firstLevel = g.mode === 'career' && g.event
+      ? g.event.initialBlindLevel : 0;
+    const handsPerLevel = g.mode === 'career' && g.event
+      ? g.event.handsPerBlindLevel : TOURNAMENT_HANDS_PER_LEVEL;
+    const target = Math.min(BLIND_LEVELS.length-1,
+      firstLevel + Math.floor(g.handNumber / handsPerLevel));
     if (target !== g.blindLevel){
       g.blindLevel = target;
       g.smallBlind = BLIND_LEVELS[target][0];
@@ -1772,12 +1800,12 @@ function endCareerEvent(g, outcome){
 }
 
 function buildCareerResultModel(g, outcome){
-  const ev = g.event || CAREER_EVENT;
+  const ev = g.event || {};
   const reward = g.event && g.event.reward;
   const won = outcome === 'win';
   return {
     outcome, won,
-    eventName: ev.name || CAREER_EVENT.name,
+    eventName: ev.name || 'CAREER EVENT',
     prize: ev.prize || 0,
     buyIn: ev.buyIn || 0,
     bankroll: careerBankroll(),                                  // read once, post-settlement
