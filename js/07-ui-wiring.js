@@ -484,6 +484,7 @@ function continueTable(){
 
 function leaveTable(){
   clearTimeout(autoDealT);
+  endQuickResolve();   // also releases any AI think wait still pending
   closeOverlays();
   hideResultCard();
   if (game){

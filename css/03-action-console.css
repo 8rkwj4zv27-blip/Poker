@@ -140,14 +140,14 @@ input[type=range]::-moz-range-thumb{
    fast (the .is-pressed rule below, 50ms linear), releasing springs back
    slower with a small overshoot (this base rule's 150ms back-out
    cubic-bezier, within the requested 100-180ms release window). */
-.btn-fold, .btn-check, .btn-call, .btn-raise, .btn-award-console{
+.btn-fold, .btn-check, .btn-call, .btn-raise, .btn-award-console, .btn-quick-resolve{
   min-height:62px; padding:16px 4px; border-radius:6px;
   border:3px solid var(--px-ink);
   font-family:var(--font-hdr); font-size:11px; font-weight:400; cursor:pointer; text-transform:uppercase; letter-spacing:.02em;
   color:#1B120C; text-shadow:0 1px 0 rgba(255,255,255,.3);
   transition:transform .15s cubic-bezier(.34,1.56,.64,1), box-shadow .12s ease-out, opacity var(--dur-fast);
 }
-.btn-fold.is-pressed, .btn-check.is-pressed, .btn-call.is-pressed, .btn-raise.is-pressed, .btn-award-console.is-pressed{
+.btn-fold.is-pressed, .btn-check.is-pressed, .btn-call.is-pressed, .btn-raise.is-pressed, .btn-award-console.is-pressed, .btn-quick-resolve.is-pressed{
   transform:translateY(4px) scale(.98);
   transition:transform .05s linear, box-shadow .05s linear;
 }
@@ -198,6 +198,65 @@ input[type=range]::-moz-range-thumb{
 .console-face-award{ position:absolute; inset:0; transform:rotateX(180deg); pointer-events:none; }
 .console-flip.flipped .console-face-award{ pointer-events:auto; }
 .console-flip.flipped .console-face-actions{ pointer-events:none; }
+
+/* QUICK RESOLVE — a second, nested split-flap inside the actions face.
+   The outer .console-flip above already spends its single 180deg rotation
+   on the actions<->AWARD POT swap, so a third face cannot hang off it;
+   this is the same construction one level down. Its perspective comes from
+   the perspective() transform *function* on the flipper itself rather than
+   a `perspective` property on the parent: .console-face-actions already
+   carries backface-visibility:hidden, and stacking a perspective containing
+   block onto that same element on top of preserve-3d children is exactly
+   the combination WebKit renders unreliably. This keeps the parent
+   untouched — no new stacking context, no new containing block.
+
+   Only .actions-face-play is in normal flow, so it sets .actions-flip's
+   height and the quick face — absolute, inset:0, exactly like
+   .console-face-award — always matches the three-button row's footprint.
+   That is what makes the whole row flip as one stable panel with nothing
+   in the table layout moving. The row is .disabled (visible, dimmed) and
+   never .hidden during AI play, so that height is always there.
+
+   The two flippers are never in flight at once: endQuickResolve() resets
+   this one at the top of both outcome handlers, well before
+   showAwardConsole() flips the outer. */
+.actions-flip{
+  position:relative; transform-style:preserve-3d;
+  transform:perspective(900px);
+  transition:transform .28s cubic-bezier(.58,.04,.34,.98);
+}
+.actions-flip.flipped{ transform:perspective(900px) rotateX(180deg); }
+.actions-face{ backface-visibility:hidden; -webkit-backface-visibility:hidden; }
+.actions-face-quick{ position:absolute; inset:0; transform:rotateX(180deg); pointer-events:none; }
+.actions-flip.flipped .actions-face-quick{ pointer-events:auto; }
+.actions-flip.flipped .actions-face-play{ pointer-events:none; }
+/* Reduced motion gets an instant swap. The global [data-motion="off"] rule
+   in 01-foundation.css already collapses transition-duration to .01ms, so
+   this is stating the intent rather than relying on inheriting it. */
+[data-motion="off"] .actions-flip{ transition:none; }
+@media (prefers-reduced-motion: reduce){ .actions-flip{ transition:none; } }
+/* Same physical housing as the four big arcade buttons (it joins their
+   shared base rule above); the background follows .btn-award-console's
+   recipe off the theme's own --accent rather than a fixed hex, so it reads
+   as manufactured from the same control panel in every theme. Sharing the
+   accent hue with AWARD POT is safe — the two can never be on screen at
+   the same time. */
+.btn-quick-resolve{
+  width:100%; height:100%;
+  background:var(--accent); color:var(--accent-ink);
+  box-shadow:
+    0 6px 0 color-mix(in srgb, var(--accent) 55%, black), 0 6px 0 2px var(--px-ink),
+    inset 0 3px 0 rgba(255,255,255,.32), inset 0 -3px 0 rgba(0,0,0,.16);
+}
+.btn-quick-resolve.is-pressed{
+  box-shadow:
+    0 2px 0 color-mix(in srgb, var(--accent) 55%, black), 0 2px 0 2px var(--px-ink),
+    inset 0 3px 0 rgba(255,255,255,.32);
+}
+/* RESOLVING… — the control has committed and is now a readout, not a
+   pressable. pointer-events is belt-and-braces over the native disabled
+   attribute set in syncQuickResolveControl/startQuickResolve. */
+.btn-quick-resolve.is-resolving{ opacity:.55; pointer-events:none; }
 .action-console.results-pending .console-face-actions{
   filter:brightness(.34) saturate(.38); transform:translateY(2px) scale(.994);
   transition:filter 170ms steps(4,end),transform 170ms steps(4,end);
@@ -516,8 +575,8 @@ body #home #home-settings{ background:var(--theme-case-raised); color:var(--ink)
     inset 0 -1px 0 rgba(255,255,255,.08),0 0 0 1px var(--theme-case-hi);
 }
 .actions-row{ gap:8px; padding-top:1px; }
-.btn-fold,.btn-check,.btn-call,.btn-raise,.btn-award-console{ transform:translateY(-1px); }
-.btn-fold.is-pressed,.btn-check.is-pressed,.btn-call.is-pressed,.btn-raise.is-pressed,.btn-award-console.is-pressed{ transform:translateY(5px) scale(.985); }
+.btn-fold,.btn-check,.btn-call,.btn-raise,.btn-award-console,.btn-quick-resolve{ transform:translateY(-1px); }
+.btn-fold.is-pressed,.btn-check.is-pressed,.btn-call.is-pressed,.btn-raise.is-pressed,.btn-award-console.is-pressed,.btn-quick-resolve.is-pressed{ transform:translateY(5px) scale(.985); }
 
 .raise-panel{
   margin-bottom:5px; padding:7px 9px 6px;
@@ -604,6 +663,6 @@ body #home #home-settings{ background:var(--theme-case-raised); color:var(--ink)
   .bet-this-hand{ min-height:50px; gap:3px; padding-top:3px; padding-bottom:3px; }
   .action-console{ padding:5px 5px 8px; }
   .console-flip{ padding:4px 4px 8px; }
-  .btn-fold,.btn-check,.btn-call,.btn-raise,.btn-award-console{ min-height:50px; padding:10px 3px; }
+  .btn-fold,.btn-check,.btn-call,.btn-raise,.btn-award-console,.btn-quick-resolve{ min-height:50px; padding:10px 3px; }
 }
 [data-motion="off"] .crt-screen,[data-motion="off"] .crt-refresh,[data-motion="off"] .crt-cursor{ animation:none; }

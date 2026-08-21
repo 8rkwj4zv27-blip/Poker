@@ -27,11 +27,140 @@ let bankPending = 0, potPending = 0;
 let humanBankDisplayFreeze = null;
 
 function sleep(ms){ return new Promise(r=>setTimeout(r, ms)); }
-// FAST DEV-aware sleep for the handful of fixed showdown/action pacing
-// beats that don't already run through speedMult() (see there) — never
-// used inside playElimination, which always calls plain sleep() with its
-// real config timings so K.O./ELIMINATED speed is never affected.
-function pacedSleep(ms){ return sleep((DEV_MODE && FAST_DEV) ? Math.round(ms * FAST_DEV_TIME_MULT) : ms); }
+
+/* ---------------- QUICK RESOLVE ----------------
+   Once the human folds and two or more AI players are still contesting the
+   pot, the rest of the hand is pure waiting — the player has no stake in it
+   and no decision left to make. QUICK RESOLVE shortens those waits only.
+
+   It is emphatically NOT a fast-forward to a precomputed result: the same
+   aiDecide() calls run, the same applyAction() state changes happen, the
+   same deck plays out, nothing hidden is revealed. The only thing that
+   changes is how long the machine pauses between beats.
+
+   It rides the two timing chokepoints FAST_DEV already uses — pacedSleep()
+   below and speedMult() (03-opponents.js) — which is what makes it small.
+   Everything in the payoff (playElimination, the pot-smash/K.O. physics,
+   the stage-roll transitions) deliberately calls plain sleep() with its own
+   config timings and never touches either chokepoint, so the reward
+   presentation is structurally out of reach of this multiplier. On top of
+   that, endQuickResolve() runs at the top of both outcome handlers, so the
+   flag is already off before a single frame of result presentation plays.
+
+   Deliberately NOT inherited from FAST_DEV: the AWARD POT auto-click (see
+   waitForAwardPot, 06-presentation.js). That tap is player-paced input, not
+   waiting, and it gates the whole chip payoff — it stays dev-only. */
+const QUICK_RESOLVE_TIME_MULT = 0.25;
+let quickResolveOn = false;
+// The handNumber the flag belongs to. Binding it this way makes a stale
+// flag surviving into the next hand structurally impossible rather than
+// merely avoided by remembering to clear it — the same defence the long
+// await chains already use with their `game !== g` identity guards.
+let quickResolveHand = -1;
+let quickResolveWaker = null;
+
+function quickResolveActive(){
+  return quickResolveOn && !!game && game.handNumber === quickResolveHand;
+}
+
+/* Availability. False before the human folds, false the instant only one
+   contender is left (the hand is already ending), and false once phase has
+   reached showdown/foldwin. Two all-in AIs with no decisions left still
+   qualify — the street dealing between them is still waiting, which is
+   exactly what this removes. */
+function canQuickResolve(){
+  const g = game;
+  if (!g || g.over || pendingHumanPlayer) return false;
+  if (!['preflop','flop','turn','river'].includes(g.phase)) return false;
+  const human = g.players[0];
+  if (!human || !human.inHand || !human.folded) return false;
+  return g.players.filter(p=>p.inHand && !p.folded).length >= 2;
+}
+
+// FAST DEV / QUICK RESOLVE-aware sleep for the handful of fixed showdown/
+// action pacing beats that don't already run through speedMult() (see
+// there) — never used inside playElimination, which always calls plain
+// sleep() with its real config timings so K.O./ELIMINATED speed is never
+// affected. FAST_DEV is checked first so the dev harness still wins.
+function pacedSleep(ms){
+  if (DEV_MODE && FAST_DEV) return sleep(Math.round(ms * FAST_DEV_TIME_MULT));
+  if (quickResolveActive()) return sleep(Math.round(ms * QUICK_RESOLVE_TIME_MULT));
+  return sleep(ms);
+}
+
+/* The AI think pause is the one wait long enough (up to ~3s) that pressing
+   QUICK RESOLVE during it would look like the button did nothing, so this
+   variant can be cut short. Each wait owns its own identity, which matters
+   because a wait can outlive the game that started it — leaveTable() can
+   fire while continueAction() is sitting in one. Without the identity
+   check that abandoned timeout would fire later and null out the waker
+   belonging to a hand that has since started on a new table, silently
+   breaking press-to-truncate there. */
+function aiWait(ms){
+  return new Promise(resolve=>{
+    let settled = false;
+    const finish = ()=>{
+      if (settled) return;      // expiry and an explicit release can race
+      settled = true;
+      clearTimeout(t);
+      // Only disown the global waker if this wait is still the current one.
+      if (quickResolveWaker === finish) quickResolveWaker = null;
+      resolve();
+    };
+    const t = setTimeout(finish, ms);
+    quickResolveWaker = finish;
+  });
+}
+
+/* Teardown: cancel the pending wait's timer and let its awaiter resume, so
+   no stale callback survives into a later game. This deliberately does not
+   try to stop the abandoned action chain itself — that is still the job of
+   continueAction()'s own `game !== g` / game.over guards, which the
+   resumed awaiter runs straight into. */
+function releaseQuickResolveWait(){
+  const w = quickResolveWaker;
+  quickResolveWaker = null;
+  if (w) w();
+}
+
+function startQuickResolve(){
+  // The anti-double-press guard. The button is also disabled the moment it
+  // fires and the un-flipped face is pointer-events:none, but this is the
+  // one that actually matters — it makes a second press a no-op rather
+  // than something that re-arms state or starts a duplicate timer. Nothing
+  // here schedules a timer at all, so there is nothing to duplicate.
+  if (quickResolveActive() || !canQuickResolve()) return;
+  quickResolveOn = true;
+  quickResolveHand = game.handNumber;
+  const btn = $('btn-quick-resolve');
+  if (btn){
+    btn.textContent = 'Resolving…';
+    btn.classList.add('is-resolving');
+    btn.disabled = true;
+  }
+  haptic(18);
+  // Land the press immediately rather than at the end of the pause the AI
+  // is already sitting in.
+  releaseQuickResolveWait();
+}
+
+/* Restores normal speed and puts the console back on its action face.
+   Called at the top of both outcome handlers — before any result
+   presentation runs — and defensively from startNewHand()/concludeGame()/
+   leaveTable(). */
+function endQuickResolve(){
+  quickResolveOn = false;
+  quickResolveHand = -1;
+  releaseQuickResolveWait();
+  const flip = $('actions-flip');
+  if (flip) flip.classList.remove('flipped');
+  const btn = $('btn-quick-resolve');
+  if (btn){
+    btn.textContent = 'Quick Resolve';
+    btn.classList.remove('is-resolving');
+    btn.disabled = true;
+  }
+}
 function $(id){ return document.getElementById(id); }
 
 function makePlayer(id, name, isHuman, chips, personality){
@@ -301,6 +430,8 @@ function updateHandInstrument(){
 /* ---------------- hand lifecycle ---------------- */
 async function startNewHand(){
   const g = game;
+  // Every hand begins at normal speed, whatever the last one did.
+  endQuickResolve();
   // A manual save during this hand resumes from this clean checkpoint,
   // never from a half-settled pot or partially completed betting round.
   g._safeSave=serializeTable(g);
@@ -839,6 +970,10 @@ function computePots(players){
 
 async function handleFoldWin(){
   const g = game;
+  // Back to normal speed before a single frame of result presentation —
+  // the banner, sting, award console, chip payout and everything after it
+  // run at their real production timing. See QUICK RESOLVE above.
+  endQuickResolve();
   const winner = g.players.find(p=>p.inHand && !p.folded);
   const amt = g.pot;
   // most fold-wins reach here directly (checkHandEndedByFold in the main
@@ -884,6 +1019,8 @@ async function handleFoldWin(){
 
 async function handleShowdown(){
   const g = game;
+  // Normal speed from here on: the staged reveal below IS the payoff.
+  endQuickResolve();
   // Defensive: inHand/folded should already exclude an eliminated player
   // from ever reaching here (see resolveEliminations/startNewHand), but
   // showdown eligibility is the one place a missed elimination would do
@@ -1419,6 +1556,7 @@ function showGameOver(g, human){
 }
 
 function concludeGame(){
+  endQuickResolve();
   if (game.mode==='elimination' && game.run && game.run.active){
     showTableCleared(game);
     return;
@@ -2353,7 +2491,7 @@ async function continueAction(){
     setMood(player.id, pickThinkMood(player));
     setActionRows(player.name,'IS THINKING…',true);
     const decision = await aiDecide(player, game);   // off the main thread
-    await sleep(aiThinkTime(player, decision, game));
+    await aiWait(aiThinkTime(player, decision, game));   // QUICK RESOLVE can cut this short
     if (seatEl) seatEl.root.classList.remove('thinking');
     if (game.over) return;
     applyAction(player, decision);

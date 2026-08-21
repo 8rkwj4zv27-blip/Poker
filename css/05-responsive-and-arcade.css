@@ -15,7 +15,7 @@
   }
   .topbar{ padding-top:max(6px,env(safe-area-inset-top)); padding-bottom:2px; }
   .banner{ min-height:32px; padding:5px 4px; }
-  .actions-row button{ min-height:52px; }
+  .actions-row button,.btn-quick-resolve{ min-height:52px; }
   .seat{ width:78px; margin-left:-39px; }
   #hud-frame{ padding:6px; gap:5px; }
   #log-drawer, .sheet{ max-width:340px; }
@@ -591,12 +591,15 @@
     height:100%; box-sizing:border-box; padding:4px 5px 6px;
     background:transparent; border:0; box-shadow:none;
   }
-  .console-face-actions,.actions-row{ height:100%; }
+  .console-face-actions,.actions-flip,.actions-face-play,.actions-row{ height:100%; }
   .actions-row{ align-items:center; padding-top:0; }
-  .btn-fold,.btn-check,.btn-call,.btn-raise,.btn-award-console{
+  .btn-fold,.btn-check,.btn-call,.btn-raise,.btn-award-console,.btn-quick-resolve{
     height:54px; min-height:54px; padding:10px 4px;
   }
   .console-face-award .btn-award-console{ width:100%; height:100%; }
+  /* Matches the AWARD POT face above: fill the flipped face exactly, so
+     the single control occupies the same box the three buttons did. */
+  .actions-face-quick .btn-quick-resolve{ width:100%; height:100%; }
   #coach,#review{
     position:absolute; z-index:35; left:14px; right:14px;
     bottom:calc(100% + 8px); max-height:min(42vh,330px); overflow:auto;
@@ -610,10 +613,10 @@
   #table-screen{ --hud-dock-h:154px; }
   #table-screen.arcade-active .topbar{ height:42px; min-height:42px; padding-top:3px; }
   #your-seat-dock{ flex-basis:var(--hud-dock-h); height:var(--hud-dock-h); }
-  .actions-row button{ min-height:46px; height:46px; padding-top:8px; padding-bottom:8px; }
+  .actions-row button,.btn-quick-resolve{ min-height:46px; height:46px; padding-top:8px; padding-bottom:8px; }
 }
 @media (orientation:portrait) and (max-height:700px){
-  .btn-fold,.btn-check,.btn-call,.btn-raise,.btn-award-console{
+  .btn-fold,.btn-check,.btn-call,.btn-raise,.btn-award-console,.btn-quick-resolve{
     height:50px; min-height:50px; padding-top:8px; padding-bottom:8px;
   }
 }

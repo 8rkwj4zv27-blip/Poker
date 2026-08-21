@@ -540,6 +540,13 @@ function speedMult(){
   // auto-deal delay, …) benefits automatically; playElimination never
   // calls speedMult(), so K.O./ELIMINATED timing is untouched either way.
   if (DEV_MODE && FAST_DEV) return FAST_DEV_TIME_MULT;
+  // QUICK RESOLVE (see 05-game-engine.js) overrides the player's own speed
+  // setting rather than compounding with it, so the accelerated stretch is
+  // one predictable speed regardless of Normal/Fast. Every existing call
+  // site benefits automatically, exactly as FAST_DEV's does; the payoff
+  // sequences never call this function, and the flag is cleared before
+  // they run anyway.
+  if (quickResolveActive()) return QUICK_RESOLVE_TIME_MULT;
   return settings.speed==='fast' ? 0.55 : settings.speed==='relaxed' ? 1.35 : 1;
 }
 function aiThinkTime(player, decision, g){

@@ -3796,10 +3796,34 @@ function syncSliderFill(){
   s.style.setProperty('--fill', pct.toFixed(1)+'%');
 }
 
+/* Drives the console's inner two-face panel (see .actions-flip in
+   03-action-console.css). The three-button row flips over as one stable
+   unit to reveal a single full-width QUICK RESOLVE control on its reverse
+   face — same footprint, so nothing in the table layout moves.
+
+   `|| quickResolveActive()` keeps the panel flipped through the whole
+   accelerated stretch even as the contender count falls towards the end of
+   the hand; endQuickResolve() is what deterministically flips it back, at
+   the top of the outcome handlers. */
+function syncQuickResolveControl(){
+  const flip = $('actions-flip'), btn = $('btn-quick-resolve');
+  if (!flip || !btn) return;
+  const show = canQuickResolve() || quickResolveActive();
+  flip.classList.toggle('flipped', show);
+  // Native disabled (not just a class) so the control on the hidden face
+  // can never be clicked or tabbed into while it isn't the live one.
+  btn.disabled = !show || quickResolveActive();
+  if (!quickResolveActive()){
+    btn.textContent = 'Quick Resolve';
+    btn.classList.remove('is-resolving');
+  }
+}
+
 function updateActionControls(){
   const g = game;
   const banner = $('banner');
   const row = $('actions-row');
+  syncQuickResolveControl();
   if (!pendingHumanPlayer){
     paintBanner(bannerOverride !== null ? bannerOverride : describeCurrentTurn());
     // Persistent-but-inert: the row stays in its fixed position through AI

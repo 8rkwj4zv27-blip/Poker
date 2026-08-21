@@ -542,6 +542,9 @@ function wireUI(){
     if (!el) return null;
     if (el.id === 'btn-fold') return 'fold';
     if (el.id === 'btn-award-pot-console') return 'award';
+    // Reuses the AWARD POT cue rather than introducing a new one — it's the
+    // same physical console face committing to a machine mode change.
+    if (el.id === 'btn-quick-resolve') return 'award';
     if (el.id === 'btn-checkcall') return el.classList.contains('btn-call') ? 'call' : 'check';
     if (el.id === 'btn-raise'){
       const label = el.textContent;
@@ -584,13 +587,22 @@ function wireUI(){
     el.addEventListener('pointercancel', release);
     el.addEventListener('pointerleave', release);
   }
-  ['btn-fold','btn-checkcall','btn-raise','btn-award-pot-console'].forEach(id=>pressFeedback($(id)));
+  ['btn-fold','btn-checkcall','btn-raise','btn-award-pot-console','btn-quick-resolve'].forEach(id=>pressFeedback($(id)));
 
   // table actions
   $('btn-fold').onclick = ()=>{
     if (!pendingHumanPlayer) return;
     Sound.buttonRelease('fold');
     humanAct('fold');
+  };
+  // QUICK RESOLVE — accelerates the remaining AI-vs-AI action for this hand
+  // only. startQuickResolve() does its own availability/double-press
+  // guarding (see there); the render() repaints the console face.
+  $('btn-quick-resolve').onclick = ()=>{
+    if (!canQuickResolve()) return;
+    Sound.buttonRelease('award');
+    startQuickResolve();
+    render();
   };
   $('btn-checkcall').onclick = ()=>{
     if (!pendingHumanPlayer) return;
