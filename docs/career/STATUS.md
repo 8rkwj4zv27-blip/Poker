@@ -1,7 +1,7 @@
 # Career Mode — Current Status
 
 Last verified: 2026-08-23  
-Verified implementation baseline: uncommitted working tree on `main`, on top of `ae4d5ea` — `Document Career mode direction and handoff`. Update this line to the Phase 1 commit hash once the work is committed.
+Verified implementation baseline: `d31b120` — `Add multi-place payouts and Pub Circuit Open` (Phase 1). Build `v0.19.0-dev · paid places and pub circuit open`, service-worker cache `poker-v18-0`.
 
 This is the short handoff file. Update it whenever a Career milestone is completed or the immediate next task changes.
 
