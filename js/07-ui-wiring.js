@@ -460,7 +460,13 @@ async function launchSinglePlayerFromMenu(opponentCount){
    bankroll is off-table money in 'felt.career'.
    ============================================================ */
 const CAREER_KEY = 'felt.career';
-const CAREER_SAVE_VERSION = 2;   // independent of the table SAVE_VERSION
+/* Independent of the table SAVE_VERSION. Bumped 2 -> 3 for multi-place
+   payouts: active snapshots gained `payouts`, the catalogue gained a third
+   unlock entry, and lastResult gained place/prize. Two structurally
+   different formats must not share a version number — the bump is what
+   routes every stored v2 save through migrateCareer() explicitly instead
+   of letting it slide past isValidCareer() on a coincidence. */
+const CAREER_SAVE_VERSION = 3;
 
 function defaultCareer(){
   const unlocks = {};
@@ -479,21 +485,65 @@ function normalizeActiveCareerEvent(active){
   if (isValidCareerEventSnapshot(full)){
     return { eventId:full.id, snapshot:Object.assign({}, full) };
   }
-  // Version 1 only knew Back Room and stored eventId/buyIn/prize. Merge in
-  // the missing launch fields, but keep the paid financial terms verbatim.
-  const descriptor = careerEventById(active.eventId || 'back-room-freezeout');
+  // An incomplete snapshot: either version 1 (which knew only Back Room and
+  // stored eventId/buyIn/prize at the TOP level) or a version-2 snapshot
+  // written before `payouts` existed. Rebuild the missing launch fields from
+  // the descriptor, then re-apply the paid financial terms from whichever
+  // of the two shapes actually carries them. Reading `full` first matters:
+  // a v2 active keeps its terms inside .snapshot, and taking them from
+  // `active` alone would silently adopt the live catalogue's terms instead
+  // of the ones the player already paid for.
+  const paid = (full && typeof full === 'object') ? full : active;
+  const descriptor = careerEventById((full && full.id) || active.eventId || 'back-room-freezeout');
   if (!descriptor) return null;
-  const snapshot = careerEventSnapshot(descriptor);
-  if (Number.isFinite(active.buyIn)) snapshot.buyIn = active.buyIn;
-  if (Number.isFinite(active.prize)) snapshot.prize = active.prize;
+  const snapshot = applyPaidCareerTerms(careerEventSnapshot(descriptor), paid);
   return { eventId:snapshot.id, snapshot };
 }
+
+/* Records written before placement existed have no place and no prize, and
+   this deliberately invents neither — reconstructing a placement from
+   `delta` would be exactly the faked placement the schema is meant to
+   prevent. place:null renders no FINISH row; prize:0 is safe because the
+   Career screen renders an old record from `outcome` and `delta` (both kept
+   verbatim), and only the new `cash` tag consults prize — a state no
+   pre-version-3 record can be in. */
+function normalizeCareerLastResult(raw){
+  if (!raw || typeof raw !== 'object') return null;
+  const result = Object.assign({}, raw);
+  result.place = Number.isInteger(raw.place) && raw.place >= 1 ? raw.place : null;
+  result.prize = Number.isFinite(raw.prize) && raw.prize >= 0 ? raw.prize : 0;
+  return result;
+}
+
+/* Venue access is derived purely from event wins, so an unlocked event is
+   itself proof that its required win happened. That makes unlocks
+   transferable between events sharing one requirement — which is what stops
+   a player who already won the Back Room from finding a NEWLY ADDED sibling
+   event (Pub Circuit Open) locked after an update, when their save records
+   only the unlock ids that existed when it was written. */
+function applyEquivalentUnlocks(unlocks){
+  const provenWins = new Set();
+  CAREER_EVENT_LIST.forEach(event=>{
+    const requirement = event.unlockRequirement;
+    if (requirement && requirement.type === 'event-win' && unlocks[event.id] === true){
+      provenWins.add(requirement.eventId);
+    }
+  });
+  CAREER_EVENT_LIST.forEach(event=>{
+    const requirement = event.unlockRequirement;
+    if (requirement && requirement.type === 'event-win' && provenWins.has(requirement.eventId)){
+      unlocks[event.id] = true;
+    }
+  });
+  return unlocks;
+}
+
 function migrateCareer(raw){
   if (!raw || typeof raw !== 'object') return defaultCareer();
   const migrated = defaultCareer();
   if (Number.isFinite(raw.bankroll) && raw.bankroll >= 0) migrated.bankroll = raw.bankroll;
   migrated.active = normalizeActiveCareerEvent(raw.active);
-  if (raw.lastResult && typeof raw.lastResult === 'object') migrated.lastResult = Object.assign({}, raw.lastResult);
+  migrated.lastResult = normalizeCareerLastResult(raw.lastResult);
   if (raw.unlocks && typeof raw.unlocks === 'object'){
     CAREER_EVENT_LIST.forEach(event=>{
       if (raw.unlocks[event.id] === true) migrated.unlocks[event.id] = true;
@@ -509,6 +559,7 @@ function migrateCareer(raw){
       }
     });
   }
+  applyEquivalentUnlocks(migrated.unlocks);
   return migrated;
 }
 function isValidCareer(c){
@@ -535,6 +586,10 @@ function careerHasActiveEvent(){ return !!career.active; }
 function careerActiveEventSnapshot(){
   return career.active ? career.active.snapshot : null;
 }
+/* Read-only view of the settled record. endCareerEvent() builds its display
+   model from this immediately after settlement, so the result presentation
+   never has to reach into `career` itself. */
+function careerLastResult(){ return career.lastResult; }
 function careerEventUnlocked(event, state){
   const c = state || career;
   if (!event || !event.unlockRequirement) return true;
@@ -573,13 +628,49 @@ function enterCareerEvent(eventId){
   return true;
 }
 
+/* The gate between "what happened at the table" and "what gets paid". A
+   placement is honoured ONLY as an integer within the paid event's own
+   field size — anything else (zero, negative, fractional, a numeric string,
+   NaN, out of range, or simply absent) becomes place:null, which pays
+   nothing and unlocks nothing. Money must never be creatable by a malformed
+   value reaching settlement.
+
+   The legacy 'win'/'loss'/'forfeit' strings remain accepted so an older call
+   site can never silently mean something new: 'win' is first place, 'loss'
+   is a bust with no known placement, and neither can pay a placed prize it
+   was not told about. */
+function normalizeCareerSettlement(result, snapshot){
+  if (result === 'forfeit') return { forfeit:true, place:null };
+  const seats = snapshot && Number.isInteger(snapshot.playerCount) ? snapshot.playerCount : 0;
+  const valid = place => Number.isInteger(place) && place >= 1 && place <= seats;
+  if (result === 'win')  return { forfeit:false, place: valid(1) ? 1 : null };
+  if (result === 'loss') return { forfeit:false, place: null };
+  const place = (result && typeof result === 'object') ? result.place : null;
+  return { forfeit:false, place: valid(place) ? place : null };
+}
+
 /* Returns true ONLY if this call performed the settlement. endCareerEvent()
-   in 05-game-engine.js relies on that to decide who owns the ceremony. */
-function settleCareerEvent(outcome){
+   in 05-game-engine.js relies on that to decide who owns the ceremony.
+
+   Three distinct endings, one arithmetic:
+     - first place       -> prize credited AND any progression unlock;
+     - a non-winning cash -> prize credited, NO unlock, ever;
+     - a bust or forfeit  -> nothing credited, nothing unlocked.
+   The prize always comes from the ACTIVE SNAPSHOT's payout table, never the
+   live catalogue, so an already-paid event settles on the terms the player
+   actually bought. */
+function settleCareerEvent(result){
   if (!career.active) return false;
   const stake = career.active.snapshot;
-  if (outcome === 'win') career.bankroll += stake.prize;
-  if (outcome === 'win'){
+  const settlement = normalizeCareerSettlement(result, stake);
+  const prize = settlement.forfeit ? 0 : careerPrizeForPlace(stake, settlement.place);
+  const won = !settlement.forfeit && settlement.place === 1;
+  const outcome = settlement.forfeit ? 'forfeit'
+    : won ? 'win'
+    : prize > 0 ? 'cash'
+    : 'loss';
+  career.bankroll += prize;
+  if (won){
     CAREER_EVENT_LIST.forEach(event=>{
       const requirement = event.unlockRequirement;
       if (requirement && requirement.type === 'event-win' && requirement.eventId === stake.id){
@@ -589,10 +680,16 @@ function settleCareerEvent(outcome){
   }
   career.lastResult = {
     outcome,
+    place: settlement.place,
+    prize,
     eventId:stake.id,
     eventName:stake.name,
     venue:stake.venue,
-    delta: outcome === 'win' ? stake.prize : -stake.buyIn,
+    // Unchanged convention: the GROSS prize when one was paid, otherwise the
+    // forfeited buy-in. Deliberately not net profit — see CAREER_DESIGN.md,
+    // "prize figures mean the total credited after the buy-in has already
+    // been deducted".
+    delta: prize > 0 ? prize : -stake.buyIn,
     bankroll: career.bankroll
   };
   career.active = null;
@@ -702,6 +799,21 @@ function returnToCareer(){
   careerReturnInFlight = false;
 }
 
+/* Board presentation of a payout table. One place reads as a plain amount;
+   several read as a paid-places list, so the Pub Circuit's two events are
+   distinguishable at a glance without opening anything. */
+function careerPayoutSummary(event){
+  const places = careerPayouts(event);
+  if (!places.length) return '—';
+  return places.map(amount=>'$' + amount.toLocaleString()).join(' / ');
+}
+function careerPayoutNote(event){
+  const places = careerPayouts(event);
+  if (places.length <= 1) return 'Winner takes the full prize pool.';
+  const named = places.length === 2 ? 'Top two places are' : 'The top ' + places.length + ' places are';
+  return named + ' paid. Only a win unlocks progression.';
+}
+
 function renderCareerScreen(){
   const bank = $('career-bankroll');
   if (bank) buildResultAmount(bank, career.bankroll);
@@ -710,7 +822,7 @@ function renderCareerScreen(){
   const resultEl = $('career-last-result');
   const money = value=>'$' + value.toLocaleString();
   const stateCopy = {
-    available:['AVAILABLE · AFFORDABLE','Winner takes the full prize pool.'],
+    available:['AVAILABLE · AFFORDABLE',''],
     unaffordable:['AVAILABLE · UNAFFORDABLE','Your bankroll does not cover this buy-in.'],
     locked:['LOCKED · PROGRESSION','Complete the required event win to unlock this event.'],
     active:['CURRENTLY ACTIVE','Your buy-in is staked. Continue where you left off.'],
@@ -721,6 +833,7 @@ function renderCareerScreen(){
     board.innerHTML = CAREER_EVENT_LIST.map(event=>{
       const state = careerEventState(event.id);
       const copy = stateCopy[state].slice();
+      if (state === 'available') copy[1] = careerPayoutNote(event);
       if (state === 'locked' && event.unlockRequirement){
         const required = careerEventById(event.unlockRequirement.eventId);
         if (required) copy[1] = 'Win ' + required.name + ' to unlock this event.';
@@ -740,7 +853,8 @@ function renderCareerScreen(){
           '<div class="career-stat"><span class="cs-k">Players</span><span class="cs-v tabular">' + event.playerCount + '</span></div>' +
           '<div class="career-stat"><span class="cs-k">Format</span><span class="cs-v">' + esc(event.format) + '</span></div>' +
           '<div class="career-stat"><span class="cs-k">Buy-in</span><span class="cs-v tabular">' + money(event.buyIn) + '</span></div>' +
-          '<div class="career-stat"><span class="cs-k">Prize</span><span class="cs-v tabular">' + money(event.prize) + '</span></div>' +
+          '<div class="career-stat"><span class="cs-k">' + (careerPayouts(event).length > 1 ? 'Payout' : 'Prize') +
+            '</span><span class="cs-v tabular">' + esc(careerPayoutSummary(event)) + '</span></div>' +
         '</div><div class="hint career-note">' + esc(copy[1]) + '</div>' + primary + abandon + '</section>';
     }).join('');
     board.querySelectorAll('[data-career-enter]').forEach(button=>{
@@ -761,9 +875,13 @@ function renderCareerScreen(){
   if (resultEl){
     const r = career.lastResult;
     resultEl.classList.toggle('hidden', !r);
+    resultEl.classList.toggle('is-cash', !!r && r.outcome === 'cash');
     if (r){
       const sign = r.delta >= 0 ? '+' : '-';
-      resultEl.innerHTML = '<span class="cr-tag">' + (r.outcome === 'win' ? 'Event won' : 'Event lost') + '</span>' +
+      const tag = r.outcome === 'win' ? 'Event won'
+        : r.outcome === 'cash' ? 'Event cashed'
+        : 'Event lost';
+      resultEl.innerHTML = '<span class="cr-tag">' + tag + '</span>' +
         '<span class="cr-amt tabular">' + sign + '$' + Math.abs(r.delta).toLocaleString() + '</span>';
     }
   }

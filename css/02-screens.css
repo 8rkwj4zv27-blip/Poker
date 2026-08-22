@@ -1653,3 +1653,16 @@
   font-size:15px; color:var(--ink); white-space:nowrap;
 }
 .career-res-row:last-child .career-res-v{ color:var(--accent-bright); font-size:17px; }
+
+/* NON-WINNING CASH — a paid place that is not a win. It shares the plain
+   result card a bust uses: no stage roll, no victory drum, no muck ceremony.
+   The only difference is a warm edge and a gold title, so the panel reads as
+   clearly positive while staying unmistakably below the full win treatment.
+   Restraint is the point (see CAREER_DESIGN.md, Presentation). */
+.career-result-panel.is-cash{
+  border-color:var(--accent-bright);
+  box-shadow:0 6px 0 rgba(0,0,0,.55), inset 0 0 0 2px rgba(232,184,58,.16);
+}
+.career-result-panel.is-cash .career-res-title{ color:var(--accent-bright); }
+/* Matching restraint on the Career screen's compact summary chip. */
+.career-last-result.is-cash .cr-tag{ color:var(--accent); }

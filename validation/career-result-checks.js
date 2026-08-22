@@ -32,31 +32,79 @@ const engineContext = {
 };
 vm.createContext(engineContext);
 vm.runInContext(engineSource +
-  ';globalThis.__careerChecks={careerResultHTML,buildCareerResultModel,showdownPotVerb};', engineContext);
-const { careerResultHTML, buildCareerResultModel, showdownPotVerb } = engineContext.__careerChecks;
+  ';globalThis.__careerChecks={careerResultHTML,buildCareerResultModel,showdownPotVerb,careerFinishPlace};', engineContext);
+const { careerResultHTML, buildCareerResultModel, showdownPotVerb, careerFinishPlace } = engineContext.__careerChecks;
 
 const winGame = {
-  event:{ name:'BACK ROOM FREEZEOUT', buyIn:100, prize:300, reward:{score:5575} },
+  event:{ name:'BACK ROOM FREEZEOUT', buyIn:100, prize:300, payouts:[300], reward:{score:5575} },
   handNumber:7
 };
-const winModel = buildCareerResultModel(winGame, 'win');
+const winModel = buildCareerResultModel(winGame,
+  { outcome:'win', place:1, prize:300, delta:300, bankroll:600 });
 const winHTML = careerResultHTML(winModel);
 const lossModel = {
-  outcome:'loss', won:false, eventName:'BACK ROOM FREEZEOUT', prize:300,
+  outcome:'loss', won:false, cashed:false, place:3, eventName:'BACK ROOM FREEZEOUT', prize:0,
   buyIn:100, bankroll:400, eventScore:1275, hands:4
 };
 const lossHTML = careerResultHTML(lossModel);
 const pubModel = buildCareerResultModel({
-  event:{ name:'PUB CIRCUIT FREEZEOUT', buyIn:300, prize:1200, reward:{score:8640} },
+  event:{ name:'PUB CIRCUIT FREEZEOUT', buyIn:300, prize:1200, payouts:[1200], reward:{score:8640} },
   handNumber:12
-}, 'win');
+}, { outcome:'win', place:1, prize:1200, delta:1200, bankroll:600 });
 const pubHTML = careerResultHTML(pubModel);
+const cashModel = buildCareerResultModel({
+  event:{ name:'PUB CIRCUIT OPEN', buyIn:300, prize:1050, payouts:[1050,450], reward:{score:4120} },
+  handNumber:23
+}, { outcome:'cash', place:2, prize:450, delta:450, bankroll:1150 });
+const cashHTML = careerResultHTML(cashModel);
+const forfeitModel = buildCareerResultModel({
+  event:{ name:'PUB CIRCUIT OPEN', buyIn:300, prize:1050, payouts:[1050,450], reward:{score:80} },
+  handNumber:2
+}, { outcome:'forfeit', place:null, prize:0, delta:-300, bankroll:200 });
+const forfeitHTML = careerResultHTML(forfeitModel);
 
 check('Career result model captures the settled display values once', ()=>{
   assert.deepStrictEqual(JSON.parse(JSON.stringify(winModel)), {
-    outcome:'win', won:true, eventName:'BACK ROOM FREEZEOUT', prize:300,
+    outcome:'win', won:true, cashed:false, place:1, eventName:'BACK ROOM FREEZEOUT', prize:300,
     buyIn:100, bankroll:600, eventScore:5575, hands:7
   });
+});
+
+check('A non-winning cash models the credited prize, not the headline first prize', ()=>{
+  assert.deepStrictEqual(JSON.parse(JSON.stringify(cashModel)), {
+    outcome:'cash', won:false, cashed:true, place:2, eventName:'PUB CIRCUIT OPEN', prize:450,
+    buyIn:300, bankroll:600, eventScore:4120, hands:23
+  });
+  // The event's own first-place figure must never leak into a second place.
+  assert.ok(!cashHTML.includes('1,050'));
+});
+
+check('A cash result reads as positive, placed and clearly not a win', ()=>{
+  ['EVENT CASHED','PUB CIRCUIT OPEN','2ND','+$450','4,120','23'].forEach(value=>
+    assert.ok(cashHTML.includes(value), value));
+  assert.ok(cashHTML.includes('career-result-panel is-cash'));
+  assert.ok(!cashHTML.includes('EVENT WON'));
+  assert.ok(!cashHTML.includes('EVENT LOST'));
+  assert.ok(!cashHTML.includes('BUY-IN LOST'));
+});
+
+check('A settled record with no placement renders no FINISH row', ()=>{
+  assert.ok(!forfeitHTML.includes('FINISH'));
+  assert.ok(forfeitHTML.includes('BUY-IN LOST'));
+  assert.ok(forfeitHTML.includes('EVENT LOST'));
+  assert.ok(!forfeitHTML.includes('is-cash'));
+  assert.strictEqual(forfeitModel.place, null);
+});
+
+check('Only a cash carries the restrained cash treatment', ()=>{
+  [winHTML, lossHTML, pubHTML, forfeitHTML].forEach(html=>assert.ok(!html.includes('is-cash')));
+  assert.ok(winHTML.includes('<section class="career-result-panel" '));
+});
+
+check('Every finish with a known place reports it', ()=>{
+  assert.ok(winHTML.includes('FINISH') && winHTML.includes('1ST'));
+  assert.ok(lossHTML.includes('FINISH') && lossHTML.includes('3RD'));
+  assert.ok(cashHTML.includes('FINISH') && cashHTML.includes('2ND'));
 });
 check('Career win contains complete atomic formatted strings', ()=>{
   ['EVENT WON','BACK ROOM FREEZEOUT','+$300','5,575','7','$600'].forEach(value=>assert.ok(winHTML.includes(value), value));
@@ -77,6 +125,83 @@ check('Career result uses no fragmented mechanical amount markup', ()=>{
 check('Career result markup contains no NEXT TABLE copy', ()=>{
   assert.ok(!/NEXT TABLE/.test(winHTML + lossHTML));
 });
+/* Table fixtures for careerFinishPlace. `start` is the stack each player
+   brought to the final hand (_handStartChips); `chips` is what they have
+   after it. An opponent with start 0 was already eliminated on an earlier
+   hand and must never be treated as a same-hand bust. */
+function table(human, opponents){
+  const seat = (id, spec) => ({
+    id, isHuman:id === 'you', chips:spec.chips,
+    _handStartChips: spec.start
+  });
+  const players = [seat('you', human)].concat(opponents.map((o,i)=>seat('ai'+i, o)));
+  return { players, human:players[0] };
+}
+function placeIn(human, opponents){
+  const t = table(human, opponents);
+  return careerFinishPlace(t, t.human);
+}
+
+check('Placement is 1 whenever the human clears the table', ()=>{
+  assert.strictEqual(placeIn({start:900,chips:2250}, [{start:750,chips:0},{start:600,chips:0}]), 1);
+  // The corrected case: the human survives the final hand against an
+  // opponent who BROUGHT A BIGGER STACK to it. Winning is winning.
+  assert.strictEqual(placeIn({start:100,chips:1500}, [{start:1400,chips:0}]), 1);
+  assert.strictEqual(placeIn({start:100,chips:3750}, [{start:1400,chips:0},{start:900,chips:0},{start:800,chips:0},{start:550,chips:0}]), 1);
+});
+
+check('A lone bust places the human directly behind the survivors', ()=>{
+  assert.strictEqual(placeIn({start:200,chips:0}, [{start:1300,chips:1500}]), 2);
+  assert.strictEqual(placeIn({start:200,chips:0}, [{start:800,chips:900},{start:700,chips:600}]), 3);
+  assert.strictEqual(placeIn({start:200,chips:0},
+    [{start:800,chips:900},{start:700,chips:600},{start:400,chips:250},{start:300,chips:0}]), 5);
+});
+
+check('Simultaneous busts are ranked by the stack brought to the hand', ()=>{
+  // One survivor; the human and one opponent both bust on the same hand.
+  // Human started SMALLER -> the opponent finishes ahead -> human is 3rd.
+  assert.strictEqual(placeIn({start:100,chips:0}, [{start:1400,chips:2250},{start:200,chips:0}]), 3);
+  // Human started LARGER -> the human finishes ahead -> human is 2nd.
+  assert.strictEqual(placeIn({start:200,chips:0}, [{start:1400,chips:2250},{start:100,chips:0}]), 2);
+  // Equal starting stacks -> documented tie policy gives the human the
+  // better place.
+  assert.strictEqual(placeIn({start:200,chips:0}, [{start:1400,chips:2250},{start:200,chips:0}]), 2);
+  // Two opponents bust alongside the human, one ahead and one behind.
+  assert.strictEqual(placeIn({start:300,chips:0},
+    [{start:2000,chips:3750},{start:900,chips:0},{start:150,chips:0}]), 3);
+});
+
+check('Players eliminated on earlier hands never count as same-hand busts', ()=>{
+  // start:0 means they arrived at this hand already broke. Even though 0 is
+  // not greater than the human's stack, the explicit start>0 guard is what
+  // keeps them out of the ranking entirely.
+  assert.strictEqual(placeIn({start:400,chips:0}, [{start:2100,chips:2500},{start:0,chips:0},{start:0,chips:0}]), 2);
+  // And a previously-eliminated player cannot displace a genuine same-hand
+  // bust that really did start ahead.
+  assert.strictEqual(placeIn({start:400,chips:0},
+    [{start:1600,chips:2000},{start:900,chips:0},{start:0,chips:0}]), 3);
+});
+
+check('Placement is always an integer within the field', ()=>{
+  const sizes = [2,3,4,5,6];
+  sizes.forEach(size=>{
+    for (let survivors=0; survivors<size; survivors++){
+      const opponents = [];
+      for (let i=0;i<size-1;i++){
+        opponents.push(i < survivors ? {start:1000,chips:800} : {start:500,chips:0});
+      }
+      const human = survivors === size-1 ? {start:300,chips:0} : {start:300,chips:600};
+      const place = placeIn(human, opponents);
+      assert.ok(Number.isInteger(place), 'integer');
+      assert.ok(place >= 1 && place <= size, 'in range: ' + place + ' of ' + size);
+    }
+  });
+  // Defensive inputs never throw or produce a usable place.
+  assert.strictEqual(careerFinishPlace(null, {chips:0}), null);
+  assert.strictEqual(careerFinishPlace({players:[]}, {chips:0}), null);
+  assert.strictEqual(careerFinishPlace({players:[{id:'you'}]}, null), null);
+});
+
 check('Showdown banner grammar is YOU WIN and named-opponent WINS', ()=>{
   assert.strictEqual(showdownPotVerb({winnerIds:['you'],split:false}), 'win');
   assert.strictEqual(showdownPotVerb({winnerIds:['wildcard'],split:false}), 'wins');
@@ -145,6 +270,27 @@ check('Completed-event shutdown natively disables ordinary table controls', ()=>
   assert.ok(presentationSource.includes("row.classList.add('disabled')"));
   assert.ok(presentationSource.includes("frame.classList.add('event-complete')"));
 });
+check('Only a win reaches the stage-roll drum', ()=>{
+  const resultBlock = engineSource.match(/async function showCareerEventResult\(g, model\)\{[\s\S]*?\n\}/);
+  assert.ok(resultBlock);
+  const body = resultBlock[0];
+  // The plain-card branch (taken by both a bust and a cash) must return
+  // before the win drum is ever reached.
+  const branch = body.indexOf('if (!model.won){');
+  const earlyReturn = body.indexOf('return;', branch);
+  const roll = body.indexOf('rollStageTransition');
+  assert.ok(branch > 0 && earlyReturn > branch && roll > earlyReturn);
+  assert.ok(body.includes("model.cashed ? 'career-cash' : 'gameover'"));
+  assert.ok(body.includes('Event cashed.'));
+});
+
+check('The cash treatment is defined and distinct in the Career result CSS', ()=>{
+  const css = fs.readFileSync(path.join(root, 'css/02-screens.css'), 'utf8');
+  assert.ok(css.includes('.career-result-panel.is-cash{'));
+  assert.ok(css.includes('.career-result-panel.is-cash .career-res-title{'));
+  assert.ok(css.includes('.career-last-result.is-cash .cr-tag{'));
+});
+
 check('Career result path never calls Arcade result-console progression', ()=>{
   const resultBlock = engineSource.match(/async function showCareerEventResult\(g, model\)\{[\s\S]*?\n\}/);
   assert.ok(resultBlock);

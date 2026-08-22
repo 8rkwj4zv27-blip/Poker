@@ -11,7 +11,7 @@ Prove that choosing between events, risking a persistent bankroll, cashing, bust
 
 Do not build the full career ladder to answer that question.
 
-## Phase 1 — Paid places and Pub Circuit Open
+## Phase 1 — Paid places and Pub Circuit Open — COMPLETE (2026-08-23)
 
 Extend the data-driven event schema without breaking saved active events:
 
@@ -24,6 +24,18 @@ Extend the data-driven event schema without breaking saved active events:
 - Add a restrained non-winning-cash result state.
 
 Exit condition: all existing Career checks still pass; new Top-2 checks pass; bankroll arithmetic is correct for win, second, bust, abandon, reload, and repeated settlement calls.
+
+Met on 2026-08-23. Career save version 3; `payouts` is the canonical reward
+table with `prize` kept as an enforced mirror of first place. Placement is
+measured from the table by `careerFinishPlace()` rather than inferred from a
+win/loss value, including the standard tie-break for players busting on the
+same hand. 27 focused event checks and 24 focused result checks pass.
+
+Two pre-existing save defects were corrected as part of this phase, both of
+which would have surfaced the moment the schema widened: a version-2 active
+snapshot could adopt live catalogue terms instead of the terms already paid,
+and an existing Back Room winner would not have received a newly added
+sibling event. See `STATUS.md`.
 
 ## Phase 2 — Second Chance recovery
 

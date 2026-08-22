@@ -331,17 +331,17 @@ function isValidCareerTableSave(save){
   return isValidCareerEventSnapshot(save.event);
 }
 
-/* Version-1 Career table saves carried only id/buyIn/prize. Enrich those
-   saves from the matching descriptor while retaining the paid buy-in and
-   promised prize from the old snapshot. Full snapshots are already the
-   authority and are never overwritten from the live registry. */
+/* Career table saves written before a schema change carry only part of a
+   snapshot — version 1 had id/buyIn/prize, version 2 gained the launch
+   fields but not `payouts`. Enrich those from the matching descriptor while
+   retaining the paid terms through applyPaidCareerTerms(), the same rule
+   the career save itself uses. Full snapshots are already the authority and
+   are never overwritten from the live registry. */
 function normalizeCareerSavedEvent(saved){
   if (isValidCareerEventSnapshot(saved)) return Object.assign({}, saved);
   const descriptor = careerEventById(saved && saved.id);
   if (!descriptor) return null;
-  const event = careerEventSnapshot(descriptor);
-  if (Number.isFinite(saved.buyIn)) event.buyIn = saved.buyIn;
-  if (Number.isFinite(saved.prize)) event.prize = saved.prize;
+  const event = applyPaidCareerTerms(careerEventSnapshot(descriptor), saved);
   if (saved.reward) event.reward = saved.reward;
   return event;
 }
@@ -592,6 +592,12 @@ async function startNewHand(){
   g.players.forEach(p=>{
     p.hand=[]; p.folded=false; p.allIn=false; p.betThisRound=0; p.totalBetHand=0;
     p.acted=false; p.mayRaise=true;
+    // The stack each player BROUGHT to this hand, captured before blinds are
+    // posted. Career placement needs it to rank players who bust on the same
+    // hand (see careerFinishPlace); harmless and mode-blind everywhere else.
+    // A player eliminated on an earlier hand carries 0 here, which is exactly
+    // what distinguishes them from this hand's busts.
+    p._handStartChips = p.chips;
     // K.O.!/ELIMINATED! (see playElimination) is a permanent-for-the-table
     // label, not a per-hand one — every other streetAction resets fresh
     // each hand, this is the one exception.
@@ -1671,11 +1677,13 @@ async function finishHand(outcome){
       tableClear: human.chips>0 && aiRemaining.length===0
     });
     // finishHand owns terminal settlement. endCareerEvent() is guarded and
-    // is the ONLY function permitted to start result presentation.
-    if (human.chips<=0){ endCareerEvent(g,'loss'); return; }
+    // is the ONLY function permitted to start result presentation. The
+    // placement is measured from the table (careerFinishPlace), never
+    // inferred from a win/loss value — a paid second place depends on it.
+    if (human.chips<=0){ endCareerEvent(g,{place:careerFinishPlace(g,human)}); return; }
     if (aiRemaining.length===0){
       await sleep(motionOff() ? 0 : ELIMINATION_CONFIG.clearedBeatMs);
-      endCareerEvent(g,'win');
+      endCareerEvent(g,{place:careerFinishPlace(g,human)});
       return;
     }
   } else {
@@ -1783,10 +1791,43 @@ function showGameOver(g, human){
    case where settlement succeeded but presentation was interrupted. A second
    call can never credit the prize, clear state, start a second drum, show a
    second result card, or rebind the return button. */
-function endCareerEvent(g, outcome){
+/* ---------------- Career placement ----------------
+   The human's finishing place, read from live table state — never derived
+   from a win/loss value.
+
+     place = surviving opponents
+           + same-hand busted opponents who STARTED THE HAND WITH MORE CHIPS
+           + 1
+
+   Both terms count players who finish AHEAD of the human. Survivors are
+   unambiguous. Simultaneous busts are the case that actually needs a rule:
+   when the human and an opponent both hit $0 on one hand, the standard
+   tournament rule ranks the LARGER stack at the start of that hand higher.
+   Without it, a short-stacked human busting alongside a bigger stack with
+   one player left would read as second place and collect a paid place they
+   did not finish in.
+
+   An exactly equal starting stack does not count as ahead, so the human
+   takes the better place: deterministic, player-favourable, and vanishingly
+   rare. The win case returns early rather than relying on the arithmetic —
+   a human who survives the final hand has won outright, even if the
+   opponent they just eliminated brought a bigger stack to it. */
+function careerFinishPlace(g, human){
+  if (!g || !human || !Array.isArray(g.players) || !g.players.length) return null;
+  const opponents = g.players.filter(p => p !== human);
+  if (human.chips > 0 && opponents.every(p => p.chips <= 0)) return 1;
+  const startOf = p => Number.isFinite(p._handStartChips) ? p._handStartChips : p.chips;
+  const survivors = opponents.filter(p => p.chips > 0).length;
+  const sameHandAhead = opponents.filter(p =>
+    p.chips <= 0 && startOf(p) > 0 && startOf(p) > startOf(human)).length;
+  // Clamped so no arithmetic slip can hand settlement an impossible place.
+  return Math.min(g.players.length, Math.max(1, survivors + sameHandAhead + 1));
+}
+
+function endCareerEvent(g, result){
   if (!g || g.mode !== 'career') return;
   if (g._careerResultShown) return;
-  if (!settleCareerEvent(outcome)) return;   // someone else already owns this ending
+  if (!settleCareerEvent(result)) return;   // someone else already owns this ending
   g._careerResultShown = true;
   g.over = true;
   // Snapshot every displayed value ONCE, immediately after settlement and
@@ -1795,18 +1836,26 @@ function endCareerEvent(g, outcome){
   // multi-second drum transition is exactly the window in which live reads
   // go stale or throw. This object is display data only — it recalculates
   // nothing and can alter no settlement.
-  const model = buildCareerResultModel(g, outcome);
+  const model = buildCareerResultModel(g, careerLastResult());
   showCareerEventResult(g, model);
 }
 
-function buildCareerResultModel(g, outcome){
+/* `settled` is the record settleCareerEvent() just wrote. Outcome, placement
+   and prize all come from there rather than being recomputed: the prize
+   shown is the amount ACTUALLY CREDITED for the place actually finished, not
+   the event's headline first-place figure. */
+function buildCareerResultModel(g, settled){
   const ev = g.event || {};
   const reward = g.event && g.event.reward;
-  const won = outcome === 'win';
+  const record = settled || {};
+  const outcome = record.outcome || 'loss';
   return {
-    outcome, won,
+    outcome,
+    won: outcome === 'win',
+    cashed: outcome === 'cash',
+    place: Number.isInteger(record.place) && record.place >= 1 ? record.place : null,
     eventName: ev.name || 'CAREER EVENT',
-    prize: ev.prize || 0,
+    prize: Number.isFinite(record.prize) && record.prize > 0 ? record.prize : 0,
     buyIn: ev.buyIn || 0,
     bankroll: careerBankroll(),                                  // read once, post-settlement
     eventScore: reward ? Math.max(0, Math.round(reward.score||0)) : 0,
@@ -1827,13 +1876,24 @@ function careerResultRow(label, value){
 }
 function careerResultHTML(model){
   const money = n => '$' + Math.abs(Math.round(n)).toLocaleString();
-  const rows = model.won
+  // Money row: any credited prize reads as a prize, so a non-winning cash
+  // reports what it actually earned rather than what it failed to win.
+  const moneyRow = model.prize > 0
     ? careerResultRow('PRIZE', '+' + money(model.prize))
     : careerResultRow('BUY-IN LOST', '-' + money(model.buyIn));
-  return '<section class="career-result-panel" aria-label="Career event result">' +
-    '<div class="career-res-title">' + (model.won ? 'EVENT WON' : 'EVENT LOST') + '</div>' +
+  // Plain instrumentation, shown for every finish with a known place —
+  // neutral after a bust rather than punitive. A forfeit, and any record
+  // migrated from before placement existed, has no place and no row.
+  const finishRow = model.place
+    ? careerResultRow('FINISH', ordinal(model.place).toUpperCase())
+    : '';
+  const title = model.won ? 'EVENT WON' : model.cashed ? 'EVENT CASHED' : 'EVENT LOST';
+  return '<section class="career-result-panel' + (model.cashed ? ' is-cash' : '') +
+      '" aria-label="Career event result">' +
+    '<div class="career-res-title">' + title + '</div>' +
     '<div class="career-res-event">' + esc(model.eventName) + '</div>' +
-    rows +
+    finishRow +
+    moneyRow +
     careerResultRow('EVENT SCORE', model.eventScore.toLocaleString()) +
     careerResultRow('HANDS', String(model.hands)) +
     careerResultRow('BANKROLL', money(model.bankroll)) +
@@ -1866,12 +1926,16 @@ async function showCareerEventResult(g, model){
   powerDownCompletedEvent(g);
 
   if (!model.won){
-    // A loss has already had its full K.O. ceremony; it does not take the
-    // win drum. Plain card, same data model, same return behaviour.
-    setBanner('<b>Event over.</b> You were eliminated.');
+    // Neither a loss nor a non-winning cash takes the win drum — both have
+    // already had their full K.O. ceremony. Plain card, same data model,
+    // same return behaviour; a cash differs only in its copy and its warmer
+    // panel treatment, which is deliberately well below a victory.
+    setBanner(model.cashed
+      ? '<b>Event cashed.</b> You finished ' + ordinal(model.place || 2) + '.'
+      : '<b>Event over.</b> You were eliminated.');
     clearCompletedEventTable(g);
     const el = document.createElement('div');
-    el.className = 'result-card gameover career-event-result';
+    el.className = 'result-card ' + (model.cashed ? 'career-cash' : 'gameover') + ' career-event-result';
     el.id = 'result-card';
     el.innerHTML = careerResultHTML(model);
     $('felt').appendChild(el);
@@ -1911,7 +1975,7 @@ function concludeGame(){
   // endCareerEvent() no-ops unless it genuinely owns the settlement.
   if (game.mode==='career'){
     const human = game.players.find(p=>p.id==='you');
-    endCareerEvent(game, (human && human.chips>0) ? 'win' : 'loss');
+    endCareerEvent(game, {place:careerFinishPlace(game, human)});
     return;
   }
   game.over = true;

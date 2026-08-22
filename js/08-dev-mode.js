@@ -274,7 +274,7 @@ function devEndTable(){
   // that is endCareerEvent(), so DEV wins go through the exact same
   // settle-once guards a real win does — pressing this twice cannot credit
   // the prize twice.
-  if (g.mode === 'career') endCareerEvent(g, 'win');
+  if (g.mode === 'career') endCareerEvent(g, {place:1});
   else showTableCleared(g);
 }
 

@@ -21,6 +21,13 @@ const TOURNAMENT_HANDS_PER_LEVEL = 10;
    active save; table launch, resume and settlement then use that snapshot,
    not mutable catalogue values. This is what makes an already-paid event
    safe if a later build retunes its buy-in or prize.
+
+   PAYOUTS. `payouts` is the canonical reward table: index 0 is first place,
+   index 1 second, and so on. `prize` is kept alongside it as a permanent
+   mirror of payouts[0] — every save, table snapshot and migration path
+   already reads it, and isValidCareerEventSnapshot() enforces the two
+   staying equal. A Top-3 event later is simply payouts:[a,b,c]; nothing
+   else in the schema has to move.
    ============================================================ */
 const CAREER_START_BANKROLL = 500;
 const CAREER_EVENT_LIST = Object.freeze([
@@ -33,6 +40,7 @@ const CAREER_EVENT_LIST = Object.freeze([
     opponentCount:2,
     buyIn:100,
     prize:300,
+    payouts:Object.freeze([300]),
     stack:500,
     initialBlindLevel:0,
     handsPerBlindLevel:10,
@@ -48,6 +56,27 @@ const CAREER_EVENT_LIST = Object.freeze([
     opponentCount:3,
     buyIn:300,
     prize:1200,
+    payouts:Object.freeze([1200]),
+    stack:750,
+    initialBlindLevel:0,
+    handsPerBlindLevel:10,
+    difficulty:'hard',
+    unlockRequirement:Object.freeze({ type:'event-win', eventId:'back-room-freezeout' })
+  }),
+  /* The first multi-place event. Same venue and buy-in as the Freezeout
+     above, deliberately: the choice between them is a choice of RISK SHAPE
+     (bigger top prize vs. a paid second place), not of stake. Only first
+     place is a progression win — second place is money and nothing else. */
+  Object.freeze({
+    id:'pub-open',
+    venue:'PUB CIRCUIT',
+    name:'PUB CIRCUIT OPEN',
+    format:'Freezeout',
+    playerCount:5,
+    opponentCount:4,
+    buyIn:300,
+    prize:1050,
+    payouts:Object.freeze([1050,450]),
     stack:750,
     initialBlindLevel:0,
     handsPerBlindLevel:10,
@@ -74,6 +103,7 @@ function careerEventSnapshot(event){
     opponentCount:event.opponentCount,
     buyIn:event.buyIn,
     prize:event.prize,
+    payouts:careerPayouts(event).slice(),
     stack:event.stack,
     initialBlindLevel:event.initialBlindLevel,
     handsPerBlindLevel:event.handsPerBlindLevel,
@@ -93,7 +123,64 @@ function isValidCareerEventSnapshot(event){
   if (event.playerCount !== event.opponentCount + 1 || event.opponentCount < 1) return false;
   if (!Number.isInteger(event.initialBlindLevel) || event.initialBlindLevel >= BLIND_LEVELS.length) return false;
   if (!Number.isInteger(event.handsPerBlindLevel) || event.handsPerBlindLevel < 1) return false;
+  // The payouts/prize invariant. A snapshot written before multi-place
+  // payouts existed has no `payouts` at all and is deliberately rejected
+  // here, which is exactly what routes it through the migration path.
+  const payouts = normalizeCareerPayouts(event.payouts);
+  if (!payouts) return false;
+  if (event.prize !== payouts[0]) return false;
   return true;
+}
+
+/* A valid payout table: a non-empty array of finite, non-negative numbers
+   whose first place actually pays something. Returns a fresh copy so a
+   frozen descriptor array can never be aliased into a mutable snapshot;
+   returns null for anything malformed. */
+function normalizeCareerPayouts(value){
+  if (!Array.isArray(value) || !value.length) return null;
+  if (value.some(amount=>!Number.isFinite(amount) || amount < 0)) return null;
+  if (!(value[0] > 0)) return null;
+  return value.slice();
+}
+
+/* The reward table for a descriptor OR a snapshot. The [prize] fallback is
+   defence in depth for any snapshot that somehow reached settlement without
+   going through normalisation — a pre-payouts event was winner-take-all, so
+   [prize] is its faithful reading. */
+function careerPayouts(event){
+  if (!event) return [];
+  const payouts = normalizeCareerPayouts(event.payouts);
+  if (payouts) return payouts;
+  return Number.isFinite(event.prize) && event.prize > 0 ? [event.prize] : [];
+}
+
+/* Money for a finishing place, 1-based. Every unpaid place — beyond the
+   table, zero, negative, fractional, or simply not a number — is 0. This is
+   the single arithmetic that turns a placement into a credit. */
+function careerPrizeForPlace(event, place){
+  if (!Number.isInteger(place) || place < 1) return 0;
+  const amount = careerPayouts(event)[place-1];
+  return Number.isFinite(amount) && amount > 0 ? amount : 0;
+}
+
+/* Already-paid financial terms always beat the live catalogue. A save
+   written before multi-place payouts recorded only `prize`, which MEANS
+   winner-take-all — reconstruct exactly that, never the descriptor's
+   current (possibly retuned, possibly multi-place) table. Shared by the
+   career save (normalizeActiveCareerEvent) and the career table save
+   (normalizeCareerSavedEvent) so both honour one rule. */
+function applyPaidCareerTerms(snapshot, saved){
+  if (!snapshot || !saved || typeof saved !== 'object') return snapshot;
+  if (Number.isFinite(saved.buyIn) && saved.buyIn >= 0) snapshot.buyIn = saved.buyIn;
+  const payouts = normalizeCareerPayouts(saved.payouts);
+  if (payouts){
+    snapshot.payouts = payouts;
+    snapshot.prize = payouts[0];
+  } else if (Number.isFinite(saved.prize) && saved.prize > 0){
+    snapshot.payouts = [saved.prize];
+    snapshot.prize = saved.prize;
+  }
+  return snapshot;
 }
 
 /* ============================================================
