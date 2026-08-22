@@ -46,3 +46,15 @@ The overall feeling is a strange velvet-covered poker machine.
 - Plan substantial changes before implementing them.
 - Do not change visual design merely to make code or UI more conventional.
 - Preserve existing localStorage settings and lifetime statistics unless a task specifically requires changes to them.
+
+## Career mode continuity
+
+Before planning, reviewing, or implementing Career work, read these files in order:
+
+1. `docs/career/CAREER_DESIGN.md`
+2. `docs/career/BUILD_PLAN.md`
+3. `docs/career/STATUS.md`
+
+Treat them as the source of truth over old chats, decks, prompts, or speculative proposals. Do not treat provisional future-catalogue numbers as implementation requirements. Work only on the Immediate next task in `STATUS.md` unless the user explicitly changes scope.
+
+After a Career milestone, update `STATUS.md`. Update `BUILD_PLAN.md` when scope or order changes, and update `CAREER_DESIGN.md` only when a product decision changes.
