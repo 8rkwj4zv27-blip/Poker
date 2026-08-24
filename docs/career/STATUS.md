@@ -1,7 +1,7 @@
 # Career Mode — Current Status
 
 Last verified: 2026-08-24  
-Verified implementation baseline: `7d34c2e` — `Apply the approved machine visual system across the UI`.
+Verified implementation baseline: `cfb317e` — `Round End Update: one shared stage for all four major results`.
 Career logic baseline remains `d31b120` — `Add multi-place payouts and Pub Circuit Open` (Phase 1); every commit since has changed result presentation only. Build `v0.21.0-dev · Round End Update`, service-worker cache `poker-v20-0`.
 
 This is the short handoff file. Update it whenever a Career milestone is completed or the immediate next task changes.
