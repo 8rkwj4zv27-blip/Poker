@@ -1,0 +1,1751 @@
+/* Isolated visual-system exploration board. No selector targets production UI. */
+
+html{
+  min-width:320px;
+  min-height:100%;
+  height:auto;
+  overflow:auto;
+  background:var(--bg-deep);
+}
+
+body.design-lab{
+  min-width:320px;
+  min-height:100vh;
+  height:auto;
+  margin:0;
+  overflow:auto;
+  overscroll-behavior-y:auto;
+  background:
+    radial-gradient(circle at 50% 0,color-mix(in srgb,var(--felt-1) 58%,transparent),transparent 36rem),
+    var(--bg-deep);
+  color:var(--ink);
+  font-family:var(--font-px);
+  -webkit-user-select:text;
+  user-select:text;
+}
+
+.lab-toolbar{
+  width:min(1440px,calc(100% - 24px));
+  margin:12px auto 0;
+  padding:16px;
+  display:grid;
+  grid-template-columns:minmax(250px,1fr) auto;
+  align-items:end;
+  gap:14px 24px;
+  border:1px solid color-mix(in srgb,var(--ink-faint) 32%,transparent);
+  border-radius:8px;
+  background:color-mix(in srgb,var(--panel) 92%,black);
+  box-shadow:0 10px 28px color-mix(in srgb,black 38%,transparent);
+}
+
+.lab-title span,
+.lab-title p,
+.lab-controls label,
+.lab-summary span{
+  color:var(--ink-faint);
+  font-size:12px;
+  letter-spacing:.08em;
+  text-transform:uppercase;
+}
+
+.lab-title h1{
+  margin:5px 0 4px;
+  color:var(--ink);
+  font-family:var(--font-px);
+  font-size:clamp(23px,4vw,38px);
+  line-height:1;
+}
+
+.lab-title p{ margin:0; }
+
+.lab-controls{
+  display:grid;
+  grid-template-columns:auto minmax(170px,220px) auto minmax(140px,190px) auto;
+  align-items:center;
+  gap:8px;
+}
+
+.lab-controls select,
+.lab-controls button,
+.option-actions button{
+  min-height:42px;
+  border:1px solid color-mix(in srgb,var(--ink-faint) 38%,transparent);
+  border-radius:5px;
+  background:var(--panel-2);
+  color:var(--ink);
+  font:700 13px/1 var(--font-px);
+  cursor:pointer;
+}
+
+.lab-controls select{ padding:0 34px 0 11px; }
+.lab-controls button{ padding:0 13px; }
+.lab-controls button:hover,.option-actions button:hover{ border-color:var(--theme-rim); }
+
+.lab-summary{
+  grid-column:1/-1;
+  padding-top:12px;
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px 20px;
+  border-top:1px solid color-mix(in srgb,var(--ink-faint) 24%,transparent);
+}
+
+.lab-summary strong{ color:var(--accent-bright); font-weight:700; }
+
+.lab-main{
+  width:min(1440px,calc(100% - 24px));
+  margin:18px auto 36px;
+}
+
+.design-board{
+  display:grid;
+  gap:30px;
+}
+
+.theme-board{
+  min-width:0;
+}
+
+.theme-board-heading{
+  margin:0 0 12px;
+  display:flex;
+  align-items:center;
+  gap:12px;
+  color:var(--theme-rim);
+  font-family:var(--font-hdr);
+  font-size:11px;
+  font-weight:400;
+  text-transform:uppercase;
+}
+
+.theme-board-heading::after{
+  content:"";
+  height:2px;
+  flex:1;
+  background:linear-gradient(90deg,var(--theme-rim),transparent);
+  opacity:.55;
+}
+
+.option-grid{
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  align-items:start;
+  gap:18px;
+}
+
+.option-card{
+  min-width:0;
+  padding:12px;
+  border:1px solid color-mix(in srgb,var(--ink-faint) 28%,transparent);
+  border-radius:7px;
+  background:color-mix(in srgb,var(--panel) 88%,black);
+}
+
+.option-card.is-shortlisted{ border-color:var(--accent); }
+.option-card.is-approved{ border-color:var(--theme-rim); box-shadow:0 0 0 2px color-mix(in srgb,var(--theme-rim) 28%,transparent); }
+
+.option-head{
+  min-height:44px;
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:12px;
+}
+
+.option-head h3{
+  margin:0;
+  color:var(--ink);
+  font-size:18px;
+  line-height:1.15;
+}
+
+.option-head h3 span{
+  display:block;
+  margin-bottom:3px;
+  color:var(--theme-rim);
+  font-family:var(--font-hdr);
+  font-size:8px;
+  font-weight:400;
+}
+
+.option-head em{
+  color:var(--accent-bright);
+  font-size:10px;
+  font-style:normal;
+  letter-spacing:.08em;
+  text-transform:uppercase;
+}
+
+.option-actions{
+  margin-top:11px;
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:8px;
+}
+
+.option-actions button{ padding:0 8px; }
+.option-actions button[aria-pressed="true"]{ background:var(--accent); color:var(--accent-ink); border-color:var(--accent-bright); }
+.option-actions .approve-button[aria-pressed="true"]{ background:var(--theme-case-raised); color:var(--ink); border-color:var(--theme-rim); }
+
+/* Every palette-bearing value below derives from the production theme variables. */
+.theme-board{
+  --dl-velvet:color-mix(in srgb,var(--felt-1) 72%,var(--panel-2) 28%);
+  --dl-velvet-hi:color-mix(in srgb,var(--felt-1) 70%,white 18%);
+  --dl-velvet-lo:color-mix(in srgb,var(--felt-2) 56%,black);
+  --dl-case:var(--theme-case-raised);
+  --dl-case-hi:var(--theme-case-hi);
+  --dl-case-lo:color-mix(in srgb,var(--theme-case-raised) 56%,black);
+  --dl-rim:var(--theme-rim);
+  --dl-edge:color-mix(in srgb,var(--bg-deep) 65%,black);
+  --dl-well:color-mix(in srgb,var(--panel) 52%,black);
+  --dl-well-deep:color-mix(in srgb,var(--bg-deep) 72%,black);
+  --dl-display:color-mix(in srgb,var(--felt-2) 52%,black);
+  --dl-display-ink:color-mix(in srgb,var(--ink-dim) 78%,var(--accent-bright) 22%);
+  --dl-wood:var(--rail);
+  --dl-wood-hi:var(--rail-hi);
+  --dl-wood-lo:var(--rail-lo);
+  --crt-live:#8FD8F4;
+  --crt-machine:#D1B45C;
+  --crt-money:#F6D06B;
+  --crt-danger:#E06576;
+}
+
+.specimen-viewport{
+  width:min(100%,393px);
+  aspect-ratio:393/852;
+  margin:10px auto 0;
+  padding:10px;
+  display:flex;
+  flex-direction:column;
+  gap:14px;
+  overflow:hidden;
+  background:
+    radial-gradient(circle at 50% 30%,color-mix(in srgb,var(--felt-1) 72%,transparent),transparent 56%),
+    repeating-conic-gradient(var(--felt-1) 0 25%,var(--felt-2) 0 50%) 0 0/9px 9px,
+    var(--bg-deep);
+}
+
+.frame-demo{
+  position:relative;
+  width:100%;
+  height:62%;
+  padding:11px;
+  overflow:hidden;
+  border:4px solid var(--dl-edge);
+  border-radius:12px;
+  background:
+    repeating-conic-gradient(color-mix(in srgb,white 10%,transparent) 0 25%,transparent 0 50%) 0 0/8px 8px,
+    var(--dl-velvet);
+  box-shadow:
+    inset 4px 4px 0 var(--dl-velvet-hi),
+    inset -5px -5px 0 var(--dl-velvet-lo),
+    0 0 0 2px var(--dl-rim),
+    0 0 0 5px color-mix(in srgb,var(--dl-velvet-hi) 70%,black),
+    0 9px 0 var(--dl-edge);
+}
+
+.frame-well{
+  width:100%;
+  height:100%;
+  padding:9px;
+  display:grid;
+  grid-template-rows:42px 1fr 45px;
+  gap:8px;
+  border:3px solid var(--dl-edge);
+  background:var(--dl-well);
+  box-shadow:inset 0 7px 0 var(--dl-well-deep),inset 4px 0 0 color-mix(in srgb,black 34%,transparent),inset -2px -2px 0 color-mix(in srgb,white 6%,transparent);
+}
+
+.frame-head,.frame-foot{
+  padding:7px 9px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:8px;
+  border:3px solid var(--dl-edge);
+  background:var(--dl-case);
+  box-shadow:inset 3px 3px 0 var(--dl-case-hi),inset -3px -3px 0 var(--dl-case-lo),0 3px 0 var(--dl-edge);
+  color:var(--ink);
+  font-family:var(--font-hdr);
+  font-size:7px;
+  text-transform:uppercase;
+}
+
+.frame-head i{
+  width:9px;
+  height:9px;
+  border:2px solid var(--dl-edge);
+  background:var(--accent);
+  box-shadow:0 0 7px color-mix(in srgb,var(--accent) 38%,transparent),inset 1px 1px 0 var(--accent-bright);
+}
+
+.frame-content{
+  padding:14px;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  border:3px solid var(--dl-edge);
+  background:var(--dl-display);
+  box-shadow:inset 0 6px 0 var(--dl-well-deep),inset 3px 0 0 color-mix(in srgb,black 28%,transparent),0 2px 0 color-mix(in srgb,var(--dl-case-hi) 20%,transparent);
+}
+
+.frame-title{
+  color:var(--dl-display-ink);
+  font-family:var(--font-hdr);
+  font-size:clamp(10px,2vw,15px);
+  line-height:1.4;
+  text-align:center;
+  text-transform:uppercase;
+}
+
+.frame-rule{
+  width:72%;
+  height:5px;
+  margin:16px auto 18px;
+  background:repeating-linear-gradient(90deg,var(--accent) 0 12px,var(--dl-rim) 12px 24px,var(--dl-well-deep) 24px 29px);
+}
+
+.frame-blocks{
+  width:82%;
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:7px;
+}
+
+.frame-blocks span{
+  height:58px;
+  border:3px solid var(--dl-edge);
+  background:color-mix(in srgb,var(--dl-display) 88%,var(--dl-case) 12%);
+  box-shadow:inset 0 5px 0 var(--dl-well-deep),inset 2px 0 0 color-mix(in srgb,white 4%,transparent);
+}
+
+.frame-foot{ background:color-mix(in srgb,var(--dl-case) 78%,var(--panel-2)); }
+
+.panel-demo{
+  position:relative;
+  width:100%;
+  height:15%;
+  padding:6px;
+  border:3px solid var(--dl-edge);
+  background:var(--dl-case);
+  box-shadow:inset 3px 3px 0 var(--dl-case-hi),inset -3px -3px 0 var(--dl-case-lo),0 4px 0 var(--dl-edge);
+}
+
+.panel-row{
+  width:100%;
+  height:100%;
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  border:3px solid var(--dl-edge);
+  background:var(--dl-display);
+  box-shadow:inset 0 5px 0 var(--dl-well-deep),inset 3px 0 0 color-mix(in srgb,black 30%,transparent);
+}
+
+.panel-stat{
+  min-width:0;
+  padding:8px 3px 5px;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  border-right:2px solid var(--dl-edge);
+  color:var(--dl-display-ink);
+  text-align:center;
+}
+
+.panel-stat:last-child{ border-right:0; }
+.panel-stat strong{ font-size:18px; line-height:1; }
+.panel-stat small{ margin-top:7px; color:var(--ink-faint); font-family:var(--font-hdr); font-size:6px; text-transform:uppercase; }
+
+.corner-detail{
+  position:relative;
+  width:92px;
+  height:92px;
+  margin-left:auto;
+  overflow:hidden;
+  border:1px solid color-mix(in srgb,var(--ink-faint) 32%,transparent);
+  background:var(--bg-deep);
+}
+
+.corner-sample{
+  position:absolute;
+  left:16px;
+  top:16px;
+  width:120px;
+  height:120px;
+  border:8px solid var(--dl-edge);
+  border-radius:24px;
+  background:var(--dl-velvet);
+  box-shadow:inset 9px 9px 0 var(--dl-velvet-hi),0 0 0 5px var(--dl-rim),0 0 0 11px var(--dl-velvet-lo);
+}
+
+/* Buttons & Controls: the same three jobs and dimensions in every option. */
+.button-specimen-viewport{
+  width:min(100%,393px);
+  height:360px;
+  margin:10px auto 0;
+  padding:16px 14px 19px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  overflow:hidden;
+  background:
+    radial-gradient(circle at 50% 25%,color-mix(in srgb,var(--felt-1) 72%,transparent),transparent 58%),
+    repeating-conic-gradient(var(--felt-1) 0 25%,var(--felt-2) 0 50%) 0 0/9px 9px,
+    var(--bg-deep);
+}
+
+.button-console{
+  width:100%;
+  padding:13px 12px 17px;
+  border:4px solid var(--dl-edge);
+  background:
+    repeating-conic-gradient(color-mix(in srgb,white 6%,transparent) 0 25%,transparent 0 50%) 0 0/8px 8px,
+    var(--dl-velvet);
+  box-shadow:inset 4px 4px 0 var(--dl-velvet-hi),inset -5px -5px 0 var(--dl-velvet-lo),0 0 0 2px var(--dl-rim),0 7px 0 var(--dl-edge);
+}
+
+.button-bank-label{
+  margin:0 0 9px;
+  display:flex;
+  align-items:center;
+  gap:8px;
+  color:var(--ink-dim);
+  font-family:var(--font-hdr);
+  font-size:7px;
+  line-height:1;
+  text-transform:uppercase;
+}
+
+.button-bank-label::after{
+  content:"";
+  height:2px;
+  flex:1;
+  background:repeating-linear-gradient(90deg,var(--dl-case-lo) 0 7px,transparent 7px 11px);
+}
+
+.launch-cradle{
+  position:relative;
+  isolation:isolate;
+  margin-bottom:14px;
+  padding:9px 7px 16px;
+  overflow:hidden;
+  border:4px solid var(--dl-edge);
+  background:var(--dl-case);
+  box-shadow:inset 4px 4px 0 var(--dl-case-hi),inset -4px -3px 0 var(--dl-case-lo),0 4px 0 var(--dl-edge);
+}
+
+.launch-cradle::before{
+  content:"";
+  position:absolute;
+  z-index:0;
+  inset:15px 7px 8px;
+  border:3px solid var(--dl-edge);
+  border-radius:4px;
+  background:color-mix(in srgb,var(--accent) 58%,black);
+  box-shadow:inset 0 5px 0 color-mix(in srgb,black 36%,transparent),0 3px 0 color-mix(in srgb,black 50%,transparent);
+}
+
+.demo-control{
+  position:relative;
+  z-index:1;
+  width:100%;
+  margin:0;
+  border:3px solid var(--dl-edge);
+  border-radius:2px;
+  font-family:var(--font-px);
+  font-weight:800;
+  text-transform:uppercase;
+  cursor:pointer;
+  -webkit-tap-highlight-color:transparent;
+}
+
+.launch-button{
+  min-height:78px;
+  padding:12px 30px 11px;
+  display:grid;
+  grid-template-columns:12px 1fr 12px;
+  align-items:center;
+  gap:8px;
+  background:var(--accent);
+  color:var(--accent-ink);
+  font-size:14px;
+  letter-spacing:.045em;
+  box-shadow:inset 3px 3px 0 var(--accent-bright),inset -3px -3px 0 color-mix(in srgb,var(--accent) 58%,black);
+}
+
+.launch-button small{
+  display:block;
+  margin-top:6px;
+  color:color-mix(in srgb,var(--accent-ink) 72%,var(--accent));
+  font-size:8px;
+  letter-spacing:.1em;
+}
+
+.demo-lamp{
+  width:10px;
+  height:10px;
+  border:2px solid var(--dl-edge);
+  background:var(--accent-bright);
+  box-shadow:0 0 7px color-mix(in srgb,var(--accent) 44%,transparent),inset 1px 1px 0 color-mix(in srgb,white 66%,var(--accent-bright));
+}
+
+.secondary-button{
+  min-height:49px;
+  padding:10px 13px;
+  background:var(--dl-case);
+  color:var(--ink);
+  font-size:9px;
+  letter-spacing:.05em;
+  box-shadow:0 4px 0 var(--dl-case-lo),0 7px 0 var(--dl-edge),inset 2px 2px 0 var(--dl-case-hi),inset -2px -2px 0 color-mix(in srgb,black 24%,transparent);
+}
+
+.compact-button{
+  min-height:47px;
+  padding:8px 5px;
+  background:color-mix(in srgb,var(--panel-2) 76%,var(--dl-case) 24%);
+  color:var(--ink-dim);
+  font-size:7px;
+  line-height:1.35;
+  letter-spacing:.04em;
+  box-shadow:0 4px 0 var(--dl-well-deep),0 7px 0 var(--dl-edge),inset 2px 2px 0 color-mix(in srgb,var(--dl-case-hi) 40%,transparent),inset -2px -2px 0 color-mix(in srgb,black 30%,transparent);
+}
+
+.button-row{
+  margin-top:15px;
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:9px;
+}
+
+.demo-control:active{ transform:translateY(6px); filter:brightness(.9); }
+.launch-button:active,.launch-button.is-demo-press{ box-shadow:inset 2px 2px 0 var(--accent-bright),inset 0 6px 0 color-mix(in srgb,var(--accent) 62%,black); }
+.secondary-button:active,.secondary-button.is-demo-press{ box-shadow:0 1px 0 var(--dl-case-lo),0 2px 0 var(--dl-edge),inset 2px 5px 0 color-mix(in srgb,var(--dl-case-lo) 58%,black); }
+.compact-button:active,.compact-button.is-demo-press{ box-shadow:0 1px 0 var(--dl-well-deep),0 2px 0 var(--dl-edge),inset 2px 5px 0 var(--dl-well-deep); }
+
+@keyframes buttonSocketAnswer{
+  0%,100%{ transform:translateY(0); filter:brightness(1); }
+  28%,68%{ transform:translateY(1px); filter:brightness(.88); }
+}
+@keyframes buttonPlunge{
+  0%,100%{ transform:translateY(0) scale(1); filter:brightness(1); }
+  20%{ transform:translateY(2px) scale(.997); filter:brightness(.98); }
+  42%,68%{ transform:translateY(8px) scale(.985); filter:brightness(.82); }
+  84%{ transform:translateY(2px) scale(.997); filter:brightness(1.04); }
+}
+@keyframes buttonDeepPlunge{
+  0%,100%{ transform:translateY(0) scaleY(1); filter:brightness(1); }
+  24%{ transform:translateY(3px) scaleY(.99); }
+  44%,72%{ transform:translateY(10px) scale(.97,.9); filter:brightness(.76); }
+  86%{ transform:translateY(1px) scaleY(1.015); filter:brightness(1.08); }
+}
+@keyframes buttonArcadeSnap{
+  0%,100%{ transform:translateY(0) scale(1); filter:brightness(1); }
+  22%{ transform:translateY(7px) scale(.94); filter:brightness(.82); }
+  42%{ transform:translateY(-2px) scale(1.025); filter:brightness(1.09); }
+  58%{ transform:translateY(2px) scale(.99); }
+  72%{ transform:translateY(-1px) scale(1.01); }
+}
+@keyframes buttonHardClack{
+  0%,100%{ transform:translate(0,0); filter:brightness(1); }
+  18%,52%{ transform:translateY(4px); filter:brightness(.78); }
+  54%{ transform:translate(-2px,1px); }
+  62%{ transform:translate(2px,0); }
+  70%{ transform:translate(0,-1px); filter:brightness(1.08); }
+}
+@keyframes buttonWoodRecoil{
+  0%,100%{ transform:translateY(0) rotate(0); filter:brightness(1); }
+  28%,62%{ transform:translateY(6px) rotate(.35deg); filter:brightness(.84); }
+  72%{ transform:translateY(-2px) rotate(-.2deg); filter:brightness(1.05); }
+}
+@keyframes buttonLatch{
+  0%,100%{ transform:translateY(0); filter:brightness(1); }
+  20%{ transform:translateY(7px); filter:brightness(.8); }
+  22%,64%{ transform:translateY(7px); filter:brightness(.72); }
+  78%{ transform:translateY(3px); filter:brightness(.96); }
+  90%{ transform:translateY(-1px); filter:brightness(1.06); }
+}
+@keyframes buttonRocker{
+  0%,100%{ transform:perspective(180px) rotateX(-4deg) translateY(0); filter:brightness(1); }
+  24%,66%{ transform:perspective(180px) rotateX(13deg) translateY(5px); filter:brightness(.82); }
+  82%{ transform:perspective(180px) rotateX(-7deg) translateY(-1px); filter:brightness(1.06); }
+}
+
+.demo-control.is-demo-press{ animation:buttonPlunge 700ms steps(8,end) both; }
+.option-card.is-demonstrating-press .launch-cradle{ animation:buttonSocketAnswer 700ms steps(6,end) both; }
+
+/* B1 — a visibly chamfered key with long, deep travel. */
+.button-variant-b1 .demo-control{
+  border-width:4px;
+  border-radius:0;
+  clip-path:polygon(9px 0,calc(100% - 9px) 0,100% 9px,100% calc(100% - 9px),calc(100% - 9px) 100%,9px 100%,0 calc(100% - 9px),0 9px);
+}
+.button-variant-b1 .launch-button{ background:linear-gradient(180deg,var(--accent-bright) 0 7px,var(--accent) 7px calc(100% - 7px),color-mix(in srgb,var(--accent) 55%,black) calc(100% - 7px)); box-shadow:inset 5px 5px 0 color-mix(in srgb,var(--accent-bright) 82%,white),inset -5px -5px 0 color-mix(in srgb,var(--accent) 52%,black); }
+.button-variant-b1 .secondary-button,.button-variant-b1 .compact-button{ box-shadow:0 6px 0 var(--dl-case-lo),0 9px 0 var(--dl-edge),inset 4px 4px 0 var(--dl-case-hi),inset -4px -4px 0 color-mix(in srgb,var(--dl-case) 52%,black); }
+.button-variant-b1 .demo-control.is-demo-press{ animation-name:buttonDeepPlunge; }
+
+/* B2 — rounded arcade caps with a sharp spring return. */
+.button-variant-b2 .launch-cradle{ border-radius:25px; padding:12px 10px 17px; background:var(--dl-well); box-shadow:inset 0 8px 0 var(--dl-well-deep),inset 6px 0 0 color-mix(in srgb,black 25%,transparent),0 4px 0 var(--dl-edge); }
+.button-variant-b2 .launch-cradle::before{ border-radius:24px; }
+.button-variant-b2 .launch-button{ border-radius:22px; background:radial-gradient(ellipse at 50% 5%,var(--accent-bright),var(--accent) 56%,color-mix(in srgb,var(--accent) 58%,black)); box-shadow:inset 0 6px 0 color-mix(in srgb,var(--accent-bright) 80%,white),inset 0 -7px 0 color-mix(in srgb,var(--accent) 52%,black),0 4px 0 var(--dl-edge); }
+.button-variant-b2 .secondary-button,.button-variant-b2 .compact-button{ border-radius:14px; background:radial-gradient(ellipse at 50% 0,var(--dl-case-hi),var(--dl-case) 64%,var(--dl-case-lo)); }
+.button-variant-b2 .demo-lamp{ border-radius:50%; }
+.button-variant-b2 .demo-control.is-demo-press{ animation-name:buttonArcadeSnap; }
+
+/* B3 — ribbed industrial keys with a short, hard clack. */
+.button-variant-b3 .demo-control{ border-width:5px; border-radius:0; }
+.button-variant-b3 .launch-button{ background:repeating-linear-gradient(180deg,color-mix(in srgb,var(--accent-bright) 45%,transparent) 0 3px,transparent 3px 9px),var(--accent); box-shadow:inset 5px 5px 0 var(--accent-bright),inset -5px -5px 0 color-mix(in srgb,var(--accent) 50%,black),0 6px 0 var(--dl-edge); }
+.button-variant-b3 .secondary-button,.button-variant-b3 .compact-button{ background:repeating-linear-gradient(180deg,color-mix(in srgb,var(--dl-case-hi) 32%,transparent) 0 3px,transparent 3px 8px),var(--dl-case); box-shadow:0 6px 0 var(--dl-case-lo),0 9px 0 var(--dl-edge),inset 4px 4px 0 var(--dl-case-hi); }
+.button-variant-b3 .demo-lamp{ width:12px; height:8px; }
+.button-variant-b3 .demo-control.is-demo-press{ animation-name:buttonHardClack; animation-timing-function:steps(10,end); }
+
+/* B4 — the retained timber mount, now with cabinet recoil. */
+.button-variant-b4 .button-console{
+  border-color:var(--dl-wood-lo);
+  background:repeating-linear-gradient(90deg,color-mix(in srgb,var(--dl-wood-hi) 22%,transparent) 0 4px,transparent 4px 11px),var(--dl-wood);
+  box-shadow:inset 5px 5px 0 var(--dl-wood-hi),inset -6px -6px 0 var(--dl-wood-lo),0 0 0 2px var(--dl-rim),0 7px 0 var(--dl-edge);
+}
+.button-variant-b4 .launch-cradle{ box-shadow:0 0 0 5px var(--dl-velvet),inset 4px 4px 0 var(--dl-case-hi),inset -4px -3px 0 var(--dl-case-lo),0 4px 0 5px var(--dl-edge); }
+.button-variant-b4 .launch-button{ border-color:var(--dl-wood-lo); box-shadow:inset 4px 4px 0 var(--accent-bright),inset -4px -4px 0 color-mix(in srgb,var(--accent) 50%,black),0 3px 0 var(--dl-wood-lo); }
+.button-variant-b4 .button-row{ padding:0 5px; }
+.button-variant-b4 .demo-control.is-demo-press{ animation-name:buttonWoodRecoil; }
+.button-variant-b4.is-demonstrating-press .button-console{ animation:buttonSocketAnswer 700ms steps(7,end) both; }
+
+/* B5 — a metal-like collar around a flat, latched face. */
+.button-variant-b5 .launch-cradle{ padding:13px 11px 19px; background:linear-gradient(135deg,var(--dl-case-hi),var(--dl-case) 42%,var(--dl-case-lo)); box-shadow:inset 6px 6px 0 var(--dl-case-hi),inset -7px -7px 0 var(--dl-case-lo),0 0 0 3px var(--dl-rim),0 5px 0 3px var(--dl-edge); }
+.button-variant-b5 .demo-control{ border:5px double var(--dl-edge); outline:2px solid var(--dl-rim); outline-offset:-5px; }
+.button-variant-b5 .launch-button{ background:linear-gradient(180deg,color-mix(in srgb,var(--accent) 82%,white),var(--accent) 42%,color-mix(in srgb,var(--accent) 58%,black)); }
+.button-variant-b5 .secondary-button,.button-variant-b5 .compact-button{ background:linear-gradient(180deg,var(--dl-case-hi),var(--dl-case) 45%,var(--dl-case-lo)); }
+.button-variant-b5 .button-row{ gap:13px; padding:0 3px; }
+.button-variant-b5 .demo-control.is-demo-press{ animation-name:buttonLatch; }
+
+/* B6 — a broad rocker plate that visibly pivots rather than plunges. */
+.button-variant-b6 .launch-cradle{ padding:10px 8px 18px; background:var(--dl-well); box-shadow:inset 0 9px 0 var(--dl-well-deep),inset 7px 0 0 color-mix(in srgb,black 24%,transparent),inset -7px 0 0 color-mix(in srgb,var(--dl-case-hi) 14%,transparent),0 4px 0 var(--dl-edge); }
+.button-variant-b6 .launch-button{ transform:perspective(180px) rotateX(-4deg); transform-origin:50% 100%; border-width:4px; background:linear-gradient(180deg,var(--accent-bright) 0 9px,var(--accent) 9px 50%,color-mix(in srgb,var(--accent) 60%,var(--dl-case)) 50% 100%); box-shadow:inset 4px 3px 0 color-mix(in srgb,var(--accent-bright) 74%,white),inset -4px -5px 0 color-mix(in srgb,var(--accent) 50%,black),0 7px 0 var(--dl-edge); }
+.button-variant-b6 .secondary-button,.button-variant-b6 .compact-button{ transform:perspective(160px) rotateX(-4deg); transform-origin:50% 100%; background:linear-gradient(180deg,var(--dl-case-hi) 0 8px,var(--dl-case) 8px 52%,var(--dl-case-lo) 52%); }
+.button-variant-b6 .demo-control.is-demo-press{ animation-name:buttonRocker; }
+
+/* B0 motion study — construction is intentionally identical in A–G. */
+@keyframes b0GentlePress{
+  0%,100%{ transform:translateY(0); filter:brightness(1); }
+  36%,64%{ transform:translateY(3px); filter:brightness(.96); }
+}
+@keyframes b0ShortClack{
+  0%,100%{ transform:translateY(0); filter:brightness(1); }
+  18%,38%{ transform:translateY(3px); filter:brightness(.94); }
+  48%{ transform:translateY(-1px); filter:brightness(1.02); }
+  60%{ transform:translateY(1px); }
+}
+@keyframes b0SoftSpring{
+  0%,100%{ transform:translateY(0); filter:brightness(1); }
+  28%,52%{ transform:translateY(4px); filter:brightness(.95); }
+  68%{ transform:translateY(-1px); filter:brightness(1.02); }
+  82%{ transform:translateY(.5px); }
+}
+@keyframes b0FirmHold{
+  0%,100%{ transform:translateY(0); filter:brightness(1); }
+  24%{ transform:translateY(3px); filter:brightness(.95); }
+  24%,72%{ transform:translateY(3px); filter:brightness(.93); }
+  88%{ transform:translateY(1px); filter:brightness(.99); }
+}
+@keyframes b0CabinetTap{
+  0%,100%{ transform:translateY(0); filter:brightness(1); }
+  30%,58%{ transform:translateY(2px); filter:brightness(.96); }
+  72%{ transform:translateY(-.5px); }
+}
+@keyframes b0SocketTap{
+  0%,100%{ transform:translateY(0); }
+  32%,58%{ transform:translateY(1px); }
+}
+@keyframes b0SideRock{
+  0%,100%{ transform:translateY(0) rotate(0); filter:brightness(1); }
+  28%,56%{ transform:translateY(2px) rotate(.65deg); filter:brightness(.96); }
+  72%{ transform:translateY(0) rotate(-.35deg); }
+}
+@keyframes b0HingedPress{
+  0%,100%{ transform:perspective(220px) rotateX(0) translateY(0); filter:brightness(1); }
+  30%,62%{ transform:perspective(220px) rotateX(5deg) translateY(2px); filter:brightness(.95); }
+  78%{ transform:perspective(220px) rotateX(-1deg) translateY(0); }
+}
+
+.button-motion-b0-a .demo-control,
+.button-motion-b0-b .demo-control,
+.button-motion-b0-c .demo-control,
+.button-motion-b0-d .demo-control,
+.button-motion-b0-e .demo-control,
+.button-motion-b0-f .demo-control,
+.button-motion-b0-g .demo-control{
+  transform:none;
+  transform-origin:50% 100%;
+}
+
+.button-motion-b0-a .demo-control:active,
+.button-motion-b0-b .demo-control:active,
+.button-motion-b0-c .demo-control:active,
+.button-motion-b0-d .demo-control:active,
+.button-motion-b0-e .demo-control:active,
+.button-motion-b0-f .demo-control:active,
+.button-motion-b0-g .demo-control:active{
+  transform:translateY(3px);
+  filter:brightness(.96);
+}
+
+.button-motion-b0-a .launch-button.is-demo-press,
+.button-motion-b0-b .launch-button.is-demo-press,
+.button-motion-b0-c .launch-button.is-demo-press,
+.button-motion-b0-d .launch-button.is-demo-press,
+.button-motion-b0-e .launch-button.is-demo-press,
+.button-motion-b0-f .launch-button.is-demo-press,
+.button-motion-b0-g .launch-button.is-demo-press{
+  box-shadow:inset 2px 2px 0 var(--accent-bright),inset 0 3px 0 color-mix(in srgb,var(--accent) 72%,black);
+}
+
+.button-motion-b0-a .secondary-button.is-demo-press,
+.button-motion-b0-b .secondary-button.is-demo-press,
+.button-motion-b0-c .secondary-button.is-demo-press,
+.button-motion-b0-d .secondary-button.is-demo-press,
+.button-motion-b0-e .secondary-button.is-demo-press,
+.button-motion-b0-f .secondary-button.is-demo-press,
+.button-motion-b0-g .secondary-button.is-demo-press,
+.button-motion-b0-a .compact-button.is-demo-press,
+.button-motion-b0-b .compact-button.is-demo-press,
+.button-motion-b0-c .compact-button.is-demo-press,
+.button-motion-b0-d .compact-button.is-demo-press,
+.button-motion-b0-e .compact-button.is-demo-press,
+.button-motion-b0-f .compact-button.is-demo-press,
+.button-motion-b0-g .compact-button.is-demo-press{
+  box-shadow:0 2px 0 var(--dl-case-lo),0 4px 0 var(--dl-edge),inset 2px 3px 0 color-mix(in srgb,var(--dl-case-hi) 36%,transparent);
+}
+
+.button-motion-b0-a .demo-control.is-demo-press{ animation:b0GentlePress 520ms steps(6,end) both; }
+.button-motion-b0-b .demo-control.is-demo-press{ animation:b0ShortClack 440ms steps(7,end) both; }
+.button-motion-b0-c .demo-control.is-demo-press{ animation:b0SoftSpring 660ms ease-out both; }
+.button-motion-b0-d .demo-control.is-demo-press{ animation:b0FirmHold 660ms steps(7,end) both; }
+.button-motion-b0-e .demo-control.is-demo-press{ animation:b0CabinetTap 560ms steps(6,end) both; }
+.button-motion-b0-e.is-demonstrating-press .launch-cradle{ animation:b0SocketTap 560ms steps(5,end) both; }
+.button-motion-b0-f .demo-control.is-demo-press{ animation:b0SideRock 560ms steps(7,end) both; }
+.button-motion-b0-g .demo-control.is-demo-press{ animation:b0HingedPress 600ms ease-out both; }
+
+.button-motion-b0-a.is-demonstrating-press .launch-cradle,
+.button-motion-b0-b.is-demonstrating-press .launch-cradle,
+.button-motion-b0-c.is-demonstrating-press .launch-cradle,
+.button-motion-b0-d.is-demonstrating-press .launch-cradle,
+.button-motion-b0-f.is-demonstrating-press .launch-cradle,
+.button-motion-b0-g.is-demonstrating-press .launch-cradle{ animation:none; }
+
+/* CRT study — semantic colour and content remain fixed; construction varies. */
+.crt-specimen-viewport{
+  width:min(100%,393px);
+  height:360px;
+  margin:10px auto 0;
+  padding:15px 13px 18px;
+  display:flex;
+  align-items:center;
+  overflow:hidden;
+  background:
+    radial-gradient(circle at 50% 25%,color-mix(in srgb,var(--felt-1) 72%,transparent),transparent 58%),
+    repeating-conic-gradient(var(--felt-1) 0 25%,var(--felt-2) 0 50%) 0 0/9px 9px,
+    var(--bg-deep);
+}
+
+.crt-machine-board{
+  width:100%;
+  padding:12px;
+  border:4px solid var(--dl-edge);
+  background:
+    repeating-conic-gradient(color-mix(in srgb,white 5%,transparent) 0 25%,transparent 0 50%) 0 0/8px 8px,
+    var(--dl-velvet);
+  box-shadow:inset 4px 4px 0 var(--dl-velvet-hi),inset -5px -5px 0 var(--dl-velvet-lo),0 0 0 2px var(--dl-rim),0 7px 0 var(--dl-edge);
+}
+
+.crt-board-label{
+  margin-bottom:8px;
+  display:flex;
+  align-items:center;
+  gap:9px;
+  color:var(--ink-dim);
+  font-family:var(--font-hdr);
+  font-size:7px;
+  text-transform:uppercase;
+}
+
+.crt-board-label::after{
+  content:"";
+  height:2px;
+  flex:1;
+  background:repeating-linear-gradient(90deg,var(--dl-case-lo) 0 7px,transparent 7px 11px);
+}
+
+.crt-board-label i{
+  width:9px;
+  height:9px;
+  border:2px solid var(--dl-edge);
+  background:var(--crt-machine);
+  box-shadow:0 0 6px color-mix(in srgb,var(--crt-machine) 40%,transparent),inset 1px 1px 0 color-mix(in srgb,white 55%,var(--crt-machine));
+}
+
+.crt-housing{
+  position:relative;
+  padding:10px;
+  border:4px solid var(--dl-edge);
+  background:var(--dl-case);
+  box-shadow:inset 5px 5px 0 var(--dl-case-hi),inset -5px -5px 0 var(--dl-case-lo),0 4px 0 var(--dl-edge);
+}
+
+.crt-screen{
+  position:relative;
+  isolation:isolate;
+  height:122px;
+  padding:15px 14px 13px;
+  display:grid;
+  grid-template-rows:auto 1fr auto;
+  align-items:center;
+  overflow:hidden;
+  border:4px solid var(--dl-edge);
+  border-radius:4px;
+  background:
+    radial-gradient(ellipse at 50% 45%,color-mix(in srgb,currentColor 10%,transparent),transparent 62%),
+    #07100F;
+  box-shadow:inset 0 8px 0 #020706,inset 6px 0 0 rgba(0,0,0,.44),inset -4px -4px 0 rgba(255,255,255,.035);
+  color:var(--crt-live);
+}
+
+.crt-screen::before{
+  content:"";
+  position:absolute;
+  z-index:2;
+  inset:0;
+  pointer-events:none;
+  background:radial-gradient(ellipse at center,transparent 56%,rgba(0,0,0,.34) 100%);
+}
+
+.crt-screen::after{
+  content:"";
+  position:absolute;
+  z-index:3;
+  inset:0;
+  pointer-events:none;
+  opacity:.24;
+  background:repeating-linear-gradient(180deg,transparent 0 3px,rgba(0,0,0,.48) 3px 4px);
+}
+
+.crt-screen-label,.crt-screen strong,.crt-screen small,.crt-live-cursor{
+  position:relative;
+  z-index:4;
+}
+
+.crt-screen-label{
+  color:color-mix(in srgb,currentColor 72%,#73847E);
+  font-family:var(--font-hdr);
+  font-size:6px;
+  text-transform:uppercase;
+}
+
+.crt-screen strong{
+  font-size:15px;
+  line-height:1.2;
+  letter-spacing:.035em;
+  text-align:center;
+  text-shadow:0 0 7px color-mix(in srgb,currentColor 34%,transparent);
+  text-transform:uppercase;
+}
+
+.crt-screen small{
+  color:color-mix(in srgb,currentColor 76%,#60746D);
+  font-family:var(--font-hdr);
+  font-size:6px;
+  text-transform:uppercase;
+}
+
+.crt-live-cursor{
+  position:absolute;
+  right:13px;
+  bottom:13px;
+  width:8px;
+  height:7px;
+  background:currentColor;
+  box-shadow:0 0 6px color-mix(in srgb,currentColor 48%,transparent);
+  animation:crtCursorBlink 1.1s steps(2,end) infinite;
+}
+
+.crt-role-row{
+  margin-top:10px;
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:7px;
+}
+
+.crt-mini-screen{
+  min-width:0;
+  height:56px;
+  padding:8px 5px 6px;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  overflow:hidden;
+  border:4px solid var(--dl-edge);
+  background:repeating-linear-gradient(180deg,transparent 0 3px,rgba(0,0,0,.35) 3px 4px),#07100F;
+  box-shadow:inset 0 6px 0 #020706,inset 4px 0 0 rgba(0,0,0,.4),0 2px 0 color-mix(in srgb,var(--dl-case-hi) 18%,transparent);
+  text-align:center;
+}
+
+.crt-mini-screen span{
+  color:color-mix(in srgb,currentColor 65%,#718078);
+  font-family:var(--font-hdr);
+  font-size:5px;
+  text-transform:uppercase;
+}
+
+.crt-mini-screen strong{
+  max-width:100%;
+  margin-top:6px;
+  overflow:hidden;
+  font-size:8px;
+  line-height:1;
+  text-overflow:ellipsis;
+  text-shadow:0 0 5px color-mix(in srgb,currentColor 30%,transparent);
+  text-transform:uppercase;
+  white-space:nowrap;
+}
+
+.crt-role-machine{ color:var(--crt-machine); }
+.crt-role-money{ color:var(--crt-money); }
+.crt-role-danger{ color:var(--crt-danger); }
+
+.crt-channel-key{
+  width:100%;
+  min-height:35px;
+  margin-top:11px;
+  border:3px solid var(--dl-edge);
+  border-radius:2px;
+  background:var(--dl-case);
+  color:var(--ink);
+  box-shadow:0 3px 0 var(--dl-case-lo),0 5px 0 var(--dl-edge),inset 2px 2px 0 var(--dl-case-hi),inset -2px -2px 0 rgba(0,0,0,.25);
+  font:700 7px/1 var(--font-px);
+  text-transform:uppercase;
+  cursor:pointer;
+}
+
+.crt-channel-key:active{ transform:translateY(3px); box-shadow:0 1px 0 var(--dl-case-lo),0 2px 0 var(--dl-edge),inset 2px 2px 0 var(--dl-case-hi); }
+
+@keyframes crtCursorBlink{ 0%,44%{ opacity:1; } 45%,100%{ opacity:.12; } }
+@keyframes crtIdleFlicker{
+  0%,89%,91%,94%,100%{ opacity:1; transform:translateX(0); }
+  90%{ opacity:.78; transform:translateX(1px); }
+  92%{ opacity:.9; transform:translateX(-1px); }
+  93%{ opacity:.7; transform:translateX(0); }
+}
+@keyframes crtChannelNoise{
+  0%,100%{ filter:brightness(1); background-position:0 0,0 0; }
+  18%{ filter:brightness(1.35) contrast(1.25); background-position:3px 0,0 7px; }
+  36%{ filter:brightness(.64) contrast(1.5); background-position:-4px 0,0 -5px; }
+  58%{ filter:brightness(1.18) contrast(1.2); background-position:2px 0,0 3px; }
+  76%{ filter:brightness(.82); background-position:-1px 0,0 -2px; }
+}
+@keyframes crtChannelText{
+  0%,12%,28%,52%,72%,100%{ opacity:1; transform:translateX(0); }
+  13%,27%{ opacity:0; transform:translateX(-2px); }
+  53%,62%{ opacity:.12; transform:translateX(3px); }
+  63%,71%{ opacity:0; transform:translateX(0); }
+}
+
+.crt-screen strong,.crt-mini-screen strong{ animation:crtIdleFlicker 6.2s steps(1,end) infinite; }
+.option-card.is-channel-changing .crt-screen{ animation:crtChannelNoise 580ms steps(7,end) both; }
+.option-card.is-channel-changing .crt-screen strong,
+.option-card.is-channel-changing .crt-screen small,
+.option-card.is-channel-changing .crt-screen-label{ animation:crtChannelText 580ms steps(8,end) both; }
+
+/* C1 — softer tube glass and a rounded casing lip. */
+.crt-variant-c1 .crt-housing{ padding:12px; border-radius:21px; }
+.crt-variant-c1 .crt-screen{ border-radius:19px / 14px; box-shadow:inset 0 9px 0 #020706,inset 7px 0 0 rgba(0,0,0,.44),inset -7px -5px 0 rgba(255,255,255,.045),0 0 0 3px var(--dl-case-lo); }
+.crt-variant-c1 .crt-mini-screen{ border-radius:8px; }
+
+/* C2 — hard square broadcast tube with stepped corners. */
+.crt-variant-c2 .crt-housing,.crt-variant-c2 .crt-screen,.crt-variant-c2 .crt-mini-screen{
+  border-radius:0;
+  clip-path:polygon(7px 0,calc(100% - 7px) 0,100% 7px,100% calc(100% - 7px),calc(100% - 7px) 100%,7px 100%,0 calc(100% - 7px),0 7px);
+}
+.crt-variant-c2 .crt-screen{ border-width:5px; }
+
+/* C3 — a deep hood that makes the glass unmistakably recessed. */
+.crt-variant-c3 .crt-housing{ padding:17px 14px 13px; background:var(--dl-well); box-shadow:inset 0 13px 0 var(--dl-well-deep),inset 10px 0 0 rgba(0,0,0,.38),inset -7px -5px 0 color-mix(in srgb,var(--dl-case-hi) 14%,transparent),0 4px 0 var(--dl-edge); }
+.crt-variant-c3 .crt-screen{ height:114px; box-shadow:inset 0 11px 0 #010403,inset 9px 0 0 rgba(0,0,0,.5),inset -6px -5px 0 rgba(255,255,255,.03); }
+
+/* C4 — a restrained metal-like bezel around the same tube. */
+.crt-variant-c4 .crt-housing{ border-width:5px; background:linear-gradient(135deg,var(--dl-case-hi),var(--dl-case) 42%,var(--dl-case-lo)); box-shadow:inset 5px 5px 0 color-mix(in srgb,var(--dl-case-hi) 74%,white),inset -6px -6px 0 var(--dl-case-lo),0 0 0 2px var(--dl-rim),0 5px 0 2px var(--dl-edge); }
+.crt-variant-c4 .crt-screen,.crt-variant-c4 .crt-mini-screen{ border:5px double var(--dl-edge); outline:2px solid var(--dl-rim); outline-offset:-5px; }
+
+/* C5 — rack-mounted screen with ribbed broadcast hardware. */
+.crt-variant-c5 .crt-housing{ padding:12px 19px; border-width:5px; background:repeating-linear-gradient(90deg,var(--dl-case-lo) 0 3px,var(--dl-case) 3px 8px); box-shadow:inset 7px 0 0 var(--dl-well-deep),inset -7px 0 0 var(--dl-well-deep),inset 0 5px 0 var(--dl-case-hi),0 5px 0 var(--dl-edge); }
+.crt-variant-c5 .crt-role-row{ padding:0 7px; }
+
+/* C6 — the one bolder twin-channel tube. */
+.crt-variant-c6 .crt-housing{ padding:10px 13px; }
+.crt-variant-c6 .crt-housing::after{ content:""; position:absolute; z-index:5; top:14px; bottom:14px; left:50%; width:3px; transform:translateX(-50%); pointer-events:none; background:color-mix(in srgb,var(--dl-edge) 80%,transparent); box-shadow:-2px 0 0 rgba(255,255,255,.035),2px 0 0 rgba(0,0,0,.42); opacity:.72; }
+.crt-variant-c6 .crt-screen{ background:radial-gradient(ellipse at 25% 45%,color-mix(in srgb,currentColor 9%,transparent),transparent 52%),radial-gradient(ellipse at 75% 45%,color-mix(in srgb,currentColor 9%,transparent),transparent 52%),#07100F; }
+
+/* C0 effects study — every tube, bezel and semantic colour is identical. */
+@keyframes crtBloomIdle{
+  0%,88%,100%{ opacity:1; filter:brightness(1); }
+  89%{ opacity:.86; filter:brightness(1.16); }
+  91%{ opacity:1; filter:brightness(1.04); }
+  93%{ opacity:.92; filter:brightness(.96); }
+}
+@keyframes crtSignalStutter{
+  0%,83%,86%,91%,94%,100%{ opacity:1; transform:translateX(0); }
+  84%{ opacity:.76; transform:translateX(2px); }
+  85%{ opacity:1; transform:translateX(-1px); }
+  92%{ opacity:.48; transform:translateX(-2px); }
+  93%{ opacity:.9; transform:translateX(1px); }
+}
+@keyframes crtLowRefresh{
+  0%,78%,100%{ opacity:1; filter:brightness(1); }
+  79%,83%{ opacity:.84; filter:brightness(.9); }
+  84%,87%{ opacity:.96; filter:brightness(1.08); }
+  88%,92%{ opacity:.9; filter:brightness(.96); }
+}
+@keyframes crtSyncRoll{
+  from{ background-position:0 -130px,0 0; }
+  to{ background-position:0 130px,0 0; }
+}
+@keyframes crtStaticIdle{
+  0%,90%,100%{ opacity:.2; background-position:0 0,0 0,0 0; }
+  91%{ opacity:.38; background-position:3px -2px,-4px 2px,0 0; }
+  93%{ opacity:.17; background-position:-2px 4px,2px -3px,0 0; }
+  95%{ opacity:.32; background-position:4px 1px,-3px -1px,0 0; }
+}
+@keyframes crtBloomChange{
+  0%,100%{ filter:brightness(1) contrast(1); }
+  22%{ filter:brightness(1.8) contrast(.72); }
+  42%{ filter:brightness(.48) contrast(1.55); }
+  62%{ filter:brightness(1.34) contrast(1.12); }
+  78%{ filter:brightness(.82) contrast(1.22); }
+}
+@keyframes crtRasterTextChange{
+  0%,100%{ opacity:1; transform:scaleY(1); }
+  26%{ opacity:.72; transform:scaleY(.34); }
+  42%{ opacity:0; transform:scaleY(.04); }
+  58%{ opacity:.15; transform:scaleY(.08); }
+  76%{ opacity:.82; transform:scaleY(.72); }
+}
+@keyframes crtTearChange{
+  0%,100%{ transform:translateX(0); filter:brightness(1); }
+  16%{ transform:translateX(3px); filter:brightness(1.24); }
+  30%{ transform:translateX(-4px); filter:brightness(.68); }
+  46%{ transform:translateX(2px); filter:brightness(1.08); }
+  58%{ transform:translateX(-2px); filter:brightness(.78); }
+  74%{ transform:translateX(1px); filter:brightness(1.16); }
+}
+@keyframes crtMemoryChange{
+  0%,100%{ opacity:1; filter:blur(0) brightness(1); }
+  22%{ opacity:.7; filter:blur(.4px) brightness(.84); }
+  40%{ opacity:.1; filter:blur(1.2px) brightness(.55); }
+  58%{ opacity:.3; filter:blur(.8px) brightness(1.2); }
+  76%{ opacity:.86; filter:blur(.2px) brightness(1.05); }
+}
+@keyframes crtRollChange{
+  0%,100%{ background-position:0 0,0 0; filter:brightness(1); }
+  20%{ background-position:0 28px,0 7px; filter:brightness(1.28); }
+  42%{ background-position:0 72px,0 -5px; filter:brightness(.64); }
+  64%{ background-position:0 -46px,0 4px; filter:brightness(1.14); }
+  82%{ background-position:0 -12px,0 -2px; filter:brightness(.9); }
+}
+@keyframes crtStaticBurst{
+  0%,100%{ opacity:.2; background-position:0 0,0 0,0 0; }
+  12%{ opacity:.78; background-position:7px -4px,-5px 6px,0 0; }
+  26%{ opacity:.42; background-position:-9px 5px,8px -3px,0 0; }
+  42%{ opacity:.9; background-position:4px 9px,-7px -8px,0 0; }
+  58%{ opacity:.34; background-position:-5px -6px,6px 7px,0 0; }
+  76%{ opacity:.68; background-position:9px 2px,-8px 4px,0 0; }
+}
+
+/* B — wider phosphor glow and a brief bloom when the feed changes. */
+.crt-effect-c0-b .crt-screen strong{ text-shadow:0 0 3px currentColor,0 0 9px currentColor,2px 0 6px color-mix(in srgb,currentColor 36%,transparent); }
+.crt-effect-c0-b:not(.is-channel-changing) .crt-screen strong,
+.crt-effect-c0-b:not(.is-channel-changing) .crt-mini-screen strong{ animation:crtBloomIdle 5.8s steps(1,end) infinite; }
+.crt-effect-c0-b.is-channel-changing .crt-screen{ animation:crtBloomChange 580ms steps(8,end) both; }
+
+/* C — a crisp shadow-mask grille with a classic raster-line collapse. */
+.crt-effect-c0-c .crt-screen::after{
+  opacity:.3;
+  background:repeating-linear-gradient(180deg,transparent 0 2px,rgba(0,0,0,.5) 2px 3px),repeating-linear-gradient(90deg,rgba(143,216,244,.035) 0 1px,rgba(224,101,118,.025) 1px 2px,transparent 2px 3px);
+}
+.crt-effect-c0-c .crt-screen strong{ text-shadow:1px 0 0 color-mix(in srgb,var(--crt-live) 36%,transparent),-1px 0 0 color-mix(in srgb,var(--crt-danger) 18%,transparent); }
+.crt-effect-c0-c.is-channel-changing .crt-screen strong,
+.crt-effect-c0-c.is-channel-changing .crt-screen small,
+.crt-effect-c0-c.is-channel-changing .crt-screen-label{ animation:crtRasterTextChange 580ms steps(8,end) both; }
+
+/* D — calm most of the time, with an occasional horizontal signal stumble. */
+.crt-effect-c0-d:not(.is-channel-changing) .crt-screen strong,
+.crt-effect-c0-d:not(.is-channel-changing) .crt-screen small{ animation:crtSignalStutter 5.1s steps(1,end) infinite; }
+.crt-effect-c0-d.is-channel-changing .crt-screen strong,
+.crt-effect-c0-d.is-channel-changing .crt-screen small,
+.crt-effect-c0-d.is-channel-changing .crt-screen-label{ animation:crtTearChange 580ms steps(9,end) both; }
+
+/* E — slower refresh with a restrained phosphor-memory fade. */
+.crt-effect-c0-e .crt-screen strong{ text-shadow:1px 0 0 currentColor,3px 0 5px color-mix(in srgb,currentColor 20%,transparent); }
+.crt-effect-c0-e:not(.is-channel-changing) .crt-screen strong,
+.crt-effect-c0-e:not(.is-channel-changing) .crt-mini-screen strong{ animation:crtLowRefresh 5.6s steps(1,end) infinite; }
+.crt-effect-c0-e.is-channel-changing .crt-screen strong,
+.crt-effect-c0-e.is-channel-changing .crt-screen small,
+.crt-effect-c0-e.is-channel-changing .crt-screen-label{ animation:crtMemoryChange 620ms steps(9,end) both; }
+
+/* F — a narrow vertical-hold band rolls through the raster. */
+.crt-effect-c0-f:not(.is-channel-changing) .crt-screen::after{
+  opacity:.22;
+  background:linear-gradient(180deg,transparent 0 43%,rgba(143,216,244,.18) 47%,rgba(255,255,255,.08) 50%,transparent 55%),repeating-linear-gradient(180deg,transparent 0 3px,rgba(0,0,0,.48) 3px 4px);
+  background-size:100% 130px,100% 4px;
+  animation:crtSyncRoll 4.2s linear infinite;
+}
+.crt-effect-c0-f.is-channel-changing .crt-screen{ animation:crtRollChange 600ms steps(9,end) both; }
+
+/* G — fine static appears only occasionally, then bursts on channel change. */
+.crt-effect-c0-g .crt-screen::after{
+  background:repeating-radial-gradient(circle at 20% 30%,rgba(255,255,255,.22) 0 1px,transparent 1px 3px),repeating-radial-gradient(circle at 72% 62%,rgba(143,216,244,.16) 0 1px,transparent 1px 4px),repeating-linear-gradient(180deg,transparent 0 3px,rgba(0,0,0,.48) 3px 4px);
+  background-size:11px 9px,13px 10px,100% 4px;
+  animation:crtStaticIdle 5.4s steps(5,end) infinite;
+}
+.crt-effect-c0-g.is-channel-changing .crt-screen::after{ animation:crtStaticBurst 580ms steps(10,end) both; }
+
+/* F1 — stepped corners. */
+.variant-f1 .frame-demo,.variant-f1 .panel-demo{
+  border-radius:0;
+  clip-path:polygon(8px 0,calc(100% - 8px) 0,calc(100% - 8px) 4px,100% 4px,100% calc(100% - 8px),calc(100% - 4px) calc(100% - 8px),calc(100% - 4px) calc(100% - 4px),calc(100% - 8px) calc(100% - 4px),calc(100% - 8px) 100%,8px 100%,8px calc(100% - 4px),4px calc(100% - 4px),4px calc(100% - 8px),0 calc(100% - 8px),0 8px,4px 8px,4px 4px,8px 4px);
+}
+.variant-f1 .frame-well,.variant-f1 .panel-row{ border-width:4px; }
+.variant-f1 .corner-sample{ border-radius:0; clip-path:polygon(18px 0,100% 0,100% 100%,0 100%,0 18px,6px 18px,6px 6px,18px 6px); }
+
+/* F2 — padded leather. */
+.variant-f2 .frame-demo{
+  padding:18px;
+  border-radius:22px;
+  box-shadow:inset 8px 8px 0 var(--dl-velvet-hi),inset -9px -9px 0 var(--dl-velvet-lo),0 0 0 2px var(--dl-rim),0 0 0 6px color-mix(in srgb,var(--dl-velvet-hi) 58%,black),0 10px 0 var(--dl-edge);
+}
+.variant-f2 .frame-well{ border-radius:11px; }
+.variant-f2 .panel-demo{ padding:10px; border-radius:12px; background:var(--dl-velvet); box-shadow:inset 5px 5px 0 var(--dl-velvet-hi),inset -6px -6px 0 var(--dl-velvet-lo),0 4px 0 var(--dl-edge); }
+.variant-f2 .panel-row{ border-radius:5px; }
+.variant-f2 .corner-sample{ border-radius:38px; box-shadow:inset 15px 15px 0 var(--dl-velvet-hi),0 0 0 5px var(--dl-rim),0 0 0 12px var(--dl-velvet-lo); }
+
+/* F3 — polished wood rail. */
+.variant-f3 .frame-demo{
+  padding:16px;
+  border-width:5px;
+  border-color:var(--dl-wood-lo);
+  border-radius:14px;
+  background:repeating-linear-gradient(90deg,color-mix(in srgb,var(--dl-wood-hi) 25%,transparent) 0 4px,transparent 4px 11px),var(--dl-wood);
+  box-shadow:inset 6px 6px 0 var(--dl-wood-hi),inset -7px -7px 0 var(--dl-wood-lo),0 0 0 2px var(--dl-rim),0 9px 0 var(--dl-edge);
+}
+.variant-f3 .frame-well{ box-shadow:0 0 0 6px var(--dl-velvet),inset 0 7px 0 var(--dl-well-deep),inset 4px 0 0 color-mix(in srgb,black 34%,transparent); }
+.variant-f3 .panel-demo{ padding:9px; border-width:5px; border-color:var(--dl-wood-lo); background:var(--dl-wood); box-shadow:inset 4px 4px 0 var(--dl-wood-hi),inset -4px -4px 0 var(--dl-wood-lo),0 4px 0 var(--dl-edge); }
+.variant-f3 .corner-sample{ border-color:var(--dl-wood-lo); background:var(--dl-wood); box-shadow:inset 10px 10px 0 var(--dl-wood-hi),0 0 0 5px var(--dl-rim),0 0 0 11px var(--dl-wood-lo); }
+
+/* F4 — deep bezel. */
+.variant-f4 .frame-demo{ padding:14px; border-radius:15px; }
+.variant-f4 .frame-well{ padding:13px; border:7px solid var(--dl-edge); border-radius:12px; box-shadow:inset 0 12px 0 var(--dl-well-deep),inset 9px 0 0 color-mix(in srgb,black 38%,transparent),inset -6px -6px 0 color-mix(in srgb,var(--dl-case-hi) 12%,transparent),0 0 0 3px var(--dl-case); }
+.variant-f4 .panel-demo{ padding:10px; border:6px solid var(--dl-edge); border-radius:9px; background:var(--dl-well); box-shadow:inset 0 7px 0 var(--dl-well-deep),0 0 0 3px var(--dl-case),0 4px 0 var(--dl-edge); }
+.variant-f4 .panel-row{ border-radius:7px; }
+.variant-f4 .corner-sample{ border-width:13px; border-radius:32px; box-shadow:inset 12px 12px 0 var(--dl-well-deep),0 0 0 6px var(--dl-case),0 0 0 11px var(--dl-rim); }
+
+/* F5 — layered rim. */
+.variant-f5 .frame-demo{
+  padding:14px;
+  border-width:3px;
+  border-radius:10px;
+  box-shadow:inset 4px 4px 0 var(--dl-velvet-hi),inset -5px -5px 0 var(--dl-velvet-lo),0 0 0 2px var(--dl-rim),0 0 0 5px var(--dl-case-hi),0 0 0 8px var(--dl-case-lo),0 10px 0 8px var(--dl-edge);
+}
+.variant-f5 .frame-well{ border:4px double var(--dl-rim); box-shadow:0 0 0 3px var(--dl-edge),inset 0 7px 0 var(--dl-well-deep); }
+.variant-f5 .panel-demo{ border-width:3px; box-shadow:inset 3px 3px 0 var(--dl-case-hi),inset -3px -3px 0 var(--dl-case-lo),0 0 0 2px var(--dl-rim),0 0 0 5px var(--dl-case-lo),0 5px 0 5px var(--dl-edge); }
+.variant-f5 .corner-sample{ border-radius:20px; box-shadow:inset 9px 9px 0 var(--dl-velvet-hi),0 0 0 4px var(--dl-rim),0 0 0 9px var(--dl-case-hi),0 0 0 14px var(--dl-case-lo); }
+
+/* F6 — raised crown, the one deliberately bolder direction. */
+.variant-f6 .frame-demo{
+  padding:28px 14px 14px;
+  border-width:5px;
+  border-radius:42px 42px 13px 13px / 28px 28px 13px 13px;
+  background:linear-gradient(180deg,var(--dl-case) 0 22px,var(--dl-velvet) 22px 100%);
+  box-shadow:inset 6px 6px 0 var(--dl-case-hi),inset -6px -6px 0 var(--dl-velvet-lo),0 0 0 3px var(--dl-rim),0 10px 0 3px var(--dl-edge);
+}
+.variant-f6 .frame-demo::before{ content:""; position:absolute; top:9px; left:28%; right:28%; height:8px; border:3px solid var(--dl-edge); background:var(--accent); box-shadow:inset 2px 2px 0 var(--accent-bright); }
+.variant-f6 .frame-well{ border-radius:18px 18px 5px 5px; }
+.variant-f6 .panel-demo{ padding:10px 8px 7px; border-radius:22px 22px 5px 5px; background:linear-gradient(180deg,var(--dl-case-hi) 0 9px,var(--dl-case) 9px 100%); }
+.variant-f6 .panel-row{ border-radius:13px 13px 2px 2px; }
+.variant-f6 .corner-sample{ border-radius:56px 12px 12px 12px; background:linear-gradient(135deg,var(--dl-case-hi),var(--dl-velvet) 48%); box-shadow:inset 13px 13px 0 color-mix(in srgb,var(--dl-case-hi) 58%,transparent),0 0 0 5px var(--dl-rim),0 0 0 11px var(--dl-edge); }
+
+/* ============================================================
+   PRINTED MARKINGS — P0-P4
+   One physical carrier, one wording set, one set of dimensions.
+   Only the printing treatment changes between options, so the
+   owner is judging ink and relief rather than a new component.
+   Printed text is attached to a physical part: it never glows,
+   flickers, blinks, scrolls or inherits any CRT behaviour.
+   ============================================================ */
+.print-specimen-viewport{
+  width:min(100%,393px);
+  height:380px;
+  margin:10px auto 0;
+  padding:14px 12px 16px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  overflow:hidden;
+  background:
+    radial-gradient(circle at 50% 25%,color-mix(in srgb,var(--felt-1) 72%,transparent),transparent 58%),
+    repeating-conic-gradient(var(--felt-1) 0 25%,var(--felt-2) 0 50%) 0 0/9px 9px,
+    var(--bg-deep);
+}
+
+/* The carrier is the established velvet console board from the button
+   study, unchanged, so no option is quietly proposing a new frame. */
+.print-board,
+.composite-console{
+  /* Materials: a pale plastic key face and a dark recessed plate. */
+  --pl-face:color-mix(in srgb,var(--accent-bright) 40%,white);
+  --pl-face-hi:color-mix(in srgb,var(--accent-bright) 15%,white);
+  --pl-face-lo:color-mix(in srgb,var(--accent) 58%,black);
+  --pl-plate:color-mix(in srgb,var(--panel-2) 74%,var(--dl-case));
+  --pl-plate-hi:color-mix(in srgb,var(--dl-case-hi) 44%,var(--panel-2));
+  --pl-plate-lo:color-mix(in srgb,var(--panel) 55%,black);
+
+  /* Base inks, derived from the production printed text they imitate. */
+  --pl-ink-dark:color-mix(in srgb,var(--accent-ink) 72%,black);
+  --pl-ink-pale:color-mix(in srgb,var(--ink-dim) 70%,var(--accent) 30%);
+  --pl-ink-quiet:color-mix(in srgb,var(--ink-faint) 74%,var(--pl-plate));
+
+  /* Semantic printed inks stay stable across themes, like the CRT roles.
+     These are printed pigments, so they sit below the CRT colours in
+     brightness: gold is money, coral is danger and destructive action. */
+  --pl-money:#E8C374;
+  --pl-danger:#8E3038;
+  --pl-danger-soft:#A8434A;
+  --pl-hazard:#C7524D;
+
+  /* Role inks and relief. Each treatment redefines only these. */
+  --pl-track:.04em;
+  --pl-relief-pale:0 1px 0 rgba(255,255,255,.30);
+  --pl-relief-dark:none;
+  --pl-c-heading:var(--pl-ink-pale);
+  --pl-c-legend:var(--pl-ink-dark);
+  --pl-c-sub:color-mix(in srgb,var(--pl-ink-dark) 74%,var(--pl-face-lo));
+  --pl-c-instrument:var(--pl-ink-pale);
+  --pl-c-caption:var(--pl-ink-quiet);
+  --pl-c-money:var(--pl-money);
+  --pl-c-danger:var(--pl-danger);
+  --pl-c-danger-note:var(--pl-danger-soft);
+  --pl-c-quiet-note:color-mix(in srgb,var(--pl-ink-dark) 55%,var(--pl-face-lo));
+}
+
+.print-board{
+  width:100%;
+  padding:12px 11px 14px;
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+  border:4px solid var(--dl-edge);
+  background:
+    repeating-conic-gradient(color-mix(in srgb,white 6%,transparent) 0 25%,transparent 0 50%) 0 0/8px 8px,
+    var(--dl-velvet);
+  box-shadow:inset 4px 4px 0 var(--dl-velvet-hi),inset -5px -5px 0 var(--dl-velvet-lo),0 0 0 2px var(--dl-rim),0 7px 0 var(--dl-edge);
+}
+
+.print-board span,
+.print-board small,
+.print-board strong,
+.composite-console span,
+.composite-console small,
+.composite-console strong{
+  font-family:var(--font-hdr);
+  font-weight:400;
+  text-transform:uppercase;
+  letter-spacing:var(--pl-track);
+  overflow-wrap:anywhere;
+}
+
+/* Cabinet heading, printed straight onto the board. */
+.print-heading{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  min-width:0;
+}
+
+.print-heading span{
+  color:var(--pl-c-heading);
+  font-size:8px;
+  line-height:1.3;
+  text-shadow:var(--pl-relief-dark);
+}
+
+.print-heading i{
+  height:3px;
+  flex:1;
+  background:repeating-linear-gradient(90deg,var(--dl-case-lo) 0 9px,transparent 9px 14px);
+}
+
+/* Physical key faces and recessed plates. Identical in every option. */
+.print-key{
+  position:relative;
+  min-width:0;
+  padding:11px 12px 12px;
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+  gap:6px;
+  border:3px solid var(--dl-edge);
+  border-radius:4px;
+  background:var(--pl-face);
+  box-shadow:
+    0 4px 0 var(--pl-face-lo),0 4px 0 2px var(--dl-edge),
+    inset 0 3px 0 var(--pl-face-hi),inset 0 -3px 0 rgba(0,0,0,.16);
+}
+
+.print-key-primary{ min-height:74px; text-align:center; }
+.print-key-row{ display:grid; grid-template-columns:1fr 1fr; gap:9px; }
+.print-key-row .print-key{ min-height:56px; }
+
+.print-plate{
+  min-width:0;
+  padding:8px 10px 9px;
+  display:flex;
+  border:3px solid var(--dl-edge);
+  background:
+    repeating-conic-gradient(rgba(255,255,255,.024) 0 25%,transparent 0 50%) 0 0/6px 6px,
+    var(--pl-plate);
+  box-shadow:inset 0 4px 0 var(--pl-plate-lo),inset 3px 0 0 rgba(0,0,0,.28),inset -2px -2px 0 var(--pl-plate-hi);
+}
+
+.print-plate-instrument{ gap:11px; }
+.print-instrument-cell{ flex:1 1 0; min-width:0; display:flex; flex-direction:column; gap:6px; }
+.print-plate-money{ flex-direction:column; align-items:flex-start; gap:6px; }
+
+/* Large button legend — the production legend recipe: header face,
+   uppercase, dark ink on a light face, one pixel of light beneath. */
+.print-legend{
+  color:var(--pl-c-legend);
+  font-size:13px;
+  line-height:1.15;
+  text-shadow:var(--pl-relief-pale);
+}
+
+.print-sublegend{
+  color:var(--pl-c-sub);
+  font-size:7px;
+  line-height:1.4;
+  text-shadow:var(--pl-relief-pale);
+}
+
+/* Small instrument label, printed beside a printed scale. */
+.print-instrument{
+  color:var(--pl-c-instrument);
+  font-size:6.5px;
+  line-height:1.4;
+  text-shadow:var(--pl-relief-dark);
+}
+
+.print-scale{
+  height:5px;
+  background:repeating-linear-gradient(90deg,var(--pl-c-instrument) 0 2px,transparent 2px 9px);
+  opacity:.5;
+}
+
+/* Money and statistic marking. Warm gold means money at rest, printed. */
+.print-caption{
+  color:var(--pl-c-caption);
+  font-size:6.5px;
+  line-height:1.4;
+  text-shadow:var(--pl-relief-dark);
+}
+
+.print-money{
+  color:var(--pl-c-money);
+  font-size:11px;
+  line-height:1.2;
+  text-shadow:var(--pl-relief-dark);
+}
+
+/* Warning / destructive marking. */
+.print-key-warning{ padding-top:15px; }
+
+.print-hazard{
+  position:absolute;
+  top:4px;
+  left:6px;
+  right:6px;
+  height:4px;
+  background:repeating-linear-gradient(45deg,var(--pl-hazard) 0 4px,transparent 4px 8px);
+  opacity:.85;
+}
+
+.print-legend-sm{
+  color:var(--pl-c-legend);
+  font-size:9px;
+  line-height:1.25;
+  text-shadow:var(--pl-relief-pale);
+}
+
+.print-key-warning .print-legend-sm{ color:var(--pl-c-danger); }
+
+.print-note{
+  color:var(--pl-c-quiet-note);
+  font-size:6.5px;
+  line-height:1.4;
+  text-shadow:var(--pl-relief-pale);
+}
+
+.print-key-warning .print-note{ color:var(--pl-c-danger-note); }
+
+/* Unavailable wording. Production dims the whole control rather than
+   reprinting it, so the treatment is judged through the same dimming. */
+.print-key-disabled{ opacity:.55; }
+
+/* ---- P0 Production ink -------------------------------------------
+   The current game exactly: header face, uppercase, dark ink on light
+   faces with a single pixel of light beneath, flat pale ink on dark
+   plates. This is the baseline every other option is measured against
+   and it uses the base values above unchanged. */
+
+/* ---- P1 Struck impression ----------------------------------------
+   No pigment at all. The wording is pressed into the material, so it
+   reads as the same plastic in shadow with a lit lower lip. */
+.print-p1 .print-board,
+.print-p1 .composite-console{
+  --pl-track:.02em;
+  --pl-relief-pale:0 1px 0 rgba(255,255,255,.58),0 -1px 0 rgba(0,0,0,.30);
+  --pl-relief-dark:0 1px 0 rgba(255,255,255,.10),0 -1px 0 rgba(0,0,0,.55);
+  --pl-c-legend:color-mix(in srgb,var(--pl-ink-dark) 58%,var(--pl-face-lo));
+  --pl-c-sub:color-mix(in srgb,var(--pl-ink-dark) 46%,var(--pl-face-lo));
+  --pl-c-heading:color-mix(in srgb,var(--pl-ink-pale) 58%,var(--pl-plate-lo));
+  --pl-c-instrument:color-mix(in srgb,var(--pl-ink-pale) 58%,var(--pl-plate-lo));
+  --pl-c-caption:color-mix(in srgb,var(--pl-ink-quiet) 66%,var(--pl-plate-lo));
+  --pl-c-money:color-mix(in srgb,var(--pl-money) 66%,var(--pl-plate-lo));
+  --pl-c-danger:color-mix(in srgb,var(--pl-danger) 74%,var(--pl-face-lo));
+  --pl-c-danger-note:color-mix(in srgb,var(--pl-danger-soft) 62%,var(--pl-face-lo));
+  --pl-c-quiet-note:color-mix(in srgb,var(--pl-ink-dark) 40%,var(--pl-face-lo));
+}
+
+/* ---- P2 Moulded relief -------------------------------------------
+   Lettering moulded proud of the part. Also unpigmented, but lit from
+   above with a hard shadow below, so it sits on top of the surface
+   instead of being cut into it. */
+.print-p2 .print-board,
+.print-p2 .composite-console{
+  --pl-track:.05em;
+  --pl-relief-pale:0 -1px 0 rgba(255,255,255,.75),0 2px 0 rgba(0,0,0,.32),0 3px 0 rgba(0,0,0,.16);
+  --pl-relief-dark:0 -1px 0 rgba(255,255,255,.20),0 2px 0 rgba(0,0,0,.62);
+  --pl-c-legend:color-mix(in srgb,var(--pl-face) 48%,var(--pl-ink-dark));
+  --pl-c-sub:color-mix(in srgb,var(--pl-face) 44%,var(--pl-ink-dark));
+  --pl-c-heading:color-mix(in srgb,var(--pl-plate-hi) 62%,var(--pl-ink-pale));
+  --pl-c-instrument:color-mix(in srgb,var(--pl-plate-hi) 58%,var(--pl-ink-pale));
+  --pl-c-caption:color-mix(in srgb,var(--pl-plate-hi) 58%,var(--pl-ink-quiet));
+  --pl-c-money:color-mix(in srgb,var(--pl-money) 58%,var(--pl-plate-hi));
+  --pl-c-danger:color-mix(in srgb,var(--pl-danger) 62%,var(--pl-face));
+  --pl-c-danger-note:color-mix(in srgb,var(--pl-danger-soft) 55%,var(--pl-face));
+  --pl-c-quiet-note:color-mix(in srgb,var(--pl-face) 40%,var(--pl-ink-dark));
+}
+
+/* ---- P3 Screen print ---------------------------------------------
+   Flat opaque paint laid on the surface with no relief at all, opened
+   up on tracking, with a one-pixel misregistration ghost and a little
+   wear so it reads as printed rather than rendered. */
+.print-p3 .print-board,
+.print-p3 .composite-console{
+  --pl-track:.10em;
+  --pl-relief-pale:1px 1px 0 color-mix(in srgb,var(--pl-ink-dark) 34%,transparent);
+  --pl-relief-dark:1px 1px 0 color-mix(in srgb,var(--pl-ink-pale) 30%,transparent);
+  --pl-c-legend:color-mix(in srgb,var(--pl-ink-dark) 92%,black);
+  --pl-c-sub:color-mix(in srgb,var(--pl-ink-dark) 84%,var(--pl-face-lo));
+  --pl-c-heading:color-mix(in srgb,var(--pl-ink-pale) 82%,white);
+  --pl-c-instrument:color-mix(in srgb,var(--pl-ink-pale) 82%,white);
+  --pl-c-caption:color-mix(in srgb,var(--pl-ink-quiet) 88%,white);
+  --pl-c-money:color-mix(in srgb,var(--pl-money) 88%,white);
+  --pl-c-danger:var(--pl-danger);
+  --pl-c-danger-note:var(--pl-danger-soft);
+  --pl-c-quiet-note:color-mix(in srgb,var(--pl-ink-dark) 62%,var(--pl-face-lo));
+}
+
+.print-p3 .print-legend,
+.print-p3 .print-sublegend,
+.print-p3 .print-legend-sm,
+.print-p3 .print-note,
+.print-p3 .print-heading span,
+.print-p3 .print-instrument,
+.print-p3 .print-caption,
+.print-p3 .print-money{ opacity:.93; }
+
+/* ---- P4 Etched fill ----------------------------------------------
+   Cut into the part and flooded with pigment: a dark cut above the
+   letter, a lit lip below it and a brighter fill than the surface, so
+   the marking is both physical and high contrast. */
+.print-p4 .print-board,
+.print-p4 .composite-console{
+  --pl-track:.09em;
+  --pl-relief-pale:0 -1px 0 rgba(0,0,0,.62),0 1px 0 rgba(255,255,255,.85),0 2px 0 rgba(255,255,255,.35);
+  --pl-relief-dark:0 -1px 0 rgba(0,0,0,.85),0 1px 0 rgba(255,255,255,.24);
+  --pl-c-legend:color-mix(in srgb,var(--pl-ink-dark) 88%,var(--pl-face-lo));
+  --pl-c-sub:color-mix(in srgb,var(--pl-ink-dark) 78%,var(--pl-face-lo));
+  --pl-c-heading:color-mix(in srgb,white 66%,var(--pl-ink-pale));
+  --pl-c-instrument:color-mix(in srgb,white 62%,var(--pl-ink-pale));
+  --pl-c-caption:color-mix(in srgb,white 42%,var(--pl-ink-quiet));
+  --pl-c-money:color-mix(in srgb,white 34%,var(--pl-money));
+  --pl-c-danger:color-mix(in srgb,var(--pl-danger) 88%,black);
+  --pl-c-danger-note:var(--pl-danger);
+  --pl-c-quiet-note:color-mix(in srgb,var(--pl-ink-dark) 66%,var(--pl-face-lo));
+}
+
+/* ============================================================
+   COMPOSITE CONSOLE — one assembled specimen, not an options deck.
+   The console itself is identical in every variant; only the chassis
+   changes, so the complete object resolves the open frame question
+   instead of another abstract frame contest.
+
+   Every approved part is worn rather than reimplemented: the card
+   carries .print-p4, .crt-effect-c0-g and .button-motion-b0-c, so the
+   selected printing, CRT behaviour and press motion apply through the
+   same rules the owner signed off. The mechanical reels below are the
+   production treatment reproduced verbatim, Lab-scoped.
+   ============================================================ */
+.composite-specimen-viewport{
+  width:min(100%,393px);
+  height:745px;
+  margin:10px auto 0;
+  padding:10px;
+  display:flex;
+  overflow:hidden;
+  background:
+    radial-gradient(circle at 50% 22%,color-mix(in srgb,var(--felt-1) 72%,transparent),transparent 58%),
+    repeating-conic-gradient(var(--felt-1) 0 25%,var(--felt-2) 0 50%) 0 0/9px 9px,
+    var(--bg-deep);
+}
+
+.composite-console{
+  width:100%;
+  padding:13px 12px 15px;
+  display:flex;
+  flex-direction:column;
+  gap:11px;
+  overflow:hidden;
+}
+
+/* Cabinet top rail: printed identification on the physical shell. */
+.composite-rail{
+  display:flex;
+  align-items:center;
+  gap:9px;
+  padding:7px 9px;
+  border:3px solid var(--dl-edge);
+  background:var(--pl-plate);
+  box-shadow:inset 2px 2px 0 var(--pl-plate-hi),inset -2px -2px 0 var(--pl-plate-lo),0 3px 0 var(--dl-edge);
+}
+
+.composite-rail .print-legend-sm{ color:var(--pl-c-instrument); font-size:8px; text-shadow:var(--pl-relief-dark); }
+.composite-rail .print-note{ color:var(--pl-c-caption); text-shadow:var(--pl-relief-dark); }
+.composite-rail i{ margin-left:auto; }
+
+/* The CRT sits recessed in the chassis itself, so the approved housing
+   is used without wrapping it in a second board. */
+.composite-console .crt-housing{ flex:0 0 auto; }
+.composite-console .crt-screen{ height:112px; }
+.composite-console .crt-role-row{ margin-top:9px; }
+
+.composite-crt-bay{ display:flex; flex-direction:column; }
+
+/* Mechanical number bay — production reel treatment, reproduced. */
+.composite-reel-bay{
+  padding:9px 10px 11px;
+  border:3px solid var(--dl-edge);
+  background:
+    repeating-conic-gradient(rgba(255,255,255,.024) 0 25%,transparent 0 50%) 0 0/6px 6px,
+    var(--pl-plate);
+  box-shadow:inset 0 4px 0 var(--pl-plate-lo),inset 3px 0 0 rgba(0,0,0,.28),inset -2px -2px 0 var(--pl-plate-hi);
+}
+
+.composite-reel-bay .print-heading{ margin-bottom:8px; }
+
+.reel-readout{
+  display:flex;
+  gap:3px;
+  align-items:stretch;
+  justify-content:center;
+  padding:4px 5px;
+  background:rgba(0,0,0,.5);
+  border:2px solid var(--accent);
+  border-radius:3px;
+  box-shadow:0 3px 0 rgba(0,0,0,.5),inset 0 2px 0 rgba(0,0,0,.5);
+}
+
+.composite-console .jp-cell{
+  position:relative; overflow:hidden; min-width:20px; height:25px; padding:0 1px; text-align:center;
+  font-family:var(--font-hdr); font-size:12px; font-weight:400; line-height:1.2; color:var(--accent-bright);
+  background:rgba(0,0,0,.55); border:1px solid rgba(255,255,255,.14); border-radius:2px;
+  box-shadow:inset 0 2px 0 rgba(0,0,0,.6);
+  text-shadow:0 0 6px rgba(217,169,59,.45),1px 1px 0 var(--dl-edge);
+}
+
+.composite-console .jp-sym{ color:var(--accent); min-width:16px; display:flex; align-items:center; justify-content:center; }
+.composite-console .jp-digit.dim{ color:rgba(255,255,255,.16); text-shadow:none; }
+
+.composite-console .reel-strip{
+  display:flex; flex-direction:column; width:100%; height:200%; transform:translateY(0);
+  will-change:transform;
+}
+
+.composite-console .reel-strip > span{ height:50%; flex:0 0 50%; display:flex; align-items:center; justify-content:center; }
+.composite-console .reel-cell.rolling-up .reel-strip{ animation:labReelRollUp .3s steps(8,end) forwards; }
+.composite-console .reel-cell.rolling-down .reel-strip{ animation:labReelRollDown .3s steps(8,end) forwards; }
+
+@keyframes labReelRollUp{
+  0%{ transform:translateY(0); }
+  78%{ transform:translateY(-53%); }
+  90%{ transform:translateY(-48.5%); }
+  100%{ transform:translateY(-50%); }
+}
+
+@keyframes labReelRollDown{
+  0%{ transform:translateY(-50%); }
+  78%{ transform:translateY(3%); }
+  90%{ transform:translateY(-1.5%); }
+  100%{ transform:translateY(0); }
+}
+
+/* Printed instrument strip on the chassis. */
+.composite-instrument{ flex:0 0 auto; }
+
+/* Controls sit at the bottom of the cabinet, as on the real machine. */
+.composite-control-bay{
+  margin-top:auto;
+  padding:11px 10px 13px;
+  border:3px solid var(--dl-edge);
+  background:
+    repeating-conic-gradient(color-mix(in srgb,white 5%,transparent) 0 25%,transparent 0 50%) 0 0/8px 8px,
+    color-mix(in srgb,var(--dl-velvet) 82%,black);
+  box-shadow:inset 3px 3px 0 var(--dl-velvet-hi),inset -4px -4px 0 var(--dl-velvet-lo),0 4px 0 var(--dl-edge);
+}
+
+.composite-control-bay .print-heading{ margin-bottom:9px; }
+.composite-control-bay .launch-cradle{ margin-bottom:12px; }
+.composite-control-bay .button-row{ margin-top:11px; }
+.composite-console .compact-button[disabled]{ opacity:.55; pointer-events:none; }
+
+/* Printed legends on the approved B0 control faces. The header pixel face has
+   one real weight, so the specimen's inherited 800 was synthesising a bold and
+   smearing the letterforms; production always sets 400 against this face. */
+.composite-console .demo-control,
+.composite-console .compact-button{ font-weight:400; }
+.composite-console .launch-button{ font-size:13px; }
+.composite-console .launch-button span{ text-shadow:var(--pl-relief-pale); }
+.composite-console .launch-button small{ font-size:7px; }
+.composite-console .secondary-button{
+  font-size:8px;
+  color:var(--pl-c-instrument);
+  text-shadow:var(--pl-relief-dark);
+}
+.composite-console .compact-button{
+  font-size:6.5px;
+  line-height:1.5;
+  color:var(--pl-c-caption);
+  text-shadow:var(--pl-relief-dark);
+}
+
+/* ---- Chassis variants: the four shortlisted frames, same console ---- */
+
+/* F0 — the current baseline shell. */
+.composite-f0 .composite-console{
+  border:4px solid var(--dl-edge);
+  background:
+    repeating-conic-gradient(color-mix(in srgb,white 6%,transparent) 0 25%,transparent 0 50%) 0 0/8px 8px,
+    var(--dl-velvet);
+  box-shadow:inset 4px 4px 0 var(--dl-velvet-hi),inset -5px -5px 0 var(--dl-velvet-lo),0 0 0 2px var(--dl-rim),0 7px 0 var(--dl-edge);
+}
+
+/* F2 — padded leather. */
+.composite-f2 .composite-console{
+  border:5px solid var(--dl-edge);
+  border-radius:14px;
+  background:
+    repeating-conic-gradient(color-mix(in srgb,white 7%,transparent) 0 25%,transparent 0 50%) 0 0/7px 7px,
+    var(--dl-velvet);
+  box-shadow:inset 7px 7px 0 var(--dl-velvet-hi),inset -8px -8px 0 var(--dl-velvet-lo),0 0 0 2px var(--dl-rim),0 8px 0 var(--dl-edge);
+}
+
+/* F3 — polished wood rail. */
+.composite-f3 .composite-console{
+  border:5px solid var(--dl-wood-lo);
+  border-radius:14px;
+  background:
+    repeating-linear-gradient(90deg,color-mix(in srgb,var(--dl-wood-hi) 25%,transparent) 0 4px,transparent 4px 11px),
+    var(--dl-wood);
+  box-shadow:inset 6px 6px 0 var(--dl-wood-hi),inset -7px -7px 0 var(--dl-wood-lo),0 0 0 2px var(--dl-rim),0 9px 0 var(--dl-edge);
+}
+
+/* F5 — layered rim. */
+.composite-f5 .composite-console{
+  border:3px solid var(--dl-edge);
+  border-radius:10px;
+  background:
+    repeating-conic-gradient(color-mix(in srgb,white 6%,transparent) 0 25%,transparent 0 50%) 0 0/8px 8px,
+    var(--dl-velvet);
+  box-shadow:
+    inset 4px 4px 0 var(--dl-velvet-hi),inset -5px -5px 0 var(--dl-velvet-lo),
+    0 0 0 2px var(--dl-rim),0 0 0 5px var(--dl-case-hi),0 0 0 8px var(--dl-case-lo),0 10px 0 8px var(--dl-edge);
+}
+
+/* The layered rim needs breathing room so its outer rings are not clipped. */
+.composite-f5 .composite-specimen-viewport{ padding:16px; }
+
+@media (prefers-reduced-motion:reduce){
+  .composite-console .reel-cell.rolling-up .reel-strip{ animation:none; transform:translateY(-50%); }
+  .composite-console .reel-cell.rolling-down .reel-strip{ animation:none; transform:translateY(0); }
+}
+
+@media (max-width:1100px){
+  .option-grid{ grid-template-columns:repeat(2,minmax(0,1fr)); }
+}
+
+@media (max-width:720px){
+  .lab-toolbar{ width:calc(100% - 16px); padding:13px; grid-template-columns:1fr; }
+  .lab-controls{ grid-template-columns:1fr; align-items:stretch; }
+  .lab-controls label{ margin-top:2px; }
+  .lab-controls select,.lab-controls button{ width:100%; }
+  .lab-main{ width:calc(100% - 16px); margin-top:14px; }
+  .option-grid{ grid-template-columns:1fr; }
+  .option-card{ padding:9px; }
+  .specimen-viewport{ max-width:393px; }
+  .button-specimen-viewport{ max-width:393px; height:360px; }
+  .crt-specimen-viewport{ max-width:393px; height:360px; }
+  .print-specimen-viewport{ max-width:393px; height:380px; }
+  .composite-specimen-viewport{ max-width:393px; height:745px; }
+}
+
+@media (max-width:360px){
+  .lab-toolbar,.lab-main{ width:calc(100% - 10px); }
+  .option-card{ padding:7px; }
+  .specimen-viewport{ padding:8px; gap:11px; }
+  .frame-demo{ padding:9px; }
+  .panel-stat strong{ font-size:15px; }
+  .button-specimen-viewport{ padding:10px 8px 14px; }
+  .crt-specimen-viewport{ padding:10px 8px 14px; }
+  .print-specimen-viewport{ padding:10px 8px 14px; height:396px; }
+  .print-board{ padding-left:9px; padding-right:9px; gap:9px; }
+  .print-legend{ font-size:11px; }
+  .print-plate-instrument{ gap:8px; }
+  .print-key-row{ gap:7px; }
+  .composite-specimen-viewport{ padding:8px; height:762px; }
+  .composite-f5 .composite-specimen-viewport{ padding:13px; }
+  .composite-console{ padding-left:9px; padding-right:9px; gap:9px; }
+  .composite-console .launch-button{ padding-left:18px; padding-right:18px; font-size:12px; }
+  .composite-console .jp-cell{ min-width:17px; font-size:11px; }
+  .button-console{ padding-left:9px; padding-right:9px; }
+  .crt-machine-board{ padding-left:9px; padding-right:9px; }
+  .launch-button{ padding-left:20px; padding-right:20px; font-size:12px; }
+}
+
+@media (prefers-reduced-motion:reduce){
+  .demo-control.is-demo-press{ animation-duration:1ms; }
+  .crt-screen strong,.crt-mini-screen strong,.crt-live-cursor,
+  .crt-screen::after{ animation:none!important; }
+  .option-card.is-channel-changing .crt-screen,
+  .option-card.is-channel-changing .crt-screen strong,
+  .option-card.is-channel-changing .crt-screen small,
+  .option-card.is-channel-changing .crt-screen-label{ animation-duration:1ms; }
+}

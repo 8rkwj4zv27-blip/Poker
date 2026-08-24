@@ -1,0 +1,807 @@
+/* ============================================================
+   THE MACHINE SYSTEM
+   The approved visual system from the Design Lab, applied to the game.
+
+   Selections it implements:
+     P0  Production ink        printed markings
+     C0  Current Upgrade       recessed near-black CRT glass
+     C0-G Static Burst         finite resynchronisation on CRT change
+     B0-C Soft Spring          menu/launch control press
+     F0  Current baseline      chassis unchanged
+     plus the machine construction for the six screens that never
+     received it, and the result-stage corrections.
+
+   Loaded last, so it layers over the existing sheets without editing
+   them. Removing the one <link> in index.html reverts everything.
+
+   No JavaScript was changed for any of this. The CRT burst reuses the
+   .crt-refresh hook paintCRT() already fires in 05-game-engine.js, and
+   the press reuses the :active state the menu buttons already have.
+   ============================================================ */
+
+
+/* ============================================================
+   1. C0 CURRENT UPGRADE — CRT glass
+   Near-black recessed tube, corner vignette, uneven illumination.
+   The second selector matches the one in 05-responsive-and-arcade.css
+   that would otherwise outrank this, so no !important is needed.
+   ============================================================ */
+.crt-screen,
+.pc-display,
+#hud-mid .crt-screen,
+#hud-invested{
+  background:
+    radial-gradient(ellipse at 50% 38%,rgba(255,255,255,.05),transparent 60%),
+    radial-gradient(ellipse at 50% 50%,transparent 38%,rgba(0,0,0,.62) 100%),
+    repeating-linear-gradient(180deg,transparent 0 2px,rgba(0,0,0,.30) 2px 3px),
+    #060B0A;
+  border-color:#040807;
+  box-shadow:
+    inset 0 7px 0 rgba(0,0,0,.74),
+    inset 5px 0 0 rgba(0,0,0,.44),
+    inset -5px 0 0 rgba(0,0,0,.34),
+    inset 0 -3px 0 rgba(255,255,255,.05),
+    0 2px 0 rgba(255,255,255,.10),
+    0 0 0 2px rgba(0,0,0,.55);
+}
+
+/* Restrained phosphor bloom on what the tube is showing. */
+.crt-line-primary,
+.crt-line-secondary,
+.hand-strength,
+#home .pc-ready-readout{
+  text-shadow:0 0 6px currentColor,0 0 14px color-mix(in srgb,currentColor 34%,transparent);
+}
+
+
+/* ============================================================
+   2. C0-G STATIC BURST
+   paintCRT() in 05-game-engine.js already adds .crt-refresh on a real
+   content change and clears it after 250ms, so this only retunes what
+   that burst looks like. Staying inside the existing 230ms keeps the
+   animation and that cleanup in step.
+   ============================================================ */
+@keyframes crtRefresh{
+  0%{ filter:brightness(2.4) contrast(.72); opacity:.35; }
+  20%{ filter:brightness(.25) contrast(1.6); opacity:.68; }
+  45%{ filter:brightness(1.6) contrast(1.15); opacity:.9; }
+  70%{ filter:brightness(.7) contrast(1.25); opacity:1; }
+  100%{ filter:brightness(1) contrast(1); opacity:1; }
+}
+
+
+/* ============================================================
+   3. B0-C SOFT SPRING — menu/launch control family
+   Press falls fast and linear, release springs back with a small
+   overshoot: the same recipe the live-table action buttons already
+   use. Travel is capped at the approved four pixels.
+
+   The live-table FOLD/CALL/CHECK/RAISE family keeps its own press and
+   is deliberately not touched here.
+   ============================================================ */
+#home .pc-button,
+#home .home-row .btn-secondary{
+  transition:transform 150ms cubic-bezier(.34,1.56,.64,1),box-shadow 120ms ease-out;
+}
+
+#home .pc-button:active,
+#home .home-row .btn-secondary:active{
+  transition:transform 50ms linear,box-shadow 50ms linear;
+}
+
+#home .pc-button-primary:active{ transform:translateY(4px); }
+
+
+/* ============================================================
+   4. P0 PRODUCTION INK — printed markings
+   Printed text is attached to a physical part: dark ink on a light
+   face carries a single pixel of light beneath it, pale ink on a dark
+   plate lies flat. Printed text never glows.
+   ============================================================ */
+.btn-fold,
+.btn-check,
+.btn-call,
+.btn-raise,
+.btn-award-console,
+.btn-quick-resolve,
+.wide-btn,
+.btn-primary,
+#home .pc-button-primary,
+#home .pc-button-primary small,
+#home #home-settings{
+  text-shadow:0 1px 0 rgba(255,255,255,.30);
+}
+
+#home .pc-button-secondary,
+#home .home-row .btn-secondary,
+.btn-secondary,
+.segmented button,
+.table-save,
+.pc-label,
+.pc-product-mark,
+.pc-product-mark small,
+.pc-cast-index,
+.sheet h3,
+.drawer-head h3,
+.sg-section-label,
+.instrument-label,
+.blind-indicator,
+.field-label,
+.card-label,
+.stepper-val .cap,
+#home .stats-card .stat-cell .k{
+  text-shadow:none;
+}
+
+/* The result name is printed on the physical stage face, so it loses the
+   glow it previously carried. */
+.stage-results-head span,
+.stage-instrument-label{
+  text-shadow:none;
+}
+
+.stage-results-head strong{ text-shadow:2px 2px 0 #142527; }
+
+
+/* ============================================================
+   5. MACHINE CONSTRUCTION FOR THE SIX SCREENS
+   Classic table setup, Hand rankings, Score/awards, Career list and
+   Settings never received the physical-machine language. They are
+   brought up to the Main Menu's construction, reusing its own material
+   variables so they match the canonical reference rather than
+   introducing a new look.
+
+   Authored artwork is untouched: playing cards, chips, faces and
+   sprites keep their own styling throughout.
+   ============================================================ */
+#setup,
+#rankings,
+#awards,
+#career,
+#settings-sheet .sheet-body{
+  --ms-edge:var(--pc-edge-lo,#0B0F0C);
+  --ms-plate:var(--pc-plastic,var(--theme-case-raised));
+  --ms-plate-hi:var(--pc-plastic-hi,var(--theme-case-hi));
+  --ms-plate-lo:var(--pc-plastic-lo,color-mix(in srgb,var(--theme-case-raised) 58%,black));
+  --ms-well:color-mix(in srgb,var(--panel) 50%,black);
+  --ms-glass:#060B0A;
+  --ms-print:#A99E73;
+}
+
+/* ---- The cabinet ---- */
+#setup .lobby-card,
+#rankings .lobby-card,
+#awards .lobby-card,
+#career .lobby-card{
+  padding:11px;
+  border:4px solid var(--ms-edge);
+  border-radius:12px;
+  background:
+    repeating-conic-gradient(rgba(255,255,255,.05) 0 25%,transparent 0 50%) 0 0/8px 8px,
+    var(--pc-leather);
+  box-shadow:
+    inset 4px 4px 0 var(--pc-leather-hi),
+    inset -5px -5px 0 var(--pc-leather-lo),
+    0 0 0 2px var(--theme-rim),
+    0 9px 0 #090406;
+}
+
+/* ---- Cabinet top rail with a printed title ---- */
+#setup .setup-head,
+#rankings .setup-head,
+#awards .setup-head,
+#career .setup-head{
+  margin-bottom:11px;
+  padding:5px 7px;
+  border:3px solid var(--ms-edge);
+  background:var(--pc-plastic-dark,var(--ms-plate-lo));
+  box-shadow:
+    inset 2px 2px 0 var(--pc-plastic-dark-hi,var(--ms-plate-hi)),
+    inset -2px -2px 0 var(--pc-plastic-dark-lo,var(--ms-plate-lo)),
+    0 3px 0 var(--ms-edge);
+}
+
+#setup .setup-title,
+#rankings .setup-title,
+#awards .setup-title,
+#career .setup-title{
+  font-size:9px;
+  letter-spacing:.12em;
+  color:#E9DDAE;
+  text-shadow:0 1px 0 rgba(0,0,0,.55);
+}
+
+/* ---- Panels become plates let into the board ---- */
+#setup .panel-card,
+#career .panel-card{
+  border:3px solid var(--ms-edge);
+  border-radius:4px;
+  background:
+    repeating-conic-gradient(rgba(255,255,255,.02) 0 25%,transparent 0 50%) 0 0/6px 6px,
+    var(--ms-well);
+  box-shadow:
+    inset 0 5px 0 rgba(0,0,0,.46),
+    inset 3px 0 0 rgba(0,0,0,.28),
+    inset -2px -2px 0 rgba(255,255,255,.05),
+    0 3px 0 var(--ms-edge);
+}
+
+/* ---- Printed panel headings with the machine's seam rule ---- */
+#setup .card-label,
+#career .card-label,
+#settings-sheet h3{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  font-size:7px;
+  letter-spacing:.1em;
+  color:var(--ms-print);
+}
+
+#setup .card-label::after,
+#career .card-label::after,
+#settings-sheet h3::after{
+  content:"";
+  height:3px;
+  flex:1;
+  background:repeating-linear-gradient(90deg,var(--ms-plate) 0 9px,transparent 9px 14px);
+  opacity:.7;
+}
+
+#setup .card-label .val,
+#career .card-label .val{ float:none; color:var(--accent-bright); }
+
+#setup .field-label,
+#career .field-label,
+#settings-sheet .field-label{ color:var(--ms-print); }
+
+#setup .hint,
+#rankings .hint,
+#awards .hint,
+#career .hint,
+#settings-sheet .hint,
+#settings-sheet .ts{ color:#8E896B; }
+
+/* ---- Physical control faces ---- */
+#setup .stepper button,
+#setup .segmented button,
+#career .segmented button,
+#settings-sheet .segmented button{
+  border:2px solid var(--ms-edge);
+  border-radius:3px;
+  background:var(--ms-plate);
+  color:var(--ink);
+  box-shadow:
+    0 3px 0 var(--ms-plate-lo),
+    0 5px 0 var(--ms-edge),
+    inset 2px 2px 0 var(--ms-plate-hi),
+    inset -2px -2px 0 rgba(0,0,0,.22);
+}
+
+#setup .segmented button.active,
+#career .segmented button.active,
+#settings-sheet .segmented button.active{
+  background:var(--accent);
+  color:var(--accent-ink);
+  box-shadow:
+    0 2px 0 color-mix(in srgb,var(--accent) 55%,black),
+    0 4px 0 var(--ms-edge),
+    inset 0 3px 0 rgba(255,255,255,.34),
+    inset 0 -3px 0 rgba(0,0,0,.16);
+}
+
+#setup .stepper button:active,
+#setup .segmented button:active,
+#career .segmented button:active,
+#settings-sheet .segmented button:active{
+  transform:translateY(3px);
+  box-shadow:0 1px 0 var(--ms-plate-lo),0 2px 0 var(--ms-edge),inset 2px 3px 0 rgba(0,0,0,.3);
+}
+
+#setup .segmented,
+#career .segmented,
+#settings-sheet .segmented{
+  gap:6px;
+  padding:5px;
+  border:2px solid var(--ms-edge);
+  border-radius:4px;
+  background:var(--ms-well);
+  box-shadow:inset 0 4px 0 rgba(0,0,0,.42);
+}
+
+/* ---- Recessed display wells ---- */
+#setup .stepper-val,
+#career .career-bank,
+#career .career-stat,
+#awards .awards-summary{
+  border:2px solid #040807;
+  border-radius:2px;
+  background:
+    radial-gradient(ellipse at 50% 38%,rgba(255,255,255,.05),transparent 60%),
+    radial-gradient(ellipse at 50% 50%,transparent 38%,rgba(0,0,0,.62) 100%),
+    repeating-linear-gradient(180deg,transparent 0 2px,rgba(0,0,0,.30) 2px 3px),
+    var(--ms-glass);
+  box-shadow:
+    inset 0 6px 0 rgba(0,0,0,.7),
+    inset 4px 0 0 rgba(0,0,0,.4),
+    inset 0 -2px 0 rgba(255,255,255,.05),
+    0 2px 0 rgba(255,255,255,.09);
+}
+
+#setup .stepper-val{ padding:7px 4px; }
+#awards .awards-summary{ padding:11px 10px; margin-bottom:12px; }
+#awards .awards-summary b{ color:var(--accent-bright); text-shadow:0 0 7px color-mix(in srgb,var(--accent) 45%,transparent); }
+#career .career-stat{ box-shadow:inset 0 4px 0 rgba(0,0,0,.62),inset 3px 0 0 rgba(0,0,0,.34); }
+
+/* ---- Large and small physical keys ---- */
+#setup .btn-primary,
+#career .btn-primary{
+  border:3px solid var(--ms-edge);
+  border-radius:5px;
+  font-family:var(--font-hdr);
+  font-weight:400;
+  text-transform:uppercase;
+  letter-spacing:.04em;
+  box-shadow:
+    0 5px 0 color-mix(in srgb,var(--accent) 55%,black),
+    0 5px 0 3px var(--ms-edge),
+    inset 0 3px 0 rgba(255,255,255,.34),
+    inset 0 -3px 0 rgba(0,0,0,.18);
+}
+
+#setup .btn-primary:active,
+#career .btn-primary:active{
+  transform:translateY(3px);
+  box-shadow:0 2px 0 color-mix(in srgb,var(--accent) 55%,black),0 2px 0 3px var(--ms-edge),inset 0 3px 0 rgba(255,255,255,.34);
+}
+
+#setup .icon-btn,
+#rankings .icon-btn,
+#awards .icon-btn,
+#career .icon-btn{
+  border:3px solid var(--ms-edge);
+  border-radius:3px;
+  background:var(--ms-plate);
+  color:var(--ink);
+  box-shadow:0 3px 0 var(--ms-edge),inset 2px 2px 0 var(--ms-plate-hi),inset -2px -2px 0 rgba(0,0,0,.25);
+}
+
+/* ---- Hand rankings: each row is a plate on the board ---- */
+#rankings .rank-row{
+  margin-bottom:7px;
+  padding:7px 8px;
+  border:2px solid var(--ms-edge);
+  border-radius:3px;
+  background:var(--ms-well);
+  box-shadow:inset 0 3px 0 rgba(0,0,0,.42),0 2px 0 var(--ms-edge);
+}
+
+#rankings .rank-no{
+  border:2px solid var(--ms-edge);
+  border-radius:2px;
+  background:var(--ms-plate);
+  color:var(--accent-bright);
+  font-family:var(--font-hdr);
+  box-shadow:inset 1px 1px 0 var(--ms-plate-hi),0 2px 0 var(--ms-edge);
+}
+
+#rankings .rank-name{
+  font-family:var(--font-hdr);
+  font-size:8px;
+  line-height:1.35;
+  letter-spacing:.02em;
+  text-transform:uppercase;
+  color:#E9DDAE;
+  text-shadow:0 1px 0 rgba(0,0,0,.5);
+}
+
+#rankings .rank-desc{ color:#8E896B; }
+
+/* ---- Score / awards: discovered signals read as machine records ---- */
+#awards .award-glossary-row{
+  margin-bottom:7px;
+  padding:8px 9px;
+  border:2px solid var(--ms-edge);
+  border-radius:3px;
+  background:var(--ms-well);
+  box-shadow:inset 0 3px 0 rgba(0,0,0,.42),0 2px 0 var(--ms-edge);
+}
+
+#awards .award-glossary-row.locked{ opacity:.55; }
+
+#awards .award-glossary-name{
+  font-family:var(--font-hdr);
+  font-size:8px;
+  letter-spacing:.05em;
+  text-transform:uppercase;
+  color:#E9DDAE;
+  text-shadow:0 1px 0 rgba(0,0,0,.5);
+}
+
+#awards .award-glossary-points{ color:var(--accent-bright); }
+#awards .award-glossary-desc{ color:#8E896B; }
+#awards .award-glossary-meta{ color:var(--ms-print); }
+
+/* ---- Career: each event is a module on the board ---- */
+#career .career-event-card{
+  border:3px solid var(--ms-edge);
+  border-radius:4px;
+  background:
+    repeating-conic-gradient(rgba(255,255,255,.02) 0 25%,transparent 0 50%) 0 0/6px 6px,
+    var(--ms-well);
+  box-shadow:
+    inset 0 5px 0 rgba(0,0,0,.46),
+    inset 3px 0 0 rgba(0,0,0,.28),
+    0 3px 0 var(--ms-edge);
+}
+
+#career .career-event-name{
+  font-size:12px;
+  color:#E9DDAE;
+  text-shadow:0 1px 0 rgba(0,0,0,.55);
+}
+
+#career .career-event-status{
+  border:2px solid var(--ms-edge);
+  box-shadow:0 2px 0 var(--ms-edge),inset 0 2px 0 rgba(255,255,255,.28);
+}
+
+/* ---- Settings: the same construction, deliberately quieter ---- */
+#settings-sheet .sheet-body{
+  background:
+    repeating-conic-gradient(rgba(255,255,255,.04) 0 25%,transparent 0 50%) 0 0/8px 8px,
+    var(--pc-leather);
+  border-top:4px solid var(--ms-edge);
+  box-shadow:inset 0 4px 0 var(--pc-leather-hi),inset 0 -5px 0 var(--pc-leather-lo);
+}
+
+#settings-sheet .sheet-section{
+  padding:12px 13px;
+  border:3px solid var(--ms-edge);
+  border-radius:4px;
+  background:var(--ms-well);
+  box-shadow:inset 0 5px 0 rgba(0,0,0,.44),inset 3px 0 0 rgba(0,0,0,.26),0 3px 0 var(--ms-edge);
+}
+
+#settings-sheet .sheet-section.sheet-title-wrap{
+  background:var(--pc-plastic-dark,var(--ms-plate-lo));
+  box-shadow:inset 2px 2px 0 var(--ms-plate-hi),inset -2px -2px 0 var(--ms-plate-lo),0 3px 0 var(--ms-edge);
+}
+
+#settings-sheet .toggle-row{
+  padding:9px 10px;
+  border:2px solid var(--ms-edge);
+  border-radius:3px;
+  background:color-mix(in srgb,var(--ms-well) 78%,black);
+  box-shadow:inset 0 3px 0 rgba(0,0,0,.4);
+}
+
+#settings-sheet .switch{
+  border:2px solid var(--ms-edge);
+  box-shadow:inset 0 3px 0 rgba(0,0,0,.44),0 2px 0 var(--ms-edge);
+}
+
+#settings-sheet .btn-secondary{
+  border:3px solid var(--ms-edge);
+  border-radius:4px;
+  background:var(--ms-plate);
+  color:var(--ink);
+  box-shadow:0 4px 0 var(--ms-plate-lo),0 6px 0 var(--ms-edge),inset 2px 2px 0 var(--ms-plate-hi);
+}
+
+
+/* ============================================================
+   6. RESULT STAGE — coherence and geometry
+
+   Two corrections:
+
+   a) The stage frame was rimmed in a bespoke teal (#7ebecd) that
+      predated the current machine language and fought the cabinet rim
+      used everywhere else. It is retimed to --theme-rim.
+
+   b) The board behind the frame had a 52px corner radius against the
+      frame's 8px, with a 20px gap (18px at the top). A concentric
+      offset needs board radius = frame radius + gap, so the gap held
+      along the straights and pinched to nothing at the corners.
+
+      --stage-gap drives both the padding and the board radius, so the
+      offset stays concentric at every breakpoint instead of only at
+      the one it was measured on.
+   ============================================================ */
+.felt.results-mode{
+  --results-rim:var(--theme-rim);
+  --stage-gap:20px;
+  --stage-frame-radius:8px;
+  /* + 2px for the board's own border */
+  border-radius:calc(var(--stage-frame-radius) + var(--stage-gap) + 2px);
+  background:
+    repeating-conic-gradient(rgba(255,255,255,.045) 0 25%,transparent 0 50%) 0 0/8px 8px,
+    linear-gradient(180deg,
+      color-mix(in srgb,var(--pc-leather-hi) 62%,black) 0%,
+      color-mix(in srgb,var(--pc-leather) 72%,black) 55%,
+      color-mix(in srgb,var(--pc-leather-lo) 82%,black) 100%);
+}
+
+.felt.results-mode::before{
+  border-radius:calc(var(--stage-frame-radius) + var(--stage-gap));
+}
+
+.stage-results{
+  padding:var(--stage-gap,20px) var(--stage-gap,20px)
+          calc(var(--stage-gap,20px) + env(safe-area-inset-bottom,0px));
+}
+
+/* Production tightened this padding asymmetrically at short viewports
+   (7px vertical / 9px horizontal). Driving it from one variable keeps the
+   gap even there too. */
+@media (orientation:portrait) and (max-height:700px){
+  .felt.results-mode{ --stage-gap:9px; }
+}
+
+@media (orientation:landscape) and (max-height:430px){
+  .felt.results-mode{ --stage-gap:9px; }
+}
+
+.stage-results-machine{
+  --results-rim:var(--theme-rim);
+  box-shadow:
+    0 0 0 3px var(--pc-edge-lo),
+    0 0 0 5px color-mix(in srgb,var(--theme-rim) 62%,var(--pc-edge-lo)),
+    inset 0 3px 0 color-mix(in srgb,var(--pc-leather-hi) 44%,transparent),
+    inset 0 -4px 0 color-mix(in srgb,var(--pc-leather-lo) 62%,transparent),
+    0 8px 0 var(--pc-edge-lo);
+}
+
+/* The head glass loses its teal cast and becomes ordinary machine glass. */
+.felt.results-mode .stage-results-head{
+  background:
+    repeating-linear-gradient(0deg,rgba(255,255,255,.022) 0 1px,transparent 1px 4px),
+    linear-gradient(180deg,color-mix(in srgb,var(--machine-glass) 84%,#5c6f70),color-mix(in srgb,var(--machine-glass) 92%,#232f32));
+  box-shadow:
+    inset 0 0 0 2px color-mix(in srgb,var(--theme-rim) 30%,transparent),
+    inset 0 5px 0 rgba(255,255,255,.035),inset 0 -5px 0 rgba(0,0,0,.22),
+    0 4px 0 var(--pc-edge-lo);
+}
+
+
+/* ---- 6a. Burgundy: a positive result must not wear the danger colour ----
+   Retiming the rim to --theme-rim (above) reads correctly in three themes,
+   but burgundy's theme rim IS the coral used for danger and defeat, which
+   made TABLE CLEARED identical to RUN OVER. Pinned to the approved positive
+   green in this theme only. ---- */
+[data-theme="burgundy"] .felt.results-mode,
+[data-theme="burgundy"] .stage-results-machine{
+  --results-rim:#5ED18B;
+}
+
+[data-theme="burgundy"] .stage-results-machine{
+  box-shadow:
+    0 0 0 3px var(--pc-edge-lo),
+    0 0 0 5px color-mix(in srgb,#5ED18B 62%,var(--pc-edge-lo)),
+    inset 0 3px 0 color-mix(in srgb,var(--pc-leather-hi) 44%,transparent),
+    inset 0 -4px 0 color-mix(in srgb,var(--pc-leather-lo) 62%,transparent),
+    0 8px 0 var(--pc-edge-lo);
+}
+
+[data-theme="burgundy"] .felt.results-mode .stage-results-head{
+  box-shadow:
+    inset 0 0 0 2px color-mix(in srgb,#5ED18B 30%,transparent),
+    inset 0 5px 0 rgba(255,255,255,.035),inset 0 -5px 0 rgba(0,0,0,.22),
+    0 4px 0 var(--pc-edge-lo);
+}
+
+/* ============================================================
+   7. RUN OVER — the negative sibling of TABLE CLEARED
+   Same chassis construction, coral where TABLE CLEARED carries the
+   theme rim, and the same rolling entrance.
+
+   runOverReportIn is redefined rather than replaced by a new name, so
+   the existing rule in 02-screens.css drives it and no JavaScript or
+   markup changes.
+
+   It animates the independent `translate` and `scale` properties
+   rather than `transform`. The report's resting transform is set by
+   production and differs by viewport — .result-card and
+   .run-over-report both match it — so composing on top of whatever
+   production resolves to makes the roll settle exactly where the
+   report belongs instead of where a hardcoded value would put it.
+   ============================================================ */
+.run-over-report .result-bezel-loss{
+  padding:7px;
+  border:2px solid var(--danger);
+  border-radius:8px;
+  background:
+    repeating-conic-gradient(rgba(255,255,255,.04) 0 25%,transparent 0 50%) 0 0/8px 8px,
+    color-mix(in srgb,var(--pc-leather) 62%,#1A0A0E);
+  box-shadow:
+    0 0 0 3px var(--pc-edge-lo),
+    0 0 0 5px color-mix(in srgb,var(--danger) 62%,var(--pc-edge-lo)),
+    inset 0 3px 0 rgba(255,255,255,.06),
+    inset 0 -4px 0 rgba(0,0,0,.5),
+    0 8px 0 var(--pc-edge-lo);
+}
+
+.run-over-report .result-head-loss{
+  box-shadow:
+    inset 0 0 0 2px color-mix(in srgb,var(--danger) 40%,transparent),
+    inset 0 5px 0 rgba(255,255,255,.05),
+    inset 0 -5px 0 rgba(0,0,0,.3),
+    0 4px 0 var(--pc-edge-lo);
+}
+
+/* The stage's own curve and travel, then the brief overshoot from
+   stageLock so it clunks into its detent rather than simply arriving. */
+@keyframes runOverReportIn{
+  0%{ translate:0 -104%; scale:.968 1; opacity:0; filter:brightness(.28) saturate(.34); }
+  18%{ opacity:1; }
+  62%{ translate:0 0; scale:.976 1; filter:brightness(.78) saturate(.86); }
+  84%{ translate:0 0; scale:1.004; filter:brightness(1.1) saturate(1); }
+  100%{ translate:0 0; scale:1; opacity:1; filter:brightness(1) saturate(1); }
+}
+
+.run-over-report{
+  animation:runOverReportIn var(--stage-roll-ms,840ms) cubic-bezier(.12,.72,.18,1) both;
+  will-change:translate,scale,filter;
+}
+
+#table-screen.run-dead{ overflow:hidden; }
+
+[data-motion="off"] .run-over-report{ animation-duration:1ms; }
+
+@media (prefers-reduced-motion:reduce){
+  .run-over-report{ animation-duration:1ms; }
+}
+
+
+/* ============================================================
+   8. CAREER EVENT RESULTS — EVENT WON / CASHED / LOST
+
+   careerResultHTML() now emits the TABLE CLEARED chassis classes
+   (.stage-results-head, .stage-score-hero, .stage-results-deck,
+   .stage-instrument, .stage-results-recap), so the event result
+   inherits that construction rather than imitating it. This section
+   only has to size the panel and carry the semantic rim.
+
+   A win and a bust both turn the stage. A non-winning cash keeps its
+   restrained plain card, so its head is given the same glass here —
+   the head glass otherwise only applies inside .felt.results-mode.
+   ============================================================ */
+.career-result-panel{
+  --cr-rim:var(--theme-rim);
+  box-sizing:border-box;
+  width:min(100%,360px);
+  padding:7px;
+  display:flex;
+  flex-direction:column;
+  gap:5px;
+  text-align:left;
+  border:2px solid var(--cr-rim);
+  border-radius:8px;
+  background:
+    repeating-conic-gradient(rgba(255,255,255,var(--pc-texture-strength,.05)) 0 25%,transparent 0 50%) 0 0/8px 8px,
+    var(--pc-leather);
+  box-shadow:
+    0 0 0 3px var(--pc-edge-lo),
+    0 0 0 5px color-mix(in srgb,var(--cr-rim) 62%,var(--pc-edge-lo)),
+    inset 0 3px 0 color-mix(in srgb,var(--pc-leather-hi) 44%,transparent),
+    inset 0 -4px 0 color-mix(in srgb,var(--pc-leather-lo) 62%,transparent),
+    0 8px 0 var(--pc-edge-lo);
+}
+
+/* Semantic rim. Coral is defeat, warm gold is money at rest, and the theme
+   rim is the ordinary positive result, exactly as on TABLE CLEARED. */
+.stage-results.career-event-result.is-loss .career-result-panel{ --cr-rim:var(--danger); }
+.career-result-panel.is-cash{ --cr-rim:var(--accent-bright); }
+
+/* Burgundy's theme rim IS the coral used for danger, which would make a win
+   and a bust identical. Positive results are pinned to the approved green in
+   this theme only; the other three keep their theme rim. The same correction
+   applies to TABLE CLEARED in section 6a below. */
+[data-theme="burgundy"] .career-result-panel{ --cr-rim:#5ED18B; }
+[data-theme="burgundy"] .stage-results.career-event-result.is-loss .career-result-panel{ --cr-rim:var(--danger); }
+[data-theme="burgundy"] .career-result-panel.is-cash{ --cr-rim:var(--accent-bright); }
+
+/* The head: identical to TABLE CLEARED's. The old bespoke title and caption
+   rules in 02-screens.css are stood down so the stage head can own them. */
+.career-result-panel .career-res-title,
+.career-result-panel .career-res-event{
+  margin:0;
+  padding:0;
+  border:0;
+  text-align:inherit;
+}
+
+.career-result-panel .career-res-event{ color:#9abdbb; }
+
+/* TABLE CLEARED's result name is one short word. "EVENT CASHED" is twelve
+   characters and wraps at the stage head's 22px, so the career titles take a
+   size that keeps all three on one line. */
+.career-result-panel .career-res-title{ font-size:19px; }
+.career-result-panel.is-cash .career-res-title{ color:var(--accent-bright); }
+.stage-results.career-event-result.is-loss .career-res-title{ color:#F6E3E4; }
+
+/* Outside .felt.results-mode the head has no glass, so the cash card gets it
+   here rather than reading as a flat plate. */
+.result-card.career-event-result .stage-results-head{
+  background:
+    repeating-linear-gradient(0deg,rgba(255,255,255,.022) 0 1px,transparent 1px 4px),
+    linear-gradient(180deg,color-mix(in srgb,var(--machine-glass) 84%,#5c6f70),color-mix(in srgb,var(--machine-glass) 92%,#232f32));
+  box-shadow:
+    inset 0 0 0 2px color-mix(in srgb,var(--cr-rim) 34%,transparent),
+    inset 0 5px 0 rgba(255,255,255,.035),inset 0 -5px 0 rgba(0,0,0,.22),
+    0 4px 0 var(--pc-edge-lo);
+  opacity:1;
+  filter:none;
+}
+
+/* TABLE CLEARED reveals its instruments beat by beat through
+   wakeTableResults(), which is welded to the Arcade run. A career event
+   result has no such drum, so its panel is simply lit from the start rather
+   than waiting for a wake that never arrives. Without this the head sits at
+   32% opacity and the hero at 12%. */
+.career-result-panel .stage-results-head,
+.career-result-panel .stage-score-hero,
+.career-result-panel .stage-results-deck,
+.career-result-panel .stage-results-instruments,
+.career-result-panel .stage-results-recap,
+.career-result-panel .stage-instrument{
+  opacity:1;
+  filter:none;
+  transform:none;
+}
+
+/* The hero is a two-column grid on TABLE CLEARED, where the amount is a reel
+   readout. Here the amount is one atomic string, so the cells are placed
+   explicitly: label and carry stacked on the left, headline figure right. */
+.career-result-panel .stage-score-hero{
+  grid-template-columns:minmax(0,1fr) auto;
+  grid-template-rows:auto auto;
+  align-items:center;
+  column-gap:10px;
+  row-gap:2px;
+}
+
+.career-result-panel .stage-score-hero .stage-instrument-label{
+  grid-column:1; grid-row:1; align-self:end; margin:0;
+}
+
+.career-result-panel .stage-score-carry{
+  grid-column:1; grid-row:2; align-self:start;
+}
+
+.career-result-panel .stage-score-hero > .career-res-v{
+  grid-column:2; grid-row:1 / 3; justify-self:end; align-self:center;
+}
+
+/* Readouts. A career amount is a settled figure rather than a counted one, so
+   it is printed into the instrument rather than rolled on reels. */
+.career-result-panel .career-res-v{
+  font-family:var(--font-hdr);
+  font-size:13px;
+  line-height:1.2;
+  color:#b6e0af;
+  text-shadow:0 0 7px rgba(182,224,175,.34);
+  white-space:nowrap;
+}
+
+.career-result-panel .stage-score-hero .career-res-v{
+  font-size:19px;
+  color:var(--accent-bright);
+  text-shadow:0 0 8px color-mix(in srgb,var(--accent) 46%,transparent);
+}
+
+.career-result-panel .stage-score-carry .career-res-v{
+  font-size:12px;
+  color:var(--accent-bright);
+}
+
+/* A forfeited buy-in is not a reward. Gold is money at rest, so the bankroll
+   keeps it, but the headline figure on a bust takes the danger colour. */
+.stage-results.career-event-result.is-loss .stage-score-hero > .career-res-v{
+  color:#E9A3A0;
+  text-shadow:0 0 8px color-mix(in srgb,var(--danger) 42%,transparent);
+}
+
+.career-result-panel .stage-results-instruments{ gap:5px; }
+.career-result-panel .stage-instrument{ min-height:0; }
+.career-result-panel .stage-recap-cell{ min-height:0; }

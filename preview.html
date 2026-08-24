@@ -1,6 +1,36 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+<script id="preview-storage-sandbox">
+/* The preview shares an origin with the real game, so without this every hand
+   played here would count toward real lifetime statistics and could advance a
+   real Career save. All storage is redirected into a "preview::" namespace,
+   seeded once from a copy of the real data so the preview still opens with
+   realistic settings, stats and Career state. The real keys are never written. */
+(() => {
+  const P = 'preview::';
+  const real = window.localStorage;
+  const realKeys = () => Array.from({ length: real.length }, (_, i) => real.key(i));
+  if (!realKeys().some(k => k && k.startsWith(P))) {
+    realKeys().filter(k => k && !k.startsWith(P)).forEach(k => real.setItem(P + k, real.getItem(k)));
+  }
+  const scoped = () => realKeys().filter(k => k && k.startsWith(P));
+  const sandbox = {
+    getItem: (k) => real.getItem(P + k),
+    setItem: (k, v) => real.setItem(P + k, v),
+    removeItem: (k) => real.removeItem(P + k),
+    clear: () => scoped().forEach((k) => real.removeItem(k)),
+    key: (i) => { const k = scoped()[i]; return k == null ? null : k.slice(P.length); },
+    get length() { return scoped().length; }
+  };
+  try {
+    Object.defineProperty(window, 'localStorage', { value: sandbox, configurable: true });
+  } catch (error) {
+    console.warn('[preview] storage sandbox unavailable; real save data is NOT protected', error);
+  }
+})();
+</script>
+
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="theme-color" content="#16090D">
@@ -11,19 +41,20 @@
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icon-180.png">
 <link rel="icon" href="icon-192.png" type="image/png">
-<title>The Table — Texas Hold'em</title>
+<title>The Table — VISUAL PREVIEW (not production)</title>
 <link rel="stylesheet" href="css/01-foundation.css">
 <link rel="stylesheet" href="css/02-screens.css">
 <link rel="stylesheet" href="css/03-action-console.css">
 <link rel="stylesheet" href="css/04-overlays-and-modes.css">
 <link rel="stylesheet" href="css/05-responsive-and-arcade.css">
+<link rel="stylesheet" href="css/06-preview-visual-system.css">
 <link rel="stylesheet" href="css/06-machine-system.css">
 
 <meta name="format-detection" content="telephone=no">
 
 
 </head>
-<body data-theme="emerald" data-deck="classic" data-cardback="table">
+<body data-theme="emerald" data-deck="classic" data-cardback="table" data-visual-preview="on">
 <div id="app">
 
   <!-- ============================ LOBBY ============================ -->
@@ -536,31 +567,9 @@
 <script src="js/06-presentation.js"></script>
 <script src="js/07-ui-wiring.js"></script>
 <script src="js/08-dev-mode.js"></script>
+<script src="js/preview-visual-system.js"></script>
 
-<script id="pwa-service-worker">
-if ('serviceWorker' in navigator) {
-  // Local development must never be shadowed by a stale service-worker
-  // cache: on localhost the SW previously behaved exactly like production
-  // (cache-first for JS/CSS), so an edited file could sit stale in Cache
-  // Storage indefinitely — a normal reload doesn't bypass it, only a
-  // manual "unregister service worker" / "empty caches" did. Detecting
-  // localhost here and actively unregistering + clearing on every load
-  // means dev changes are always testable with a plain reload, with zero
-  // manual cache-clearing, while production (a real hostname) keeps the
-  // real SW registered exactly as before.
-  const isLocalDev = ['localhost', '127.0.0.1', '[::1]'].includes(location.hostname);
-  if (isLocalDev) {
-    navigator.serviceWorker.getRegistrations().then(regs => regs.forEach(r => r.unregister()));
-    if (window.caches && caches.keys) caches.keys().then(keys => keys.forEach(k => caches.delete(k)));
-  } else {
-    window.addEventListener('load', () => {
-      navigator.serviceWorker.register('./sw.js').catch(err => {
-        console.warn('Service worker registration failed:', err);
-      });
-    });
-  }
-}
-</script>
+<!-- service-worker registration intentionally omitted from the preview -->
 
 </body>
 </html>

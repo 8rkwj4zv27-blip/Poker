@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#0C1510">
+  <meta name="format-detection" content="telephone=no">
+  <link rel="icon" href="data:,">
+  <title>Poker Faces UI Design Lab</title>
+  <link rel="stylesheet" href="css/01-foundation.css">
+  <link rel="stylesheet" href="css/design-lab.css">
+  <script defer src="js/design-lab.js"></script>
+</head>
+<body class="design-lab" data-theme="emerald">
+  <header class="lab-toolbar">
+    <div class="lab-title">
+      <span>Internal art direction</span>
+      <h1>Poker Faces UI Design Lab</h1>
+      <p data-lab-family-title>C0 CRT Effects · A–G</p>
+    </div>
+
+    <div class="lab-controls">
+      <label for="lab-family">Element</label>
+      <select id="lab-family">
+        <option value="crts">CRT Screens</option>
+        <option value="buttons">Buttons &amp; Controls</option>
+        <option value="frames">Frames &amp; Panels</option>
+        <option value="labels">Printed Markings</option>
+        <option value="composite">Composite Console</option>
+      </select>
+      <label for="lab-theme">Theme</label>
+      <select id="lab-theme">
+        <option value="emerald">Emerald</option>
+        <option value="midnight">Midnight</option>
+        <option value="burgundy">Burgundy</option>
+        <option value="slate">Slate</option>
+        <option value="all">All themes</option>
+      </select>
+      <button type="button" id="lab-reset">Reset current selection</button>
+    </div>
+
+    <div class="lab-summary" aria-live="polite">
+      <span>Selected <strong data-lab-approved>None</strong></span>
+      <span>Shortlist <strong data-lab-shortlist>None</strong></span>
+    </div>
+  </header>
+
+  <main class="lab-main">
+    <div id="design-board" class="design-board"></div>
+  </main>
+</body>
+</html>

@@ -1,0 +1,945 @@
+/* ============================================================
+   VISUAL-SYSTEM PREVIEW LAYER  —  NOT PRODUCTION
+   Loaded only by preview.html. index.html and every production
+   stylesheet are untouched; deleting this file reverts everything.
+
+   Nothing here applies unless the preview control bar switches it
+   on, so "Original" is genuinely the shipped game with no rules
+   matching at all.
+
+     data-pv-print="p0..p4"  printed markings treatment
+     data-pv-crt="on"        C0-G finite resynchronisation
+     data-pv-motion="on"     B0-C Soft Spring on the launch control
+
+   Deliberately NON-GEOMETRIC: colour, text-shadow and transform
+   only. No padding, margin, size, font-size, letter-spacing, width
+   or position is set anywhere, so the locked geometry of the Main
+   Menu, the player dashboard and TABLE CLEARED cannot move.
+   ============================================================ */
+
+/* ---- The five printed treatments from the Design Lab ----
+   Only the relief changes between them. P4 additionally floods the
+   cut with a brighter pigment, which is part of that treatment and
+   is scoped to it further down. */
+[data-pv-print="p0"]{                       /* Production ink */
+  --pv-cut-pale:0 1px 0 rgba(255,255,255,.30);
+  --pv-cut-dark:none;
+}
+[data-pv-print="p1"]{                       /* Struck impression */
+  --pv-cut-pale:0 1px 0 rgba(255,255,255,.58),0 -1px 0 rgba(0,0,0,.30);
+  --pv-cut-dark:0 1px 0 rgba(255,255,255,.10),0 -1px 0 rgba(0,0,0,.55);
+}
+[data-pv-print="p2"]{                       /* Moulded relief */
+  --pv-cut-pale:0 -1px 0 rgba(255,255,255,.75),0 2px 0 rgba(0,0,0,.32),0 3px 0 rgba(0,0,0,.16);
+  --pv-cut-dark:0 -1px 0 rgba(255,255,255,.20),0 2px 0 rgba(0,0,0,.62);
+}
+[data-pv-print="p3"]{                       /* Screen print */
+  --pv-cut-pale:1px 1px 0 rgba(0,0,0,.34);
+  --pv-cut-dark:1px 1px 0 rgba(255,255,255,.30);
+}
+[data-pv-print="p4"]{                       /* Etched fill */
+  --pv-cut-pale:0 -1px 0 rgba(0,0,0,.62),0 1px 0 rgba(255,255,255,.85),0 2px 0 rgba(255,255,255,.35);
+  --pv-cut-dark:0 -1px 0 rgba(0,0,0,.85),0 1px 0 rgba(255,255,255,.24);
+}
+
+/* ---- Large button legends: ink in a light key face ---- */
+[data-pv-print] .btn-fold,
+[data-pv-print] .btn-check,
+[data-pv-print] .btn-call,
+[data-pv-print] .btn-raise,
+[data-pv-print] .btn-award-console,
+[data-pv-print] .btn-quick-resolve,
+[data-pv-print] .wide-btn,
+[data-pv-print] .btn-primary,
+[data-pv-print] #home .pc-button-primary,
+[data-pv-print] #home .pc-button-primary small,
+[data-pv-print] #home #home-settings{
+  text-shadow:var(--pv-cut-pale);
+}
+
+/* ---- Secondary and compact faces: pale ink on a mid-tone plate ---- */
+[data-pv-print] #home .pc-button-secondary,
+[data-pv-print] #home .home-row .btn-secondary,
+[data-pv-print] .btn-secondary,
+[data-pv-print] .segmented button,
+[data-pv-print] .table-save{
+  text-shadow:var(--pv-cut-dark);
+}
+
+/* ---- Cabinet and panel headings ---- */
+[data-pv-print] .pc-label,
+[data-pv-print] .pc-product-mark,
+[data-pv-print] .pc-product-mark small,
+[data-pv-print] .pc-cast-index,
+[data-pv-print] .sheet h3,
+[data-pv-print] .drawer-head h3,
+[data-pv-print] .sg-section-label{
+  text-shadow:var(--pv-cut-dark);
+}
+
+/* ---- Result-stage face labels ----
+   NOTE FOR REVIEW: production gives the result name and its caption a soft
+   glow (0 0 7px / 0 0 5px). The approved grammar says the result name is
+   printed on the physical stage face, and printed text does not glow, so
+   every treatment here replaces that glow with its own relief. This is the
+   one place the preview visibly changes TABLE CLEARED. Switch Treatment to
+   "Original" to see the production glow again. */
+[data-pv-print] .stage-results-head span,
+[data-pv-print] .stage-instrument-label{
+  text-shadow:var(--pv-cut-dark);
+}
+
+[data-pv-print] .stage-results-head strong{
+  text-shadow:var(--pv-cut-dark),2px 2px 0 #142527;
+}
+
+/* ---- Small instrument labels ---- */
+[data-pv-print] .instrument-label,
+[data-pv-print] .blind-indicator,
+[data-pv-print] .field-label,
+[data-pv-print] .card-label,
+[data-pv-print] .stepper-val .cap,
+[data-pv-print] #home .stats-card .stat-cell .k{
+  text-shadow:var(--pv-cut-dark);
+}
+
+/* ---- P4 only: the cut is flooded with a brighter pigment ---- */
+[data-pv-print="p4"] .pc-label{ color:color-mix(in srgb,#E9DDAE 58%,#5D4D2B); }
+[data-pv-print="p4"] .pc-control-head .pc-label{ color:color-mix(in srgb,#E9DDAE 46%,#A99E73); }
+[data-pv-print="p4"] .pc-product-mark{ color:color-mix(in srgb,white 26%,#E9DDAE); }
+[data-pv-print="p4"] .pc-seat-head .pc-label:last-child{ color:#C0555E; }
+[data-pv-print="p4"] .stage-results-head span{ color:color-mix(in srgb,white 22%,#9abdbb); }
+[data-pv-print="p4"] .stage-results-head strong{ color:#eef7f5; }
+[data-pv-print="p4"] .stage-instrument-label{ color:color-mix(in srgb,white 18%,#87a785); }
+[data-pv-print="p4"] .instrument-label,
+[data-pv-print="p4"] .blind-indicator,
+[data-pv-print="p4"] .field-label,
+[data-pv-print="p4"] .card-label,
+[data-pv-print="p4"] .stepper-val .cap,
+[data-pv-print="p4"] #home .stats-card .stat-cell .k{
+  color:color-mix(in srgb,var(--ink-dim) 70%,var(--accent) 30%);
+}
+
+/* ---- C0-G: a finite resynchronisation when CRT content changes ----
+   Driven by js/preview-visual-system.js watching the real readouts.
+   The idle static grain is omitted because production's .crt-screen
+   already uses both ::before and ::after; only the burst is shown. */
+@keyframes pvChannelNoise{
+  0%,100%{ filter:brightness(1); }
+  18%{ filter:brightness(1.35) contrast(1.25); }
+  36%{ filter:brightness(.64) contrast(1.5); }
+  58%{ filter:brightness(1.18) contrast(1.2); }
+  76%{ filter:brightness(.82); }
+}
+
+@keyframes pvChannelText{
+  0%,12%,28%,52%,72%,100%{ opacity:1; }
+  13%,27%{ opacity:0; }
+  53%,62%{ opacity:.12; }
+  63%,71%{ opacity:0; }
+}
+
+[data-pv-crt="on"] .crt-screen.pv-resync{ animation:pvChannelNoise 580ms steps(7,end) both; }
+[data-pv-crt="on"] .crt-screen.pv-resync > *{ animation:pvChannelText 580ms steps(8,end) both; }
+
+/* ---- B0-C Soft Spring, menu/launch cartridge only.
+        The live-table FOLD/CALL/CHECK/RAISE family keeps its own
+        production press and is never touched. ---- */
+@keyframes pvSoftSpring{
+  0%,100%{ transform:translateY(0); filter:brightness(1); }
+  28%,52%{ transform:translateY(4px); filter:brightness(.95); }
+  68%{ transform:translateY(-1px); filter:brightness(1.02); }
+  82%{ transform:translateY(.5px); }
+}
+
+[data-pv-motion="on"] #home .pc-button.pv-press:not(.pc-launch-clunk),
+[data-pv-motion="on"] #home .home-row .btn-secondary.pv-press{
+  animation:pvSoftSpring 660ms ease-out both;
+}
+
+/* ============================================================
+   C0 CURRENT UPGRADE — CRT glass construction
+   Near-black glass, deep recess, corner vignette, uneven
+   illumination and restrained bloom. Background, box-shadow and
+   border-colour only: the tube keeps production's exact footprint.
+   ============================================================ */
+[data-pv-glass="c0"] .crt-screen,
+[data-pv-glass="c0"] .pc-display{
+  background:radial-gradient(ellipse at 50% 38%,rgba(255,255,255,.05),transparent 60%),
+    radial-gradient(ellipse at 50% 50%,transparent 38%,rgba(0,0,0,.62) 100%),
+    repeating-linear-gradient(180deg,transparent 0 2px,rgba(0,0,0,.30) 2px 3px),
+    #060B0A !important;
+  border-color:#040807 !important;
+  box-shadow:inset 0 7px 0 rgba(0,0,0,.74),
+    inset 5px 0 0 rgba(0,0,0,.44),
+    inset -5px 0 0 rgba(0,0,0,.34),
+    inset 0 -3px 0 rgba(255,255,255,.05),
+    0 2px 0 rgba(255,255,255,.10),
+    0 0 0 2px rgba(0,0,0,.55) !important;
+}
+
+/* Restrained phosphor bloom on the text the tube is actually showing. */
+[data-pv-glass="c0"] .crt-line-primary,
+[data-pv-glass="c0"] .crt-line-secondary,
+[data-pv-glass="c0"] .hand-strength,
+[data-pv-glass="c0"] #home .pc-ready-readout{
+  text-shadow:0 0 6px currentColor,0 0 14px color-mix(in srgb,currentColor 34%,transparent) !important;
+}
+
+/* ============================================================
+   SHORTLISTED CHASSIS — F2, F3, F5
+   Applied to the cabinet-level containers only: the menu shell, the
+   table console housing and the result-stage machine. Deliberately
+   NOT applied to every panel — turning every container into the same
+   frame is on the rejected list.
+
+   F0 Current Baseline is production itself, so it is offered as
+   "Original" rather than duplicated here.
+
+   All four use background, box-shadow, border-colour and
+   border-radius only. border-width, padding and size are never
+   touched, so no layout can move.
+   ============================================================ */
+[data-pv-chassis]{
+  --pv-velvet:color-mix(in srgb,var(--felt-1) 72%,var(--panel-2) 28%);
+  --pv-velvet-hi:color-mix(in srgb,var(--felt-1) 70%,white 18%);
+  --pv-velvet-lo:color-mix(in srgb,var(--felt-2) 56%,black);
+  --pv-edge:color-mix(in srgb,var(--bg-deep) 65%,black);
+  --pv-case-hi:var(--theme-case-hi);
+  --pv-case-lo:color-mix(in srgb,var(--theme-case-raised) 56%,black);
+}
+
+/* ---- F2 Padded leather ---- */
+[data-pv-chassis="f2"] #home .lobby-card.pc-housing,
+[data-pv-chassis="f2"] #hud-frame,
+[data-pv-chassis="f2"] .stage-results-machine{
+  border-radius:15px !important;
+  border-color:var(--pv-edge) !important;
+  background:repeating-conic-gradient(color-mix(in srgb,white 7%,transparent) 0 25%,transparent 0 50%) 0 0/7px 7px,
+    var(--pv-velvet) !important;
+  box-shadow:inset 7px 7px 0 var(--pv-velvet-hi),
+    inset -8px -8px 0 var(--pv-velvet-lo),
+    0 0 0 2px var(--theme-rim),
+    0 8px 0 var(--pv-edge) !important;
+}
+
+[data-pv-chassis="f2"] #home .pc-primary-cradle{ border-radius:12px !important; }
+
+/* ---- F3 Wood rail ---- */
+[data-pv-chassis="f3"] #home .lobby-card.pc-housing,
+[data-pv-chassis="f3"] #hud-frame,
+[data-pv-chassis="f3"] .stage-results-machine{
+  border-radius:14px !important;
+  border-color:var(--rail-lo) !important;
+  background:repeating-linear-gradient(90deg,color-mix(in srgb,var(--rail-hi) 25%,transparent) 0 4px,transparent 4px 11px),
+    var(--rail) !important;
+  box-shadow:inset 6px 6px 0 var(--rail-hi),
+    inset -7px -7px 0 var(--rail-lo),
+    0 0 0 2px var(--theme-rim),
+    0 9px 0 var(--pv-edge) !important;
+}
+
+[data-pv-chassis="f3"] #home .pc-primary-cradle{ border-radius:10px !important; border-color:var(--rail-lo) !important; }
+
+/* ---- F5 Layered rim ---- */
+[data-pv-chassis="f5"] #home .lobby-card.pc-housing,
+[data-pv-chassis="f5"] #hud-frame,
+[data-pv-chassis="f5"] .stage-results-machine{
+  border-radius:10px !important;
+  border-color:var(--pv-edge) !important;
+  background:repeating-conic-gradient(color-mix(in srgb,white 6%,transparent) 0 25%,transparent 0 50%) 0 0/8px 8px,
+    var(--pv-velvet) !important;
+  box-shadow:inset 4px 4px 0 var(--pv-velvet-hi),
+    inset -5px -5px 0 var(--pv-velvet-lo),
+    0 0 0 2px var(--theme-rim),
+    0 0 0 5px var(--pv-case-hi),
+    0 0 0 8px var(--pv-case-lo),
+    0 10px 0 8px var(--pv-edge) !important;
+}
+
+[data-pv-chassis="f5"] #home .pc-primary-cradle{
+  border-radius:8px !important;
+  box-shadow:inset 4px 4px 0 var(--pv-case-hi),
+    inset -4px -3px 0 var(--pv-case-lo),
+    0 0 0 2px var(--theme-rim),
+    0 0 0 4px var(--pv-case-lo),
+    0 4px 0 4px var(--pv-edge) !important;
+}
+
+/* ============================================================
+   MACHINE TREATMENT FOR THE UN-UPDATED SCREENS
+   Classic table setup, Hand rankings, Score/awards, Career list.
+
+   These four screens never received the physical-machine language:
+   they are flat panels on a flat background while the Main Menu and
+   the table are built cabinets. This layer brings them up to the
+   Main Menu's construction, reusing its own material variables
+   (--pc-leather, --pc-plastic, --pc-edge-lo) so they are matched to
+   the canonical reference rather than given a new look.
+
+   UNLIKE EVERY OTHER LAYER HERE, THIS ONE CHANGES GEOMETRY.
+   Turning a flat panel into a physical part needs real borders and
+   padding. It is confined to these four screens; #home, the table
+   screen and the result stages are never selected, so every locked
+   geometry stays untouched.
+
+   Authored artwork is not touched: playing cards, chips, faces and
+   sprites keep their own styling.
+   ============================================================ */
+[data-pv-screens="machine"] #setup,
+[data-pv-screens="machine"] #rankings,
+[data-pv-screens="machine"] #awards,
+[data-pv-screens="machine"] #career{
+  --ms-edge:var(--pc-edge-lo,#0B0F0C);
+  --ms-plate:var(--pc-plastic,var(--theme-case-raised));
+  --ms-plate-hi:var(--pc-plastic-hi,var(--theme-case-hi));
+  --ms-plate-lo:var(--pc-plastic-lo,color-mix(in srgb,var(--theme-case-raised) 58%,black));
+  --ms-well:color-mix(in srgb,var(--panel) 50%,black);
+  --ms-glass:#060B0A;
+  --ms-print:#A99E73;
+}
+
+/* ---- The cabinet: same housing the Main Menu gets from .pc-housing ---- */
+[data-pv-screens="machine"] #setup .lobby-card,
+[data-pv-screens="machine"] #rankings .lobby-card,
+[data-pv-screens="machine"] #awards .lobby-card,
+[data-pv-screens="machine"] #career .lobby-card{
+  padding:11px;
+  border:4px solid var(--ms-edge);
+  border-radius:12px;
+  background:
+    repeating-conic-gradient(rgba(255,255,255,.05) 0 25%,transparent 0 50%) 0 0/8px 8px,
+    var(--pc-leather);
+  box-shadow:
+    inset 4px 4px 0 var(--pc-leather-hi),
+    inset -5px -5px 0 var(--pc-leather-lo),
+    0 0 0 2px var(--theme-rim),
+    0 9px 0 #090406;
+}
+
+/* ---- Cabinet top rail with a printed title ---- */
+[data-pv-screens="machine"] #setup .setup-head,
+[data-pv-screens="machine"] #rankings .setup-head,
+[data-pv-screens="machine"] #awards .setup-head,
+[data-pv-screens="machine"] #career .setup-head{
+  margin-bottom:11px;
+  padding:5px 7px;
+  border:3px solid var(--ms-edge);
+  background:var(--pc-plastic-dark,var(--ms-plate-lo));
+  box-shadow:
+    inset 2px 2px 0 var(--pc-plastic-dark-hi,var(--ms-plate-hi)),
+    inset -2px -2px 0 var(--pc-plastic-dark-lo,var(--ms-plate-lo)),
+    0 3px 0 var(--ms-edge);
+}
+
+[data-pv-screens="machine"] .setup-title{
+  font-size:9px;
+  letter-spacing:.12em;
+  color:#E9DDAE;
+  text-shadow:0 1px 0 rgba(0,0,0,.55);
+}
+
+/* ---- Panels become plates let into the board ---- */
+[data-pv-screens="machine"] #setup .panel-card,
+[data-pv-screens="machine"] #career .panel-card{
+  border:3px solid var(--ms-edge);
+  border-radius:4px;
+  background:
+    repeating-conic-gradient(rgba(255,255,255,.02) 0 25%,transparent 0 50%) 0 0/6px 6px,
+    var(--ms-well);
+  box-shadow:
+    inset 0 5px 0 rgba(0,0,0,.46),
+    inset 3px 0 0 rgba(0,0,0,.28),
+    inset -2px -2px 0 rgba(255,255,255,.05),
+    0 3px 0 var(--ms-edge);
+}
+
+/* ---- Printed panel headings, with the machine's seam rule ---- */
+[data-pv-screens="machine"] .card-label{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  font-size:7px;
+  letter-spacing:.1em;
+  color:var(--ms-print);
+}
+
+[data-pv-screens="machine"] .card-label::after{
+  content:"";
+  height:3px;
+  flex:1;
+  background:repeating-linear-gradient(90deg,var(--ms-plate) 0 9px,transparent 9px 14px);
+  opacity:.7;
+}
+
+[data-pv-screens="machine"] .card-label .val{ float:none; color:var(--accent-bright); }
+
+/* .field-label and .hint also appear in the Settings sheets, so they are
+   confined to the four screens this layer is scoped to. */
+[data-pv-screens="machine"] #setup .field-label,
+[data-pv-screens="machine"] #career .field-label{ color:var(--ms-print); }
+[data-pv-screens="machine"] #setup .hint,
+[data-pv-screens="machine"] #rankings .hint,
+[data-pv-screens="machine"] #awards .hint,
+[data-pv-screens="machine"] #career .hint{ color:#8E896B; }
+
+/* ---- Physical control faces ---- */
+[data-pv-screens="machine"] #setup .stepper button,
+[data-pv-screens="machine"] #setup .segmented button,
+[data-pv-screens="machine"] #career .segmented button{
+  border:2px solid var(--ms-edge);
+  border-radius:3px;
+  background:var(--ms-plate);
+  color:var(--ink);
+  box-shadow:
+    0 3px 0 var(--ms-plate-lo),
+    0 5px 0 var(--ms-edge),
+    inset 2px 2px 0 var(--ms-plate-hi),
+    inset -2px -2px 0 rgba(0,0,0,.22);
+}
+
+[data-pv-screens="machine"] #setup .segmented button.active,
+[data-pv-screens="machine"] #career .segmented button.active{
+  background:var(--accent);
+  color:var(--accent-ink);
+  box-shadow:
+    0 2px 0 color-mix(in srgb,var(--accent) 55%,black),
+    0 4px 0 var(--ms-edge),
+    inset 0 3px 0 rgba(255,255,255,.34),
+    inset 0 -3px 0 rgba(0,0,0,.16);
+}
+
+[data-pv-screens="machine"] #setup .stepper button:active,
+[data-pv-screens="machine"] #setup .segmented button:active{
+  transform:translateY(3px);
+  box-shadow:0 1px 0 var(--ms-plate-lo),0 2px 0 var(--ms-edge),inset 2px 3px 0 rgba(0,0,0,.3);
+}
+
+[data-pv-screens="machine"] #setup .segmented,
+[data-pv-screens="machine"] #career .segmented{
+  gap:6px;
+  padding:5px;
+  border:2px solid var(--ms-edge);
+  border-radius:4px;
+  background:var(--ms-well);
+  box-shadow:inset 0 4px 0 rgba(0,0,0,.42);
+}
+
+/* ---- Recessed display wells: anything the machine is reading out ---- */
+[data-pv-screens="machine"] #setup .stepper-val,
+[data-pv-screens="machine"] #career .career-bank,
+[data-pv-screens="machine"] #awards .awards-summary,
+[data-pv-screens="machine"] #career .career-stat{
+  border:2px solid #040807;
+  border-radius:2px;
+  background:
+    radial-gradient(ellipse at 50% 38%,rgba(255,255,255,.05),transparent 60%),
+    radial-gradient(ellipse at 50% 50%,transparent 38%,rgba(0,0,0,.62) 100%),
+    repeating-linear-gradient(180deg,transparent 0 2px,rgba(0,0,0,.30) 2px 3px),
+    var(--ms-glass);
+  box-shadow:
+    inset 0 6px 0 rgba(0,0,0,.7),
+    inset 4px 0 0 rgba(0,0,0,.4),
+    inset 0 -2px 0 rgba(255,255,255,.05),
+    0 2px 0 rgba(255,255,255,.09);
+}
+
+[data-pv-screens="machine"] #setup .stepper-val{ padding:7px 4px; }
+[data-pv-screens="machine"] #awards .awards-summary{ padding:11px 10px; margin-bottom:12px; }
+[data-pv-screens="machine"] #awards .awards-summary b{ color:var(--accent-bright); text-shadow:0 0 7px color-mix(in srgb,var(--accent) 45%,transparent); }
+[data-pv-screens="machine"] #career .career-stat{ box-shadow:inset 0 4px 0 rgba(0,0,0,.62),inset 3px 0 0 rgba(0,0,0,.34); }
+
+/* ---- Large and small physical keys ---- */
+[data-pv-screens="machine"] #setup .btn-primary,
+[data-pv-screens="machine"] #career .btn-primary{
+  border:3px solid var(--ms-edge);
+  border-radius:5px;
+  font-family:var(--font-hdr);
+  font-weight:400;
+  text-transform:uppercase;
+  letter-spacing:.04em;
+  box-shadow:
+    0 5px 0 color-mix(in srgb,var(--accent) 55%,black),
+    0 5px 0 3px var(--ms-edge),
+    inset 0 3px 0 rgba(255,255,255,.34),
+    inset 0 -3px 0 rgba(0,0,0,.18);
+}
+
+[data-pv-screens="machine"] #setup .btn-primary:active,
+[data-pv-screens="machine"] #career .btn-primary:active{
+  transform:translateY(3px);
+  box-shadow:0 2px 0 color-mix(in srgb,var(--accent) 55%,black),0 2px 0 3px var(--ms-edge),inset 0 3px 0 rgba(255,255,255,.34);
+}
+
+[data-pv-screens="machine"] #setup .icon-btn,
+[data-pv-screens="machine"] #rankings .icon-btn,
+[data-pv-screens="machine"] #awards .icon-btn,
+[data-pv-screens="machine"] #career .icon-btn{
+  border:3px solid var(--ms-edge);
+  border-radius:3px;
+  background:var(--ms-plate);
+  color:var(--ink);
+  box-shadow:0 3px 0 var(--ms-edge),inset 2px 2px 0 var(--ms-plate-hi),inset -2px -2px 0 rgba(0,0,0,.25);
+}
+
+/* ---- Hand rankings: each row becomes a plate on the board ---- */
+[data-pv-screens="machine"] #rankings .rank-row{
+  margin-bottom:7px;
+  padding:7px 8px;
+  border:2px solid var(--ms-edge);
+  border-radius:3px;
+  background:var(--ms-well);
+  box-shadow:inset 0 3px 0 rgba(0,0,0,.42),0 2px 0 var(--ms-edge);
+}
+
+[data-pv-screens="machine"] #rankings .rank-no{
+  border:2px solid var(--ms-edge);
+  border-radius:2px;
+  background:var(--ms-plate);
+  color:var(--accent-bright);
+  font-family:var(--font-hdr);
+  box-shadow:inset 1px 1px 0 var(--ms-plate-hi),0 2px 0 var(--ms-edge);
+}
+
+[data-pv-screens="machine"] #rankings .rank-name{
+  font-family:var(--font-hdr);
+  font-size:8px;
+  line-height:1.35;
+  letter-spacing:.02em;
+  text-transform:uppercase;
+  color:#E9DDAE;
+  text-shadow:0 1px 0 rgba(0,0,0,.5);
+}
+
+[data-pv-screens="machine"] #rankings .rank-desc{ color:#8E896B; }
+
+/* ---- Score / awards: discovered signals read as machine records ---- */
+[data-pv-screens="machine"] #awards .award-glossary-row{
+  margin-bottom:7px;
+  padding:8px 9px;
+  border:2px solid var(--ms-edge);
+  border-radius:3px;
+  background:var(--ms-well);
+  box-shadow:inset 0 3px 0 rgba(0,0,0,.42),0 2px 0 var(--ms-edge);
+}
+
+[data-pv-screens="machine"] #awards .award-glossary-row.locked{ opacity:.55; }
+
+[data-pv-screens="machine"] #awards .award-glossary-name{
+  font-family:var(--font-hdr);
+  font-size:8px;
+  letter-spacing:.05em;
+  text-transform:uppercase;
+  color:#E9DDAE;
+  text-shadow:0 1px 0 rgba(0,0,0,.5);
+}
+
+[data-pv-screens="machine"] #awards .award-glossary-points{ color:var(--accent-bright); }
+[data-pv-screens="machine"] #awards .award-glossary-desc{ color:#8E896B; }
+[data-pv-screens="machine"] #awards .award-glossary-meta{ color:var(--ms-print); }
+
+/* ---- Career: each event is a module on the board ---- */
+[data-pv-screens="machine"] #career .career-event-card{
+  border:3px solid var(--ms-edge);
+  border-radius:4px;
+  background:
+    repeating-conic-gradient(rgba(255,255,255,.02) 0 25%,transparent 0 50%) 0 0/6px 6px,
+    var(--ms-well);
+  box-shadow:
+    inset 0 5px 0 rgba(0,0,0,.46),
+    inset 3px 0 0 rgba(0,0,0,.28),
+    0 3px 0 var(--ms-edge);
+}
+
+[data-pv-screens="machine"] #career .career-event-name{
+  font-size:12px;
+  color:#E9DDAE;
+  text-shadow:0 1px 0 rgba(0,0,0,.55);
+}
+
+[data-pv-screens="machine"] #career .career-event-status{
+  border:2px solid var(--ms-edge);
+  box-shadow:0 2px 0 var(--ms-edge),inset 0 2px 0 rgba(255,255,255,.28);
+}
+
+/* ---- Settings: the same construction, deliberately quieter ----
+   The handover always described Settings as a quieter utility sheet, so it
+   gets the machine's materials at lower contrast rather than the full
+   cabinet treatment the four screens receive. */
+[data-pv-screens="machine"] #settings-sheet .sheet-body{
+  --ms-edge:var(--pc-edge-lo,#0B0F0C);
+  --ms-plate:var(--pc-plastic,var(--theme-case-raised));
+  --ms-plate-hi:var(--pc-plastic-hi,var(--theme-case-hi));
+  --ms-plate-lo:var(--pc-plastic-lo,color-mix(in srgb,var(--theme-case-raised) 58%,black));
+  --ms-well:color-mix(in srgb,var(--panel) 50%,black);
+  --ms-print:#A99E73;
+  background:
+    repeating-conic-gradient(rgba(255,255,255,.04) 0 25%,transparent 0 50%) 0 0/8px 8px,
+    var(--pc-leather);
+  border-top:4px solid var(--ms-edge);
+  box-shadow:inset 0 4px 0 var(--pc-leather-hi),inset 0 -5px 0 var(--pc-leather-lo);
+}
+
+[data-pv-screens="machine"] #settings-sheet .sheet-section{
+  padding:12px 13px;
+  border:3px solid var(--ms-edge);
+  border-radius:4px;
+  background:var(--ms-well);
+  box-shadow:inset 0 5px 0 rgba(0,0,0,.44),inset 3px 0 0 rgba(0,0,0,.26),0 3px 0 var(--ms-edge);
+}
+
+[data-pv-screens="machine"] #settings-sheet .sheet-section.sheet-title-wrap{
+  background:var(--pc-plastic-dark,var(--ms-plate-lo));
+  box-shadow:inset 2px 2px 0 var(--ms-plate-hi),inset -2px -2px 0 var(--ms-plate-lo),0 3px 0 var(--ms-edge);
+}
+
+[data-pv-screens="machine"] #settings-sheet h3{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  color:var(--ms-print);
+}
+
+[data-pv-screens="machine"] #settings-sheet h3::after{
+  content:"";
+  height:3px;
+  flex:1;
+  background:repeating-linear-gradient(90deg,var(--ms-plate) 0 9px,transparent 9px 14px);
+  opacity:.7;
+}
+
+[data-pv-screens="machine"] #settings-sheet .field-label{ color:var(--ms-print); }
+[data-pv-screens="machine"] #settings-sheet .hint,
+[data-pv-screens="machine"] #settings-sheet .ts{ color:#8E896B; }
+
+[data-pv-screens="machine"] #settings-sheet .segmented{
+  gap:6px;
+  padding:5px;
+  border:2px solid var(--ms-edge);
+  border-radius:4px;
+  background:color-mix(in srgb,var(--ms-well) 82%,black);
+  box-shadow:inset 0 4px 0 rgba(0,0,0,.42);
+}
+
+[data-pv-screens="machine"] #settings-sheet .segmented button{
+  border:2px solid var(--ms-edge);
+  border-radius:3px;
+  background:var(--ms-plate);
+  color:var(--ink);
+  box-shadow:0 3px 0 var(--ms-plate-lo),0 5px 0 var(--ms-edge),inset 2px 2px 0 var(--ms-plate-hi);
+}
+
+[data-pv-screens="machine"] #settings-sheet .segmented button.active{
+  background:var(--accent);
+  color:var(--accent-ink);
+  box-shadow:0 2px 0 color-mix(in srgb,var(--accent) 55%,black),0 4px 0 var(--ms-edge),inset 0 3px 0 rgba(255,255,255,.34);
+}
+
+[data-pv-screens="machine"] #settings-sheet .toggle-row{
+  padding:9px 10px;
+  border:2px solid var(--ms-edge);
+  border-radius:3px;
+  background:color-mix(in srgb,var(--ms-well) 78%,black);
+  box-shadow:inset 0 3px 0 rgba(0,0,0,.4);
+}
+
+[data-pv-screens="machine"] #settings-sheet .switch{
+  border:2px solid var(--ms-edge);
+  box-shadow:inset 0 3px 0 rgba(0,0,0,.44),0 2px 0 var(--ms-edge);
+}
+
+[data-pv-screens="machine"] #settings-sheet .btn-secondary{
+  border:3px solid var(--ms-edge);
+  border-radius:4px;
+  background:var(--ms-plate);
+  color:var(--ink);
+  box-shadow:0 4px 0 var(--ms-plate-lo),0 6px 0 var(--ms-edge),inset 2px 2px 0 var(--ms-plate-hi);
+}
+
+/* ============================================================
+   RESULT STAGE — coherence, and RUN OVER as the negative sibling
+
+   Two problems this layer addresses:
+
+   1. The stage frame is rimmed in a bespoke teal (--results-rim,
+      #7ebecd) that predates the current machine language, so it
+      fights the cabinet rim used on every other screen. It is
+      retimed to --theme-rim so the result stage reads as part of
+      the same machine.
+
+   2. RUN OVER is architecturally a different object from TABLE
+      CLEARED: production builds it as a floating report card that
+      pops in (runOverReportIn), while TABLE CLEARED is the stage
+      itself rolling into place. Here RUN OVER is given the stage
+      chassis construction and the same rolling entrance, so the two
+      read as positive and negative faces of one machine.
+
+      NOTE: this is presentation only. A true shared chassis means
+      routing RUN OVER through the stage machinery in production JS,
+      which this preview does not do.
+   ============================================================ */
+[data-pv-results="machine"] .felt.results-mode,
+[data-pv-results="machine"] .stage-results-machine{
+  --results-rim:var(--theme-rim);
+}
+
+/* The board the stage sits on: cabinet material, so the surround stops
+   reading as green felt behind a teal-rimmed instrument. */
+[data-pv-results="machine"] .felt.results-mode{
+  background:
+    repeating-conic-gradient(rgba(255,255,255,.045) 0 25%,transparent 0 50%) 0 0/8px 8px,
+    linear-gradient(180deg,
+      color-mix(in srgb,var(--pc-leather-hi) 62%,black) 0%,
+      color-mix(in srgb,var(--pc-leather) 72%,black) 55%,
+      color-mix(in srgb,var(--pc-leather-lo) 82%,black) 100%);
+}
+
+[data-pv-results="machine"] .stage-results-machine{
+  box-shadow:
+    0 0 0 3px var(--pc-edge-lo),
+    0 0 0 5px color-mix(in srgb,var(--theme-rim) 62%,var(--pc-edge-lo)),
+    inset 0 3px 0 color-mix(in srgb,var(--pc-leather-hi) 44%,transparent),
+    inset 0 -4px 0 color-mix(in srgb,var(--pc-leather-lo) 62%,transparent),
+    0 8px 0 var(--pc-edge-lo);
+}
+
+/* The head glass loses its teal cast and becomes ordinary machine glass. */
+[data-pv-results="machine"] .felt.results-mode .stage-results-head{
+  background:
+    repeating-linear-gradient(0deg,rgba(255,255,255,.022) 0 1px,transparent 1px 4px),
+    linear-gradient(180deg,color-mix(in srgb,var(--machine-glass) 84%,#5c6f70),color-mix(in srgb,var(--machine-glass) 92%,#232f32));
+  box-shadow:
+    inset 0 0 0 2px color-mix(in srgb,var(--theme-rim) 30%,transparent),
+    inset 0 5px 0 rgba(255,255,255,.035),inset 0 -5px 0 rgba(0,0,0,.22),
+    0 4px 0 var(--pc-edge-lo);
+}
+
+/* ---- The board behind the stage frame ----
+   Measured on the shipped screen: the felt's corner radius is 52px, the
+   stage frame's is 8px, and the gap between them is 20px (18px at the top).
+   A concentric offset needs felt radius = frame radius + gap, so 52px is
+   24px too round: the gap stays even along the straights and pinches to
+   nothing at the corners, which is the corner-touching you spotted.
+
+   Three ways out, so the choice can be made by eye:
+     even-board  keep the frame, tighten the board to 30px
+     even-frame  keep the board, round the frame to 30px
+     none        remove the board and mount the frame on the cabinet
+   All three also equalise the 18px top gap to 20px. */
+
+/* Equal gap, tighter board. Frame stays exactly as approved. */
+[data-pv-felt="even-board"] .stage-results{
+  padding:20px 20px calc(20px + env(safe-area-inset-bottom,0px));
+}
+
+[data-pv-felt="even-board"] .felt.results-mode{ border-radius:30px; }
+[data-pv-felt="even-board"] .felt.results-mode::before{ border-radius:28px; }
+
+/* Equal gap, rounder frame. Board silhouette stays exactly as authored. */
+[data-pv-felt="even-frame"] .stage-results{
+  padding:20px 20px calc(20px + env(safe-area-inset-bottom,0px));
+}
+
+[data-pv-felt="even-frame"] .stage-results-machine{ border-radius:30px; }
+
+/* No board at all: the instrument is mounted straight on the cabinet. */
+[data-pv-felt="none"] .stage-results{
+  padding:12px 12px calc(12px + env(safe-area-inset-bottom,0px));
+}
+
+[data-pv-felt="none"] .felt.results-mode{
+  background:none;
+  border-color:transparent;
+  border-radius:0;
+  box-shadow:none;
+}
+
+[data-pv-felt="none"] .felt.results-mode::before{ display:none; }
+
+/* ---- RUN OVER: same chassis, negative illumination ---- */
+[data-pv-results="machine"] .run-over-report .result-bezel-loss{
+  padding:7px;
+  border:2px solid var(--danger);
+  border-radius:8px;
+  background:
+    repeating-conic-gradient(rgba(255,255,255,.04) 0 25%,transparent 0 50%) 0 0/8px 8px,
+    color-mix(in srgb,var(--pc-leather) 62%,#1A0A0E);
+  box-shadow:
+    0 0 0 3px var(--pc-edge-lo),
+    0 0 0 5px color-mix(in srgb,var(--danger) 62%,var(--pc-edge-lo)),
+    inset 0 3px 0 rgba(255,255,255,.06),
+    inset 0 -4px 0 rgba(0,0,0,.5),
+    0 8px 0 var(--pc-edge-lo);
+}
+
+[data-pv-results="machine"] .run-over-report .result-head-loss{
+  box-shadow:
+    inset 0 0 0 2px color-mix(in srgb,var(--danger) 40%,transparent),
+    inset 0 5px 0 rgba(255,255,255,.05),
+    inset 0 -5px 0 rgba(0,0,0,.3),
+    0 4px 0 var(--pc-edge-lo);
+}
+
+/* ---- The rolling entrance, matched to TABLE CLEARED's stage roll ----
+   Same curve and travel as stageRollIn, then the same brief overshoot
+   as stageLock so it clunks into its detent instead of simply arriving. */
+/* Animate the independent `translate` and `scale` properties rather than
+   `transform`. The report's resting transform is set by production and is not
+   what it looks like from the source — .result-card and .run-over-report both
+   match it, and which one wins differs by viewport. Composing on top of
+   whatever production resolves to means the roll always settles exactly where
+   the report is supposed to sit, instead of where a hardcoded guess put it. */
+@keyframes pvRunOverRollIn{
+  0%{ translate:0 -104%; scale:.968 1; filter:brightness(.28) saturate(.34); }
+  62%{ translate:0 0; scale:.976 1; filter:brightness(.78) saturate(.86); }
+  84%{ translate:0 0; scale:1.004; filter:brightness(1.1) saturate(1); }
+  100%{ translate:0 0; scale:1; filter:brightness(1) saturate(1); }
+}
+
+[data-pv-results="machine"] .run-over-report{
+  animation:pvRunOverRollIn var(--stage-roll-ms,840ms) cubic-bezier(.12,.72,.18,1) both;
+  will-change:translate,scale,filter;
+}
+
+/* The bay clips the roll on TABLE CLEARED; give the report the same
+   discipline so it cannot be seen arriving from outside the cabinet. */
+[data-pv-results="machine"] #table-screen.run-dead{ overflow:hidden; }
+
+@media (prefers-reduced-motion:reduce){
+  [data-pv-results="machine"] .run-over-report{ animation-duration:1ms; }
+}
+
+/* ============================================================
+   PREVIEW CONTROL BAR — harness chrome, not part of the game.
+   Deliberately plain so it never reads as machine UI.
+   ============================================================ */
+.pv-bar{
+  position:fixed;
+  z-index:2147483000;
+  top:0;
+  left:0;
+  right:0;
+  display:flex;
+  flex-wrap:wrap;
+  align-items:center;
+  gap:4px 8px;
+  padding:4px 6px;
+  box-sizing:border-box;
+  background:rgba(8,10,12,.94);
+  border-bottom:1px solid #2b3238;
+  box-shadow:0 2px 10px rgba(0,0,0,.5);
+  font:11px/1.15 ui-monospace,SFMono-Regular,Menlo,monospace;
+  color:#cfd8dd;
+}
+
+.pv-bar[hidden]{ display:none; }
+
+/* On a phone viewport the harness must not eat the screen it is there to
+   help judge, so it becomes one horizontally scrollable row. */
+@media (max-width:600px){
+  .pv-bar{
+    flex-wrap:nowrap;
+    overflow-x:auto;
+    overflow-y:hidden;
+    scrollbar-width:none;
+  }
+  .pv-bar::-webkit-scrollbar{ display:none; }
+  .pv-bar > *{ flex:0 0 auto; }
+  .pv-bar .pv-spacer{ display:none; }
+  .pv-bar select{ max-width:38vw; }
+}
+.pv-bar label{ display:flex; align-items:center; gap:4px; white-space:nowrap; }
+.pv-bar span{ color:#8b979e; text-transform:uppercase; letter-spacing:.04em; font-size:9px; }
+
+.pv-bar select,
+.pv-bar button{
+  min-height:24px;
+  max-width:44vw;
+  padding:1px 4px;
+  border:1px solid #3a444c;
+  border-radius:3px;
+  background:#161b1f;
+  color:#e6eef2;
+  font:11px/1 ui-monospace,SFMono-Regular,Menlo,monospace;
+  cursor:pointer;
+}
+
+.pv-bar input[type="checkbox"]{ accent-color:#5fc0e8; margin:0; }
+.pv-bar .pv-spacer{ flex:1 1 auto; }
+
+/* The master A/B switch: the control most used when comparing. */
+.pv-bar .pv-ab{
+  min-width:132px;
+  border-color:#6b5a2a;
+  background:#241d0c;
+  color:#E8C374;
+  font-weight:700;
+  letter-spacing:.04em;
+}
+
+.pv-bar .pv-ab.is-original{
+  border-color:#3a444c;
+  background:#161b1f;
+  color:#9fb0b8;
+}
+
+/* Collapsed: a small tab that keeps the harness reachable without
+   covering the screen being judged. */
+.pv-tab{
+  position:fixed;
+  z-index:2147483000;
+  top:0;
+  right:0;
+  padding:4px 8px;
+  border:0;
+  border-bottom-left-radius:4px;
+  background:rgba(8,10,12,.9);
+  color:#E8C374;
+  font:11px/1 ui-monospace,SFMono-Regular,Menlo,monospace;
+  cursor:pointer;
+}
+
+.pv-tab[hidden]{ display:none; }
+
+/* The game is position:fixed/inset:0, so body padding cannot move it. Offset
+   the app itself instead, otherwise the bar simply covers the top of every
+   screen being judged. This shortens the app viewport while the bar is open,
+   so use "Hide" to compare at the exact production viewport height. */
+body.pv-bar-open #app{
+  top:var(--pv-bar-h,38px);
+  height:calc(100dvh - var(--pv-bar-h,38px));
+}
+
+@supports not (height:100dvh){
+  body.pv-bar-open #app{ height:calc(100vh - var(--pv-bar-h,38px)); }
+}
+
+/* ---- Standing marker, so no screenshot can be mistaken for the
+        shipped game. Present whenever any treatment is active. ---- */
+[data-pv-print]::after,
+[data-pv-glass="c0"]::after,
+[data-pv-chassis]::after,
+[data-pv-screens="machine"]::after,
+[data-pv-results="machine"]::after,
+[data-pv-felt]::after,
+[data-pv-crt="on"]::after,
+[data-pv-motion="on"]::after{
+  content:"VISUAL PREVIEW";
+  position:fixed;
+  z-index:2147482000;
+  right:0;
+  bottom:0;
+  padding:3px 6px;
+  pointer-events:none;
+  background:rgba(0,0,0,.62);
+  color:#E8C374;
+  font-family:var(--font-hdr);
+  font-size:6px;
+  letter-spacing:.1em;
+}
+
+@media (prefers-reduced-motion:reduce){
+  [data-pv-crt="on"] .crt-screen.pv-resync,
+  [data-pv-crt="on"] .crt-screen.pv-resync > *,
+  [data-pv-motion="on"] #home .pc-button.pv-press{ animation-duration:1ms; }
+}

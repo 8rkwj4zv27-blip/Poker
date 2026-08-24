@@ -1874,29 +1874,47 @@ function careerResultRow(label, value){
   return '<div class="career-res-row"><span class="career-res-k">' + esc(label) +
          '</span><span class="career-res-v tabular">' + esc(value) + '</span></div>';
 }
+/* Built from the TABLE CLEARED chassis classes rather than a bespoke card, so
+   an event result is visibly the same machine as a cleared table: the same
+   plastic head, the same recessed pc-display instruments, the same leather
+   deck. Only the content and the semantic rim differ.
+
+   Values stay atomic text nodes in .career-res-v — a career amount is a
+   settled figure, not a quantity being counted, so it takes no mechanical
+   reel cells. That distinction is asserted in validation/career-result-checks.js. */
 function careerResultHTML(model){
   const money = n => '$' + Math.abs(Math.round(n)).toLocaleString();
-  // Money row: any credited prize reads as a prize, so a non-winning cash
-  // reports what it actually earned rather than what it failed to win.
-  const moneyRow = model.prize > 0
-    ? careerResultRow('PRIZE', '+' + money(model.prize))
-    : careerResultRow('BUY-IN LOST', '-' + money(model.buyIn));
-  // Plain instrumentation, shown for every finish with a known place —
-  // neutral after a bust rather than punitive. A forfeit, and any record
-  // migrated from before placement existed, has no place and no row.
-  const finishRow = model.place
-    ? careerResultRow('FINISH', ordinal(model.place).toUpperCase())
-    : '';
+  const v = value => '<span class="career-res-v tabular">' + esc(value) + '</span>';
+  const cell = (label, value) =>
+    '<div class="stage-instrument pc-display"><span class="stage-instrument-label">' +
+    esc(label) + '</span>' + v(value) + '</div>';
+  // Any credited prize reads as a prize, so a non-winning cash reports what it
+  // actually earned rather than what it failed to win.
+  const moneyLabel = model.prize > 0 ? 'PRIZE' : 'BUY-IN LOST';
+  const moneyValue = model.prize > 0 ? '+' + money(model.prize) : '-' + money(model.buyIn);
+  // Shown for every finish with a known place — neutral after a bust rather
+  // than punitive. A forfeit, and any record migrated from before placement
+  // existed, has no place and no cell.
+  const finishCell = model.place ? cell('FINISH', ordinal(model.place).toUpperCase()) : '';
   const title = model.won ? 'EVENT WON' : model.cashed ? 'EVENT CASHED' : 'EVENT LOST';
   return '<section class="career-result-panel' + (model.cashed ? ' is-cash' : '') +
       '" aria-label="Career event result">' +
-    '<div class="career-res-title">' + title + '</div>' +
-    '<div class="career-res-event">' + esc(model.eventName) + '</div>' +
-    finishRow +
-    moneyRow +
-    careerResultRow('EVENT SCORE', model.eventScore.toLocaleString()) +
-    careerResultRow('HANDS', String(model.hands)) +
-    careerResultRow('BANKROLL', money(model.bankroll)) +
+    '<header class="stage-results-head pc-raised pc-material-plastic">' +
+      '<span class="career-res-event">' + esc(model.eventName) + '</span>' +
+      '<strong class="career-res-title">' + title + '</strong>' +
+      '<i aria-hidden="true"></i></header>' +
+    '<div class="stage-score-hero pc-display">' +
+      '<span class="stage-instrument-label">' + moneyLabel + '</span>' + v(moneyValue) +
+      '<span class="stage-score-carry"><span>BANKROLL</span>' + v(money(model.bankroll)) +
+      '</span></div>' +
+    '<div class="stage-results-deck pc-raised pc-material-plastic">' +
+      '<div class="stage-results-instruments">' + finishCell +
+        cell('EVENT SCORE', model.eventScore.toLocaleString()) + '</div>' +
+      '<div class="stage-results-recap pc-display">' +
+        '<div class="stage-recap-cell"><span class="stage-instrument-label">HANDS</span>' +
+          v(String(model.hands)) + '</div>' +
+      '</div>' +
+    '</div>' +
     '</section>';
 }
 
@@ -1925,17 +1943,15 @@ async function showCareerEventResult(g, model){
   if ($('action-console')) $('action-console').classList.add('results-pending');
   powerDownCompletedEvent(g);
 
-  if (!model.won){
-    // Neither a loss nor a non-winning cash takes the win drum — both have
-    // already had their full K.O. ceremony. Plain card, same data model,
-    // same return behaviour; a cash differs only in its copy and its warmer
-    // panel treatment, which is deliberately well below a victory.
-    setBanner(model.cashed
-      ? '<b>Event cashed.</b> You finished ' + ordinal(model.place || 2) + '.'
-      : '<b>Event over.</b> You were eliminated.');
+  if (model.cashed){
+    // A non-winning cash keeps its restrained plain card and does not turn the
+    // stage. It is a paid place, not an outcome of the event, so it stays
+    // deliberately below both a win and a bust in presentation weight.
+    // See docs/career/CAREER_DESIGN.md, Presentation.
+    setBanner('<b>Event cashed.</b> You finished ' + ordinal(model.place || 2) + '.');
     clearCompletedEventTable(g);
     const el = document.createElement('div');
-    el.className = 'result-card ' + (model.cashed ? 'career-cash' : 'gameover') + ' career-event-result';
+    el.className = 'result-card career-cash career-event-result';
     el.id = 'result-card';
     el.innerHTML = careerResultHTML(model);
     $('felt').appendChild(el);
@@ -1944,8 +1960,14 @@ async function showCareerEventResult(g, model){
     return;
   }
 
-  setBanner('<b>Event won.</b> Every opponent is out.');
-  await muckCards();
+  // A win and a bust are the two outcomes of the event itself, so both turn
+  // the stage, exactly as TABLE CLEARED and RUN OVER are two faces of one
+  // machine. Only a win mucks first; a bust has already had its K.O.
+  // ceremony and rolls straight into its report.
+  setBanner(model.won
+    ? '<b>Event won.</b> Every opponent is out.'
+    : '<b>Event over.</b> You were eliminated.');
+  if (model.won) await muckCards();
   await sleep(motionOff() ? 0 : STAGE_ROLL_CONFIG.breatheMs);
   await rollStageTransition(felt=>{
     clearAllCardDOM();
@@ -1956,7 +1978,8 @@ async function showCareerEventResult(g, model){
     g.board = []; g.pot = 0;
     felt.classList.add('results-mode');
     const el = document.createElement('div');
-    el.className = 'stage-results career-event-result'; el.id = 'result-card';
+    el.className = 'stage-results career-event-result' + (model.won ? '' : ' is-loss');
+    el.id = 'result-card';
     el.innerHTML = careerResultHTML(model);
     felt.appendChild(el);
   });

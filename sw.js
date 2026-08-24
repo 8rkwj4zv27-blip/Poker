@@ -1,4 +1,4 @@
-const CACHE_NAME = 'poker-v18-0';
+const CACHE_NAME = 'poker-v19-0';
 const APP_SHELL = [
   './',
   './index.html',
@@ -11,6 +11,7 @@ const APP_SHELL = [
   './css/03-action-console.css',
   './css/04-overlays-and-modes.css',
   './css/05-responsive-and-arcade.css',
+  './css/06-machine-system.css',
   './js/01-poker-math.js',
   './js/02-support-systems.js',
   './js/03-opponents.js',

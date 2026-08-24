@@ -270,18 +270,24 @@ check('Completed-event shutdown natively disables ordinary table controls', ()=>
   assert.ok(presentationSource.includes("row.classList.add('disabled')"));
   assert.ok(presentationSource.includes("frame.classList.add('event-complete')"));
 });
-check('Only a win reaches the stage-roll drum', ()=>{
+check('Only a non-winning cash skips the stage roll', ()=>{
   const resultBlock = engineSource.match(/async function showCareerEventResult\(g, model\)\{[\s\S]*?\n\}/);
   assert.ok(resultBlock);
   const body = resultBlock[0];
-  // The plain-card branch (taken by both a bust and a cash) must return
-  // before the win drum is ever reached.
-  const branch = body.indexOf('if (!model.won){');
+  // A win and a bust are the two outcomes of the event and both turn the
+  // stage. Only a paid non-winning place keeps the restrained plain card, so
+  // the early return is now guarded on model.cashed rather than on !model.won.
+  const branch = body.indexOf('if (model.cashed){');
   const earlyReturn = body.indexOf('return;', branch);
   const roll = body.indexOf('rollStageTransition');
   assert.ok(branch > 0 && earlyReturn > branch && roll > earlyReturn);
-  assert.ok(body.includes("model.cashed ? 'career-cash' : 'gameover'"));
+  assert.ok(!body.includes('if (!model.won){'));
+  assert.ok(body.includes("'result-card career-cash career-event-result'"));
   assert.ok(body.includes('Event cashed.'));
+  // The bust must reach the roll rather than the card, and must not muck:
+  // its K.O. ceremony has already played.
+  assert.ok(body.includes('if (model.won) await muckCards();'));
+  assert.ok(body.includes('You were eliminated.'));
 });
 
 check('The cash treatment is defined and distinct in the Career result CSS', ()=>{

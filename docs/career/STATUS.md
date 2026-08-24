@@ -1,7 +1,7 @@
 # Career Mode — Current Status
 
 Last verified: 2026-08-23  
-Verified implementation baseline: `d31b120` — `Add multi-place payouts and Pub Circuit Open` (Phase 1). Build `v0.19.0-dev · paid places and pub circuit open`, service-worker cache `poker-v18-0`.
+Verified implementation baseline: `d31b120` — `Add multi-place payouts and Pub Circuit Open` (Phase 1). Build `v0.20.0-dev · UI update`, service-worker cache `poker-v19-0`.
 
 This is the short handoff file. Update it whenever a Career milestone is completed or the immediate next task changes.
 
@@ -26,7 +26,16 @@ This is the short handoff file. Update it whenever a Career milestone is complet
 - Settlement is guarded against duplicate credit and stores bankroll plus cleared active state atomically.
 - Career table saves are separate from ordinary Single Player saves.
 - Career has its own result presentation and returns to the event screen.
-- **Cash-without-win presentation:** the plain result card a bust uses (no stage roll, no victory drum), titled `EVENT CASHED` with a warm gold panel edge. Every finish with a known place also shows a `FINISH` readout.
+- **Event result presentation (updated 24 August 2026).** All three results are built from the
+  TABLE CLEARED chassis classes (`stage-results-head`, `stage-score-hero`, `stage-results-deck`,
+  `stage-instrument`, `stage-results-recap`), so an event result is visibly the same machine as a
+  cleared table. Values remain atomic text nodes in `.career-res-v` — no mechanical reel cells.
+  Semantic rim: theme rim for a win, coral for a bust, warm gold for a cash. In `burgundy` the
+  theme rim is itself the danger coral, so positive results are pinned to the approved green there.
+  - A **win** and a **bust** both turn the stage. `showCareerEventResult()` guards its early
+    return on `model.cashed`, not on `!model.won`.
+  - A **cash** keeps the restrained plain card, titled `EVENT CASHED` with a warm gold edge.
+  - Every finish with a known place shows a `FINISH` readout.
 - Quick Resolve is available in the underlying elimination-table flow.
 - Version-1 and version-2 Career saves migrate to version 3.
 
@@ -56,6 +65,11 @@ Both were latent and would have surfaced the moment the schema widened:
 - `node validation/career-result-checks.js`
 
 Run both before and after every Career implementation phase.
+
+Last verification on 2026-08-24 (event-result presentation change): 27/27 event checks and
+24/24 result checks passed. `Only a win reaches the stage-roll drum` was rewritten as
+`Only a non-winning cash skips the stage roll` to match the changed decision recorded in
+`CAREER_DESIGN.md`; it now asserts the bust reaches the roll and does not muck.
 
 Last verification on 2026-08-23:
 

@@ -168,7 +168,14 @@ A targeted Hard heads-up improvement and a simple paid-place pressure heuristic 
 
 - Wins retain the existing full result treatment.
 - A non-winning cash receives a positive but restrained result card, with no full victory roll.
-- Busts retain the plain loss treatment.
+- **Busts turn the stage, as a win does.** Changed 24 August 2026 by owner decision. A win
+  and a bust are the two outcomes of the event itself, so both roll into the result on the
+  shared physical stage, exactly as TABLE CLEARED and RUN OVER are two faces of one machine.
+  The distinction between them is carried by semantic illumination and copy, not by one
+  outcome getting a presentation and the other a plain card. A bust does not muck first: its
+  K.O. ceremony has already played.
+- The restraint that previously applied to a bust now applies only to a non-winning cash,
+  which remains a paid place rather than an outcome of the event.
 - A new permanent venue receives a one-time board reveal.
 - Losing financial access produces only a subtle stake/readout movement and neutral rebuilding copy.
 - The first Invitational win eventually receives the career's largest presentation, built from the game's existing physical-machine language.
