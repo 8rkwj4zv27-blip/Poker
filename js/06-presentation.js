@@ -3990,24 +3990,34 @@ function buildResultHTML(potResults){
    ($1,449), not a stat delta. Only the '$'/',' symbol cells are excluded
    from the digit tick reveal (see revealResultAmount, which only ever
    selects .jp-digit) — same convention #jackpot's own '$' cell follows. */
-function buildResultCounter(container, amount, prefix){
+/* The cell builder itself, taking an ALREADY-FORMATTED string. The shared
+   result stage uses this directly for figures that carry their own fixed
+   presentation — the padded seven-digit arcade score, a Career amount that
+   already has its symbol attached. Only .jp-digit cells are picked up by
+   the tick reveal, so any symbol in the string stays static, exactly as
+   #jackpot's own '$' cell does. */
+function buildResultDigits(container, text, prefix){
   if (!container) return;
   container.innerHTML = '';
-  const sym = document.createElement('span');
-  sym.className = 'jp-cell jp-sym';
-  sym.textContent = prefix || '';
-  if (prefix) container.appendChild(sym);
-  Array.from(Math.max(0, amount|0).toLocaleString()).forEach(ch=>{
+  if (prefix){
+    const sym = document.createElement('span');
+    sym.className = 'jp-cell jp-sym';
+    sym.textContent = prefix;
+    container.appendChild(sym);
+  }
+  Array.from(String(text)).forEach(ch=>{
     const c = document.createElement('span');
-    if (ch === ','){
-      c.className = 'jp-cell jp-sym jp-comma';
-      c.textContent = ',';
-    } else {
+    if (ch >= '0' && ch <= '9'){
       c.className = 'jp-cell jp-digit tabular';
-      c.textContent = ch;
+    } else {
+      c.className = 'jp-cell jp-sym' + (ch === ',' ? ' jp-comma' : '');
     }
+    c.textContent = ch;
     container.appendChild(c);
   });
+}
+function buildResultCounter(container, amount, prefix){
+  buildResultDigits(container, Math.max(0, amount|0).toLocaleString(), prefix || '');
 }
 function buildResultAmount(container, amount){
   buildResultCounter(container, amount, '$');
@@ -4202,10 +4212,27 @@ function powerUpDashboard(){
    leak into a real award-pot moment — but the label/class WOULD leak
    without exitResultsConsole() explicitly cleaning them up, since nothing
    else resets those between tables. */
-function activateResultsConsole(onAction, label, modeClass, once){
+/* `secondary` is the ONE outcome (RUN OVER) with two destinations. It
+   reuses the same face and the same physical control family rather than
+   introducing a second control language: the face becomes a row, the
+   primary keeps its full treatment, and the secondary takes the quieter
+   case plastic. Every other result leaves it null and the face holds one
+   full-width button exactly as before. */
+function activateResultsConsole(onAction, label, modeClass, once, secondary){
   const btn = $('btn-award-pot-console');
   const row = $('actions-row'), consoleEl = $('action-console');
+  const face = $('console-face-award'), second = $('btn-result-secondary');
   if (row){ row.classList.remove('hidden'); row.classList.add('disabled'); }
+  if (face) face.classList.toggle('has-secondary', !!secondary);
+  if (second){
+    second.onclick = null;
+    second.disabled = false;
+    second.classList.toggle('hidden', !secondary);
+    if (secondary){
+      second.textContent = secondary.label;
+      second.onclick = ()=>{ Sound.buttonRelease('award'); secondary.onAction(); };
+    }
+  }
   if (btn){
     btn.classList.remove('next-table-mode','career-return-mode');
     btn.classList.add(modeClass);
@@ -4240,8 +4267,19 @@ function enterResultsConsole(onNextTable){
 function enterCareerResultsConsole(onBackToEvents){
   activateResultsConsole(onBackToEvents, 'BACK TO EVENTS', 'career-return-mode', true);
 }
+/* RUN OVER: the same results console, carrying its two real destinations.
+   NEW RUN is the progression control and keeps the NEXT TABLE treatment;
+   MAIN MENU is the quiet way out. Neither is one-shot — a dead run has
+   nothing left that a second press could corrupt. */
+function enterRunOverConsole(onNewRun, onMainMenu){
+  activateResultsConsole(onNewRun, 'NEW RUN', 'next-table-mode', false,
+    { label:'MAIN MENU', onAction:onMainMenu });
+}
 function exitResultsConsole(){
   const btn = $('btn-award-pot-console'), consoleEl = $('action-console');
+  const face = $('console-face-award'), second = $('btn-result-secondary');
+  if (face) face.classList.remove('has-secondary');
+  if (second){ second.onclick = null; second.disabled = false; second.classList.add('hidden'); }
   if (btn){
     btn.classList.remove('next-table-mode','career-return-mode');
     btn.onclick = null; btn.disabled = false; btn.textContent = 'Award Pot';

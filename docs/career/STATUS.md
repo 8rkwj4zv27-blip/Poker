@@ -2,7 +2,7 @@
 
 Last verified: 2026-08-24  
 Verified implementation baseline: `7d34c2e` — `Apply the approved machine visual system across the UI`.
-Career logic baseline remains `d31b120` — `Add multi-place payouts and Pub Circuit Open` (Phase 1); the newer commit changed event-result presentation only. Build `v0.20.0-dev · UI update`, service-worker cache `poker-v19-0`.
+Career logic baseline remains `d31b120` — `Add multi-place payouts and Pub Circuit Open` (Phase 1); every commit since has changed result presentation only. Build `v0.21.0-dev · Round End Update`, service-worker cache `poker-v20-0`.
 
 This is the short handoff file. Update it whenever a Career milestone is completed or the immediate next task changes.
 
@@ -27,16 +27,28 @@ This is the short handoff file. Update it whenever a Career milestone is complet
 - Settlement is guarded against duplicate credit and stores bankroll plus cleared active state atomically.
 - Career table saves are separate from ordinary Single Player saves.
 - Career has its own result presentation and returns to the event screen.
-- **Event result presentation (updated 24 August 2026).** All three results are built from the
-  TABLE CLEARED chassis classes (`stage-results-head`, `stage-score-hero`, `stage-results-deck`,
-  `stage-instrument`, `stage-results-recap`), so an event result is visibly the same machine as a
-  cleared table. Values remain atomic text nodes in `.career-res-v` — no mechanical reel cells.
-  Semantic rim: theme rim for a win, coral for a bust, warm gold for a cash. In `burgundy` the
-  theme rim is itself the danger coral, so positive results are pinned to the approved green there.
-  - A **win** and a **bust** both turn the stage. `showCareerEventResult()` guards its early
-    return on `model.cashed`, not on `!model.won`.
-  - A **cash** keeps the restrained plain card, titled `EVENT CASHED` with a warm gold edge.
-  - Every finish with a known place shows a `FINISH` readout.
+- **Unified result stage (updated 24 August 2026, superseding the earlier chassis-classes
+  approach).** `EVENT WON` and `EVENT LOST` are rendered by the SHARED result stage that also
+  renders `TABLE CLEARED` and `RUN OVER` — one chassis, one five-region hierarchy, one
+  transition. See `docs/ui/handover/CURRENT_STATE.md` for the cross-mode record.
+  - `resultStageHTML(model)` (js/05-game-engine.js) builds the chassis; `careerStageModel()`
+    supplies the Career variant from the settled display model.
+  - `presentResultStage()` is the one production path from "calculated" to "on screen with live
+    actions". A win and a bust both reach it; `showCareerEventResult()` guards its early return
+    on `model.cashed`, not on `!model.won`.
+  - Semantic tone is one custom property, `--stage-tone`: theme rim for a win, coral for a bust.
+    In `burgundy` the theme rim is itself the danger coral, so positive results are pinned to the
+    approved green there.
+  - The headline figure (prize, or forfeited buy-in) is a **mechanical reel** and rolls once.
+    Every secondary statistic stays ordinary CRT text.
+  - `FINISH`, `EVENT SCORE`, `HANDS`, `FIELD` and the stake/payout cell are the reported values.
+    **`FIELD` comes from the event snapshot's `playerCount`**, never from surviving players.
+  - `EVENT LOST` never states the buy-in twice: the hero owns the financial result and the recap
+    slot reports `PRIZE $0`.
+  - The Career progression strip is a deliberate two-part layout (`EVENT COMPLETE` /
+    `NEXT: EVENTS BOARD`), with no empty centre value.
+  - A **cash** is unchanged: the restrained plain card, titled `EVENT CASHED`, atomic values,
+    warm gold edge, no stage roll.
 - Quick Resolve is available in the underlying elimination-table flow.
 - Version-1 and version-2 Career saves migrate to version 3.
 
@@ -67,10 +79,29 @@ Both were latent and would have surfaced the moment the schema widened:
 
 Run both before and after every Career implementation phase.
 
-Last verification on 2026-08-24 (event-result presentation change): 27/27 event checks and
-24/24 result checks passed. `Only a win reaches the stage-roll drum` was rewritten as
-`Only a non-winning cash skips the stage roll` to match the changed decision recorded in
-`CAREER_DESIGN.md`; it now asserts the bust reaches the roll and does not muck.
+Last verification on 2026-08-24 (unified result stage): **27/27 event checks and 36/36 result
+checks passed** (24 pre-existing, updated where the approved decision moved what they assert;
+12 new, covering the shared chassis).
+
+Assertions changed because the approved presentation changed, not to suppress a failure:
+
+- `Career result uses no fragmented mechanical amount markup` became
+  `EVENT CASHED uses no fragmented mechanical amount markup`. The rule is unchanged for the cash
+  card, which still owns it; the four stage results now deliberately carry one mechanical hero
+  reel each, asserted separately by `Every outcome has exactly one mechanical hero reel`.
+- The model check gained `field`, and the event fixtures gained the `playerCount` they were
+  always entered with.
+- `Only a non-winning cash skips the stage roll` became
+  `Only a non-winning cash skips the shared result stage` and now asserts the shared path.
+- The CSS isolation check no longer expects `.stage-results.career-event-result{`: a win and a
+  bust ARE the stage rather than a panel mounted on it, so that selector was removed with the
+  panel. It asserts the cash card's own placement selector instead.
+
+New coverage: the five-region chassis across all four outcomes, one hero reel each, tone carried
+by the model rather than by four treatments, the TABLE CLEARED baseline verbatim, RUN OVER's
+hierarchy and personal-best fallback, `FIELD` provenance, no duplicated buy-in on a loss, the
+two-part Career strip, exactly one result transition used by all four, per-outcome finalisation
+guards, and the DEV tester settling and persisting nothing.
 
 Last verification on 2026-08-23:
 
@@ -81,7 +112,12 @@ New coverage includes the Pub Circuit Open descriptor and five-player launch con
 
 ## Not verified
 
-- No on-device or rendered verification was performed. The manual checklist below is outstanding.
+- No on-device verification was performed. The manual checklist below is outstanding.
+- Rendered verification of all four result transitions WAS performed in a desktop browser at
+  393x852 and 834x1112: all four settle at an identical size and position, no clipping or
+  horizontal overflow, actions are inert until the stage locks, reduced motion settles
+  immediately with no stuck transition layers, `NEXT TABLE` reaches table 2, a real bust
+  finalises exactly once, and `EVENT CASHED` is visually unchanged.
 
 ## Not implemented
 
@@ -93,7 +129,18 @@ New coverage includes the Pub Circuit Open descriptor and five-player launch con
 
 ## Immediate next task
 
-Phase 2 from `BUILD_PLAN.md`: Second Chance recovery — the free three-player descriptor, gated strictly to a bankroll below $100, crediting $150 additively on a win, repeatable below the threshold, hidden at $100 or above, and unable to unlock Pub or Card Club.
+Phase 2 from `BUILD_PLAN.md`: Second Chance recovery. The unified result stage was approved by
+the owner on 24 August 2026 and is committed as `Round End Update`
+(build `v0.21.0-dev`, service-worker cache `poker-v20-0`). On-device iPhone verification of the
+four transitions is still outstanding — see Not verified.
+
+DEV transition tester (retained for future result work): enable Developer Mode in Settings (or load with `?dev`), open the DEV
+panel, and use MAJOR RESULT TRANSITIONS. It drives the real `presentResultStage()` path with
+fixture state: no buy-in, no prize, no unlock, no save, no lifetime statistic and no high score
+is written. Each result action re-arms the tester so a transition can be watched repeatedly;
+RESET TESTER returns to the Main Menu.
+
+The task itself: Second Chance recovery — the free three-player descriptor, gated strictly to a bankroll below $100, crediting $150 additively on a win, repeatable below the threshold, hidden at $100 or above, and unable to unlock Pub or Card Club.
 
 Minimum completion requirements:
 
@@ -106,8 +153,9 @@ Minimum completion requirements:
 1. Career screen shows three events; Pub Circuit Open locked until the Back Room is won.
 2. Entering Pub Circuit Open drops the bankroll by $300 and deals a five-handed table.
 3. Refresh mid-event, then Continue Event — resumes without a second charge.
-4. Finish 2nd — `EVENT CASHED`, `+$450`, bankroll up $150 net, no new unlock.
-5. Finish 1st — full win drum, `+$1,050`.
+4. Finish 2nd — `EVENT CASHED`, `+$450`, bankroll up $150 net, no new unlock, and **no stage
+   roll**: the restrained plain card over the live felt, exactly as before.
+5. Finish 1st — the shared result stage, `EVENT WON`, `+$1,050` on the hero reel.
 6. Abandon — buy-in forfeited, no prize, no unlock.
 7. Back Room and Pub Circuit Freezeout play and settle exactly as before.
 8. Five-handed table layout and the Payout readout are legible on an iPhone.

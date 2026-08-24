@@ -1859,7 +1859,11 @@ function buildCareerResultModel(g, settled){
     buyIn: ev.buyIn || 0,
     bankroll: careerBankroll(),                                  // read once, post-settlement
     eventScore: reward ? Math.max(0, Math.round(reward.score||0)) : 0,
-    hands: g.handNumber || 0
+    hands: g.handNumber || 0,
+    // The field the player actually entered, from the event's own
+    // immutable snapshot. Never g.players.length, which by the time a
+    // result exists is the field MINUS everyone eliminated.
+    field: Number.isInteger(ev.playerCount) && ev.playerCount > 0 ? ev.playerCount : null
   };
 }
 
@@ -1874,14 +1878,16 @@ function careerResultRow(label, value){
   return '<div class="career-res-row"><span class="career-res-k">' + esc(label) +
          '</span><span class="career-res-v tabular">' + esc(value) + '</span></div>';
 }
-/* Built from the TABLE CLEARED chassis classes rather than a bespoke card, so
-   an event result is visibly the same machine as a cleared table: the same
-   plastic head, the same recessed pc-display instruments, the same leather
-   deck. Only the content and the semantic rim differ.
+/* EVENT CASHED only. A win and a bust are outcomes of the event and go to
+   the shared result stage (careerStageModel/resultStageHTML); a non-winning
+   paid place deliberately stays below both in presentation weight and keeps
+   this restrained plain card, unchanged. See CAREER_DESIGN.md, Presentation.
 
-   Values stay atomic text nodes in .career-res-v — a career amount is a
-   settled figure, not a quantity being counted, so it takes no mechanical
-   reel cells. That distinction is asserted in validation/career-result-checks.js. */
+   Values stay atomic text nodes in .career-res-v — a cash is a settled
+   figure being reported, not a quantity being counted, so it takes no
+   mechanical reel cells. The three-outcome branching below is retained
+   intact: it is what makes this renderer readable against the model it is
+   given, and the win/loss branches remain covered by the focused checks. */
 function careerResultHTML(model){
   const money = n => '$' + Math.abs(Math.round(n)).toLocaleString();
   const v = value => '<span class="career-res-v tabular">' + esc(value) + '</span>';
@@ -1924,30 +1930,30 @@ function careerResultHTML(model){
    the same way showBusted does — real ceremony for the K.O., plain report
    after it. */
 async function showCareerEventResult(g, model){
-  clearTimeout(autoDealT);
-  endQuickResolve();          // no table action may survive into the result
-  hideResultCard();
-  closeRaisePanel();
-  clearHumanReadouts();
-  hideReview();
-  pendingHumanPlayer = null;
-  coachToken++;
-  bannerOverride = null;
-  $('btn-next-hand').classList.add('hidden');
-  $('btn-rebuy').classList.add('hidden');
-  $('btn-new-table').classList.add('hidden');
-  // Row stays in its bay but fully inert: .disabled is pointer-events:none,
-  // so Fold/Check/Raise cannot be pressed while a result is up.
-  $('actions-row').classList.remove('hidden');
-  $('actions-row').classList.add('disabled');
-  if ($('action-console')) $('action-console').classList.add('results-pending');
-  powerDownCompletedEvent(g);
-
   if (model.cashed){
-    // A non-winning cash keeps its restrained plain card and does not turn the
-    // stage. It is a paid place, not an outcome of the event, so it stays
-    // deliberately below both a win and a bust in presentation weight.
-    // See docs/career/CAREER_DESIGN.md, Presentation.
+    // A non-winning cash keeps its restrained plain card and does not turn
+    // the stage. It is a paid place, not an outcome of the event, so it
+    // stays deliberately below both a win and a bust in presentation
+    // weight, and is deliberately NOT routed through the shared result
+    // stage. See docs/career/CAREER_DESIGN.md, Presentation.
+    clearTimeout(autoDealT);
+    endQuickResolve();          // no table action may survive into the result
+    hideResultCard();
+    closeRaisePanel();
+    clearHumanReadouts();
+    hideReview();
+    pendingHumanPlayer = null;
+    coachToken++;
+    bannerOverride = null;
+    $('btn-next-hand').classList.add('hidden');
+    $('btn-rebuy').classList.add('hidden');
+    $('btn-new-table').classList.add('hidden');
+    // Row stays in its bay but fully inert: .disabled is pointer-events:none,
+    // so Fold/Check/Raise cannot be pressed while a result is up.
+    $('actions-row').classList.remove('hidden');
+    $('actions-row').classList.add('disabled');
+    if ($('action-console')) $('action-console').classList.add('results-pending');
+    powerDownCompletedEvent(g);
     setBanner('<b>Event cashed.</b> You finished ' + ordinal(model.place || 2) + '.');
     clearCompletedEventTable(g);
     const el = document.createElement('div');
@@ -1961,29 +1967,19 @@ async function showCareerEventResult(g, model){
   }
 
   // A win and a bust are the two outcomes of the event itself, so both turn
-  // the stage, exactly as TABLE CLEARED and RUN OVER are two faces of one
-  // machine. Only a win mucks first; a bust has already had its K.O.
-  // ceremony and rolls straight into its report.
+  // the stage — the same stage, the same travel and the same lock TABLE
+  // CLEARED and RUN OVER use. Only a win mucks first; a bust has already
+  // had its K.O. ceremony and rolls straight into its report.
   setBanner(model.won
     ? '<b>Event won.</b> Every opponent is out.'
     : '<b>Event over.</b> You were eliminated.');
-  if (model.won) await muckCards();
-  await sleep(motionOff() ? 0 : STAGE_ROLL_CONFIG.breatheMs);
-  await rollStageTransition(felt=>{
-    clearAllCardDOM();
-    felt.querySelectorAll('.seat').forEach(s=>s.remove());
-    const potArea = felt.querySelector('#pot-area');
-    if (potArea) potArea.classList.add('hidden');
-    if ($('pot-val')) $('pot-val').textContent = '0';
-    g.board = []; g.pot = 0;
-    felt.classList.add('results-mode');
-    const el = document.createElement('div');
-    el.className = 'stage-results career-event-result' + (model.won ? '' : ' is-loss');
-    el.id = 'result-card';
-    el.innerHTML = careerResultHTML(model);
-    felt.appendChild(el);
+  await presentResultStage(g, careerStageModel(model), {
+    // A finished event's instruments are hidden outright rather than
+    // dimmed, before anything else moves: the tournament is over.
+    prepare: ()=>{ clearHumanReadouts(); powerDownCompletedEvent(g); },
+    muck: model.won,
+    console: ()=>enterCareerResultsConsole(returnToCareer)
   });
-  enterCareerResultsConsole(returnToCareer);
 }
 
 function concludeGame(){
@@ -2018,29 +2014,13 @@ function concludeGame(){
 
 function moneyResult(n){ return '$'+Math.max(0,n||0).toLocaleString(); }
 function ratioResult(won,played){ return (won||0)+' / '+(played||0); }
-function resultStat(label,value,cls){
-  return '<div class="result-stat '+(cls||'')+'"><span class="result-stat-label">'+esc(label)+'</span>'+
-    '<strong class="result-stat-value tabular">'+esc(String(value))+'</strong></div>';
-}
-function bestHandResultHTML(best){
-  if (!best){
-    return '<section class="result-best empty"><div class="result-section-label">BEST HAND</div>'+
-      '<div class="result-best-empty">NO SHOWDOWN HAND RECORDED</div></section>';
-  }
-  const split=splitHandText(best.result.cat,best.name);
-  const displayCards=arrangeHandForDisplay(best.result.cat,best.cards);
-  const cards=displayCards.map(c=>'<div class="'+cardClass(false,c,true)+'" aria-label="'+esc(cardLabel(false,c))+'">'+cardInner(c)+'</div>').join('');
-  return '<section class="result-best"><div class="result-section-label">BEST HAND</div>'+
-    '<div class="result-best-name">'+esc(split.category.toUpperCase())+'</div>'+
-    (split.descriptor?'<div class="result-best-desc">'+esc(split.descriptor)+'</div>':'')+
-    '<div class="result-best-cards">'+cards+'</div></section>';
-}
-/* BEST HAND trophy case for the results stage — deliberately NOT
-   bestHandResultHTML()/.result-best (that markup is shared with
-   runOverHTML's dense run-report grid and stays untouched). Pure normal
-   flow, no absolute positioning: label, then the five cards, then the
-   hand name, then its subtype, stacked and centred — nothing can overlap
-   because nothing is pulled out of flow. */
+/* BEST HAND trophy case — region four of the shared result stage. Pure
+   normal flow, no absolute positioning: label, then the five cards, then
+   the hand name, then its subtype, stacked and centred — nothing can
+   overlap because nothing is pulled out of flow. Both stage results that
+   HAVE a best hand (TABLE CLEARED, RUN OVER) use this; the two Career
+   results have no best hand to show and fill the same well with
+   stageStatementHTML() instead. */
 function tableBestHandTrophyHTML(best){
   if (!best){
     return '<div class="stage-trophy pc-display" data-result-beat="trophy">'+
@@ -2074,66 +2054,297 @@ function tableReportStatPages(r){
   if (context.length<3) context.push({label:'Table length',value:hands+' HAND'+(hands===1?'':'S')});
   return [core,context.slice(0,3)];
 }
-function tableReportStatBankHTML(r){
-  return tableReportStatPages(r)[0].map((stat,i)=>
-    '<div class="stage-recap-cell" data-stage-stat="'+i+'"><span class="stage-instrument-label">'+esc(stat.label)+'</span>'+
-      '<strong class="stage-recap-value tabular">'+esc(stat.value)+'</strong></div>'
-  ).join('');
+/* ============================================================
+   THE SHARED RESULT STAGE
+
+   ONE physical chassis presents all four major outcomes: TABLE CLEARED,
+   RUN OVER, EVENT WON and EVENT LOST. They are semantic states of the
+   same hardware, not four screens — see docs/ui/handover/CURRENT_STATE.md
+   and result-stage-lab.html, the approved visual source of truth.
+
+   Not a card floating over the felt, and not a cleared poker table with
+   stats on it. See .felt.results-mode / rollStageTransition() in
+   06-presentation.js, which places this into the real #felt (reskinned
+   but keeping the felt's own curved-corner silhouette) as the incoming
+   stage. Built from the .pc-* physical-cabinet primitives shared with the
+   main menu, using that screen's fixed leather, cream-plastic,
+   green-display and amber-lamp palette so a table theme can never make a
+   result feel like a different game.
+
+   FIVE REGIONS, in this order, for every outcome:
+
+     1. head        context eyebrow, result word, machine lamp
+     2. hero        the ONE headline quantity, on mechanical reels, with
+                    the persistent carry-forward legend beneath it
+     3. deck        two framed instruments + the three-slot CRT memory
+                    bank (+ an optional lamp strip)
+     4. detail      best hand, or — where no hand is tracked — the
+                    outcome statement the game already produces
+     5. progress    where the player now stands and what comes next
+
+   A model describes WHAT to show; resultStageHTML() decides how. Nothing
+   here calculates a result, settles money, or reads live mode state: a
+   model is built once by its owner, immediately after that owner's own
+   calculation, and is display data from then on.
+
+   Mechanical reels are reserved for the headline quantity and for a
+   framed instrument that genuinely counts something. Their digits are
+   filled by fillResultStageReels() right after the HTML is inserted —
+   string-built zeros here would otherwise flash before being replaced.
+   Every other settled statistic is ordinary CRT text.
+
+   Returns the INNER content only — the caller's own element carries
+   class="stage-results" id="result-card" directly, so this never nests a
+   second .stage-results/.result-card box inside itself.
+   ============================================================ */
+
+/* The two reel slots. Both ids are the production ones the wake sequence
+   (wakeResultStage) and revealResultAmount() already address, so no
+   outcome needs a reveal path of its own. */
+const RESULT_HERO_REEL_ID = 'stage-results-score';
+const RESULT_INSTRUMENT_REEL_ID = 'stage-results-stack';
+
+function stageHeadHTML(eyebrow, title){
+  return '<header class="stage-results-head pc-raised pc-material-plastic">'+
+    '<span>'+esc(eyebrow)+'</span><strong>'+esc(title)+'</strong>'+
+    '<i aria-hidden="true"></i></header>';
 }
-/* The results stage itself — not a card floating over the felt, not a
-   cleared poker table with stats on it. See .felt.results-mode /
-   rollStageTransition() in 06-presentation.js, which places this into the
-   real #felt (reskinned but keeping the felt's own curved-corner
-   silhouette) as the incoming stage. Built from the .pc-* physical-cabinet
-   primitives shared with the main menu, using that screen's fixed leather,
-   cream-plastic, green-display and amber-lamp palette so a table theme can
-   never make the intermission feel like a different game. RUN SCORE is
-   deliberately NOT repeated here — the fixed
-   SCORE cabinet directly above the bay already shows it. BANKROLL is the
-   one persistent, forward-carrying number, so it gets the strongest
-   instrument treatment (the same digit-cell readout as the live stack
-   readout); its '$' placeholder digits are filled for real by
-   buildResultAmount() right after this HTML is inserted (see
-   showTableCleared()) — string-built zeros here would otherwise flash
-   before being replaced. Returns the INNER content only — the caller's own
-   element carries class="stage-results" id="result-card" directly, so this
-   never nests a second .stage-results/.result-card box inside itself. */
-function tableClearedHTML(g){
-  const r=g.run;
-  const a=r.arcade||makeArcadeRunState();
-  const opponents = runOpponentCount(g);
-  const trackedStart=Number.isFinite(r.tableScoreStart) ? r.tableScoreStart : null;
-  const scoreLabel=trackedStart==null ? 'Run score' : 'Table score';
-  const koLamps = Array.from({length:opponents}, (_,i)=>
-    '<span class="stage-ko-slot'+(i<r.tableKOs?' lit':'')+'"></span>').join('');
-  const perfect = r.tableKOs===opponents && r.tableShowdownsPlayed>0 && r.tableShowdownsWon===r.tableShowdownsPlayed;
-  return '<div class="stage-results-machine pc-material-leather">'+
-    '<header class="stage-results-head pc-raised pc-material-plastic">'+
-      '<span>TABLE '+r.tableNumber+'</span><strong>CLEARED</strong><i aria-hidden="true"></i></header>'+
-    '<div class="stage-score-hero pc-display">'+
-      '<span class="stage-instrument-label">'+scoreLabel+'</span>'+
-      '<div class="amt-readout stage-score-readout" id="stage-results-score"></div>'+
-      '<span class="stage-score-carry"><span>RUN TOTAL</span><strong class="tabular">'+formatArcadeScore(a.score)+'</strong></span></div>'+
-    '<div class="stage-results-deck pc-raised pc-material-plastic">'+
-      '<div class="stage-results-instruments" data-result-beat="instruments">'+
-        '<div class="stage-instrument pc-display"><span class="stage-instrument-label">Finish stack</span>'+
-          '<div class="amt-readout" id="stage-results-stack"></div></div>'+
-        '<div class="stage-instrument pc-display"><span class="stage-instrument-label">K.O.s</span>'+
-          '<div class="stage-ko-lamps">'+koLamps+'</div>'+
-          '<div class="stage-ko-readout tabular">'+r.tableKOs+' / '+opponents+'</div></div>'+
-      '</div>'+
-      '<div class="stage-results-recap pc-display" id="stage-stat-bank" data-result-beat="recap">'+
-        tableReportStatBankHTML(r)+'</div>'+
-      (perfect ? '<div class="stage-recap-lamp"><span class="pc-lamp is-amber"></span>'+
-        '<span class="stage-recap-lamp-text">FLAWLESS SHOWDOWNS</span></div>' : '')+
+function stageHeroHTML(hero){
+  return '<div class="stage-score-hero pc-display">'+
+    '<span class="stage-instrument-label">'+esc(hero.label)+'</span>'+
+    '<div class="amt-readout stage-score-readout'+(stageReelIsLong(hero.reel)?' is-long':'')+
+      '" id="'+RESULT_HERO_REEL_ID+'"></div>'+
+    '<span class="stage-score-carry"><span>'+esc(hero.carryLabel)+'</span>'+
+    '<strong class="tabular">'+esc(hero.carryValue)+'</strong></span></div>';
+}
+/* Six or more cells is where a reel stops fitting its instrument at
+   393px, so it takes the one-size-down variant rather than spilling. */
+function stageReelIsLong(reel){
+  if (!reel) return false;
+  return (String(reel.prefix||'').length + stageReelText(reel).length) >= 6;
+}
+function stageReelText(reel){
+  return reel && typeof reel.text === 'string'
+    ? reel.text
+    : Math.max(0, (reel && reel.amount) | 0).toLocaleString();
+}
+function stageInstrumentHTML(instrument){
+  let body;
+  if (instrument.kind === 'reel'){
+    body = '<div class="amt-readout'+(stageReelIsLong(instrument.reel)?' is-long':'')+
+      '" id="'+RESULT_INSTRUMENT_REEL_ID+'"></div>';
+  } else if (instrument.kind === 'lamps'){
+    const lamps = Array.from({length:instrument.total}, (_,i)=>
+      '<span class="stage-ko-slot'+(i<instrument.lit?' lit':'')+'"></span>').join('');
+    body = '<div class="stage-ko-lamps">'+lamps+'</div>'+
+      '<div class="stage-ko-readout tabular">'+esc(instrument.readout)+'</div>';
+  } else {
+    // A single settled figure that is neither money nor a bounded count —
+    // a finishing place, an unbounded K.O. total, an event score. Same
+    // readout family as the K.O. count, one size up.
+    body = '<div class="stage-ko-readout stage-big-readout tabular">'+esc(instrument.value)+'</div>';
+  }
+  return '<div class="stage-instrument pc-display"><span class="stage-instrument-label">'+
+    esc(instrument.label)+'</span>'+body+'</div>';
+}
+/* Three-slot CRT memory bank. Core facts appear first; where a model
+   supplies a second page it flickers in after the stage wakes, using
+   only statistics the mode already tracks. */
+function stageRecapHTML(pages){
+  return '<div class="stage-results-recap pc-display" id="stage-stat-bank" data-result-beat="recap">'+
+    pages[0].map((stat,i)=>
+      '<div class="stage-recap-cell" data-stage-stat="'+i+'"><span class="stage-instrument-label">'+esc(stat.label)+'</span>'+
+        '<strong class="stage-recap-value tabular">'+esc(stat.value)+'</strong></div>'
+    ).join('')+'</div>';
+}
+/* One extra fact about this outcome. Positive: FLAWLESS SHOWDOWNS.
+   Negative: who ended the run. Same physical strip either way. */
+function stageLampHTML(lamp){
+  if (!lamp) return '';
+  const negative = lamp.tone === 'negative';
+  return '<div class="stage-recap-lamp'+(negative?' is-negative':'')+'">'+
+    '<span class="pc-lamp '+(negative?'is-danger':'is-amber')+'"></span>'+
+    '<span class="stage-recap-lamp-text">'+esc(lamp.text)+'</span></div>';
+}
+/* Region four when no best hand is tracked. The line is the outcome
+   message the game already produces for the banner; the sub-line states
+   what the settlement already did. Nothing here is calculated. */
+function stageStatementHTML(detail){
+  return '<div class="stage-trophy stage-trophy--statement pc-display" data-result-beat="trophy">'+
+    '<div class="stage-trophy-label">'+esc(detail.label)+'</div>'+
+    // Line and sub-line are ONE block so they stay together in the middle
+    // of the well rather than drifting apart as the stage grows.
+    '<div class="stage-statement-block">'+
+      '<div class="stage-statement">'+esc(detail.line)+'</div>'+
+      (detail.sub?'<div class="stage-statement-sub">'+esc(detail.sub)+'</div>':'')+
     '</div>'+
-    tableBestHandTrophyHTML(r.tableBestHand)+
-    '<div class="stage-run-progress pc-display" data-result-beat="progress">'+
-      '<span>TABLES CLEARED</span><strong class="tabular">'+r.tablesCleared+'</strong>'+
-      '<em>NEXT: TABLE '+(r.tableNumber+1)+'</em></div>'+
   '</div>';
 }
-async function wakeTableResults(g){
+function stageDetailHTML(detail){
+  return detail.kind === 'statement'
+    ? stageStatementHTML(detail)
+    : tableBestHandTrophyHTML(detail.best);
+}
+/* Where the player stands and what comes next. Career has no counted
+   progression left once BANKROLL sits in the hero carry, so it takes the
+   deliberate two-part layout rather than an empty centre value. */
+function stageProgressHTML(progress){
+  const twoPart = !progress.value;
+  return '<div class="stage-run-progress pc-display'+(twoPart?' is-two-part':'')+
+    '" data-result-beat="progress">'+
+    '<span>'+esc(progress.label)+'</span>'+
+    (twoPart?'':'<strong class="tabular">'+esc(progress.value)+'</strong>')+
+    '<em>'+esc(progress.next)+'</em></div>';
+}
+function resultStageHTML(model){
+  return '<div class="stage-results-machine pc-material-leather">'+
+    stageHeadHTML(model.eyebrow, model.title)+
+    stageHeroHTML(model.hero)+
+    '<div class="stage-results-deck pc-raised pc-material-plastic">'+
+      '<div class="stage-results-instruments" data-result-beat="instruments">'+
+        model.instruments.map(stageInstrumentHTML).join('')+'</div>'+
+      stageRecapHTML(model.recapPages)+
+      stageLampHTML(model.lamp)+
+    '</div>'+
+    stageDetailHTML(model.detail)+
+    stageProgressHTML(model.progress)+
+  '</div>';
+}
+/* Reels are built, never string-rendered — see the section header. Runs
+   inside the stage-swap callback, immediately after the HTML lands. */
+function fillResultStageReels(model){
+  const hero = model.hero.reel;
+  if (hero) buildResultDigits(document.getElementById(RESULT_HERO_REEL_ID), stageReelText(hero), hero.prefix||'');
+  const counted = model.instruments.find(i=>i.kind === 'reel');
+  if (counted) buildResultDigits(document.getElementById(RESULT_INSTRUMENT_REEL_ID), stageReelText(counted.reel), counted.reel.prefix||'');
+}
+
+/* ---------------- the four models ----------------
+   Each is built ONCE by the owner of its outcome, from values that owner
+   has already finished calculating. */
+
+function tableClearedModel(g){
+  const r=g.run;
+  const a=r.arcade||makeArcadeRunState();
+  const human=g.players.find(p=>p.isHuman);
+  const opponents=runOpponentCount(g);
+  const trackedStart=Number.isFinite(r.tableScoreStart) ? r.tableScoreStart : null;
+  const tableScore=trackedStart==null ? a.score : Math.max(0,a.score-trackedStart);
+  const perfect=r.tableKOs===opponents && r.tableShowdownsPlayed>0 && r.tableShowdownsWon===r.tableShowdownsPlayed;
+  return {
+    tone:'positive',
+    eyebrow:'TABLE '+r.tableNumber,
+    title:'CLEARED',
+    // RUN SCORE is deliberately not the headline — the fixed SCORE cabinet
+    // directly above the bay already shows it, so the carry legend does.
+    hero:{
+      label: trackedStart==null ? 'Run score' : 'Table score',
+      reel:{ amount:tableScore, prefix:'+' },
+      carryLabel:'RUN TOTAL',
+      carryValue:formatArcadeScore(a.score)
+    },
+    instruments:[
+      { kind:'reel', label:'Finish stack', reel:{ amount:human?human.chips:0, prefix:'$' } },
+      { kind:'lamps', label:'K.O.s', lit:r.tableKOs, total:opponents, readout:r.tableKOs+' / '+opponents }
+    ],
+    recapPages:tableReportStatPages(r),
+    lamp: perfect ? { tone:'positive', text:'FLAWLESS SHOWDOWNS' } : null,
+    detail:{ kind:'hand', best:r.tableBestHand },
+    progress:{ label:'TABLES CLEARED', value:String(r.tablesCleared), next:'NEXT: TABLE '+(r.tableNumber+1) }
+  };
+}
+
+/* The negative sibling of TABLE CLEARED: identical chassis, coral where
+   that one carries the positive rim. Every figure already exists on the
+   run — finalizeArcadeRun() has completed by the time this is built, so
+   arcadeProfile.highScore is either this run's new record or the standing
+   personal best to report against. */
+function runOverModel(g){
+  const r=g.run;
+  const a=r.arcade||makeArcadeRunState();
+  const buster=r.bustedBy;
+  const hands=Math.max(0,r.totalHands||0);
+  const won=Math.max(0,r.totalHandsWon||0);
+  const scoringEvents=Object.values(a.awardCounts||{}).reduce((sum,n)=>sum+(n||0),0);
+  return {
+    tone:'negative',
+    eyebrow:'BUSTED ON TABLE '+r.tableNumber,
+    title:'RUN OVER',
+    hero:{
+      label:'Final score',
+      // The padded seven-digit form the SCORE cabinet itself uses.
+      reel:{ text:formatArcadeScore(a.score), prefix:'' },
+      carryLabel:'RUN RECORD',
+      carryValue: a.newHighScore ? 'NEW HIGH SCORE' : 'BEST '+formatArcadeScore(arcadeProfile.highScore||0)
+    },
+    instruments:[
+      { kind:'reel', label:'Table reached', reel:{ amount:r.highestTableReached, prefix:'' } },
+      { kind:'big', label:'K.O.s', value:String(r.totalKOs) }
+    ],
+    recapPages:[
+      [ {label:'Hands won',value:ratioResult(won,hands)},
+        {label:'Scoring events',value:String(scoringEvents)},
+        {label:'Biggest pot',value:moneyResult(r.biggestPotWon)} ],
+      [ {label:'Total hands',value:String(hands)},
+        {label:'Biggest reward',value:'+'+a.biggestReward.toLocaleString()},
+        {label:'Win rate',value:hands ? Math.round((won/hands)*100)+'%' : '—'} ]
+    ],
+    lamp: buster ? {
+      tone:'negative',
+      text:'BUSTED BY '+buster.names.join(' & ').toUpperCase()+(buster.hand?' · '+buster.hand.toUpperCase():'')
+    } : null,
+    detail:{ kind:'hand', best:r.bestHand },
+    progress:{ label:'TABLES CLEARED', value:String(r.tablesCleared), next:'NO REBUY' }
+  };
+}
+
+/* EVENT WON / EVENT LOST. Built from the settled display model
+   (buildCareerResultModel), never from live Career state — see
+   endCareerEvent(). EVENT CASHED does not come through here: a
+   non-winning paid place keeps its restrained plain card
+   (careerResultHTML) and does not turn the stage. */
+function careerStageModel(m){
+  const money=n=>'$'+Math.abs(Math.round(n)).toLocaleString();
+  const won=m.won;
+  return {
+    tone: won ? 'positive' : 'negative',
+    eyebrow:m.eventName,
+    title: won ? 'EVENT WON' : 'EVENT LOST',
+    hero:{
+      label: won ? 'Prize' : 'Buy-in lost',
+      reel:{ text:money(won ? m.prize : m.buyIn), prefix: won ? '+' : '-' },
+      // The one persistent, forward-carrying Career number.
+      carryLabel:'BANKROLL',
+      carryValue:money(m.bankroll)
+    },
+    instruments:[
+      { kind:'big', label:'Finish', value:m.place ? ordinal(m.place).toUpperCase() : '—' },
+      { kind:'big', label:'Event score', value:m.eventScore.toLocaleString() }
+    ],
+    // The stake is the useful third fact after a win (what was risked for
+    // the prize); after a loss the hero already reports the forfeited
+    // buy-in, so the payout that did not arrive takes the slot instead.
+    recapPages:[[
+      { label:'Hands', value:String(m.hands) },
+      { label:'Field', value:m.field ? String(m.field) : '—' },
+      won ? { label:'Buy-in', value:money(m.buyIn) }
+          : { label:'Prize', value:'$0' }
+    ]],
+    lamp:null,
+    detail:{
+      kind:'statement', label:'Result',
+      line: won ? 'EVERY OPPONENT IS OUT' : 'YOU WERE ELIMINATED',
+      sub: won ? 'PRIZE CREDITED TO BANKROLL' : 'BUY-IN FORFEITED'
+    },
+    progress:{ label: won ? 'EVENT COMPLETE' : 'EVENT ENDED', value:'', next:'NEXT: EVENTS BOARD' }
+  };
+}
+
+/* ---------------- the shared wake ----------------
+   The stage stays electrically dormant while the face itself is
+   travelling; these beats run only once the heavy lock has completed.
+   Identical for all four outcomes. */
+async function wakeResultStage(g, model){
   const el=$('result-card');
   if (!el || game!==g) return false;
   if (motionOff()){
@@ -2148,21 +2359,20 @@ async function wakeTableResults(g){
   };
   if (!await beat('wake-head',110)) return false;
   el.classList.add('wake-score');
-  revealResultAmount($('stage-results-score'),true);
+  revealResultAmount($(RESULT_HERO_REEL_ID),true);
   await sleep(180);
   if (game!==g || !el.isConnected) return false;
   if (!await beat('wake-instruments',170)) return false;
-  revealResultAmount($('stage-results-stack'),false);
+  revealResultAmount($(RESULT_INSTRUMENT_REEL_ID),false);
   if (!await beat('wake-recap',150)) return false;
   if (!await beat('wake-trophy',140)) return false;
   if (!await beat('wake-progress',110)) return false;
-  startTableStatCycle(g,el);
+  startResultStatCycle(g,el,model.recapPages);
   return true;
 }
-function startTableStatCycle(g,el){
+function startResultStatCycle(g,el,pages){
   const bank=el && el.querySelector('#stage-stat-bank');
-  const pages=g && g.run ? tableReportStatPages(g.run) : [];
-  if (!bank || pages.length<2 || motionOff()) return;
+  if (!bank || !Array.isArray(pages) || pages.length<2 || motionOff()) return;
   let page=0;
   const swap=()=>{
     if (game!==g || !el.isConnected || !bank.isConnected) return;
@@ -2186,63 +2396,68 @@ function startTableStatCycle(g,el){
   };
   el._stageStatsCycleT=setTimeout(swap,2700);
 }
-function runOverHTML(g){
-  const r=g.run;
-  const buster=r.bustedBy;
-  const a=r.arcade||makeArcadeRunState();
-  return '<div class="result-bezel result-bezel-loss">' +
-    '<div class="result-eyebrow danger-eye">RUN TERMINATED <i></i> NO REBUY</div>'+
-    '<header class="result-head result-head-loss"><strong>RUN OVER</strong><span>BUSTED ON TABLE '+r.tableNumber+'</span></header>'+
-    '<div class="final-score-panel"><span>FINAL SCORE</span><strong class="tabular" id="final-score-value">0000000</strong>'+
-      (a.newHighScore?'<span class="new-high-score">NEW HIGH SCORE</span>':'')+'</div>'+
-    '<div class="run-progress-hero"><div><span>TABLE</span><strong class="tabular">'+r.highestTableReached+'</strong><em>REACHED</em></div>'+
-      '<div><strong class="tabular">'+r.tablesCleared+'</strong><span>TABLES<br>CLEARED</span></div></div>'+
-    '<div class="run-report-grid">'+
-      resultStat('Hands won',ratioResult(r.totalHandsWon,r.totalHands),'')+
-      resultStat('Scoring events',Object.values(a.awardCounts||{}).reduce((sum,n)=>sum+(n||0),0),'')+
-      resultStat('Total hands',r.totalHands,'')+
-      resultStat('K.O.s',r.totalKOs,'ko-stat')+
-    '</div>'+
-    '<div class="run-highlight-row">'+
-      resultStat('Biggest pot won',moneyResult(r.biggestPotWon),'accent-stat')+
-      resultStat('Biggest reward','+'+a.biggestReward.toLocaleString(),'')+
-    '</div>'+
-    bestHandResultHTML(r.bestHand)+
-    (buster?'<div class="run-epitaph"><span>BUSTED BY</span><strong>'+esc(buster.names.join(' & ').toUpperCase())+'</strong>'+
-      (buster.hand?'<em>'+esc(buster.hand)+'</em>':'')+'</div>':'')+
-    '<div class="run-result-actions"><button class="btn-primary result-primary" id="run-new" type="button">NEW RUN</button>'+
-      '<button class="btn-secondary result-secondary" id="run-menu" type="button">MAIN MENU</button></div>'+
-  '</div>';
-}
 
-async function showTableCleared(g){
-  if (g._tableClearedShown) return;
-  g._tableClearedShown = true;
-  g.over = true;
-  clearTableSave();
+/* ---------------- the shared presentation path ----------------
+   The ONE production route from "this outcome has been calculated" to
+   "the machine is showing it and its actions are live". All four major
+   results run through here, so there is exactly one stage, one travel,
+   one lock and one console change — never four similar animations.
+
+   Callers own steps 1 and 3 (their own calculation, and the ordering of
+   their own card/table cleanup, which differs: a cleared table mucks
+   before it powers down, a bust has already had its ceremony). This owns
+   everything else, in this fixed order:
+
+     2. ordinary table controls go inert for the whole presentation;
+     4. the existing stage-wheel transition is entered;
+     5. the felt content is replaced inside its stage-swap callback;
+     6. the shared chassis is rendered in the appropriate variant;
+     7. it settles in exactly the position TABLE CLEARED settles in;
+     8. result actions are exposed only once the stage has locked.
+
+   opts.prepare   runs before the outcome's own cleanup (Career powers a
+                  finished event's instruments down before anything else)
+   opts.muck      return the cards to the deck first (a cleared table
+                  does; a bust has already lost its hand)
+   opts.settle    runs after the cleanup, before the breathing beat
+                  (Arcade dims the dashboard here)
+   opts.console   activates the result console; called once, after the
+                  lock, and never while anything is still moving */
+async function presentResultStage(g, model, opts){
+  const o = opts || {};
   clearTimeout(autoDealT);
+  endQuickResolve();          // no table action may survive into the result
   hideResultCard();
-  g.run.tablesCleared = Math.max(g.run.tablesCleared, g.run.tableNumber);
-  setBanner('<b>Table cleared.</b> Every opponent is eliminated.');
+  closeRaisePanel();
+  hideReview();
+  pendingHumanPlayer = null;
+  coachToken++;
+  bannerOverride = null;
+
+  // 2. Ordinary controls: hidden or inert, for the whole presentation.
+  // The row stays in its bay but .disabled is pointer-events:none, so
+  // Fold/Check/Raise cannot be pressed while a result is up.
+  $('btn-next-hand').classList.add('hidden');
+  $('btn-rebuy').classList.add('hidden');
+  $('btn-new-table').classList.add('hidden');
   $('actions-row').classList.remove('hidden');
   $('actions-row').classList.add('disabled');
   if ($('action-console')) $('action-console').classList.add('results-pending');
-  $('btn-next-hand').classList.add('hidden');
-  $('btn-new-table').classList.add('hidden');
+  if (o.prepare) o.prepare();
 
-  // Clean the felt before the mechanical beats start — no cards travelling
-  // mid-roll. muckCards() flicks every remaining board/hole card (the
-  // human's own included, even though it lives in the fixed HUD dock, not
-  // on the stage) back into the deck and fully resolves before we move on.
-  await muckCards();
-  // Dashboard begins powering down (hand-strength/bet/blind lamps go dark
-  // in place; BANKROLL stays lit) while the felt still has its breathing
-  // beat — one pause serves both "let the dormant transition settle" and
-  // "brief clean-machine beat before the latch clicks".
-  powerDownDashboard(g);
+  // 3. The outcome's own cleanup, in its own order. muckCards() flicks
+  // every remaining board/hole card (the human's own included, even
+  // though it lives in the fixed HUD dock) back into the deck and fully
+  // resolves before anything mechanical starts — no cards travelling
+  // mid-roll.
+  if (o.muck) await muckCards();
+  if (o.settle) o.settle();
+  // One pause serves both "let the dormant transition settle" and "brief
+  // clean-machine beat before the latch clicks".
   await sleep(motionOff() ? 0 : STAGE_ROLL_CONFIG.breatheMs);
+  if (game !== g) return;
 
-  const human = g.players.find(p=>p.isHuman);
+  // 4-7. One stage-wheel transition, shared by all four outcomes.
   await rollStageTransition(felt=>{
     clearAllCardDOM();
     felt.querySelectorAll('.seat').forEach(s=>s.remove());
@@ -2251,24 +2466,44 @@ async function showTableCleared(g){
     if ($('pot-val')) $('pot-val').textContent = '0';
     g.board = []; g.pot = 0;
     felt.classList.add('results-mode');
+    // The one semantic switch: same machine, different state.
+    felt.classList.toggle('tone-negative', model.tone === 'negative');
     const el = document.createElement('div');
     el.className = 'stage-results'; el.id = 'result-card';
-    el.innerHTML = tableClearedHTML(g);
+    el.innerHTML = resultStageHTML(model);
     felt.appendChild(el);
-    buildResultAmount(document.getElementById('stage-results-stack'), human ? human.chips : 0);
-    const scoreStart=Number.isFinite(g.run.tableScoreStart) ? g.run.tableScoreStart : null;
-    const tableScore=scoreStart==null ? g.run.arcade.score : Math.max(0,g.run.arcade.score-scoreStart);
-    buildResultCounter(document.getElementById('stage-results-score'),tableScore,'+');
+    fillResultStageReels(model);
   });
 
   render();
-  await wakeTableResults(g);
+  await wakeResultStage(g, model);
 
-  // Only once the stage has genuinely locked does the action console
-  // change mode — never expose NEXT TABLE (or leave FOLD/CHECK/RAISE
+  // 8. Only once the stage has genuinely locked does the action console
+  // change mode — never expose a result action (or leave FOLD/CHECK/RAISE
   // reachable) while anything is still moving.
   await sleep(motionOff() ? 0 : STAGE_ROLL_CONFIG.consoleFlipBeatMs);
-  enterResultsConsole(beginNextRunTable);
+  if (game !== g) return;
+  if (o.console) o.console();
+}
+
+/* Arcade's positive result. Owns its own calculation and its own
+   cleanup order, then hands the whole presentation to the shared stage
+   path — this function has no transition of its own. */
+async function showTableCleared(g){
+  if (g._tableClearedShown) return;
+  g._tableClearedShown = true;
+  g.over = true;
+  clearTableSave();
+  g.run.tablesCleared = Math.max(g.run.tablesCleared, g.run.tableNumber);
+  setBanner('<b>Table cleared.</b> Every opponent is eliminated.');
+  await presentResultStage(g, tableClearedModel(g), {
+    muck: true,
+    // The dashboard begins powering down (hand-strength/bet/blind lamps go
+    // dark in place; BANKROLL stays lit) while the felt still has its
+    // breathing beat.
+    settle: ()=>powerDownDashboard(g),
+    console: ()=>enterResultsConsole(beginNextRunTable)
+  });
 }
 function ordinal(n){
   const s=['th','st','nd','rd'], v=n%100;
@@ -2652,32 +2887,35 @@ function showBusted(g, human){
   render();
 }
 
+/* Arcade's negative result — the same machine as TABLE CLEARED reporting
+   a different state, not a separate report card. It no longer builds its
+   own element over the table, no longer greys the world behind itself and
+   no longer has an entrance animation of its own: it enters on the real
+   stage wheel, exactly as a cleared table does.
+
+   Guarded like showTableCleared. finalizeArcadeRun() is the one call here
+   that writes anything — a second entry would compare this run's score
+   against the high score it had just set and wrongly clear newHighScore,
+   so the guard protects the record as well as the presentation. */
 async function showRunOver(g){
+  if (g._runOverShown) return;
+  g._runOverShown = true;
   g.over = true;
   finalizeArcadeRun(g);
   clearTableSave();
-  clearTimeout(autoDealT);
-  hideResultCard();
   setBanner('<b>Run over.</b> Out of chips.');
-  Sound.busted(true);
-  $('table-screen').classList.add('run-dead');
-  await sleep(motionOff()?0:320);
-  if (game!==g) return;
-  const el = document.createElement('div');
-  el.className = 'result-card run-results gameover run-over-report'; el.id = 'result-card';
-  el.innerHTML = runOverHTML(g);
-  $('table-screen').appendChild(el);
-  $('actions-row').classList.add('hidden');
-  $('btn-next-hand').classList.add('hidden');
-  $('btn-rebuy').classList.add('hidden');
-  $('btn-new-table').classList.add('hidden');
   // A fresh run straight off RUN OVER keeps the table size the player was
   // already playing — it's a retry, not a trip back through the picker.
   const sameSizeAgain = runOpponentCount(g);
-  $('run-new').onclick = ()=>startSinglePlayerRun({opponentCount:sameSizeAgain});
-  $('run-menu').onclick = leaveTable;
-  render();
-  animateFinalArcadeScore(g);
+  await presentResultStage(g, runOverModel(g), {
+    prepare: ()=>Sound.busted(true),
+    // No muck: the human's hand is already gone with the stack that lost
+    // it, exactly as a Career bust does not muck either.
+    settle: ()=>powerDownDashboard(g),
+    console: ()=>enterRunOverConsole(
+      ()=>startSinglePlayerRun({opponentCount:sameSizeAgain}),
+      leaveTable)
+  });
 }
 
 function resetForNextRunTable(g){

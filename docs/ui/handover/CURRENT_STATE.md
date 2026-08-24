@@ -33,8 +33,10 @@ Standardise construction and semantics, not every screen's composition.
 | Frames | **Resolved** | F0 Current Baseline. F2, F3 and F5 were tried on the assembled console and in the real game; the baseline chassis was kept. |
 | Mechanical numbers | Locked reference | Keep the existing production reel/stack/score treatment. The N0–N6 Lab exploration was rejected and removed. |
 | Player dashboard | Layout locked | Exact production geometry, content, cards, chips, sprites, information placement and relationship to table. Only a future conservative visual correction may be explored. |
-| TABLE CLEARED | Preservation locked | Strong production reference. Preserve full scale, information layout, stage/wheel relationship and physical presence. |
-| RUN OVER | Future sibling | Eventually use the same chassis and mechanical stage as TABLE CLEARED with negative content/semantics. Do not modify either result now. |
+| TABLE CLEARED | **In production** | Canonical result reference, unchanged. Now rendered by the shared result stage (`resultStageHTML`) rather than its own builder, so the construction it defines is the one all four outcomes use. |
+| RUN OVER | **In production** | Resolved 24 August 2026 after Lab approval. Same chassis, same five regions, same `rollStageTransition()` entrance as TABLE CLEARED, with negative semantics. Its standalone report, `.run-over-report` and the `runOverReportIn` imitation entrance are gone. |
+| EVENT WON / EVENT LOST | **In production** | The Career pair of the same four. Same chassis and same transition; Career-specific content only. `EVENT CASHED` is deliberately excluded and keeps its restrained plain card. |
+| Result stage semantics | **In production** | One custom property, `--stage-tone`, decides positive (theme rim, gold) or negative (coral) and reaches only the rim, head glass line, result word, hero stripe and hero figure. Instruments, memory bank and trophy stay ordinary machine information. |
 | Hand Rankings | Future pilot | Still the intended first production migration, but only after Lab and composite approval. |
 | Settings | Future treatment | Quieter utility sheet using shared construction; not part of the immediate task. |
 | `assets/ui/` | Untouched | Its intended artwork role has not been discussed. Do not inspect, move, stage or alter it. |
@@ -151,16 +153,27 @@ Shipped:
 - RUN OVER given the stage chassis and a rolling entrance matching TABLE
   CLEARED, by redefining the existing `runOverReportIn` keyframes.
 
-**No JavaScript was changed.** No gameplay, poker logic, Career logic, saves,
-statistics or results logic was touched. Production changes outside the new
-stylesheet are two lines: the `<link>` in `index.html`, and the new file plus a
-`CACHE_NAME` bump in `sw.js` so installed PWAs pick up the new shell.
+That pass changed **no JavaScript**. It has since been superseded for the four
+major results (see below); the rest of it stands.
 
-Reverting is removing the one `<link>`.
+## Superseded: the four major results are now one stage
+
+Approved 24 August 2026 after an isolated Lab review
+(`result-stage-lab.html`, unlinked and not in the service worker).
+
+RUN OVER's imitation entrance is gone. TABLE CLEARED, RUN OVER, EVENT WON and
+EVENT LOST are now genuinely one chassis: one renderer (`resultStageHTML`), one
+five-region hierarchy, one production presentation path (`presentResultStage`)
+and the one existing `rollStageTransition()`. No outcome owns a transition.
+
+This DID change results JavaScript — deliberately, as the only way to make them
+one chassis rather than four that resemble each other. Gameplay, poker logic,
+scoring, Career settlement, placement, prizes, unlocks, saves, storage schemas,
+lifetime statistics, action destinations, the Main Menu and dashboard geometry
+are untouched. `EVENT CASHED` is untouched.
 
 ## Still not authorised
 
-A dashboard geometry correction, replacement authored artwork, or a shared
-JavaScript component framework. RUN OVER matches TABLE CLEARED in look and
-motion but is still architecturally a separate report card; making them one
-chassis would need a change to results JavaScript.
+A dashboard geometry correction, replacement authored artwork, or a general
+JavaScript component framework. The result-stage renderer is a set of string
+builders for one specific chassis, not a framework, and must not grow into one.

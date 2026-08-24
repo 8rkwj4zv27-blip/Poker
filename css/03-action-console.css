@@ -195,7 +195,15 @@ input[type=range]::-moz-range-thumb{
 }
 .console-flip.flipped{ transform:rotateX(180deg); }
 .console-face{ backface-visibility:hidden; -webkit-backface-visibility:hidden; }
-.console-face-award{ position:absolute; inset:0; transform:rotateX(180deg); pointer-events:none; }
+/* One face, one or two destinations. RUN OVER is the only result with a
+   second action; every other result leaves the secondary hidden and the
+   face holds a single full-width control exactly as before. */
+.console-face-award{
+  position:absolute; inset:0; transform:rotateX(180deg); pointer-events:none;
+  display:grid; grid-template-columns:minmax(0,1fr); gap:10px;
+}
+.console-face-award.has-secondary{ grid-template-columns:1.3fr .7fr; }
+.console-face-award > .hidden{ display:none; }
 .console-flip.flipped .console-face-award{ pointer-events:auto; }
 .console-flip.flipped .console-face-actions{ pointer-events:none; }
 
@@ -308,6 +316,23 @@ input[type=range]::-moz-range-thumb{
 @keyframes nextTablePulse{
   0%,100%{ filter:brightness(1); box-shadow:0 6px 0 color-mix(in srgb, var(--accent) 55%, black), 0 6px 0 2px var(--px-ink), inset 0 3px 0 rgba(255,255,255,.32), inset 0 -3px 0 rgba(0,0,0,.16); }
   50%{ filter:brightness(1.1); box-shadow:0 6px 0 color-mix(in srgb, var(--accent) 55%, black), 0 6px 0 2px var(--px-ink), inset 0 3px 0 rgba(255,255,255,.4), inset 0 -3px 0 rgba(0,0,0,.16), inset 0 0 0 2px color-mix(in srgb,var(--accent-bright) 30%,transparent); }
+}
+/* The quieter half of a two-destination result. Same construction recipe
+   as every other control on the panel — colour-matched dark companion,
+   ink outline, inset top highlight — in the theme's own case plastic, so
+   it reads as built into the same panel rather than as a link. */
+.btn-award-console.results-secondary{
+  font-size:10px; letter-spacing:.04em;
+  color:var(--ink); background:var(--theme-case-raised);
+  box-shadow:
+    0 6px 0 color-mix(in srgb, var(--theme-case-raised) 55%, black), 0 6px 0 2px var(--px-ink),
+    inset 0 3px 0 rgba(255,255,255,.16), inset 0 -3px 0 rgba(0,0,0,.22);
+  animation:none;
+}
+.btn-award-console.results-secondary.is-pressed{
+  box-shadow:
+    0 2px 0 color-mix(in srgb, var(--theme-case-raised) 55%, black), 0 2px 0 2px var(--px-ink),
+    inset 0 3px 0 rgba(255,255,255,.16);
 }
 .btn-award-console.next-table-mode.is-pressed{ animation:none; }
 .btn-award-console.career-return-mode.is-pressed{ animation:none; }

@@ -166,7 +166,13 @@ A targeted Hard heads-up improvement and a simple paid-place pressure heuristic 
 
 ## Presentation
 
-- Wins retain the existing full result treatment.
+- **One shared result stage.** Changed 24 August 2026 by owner decision, after Lab approval.
+  TABLE CLEARED, RUN OVER, EVENT WON and EVENT LOST are four semantic states of ONE physical
+  result chassis with one five-region hierarchy (head, hero, instrument deck, detail well,
+  progression strip), presented through one production path (`presentResultStage()`) and the
+  one existing stage-wheel transition. No outcome owns a transition, an entrance animation or a
+  chassis of its own.
+- Wins retain the full result treatment, now expressed on that shared stage.
 - A non-winning cash receives a positive but restrained result card, with no full victory roll.
 - **Busts turn the stage, as a win does.** Changed 24 August 2026 by owner decision. A win
   and a bust are the two outcomes of the event itself, so both roll into the result on the
@@ -175,7 +181,14 @@ A targeted Hard heads-up improvement and a simple paid-place pressure heuristic 
   outcome getting a presentation and the other a plain card. A bust does not muck first: its
   K.O. ceremony has already played.
 - The restraint that previously applied to a bust now applies only to a non-winning cash,
-  which remains a paid place rather than an outcome of the event.
+  which remains a paid place rather than an outcome of the event. `EVENT CASHED` is the one
+  result that does not use the shared stage.
+- **A result's headline quantity is mechanical.** The prize on a win and the forfeited buy-in on
+  a bust roll once on the same reels TABLE CLEARED uses for its table score, and settle. This
+  supersedes the earlier rule that every Career amount is an atomic printed string; that rule
+  still holds for `EVENT CASHED` and for every secondary statistic on the stage.
+- **A result reports the field it was entered into**, from the event's own immutable snapshot
+  (`playerCount`) — never the number of players left after eliminations.
 - A new permanent venue receives a one-time board reveal.
 - Losing financial access produces only a subtle stake/readout movement and neutral rebuilding copy.
 - The first Invitational win eventually receives the career's largest presentation, built from the game's existing physical-machine language.

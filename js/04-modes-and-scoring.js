@@ -1031,18 +1031,13 @@ function finalizeArcadeRun(g){
   g.run.arcade.newHighScore=score>prior;
   if (score>prior){ arcadeProfile.highScore=score; saveArcadeProfile(); }
 }
-function animateFinalArcadeScore(g){
-  const el=$('final-score-value'); if (!el||!g||!g.run||!g.run.arcade) return;
-  const target=g.run.arcade.score;
-  if (motionOff()){ el.textContent=formatArcadeScore(target); return; }
-  const start=performance.now(), duration=1050;
-  function frame(now){
-    const t=Math.min(1,(now-start)/duration), v=Math.round(target*(1-Math.pow(1-t,3)));
-    el.textContent=formatArcadeScore(v);
-    if (t<1) requestAnimationFrame(frame); else Sound.arcadeBankLock();
-  }
-  requestAnimationFrame(frame);
-}
+/* RUN OVER's final score is now a mechanical hero reel on the shared
+   result stage (runOverModel/fillResultStageReels, 05-game-engine.js),
+   filled and revealed by the same buildResultDigits/revealResultAmount
+   pair every other headline quantity uses. The old #final-score-value
+   ease-out counter that belonged to the standalone run report went with
+   the report itself. finalizeArcadeRun() above is unchanged: it remains
+   the single writer of the persisted high score. */
 /* Explicit DEV display tests (section 20) — these preview the visual
    tiers directly and never falsify real gameplay scoring; genuine
    trigger logic is verified separately by playing rigged hands (see the

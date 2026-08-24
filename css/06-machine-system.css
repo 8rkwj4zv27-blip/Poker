@@ -509,7 +509,7 @@
       the one it was measured on.
    ============================================================ */
 .felt.results-mode{
-  --results-rim:var(--theme-rim);
+  --results-rim:var(--stage-tone);
   --stage-gap:20px;
   --stage-frame-radius:8px;
   /* + 2px for the board's own border */
@@ -543,10 +543,10 @@
 }
 
 .stage-results-machine{
-  --results-rim:var(--theme-rim);
+  --results-rim:var(--stage-tone);
   box-shadow:
     0 0 0 3px var(--pc-edge-lo),
-    0 0 0 5px color-mix(in srgb,var(--theme-rim) 62%,var(--pc-edge-lo)),
+    0 0 0 5px color-mix(in srgb,var(--stage-tone) 62%,var(--pc-edge-lo)),
     inset 0 3px 0 color-mix(in srgb,var(--pc-leather-hi) 44%,transparent),
     inset 0 -4px 0 color-mix(in srgb,var(--pc-leather-lo) 62%,transparent),
     0 8px 0 var(--pc-edge-lo);
@@ -558,113 +558,178 @@
     repeating-linear-gradient(0deg,rgba(255,255,255,.022) 0 1px,transparent 1px 4px),
     linear-gradient(180deg,color-mix(in srgb,var(--machine-glass) 84%,#5c6f70),color-mix(in srgb,var(--machine-glass) 92%,#232f32));
   box-shadow:
-    inset 0 0 0 2px color-mix(in srgb,var(--theme-rim) 30%,transparent),
+    inset 0 0 0 2px color-mix(in srgb,var(--stage-tone) 30%,transparent),
     inset 0 5px 0 rgba(255,255,255,.035),inset 0 -5px 0 rgba(0,0,0,.22),
     0 4px 0 var(--pc-edge-lo);
 }
 
-
-/* ---- 6a. Burgundy: a positive result must not wear the danger colour ----
-   Retiming the rim to --theme-rim (above) reads correctly in three themes,
-   but burgundy's theme rim IS the coral used for danger and defeat, which
-   made TABLE CLEARED identical to RUN OVER. Pinned to the approved positive
-   green in this theme only. ---- */
-[data-theme="burgundy"] .felt.results-mode,
-[data-theme="burgundy"] .stage-results-machine{
-  --results-rim:#5ED18B;
-}
-
-[data-theme="burgundy"] .stage-results-machine{
-  box-shadow:
-    0 0 0 3px var(--pc-edge-lo),
-    0 0 0 5px color-mix(in srgb,#5ED18B 62%,var(--pc-edge-lo)),
-    inset 0 3px 0 color-mix(in srgb,var(--pc-leather-hi) 44%,transparent),
-    inset 0 -4px 0 color-mix(in srgb,var(--pc-leather-lo) 62%,transparent),
-    0 8px 0 var(--pc-edge-lo);
-}
-
-[data-theme="burgundy"] .felt.results-mode .stage-results-head{
-  box-shadow:
-    inset 0 0 0 2px color-mix(in srgb,#5ED18B 30%,transparent),
-    inset 0 5px 0 rgba(255,255,255,.035),inset 0 -5px 0 rgba(0,0,0,.22),
-    0 4px 0 var(--pc-edge-lo);
-}
 
 /* ============================================================
-   7. RUN OVER — the negative sibling of TABLE CLEARED
-   Same chassis construction, coral where TABLE CLEARED carries the
-   theme rim, and the same rolling entrance.
+   6a. SEMANTIC TONE — one variable, four outcomes
 
-   runOverReportIn is redefined rather than replaced by a new name, so
-   the existing rule in 02-screens.css drives it and no JavaScript or
-   markup changes.
+   TABLE CLEARED, RUN OVER, EVENT WON and EVENT LOST are states of the
+   same hardware, so exactly one custom property decides whether the
+   machine is reporting a good or a bad result. --stage-tone reaches the
+   rim, the head's inner glass line, the result word, the hero's edge
+   stripe and the hero figure — and nothing else. Instruments, the memory
+   bank and the trophy stay ordinary green/amber machine information, CRT
+   wells stay near-black, and cards, chips and authored artwork are never
+   recoloured. The machine is never washed in the outcome colour.
 
-   It animates the independent `translate` and `scale` properties
-   rather than `transform`. The report's resting transform is set by
-   production and differs by viewport — .result-card and
-   .run-over-report both match it — so composing on top of whatever
-   production resolves to makes the roll settle exactly where the
-   report belongs instead of where a hardcoded value would put it.
+   Positive takes the theme rim, exactly as TABLE CLEARED always has.
+   Burgundy is pinned to the approved green because that theme's rim IS
+   the coral used for danger and defeat, which would otherwise make a win
+   and a bust identical.
    ============================================================ */
-.run-over-report .result-bezel-loss{
-  padding:7px;
-  border:2px solid var(--danger);
-  border-radius:8px;
-  background:
-    repeating-conic-gradient(rgba(255,255,255,.04) 0 25%,transparent 0 50%) 0 0/8px 8px,
-    color-mix(in srgb,var(--pc-leather) 62%,#1A0A0E);
-  box-shadow:
-    0 0 0 3px var(--pc-edge-lo),
-    0 0 0 5px color-mix(in srgb,var(--danger) 62%,var(--pc-edge-lo)),
-    inset 0 3px 0 rgba(255,255,255,.06),
-    inset 0 -4px 0 rgba(0,0,0,.5),
-    0 8px 0 var(--pc-edge-lo);
+.felt.results-mode{ --stage-tone:var(--theme-rim); }
+.felt.results-mode.tone-negative{ --stage-tone:var(--danger); }
+[data-theme="burgundy"] .felt.results-mode{ --stage-tone:#5ED18B; }
+[data-theme="burgundy"] .felt.results-mode.tone-negative{ --stage-tone:var(--danger); }
+
+/* The result word is the one printed marking that carries the tone. It
+   stays printed: no flicker, no glow beyond the head's existing bloom. */
+.felt.results-mode.tone-negative .stage-results-head strong{
+  color:#F6E3E4;
+  text-shadow:0 0 7px color-mix(in srgb,var(--danger) 40%,transparent),2px 2px 0 #2A0F11;
 }
 
-.run-over-report .result-head-loss{
-  box-shadow:
-    inset 0 0 0 2px color-mix(in srgb,var(--danger) 40%,transparent),
-    inset 0 5px 0 rgba(255,255,255,.05),
-    inset 0 -5px 0 rgba(0,0,0,.3),
-    0 4px 0 var(--pc-edge-lo);
+/* The hero's gold edge stripe becomes coral in the same 4px slot — the
+   same part, in a different state. The headline figure follows it; a
+   forfeited buy-in and a dead run are not rewards. */
+.felt.results-mode.tone-negative .stage-score-hero{
+  box-shadow:inset 4px 0 0 var(--danger),inset 0 4px 5px rgba(0,0,0,.65),0 3px 0 #16090d;
+}
+.felt.results-mode.tone-negative .stage-score-readout{
+  border-color:color-mix(in srgb,var(--danger) 78%,#7a2b28);
+  box-shadow:0 3px 0 #090b08,inset 0 3px 5px rgba(0,0,0,.72),0 0 7px rgba(217,83,74,.14);
+}
+.felt.results-mode.tone-negative .stage-score-readout .jp-digit{
+  color:#F0B7B3;
+  text-shadow:0 0 7px rgba(217,83,74,.5),1px 1px 0 #090b08;
+}
+.felt.results-mode.tone-negative .stage-score-readout .jp-sym{ color:#E9A3A0; }
+/* Gold is money and records at rest, so the carry legend keeps it in
+   both states. Only the headline figure changes colour. */
+.felt.results-mode.tone-negative .stage-score-carry strong{ color:#F2B431; }
+
+
+/* ============================================================
+   7. THE SHARED RESULT-STAGE CHASSIS
+
+   Everything the four outcomes need that TABLE CLEARED alone never
+   exposed. Written as a thin layer on top of the production result-stage
+   rules in 02-screens.css, never as a replacement.
+
+   RUN OVER's old standalone report — .run-over-report, .result-bezel-loss
+   and the runOverReportIn entrance that imitated this stage's movement —
+   is gone. It now enters on the real stage wheel (rollStageTransition),
+   so there is no second entrance animation left to keep in step.
+   ============================================================ */
+
+/* ---- 7a. Width containment ----
+   The chassis is a single-column grid, so its column resolves to the
+   max-content width of its widest row. TABLE CLEARED never exposed this
+   (its hero holds a two-digit counter), but RUN OVER's seven-digit final
+   score and the longer Career carry legends do: one wide row stretched
+   every other row past the rim and clipped the deck, the lamp strip and
+   the trophy. The column is pinned and every row may shrink, so the
+   chassis is always exactly the stage's width.
+
+   In the hero the readout is the priority and the printed label gives
+   way — the same placement production already uses, only the column
+   sizing changes. */
+.stage-results-machine{ grid-template-columns:minmax(0,1fr); overflow-x:hidden; }
+.stage-results-machine > *{ min-width:0; }
+
+.stage-score-hero{ grid-template-columns:minmax(0,1fr) auto; }
+.stage-score-carry{ min-width:0; flex-wrap:wrap; row-gap:1px; }
+.stage-score-carry strong{ white-space:nowrap; }
+
+/* A long mechanical figure keeps the same reel, one size down, rather
+   than spilling out of its instrument. */
+.stage-results .amt-readout.is-long .jp-cell{ height:24px; min-width:13px; font-size:11px; }
+.stage-score-readout.is-long .jp-cell{ height:25px; min-width:14px; font-size:12px; }
+
+.stage-recap-cell{ overflow:hidden; }
+.stage-recap-value{ max-width:100%; overflow:hidden; text-overflow:ellipsis; }
+.stage-recap-lamp{ min-width:0; }
+.stage-recap-lamp .stage-recap-lamp-text{ min-width:0; }
+.stage-trophy-name{ overflow-wrap:anywhere; }
+
+/* ---- 7b. A third instrument body ----
+   Production shipped two: a reel readout (money) and the bounded K.O.
+   lamp bank. RUN OVER and both Career results need a third — a single
+   settled figure that is not money and has no bounded total (a finishing
+   place, an unbounded K.O. count, an event score). It reuses the K.O.
+   readout's type so it is visibly the same family, one size up, rather
+   than a new widget. */
+.stage-big-readout{
+  margin-top:2px;
+  font-size:20px; line-height:1;
+  color:#b6e0af;
+  text-shadow:0 0 8px rgba(182,224,175,.42);
 }
 
-/* The stage's own curve and travel, then the brief overshoot from
-   stageLock so it clunks into its detent rather than simply arriving. */
-@keyframes runOverReportIn{
-  0%{ translate:0 -104%; scale:.968 1; opacity:0; filter:brightness(.28) saturate(.34); }
-  18%{ opacity:1; }
-  62%{ translate:0 0; scale:.976 1; filter:brightness(.78) saturate(.86); }
-  84%{ translate:0 0; scale:1.004; filter:brightness(1.1) saturate(1); }
-  100%{ translate:0 0; scale:1; opacity:1; filter:brightness(1) saturate(1); }
+/* ---- 7c. Outcome-detail region ----
+   The BEST HAND trophy case is region four. Career tracks no best hand,
+   so the same well carries the outcome statement the game already
+   produces. Same housing, same label treatment, same near-black glass —
+   only the content differs. */
+.stage-trophy--statement{
+  grid-template-columns:minmax(0,1fr); grid-template-rows:auto 1fr;
+  text-align:center; row-gap:4px;
+}
+.stage-trophy--statement .stage-trophy-label{ grid-column:1; justify-self:start; }
+/* One centred block, so a taller stage opens space around the statement
+   rather than pulling its two lines apart. */
+.stage-statement-block{
+  grid-column:1; align-self:center; justify-self:center;
+  display:flex; flex-direction:column; align-items:center; gap:7px;
+  max-width:100%;
+}
+.stage-statement{
+  font-family:var(--font-hdr); font-size:13px; line-height:1.5; letter-spacing:.05em;
+  color:#f2b431; text-shadow:0 0 8px rgba(242,180,49,.28);
+}
+.stage-statement-sub{
+  font-family:var(--font-hdr); font-size:8px; letter-spacing:.07em; color:#87a785;
+}
+.felt.results-mode.tone-negative .stage-statement{
+  color:#F0B7B3; text-shadow:0 0 8px rgba(217,83,74,.3);
 }
 
-.run-over-report{
-  animation:runOverReportIn var(--stage-roll-ms,840ms) cubic-bezier(.12,.72,.18,1) both;
-  will-change:translate,scale,filter;
+/* ---- 7d. Lamp strip, negative state ----
+   The FLAWLESS SHOWDOWNS strip becomes the general "one extra fact about
+   this outcome" module: who ended the run, after a bust. */
+.pc-lamp.is-danger{
+  background:var(--danger);
+  box-shadow:0 2px 0 #100807,0 0 7px rgba(217,83,74,.36),inset 1px 1px 0 #F4C3C0;
+}
+.stage-recap-lamp.is-negative{ background:#2A1416; border-color:#16090d; }
+.stage-recap-lamp.is-negative .stage-recap-lamp-text{
+  color:#E9A3A0; white-space:normal; line-height:1.45;
 }
 
-#table-screen.run-dead{ overflow:hidden; }
-
-[data-motion="off"] .run-over-report{ animation-duration:1ms; }
-
-@media (prefers-reduced-motion:reduce){
-  .run-over-report{ animation-duration:1ms; }
-}
+/* ---- 7e. Two-part progression strip ----
+   Career has no counted progression left once BANKROLL sits in the hero
+   carry, so its strip is a deliberate status/destination pair rather than
+   a three-slot row with an empty centre. */
+.stage-run-progress.is-two-part{ grid-template-columns:auto 1fr; }
 
 
 /* ============================================================
    8. CAREER EVENT RESULTS — EVENT WON / CASHED / LOST
 
-   careerResultHTML() now emits the TABLE CLEARED chassis classes
-   (.stage-results-head, .stage-score-hero, .stage-results-deck,
-   .stage-instrument, .stage-results-recap), so the event result
-   inherits that construction rather than imitating it. This section
-   only has to size the panel and carry the semantic rim.
+   A win and a bust are outcomes of the event and are rendered by the
+   SHARED result stage (section 7 above and 02-screens.css), so nothing
+   here styles them any more.
 
-   A win and a bust both turn the stage. A non-winning cash keeps its
-   restrained plain card, so its head is given the same glass here —
-   the head glass otherwise only applies inside .felt.results-mode.
+   What remains is EVENT CASHED, unchanged: a non-winning paid place keeps
+   its restrained plain card, built from the TABLE CLEARED chassis classes
+   (.stage-results-head, .stage-score-hero, .stage-results-deck,
+   .stage-instrument, .stage-results-recap) so it still reads as the same
+   machine at a smaller weight. Its head is given the machine glass here
+   because that glass otherwise only applies inside .felt.results-mode.
    ============================================================ */
 .career-result-panel{
   --cr-rim:var(--theme-rim);
@@ -690,7 +755,6 @@
 
 /* Semantic rim. Coral is defeat, warm gold is money at rest, and the theme
    rim is the ordinary positive result, exactly as on TABLE CLEARED. */
-.stage-results.career-event-result.is-loss .career-result-panel{ --cr-rim:var(--danger); }
 .career-result-panel.is-cash{ --cr-rim:var(--accent-bright); }
 
 /* Burgundy's theme rim IS the coral used for danger, which would make a win
@@ -698,7 +762,6 @@
    this theme only; the other three keep their theme rim. The same correction
    applies to TABLE CLEARED in section 6a below. */
 [data-theme="burgundy"] .career-result-panel{ --cr-rim:#5ED18B; }
-[data-theme="burgundy"] .stage-results.career-event-result.is-loss .career-result-panel{ --cr-rim:var(--danger); }
 [data-theme="burgundy"] .career-result-panel.is-cash{ --cr-rim:var(--accent-bright); }
 
 /* The head: identical to TABLE CLEARED's. The old bespoke title and caption
@@ -718,7 +781,6 @@
    size that keeps all three on one line. */
 .career-result-panel .career-res-title{ font-size:19px; }
 .career-result-panel.is-cash .career-res-title{ color:var(--accent-bright); }
-.stage-results.career-event-result.is-loss .career-res-title{ color:#F6E3E4; }
 
 /* Outside .felt.results-mode the head has no glass, so the cash card gets it
    here rather than reading as a flat plate. */
@@ -793,13 +855,6 @@
 .career-result-panel .stage-score-carry .career-res-v{
   font-size:12px;
   color:var(--accent-bright);
-}
-
-/* A forfeited buy-in is not a reward. Gold is money at rest, so the bankroll
-   keeps it, but the headline figure on a bust takes the danger colour. */
-.stage-results.career-event-result.is-loss .stage-score-hero > .career-res-v{
-  color:#E9A3A0;
-  text-shadow:0 0 8px color-mix(in srgb,var(--danger) 42%,transparent);
 }
 
 .career-result-panel .stage-results-instruments{ gap:5px; }

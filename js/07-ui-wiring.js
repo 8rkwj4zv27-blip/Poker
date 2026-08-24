@@ -791,7 +791,7 @@ function returnToCareer(){
   coachToken++;
   setArcadeMode(false);
   const felt = $('felt');
-  if (felt) felt.classList.remove('results-mode');
+  if (felt) felt.classList.remove('results-mode','tone-negative');
   $('btn-new-table').textContent = 'New Table';
   $('btn-new-table').classList.add('hidden');
   applyTheme();
@@ -1002,7 +1002,7 @@ function doLeaveTable(){
   // the event as still active — see refreshCareerMenuButton().
   const careerFinished = !!(game && game.mode==='career') && !careerHasActiveEvent();
   const felt = $('felt');
-  if (felt) felt.classList.remove('results-mode');
+  if (felt) felt.classList.remove('results-mode','tone-negative');
   clearCompletedEventConsole();
   $('btn-new-table').textContent = 'New Table';
   $('table-screen').classList.add('hidden');

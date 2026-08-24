@@ -278,6 +278,163 @@ function devEndTable(){
   else showTableCleared(g);
 }
 
+/* ============================================================
+   DEV: MAJOR-RESULT TRANSITION TESTER
+
+   Four actions that drive the REAL production presentation — the same
+   presentResultStage() path, the same rollStageTransition(), the same
+   shared renderer and the same results console every real outcome uses.
+   Nothing here animates, styles or lays anything out itself.
+
+   ISOLATION. The fixture is built with newGame(), which is pure: it
+   allocates a game object and touches no storage. Nothing in this section
+   calls clearTableSave(), saveTable(), saveCareer(), saveArcadeProfile()
+   or finalizeArcadeRun(), so no save, no lifetime statistic and no
+   persisted high score can move. The two Career fixtures never call
+   enterCareerEvent() or settleCareerEvent(): no buy-in is taken, no prize
+   is paid, no unlock is granted, and career.bankroll is only ever READ
+   for display.
+
+   REPEATABILITY. Each fixture's result console keeps its real label,
+   class and physical behaviour, but its action re-arms the tester rather
+   than navigating, so a transition can be watched as many times as
+   needed. Real destinations (NEXT TABLE, NEW RUN, MAIN MENU, BACK TO
+   EVENTS) are exercised by real play, not from here.
+   ============================================================ */
+const DEV_RESULT_TEST_OPPONENTS = 5;
+const DEV_RESULT_TEST_EVENT = 'back-room-freezeout';
+
+function devFixtureCard(rank, suit){
+  return { rank, suit, value:RANKS.indexOf(rank) + 2 };
+}
+/* A genuine evaluated hand rather than a hand-written record: the fixture
+   cards go through the real evaluator and the real tracked-hand copier,
+   so the trophy case renders exactly what a played hand would produce. */
+function devFixtureBestHand(){
+  const cards = [
+    devFixtureCard('6','♠'), devFixtureCard('6','♦'), devFixtureCard('6','♣'),
+    devFixtureCard('8','♦'), devFixtureCard('8','♠')
+  ];
+  return copyTrackedHand({ result:evaluate5(cards), cards });
+}
+
+/* A throwaway table, so the stage has a real outgoing face to roll away
+   from. Deliberately built through newGame()/initSeats() rather than
+   startSinglePlayerRun() or startCareerEvent(), both of which persist. */
+function devBuildResultFixture(kind){
+  const career = kind === 'event-won' || kind === 'event-lost';
+  if (career){
+    const event = careerEventSnapshot(careerEventById(DEV_RESULT_TEST_EVENT));
+    newGame({ mode:'career', difficulty:event.difficulty,
+      opponents:event.opponentCount, stack:event.stack, blindLevel:event.initialBlindLevel });
+    game.event = Object.assign({}, event, { reward:makeEventRewardState() });
+  } else {
+    newGame({ mode:'elimination', difficulty:settings.difficulty, opponents:DEV_RESULT_TEST_OPPONENTS });
+    game.run = makeEliminationRun(DEV_RESULT_TEST_OPPONENTS);
+  }
+  game._devResultFixture = kind;
+  game.handNumber = 4;
+  applyRunTheme();
+  setArcadeMode(true);
+  updateArcadeHUD();
+  showTableScreen();
+  const felt = $('felt');
+  if (felt) felt.classList.remove('results-mode','tone-negative');
+  exitResultsConsole();
+  clearCompletedEventConsole();
+  powerUpDashboard();
+  initSeats();
+  render();
+  return game;
+}
+
+/* Arcade fixture figures, chosen to exercise every slot the stage has:
+   a padded seven-digit score, a two-page memory bank, a lamp strip and a
+   real evaluated best hand. */
+function devArcadeResultFixture(g, kind){
+  const r = g.run, a = r.arcade;
+  a.score = 780; a.displayedScore = 780; a.biggestReward = 400;
+  a.awardCounts = { goodFold:1, ko:1 };
+  a.newHighScore = kind === 'run-over';
+  r.tableNumber = 1; r.highestTableReached = 1;
+  r.totalHands = 4; r.totalHandsWon = 3;
+  r.totalKOs = kind === 'table-cleared' ? DEV_RESULT_TEST_OPPONENTS : 2;
+  r.biggestPotWon = 530;
+  r.tableHands = 4; r.tableHandsWon = 3;
+  r.tableShowdownsPlayed = 2; r.tableShowdownsWon = 2;
+  r.tableAllInsPlayed = 1; r.tableAllInsWon = 1;
+  r.tableBiggestPotWon = 530; r.tableHighestStack = 1200;
+  r.tableScoreStart = 740;
+  r.bestHand = devFixtureBestHand();
+  r.tableBestHand = kind === 'table-cleared' ? null : devFixtureBestHand();
+  if (kind === 'run-over'){
+    r.tablesCleared = 0;
+    r.bustedBy = { names:['Maniac'], hand:'Four of a Kind, Sixes' };
+    const human = g.players.find(p=>p.isHuman);
+    if (human) human.chips = 0;
+  } else {
+    r.tablesCleared = 1;
+    const human = g.players.find(p=>p.isHuman);
+    if (human) human.chips = 530;
+  }
+}
+
+/* The Career display model is built by the REAL builder from a fixture
+   settled record — the same object shape settleCareerEvent() writes —
+   so the tester exercises buildCareerResultModel() rather than
+   bypassing it. Only the bankroll is overridden afterwards, so a test
+   never reports the player's real Career balance as if it had moved. */
+function devCareerResultModel(g, won){
+  const ev = g.event;
+  const model = buildCareerResultModel(g, {
+    outcome: won ? 'win' : 'loss',
+    place: won ? 1 : ev.playerCount,
+    prize: won ? ev.prize : 0,
+    delta: won ? ev.prize : -ev.buyIn,
+    bankroll: 0
+  });
+  model.bankroll = won ? 600 : 500;   // fixture only; nothing was credited
+  return model;
+}
+
+function devTestResultStage(kind){
+  if (!DEV_MODE) return;
+  const g = devBuildResultFixture(kind);
+  const rearm = ()=>devTestResultStage(kind);
+  logMsg('[DEV] ' + kind.toUpperCase().replace('-', ' ') +
+    ' — production transition, fixture state, no settlement', true);
+  if (kind === 'table-cleared' || kind === 'run-over'){
+    devArcadeResultFixture(g, kind);
+    updateArcadeHUD();
+    render();                 // let the dashboard settle on the fixture stack first
+    g.over = true;
+    const negative = kind === 'run-over';
+    setBanner(negative
+      ? '<b>Run over.</b> Out of chips.'
+      : '<b>Table cleared.</b> Every opponent is eliminated.');
+    presentResultStage(g, negative ? runOverModel(g) : tableClearedModel(g), {
+      prepare: negative ? ()=>Sound.busted(true) : null,
+      muck: !negative,
+      settle: ()=>powerDownDashboard(g),
+      console: negative
+        ? ()=>enterRunOverConsole(rearm, rearm)
+        : ()=>enterResultsConsole(rearm)
+    });
+    return;
+  }
+  const won = kind === 'event-won';
+  const model = devCareerResultModel(g, won);
+  g.over = true;
+  setBanner(won
+    ? '<b>Event won.</b> Every opponent is out.'
+    : '<b>Event over.</b> You were eliminated.');
+  presentResultStage(g, careerStageModel(model), {
+    prepare: ()=>{ clearHumanReadouts(); powerDownCompletedEvent(g); },
+    muck: won,
+    console: ()=>enterCareerResultsConsole(rearm)
+  });
+}
+
 /* DEV-only fast entry into a Single Player run at an explicit table size.
    Bypasses the menu picker entirely; `opponentCount` is still normalised
    downstream by startSinglePlayerRun, so a bad value can't build an
@@ -326,6 +483,15 @@ function initDevPanel(){
         '<button id="dev-ko-eject" type="button">TEST KO EJECT</button>' +
         '<button id="dev-ko-eject-2" type="button">TEST DOUBLE KO</button>' +
         '<button id="dev-ko-eject-4" type="button">TEST MULTI KO x4</button>' +
+      '</div>' +
+      '<div id="dev-result-stage">' +
+        '<div class="dev-section-title">MAJOR RESULT TRANSITIONS</div>' +
+        '<div class="dev-subtitle">REAL STAGE ROLL · FIXTURE STATE · NO SETTLEMENT</div>' +
+        '<button data-result-test="table-cleared" type="button">TEST TABLE CLEARED</button>' +
+        '<button data-result-test="run-over" type="button">TEST RUN OVER</button>' +
+        '<button data-result-test="event-won" type="button">TEST EVENT WON</button>' +
+        '<button data-result-test="event-lost" type="button">TEST EVENT LOST</button>' +
+        '<button id="dev-result-reset" type="button">RESET TESTER (BACK TO MENU)</button>' +
       '</div>' +
       '<div id="dev-table-size">' +
         '<div class="dev-section-title">TABLE SIZE</div>' +
@@ -413,6 +579,18 @@ function initDevPanel(){
   $('dev-ko-eject').onclick = devTestKoEject;
   $('dev-ko-eject-2').onclick = ()=>devTestKoEjectGroup(2);
   $('dev-ko-eject-4').onclick = ()=>devTestKoEjectGroup(4);
+  panel.querySelectorAll('[data-result-test]').forEach(b=>{
+    b.onclick = ()=>{
+      devTestResultStage(b.dataset.resultTest);
+      panel.classList.add('collapsed');
+      $('dev-collapse').textContent = '+';
+    };
+  });
+  $('dev-result-reset').onclick = ()=>{
+    exitResultsConsole();
+    clearCompletedEventConsole();
+    leaveTable();
+  };
   document.querySelectorAll('#dev-table-size-row button').forEach(b=>{
     b.onclick = ()=>devNewEliminationTable(parseInt(b.dataset.devOpponents,10));
   });

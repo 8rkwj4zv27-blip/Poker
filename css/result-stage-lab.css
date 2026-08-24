@@ -1,0 +1,240 @@
+/* ============================================================
+   RESULT STAGE LAB — Phase 1 review only.
+
+   Part A is the PROPOSED shared result-stage layer: the small set of
+   rules that would have to join the production machine system for all
+   four outcomes to be one piece of hardware. It is written as a thin
+   layer ON TOP of the production TABLE CLEARED rules (02-screens.css
+   section "results stage" + 06-machine-system.css sections 6-8), never
+   as a replacement — everything not listed here is inherited from
+   production untouched.
+
+   Part B is lab chrome and exists only in this file.
+
+   Loaded by result-stage-lab.html only. Not referenced by index.html,
+   not in sw.js.
+   ============================================================ */
+
+/* ============================================================
+   PART A — proposed shared result-stage layer
+   ============================================================ */
+
+/* ---- A1. Semantic tone ----------------------------------------------
+   ONE variable decides whether the machine is reporting a good or a bad
+   outcome. It reaches the rim, the head's inner glass line, the hero's
+   edge stripe and the hero figure — and nothing else. Green/amber stay
+   ordinary machine information, CRT wells stay near-black, cards and
+   chips are never recoloured.
+
+   Positive uses the theme rim, exactly as production TABLE CLEARED
+   does, with burgundy pinned to the approved green because that theme's
+   rim IS the danger coral (the correction production already makes).
+   -------------------------------------------------------------------- */
+.felt.results-mode{ --stage-tone:var(--theme-rim); }
+.felt.results-mode.tone-negative{ --stage-tone:var(--danger); }
+[data-theme="burgundy"] .felt.results-mode{ --stage-tone:#5ED18B; }
+[data-theme="burgundy"] .felt.results-mode.tone-negative{ --stage-tone:var(--danger); }
+
+.felt.results-mode,
+.felt.results-mode .stage-results-machine{ --results-rim:var(--stage-tone); }
+
+.felt.results-mode .stage-results-machine{
+  box-shadow:
+    0 0 0 3px var(--pc-edge-lo),
+    0 0 0 5px color-mix(in srgb,var(--stage-tone) 62%,var(--pc-edge-lo)),
+    inset 0 3px 0 color-mix(in srgb,var(--pc-leather-hi) 44%,transparent),
+    inset 0 -4px 0 color-mix(in srgb,var(--pc-leather-lo) 62%,transparent),
+    0 8px 0 var(--pc-edge-lo);
+}
+
+.felt.results-mode .stage-results-head{
+  box-shadow:
+    inset 0 0 0 2px color-mix(in srgb,var(--stage-tone) 30%,transparent),
+    inset 0 5px 0 rgba(255,255,255,.035),inset 0 -5px 0 rgba(0,0,0,.22),
+    0 4px 0 var(--pc-edge-lo);
+}
+
+/* The result word is the one printed marking that carries the tone. It
+   stays printed: no flicker, no glow beyond the head's existing bloom. */
+.felt.results-mode.tone-negative .stage-results-head strong{
+  color:#F6E3E4;
+  text-shadow:0 0 7px color-mix(in srgb,var(--danger) 40%,transparent),2px 2px 0 #2A0F11;
+}
+
+/* Production's hero carries a gold edge stripe. A negative result takes
+   coral in the same 4px slot — same part, different state. */
+.felt.results-mode.tone-negative .stage-score-hero{
+  box-shadow:inset 4px 0 0 var(--danger),inset 0 4px 5px rgba(0,0,0,.65),0 3px 0 #16090d;
+}
+.felt.results-mode.tone-negative .stage-score-readout{
+  border-color:color-mix(in srgb,var(--danger) 78%,#7a2b28);
+  box-shadow:0 3px 0 #090b08,inset 0 3px 5px rgba(0,0,0,.72),0 0 7px rgba(217,83,74,.14);
+}
+.felt.results-mode.tone-negative .stage-score-readout .jp-digit{
+  color:#F0B7B3;
+  text-shadow:0 0 7px rgba(217,83,74,.5),1px 1px 0 #090b08;
+}
+.felt.results-mode.tone-negative .stage-score-readout .jp-sym{ color:#E9A3A0; }
+
+/* The carry legend is a status line, not a number, when it reports the
+   high-score state. Restrained: it is printed, and does not blink. */
+.stage-score-carry strong{ white-space:nowrap; }
+.felt.results-mode.tone-negative .stage-score-carry strong{ color:#F2B431; }
+
+/* ---- A1b. Width containment ------------------------------------------
+   The chassis is a single-column grid, so its column resolves to the
+   max-content width of its widest row. TABLE CLEARED never exposed this
+   (its hero holds a two-digit counter), but RUN OVER's seven-digit final
+   score and the longer career carry legends do: one wide row stretched
+   every other row past the rim and clipped the deck, the lamp strip and
+   the trophy. The column is pinned and each row is allowed to shrink, so
+   the chassis is always exactly the stage's width.
+
+   In the hero, the readout is the priority and the printed label/carry
+   give way — the same placement production already uses, only the
+   column sizing changes.
+   -------------------------------------------------------------------- */
+.stage-results-machine{ grid-template-columns:minmax(0,1fr); overflow-x:hidden; }
+.stage-results-machine > *{ min-width:0; }
+
+.stage-score-hero{ grid-template-columns:minmax(0,1fr) auto; }
+.stage-score-carry{ min-width:0; flex-wrap:wrap; row-gap:1px; }
+
+/* A long mechanical figure keeps the same reel, one size down, rather
+   than spilling out of its instrument. */
+.stage-results .amt-readout.is-long .jp-cell{ height:24px; min-width:13px; font-size:11px; }
+.stage-score-readout.is-long .jp-cell{ height:25px; min-width:14px; font-size:12px; }
+
+.stage-recap-cell{ overflow:hidden; }
+.stage-recap-value{ max-width:100%; overflow:hidden; text-overflow:ellipsis; }
+.stage-recap-lamp{ min-width:0; }
+.stage-recap-lamp .stage-recap-lamp-text{ min-width:0; }
+.stage-trophy-name{ overflow-wrap:anywhere; }
+
+/* ---- A2. A third instrument body -----------------------------------
+   Production ships two instrument bodies: a reel readout (money) and
+   the bounded K.O. lamp bank. RUN OVER and both Career results need a
+   third: a single settled figure that is not money and has no bounded
+   total (a place, an unbounded K.O. count, an event score). It reuses
+   .stage-ko-readout's type so it is visibly the same family of readout
+   rather than a new widget.
+   -------------------------------------------------------------------- */
+.stage-big-readout{
+  margin-top:2px;
+  font-size:20px; line-height:1;
+  color:#b6e0af;
+  text-shadow:0 0 8px rgba(182,224,175,.42);
+}
+.felt.results-mode.tone-negative .stage-instrument .stage-big-readout{ color:#b6e0af; }
+
+/* ---- A3. Outcome-detail region -------------------------------------
+   The BEST HAND trophy case is region four. Career tracks no best hand,
+   so the same well carries the outcome statement the game already
+   produces (the banner copy) instead. Same housing, same label
+   treatment, same near-black glass — only the content differs.
+   -------------------------------------------------------------------- */
+.stage-trophy--statement{
+  grid-template-columns:1fr; grid-template-rows:auto 1fr auto;
+  justify-items:center; text-align:center; row-gap:4px;
+}
+.stage-trophy--statement .stage-trophy-label{ grid-column:1; justify-self:start; }
+.stage-statement{
+  grid-column:1; align-self:center;
+  font-family:var(--font-hdr); font-size:13px; line-height:1.5; letter-spacing:.05em;
+  color:#f2b431; text-shadow:0 0 8px rgba(242,180,49,.28);
+}
+.stage-statement-sub{
+  grid-column:1;
+  font-family:var(--font-hdr); font-size:8px; letter-spacing:.07em; color:#87a785;
+}
+.felt.results-mode.tone-negative .stage-statement{
+  color:#F0B7B3; text-shadow:0 0 8px rgba(217,83,74,.3);
+}
+
+/* ---- A4. Lamp strip, negative state --------------------------------
+   Production's FLAWLESS SHOWDOWNS strip becomes the general "one extra
+   fact about this outcome" module: defeated-by after a run, elimination
+   after a Career event.
+   -------------------------------------------------------------------- */
+.pc-lamp.is-danger{
+  background:var(--danger);
+  box-shadow:0 2px 0 #100807,0 0 7px rgba(217,83,74,.36),inset 1px 1px 0 #F4C3C0;
+}
+.stage-recap-lamp.is-negative{ background:#2A1416; border-color:#16090d; }
+.stage-recap-lamp.is-negative .stage-recap-lamp-text{
+  color:#E9A3A0; white-space:normal; line-height:1.45;
+}
+
+/* A single-page memory bank has no cycle, so its cells simply sit lit —
+   the module is unchanged, only its page count. */
+
+/* ---- A5. Two-action results console --------------------------------
+   RUN OVER is the only outcome with two actions. It keeps the same
+   physical control family and the same console face rather than
+   introducing a second control language: the face holds a row instead
+   of one button, primary at 1.3fr and the secondary in dark plastic.
+   -------------------------------------------------------------------- */
+.results-actions-row{
+  width:100%; height:100%;
+  display:grid; grid-template-columns:1.3fr .7fr; gap:10px;
+}
+.btn-award-console.results-secondary{
+  font-size:10px; letter-spacing:.04em;
+  color:var(--ink);
+  background:var(--theme-case-raised);
+  box-shadow:
+    0 6px 0 color-mix(in srgb,var(--theme-case-raised) 55%,black), 0 6px 0 2px var(--px-ink),
+    inset 0 3px 0 rgba(255,255,255,.16), inset 0 -3px 0 rgba(0,0,0,.22);
+  animation:none;
+}
+.btn-award-console.results-secondary.is-pressed{
+  box-shadow:
+    0 2px 0 color-mix(in srgb,var(--theme-case-raised) 55%,black), 0 2px 0 2px var(--px-ink),
+    inset 0 3px 0 rgba(255,255,255,.16);
+}
+
+/* ============================================================
+   PART B — lab chrome (never leaves this file)
+   ============================================================ */
+body.lab-specimen{ margin:0; overflow:hidden; background:#0B0F0C; }
+
+body:not(.lab-specimen){
+  margin:0; min-height:100vh;
+  background:#12161B; color:#D8DEE4;
+  font-family:ui-monospace,Menlo,monospace;
+}
+.lab-shell{ display:flex; flex-direction:column; min-height:100vh; }
+.lab-bar{
+  position:sticky; top:0; z-index:5;
+  display:flex; flex-wrap:wrap; align-items:center; gap:10px 18px;
+  padding:12px 16px; background:#0D1116; border-bottom:2px solid #262E36;
+}
+.lab-bar h1{
+  margin:0; font-family:var(--font-hdr); font-size:11px; letter-spacing:.06em;
+  font-weight:400; color:#E8B83A;
+}
+.lab-picker{ display:flex; flex-wrap:wrap; gap:6px; }
+.lab-picker button{
+  padding:8px 12px; cursor:pointer;
+  font-family:var(--font-hdr); font-size:9px; letter-spacing:.04em;
+  color:#AFBBC6; background:#1A2129; border:2px solid #2E3843; border-radius:4px;
+}
+.lab-picker button:hover{ color:#fff; border-color:#4A5866; }
+.lab-picker button.is-on{ color:#101418; background:#E8B83A; border-color:#F6D06B; }
+.lab-overview-btn{ margin-left:8px; }
+
+.lab-single{ display:flex; justify-content:center; padding:24px 16px 40px; }
+.lab-grid{
+  display:flex; flex-wrap:wrap; justify-content:center; align-items:flex-start;
+  gap:24px; padding:24px 16px 40px;
+}
+.lab-cell{ margin:0; display:flex; flex-direction:column; gap:8px; }
+.lab-cell figcaption{
+  font-family:var(--font-hdr); font-size:8px; letter-spacing:.08em;
+  text-transform:uppercase; color:#7E8B98;
+}
+.lab-device{
+  width:393px; height:852px; display:block;
+  border:2px solid #2E3843; border-radius:6px; background:#0B0F0C;
+  box-shadow:0 10px 0 #0A0D11;
+}

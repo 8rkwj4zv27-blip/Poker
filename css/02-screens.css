@@ -1610,14 +1610,14 @@
    causing the compact bankroll summary and the full-stage report to fight
    over width, direction and padding.
 
-   The outer element owns placement (full-stage for a win, ordinary result
-   card for a loss); the inner panel owns one compact, glanceable report.
-   Every value remains one atomic text node — no mechanical digit cells.
+   Now EVENT CASHED only: a win and a bust go to the shared result stage.
+   The outer element owns placement; the inner panel owns one compact,
+   glanceable report. Every value remains one atomic text node — no
+   mechanical digit cells.
    ============================================================ */
-.stage-results.career-event-result{
-  display:flex; align-items:center; justify-content:center;
-  width:100%; min-width:0; max-width:none;
-}
+/* A win and a bust no longer mount a panel on the stage — they ARE the
+   stage now (resultStageHTML, 05-game-engine.js). Only the cash card
+   below still needs placing. */
 .result-card.career-event-result{
   width:min(360px,calc(100% - 28px)); min-width:0; max-width:360px;
   padding:0; background:transparent; border:0; box-shadow:none;
