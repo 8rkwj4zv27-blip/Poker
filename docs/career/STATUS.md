@@ -1,7 +1,8 @@
 # Career Mode — Current Status
 
-Last verified: 2026-08-23  
-Verified implementation baseline: `d31b120` — `Add multi-place payouts and Pub Circuit Open` (Phase 1). Build `v0.20.0-dev · UI update`, service-worker cache `poker-v19-0`.
+Last verified: 2026-08-24  
+Verified implementation baseline: `7d34c2e` — `Apply the approved machine visual system across the UI`.
+Career logic baseline remains `d31b120` — `Add multi-place payouts and Pub Circuit Open` (Phase 1); the newer commit changed event-result presentation only. Build `v0.20.0-dev · UI update`, service-worker cache `poker-v19-0`.
 
 This is the short handoff file. Update it whenever a Career milestone is completed or the immediate next task changes.
 
