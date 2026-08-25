@@ -6,6 +6,23 @@ Career logic baseline remains `d31b120` — `Add multi-place payouts and Pub Cir
 
 This is the short handoff file. Update it whenever a Career milestone is completed or the immediate next task changes.
 
+## Direction update — 2026-08-25
+
+The expanded Career direction (the soft poker RPG) was **approved by the owner
+and promoted into `CAREER_DESIGN.md` and `BUILD_PLAN.md` on 2026-08-25.**
+`BUILD_PLAN.md` now carries the complete sixteen-phase sequence.
+
+**No expansion implementation has begun.** Approval changed the canonical
+documents only. Scoring specification, scoring correction, the Contextual Board,
+Full Circuit, pacing instrumentation, named residents, the boss seat, the Back
+Room cash table, dossiers, titles, trophies and cosmetics are **all unbuilt**.
+Nothing in *Implemented now* below changed as a result of the promotion, and the
+Career save schema is **still version 3** — it bumps only when Phase 9
+implements cash-session state.
+
+**Phase 2 (Second Chance) remains the sole immediate next task**, unchanged and
+unblocked by the expansion.
+
 ## Implemented now
 
 - Career is a separate game mode using ordinary freezeout poker and standard AI.
@@ -122,10 +139,42 @@ New coverage includes the Pub Circuit Open descriptor and five-player launch con
 ## Not implemented
 
 - Second Chance recovery.
-- Contextual board, permanent-status line, or Full Circuit.
+- Scoring award specification, audit or correction.
+- Contextual board, permanent-status line, visible venue ladder, or Full Circuit.
 - Card Club preview.
-- Six-player Career pacing harness.
+- Back Room pacing instrumentation.
+- Named residents, roster-as-paid-term, or any relationship record.
+- Back Room boss seat or first-clear ceremony.
+- The Back Room cash table, cash-session save state, or cash-session recovery.
+- Dossiers, career record, milestone titles, trophies, rotation, or cosmetics.
 - Satellites, seats, Card Club gameplay, or higher tiers.
+
+## Approved future sequence
+
+Summary only — `BUILD_PLAN.md` is authoritative for scope, exclusions,
+dependencies and exit conditions.
+
+| Phase | Work | State |
+|---:|---|---|
+| 1 | Paid places and Pub Circuit Open | Complete |
+| 2 | Second Chance recovery | **Next** |
+| 3 | Scoring specification and audit | Approved, not started |
+| 4 | Scoring correction | Approved, not started |
+| 5 | Contextual Board and visible Full Circuit | Approved, not started |
+| 6 | Back Room pacing instrumentation and decision | Approved, not started |
+| 7 | Named residents, roster authority, minimal relationship record | Approved, not started |
+| 8 | Back Room boss seat and first-clear ceremony | Approved, not started |
+| 9 | Back Room cash table | Approved, not started |
+| 10 | Board extension for live cash, boss and field state | Approved, not started |
+| 11 | Back Room playtest gate | Approved, not started |
+| 12 | Pub Circuit expansion | Approved, not started |
+| 13 | Full dossiers, records, titles, controlled rotation | Approved, not started |
+| 14 | Trophies | Approved, not started |
+| 15 | Cosmetic spending experiment | Approved, not started |
+| 16 | Card Club gate, then higher venues one at a time | Approved, not started |
+
+Phases 7–10 are the Back Room vertical slice; Phase 11 tests it. One phase at a
+time, in numeric order.
 
 ## Immediate next task
 
@@ -147,6 +196,9 @@ Minimum completion requirements:
 - Test bankroll values including $0, $50, $99 and $100.
 - Second Chance can never unlock a venue.
 - A player can never reach a career dead end.
+- The $100 threshold stays a fixed approved value, never derived.
+- Eligibility is exposed as a **single shared predicate**, so Phase 5's Board
+  reads it rather than restating the recovery rule a second time.
 
 ## Manual checks still outstanding
 
@@ -170,15 +222,37 @@ Minimum completion requirements:
 - Risky entries use an in-place second confirmation rather than a new details screen.
 - Second Chance pays $150 and appears below $100.
 - Exact upper-tier economy, event durations, and the 4–8-hour career target remain unvalidated.
-- Five-player Career pacing is unmeasured; that is Phase 4's job.
+- Career pacing is unmeasured. Back Room instrumentation and the resulting
+  stack-depth and blind-cadence decision are Phase 6's job; blinds are not
+  accelerated before that measurement exists.
 
 ## Do not start next
 
-- Playable Card Club or upper tiers.
+Phase 2 is the only task in flight. Nothing below is next, whether it is
+permanently excluded or approved for a later phase.
+
+Permanently excluded:
+
+- XP, perks, power-ups, or any additional currency.
+- Cash Cut or any roguelite system.
+
+Approved for a later phase — not now:
+
+- Scoring specification, audit or correction (Phases 3–4).
+- Board, status line, or visible venue ladder (Phase 5).
+- Pacing instrumentation or any blind-cadence change (Phase 6).
+- Named residents, relationship records, boss seat, or cash table (Phases 7–9).
+- Career history, milestone titles, dossiers, trophies, or cosmetics
+  (Phases 13–15). The previous blanket exclusion of career history, titles,
+  records and recurring-opponent progression was reversed by the owner on
+  2026-08-25; they are now scheduled, not forbidden.
+- Playable Card Club or upper tiers (Phase 16).
+
+Still deferred with no owning phase:
+
 - Satellites or seat inventory.
 - Full Elite AI work.
 - Bot simulation or analytics infrastructure.
-- Career history, titles, or recurring-opponent progression.
 
 ## Handoff protocol
 

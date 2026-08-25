@@ -1,7 +1,8 @@
 # Poker Faces — Career Mode Design Baseline
 
-Status: approved direction for the next prototype  
+Status: approved direction
 Baseline date: 2026-08-22
+Expansion promoted: 2026-08-25
 
 This is the canonical product-design reference for Career Mode. Read it with:
 
@@ -10,9 +11,15 @@ This is the canonical product-design reference for Career Mode. Read it with:
 
 If an older conversation, proposal, deck, or prompt conflicts with these files, these files win. Future-catalogue values are working hypotheses, not implementation requirements.
 
+On 2026-08-25 the owner approved an expansion of Career's direction — the soft
+poker RPG — and it is recorded here. **Approval is not implementation.** Nothing
+in the expanded direction is built. `STATUS.md` remains the only record of what
+exists, and every expanded system below names the phase that owns it.
+
 ## Design classification
 
 - **Approved principle:** settled product direction.
+- **Approved direction:** settled product decision, scheduled to a named phase, not yet built.
 - **Prototype commitment:** part of the next playable career pass.
 - **Working rule:** chosen default that should be tested and may be tuned.
 - **Provisional:** later content or balance requiring evidence.
@@ -31,11 +38,52 @@ A Casino-level player may need to rebuild in the Back Room without losing their 
 
 Money buys entry and opportunity. It never buys stronger cards, in-hand bonuses, AI manipulation, or other gameplay power.
 
+## RPG around the poker, not inside it
+
+**Approved principle.** Career carries an RPG feeling, and it lives entirely
+*around* the hand — in who the player is sitting against, what a result means to
+their story, and what they have proved. It never reaches inside the deck.
+
+- Nothing in the RPG layer touches card outcomes, odds, hand evaluation, or the
+  information available to any player.
+- **Bankroll is the sole spendable and volatile Career currency.** It is the one
+  axis the player pays out of, and the one that can fall.
+- **Permanent status, opponent knowledge and trophies are earned records.** They
+  are never spent and never purchased. They are written by what the player did,
+  and only by that.
+- **What bankroll may buy:** tournament entry, cash-table play, and approved
+  cosmetic expression. **What it may never buy:** poker power of any kind,
+  venue status, opponent knowledge, or trophies.
+- **Explicitly prohibited, permanently: XP, experience levels, perks, power-ups,
+  and any additional currency.** Bankroll is the only currency in Career.
+- No axis may gate another in a way that can strand a player.
+
+### The four progression axes
+
+**Approved principle.** Career's progression is four independently legible axes,
+not one score.
+
+| Axis | What it tracks | Volatility | Exists today | Scheduled |
+|---|---|---|---|---|
+| Bankroll | Money on hand | Fully volatile; can fall to near zero | Yes — implemented | — |
+| Permanent status | Highest venue access; boss first-clears; later, a title | Permanent, never revoked | Highest access exists in the unlock set | Board presentation Phase 5; boss first-clears Phase 8; titles Phase 13 |
+| Opponent knowledge | Who the player has played, beaten, and lost to | Permanent, append-only | No | Minimal record Phase 7; full dossiers Phase 13 |
+| Trophies | Milestones the player has earned and displays | Permanent, earned only, never purchased | No | Phase 14 |
+
+Career record — events entered, best finish per venue, head-to-head against each
+resident — is the poker-native texture that a numerical XP track would otherwise
+be invented to supply. It is **approved direction, Phase 13**. Only the three raw
+per-resident counters from Phase 7 exist before that.
+
 ## Approved principles
 
 - Career is persistent, not a roguelite run.
 - No run resets, perk drafting, random rewards, meta-currency, debt, or career deletion.
-- Real no-limit Texas Hold'em freezeouts remain the game.
+- **Real no-limit Texas Hold'em remains the game.** Tournament progression is
+  freezeout-only, and every venue unlock comes from a freezeout first place.
+  **One carve-out exists:** the Back Room cash table, described below, is the
+  single non-freezeout format in Career. It is Back Room only, permanently, and
+  it grants no status.
 - Bankroll persists between events and can rise or fall indefinitely.
 - Venue access and status never re-lock because of financial losses.
 - Only first place unlocks the next venue. A non-winning cash pays money but grants no status.
@@ -44,10 +92,12 @@ Money buys entry and opportunity. It never buys stronger cards, in-hand bonuses,
 - Cash Cut is abandoned.
 - Bankruptcy always has a playable recovery route.
 - Financial setbacks receive neutral “rebuilding” language, never humiliation or reputation loss.
-- The board shows a small contextual selection plus a Full Circuit view.
-- Recurring opponents, career history, titles, satellites, and upper-tier content are valuable later features, not requirements for the next prototype.
+- The board shows a small contextual selection plus a Full Circuit view, and shows the complete venue ladder from its first version.
+- Satellites, seats, and upper-tier content are valuable later features, not requirements for the next prototype.
 
 ## Core loop
+
+### Tournament loop — the career spine
 
 Choose event → pay buy-in → play freezeout → win, cash, or bust → settle bankroll and any first-place unlock → choose the next risk.
 
@@ -62,6 +112,22 @@ Settlement is always:
 `closing bankroll = opening bankroll - buy-in + total prize received`
 
 Prize figures mean the total credited after the buy-in has already been deducted, never net profit.
+
+### Optional cash loop — Back Room only
+
+**Approved direction, Phase 9. Not implemented.** This is a separate, optional
+loop that sits alongside the tournament spine and never replaces it:
+
+Choose Back Room cash table → pay $50 buy-in → play completed hands → Resume or Cash Out → return the full remaining stack to bankroll.
+
+- A session ends only by cash-out, by a human bust, or by the table closing.
+  Cash-out and table close return the player's **full remaining stack**; a human
+  bust returns nothing.
+- **Cash play never grants venue access, a boss first-clear, or any tournament
+  progression.** It moves bankroll and nothing else on the status axis.
+- What cash play *may* do is inform opponent knowledge, which shares one identity
+  per resident across both loops. See *Residents, rosters, and opponent
+  knowledge*.
 
 ## Prototype economy and events
 
@@ -78,7 +144,90 @@ These are prototype commitments:
 
 The Pub Open's 70/30 split is a prototype value to test, not a universal approved ratio for every future event.
 
-Card Club Freezeout appears as a locked preview but is not playable in this pass.
+Card Club Freezeout appears as a locked preview but is not playable in this pass. From Board v1 it is one row of the complete locked ladder rather than the only future venue shown; see *Contextual career board*.
+
+### The Back Room cash table
+
+**Approved direction, Phase 9. Not implemented.** One permanent cash game sits
+outside the tournament ladder and answers a need freezeouts cannot: a short
+session with a clean, immediate stop point, and an early rebuilding route that
+is not free money.
+
+Approved parameters:
+
+| Property | Value |
+|---|---|
+| Venue | Back Room only, permanently |
+| Field | Four-handed — the human plus three named residents |
+| Buy-in | $50 |
+| Blinds | $1 / $2 |
+| Starting stack | 50 chips |
+| Effective depth | 25 big blinds |
+| Chips | One table chip equals one Career dollar |
+| Rake | None |
+| Cash-out | Full stack, between completed hands only |
+| Opponents | Named residents with finite session bankrolls |
+| Table close | When too few players remain |
+| Status | Grants no venue unlock, ever |
+
+- **Whole-dollar currency is a firm project rule.** There are no cents, no
+  decimal bankroll values, no fractional blinds, no exchange rate, and no
+  separate chip denomination anywhere in Career. A $50 buy-in is 50 chips; the
+  big blind is 2 chips, which is $2.
+- **25 big blinds is intentional for the prototype.** This is deliberately not a
+  deep cash game. Shallow depth is what keeps a session short enough to be worth
+  opening. Its pacing and its poker quality are both open questions for the
+  Phase 11 playtest gate, which must answer whether play at that depth stays
+  recognisably good poker rather than collapsing into preflop shoving. The depth
+  does not change before that gate reports.
+- **Cashing out at a local maximum is accepted cash-poker behaviour**, not an
+  exploit to design against. The table is contained by permanently low stakes
+  and finite opponent bankrolls — never by rake or artificial cash-out
+  restrictions. Its hourly rate is fixed forever while tournament buy-ins scale,
+  so it self-obsoletes as a grind.
+- **Working rules, to be tested at Phase 9 and Phase 11:** each resident holds a
+  session bankroll that resets per session and may rebuy from it until it is
+  gone, then leaves; the table closes when fewer than three players remain, and
+  a table close returns the player's full stack rather than busting them; a human
+  bust closes the session with nothing returned; leaving the table screen is not
+  a forfeit and the session persists exactly as it does across an app close; the
+  Board offers exactly two actions on an open session, Resume or Cash Out; the
+  $50 buy-in uses the same Comfortable → Risky second confirmation tournament
+  entries use.
+- A player may not enter a tournament while a cash session is open, and may not
+  open a cash session while a tournament event is active.
+
+## Money ownership and cash-session safety
+
+**Approved direction, Phase 9. Not implemented.** These principles govern the
+cash table when it is built; nothing about them is true of the code today.
+
+- **`felt.career` is the single authoritative ledger** for Career bankroll and
+  for the financial state of an open cash session. A table snapshot may hold
+  gameplay state — seats, chips in play, hand state — but **must never own
+  money**.
+- **Entry and settlement are atomic and idempotent.** The entry transaction
+  (session id, buy-in, opened timestamp) is written in the same operation that
+  debits bankroll, so there is never a window in which the buy-in has left
+  bankroll with no record of it. Settlement credits the returned amount and
+  clears the open-session entry in one operation, guarded by a settled marker
+  keyed to the session id.
+- **No money is ever counted twice.** Bankroll and money on the table are
+  distinct figures, and the Board shows both plus an explicit total.
+- **Cash sessions never pass through placement settlement.** A cash session has
+  no finish place; the tournament placement and settlement paths are not
+  extended to cover it.
+- **The session is persisted only at completed-hand boundaries**, so every
+  resumable session is by construction between hands and Cash Out from the Board
+  always succeeds. A mid-hand app kill rewinds to the start of that hand; this is
+  an accepted cost of the guarantee.
+- **Corrupt-session recovery is ordered and never invents money:** prefer the
+  last valid completed-hand snapshot; if the gameplay snapshot is unusable but
+  the ledger holds a valid entry transaction, refund **only the recorded buy-in**
+  and close the session; never reconstruct or infer an unknown stack; recovery is
+  idempotent and can never produce a duplicate refund. Discarding an unreadable
+  session as though it never existed is prohibited — the buy-in has already been
+  debited, and that would silently destroy the player's money.
 
 ## Contextual career board
 
@@ -90,6 +239,31 @@ The prototype board contains up to four contextual cards plus Full Circuit acces
 4. **Special opportunity:** Second Chance when bankroll is below $100. Future seats may also use this area, but their collision rules are deferred with the seat system.
 
 Full Circuit always shows the current career catalogue grouped by venue, including permanently unlocked venues the player cannot presently afford.
+
+**Approved direction.** There is **one Board**, extended in place. The contextual
+card logic above is the base layer, built once and never rebuilt.
+
+**The complete six-venue ladder is visible from Board v1** — Back Room, Pub
+Circuit, Card Club, Casino Floor, High Roller Room, Invitational Championship —
+with unreached venues visibly locked. This supersedes the earlier arrangement in
+which Card Club alone appeared as a locked preview, and it is the cheapest
+signal that the career is six stages deep.
+
+The Board is a **map and a status readout**. It is not a shop. Cosmetic
+purchases, when eventually tested at Phase 15, belong on the machine itself.
+
+| Board element | Phase |
+|---|---|
+| Bankroll; status line and immediate objective; four contextual cards with entry states and confirmation; Second Chance slot; active event Continue / Abandon; full locked ladder | 5 |
+| Authoritative named fields on every event card | 7 |
+| Boss presence at Back Room | 8 |
+| Cash table as an opportunity; money committed to an open session; explicit total funds; Resume / Cash Out | 9 |
+| Whatever of the above remains unfinished | 10 |
+
+**Excluded from the Board through the Back Room slice:** duration estimates,
+cosmetics, trophies, and any large records interface. A duration estimate cannot
+be honest before the Phase 6 measurements exist, and a coarse band derived from
+field size would be a guess presented as information.
 
 ### Status and language
 
@@ -110,11 +284,16 @@ The three-buy-in Comfortable threshold is a working board rule, not certified ba
 
 If no event is Comfortable, Back Room remains Recommended and accurately shows whether it is Risky or unaffordable.
 
+Once the cash table exists (Phase 9), the Recovery state below $100 contains
+**two** affordable options rather than one: Second Chance, and the $50 cash
+table. Both must read as legitimate rebuilding routes.
+
 ### Entry protection
 
 Working decision: keep entry on the event card. If paying the buy-in would take the player from Comfortable to Risky for that tier, the first tap expands the card and asks for an explicit second confirmation. Use concrete remaining-bankroll language rather than internal labels. Comfortable entries remain one tap.
 
-No meaningful buy-in may be spent by one accidental tap.
+No meaningful buy-in may be spent by one accidental tap. The same rule covers the
+cash table's $50 buy-in when it exists.
 
 ## Recovery
 
@@ -129,6 +308,88 @@ Second Chance is a prototype commitment:
 - Never grants a venue unlock.
 
 Its frequency, emotional effect, and potential for deliberate exploitation must be observed in playtesting rather than assumed.
+
+### The ordering invariant
+
+**Approved principle.** The $100 threshold is a **fixed approved value**. It is
+**not** derived from the cheapest playable opportunity — deriving it would couple
+a free-money route to a balance knob. The relationship to the cash table is
+expressed as an invariant instead:
+
+```
+cash buy-in ($50)  <  recovery threshold ($100)  ≤  cheapest tournament buy-in ($100)
+```
+
+Any future tuning of the cash buy-in or the cheapest tournament buy-in must
+preserve this ordering.
+
+Eligibility is written once, as a **single shared predicate**, in the Second
+Chance work at Phase 2. The Board reads that predicate rather than restating it,
+so the recovery rule is never implemented twice.
+
+Boundary validation set: **$0, $49, $50, $99, $100, $101.**
+
+| Bankroll | Second Chance | Cash table (Phase 9) | Back Room Freezeout |
+|---:|---|---|---|
+| $0 | Visible | Unaffordable | Unaffordable |
+| $49 | Visible | Unaffordable | Unaffordable |
+| $50 | Visible | Affordable | Unaffordable |
+| $99 | Visible | Affordable | Unaffordable |
+| $100 | Hidden | Affordable | Affordable (Risky) |
+| $101 | Hidden | Affordable | Affordable (Risky) |
+
+## Residents, rosters, and opponent knowledge
+
+**Approved direction, Phase 7 (minimal) and Phase 13 (full). Not implemented.**
+This reverses the earlier exclusion of career history, records, and
+recurring-opponent progression; see *Outside the current build* below.
+
+- **Venues have a stable cast** rather than an anonymous AI pool re-rolled per
+  event. A resident has a fixed authored identity: portrait, public
+  playing-style line, and short background. All authored, never generated.
+- **One identity, two kinds of encounter.** Cash-table and tournament meetings
+  both feed **one** relationship with each resident. What cash play must never do
+  is grant venue status, count as a boss first-clear, or satisfy tournament
+  progression — that is a boundary on what cash play *unlocks*, not on what it is
+  allowed to *inform*. Cash and tournament statistics may be shown as separate
+  lines, but always as two facets of one character. A cash-table bust must never
+  read as, or be mistakable for, a tournament elimination or a boss result.
+- **The minimal relationship record (Phase 7), per resident:** encounters,
+  player knockouts of that resident, resident knockouts of the player. Nothing
+  else. Those counters and the authored style line are surfaced on the field
+  preview, so the opponent-knowledge axis is testable at the Phase 11 gate.
+- **Roster authority is a hard requirement.** The roster shown before entry must
+  be the roster that actually launches and resumes. The roster is a **paid
+  term**, captured into the event snapshot at the moment the player commits,
+  exactly as buy-in and payouts already are. Whether AI personality is currently
+  randomised per table launch is a code question to answer at Phase 7; either
+  way it is pinned or seeded at commitment.
+- **Bounded data.** Authored copy lives in code or data and never in the save.
+  The save holds the counters per character plus, later, a fixed-size ring of
+  flagged moments (cap five per character) storing event keys, never free text.
+- **Later, at Phase 13:** full dossiers with authored reveal copy selected by
+  encounter thresholds — never generated — the flagged-moment ring, the career
+  record, hand-authored milestone titles one per venue, and a rotating
+  featured/visitor slot driven by completed events rather than any real-world
+  timer. **Staple events never rotate:** the Back Room Freezeout, the Pub events,
+  and the cash table are always available.
+
+## Bosses
+
+**Approved direction, Phase 8 (Back Room). Not implemented.**
+
+- Each venue's top rung is a **named character occupying a guaranteed seat
+  inside that venue's existing freezeout** — never a separate boss event.
+- **The unlock condition is unchanged.** Winning the Back Room Freezeout unlocks
+  Pub Circuit; only first place unlocks anything.
+- **The first victory** carries a major first-clear ceremony and the progression
+  unlock. **Later appearances** seat the same character as a recurring rival with
+  no repetition of that framing, distinguished by a persistent per-venue
+  first-clear flag.
+- This keeps the boss meaningful while the player grinds or rebuilds at the Back
+  Room: the character is always there, but the ceremony happens once.
+- Pub Circuit Open is explicitly **not** a boss event. It remains a Top-2 cash
+  opportunity, unrelated to unlock-gating.
 
 ## Progression ladder
 
@@ -162,7 +423,72 @@ The provisional difficulty shape is gradual:
 
 Difficulty should come from visible, fair poker behaviour and opponent composition—not hidden information or a blanket statistical handicap. AI must never use the player's hole cards or future deck information.
 
-A targeted Hard heads-up improvement and a simple paid-place pressure heuristic are candidates for the prototype only if they are contained changes. They must not turn the prototype into a wholesale AI rewrite.
+**Non-negotiable at every venue:** no hidden card access, no future-deck access,
+no rigging, no arbitrary luck bonus, and no unfair starting stack — unless an
+event format advertises the imbalance up front as part of its own description.
+
+**Boss AI is a contained change, not a rewrite.** At Back Room the permitted
+scope is authored personality — table talk, timing, visible style — plus, at
+most, the narrowly scoped short-stack or heads-up tuning that the Phase 6
+measurements justify. Position awareness, bubble and pay-jump pressure, and
+paid-place pressure belong at Pub Circuit and above, where larger fields and
+multi-place payouts make them meaningful.
+
+**Short-stack push/fold logic is shared with Single Player.** If shared
+behaviour changes, Single Player receives regression coverage in the same phase.
+
+## Pacing
+
+**Approved principle.** Pacing is measured before it is changed.
+
+The Back Room event is reported to run too long. The response is instrumentation
+first, not a faster blind schedule:
+
+- Hands to conclusion
+- Median seconds per hand
+- Percentage of elapsed time outside human decisions
+- Percentage of hands reaching the flop
+
+The last two distinguish a poker-structure problem from a presentation problem.
+If a large share of elapsed time is deal animation, AI act delays, and
+transitions, then the blind schedule is the wrong lever and changing it would
+damage the poker to fix pacing. Flop-seen percentage is the guard against
+producing a preflop shove-fest — which would also make a boss's better decision
+logic invisible.
+
+**A wall-clock target is not the goal**, and blinds are not accelerated before
+measurement. Those findings, at Phase 6, decide stack depth, blind cadence, and
+any narrowly scoped short-stack behaviour change.
+
+## Scoring integrity
+
+**Approved principle.** The player must be able to trust what the machine
+reports.
+
+Event Score is **display-only**. It is not progression, XP, or currency; it never
+gates venue access, and it can never become purchasable. Whether it survives in
+any form after the audit is an open question that the audit itself must inform.
+
+The scoring workstream (Phases 3 and 4) must:
+
+- Define an **authoritative award table**: award name, exact trigger, value,
+  presentation timing, and persistence.
+- **Audit Career and Single Player separately**, and distinguish Career Event
+  Score from Single Player score.
+- Identify **false or duplicated awards and payments**.
+- **Check all lifetime-statistic persistence.** A false award that persists is
+  corrupting a record the project requires preserved.
+- **Preserve the approved visual scoring presentation where possible.** The
+  chassis is model-driven; corrections that change model values, or when the
+  model is built, leave the approved presentation untouched. A timing symptom is
+  the one class of fix that may reach into result-stage sequencing.
+- **Reverify all four major-result transitions** if timing changes affect them.
+
+Every award is audited across four responsibilities, because a defect in one
+presents as a defect in another: **detection** (did the qualifying event happen),
+**mutation** (changed by the right amount, exactly once), **presentation timing**
+(shown at the right moment, once), and **persistence** (saved, or correctly not
+saved).
 
 ## Presentation
 
@@ -190,8 +516,28 @@ A targeted Hard heads-up improvement and a simple paid-place pressure heuristic 
 - **A result reports the field it was entered into**, from the event's own immutable snapshot
   (`playerCount`) — never the number of players left after eliminations.
 - A new permanent venue receives a one-time board reveal.
+- **A boss first-clear receives a one-time ceremony**, alongside the one-time venue
+  reveal. Later victories over the same character do not repeat it. Approved
+  direction, Phase 8.
 - Losing financial access produces only a subtle stake/readout movement and neutral rebuilding copy.
 - The first Invitational win eventually receives the career's largest presentation, built from the game's existing physical-machine language.
+
+## Cosmetic expression
+
+**Approved direction, Phase 15. Not implemented, and deliberately last among the
+RPG-layer additions.**
+
+- Optional purchases affect the **machine itself** — cabinet finish, card backs,
+  chip sets — not the Board, which is a map and a status readout.
+- Purchases spend **actual bankroll**. No second currency, ever.
+- **Nothing purchasable may affect poker odds, AI behaviour, or event access.**
+  This is a hard boundary, not a preference.
+- A purchase that would drop the player below Comfortable for their highest
+  unlocked tier is **hard-blocked**, not merely warned about.
+- **Trophies are earned and never purchasable**; purchases are never earnable.
+  The two axes stay distinct.
+- Price scaling — flat, or scaled to venue tier — is unresolved and belongs to
+  Phase 15.
 
 ## Deferred satellite and seat rules
 
@@ -208,14 +554,60 @@ Satellites are not part of the next prototype. When implemented:
 
 Satellite opponent composition, exact prices, UI collisions, and final expected value remain provisional.
 
-## Explicitly outside the next build
+## Deferred event families
 
-- Playable Card Club or any higher venue.
-- Satellites and seats.
+The long-run catalogue is deferred, and splits by cost:
+
+- **Descriptor-level variants** — Turbo, Deep Stack, an ordinary heads-up
+  freezeout — fit the existing field-size / stack-depth / blind-pace / AI /
+  buy-in / payout / qualification axes. Deferred as scope discipline.
+- **State-requiring formats** — knockout bounties need per-elimination payout
+  tracking; satellites and private invitations need seat issuance, consumption,
+  and qualification state — need mechanisms beyond the current placement-based
+  payout shape. Deferred because they are genuinely more work.
+
+## Outside the current build
+
+Deferred, with the phase that owns each where one exists:
+
+- Playable Card Club or any higher venue — Phase 16.
+- Satellites, seats, knockout bounties, private invitations, Turbo and Deep Stack variants.
 - Full Elite AI.
-- Recurring-opponent progression.
-- Career history, titles, records, or additional currencies.
+- Duration estimates on the Board — blocked on Phase 6 measurements.
 - Automated board personalisation.
 - A new analytics platform or bot-simulation framework.
 - Cash Cut or any roguelite system.
+- **Additional currencies, XP, perks, and power-ups — excluded permanently, not deferred.**
 
+### Exclusions reversed on 2026-08-25
+
+The owner explicitly reversed two entries that previously appeared above.
+They are recorded here so the reversal is not mistaken for an oversight:
+
+- **Career history, titles, and records** — now approved direction. Scope-limited:
+  only the three per-resident counters and a small amount of authored character
+  information at Phase 7; full dossiers, expanded records, and milestone titles
+  at Phase 13.
+- **Recurring-opponent progression** — now approved direction, as named residents
+  (Phase 7) and boss seats with one-time first-clears (Phase 8). The Pub
+  expansion at Phase 12 is the first point at which a rival can recur across two
+  venues.
+
+*Additional currencies*, which shared a line with career history in the previous
+exclusion list, remains excluded permanently.
+
+## Rejected — do not re-propose
+
+- A second currency, XP, perks, or power-ups.
+- Rake at the cash table.
+- Partial cash-out, or any artificial restriction on cashing out at a local maximum.
+- Cash tables at Pub Circuit or above.
+- A separate money-owning save key for the cash session.
+- Treating an unreadable cash session as if it never existed.
+- Deriving Second Chance's threshold from the cheapest playable opportunity.
+- A separate boss event, at any venue.
+- A wall-clock pacing target, or accelerating blinds before measurement.
+- Duration estimates on the Board before Phase 6's data exists.
+- The Board as a shop window.
+- Building the contextual card logic twice.
+- Any phase running in parallel with another.

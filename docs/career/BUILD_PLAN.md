@@ -1,19 +1,49 @@
 # Career Mode — Build Plan
 
-Status: approved prototype sequence  
+Status: approved sequence
 Baseline date: 2026-08-22
+Expansion promoted: 2026-08-25
 
 This plan implements the design in `CAREER_DESIGN.md` in small, testable stages. `STATUS.md` records which stage is current.
 
+On 2026-08-25 the owner approved the expanded Career direction and this file was
+replaced with the complete sixteen-phase sequence below. The previous sequence
+(Phases 1–5 plus an unnumbered "later, evidence-gated work" list) is superseded.
+Its content is not lost: old Phase 1 is preserved verbatim, old Phase 2 is
+unchanged, old Phase 3 becomes Phase 5, old Phase 4 is replaced by the narrower
+and metric-specific Phase 6, old Phase 5's gate becomes Phase 11 for Back Room
+and Phase 16 for Card Club, and the old "later, evidence-gated work" list maps
+onto Phases 12–16.
+
+**Phase 2 remains the immediate implementation task.** Approval of the expansion
+did not start it: nothing from Phase 3 onward is implemented.
+
 ## Prototype objective
 
-Prove that choosing between events, risking a persistent bankroll, cashing, busting, rebuilding, and seeing the next venue creates a compelling repeatable career loop.
+Prove that choosing between events, risking a persistent bankroll, cashing, busting, rebuilding, and seeing the next venue creates a compelling repeatable career loop — and then whether a venue with named residents, a boss seat, and a cash table is a richer place to play than a flat event list.
 
-Do not build the full career ladder to answer that question.
+Do not build the full career ladder to answer either question.
+
+## Change discipline
+
+- **One phase at a time, in numeric order.** No phase runs in parallel with another.
+- The **Dependencies** line in each phase records the minimum that must already
+  be true. It is not a licence to reorder or to parallelise; execution order is
+  the numeric order regardless.
+- Preserve unrelated user changes and existing saves.
+- Update `STATUS.md` after every completed career milestone.
+- Update this file if implementation order or scope changes.
+- Update `CAREER_DESIGN.md` only when a product decision changes, not for routine implementation detail.
+- Commit documentation changes with the implementation they describe so a future AI can reconstruct the project from Git.
+- Run `node validation/career-events-checks.js` and `node validation/career-result-checks.js` before and after every Career implementation phase.
+
+---
 
 ## Phase 1 — Paid places and Pub Circuit Open — COMPLETE (2026-08-23)
 
-Extend the data-driven event schema without breaking saved active events:
+**Purpose:** extend the data-driven event schema to multi-place payouts without breaking saved active events.
+
+**Included scope:**
 
 - Represent payout places rather than a single winner-only prize.
 - Preserve existing Back Room and Pub descriptors and migrations.
@@ -23,13 +53,18 @@ Extend the data-driven event schema without breaking saved active events:
 - Add focused regression checks for entry, settlement, duplicate-credit prevention, save/resume, and migrations.
 - Add a restrained non-winning-cash result state.
 
-Exit condition: all existing Career checks still pass; new Top-2 checks pass; bankroll arithmetic is correct for win, second, bust, abandon, reload, and repeated settlement calls.
+**Exclusions:** no recovery event, no board work, no AI changes.
 
-Met on 2026-08-23. Career save version 3; `payouts` is the canonical reward
-table with `prize` kept as an enforced mirror of first place. Placement is
-measured from the table by `careerFinishPlace()` rather than inferred from a
-win/loss value, including the standard tie-break for players busting on the
-same hand. 27 focused event checks and 24 focused result checks pass.
+**Dependencies:** none.
+
+**Exit condition:** all existing Career checks still pass; new Top-2 checks pass; bankroll arithmetic is correct for win, second, bust, abandon, reload, and repeated settlement calls.
+
+**Verified record.** Met on 2026-08-23. Career save version 3; `payouts` is the
+canonical reward table with `prize` kept as an enforced mirror of first place.
+Placement is measured from the table by `careerFinishPlace()` rather than
+inferred from a win/loss value, including the standard tie-break for players
+busting on the same hand. 27 focused event checks and 24 focused result checks
+pass.
 
 Two pre-existing save defects were corrected as part of this phase, both of
 which would have surfaced the moment the schema widened: a version-2 active
@@ -37,45 +72,203 @@ snapshot could adopt live catalogue terms instead of the terms already paid,
 and an existing Back Room winner would not have received a newly added
 sibling event. See `STATUS.md`.
 
+---
+
 ## Phase 2 — Second Chance recovery
 
+**Purpose:** guarantee that a player can never reach a career dead end, and establish the single recovery predicate the Board will later read.
+
+**Included scope:**
+
 - Add the free three-player Second Chance descriptor or equivalent special-event representation.
-- Gate it strictly to bankroll below $100.
+- Gate it strictly to bankroll below $100 — the fixed approved threshold, never derived.
 - Credit $150 additively on a win.
 - Keep it repeatable below the threshold and hide it at $100 or above.
 - Ensure it cannot unlock Pub or Card Club.
-- Test bankroll values including $0, $50, $99, and $100.
+- Expose eligibility as a **single shared predicate**, so the Board reads it at Phase 5 rather than restating the rule.
 
-Exit condition: a player can never reach a career dead end, and recovery cannot appear while ineligible.
+**Exclusions:** no cash table; no derived threshold; no board work; no resident, boss, or scoring work.
 
-## Phase 3 — Contextual board and Full Circuit
+**Dependencies:** Phase 1 (complete).
+
+**Exit condition:** bankroll values $0, $50, $99 and $100 behave correctly; Second Chance can never unlock a venue; a player can never reach a career dead end; recovery cannot appear while ineligible; both focused check suites pass.
+
+---
+
+## Phase 3 — Scoring specification and audit
+
+**Purpose:** restore trust in what the machine reports, before anything is measured, balanced, or playtested.
+
+**Included scope:**
+
+- Define the **authoritative award table**: award name, exact trigger, value, presentation timing, persistence.
+- Read-only trace of every award through detection → mutation → presentation → persistence, in the order those responsibilities actually execute.
+- **Audit Career and Single Player separately**; distinguish Career Event Score from Single Player score.
+- Identify false, duplicated, late, or incorrectly valued awards and payments.
+- **Check all lifetime-statistic persistence** and answer, in writing, whether any false award is being written to a persisted record.
+- Produce **reproducible fixtures** — a seeded deck plus a scripted action sequence — in the style of the existing `validation/` checks, so a claimed fix can be verified against the same input twice.
+
+**Exclusions:** no code change; this phase is diagnostic only. No design proposal for scoring's future shape.
+
+**Dependencies:** Phase 2.
+
+**Exit condition:** every award type is mapped; every reported symptom (wrong timing, false positive, incorrect payment) is attributed to a specific responsibility layer; every fixture is replayable; the lifetime-statistics question is answered explicitly.
+
+---
+
+## Phase 4 — Scoring correction
+
+**Purpose:** fix what Phase 3 found, before any pacing measurement or playtest can be contaminated by it.
+
+**Included scope:**
+
+- Corrections determined entirely by the audit's findings.
+- Fixtures from Phase 3 retained as permanent regression checks.
+- The approved visual scoring presentation preserved where possible; the chassis is model-driven, so corrections to model values or to when the model is built leave it untouched.
+- **Reverify all four major-result transitions** if timing changes affect result-stage sequencing.
+- Address any corrupted lifetime statistic explicitly.
+
+**Exclusions:** any scoring feature not implicated by a reported symptom; no change to Event Score's status as display-only; no new scoring design.
+
+**Dependencies:** Phase 3.
+
+**Exit condition:** the reported symptoms — wrong timing, false positives, incorrect payment — are resolved and covered by fixtures; both existing check suites still pass; any persisted corruption is addressed.
+
+---
+
+## Phase 5 — Contextual Board and visible Full Circuit
+
+**Purpose:** build the Board base layer, once. It is extended in place from here on and never rebuilt.
+
+**Included scope:**
 
 - Add the persistent highest-access line; Back Room is the starting access.
 - Implement Recommended, Alternative, Next Target, and Special Opportunity selection.
 - Use the working three-buy-in threshold for recommendations.
 - Show locked, earned-but-unaffordable, and earned-and-risky states distinctly.
-- Add the locked Card Club preview.
+- Show the **complete six-venue ladder** — Back Room, Pub Circuit, Card Club, Casino Floor, High Roller Room, Invitational Championship — with unreached venues visibly locked.
 - Add Full Circuit showing the current catalogue and all earned access.
+- Add the current status line and immediate objective.
 - Add in-place second confirmation when entry would cross from Comfortable to Risky.
+- Read Phase 2's shared recovery predicate for the Special Opportunity slot rather than restating the rule.
 - Preserve continue/abandon handling for an active event and block double entry.
 
-Exit condition: the five example states described in `CAREER_DESIGN.md` render coherently, including a high-status player rebuilding at low stakes.
+**Exclusions:** named fields, boss presence, cash-table entry, money-on-table display, duration estimates, cosmetics, trophies, records interface.
 
-## Phase 4 — Pacing validation
+**Dependencies:** Phase 2 (recovery predicate) and Phase 4 (nothing is surfaced on top of an untrusted score).
 
-- Add the smallest practical private six-player launch path for internal testing; do not add it to the public catalogue.
-- Time real three-, four-, five-, and six-player events with Quick Resolve.
+**Exit condition:** the five example states described in `CAREER_DESIGN.md` render coherently, including a high-status player rebuilding at low stakes; the locked ladder reads as ambition rather than as broken rows; both focused check suites pass.
+
+---
+
+## Phase 6 — Back Room pacing instrumentation and decision
+
+**Purpose:** find out where the time actually goes before changing any poker.
+
+**Included scope:**
+
+- Instrument and record, for real three-player Back Room events: **hands to conclusion**, **median seconds per hand**, **percentage of elapsed time outside human decisions**, **percentage of hands reaching the flop**.
+- Time real events with and without Quick Resolve.
 - Record event, opening bankroll, result, closing bankroll, and elapsed time manually or with a small local log if that is genuinely cheaper.
-- Do not build an analytics platform.
-- Decide whether the Hard heads-up change and paid-place pressure heuristic are necessary from observed play, then scope them separately.
+- Produce a **written decision** on stack depth, blind cadence, and any narrowly scoped short-stack behaviour change, with the evidence behind it.
+- If shared short-stack push/fold behaviour changes, add **Single Player regression coverage in this same phase**.
 
-Exit condition: real duration and choice data exists, and six-player Quick Resolve pacing is understood well enough to decide whether six-player upper events remain viable.
+**Exclusions:** no blind acceleration before measurement; no wall-clock target; no boss AI work; no analytics platform or bot-simulation framework.
 
-## Phase 5 — Human playtest gate
+**Dependencies:** Phase 4.
 
-Test the complete small loop, not isolated screens.
+**Exit condition:** the four measurements exist for real events; the stack-depth and cadence decision is recorded with its evidence; if anything changed, flop-seen percentage confirms the event has not become a preflop shove-fest, and Single Player checks still pass.
 
-Key questions:
+---
+
+## Phase 7 — Named residents, roster authority, minimal relationship record
+
+**Purpose:** the identity foundation the rest of the Back Room slice depends on.
+
+**Included scope:**
+
+- Authored Back Room residents — portrait, public playing-style line, short background — covering the freezeout's two opponents and the cash table's three seats.
+- One identity per resident, shared across cash and tournament play.
+- The three counters per resident: encounters, player knockouts of that resident, resident knockouts of the player.
+- Roster captured as a **paid term** in the event snapshot at the moment the player commits, exactly as buy-in and payouts already are.
+- Verify against the actual code whether AI personality is currently randomised per table launch, and pin or seed it at commitment either way.
+- Surface named fields and the three counters on the Board's event cards.
+
+**Exclusions:** no dossier screen; no threshold-based reveal copy; no milestone titles; no records interface; no flagged-moment ring; no second venue's residents.
+
+**Dependencies:** Phase 5.
+
+**Exit condition:** the roster shown pre-entry is exactly the roster that launches and that resumes after a reload; counters increment correctly from tournaments immediately, and from cash play once Phase 9 exists; authored copy lives outside the save; both focused check suites pass.
+
+**Owned unresolved decision:** which of the Back Room cast occupy the three cash-table seats, and whether the boss is among them.
+
+---
+
+## Phase 8 — Back Room boss seat and first-clear ceremony
+
+**Purpose:** give Back Room a named top rung whose ceremony does not erode through repetition.
+
+**Included scope:**
+
+- The boss as a **guaranteed named seat inside the existing Back Room Freezeout**.
+- A persistent per-venue first-clear flag.
+- The one-time first-clear ceremony and the Pub unlock on first victory.
+- Recurring-rival framing on every later meeting, with no repetition of the first-clear treatment.
+- Authored boss personality, plus only the contained AI tuning Phase 6's measurements justified.
+
+**Exclusions:** no separate boss event; no change to the unlock rule; no wholesale AI rewrite; no Casino-tier boss work; no position, bubble, or pay-jump awareness.
+
+**Dependencies:** Phases 6 and 7.
+
+**Exit condition:** the boss occupies the seat every time; the first win produces the ceremony and the Pub unlock exactly once; a second win does not repeat the first-clear framing; both focused check suites pass.
+
+---
+
+## Phase 9 — Back Room cash table
+
+**Purpose:** a short session with a clean stop point, and an early rebuilding route that is not free money.
+
+**Included scope:**
+
+- The approved parameters: **Back Room only, four-handed, $50 buy-in, $1/$2 blinds, 50-chip starting stack, 25 big blinds, one chip per dollar, no rake**.
+- Full-stack cash-out between completed hands.
+- The money-ownership model: `felt.career` as the single authoritative ledger for bankroll and open-session financial state; the table snapshot holds gameplay state and never money; atomic and idempotent entry and settlement guarded by a settled marker keyed to the session id.
+- The Career save schema version bump and migration for the new open-session fields, with a validator that rejects a malformed open-session entry rather than trusting it.
+- Corrupt-session recovery: prefer the last valid completed-hand snapshot; otherwise refund only the recorded buy-in and close; never infer an unknown stack; never permit a duplicate refund.
+- Persist the session only at completed-hand boundaries.
+- Resident session bankrolls, resident rebuy from their own bankroll, resident departure, and table close when fewer than three players remain. A table close returns the player's full stack; a human bust returns nothing.
+- Mutual exclusion with tournament entry in both directions.
+- Comfortable → Risky second confirmation on the $50 buy-in.
+
+**Exclusions:** no rake; no partial cash-out; no artificial cash-out restriction; no cash table at any other venue; no cents, decimal bankroll values, fractional blinds, exchange rate, or separate chip denomination; no change to the 25 big-blind depth before Phase 11 reports; no economy verdict — this phase produces the session, Phase 11 produces the judgement.
+
+**Dependencies:** Phases 5 and 7.
+
+**Exit condition:** a full session — buy-in, several hands, cash-out, resume after app close, human bust, and table close by resident attrition — behaves correctly against every invariant; forced-corruption and repeated-settlement tests produce exactly one credit *or* exactly one recorded-buy-in refund and never both; the boundary set $0 / $49 / $50 / $99 / $100 / $101 renders the states in `CAREER_DESIGN.md`; no path counts the same dollar twice; existing tournament saves and Single Player saves are unaffected; both focused check suites pass alongside new cash-session checks.
+
+**Owned unresolved decisions:** the size of each resident's session bankroll and whether it resets per session; whether a departing resident is replaced by another named character or the table simply shortens toward its close condition.
+
+---
+
+## Phase 10 — Board extension for live cash, boss and field state
+
+**Purpose:** finish the Board for the Back Room slice.
+
+**Included scope:** only what Phases 7, 8 and 9 have not already surfaced — the cash table as an opportunity, money committed to an open session, an explicit total of bankroll plus money on the table, and Resume / Cash Out as the only two actions on an open session.
+
+**Exclusions:** duration estimates, cosmetics, trophies, records interface. No rebuilding of the contextual card logic.
+
+**Dependencies:** Phases 7, 8 and 9.
+
+**Exit condition:** an open cash session is unmistakable on the Board; money is never ambiguous or apparently missing; Cash Out from the Board always succeeds, because the persisted session is always between hands.
+
+---
+
+## Phase 11 — Back Room playtest gate
+
+**Purpose:** decide whether this treatment is worth repeating at a second venue.
+
+**Included scope — the original core-loop questions:**
 
 - Do buy-ins cause meaningful hesitation?
 - Are Pub Freezeout and Pub Open understandable before both are played?
@@ -83,27 +276,110 @@ Key questions:
 - Does a second-place cash feel positive but clearly below a win?
 - Does Second Chance feel fair and coherent?
 - Does rebuilding feel financial rather than humiliating?
-- Is the locked Card Club noticeable and desirable?
+- Is the locked ladder noticeable and desirable?
 - Do players want another session after a setback?
 
-Proceed to playable Card Club only if the core loop is engaging and the failures are tuning problems rather than structural ones.
+**Plus the expansion questions:**
 
-## Later, evidence-gated work
+- Does the named cast and boss seat feel richer than a flat event list?
+- Does the first-clear ceremony land, and does the rival framing hold afterwards?
+- Do the three resident counters register as knowledge?
+- Does the cash table get used for short sessions, or become a grind?
+- What is the measured hourly rate of cash play against tournament play?
+- Does a cash session reach a natural stopping point soon enough to be worth opening?
+- Does play at 25 big blinds stay recognisably good poker rather than collapsing into preflop shoving?
+- Is the dump-to-recovery route — deliberately losing at cash to fall below $100 and repeat Second Chance — something players actually do?
 
-After the prototype:
+Record hands per session, session length, and percentage of hands reaching the flop at the cash table alongside the qualitative answers.
 
-1. Revisit the Card Club event set with measured pacing and outcomes.
-2. Measure AI win/cash rates before claiming economy balance.
-3. Consider a separate bot-simulation harness only if manual data cannot answer a concrete balance question.
-4. Revisit upper-tier buy-ins, stacks, fields, payouts, and satellites.
-5. Add higher venues one tier at a time, repeating the playtest gate.
+**Exclusions:** no Card Club work regardless of outcome; no new venues; no cosmetics.
 
-## Change discipline
+**Dependencies:** Phase 10.
 
-- One phase at a time.
-- Preserve unrelated user changes and existing saves.
-- Update `STATUS.md` after every completed career milestone.
-- Update this file if implementation order or scope changes.
-- Update `CAREER_DESIGN.md` only when a product decision changes, not for routine implementation detail.
-- Commit documentation changes with the implementation they describe so a future AI can reconstruct the project from Git.
+**Exit condition:** proceed to Phase 12 only if the core loop plus the slice's additions are engaging and the failures are tuning problems rather than structural ones.
 
+---
+
+## Phase 12 — Pub Circuit expansion
+
+**Purpose:** reapply the proven pattern at the second venue.
+
+**Included scope:** Pub residents; a Pub boss seat inside the existing Pub Circuit Freezeout with its own one-time first-clear; Pub fields on the Board. This is the first point at which a rival can recur across two venues.
+
+**Exclusions:** no new event types; no Pub cash table; no Card Club work.
+
+**Dependencies:** Phase 11 passing.
+
+**Exit condition:** Pub Circuit shows on the Board at the same fidelity as Back Room; a recurring rival is legible as the same character across two venues; both focused check suites pass.
+
+---
+
+## Phase 13 — Full dossiers, expanded records, titles and controlled rotation
+
+**Purpose:** the opponent-knowledge and permanent-status axes at full strength.
+
+**Included scope:**
+
+- Dossier display, with cash and tournament stat lines rendered as two facets of one character.
+- Authored reveal copy selected by encounter thresholds — never generated.
+- The flagged-moment ring, capped at five per character, storing event keys only.
+- Career record: events entered, best finish per venue, head-to-head against each resident.
+- Hand-authored milestone titles, one per venue.
+- A rotating featured/visitor slot driven by completed events, never a real-world timer. Staple events never rotate.
+
+**Exclusions:** no XP, no currency, no purchasable knowledge, no daily timers, no generated text.
+
+**Dependencies:** Phase 12.
+
+**Exit condition:** a resident's dossier is meaningfully sharper after real encounters of either kind; staples never rotate away; per-character save data stays within its declared bounds.
+
+---
+
+## Phase 14 — Trophies
+
+**Purpose:** the earned-display axis.
+
+**Included scope:** trophies awarded automatically for permanent milestones already tracked elsewhere — first venue win, first boss clear, first elimination of a recurring rival — displayed with no mechanical effect.
+
+**Exclusions:** trophies are never purchasable, never crafted, never a currency, and never gate anything.
+
+**Dependencies:** Phase 13.
+
+**Exit condition:** every trophy maps to a milestone already recorded elsewhere; no trophy can be obtained by spending.
+
+---
+
+## Phase 15 — Cosmetic spending experiment
+
+**Purpose:** test at small scale whether spending bankroll on expression is enjoyable rather than a hoarding tax.
+
+**Included scope:** a small set of purchases on the machine itself — cabinet finish, card backs, chip sets — bought with actual bankroll; the tournament-entry confirmation pattern reused; a **hard block** on any purchase that would drop the player below Comfortable for their highest unlocked tier.
+
+**Exclusions:** no second currency; no purchase with any effect on cards, odds, AI, or event access; no purchasable trophies; the Board is not a shop.
+
+**Dependencies:** Phase 12 at minimum, so that bankroll headroom above the top tier played actually exists. Executed in numeric order after Phase 14.
+
+**Exit condition:** hoarding, regret and runway effects are observed and reported from real play; the hard block is never circumvented.
+
+**Owned unresolved decision:** whether cosmetic prices are flat or scale with venue tier.
+
+---
+
+## Phase 16 — Card Club gate, then higher venues one at a time
+
+**Purpose:** the existing evidence-gate discipline, unchanged and now also covering the RPG layer.
+
+**Included scope:**
+
+- The human playtest gate, extended to ask whether bosses, residents and the cash table hold up over a real session — not only whether the original core loop does.
+- Revisit the Card Club event set with measured pacing and outcomes.
+- Measure AI win/cash rates before claiming economy balance.
+- Consider a separate bot-simulation harness only if manual data cannot answer a concrete balance question.
+- Revisit upper-tier buy-ins, stacks, fields, payouts, and satellites.
+- Then Casino Floor, High Roller Room and Invitational Championship, one venue at a time, each repeating the gate.
+
+**Exclusions:** no upper-tier economy numbers invented beyond the ladder `CAREER_DESIGN.md` already provisions; no cash table at any of these venues.
+
+**Dependencies:** Phases 11 and 12 at minimum. Executed in numeric order.
+
+**Exit condition:** per venue, the gate passes before the next is built.
