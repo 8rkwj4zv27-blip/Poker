@@ -82,6 +82,29 @@ const CAREER_EVENT_LIST = Object.freeze([
     handsPerBlindLevel:10,
     difficulty:'hard',
     unlockRequirement:Object.freeze({ type:'event-win', eventId:'back-room-freezeout' })
+  }),
+  /* The free recovery event. Its visibility/enterability is NOT the
+     unlockRequirement mechanism above — it is governed entirely by the
+     live-bankroll predicate below (isSecondChanceEligible), which is the
+     single source of truth every caller (this screen today, the Board's
+     Special Opportunity slot later) must consult instead of restating the
+     $100 rule. unlockRequirement stays null forever: Second Chance never
+     participates in venue-unlock progression, in either direction. */
+  Object.freeze({
+    id:'second-chance',
+    venue:'BACK ROOM',
+    name:'SECOND CHANCE',
+    format:'Freezeout',
+    playerCount:3,
+    opponentCount:2,
+    buyIn:0,
+    prize:150,
+    payouts:Object.freeze([150]),
+    stack:500,
+    initialBlindLevel:0,
+    handsPerBlindLevel:10,
+    difficulty:'medium',
+    unlockRequirement:null
   })
 ]);
 const CAREER_EVENTS = Object.freeze(CAREER_EVENT_LIST.reduce((registry,event)=>{
@@ -91,6 +114,17 @@ const CAREER_EVENTS = Object.freeze(CAREER_EVENT_LIST.reduce((registry,event)=>{
 
 function careerEventById(id){
   return typeof id === 'string' ? (CAREER_EVENTS[id] || null) : null;
+}
+
+/* Second Chance's recovery threshold is a FIXED approved value — never
+   derived from the cash table or from any tournament buy-in (see
+   CAREER_DESIGN.md, "The ordering invariant"). This is the one pure,
+   shared predicate for eligibility; every caller reads it rather than
+   re-encoding "< 100" for itself. */
+const SECOND_CHANCE_EVENT_ID = 'second-chance';
+const SECOND_CHANCE_BANKROLL_THRESHOLD = 100;
+function isSecondChanceEligible(bankroll){
+  return Number.isFinite(bankroll) && bankroll < SECOND_CHANCE_BANKROLL_THRESHOLD;
 }
 function careerEventSnapshot(event){
   if (!event) return null;

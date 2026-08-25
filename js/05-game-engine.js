@@ -2306,13 +2306,20 @@ function runOverModel(g){
 function careerStageModel(m){
   const money=n=>'$'+Math.abs(Math.round(n)).toLocaleString();
   const won=m.won;
+  // A loss whose captured buy-in is exactly zero (a free event, e.g. Second
+  // Chance) forfeited nothing — "Buy-in lost"/"BUY-IN FORFEITED" would be
+  // false. Report the truthful, signless zero instead. Never reachable on a
+  // win: a win's hero is always the prize, whatever the buy-in was.
+  const freeLoss = !won && m.buyIn === 0;
   return {
     tone: won ? 'positive' : 'negative',
     eyebrow:m.eventName,
     title: won ? 'EVENT WON' : 'EVENT LOST',
     hero:{
-      label: won ? 'Prize' : 'Buy-in lost',
-      reel:{ text:money(won ? m.prize : m.buyIn), prefix: won ? '+' : '-' },
+      label: won ? 'Prize' : freeLoss ? 'BANKROLL CHANGE' : 'Buy-in lost',
+      reel: freeLoss
+        ? { text:'$0', prefix:'' }
+        : { text:money(won ? m.prize : m.buyIn), prefix: won ? '+' : '-' },
       // The one persistent, forward-carrying Career number.
       carryLabel:'BANKROLL',
       carryValue:money(m.bankroll)
@@ -2334,7 +2341,7 @@ function careerStageModel(m){
     detail:{
       kind:'statement', label:'Result',
       line: won ? 'EVERY OPPONENT IS OUT' : 'YOU WERE ELIMINATED',
-      sub: won ? 'PRIZE CREDITED TO BANKROLL' : 'BUY-IN FORFEITED'
+      sub: won ? 'PRIZE CREDITED TO BANKROLL' : freeLoss ? 'NO BUY-IN LOST' : 'BUY-IN FORFEITED'
     },
     progress:{ label: won ? 'EVENT COMPLETE' : 'EVENT ENDED', value:'', next:'NEXT: EVENTS BOARD' }
   };

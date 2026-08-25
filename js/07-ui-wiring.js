@@ -601,6 +601,11 @@ function careerEventState(eventId){
   if (career.active){
     return career.active.eventId === event.id ? 'active' : 'blocked';
   }
+  // Live eligibility, re-checked every call — never only at render time.
+  // An event already active bypassed this above, so an active Second Chance
+  // stays resumable even if bankroll (which cannot actually move while an
+  // event is active) later reads as ineligible.
+  if (event.id === SECOND_CHANCE_EVENT_ID && !isSecondChanceEligible(career.bankroll)) return 'hidden';
   if (!careerEventUnlocked(event)) return 'locked';
   if (career.bankroll < event.buyIn) return 'unaffordable';
   return 'available';
@@ -831,7 +836,8 @@ function renderCareerScreen(){
 
   if (board){
     board.innerHTML = CAREER_EVENT_LIST.map(event=>{
-      const state = careerEventState(event.id);
+      return { event, state: careerEventState(event.id) };
+    }).filter(({state})=>state !== 'hidden').map(({event,state})=>{
       const copy = stateCopy[state].slice();
       if (state === 'available') copy[1] = careerPayoutNote(event);
       if (state === 'locked' && event.unlockRequirement){
@@ -868,8 +874,7 @@ function renderCareerScreen(){
     });
   }
 
-  const hasAffordableUnlocked = CAREER_EVENT_LIST.some(event=>
-    careerEventUnlocked(event) && career.bankroll >= event.buyIn);
+  const hasAffordableUnlocked = CAREER_EVENT_LIST.some(event=>careerEventState(event.id) === 'available');
   if (newBtn) newBtn.classList.toggle('hidden', careerHasActiveEvent() || hasAffordableUnlocked);
 
   if (resultEl){
@@ -877,7 +882,9 @@ function renderCareerScreen(){
     resultEl.classList.toggle('hidden', !r);
     resultEl.classList.toggle('is-cash', !!r && r.outcome === 'cash');
     if (r){
-      const sign = r.delta >= 0 ? '+' : '-';
+      // A zero delta — a free event's loss or forfeit — is neither a gain
+      // nor a loss, so it carries no sign at all: never '+$0' or '-$0'.
+      const sign = r.delta > 0 ? '+' : r.delta < 0 ? '-' : '';
       const tag = r.outcome === 'win' ? 'Event won'
         : r.outcome === 'cash' ? 'Event cashed'
         : 'Event lost';
@@ -885,6 +892,12 @@ function renderCareerScreen(){
         '<span class="cr-amt tabular">' + sign + '$' + Math.abs(r.delta).toLocaleString() + '</span>';
     }
   }
+
+  // Career state can change while the DEV panel stays mounted (entry,
+  // settlement, abandonment, fresh career). Keep its bankroll control in
+  // step with the same render that updates the player-facing Board, so it
+  // cannot remain visually locked after an event has ended.
+  if (typeof refreshDevPanel === 'function') refreshDevPanel();
 }
 
 function careerEnterPressed(eventId){

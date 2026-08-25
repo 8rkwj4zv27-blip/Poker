@@ -1,8 +1,11 @@
 # Career Mode — Current Status
 
-Last verified: 2026-08-24  
-Verified implementation baseline: `cfb317e` — `Round End Update: one shared stage for all four major results`.
-Career logic baseline remains `d31b120` — `Add multi-place payouts and Pub Circuit Open` (Phase 1); every commit since has changed result presentation only. Build `v0.21.0-dev · Round End Update`, service-worker cache `poker-v20-0`.
+Last verified: 2026-08-25  
+Verified implementation baseline: `63bbcfa` — `Approve Career expansion plan`, plus Second Chance
+(Phase 2) and its owner-requested correction pass (venue, free-event-loss result copy, compact
+zero-delta sign), implemented in the working tree on top of it and **not yet committed** — pending
+owner review per this task's instructions. Update this hash once that work is committed.
+Career logic baseline before Phase 2 was `d31b120` — `Add multi-place payouts and Pub Circuit Open` (Phase 1); every commit since has changed result presentation only, until Phase 2's registry and entry/state changes. Build `v0.21.0-dev · Round End Update`, service-worker cache `poker-v20-0` (unchanged by Phase 2).
 
 This is the short handoff file. Update it whenever a Career milestone is completed or the immediate next task changes.
 
@@ -12,16 +15,18 @@ The expanded Career direction (the soft poker RPG) was **approved by the owner
 and promoted into `CAREER_DESIGN.md` and `BUILD_PLAN.md` on 2026-08-25.**
 `BUILD_PLAN.md` now carries the complete sixteen-phase sequence.
 
-**No expansion implementation has begun.** Approval changed the canonical
-documents only. Scoring specification, scoring correction, the Contextual Board,
-Full Circuit, pacing instrumentation, named residents, the boss seat, the Back
-Room cash table, dossiers, titles, trophies and cosmetics are **all unbuilt**.
-Nothing in *Implemented now* below changed as a result of the promotion, and the
-Career save schema is **still version 3** — it bumps only when Phase 9
-implements cash-session state.
+Phase 2 (Second Chance) was implemented the same day — see *Implemented now*
+below. Scoring specification, scoring correction, the Contextual Board, Full
+Circuit, pacing instrumentation, named residents, the boss seat, the Back Room
+cash table, dossiers, titles, trophies and cosmetics remain **all unbuilt**. The
+Career save schema is **still version 3**; adding the Second Chance descriptor
+did not require a bump — a saved career missing the new `unlocks['second-chance']`
+key fails `isValidCareer()` and is carried through the existing `migrateCareer()`
+path (the same mechanism that added Pub Circuit Open in Phase 1), which is
+exercised by a dedicated check. It bumps only when Phase 9 implements
+cash-session state.
 
-**Phase 2 (Second Chance) remains the sole immediate next task**, unchanged and
-unblocked by the expansion.
+**Phase 3 (scoring specification and audit) is the sole immediate next task.**
 
 ## Implemented now
 
@@ -68,6 +73,56 @@ unblocked by the expansion.
     warm gold edge, no stage roll.
 - Quick Resolve is available in the underlying elimination-table flow.
 - Version-1 and version-2 Career saves migrate to version 3.
+- **Second Chance recovery (Phase 2, 2026-08-25).** Free three-player Medium-AI
+  freezeout (`second-chance`), 500 stack, `payouts:[150]`. Visible and
+  enterable only while `careerBankroll() < 100` — a fixed value, never derived
+  from the cash table or any tournament buy-in. Eligibility is exposed as one
+  pure predicate, `isSecondChanceEligible(bankroll)` (`js/04-modes-and-scoring.js`),
+  which `careerEventState()` is the only caller of; the Career screen filters
+  the board to that state rather than re-testing bankroll itself, so the rule
+  exists in exactly one place for the Board to reuse at Phase 5.
+  `unlockRequirement` stays `null` permanently — Second Chance can never
+  satisfy another event's unlock and nothing can unlock it, so a win credits
+  $150 additively and nothing on the status axis moves. Repeatable while
+  eligible; the event simply does not render once bankroll reaches $100.
+  Entry is revalidated through the same `careerCanEnterEvent()` gate every
+  other event uses, so a stale or manually triggered entry at $100+ is
+  rejected with no bankroll, active-event, or save mutation. Because the
+  active-event branch in `careerEventState()` is checked before the
+  eligibility branch, an already-active Second Chance stays resumable even if
+  live eligibility were ever read as false while active (bankroll cannot
+  actually move mid-active, since nothing else can touch it then). Settlement
+  reuses the existing placement-aware machinery verbatim: idempotent credit
+  guarded by `career.active` being cleared, second/third place pay $0,
+  abandonment forfeits the (zero) buy-in. `venue` reads `BACK ROOM` — Second
+  Chance is displayed as a Back Room recovery event, not a distinct venue.
+- **Truthful free-event-loss copy, correction pass (2026-08-25).** A loss
+  whose captured buy-in is exactly `0` (only Second Chance produces this
+  today) no longer claims a buy-in was lost or forfeited on the shared result
+  stage. `careerStageModel()` (js/05-game-engine.js) branches on
+  `!won && m.buyIn === 0`: the hero reads `BANKROLL CHANGE` / `$0` with an
+  empty reel prefix (so `buildResultDigits` can never attach a `+` or `-`
+  glyph), and the detail sub-line reads `NO BUY-IN LOST` in place of
+  `BUY-IN FORFEITED`. The result statement (`YOU WERE ELIMINATED`) and the
+  `EVENT LOST` title are unchanged. Every paid-event loss (`buyIn > 0`) keeps
+  its existing `Buy-in lost` / `BUY-IN FORFEITED` copy verbatim — the branch
+  is additive, not a rewrite of the existing path. Abandonment never reaches
+  this chassis at all (see `careerAbandonPressed()`), so this only affects a
+  real bust or non-paying finish at the table.
+- **Compact Career-screen result summary signs a zero delta as `$0`**, never
+  `+$0` or `-$0` (`renderCareerScreen()`, js/07-ui-wiring.js). A positive or
+  negative delta is unaffected and still carries its sign.
+- **DEV-only Career bankroll control (manual verification aid, 2026-08-25).**
+  The DEV panel accepts a non-negative whole-dollar bankroll value and includes
+  `$0`, `$99`, `$100` and `$500` presets so Second Chance can be checked at its
+  eligibility boundary without deliberately losing events. It changes only
+  `career.bankroll`, persists through the normal Career save, and refreshes the
+  Board immediately; unlocks, result history and table saves remain untouched.
+  It is disabled while a Career event is active, when the buy-in has already
+  been staked, and the mutation function also refuses calls outside DEV mode.
+  The Career Board's normal render now refreshes the mounted DEV panel as well,
+  so entry locks the control and settlement or abandonment unlocks it without a
+  page reload.
 
 ## Save migration behaviour
 
@@ -95,6 +150,42 @@ Both were latent and would have surfaced the moment the schema widened:
 - `node validation/career-result-checks.js`
 
 Run both before and after every Career implementation phase.
+
+Last verification on 2026-08-25 (Second Chance correction pass plus DEV bankroll aid): **42/42 event checks and 39/39
+result checks passed**.
+
+Event checks: 39 pre-existing (the `venue:'RECOVERY'` descriptor assertion updated to
+`venue:'BACK ROOM'`, its only change) plus 2 new — an existing valid version-3 save from before
+Second Chance existed (missing `unlocks['second-chance']` only) preserves bankroll, active state,
+existing unlocks and last result, adds the new catalogue entry safely, persists the migration, and
+leaves eligibility governed solely by live bankroll (checked both with an active event blocking
+entry and, separately, at bankroll $40 and $500 with no active event); and the compact Career
+result summary rendering `$0` rather than `+$0`/`-$0` for a zero delta, with a real gain and a real
+paid loss both proven to still carry their sign.
+
+DEV-aid coverage adds one further check: whole-dollar `$99` and `$100` values persist and drive
+the shared Second Chance predicate immediately; invalid, fractional, negative and unsafe values
+are rejected; non-DEV calls and changes during an active event are rejected; unlocks and result
+history remain byte-for-byte equivalent.
+
+Result checks: 36 pre-existing, unchanged, plus 3 new — a free-event loss (captured buy-in `$0`)
+never claims `BUY-IN LOST`, `BUY-IN FORFEITED`, `+$0` or `-$0` (the `BUY-IN LOST` check strips the
+truthful `NO BUY-IN LOST` phrase first, so it cannot false-positive against its own required
+copy); the same case uses `BANKROLL CHANGE`, a signless `$0` reel and `NO BUY-IN LOST`, with
+`EVENT LOST` and `YOU WERE ELIMINATED` unchanged; and an ordinary paid-event loss (`buyIn:100`,
+the pre-existing fixture) keeps its exact `Buy-in lost` / `BUY-IN FORFEITED` copy, proving the new
+branch is additive.
+
+Last verification on 2026-08-25 (Second Chance, Phase 2 implementation): **39/39 event checks and
+36/36 result checks passed** (27 pre-existing — one assertion updated, the registry length from 3
+to 4, since Second Chance is a real fourth descriptor; 12 new, covering the descriptor, the
+eligibility predicate at every boundary in the exit condition's set ($0/$49/$50/$99/$100/$101),
+free entry, additive credit from $0 and from $99, duplicate-settlement rejection, $0 for
+second/third, defeat/abandonment leaving unlocks untouched, proof that a win never unlocks Pub
+Circuit, an active event's resumability under a hypothetical later-diverging eligibility read, and
+non-interference with Back Room/Pub Circuit event states). Result checks were unchanged in that
+pass — the implementation touched no result-stage code; this correction pass is what adds result
+coverage.
 
 Last verification on 2026-08-24 (unified result stage): **27/27 event checks and 36/36 result
 checks passed** (24 pre-existing, updated where the approved decision moved what they assert;
@@ -138,7 +229,6 @@ New coverage includes the Pub Circuit Open descriptor and five-player launch con
 
 ## Not implemented
 
-- Second Chance recovery.
 - Scoring award specification, audit or correction.
 - Contextual board, permanent-status line, visible venue ladder, or Full Circuit.
 - Card Club preview.
@@ -157,8 +247,8 @@ dependencies and exit conditions.
 | Phase | Work | State |
 |---:|---|---|
 | 1 | Paid places and Pub Circuit Open | Complete |
-| 2 | Second Chance recovery | **Next** |
-| 3 | Scoring specification and audit | Approved, not started |
+| 2 | Second Chance recovery | Complete |
+| 3 | Scoring specification and audit | **Next** |
 | 4 | Scoring correction | Approved, not started |
 | 5 | Contextual Board and visible Full Circuit | Approved, not started |
 | 6 | Back Room pacing instrumentation and decision | Approved, not started |
@@ -178,27 +268,25 @@ time, in numeric order.
 
 ## Immediate next task
 
-Phase 2 from `BUILD_PLAN.md`: Second Chance recovery. The unified result stage was approved by
-the owner on 24 August 2026 and is committed as `Round End Update`
-(build `v0.21.0-dev`, service-worker cache `poker-v20-0`). On-device iPhone verification of the
-four transitions is still outstanding — see Not verified.
+Phase 3 from `BUILD_PLAN.md`: scoring specification and audit. Diagnostic only —
+no code change. Define the authoritative award table (award name, exact
+trigger, value, presentation timing, persistence); trace every award through
+detection → mutation → presentation → persistence; audit Career and Single
+Player separately; identify false, duplicated, late or incorrectly valued
+awards; check all lifetime-statistic persistence; produce reproducible
+fixtures in the style of `validation/`. See `BUILD_PLAN.md` Phase 3 for the
+full exit condition.
+
+On-device iPhone verification of the four result-stage transitions (from the
+24 August 2026 `Round End Update`) is still outstanding — see Not verified.
+Rendered verification of Second Chance (below) is also still outstanding — see
+Manual checks still outstanding.
 
 DEV transition tester (retained for future result work): enable Developer Mode in Settings (or load with `?dev`), open the DEV
 panel, and use MAJOR RESULT TRANSITIONS. It drives the real `presentResultStage()` path with
 fixture state: no buy-in, no prize, no unlock, no save, no lifetime statistic and no high score
 is written. Each result action re-arms the tester so a transition can be watched repeatedly;
 RESET TESTER returns to the Main Menu.
-
-The task itself: Second Chance recovery — the free three-player descriptor, gated strictly to a bankroll below $100, crediting $150 additively on a win, repeatable below the threshold, hidden at $100 or above, and unable to unlock Pub or Card Club.
-
-Minimum completion requirements:
-
-- Test bankroll values including $0, $50, $99 and $100.
-- Second Chance can never unlock a venue.
-- A player can never reach a career dead end.
-- The $100 threshold stays a fixed approved value, never derived.
-- Eligibility is exposed as a **single shared predicate**, so Phase 5's Board
-  reads it rather than restating the recovery rule a second time.
 
 ## Manual checks still outstanding
 
@@ -211,6 +299,24 @@ Minimum completion requirements:
 6. Abandon — buy-in forfeited, no prize, no unlock.
 7. Back Room and Pub Circuit Freezeout play and settle exactly as before.
 8. Five-handed table layout and the Payout readout are legible on an iPhone.
+9. At a bankroll below $100, Second Chance appears as a fourth, free-entry card; at $100 or
+   above it does not render at all (not even disabled).
+10. Enter Second Chance — bankroll does not move; the table is a three-handed 500-stack Medium
+    game.
+11. Win Second Chance — bankroll goes up by exactly $150, no new venue unlock appears.
+12. Bust Second Chance (finish 2nd or 3rd, or get eliminated) — the shared `EVENT LOST` stage
+    reads `BANKROLL CHANGE` / `$0` on the hero (no `+` or `-`), `YOU WERE ELIMINATED` as the
+    result statement, and `NO BUY-IN LOST` as the sub-line — never `BUY-IN FORFEITED` or a signed
+    `$0`. Bankroll is unchanged; Second Chance remains available on the next visit to the Career
+    screen if still under $100.
+13. Abandon an active Second Chance — bankroll unchanged, no result card is shown (abandonment
+    returns straight to the Career screen), and the compact result summary at the top of that
+    screen shows a bare `$0`, never `+$0` or `-$0`.
+14. Confirm an ordinary paid loss (e.g. a Back Room bust) still reads `Buy-in lost` on the hero and
+   `BUY-IN FORFEITED` on the sub-line, unchanged by this pass.
+
+For checks 9–14, the DEV panel's **CAREER BANKROLL** control can set `$0`, `$99`, `$100`, `$500`
+or any non-negative whole-dollar value. It is intentionally disabled during an active event.
 
 ## Working decisions to validate
 
@@ -220,7 +326,16 @@ Minimum completion requirements:
 - `lastResult.delta` keeps its pre-existing convention: the gross prize when one was paid, otherwise the forfeited buy-in — not net profit.
 - The board uses a three-buy-in Comfortable threshold.
 - Risky entries use an in-place second confirmation rather than a new details screen.
-- Second Chance pays $150 and appears below $100.
+- Second Chance pays $150 and appears below $100 (implemented, Phase 2). Its emotional
+  effect and exploitation potential remain unobserved until Phase 11 playtesting.
+- Second Chance's `venue` reads `BACK ROOM` (corrected 2026-08-25; briefly `RECOVERY` in the
+  initial Phase 2 pass). It does not affect eligibility or progression, both of which read only
+  from `isSecondChanceEligible()`/`unlockRequirement`, never from `venue`.
+- A free-entry Second Chance loss (bust, or any non-paying finish) settles at `delta:0` and now
+  presents truthfully: `BANKROLL CHANGE` / `$0` / `NO BUY-IN LOST` on the shared result stage
+  (correction pass, 2026-08-25), rather than a false `Buy-in lost` claim. Abandonment still shows
+  no result card at all and settles at `delta:0` on the compact Career summary, which now renders
+  that as a bare `$0`.
 - Exact upper-tier economy, event durations, and the 4–8-hour career target remain unvalidated.
 - Career pacing is unmeasured. Back Room instrumentation and the resulting
   stack-depth and blind-cadence decision are Phase 6's job; blinds are not
@@ -228,7 +343,7 @@ Minimum completion requirements:
 
 ## Do not start next
 
-Phase 2 is the only task in flight. Nothing below is next, whether it is
+Phase 3 is the only task in flight. Nothing below is next, whether it is
 permanently excluded or approved for a later phase.
 
 Permanently excluded:
@@ -238,7 +353,7 @@ Permanently excluded:
 
 Approved for a later phase — not now:
 
-- Scoring specification, audit or correction (Phases 3–4).
+- Scoring correction (Phase 4) — depends on Phase 3's findings.
 - Board, status line, or visible venue ladder (Phase 5).
 - Pacing instrumentation or any blind-cadence change (Phase 6).
 - Named residents, relationship records, boss seat, or cash table (Phases 7–9).

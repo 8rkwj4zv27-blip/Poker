@@ -62,6 +62,14 @@ const lossModel = {
   buyIn:100, bankroll:400, eventScore:1275, hands:4, field:3
 };
 const lossHTML = careerResultHTML(lossModel);
+/* A loss from a free event (Second Chance's captured buy-in is always 0).
+   Bankroll is deliberately unchanged from a plausible pre-event value (99,
+   under the $100 recovery threshold) to prove the truthful-copy branch is
+   keyed on the captured buy-in alone, not on any other reading of state. */
+const freeLossModel = {
+  outcome:'loss', won:false, cashed:false, place:2, eventName:'SECOND CHANCE', prize:0,
+  buyIn:0, bankroll:99, eventScore:640, hands:5, field:3
+};
 const pubModel = buildCareerResultModel({
   event:{ name:'PUB CIRCUIT FREEZEOUT', playerCount:4, buyIn:300, prize:1200, payouts:[1200], reward:{score:8640} },
   handNumber:12
@@ -374,6 +382,7 @@ const bustStage = resultStageHTML(bustModel);
 
 const wonStage = resultStageHTML(careerStageModel(winModel));
 const lostStage = resultStageHTML(careerStageModel(lossModel));
+const freeLossStage = resultStageHTML(careerStageModel(freeLossModel));
 const allStages = [clearedStage, bustStage, wonStage, lostStage];
 
 check('All four outcomes render the same five-region chassis', ()=>{
@@ -487,6 +496,54 @@ check('EVENT LOST never states the same buy-in twice', ()=>{
   // The win does show its stake, once, and never a redundant prize cell.
   assert.ok(/Buy-in<\/span><strong class="stage-recap-value tabular">\$100<\/strong>/.test(wonStage));
   assert.ok(!/Prize<\/span><strong class="stage-recap-value/.test(wonStage));
+});
+
+check('A free-event loss (captured buy-in $0) never claims a buy-in was lost or forfeited', ()=>{
+  [freeLossStage, JSON.stringify(careerStageModel(freeLossModel))].forEach(text=>{
+    // 'BUY-IN LOST' must never appear as its own claim — only ever as part
+    // of the truthful 'NO BUY-IN LOST' sub-line. Strip that exact phrase
+    // first, then the bare fragment must be gone.
+    assert.ok(!text.split('NO BUY-IN LOST').join('').includes('BUY-IN LOST'), text);
+    assert.ok(!text.includes('BUY-IN FORFEITED'), text);
+    assert.ok(!text.includes('Buy-in lost'), text);
+    assert.ok(!text.includes('+$0'), text);
+    assert.ok(!text.includes('-$0'), text);
+  });
+  // The reel itself is signless at the model level too — buildResultDigits
+  // only ever prepends a sign glyph when prefix is truthy (see
+  // js/06-presentation.js), so an empty prefix is what actually guarantees
+  // no '+' or '-' cell can ever be built for this reel.
+  const freeLossModelBuilt = careerStageModel(freeLossModel);
+  assert.strictEqual(freeLossModelBuilt.hero.reel.text, '$0');
+  assert.strictEqual(freeLossModelBuilt.hero.reel.prefix, '');
+});
+
+check('A free-event loss uses the truthful BANKROLL CHANGE / $0 / NO BUY-IN LOST copy', ()=>{
+  assert.ok(freeLossStage.includes('BANKROLL CHANGE'));
+  assert.ok(freeLossStage.includes('NO BUY-IN LOST'));
+  assert.ok(freeLossStage.includes('EVENT LOST'));           // title is unchanged
+  assert.ok(freeLossStage.includes('YOU WERE ELIMINATED'));  // result statement is unchanged
+  const model = careerStageModel(freeLossModel);
+  assert.strictEqual(model.hero.label, 'BANKROLL CHANGE');
+  assert.strictEqual(model.detail.sub, 'NO BUY-IN LOST');
+  assert.strictEqual(model.detail.line, 'YOU WERE ELIMINATED');
+  assert.strictEqual(model.tone, 'negative');
+});
+
+check('An ordinary paid-event loss keeps its existing Buy-in lost / BUY-IN FORFEITED copy', ()=>{
+  // lossModel/lostStage carry a real $100 buy-in — the pre-existing fixture,
+  // asserted again here so this correction pass cannot be read as having
+  // touched the paid path.
+  assert.strictEqual(lossModel.buyIn, 100);
+  const model = careerStageModel(lossModel);
+  assert.strictEqual(model.hero.label, 'Buy-in lost');
+  assert.strictEqual(model.hero.reel.text, '$100');
+  assert.strictEqual(model.hero.reel.prefix, '-');
+  assert.strictEqual(model.detail.sub, 'BUY-IN FORFEITED');
+  assert.ok(lostStage.includes('Buy-in lost'));
+  assert.ok(lostStage.includes('BUY-IN FORFEITED'));
+  assert.ok(!lostStage.includes('BANKROLL CHANGE'));
+  assert.ok(!lostStage.includes('NO BUY-IN LOST'));
 });
 
 check('Career progression strip is a deliberate two-part layout', ()=>{

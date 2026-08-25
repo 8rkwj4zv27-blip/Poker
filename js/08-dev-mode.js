@@ -462,6 +462,26 @@ function syncDevSection(){
   const readout = $('dev-build-readout');
   if (readout) readout.textContent = 'Build ' + BUILD_VERSION;
 }
+
+/* DEV-only Career testing control. This changes only the off-table bankroll
+   field in the existing Career record: unlocks, result history and table saves
+   are deliberately left alone. Refuse an active event because its buy-in has
+   already been staked and changing the ledger mid-event would create a test
+   state production can never reach. */
+function normalizeDevCareerBankroll(value){
+  if (typeof value === 'string' && value.trim() === '') return null;
+  const amount = Number(value);
+  return Number.isSafeInteger(amount) && amount >= 0 ? amount : null;
+}
+function devSetCareerBankroll(value){
+  if (!DEV_MODE || careerHasActiveEvent()) return false;
+  const amount = normalizeDevCareerBankroll(value);
+  if (amount === null) return false;
+  career.bankroll = amount;
+  saveCareer();
+  renderCareerScreen();
+  return true;
+}
 function initDevPanel(){
   if (!DEV_MODE) return;
   if ($('dev-panel')) return;
@@ -501,6 +521,21 @@ function initDevPanel(){
           '<button data-dev-opponents="5" type="button">5 OPP</button>' +
           '<button data-dev-opponents="6" type="button">6 OPP</button>' +
         '</div>' +
+      '</div>' +
+      '<div id="dev-career-bankroll">' +
+        '<div class="dev-section-title">CAREER BANKROLL</div>' +
+        '<div class="dev-subtitle">WHOLE-DOLLAR TEST VALUE · SAVES TO THIS CAREER</div>' +
+        '<div id="dev-bankroll-row">' +
+          '<input id="dev-bankroll-input" type="number" min="0" step="1" inputmode="numeric" aria-label="Career bankroll" />' +
+          '<button id="dev-bankroll-apply" type="button">APPLY</button>' +
+        '</div>' +
+        '<div id="dev-bankroll-presets">' +
+          '<button data-dev-bankroll="0" type="button">$0</button>' +
+          '<button data-dev-bankroll="99" type="button">$99</button>' +
+          '<button data-dev-bankroll="100" type="button">$100</button>' +
+          '<button data-dev-bankroll="500" type="button">$500</button>' +
+        '</div>' +
+        '<div id="dev-bankroll-status"></div>' +
       '</div>' +
         '<div id="dev-arcade-controls">' +
         '<div class="dev-section-title">ARCADE TEST</div>' +
@@ -594,6 +629,28 @@ function initDevPanel(){
   document.querySelectorAll('#dev-table-size-row button').forEach(b=>{
     b.onclick = ()=>devNewEliminationTable(parseInt(b.dataset.devOpponents,10));
   });
+  const applyDevBankroll = value=>{
+    const input = $('dev-bankroll-input');
+    const status = $('dev-bankroll-status');
+    if (devSetCareerBankroll(value)){
+      if (input) input.value = String(careerBankroll());
+      if (status) status.textContent = 'SET TO $' + careerBankroll().toLocaleString();
+    } else if (status){
+      status.textContent = careerHasActiveEvent()
+        ? 'FINISH OR ABANDON THE ACTIVE EVENT FIRST'
+        : 'ENTER A WHOLE-DOLLAR VALUE OF $0 OR MORE';
+    }
+  };
+  $('dev-bankroll-apply').onclick = ()=>applyDevBankroll($('dev-bankroll-input').value);
+  $('dev-bankroll-input').onkeydown = event=>{
+    if (event.key === 'Enter'){
+      event.preventDefault();
+      applyDevBankroll(event.currentTarget.value);
+    }
+  };
+  panel.querySelectorAll('[data-dev-bankroll]').forEach(button=>{
+    button.onclick = ()=>applyDevBankroll(button.dataset.devBankroll);
+  });
   $('dev-end-table').onclick = devEndTable;
   const runArcadeDevTest=fn=>()=>{
     fn();
@@ -627,6 +684,21 @@ function refreshDevPanel(){
   $('dev-new-elim').classList.toggle('hidden', onTable && !game.over);
   $('dev-controls').classList.toggle('hidden', !onTable || game.over);
   $('dev-arcade-controls').classList.toggle('hidden', !rewardable);
+  const careerActive = careerHasActiveEvent();
+  const bankrollInput = $('dev-bankroll-input');
+  const bankrollApply = $('dev-bankroll-apply');
+  if (bankrollInput){
+    bankrollInput.disabled = careerActive;
+    if (document.activeElement !== bankrollInput) bankrollInput.value = String(careerBankroll());
+  }
+  if (bankrollApply) bankrollApply.disabled = careerActive;
+  document.querySelectorAll('#dev-bankroll-presets button').forEach(button=>{
+    button.disabled = careerActive;
+  });
+  const bankrollStatus = $('dev-bankroll-status');
+  if (bankrollStatus) bankrollStatus.textContent = careerActive
+    ? 'FINISH OR ABANDON THE ACTIVE EVENT FIRST'
+    : 'CURRENT: $' + careerBankroll().toLocaleString();
   const hip = handInProgress(), bh = betweenHands();
   $('dev-win-hand').disabled = !(onTable && hip);
   $('dev-ko-next').disabled = !(onTable && hip);

@@ -808,6 +808,15 @@
 #dev-result-stage{ display:flex; flex-direction:column; gap:3px; padding-top:4px; border-top:1px solid #555; }
 #dev-table-size{ padding-top:4px; border-top:1px solid #555; }
 #dev-table-size-row{ display:grid; grid-template-columns:repeat(3,1fr); gap:3px; }
+#dev-career-bankroll{ padding-top:4px; border-top:1px solid #555; }
+#dev-bankroll-row{ display:grid; grid-template-columns:minmax(0,1fr) auto; gap:3px; }
+#dev-bankroll-row input{
+  min-width:0; width:100%; box-sizing:border-box; padding:4px 5px;
+  font:10px monospace; color:#eee; background:#111; border:1px solid #666; border-radius:3px;
+}
+#dev-bankroll-presets{ display:grid; grid-template-columns:repeat(4,1fr); gap:3px; margin-top:3px; }
+#dev-bankroll-presets button{ text-align:center; }
+#dev-bankroll-status{ min-height:12px; margin-top:3px; color:#9a9a9a; word-break:break-word; }
 #dev-table-size.hidden{ display:none; }
 #dev-new-elim.hidden{ display:none; }
 #dev-status{ color:#9a9a9a; word-break:break-word; }
