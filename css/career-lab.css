@@ -1,0 +1,487 @@
+/* ============================================================
+   CAREER LAB — two machines in one cabinet
+
+   1. PLAYER INSTRUMENT — personalised. Inherits the player-selected
+      production palette and recolours with it. No colour literal.
+   2. CAREER EVENT DIRECTORY — a fixed house machine. Its palette and
+      materials are DELIBERATELY fixed Lab values, scoped beneath the
+      directory root so they override the player theme locally without
+      mutating any global production token.
+
+   The fixed-house values below are an intentional owner-approved
+   experiment, not an oversight.
+   ============================================================ */
+
+
+/* ---- 1. SPECIMEN FRAME AND LAB CHROME ---------------------- */
+.cl-body{ margin:0; }
+.cl-frame{ position:relative; width:100vw; height:100vh; overflow:hidden; }
+/* env() is 0 in a desktop browser, so the installed-iPhone insets are
+   stated. Side padding is left alone so production's max-width:389px
+   rule can still be observed. */
+.cl-frame > #home{ padding-top:59px; padding-bottom:34px; }
+/* The machine stays a centred mobile object at any width. */
+#home .lobby-card.pc-housing{ max-width:408px; }
+
+.cl-controls{
+  display:flex; flex-wrap:wrap; align-items:center; gap:6px;
+  padding:10px; font-family:var(--font-hdr); font-size:7px;
+}
+.cl-controls-label{ font-size:6px; opacity:.7; text-transform:uppercase; letter-spacing:.1em; }
+.cl-controls button{
+  min-height:30px; padding:6px 9px; cursor:pointer;
+  font-family:var(--font-hdr); font-size:7px; text-transform:uppercase;
+}
+.cl-controls button[aria-pressed="true"]{ outline:2px solid currentColor; }
+
+
+/* ---- 2. CABINET RAIL --------------------------------------- */
+#home .home-topbar{ flex-basis:34px; grid-template-columns:1fr auto; }
+
+
+/* ============================================================
+   3. MACHINE 1 — PLAYER INSTRUMENT
+   Target 180-200px at 393x852. Every value here resolves from the
+   production palette, so switching theme recolours this module.
+   ============================================================ */
+.cl-instrument{
+  flex:0 0 auto; padding:7px;
+  display:flex; flex-direction:column; gap:6px;
+}
+
+/* A3a. Inset identification plate — not a heading, avatar or CRT. */
+.cl-nameplate{
+  display:flex; align-items:center; gap:7px;
+  min-height:20px; padding:3px 8px;
+  background:var(--pc-plastic-dark); border:2px solid var(--pc-edge-lo);
+  box-shadow:inset 2px 2px 0 var(--pc-plastic-dark-hi),
+             inset -2px -2px 0 var(--pc-plastic-dark-lo);
+}
+.cl-nameplate .pc-label{ line-height:1; }
+.cl-nameplate-value{
+  font-family:var(--font-hdr); font-size:9px; line-height:1;
+  letter-spacing:.14em; color:var(--pc-plastic); text-shadow:none;
+}
+
+/* A2. The dominant figure: eight cells filling a purpose-sized recess. */
+.cl-bankroll-label{ line-height:1; }
+.cl-bankroll-housing{
+  padding:6px; background:var(--pc-recess); border:3px solid var(--pc-edge-lo);
+  box-shadow:inset 0 5px 0 var(--pc-recess-deep),
+             inset 4px 0 0 rgba(0,0,0,.38),
+             inset -2px -2px 0 rgba(255,255,255,.06);
+}
+#home .cl-instrument .cl-reel{
+  margin:0; padding:5px 6px; gap:4px;
+  display:flex; align-items:center; justify-content:center;
+}
+#home .cl-instrument .cl-reel .jp-cell{
+  flex:1 1 0; min-width:0; height:50px; padding:0;
+  display:flex; align-items:center; justify-content:center;
+  font-size:24px; line-height:1; text-align:center;
+}
+#home .cl-instrument .cl-reel .jp-sym{ flex:0 0 26px; width:26px; font-size:20px; }
+
+/* A3. Three subordinate readouts: flat printed label, bounded window. */
+.cl-stats{ display:grid; grid-template-columns:1.55fr 1fr 1fr; gap:5px; }
+.cl-stat{ min-width:0; display:flex; flex-direction:column; gap:3px; }
+.cl-stat .pc-label{ font-size:5.5px; line-height:1; letter-spacing:.04em; text-align:center; }
+.cl-stat-well{
+  min-height:22px; padding:5px 3px 4px;
+  display:flex; align-items:center; justify-content:center;
+  background:var(--pc-display); border:2px solid var(--pc-edge-lo);
+  box-shadow:inset 0 3px 0 rgba(0,0,0,.55);
+}
+.cl-stat-value{
+  font-family:var(--font-hdr); font-size:8px; line-height:1;
+  letter-spacing:.03em; white-space:nowrap; color:var(--pc-display-ink);
+  text-shadow:0 0 5px color-mix(in srgb,currentColor 34%,transparent);
+}
+
+
+/* ============================================================
+   4. MACHINE 2 — FIXED-HOUSE DIRECTORY
+   Fixed Lab values, scoped to this root. They do not leak upward and
+   they do not follow the player's palette.
+   ============================================================ */
+.cl-directory{
+  --h-ink:#CFC6AC;          /* printed markings on house plastic     */
+  --h-ink-dim:#8A8371;
+  --h-edge:#0A0A09;         /* hard outer edge on every house part   */
+  --h-recess:#14140F;       /* cavity floor                          */
+  --h-recess-deep:#080806;
+  --h-glass:#070B09;        /* near-black CRT glass                  */
+  --h-glass-ink:#9FD3A8;    /* ordinary machine information          */
+  --h-money:#E7B633;        /* money at rest — warm gold             */
+  --h-danger:#D9534A;       /* danger and warning — coral            */
+  --h-button:#E7B633;       /* physical action face                  */
+  --h-button-hi:#FFE17B;
+  --h-button-lo:#8D6818;
+
+  flex:1 1 auto; min-height:0; padding:8px 7px;
+  display:flex; flex-direction:column; gap:10px;
+  overflow-y:auto; overflow-x:hidden; overscroll-behavior:contain;
+  background:#0D0F0C; border:3px solid var(--h-edge);
+  box-shadow:inset 0 6px 0 #050604, inset 4px 0 0 rgba(0,0,0,.5),
+             inset -3px 0 0 rgba(0,0,0,.4);
+}
+
+/* Every CRT in the house machine: near-black recessed glass, inner
+   bezel, subtle scanlines, restrained bloom on its text. */
+.cl-crt{
+  background:
+    repeating-linear-gradient(180deg,transparent 0 2px,rgba(0,0,0,.34) 2px 3px),
+    var(--h-glass);
+  border:2px solid var(--h-edge);
+  box-shadow:inset 0 4px 0 rgba(0,0,0,.72), inset 3px 0 0 rgba(0,0,0,.44),
+             inset -3px 0 0 rgba(0,0,0,.34), 0 1px 0 rgba(255,255,255,.07);
+}
+
+.cl-pinned{ display:flex; flex-direction:column; gap:5px; }
+.cl-pin-label{ color:var(--h-ink-dim); line-height:1; }
+
+
+/* ---- 5. ROOM BAYS -----------------------------------------
+   Shared functional grammar; the rooms differ by material, mounting,
+   depth and restraint. Each stays identifiable in greyscale through
+   its plate geometry, frame weight and aperture inset. */
+.cl-room{ display:flex; flex-direction:column; }
+
+.cl-room-plate{
+  align-self:flex-start; min-height:22px; padding:5px 11px;
+  display:flex; align-items:center;
+  border:2px solid var(--h-edge);
+}
+.cl-room-name{
+  font-family:var(--font-hdr); font-size:8px; line-height:1;
+  letter-spacing:.12em; text-transform:uppercase; white-space:nowrap;
+  text-shadow:none;
+}
+.cl-room-bay{
+  padding:8px; display:flex; flex-direction:column; gap:7px;
+  border:3px solid var(--h-edge);
+}
+
+/* C1 — BACK ROOM. Utilitarian dark machine plastic, shallow bevel,
+   modest muted-metal edging, restrained scuffing. Simplest mounting. */
+.cl-room-backroom .cl-room-plate{
+  background:#2E4034; color:#B9C9AE;
+  box-shadow:inset 1px 1px 0 #445A49, inset -1px -1px 0 #1B271F, 0 2px 0 var(--h-edge);
+}
+.cl-room-backroom .cl-room-bay{
+  background:
+    repeating-linear-gradient(114deg,rgba(255,255,255,.022) 0 2px,transparent 2px 7px),
+    #23261F;
+  box-shadow:inset 2px 2px 0 #34382C, inset -2px -2px 0 #14160F, 0 3px 0 var(--h-edge);
+}
+
+/* C2 — PUB CIRCUIT. Heavier fruit-machine cabinet, restrained wood
+   casing, muted mustard printed accents, deeper wells. */
+.cl-room-pub .cl-room-plate{
+  background:#4A3521; color:#E0B15F; border-width:3px;
+  box-shadow:inset 1px 1px 0 #6B4E31, inset -1px -1px 0 #2A1D12, 0 3px 0 var(--h-edge);
+}
+.cl-room-pub .cl-room-bay{
+  background:
+    repeating-linear-gradient(90deg,rgba(0,0,0,.16) 0 1px,transparent 1px 5px),
+    repeating-linear-gradient(90deg,rgba(255,255,255,.03) 0 1px,transparent 1px 11px),
+    #3A2A1A;
+  border-width:4px;
+  box-shadow:inset 3px 3px 0 #55402A, inset -3px -3px 0 #201509, 0 4px 0 var(--h-edge);
+}
+.cl-room-pub .cl-money-value{ color:var(--h-money); }
+
+/* C3 — CARD CLUB. Professional room: burgundy fabric, cream edging,
+   exact geometry, a more formal (full-width, centred) nameplate. */
+.cl-room-cardclub .cl-room-plate{
+  align-self:stretch; justify-content:center;
+  background:#4A2029; color:#EDE0C2; border-color:#C9BA92;
+  box-shadow:inset 1px 1px 0 #653039, inset -1px -1px 0 #2A1017, 0 3px 0 var(--h-edge);
+}
+.cl-room-cardclub .cl-room-bay{
+  background:
+    repeating-conic-gradient(rgba(255,255,255,.028) 0 25%,transparent 0 50%) 0 0/5px 5px,
+    #3A1A22;
+  border-color:#0A0A09;
+  box-shadow:inset 0 0 0 2px #C9BA92, inset 0 5px 0 rgba(0,0,0,.4), 0 3px 0 var(--h-edge);
+}
+
+/* C4 — CASINO FLOOR. Near-black lacquer, restrained warm-gold latch
+   detail, controlled dark-red inset, deeper compartment framing. */
+.cl-room-casino .cl-room-plate{
+  background:#15151A; color:#E4C77E; border-color:#8A6D2E; border-width:3px;
+  box-shadow:inset 1px 1px 0 #2C2C33, inset -1px -1px 0 #0A0A0D, 0 3px 0 var(--h-edge);
+}
+.cl-room-casino .cl-room-bay{
+  background:
+    linear-gradient(180deg,rgba(255,255,255,.05) 0 2px,transparent 2px 100%),
+    #121216;
+  border-width:4px; padding:11px 10px;
+  box-shadow:inset 0 0 0 2px #6E5626, inset 0 6px 0 rgba(0,0,0,.5), 0 4px 0 var(--h-edge);
+}
+
+/* C5 — HIGH ROLLER ROOM. Severe: charcoal casing, thick heavy frame,
+   a narrower aperture and less exposed information. */
+.cl-room-highroller .cl-room-plate{
+  background:#1E1E1E; color:#CFC6AC; border-width:3px;
+  box-shadow:inset 1px 1px 0 #343434, inset -1px -1px 0 #0C0C0C, 0 3px 0 var(--h-edge);
+}
+.cl-room-highroller .cl-room-bay{
+  background:#191919; border-width:6px; padding:13px 20px;
+  box-shadow:inset 3px 3px 0 #2A2A2A, inset -3px -3px 0 #0D0D0D, 0 4px 0 var(--h-edge);
+}
+
+/* C6 — INVITATIONAL CHAMPIONSHIP. Ceremonial: deep velvet housing,
+   disciplined gold edging, the heaviest and most resolved door. */
+.cl-room-invitational .cl-room-plate{
+  align-self:stretch; justify-content:center;
+  background:#2A0E17; color:#EBC77A; border-color:#9A7A34; border-width:3px;
+  box-shadow:inset 1px 1px 0 #431720, inset -1px -1px 0 #150409, 0 3px 0 var(--h-edge);
+}
+.cl-room-invitational .cl-room-name{ font-size:8px; letter-spacing:.16em; }
+.cl-room-invitational .cl-room-bay{
+  background:
+    repeating-conic-gradient(rgba(255,255,255,.02) 0 25%,transparent 0 50%) 0 0/6px 6px,
+    #200B12;
+  border-width:6px; padding:14px 12px;
+  box-shadow:inset 0 0 0 3px #7C6029, inset 0 7px 0 rgba(0,0,0,.55), 0 5px 0 var(--h-edge);
+}
+
+
+/* ---- 6. LOCKED COMPARTMENT DOOR ---------------------------- */
+.cl-door{
+  min-height:40px; padding:11px; display:flex; align-items:center; justify-content:center;
+  background:
+    repeating-linear-gradient(180deg,rgba(0,0,0,.24) 0 3px,transparent 3px 8px),
+    var(--h-recess);
+  border:3px solid var(--h-edge);
+  box-shadow:inset 0 5px 0 var(--h-recess-deep), inset 0 -3px 0 rgba(255,255,255,.05);
+}
+.cl-door-text{
+  font-family:var(--font-hdr); font-size:7px; line-height:1;
+  letter-spacing:.14em; color:var(--h-ink-dim); text-shadow:none;
+}
+.cl-room-highroller .cl-door,
+.cl-room-invitational .cl-door{ min-height:48px; border-width:4px; }
+
+
+/* ---- 7. CLOSED EVENT CASSETTE -----------------------------
+   A chunky horizontal cartridge seated in a recessed mounting
+   aperture. The name is printed on the cassette face; the entry price
+   sits in its own small recessed money window. */
+.cl-hatch{ display:flex; flex-direction:column; }
+
+.cl-mount{
+  padding:4px; background:var(--h-recess); border:2px solid var(--h-edge);
+  box-shadow:inset 0 4px 0 var(--h-recess-deep), inset 3px 0 0 rgba(0,0,0,.4);
+}
+.cl-hatch.is-open .cl-mount{ padding-bottom:2px; }
+
+.cl-cassette{
+  width:100%; min-height:58px; padding:8px 10px 9px; cursor:pointer;
+  display:grid; grid-template-columns:minmax(0,1fr) auto;
+  align-items:center; column-gap:8px; row-gap:6px; text-align:left;
+  background:#C9BFA0; color:#20211A;
+  border:3px solid var(--h-edge); border-radius:3px;
+  box-shadow:inset 2px 2px 0 #EDE4C4, inset -2px -3px 0 #8A8268,
+             0 4px 0 #6B6450, 0 6px 0 var(--h-edge);
+  transition:transform 150ms cubic-bezier(.34,1.56,.64,1), box-shadow 120ms ease-out;
+}
+.cl-cassette-name{
+  grid-column:1 / -1; grid-row:1; min-width:0;
+  font-family:var(--font-hdr); font-size:9px; line-height:1.15;
+  letter-spacing:.04em; text-transform:uppercase; white-space:nowrap;
+  overflow:hidden; text-overflow:ellipsis; text-shadow:0 1px 0 rgba(255,255,255,.3);
+}
+.cl-money-window{
+  grid-column:1; grid-row:2; justify-self:start;
+  min-height:19px; padding:4px 7px 3px;
+  display:flex; align-items:center; justify-content:center;
+}
+.cl-money-value{
+  font-family:var(--font-hdr); font-size:6.5px; line-height:1;
+  letter-spacing:.08em; white-space:nowrap; color:var(--h-money);
+  text-shadow:0 0 5px color-mix(in srgb,currentColor 32%,transparent);
+}
+/* State is carried by a physical flag, not by opacity alone. */
+.cl-flag{
+  grid-column:2; grid-row:2; align-self:center;
+  padding:4px 7px; font-family:var(--font-hdr); font-size:6px; line-height:1;
+  letter-spacing:.08em; white-space:nowrap; text-shadow:none;
+  border:2px solid currentColor; border-radius:2px;
+}
+.cl-flag.is-locked{ color:#6E6857; background:rgba(0,0,0,.14); }
+.cl-flag.is-active{ color:#7A4A0B; background:#E7B633; border-color:#7A4A0B; }
+
+/* Press travel on activation. */
+.cl-cassette:active,
+.cl-cassette.cl-pressed{
+  transform:translateY(3px);
+  box-shadow:inset 2px 2px 0 #EDE4C4, inset -2px -3px 0 #8A8268, 0 1px 0 #6B6450, 0 3px 0 var(--h-edge);
+  transition:transform 50ms linear, box-shadow 50ms linear;
+}
+/* A locked cassette is a duller, deader casting — not merely faded. */
+.cl-hatch.is-locked .cl-cassette,
+.cl-hatch.is-blocked .cl-cassette{
+  background:#8E8B78; color:#3A3A32;
+  box-shadow:inset 2px 2px 0 #A5A28D, inset -2px -3px 0 #63614F,
+             0 3px 0 #4A4839, 0 5px 0 var(--h-edge);
+}
+.cl-hatch.is-locked .cl-cassette-name,
+.cl-hatch.is-blocked .cl-cassette-name{ text-shadow:none; }
+.cl-hatch.is-active .cl-cassette{ background:#DCCF9F; }
+
+
+/* ---- 8. THE EXTENDING TRAY --------------------------------
+   The tray's REAL height animates in three discrete beats, so later
+   content is genuinely pushed down. It never rotates, flips, overlays,
+   scales from zero or eases smoothly. */
+.cl-tray{ overflow:hidden; }
+.cl-tray.is-extending{ transition:height 300ms steps(3, end); }
+.cl-tray-inner{
+  padding:8px; display:flex; flex-direction:column; gap:6px;
+  background:var(--h-recess); border:3px solid var(--h-edge); border-top-width:0;
+  box-shadow:inset 0 5px 0 var(--h-recess-deep), inset 3px 0 0 rgba(0,0,0,.4);
+}
+
+
+/* ---- 9. OPEN TRAY — FITTED CONTROL DECK -------------------- */
+
+/* F1. Opponent bay: production face frames in a recessed cartridge bank. */
+.cl-bay{
+  display:grid; grid-template-columns:auto minmax(0,1fr); align-items:center; gap:8px;
+  padding:7px 9px;
+  background:#0F120E; border:3px solid var(--h-edge);
+  box-shadow:inset 0 0 0 3px #6E6850, inset 0 5px 0 rgba(0,0,0,.5);
+}
+.cl-bay-label{ color:var(--h-ink-dim); line-height:1; }
+.cl-bay-serious{
+  padding:9px 9px 10px;
+  box-shadow:inset 0 0 0 3px #4E4838, inset 0 7px 0 rgba(0,0,0,.62);
+}
+#home .cl-faces{
+  display:grid; grid-auto-flow:column; grid-auto-columns:minmax(0,1fr);
+  gap:6px; width:100%; min-width:0;
+}
+#home .cl-faces .cl-hf{
+  width:100%; height:auto; min-width:0; max-width:58px; justify-self:center;
+  aspect-ratio:1; overflow:hidden;
+  display:flex; align-items:center; justify-content:center;
+  background:#13281C; border:3px solid #090806; border-radius:3px;
+  box-shadow:0 3px 0 #100705, inset 0 3px 0 rgba(255,255,255,.1);
+}
+#home .cl-faces .cl-hf .face{ width:100%; height:100%; margin:0; }
+
+/* F2. Threat instrument: flat printed label, separate bounded window. */
+.cl-threat{
+  display:grid; grid-template-columns:auto minmax(0,1fr) auto;
+  align-items:center; gap:8px; padding:5px 9px;
+  background:#23261F; border:2px solid var(--h-edge);
+  box-shadow:inset 1px 1px 0 #34382C, inset -1px -1px 0 #14160F, 0 2px 0 var(--h-edge);
+}
+.cl-threat .pc-label{ color:var(--h-ink-dim); line-height:1; }
+.cl-threat-well{
+  min-height:20px; padding:4px 8px 3px;
+  display:flex; align-items:center; justify-content:center;
+}
+.cl-threat-value{
+  font-family:var(--font-hdr); font-size:8px; line-height:1; letter-spacing:.1em;
+  color:var(--h-glass-ink); text-shadow:0 0 5px color-mix(in srgb,currentColor 34%,transparent);
+}
+.cl-threat.is-serious .cl-threat-well{
+  border-width:3px; box-shadow:inset 0 6px 0 rgba(0,0,0,.82), inset 4px 0 0 rgba(0,0,0,.5);
+}
+.cl-threat.is-serious .cl-threat-value{ color:var(--h-danger); }
+/* One restrained coral marker. It does not blink. */
+.cl-threat-mark{
+  width:9px; height:9px; border:2px solid var(--h-edge); background:var(--h-danger);
+  box-shadow:0 2px 0 #100807, inset 1px 1px 0 rgba(255,255,255,.3);
+}
+
+/* F3. Four equal fitted instrument modules on one shared baseline. */
+.cl-terms{ display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:5px; }
+.cl-term{
+  min-width:0; display:flex; flex-direction:column; gap:3px;
+  padding:5px 3px 6px;
+  background:#23261F; border:2px solid var(--h-edge);
+  box-shadow:inset 1px 1px 0 #34382C, inset -1px -1px 0 #14160F, 0 2px 0 var(--h-edge);
+}
+.cl-term .pc-label{ font-size:5.5px; line-height:1; letter-spacing:.04em; text-align:center; color:var(--h-ink-dim); }
+.cl-term-well,
+.cl-payout-well,
+.cl-note-well{
+  min-height:19px; padding:4px 2px 3px;
+  display:flex; align-items:center; justify-content:center;
+}
+.cl-term-value{
+  font-family:var(--font-hdr); font-size:6px; line-height:1;
+  letter-spacing:.01em; white-space:nowrap; color:var(--h-glass-ink);
+  text-shadow:0 0 5px color-mix(in srgb,currentColor 32%,transparent);
+}
+
+/* F4. Payout — one wider instrument. Money stays warm gold. */
+.cl-payout{
+  display:flex; flex-direction:column; gap:3px; padding:5px 6px 6px;
+  background:#23261F; border:2px solid var(--h-edge);
+  box-shadow:inset 1px 1px 0 #34382C, inset -1px -1px 0 #14160F, 0 2px 0 var(--h-edge);
+}
+.cl-payout .pc-label{ font-size:5.5px; line-height:1; letter-spacing:.04em; text-align:center; color:var(--h-ink-dim); }
+.cl-payout-value{
+  font-family:var(--font-hdr); font-size:7.5px; line-height:1;
+  letter-spacing:.03em; white-space:nowrap; color:var(--h-money);
+  text-shadow:0 0 6px color-mix(in srgb,currentColor 34%,transparent);
+}
+
+/* F5. Availability — one narrow status strip. */
+.cl-note{
+  font-family:var(--font-hdr); font-size:6px; line-height:1.2;
+  letter-spacing:.04em; white-space:nowrap; color:var(--h-ink-dim); text-shadow:none;
+}
+
+/* F6. Primary action — production's large-button construction, seated
+   in a physical cradle. Printed text, no glow. */
+.cl-actions{ flex:0 0 auto; }
+.cl-cradle{
+  position:relative; padding:8px 7px 16px;
+  background:#B4A46F; border:4px solid var(--h-edge);
+  box-shadow:inset 4px 4px 0 #EEDDA5, inset -4px -3px 0 #756744, 0 3px 0 #2A190F;
+}
+.cl-primary{
+  position:relative; width:100%; min-height:64px; padding:12px 16px 11px; cursor:pointer;
+  display:grid; grid-template-columns:12px minmax(0,1fr) 12px; align-items:center; gap:8px;
+  background:var(--h-button); color:#2A1C05;
+  border:3px solid var(--h-edge); border-radius:5px;
+  font-family:var(--font-hdr); text-transform:uppercase;
+  box-shadow:inset 3px 3px 0 var(--h-button-hi), inset -3px -3px 0 rgba(81,49,5,.3),
+             0 4px 0 var(--h-button-lo), 0 6px 0 var(--h-edge);
+  transition:transform 150ms cubic-bezier(.34,1.56,.64,1), box-shadow 120ms ease-out;
+}
+.cl-primary:active:not(:disabled){
+  transform:translateY(4px);
+  box-shadow:inset 3px 3px 0 var(--h-button-hi), 0 1px 0 var(--h-button-lo), 0 2px 0 var(--h-edge);
+  transition:transform 50ms linear, box-shadow 50ms linear;
+}
+.cl-primary .pc-lamp{ justify-self:center; }
+.cl-legend-wrap{ min-width:0; }
+.cl-legend{
+  display:block; font-family:var(--font-hdr); font-size:13px; line-height:1.15;
+  letter-spacing:.05em; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+  text-shadow:0 1px 0 rgba(255,255,255,.3);
+}
+.cl-primary small{
+  display:block; margin-top:5px; font-family:var(--font-hdr); font-size:6px; font-weight:400;
+  letter-spacing:.05em; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+  color:#694C10; text-shadow:0 1px 0 rgba(255,255,255,.24);
+}
+.cl-primary.is-disabled{ background:#8C8261; color:#39352A; box-shadow:inset 3px 3px 0 #A79C77, inset -3px -3px 0 rgba(40,34,12,.3), 0 3px 0 #5A5238, 0 5px 0 var(--h-edge); }
+.cl-primary.is-disabled .cl-legend,
+.cl-primary.is-disabled small{ text-shadow:none; color:#39352A; }
+
+.cl-tray-inner .cl-abandon{
+  width:100%; margin-top:7px; min-height:44px; padding:12px; cursor:pointer;
+  background:rgba(0,0,0,.32); border:2px solid var(--h-danger); border-radius:var(--radius);
+  color:var(--h-danger); font-family:var(--font-hdr); font-size:8px;
+  letter-spacing:.04em; text-transform:uppercase; text-shadow:none;
+  box-shadow:0 3px 0 var(--h-edge);
+}
+.cl-tray-inner .cl-abandon:active{ transform:translateY(2px); box-shadow:0 1px 0 var(--h-edge); }

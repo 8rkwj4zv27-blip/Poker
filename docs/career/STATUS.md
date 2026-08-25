@@ -1,11 +1,12 @@
 # Career Mode — Current Status
 
 Last verified: 2026-08-25  
-Verified implementation baseline: `63bbcfa` — `Approve Career expansion plan`, plus Second Chance
-(Phase 2) and its owner-requested correction pass (venue, free-event-loss result copy, compact
-zero-delta sign), implemented in the working tree on top of it and **not yet committed** — pending
-owner review per this task's instructions. Update this hash once that work is committed.
-Career logic baseline before Phase 2 was `d31b120` — `Add multi-place payouts and Pub Circuit Open` (Phase 1); every commit since has changed result presentation only, until Phase 2's registry and entry/state changes. Build `v0.21.0-dev · Round End Update`, service-worker cache `poker-v20-0` (unchanged by Phase 2).
+Verified implementation baseline: `cb9aee0` — `Career Phase 2: Second Chance recovery, truthful
+loss messaging, DEV bankroll tool`, plus the owner-directed **Career event directory** integration
+implemented on top of it. Career logic baseline before Phase 2 was `d31b120` — `Add multi-place
+payouts and Pub Circuit Open` (Phase 1).
+Build `v0.22.0-dev · Career Directory Update`, service-worker cache `poker-v21-0`.
+Career save schema **version 4**.
 
 This is the short handoff file. Update it whenever a Career milestone is completed or the immediate next task changes.
 
@@ -16,22 +17,128 @@ and promoted into `CAREER_DESIGN.md` and `BUILD_PLAN.md` on 2026-08-25.**
 `BUILD_PLAN.md` now carries the complete sixteen-phase sequence.
 
 Phase 2 (Second Chance) was implemented the same day — see *Implemented now*
-below. Scoring specification, scoring correction, the Contextual Board, Full
-Circuit, pacing instrumentation, named residents, the boss seat, the Back Room
-cash table, dossiers, titles, trophies and cosmetics remain **all unbuilt**. The
-Career save schema is **still version 3**; adding the Second Chance descriptor
-did not require a bump — a saved career missing the new `unlocks['second-chance']`
-key fails `isValidCareer()` and is carried through the existing `migrateCareer()`
-path (the same mechanism that added Pub Circuit Open in Phase 1), which is
-exercised by a dedicated check. It bumps only when Phase 9 implements
+below. Scoring specification, scoring correction, the contextual Recommended /
+Alternative / Next-target selection, Full Circuit, pacing instrumentation, named
+residents, the boss seat, the Back Room cash table, dossiers, titles, trophies
+and cosmetics remain **all unbuilt**.
+
+The Career save schema is **version 4** as of the owner-directed Career event
+directory milestone below, which added `eventsPlayed` and `eventsWon` and nothing
+else. Phase 2 itself required no bump: a saved career missing the new
+`unlocks['second-chance']` key fails `isValidCareer()` and is carried through the
+existing `migrateCareer()` path (the same mechanism that added Pub Circuit Open in
+Phase 1), which is exercised by a dedicated check. The next bump is Phase 9's
 cash-session state.
 
 **Phase 3 (scoring specification and audit) is the sole immediate next task.**
 
+## Owner-directed milestone — Career event directory (2026-08-25)
+
+Shipped outside the numeric phase order at the owner's direction, after Phase 2.
+It does not start Phase 5 and it does not renumber anything; see `BUILD_PLAN.md`.
+
+**What shipped**
+
+- The Career screen is now a physical **event directory**. One cabinet holds two
+  visibly separate machines: a personalised **player instrument** above a
+  fixed-house scrolling **directory**.
+- Player instrument: the stored player name on an inset plate (escaped, falling
+  back to `PLAYER`), the bankroll as one `$` cell plus **seven fixed
+  whole-dollar digit cells** with the existing dim treatment on leading zeroes
+  (`$500` → `$0000500`), and three readouts — highest access, events played,
+  events won. A bankroll past seven digits keeps every digit; the cells narrow
+  rather than truncating the figure.
+- Directory: six room bays in ladder order. Back Room and Pub Circuit hold real
+  cassettes from `CAREER_EVENT_LIST`; Card Club, Casino Floor, High Roller Room
+  and Invitational Championship show one `LOCKED · COMING SOON` compartment door
+  and **no invented descriptor, payout, unlock rule or opponent**.
+- Within a room the cheapest event sorts first, so Second Chance leads the Back
+  Room when the existing shared predicate exposes it.
+- A cassette carries only its name, its entry price and any required flag.
+  Selecting one extends a tray whose **real layout height** pushes later events
+  down; one tray is open at a time and opening one **writes nothing** — no
+  debit, unlock, counter, save or table state.
+- The tray shows the opponent lineup through the production `renderFace()` path,
+  `TABLE THREAT: MODERATE` / `SERIOUS` from the real `difficulty`, entry,
+  players, stack, format, payout, the requirement, and the action.
+- Locked and unaffordable events stay inspectable with their action disabled.
+- `TAKE SEAT`, `CONTINUE` and `ABANDON EVENT` call the existing
+  `careerEnterPressed()` / `careerAbandonPressed()` paths. No parallel entry,
+  debit, settlement, unlock, save or result logic was created.
+- **Palette boundary:** the player instrument uses the selected production
+  palette and recolours with it; the directory declares fixed house values
+  scoped to its own root and does not. Verified in `emerald` and `burgundy`.
+- The compact last-result summary is retained as an optional state on the player
+  instrument.
+
+**Save schema v4**
+
+`felt.career` gains exactly two non-negative integer fields, `eventsPlayed` and
+`eventsWon`. Nothing else changed.
+
+| Stored save | Result |
+|---|---|
+| v3 | bankroll, active event, unlocks and `lastResult` preserved verbatim; both counters initialise to `0`; migration persists once through the normal save path |
+| v1 / v2 | every existing v1/v2 guarantee is unchanged and now lands on v4 with counters at `0` |
+| any counter that is negative, fractional, non-finite, unsafe or absent | normalised to `0` by `normalizeCareerCounter()` |
+
+A total is **never** inferred from `lastResult`, unlocks or lifetime statistics.
+An active event remains resumable across the migration without a second charge.
+
+**Counter semantics**
+
+- `eventsPlayed` increments exactly once inside `enterCareerEvent()`, in the same
+  `saveCareer()` that establishes the active event and debits the buy-in, so it
+  cannot desynchronise from either. Free Second Chance entry counts. A rejected
+  entry — unaffordable, locked, ineligible, blocked by an active event, or an
+  unknown id — returns before the increment. Resuming and reloading do not count.
+- `eventsWon` increments exactly once inside `settleCareerEvent()`, under the
+  same `career.active` guard that owns the unlock write, and only when the
+  settlement is a genuine first place. A non-winning cash, a bust and a forfeit
+  do not. A repeated settlement call is refused by the guard and cannot
+  increment twice. Second Chance first place counts.
+
+These are **aggregates only**. No event history, venue record, head-to-head
+record, dossier, title, XP, level or currency was added; those remain Phase 13.
+
+**Tests**
+
+`node validation/career-events-checks.js` — **62 passed** (42 pre-existing, with
+the markup-contract and payout-copy assertions updated to the shipped
+presentation and fixtures moved to v4; 20 new, covering v4 defaults, v3→v4
+migration, v1/v2 migration through v4, an active event resumable across
+migration, counter normalisation across every unsafe value, paid entry, free
+entry, four rejected-entry paths, reload/resume, first-place settlement,
+duplicate settlement, cash/bust/forfeit, a full entry–settle cycle, highest
+access, the six rooms inventing no catalogue entry, free-first ordering, threat
+wording, requirement copy, the renderer reading live state, and production not
+loading the Lab).
+
+`node validation/career-result-checks.js` — **39 passed**, unchanged.
+
+**Manual verification (headless Chrome over HTTP, device-emulated)**
+
+13 cases, all clean — no horizontal overflow, no clipped or wrapped text, every
+visible control ≥ 44px, one tray open maximum, zero opponent portraits in the
+document while closed, **zero console errors**, and no save write from opening a
+tray: fresh $500; recovery at $40 with Second Chance visible; Back Room open;
+locked Pub open and inspectable; unaffordable Pub open; active paid event; active
+Second Chance; after a first-place win; `$123,456,789` bankroll; `emerald` and
+`burgundy`; 393×852, 389×844 and 1280×900; and a stored **v3** save with an
+active event, reloaded, migrated and still resumable.
+
+**Still outstanding:** on-device iPhone verification, as before.
+
+**The Career Lab (`career-lab.html`, `css/career-lab.css`, `js/career-lab.js`) is
+committed as the durable visual reference.** It is not linked from `index.html`
+and is not in the service-worker app shell.
+
 ## Implemented now
 
 - Career is a separate game mode using ordinary freezeout poker and standard AI.
-- Persistent save key: `felt.career`, **schema version 3**.
+- Persistent save key: `felt.career`, **schema version 4**.
+- **Career event directory** presentation (owner-directed milestone, 2026-08-25) — see above.
+- **`eventsPlayed` / `eventsWon`** aggregate counters — see above.
 - Starting bankroll: $500.
 - Data-driven live catalogue with immutable active-event snapshots.
 - **Placement-aware payouts.** `payouts` is the canonical reward table (index 0 = first place); `prize` remains as a mirror of `payouts[0]`, an invariant enforced by `isValidCareerEventSnapshot()`. A Top-3 event later is simply `payouts:[a,b,c]` — no further schema work.
@@ -230,7 +337,10 @@ New coverage includes the Pub Circuit Open descriptor and five-player launch con
 ## Not implemented
 
 - Scoring award specification, audit or correction.
-- Contextual board, permanent-status line, visible venue ladder, or Full Circuit.
+- Contextual Recommended / Alternative / Next-target selection and Full Circuit
+  (Phase 5). The event directory shipped in 2026-08-25's owner-directed milestone
+  is the presentation that logic will be built into; the six-venue ladder and the
+  permanent-access readout already exist there.
 - Card Club preview.
 - Back Room pacing instrumentation.
 - Named residents, roster-as-paid-term, or any relationship record.
@@ -248,6 +358,7 @@ dependencies and exit conditions.
 |---:|---|---|
 | 1 | Paid places and Pub Circuit Open | Complete |
 | 2 | Second Chance recovery | Complete |
+| — | Career event directory (owner-directed, not a phase) | Complete |
 | 3 | Scoring specification and audit | **Next** |
 | 4 | Scoring correction | Approved, not started |
 | 5 | Contextual Board and visible Full Circuit | Approved, not started |

@@ -1543,11 +1543,6 @@
    .stack-readout / .btn-primary / .hint) so it reads as the same machine
    without pre-empting the real event-board design.
    ============================================================ */
-.career-bank-card{ text-align:center; }
-.career-bank{ justify-content:center; margin:4px 0 2px; }
-.career-bank #career-bankroll{
-  display:flex; gap:2px; justify-content:center; align-items:center;
-}
 .career-last-result{
   display:flex; justify-content:space-between; align-items:baseline; gap:10px;
   margin-top:12px; padding-top:10px; border-top:2px solid var(--px-ink);
@@ -1557,50 +1552,6 @@
   letter-spacing:.1em; color:var(--ink-faint);
 }
 .career-last-result .cr-amt{ font-size:13px; color:var(--accent-bright); }
-.career-events{ display:flex; flex-direction:column; gap:14px; margin-top:16px; }
-.career-event-card{ margin:0; }
-.career-event-status{
-  display:inline-block; margin-bottom:8px; padding:4px 8px;
-  font-family:var(--font-hdr); font-size:7px; text-transform:uppercase; letter-spacing:.12em;
-  color:var(--accent-ink); background:var(--accent);
-  border:2px solid var(--px-ink); border-radius:3px;
-  box-shadow:0 2px 0 var(--px-ink);
-}
-.career-event-card.is-locked,
-.career-event-card.is-blocked{ opacity:.72; }
-.career-event-card.is-active{ outline:2px solid var(--accent); }
-.career-event-card.is-locked .career-event-status,
-.career-event-card.is-blocked .career-event-status,
-.career-event-card.is-unaffordable .career-event-status{
-  color:var(--ink-faint); background:var(--panel); border-color:var(--px-ink);
-}
-.career-abandon{ margin-top:10px; }
-#open-career.career-active{ color:var(--accent-bright); }
-.career-event-name{
-  font-family:var(--font-hdr); font-size:15px; text-transform:uppercase;
-  letter-spacing:.04em; color:var(--ink); margin:2px 0 12px;
-}
-.career-event-stats{
-  display:grid; grid-template-columns:repeat(2,1fr); gap:8px; margin-bottom:12px;
-}
-.career-stat{
-  display:flex; flex-direction:column; gap:3px; align-items:center;
-  padding:8px 4px; background:var(--panel); border:2px solid var(--px-ink);
-  border-radius:var(--radius); box-shadow:inset 0 2px 0 rgba(255,255,255,.05);
-}
-.career-stat .cs-k{
-  font-family:var(--font-hdr); font-size:7px; text-transform:uppercase;
-  letter-spacing:.1em; color:var(--ink-faint);
-}
-.career-stat .cs-v{ font-size:13px; color:var(--accent-bright); }
-.career-note{ margin-bottom:14px; }
-#career .btn-primary{ margin-top:0; }
-#career-new{ margin-top:14px !important; }
-@media (orientation:landscape) and (max-height:520px){
-  .career-event-name{ font-size:13px; margin-bottom:8px; }
-  .career-event-stats{ margin-bottom:8px; }
-  .career-note{ margin-bottom:10px; }
-}
 
 
 /* ============================================================

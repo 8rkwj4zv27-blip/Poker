@@ -240,6 +240,52 @@ The prototype board contains up to four contextual cards plus Full Circuit acces
 
 Full Circuit always shows the current career catalogue grouped by venue, including permanently unlocked venues the player cannot presently afford.
 
+### The Career event directory — shipped presentation
+
+**Approved principle, implemented 2026-08-25 by owner direction.** The Career
+screen is a physical **event directory**: one cabinet holding two visibly
+separate machines.
+
+- The **player instrument** at the top is personalised. It carries the player's
+  name on an inset identification plate, the bankroll as the dominant mechanical
+  figure, and three restrained readouts — highest access, events played, events
+  won. It uses the player-selected palette and recolours with it.
+- The **event directory** beneath it is a fixed house machine and deliberately
+  does **not** follow the player's palette. It is a vertically scrolling column
+  of recessed room bays, cheapest and easiest at the top, with cost, field and
+  table threat rising downward.
+- All six venues are present from the first version. A venue with no implemented
+  event shows one compact locked compartment door and **no invented content**:
+  no descriptor, buy-in, payout, unlock rule or opponent exists for it.
+- Each implemented event is a chunky cassette carrying only its name, its entry
+  price and any required state flag. Selecting one extends a detail tray whose
+  real layout height pushes later events down the directory. One tray is open at
+  a time, and opening one writes nothing.
+- The open tray shows the opponent lineup, `TABLE THREAT: MODERATE` or
+  `SERIOUS`, entry, players, stack, format, payout, the availability or unlock
+  requirement, and the primary action.
+- Locked and unaffordable events remain **inspectable**: their terms and
+  opponents are visible while the action stays unmistakably unavailable.
+
+This is the presentation the Phase 5 contextual selection logic will be built
+into. It is a map and a status readout, never a shop.
+
+### Two aggregate counters
+
+**Approved direction, pulled forward from Phase 13 by explicit owner decision on
+2026-08-25.** The player instrument needs truthful figures, so Career persists
+exactly two aggregate counters and nothing else:
+
+| Counter | Increments |
+|---|---|
+| `eventsPlayed` | once when an event is successfully entered, in the same saved mutation that establishes the active event and debits the buy-in. Free Second Chance entry counts. Rejected entries, resumes and reloads do not. |
+| `eventsWon` | once when an event settles as a genuine first place. A non-winning cash, a bust and a forfeit do not. Second Chance first place does. |
+
+They are **aggregates only**. Event history, venue records, head-to-head
+records, dossiers, milestone titles and every other Phase 13 record feature
+remain unbuilt and unscheduled by this change. Totals are never inferred from
+`lastResult`, unlocks or lifetime statistics; a save without them starts at zero.
+
 **Approved direction.** There is **one Board**, extended in place. The contextual
 card logic above is the base layer, built once and never rebuilt.
 
@@ -254,6 +300,7 @@ purchases, when eventually tested at Phase 15, belong on the machine itself.
 
 | Board element | Phase |
 |---|---|
+| Event directory presentation: player instrument, six room bays, event cassettes, detail trays, `eventsPlayed` / `eventsWon` | **Shipped 2026-08-25, owner-directed, outside the phase sequence** |
 | Bankroll; status line and immediate objective; four contextual cards with entry states and confirmation; Second Chance slot; active event Continue / Abandon; full locked ladder | 5 |
 | Authoritative named fields on every event card | 7 |
 | Boss presence at Back Room | 8 |
@@ -578,6 +625,9 @@ Deferred, with the phase that owns each where one exists:
 - A new analytics platform or bot-simulation framework.
 - Cash Cut or any roguelite system.
 - **Additional currencies, XP, perks, and power-ups — excluded permanently, not deferred.**
+- Event history, venue records, head-to-head records, dossiers and titles remain
+  Phase 13. The two aggregate counters shipped on 2026-08-25 are the sole
+  exception and expand no further.
 
 ### Exclusions reversed on 2026-08-25
 

@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Career Lab — Event Directory</title>
+
+<!-- The six production stylesheets, in production order (index.html:15-20).
+     Not one line of them is edited. -->
+<link rel="stylesheet" href="css/01-foundation.css">
+<link rel="stylesheet" href="css/02-screens.css">
+<link rel="stylesheet" href="css/03-action-console.css">
+<link rel="stylesheet" href="css/04-overlays-and-modes.css">
+<link rel="stylesheet" href="css/05-responsive-and-arcade.css">
+<link rel="stylesheet" href="css/06-machine-system.css">
+
+<!-- One isolated Lab layout sheet. -->
+<link rel="stylesheet" href="css/career-lab.css">
+</head>
+
+<body data-theme="emerald" class="cl-body">
+
+<div class="cl-frame">
+  <div id="home" class="screen">
+    <div class="lobby-card pc-housing pc-material-leather" data-cl-region="cabinet">
+
+      <!-- ============ CABINET RAIL ============ -->
+      <div class="home-topbar" data-cl-region="rail">
+        <div class="pc-product-mark">Career<small>Event directory</small></div>
+        <span class="pc-lamp is-green"></span>
+      </div>
+
+      <!-- ============ MACHINE 1 — PLAYER INSTRUMENT ============
+           Personalised. Inherits the player-selected production palette
+           and recolours with it. -->
+      <div class="pc-readout-row cl-instrument" data-cl-region="instrument">
+
+        <!-- Inset identification plate, not a heading or an avatar card. -->
+        <div class="cl-nameplate">
+          <span class="pc-label">Player</span>
+          <span class="cl-nameplate-value" data-cl-crt="player">ACE</span>
+        </div>
+
+        <span class="pc-label cl-bankroll-label">Bankroll</span>
+        <div class="cl-bankroll-housing">
+          <div class="amt-readout cl-reel" id="cl-bankroll" role="img" aria-label="Career bankroll"></div>
+        </div>
+
+        <div class="cl-stats">
+          <div class="cl-stat">
+            <span class="pc-label">Highest access</span>
+            <span class="cl-stat-well"><span class="cl-stat-value" data-cl-crt="access"></span></span>
+          </div>
+          <div class="cl-stat">
+            <span class="pc-label">Events played</span>
+            <span class="cl-stat-well"><span class="cl-stat-value tabular" data-cl-crt="played"></span></span>
+          </div>
+          <div class="cl-stat">
+            <span class="pc-label">Events won</span>
+            <span class="cl-stat-well"><span class="cl-stat-value tabular" data-cl-crt="won"></span></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- ============ MACHINE 2 — FIXED-HOUSE DIRECTORY ============
+           Deliberately NOT the player's palette. Its own fixed house
+           values are scoped to this root only. -->
+      <div class="cl-directory" id="cl-directory" data-cl-region="directory"></div>
+
+    </div>
+  </div>
+</div>
+
+<div class="cl-controls">
+  <span class="cl-controls-label">Fixture</span>
+  <button type="button" data-cl-fixture="S1">S1 begin</button>
+  <button type="button" data-cl-fixture="S2">S2 recovery</button>
+  <button type="button" data-cl-fixture="S3">S3 active freezeout</button>
+  <button type="button" data-cl-fixture="S3b">S3b active second chance</button>
+  <button type="button" data-cl-fixture="S4">S4 rebuilding</button>
+  <span class="cl-controls-label">Player palette</span>
+  <button type="button" data-cl-theme="emerald">Emerald</button>
+  <button type="button" data-cl-theme="midnight">Midnight</button>
+  <button type="button" data-cl-theme="burgundy">Burgundy</button>
+  <button type="button" data-cl-theme="slate">Slate</button>
+</div>
+
+<script src="js/career-lab.js"></script>
+</body>
+</html>

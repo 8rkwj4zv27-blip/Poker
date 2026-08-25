@@ -465,8 +465,20 @@ const CAREER_KEY = 'felt.career';
    unlock entry, and lastResult gained place/prize. Two structurally
    different formats must not share a version number — the bump is what
    routes every stored v2 save through migrateCareer() explicitly instead
-   of letting it slide past isValidCareer() on a coincidence. */
-const CAREER_SAVE_VERSION = 3;
+   of letting it slide past isValidCareer() on a coincidence.
+
+   Bumped 3 -> 4 for the Career directory's player instrument, which needs
+   two truthful aggregate counters. They are the ONLY records added: no
+   event history, venue record, rival record or dossier (all Phase 13). */
+const CAREER_SAVE_VERSION = 4;
+
+/* A stored counter is trusted only as a non-negative whole number. Anything
+   else — negative, fractional, NaN, Infinity, a string, absent — becomes 0.
+   A total is never inferred from lastResult, unlocks or lifetime stats:
+   guessing history would be exactly the fabricated record this avoids. */
+function normalizeCareerCounter(value){
+  return Number.isSafeInteger(value) && value >= 0 ? value : 0;
+}
 
 function defaultCareer(){
   const unlocks = {};
@@ -476,7 +488,9 @@ function defaultCareer(){
     bankroll:CAREER_START_BANKROLL,
     active:null,
     unlocks,
-    lastResult:null
+    lastResult:null,
+    eventsPlayed:0,
+    eventsWon:0
   };
 }
 function normalizeActiveCareerEvent(active){
@@ -544,6 +558,10 @@ function migrateCareer(raw){
   if (Number.isFinite(raw.bankroll) && raw.bankroll >= 0) migrated.bankroll = raw.bankroll;
   migrated.active = normalizeActiveCareerEvent(raw.active);
   migrated.lastResult = normalizeCareerLastResult(raw.lastResult);
+  // v1/v2/v3 saves have no counters; they start at 0 rather than being
+  // reconstructed from anything the save already holds.
+  migrated.eventsPlayed = normalizeCareerCounter(raw.eventsPlayed);
+  migrated.eventsWon = normalizeCareerCounter(raw.eventsWon);
   if (raw.unlocks && typeof raw.unlocks === 'object'){
     CAREER_EVENT_LIST.forEach(event=>{
       if (raw.unlocks[event.id] === true) migrated.unlocks[event.id] = true;
@@ -566,6 +584,8 @@ function isValidCareer(c){
   return !!c && typeof c === 'object'
     && c.v === CAREER_SAVE_VERSION
     && typeof c.bankroll === 'number' && !Number.isNaN(c.bankroll) && c.bankroll >= 0
+    && Number.isSafeInteger(c.eventsPlayed) && c.eventsPlayed >= 0
+    && Number.isSafeInteger(c.eventsWon) && c.eventsWon >= 0
     && !!c.unlocks && typeof c.unlocks === 'object'
     && CAREER_EVENT_LIST.every(event=>typeof c.unlocks[event.id] === 'boolean'
         && (!!event.unlockRequirement || c.unlocks[event.id] === true))
@@ -629,6 +649,11 @@ function enterCareerEvent(eventId){
   career.bankroll -= snapshot.buyIn;
   career.active = { eventId:snapshot.id, snapshot };
   career.lastResult = null;
+  // Counted here and nowhere else: this is the one place an event becomes
+  // active and the buy-in is debited, so the increment cannot desynchronise
+  // from either. A rejected entry returned above without reaching this, and
+  // a resume never calls this at all.
+  career.eventsPlayed = normalizeCareerCounter(career.eventsPlayed) + 1;
   saveCareer();
   return true;
 }
@@ -676,6 +701,11 @@ function settleCareerEvent(result){
     : 'loss';
   career.bankroll += prize;
   if (won){
+    // Same guard as the unlock above: settleCareerEvent() returns early
+    // unless career.active is set, and clears it below, so a repeated
+    // settlement call cannot increment this twice. A cash, a bust and a
+    // forfeit are all `won === false`.
+    career.eventsWon = normalizeCareerCounter(career.eventsWon) + 1;
     CAREER_EVENT_LIST.forEach(event=>{
       const requirement = event.unlockRequirement;
       if (requirement && requirement.type === 'event-win' && requirement.eventId === stake.id){
@@ -807,62 +837,268 @@ function returnToCareer(){
 /* Board presentation of a payout table. One place reads as a plain amount;
    several read as a paid-places list, so the Pub Circuit's two events are
    distinguishable at a glance without opening anything. */
+/* ============================================================
+   CAREER DIRECTORY — the approved production presentation.
+
+   Two machines mounted in one cabinet:
+     1. the player instrument, which follows the selected palette;
+     2. the house event directory, which does not.
+
+   Every value below is read from the existing Career state and the
+   existing CAREER_EVENT_LIST. This renderer owns NO catalogue value, NO
+   eligibility rule and NO money: it reads careerEventState(), which is
+   still the single authority on available / unaffordable / locked /
+   active / blocked / hidden, and it calls the existing entry, resume and
+   abandon paths. Opening a tray is pure presentation and writes nothing.
+   ============================================================ */
+
+/* The six rooms of the approved ladder, in progression order. The four
+   without implemented events are PRESENTATION ONLY — they deliberately
+   have no descriptor, no payout, no unlock rule and no opponents. */
+const CAREER_ROOMS = Object.freeze([
+  Object.freeze({ venue:'BACK ROOM',                 key:'backroom'     }),
+  Object.freeze({ venue:'PUB CIRCUIT',               key:'pub'          }),
+  Object.freeze({ venue:'CARD CLUB',                 key:'cardclub'     }),
+  Object.freeze({ venue:'CASINO FLOOR',              key:'casino'       }),
+  Object.freeze({ venue:'HIGH ROLLER ROOM',          key:'highroller'   }),
+  Object.freeze({ venue:'INVITATIONAL CHAMPIONSHIP', key:'invitational' })
+]);
+
+/* Career's two live difficulties, stated in the machine's own words. */
+function careerThreatOf(event){
+  return event && event.difficulty === 'hard' ? 'SERIOUS' : 'MODERATE';
+}
+
+/* Highest permanent access: the deepest room in ladder order holding an
+   event the player may enter on status alone. Back Room is always the
+   floor, so this never reads "none". Derived from the live unlock set —
+   never stored, so it cannot drift from it. */
+function careerHighestAccess(){
+  let access = CAREER_ROOMS[0].venue;
+  CAREER_ROOMS.forEach(room=>{
+    const reached = CAREER_EVENT_LIST.some(event=>
+      event.venue === room.venue && careerEventUnlocked(event));
+    if (reached) access = room.venue;
+  });
+  return access;
+}
+
+function careerEntryLabel(event){
+  return event.buyIn === 0 ? 'FREE ENTRY' : '$' + event.buyIn.toLocaleString() + ' ENTRY';
+}
+
+/* Free events first: within a room the cheapest opportunity is the one the
+   player can always act on, so Second Chance sorts above the Freezeout. */
+function careerRoomEvents(venue){
+  return CAREER_EVENT_LIST
+    .filter(event=>event.venue === venue)
+    .sort((a,b)=>a.buyIn - b.buyIn);
+}
+
 function careerPayoutSummary(event){
   const places = careerPayouts(event);
   if (!places.length) return '—';
-  return places.map(amount=>'$' + amount.toLocaleString()).join(' / ');
+  const suffix = ['TO 1ST','TO 2ND','TO 3RD'];
+  return places.map((amount,i)=>
+    '$' + amount.toLocaleString() + (suffix[i] ? ' ' + suffix[i] : '')).join(' · ');
 }
-function careerPayoutNote(event){
-  const places = careerPayouts(event);
-  if (places.length <= 1) return 'Winner takes the full prize pool.';
-  const named = places.length === 2 ? 'Top two places are' : 'The top ' + places.length + ' places are';
-  return named + ' paid. Only a win unlocks progression.';
+
+/* What this event needs, or what it pays. Locked and unaffordable states
+   read from the same live values the gate itself uses. */
+function careerRequirementText(event, state){
+  if (state === 'locked'){
+    const required = event.unlockRequirement
+      ? careerEventById(event.unlockRequirement.eventId) : null;
+    return required ? 'UNLOCKS BY WINNING ' + required.name : 'LOCKED';
+  }
+  if (state === 'unaffordable'){
+    return 'NEEDS $' + (event.buyIn - careerBankroll()).toLocaleString() + ' MORE THAN YOU HOLD';
+  }
+  if (state === 'blocked') return 'UNAVAILABLE WHILE AN EVENT IS ACTIVE';
+  if (state === 'active'){
+    return event.buyIn === 0
+      ? 'NO BUY-IN TAKEN'
+      : 'BUY-IN OF $' + event.buyIn.toLocaleString() + ' IS STAKED';
+  }
+  if (event.id === SECOND_CHANCE_EVENT_ID){
+    return 'OPEN WHILE YOUR BANKROLL IS UNDER $' + SECOND_CHANCE_BANKROLL_THRESHOLD;
+  }
+  return 'OPEN TO YOU NOW';
+}
+
+/* One physical '$' cell plus seven mechanical digit cells: fixed-width
+   whole dollars, no comma. Leading zeroes stay on their reels but take the
+   existing dim treatment. A bankroll wider than seven digits keeps all of
+   its digits rather than being truncated into a smaller, wrong number —
+   the cells narrow instead. */
+const CAREER_BANKROLL_DIGITS = 7;
+function buildCareerBankroll(container, amount){
+  if (!container) return;
+  container.innerHTML = '';
+  const sym = document.createElement('span');
+  sym.className = 'jp-cell jp-sym';
+  sym.textContent = '$';
+  container.appendChild(sym);
+
+  const text = String(Math.max(0, Math.floor(amount) || 0));
+  const padded = text.length >= CAREER_BANKROLL_DIGITS
+    ? text
+    : ('0'.repeat(CAREER_BANKROLL_DIGITS - text.length) + text);
+  const firstSignificant = padded.length - text.length;
+  container.dataset.cells = String(padded.length + 1);
+
+  Array.from(padded).forEach((ch,i)=>{
+    const cell = document.createElement('span');
+    cell.className = 'jp-cell jp-digit tabular' + (i < firstSignificant ? ' dim' : '');
+    cell.textContent = ch;
+    container.appendChild(cell);
+  });
+}
+
+/* Which tray is extended. Presentation only — it is never persisted, and
+   changing it never touches career state. */
+let careerOpenEventId = null;
+
+/* The opened equipment tray, built only when a cassette is open, so no
+   opponent portrait exists in the document while it is closed. */
+function careerTrayHTML(event, state){
+  const threat = careerThreatOf(event);
+  const seats = Math.max(0, event.opponentCount | 0);
+  const moods = threat === 'SERIOUS'
+    ? ['smug','sly','angry','gloating']
+    : ['idle','think','idle','think'];
+
+  let faces = '';
+  for (let i = 0; i < seats; i++){
+    // renderFace() is the production portrait path; faceColorIdx is the
+    // same index the table uses. No name, no dialogue, no roster is
+    // implied — this is the field preview, not a captured roster.
+    const seat = { faceColorIdx:(i * 3 + event.playerCount) % FACE_COLORS.length };
+    faces += '<span class="cdir-hf">' + renderFace(seat, moods[i % moods.length]) + '</span>';
+  }
+
+  const terms = [
+    ['Entry',   event.buyIn === 0 ? 'FREE' : '$' + event.buyIn.toLocaleString()],
+    ['Players', String(event.playerCount)],
+    ['Stack',   event.stack.toLocaleString()],
+    ['Format',  String(event.format).toUpperCase()]
+  ].map(pair=>
+    '<div class="cdir-term"><span class="pc-label">' + esc(pair[0]) + '</span>' +
+    '<span class="cdir-term-well cdir-crt"><span class="cdir-term-value">' +
+    esc(pair[1]) + '</span></span></div>').join('');
+
+  let action;
+  if (state === 'active'){
+    action = '<button type="button" class="cdir-primary" data-career-continue="' + esc(event.id) + '">' +
+      '<span class="pc-lamp is-amber"></span><span class="cdir-legend-wrap">' +
+      '<span class="cdir-legend">Continue</span><small>' + esc(event.name) + '</small></span>' +
+      '<span class="pc-lamp is-amber"></span></button>';
+  } else if (state === 'available'){
+    action = '<button type="button" class="cdir-primary" data-career-enter="' + esc(event.id) + '">' +
+      '<span class="pc-lamp is-amber"></span><span class="cdir-legend-wrap">' +
+      '<span class="cdir-legend">Take Seat</span></span>' +
+      '<span class="pc-lamp is-amber"></span></button>';
+  } else {
+    const legend = state === 'unaffordable'
+      ? 'Need $' + (event.buyIn - careerBankroll()).toLocaleString() + ' More'
+      : state === 'blocked' ? 'Event Active' : 'Locked';
+    // A shortfall legend is the longest label the face ever carries, and it
+    // grows with the figure. It steps down one size so it can never overrun
+    // the button, while TAKE SEAT and CONTINUE keep their approved size.
+    const longLegend = legend.length > 10 ? ' is-long' : '';
+    action = '<button type="button" class="cdir-primary is-disabled" disabled>' +
+      '<span class="pc-lamp"></span><span class="cdir-legend-wrap">' +
+      '<span class="cdir-legend' + longLegend + '">' + esc(legend) + '</span></span>' +
+      '<span class="pc-lamp"></span></button>';
+  }
+
+  const abandon = state === 'active'
+    ? '<button type="button" class="cdir-abandon" data-career-abandon="' + esc(event.id) + '">Abandon Event</button>'
+    : '';
+
+  return '<div class="cdir-tray"><div class="cdir-tray-inner">' +
+    '<div class="cdir-bay cdir-bay-' + threat.toLowerCase() + '">' +
+      '<span class="pc-label cdir-bay-label">Table</span>' +
+      '<div class="cdir-faces">' + faces + '</div></div>' +
+    '<div class="cdir-threat is-' + threat.toLowerCase() + '">' +
+      '<span class="pc-label">Table threat</span>' +
+      '<span class="cdir-threat-well cdir-crt"><span class="cdir-threat-value">' + threat + '</span></span>' +
+      (threat === 'SERIOUS' ? '<span class="cdir-threat-mark"></span>' : '') + '</div>' +
+    '<div class="cdir-terms">' + terms + '</div>' +
+    '<div class="cdir-payout"><span class="pc-label">Payout</span>' +
+      '<span class="cdir-payout-well cdir-crt"><span class="cdir-payout-value">' +
+      esc(careerPayoutSummary(event)) + '</span></span></div>' +
+    '<div class="cdir-note-well cdir-crt"><span class="cdir-note">' +
+      esc(careerRequirementText(event, state)) + '</span></div>' +
+    '<div class="cdir-actions">' +
+      '<div class="cdir-cradle">' + action + '</div>' + abandon +
+    '</div></div></div>';
+}
+
+/* One closed cassette: the real event name printed on its face, the real
+   entry price in its own recessed money window, and a physical flag only
+   where the state needs one. */
+function careerCassetteHTML(event, state){
+  const open = careerOpenEventId === event.id;
+  const flag = state === 'active' ? '<span class="cdir-flag is-active">ACTIVE</span>'
+    : state === 'locked' ? '<span class="cdir-flag is-locked">LOCKED</span>'
+    : '';
+  return '<div class="cdir-hatch is-' + state + (open ? ' is-open' : '') + '">' +
+    '<div class="cdir-mount">' +
+      '<button type="button" class="cdir-cassette" data-career-toggle="' + esc(event.id) + '"' +
+        ' aria-expanded="' + (open ? 'true' : 'false') + '">' +
+        '<span class="cdir-cassette-name">' + esc(event.name) + '</span>' +
+        '<span class="cdir-money-window cdir-crt"><span class="cdir-money-value">' +
+          esc(careerEntryLabel(event)) + '</span></span>' + flag +
+      '</button></div>' +
+    (open ? careerTrayHTML(event, state) : '') +
+  '</div>';
 }
 
 function renderCareerScreen(){
   const bank = $('career-bankroll');
-  if (bank) buildResultAmount(bank, career.bankroll);
-  const board = $('career-events');
-  const newBtn = $('career-new');
-  const resultEl = $('career-last-result');
-  const money = value=>'$' + value.toLocaleString();
-  const stateCopy = {
-    available:['AVAILABLE · AFFORDABLE',''],
-    unaffordable:['AVAILABLE · UNAFFORDABLE','Your bankroll does not cover this buy-in.'],
-    locked:['LOCKED · PROGRESSION','Complete the required event win to unlock this event.'],
-    active:['CURRENTLY ACTIVE','Your buy-in is staked. Continue where you left off.'],
-    blocked:['BLOCKED · EVENT ACTIVE','Finish or abandon the active event first.']
-  };
+  if (bank) buildCareerBankroll(bank, careerBankroll());
 
+  const nameEl = $('career-player-name');
+  if (nameEl){
+    const raw = (typeof settings !== 'undefined' && settings && typeof settings.playerName === 'string')
+      ? settings.playerName.trim() : '';
+    nameEl.textContent = (raw || 'PLAYER').toUpperCase();
+  }
+  const accessEl = $('career-access');
+  if (accessEl) accessEl.textContent = careerHighestAccess();
+  const playedEl = $('career-played');
+  if (playedEl) playedEl.textContent = String(normalizeCareerCounter(career.eventsPlayed));
+  const wonEl = $('career-won');
+  if (wonEl) wonEl.textContent = String(normalizeCareerCounter(career.eventsWon));
+
+  const board = $('career-events');
   if (board){
-    board.innerHTML = CAREER_EVENT_LIST.map(event=>{
-      return { event, state: careerEventState(event.id) };
-    }).filter(({state})=>state !== 'hidden').map(({event,state})=>{
-      const copy = stateCopy[state].slice();
-      if (state === 'available') copy[1] = careerPayoutNote(event);
-      if (state === 'locked' && event.unlockRequirement){
-        const required = careerEventById(event.unlockRequirement.eventId);
-        if (required) copy[1] = 'Win ' + required.name + ' to unlock this event.';
-      }
-      const primary = state === 'active'
-        ? '<button class="btn-primary" data-career-continue="' + esc(event.id) + '">Continue Event</button>'
-        : '<button class="btn-primary" data-career-enter="' + esc(event.id) + '"' +
-          (state === 'available' ? '' : ' disabled') + '>Enter Event</button>';
-      const abandon = state === 'active'
-        ? '<button class="btn-secondary btn-danger career-abandon" data-career-abandon="' + esc(event.id) + '">Abandon Event</button>'
-        : '';
-      return '<section class="panel-card career-event-card is-' + state + '" data-career-event="' + esc(event.id) + '">' +
-        '<div class="card-label"><span>' + esc(event.venue) + '</span></div>' +
-        '<div class="career-event-status">' + esc(copy[0]) + '</div>' +
-        '<div class="career-event-name">' + esc(event.name) + '</div>' +
-        '<div class="career-event-stats">' +
-          '<div class="career-stat"><span class="cs-k">Players</span><span class="cs-v tabular">' + event.playerCount + '</span></div>' +
-          '<div class="career-stat"><span class="cs-k">Format</span><span class="cs-v">' + esc(event.format) + '</span></div>' +
-          '<div class="career-stat"><span class="cs-k">Buy-in</span><span class="cs-v tabular">' + money(event.buyIn) + '</span></div>' +
-          '<div class="career-stat"><span class="cs-k">' + (careerPayouts(event).length > 1 ? 'Payout' : 'Prize') +
-            '</span><span class="cs-v tabular">' + esc(careerPayoutSummary(event)) + '</span></div>' +
-        '</div><div class="hint career-note">' + esc(copy[1]) + '</div>' + primary + abandon + '</section>';
+    // An open tray belonging to an event that is no longer rendered (its
+    // eligibility lapsed, or a fresh career replaced it) must not survive.
+    if (careerOpenEventId && careerEventState(careerOpenEventId) === 'hidden'){
+      careerOpenEventId = null;
+    }
+    board.innerHTML = CAREER_ROOMS.map(room=>{
+      const events = careerRoomEvents(room.venue)
+        .map(event=>({ event, state:careerEventState(event.id) }))
+        .filter(entry=>entry.state !== 'hidden');
+      const body = events.length
+        ? events.map(entry=>careerCassetteHTML(entry.event, entry.state)).join('')
+        : '<div class="cdir-door"><span class="cdir-door-text">LOCKED &middot; COMING SOON</span></div>';
+      return '<section class="cdir-room cdir-room-' + room.key + '">' +
+        '<div class="cdir-room-plate"><span class="cdir-room-name">' + esc(room.venue) + '</span></div>' +
+        '<div class="cdir-room-bay">' + body + '</div></section>';
     }).join('');
+
+    board.querySelectorAll('[data-career-toggle]').forEach(button=>{
+      button.onclick = ()=>{
+        const id = button.dataset.careerToggle;
+        // Presentation only: no save, no debit, no unlock, no table state.
+        careerOpenEventId = (careerOpenEventId === id) ? null : id;
+        renderCareerScreen();
+      };
+    });
     board.querySelectorAll('[data-career-enter]').forEach(button=>{
       button.onclick = ()=>{ Sound.buttonRelease('award'); careerEnterPressed(button.dataset.careerEnter); };
     });
@@ -872,11 +1108,36 @@ function renderCareerScreen(){
     board.querySelectorAll('[data-career-abandon]').forEach(button=>{
       button.onclick = ()=>careerAbandonPressed(button.dataset.careerAbandon);
     });
+
+    // The tray's REAL height extends in three discrete mechanical beats, so
+    // every later cassette and room is genuinely pushed down the directory
+    // rather than overlaid. Reduced motion settles straight to the height.
+    const tray = typeof board.querySelector === 'function'
+      ? board.querySelector('.cdir-hatch.is-open .cdir-tray') : null;
+    if (tray){
+      const inner = tray.firstElementChild;
+      if (motionOff()){
+        tray.style.height = 'auto';
+      } else {
+        const target = inner.getBoundingClientRect().height;
+        tray.style.height = '0px';
+        void tray.offsetHeight;
+        tray.classList.add('is-extending');
+        tray.style.height = target + 'px';
+        tray.addEventListener('transitionend', function settle(){
+          tray.classList.remove('is-extending');
+          tray.style.height = 'auto';
+          tray.removeEventListener('transitionend', settle);
+        });
+      }
+    }
   }
 
   const hasAffordableUnlocked = CAREER_EVENT_LIST.some(event=>careerEventState(event.id) === 'available');
+  const newBtn = $('career-new');
   if (newBtn) newBtn.classList.toggle('hidden', careerHasActiveEvent() || hasAffordableUnlocked);
 
+  const resultEl = $('career-last-result');
   if (resultEl){
     const r = career.lastResult;
     resultEl.classList.toggle('hidden', !r);
@@ -928,6 +1189,7 @@ function careerAbandonPressed(eventId){
 
 function startFreshCareer(){
   career = defaultCareer();
+  careerOpenEventId = null;
   saveCareer();
   clearCareerTable();
   renderCareerScreen();

@@ -363,15 +363,38 @@
         <div style="width:44px; flex-shrink:0;"></div>
       </div>
 
-      <div class="panel-card career-bank-card">
-        <div class="card-label"><span>Bankroll</span></div>
-        <div class="stack-readout career-bank">
-          <div id="career-bankroll" role="img" aria-label="Career bankroll"></div>
+      <!-- MACHINE 1 — the player's own instrument. Uses the selected
+           production palette and recolours with it. -->
+      <div class="cpi" id="career-player-instrument">
+        <div class="cpi-nameplate">
+          <span class="pc-label">Player</span>
+          <span class="cpi-name" id="career-player-name"></span>
+        </div>
+        <span class="pc-label cpi-bankroll-label">Bankroll</span>
+        <div class="cpi-bankroll-housing">
+          <div class="amt-readout cpi-reel" id="career-bankroll" role="img" aria-label="Career bankroll"></div>
+        </div>
+        <div class="cpi-stats">
+          <div class="cpi-stat">
+            <span class="pc-label">Highest access</span>
+            <span class="cpi-stat-well"><span class="cpi-stat-value" id="career-access"></span></span>
+          </div>
+          <div class="cpi-stat">
+            <span class="pc-label">Events played</span>
+            <span class="cpi-stat-well"><span class="cpi-stat-value tabular" id="career-played"></span></span>
+          </div>
+          <div class="cpi-stat">
+            <span class="pc-label">Events won</span>
+            <span class="cpi-stat-well"><span class="cpi-stat-value tabular" id="career-won"></span></span>
+          </div>
         </div>
         <div class="career-last-result hidden" id="career-last-result"></div>
       </div>
 
-      <div id="career-events" class="career-events" aria-label="Career events"></div>
+      <!-- MACHINE 2 — the house directory. Fixed house treatment, scoped
+           beneath this root so the player palette never reaches it. -->
+      <div class="cdir" id="career-events" aria-label="Career event directory"></div>
+
       <button class="btn-primary hidden" id="career-new">Start New Career</button>
     </div>
   </div>

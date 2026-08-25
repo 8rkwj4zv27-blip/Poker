@@ -18,6 +18,10 @@ onto Phases 12–16.
 **Phase 2 remains the immediate implementation task.** Approval of the expansion
 did not start it: nothing from Phase 3 onward is implemented.
 
+*Superseded 2026-08-25:* Phase 2 is complete, and an owner-directed Career
+event-directory milestone was executed after it (recorded below, before Phase 3).
+**Phase 3 is now the immediate task.** The phase numbering is unchanged.
+
 ## Prototype objective
 
 Prove that choosing between events, risking a persistent bankroll, cashing, busting, rebuilding, and seeing the next venue creates a compelling repeatable career loop — and then whether a venue with named residents, a boss seat, and a cash table is a richer place to play than a flat event list.
@@ -92,6 +96,45 @@ sibling event. See `STATUS.md`.
 **Dependencies:** Phase 1 (complete).
 
 **Exit condition:** bankroll values $0, $50, $99 and $100 behave correctly; Second Chance can never unlock a venue; a player can never reach a career dead end; recovery cannot appear while ineligible; both focused check suites pass.
+
+---
+
+## Owner-directed milestone — Career event directory — COMPLETE (2026-08-25)
+
+**Not a phase.** The sixteen-phase sequence below is unchanged and unrenumbered.
+This milestone was directed by the owner after Phase 2 and executed outside the
+numeric order; **Phase 3 remains the immediate next Career task.**
+
+**Purpose:** ship the approved Career event-directory presentation, and the
+minimum durable data it needs to be truthful.
+
+**Included scope:**
+
+- The Career screen rebuilt as a physical event directory: a personalised player
+  instrument above a fixed-house scrolling directory of six room bays.
+- All six venues present; the four without implemented events show a locked
+  compartment door and nothing else.
+- Event cassettes with extending detail trays; one open at a time; opening one
+  writes nothing.
+- Real opponent portraits, threat wording, terms, payouts and requirements, all
+  read from the existing catalogue and the existing state functions.
+- Career save **version 4**: `eventsPlayed` and `eventsWon`, pulled forward from
+  Phase 13 by explicit owner decision because the player instrument requires
+  truthful figures.
+
+**Exclusions:** no contextual Recommended/Alternative/Next-target selection (that
+is still Phase 5, and is built into this presentation rather than replacing it);
+no event history, venue record, head-to-head record, dossier or title; no new
+event descriptor, payout, unlock rule or opponent for any unimplemented venue;
+no poker, AI, pacing or scoring change.
+
+**Dependencies:** Phase 2.
+
+**Exit condition:** met. Both focused suites pass with new coverage for the
+v3→v4 migration, counter normalisation and both counters' increment semantics;
+the directory renders from real Career state at 393x852, 389x844 and a wider
+viewport under two palettes with no overflow, no clipped text and no console
+error. See `STATUS.md`.
 
 ---
 
