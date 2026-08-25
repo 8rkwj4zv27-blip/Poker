@@ -1,9 +1,9 @@
 # Career Mode — Current Status
 
 Last verified: 2026-08-25  
-Verified implementation baseline: `cb9aee0` — `Career Phase 2: Second Chance recovery, truthful
-loss messaging, DEV bankroll tool`, plus the owner-directed **Career event directory** integration
-implemented on top of it. Career logic baseline before Phase 2 was `d31b120` — `Add multi-place
+Verified implementation baseline: `35d93c3` — `Integrate the Career event directory`
+(the owner-directed milestone below), on top of `cb9aee0` — `Career Phase 2: Second Chance
+recovery, truthful loss messaging, DEV bankroll tool`. Career logic baseline before Phase 2 was `d31b120` — `Add multi-place
 payouts and Pub Circuit Open` (Phase 1).
 Build `v0.22.0-dev · Career Directory Update`, service-worker cache `poker-v21-0`.
 Career save schema **version 4**.
