@@ -354,7 +354,7 @@ function devBuildResultFixture(kind){
 function devArcadeResultFixture(g, kind){
   const r = g.run, a = r.arcade;
   a.score = 780; a.displayedScore = 780; a.biggestReward = 400;
-  a.awardCounts = { goodFold:1, ko:1 };
+  a.awardCounts = { bigWin:1, ko:1 };
   a.newHighScore = kind === 'run-over';
   r.tableNumber = 1; r.highestTableReached = 1;
   r.totalHands = 4; r.totalHandsWon = 3;
@@ -540,54 +540,35 @@ function initDevPanel(){
         '<div id="dev-arcade-controls">' +
         '<div class="dev-section-title">ARCADE TEST</div>' +
         '<div class="dev-subtitle">PRESENTATION TIERS (visual only)</div>' +
-        '<button data-arcade-scenario="standard" type="button">STANDARD — GOOD FOLD</button>' +
-        '<button data-arcade-scenario="strong" type="button">STRONG — GOOD BLUFF</button>' +
-        '<button data-arcade-scenario="elite" type="button">ELITE — HERO CALL</button>' +
-        '<button data-arcade-scenario="jackpot" type="button">JACKPOT — MONSTER BLUFF</button>' +
+        '<button data-arcade-scenario="strong" type="button">STRONG — BIG WIN</button>' +
+        '<button data-arcade-scenario="elite" type="button">ELITE — DOUBLE UP</button>' +
+        '<button data-arcade-scenario="jackpot" type="button">JACKPOT — MASSIVE WIN</button>' +
         '<div class="dev-subtitle">INDIVIDUAL AWARDS</div>' +
-        '<button data-arcade-award="goodFold" type="button">GOOD FOLD +100</button>' +
-        '<button data-arcade-award="goodPressure" type="button">GOOD PRESSURE +100</button>' +
-        '<button data-arcade-award="punish" type="button">PUNISH +150</button>' +
-        '<button data-arcade-award="trapWorked" type="button">TRAP WORKED +250</button>' +
-        '<button data-arcade-award="goodShove" type="button">GOOD SHOVE +250</button>' +
-        '<button data-arcade-award="greatShove" type="button">GREAT SHOVE +600</button>' +
-        '<button data-arcade-award="maxValue" type="button">MAX VALUE +650</button>' +
-        '<button data-arcade-award="heroCall" type="button">HERO CALL +700</button>' +
-        '<button data-arcade-award="greatBluff" type="button">GREAT BLUFF +700</button>' +
-        '<button data-arcade-award="monsterBluff" type="button">MONSTER BLUFF +1,500</button>' +
+        '<button data-arcade-award="bigWin" type="button">BIG WIN +150</button>' +
         '<button data-arcade-award="monsterHand" type="button">MONSTER HAND +200</button>' +
         '<button data-arcade-award="doubleUp" type="button">DOUBLE UP +300</button>' +
         '<button data-arcade-award="ko" type="button">K.O.! +400</button>' +
-        '<button data-arcade-award="bigPot" type="button">BIG POT +150</button>' +
-        '<button data-arcade-award="massivePot" type="button">MASSIVE POT +500</button>' +
+        '<button data-arcade-award="massiveWin" type="button">MASSIVE WIN +500</button>' +
         '<button data-arcade-award="tableClear" type="button">TABLE CLEARED +1,000</button>' +
-        '<div class="dev-subtitle">LUCK LABELS (zero points)</div>' +
-        '<button data-arcade-luck="lucky" type="button">LUCKY</button>' +
-        '<button data-arcade-luck="veryLucky" type="button">VERY LUCKY</button>' +
-        '<button data-arcade-luck="filthy" type="button">FILTHY</button>' +
-        '<button data-arcade-luck="unlucky" type="button">UNLUCKY</button>' +
-        '<button data-arcade-luck="brutal" type="button">BRUTAL</button>' +
-        '<div class="dev-subtitle">NEGATIVE (zero points)</div>' +
-        '<button data-arcade-negative="looseCall" type="button">LOOSE CALL</button>' +
-        '<button data-arcade-negative="badCall" type="button">BAD CALL</button>' +
-        '<button data-arcade-negative="paidThemOff" type="button">PAID THEM OFF</button>' +
-        '<button data-arcade-negative="badFold" type="button">BAD FOLD</button>' +
-        '<button data-arcade-negative="tooTight" type="button">TOO TIGHT</button>' +
-        '<button data-arcade-negative="badBluff" type="button">BAD BLUFF</button>' +
-        '<button data-arcade-negative="reckless" type="button">RECKLESS</button>' +
-        '<button data-arcade-negative="badShove" type="button">BAD SHOVE</button>' +
-        '<button data-arcade-negative="overplayed" type="button">OVERPLAYED</button>' +
-        '<button data-arcade-negative="missedValue" type="button">MISSED VALUE</button>' +
-        '<button data-arcade-negative="tooPassive" type="button">TOO PASSIVE</button>' +
+        '<button data-arcade-award="eventWon" type="button">EVENT WON +1,000</button>' +
+        '<div class="dev-subtitle">COMMENTARY — CRT LINE (zero points)</div>' +
+        '<button data-arcade-commentary="lucky" type="button">LUCKY</button>' +
+        '<button data-arcade-commentary="veryLucky" type="button">VERY LUCKY</button>' +
+        '<button data-arcade-commentary="filthy" type="button">FILTHY</button>' +
+        '<button data-arcade-commentary="unlucky" type="button">UNLUCKY</button>' +
+        '<button data-arcade-commentary="brutal" type="button">BRUTAL</button>' +
+        '<button data-arcade-commentary="sidePotWonNetLoss" type="button">SIDE POT · NET LOSS</button>' +
+        '<button data-arcade-commentary="potChopped" type="button">POT CHOPPED</button>' +
+        '<button data-arcade-commentary="uncalledBetReturned" type="button">UNCALLED BET RETURNED</button>' +
+        '<button data-arcade-commentary="shownDownLight" type="button">SHOWN DOWN LIGHT</button>' +
+        '<button data-arcade-commentary="pressureSucceeded" type="button">NO SHOWDOWN · POT TAKEN</button>' +
         '<div class="dev-subtitle">STACKED SCENARIOS</div>' +
-        '<button data-arcade-scenario="escalating" type="button">ESCALATING PAYOUT (7 rewards)</button>' +
-        '<button data-arcade-scenario="massivePot" type="button">MASSIVE POT</button>' +
-        '<button data-arcade-scenario="heroCall" type="button">HERO CALL</button>' +
-        '<button data-arcade-scenario="monsterBluff" type="button">MONSTER BLUFF</button>' +
+        '<button data-arcade-scenario="escalating" type="button">ESCALATING PAYOUT (5 rewards)</button>' +
+        '<button data-arcade-scenario="massiveWin" type="button">MASSIVE WIN</button>' +
+        '<button data-arcade-scenario="monsterHand" type="button">MONSTER HAND</button>' +
         '<button data-arcade-scenario="ko" type="button">K.O.!</button>' +
         '<button data-arcade-scenario="luckyWin" type="button">REWARD + LUCKY</button>' +
-        '<button data-arcade-scenario="badBeat" type="button">REWARD + BRUTAL</button>' +
-        '<button data-arcade-scenario="negative" type="button">NEGATIVE ONLY</button>' +
+        '<button data-arcade-scenario="badBeat" type="button">BRUTAL ONLY</button>' +
         '<div class="dev-subtitle">COUNTER</div>' +
         '<button data-arcade-score="100" type="button">+100 SCORE</button>' +
         '<button data-arcade-score="1000" type="button">+1,000 SCORE</button>' +
@@ -658,8 +639,7 @@ function initDevPanel(){
     $('dev-collapse').textContent='+';
   };
   panel.querySelectorAll('[data-arcade-award]').forEach(b=>b.onclick=runArcadeDevTest(()=>devArcadeAward(b.dataset.arcadeAward)));
-  panel.querySelectorAll('[data-arcade-luck]').forEach(b=>b.onclick=runArcadeDevTest(()=>devArcadeLuck(b.dataset.arcadeLuck)));
-  panel.querySelectorAll('[data-arcade-negative]').forEach(b=>b.onclick=runArcadeDevTest(()=>devArcadeNegative(b.dataset.arcadeNegative)));
+  panel.querySelectorAll('[data-arcade-commentary]').forEach(b=>b.onclick=runArcadeDevTest(()=>devArcadeCommentary(b.dataset.arcadeCommentary)));
   panel.querySelectorAll('[data-arcade-scenario]').forEach(b=>b.onclick=runArcadeDevTest(()=>devArcadeScenario(b.dataset.arcadeScenario)));
   panel.querySelectorAll('[data-arcade-score]').forEach(b=>b.onclick=()=>devArcadeAddScore(b.dataset.arcadeScore));
   panel.querySelectorAll('[data-pot-smash]').forEach(b=>b.onclick=runArcadeDevTest(()=>devTestPotSmash(b.dataset.potSmash)));

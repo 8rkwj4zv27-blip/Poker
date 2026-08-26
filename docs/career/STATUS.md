@@ -1,11 +1,11 @@
 # Career Mode — Current Status
 
-Last verified: 2026-08-25  
+Last verified: 2026-08-26
 Verified implementation baseline: `35d93c3` — `Integrate the Career event directory`
 (the owner-directed milestone below), on top of `cb9aee0` — `Career Phase 2: Second Chance
 recovery, truthful loss messaging, DEV bankroll tool`. Career logic baseline before Phase 2 was `d31b120` — `Add multi-place
 payouts and Pub Circuit Open` (Phase 1).
-Build `v0.22.0-dev · Career Directory Update`, service-worker cache `poker-v21-0`.
+Build `v0.23.0-dev · Scoring Correction`, service-worker cache `poker-v22-0`.
 Career save schema **version 4**.
 
 This is the short handoff file. Update it whenever a Career milestone is completed or the immediate next task changes.
@@ -30,7 +30,12 @@ existing `migrateCareer()` path (the same mechanism that added Pub Circuit Open 
 Phase 1), which is exercised by a dedicated check. The next bump is Phase 9's
 cash-session state.
 
-**Phase 3 (scoring specification and audit) is the sole immediate next task.**
+**Phase 3 (scoring specification and audit) and Phase 4 (scoring correction,
+gates 4A–4D) are both CODE-COMPLETE as of 2026-08-26 — see below. The six owner
+decisions in `docs/scoring/SCORING_SPEC.md` section 9 were settled and approved
+on 2026-08-26 and are implemented. Rendered verification of the Phase 4
+correction is the immediate next task; Phase 5 — Contextual Board and visible
+Full Circuit — follows only after that manual gate passes.**
 
 ## Owner-directed milestone — Career event directory (2026-08-25)
 
@@ -132,6 +137,228 @@ active event, reloaded, migrated and still resumable.
 **The Career Lab (`career-lab.html`, `css/career-lab.css`, `js/career-lab.js`) is
 committed as the durable visual reference.** It is not linked from `index.html`
 and is not in the service-worker app shell.
+
+## Phase 3 — Scoring specification and audit — COMPLETE (2026-08-26)
+
+Diagnostic only. **No production behaviour, save, statistic, version, service
+worker or Lab file was changed.** Both existing suites pass unchanged.
+
+**What shipped**
+
+- **`docs/scoring/SCORING_SPEC.md`** — the authoritative long-term scoring
+  reference, covering Career *and* Single Player: the award table (name, exact
+  trigger, value, presentation timing, persistence, mode), the four-category
+  commentary catalogue, the hidden-information rule, the lifetime-statistic
+  definitions and their on-screen copy, the terminal-hand responsibility split,
+  the fixture determinism contract, the audit findings, and the persistence
+  disclosure. `CAREER_DESIGN.md`'s *Scoring integrity* section now points to it.
+- **`validation/fixtures/scoring-fixtures.js`** and
+  **`validation/fixtures/scoring-fixtures-cases.js`** — 26 deterministic
+  fixtures. Expected values are DERIVED from the spec's constants, not typed, so
+  retuning `BIG_WIN_BB` / `MASSIVE_WIN_BB` at Phase 4B keeps the matrix coherent.
+- **`validation/scoring-audit.js`** — the diagnostic harness. It runs the real
+  evaluator in a VM over the real production sources and REPORTS current against
+  required. **It asserts no correctness**, so no committed check fails and no
+  passing assertion preserves a defect. Phase 4 adds `validation/scoring-checks.js`,
+  which asserts the same `expected` blocks gate by gate.
+
+**Result: 26 fixtures, 115 compared channels, 77 divergences.** Byte-identical
+across consecutive runs. Exit 0 with divergences; exit 1 on a malformed fixture
+(verified by deliberately violating the board-length rule).
+
+**Both reported failures reproduce, and one is worse than reported**
+
+- **Failure A (F12)** — a correct-price call loses, the player busts, `GOOD CALL`
+  **+100** is presented full-screen, and only then does `RUN OVER` appear.
+- **Failure B (F9)** — a hand the player is **$700 down** on fires `MASSIVE POT`
+  **+500**, `MONSTER HAND` **+200**, `GOOD CALL` **+100**, a `FILTHY` luck tag,
+  and the full pot-smash ceremony. **800 points and a victory ceremony for a
+  $700 loss** — three awards, not the one reported.
+
+**Defects measured rather than asserted**
+
+- **K.O. never fires in Career** — the real `resolveEliminations()` returns
+  `koCount 0` because Career has no `g.run`.
+- **Career prints `TABLE CLEARED`** as an award name before `EVENT WON`.
+- **Pot awards are structurally dead on fold-wins** — a genuine +20bb fold-win
+  produces no pot award at all.
+- **Hidden-card leak in luck tags** — two fixture variants differing in *nothing
+  the player can see* (same board, same hole cards, same actions, same
+  settlement; only folded opponents' cards differ) emit `luck:lucky` and
+  `luck:filthy`.
+- **Hidden-card leak in the review panel** — `foldSnapshotNote()` describes a
+  fold-win winner's never-shown hand.
+- **`stats.biggestPot` records the whole table pot** — 2,030 on a hand netting
+  +30 — and **`run.biggestPotWon` counts returned own money** — 1,120 including
+  an 880 uncalled return.
+- **Score mutation is coupled to presentation** in both paths, so suppressing
+  presentation would also suppress score. This is why the specification separates
+  detection, mutation, presentation and persistence explicitly.
+- **`computePots()` discards `payers.length`** — three layers in one hand
+  ($30 from 3 contributors, $20 from 2, $1,980 from 1) all expose `eligible = 1`.
+
+**The lifetime-statistics question, answered**
+
+Career persists **no** score anywhere: a full Career evaluation leaves
+`felt.arcade` byte-identical, so Event Score is genuinely ephemeral exactly as
+`CAREER_DESIGN.md` claims.
+
+Single Player's permanent profile **is** contaminated and cannot be repaired.
+`noteArcadeDiscovery()` writes for every award produced, and
+`finalizeArcadeRun()` banks the run total *after* the bust hand's awards — a
+`GOOD CALL` awarded on the hand that ended the run reaches
+`felt.arcade.highScore` permanently. Affected: `felt.stats.won`,
+`showdownsWon`, `biggestPot`, and `felt.arcade`'s `highScore`, `counts`,
+`discovered`, `bestByEvent`. **Decision: leave and disclose.** The values cannot
+be recomputed and resetting would destroy legitimate history. No stored history
+is changed by Phase 4.
+
+**Tests**
+
+`node validation/career-events-checks.js` — **62 passed**, unchanged.
+`node validation/career-result-checks.js` — **39 passed**, unchanged.
+`node validation/scoring-audit.js` — exit 0, 77 divergences, deterministic.
+
+**Blocking:** the six owner decisions in `SCORING_SPEC.md` section 9.
+
+## Phase 4 — Scoring correction — COMPLETE (2026-08-26)
+
+Ran as four sequential gates. All three validation suites were run after each,
+and no gate proceeded on a failure. **No stored statistic, save or Lab file was
+changed. The release commit advances only the visible build identifier and
+service-worker cache so installed PWAs receive the correction. No poker rule,
+hand evaluation or AI behaviour was touched.**
+
+### The six owner decisions, settled 2026-08-26
+
+Each on its recommendation, and recorded as approved in
+`docs/scoring/SCORING_SPEC.md` section 9:
+
+1. **Career Event Score kept** — ephemeral, display-only, per-event, never
+   persisted, gates nothing. Not XP.
+2. **`BIG WIN` renamed and redefined on net profit**, keeping both the flat
+   points and the tier escalation. `MONSTER HAND` still scores, under its two
+   gates. The thresholds are frozen at 12bb / 30bb.
+3. **Section 5.1 lifetime-statistic definitions adopted**; a `ties` counter
+   deferred; `DEFAULT_STATS` unchanged.
+4. **The `#banner` CRT line is the commentary surface**, with the Hand Review
+   panel as expanded analysis.
+5. **Decision-quality commentary deferred entirely** to the separate
+   range-model workstream. Nothing is scaffolded for it.
+6. **`MONSTER BLUFF`, `GREAT BLUFF`, `GOOD BLUFF`, `HERO CALL` and `PUNISH`
+   removed.**
+
+### 4A — pot attribution and lifetime statistics
+
+- `arcadeContestedPot()` deleted; `arcadeNetProfit()` replaces it. Every
+  win-size award is measured against the player's own net result for the hand.
+  This is what stops a hand the player finished **$700 down** from firing
+  `MASSIVE POT`, `MONSTER HAND` and a full victory ceremony, and it is also what
+  lets a genuine fold-win score at all (the old measure excluded every folded
+  contributor, so a +20bb fold-win measured as zero).
+- `BIG POT`/`MASSIVE POT` → **`BIG WIN`/`MASSIVE WIN`**, one shared family, both
+  gated on `netProfit > 0`.
+- **K.O. now fires in Career.** Attribution in `resolveEliminations()` is
+  mode-blind; the run counters stay gated on `g.run`, so Career writes no
+  Single Player run state.
+- **Career awards `EVENT WON`**, never the literal name `TABLE CLEARED`.
+- `HERO CALL` and `PUNISH` removed — both read cards or personality the player
+  never sees.
+- **Lifetime statistics have one writer.** `recordPot()` is gone;
+  `recordHandStatistics()` runs once per hand in `finishHand()`, after the
+  payout, from the settled net result. `won`, `showdownsWon` and `biggestPot`
+  now mean *the player finished the hand ahead* — an exact chop is not a win,
+  and a net-losing side-pot share is not a win. `run.biggestPotWon` and
+  `tableBiggestPotWon` record net profit, not the gross share.
+- Player-facing copy shipped in the same gate: **`Best pot` → `Best hand win`**
+  (stat strip and settings statistics), **`Biggest pot` → `Biggest net win`**
+  (TABLE CLEARED and RUN OVER recaps), plus the two `career-result-checks.js`
+  assertions that pin them. Those two assertions changed **because the approved
+  copy changed**, and each is now paired with an assertion that the old label is
+  gone.
+
+### 4B — decision awards removed from scoring and presentation
+
+- The entire decision catalogue is **deleted, not disabled** — no flag, no
+  scaffolding. `evaluateArcadeSkill()`, `findArcadeFoldBluff()`,
+  `isMonsterBluff()`, `heroCatAtSnapshot()`, `actionWasCalled()`,
+  `ARCADE_NEGATIVE` and `evaluateArcadeNegative()` are gone.
+- Seven objective awards remain: `POT WINNINGS`, `BIG WIN`, `MONSTER HAND`,
+  `DOUBLE UP`, `K.O.`, `MASSIVE WIN`, and `TABLE CLEARED` / `EVENT WON`.
+- `captureArcadeDecision()` no longer requests decision-time equity, which also
+  takes the invalid model's per-decision worker traffic out of the live game.
+  The snapshots stay — `classifyArcadeLuck()` reads their sizing.
+- The Scoring Guide, the awards glossary, the DEV panel and the DEV pot-smash
+  fixtures follow the objective catalogue. **The Scoring Guide now opens with
+  the canonical description of the counter, verbatim.**
+
+### 4C — terminal-hand calculation and presentation ordering
+
+- `resolveArcadeHandLate()` split into `resolveArcadeHandScore()` (detect and
+  record, silent) plus either `bankArcadeResolution()` (terminal: add the
+  points, set `displayedScore` equal, show nothing) or the unchanged
+  `presentArcadeResolution()`. Score mutation used to live *inside*
+  presentation on both paths, so suppressing the celebration would also have
+  suppressed the points.
+- **`finishHand()` computes `terminal` before the late pass** and passes it in.
+  A hand that busts the player no longer presents a celebratory award between
+  the bust and `RUN OVER`.
+- A hand that earned nothing no longer opens the reward layer at all: the chips
+  are still paid, through the ordinary payout path.
+
+### 4D — objective commentary and the hidden-information rule
+
+- `computePots()` gained the additive `contributors` field. `eligible` is
+  untouched and every existing caller is unaffected.
+- **Luck tags are gated to showdown-revealed opponents only.** Two hands
+  identical in everything visible used to emit `LUCKY` and `FILTHY` purely
+  because the *folded* opponents held different cards.
+- **The review panel no longer describes a never-shown winning hand.**
+  `foldSnapshotNote()` takes an explicit `shown` argument and is not called on a
+  fold-win; the fold-win review states the public fact instead.
+- One objective commentary line per hand, chosen by a fixed priority ladder,
+  delivered to the `#banner` CRT line at the `Hand complete.` beat. Soft lines
+  are rate limited to one every four hands; hard settlement facts are exempt.
+  All text comes from one lookup, `commentaryLine(id, context)`.
+- `presentArcadeCommentary()` deleted — the reward layer is scoring awards only.
+
+### Tests
+
+`node validation/career-events-checks.js` — **62 passed**, unchanged.
+`node validation/career-result-checks.js` — **39 passed** (two copy assertions
+updated to the approved copy, each paired with a new assertion that the old
+label is gone).
+`node validation/scoring-checks.js` — **170 passed** (new; asserts the fixtures
+gate by gate).
+`node validation/scoring-audit.js` — exit 0, **115 channels, 0 divergences**
+(was 77), byte-identical across consecutive runs.
+
+Three audit *measurements* were corrected alongside the code, because each had
+hard-coded or stood in for a quantity the correction changed and would otherwise
+have kept reporting a fixed defect as present. The VM harness both scoring files
+share was extracted to `validation/fixtures/scoring-harness.js`, so the report
+and the assertions cannot drive the evaluator differently.
+
+### Not done, deliberately
+
+- **No stored history changed.** `felt.stats` and `felt.arcade` keep every value
+  they hold, including counts for awards this phase removed. They cannot be
+  recomputed and resetting would destroy legitimate history.
+- No range model, no decision advice, no scaffolding for either.
+- No seeded RNG (D16) — the fixtures are deterministic by construction.
+- D4 (only the highest-edge call candidate is tested) not repaired: it tuned a
+  verdict that no longer ships.
+- `js/result-stage-lab.js` and `js/design-lab.js` still carry the old
+  `Biggest pot` / `Best pot` copy in their own fixture data. They are visual
+  references outside the specification's enumerated sites and were left
+  untouched; **they are now one revision behind the production recaps.**
+- CSS for the deleted commentary presentation is now unmatched and was left in
+  place rather than risk disturbing a selector still in use.
+
+### Not verified
+
+Rendered/on-device verification of the corrected scoring presentation. See
+**Manual checks still outstanding** below.
 
 ## Implemented now
 
@@ -258,6 +485,19 @@ Both were latent and would have surfaced the moment the schema widened:
 
 Run both before and after every Career implementation phase.
 
+Scoring work additionally runs:
+
+- `node validation/scoring-checks.js` — **asserts**; must pass. 170 checks,
+  tagged by gate (`--gate 4A` runs one gate's worth).
+- `node validation/scoring-audit.js` — **reports** current behaviour against
+  `docs/scoring/SCORING_SPEC.md` and counts divergences. Exits 0 even with
+  divergences; non-zero only when the harness or a fixture is broken. Currently
+  115 channels, **0 divergences**.
+
+Both drive the real evaluator through one shared VM harness,
+`validation/fixtures/scoring-harness.js`, so the report and the assertions can
+never measure different things.
+
 Last verification on 2026-08-25 (Second Chance correction pass plus DEV bankroll aid): **42/42 event checks and 39/39
 result checks passed**.
 
@@ -336,7 +576,10 @@ New coverage includes the Pub Circuit Open descriptor and five-player launch con
 
 ## Not implemented
 
-- Scoring award specification, audit or correction.
+- Scoring beyond Phase 4. The specification, audit and correction are all
+  complete (2026-08-26). What remains unbuilt by explicit decision: the
+  action-conditioned range model and any decision-quality commentary, which are
+  a separate, separately approved workstream this file does not schedule.
 - Contextual Recommended / Alternative / Next-target selection and Full Circuit
   (Phase 5). The event directory shipped in 2026-08-25's owner-directed milestone
   is the presentation that logic will be built into; the six-venue ladder and the
@@ -359,9 +602,9 @@ dependencies and exit conditions.
 | 1 | Paid places and Pub Circuit Open | Complete |
 | 2 | Second Chance recovery | Complete |
 | — | Career event directory (owner-directed, not a phase) | Complete |
-| 3 | Scoring specification and audit | **Next** |
-| 4 | Scoring correction | Approved, not started |
-| 5 | Contextual Board and visible Full Circuit | Approved, not started |
+| 3 | Scoring specification and audit | Complete |
+| 4 | Scoring correction (gates 4A–4D) | Complete |
+| 5 | Contextual Board and visible Full Circuit | **Next** |
 | 6 | Back Room pacing instrumentation and decision | Approved, not started |
 | 7 | Named residents, roster authority, minimal relationship record | Approved, not started |
 | 8 | Back Room boss seat and first-clear ceremony | Approved, not started |
@@ -379,19 +622,32 @@ time, in numeric order.
 
 ## Immediate next task
 
-Phase 3 from `BUILD_PLAN.md`: scoring specification and audit. Diagnostic only —
-no code change. Define the authoritative award table (award name, exact
-trigger, value, presentation timing, persistence); trace every award through
-detection → mutation → presentation → persistence; audit Career and Single
-Player separately; identify false, duplicated, late or incorrectly valued
-awards; check all lifetime-statistic persistence; produce reproducible
-fixtures in the style of `validation/`. See `BUILD_PLAN.md` Phase 3 for the
-full exit condition.
+**Rendered verification of the Phase 4 scoring correction**, then
+**Phase 5 — Contextual Board and visible Full Circuit.**
+
+Phase 4 is code-complete and passes every automated suite, but no part of it has
+been seen on a screen. The manual checklist below (items 15–24) is the gate. It
+should be walked before Phase 5 starts, because Phase 5's dependency line in
+`BUILD_PLAN.md` is explicitly *"nothing is surfaced on top of an untrusted
+score"* — and the score is only trustworthy once the corrected presentation has
+actually been watched.
+
+Phase 5's scope is unchanged and is defined in `BUILD_PLAN.md`. Do not start it
+while the checklist is outstanding.
+
+Phases 3 and 4 are complete — see the records above and
+`docs/scoring/SCORING_SPEC.md`, which is the authoritative scoring reference.
 
 On-device iPhone verification of the four result-stage transitions (from the
 24 August 2026 `Round End Update`) is still outstanding — see Not verified.
 Rendered verification of Second Chance (below) is also still outstanding — see
 Manual checks still outstanding.
+
+DEV scoring tester (retained): the DEV panel's ARCADE TEST section now drives the
+objective catalogue only — BIG WIN, MONSTER HAND, DOUBLE UP, K.O., MASSIVE WIN,
+TABLE CLEARED, EVENT WON — and its COMMENTARY controls paint the real CRT action
+line through the same `commentaryLine()` lookup a real hand uses, rather than the
+reward layer they used to borrow.
 
 DEV transition tester (retained for future result work): enable Developer Mode in Settings (or load with `?dev`), open the DEV
 panel, and use MAJOR RESULT TRANSITIONS. It drives the real `presentResultStage()` path with
@@ -426,6 +682,46 @@ RESET TESTER returns to the Main Menu.
 14. Confirm an ordinary paid loss (e.g. a Back Room bust) still reads `Buy-in lost` on the hero and
    `BUY-IN FORFEITED` on the sub-line, unchanged by this pass.
 
+### Phase 4 — scoring correction (2026-08-26). All outstanding.
+
+Single Player (Arcade elimination run) unless stated. Developer Mode's ARCADE
+TEST controls set up several of these without waiting for the hand to occur.
+
+15. **A hand won outright.** The reward breakdown opens with `POT WINNINGS`, the
+    pot smash runs, and the SCORE counter rolls once. A win of roughly 12+ big
+    blinds adds `BIG WIN`; roughly 30+ adds `MASSIVE WIN` instead — never both.
+16. **A hand where you win a side pot but finish DOWN on the hand.** Expect
+    **no reward layer, no TOTAL and no pot smash at all** — the chips are still
+    paid onto your stack, and the CRT line under the table reads
+    `Side pot won. Down on the hand.` This is the headline fix: it used to award
+    800 points and run a full victory ceremony.
+17. **An exact chop.** No reward layer; the CRT line reads
+    `Pot chopped. Stake returned.`
+18. **An uncalled shove — you bet big and everyone folds.** The CRT line reads
+    `Uncalled bet returned.` A large *matched* fold-win instead reads
+    `No showdown. Pot taken.`, and that line appears at most once every four
+    hands.
+19. **The hand that busts you.** Nothing at all between the last card and
+    `RUN OVER` — no award, no sound, no score roll. The final score on the
+    result stage is correct and is not still counting up behind it.
+20. **The hand that clears the table.** The pot smash for your own payout still
+    runs, then straight to `TABLE CLEARED` with no separate K.O. carousel first.
+    The K.O. and TABLE CLEARED points ARE included in the score shown.
+21. **Career: win an event.** K.O.s now score in Career, and the terminal award
+    is `EVENT WON` — the words `TABLE CLEARED` must never appear in a Career
+    event. Confirm the Career screen bankroll is unchanged by any of this.
+22. **No decision award ever appears.** `GOOD FOLD`, `GOOD CALL`, `HERO CALL`,
+    `GOOD PRESSURE`, `MONSTER BLUFF`, `BAD CALL` and the rest are gone from the
+    game, from Settings ▸ Help ▸ Scoring Guide, and from the awards glossary.
+23. **Settings ▸ Help ▸ Scoring Guide** opens with *"An ephemeral machine tally
+    generated by positive chip results and objective milestones. It is not
+    profit, skill, XP or Career progression."* and lists only the objective
+    awards. The stat strip and Settings statistics read **`Best hand win`**; the
+    TABLE CLEARED and RUN OVER recaps read **`Biggest net win`**.
+24. **The Hand Review panel on a fold-win you were not part of** must not
+    describe the winner's cards. It should say their cards were never shown, and
+    nothing more.
+
 For checks 9–14, the DEV panel's **CAREER BANKROLL** control can set `$0`, `$99`, `$100`, `$500`
 or any non-negative whole-dollar value. It is intentionally disabled during an active event.
 
@@ -454,8 +750,9 @@ or any non-negative whole-dollar value. It is intentionally disabled during an a
 
 ## Do not start next
 
-Phase 3 is the only task in flight. Nothing below is next, whether it is
-permanently excluded or approved for a later phase.
+Rendered verification of the Phase 4 correction is the task in flight; Phase 5 is
+next after it. Nothing below is next, whether it is permanently excluded or
+approved for a later phase.
 
 Permanently excluded:
 
@@ -464,8 +761,10 @@ Permanently excluded:
 
 Approved for a later phase — not now:
 
-- Scoring correction (Phase 4) — depends on Phase 3's findings.
-- Board, status line, or visible venue ladder (Phase 5).
+- The action-conditioned range model and any decision-quality commentary —
+  a separate, separately approved workstream, not scheduled by
+  `docs/scoring/SCORING_SPEC.md` and not by this file. Scoring **thresholds are
+  frozen** and are not retuned before Phase 11's playtest evidence.
 - Pacing instrumentation or any blind-cadence change (Phase 6).
 - Named residents, relationship records, boss seat, or cash table (Phases 7–9).
 - Career history, milestone titles, dossiers, trophies, or cosmetics

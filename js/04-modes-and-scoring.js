@@ -355,54 +355,67 @@ function arcadePotWinningsScore(g,netProfit){
   const raw=netProfit/Math.max(1,g.bigBlind)*25*arcadeTableMultiplier(g.run&&g.run.tableNumber);
   return Math.round(raw/5)*5;
 }
-/* Genuinely contested/matched money only (sections 9/21) — re-derives
-   pot layers via the existing computePots() so an uncalled/returned
-   excess bet (a raise nobody called) never counts toward BIG POT/
-   MASSIVE POT. Safe to call any time before the next hand resets
-   totalBetHand, for both a showdown and a fold-win outcome — a fold-win
-   never deals another card after the winning bet, so g.board/
-   totalBetHand are still exactly as they stood at that moment. */
-function arcadeContestedPot(g){
-  return computePots(g.players).filter(p=>p.eligible.length>=2).reduce((s,p)=>s+p.amount,0);
+/* The ONE quantity every win-size award is measured against
+   (SCORING_SPEC.md 2.1). It replaces the old arcadeContestedPot(), which
+   summed the WHOLE TABLE's matched money and so fired MASSIVE POT on a
+   hand the player finished $700 down (defect D7's mirror, fixture F9).
+
+   Net profit is a difference of two stack readings, so it cannot count
+   the player's own returned money (F22: 1,980 of a 2,030 collection came
+   straight back), and it does not care whether the hand ended in a
+   showdown or a fold-win — which is what makes a genuine fold-win
+   scorable at all (D7, fixture F7). Identical to the quantity
+   arcadePotWinningsScore() already converts, deliberately: the two must
+   never disagree about how big a win was.
+
+   Safe to call any time before the next hand resets chips/_humanStart. */
+function arcadeNetProfit(g){
+  const human=g.players.find(p=>p.isHuman);
+  if (!human) return 0;
+  const start=g._humanStart==null?human.chips:g._humanStart;
+  return human.chips-start;
 }
+/* Frozen 2026-08-26 (SCORING_SPEC.md 9, decision 2) after re-derivation
+   against the fixture matrix on net profit. Silent at +6bb (F19) and
+   +1.5bb (F22); BIG WIN at 20-25bb (F7/F10/F13/F14/F20); MASSIVE WIN
+   reserved for +40bb (F1). */
+const ARCADE_BIG_WIN_BB = 12;
+const ARCADE_MASSIVE_WIN_BB = 30;
 
-/* ---- Award catalogue — every id fires purely off its own deterministic
-   condition (see evaluateArcadeSkill/evaluateArcadeEvents below); there
-   is no rarity roll, percentage chance or frequency limiter anywhere in
-   this file. `family`: ids sharing a family are mutually exclusive —
-   normalizeArcadeAwards keeps only the highest-base one actually earned
-   (e.g. goodFold/greatFold/hugeFold never stack). Award ids with no
-   family may always stack freely alongside anything else genuinely
-   earned. */
+/* THE AUTHORITATIVE AWARD TABLE (SCORING_SPEC.md 2). Anything not listed
+   here does not score, and nothing here is subjective.
+
+   Phase 4B removed the ENTIRE decision-award catalogue — GOOD/GREAT/HUGE
+   FOLD, GOOD/GREAT CALL, HERO CALL, GOOD/GREAT/MONSTER BLUFF, GOOD
+   PRESSURE, GOOD/MAX VALUE, TRAP WORKED, PUNISH, GOOD/GREAT SHOVE — from
+   scoring AND from presentation. Every one of them graded the player's
+   decision against estimateEquity(), which deals opponents UNIFORMLY
+   RANDOM hole cards with no action conditioning (js/01-poker-math.js). A
+   player facing a pot-sized river shove is not facing a random hand, and
+   the evaluator has no representation of that fact. Widening a threshold
+   only reduces sampling noise; it does not correct the modelling error.
+
+   These are NOT disabled, flagged or scaffolded, on purpose: a
+   permanently-disabled feature is code and tests to maintain for no
+   shipping behaviour. Decision analysis belongs to a separate, separately
+   approved workstream (action-conditioned range model), which this file
+   does not schedule.
+
+   `family`: ids sharing a family are mutually exclusive — normalizeArcadeAwards
+   keeps only the highest-base one actually earned. `tier` is presentation
+   weight only (see arcadeTierTiming / the CSS tier-* classes); the id's own
+   `base` is always the real point value. */
 const ARCADE_AWARDS = {
-  // STANDARD
-  goodFold:     { name:'GOOD FOLD',     base:100,  tier:'standard', type:'skill', family:'fold',    description:'A clearly sensible fold in a meaningful spot where continuing was confidently -EV.' },
-  goodCall:     { name:'GOOD CALL',     base:100,  tier:'standard', type:'skill', family:'call',    description:'A correct, non-trivial call where continuing was meaningfully justified.' },
-  goodPressure: { name:'GOOD PRESSURE', base:100,  tier:'standard', type:'skill', family:null,      description:'Appropriately sized aggression wins a worthwhile pot without showdown.' },
-  goodValue:    { name:'GOOD VALUE',    base:125,  tier:'standard', type:'skill', family:'value',   description:'A genuine value bet gets called by a worse hand.' },
-  punish:       { name:'PUNISH',        base:150,  tier:'standard', type:'skill', family:null,      description:"Correctly exploits an opponent's clear weakness or passivity for meaningful value." },
-  // STRONG
-  greatFold:    { name:'GREAT FOLD',    base:250,  tier:'strong',   type:'skill', family:'fold',    description:'Gets away from a reasonably strong holding in a genuinely dangerous spot.' },
-  greatCall:    { name:'GREAT CALL',    base:250,  tier:'strong',   type:'skill', family:'call',    description:'A difficult but well-justified call against significant pressure.' },
-  trapWorked:   { name:'TRAP WORKED',   base:250,  tier:'strong',   type:'skill', family:null,      description:'A deliberately passive line with strong value induces meaningful extra action.' },
-  goodShove:    { name:'GOOD SHOVE',    base:250,  tier:'strong',   type:'skill', family:'shove',   description:'A strategically justified all-in given stack, equity and pressure.' },
-  goodBluff:    { name:'GOOD BLUFF',    base:300,  tier:'strong',   type:'skill', family:'bluff',   description:'Meaningful pressure with poor showdown value forces out a worthwhile holding.' },
-  // ELITE
-  hugeFold:     { name:'HUGE FOLD',     base:600,  tier:'elite',    type:'skill', family:'fold',    description:'An exceptional laydown of a very strong-looking hand under real pressure.' },
-  greatShove:   { name:'GREAT SHOVE',   base:600,  tier:'elite',    type:'skill', family:'shove',   description:'An exceptional, high-leverage all-in with very strong strategic justification.' },
-  maxValue:     { name:'MAX VALUE',     base:650,  tier:'elite',    type:'skill', family:'value',   description:'Extracts close to the maximum realistic value from a dominated opponent.' },
-  heroCall:     { name:'HERO CALL',     base:700,  tier:'elite',    type:'skill', family:'call',    description:'A major, marginal bluff-catching call that genuinely nails a bluff.' },
-  greatBluff:   { name:'GREAT BLUFF',   base:700,  tier:'elite',    type:'skill', family:'bluff',   description:'A high-pressure bluff forces off a genuinely strong or hard-to-fold holding.' },
-  // JACKPOT
-  monsterBluff: { name:'MONSTER BLUFF', base:1500, tier:'jackpot',  type:'skill', family:'bluff',   description:'An extremely demanding, fully-earned river bluff through a genuine strong hand.' },
-
-  // EVENTS — describe what happened; may stack freely with skill awards
-  bigPot:       { name:'BIG POT',       base:150,  tier:'strong',   type:'event', family:'potSize', description:'A genuinely large contested pot relative to current blinds.' },
-  monsterHand:  { name:'MONSTER HAND',  base:200,  tier:'strong',   type:'event', family:null,      description:'A genuinely exceptional made hand — full house or better.' },
+  bigWin:       { name:'BIG WIN',       base:150,  tier:'strong',   type:'event', family:'winSize', description:'A genuinely large net profit on one hand, relative to current blinds.' },
+  monsterHand:  { name:'MONSTER HAND',  base:200,  tier:'strong',   type:'event', family:null,      description:'A genuinely exceptional made hand — full house or better — shown down.' },
   doubleUp:     { name:'DOUBLE UP',     base:300,  tier:'elite',    type:'event', family:null,      description:'Roughly doubles the stack held at the start of the hand.' },
   ko:           { name:'K.O.!',         base:400,  tier:'elite',    type:'event', family:null,      description:'Directly eliminates an opponent through the decisive pot.' },
-  massivePot:   { name:'MASSIVE POT',   base:500,  tier:'jackpot',  type:'event', family:'potSize', description:'A truly exceptional contested pot relative to current stakes.' },
-  tableClear:   { name:'TABLE CLEARED', base:1000, tier:'jackpot',  type:'event', family:null,      description:'Eliminates the final opponent and clears the table.' }
+  massiveWin:   { name:'MASSIVE WIN',   base:500,  tier:'jackpot',  type:'event', family:'winSize', description:'A truly exceptional net profit on one hand, relative to current stakes.' },
+  tableClear:   { name:'TABLE CLEARED', base:1000, tier:'jackpot',  type:'event', family:null,      description:'Eliminates the final opponent and clears the table.' },
+  // Career's own name for the same condition. TABLE CLEARED is Single
+  // Player only and EVENT WON is Career only (SCORING_SPEC.md 2, D6) —
+  // a Career event never prints "TABLE CLEARED".
+  eventWon:     { name:'EVENT WON',     base:1000, tier:'jackpot',  type:'event', family:null,      description:'Takes first place in a Career event.' }
 };
 /* Zero-point — never touch the score. Luck (this run) is separate from
    skill: a good/bad decision keeps its own label no matter how the cards
@@ -415,23 +428,13 @@ const ARCADE_LUCK = {
   unlucky:    { name:'UNLUCKY',    kind:'bad',          min:.65, max:.90,  description:'Loses after a meaningful commitment as a real favourite.' },
   brutal:     { name:'BRUTAL',     kind:'extreme-bad',  min:.90, max:1.01, description:'A severe bad beat — loses as an overwhelming favourite.' }
 };
-/* Zero-point, never subtracts, never enters the TOTAL. Only ever the
-   single most severe candidate found this hand (see
-   evaluateArcadeNegative) — deliberately much quieter/rarer than the
-   positive catalogue above. */
-const ARCADE_NEGATIVE = {
-  looseCall:    { name:'LOOSE CALL',    family:'calling',    description:'Clearly too loose for the price offered, though not catastrophic.' },
-  badCall:      { name:'BAD CALL',      family:'calling',    description:'A substantial -EV call with strong evidence continuing was poor.' },
-  paidThemOff:  { name:'PAID THEM OFF', family:'calling',    description:'A major late-street call that significantly overpays a clear value line.' },
-  badFold:      { name:'BAD FOLD',      family:'folding',    description:'Gives up a hand in a spot where continuing was clearly profitable.' },
-  tooTight:     { name:'TOO TIGHT',     family:'folding',    description:'An especially conservative fold where the price strongly supported continuing.' },
-  badBluff:     { name:'BAD BLUFF',     family:'aggression', description:'A substantial bluff with very poor justification gets called.' },
-  reckless:     { name:'RECKLESS',      family:'aggression', description:'Exposes an excessive share of the stack with very weak strategic justification.' },
-  badShove:     { name:'BAD SHOVE',     family:'aggression', description:'A clearly poor all-in decision.' },
-  overplayed:   { name:'OVERPLAYED',    family:'aggression', description:'A decent, non-premium hand pushed far beyond a reasonable value threshold.' },
-  missedValue:  { name:'MISSED VALUE',  family:'missed',     description:'A clear, high-confidence value spot is passed up or drastically underbet.' },
-  tooPassive:   { name:'TOO PASSIVE',   family:'missed',     description:'An especially obvious missed aggression/value spot.' }
-};
+/* The negative catalogue (LOOSE CALL, BAD CALL, PAID THEM OFF, BAD FOLD,
+   TOO TIGHT, BAD BLUFF, RECKLESS, BAD SHOVE, OVERPLAYED, MISSED VALUE,
+   TOO PASSIVE) was deleted at Phase 4B along with the positive one. It
+   graded decisions against the same invalid opponent model, and its
+   suppression rule read hidden cards to decide whether a message appeared
+   at all (defect D11) — which the hidden-information rule forbids
+   outright, because the ABSENCE of a message is itself information. */
 const ARCADE_PROFILE_DEFAULT = { highScore:0, discovered:{}, counts:{}, bestByEvent:{} };
 let arcadeProfile = Object.assign({}, ARCADE_PROFILE_DEFAULT, Store.get('felt.arcade', {}));
 arcadeProfile.discovered = Object.assign({}, arcadeProfile.discovered||{});
@@ -534,9 +537,17 @@ function noteArcadeDiscovery(id,count,bestScore){
   saveArcadeProfile();
 }
 
-/* Capture only information available at decision time. Equity is against
-   random/tendency-adjusted ranges, never the opponents' hidden cards. The
-   worker promise resolves while ordinary poker animation continues. */
+/* Capture only information available at decision time.
+
+   Phase 4B removed the decision-time equity request. Nothing that ships
+   reads snap.equity any more (SCORING_SPEC.md 3.1) — the only surviving
+   consumer of these snapshots is classifyArcadeLuck(), which reads their
+   SIZING and COMMITMENT fields to pick which commitment the hand turned
+   on and then resolves that spot against cards the player actually saw.
+   Dropping the request also takes the invalid uniformly-random model's
+   per-decision worker traffic out of the live game. The in-hand #coach
+   instrument makes its own independent EquityService call and is
+   unaffected. */
 function captureArcadeDecision(player,requestedAction,amount){
   const g=game;
   const a=rewardState(g);
@@ -556,14 +567,20 @@ function captureArcadeDecision(player,requestedAction,amount){
     stackBefore,startStack, totalCommittedBefore:player.totalBetHand, bigBlind:g.bigBlind,
     allIn:commit>=stackBefore, handActionIndex:(g.handActions||[]).length
   };
-  snap.equityPromise=EquityService.get(snap.hole,snap.board,Math.max(1,opponents.length),260)
-    .then(v=>typeof v==='number'?v:null).catch(()=>null);
   a.decisionSnapshots.push(snap);
 }
+/* Kept as the one place snapshots are made ready for the evaluators. It
+   no longer awaits anything in the live game, because captureArcadeDecision()
+   no longer attaches an equity promise; the await survives only so a
+   snapshot carrying one — a fixture, or a saved event from before this
+   change — still settles rather than being read half-resolved. */
 async function settleArcadeSnapshots(g){
   const a=rewardState(g);
   const snaps=(a&&a.decisionSnapshots)||[];
-  await Promise.all(snaps.map(async s=>{ if (s.equity==null) s.equity=await s.equityPromise; delete s.equityPromise; }));
+  await Promise.all(snaps.map(async s=>{
+    if (s.equity==null&&s.equityPromise) s.equity=await s.equityPromise;
+    delete s.equityPromise;
+  }));
   return snaps;
 }
 function resolvedEquityShare(heroHole,opponentHoles,board){
@@ -600,12 +617,35 @@ function resolvedEquityAtSnapshot(s,g){
   }
   return total?share/total:null;
 }
+/* THE HIDDEN-INFORMATION GATE (SCORING_SPEC.md 3.2, defect D10).
+
+   resolvedEquityAtSnapshot() below reads every listed opponent's actual
+   hole cards. At a showdown those cards were turned face up and the
+   player saw them, so the resulting tag states something public. On a
+   fold-win — or against an opponent who folded before a showdown that
+   others reached — they were NEVER SHOWN, and a tag derived from them
+   tells the player something they could not know.
+
+   The measured symptom was two hands identical in everything visible
+   (same board, same hole cards, same actions, same settlement) emitting
+   LUCKY in one and FILTHY in the other, purely because the folded
+   opponents held different cards (fixture F23).
+
+   The gate is deliberately strict: EVERY opponent the calculation would
+   use must be a revealed showdown contender. A partial reveal is not
+   enough, because the absence of a tag is itself information. */
+function luckOpponentsWereRevealed(g,outcome,snapshot){
+  if (!outcome||outcome.type!=='showdown'||!Array.isArray(outcome.contenders)) return false;
+  const revealed=new Set(outcome.contenders.filter(p=>!p.folded).map(p=>p.id));
+  return (snapshot.opponentIds||[]).every(id=>revealed.has(id));
+}
 function classifyArcadeLuck(g,outcome,snapshots){
   const won=humanWonOutcome(outcome);
   const meaningful=snapshots.filter(s=>s.action!=='fold'&&s.action!=='check'&&(
     s.allIn||s.commit>=Math.max(6*s.bigBlind,s.startStack*.22)||s.totalCommittedBefore+s.commit>=s.startStack*.45
   )).sort((a,b)=>(b.commit/b.startStack)-(a.commit/a.startStack))[0];
   if (!meaningful) return null;
+  if (!luckOpponentsWereRevealed(g,outcome,meaningful)) return null;
   const equity=resolvedEquityAtSnapshot(meaningful,g);
   if (equity==null) return null;
   if (won){
@@ -618,6 +658,157 @@ function classifyArcadeLuck(g,outcome,snapshots){
   }
   return null;
 }
+/* ============================================================
+   OBJECTIVE POST-HAND COMMENTARY (SCORING_SPEC.md 3)
+
+   At most ONE line per hand, chosen by a fixed priority ladder, stating a
+   PUBLIC FACT about how the hand settled. Nothing here grades a decision,
+   claims a correct play, quotes a percentage or an EV figure, or names a
+   counterfactual result. Every line must stay true even when the player's
+   read was better than the machine's.
+
+   Two rules govern eligibility absolutely:
+
+   1. HIDDEN INFORMATION. Cards the player was not shown may not affect a
+      line's wording, its eligibility, which candidate wins priority, or
+      WHETHER A LINE APPEARS AT ALL. The absence of a message is itself
+      information.
+   2. NO DECISION QUALITY. The evaluator's opponent model deals uniformly
+      random hole cards, so it cannot support any verdict about whether an
+      action was right. Those belong to a separate range-model workstream.
+
+   Text lives in ONE lookup, commentaryLine(), and detection never
+   consults it — so a future Coach character can supply different wording
+   for the same id without touching detection, priority or cadence.
+   ============================================================ */
+const ARCADE_COMMENTARY = {
+  /* HARD settlement facts. Rare by construction and always worth stating,
+     so they are exempt from the cadence limiter below. */
+  sidePotWonNetLoss:   { name:'SIDE POT WON · NET LOSS',      kind:'settlement' },
+  potChopped:          { name:'POT CHOPPED · STAKE RETURNED', kind:'settlement' },
+  uncalledBetReturned: { name:'UNCALLED BET RETURNED',        kind:'settlement' },
+  /* SOFT lines. True, but common enough to become wallpaper if they fired
+     every time they were eligible. */
+  shownDownLight:      { name:'SHOWN DOWN LIGHT',             kind:'soft' },
+  pressureSucceeded:   { name:'NO SHOWDOWN · POT TAKEN',      kind:'soft' }
+};
+/* The one text source. `context` carries only public quantities; nothing
+   in it is derived from a card the player did not see. */
+function commentaryLine(id,context){
+  const c=context||{};
+  switch (id){
+    case 'sidePotWonNetLoss':   return 'Side pot won. Down on the hand.';
+    case 'potChopped':          return 'Pot chopped. Stake returned.';
+    case 'uncalledBetReturned': return 'Uncalled bet returned.';
+    case 'shownDownLight':      return 'Shown down light.';
+    case 'pressureSucceeded':   return 'No showdown. Pot taken.';
+    default: {
+      const luck=ARCADE_LUCK[id];
+      return luck ? luck.name : null;
+    }
+  }
+}
+/* How the hand actually settled, in public quantities only. A fold-win
+   collapses every layer into one row, so its layering is read from
+   computePots() directly — the winner takes every layer by definition.
+   A showdown reads the rows, which now carry their own contributor count. */
+function arcadeSettlementFacts(g,outcome,netProfit){
+  const won=humanWonOutcome(outcome);
+  const facts={ won, netProfit, wonContestedLayer:false, uncalledWon:0, chopped:false };
+  if (!won) return facts;
+  if (outcome.type==='foldwin'){
+    computePots(g.players).forEach(layer=>{
+      if (layer.contributors>=2) facts.wonContestedLayer=true;
+      else facts.uncalledWon+=layer.amount;
+    });
+    return facts;
+  }
+  (outcome.potResults||[]).forEach(row=>{
+    if (!row.winnerIds||!row.winnerIds.includes('you')) return;
+    const share=(row.winnerShares||[]).filter(w=>w.id==='you').reduce((n,w)=>n+w.amount,0);
+    if (row.contributors!=null&&row.contributors<2) facts.uncalledWon+=share;
+    else facts.wonContestedLayer=true;
+    if (row.split) facts.chopped=true;
+  });
+  return facts;
+}
+/* The human's own holding, shown down. Reading their own cards is always
+   legitimate; this additionally requires that they REACHED a showdown, so
+   the opponents saw the same thing the line describes. */
+function humanShowedDownLight(g,outcome,snapshots){
+  if (!outcome||outcome.type!=='showdown') return false;
+  if (!Array.isArray(outcome.contenders)||!outcome.contenders.some(p=>p.isHuman)) return false;
+  const human=g.players.find(p=>p.isHuman);
+  const made=actualHandAtResolution(human,g);
+  if (!made||made.cat>0) return false;                 // better than high card is not "light"
+  return snapshots.some(s=>s.action==='raise'&&s.commit>=Math.max(4*s.bigBlind,s.pot*.5));
+}
+/* Public aggression on a hand that ended without a showdown. This claims
+   nothing about what was folded — only that the pot came without cards
+   being shown, which is exactly what the player watched happen. */
+function humanTookItWithoutShowdown(g,outcome,snapshots){
+  if (!outcome||outcome.type!=='foldwin'||!humanWonOutcome(outcome)) return false;
+  if ((outcome.amount||0)<2*g.bigBlind) return false;
+  const last=snapshots.filter(s=>s.action==='raise').slice(-1)[0];
+  return !!last&&last.commit>=Math.max(3*g.bigBlind,last.pot*.35);
+}
+/* Soft lines fire at most once every ARCADE_COMMENTARY_CADENCE hands. The
+   counter lives on the mode's own reward state, which is the same object
+   for every hand of a run or a Career event and is discarded with it — so
+   a Career event never inherits a Single Player run's cadence, and neither
+   leaks into the other. */
+const ARCADE_COMMENTARY_CADENCE = 4;
+function softCommentaryAllowed(a,handNumber){
+  const last=a._lastSoftCommentaryHand;
+  return last==null||(handNumber-last)>=ARCADE_COMMENTARY_CADENCE;
+}
+/* THE PRIORITY LADDER (SCORING_SPEC.md 3.4), first match wins:
+     1. terminal condition            -> nothing
+     2. hard settlement facts         -> always, no cadence limit
+     3. showdown luck tag             -> always, no cadence limit
+     4. own holding shown down light  -> soft
+     5. pot taken without a showdown  -> soft
+   Returns { id, luck } where exactly one of the two is set, or null. */
+function evaluateArcadeCommentary(g,outcome,snapshots,luck,netProfit){
+  const a=rewardState(g);
+  if (!a) return null;
+  // Priority 1 — "a terminal hand says nothing" — is enforced at DELIVERY,
+  // in finishHand(), not here. SCORING_SPEC.md 4 is explicit that the
+  // terminal rule suppresses contradictory CELEBRATION and never
+  // detection, mutation or persistence: a public luck tag earned on the
+  // hand that cleared the table is still a true, discovered signal and is
+  // still recorded, it simply must not be printed between the last card
+  // and the result stage.
+  const facts=arcadeSettlementFacts(g,outcome,netProfit);
+
+  // 2. Settlement facts. Mutually exclusive in practice, but ordered so
+  //    the reading is fixed rather than incidental.
+  if (facts.won&&facts.wonContestedLayer&&netProfit<0) return { id:'sidePotWonNetLoss' };
+  if (facts.won&&facts.chopped&&netProfit===0)         return { id:'potChopped' };
+  // "More of what came back was your own stake than you actually gained."
+  // This is the distinction computePots()' contributor count exists for:
+  // a contested layer is opponents' money genuinely won, an unmatched
+  // layer is the player's own bet returned. Comparing the returned
+  // portion against NET PROFIT is what separates fixture F22 (+1.5bb
+  // behind a 1,980 return) from fixture F7 (+20bb genuinely won, with a
+  // small unmatched remainder).
+  if (facts.won&&facts.uncalledWon>0&&facts.uncalledWon>netProfit) return { id:'uncalledBetReturned' };
+
+  // 3. The luck tag, already gated to showdown-revealed opponents.
+  if (luck) return { luck };
+
+  // 4-5. Soft lines, rate limited together.
+  if (!softCommentaryAllowed(a,g.handNumber||0)) return null;
+  if (humanShowedDownLight(g,outcome,snapshots)){
+    a._lastSoftCommentaryHand=g.handNumber||0;
+    return { id:'shownDownLight' };
+  }
+  if (humanTookItWithoutShowdown(g,outcome,snapshots)){
+    a._lastSoftCommentaryHand=g.handNumber||0;
+    return { id:'pressureSucceeded' };
+  }
+  return null;
+}
 function addArcadeAward(list,id,count){
   const def=ARCADE_AWARDS[id]; if (!def) return;
   const existing=list.find(a=>a.id===id);
@@ -627,157 +818,52 @@ function actualHandAtResolution(player,g){
   if (!player||!player.hand||player.hand.length<2||player.hand.length+g.board.length<5) return null;
   return evaluate7([...player.hand,...g.board]);
 }
-/* The player's own hand strength using only what they had in front of
-   them at that exact snapshot (their two hole cards + the board as it
-   stood then) — legitimate prospective information, not a peek at
-   anything hidden. Used by the HUGE FOLD gate below to confirm "a very
-   strong-looking hand" was actually being laid down. */
-function heroCatAtSnapshot(s){
-  if (!s.hole||s.hole.length<2||s.hole.length+s.board.length<5) return -1;
-  return evaluate7([...s.hole,...s.board]).cat;
-}
-function actionWasCalled(g,snapshot){
-  return (g.handActions||[]).slice(snapshot.handActionIndex+1).some(a=>
-    a.street===snapshot.street&&a.id!=='you'&&a.action==='call'
-  );
-}
-/* Who called this particular value bet — for PUNISH's "exploited a
-   clearly loose/passive opponent" check, reusing the AI's own existing
-   personality.tightness rather than inventing a new tendency model. */
-function findCallerOf(g,snapshot){
-  const call=(g.handActions||[]).slice(snapshot.handActionIndex+1).find(a=>
-    a.street===snapshot.street&&a.id!=='you'&&a.action==='call'
-  );
-  return call ? g.players.find(p=>p.id===call.id) : null;
-}
-/* Retrospective-only: confirms a fold-win aggression really did fold a
-   worthwhile/better made hand, using the actual opponent hole cards —
-   never used to grade the decision itself, only to confirm the fact
-   happened (section 12). Board is frozen at exactly the street the
-   winning aggression happened on (a fold-win deals no further community
-   cards), so this evaluates opponents' hands exactly as they stood. */
-function findArcadeFoldBluff(g,outcome,snapshots){
-  if (!humanWonOutcome(outcome)||outcome.type!=='foldwin') return null;
-  const human=g.players.find(p=>p.isHuman);
-  return snapshots.filter(s=>s.action==='raise'&&s.street!=='preflop'&&s.commit>=Math.max(4*s.bigBlind,s.startStack*.12)&&s.pot>=6*s.bigBlind&&s.equity<=.35)
-    .reverse().find(s=>{
-      const heroNow=actualHandAtResolution(human,g); if (!heroNow) return false;
-      return g.players.some(p=>!p.isHuman&&p.folded&&s.opponentIds.includes(p.id)&&actualHandAtResolution(p,g)&&compareHands(actualHandAtResolution(p,g),heroNow)>0);
-    })||null;
-}
-/* MONSTER BLUFF's own, much stricter gate on top of findArcadeFoldBluff's
-   base qualification (section 8): river only, essentially no showdown
-   value, a major bet relative to both pot and stack, a meaningful pot
-   already built, and — retrospectively — at least one folded opponent
-   genuinely held two pair or better. */
-function isMonsterBluff(g,bluff){
-  if (!bluff||bluff.street!=='river'||bluff.equity>.15) return false;
-  if (bluff.commit<Math.max(bluff.pot*.9,bluff.startStack*.4)) return false;
-  if (bluff.pot<8*bluff.bigBlind) return false;
-  return bluff.opponentIds.some(id=>{
-    const v=g.players.find(p=>p.id===id);
-    if (!v||!v.folded) return false;
-    const h=actualHandAtResolution(v,g);
-    return h&&h.cat>=2;
-  });
-}
-/* The whole positive skill/decision catalogue (sections 5-8, 12). FOLD
-   and CALL families are graded purely from decision-time snapshot data
-   (equity vs. random ranges, pot odds, sizing) and fire regardless of
-   this hand's eventual winner — a good fold/call stays good even on a
-   hand the human goes on to lose. The aggression side (bluff/pressure/
-   shove/value/trap/punish) only makes sense on a hand the human actually
-   won, so it's gated on `won` internally. HERO CALL/bluff tiers use
-   opponents' real cards ONLY to retrospectively confirm the read, never
-   to grade a sensible call/fold as wrong. */
-function evaluateArcadeSkill(g,outcome,snapshots){
-  const awards=[], human=g.players.find(p=>p.isHuman), won=humanWonOutcome(outcome);
-  const claimedActionIdx=new Set();
+/* ---- WHAT WAS HERE, AND WHY IT IS NOT ----
 
-  // FOLD family
-  const foldCandidates=snapshots.filter(s=>s.action==='fold'&&s.street!=='preflop'&&s.toCall>0&&s.equity!=null)
-    .map(s=>({ s, edge:s.potOdds-s.equity }))
-    .filter(x=>x.edge>=.11&&x.s.toCall>=Math.max(3*x.s.bigBlind,x.s.startStack*.10)&&x.s.pot>=6*x.s.bigBlind)
-    .sort((a,b)=>b.edge-a.edge);
-  if (foldCandidates.length){
-    const {s,edge}=foldCandidates[0];
-    if (edge>=.30&&s.toCall>=s.startStack*.35&&heroCatAtSnapshot(s)>=2) addArcadeAward(awards,'hugeFold');
-    else if (edge>=.24&&s.toCall>=s.startStack*.20) addArcadeAward(awards,'greatFold');
-    else addArcadeAward(awards,'goodFold');
-  }
+   heroCatAtSnapshot(), actionWasCalled(), findArcadeFoldBluff(),
+   isMonsterBluff() and evaluateArcadeSkill() were deleted at Phase 4B
+   (SCORING_SPEC.md 2.2, 3.1). Together they were the decision-quality
+   evaluator: the FOLD/CALL/VALUE/SHOVE/PRESSURE families graded against
+   estimateEquity()'s uniformly-random opponent model, and the BLUFF tiers
+   plus HERO CALL confirmed their verdict against opponents' HIDDEN cards
+   on hands that never reached a showdown.
 
-  // CALL family — HERO CALL requires a won showdown and retrospective bluff confirmation
-  const calls=snapshots.filter(s=>s.action==='call'&&s.toCall>0&&s.equity!=null);
-  const heroCall=calls.slice().reverse().find(s=>{
-    if (!won||outcome.type!=='showdown'||!s.lastAggressorId||s.commit<Math.max(5*s.bigBlind,s.startStack*.15)) return false;
-    const heroCat=heroCatAtSnapshot(s);
-    if (heroCat<0||heroCat>2||s.equity>.55) return false;
-    const villain=g.players.find(p=>p.id===s.lastAggressorId), vh=actualHandAtResolution(villain,g), hh=actualHandAtResolution(human,g);
-    return vh&&hh&&compareHands(hh,vh)>0&&vh.cat<=1;
-  });
-  if (heroCall){ addArcadeAward(awards,'heroCall'); claimedActionIdx.add(heroCall.handActionIndex); }
-  else {
-    const callCandidates=calls.map(s=>({s,edge:s.equity-s.potOdds}))
-      .filter(x=>x.s.commit>=Math.max(3*x.s.bigBlind,x.s.startStack*.08)&&x.edge>=.05&&x.s.equity<=.75)
-      .sort((a,b)=>b.edge-a.edge);
-    if (callCandidates.length){
-      const {s,edge}=callCandidates[0];
-      if (edge>=.05&&s.equity<=.60&&s.commit>=Math.max(5*s.bigBlind,s.startStack*.18)&&s.street!=='preflop') addArcadeAward(awards,'greatCall');
-      else if (edge>=.10&&s.equity<=.72) addArcadeAward(awards,'goodCall');
-    }
-  }
+   They are deleted rather than disabled. Nothing here is retained behind
+   a flag, and no scaffolding is left for a future range model to slot
+   into — that workstream will bring its own detection, calibration, copy
+   and tests, and an unused half-implementation would only mislead it.
 
-  if (won){
-    if (outcome.type==='foldwin'){
-      const aggression=snapshots.filter(s=>s.action==='raise').slice(-1)[0];
-      if (aggression&&(outcome.amount||0)>=2*g.bigBlind){
-        const bluff=findArcadeFoldBluff(g,outcome,snapshots);
-        if (bluff){
-          claimedActionIdx.add(bluff.handActionIndex);
-          if (isMonsterBluff(g,bluff)) addArcadeAward(awards,'monsterBluff');
-          else if (bluff.street==='river'&&bluff.commit>=Math.max(bluff.pot*.75,bluff.startStack*.3)) addArcadeAward(awards,'greatBluff');
-          else addArcadeAward(awards,'goodBluff');
-        } else if (aggression.commit>=Math.max(3*g.bigBlind,aggression.pot*.35)){
-          addArcadeAward(awards,'goodPressure');
-        }
-      }
-    } else if (outcome.type==='showdown'){
-      const bets=snapshots.filter(s=>s.action==='raise'&&s.commit>0&&s.equity!=null);
-      const valueBet=bets.filter(s=>s.street!=='preflop'&&actionWasCalled(g,s)&&s.equity>=.67&&s.commit>=Math.max(2*s.bigBlind,s.pot*.28))
-        .sort((a,b)=>(b.street==='river')-(a.street==='river')||b.commit-a.commit)[0];
-      if (valueBet){
-        claimedActionIdx.add(valueBet.handActionIndex);
-        if (valueBet.street==='river'&&valueBet.equity>=.84&&valueBet.commit>=Math.max(6*valueBet.bigBlind,valueBet.pot*.6)) addArcadeAward(awards,'maxValue');
-        else addArcadeAward(awards,'goodValue');
-        const earlierTrap=snapshots.some(s=>s.action==='check'&&s.street!=='river'&&s.equity>=.72&&s.handActionIndex<valueBet.handActionIndex);
-        if (earlierTrap&&valueBet.commit>=4*valueBet.bigBlind) addArcadeAward(awards,'trapWorked');
-        const caller=findCallerOf(g,valueBet);
-        if (caller&&caller.personality&&caller.personality.tightness<.32) addArcadeAward(awards,'punish');
-      }
-    }
-    // GOOD/GREAT SHOVE — only the human's own stood all-in, and only if it
-    // isn't already the specific action a bluff/value award above claimed
-    // (section 6: "prefer the more specific bluff/value classification
-    // rather than double-counting the same action"). Excludes routine
-    // short-stack push/fold shoves (startStack<=12bb) entirely.
-    const shove=snapshots.filter(s=>s.action==='raise'&&s.allIn&&s.equity!=null&&!claimedActionIdx.has(s.handActionIndex)&&s.startStack>12*s.bigBlind).slice(-1)[0];
-    if (shove){
-      if (shove.equity>=.60&&shove.commit>=15*shove.bigBlind&&shove.commit>=shove.startStack*.5) addArcadeAward(awards,'greatShove');
-      else if (shove.equity>=.42&&shove.commit>=8*shove.bigBlind) addArcadeAward(awards,'goodShove');
-    }
-  }
-  return awards;
-}
-/* Event awards (section 9) — all gated on the human having actually won
-   this hand's pot. Pot size uses arcadeContestedPot(), never the gross/
-   uncalled amount, so an unopposed shove can't manufacture a BIG POT. */
+   What survives is what a shipping feature genuinely needs:
+   captureArcadeDecision()'s snapshots, because classifyArcadeLuck() reads
+   their sizing and commitment fields to decide which commitment this hand
+   turned on. Nothing that ships reads snap.equity any more.
+
+*/
+
+/* Event awards (SCORING_SPEC.md 2). Winning A POT LAYER is no longer
+   sufficient for any of them: every award here is gated on the player
+   finishing the hand NET AHEAD, measured by arcadeNetProfit().
+
+   That single gate is what stops fixture F9 — quads nines takes a $40
+   side pot while quads kings takes the $2,160 main pot, leaving the
+   player $700 down — from firing MASSIVE POT, MONSTER HAND and a full
+   victory ceremony on a losing hand. It is also what lets a genuine
+   fold-win score at all: the old contested-pot measure excluded every
+   folded contributor, so a +20bb fold-win measured as zero (D7). */
 function evaluateArcadeEvents(g,outcome,awards){
   const human=g.players.find(p=>p.isHuman);
   if (!humanWonOutcome(outcome)) return;
-  const contested=arcadeContestedPot(g);
-  if (contested>=30*g.bigBlind) addArcadeAward(awards,'massivePot');
-  else if (contested>=12*g.bigBlind) addArcadeAward(awards,'bigPot');
+  const netProfit=arcadeNetProfit(g);
+  // Won a layer, still down on the hand (or exactly even, e.g. a chop):
+  // nothing about that is a win, so nothing here fires.
+  if (!(netProfit>0)) return;
+  const netBB=netProfit/Math.max(1,g.bigBlind);
+  if (netBB>=ARCADE_MASSIVE_WIN_BB) addArcadeAward(awards,'massiveWin');
+  else if (netBB>=ARCADE_BIG_WIN_BB) addArcadeAward(awards,'bigWin');
 
+  // MONSTER HAND keeps both of its gates: full house or better, and
+  // REVEALED at showdown. A fold-win reveals nothing, so it never
+  // qualifies however strong the holding actually was.
   if (outcome.type==='showdown'){
     const hand=actualHandAtResolution(human,g);
     if (hand&&hand.cat>=6) addArcadeAward(awards,'monsterHand');
@@ -793,9 +879,11 @@ function evaluateArcadeEvents(g,outcome,awards){
    rather than folding into the pre-smash TOTAL. TABLE CLEARED's own
    full-screen ceremony (showTableCleared, js/05-game-engine.js) is a
    separate, unrelated flow — this only ever awards its point value. */
-function evaluateArcadeMilestoneAchievements(context,awards){
+function evaluateArcadeMilestoneAchievements(g,context,awards){
   if (context&&context.koCount) addArcadeAward(awards,'ko',context.koCount);
-  if (context&&context.tableClear) addArcadeAward(awards,'tableClear');
+  // Same condition, two names (D6). Career must never print the literal
+  // award name TABLE CLEARED — it took first place in an EVENT.
+  if (context&&context.tableClear) addArcadeAward(awards,g&&g.mode==='career'?'eventWon':'tableClear');
 }
 /* Family exclusivity + presentation ordering (sections 13-14) in one
    pass: within a family, keep only the highest-base award actually
@@ -816,54 +904,6 @@ function normalizeArcadeAwards(awards){
   // truncating it.
   return kept.sort((a,b)=>arcadeTierRank(a.def.tier)-arcadeTierRank(b.def.tier)||a.def.base-b.def.base);
 }
-/* The negative catalogue (section 11) — at most ONE shown per hand, the
-   single most severe candidate found across every category, never
-   picked by chance. Suppressed entirely when the hand already carries a
-   strong bad-luck tag, so a decision that was actually fine doesn't get
-   relabeled just because the result was ugly (section 12/21). */
-function evaluateArcadeNegative(g,outcome,snapshots,luck){
-  if (luck&&(luck.id==='unlucky'||luck.id==='brutal')) return null;
-  const human=g.players.find(p=>p.isHuman);
-  const candidates=[];
-  const push=(id,severity)=>candidates.push({id,severity});
-  snapshots.forEach(s=>{
-    if (s.equity==null) return;
-    if (s.action==='call'&&s.toCall>0){
-      const gap=s.potOdds-s.equity;
-      // A call whose read is retrospectively confirmed right (it actually
-      // beat the specific aggressor being called) is never a calling
-      // mistake, no matter how marginal the raw pre-decision equity
-      // looked — this is exactly what stops a genuine HERO CALL from also
-      // showing up as BAD CALL/LOOSE CALL/PAID THEM OFF on the same call.
-      const villain=s.lastAggressorId&&g.players.find(p=>p.id===s.lastAggressorId);
-      const villainHand=villain&&actualHandAtResolution(villain,g), heroHand=actualHandAtResolution(human,g);
-      const confirmedGoodRead=!!(villainHand&&heroHand&&compareHands(heroHand,villainHand)>0);
-      if (!confirmedGoodRead){
-        if (s.street==='river'&&s.lastAggressorId&&s.commit>=Math.max(6*s.bigBlind,s.pot*.5)&&s.equity<=.30&&gap>=.20) push('paidThemOff',80+(.30-s.equity)*40);
-        if (s.commit>=3*s.bigBlind&&gap>=.16) push('badCall',40+gap*100);
-        else if (s.commit>=2*s.bigBlind&&gap>=.08) push('looseCall',15+gap*80);
-      }
-    }
-    if (s.action==='fold'&&s.toCall>0){
-      const edge=s.equity-s.potOdds;
-      if (edge>=.15&&s.toCall>=2*s.bigBlind) push('badFold',45+edge*100);
-      else if (edge>=.10&&s.toCall<=s.startStack*.05) push('tooTight',25+edge*80);
-    }
-    if (s.action==='raise'&&s.commit>0){
-      if (s.allIn&&s.startStack>=15*s.bigBlind&&s.equity<=.32&&s.commit>=s.startStack*.6) push('badShove',90+(.32-s.equity)*100);
-      else if (!s.allIn&&s.commit>=s.startStack*.45&&s.equity<=.35) push('reckless',70+(.35-s.equity)*80);
-      else if (s.equity<=.25&&s.commit>=Math.max(4*s.bigBlind,s.pot*.5)&&actionWasCalled(g,s)) push('badBluff',65);
-      // Capped below .67 (GOOD VALUE's own floor) so a hand good enough to
-      // register as genuine value can never also be flagged OVERPLAYED.
-      else if (s.equity>=.55&&s.equity<.67&&s.commit>=s.startStack*.5&&s.street!=='preflop') push('overplayed',50);
-    }
-    if (s.action==='check'&&s.street==='river'&&s.equity>=.85&&s.opponentIds.length>0) push('missedValue',55);
-    if (s.action==='call'&&s.equity>=.80&&s.potOdds<=.25&&s.street!=='river'&&s.commit>=2*s.bigBlind) push('tooPassive',35);
-  });
-  if (!candidates.length) return null;
-  candidates.sort((a,b)=>b.severity-a.severity);
-  return {id:candidates[0].id};
-}
 /* Early phase — human-pot-win only. Called from runShowdownAwardSequence
    (js/06-presentation.js) right after the real money mutation, well
    before resolveEliminations() runs, so it deliberately never touches
@@ -880,12 +920,10 @@ function evaluateArcadeNegative(g,outcome,snapshots,luck){
 async function evaluateArcadeAwardsEarly(g,outcome){
   const a=rewardState(g);
   if (!a||!humanWonOutcome(outcome)) return null;
-  const snapshots=await settleArcadeSnapshots(g), awards=[];
-  evaluateArcadeSkill(g,outcome,snapshots).forEach(x=>addArcadeAward(awards,x.id,x.count));
+  await settleArcadeSnapshots(g);
+  const awards=[];
   evaluateArcadeEvents(g,outcome,awards);
   const finalAwards=normalizeArcadeAwards(awards);
-  const luck=classifyArcadeLuck(g,outcome,snapshots);
-  const negative=evaluateArcadeNegative(g,outcome,snapshots,luck);
   const human=g.players.find(p=>p.isHuman);
   const netProfit=human.chips-(g._humanStart==null?human.chips:g._humanStart);
   const potScore=arcadePotWinningsScore(g,netProfit);
@@ -897,47 +935,148 @@ async function evaluateArcadeAwardsEarly(g,outcome){
   finalAwards.forEach(x=>{ a.awardCounts[x.id]=(a.awardCounts[x.id]||0)+x.count; });
   if (arcadePersists(g)){
     finalAwards.forEach(x=>noteArcadeDiscovery(x.id,x.count,x.def.base*x.count));
-    if (luck) noteArcadeDiscovery(luck.id,1,null);
-    if (negative) noteArcadeDiscovery(negative.id,1,null);
   }
   const awardsOut=potScore>0?[potWinnings,...finalAwards]:finalAwards;
-  return { awards:awardsOut, luck, commentary:negative, total:potScore+bonusTotal };
+  // NOTHING EARNED, NOTHING SHOWN. A hand can reach here having won a pot
+  // LAYER and still be worth zero — an exact chop, or a side pot won on a
+  // hand finished net down (fixtures F9, F11, F21). Returning null sends
+  // runHumanPotSmashCeremony() down its existing plain-payout branch, so
+  // the chips are still paid on screen and only the reward layer, the
+  // TOTAL and the pot smash stay silent. Celebrating a loss is exactly the
+  // dishonesty this correction exists to remove.
+  if (!awardsOut.length) return null;
+  // Commentary is NOT decided here. It is one line per hand, chosen by a
+  // priority ladder that needs the terminal condition — which only exists
+  // in finishHand(), after this has already run — so it is decided once,
+  // on the late pass, and delivered to the CRT line rather than to this
+  // reward layer (SCORING_SPEC.md 3.4, 3.5).
+  return { awards:awardsOut, luck:null, commentary:null, total:potScore+bonusTotal };
 }
-/* Late phase — always runs from finishHand(), same call site/timing the
-   original resolveArcadeHand used, after resolveEliminations(). If the
-   human already won this hand's pot, evaluateArcadeAwardsEarly() above
-   has already evaluated+presented everything except K.O./TABLE CLEAR, so
-   this only adds those as a late stinger on top (still through the
-   unchanged presentArcadeAward/rollArcadeCounter per-item flow). If the
-   human did NOT win this hand's pot (a loss, or no pot awarded to them),
-   nothing ran early, so this computes and presents the full picture in
-   one pass — identical behaviour/timing to the original resolveArcadeHand
-   for every non-win hand. */
-async function resolveArcadeHandLate(g,outcome,context){
+/* Late phase — always runs from finishHand(), after resolveEliminations().
+
+   SPLIT AT PHASE 4C into the four responsibilities SCORING_SPEC.md 4
+   separates, because they used to be two:
+
+     resolveArcadeHandScore()  detect + record, SILENT and side-effect-free
+                               on the visible score
+     bankArcadeResolution()    mutate the score with no ceremony
+     presentArcadeResolution() the existing award carousel, which mutates
+                               the score as part of showing it
+
+   Before the split, score mutation lived INSIDE presentation on both
+   paths (presentArcadeAward moved a.score; runPotSmashSequence's
+   rollScore moved it), so suppressing the celebration on a terminal hand
+   would also have suppressed the points. A terminal hand must still earn
+   everything it objectively earned — it simply must not be congratulated
+   between the bust and RUN OVER, or between the last K.O. and
+   TABLE CLEARED / EVENT WON.
+
+   If the human already won this hand's pot, evaluateArcadeAwardsEarly()
+   has evaluated and presented everything except the milestones, so this
+   adds only those. If they did not, nothing ran early and this computes
+   the whole picture in one pass. */
+async function resolveArcadeHandScore(g,outcome,context){
   const a=rewardState(g);
-  if (!a) return;
+  if (!a) return null;
+  const human=g.players.find(p=>p.isHuman);
+  const netProfit=human?human.chips-(g._humanStart==null?human.chips:g._humanStart):0;
   const awards=[];
-  let luck=null, commentary=null;
-  if (humanWonOutcome(outcome)){
-    evaluateArcadeMilestoneAchievements(context,awards);
-  } else {
-    const snapshots=await settleArcadeSnapshots(g);
-    evaluateArcadeSkill(g,outcome,snapshots).forEach(x=>addArcadeAward(awards,x.id,x.count));
-    evaluateArcadeMilestoneAchievements(context,awards);
-    luck=classifyArcadeLuck(g,outcome,snapshots);
-    commentary=evaluateArcadeNegative(g,outcome,snapshots,luck);
-  }
+  // Nothing the player DID is graded any more. A hand they did not win can
+  // still carry an objective milestone — a K.O. is possible on a pot layer
+  // they lost — and both paths reach the same commentary decision.
+  const snapshots=await settleArcadeSnapshots(g);
+  evaluateArcadeMilestoneAchievements(g,context,awards);
+  const luck=classifyArcadeLuck(g,outcome,snapshots);
+  // ONE line for the hand, decided once, here — not once per path. This is
+  // the only place that knows both the settlement and the terminal
+  // condition, which is what the priority ladder needs.
+  const chosen=evaluateArcadeCommentary(g,outcome,snapshots,luck,netProfit);
   const finalAwards=normalizeArcadeAwards(awards);
   const total=finalAwards.reduce((sum,x)=>sum+x.def.base*x.count,0);
-  const resolution={awards:finalAwards,luck,commentary,total,dev:false};
+  // Recording and persistence happen HERE, unconditionally, whether or not
+  // anything is ever shown — that is the whole point of the split.
   finalAwards.forEach(x=>{ a.awardCounts[x.id]=(a.awardCounts[x.id]||0)+x.count; });
   if (arcadePersists(g)){
     finalAwards.forEach(x=>noteArcadeDiscovery(x.id,x.count,x.def.base*x.count));
-    if (luck) noteArcadeDiscovery(luck.id,1,null);
-    if (commentary) noteArcadeDiscovery(commentary.id,1,null);
+    // Luck tags are discoverable signals and appear in the awards glossary.
+    // The objective settlement lines are not: they are statements of fact
+    // about one hand, not something to collect, and a count for an id the
+    // glossary cannot display would be permanent junk in the profile.
+    if (chosen&&chosen.luck) noteArcadeDiscovery(chosen.luck.id,1,null);
   }
-  if (!finalAwards.length&&!luck&&!commentary) return;
-  await queueArcadePresentation(()=>presentArcadeResolution(g,resolution));
+  return {
+    awards:finalAwards, total, dev:false,
+    luck:chosen&&chosen.luck?chosen.luck:null,
+    commentary:chosen&&chosen.id?{id:chosen.id}:null
+  };
+}
+/* Terminal-hand banking: every earned point added exactly once, with the
+   displayed counter set EQUAL rather than rolled, so the result stage
+   opens on the true final figure and no counter is left mid-animation
+   behind it. */
+function bankArcadeResolution(g,resolution){
+  const a=rewardState(g);
+  if (!a||!resolution) return;
+  a.biggestReward=Math.max(a.biggestReward,resolution.total||0);
+  a.score+=resolution.total||0;
+  a.displayedScore=a.score;
+  updateArcadeHUD();
+}
+/* `terminal` is decided by finishHand() BEFORE this is called — the hand
+   ended the run or the event — and is what selects banking over
+   celebration. Returns the resolution either way, so a caller can see
+   what was earned without inferring it from what was shown. */
+async function resolveArcadeHandLate(g,outcome,context,terminal){
+  const resolution=await resolveArcadeHandScore(g,outcome,context);
+  if (!resolution) return null;
+  if (terminal){
+    bankArcadeResolution(g,resolution);
+    return resolution;
+  }
+  // The reward layer is for SCORING AWARDS only. Commentary — including a
+  // luck tag — is delivered to the CRT line by finishHand() at the
+  // "Hand complete." beat, and never through this carousel.
+  if (resolution.awards.length){
+    await queueArcadePresentation(()=>presentArcadeResolution(g,resolution));
+  }
+  return resolution;
+}
+/* The one line this hand DELIVERS, as text, or null. Read by finishHand()
+   at the "Hand complete." beat.
+
+   Detection has already happened and is never suppressed (SCORING_SPEC.md
+   4: the terminal rule suppresses contradictory celebration, never
+   detection, mutation or persistence). This is where priority 1 —
+   "a terminal hand says nothing" — is actually applied, and it is applied
+   with one distinction the fixture matrix forced into the open:
+
+     terminal BUSTING hand  nothing at all, without exception. Straight to
+                            RUN OVER / EVENT LOST.
+     terminal WINNING hand  the SETTLEMENT and SOFT lines are suppressed,
+                            because the result stage is about to state the
+                            settlement itself and a line narrating it first
+                            both duplicates and pre-empts it (fixture F19,
+                            an uncalled return on the table-clearing hand).
+                            A showdown LUCK TAG still speaks: it says
+                            something the result stage never says, about
+                            cards the player genuinely saw (fixture F3, a
+                            0%-equity suck-out that cleared the table).
+     ordinary hand          whatever won the priority ladder.
+
+   `terminalBust` is passed rather than derived so this cannot disagree
+   with the branch finishHand() is about to take. */
+function arcadeCommentaryText(resolution,g,delivery){
+  if (!resolution) return null;
+  const d=delivery||{};
+  if (d.terminalBust) return null;
+  const luckId=resolution.luck?resolution.luck.id:null;
+  const id=luckId||(resolution.commentary?resolution.commentary.id:null);
+  if (!id) return null;
+  if (d.terminal&&!luckId) return null;
+  return commentaryLine(id,{
+    netProfit:resolution.netProfit,
+    bigBlind:g?g.bigBlind:null
+  });
 }
 function queueArcadePresentation(fn){
   arcadePresentationQueue=arcadePresentationQueue.catch(()=>{}).then(fn);
@@ -1032,30 +1171,17 @@ async function presentArcadeAward(g,award){
   await rollArcadeCounter(a,target,tier);
   await arcadeDelay(timing.holdMs);
 }
-async function presentArcadeCommentary(g,item,isLuck){
-  if (!item||!g||game!==g) return;
-  const def=isLuck?ARCADE_LUCK[item.id]:ARCADE_NEGATIVE[item.id];
-  if (!def) return;
-  const layer=$('arcade-reward-layer'); if (!layer) return;
-  const extreme=isLuck&&def.kind.indexOf('extreme')===0;
-  clearArcadeLayer();
-  layer.className='arcade-reward-layer commentary-only '+(isLuck?'luck-'+def.kind:'comment-negative');
-  layer.classList.remove('hidden');
-  $('arcade-hero').textContent=def.name;
-  fitArcadeHeroText($('arcade-hero'));
-  void layer.offsetWidth; layer.classList.add('is-live');
-  Sound.arcadeLuck(isLuck?def.kind:'negative');
-  await arcadeDelay(extreme?700:520);
-  clearArcadeLayer();
-  await arcadeDelay(80);
-}
+/* presentArcadeCommentary() was deleted at Phase 4D. Commentary — luck
+   tags included — no longer uses #arcade-reward-layer at all; that layer
+   is scoring awards only (SCORING_SPEC.md 3.5). The single line a hand
+   earns is painted on the CRT action line by finishHand().
+
+*/
 async function presentArcadeResolution(g,r){
   const a=rewardState(g);
   if (!g||game!==g||!a) return;
   a.biggestReward=Math.max(a.biggestReward,r.total||0);
   for (const award of r.awards) await presentArcadeAward(g,award);
-  if (r.luck) await presentArcadeCommentary(g,r.luck,true);
-  else if (r.commentary) await presentArcadeCommentary(g,r.commentary,false);
 }
 function finalizeArcadeRun(g){
   // Arcade persistence only — never reached for a Career event. Explicit
@@ -1077,45 +1203,48 @@ function finalizeArcadeRun(g){
    trigger logic is verified separately by playing rigged hands (see the
    REAL GAMEPLAY TEST controls in js/08-dev-mode.js). */
 const DEV_ARCADE_SCENARIOS = {
-  standard:    {awards:['goodFold']},
-  strong:      {awards:['goodBluff']},
-  elite:       {awards:['heroCall']},
-  jackpot:     {awards:['monsterBluff']},
-  // Seven independent (no shared family) awards, deliberately out of
-  // order here — normalizeArcadeAwards' own tier/base sort is what
-  // actually builds the escalating nice->nice->bigger->OH->OH SHIT reveal.
-  escalating:  {awards:['goodPressure','punish','trapWorked','maxValue','ko','massivePot','monsterBluff']},
-  massivePot:  {awards:['massivePot']},
-  heroCall:    {awards:['heroCall']},
-  monsterBluff:{awards:['monsterBluff']},
+  strong:      {awards:['bigWin']},
+  elite:       {awards:['doubleUp']},
+  jackpot:     {awards:['massiveWin']},
+  // Deliberately out of order here — normalizeArcadeAwards' own tier/base
+  // sort is what actually builds the escalating reveal.
+  escalating:  {awards:['bigWin','monsterHand','doubleUp','ko','massiveWin']},
+  massiveWin:  {awards:['massiveWin']},
+  monsterHand: {awards:['monsterHand']},
   ko:          {awards:['ko']},
-  luckyWin:    {awards:['goodCall'],luck:'lucky'},
-  badBeat:     {awards:['greatCall'],luck:'brutal'},
-  negative:    {awards:[],commentary:'badCall'}
+  luckyWin:    {awards:['bigWin'],luck:'lucky'},
+  badBeat:     {awards:[],luck:'brutal'}
 };
 /* Reward-PRESENTATION dev tools. These drive the same breakdown/TOTAL/pot
    smash path a real hand does and never touch the felt.arcade profile
    (noteArcadeDiscovery is only reached from the two real evaluators, both
    gated on arcadePersists), so they run wherever rewardState() does —
    Arcade runs and Career events alike. */
-function devArcadePresent(ids,luckId,negativeId){
+function devArcadePresent(ids){
   if (!DEV_MODE||!rewardState(game)) return;
   const g=game;
   let awards=(ids||[]).map(id=>ARCADE_AWARDS[id]?{id,count:1,def:ARCADE_AWARDS[id]}:null).filter(Boolean);
   awards=normalizeArcadeAwards(awards);
   const total=awards.reduce((sum,x)=>sum+x.def.base*x.count,0);
   queueArcadePresentation(()=>presentArcadeResolution(g,{
-    awards,luck:luckId&&ARCADE_LUCK[luckId]?{id:luckId,equity:0}:null,
-    commentary:negativeId&&ARCADE_NEGATIVE[negativeId]?{id:negativeId}:null,
-    total,dev:true
+    awards,luck:null,commentary:null,total,dev:true
   }));
 }
-function devArcadeAward(id){ devArcadePresent([id],null); }
-function devArcadeLuck(id){ devArcadePresent([],id); }
-function devArcadeNegative(id){ devArcadePresent([],null,id); }
+function devArcadeAward(id){ devArcadePresent([id]); }
+/* Commentary previews now paint the real surface — the CRT action line —
+   through the same commentaryLine() lookup a real hand uses, rather than
+   the reward layer they used to borrow. */
+function devArcadeCommentary(id){
+  if (!DEV_MODE||!rewardState(game)) return;
+  const text=commentaryLine(id,{});
+  if (text) setBanner(esc(text));
+}
+function devArcadeLuck(id){ devArcadeCommentary(id); }
 function devArcadeScenario(id){
   const scenario=DEV_ARCADE_SCENARIOS[id];
-  if (scenario) devArcadePresent(scenario.awards,scenario.luck||null,scenario.commentary||null);
+  if (!scenario) return;
+  devArcadePresent(scenario.awards);
+  if (scenario.luck) devArcadeCommentary(scenario.luck);
 }
 function devArcadeAddScore(amount){
   const a0=rewardState(game);
@@ -1167,9 +1296,9 @@ function devArcadeReset(){
    bootstraps them correctly from real state instead of being left
    holding this test's decorative amount. */
 const DEV_POT_SMASH_SCALES = {
-  small:  { amount:180,  awardIds:['goodFold'] },
-  medium: { amount:900,  awardIds:['goodPressure','bigPot'] },
-  huge:   { amount:2600, awardIds:['monsterHand','bigPot','heroCall'] }
+  small:  { amount:180,  awardIds:[] },
+  medium: { amount:900,  awardIds:['bigWin'] },
+  huge:   { amount:2600, awardIds:['monsterHand','massiveWin','doubleUp'] }
 };
 function devTestPotSmash(scale){
   if (!DEV_MODE||!rewardState(game)||!betweenHands()) return;
@@ -1195,7 +1324,7 @@ function devTestPotSmash(scale){
 }
 function buildAwardsGlossary(){
   const list=$('awards-list'), summary=$('awards-summary'); if (!list||!summary) return;
-  const entries=[...Object.entries(ARCADE_AWARDS),...Object.entries(ARCADE_LUCK),...Object.entries(ARCADE_NEGATIVE)];
+  const entries=[...Object.entries(ARCADE_AWARDS),...Object.entries(ARCADE_LUCK)];
   const unlocked=entries.filter(([id])=>arcadeProfile.discovered[id]).length;
   summary.innerHTML='<b>HIGH SCORE '+formatArcadeScore(arcadeProfile.highScore||0)+'</b><br>'+unlocked+' / '+entries.length+' signals discovered';
   list.innerHTML=entries.map(([id,def])=>{
@@ -1225,15 +1354,21 @@ function buildScoringGuide(){
   SCORING_GUIDE_TIERS.forEach(t=>byTier[t]=[]);
   Object.values(ARCADE_AWARDS).forEach(def=>{ if (def.type==='skill') byTier[def.tier].push(def); });
   const events = Object.values(ARCADE_AWARDS).filter(def=>def.type==='event').sort((a,b)=>a.base-b.base);
-  let html = SCORING_GUIDE_TIERS.filter(t=>byTier[t].length).map(t=>
+  // The canonical description of what the counter is (SCORING_SPEC.md 1),
+  // used verbatim wherever the counter is explained. It is stated first,
+  // before any point value, so nothing here can read as profit or XP.
+  let html = '<div class="hint" style="margin-bottom:12px;">' +
+    'An ephemeral machine tally generated by positive chip results and objective milestones. ' +
+    'It is not profit, skill, XP or Career progression.</div>';
+  html += SCORING_GUIDE_TIERS.filter(t=>byTier[t].length).map(t=>
     '<div class="sg-tier sg-tier-'+t+'"><div class="sg-tier-label">'+SCORING_GUIDE_TIER_LABEL[t]+'</div>'+byTier[t].map(row).join('')+'</div>'
   ).join('');
   html += '<div class="sg-section-label">Event rewards</div>' + events.map(row).join('');
   html += '<div class="sg-section-label">Pot winnings</div>' +
-    '<div class="hint">POT WINNINGS — score generated from actual net chips won, adjusted for current table stakes.</div>';
+    '<div class="hint">POT WINNINGS — score generated from your actual net profit on the hand, adjusted for current table stakes. A hand you finish level or behind scores nothing.</div>';
   html += '<div class="sg-section-label">Luck</div>' +
     '<div class="hint">'+Object.values(ARCADE_LUCK).map(l=>esc(l.name)).join(' &middot; ')+' — these award 0 points.</div>';
-  html += '<div class="hint" style="margin-top:10px;">Occasional negative feedback points out a clear mistake, but it never deducts score.</div>';
+  html += '<div class="hint" style="margin-top:10px;">Nothing here grades a decision, and nothing ever deducts score.</div>';
   list.innerHTML = html;
 }
 

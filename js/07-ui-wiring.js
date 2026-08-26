@@ -8,10 +8,19 @@ function hideReview(){ const r=$('review'); if (r) r.classList.add('hidden'); }
 const STREET_NAME = { preflop:'pre-flop', flop:'the flop', turn:'the turn', river:'the river' };
 
 /* If the human folded this hand and the board ran out fully, offer a neutral
-   "for reference" comparison — never framed as a verdict on the decision. */
-function foldSnapshotNote(winnerPlayer){
+   "for reference" comparison — never framed as a verdict on the decision.
+
+   HIDDEN-INFORMATION GUARD (defect D9, SCORING_SPEC.md 3.2). Every branch
+   below describes the WINNER'S hand, so this may only ever run when that
+   hand was genuinely turned face up. On a fold-win nobody shows anything,
+   and the old unguarded call leaked the winner's never-seen hole cards
+   straight into the review panel. `shown` is passed by the caller from the
+   real outcome rather than inferred here, so the guard cannot drift from
+   what actually happened at the table. */
+function foldSnapshotNote(winnerPlayer, shown){
   const g = game;
   const snap = g.humanFoldSnapshot;
+  if (!shown) return null;
   if (!snap || g.board.length !== 5 || !winnerPlayer) return null;
   const mineIfContinued = evaluate7([...snap.holeCards, ...g.board]);
   const winnerHand = evaluate7([...winnerPlayer.hand, ...g.board]);
@@ -67,8 +76,11 @@ function buildReview(outcome){
     rows.push('<b>' + esc(w.name) + '</b> won ' + outcome.amount.toLocaleString() +
               ' without a showdown — everyone else folded, so their cards were never shown.');
     if (line) rows.push('Their line: ' + esc(line) + '.');
-    const foldNote = foldSnapshotNote(w);
-    if (foldNote) rows.push(foldNote);
+    // Deliberately NOT called on a fold-win: the winner's cards were never
+    // shown, so there is nothing truthful to compare against. The row above
+    // already states the only fact available — the pot came without a
+    // showdown.
+
     if (w.isHuman){
       lesson = ['Winning without showdown','Taking a pot uncontested is a legitimate way to win. ' +
         'You never have to reveal what you held, so opponents learn nothing about how you play.'];
@@ -105,7 +117,13 @@ function buildReview(outcome){
     const line = describeLine(topWinnerId);
     if (line) rows.push('How they played it: ' + esc(line) + '.');
   }
-  const foldNote = foldSnapshotNote(topWinner);
+  // A showdown genuinely reveals the winner's cards, so the comparison is
+  // public here — provided this particular winner was a contender who
+  // showed, rather than someone who folded earlier and is only named in a
+  // side-pot row.
+  const winnerShowed = Array.isArray(outcome.contenders) &&
+    outcome.contenders.some(p=>p.id===topWinnerId && !p.folded);
+  const foldNote = foldSnapshotNote(topWinner, winnerShowed);
   if (foldNote) rows.push(foldNote);
 
   // pick a lesson from what actually happened
@@ -152,7 +170,7 @@ function renderStats(){
   const cells = [
     {k:'Hands', v: stats.hands.toLocaleString()},
     {k:'Won', v: stats.hands ? Math.round(stats.won/stats.hands*100)+'%' : '—'},
-    {k:'Best pot', v: stats.biggestPot ? stats.biggestPot.toLocaleString() : '—'}
+    {k:'Best hand win', v: stats.biggestPot ? stats.biggestPot.toLocaleString() : '—'}
   ];
   const html = cells.map(c=>'<div class="stat-cell"><div class="v tabular">'+c.v+'</div><div class="k">'+c.k+'</div></div>').join('');
   const a = $('stat-strip'), b = $('settings-stats');

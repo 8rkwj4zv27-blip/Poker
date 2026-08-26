@@ -435,8 +435,15 @@ check('TABLE CLEARED baseline is unchanged', ()=>{
   assert.ok(clearedStage.includes('Finish stack'));
   assert.ok(clearedStage.includes('K.O.s') && clearedStage.includes('5 / 5'));
   assert.strictEqual((clearedStage.match(/stage-ko-slot/g)||[]).length, 5);
-  ['Hands won','Showdowns won','Biggest pot'].forEach(label=>
+  // 'Biggest pot' -> 'Biggest net win' because the APPROVED COPY CHANGED
+  // (SCORING_SPEC.md 5.2): the underlying statistic now records the
+  // player's largest net profit on a hand, not the table pot, and the
+  // meaning change and the label change ship in the same gate. This is
+  // not a failure being suppressed — the old label is separately asserted
+  // to be gone.
+  ['Hands won','Showdowns won','Biggest net win'].forEach(label=>
     assert.ok(clearedStage.includes(label), label));
+  assert.ok(!clearedStage.includes('Biggest pot'), 'the gross-pot label must be gone');
   assert.ok(clearedStage.includes('No showdown hand recorded'));
   assert.ok(clearedStage.includes('<span>TABLES CLEARED</span><strong class="tabular">1</strong><em>NEXT: TABLE 2</em>'));
   // A flawless table still lights its lamp strip.
@@ -452,8 +459,10 @@ check('RUN OVER reports the run through the shared hierarchy', ()=>{
   // The padded seven-digit form, as a reel rather than a string.
   assert.strictEqual(bustModel.hero.reel.text, '0000780');
   assert.ok(bustStage.includes('NEW HIGH SCORE'));
-  ['Table reached','K.O.s','Hands won','Scoring events','Biggest pot'].forEach(label=>
+  // Same approved copy change as the TABLE CLEARED recap above.
+  ['Table reached','K.O.s','Hands won','Scoring events','Biggest net win'].forEach(label=>
     assert.ok(bustStage.includes(label), label));
+  assert.ok(!bustStage.includes('Biggest pot'), 'the gross-pot label must be gone');
   // Joined rather than deep-compared: arrays crossing out of the VM
   // realm are not deepStrictEqual to plain host arrays.
   const pageTwo = bustModel.recapPages[1].map(s=>s.label).join(' | ');

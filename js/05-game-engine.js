@@ -1079,6 +1079,18 @@ function checkHandEndedByFold(){
   return game.players.filter(p=>p.inHand && !p.folded).length<=1;
 }
 
+/* `contributors` is additive and changes nothing about how pots are built
+   or awarded — `eligible` is untouched, and every existing caller reads
+   only `amount` and `eligible`.
+
+   It exists because the number was already being computed here and then
+   thrown away, and without it two completely different facts are
+   indistinguishable downstream: a $40 side pot paid into by three players
+   and won is OPPONENTS' money genuinely won, while a $1,980 layer only one
+   player paid into is that player's OWN unmatched bet coming back. Both
+   expose `eligible.length === 1` once everyone else has folded (see
+   SCORING_SPEC.md 7.4), so post-hand commentary could not tell them apart
+   and had to stay silent about both. */
 function computePots(players){
   const contributors = players.filter(p=>p.totalBetHand>0);
   const levels = [...new Set(contributors.map(p=>p.totalBetHand))].sort((a,b)=>a-b);
@@ -1088,7 +1100,11 @@ function computePots(players){
     const layer = level - prev;
     const payers = contributors.filter(p=>p.totalBetHand >= level);
     const amount = layer * payers.length;
-    if (amount>0) pots.push({ amount, eligible: payers.filter(p=>!p.folded).map(p=>p.id) });
+    if (amount>0) pots.push({
+      amount,
+      contributors: payers.length,
+      eligible: payers.filter(p=>!p.folded).map(p=>p.id)
+    });
     prev = level;
   }
   return pots;
@@ -1161,13 +1177,15 @@ async function handleFoldWin(){
   g.players.forEach(p=>{
     if (p.streetAction && !['fold','allin','ko','eliminated'].includes(p.streetAction.type)) p.streetAction = null;
   });
-  recordPot(amt);
+  // recordPot() used to bank the whole table pot into stats.biggestPot
+  // from here (D13). Lifetime statistics are now written once, in
+  // finishHand(), from the settled net result — see recordHandStatistics().
   // Same person agreement as the showdown banner below: "You take", not
   // "You takes"; named opponents keep "takes".
   setBanner('<b>' + esc(winner.name) + '</b> ' + (winner.isHuman ? 'take' : 'takes') + ' the pot…');
   render();
   await sleep(motionOff() ? 80 : 250);
-  if (winner.isHuman){ stats.won++; Sound.resultSting('humanWin'); haptic(30); }
+  if (winner.isHuman){ Sound.resultSting('humanWin'); haptic(30); }
   else {
     reactToWin(winner, amt / g.bigBlind);
     if (amt > 10*g.bigBlind) nudgeMood(winner, 'up', 0.5);
@@ -1184,11 +1202,16 @@ async function handleFoldWin(){
   // plaque skips those parts of the display accordingly. Money mutation
   // and the visual payout both now happen inside that shared sequence,
   // gated behind the player's own AWARD POT press.
+  // A fold-win collapses every layer into one row, so this row's own
+  // `contributors` would be meaningless. Post-hand commentary reads the
+  // real layering from computePots() directly in this case (the winner
+  // takes every layer by definition), which is why it is left null here
+  // rather than guessed at.
   const potResults = [{
     label:'Pot', amount:amt, winners:[winner.name], winnerIds:[winner.id],
     eligible:[winner.id],
     winnerShares:[{name:winner.name, id:winner.id, amount:amt}],
-    hand:null, cat:null, cards:null, contested:1, split:false
+    hand:null, cat:null, cards:null, contested:1, contributors:null, split:false
   }];
   await runShowdownAwardSequence(potResults, []);
 }
@@ -1204,7 +1227,6 @@ async function handleShowdown(){
   // !p.eliminated guard costs nothing and makes that impossible.
   const contenders = g.players.filter(p=>p.inHand && !p.folded && !p.eliminated);
   const pots = computePots(g.players);
-  recordPot(pots.reduce((s,p)=>s+p.amount,0));
 
   // Showdown cleanup, pass 2 — this street's Check/Call/Bet/Raise labels
   // are done informing anything once betting has ended; leaving them up
@@ -1283,6 +1305,10 @@ async function handleShowdown(){
       cat: best.result.cat,
       cards: best.cards,
       contested: eligible.length,
+      // The count of players who PAID INTO this layer, from computePots().
+      // Distinct from `contested`/`eligible`, which count who could still
+      // WIN it — see computePots() for why the difference matters.
+      contributors: pot.contributors,
       split: winners.length > 1
     });
   });
@@ -1357,7 +1383,10 @@ async function handleShowdown(){
     }
   });
   if (winnerIds.has('you')){
-    stats.won++; stats.showdownsWon++;
+    // Presentation only. Winning A LAYER is not the same as finishing the
+    // hand ahead, so stats.won/showdownsWon are no longer written here —
+    // see recordHandStatistics() in finishHand(). The sting is correct
+    // either way: the player did just take a pot on screen.
     Sound.resultSting('humanWin');
     haptic(30);
   } else if (contenders.length>1){
@@ -1560,10 +1589,16 @@ function captureHumanBuster(g,outcome){
   const names=ids.map(id=>{ const p=g.players.find(x=>x.id===id); return p ? p.name : id; });
   g.run.bustedBy={ names, hand:decisivePot.hand||'' };
 }
-function trackEliminationHand(g,outcome,human){
+/* `netProfit` is the SETTLED result of the hand (human.chips - g._humanStart),
+   passed in by finishHand() rather than recomputed, so every "won" counter
+   below means the same thing the lifetime statistics mean (SCORING_SPEC.md
+   5.1): the player finished the hand AHEAD. Winning a pot layer is not
+   enough — an exact chop nets zero and a net-losing side-pot share nets
+   below zero, and neither is a win. */
+function trackEliminationHand(g,outcome,human,netProfit){
   const run=g.run;
   if (!run || !run.active) return;
-  const won=humanWonOutcome(outcome);
+  const won=netProfit>0;
   run.totalHands++; run.tableHands++;
   if (won){ run.totalHandsWon++; run.tableHandsWon++; }
 
@@ -1580,16 +1615,36 @@ function trackEliminationHand(g,outcome,human){
     run.allInsPlayed++; run.tableAllInsPlayed++;
     if (won){ run.allInsWon++; run.tableAllInsWon++; }
   }
-  const award=humanAwardFromOutcome(outcome);
-  run.biggestPotWon=Math.max(run.biggestPotWon,award);
-  run.tableBiggestPotWon=Math.max(run.tableBiggestPotWon,award);
+  // BIGGEST NET WIN, not the gross share (defect D14). humanAwardFromOutcome()
+  // counts every layer paid to the player INCLUDING an uncalled bet coming
+  // straight back, so fixture F19 recorded 1,120 for a hand that made 120.
+  run.biggestPotWon=Math.max(run.biggestPotWon,netProfit);
+  run.tableBiggestPotWon=Math.max(run.tableBiggestPotWon,netProfit);
   run.highestStack=Math.max(run.highestStack,human.chips);
   run.tableHighestStack=Math.max(run.tableHighestStack,human.chips);
   if (human.chips<=0) captureHumanBuster(g,outcome);
 }
 
-function recordPot(amount){
-  if (amount > stats.biggestPot) stats.biggestPot = amount;
+/* The ONE writer of the settled lifetime statistics (SCORING_SPEC.md 5.1),
+   called once per hand from finishHand() after the payout has landed.
+
+   It replaced recordPot(), which banked the WHOLE TABLE POT into
+   stats.biggestPot from inside handleShowdown()/handleFoldWin() (defect
+   D13: 2,030 recorded on a hand that netted 30), alongside two
+   stats.won/showdownsWon increments that fired on winning any pot layer
+   at all — including an exact chop and a net-losing side-pot share.
+
+   `won` is net-ahead, so stats.biggestPot now means "the player's largest
+   NET PROFIT on a single hand". No stored value is rewritten: the rule
+   applies from here forward only, exactly as SCORING_SPEC.md 8 records. */
+function recordHandStatistics(g,outcome,netProfit){
+  if (netProfit>0){
+    stats.won++;
+    const humanContended = outcome && outcome.type==='showdown' &&
+      Array.isArray(outcome.contenders) && outcome.contenders.some(p=>p.isHuman);
+    if (humanContended) stats.showdownsWon++;
+    if (netProfit > stats.biggestPot) stats.biggestPot = netProfit;
+  }
 }
 
 async function finishHand(outcome){
@@ -1607,7 +1662,11 @@ async function finishHand(outcome){
 
   stats.hands++;
   const human = g.players.find(p=>p.id==='you');
-  if (g.mode==='elimination') trackEliminationHand(g,outcome,human);
+  // The settled result of this hand, read once, after the payout has been
+  // credited. Everything below that says "won" means this being positive.
+  const netProfit = human.chips - (g._humanStart != null ? g._humanStart : human.chips);
+  recordHandStatistics(g,outcome,netProfit);
+  if (g.mode==='elimination') trackEliminationHand(g,outcome,human,netProfit);
   // Career table chips are not a Single Player session net, and this is an
   // assignment rather than an accumulation — letting a Career hand through
   // would overwrite the player's real figure. The lifetime counters above
@@ -1616,7 +1675,14 @@ async function finishHand(outcome){
   saveStats();
   renderStats();
 
-  const delta = human.chips - (g._humanStart != null ? g._humanStart : human.chips);
+  // The one post-hand commentary line, if this hand earned one. Set by the
+  // late scoring pass below and painted at the "Hand complete." beat —
+  // the CRT action line is the default commentary surface
+  // (SCORING_SPEC.md 3.5). Every terminal branch returns before that beat,
+  // so terminal suppression is structural rather than a second check.
+  let handCommentary = null;
+
+  const delta = netProfit;
   if (delta > g.sess.bestWin) g.sess.bestWin = delta;
   if (delta < g.sess.worstLoss) g.sess.worstLoss = delta;
 
@@ -1653,10 +1719,22 @@ async function finishHand(outcome){
     const recoveredResult = await recoverMissedEliminations(g, outcome);
     const koCount = (eliminationResult?eliminationResult.koCount:0) + (recoveredResult?recoveredResult.koCount:0);
     const aiRemaining = g.players.filter(p=>!p.isHuman && !p.eliminated);
-    await resolveArcadeHandLate(g,outcome,{
+    // TERMINALITY IS DECIDED BEFORE ANYTHING IS PRESENTED (SCORING_SPEC.md 4).
+    // This used to be read AFTER the award carousel had already been
+    // awaited, which is how a hand that busted the player could present a
+    // full-screen celebratory award, with sound and a score roll, in the
+    // gap before RUN OVER. The points are still detected and still banked
+    // — resolveArcadeHandLate() mutates the score either way — only the
+    // ceremony is suppressed.
+    const terminal = human.chips<=0 || aiRemaining.length===0;
+    const resolved = await resolveArcadeHandLate(g,outcome,{
       koCount,
       tableClear:human.chips>0&&aiRemaining.length===0
-    });
+    },terminal);
+    // PRIORITY 1 (SCORING_SPEC.md 3.4). arcadeCommentaryText() owns the
+    // rule; every terminal branch below also returns before the
+    // "Hand complete." beat, so suppression is structural as well as stated.
+    handCommentary = arcadeCommentaryText(resolved, g, { terminal, terminalBust:human.chips<=0 });
     if (human.chips<=0){ showBusted(g, human); return; }
     if (aiRemaining.length===0){
       await sleep(motionOff() ? 0 : ELIMINATION_CONFIG.clearedBeatMs);
@@ -1672,10 +1750,15 @@ async function finishHand(outcome){
     const recoveredResult = await recoverMissedEliminations(g, outcome);
     const koCount = (eliminationResult?eliminationResult.koCount:0) + (recoveredResult?recoveredResult.koCount:0);
     const aiRemaining = g.players.filter(p=>!p.isHuman && !p.eliminated);
-    await resolveArcadeHandLate(g,outcome,{
+    // Same rule as elimination above: a hand that ends the event banks its
+    // points and presents nothing, so EVENT WON / EVENT LOST is never
+    // preceded by a carousel.
+    const terminal = human.chips<=0 || aiRemaining.length===0;
+    const resolved = await resolveArcadeHandLate(g,outcome,{
       koCount,
       tableClear: human.chips>0 && aiRemaining.length===0
-    });
+    },terminal);
+    handCommentary = arcadeCommentaryText(resolved, g, { terminal, terminalBust:human.chips<=0 });
     // finishHand owns terminal settlement. endCareerEvent() is guarded and
     // is the ONLY function permitted to start result presentation. The
     // placement is measured from the table (careerFinishPlace), never
@@ -1701,7 +1784,7 @@ async function finishHand(outcome){
   }
 
   $('btn-next-hand').classList.remove('hidden');
-  setBanner('Hand complete.');
+  setBanner(handCommentary ? esc(handCommentary) : 'Hand complete.');
   render();
   if (g.mode==='career') saveCareerTable(); else saveTable();
   scheduleAutoDeal();
@@ -2043,7 +2126,7 @@ function tableReportStatPages(r){
   const core=[
     {label:'Hands won',value:ratioResult(won,hands)},
     {label:'Showdowns won',value:ratioResult(r.tableShowdownsWon,r.tableShowdownsPlayed)},
-    {label:'Biggest pot',value:moneyResult(r.tableBiggestPotWon)}
+    {label:'Biggest net win',value:moneyResult(r.tableBiggestPotWon)}
   ];
   const context=[];
   if ((r.tableAllInsPlayed||0)>0){
@@ -2284,7 +2367,7 @@ function runOverModel(g){
     recapPages:[
       [ {label:'Hands won',value:ratioResult(won,hands)},
         {label:'Scoring events',value:String(scoringEvents)},
-        {label:'Biggest pot',value:moneyResult(r.biggestPotWon)} ],
+        {label:'Biggest net win',value:moneyResult(r.biggestPotWon)} ],
       [ {label:'Total hands',value:String(hands)},
         {label:'Biggest reward',value:'+'+a.biggestReward.toLocaleString()},
         {label:'Win rate',value:hands ? Math.round((won/hands)*100)+'%' : '—'} ]
@@ -2562,7 +2645,17 @@ async function resolveEliminations(g, outcome){
     }
     p.eliminated = true;
     p.inHand = false;
-    if (ko && g.run && g.run.active){ g.run.totalKOs++; g.run.tableKOs++; humanKOs++; }
+    // K.O. ATTRIBUTION IS MODE-BLIND (defect D5, corrected Phase 4A).
+    // humanKOs used to increment only inside the `g.run` branch, so a
+    // Career event — which deliberately has no g.run — could knock every
+    // opponent out and still report koCount 0, and the K.O. award never
+    // fired there. The RUN COUNTERS stay gated on g.run, because those
+    // belong to a Single Player run and Career has none; only the
+    // per-hand attribution returned to finishHand() is shared.
+    if (ko){
+      humanKOs++;
+      if (g.run && g.run.active){ g.run.totalKOs++; g.run.tableKOs++; }
+    }
     logMsg(p.name + (ko ? ' is knocked out!' : ' is eliminated!'), true);
     entries.push({ p, ko });
   }

@@ -3651,8 +3651,9 @@ function runHumanPotSmashCeremony(g, outcome, potN, preWinChips){
     // the freeze already cleared, so it never delays the money reveal
     // itself — only what comes after it.
     await sleep(motionOff() ? 0 : 200);
-    if (early.luck) await presentArcadeCommentary(g, early.luck, true);
-    else if (early.commentary) await presentArcadeCommentary(g, early.commentary, false);
+    // Commentary used to be tacked on here, on the reward layer. It is now
+    // one line per hand on the CRT action line, decided by the late pass
+    // and painted by finishHand() (SCORING_SPEC.md 3.4, 3.5).
   });
 }
 

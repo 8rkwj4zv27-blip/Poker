@@ -22,6 +22,11 @@ did not start it: nothing from Phase 3 onward is implemented.
 event-directory milestone was executed after it (recorded below, before Phase 3).
 **Phase 3 is now the immediate task.** The phase numbering is unchanged.
 
+*Superseded 2026-08-26:* Phases 3 and 4 are code-complete. **Rendered
+verification of Phase 4 is now the immediate task; Phase 5 — Contextual Board
+and visible Full Circuit — follows only after that gate passes.** The phase
+numbering is unchanged.
+
 ## Prototype objective
 
 Prove that choosing between events, risking a persistent bankroll, cashing, busting, rebuilding, and seeing the next venue creates a compelling repeatable career loop — and then whether a venue with named residents, a boss seat, and a cash table is a richer place to play than a flat event list.
@@ -40,6 +45,9 @@ Do not build the full career ladder to answer either question.
 - Update `CAREER_DESIGN.md` only when a product decision changes, not for routine implementation detail.
 - Commit documentation changes with the implementation they describe so a future AI can reconstruct the project from Git.
 - Run `node validation/career-events-checks.js` and `node validation/career-result-checks.js` before and after every Career implementation phase.
+- Scoring work additionally runs `node validation/scoring-checks.js` (asserts;
+  must pass) and `node validation/scoring-audit.js` (reports; exits 0 even with
+  divergences, non-zero only on a broken harness or fixture).
 
 ---
 
@@ -159,7 +167,7 @@ error. See `STATUS.md`.
 
 ---
 
-## Phase 4 — Scoring correction
+## Phase 4 — Scoring correction — COMPLETE (2026-08-26)
 
 **Purpose:** fix what Phase 3 found, before any pacing measurement or playtest can be contaminated by it.
 
@@ -176,6 +184,32 @@ error. See `STATUS.md`.
 **Dependencies:** Phase 3.
 
 **Exit condition:** the reported symptoms — wrong timing, false positives, incorrect payment — are resolved and covered by fixtures; both existing check suites still pass; any persisted corruption is addressed.
+
+**Verified record.** Met on 2026-08-26. Ran as four sequential gates —
+**4A** pot attribution and lifetime statistics, **4B** decision awards removed
+from scoring and presentation, **4C** terminal-hand calculation and presentation
+ordering, **4D** objective commentary and the hidden-information rule — with all
+three validation suites run after each and no gate allowed to proceed on a
+failure.
+
+The approved visual scoring presentation is intact. The reward breakdown, the
+TOTAL, the pot smash and the SCORE cabinet are untouched, and the corrections
+changed model VALUES and WHEN the model is built, exactly as the scope above
+anticipated. Two presentation changes were required by the specification rather
+than incidental: a hand that earned nothing no longer opens the reward layer at
+all, and post-hand commentary moved off that layer onto the `#banner` CRT line.
+The four major result transitions were reverified by check and are unchanged;
+on-device rendered verification is outstanding, as it was before this phase.
+
+Corrupted lifetime statistics were addressed by explicit decision and disclosure
+rather than by a reset: the affected values cannot be recomputed and resetting
+would destroy legitimate history alongside the contamination. **No stored
+statistic was changed.** Recording is corrected going forward only.
+
+62 event checks, 39 result checks and 170 new scoring checks pass; the Phase 3
+diagnostic harness reports 115 compared channels and **0 divergences**,
+byte-identical across consecutive runs. Full detail, including what was
+deliberately not done, is in `docs/scoring/SCORING_SPEC.md` section 10.
 
 ---
 
