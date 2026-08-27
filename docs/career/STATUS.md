@@ -1,15 +1,15 @@
 # Career Mode — Current Status
 
 Last verified: 2026-08-27
-Verified implementation baseline: the **Career directory and roster-integrity
-pass** below (uncommitted at the time of writing), on top of `2673dcb` —
+Verified implementation baseline: `cbaf082` — `Career directory refinement and
+roster integrity` (the owner-directed pass below), on top of `2673dcb` —
 `Record the scoring correction commit in Career status`, on top of `4f9a351` —
 `Correct scoring attribution and feedback`, on top of `35d93c3` — `Integrate the
 Career event directory` (the owner-directed milestone below), on top of
 `cb9aee0` — `Career Phase 2: Second Chance recovery, truthful loss messaging,
 DEV bankroll tool`. Career logic baseline before Phase 2 was `d31b120` — `Add
 multi-place payouts and Pub Circuit Open` (Phase 1).
-Build `v0.23.0-dev · Scoring Correction`, service-worker cache `poker-v22-0`.
+Build `v0.24.0-dev · Roster Integrity`, service-worker cache `poker-v23-0`.
 Career save schema **version 4** — unchanged by the 2026-08-27 pass, which
 added the roster book as a tolerant additive field rather than a fifth version.
 
@@ -43,6 +43,9 @@ correction is the immediate next task; Phase 5 — Contextual Board and visible
 Full Circuit — follows only after that manual gate passes.**
 
 ## Owner-directed pass — Career directory refinement and roster integrity (2026-08-27)
+
+Shipped as `cbaf082`. Build `v0.24.0-dev · Roster Integrity`, service-worker
+cache `poker-v23-0` — the cache bump is what delivers this to installed PWAs.
 
 Shipped outside the numeric phase order at the owner's direction. It does not
 start Phase 5, does not renumber anything, and changes no economy, pacing,
