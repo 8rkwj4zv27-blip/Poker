@@ -144,6 +144,26 @@ These are prototype commitments:
 
 The 5-HAND's 70/30 split is a prototype value to test, not a universal approved ratio for every future event.
 
+### Open design issue — the threat ladder (raised 2026-08-27)
+
+**Not addressed in the ticket-integration pass, and deliberately not
+changed by it.** No event difficulty, AI behaviour or threat label was
+touched.
+
+> The current threat ladder reaches SERIOUS too early, including near the
+> beginning of the Pub Circuit. Threat terminology and AI progression
+> require a dedicated Career balance pass so the language communicates a
+> steady climb from welcoming introductory tables to genuinely elite
+> late-career opposition.
+
+Today the ladder has only two rungs — `careerThreatOf()` returns
+`MODERATE` for `difficulty:'medium'` and `SERIOUS` for everything else —
+so the Pub Circuit's first paid event already reads as the top of the
+scale, with nothing left to escalate to across four further venues. The
+balance pass owns both halves of the problem: the vocabulary, and the AI
+progression the vocabulary is describing. It should be scheduled as its
+own phase rather than folded into presentation work.
+
 ### Event naming
 
 Renamed on 2026-08-27 at the owner's direction. Entries, fields, stacks, AI,

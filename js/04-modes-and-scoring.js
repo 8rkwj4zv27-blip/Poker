@@ -188,6 +188,24 @@ function generateCareerRoster(event){
   return roster;
 }
 
+/* The canonical catalogue name for a seat's personality — 'Shark', 'Prof',
+   'Maniac' and so on. Read straight from PERSONALITIES_ALL, which is the
+   same list newGame() seats the table from, so a name on a Career ticket
+   and the personality that turns up are the same character. No new name is
+   invented here and no second roster exists.
+
+   NOTE on the "random names" setting: with Opponent Names set to Random the
+   TABLE labels each seat with a random first name generated at launch, which
+   by definition cannot be advertised in advance. The ticket therefore always
+   shows the canonical personality, which remains truthful about who is
+   seated even when the table is showing them under an alias. */
+function careerSeatName(seat){
+  if (!seat || typeof seat.personalityKey !== 'string') return '';
+  if (typeof PERSONALITIES_ALL === 'undefined' || !Array.isArray(PERSONALITIES_ALL)) return '';
+  const persona = PERSONALITIES_ALL.find(p=>p.key === seat.personalityKey);
+  return persona && persona.name ? persona.name : '';
+}
+
 /* A stored roster is trusted only if it still describes THIS event exactly:
    the right number of seats, every personality key still in the roster of
    archetypes, every face colour a real index, and no seat duplicating

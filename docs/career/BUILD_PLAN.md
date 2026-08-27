@@ -258,6 +258,41 @@ deliberately not done, is in `docs/scoring/SCORING_SPEC.md` section 10.
 
 ---
 
+## Follow-up task — segmented controls to a 44px touch target
+
+**Raised 2026-08-27 during the printed-ticket pass, and deliberately not
+done in it.** Not a Career phase: it is a shared-component fix that
+touches screens outside Career, which is exactly why it was held back
+rather than folded into presentation work.
+
+**The defect.** `.segmented` buttons render **36px** tall — below the 44px
+minimum touch target, and below the bar every other control in the game
+already meets. Measured on the pre-existing Classic Table Setup screen
+(12 instances) before any of this pass's work, so it is inherited, not
+introduced. The Custom Game consolidation added the Game Type and run-size
+selectors to the same component, which raises its visibility without
+changing its height.
+
+**Scope.**
+
+- Bring `.segmented` (and `.segmented.compact`) to a minimum 44px target
+  across **Custom Game** and the **Settings sheet** — difficulty, game
+  type, run size, starting stack, blinds, game speed and colour theme.
+- Decide per control whether the height grows or the tap area is extended
+  beyond the painted button, so the Settings sheet's density is not
+  wrecked by seven taller rows.
+- Keep the physical machine language: these are printed segmented
+  switches, not pill buttons.
+
+**Verification.** Visual regression at 320 / 375 / 390 / 393 / 430 across
+all four palettes for both screens, plus a committed check asserting no
+interactive control on either screen measures under 44px — the same shape
+as the existing featured-cartridge clipping contract.
+
+**Dependencies:** none. **Exit condition:** no sub-44px control on Custom
+Game or Settings, at any supported width, in any palette, with the
+segmented controls still reading as machine switches.
+
 ## Phase 7 — Named residents, roster authority, minimal relationship record
 
 **Purpose:** the identity foundation the rest of the Back Room slice depends on.

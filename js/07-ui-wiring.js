@@ -272,13 +272,28 @@ const DIFF_COPY = {
 };
 const MODE_COPY = {
   cash:'Blinds stay fixed. Busted opponents buy back in, so the table stays full.',
-  tournament:'Blinds rise every 10 hands. No rebuys — play until one player has everything.'
+  tournament:'Blinds rise every 10 hands. No rebuys — play until one player has everything.',
+  elimination:'An endless run. Clear the table, then a fresh one arrives with a bigger field waiting.'
 };
+/* The size choices a run can actually build, in the run's own words. */
+const RUN_SIZE_COPY = 'Four, five or six opponents. The run fixes its own stakes: '
+  + ELIMINATION_CONFIG.startingStack.toLocaleString() + ' stacks at '
+  + ELIMINATION_CONFIG.smallBlind + ' / ' + ELIMINATION_CONFIG.bigBlind + '.';
 
 /* Plain-language recap of the current setup, shown above "Deal Me In". */
 function updateSetupSummary(){
   const el = $('setup-summary');
   if (!el) return;
+  // An Elimination run reads its stakes off ELIMINATION_CONFIG rather than
+  // the stack/blind controls, which is exactly why those controls are
+  // withdrawn for it — the summary must not claim settings it will ignore.
+  if (settings.gameType === 'elimination'){
+    const r = normalizeOpponentCount(settings.runOpponents);
+    el.innerHTML = '<b>Elimination run</b> against <b>' + r + '</b> opponents &middot; ' +
+      ELIMINATION_CONFIG.startingStack.toLocaleString() + ' stack &middot; blinds ' +
+      ELIMINATION_CONFIG.smallBlind + '/' + ELIMINATION_CONFIG.bigBlind + '.';
+    return;
+  }
   const n = settings.opponents;
   const mode = settings.mode === 'tournament' ? 'Tournament' : 'Cash game';
   const blinds = settings.mode === 'tournament'
@@ -287,6 +302,36 @@ function updateSetupSummary(){
   el.innerHTML = '<b>' + mode + '</b> against <b>' + n + '</b> ' +
     (n === 1 ? 'opponent' : 'opponents') + ' &middot; ' +
     settings.stack.toLocaleString() + ' stack &middot; ' + blinds + '.';
+}
+
+/* Shows only the controls the selected game type actually uses. */
+function applyGameTypeToSetup(){
+  const run = settings.gameType === 'elimination';
+  const stepper = $('opp-stepper'), runField = $('run-size-field');
+  const stakes = $('stakes-panel'), blindField = $('blind-field');
+  if (stepper) stepper.classList.toggle('hidden', run);
+  if (runField) runField.classList.toggle('hidden', !run);
+  if (stakes) stakes.classList.toggle('hidden', run);
+  // Tournament owns its own rising structure, so a fixed blind choice is
+  // meaningless there — unchanged behaviour, just stated in one place now.
+  if (blindField) blindField.classList.toggle('hidden', settings.mode === 'tournament');
+  const label = $('opp-label');
+  if (label) label.textContent = run ? normalizeOpponentCount(settings.runOpponents) : settings.opponents;
+  const hint = $('type-hint');
+  if (hint) hint.textContent = MODE_COPY[settings.gameType] || '';
+  const runHint = $('run-size-hint');
+  if (runHint) runHint.textContent = RUN_SIZE_COPY;
+  updateSetupSummary();
+}
+
+/* The one dispatch between the two launch paths. Both already clear the
+   table save themselves; neither is modified by this consolidation. */
+function dealMeIn(){
+  if (settings.gameType === 'elimination'){
+    launchSinglePlayerFromMenu(normalizeOpponentCount(settings.runOpponents));
+    return;
+  }
+  startGame();
 }
 
 function startGame(){
@@ -315,65 +360,64 @@ function startGame(){
 let menuLaunchInFlight = false;
 
 function reconstructMainMenu(){
-  const home=$('home'), button=$('single-player');
+  const home=$('home'), button=$('open-career');
   menuLaunchInFlight=false;
-  closeOpponentPicker();
   if (home) home.classList.remove('menu-launching','menu-over-table','menu-clearing');
   if (button){ button.disabled=false; button.classList.remove('pc-launch-clunk'); }
-  refreshMenuPrimaryButton();
+  refreshCustomGameResume();
   refreshCareerMenuButton();
 }
 
-// Single primary slot: SINGLE PLAYER when there's nothing to resume, or
-// CONTINUE (same button, same cartridge animation) when a save exists —
-// avoids ever stacking two giant primary buttons on the menu.
-/* The main menu must advertise a paused event, since leaving the table no
-   longer forfeits it and the player needs to know it is still waiting. */
+/* Career is the FEATURED cartridge. Only the sub-line changes with state:
+   the menu must advertise a paused event, since leaving the table no longer
+   forfeits it and the player needs to know it is still waiting. */
 function refreshCareerMenuButton(){
   const btn = $('open-career');
   if (!btn) return;
   const active = careerHasActiveEvent();
-  btn.textContent = active ? 'Career \u00b7 Event in Progress' : 'Career';
+  const label = $('career-btn-label'), sub = $('career-btn-sub');
+  if (label) label.textContent = 'Career';
+  if (sub) sub.textContent = active ? 'Event in progress' : 'Build your bankroll';
   btn.classList.toggle('career-active', active);
 }
 
-function refreshMenuPrimaryButton(){
-  const hasResumable = !!loadTableSave();
-  const label = $('single-player-label'), sub = $('single-player-sub');
-  if (label) label.textContent = hasResumable ? 'Continue' : 'Single Player';
-  if (sub) sub.textContent = hasResumable ? 'Resume saved game' : 'Start elimination run';
-  const newGameBtn = $('new-game-btn');
-  if (newGameBtn) newGameBtn.classList.toggle('hidden', !hasResumable);
+/* A standalone table in progress is reached from Custom Game, not from the
+   menu: the featured slot belongs to Career now. This is what stops the
+   consolidation from stranding a saved run — the save itself is untouched,
+   only the door to it moved. */
+const GAME_TYPE_NAMES = { cash:'Cash game', tournament:'Tournament', elimination:'Elimination run' };
+function savedTableTypeName(save){
+  if (!save) return '';
+  if (save.mode === 'elimination') return GAME_TYPE_NAMES.elimination;
+  return save.mode === 'tournament' ? GAME_TYPE_NAMES.tournament : GAME_TYPE_NAMES.cash;
+}
+function refreshCustomGameResume(){
+  const panel = $('setup-resume');
+  if (!panel) return;
+  const save = loadTableSave();
+  panel.classList.toggle('hidden', !save);
+  if (!save) return;
+  const tag = $('setup-resume-tag');
+  if (tag) tag.textContent = savedTableTypeName(save);
+  const line = $('setup-resume-line');
+  if (line){
+    const seats = Array.isArray(save.players) ? save.players.length : 0;
+    const opponents = Math.max(0, seats - 1);
+    const parts = [];
+    if (opponents) parts.push(opponents + (opponents === 1 ? ' opponent' : ' opponents'));
+    if (save.mode === 'elimination' && save.run && Number.isFinite(save.run.tableNumber)){
+      parts.push('table ' + save.run.tableNumber);
+    }
+    if (Number.isFinite(save.handNumber) && save.handNumber > 0) parts.push('hand ' + save.handNumber);
+    line.textContent = parts.length ? parts.join(' \u00b7 ') : 'Saved between hands.';
+  }
 }
 
-/* ---- OPPONENTS 4/5/6 picker ----
-   Not a new setup screen: the existing control bay simply swaps its
-   contents for one labelled OPPONENTS panel plus a BACK control, using the
-   same pc-* physical primitives as the rest of the menu. Deliberately
-   non-destructive — nothing about the existing run is touched until a size
-   is actually chosen, so BACK out of it (even from NEW GAME) still leaves
-   a resumable save intact. */
-function openOpponentPicker(){
-  const bay=document.querySelector('#home .pc-control-bay');
-  const picker=$('opponent-picker');
-  if (!bay || !picker) { launchSinglePlayerFromMenu(); return; }
-  picker.classList.remove('hidden');
-  bay.classList.add('picking-opponents');
-  Sound.buttonPress('check');
-  haptic(12);
-}
-function closeOpponentPicker(){
-  const bay=document.querySelector('#home .pc-control-bay');
-  const picker=$('opponent-picker');
-  if (bay) bay.classList.remove('picking-opponents');
-  if (picker) picker.classList.add('hidden');
-}
-function cancelOpponentPicker(){
-  closeOpponentPicker();
-  refreshMenuPrimaryButton();
-  Sound.buttonRelease('fold');
-  haptic(10);
-}
+/* The 4/5/6 run-size step used to take over the menu's control bay. Table
+   size is now chosen in Custom Game alongside every other table option, so
+   the menu-resident picker is gone. The RUN ITSELF is unchanged: it is
+   still built by launchSinglePlayerFromMenu() below, through the same
+   normalizeOpponentCount() gate. */
 
 function stageInitialRunArrival(g){
   if (!g || game!==g) return Promise.resolve();
@@ -430,17 +474,16 @@ function prepareDeferredRunPresentation(g){
 async function launchSinglePlayerFromMenu(opponentCount){
   if (menuLaunchInFlight) return;
   const opponents=normalizeOpponentCount(opponentCount);
-  const home=$('home'), button=$('single-player');
-  if (!home || home.classList.contains('hidden')){ startSinglePlayerRun({opponentCount:opponents}); return; }
-  closeOpponentPicker();
+  const home=$('home'), button=$('open-career');
+  // A run is now started from Custom Game, which means the menu is already
+  // hidden and this takes the direct path. The cartridge sequence below is
+  // retained for any caller that still launches with the menu on screen.
+  if (!home || home.classList.contains('hidden') || !button){
+    startSinglePlayerRun({opponentCount:opponents});
+    return;
+  }
   menuLaunchInFlight=true;
   button.disabled=true;
-  // Optimistic: a fresh run is starting, so drop any stale CONTINUE label
-  // immediately rather than waiting on startSinglePlayerRun()'s clearTableSave().
-  const label=$('single-player-label'), sub=$('single-player-sub');
-  if (label) label.textContent='Single Player';
-  if (sub) sub.textContent='Start elimination run';
-  const newGameBtn=$('new-game-btn'); if (newGameBtn) newGameBtn.classList.add('hidden');
   home.classList.add('menu-launching');
   button.classList.add('pc-launch-clunk');
   Sound.buttonPress('allin');
@@ -673,16 +716,36 @@ function careerRosterStore(){
   return career.rosters;
 }
 
+/* The players actually sitting at the live Career table, read back out of
+   the table save. This is the last word on who is in an event that is
+   already under way — it is the real seat list, not an advertisement — and
+   it is what keeps a ticket truthful for an event entered before rosters
+   existed, whose career.active carries none. Reads only; writes nothing. */
+function careerSeatedRosterFromTable(event){
+  if (typeof loadCareerTable !== 'function') return null;
+  let save = null;
+  try{ save = loadCareerTable(); }catch(e){ return null; }
+  if (!save || !Array.isArray(save.players)) return null;
+  const seats = save.players
+    .filter(p=>p && !p.isHuman)
+    .map(p=>({ personalityKey:p.personalityKey, faceColorIdx:p.faceColorIdx }));
+  return normalizeCareerRoster(seats, event);
+}
+
 /* The authoritative field for an event. An event in progress answers with
-   the roster actually seated in it; anything else answers with the drawn
-   field, drawing one only if the book has none. Repeated calls — every
-   directory render, every tray open and close — return the SAME field. */
+   the roster actually seated in it — first from the active event, then
+   from the live table itself; anything else answers with the drawn field,
+   drawing one only if the book has none. Repeated calls — every directory
+   render, every tray open and close — return the SAME field. */
 function careerRosterFor(eventId){
   const event = careerEventById(eventId);
   if (!event) return null;
   if (career.active && career.active.eventId === eventId){
-    const seated = normalizeCareerRoster(career.active.roster, career.active.snapshot || event);
+    const snapshot = career.active.snapshot || event;
+    const seated = normalizeCareerRoster(career.active.roster, snapshot);
     if (seated) return seated;
+    const atTable = careerSeatedRosterFromTable(snapshot);
+    if (atTable) return atTable;
   }
   const store = careerRosterStore();
   const stored = normalizeCareerRoster(store[eventId], event);
@@ -1010,6 +1073,51 @@ const CAREER_ROOMS = Object.freeze([
   Object.freeze({ venue:'INVITATIONAL CHAMPIONSHIP', key:'invitational' })
 ]);
 
+/* Venue -> its room key and its PRESTIGE TIER. Prestige changes only the
+   paper stock and the finishing of the printed ticket: the information
+   layout, the terms and the readability are identical at every tier. A
+   grander venue is grander in MATERIAL, never in extra content.
+
+     basic    Back Room          cheap off-white stock, rough perforation,
+                                 plain ink, minimal border
+     standard Pub Circuit        cleaner stock, venue heading stripe,
+                                 stronger printed rule, admission stamp
+     premium  Card Club          heavier cream stock, double keyline,
+                                 pixel seal, cleaner perforation, serial
+     luxury   Casino and above   finest stock, restrained metallic accent,
+                                 fine double border, seal and serial
+   Derived from the venue alone, so it can never disagree with the room a
+   ticket was printed in. */
+const CAREER_VENUE_TIERS = Object.freeze({
+  'BACK ROOM':                 Object.freeze({ key:'backroom',     prestige:'basic'    }),
+  'PUB CIRCUIT':               Object.freeze({ key:'pub',          prestige:'standard' }),
+  'CARD CLUB':                 Object.freeze({ key:'cardclub',     prestige:'premium'  }),
+  'CASINO FLOOR':              Object.freeze({ key:'casino',       prestige:'luxury'   }),
+  'HIGH ROLLER ROOM':          Object.freeze({ key:'highroller',   prestige:'luxury'   }),
+  'INVITATIONAL CHAMPIONSHIP': Object.freeze({ key:'invitational', prestige:'luxury'   })
+});
+function careerVenueTier(venue){
+  return CAREER_VENUE_TIERS[venue] || { key:'backroom', prestige:'basic' };
+}
+
+/* A stable printed serial for the tiers that carry one. Derived from the
+   event id, so it is the same on every render and every reload — it is a
+   printed mark on a ticket, not a record of anything. */
+function careerTicketSerial(eventId){
+  let h = 0;
+  const id = String(eventId || '');
+  for (let i = 0; i < id.length; i++) h = (h * 31 + id.charCodeAt(i)) % 1000000;
+  return String(h).padStart(6, '0');
+}
+
+/* One short state word per event, for the drawer's status chip. It never
+   relies on colour alone — the word is the state. */
+const CAREER_STATUS_WORD = {
+  available:'OPEN', active:'ENTRY PAID', locked:'LOCKED',
+  unaffordable:'SHORT', blocked:'UNAVAILABLE'
+};
+function careerStatusWord(state){ return CAREER_STATUS_WORD[state] || 'CLOSED'; }
+
 /* Career's two live difficulties, stated in the machine's own words. */
 function careerThreatOf(event){
   return event && event.difficulty === 'hard' ? 'SERIOUS' : 'MODERATE';
@@ -1105,89 +1213,139 @@ function buildCareerBankroll(container, amount){
    changing it never touches career state. */
 let careerOpenEventId = null;
 
-/* The opened equipment tray, built only when a cassette is open, so no
-   opponent portrait exists in the document while it is closed. */
+/* PRINT ONCE, ON PURPOSE. The directory re-renders for a great many
+   reasons that are not the player opening an event — a palette change, a
+   save write, a DEV panel refresh, arriving back from Settings, a
+   settlement, a resize. None of those may replay the print sequence or
+   its sound. This flag is armed ONLY by the explicit tap that opens an
+   event, and renderCareerScreen() disarms it as it consumes it. */
+let careerPrintArmed = false;
+
+/* The opened equipment tray. Built only when a cassette is open, so no
+   opponent portrait exists in the document while it is closed.
+
+   The tray is a PRINTER: a slot opens beneath the event row and feeds a
+   printed ticket out of it. Extracted from the approved Ticket Lab
+   (ticket-lab.html) without reinterpretation — the Lab stays as the
+   reference. Ordinary HTML and CSS: no canvas, no SVG animation, no
+   paper simulation, no new artwork.
+
+   The paper carries, in this order:
+     1. venue and event name
+     2. status and table threat
+     3. prize and buy-in          <- the decision, high on the ticket
+     4. opponent roster
+     5. players, stack, format
+     6. eligibility or unlock requirement
+   and the physical controls are mounted BELOW the paper, never printed
+   on it. */
 function careerTrayHTML(event, state){
   const threat = careerThreatOf(event);
+  const tier = careerVenueTier(event.venue);
   const seats = Math.max(0, event.opponentCount | 0);
   const moods = threat === 'SERIOUS'
-    ? ['smug','sly','angry','gloating']
-    : ['idle','think','idle','think'];
+    ? ['smug','sly','angry','gloating','smug','sly']
+    : ['idle','think','idle','think','think','idle'];
+  const paid = state === 'active';
 
-  // THE ADVERTISED FIELD IS THE AUTHORITATIVE FIELD. These portraits are
-  // the roster this event will actually be dealt with — the same
-  // personality keys and face colours newGame() seats at launch. It is
-  // read, never drawn here, so opening and closing the tray cannot change
-  // who is shown. The fallback exists only for the case where the opponent
-  // systems are unavailable and no field could be drawn at all.
+  // THE ADVERTISED FIELD IS THE AUTHORITATIVE FIELD. These portraits and
+  // the canonical personality printed under each are the roster this
+  // event will actually be dealt with — read, never drawn here, so
+  // opening and closing the tray cannot change who is shown.
   const roster = careerRosterFor(event.id);
   let faces = '';
   for (let i = 0; i < seats; i++){
-    const seat = roster && roster[i]
-      ? { faceColorIdx:roster[i].faceColorIdx }
+    const entry = roster && roster[i] ? roster[i] : null;
+    const seat = entry
+      ? { faceColorIdx:entry.faceColorIdx }
       : { faceColorIdx:(i * 3 + event.playerCount) % FACE_COLORS.length };
-    faces += '<span class="cdir-hf">' + renderFace(seat, moods[i % moods.length]) + '</span>';
+    const name = entry ? careerSeatName(entry) : '';
+    faces += '<span class="cdir-seat">' +
+      '<span class="cdir-hf">' + renderFace(seat, moods[i % moods.length]) + '</span>' +
+      '<span class="cdir-seat-name">' + esc(name || '\u2014') + '</span></span>';
   }
 
-  // ONE recessed information strip with internal dividers, rather than
-  // four separately framed miniature cabinets inside another cabinet.
-  const terms = [
-    ['Entry',   event.buyIn === 0 ? 'FREE' : '$' + event.buyIn.toLocaleString()],
+  const facts = [
     ['Players', String(event.playerCount)],
     ['Stack',   event.stack.toLocaleString()],
     ['Format',  String(event.format).toUpperCase()]
   ].map(pair=>
-    '<div class="cdir-cell"><span class="pc-label">' + esc(pair[0]) + '</span>' +
-    '<span class="cdir-cell-value">' + esc(pair[1]) + '</span></div>').join('');
+    '<span class="cdir-tk-fact"><span>' + esc(pair[0]) + '</span><b>' +
+    esc(pair[1]) + '</b></span>').join('');
 
-  let action;
+  const serial = (tier.prestige === 'premium' || tier.prestige === 'luxury')
+    ? '<span class="cdir-tk-serial">NO. ' + careerTicketSerial(event.id) + '</span>' : '';
+  const seal = (tier.prestige === 'premium' || tier.prestige === 'luxury')
+    ? '<span class="cdir-tk-seal" aria-hidden="true"></span>' : '';
+
+  const paper =
+    '<div class="cdir-paper" data-prestige="' + tier.prestige + '">' +
+      '<div class="cdir-perf" aria-hidden="true"></div>' +
+      '<div class="cdir-paperbody">' +
+        (paid ? '<span class="cdir-tk-punch" aria-hidden="true"></span>' : '') +
+        /* 1. Venue and event name. */
+        '<div class="cdir-tk-venue cdir-tk-venue-' + tier.key + '">' + esc(event.venue) + '</div>' +
+        '<h3 class="cdir-tk-name">' + esc(careerEventTitle(event)) + '</h3>' +
+        '<div class="cdir-tk-ref">' + esc(event.name) + '</div>' +
+        /* 2. Status and table threat. One stamp only. */
+        '<div class="cdir-tk-stampline">' +
+          '<span class="cdir-tk-stamp is-' + state + '">' + esc(careerStatusWord(state)) + '</span>' +
+          '<span class="cdir-tk-threat"><b>TABLE</b>' + threat + '</span>' +
+        '</div>' +
+        '<div class="cdir-tk-rule" aria-hidden="true"></div>' +
+        /* 3. Prize and buy-in. Payout is the largest financial value. */
+        '<div class="cdir-tk-money">' +
+          '<div class="cdir-tk-payout"><span>Payout</span><b>' +
+            esc(careerPayoutSummary(event)) + '</b></div>' +
+          '<div class="cdir-tk-entry"><span>Entry</span><b>' +
+            esc(event.buyIn === 0 ? 'FREE' : '$' + event.buyIn.toLocaleString()) + '</b></div>' +
+        '</div>' +
+        '<div class="cdir-tk-rule" aria-hidden="true"></div>' +
+        /* 4. Opponent roster, left aligned. */
+        '<div class="cdir-tk-rosterhead">Your table</div>' +
+        '<div class="cdir-faces">' + faces + '</div>' +
+        '<div class="cdir-tk-rule" aria-hidden="true"></div>' +
+        /* 5. Players, stack, format. */
+        '<div class="cdir-tk-facts">' + facts + '</div>' +
+        /* 6. Eligibility or unlock requirement. */
+        '<p class="cdir-tk-note' + (state === 'locked' || state === 'unaffordable' ? ' is-requirement' : '') + '">' +
+          esc(careerRequirementText(event, state)) + '</p>' +
+        '<div class="cdir-tk-footer">' + seal +
+          '<span class="cdir-tk-footmark">TICKET ' + esc(event.id.toUpperCase()) + '</span>' +
+          serial + '</div>' +
+      '</div>' +
+    '</div>';
+
+  /* 7. The controls are MACHINE, mounted on the printer housing below the
+     paper. A locked or otherwise unenterable event gets a shallow quiet
+     status strip instead of an enormous dead key dominating the ticket —
+     its requirement is already printed prominently on the paper above. */
+  let controls;
   if (state === 'active'){
-    action = '<button type="button" class="cdir-primary" data-career-continue="' + esc(event.id) + '">' +
-      '<span class="pc-lamp is-amber"></span><span class="cdir-legend-wrap">' +
-      '<span class="cdir-legend">Continue</span><small>' + esc(careerEventTitle(event)) + '</small></span>' +
-      '<span class="pc-lamp is-amber"></span></button>';
+    controls = '<div class="cdir-cradle">' +
+      '<button type="button" class="cdir-primary" data-career-continue="' + esc(event.id) + '">' +
+        '<span class="pc-lamp is-amber"></span><span class="cdir-legend-wrap">' +
+        '<span class="cdir-legend">Continue</span><small>' + esc(careerEventTitle(event)) + '</small></span>' +
+        '<span class="pc-lamp is-amber"></span></button></div>' +
+      '<button type="button" class="cdir-abandon" data-career-abandon="' + esc(event.id) + '">Abandon Event</button>';
   } else if (state === 'available'){
-    action = '<button type="button" class="cdir-primary" data-career-enter="' + esc(event.id) + '">' +
-      '<span class="pc-lamp is-amber"></span><span class="cdir-legend-wrap">' +
-      '<span class="cdir-legend">Take Seat</span></span>' +
-      '<span class="pc-lamp is-amber"></span></button>';
+    controls = '<div class="cdir-cradle">' +
+      '<button type="button" class="cdir-primary" data-career-enter="' + esc(event.id) + '">' +
+        '<span class="pc-lamp is-amber"></span><span class="cdir-legend-wrap">' +
+        '<span class="cdir-legend">Take Seat</span></span>' +
+        '<span class="pc-lamp is-amber"></span></button></div>';
   } else {
-    const legend = state === 'unaffordable'
-      ? 'Need $' + (event.buyIn - careerBankroll()).toLocaleString() + ' More'
-      : state === 'blocked' ? 'Event Active' : 'Locked';
-    // A shortfall legend is the longest label the face ever carries, and it
-    // grows with the figure. It steps down one size so it can never overrun
-    // the button, while TAKE SEAT and CONTINUE keep their approved size.
-    const longLegend = legend.length > 10 ? ' is-long' : '';
-    action = '<button type="button" class="cdir-primary is-disabled" disabled>' +
-      '<span class="pc-lamp"></span><span class="cdir-legend-wrap">' +
-      '<span class="cdir-legend' + longLegend + '">' + esc(legend) + '</span></span>' +
-      '<span class="pc-lamp"></span></button>';
+    const word = state === 'unaffordable' ? 'Bankroll short'
+      : state === 'blocked' ? 'Finish your active event first' : 'Locked';
+    controls = '<div class="cdir-locked-strip"><span class="pc-lamp"></span>' +
+      '<span>' + esc(word) + '</span></div>';
   }
 
-  const abandon = state === 'active'
-    ? '<button type="button" class="cdir-abandon" data-career-abandon="' + esc(event.id) + '">Abandon Event</button>'
-    : '';
-
-  // The tray's own housing is the ONE frame here. Inside it the hierarchy
-  // is carried by spacing, a printed label rail, recessed surfaces and
-  // dividers — the portraits, the payout window and the action key are the
-  // only pieces that keep a frame of their own.
   return '<div class="cdir-tray"><div class="cdir-tray-inner">' +
-    '<div class="cdir-roster">' +
-      '<div class="cdir-rail"><span class="pc-label">Table</span>' +
-        '<span class="cdir-threat is-' + threat.toLowerCase() + '">' + threat +
-        (threat === 'SERIOUS' ? '<span class="cdir-threat-mark"></span>' : '') + '</span></div>' +
-      '<div class="cdir-faces">' + faces + '</div></div>' +
-    '<div class="cdir-strip cdir-crt">' + terms + '</div>' +
-    '<div class="cdir-payout">' +
-      '<span class="pc-label">Payout</span>' +
-      '<span class="cdir-payout-well cdir-crt"><span class="cdir-payout-value">' +
-      esc(careerPayoutSummary(event)) + '</span></span></div>' +
-    '<p class="cdir-note">' + esc(careerRequirementText(event, state)) + '</p>' +
-    '<div class="cdir-actions">' +
-      '<div class="cdir-cradle">' + action + '</div>' + abandon +
-    '</div></div></div>';
+    '<div class="cdir-slot" aria-hidden="true"><i></i></div>' +
+    '<div class="cdir-feed">' + paper + '</div>' +
+    '<div class="cdir-mount">' + controls + '</div>' +
+  '</div></div>';
 }
 
 /* One closed cassette: the real event name printed on its face, the real
@@ -1256,7 +1414,14 @@ function renderCareerScreen(){
       button.onclick = ()=>{
         const id = button.dataset.careerToggle;
         // Presentation only: no save, no debit, no unlock, no table state.
-        careerOpenEventId = (careerOpenEventId === id) ? null : id;
+        const opening = careerOpenEventId !== id;
+        careerOpenEventId = opening ? id : null;
+        // The ONE place the printer is armed: a real tap that opens an
+        // event. Closing one does not print, and neither does anything
+        // else that re-renders this board. Sound.unlock() has to happen
+        // inside the gesture for iOS to allow audio at all.
+        careerPrintArmed = opening;
+        if (opening) Sound.unlock();
         renderCareerScreen();
       };
     });
@@ -1270,15 +1435,27 @@ function renderCareerScreen(){
       button.onclick = ()=>careerAbandonPressed(button.dataset.careerAbandon);
     });
 
-    // The tray's REAL height extends in three discrete mechanical beats, so
-    // every later cassette and room is genuinely pushed down the directory
-    // rather than overlaid. Reduced motion settles straight to the height.
+    // The tray's REAL height extends in discrete mechanical beats, so every
+    // later cassette and room is genuinely pushed down the directory
+    // rather than overlaid.
     const tray = typeof board.querySelector === 'function'
       ? board.querySelector('.cdir-hatch.is-open .cdir-tray') : null;
+    const printing = careerPrintArmed;
+    careerPrintArmed = false;           // consumed, whatever happens next
     if (tray){
       const inner = tray.firstElementChild;
-      if (motionOff()){
+      const paper = tray.querySelector('.cdir-paper');
+      const slot = tray.querySelector('.cdir-slot');
+      // Reduced motion reveals the ticket immediately, with no travel at
+      // all. A re-render that is not a fresh opening lands here too: the
+      // ticket is simply present, exactly as it already was.
+      if (motionOff() || !printing){
         tray.style.height = 'auto';
+        if (slot) slot.classList.add('is-open');
+        if (paper) paper.classList.add('is-settled');
+        // Sound is independent of the motion preference: a player who has
+        // turned motion off has not turned sound off.
+        if (printing) Sound.ticketPrint();
       } else {
         const target = inner.getBoundingClientRect().height;
         tray.style.height = '0px';
@@ -1290,6 +1467,19 @@ function renderCareerScreen(){
           tray.style.height = 'auto';
           tray.removeEventListener('transitionend', settle);
         });
+        // 1. the mechanism engages and the slot opens, 2-5. the paper
+        // feeds down, overshoots and settles. Both are CSS; this only
+        // starts them and marks the rest state when they finish.
+        if (slot) slot.classList.add('is-open');
+        if (paper){
+          paper.classList.add('is-printing');
+          paper.addEventListener('animationend', function done(){
+            paper.classList.remove('is-printing');
+            paper.classList.add('is-settled');
+            paper.removeEventListener('animationend', done);
+          });
+        }
+        Sound.ticketPrint();
       }
     }
   }

@@ -720,15 +720,14 @@ function wireUI(){
 
   // lobby selections
   setSegment('diff-seg','diff',settings.difficulty);
-  setSegment('mode-seg','mode',settings.mode);
+  setSegment('type-seg','type',settings.gameType);
+  setSegment('run-size-seg','runOpponents',normalizeOpponentCount(settings.runOpponents));
   setSegment('stack-seg','stack',settings.stack);
   setSegment('blind-seg','blind',settings.blindLevel);
   $('diff-hint').textContent = DIFF_COPY[settings.difficulty];
-  $('mode-hint').textContent = MODE_COPY[settings.mode];
   $('opp-count').textContent = settings.opponents;
-  $('opp-label').textContent = settings.opponents;
   $('stack-label').textContent = settings.stack.toLocaleString();
-  $('blind-field').classList.toggle('hidden', settings.mode==='tournament');
+  applyGameTypeToSetup();
 
   $('opp-minus').onclick = ()=>{ settings.opponents = Math.max(1, settings.opponents-1); syncOpp(); };
   $('opp-plus').onclick  = ()=>{ settings.opponents = Math.min(8, settings.opponents+1); syncOpp(); };
@@ -739,17 +738,31 @@ function wireUI(){
     $('opp-plus').disabled = settings.opponents>=8;
     saveSettings(); updateSetupSummary();
   }
+  document.querySelectorAll('#run-size-seg button').forEach(b=>{
+    b.onclick = ()=>{
+      // Stored separately from settings.opponents, so choosing a run size
+      // never rewrites the cash/tournament table size and vice versa.
+      settings.runOpponents = normalizeOpponentCount(b.dataset.runOpponents);
+      setSegment('run-size-seg','runOpponents',settings.runOpponents);
+      saveSettings(); applyGameTypeToSetup();
+    };
+  });
   syncOpp();
 
   document.querySelectorAll('#diff-seg button').forEach(b=>b.onclick=()=>{
     settings.difficulty = b.dataset.diff; setSegment('diff-seg','diff',settings.difficulty);
     $('diff-hint').textContent = DIFF_COPY[settings.difficulty]; saveSettings(); updateSetupSummary();
   });
-  document.querySelectorAll('#mode-seg button').forEach(b=>b.onclick=()=>{
-    settings.mode = b.dataset.mode; setSegment('mode-seg','mode',settings.mode);
-    $('mode-hint').textContent = MODE_COPY[settings.mode];
-    $('blind-field').classList.toggle('hidden', settings.mode==='tournament');
-    saveSettings(); updateSetupSummary();
+  document.querySelectorAll('#type-seg button').forEach(b=>b.onclick=()=>{
+    settings.gameType = b.dataset.type;
+    // settings.mode stays a value newGame() can build. Elimination is
+    // dispatched by gameType alone (see dealMeIn), so an existing caller
+    // like Quick Deal can never be handed a mode it cannot start.
+    if (settings.gameType === 'cash' || settings.gameType === 'tournament'){
+      settings.mode = settings.gameType;
+    }
+    setSegment('type-seg','type',settings.gameType);
+    saveSettings(); applyGameTypeToSetup();
   });
   document.querySelectorAll('#stack-seg button').forEach(b=>b.onclick=()=>{
     settings.stack = parseInt(b.dataset.stack,10); setSegment('stack-seg','stack',settings.stack);
@@ -760,18 +773,11 @@ function wireUI(){
   });
 
   updateSetupSummary();
-  $('deal-me-in').onclick = startGame;
-  // CONTINUE resumes straight into the saved run at its own table size —
-  // no picker, no size question. Only a genuinely NEW run goes through the
-  // OPPONENTS step, and NEW GAME still shows the progress-loss warning
-  // first (the save isn't actually discarded until a size is chosen, so
-  // backing out of the picker leaves the run intact).
-  $('single-player').onclick = ()=>{ if (loadTableSave()) continueTable(); else openOpponentPicker(); };
-  $('new-game-btn').onclick = ()=>withNewTableConfirm(openOpponentPicker);
-  document.querySelectorAll('#opp-choice-row .opp-choice').forEach(b=>{
-    b.onclick = ()=>launchSinglePlayerFromMenu(parseInt(b.dataset.opponents,10));
-  });
-  $('opp-picker-back').onclick = cancelOpponentPicker;
+  // DEAL ME IN discards a saved table, so it keeps the existing warning.
+  // CONTINUE TABLE resumes the save exactly as the old menu button did —
+  // same continueTable(), same save, at its own size and game type.
+  $('deal-me-in').onclick = ()=>withNewTableConfirm(dealMeIn);
+  $('setup-continue').onclick = ()=>{ if (loadTableSave()) continueTable(); };
   $('quick-play').onclick = ()=>withNewTableConfirm(startGame);
   $('open-career').onclick = ()=>{ showCareerScreen(); };
   $('career-back').onclick = ()=>{
@@ -792,7 +798,14 @@ function wireUI(){
   $('open-awards').onclick = ()=>{ buildAwardsGlossary(); $('home').classList.add('hidden'); $('awards').classList.remove('hidden'); };
   $('awards-back').onclick = ()=>{ $('awards').classList.add('hidden'); $('home').classList.remove('hidden'); reconstructMainMenu(); };
   $('home-settings').onclick = ()=>openOverlay('settings');
-  $('go-to-setup').onclick = ()=>withNewTableConfirm(()=>{ $('home').classList.add('hidden'); $('setup').classList.remove('hidden'); });
+  // No confirm here any more: Custom Game now SHOWS the saved table and
+  // offers to continue it, so opening the screen must not threaten it.
+  $('go-to-setup').onclick = ()=>{
+    refreshCustomGameResume();
+    applyGameTypeToSetup();
+    $('home').classList.add('hidden');
+    $('setup').classList.remove('hidden');
+  };
   $('setup-back').onclick = ()=>{ $('setup').classList.add('hidden'); $('home').classList.remove('hidden'); reconstructMainMenu(); };
   $('confirm-newtable-yes').onclick = ()=>{
     const action = pendingNewTableAction;

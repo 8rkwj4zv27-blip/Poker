@@ -1004,18 +1004,10 @@
   -webkit-overflow-scrolling:touch;
 }
 
-/* Every recessed glass surface in the house machine: near-black, inner
-   bezel, subtle scanlines, restrained bloom on its text. Reserved for
-   information that CHANGES — payouts, readouts. A fixed printed figure
-   (an entry price, a room name) is ink on a physical part instead. */
-.cdir-crt{
-  background:
-    repeating-linear-gradient(180deg,transparent 0 2px,rgba(0,0,0,.34) 2px 3px),
-    var(--h-glass);
-  border:2px solid var(--h-edge);
-  box-shadow:inset 0 4px 0 rgba(0,0,0,.72), inset 3px 0 0 rgba(0,0,0,.44),
-             inset -3px 0 0 rgba(0,0,0,.34), 0 1px 0 rgba(255,255,255,.07);
-}
+/* The directory's changing information now lives on the printed ticket
+   rather than on recessed glass, so the shared .cdir-crt surface that the
+   old dark drawer used is gone with it. The venue housings, plaques and
+   machine keys below are unchanged. */
 
 /* ---- VENUE SECTIONS ----------------------------------------
    One venue = one broad horizontal housing carrying its own authored
@@ -1218,96 +1210,271 @@
    overlays, scales from zero or eases smoothly. */
 .cdir-tray{ overflow:hidden; }
 .cdir-tray.is-extending{ transition:height 300ms steps(3, end); }
-/* The tray's housing is the ONE frame inside a venue body. Everything it
-   contains is separated by spacing, a printed rail, recessed surface and
-   dividers instead of further rectangles. */
+/* The tray's housing is the PRINTER: a dark recess the slot is cut into,
+   the paper feeds out of, and the keys are mounted on. Its children are
+   fixed physical parts and must never be squeezed — without flex:0 0 auto
+   the key below the paper shrinks out of its own cradle. */
 .cdir-tray-inner{
   padding:9px; display:flex; flex-direction:column; gap:9px;
   background:var(--h-recess); border:3px solid var(--h-edge); border-top-width:0;
   box-shadow:inset 0 5px 0 var(--h-recess-deep), inset 3px 0 0 rgba(0,0,0,.4);
 }
+.cdir-tray-inner > *{ flex:0 0 auto; }
 
 
-/* ---- 5. OPEN TRAY — ROSTER, INFORMATION, ACTION ------------ */
+/* ---- 5. OPEN TRAY — THE PRINTED TICKET --------------------
+   Extracted from the approved Ticket Lab without reinterpretation. The
+   printer housing and its keys are HOUSE parts, like every other control
+   in this directory, so they keep the fixed --h-* values and do NOT
+   follow the machine palette (see the theme boundary at the top of the
+   house block — a committed check enforces it). The PAPER is neutral by
+   construction: its own literals, unchanged in every palette. Only the
+   venue heading carries a venue's authored identity.
+   ------------------------------------------------------------ */
 
-/* The people you are about to sit down with, on the tray's own recessed
-   surface. No extra cabinet around them — the portraits are the objects. */
-.cdir-roster{ display:flex; flex-direction:column; gap:7px; }
-/* A printed label rail: the section name at one end, the threat readout
-   at the other, divided by a hairline rather than boxed. */
-.cdir-rail{
-  display:flex; align-items:center; justify-content:space-between; gap:8px;
-  padding-bottom:5px; border-bottom:1px solid rgba(255,255,255,.09);
+/* 1. A narrow physical slot opens beneath the event row. */
+.cdir-slot{
+  height:0; overflow:hidden; opacity:0;
+  background:#0B0D0A; border:3px solid #070504; border-bottom-width:0;
+  box-shadow:inset 0 5px 0 #020302, inset 4px 0 0 rgba(0,0,0,.55), inset -4px 0 0 rgba(0,0,0,.45);
+  transition:height 140ms steps(3,end), opacity 100ms linear;
 }
-.cdir-rail .pc-label{ color:var(--h-ink-dim); line-height:1; }
-/* Threat: a concise instrument reading, not a framed object. */
-.cdir-threat{
-  display:inline-flex; align-items:center; gap:6px;
-  font-family:var(--font-hdr); font-size:8px; line-height:1; letter-spacing:.1em;
-  color:var(--h-glass-ink); text-shadow:0 0 5px color-mix(in srgb,currentColor 34%,transparent);
+.cdir-slot.is-open{ height:13px; opacity:1; }
+.cdir-slot > i{
+  display:block; height:3px; margin:4px 7px 0;
+  background:repeating-linear-gradient(90deg,#3A3B30 0 5px,#15160F 5px 9px);
 }
-.cdir-threat.is-serious{ color:var(--h-danger); }
-/* One restrained coral marker. It does not blink. */
-.cdir-threat-mark{
-  width:9px; height:9px; border:2px solid var(--h-edge); background:var(--h-danger);
-  box-shadow:0 2px 0 #100807, inset 1px 1px 0 rgba(255,255,255,.3);
+/* The feed clips the paper while it is still inside the machine. The
+   bottom padding is what lets the overshoot show without the paper or
+   its hard shadow being cropped. */
+.cdir-feed{ overflow:hidden; padding-bottom:15px; }
+
+/* ---- THE PAPER — neutral in every palette, on purpose ---- */
+.cdir-paper{
+  --tk-paper:#E8E1CE;
+  --tk-ink:#22211C;
+  --tk-ink-dim:#6E6857;
+  --tk-line:rgba(34,33,28,.34);
+  position:relative; transform:translateY(-101%);
+  filter:drop-shadow(0 5px 0 rgba(0,0,0,.55));
+}
+.cdir-paper.is-settled{ transform:translateY(0); }
+/* 3-5. One short stepped feed, slightly past the resting point, then a
+   short mechanical stop. Stepped, never eased, never looping. */
+@keyframes cdirTicketPrint{
+  0%   { transform:translateY(-101%); }
+  62%  { transform:translateY(9px); }
+  78%  { transform:translateY(9px); }
+  90%  { transform:translateY(-3px); }
+  100% { transform:translateY(0); }
+}
+.cdir-paper.is-printing{ animation:cdirTicketPrint 520ms steps(11,end) both; }
+
+/* A chunky square-toothed perforation. Pixel-art, not photographic. */
+.cdir-perf{
+  height:6px;
+  background:repeating-linear-gradient(90deg, var(--tk-paper) 0 7px, transparent 7px 14px);
+}
+.cdir-paperbody{
+  position:relative; padding:13px 14px 14px;
+  background:
+    repeating-linear-gradient(180deg, rgba(0,0,0,.035) 0 1px, transparent 1px 4px),
+    var(--tk-paper);
+  color:var(--tk-ink);
+  clip-path:polygon(0 0, 100% 0, 100% calc(100% - 14px), calc(100% - 14px) 100%, 0 100%);
+}
+/* Only on a ticket whose entry is already paid. */
+.cdir-tk-punch{
+  position:absolute; top:12px; right:14px; width:15px; height:15px; border-radius:50%;
+  background:#191A16; box-shadow:inset 0 2px 0 rgba(0,0,0,.7), 0 1px 0 rgba(255,255,255,.5);
+}
+
+/* 1. Venue and event name. */
+.cdir-tk-venue{
+  display:inline-block; padding:4px 9px; margin-bottom:8px;
+  font-family:var(--font-hdr); font-size:7px; letter-spacing:.14em; text-shadow:none;
+}
+.cdir-tk-venue-backroom{ background:#2E4034; color:#B9C9AE; }
+.cdir-tk-venue-pub{ background:#4A3521; color:#E0B15F; }
+.cdir-tk-venue-cardclub{ background:#4A2029; color:#EDE0C2; }
+.cdir-tk-venue-casino{ background:#15151A; color:#E4C77E; }
+.cdir-tk-venue-highroller{ background:#1E1E1E; color:#CFC6AC; }
+.cdir-tk-venue-invitational{ background:#2A0E17; color:#EBC77A; }
+.cdir-tk-name{
+  margin:0; font-family:var(--font-hdr); font-size:20px; font-weight:400;
+  line-height:1; letter-spacing:.06em; color:var(--tk-ink); text-shadow:none;
+}
+.cdir-tk-ref{
+  margin-top:5px; font-family:var(--font-hdr); font-size:6.5px;
+  letter-spacing:.1em; color:var(--tk-ink-dim); text-shadow:none;
+}
+
+/* 2. Status and threat. ONE prominent stamp, and the WORD carries the
+   state — never the colour alone. */
+.cdir-tk-stampline{
+  margin-top:11px; display:flex; align-items:center; justify-content:space-between; gap:10px;
+}
+.cdir-tk-stamp{
+  transform:rotate(-4deg); padding:5px 10px;
+  font-family:var(--font-hdr); font-size:11px; letter-spacing:.1em; text-shadow:none;
+  border:3px solid currentColor; border-radius:3px; white-space:nowrap;
+}
+.cdir-tk-stamp.is-available{ color:#2F6B3D; }
+.cdir-tk-stamp.is-active{ color:#8A5A0B; }
+.cdir-tk-stamp.is-locked,
+.cdir-tk-stamp.is-blocked{ color:#8C8578; }
+.cdir-tk-stamp.is-unaffordable{ color:#9A4038; }
+.cdir-tk-threat{
+  display:flex; flex-direction:column; align-items:flex-end; gap:4px; text-align:right;
+  font-family:var(--font-hdr); font-size:9px; line-height:1; letter-spacing:.06em;
+  color:var(--tk-ink); text-shadow:none;
+}
+.cdir-tk-threat b{ font-size:5.5px; font-weight:400; line-height:1; letter-spacing:.14em; color:var(--tk-ink-dim); }
+
+.cdir-tk-rule{ height:0; margin:12px 0; border-top:2px dashed var(--tk-line); }
+
+/* 3. Prize and buy-in. Payout is the largest financial value printed. */
+.cdir-tk-money{ display:flex; flex-direction:column; gap:10px; }
+.cdir-tk-payout{ padding:9px 11px 10px; background:rgba(34,33,28,.07); border:2px solid rgba(34,33,28,.5); }
+.cdir-tk-payout > span,
+.cdir-tk-entry > span{
+  display:block; margin-bottom:4px; font-family:var(--font-hdr); font-size:5.5px;
+  letter-spacing:.14em; text-transform:uppercase; color:var(--tk-ink-dim); text-shadow:none;
+}
+.cdir-tk-payout > b{
+  display:block; font-family:var(--font-hdr); font-size:17px; font-weight:400;
+  line-height:1.2; letter-spacing:.02em; color:var(--tk-ink); text-shadow:none;
+  overflow-wrap:anywhere;
+}
+.cdir-tk-entry > b{
+  display:block; font-family:var(--font-hdr); font-size:12px; font-weight:400;
+  line-height:1.15; letter-spacing:.02em; color:var(--tk-ink); text-shadow:none;
+}
+
+/* 4. The roster. LEFT ALIGNED with fixed gaps: never space-around,
+   space-evenly or any centred distribution, so two faces sit at the left
+   margin rather than floating in equal gaps — and an incomplete final row
+   begins at the left like every other row. */
+.cdir-tk-rosterhead{
+  margin-bottom:7px; font-family:var(--font-hdr); font-size:5.5px;
+  letter-spacing:.14em; text-transform:uppercase; color:var(--tk-ink-dim); text-shadow:none;
 }
 .cdir-faces{
-  display:grid; grid-auto-flow:column; grid-auto-columns:minmax(0,1fr);
-  gap:7px; width:100%; min-width:0;
+  display:flex; flex-wrap:wrap; justify-content:flex-start; align-items:flex-start;
+  gap:9px 8px; width:100%; min-width:0;
+}
+/* The seat is wider than its portrait so the LONGEST canonical name
+   ("Wildcard") sits on one line. Widening the seat rather than shrinking
+   the face keeps portrait dimensions stable at every field size. */
+.cdir-seat{
+  flex:0 0 66px; width:66px; min-width:0;
+  display:flex; flex-direction:column; align-items:center; gap:5px;
 }
 .cdir-hf{
-  width:100%; height:auto; min-width:0; max-width:62px; justify-self:center;
-  aspect-ratio:1; overflow:hidden;
+  width:56px; height:56px; overflow:hidden;
   display:flex; align-items:center; justify-content:center;
-  background:#13281C; border:3px solid #090806; border-radius:3px;
-  box-shadow:0 3px 0 #100705, inset 0 3px 0 rgba(255,255,255,.1);
+  background:#D6CDB4; border:2px solid #22211C;
+  box-shadow:0 2px 0 rgba(34,33,28,.5);
 }
 .cdir-hf .face{ width:100%; height:100%; margin:0; }
-
-/* ONE recessed information strip. Entry / players / stack / format share
-   a single surface and are separated by internal dividers — four framed
-   miniature cabinets inside another cabinet became one panel. */
-.cdir-strip{ display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); }
-.cdir-cell{
-  min-width:0; padding:6px 3px 7px;
-  display:flex; flex-direction:column; align-items:center; gap:4px;
-}
-.cdir-cell + .cdir-cell{ box-shadow:inset 1px 0 0 rgba(159,211,168,.16); }
-.cdir-cell .pc-label{
-  font-size:5.5px; line-height:1; letter-spacing:.04em; text-align:center;
-  color:var(--h-ink-dim); text-shadow:none;
-}
-.cdir-cell-value{
-  font-family:var(--font-hdr); font-size:6px; line-height:1; letter-spacing:0;
-  white-space:nowrap; color:var(--h-glass-ink);
-  text-shadow:0 0 5px color-mix(in srgb,currentColor 32%,transparent);
+/* The name wraps rather than truncating: a clipped "Wildca..." is not a
+   readable name, and every personality in the catalogue has to survive the
+   widest field the ticket can print. */
+.cdir-seat-name{
+  max-width:100%; font-family:var(--font-hdr); font-size:6.5px; line-height:1.25;
+  letter-spacing:.02em; text-align:center; color:var(--tk-ink); text-shadow:none;
+  overflow-wrap:anywhere; hyphens:none;
 }
 
-/* Payout stays visually important and keeps the warm-gold semantic role:
-   a printed label above its own money window. */
-.cdir-payout{ display:flex; flex-direction:column; gap:4px; }
-.cdir-payout .pc-label{ color:var(--h-ink-dim); line-height:1; text-shadow:none; }
-.cdir-payout-well{
-  min-height:24px; padding:6px 8px 5px;
-  display:flex; align-items:center; justify-content:center;
+/* 5. Players, stack and format — true, needed and deliberately quiet.
+   Not a dense row of tiny technical labels: three terms, generous gaps. */
+.cdir-tk-facts{ display:flex; flex-wrap:wrap; align-items:baseline; gap:7px 18px; }
+.cdir-tk-fact{ display:inline-flex; align-items:baseline; gap:6px; min-width:0; }
+.cdir-tk-fact > span{
+  font-family:var(--font-hdr); font-size:5.5px; letter-spacing:.14em;
+  text-transform:uppercase; color:var(--tk-ink-dim); text-shadow:none;
 }
-.cdir-payout-value{
-  font-family:var(--font-hdr); font-size:8px; line-height:1; letter-spacing:.03em;
-  white-space:nowrap; color:var(--h-money);
-  text-shadow:0 0 6px color-mix(in srgb,currentColor 34%,transparent);
-}
-
-/* Availability, printed straight onto the tray. */
-.cdir-note{
-  margin:0; font-family:var(--font-hdr); font-size:6px; line-height:1.35;
-  letter-spacing:.04em; color:var(--h-ink-dim); text-shadow:none;
+.cdir-tk-fact > b{
+  font-family:var(--font-hdr); font-size:10px; font-weight:400; line-height:1;
+  letter-spacing:.03em; color:var(--tk-ink); text-shadow:none; white-space:nowrap;
 }
 
-/* Primary action: ONE strong physical housing. The key is the framed
-   object; the cradle beneath it is a recessed seat, not a second frame
-   competing with it. */
-.cdir-actions{ flex:0 0 auto; }
+/* 6. Eligibility, or the unlock requirement — which is printed
+   PROMINENTLY, because on a locked ticket it is the only thing the
+   player can act on. */
+.cdir-tk-note{
+  margin:12px 0 0; font-family:var(--font-hdr); font-size:7px; line-height:1.5;
+  letter-spacing:.04em; color:#4A473C; text-shadow:none;
+}
+.cdir-tk-note.is-requirement{
+  padding:8px 10px; font-size:8.5px; line-height:1.45; color:var(--tk-ink);
+  background:rgba(34,33,28,.06); border-left:4px solid rgba(34,33,28,.55);
+}
+.cdir-tk-footer{
+  margin-top:13px; padding-top:9px; border-top:2px dashed rgba(34,33,28,.28);
+  display:flex; align-items:center; gap:8px;
+  font-family:var(--font-hdr); font-size:5px; letter-spacing:.12em;
+  color:var(--tk-ink-dim); text-shadow:none;
+}
+.cdir-tk-footmark{ flex:1 1 auto; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.cdir-tk-serial{ flex:0 0 auto; }
+/* A restrained pixel seal — squares, no gradient, no gloss. */
+.cdir-tk-seal{
+  flex:0 0 auto; width:14px; height:14px;
+  background:
+    repeating-conic-gradient(var(--tk-ink) 0 25%, transparent 0 50%) 0 0/4px 4px,
+    rgba(34,33,28,.16);
+  border:2px solid var(--tk-ink);
+}
+
+/* ============================================================
+   PRESTIGE. Paper stock and finishing ONLY. Every tier carries exactly
+   the same terms, in the same places, at the same size.
+   ============================================================ */
+/* BASIC — Back Room. Cheap off-white stock, rough perforation, plain
+   ink, minimal border. */
+.cdir-paper[data-prestige="basic"]{ --tk-paper:#E2DAC3; }
+.cdir-paper[data-prestige="basic"] .cdir-perf{
+  background:repeating-linear-gradient(90deg, var(--tk-paper) 0 5px, transparent 5px 11px);
+  height:7px;
+}
+/* STANDARD — Pub Circuit. Cleaner stock, a stronger printed rule. */
+.cdir-paper[data-prestige="standard"]{ --tk-paper:#E9E2CF; }
+.cdir-paper[data-prestige="standard"] .cdir-tk-rule{ border-top-style:solid; border-top-width:2px; }
+.cdir-paper[data-prestige="standard"] .cdir-tk-venue{ letter-spacing:.16em; }
+/* PREMIUM — Card Club. Heavier cream stock, a double printed keyline,
+   cleaner perforation, a seal and a serial. */
+.cdir-paper[data-prestige="premium"]{ --tk-paper:#F0E9D4; --tk-line:rgba(34,33,28,.46); }
+.cdir-paper[data-prestige="premium"] .cdir-perf{
+  height:5px;
+  background:repeating-linear-gradient(90deg, var(--tk-paper) 0 9px, transparent 9px 14px);
+}
+.cdir-paper[data-prestige="premium"] .cdir-paperbody{
+  box-shadow:inset 0 0 0 2px rgba(34,33,28,.5), inset 0 0 0 5px var(--tk-paper), inset 0 0 0 6px rgba(34,33,28,.3);
+  padding:16px 17px 16px;
+}
+.cdir-paper[data-prestige="premium"] .cdir-tk-rule{ border-top-style:solid; }
+/* LUXURY — Casino Floor and above. The finest stock, a fine double
+   border, a restrained metallic accent, a crisp stamp. */
+.cdir-paper[data-prestige="luxury"]{ --tk-paper:#F4EEDC; --tk-ink:#1C1B16; --tk-line:rgba(28,27,22,.5); }
+.cdir-paper[data-prestige="luxury"] .cdir-perf{
+  height:4px;
+  background:repeating-linear-gradient(90deg, var(--tk-paper) 0 11px, transparent 11px 15px);
+}
+.cdir-paper[data-prestige="luxury"] .cdir-paperbody{
+  box-shadow:inset 0 0 0 2px #8A6D2E, inset 0 0 0 4px var(--tk-paper), inset 0 0 0 5px rgba(28,27,22,.55);
+  padding:17px 18px 17px;
+}
+.cdir-paper[data-prestige="luxury"] .cdir-tk-rule{ border-top-style:solid; border-top-color:#8A6D2E; }
+.cdir-paper[data-prestige="luxury"] .cdir-tk-stamp{ border-width:3px; letter-spacing:.12em; }
+.cdir-paper[data-prestige="luxury"] .cdir-tk-seal{ border-color:#8A6D2E; }
+.cdir-paper[data-prestige="luxury"] .cdir-tk-serial{ color:#7A6028; }
+
+/* ============================================================
+   7. THE CONTROLS — machine, mounted on the printer housing BELOW the
+   paper. Never printed as part of the ticket.
+   ============================================================ */
+.cdir-mount{ margin-top:12px; }
 .cdir-cradle{
   position:relative; padding:7px 6px 13px;
   background:#B4A46F;
@@ -1335,22 +1502,24 @@
   letter-spacing:.05em; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
   text-shadow:0 1px 0 rgba(255,255,255,.3);
 }
-.cdir-legend.is-long{ font-size:10px; letter-spacing:.03em; }
 .cdir-primary small{
   display:block; margin-top:5px; font-family:var(--font-hdr); font-size:6px; font-weight:400;
   letter-spacing:.05em; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
   color:#694C10; text-shadow:0 1px 0 rgba(255,255,255,.24);
 }
-.cdir-primary.is-disabled{
-  cursor:default; background:#8C8261; color:#39352A;
-  box-shadow:inset 3px 3px 0 #A79C77, inset -3px -3px 0 rgba(40,34,12,.3),
-             0 3px 0 #5A5238, 0 5px 0 var(--h-edge);
+/* An unenterable event gets a SHALLOW quiet status strip, not a huge dead
+   key dominating the ticket. What it needs the player to read — the
+   unlock condition — is printed prominently on the paper above. */
+.cdir-locked-strip{
+  min-height:34px; padding:9px 12px;
+  display:flex; align-items:center; gap:9px;
+  background:var(--h-recess); border:2px solid var(--h-edge);
+  box-shadow:inset 0 3px 0 var(--h-recess-deep);
+  font-family:var(--font-hdr); font-size:7.5px; letter-spacing:.08em;
+  color:var(--h-ink-dim); text-shadow:none;
 }
-.cdir-primary.is-disabled .cdir-legend,
-.cdir-primary.is-disabled small{ text-shadow:none; color:#39352A; }
-
 .cdir-abandon{
-  width:100%; margin-top:7px; min-height:44px; padding:12px; cursor:pointer;
+  width:100%; margin-top:9px; min-height:44px; padding:12px; cursor:pointer;
   background:rgba(0,0,0,.32); border:2px solid var(--h-danger); border-radius:var(--radius);
   color:var(--h-danger); font-family:var(--font-hdr); font-size:8px;
   letter-spacing:.04em; text-transform:uppercase; text-shadow:none;
@@ -1358,5 +1527,10 @@
 }
 .cdir-abandon:active{ transform:translateY(2px); box-shadow:0 1px 0 var(--h-edge); }
 
-/* Reduced motion settles the tray straight to its height. */
+/* Reduced motion settles the tray straight to its height and reveals the
+   ticket immediately, with no travel at all. Sound is deliberately NOT
+   tied to this — see Sound.ticketPrint(). */
 [data-motion="off"] .cdir-tray{ transition:none !important; }
+[data-motion="off"] .cdir-paper{ animation:none !important; transform:translateY(0) !important; }
+[data-motion="off"] .cdir-slot,
+[data-motion="off"] .cdir-feed{ transition:none !important; }

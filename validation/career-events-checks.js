@@ -96,7 +96,10 @@ function makeContext(initialCareer){
     clearCareerTable(){ calls.clears++; },
     updateArcadeHUD(){}, showTableScreen(){}, initSeats(){},
     startNewHand(){ calls.hands++; },
-    loadCareerTable(){ return null; },
+    // Settable so the legacy-roster fallback can be exercised: a real
+    // Career table save is what an older active event has instead of a
+    // stored roster.
+    loadCareerTable(){ return calls.careerTable || null; },
     restoreTable(){},
     esc:value=>String(value),
     buildResultAmount(){},
@@ -148,6 +151,10 @@ function makeContext(initialCareer){
       render:renderCareerScreen,
       showScreen:showCareerScreen,
       title:careerEventTitle,
+      seatName:careerSeatName,
+      statusWord:careerStatusWord,
+      venueTier:careerVenueTier,
+      ticketSerial:careerTicketSerial,
       trayHTML:careerTrayHTML,
       cassetteHTML:careerCassetteHTML,
       rosterFor:careerRosterFor,
@@ -156,6 +163,7 @@ function makeContext(initialCareer){
       materializeRosters:materializeCareerRosters,
       generateRoster:generateCareerRoster,
       normalizeRoster:normalizeCareerRoster,
+      seatedFromTable:careerSeatedRosterFromTable,
       setDevMode:value=>{ DEV_MODE=value; },
       setDevBankroll:devSetCareerBankroll
     };`, context);
@@ -1418,9 +1426,17 @@ check('No venue material can follow the player machine theme', ()=>{
     const token = match[1];
     assert.ok(!themed.some(prefix=>token.startsWith(prefix)),
       'the venue directory must not read the themed token ' + token);
-    assert.ok(token.startsWith('--h-') || token === '--font-hdr' || token === '--radius',
+    assert.ok(token.startsWith('--h-') || token.startsWith('--tk-')
+      || token === '--font-hdr' || token === '--radius',
       'unexpected token in the venue directory: ' + token);
   });
+  // The PAPER's own --tk-* palette must be literals, never derived from
+  // anything themed: a printed ticket is neutral in every palette.
+  const paperVars = block.match(/--tk-[a-z-]+\s*:[^;]+;/g) || [];
+  assert.ok(paperVars.length >= 4, 'the paper declares its own neutral palette');
+  paperVars.forEach(decl=>assert.ok(!decl.includes('var(--'),
+    'paper colour must not resolve through another token: ' + decl.trim()));
+
   // And the player instrument must still be theme-derived, so switching
   // theme visibly changes something.
   const cpi = css.slice(css.indexOf('/* ---- 1. PLAYER INSTRUMENT'), from);
@@ -1485,12 +1501,361 @@ check('A table with no roster keeps the original random draw', ()=>{
   });
 });
 
-check('Production never loads the Career Lab', ()=>{
+check('Each advertised face is captioned with its own seated personality', ()=>{
+  const { api } = makeContext(openCareer());
+  const roster = api.rosterFor('pub-open');
+  const html = api.trayHTML(api.eventById('pub-open'), 'available');
+  // The caption under each portrait is the canonical catalogue name for
+  // that seat — not a new name, and not a second roster.
+  const shown = Array.from(html.matchAll(/class="cdir-seat-name">([^<]*)</g)).map(m=>m[1]);
+  const expected = roster.map(seat=>api.seatName(seat));
+  assert.strictEqual(shown.join('|'), expected.join('|'));
+  assert.strictEqual(shown.length, api.eventById('pub-open').opponentCount);
+  shown.forEach(name=>assert.ok(name && name !== '\u2014', 'every seat is named: ' + shown.join('|')));
+  // And every one of those names is a real personality from the catalogue.
+  const known = api.seatName({personalityKey:'shark'});
+  assert.strictEqual(known, 'Shark');
+  assert.strictEqual(api.seatName({personalityKey:'professor'}), 'Prof');
+  assert.strictEqual(api.seatName({personalityKey:'nobody'}), '');
+  assert.strictEqual(api.seatName(null), '');
+  // The captions survive the launch: same order, same personalities.
+  api.enter('pub-open'); api.start();
+  const launched = calls => calls;
+  assert.strictEqual(api.activeRoster().map(s=>api.seatName(s)).join('|'), expected.join('|'));
+});
+
+check('The drawer states its status in words, not in colour alone', ()=>{
+  const { api } = makeContext(openCareer());
+  assert.strictEqual(api.statusWord('available'), 'OPEN');
+  assert.strictEqual(api.statusWord('active'), 'ENTRY PAID');
+  assert.strictEqual(api.statusWord('locked'), 'LOCKED');
+  assert.strictEqual(api.statusWord('unaffordable'), 'SHORT');
+  assert.strictEqual(api.statusWord('blocked'), 'UNAVAILABLE');
+  assert.strictEqual(api.statusWord('nonsense'), 'CLOSED');
+  ['available','locked','active'].forEach(state=>{
+    const html = api.trayHTML(api.eventById('pub-open'), state);
+    assert.ok(html.includes('>' + api.statusWord(state) + '<'), state);
+    // The full venue-qualified name heads the drawer, since the drawer is
+    // read on its own rather than only under its venue marker.
+    assert.ok(html.includes('PUB CIRCUIT 5-HAND'), state);
+  });
+});
+
+check('The menu offers exactly two play routes, and strands no saved table', ()=>{
+  const html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
+  const home = html.slice(html.indexOf('<div id="home"'), html.indexOf('<!-- ============================ HAND RANKINGS'));
+  // The featured cartridge is Career; the one secondary route is Custom Game.
+  assert.ok(home.includes('id="open-career"'), 'Career is on the menu');
+  assert.ok(home.includes('id="career-btn-sub"'), 'Career carries a state sub-line');
+  assert.ok(home.includes('Custom Game'), 'Custom Game is on the menu');
+  assert.ok(home.includes('Build your bankroll'));
+  // The secondary route carries ONE word and no subtitle element at all —
+  // not an emptied one, which would still occupy space and affect
+  // alignment.
+  assert.ok(!home.includes('Build your table'), 'the Custom Game subtitle is gone');
+  assert.ok(!home.includes('pc-route-sub'), 'no empty subtitle element remains');
+  const route = home.slice(home.indexOf('id="go-to-setup"'));
+  assert.ok(/^id="go-to-setup">Custom Game<\/button>/.test(route), 'one word on the slab: ' + route.slice(0,80));
+  // The two consolidated routes are gone from the menu...
+  ['id="single-player"','id="new-game-btn"','Classic Table Setup','id="opponent-picker"']
+    .forEach(gone=>assert.ok(!home.includes(gone), 'removed from the menu: ' + gone));
+  // ...and Career sits in the featured cradle, not in the secondary stack.
+  const cradle = home.slice(home.indexOf('pc-primary-cradle'), home.indexOf('pc-button-route'));
+  assert.ok(cradle.includes('id="open-career"'), 'Career occupies the featured position');
+  // Custom Game owns the game type, the run size and the resume route.
+  const setup = html.slice(html.indexOf('<div id="setup"'), html.indexOf('<!-- ============================ TABLE'));
+  ['id="type-seg"','data-type="cash"','data-type="tournament"','data-type="elimination"',
+   'id="run-size-seg"','id="setup-resume"','id="setup-continue"','Custom Game']
+    .forEach(needed=>assert.ok(setup.includes(needed), 'Custom Game carries ' + needed));
+  // No unfinished future mode is advertised in the selector.
+  const seg = setup.slice(setup.indexOf('id="type-seg"'), setup.indexOf('id="type-hint"'));
+  assert.strictEqual((seg.match(/data-type=/g) || []).length, 3, 'exactly three shipped game types');
+});
+
+check('The featured cartridge is never cropped by its own housing', ()=>{
+  const css = fs.readFileSync(path.join(root, 'css/04-overlays-and-modes.css'), 'utf8');
+  const cradle = css.slice(css.indexOf('.pc-primary-cradle{'), css.indexOf('.pc-primary-cradle::before'));
+  // The cradle's bottom padding IS the visible plinth. It must not clip.
+  assert.ok(!/overflow\s*:\s*hidden/.test(cradle), 'the cradle must not clip its own plinth');
+  assert.ok(/padding:9px 7px 22px/.test(cradle), 'the plinth padding is intact');
+  const bay = css.slice(css.indexOf('.pc-control-bay{'), css.indexOf('.pc-control-head{'));
+  assert.ok(!/overflow\s*:\s*hidden/.test(bay), 'the bay must not crop the controls');
+  assert.ok(/min-height:min-content/.test(bay), 'the bay may not shrink below its contents');
+  // ...and it is sized by its contents rather than stretching to fill the
+  // cabinet, which is what left dead space under the utility row.
+  assert.ok(/flex:0 0 auto/.test(bay), 'the bay must not stretch to fill spare height');
+  // The clipped viewport the mechanism actually needs still exists.
+  const aperture = css.slice(css.indexOf('.pc-slot-aperture{'), css.indexOf('.pc-slot-aperture::before'));
+  assert.ok(/overflow\s*:\s*hidden/.test(aperture), 'the slot aperture still owns the clip');
+});
+
+check('A legacy active event advertises the opponents in its table save', ()=>{
+  // The case: an event entered before rosters existed. career.active
+  // carries no roster, but the resumable table save holds the real
+  // players — and THOSE are who the ticket must advertise.
+  const { api, calls } = makeContext(openCareer());
+  api.enter('pub-freezeout');
+  const drawn = clone(api.activeRoster());
+  assert.ok(drawn, 'a modern entry stores its roster');
+
+  // Strip the stored roster, exactly as an older save would be.
+  delete api.getCareer().active.roster;
+  assert.strictEqual(api.activeRoster(), null);
+
+  // With no table save either, there is nothing truthful to show and the
+  // book simply draws a field — the pre-existing behaviour.
+  assert.ok(api.rosterFor('pub-freezeout'));
+
+  // With the real table present, the ticket reads the seated players.
+  calls.careerTable = { players:[
+    { id:'you', isHuman:true, personalityKey:null, faceColorIdx:null },
+    { id:'ai0', isHuman:false, personalityKey:'rock',    faceColorIdx:5 },
+    { id:'ai1', isHuman:false, personalityKey:'shark',   faceColorIdx:2 },
+    { id:'ai2', isHuman:false, personalityKey:'grinder', faceColorIdx:7 }
+  ]};
+  const seated = api.seatedFromTable(api.getCareer().active.snapshot);
+  assert.deepStrictEqual(clone(seated), [
+    { personalityKey:'rock',    faceColorIdx:5 },
+    { personalityKey:'shark',   faceColorIdx:2 },
+    { personalityKey:'grinder', faceColorIdx:7 }
+  ]);
+  assert.deepStrictEqual(clone(api.rosterFor('pub-freezeout')), clone(seated));
+  // ...and those are the names printed on the ticket.
+  const html = api.trayHTML(api.eventById('pub-freezeout'), 'active');
+  const shown = Array.from(html.matchAll(/class="cdir-seat-name">([^<]*)</g)).map(m=>m[1]);
+  assert.strictEqual(shown.join('|'), 'Rock|Shark|Grinder');
+
+  // A table save that does not describe this event is refused, not
+  // half-used: three seats are required, so two cannot stand in.
+  calls.careerTable = { players:[
+    { id:'you', isHuman:true },
+    { id:'ai0', isHuman:false, personalityKey:'rock', faceColorIdx:5 }
+  ]};
+  assert.strictEqual(api.seatedFromTable(api.getCareer().active.snapshot), null);
+  calls.careerTable = null;
+  assert.strictEqual(api.seatedFromTable(api.getCareer().active.snapshot), null);
+});
+
+check('The ticket prints its terms in the approved order', ()=>{
+  const { api } = makeContext(openCareer());
+  const html = api.trayHTML(api.eventById('pub-open'), 'available');
+  const at = needle => { const i = html.indexOf(needle); assert.ok(i >= 0, 'missing: ' + needle); return i; };
+  // 1 venue and name, 2 status and threat, 3 prize and buy-in,
+  // 4 roster, 5 players/stack/format, 6 eligibility, 7 controls below.
+  const order = ['cdir-tk-venue','cdir-tk-name','cdir-tk-stamp','cdir-tk-threat',
+                 'cdir-tk-payout','cdir-tk-entry','cdir-faces','cdir-tk-facts',
+                 'cdir-tk-note','cdir-mount'].map(at);
+  order.forEach((pos,i)=>{ if (i) assert.ok(pos > order[i-1],
+    'out of order at index ' + i); });
+  // The money is above the roster — it is the decision being made.
+  assert.ok(at('cdir-tk-payout') < at('cdir-faces'));
+  // The controls are MACHINE, mounted below the paper, never printed on it.
+  assert.ok(at('cdir-mount') > html.indexOf('</div></div>'), 'controls follow the paper');
+  const paper = html.slice(at('cdir-paper'), at('cdir-mount'));
+  ['cdir-primary','cdir-cradle','cdir-abandon','cdir-locked-strip'].forEach(control=>
+    assert.ok(!paper.includes(control), control + ' must not be printed on the paper'));
+});
+
+check('Prestige is derived from the venue and changes material only', ()=>{
+  const { api } = makeContext(openCareer());
+  assert.strictEqual(api.venueTier('BACK ROOM').prestige, 'basic');
+  assert.strictEqual(api.venueTier('PUB CIRCUIT').prestige, 'standard');
+  assert.strictEqual(api.venueTier('CARD CLUB').prestige, 'premium');
+  ['CASINO FLOOR','HIGH ROLLER ROOM','INVITATIONAL CHAMPIONSHIP'].forEach(v=>
+    assert.strictEqual(api.venueTier(v).prestige, 'luxury', v));
+  // Every room in the ladder has a tier, and an unknown one degrades safely.
+  api.rooms.forEach(room=>assert.ok(api.venueTier(room.venue).prestige, room.venue));
+  assert.strictEqual(api.venueTier('NOWHERE').prestige, 'basic');
+  // Prestige reaches the paper, and the SAME terms are printed at every
+  // tier — grandeur is material, never extra content.
+  const terms = state => {
+    const html = api.trayHTML(api.eventById('back-room-freezeout'), state);
+    return html.replace(/data-prestige="[a-z]+"/, '').replace(/cdir-tk-venue-[a-z]+/, '');
+  };
+  const back = api.trayHTML(api.eventById('back-room-freezeout'), 'available');
+  const pub = api.trayHTML(api.eventById('pub-open'), 'available');
+  assert.ok(back.includes('data-prestige="basic"'));
+  assert.ok(pub.includes('data-prestige="standard"'));
+  // A serial and seal appear only from premium upward, so neither Back
+  // Room nor Pub Circuit carries one today.
+  [back, pub].forEach(html=>{
+    assert.ok(!html.includes('cdir-tk-serial'));
+    assert.ok(!html.includes('cdir-tk-seal'));
+  });
+  // The serial is stable — it is a printed mark, not a record.
+  assert.strictEqual(api.ticketSerial('pub-open'), api.ticketSerial('pub-open'));
+  assert.strictEqual(api.ticketSerial('pub-open').length, 6);
+});
+
+check('An unenterable ticket gets a quiet strip, not a giant dead key', ()=>{
+  const { api } = makeContext(recoveryCareer(500));
+  ['locked','blocked','unaffordable'].forEach(state=>{
+    const html = api.trayHTML(api.eventById('pub-open'), state);
+    assert.ok(html.includes('cdir-locked-strip'), state + ' shows the quiet strip');
+    assert.ok(!html.includes('cdir-primary'), state + ' shows no primary key');
+    assert.ok(!html.includes('cdir-cradle'), state + ' shows no cradle');
+    // ...and the requirement it needs read is printed prominently.
+    if (state !== 'blocked') assert.ok(html.includes('is-requirement'), state);
+  });
+  // The two enterable states keep the chunky physical control.
+  ['available','active'].forEach(state=>{
+    const html = api.trayHTML(api.eventById('back-room-freezeout'), state);
+    assert.ok(html.includes('cdir-primary'), state);
+    assert.ok(html.includes('cdir-cradle'), state);
+    assert.ok(!html.includes('cdir-locked-strip'), state);
+  });
+  // Entry paid gets the punched hole and exactly one stamp.
+  const active = api.trayHTML(api.eventById('back-room-freezeout'), 'active');
+  assert.ok(active.includes('cdir-tk-punch'));
+  // matched on the stamp ELEMENT, not the substring the wrapper shares
+  assert.strictEqual((active.match(/class="cdir-tk-stamp /g) || []).length, 1,
+    'no more than one prominent stamp per ticket');
+  assert.ok(active.includes('>ENTRY PAID<'));
+  assert.ok(active.includes('cdir-abandon'), 'abandon stays available');
+  const open = api.trayHTML(api.eventById('back-room-freezeout'), 'available');
+  assert.ok(!open.includes('cdir-tk-punch'), 'unpaid tickets are not punched');
+});
+
+check('The roster is left aligned and never centred', ()=>{
+  const css = fs.readFileSync(path.join(root, 'css/06-machine-system.css'), 'utf8');
+  // Just the .cdir-faces rule — the DISTRIBUTION of the row. (.cdir-hf
+  // legitimately centres the portrait inside its own frame, which is a
+  // different question and must not be caught here.)
+  const from = css.indexOf('.cdir-faces{');
+  const faces = css.slice(from, css.indexOf('}', from) + 1);
+  assert.ok(/justify-content:flex-start/.test(faces), 'the roster starts at the left');
+  ['space-around','space-evenly','space-between','justify-content:center']
+    .forEach(bad=>assert.ok(!faces.includes(bad), 'must not use ' + bad));
+  assert.ok(/gap:/.test(faces), 'a fixed gap, not a distributed one');
+  // Fixed seat and portrait sizes, so two faces sit at the margin instead
+  // of floating in equal spaces.
+  const seatFrom = css.indexOf('.cdir-seat{');
+  const seat = css.slice(seatFrom, css.indexOf('}', seatFrom) + 1);
+  assert.ok(/flex:0 0 \d+px/.test(seat), 'fixed seat width: ' + seat);
+  const hfFrom = css.indexOf('.cdir-hf{');
+  const hf = css.slice(hfFrom, css.indexOf('}', hfFrom) + 1);
+  assert.ok(/width:\d+px/.test(hf) && /height:\d+px/.test(hf), 'stable portrait dimensions');
+  // The name may wrap but must never be clipped to an unreadable stub.
+  const name = css.slice(css.indexOf('.cdir-seat-name{'), css.indexOf('.cdir-seat-name{') + 400);
+  assert.ok(!/text-overflow:ellipsis/.test(name), 'names must not truncate');
+});
+
+check('The print sequence is armed only by an explicit opening', ()=>{
+  const wiring = fs.readFileSync(path.join(root, 'js/07-ui-wiring.js'), 'utf8');
+  // Exactly one place ARMS it, and only when opening: the toggle handler.
+  const assigns = wiring.match(/careerPrintArmed\s*=\s*[^;]+/g) || [];
+  const arming = assigns.filter(a=>!/=\s*false/.test(a));
+  assert.deepStrictEqual(arming, ['careerPrintArmed = opening'],
+    'one arming site only: ' + assigns.join(' | '));
+  // Everything else that touches it only ever clears it (the declaration
+  // and the consume), so nothing can arm it by accident.
+  assert.strictEqual(assigns.length, 3, 'declaration, arm, consume: ' + assigns.join(' | '));
+  // The renderer consumes it before doing anything else with it, so a
+  // re-render can never inherit an armed flag.
+  const render = wiring.slice(wiring.indexOf('const printing = careerPrintArmed;'));
+  assert.ok(render.indexOf('careerPrintArmed = false;') < 120, 'the flag is consumed immediately');
+  // Sound is only ever called from the print path, never on load.
+  const soundCalls = (wiring.match(/Sound\.ticketPrint\(/g) || []).length;
+  assert.strictEqual(soundCalls, 2, 'one call per branch, reduced-motion and animated');
+  // Reduced motion still sounds: the sound call is not inside a motion guard.
+  assert.ok(wiring.includes('if (printing) Sound.ticketPrint();'),
+    'the reduced-motion branch still prints its sound');
+});
+
+check('The production print sound is Mechanical Ticket, and muted is silent', ()=>{
+  // The real Sound module, run in isolation. Nothing about the game is
+  // loaded — this is only about which voice ships and whether the mute
+  // gate holds.
+  const source = fs.readFileSync(path.join(root, 'js/02-support-systems.js'), 'utf8');
+  const from = source.indexOf('const Sound = (function(){');
+  const to = source.indexOf('\n})();', from) + 6;
+  assert.ok(from > 0 && to > from, 'the Sound module is where it was');
+
+  function soundIn(soundOn){
+    let contexts = 0, nodes = 0;
+    function FakeCtx(){
+      contexts++;
+      this.currentTime = 0; this.sampleRate = 44100; this.state = 'running';
+      this.destination = {};
+      this.createOscillator = ()=>{ nodes++; return {
+        type:'', frequency:{ setValueAtTime(){} },
+        connect(){}, start(){}, stop(){} }; };
+      this.createBufferSource = ()=>{ nodes++; return {
+        buffer:null, connect(){}, start(){}, stop(){} }; };
+      this.createGain = ()=>({ gain:{ value:0, setValueAtTime(){}, exponentialRampToValueAtTime(){} }, connect(){} });
+      this.createBiquadFilter = ()=>({ type:'', frequency:{ setValueAtTime(){}, exponentialRampToValueAtTime(){} }, Q:{}, connect(){} });
+      this.createBuffer = (ch,n)=>({ getChannelData:()=>new Float32Array(n) });
+      this.resume = ()=>{};
+    }
+    const ctx = { console, settings:{ sound:soundOn },
+      window:{ AudioContext:FakeCtx }, document:undefined };
+    vm.createContext(ctx);
+    vm.runInContext(source.slice(from, to) + '\nglobalThis.__S = Sound;', ctx);
+    return { S:ctx.__S, counts:()=>({ contexts, nodes }) };
+  }
+
+  // All three auditionable voices ship, and Mechanical is the one
+  // production prints with.
+  const on = soundIn(true);
+  // joined, not deep-compared: the array is built in the module's own VM
+  // realm, so deepStrictEqual fails on prototype identity alone
+  assert.strictEqual(on.S.ticketVoices().sort().join('|'), 'mechanical|premium|receipt');
+  assert.strictEqual(on.S.getTicketVoice(), 'mechanical',
+    'B — Mechanical Ticket is the production voice');
+  assert.strictEqual(on.counts().nodes, 0, 'nothing sounds on load');
+  on.S.ticketPrint();
+  assert.ok(on.counts().nodes > 0, 'an explicit print does sound');
+  const afterOne = on.counts().nodes;
+  // Every voice is playable for the Lab audition without changing the
+  // production voice.
+  on.S.ticketPrint('receipt');
+  assert.ok(on.counts().nodes > afterOne);
+  assert.strictEqual(on.S.getTicketVoice(), 'mechanical', 'auditioning does not switch production');
+  // An unknown voice is refused rather than silently falling through.
+  on.S.setTicketVoice('nonsense');
+  assert.strictEqual(on.S.getTicketVoice(), 'mechanical');
+
+  // Muted really is silent: no AudioContext is even constructed.
+  const off = soundIn(false);
+  off.S.ticketPrint();
+  off.S.ticketPrint('premium');
+  const offCounts = off.counts();
+  assert.strictEqual(offCounts.contexts + offCounts.nodes, 0, 'muted creates no audio at all');
+
+  // The print window stays inside the animation: nothing may still be
+  // sounding after the ticket has stopped.
+  const voices = source.slice(source.indexOf('const TICKET_VOICES = {'), source.indexOf('let ticketVoice'));
+  const whens = (voices.match(/when:([0-9.]+)/g) || []).map(w=>parseFloat(w.slice(5)));
+  assert.ok(whens.length > 0);
+  assert.ok(Math.max.apply(null, whens) <= 0.45,
+    'the last scheduled event starts within the 520ms print');
+});
+
+check('Production never loads a Lab, and the Ticket Lab loads no game logic', ()=>{
   const indexSource = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
   const swSource = fs.readFileSync(path.join(root, 'sw.js'), 'utf8');
-  ['career-lab.css','career-lab.js','career-lab.html'].forEach(file=>{
+  ['career-lab.css','career-lab.js','career-lab.html',
+   'ticket-lab.css','ticket-lab.js','ticket-lab.html'].forEach(file=>{
     assert.ok(!indexSource.includes(file), 'index.html must not load ' + file);
     assert.ok(!swSource.includes(file), 'the app shell must not cache ' + file);
+  });
+  // The isolation runs the other way too. The Ticket Lab may load exactly
+  // ONE production script — the shared Sound module, so the audition
+  // auditions the voices that actually ship — and no game logic at all.
+  const lab = fs.readFileSync(path.join(root, 'ticket-lab.html'), 'utf8');
+  const scripts = (lab.match(/<script src="([^"]+)"/g) || [])
+    .map(t=>t.replace(/^<script src="/, '').replace(/"$/, ''));
+  assert.deepStrictEqual(scripts, ['js/02-support-systems.js', 'js/ticket-lab.js'],
+    'the Ticket Lab loads only the Sound module and itself: ' + scripts.join(', '));
+  ['01-poker-math','03-opponents','04-modes-and-scoring','05-game-engine',
+   '06-presentation','07-ui-wiring','08-dev-mode'].forEach(mod=>{
+    assert.ok(!lab.includes(mod), 'the Ticket Lab must not load ' + mod);
+  });
+  // And it must not reach into Career state even if something were loaded.
+  const labJs = fs.readFileSync(path.join(root, 'js/ticket-lab.js'), 'utf8');
+  ['careerRosterFor','enterCareerEvent','settleCareerEvent','saveCareer',
+   'felt.career','localStorage'].forEach(forbidden=>{
+    assert.ok(!labJs.includes(forbidden), 'the Ticket Lab must not touch ' + forbidden);
   });
   // The directory's own construction ships in the production stylesheet.
   const machineSource = fs.readFileSync(path.join(root, 'css/06-machine-system.css'), 'utf8');

@@ -721,18 +721,31 @@ const DEFAULT_SETTINGS = {
   speed:'normal', autoDeal:true, lives:true, confirmAllIn:false,
   playerName:'You', avatarColour:'#D9A93B', opponentNames:'persona',
   opponents:4, difficulty:'medium', mode:'cash', stack:1000, blindLevel:0,
+  // Custom Game's Game Type selector. `mode` remains exactly what it always
+  // was — the value newGame() is given for a cash/tournament table — and is
+  // deliberately never set to 'elimination', so every existing caller of
+  // startGame() (Quick Deal included) keeps building a table it can build.
+  // `gameType` is the player-facing choice on top of it, and it is the only
+  // thing that knows about the run.
+  gameType:'cash', runOpponents:4,
   seenIntro:false, devMode:false
 };
 const DEFAULT_STATS = { hands:0, won:0, showdownsWon:0, biggestPot:0, net:0 };
 const SAVE_VERSION = 1;
 /* Bump on every release so the main-menu header shows what's actually installed. */
-const BUILD_VERSION = 'v0.24.0-dev · Roster Integrity';
+const BUILD_VERSION = 'v0.25.0-dev · Printed Tickets';
 
 let settings = Object.assign({}, DEFAULT_SETTINGS, Store.get('felt.settings', {}));
 // The Settings menu cleanup dropped RELAXED from the Game Speed control
 // (now just NORMAL/FAST) — migrate anyone still on it so the segmented
 // control has a matching active state instead of showing nothing selected.
 if (settings.speed === 'relaxed') settings.speed = 'normal';
+// A settings blob written before Custom Game existed has no gameType. Adopt
+// the mode it already had rather than resetting the player to Cash.
+if (settings.gameType !== 'cash' && settings.gameType !== 'tournament' && settings.gameType !== 'elimination'){
+  settings.gameType = settings.mode === 'tournament' ? 'tournament' : 'cash';
+}
+if (settings.mode !== 'cash' && settings.mode !== 'tournament') settings.mode = 'cash';
 let stats = Object.assign({}, DEFAULT_STATS, Store.get('felt.stats', {}));
 function saveSettings(){ Store.set('felt.settings', settings); }
 function saveStats(){ Store.set('felt.stats', stats); }
@@ -795,11 +808,15 @@ const Sound = (function(){
       const f = c.createBiquadFilter();
       f.type = opts.filterType || 'bandpass';
       const freq = opts.freq!=null ? opts.freq : 1800;
-      f.frequency.setValueAtTime(freq, c.currentTime);
-      if (opts.freqSweepTo!=null) f.frequency.exponentialRampToValueAtTime(Math.max(40,opts.freqSweepTo), c.currentTime+dur);
+      // opts.when schedules the burst ahead of now, exactly as blip()'s
+      // `when` already does. Omitted (every pre-existing caller) it is 0
+      // and this behaves precisely as before.
+      const t = c.currentTime + (opts.when||0);
+      f.frequency.setValueAtTime(freq, t);
+      if (opts.freqSweepTo!=null) f.frequency.exponentialRampToValueAtTime(Math.max(40,opts.freqSweepTo), t+dur);
       if (opts.Q!=null) f.Q.value = opts.Q;
       s.connect(f); f.connect(g); g.connect(c.destination);
-      s.start();
+      s.start(t); s.stop(t+dur+0.02);
     } catch(e){}
   }
 
@@ -1309,8 +1326,81 @@ const Sound = (function(){
     });
   }
 
+  /* ============================================================
+     TICKET PRINTER — procedural, isolated and replaceable.
+
+     Three auditionable voices behind ONE call. Everything is scheduled on
+     the AudioContext clock inside a ~0.55s window that matches the print
+     animation, so nothing can still be sounding after the ticket has
+     stopped, and nothing needs a timer that could outlive the screen.
+
+     It inherits every existing rule for free: ac() returns null unless
+     settings.sound is on (so muted really is silent), it reuses the one
+     shared AudioContext, and it only ever runs from the player's tap —
+     which is also what satisfies iOS, since Sound.unlock() is called in
+     that same gesture. Deliberately independent of reduced motion: a
+     player who turned motion off has not turned sound off.
+
+     To replace any of these with real samples later, swap the body of one
+     entry. Nothing else in the game calls into them.
+     ============================================================ */
+  const TICKET_VOICES = {
+    /* A. RECEIPT — light, fast paper chatter with a small finishing click. */
+    receipt(){
+      noise(0.020, 0.030, { freq:3000, Q:1.2, decayPow:3, when:0 });
+      for (let i=0;i<9;i++){
+        noise(0.016, 0.018, { freq:2300+((i%3)*160), Q:2, decayPow:3.4, when:0.045+i*0.024 });
+      }
+      blip(1250, 0.045, 'square', 0.028, 0.275);
+      noise(0.030, 0.024, { freq:1700, decayPow:2.4, when:0.275 });
+    },
+    /* B. MECHANICAL TICKET — the recommended voice, and the temporary
+       production candidate: a firm engagement click, a chunky ratcheting
+       feed over a subtle motor, and a substantial final locking clunk. */
+    mechanical(){
+      // 1. engagement click
+      noise(0.038, 0.052, { freq:2500, Q:1.1, decayPow:2.6, when:0 });
+      blip(150, 0.055, 'square', 0.030, 0);
+      // 2. subtle low motor under the feed, quiet and short
+      blip(72, 0.300, 'triangle', 0.013, 0.055);
+      // 3. chunky ratcheting feed, one tick per mechanical beat
+      for (let i=0;i<7;i++){
+        noise(0.026, 0.034, { freq:1450+((i%2)*220), Q:1.6, decayPow:2.8, when:0.070+i*0.042 });
+      }
+      // 4. final locking clunk
+      noise(0.090, 0.062, { freq:330, freqSweepTo:150, decayPow:1.9, when:0.400 });
+      blip(96, 0.120, 'triangle', 0.040, 0.400);
+    },
+    /* C. PREMIUM TICKET — quieter, smoother feed, a crisp metal stamp and
+       a controlled heavy settlement. */
+    premium(){
+      noise(0.032, 0.026, { freq:950, Q:0.9, decayPow:3, when:0 });
+      for (let i=0;i<5;i++){
+        noise(0.030, 0.015, { freq:1050, Q:1.1, decayPow:4, when:0.060+i*0.056 });
+      }
+      // crisp metal stamp
+      blip(3200, 0.050, 'sine', 0.034, 0.300);
+      blip(4300, 0.038, 'sine', 0.019, 0.308);
+      // controlled heavy settlement
+      noise(0.110, 0.048, { freq:210, freqSweepTo:90, decayPow:1.7, when:0.400 });
+      blip(74, 0.140, 'triangle', 0.034, 0.402);
+    }
+  };
+  /* The voice production currently prints with. Auditioning in the Lab
+     passes an explicit name; production passes nothing. */
+  let ticketVoice = 'mechanical';
+
   return {
     unlock(){ ac(); },
+    /* Call ONCE per explicit opening of an event — never from a
+       re-render, a palette change, a save, a restore or a resize. */
+    ticketPrint(variant){
+      const voice = TICKET_VOICES[variant || ticketVoice];
+      if (voice && ac()) voice();
+    },
+    ticketVoices(){ return Object.keys(TICKET_VOICES); },
+    setTicketVoice(name){ if (TICKET_VOICES[name]) ticketVoice = name; },
+    getTicketVoice(){ return ticketVoice; },
     /* Gated to AI opponents only as of SFX V1 — the human's own fold/
        check/call/bet/raise now comes from the physical button press/
        release family below instead (see the applyAction() call sites,

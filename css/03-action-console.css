@@ -402,6 +402,7 @@ body #home .pc-button-secondary{
   background:var(--theme-case-raised); color:var(--ink);
   box-shadow:0 4px 0 color-mix(in srgb,var(--theme-case-raised) 55%,black),0 6px 0 var(--pc-edge-lo),inset 2px 2px 0 var(--theme-case-hi),inset -2px -2px 0 rgba(0,0,0,.24);
 }
+
 body #home #home-settings{ background:var(--theme-case-raised); color:var(--ink); box-shadow:0 3px 0 var(--pc-edge-lo),inset 2px 2px 0 var(--theme-case-hi),inset -2px -2px 0 rgba(0,0,0,.25); }
 #home .pc-label,#home .pc-control-head,#home .pc-control-head .pc-label{ color:var(--ink-dim); }
 

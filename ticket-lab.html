@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Ticket Lab — Printed Event Ticket</title>
+
+<!-- The six production stylesheets, in production order (index.html:15-20).
+     Not one line of them is edited. -->
+<link rel="stylesheet" href="css/01-foundation.css">
+<link rel="stylesheet" href="css/02-screens.css">
+<link rel="stylesheet" href="css/03-action-console.css">
+<link rel="stylesheet" href="css/04-overlays-and-modes.css">
+<link rel="stylesheet" href="css/05-responsive-and-arcade.css">
+<link rel="stylesheet" href="css/06-machine-system.css">
+
+<!-- One isolated Lab sheet. -->
+<link rel="stylesheet" href="css/ticket-lab.css">
+</head>
+
+<body data-theme="emerald" data-motion="on" class="tkl-body">
+
+<div class="tkl-wrap">
+  <h1 class="tkl-title">Ticket Lab</h1>
+  <p class="tkl-sub">The reference harness for the printed Career ticket. It renders the <b>production</b> ticket &mdash; same classes, same stylesheet, same print sequence and the same <code>Sound.ticketPrint()</code> &mdash; so it cannot drift from what ships. No Career state, save, unlock or table is touched.</p>
+
+  <div class="tkl-controls">
+    <div class="tkl-group"><b>Prestige</b>
+      <button data-tk-event="0" class="active">Basic &middot; Back Room</button>
+      <button data-tk-event="1">Standard &middot; Pub</button>
+    </div>
+    <div class="tkl-group"><b></b>
+      <button data-tk-event="2">Premium &middot; Card Club</button>
+      <button data-tk-event="3">Luxury &middot; Invitational</button>
+    </div>
+    <div class="tkl-group"><b>State</b>
+      <button data-tk-status="available" class="active">Available</button>
+      <button data-tk-status="active">Active</button>
+      <button data-tk-status="locked">Locked</button>
+      <button data-tk-status="invitational">Invitation</button>
+    </div>
+    <div class="tkl-group"><b>Field</b>
+      <button data-tk-seats="2">2</button>
+      <button data-tk-seats="3">3</button>
+      <button data-tk-seats="4">4</button>
+      <button data-tk-seats="5">5</button>
+    </div>
+    <div class="tkl-group"><b>Palette</b>
+      <button data-tk-theme="emerald" class="active">Emerald</button>
+      <button data-tk-theme="midnight">Midnight</button>
+      <button data-tk-theme="burgundy">Burgundy</button>
+      <button data-tk-theme="slate">Slate</button>
+    </div>
+    <div class="tkl-group"><b>Motion</b>
+      <button data-tk-motion="on" class="active">Normal</button>
+      <button data-tk-motion="off">Reduced</button>
+    </div>
+
+    <div class="tkl-group tkl-sound"><b>Sound</b>
+      <button data-tk-voice="receipt">A &middot; Receipt</button>
+      <button data-tk-voice="mechanical" class="tkl-rec active">B &middot; Mechanical</button>
+      <button data-tk-voice="premium">C &middot; Premium</button>
+    </div>
+    <div class="tkl-group"><b></b>
+      <button id="tk-audition-print">Print with sound</button>
+      <button id="tk-audition-mute">Print muted</button>
+    </div>
+    <div class="tkl-group"><b></b><span class="tkl-readout" id="tk-voice-readout"></span></div>
+    <p class="tkl-note"><b>B &middot; Mechanical</b> is the recommendation and the temporary production candidate: a firm engagement click, a chunky ratcheting feed over a subtle motor, and a substantial final locking clunk. All three are procedural, scheduled inside the ~0.55s print window, and inherit the game&rsquo;s sound setting &mdash; muted really is silent. Nothing sounds until you press something.</p>
+  </div>
+
+  <div class="cdir">
+    <div class="tk-eventrow" id="tk-row"></div>
+  </div>
+</div>
+
+<!-- The one production file the Lab loads: the real Sound module, so the
+     audition auditions the voices that actually ship. No game logic. -->
+<script src="js/02-support-systems.js"></script>
+<script src="js/ticket-lab.js"></script>
+</body>
+</html>

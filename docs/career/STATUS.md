@@ -1,15 +1,16 @@
 # Career Mode — Current Status
 
 Last verified: 2026-08-27
-Verified implementation baseline: `cbaf082` — `Career directory refinement and
-roster integrity` (the owner-directed pass below), on top of `2673dcb` —
+Verified implementation baseline: the **printed event ticket and home-screen
+consolidation** pass below, on top of `cbaf082` — `Career directory refinement
+and roster integrity`, on top of `2673dcb` —
 `Record the scoring correction commit in Career status`, on top of `4f9a351` —
 `Correct scoring attribution and feedback`, on top of `35d93c3` — `Integrate the
 Career event directory` (the owner-directed milestone below), on top of
 `cb9aee0` — `Career Phase 2: Second Chance recovery, truthful loss messaging,
 DEV bankroll tool`. Career logic baseline before Phase 2 was `d31b120` — `Add
 multi-place payouts and Pub Circuit Open` (Phase 1).
-Build `v0.24.0-dev · Roster Integrity`, service-worker cache `poker-v23-0`.
+Build `v0.25.0-dev · Printed Tickets`, service-worker cache `poker-v24-0`.
 Career save schema **version 4** — unchanged by the 2026-08-27 pass, which
 added the roster book as a tolerant additive field rather than a fifth version.
 
@@ -41,6 +42,194 @@ decisions in `docs/scoring/SCORING_SPEC.md` section 9 were settled and approved
 on 2026-08-26 and are implemented. Rendered verification of the Phase 4
 correction is the immediate next task; Phase 5 — Contextual Board and visible
 Full Circuit — follows only after that manual gate passes.**
+
+## Owner-directed pass — printed event tickets and menu consolidation (2026-08-27)
+
+Approved from the Ticket Lab prototype and integrated. Build
+`v0.25.0-dev · Printed Tickets`, service-worker cache `poker-v24-0` — the
+cache bump is what delivers this to installed PWAs.
+
+**No Career economy, event availability, roster authority, save structure,
+entry charging, settlement, payout term, venue id, opponent artwork,
+personality identity or poker rule was changed.** No event difficulty, AI
+behaviour or threat label was touched either — see the threat-ladder issue
+below, which was recorded and deliberately not acted on.
+
+### 1. Home screen — two play routes
+
+Career is the featured cartridge (`Career` / `Build your bankroll`, and
+`Event in progress` when one is live). `Custom Game` is the single
+secondary route, carrying **one word** — the subtitle element is removed,
+not emptied, so nothing occupies space or affects alignment.
+
+SINGLE PLAYER, CLASSIC TABLE SETUP, NEW GAME and the menu-resident 4/5/6
+opponent picker are gone from the menu. **No gameplay code was deleted:**
+`startSinglePlayerRun()`, `startGame()` and `continueTable()` are untouched
+and are now reached from Custom Game.
+
+**Custom Game** is the one place a standalone table is configured. Its
+Game Type selector is Cash / Tournament / **Elimination**, with no
+unfinished future mode advertised. Elimination withdraws the stack and
+blind panel (it fixes its own stakes from `ELIMINATION_CONFIG`) and offers
+the three sizes a run can actually build, stored in a new
+`settings.runOpponents` so it never overwrites the cash table size.
+`settings.mode` is **never** set to `elimination`, so every existing caller
+of `startGame()` — Quick Deal included — can only ever be handed a mode it
+can build. A saved table is never stranded: Custom Game shows it and
+offers Continue, through the same `continueTable()` the old menu button
+used.
+
+### 2. Featured-button clipping — root cause and fix
+
+`.pc-primary-cradle` was a shrinkable flex item inside a bay with
+`min-height:0; overflow:hidden`. On a short phone the cradle collapsed
+**117px → 39px** and its own `overflow:hidden` then cropped the 78px
+cartridge — measured at 375x667 as "loses 36px", and at 320x568 the
+utility row lost 103px.
+
+Fixed by correcting ownership, not by shortening anything: the cradle no
+longer clips (`.pc-slot-aperture` already owns the mechanism's clipped
+viewport, the only clip ever needed), the bay's physical parts are
+`flex:0 0 auto`, and the bay is `min-height:min-content; overflow:visible`
+so the already-scrolling `#home` owns the overflow.
+
+### 3. Cabinet height
+
+`.pc-control-bay` was `flex:1 1 auto`, stretching to fill the cabinet and
+leaving a dead panel under the utility row. It is now content-sized, the
+card is `height:auto` with a 13px floor, and the card is `flex:0 0 auto`
+so it cannot shrink below its contents and paint its own floor *above* the
+last control on a short phone. Measured floor below the last control:
+**35px** at 390px and above, **30px** at 320/375 where the page scrolls.
+
+### 4. The printed event ticket
+
+The dark event drawer is replaced by a printed ticket that feeds out of a
+slot beneath the event row. Extracted from the approved Ticket Lab without
+reinterpretation. Ordinary HTML and CSS — no canvas, no SVG animation, no
+paper simulation, no new artwork.
+
+Printed order: venue and event name; status stamp and table threat; prize
+and buy-in; opponent roster; players, stack and format; eligibility or
+unlock requirement. The controls are **machine**, mounted on the printer
+housing below the paper, never printed on it.
+
+- **Payout is the largest financial value on the ticket.**
+- **Opponent names** are the canonical personality from the authoritative
+  advertised roster — the same catalogue `newGame()` seats from.
+- **The roster is left aligned**: `justify-content:flex-start`, fixed 66px
+  seats holding stable 56px portraits, fixed gaps. Never `space-around`,
+  `space-evenly` or centred. An incomplete final row begins at the left,
+  which is what a four-seat field does at 320px.
+- **A locked or otherwise unenterable ticket** gets its stamp, its unlock
+  requirement printed prominently, and a **34px quiet status strip** — not
+  a large dead key dominating the ticket.
+- **Entry paid** carries the punched hole, exactly one `ENTRY PAID` stamp,
+  the full event and opponent information, and `CONTINUE` as the primary
+  control with `ABANDON EVENT` as the quieter destructive one.
+
+**Prestige** is derived from the venue and changes **material only** —
+paper stock, perforation, keyline, seal and serial. Every tier prints the
+same terms, in the same places, at the same size: basic (Back Room),
+standard (Pub Circuit), premium (Card Club), luxury (Casino Floor and
+above). All four are visible in the Lab even though the later venues are
+not implemented.
+
+### 5. Print motion and sound
+
+The sequence — mechanism engages, slot opens, paper feeds down in short
+stepped movement, overshoots, settles — is armed by **one thing only**:
+the tap that opens an event. Instrumented live:
+
+| | prints / sounds |
+|---|---|
+| page load, arriving at the Career screen | 0 / 0 |
+| explicit tap | 1 / 1 |
+| re-render, palette change, save write, returning to the screen, resize, closing | 1 / 1 |
+| a second explicit tap | 2 / 2 |
+
+Reduced motion reveals the ticket immediately with no travel. **Sound is
+deliberately independent of it** — a player who turned motion off has not
+turned sound off.
+
+**B — MECHANICAL TICKET is the approved production voice**: a firm
+engagement click, a chunky ratcheting feed over a subtle motor, and a
+substantial final locking clunk. All three voices (Receipt, Mechanical,
+Premium) remain auditionable in the Lab. They are procedural, scheduled on
+the AudioContext clock inside the ~0.55s print window so nothing can still
+be sounding after the ticket stops, and they inherit every existing rule:
+muted creates **no AudioContext at all**, nothing sounds on page load, and
+`Sound.unlock()` runs inside the tap so iOS permits audio. `noise()` gained
+an optional `when` offset — additive, and every pre-existing caller behaves
+exactly as before.
+
+### 6. Venue and palette boundary — unchanged and still enforced
+
+The ticket's mount and keys are **house-fixed**, like every other control
+in the directory, and do not follow the machine palette. The paper is
+neutral by construction in all four palettes; only the venue heading
+carries a venue's authored identity. The committed boundary check now also
+requires the paper's own `--tk-*` values to be literals, so a paper colour
+can never start resolving through a themed token.
+
+### 7. Legacy active-roster fallback
+
+An event entered before rosters existed carries no `career.active.roster`.
+The ticket now reads the seated players back out of the resumable Career
+table save, so such an event advertises the opponents it will actually
+resume with. Reads only; writes nothing. A table save that does not
+describe the event exactly is refused rather than half-used.
+
+### Files changed
+
+- `index.html` — home control bay; Custom Game screen.
+- `js/02-support-systems.js` — `gameType` / `runOpponents` settings and
+  their migration; `Sound.ticketPrint()` and the three voices; `noise()`
+  scheduling; build version.
+- `js/04-modes-and-scoring.js` — `careerSeatName()`.
+- `js/07-ui-wiring.js` — featured-button state; Custom Game resume and
+  game-type dispatch; venue tiers and ticket serial; the printed ticket;
+  the print-once flag; the legacy roster fallback.
+- `js/08-dev-mode.js` — the rewired menu and Custom Game bindings.
+- `css/03-action-console.css`, `css/04-overlays-and-modes.css`,
+  `css/06-machine-system.css` — route slab, clipping and cabinet height,
+  the ticket and its prestige tiers.
+- `sw.js` — cache name.
+- `ticket-lab.html`, `css/ticket-lab.css`, `js/ticket-lab.js` — the Lab,
+  which now renders the **production** ticket classes and stylesheet, so
+  it cannot drift from what ships.
+- `validation/career-events-checks.js`, `docs/career/*` — checks and
+  handoff.
+
+### Tests
+
+`node validation/career-events-checks.js` — **87 passed** (62 from before
+the roster pass, 18 added there, 7 added here: printed term order,
+prestige, the quiet locked strip, roster alignment, print arming, the
+production sound contract, and the legacy table-save fallback).
+`node validation/career-result-checks.js` — **39 passed**, unchanged.
+`node validation/scoring-checks.js` — **170 passed**, unchanged.
+`node validation/scoring-audit.js` — exit 0, unchanged.
+
+**Production-isolation audit:** no Lab file is referenced by `index.html`
+or `sw.js`; the Ticket Lab loads exactly two scripts —
+`js/02-support-systems.js` (the real Sound module, so the audition
+auditions what ships) and itself — and a committed check fails if it ever
+references `careerRosterFor`, `enterCareerEvent`, `settleCareerEvent`,
+`saveCareer`, `felt.career` or `localStorage`.
+
+### Rendered verification
+
+320 / 375 / 390 / 393 / 430 across all four palettes: no horizontal
+overflow, the whole ticket and its controls reachable by scrolling,
+canonical names on one line at every field size, portraits stable at 56px,
+incomplete rows left aligned, one ticket open at a time, zero console
+errors. Live: entry charges once, resume takes no second charge, and the
+advertised opponents are the opponents seated — including for an active
+event whose stored roster was deliberately deleted.
+
+**Still outstanding:** on-device iPhone verification, and final sound
+approval on a real device.
 
 ## Owner-directed pass — Career directory refinement and roster integrity (2026-08-27)
 
@@ -798,6 +987,8 @@ dependencies and exit conditions.
 | 2 | Second Chance recovery | Complete |
 | — | Career event directory (owner-directed, not a phase) | Complete |
 | — | Directory refinement + roster integrity (owner-directed, not a phase) | Complete |
+| — | Printed tickets + menu consolidation (owner-directed, not a phase) | Complete |
+| — | Segmented controls to a 44px target (follow-up, not a phase) | Recorded, not started |
 | 3 | Scoring specification and audit | Complete |
 | 4 | Scoring correction (gates 4A–4D) | Complete |
 | 5 | Contextual Board and visible Full Circuit | **Next** |
@@ -815,6 +1006,31 @@ dependencies and exit conditions.
 
 Phases 7–10 are the Back Room vertical slice; Phase 11 tests it. One phase at a
 time, in numeric order.
+
+## Follow-up task — segmented controls to a 44px touch target (raised 2026-08-27)
+
+Held back from the printed-ticket pass at the owner's direction. Full
+scope in `BUILD_PLAN.md`.
+
+`.segmented` buttons are **36px** tall, under the 44px minimum. Inherited,
+not introduced: measured at 12 instances on Classic Table Setup before this
+work began. It is a shared component used by Settings as well as Custom
+Game, so it needs its own pass with visual regression checks rather than a
+quiet edit inside a presentation change.
+
+## Open design issue — the threat ladder (raised 2026-08-27)
+
+Recorded during the printed-ticket integration and **not acted on**, as
+directed. Full entry in `CAREER_DESIGN.md`.
+
+> The current threat ladder reaches SERIOUS too early, including near the
+> beginning of the Pub Circuit. Threat terminology and AI progression
+> require a dedicated Career balance pass so the language communicates a
+> steady climb from welcoming introductory tables to genuinely elite
+> late-career opposition.
+
+Needs its own Career balance pass. No difficulty, AI or threat label was
+changed by the ticket work.
 
 ## Immediate next task
 

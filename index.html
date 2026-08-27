@@ -59,37 +59,24 @@
           <span class="pc-seam"></span>
           <span class="pc-lamp is-amber"></span>
         </div>
+        <!-- FEATURED CARTRIDGE — Career is the primary game mode. The
+             sub-line is the only part that changes with state. -->
         <div class="pc-primary-cradle">
           <span class="pc-slot-aperture" aria-hidden="true"><span class="pc-slot-door"></span></span>
-          <button class="pc-button pc-button-primary" id="single-player">
+          <button class="pc-button pc-button-primary" id="open-career">
             <span class="pc-lamp is-amber"></span>
-            <span><span id="single-player-label">Single Player</span><small id="single-player-sub">Start elimination run</small></span>
+            <span><span id="career-btn-label">Career</span><small id="career-btn-sub">Build your bankroll</small></span>
             <span class="pc-lamp is-amber"></span>
           </button>
         </div>
-        <button class="pc-button pc-button-secondary" id="go-to-setup">Classic Table Setup</button>
-        <button class="pc-button pc-button-secondary hidden" id="new-game-btn">New Game</button>
-        <button class="pc-button pc-button-secondary" id="open-career">Career</button>
+        <!-- The one route to a standalone table. Elimination Run, Cash and
+             Tournament are all game types INSIDE it now, so the menu no
+             longer carries three competing ways to start a game. -->
+        <button class="pc-button pc-button-secondary" id="go-to-setup">Custom Game</button>
         <div class="home-row">
           <button class="btn-secondary" id="quick-play">Quick Deal</button>
           <button class="btn-secondary" id="open-rankings">Hand Rankings</button>
           <button class="btn-secondary" id="open-awards">Score / Awards</button>
-        </div>
-        <!-- Table-size step for a NEW single-player run. Lives inside the
-             existing control bay and takes it over (see .picking-opponents)
-             rather than being another screen. -->
-        <div class="pc-opponent-picker hidden" id="opponent-picker">
-          <div class="pc-control-head">
-            <span class="pc-label">Opponents</span>
-            <span class="pc-seam"></span>
-            <span class="pc-lamp is-amber"></span>
-          </div>
-          <div class="opp-choice-row" id="opp-choice-row">
-            <button class="pc-button pc-button-primary opp-choice" id="opp-choice-4" data-opponents="4" type="button"><strong>4</strong><small>5&#8209;handed</small></button>
-            <button class="pc-button pc-button-primary opp-choice" id="opp-choice-5" data-opponents="5" type="button"><strong>5</strong><small>6&#8209;handed</small></button>
-            <button class="pc-button pc-button-primary opp-choice" id="opp-choice-6" data-opponents="6" type="button"><strong>6</strong><small>7&#8209;handed</small></button>
-          </div>
-          <button class="pc-button pc-button-secondary" id="opp-picker-back" type="button">&larr; Back</button>
         </div>
       </div>
     </div>
@@ -113,16 +100,51 @@
     <div class="lobby-card">
       <div class="setup-head">
         <button class="icon-btn" id="setup-back" aria-label="Back">&larr;</button>
-        <div class="setup-title">Table Setup</div>
+        <div class="setup-title">Custom Game</div>
         <div style="width:44px; flex-shrink:0;"></div>
+      </div>
+
+      <!-- RESUME. A standalone table in progress is never stranded by the
+           menu consolidation: this is the route back into it, and it is the
+           only control shown before the player has decided to discard it. -->
+      <div class="panel-card setup-resume hidden" id="setup-resume">
+        <div class="card-label">Table in progress <span class="val" id="setup-resume-tag">Cash game</span></div>
+        <div class="hint" id="setup-resume-line" style="margin-bottom:12px;"></div>
+        <button class="btn-primary" id="setup-continue" type="button">Continue Table</button>
+        <div class="hint" style="margin-top:10px;">Dealing a new table below will discard it.</div>
+      </div>
+
+      <div class="panel-card">
+        <div class="card-label">Game type</div>
+        <div class="field">
+          <div class="segmented" id="type-seg" role="group" aria-label="Game type">
+            <button data-type="cash" class="active">Cash</button>
+            <button data-type="tournament">Tournament</button>
+            <button data-type="elimination">Elimination</button>
+          </div>
+          <div class="hint" id="type-hint"></div>
+        </div>
       </div>
 
       <div class="panel-card">
         <div class="card-label">The table <span class="val" id="opp-label">4</span></div>
-        <div class="stepper">
+        <!-- Cash and Tournament take any table size from 1 to 8. -->
+        <div class="stepper" id="opp-stepper">
           <button id="opp-minus" aria-label="Fewer opponents">&minus;</button>
           <div class="stepper-val"><span class="n" id="opp-count">4</span><span class="cap">opponents</span></div>
           <button id="opp-plus" aria-label="More opponents">+</button>
+        </div>
+        <!-- An Elimination run supports exactly 4, 5 or 6, so it gets the
+             three real choices rather than a stepper that can be walked to
+             a size the run cannot build. Stored separately from the
+             cash/tournament size, so neither overwrites the other. -->
+        <div class="field hidden" id="run-size-field">
+          <div class="segmented" id="run-size-seg" role="group" aria-label="Run table size">
+            <button data-run-opponents="4">4</button>
+            <button data-run-opponents="5">5</button>
+            <button data-run-opponents="6">6</button>
+          </div>
+          <div class="hint" id="run-size-hint"></div>
         </div>
         <div class="field" style="margin-top:18px;">
           <div class="field-label">Difficulty</div>
@@ -135,16 +157,10 @@
         </div>
       </div>
 
-      <div class="panel-card">
+      <!-- Elimination fixes its own stakes (see ELIMINATION_CONFIG), so the
+           whole panel is withdrawn rather than shown with dead controls. -->
+      <div class="panel-card" id="stakes-panel">
         <div class="card-label">Stakes</div>
-        <div class="field">
-          <div class="field-label">Game type</div>
-          <div class="segmented" id="mode-seg" role="group" aria-label="Game type">
-            <button data-mode="cash" class="active">Cash game</button>
-            <button data-mode="tournament">Tournament</button>
-          </div>
-          <div class="hint" id="mode-hint"></div>
-        </div>
         <div class="field">
           <div class="field-label">Starting stack <b id="stack-label">1,000</b></div>
           <div class="segmented compact" id="stack-seg" role="group" aria-label="Starting stack">

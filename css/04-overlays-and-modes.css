@@ -415,8 +415,13 @@ body:has(#table-screen.hidden) .arcade-bank-flight{
   background:var(--bg-deep);
 }
 #home .lobby-card.pc-housing{
-  position:relative; z-index:2; width:100%; max-width:408px; height:100%; max-height:912px; min-height:0;
-  margin:auto; padding:11px; display:flex; flex-direction:column; gap:8px; overflow:hidden;
+  position:relative; z-index:2; width:100%; max-width:408px; height:auto; max-height:912px; min-height:0;
+  /* flex-shrink:0 — the cabinet is a flex ITEM of #home, and by default it
+     would shrink to the viewport on a short phone while its fixed-basis
+     contents kept their height, painting the cabinet floor ABOVE the last
+     control. It keeps its full height and #home scrolls instead. */
+  flex:0 0 auto;
+  margin:auto; padding:11px 11px 13px; display:flex; flex-direction:column; gap:8px; overflow:hidden;
   border:4px solid var(--pc-edge-lo); border-radius:12px;
   box-shadow:
     inset 4px 4px 0 var(--pc-leather-hi),inset -5px -5px 0 var(--pc-leather-lo),
@@ -509,12 +514,31 @@ body:has(#table-screen.hidden) .arcade-bank-flight{
 #home .swatch[aria-pressed="true"]{ transform:translateY(1px); box-shadow:0 1px 0 #140A07,inset 0 2px 0 rgba(255,255,255,.28); }
 #home .swatch[aria-pressed="true"]::after{ inset:-3px -2px; border:1px solid #6A4A14; border-radius:2px; }
 
-.pc-control-bay{ flex:1 1 auto; min-height:0; padding:12px 10px 15px; display:flex; flex-direction:column; overflow:hidden; }
+/* HEIGHT OWNERSHIP. The bay is sized by its CONTENTS, not by whatever
+   height is left over: it used to be flex:1 1 auto, which stretched it to
+   the bottom of a tall cabinet and left a dead panel under the utility
+   row. It also may no longer crop what it holds — min-height:0 +
+   overflow:hidden was what silently ate the featured cartridge's lower
+   edge on a short phone. The SCREEN owns the overflow; the bay owns none,
+   and the cabinet simply finishes after the last control. */
+.pc-control-bay{
+  flex:0 0 auto; min-height:min-content; padding:12px 10px 15px;
+  display:flex; flex-direction:column; overflow:visible;
+}
+/* Every physical part in the bay is a fixed casting, not a spring. */
+.pc-control-bay > .pc-primary-cradle,
+.pc-control-bay > .pc-button-secondary,
+.pc-control-bay > .home-row{ flex:0 0 auto; }
 .pc-control-head{ display:flex; align-items:center; justify-content:space-between; gap:9px; margin-bottom:10px; color:#B9B088; }
 .pc-control-head .pc-label{ color:#A99E73; }
 .pc-control-head .pc-seam{ flex:1; opacity:.65; }
+/* The 22px of bottom padding IS the visible plinth under the cartridge,
+   and the 0 3px 0 drop is the cabinet shadow beneath that. Neither may be
+   cropped, so this deliberately does NOT clip: the travelling mechanism
+   has its own clipped viewport in .pc-slot-aperture below, which is the
+   only thing that ever needed clipping. */
 .pc-primary-cradle{
-  position:relative; isolation:isolate; overflow:hidden; padding:9px 7px 22px; margin-bottom:12px;
+  position:relative; isolation:isolate; padding:9px 7px 22px; margin-bottom:12px;
   background:#B4A46F; border:4px solid #120907;
   box-shadow:inset 4px 4px 0 #EEDDA5,inset -4px -3px 0 #756744,0 3px 0 #2A190F;
 }
@@ -597,33 +621,11 @@ body:has(#table-screen.hidden) .arcade-bank-flight{
   box-shadow:0 4px 0 #72623C,0 6px 0 #090605,inset 2px 2px 0 #F9E8B4,inset -2px -2px 0 #8B7A4C;
 }
 #home .pc-button-secondary:active{ transform:translateY(4px); box-shadow:0 1px 0 #72623C,0 3px 0 #090605,inset 2px 2px 0 #F9E8B4; }
+/* The one secondary route is a plain slab with a single word on it. */
 
-/* ---- OPPONENTS 4/5/6 step ----
-   The control bay is one physical panel with one job at a time: while a
-   table size is being chosen it swaps its whole face for the picker
-   instead of growing a second column of controls. Everything here reuses
-   the bay's own primitives (pc-control-head, the cream primary button
-   face, the secondary slab for BACK) so it reads as another position of
-   the same machine, not a form. */
-.pc-control-bay.picking-opponents>*:not(.pc-opponent-picker){ display:none; }
-.pc-opponent-picker{ flex:1 1 auto; min-height:0; display:flex; flex-direction:column; }
-.pc-opponent-picker.hidden{ display:none; }
-.opp-choice-row{
-  flex:0 0 auto; display:grid; grid-template-columns:repeat(3,minmax(0,1fr));
-  gap:9px; margin-bottom:12px; height:clamp(96px,20vh,132px);
-}
-#home .pc-button-primary.opp-choice{
-  min-height:0; height:100%; padding:10px 4px 12px; margin:0;
-  display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px;
-  letter-spacing:0;
-}
-#home .pc-button-primary.opp-choice strong{
-  font-family:var(--font-hdr); font-size:26px; font-weight:400; line-height:1;
-  text-shadow:2px 2px 0 rgba(81,49,5,.28);
-}
-#home .pc-button-primary.opp-choice small{ margin-top:7px; font-size:7.5px; letter-spacing:.06em; }
-/* BACK sits on the bay floor, where every other secondary control lives. */
-.pc-opponent-picker>.pc-button-secondary{ margin-top:auto; }
+/* The menu-resident OPPONENTS 4/5/6 step was removed with the menu
+   consolidation — run size is chosen in Custom Game now, alongside every
+   other table option, so the picker and its styling are gone with it. */
 .table-tools{ display:flex; align-items:center; gap:6px; }
 .table-save{
   width:58px; height:30px; min-height:30px; padding:0 7px;
