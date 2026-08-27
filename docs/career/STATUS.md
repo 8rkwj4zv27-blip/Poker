@@ -11,7 +11,7 @@ Career event directory` (the owner-directed milestone below), on top of
 `cb9aee0` — `Career Phase 2: Second Chance recovery, truthful loss messaging,
 DEV bankroll tool`. Career logic baseline before Phase 2 was `d31b120` — `Add
 multi-place payouts and Pub Circuit Open` (Phase 1).
-Build `v0.25.0-dev · Printed Tickets`, service-worker cache `poker-v24-0`.
+Build `v0.26.0-dev · Event UI Update`, service-worker cache `poker-v25-0`.
 Career save schema **version 4** — unchanged by the 2026-08-27 pass, which
 added the roster book as a tolerant additive field rather than a fifth version.
 
@@ -47,8 +47,10 @@ Full Circuit — follows only after that manual gate passes.**
 ## Owner-directed pass — printed event tickets and menu consolidation (2026-08-27)
 
 Shipped as `ed0f5d6`. Approved from the Ticket Lab prototype and integrated. Build
-`v0.25.0-dev · Printed Tickets`, service-worker cache `poker-v24-0` — the
-cache bump is what delivers this to installed PWAs.
+`v0.26.0-dev · Event UI Update`, service-worker cache `poker-v25-0` — the
+cache bump is what delivers this to installed PWAs. (It first shipped in
+`ed0f5d6` as `v0.25.0-dev · Printed Tickets` and was relabelled on the same
+day; the pass itself is unchanged.)
 
 **No Career economy, event availability, roster authority, save structure,
 entry charging, settlement, payout term, venue id, opponent artwork,
