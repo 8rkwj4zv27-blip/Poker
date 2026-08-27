@@ -1,9 +1,10 @@
 # Career Mode — Current Status
 
 Last verified: 2026-08-27
-Verified implementation baseline: the **printed event ticket and home-screen
-consolidation** pass below, on top of `cbaf082` — `Career directory refinement
-and roster integrity`, on top of `2673dcb` —
+Verified implementation baseline: `ed0f5d6` — `Printed event tickets and
+home-screen menu consolidation` (the owner-approved pass below), on top of
+`cbaf082` — `Career directory refinement and roster integrity`, on top of
+`2673dcb` —
 `Record the scoring correction commit in Career status`, on top of `4f9a351` —
 `Correct scoring attribution and feedback`, on top of `35d93c3` — `Integrate the
 Career event directory` (the owner-directed milestone below), on top of
@@ -45,7 +46,7 @@ Full Circuit — follows only after that manual gate passes.**
 
 ## Owner-directed pass — printed event tickets and menu consolidation (2026-08-27)
 
-Approved from the Ticket Lab prototype and integrated. Build
+Shipped as `ed0f5d6`. Approved from the Ticket Lab prototype and integrated. Build
 `v0.25.0-dev · Printed Tickets`, service-worker cache `poker-v24-0` — the
 cache bump is what delivers this to installed PWAs.
 
