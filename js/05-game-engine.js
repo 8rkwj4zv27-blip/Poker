@@ -174,6 +174,18 @@ function makePlayer(id, name, isHuman, chips, personality){
     acted:false, mayRaise:true, inHand:false, eliminated:false };
 }
 
+/* Accepts a supplied roster only if it seats exactly this table and every
+   seat names a personality that still exists. Anything else returns null
+   and the table falls back to the ordinary random draw — a partial roster
+   must never build a table with an undefined persona in a seat. */
+function careerLaunchRoster(roster, numOpponents){
+  if (!Array.isArray(roster) || roster.length !== numOpponents) return null;
+  const ok = roster.every(seat=>seat && typeof seat.personalityKey === 'string'
+    && PERSONALITIES_ALL.some(p=>p.key === seat.personalityKey)
+    && Number.isInteger(seat.faceColorIdx));
+  return ok ? roster : null;
+}
+
 function newGame(opts){
   const elim = opts.mode==='elimination';
   // Elimination mode is config-driven for stakes (fixed starting stack/
@@ -188,12 +200,28 @@ function newGame(opts){
 
   const players = [];
   players.push(makePlayer('you', settings.playerName || 'You', true, stack, null));
-  const personas = pickPersonalities(numOpponents);
+  // opts.roster is Career's AUTHORITATIVE field for this event — the same
+  // personalities and face colours the event directory advertised (see the
+  // roster book in 07-ui-wiring.js). When one is supplied the table is
+  // built from it instead of drawing fresh randoms, which is what makes
+  // the played table the advertised table. Every other caller passes none
+  // and keeps the original random draw, unchanged.
+  const roster = careerLaunchRoster(opts.roster, numOpponents);
+  const personas = roster
+    ? roster.map(seat=>PERSONALITIES_ALL.find(p=>p.key===seat.personalityKey))
+    : pickPersonalities(numOpponents);
   const usedNames = new Set();
   for (let i=0;i<numOpponents;i++){
+    // Display names are still resolved live from the current setting, as
+    // before: the directory advertises faces, not names, so a roster fixes
+    // WHO is at the table without freezing what the name setting shows.
     const displayName = settings.opponentNames === 'random' ? randomOpponentName(usedNames) : personas[i].name;
-    players.push(makePlayer('ai'+i, displayName, false, stack, personas[i]));
+    const player = makePlayer('ai'+i, displayName, false, stack, personas[i]);
+    if (roster) player.faceColorIdx = roster[i].faceColorIdx;
+    players.push(player);
   }
+  // Only ever backfills a seat still without a colour, so a roster's
+  // colours are never shuffled out from under it.
   assignFaceColors(players);
   const lvl = opts.mode==='tournament' ? 0 : opts.blindLevel;
   const smallBlind = elim ? ELIMINATION_CONFIG.smallBlind : BLIND_LEVELS[lvl][0];

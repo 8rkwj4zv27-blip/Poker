@@ -1,14 +1,17 @@
 # Career Mode — Current Status
 
-Last verified: 2026-08-26
-Verified implementation baseline: `4f9a351` — `Correct scoring attribution and
-feedback`, on top of `35d93c3` — `Integrate the Career event directory` (the
-owner-directed milestone below), on top of `cb9aee0` — `Career Phase 2: Second
-Chance recovery, truthful loss messaging, DEV bankroll tool`. Career logic
-baseline before Phase 2 was `d31b120` — `Add multi-place payouts and Pub Circuit
-Open` (Phase 1).
+Last verified: 2026-08-27
+Verified implementation baseline: the **Career directory and roster-integrity
+pass** below (uncommitted at the time of writing), on top of `2673dcb` —
+`Record the scoring correction commit in Career status`, on top of `4f9a351` —
+`Correct scoring attribution and feedback`, on top of `35d93c3` — `Integrate the
+Career event directory` (the owner-directed milestone below), on top of
+`cb9aee0` — `Career Phase 2: Second Chance recovery, truthful loss messaging,
+DEV bankroll tool`. Career logic baseline before Phase 2 was `d31b120` — `Add
+multi-place payouts and Pub Circuit Open` (Phase 1).
 Build `v0.23.0-dev · Scoring Correction`, service-worker cache `poker-v22-0`.
-Career save schema **version 4**.
+Career save schema **version 4** — unchanged by the 2026-08-27 pass, which
+added the roster book as a tolerant additive field rather than a fifth version.
 
 This is the short handoff file. Update it whenever a Career milestone is completed or the immediate next task changes.
 
@@ -38,6 +41,193 @@ decisions in `docs/scoring/SCORING_SPEC.md` section 9 were settled and approved
 on 2026-08-26 and are implemented. Rendered verification of the Phase 4
 correction is the immediate next task; Phase 5 — Contextual Board and visible
 Full Circuit — follows only after that manual gate passes.**
+
+## Owner-directed pass — Career directory refinement and roster integrity (2026-08-27)
+
+Shipped outside the numeric phase order at the owner's direction. It does not
+start Phase 5, does not renumber anything, and changes no economy, pacing,
+unlock rule, poker rule or scoring behaviour. Four goals: clarify the
+**PLAYER INSTRUMENT → VENUES → EVENTS** hierarchy, simplify the event names,
+cut the border noise, and make the advertised table the played table.
+
+### 1. Roster integrity — the headline fix
+
+**The defect.** The directory preview and the table were two independent random
+draws that had never been connected:
+
+- the preview built portraits from a seat-index colour formula,
+  `(i * 3 + playerCount) % FACE_COLORS.length` — no personalities, and the same
+  four colours for a given event forever;
+- `newGame()` separately called `pickPersonalities()` and `assignFaceColors()`,
+  both shuffled, at the moment of launch.
+
+Measured on the pre-pass build, PUB CIRCUIT OPEN advertised faces `[5,0,3,6]` on
+every single visit and dealt `[6,3,5,7]`, `[3,2,7,6]`, `[6,2,0,5]` on three
+consecutive entries. The advertised table was **never** the played table.
+
+**The fix — one authoritative roster per event instance.**
+
+- A roster is a minimal anonymous field: `personalityKey` + `faceColorIdx` per
+  seat. No names, no dialogue, no familiarity, no history. Phase 7 is untouched.
+- It is **drawn once** by the real production paths — `pickPersonalities()` and
+  `assignFaceColors()`, reused rather than reimplemented — so a Career field
+  comes from exactly the distribution a Single Player table does.
+- `career.rosters` holds the field currently **advertised** for each event.
+  `career.active.roster` holds the field actually **seated**, captured at entry
+  exactly as buy-in and payouts already are, and released from the book so the
+  directory draws fresh next time.
+- It drives the preview portraits, `newGame()` (via a new optional
+  `opts.roster`), the active save and the resume. A settled or abandoned event
+  retires its field.
+- `normalizeCareerRoster()` rejects any stored field that no longer describes
+  its event — wrong seat count, unknown personality key, out-of-range or
+  duplicated colour — and redraws rather than half-building a table.
+- Every non-Career caller passes no roster and keeps the original random draw,
+  bit for bit.
+
+**No save-version bump.** `isValidCareer()` deliberately does not require the
+new fields, so a stored v4 career without them is still a valid v4 career and
+simply draws its fields on the next visit. A malformed book is discarded, never
+rejected. Verified: a fully valid v4 save loads with **zero** writes.
+
+**The one write, and where it is not.** Fields are materialised in
+`showCareerScreen()` — once per *visit* — and persisted only if the book
+actually changed. `renderCareerScreen()` still writes nothing, so the existing
+guarantee that **opening a tray performs no save** is intact and still asserted.
+
+### 2. Event names — display only
+
+| id (unchanged) | was | title now | record name now |
+|---|---|---|---|
+| `back-room-freezeout` | BACK ROOM FREEZEOUT | `3-HAND` | `BACK ROOM 3-HAND` |
+| `pub-freezeout` | PUB CIRCUIT FREEZEOUT | `4-HAND` | `PUB CIRCUIT 4-HAND` |
+| `pub-open` | PUB CIRCUIT OPEN | `5-HAND` | `PUB CIRCUIT 5-HAND` |
+| `second-chance` | SECOND CHANCE | `SECOND CHANCE` | `SECOND CHANCE` |
+
+Records of earlier milestones further down this file deliberately keep the
+titles that were current when they were written; only the ids are stable across
+both, and the ids never changed.
+
+`title` is what the directory prints, where the venue marker is already above
+it. `name` stays venue-qualified for saves, settled results and the unlock copy
+("UNLOCKS BY WINNING BACK ROOM 3-HAND"), because "4-HAND" alone does not say
+where. All four still report `FORMAT  FREEZEOUT` — which is precisely why
+"Open" could not remain a title. Save ids are untouched. See
+`CAREER_DESIGN.md`, *Event naming*.
+
+### 3. Hierarchy and frame reduction
+
+- **`#career` no longer sits in the shared themed cabinet.** That wrapper was
+  the outermost redundant frame: it made every venue read as a small box nested
+  inside the player's dashboard, and tinted all six with the machine palette.
+  `.cpi` now carries the cabinet — rim, drop and all — and is the only framed
+  machine on the screen.
+- `.cdir` stopped being a cabinet and became a transparent full-width column.
+- Each venue is now **one** housing with its marker band as the top of that
+  housing, rather than a plate plus a separately framed bay.
+- Collapsed events are a single-row plaque: title, printed gold entry price,
+  state flag. The entry price lost its own recessed window — a fixed figure is
+  printed ink; recessed glass is reserved for information that changes.
+- The tray keeps one housing. Inside it the four term cabinets and their four
+  wells became **one** recessed CRT strip with internal dividers; the faces lost
+  their extra bay; threat became an inline readout; payout kept its window but
+  lost its outer panel; the availability note became printed text; the action
+  cradle became a recessed seat so the key is the single framed object.
+
+Measured, at 390px, counting elements drawing a complete rectangular outline
+inside `#career`:
+
+| tray state | before | after | removed |
+|---|---:|---:|---:|
+| 3-HAND open | 65 | 34 | 31 (48%) |
+| 4-HAND open | 67 | 36 | 31 (46%) |
+| 5-HAND open | 68 | 37 | 31 (46%) |
+| **total** | **200** | **107** | **93 (47%)** |
+
+Comfortably past the one-third target. Everything physical stayed physical:
+venue housings, plaques, portrait windows, flags, CRT surfaces and the action
+key all keep their frames and depth.
+
+Also measured at 390px: venue width **296px → 366px**, portraits **40px →
+62px**, collapsed row height **58px → 46px**.
+
+### 4. Machine theme vs venue identity
+
+The separation is now **explicit and enforced**, not incidental. Every
+declaration below `/* ---- 2. HOUSE DIRECTORY` resolves to an `--h-*` value
+scoped to `.cdir` or to a literal; `--font-hdr` and `--radius` (typography and
+geometry, not palette) are the only global tokens allowed through. A committed
+check parses the stylesheet and fails on any `--theme-*`, `--pc-*`, `--accent*`,
+`--felt*`, `--panel*`, `--bg-*`, `--ink-*`, `--card-*` or `--danger` reference in
+that block, and on `#career .lobby-card` reappearing in the shared cabinet rule.
+
+Measured across all four themes: **4 distinct player-instrument colours, 1
+identical venue fingerprint** (all six venues' band and body colours hashed).
+
+### 5. One small pre-existing defect fixed in passing
+
+At 320px the "EVENTS PLAYED" label wraps to two lines and pushed its own readout
+5px below the other two. Present on the pre-pass build too. One declaration —
+`align-items:end` on `.cpi-stats`. No other dashboard change.
+
+### Files changed
+
+- `js/04-modes-and-scoring.js` — `title` on each descriptor, `name` requalified,
+  `careerEventTitle()`, `generateCareerRoster()`, `normalizeCareerRoster()`.
+- `js/05-game-engine.js` — `careerLaunchRoster()`; `newGame()` accepts and seats
+  `opts.roster`.
+- `js/07-ui-wiring.js` — the roster book (`careerRosterStore/For/release`,
+  `materializeCareerRosters`, `careerActiveRoster`, `withCareerRoster`), entry /
+  settlement / migration wiring, and the directory markup.
+- `css/06-machine-system.css` — `#career` removed from the shared cabinet;
+  the Career-screen, player-instrument and house-directory blocks.
+- `validation/career-events-checks.js` — 14 new checks; the real opponent
+  systems and the real `newGame()` are now loaded into the harness.
+- `docs/career/CAREER_DESIGN.md`, `docs/career/BUILD_PLAN.md` — naming decision
+  recorded; the Phase 7 roster-authority code question answered.
+
+**Nothing else was touched.** No table, gameplay, dashboard, settings or result
+code; no poker rule, hand evaluation or AI behaviour; no economy, payout, stack,
+blind structure, unlock rule, Second Chance threshold, counter or save version.
+
+### Tests
+
+`node validation/career-events-checks.js` — **76 passed** (62 pre-existing, with
+the four descriptor fixtures and the unlock-copy assertion updated to the
+shipped names, and the five launch-terms assertions now comparing terms and
+roster separately; 14 new). The harness now loads the real `shuffle`,
+`FACE_COLORS`, `assignFaceColors`, `PERSONALITIES_ALL`, `pickPersonalities` and
+`newGame`, so roster behaviour is asserted against production rather than a stub.
+
+`node validation/career-result-checks.js` — **39 passed**, unchanged.
+`node validation/scoring-checks.js` — **170 passed**, unchanged.
+`node validation/scoring-audit.js` — exit 0, unchanged.
+
+### Rendered verification (headless Chrome over HTTP, CDP device emulation)
+
+Chrome clamps `--window-size` on macOS, so viewports were set through
+`Emulation.setDeviceMetricsOverride` and the HTTP cache was disabled for every
+navigation.
+
+**28 layout cases, all clean** — no document, screen, directory or tray
+overflow; nothing outside the viewport; every button ≥ 44px; at most one tray
+open; zero console errors. Widths **320 / 390 / 430** across: fresh $500; each
+of 3-HAND, 4-HAND, 5-HAND and SECOND CHANCE expanded; an unaffordable event; a
+locked event; an active event; and a `$123,456,789` bankroll. Themes
+**emerald / midnight / burgundy / slate** at 390px.
+
+**Live walkthrough in the real app**, driving real taps:
+
+- advertised roster → close tray → reopen → **identical**;
+- TAKE SEAT → `game.players` **exactly** the advertised personalities and face
+  colours; the same field in `career.active.roster`;
+- full page reload → resume → **same field again**, bankroll not re-charged;
+- two cassettes tapped in sequence → still exactly one tray open;
+- settlement → the field is retired and a fresh one drawn;
+- Second Chance renders at $40 and $99 and **not at all** at $100 or $500;
+- four `LOCKED · COMING SOON` compartments, inventing no event.
+
+**Still outstanding:** on-device iPhone verification, as before.
 
 ## Owner-directed milestone — Career event directory (2026-08-25)
 
@@ -604,6 +794,7 @@ dependencies and exit conditions.
 | 1 | Paid places and Pub Circuit Open | Complete |
 | 2 | Second Chance recovery | Complete |
 | — | Career event directory (owner-directed, not a phase) | Complete |
+| — | Directory refinement + roster integrity (owner-directed, not a phase) | Complete |
 | 3 | Scoring specification and audit | Complete |
 | 4 | Scoring correction (gates 4A–4D) | Complete |
 | 5 | Contextual Board and visible Full Circuit | **Next** |
@@ -626,6 +817,10 @@ time, in numeric order.
 
 **Rendered verification of the Phase 4 scoring correction**, then
 **Phase 5 — Contextual Board and visible Full Circuit.**
+
+Unchanged by the 2026-08-27 owner-directed pass, which touched no scoring code.
+That pass's own rendered verification is complete and recorded above; the
+outstanding gate below is still Phase 4's, items 15–24.
 
 Phase 4 is code-complete and passes every automated suite, but no part of it has
 been seen on a screen. The manual checklist below (items 15–24) is the gate. It
@@ -659,14 +854,14 @@ RESET TESTER returns to the Main Menu.
 
 ## Manual checks still outstanding
 
-1. Career screen shows three events; Pub Circuit Open locked until the Back Room is won.
-2. Entering Pub Circuit Open drops the bankroll by $300 and deals a five-handed table.
+1. Career screen shows three events; Pub Circuit 5-HAND locked until the Back Room is won.
+2. Entering Pub Circuit 5-HAND drops the bankroll by $300 and deals a five-handed table.
 3. Refresh mid-event, then Continue Event — resumes without a second charge.
 4. Finish 2nd — `EVENT CASHED`, `+$450`, bankroll up $150 net, no new unlock, and **no stage
    roll**: the restrained plain card over the live felt, exactly as before.
 5. Finish 1st — the shared result stage, `EVENT WON`, `+$1,050` on the hero reel.
 6. Abandon — buy-in forfeited, no prize, no unlock.
-7. Back Room and Pub Circuit Freezeout play and settle exactly as before.
+7. Back Room 3-HAND and Pub Circuit 4-HAND play and settle exactly as before.
 8. Five-handed table layout and the Payout readout are legible on an iPhone.
 9. At a bankroll below $100, Second Chance appears as a fourth, free-entry card; at $100 or
    above it does not render at all (not even disabled).

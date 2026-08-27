@@ -508,14 +508,26 @@ function defaultCareer(){
     unlocks,
     lastResult:null,
     eventsPlayed:0,
-    eventsWon:0
+    eventsWon:0,
+    // Drawn lazily on the first visit to the directory. See THE ROSTER
+    // BOOK below: additive, tolerant, and NOT a schema version change.
+    rosters:{}
   };
+}
+/* Attaches a seated roster only when there genuinely is one, so an active
+   event carried over from a save written before rosters existed keeps its
+   exact previous shape rather than growing a null key. */
+function withCareerRoster(active, roster){
+  const seated = normalizeCareerRoster(roster, active.snapshot);
+  if (seated) active.roster = seated;
+  return active;
 }
 function normalizeActiveCareerEvent(active){
   if (!active || typeof active !== 'object') return null;
   const full = active.snapshot || active.event;
   if (isValidCareerEventSnapshot(full)){
-    return { eventId:full.id, snapshot:Object.assign({}, full) };
+    const snapshot = Object.assign({}, full);
+    return withCareerRoster({ eventId:snapshot.id, snapshot }, active.roster);
   }
   // An incomplete snapshot: either version 1 (which knew only Back Room and
   // stored eventId/buyIn/prize at the TOP level) or a version-2 snapshot
@@ -529,7 +541,10 @@ function normalizeActiveCareerEvent(active){
   const descriptor = careerEventById((full && full.id) || active.eventId || 'back-room-freezeout');
   if (!descriptor) return null;
   const snapshot = applyPaidCareerTerms(careerEventSnapshot(descriptor), paid);
-  return { eventId:snapshot.id, snapshot };
+  // A save written before rosters existed simply has none. It is NOT
+  // invented here: the table save already holds the real seated players,
+  // and continueCareerEvent() restores them.
+  return withCareerRoster({ eventId:snapshot.id, snapshot }, active.roster);
 }
 
 /* Records written before placement existed have no place and no prize, and
@@ -580,6 +595,15 @@ function migrateCareer(raw){
   // reconstructed from anything the save already holds.
   migrated.eventsPlayed = normalizeCareerCounter(raw.eventsPlayed);
   migrated.eventsWon = normalizeCareerCounter(raw.eventsWon);
+  // Advertised fields carry across verbatim where they still describe a
+  // real event; anything else is dropped and redrawn on the next visit.
+  if (raw.rosters && typeof raw.rosters === 'object' && !Array.isArray(raw.rosters)){
+    migrated.rosters = {};
+    Object.keys(raw.rosters).forEach(id=>{
+      const roster = normalizeCareerRoster(raw.rosters[id], careerEventById(id));
+      if (roster) migrated.rosters[id] = roster;
+    });
+  }
   if (raw.unlocks && typeof raw.unlocks === 'object'){
     CAREER_EVENT_LIST.forEach(event=>{
       if (raw.unlocks[event.id] === true) migrated.unlocks[event.id] = true;
@@ -619,10 +643,96 @@ let career = (function(){
   return migrated;
 })();
 function saveCareer(){ Store.set(CAREER_KEY, career); }
+
+/* ============================================================
+   THE ROSTER BOOK — Career's one authority on who is at which table.
+
+   `career.rosters` maps an event id to the field currently ADVERTISED for
+   it. `career.active.roster` holds the field actually SEATED in the event
+   in progress. Together they are the single source of truth behind the
+   preview portraits, the launch, the active save and the resume, so the
+   directory can no longer advertise one table and deal another.
+
+   ADDITIVE AND TOLERANT ON PURPOSE. isValidCareer() deliberately does not
+   require either field, so this needed NO save-version bump and NO
+   migration: a stored v4 career with no rosters is still a valid v4
+   career, and simply draws its fields on the next visit. A malformed or
+   stale entry is discarded by normalizeCareerRoster() and redrawn rather
+   than rejecting the whole save.
+
+   Lifecycle:
+     drawn   — lazily, once, per event instance;
+     seated  — moved into career.active at entry, and removed from the
+               book, so the directory draws a fresh field next time;
+     retired — with the active event at settlement or abandonment.
+   ============================================================ */
+function careerRosterStore(){
+  if (!career.rosters || typeof career.rosters !== 'object' || Array.isArray(career.rosters)){
+    career.rosters = {};
+  }
+  return career.rosters;
+}
+
+/* The authoritative field for an event. An event in progress answers with
+   the roster actually seated in it; anything else answers with the drawn
+   field, drawing one only if the book has none. Repeated calls — every
+   directory render, every tray open and close — return the SAME field. */
+function careerRosterFor(eventId){
+  const event = careerEventById(eventId);
+  if (!event) return null;
+  if (career.active && career.active.eventId === eventId){
+    const seated = normalizeCareerRoster(career.active.roster, career.active.snapshot || event);
+    if (seated) return seated;
+  }
+  const store = careerRosterStore();
+  const stored = normalizeCareerRoster(store[eventId], event);
+  if (stored) return stored;
+  const drawn = generateCareerRoster(event);
+  if (!drawn) return null;
+  store[eventId] = drawn;
+  return drawn;
+}
+function releaseCareerRoster(eventId){
+  const store = careerRosterStore();
+  if (store[eventId]){ delete store[eventId]; return true; }
+  return false;
+}
+
+/* Called once per VISIT to the Career screen — from showCareerScreen(),
+   never from renderCareerScreen(). That distinction is deliberate and is
+   asserted by the checks: opening and closing a tray re-renders the board
+   and must still write NOTHING, while arriving at the screen may persist
+   fields drawn for the first time so a reload advertises the same faces.
+   It saves only when the book actually changed. */
+function materializeCareerRosters(){
+  const store = careerRosterStore();
+  let changed = false;
+  CAREER_EVENT_LIST.forEach(event=>{
+    const state = careerEventState(event.id);
+    if (state === 'hidden' || state === 'missing') return;
+    if (normalizeCareerRoster(store[event.id], event)) return;
+    const before = store[event.id];
+    if (careerRosterFor(event.id) && store[event.id] !== before) changed = true;
+  });
+  // A field held for an event the catalogue no longer contains is dead
+  // weight, and would be a stale advertisement if the id ever returned.
+  Object.keys(store).forEach(id=>{
+    if (!careerEventById(id)){ delete store[id]; changed = true; }
+  });
+  if (changed) saveCareer();
+  return changed;
+}
 function careerBankroll(){ return career.bankroll; }
 function careerHasActiveEvent(){ return !!career.active; }
 function careerActiveEventSnapshot(){
   return career.active ? career.active.snapshot : null;
+}
+/* The field actually seated in the event in progress, or null for an event
+   entered before rosters existed (whose real players live in the table
+   save and are restored by continueCareerEvent). */
+function careerActiveRoster(){
+  return career.active
+    ? normalizeCareerRoster(career.active.roster, career.active.snapshot) : null;
 }
 /* Read-only view of the settled record. endCareerEvent() builds its display
    model from this immediately after settlement, so the result presentation
@@ -664,8 +774,15 @@ function enterCareerEvent(eventId){
   if (!careerCanEnterEvent(eventId)) return false;
   const event = careerEventById(eventId);
   const snapshot = careerEventSnapshot(event);
+  // The field the directory was ADVERTISING becomes the field that is
+  // SEATED. It is copied into the active event (so it survives a reload
+  // and drives the resume) and released from the book, so the next visit
+  // to the directory draws a new field for this event rather than
+  // re-advertising the one already played.
+  const roster = careerRosterFor(eventId);
   career.bankroll -= snapshot.buyIn;
-  career.active = { eventId:snapshot.id, snapshot };
+  career.active = withCareerRoster({ eventId:snapshot.id, snapshot }, roster);
+  releaseCareerRoster(eventId);
   career.lastResult = null;
   // Counted here and nowhere else: this is the one place an event becomes
   // active and the buy-in is debited, so the increment cannot desynchronise
@@ -746,6 +863,9 @@ function settleCareerEvent(result){
     bankroll: career.bankroll
   };
   career.active = null;
+  // The seated field dies with the event it was seated in; the directory
+  // draws a fresh one for that event on the next visit.
+  releaseCareerRoster(stake.id);
   saveCareer();        // credit + active:null in one write, and it lands first
   clearCareerTable();  // only once settlement is durable
   return true;
@@ -761,7 +881,11 @@ function startCareerEvent(){
   newGame({
     mode:'career', difficulty:event.difficulty,
     opponents:event.opponentCount, stack:event.stack,
-    blindLevel:event.initialBlindLevel
+    blindLevel:event.initialBlindLevel,
+    // The advertised field, seated. Without this newGame() would draw its
+    // own personalities and colours and the table would not be the table
+    // the player inspected.
+    roster:careerActiveRoster()
   });
   game.event = Object.assign({}, event, { reward:makeEventRewardState() });
   // The first checkpoint. saveTable() only fires at the END of a hand, so
@@ -813,6 +937,10 @@ function showTableScreen(){
 }
 
 function showCareerScreen(){
+  // Once per VISIT, before the first paint: any event without an
+  // advertised field draws one and the book is persisted. Tray toggles
+  // re-render without coming through here and so still write nothing.
+  materializeCareerRosters();
   renderCareerScreen();
   $('home').classList.add('hidden');
   $('setup').classList.add('hidden');
@@ -986,30 +1114,37 @@ function careerTrayHTML(event, state){
     ? ['smug','sly','angry','gloating']
     : ['idle','think','idle','think'];
 
+  // THE ADVERTISED FIELD IS THE AUTHORITATIVE FIELD. These portraits are
+  // the roster this event will actually be dealt with — the same
+  // personality keys and face colours newGame() seats at launch. It is
+  // read, never drawn here, so opening and closing the tray cannot change
+  // who is shown. The fallback exists only for the case where the opponent
+  // systems are unavailable and no field could be drawn at all.
+  const roster = careerRosterFor(event.id);
   let faces = '';
   for (let i = 0; i < seats; i++){
-    // renderFace() is the production portrait path; faceColorIdx is the
-    // same index the table uses. No name, no dialogue, no roster is
-    // implied — this is the field preview, not a captured roster.
-    const seat = { faceColorIdx:(i * 3 + event.playerCount) % FACE_COLORS.length };
+    const seat = roster && roster[i]
+      ? { faceColorIdx:roster[i].faceColorIdx }
+      : { faceColorIdx:(i * 3 + event.playerCount) % FACE_COLORS.length };
     faces += '<span class="cdir-hf">' + renderFace(seat, moods[i % moods.length]) + '</span>';
   }
 
+  // ONE recessed information strip with internal dividers, rather than
+  // four separately framed miniature cabinets inside another cabinet.
   const terms = [
     ['Entry',   event.buyIn === 0 ? 'FREE' : '$' + event.buyIn.toLocaleString()],
     ['Players', String(event.playerCount)],
     ['Stack',   event.stack.toLocaleString()],
     ['Format',  String(event.format).toUpperCase()]
   ].map(pair=>
-    '<div class="cdir-term"><span class="pc-label">' + esc(pair[0]) + '</span>' +
-    '<span class="cdir-term-well cdir-crt"><span class="cdir-term-value">' +
-    esc(pair[1]) + '</span></span></div>').join('');
+    '<div class="cdir-cell"><span class="pc-label">' + esc(pair[0]) + '</span>' +
+    '<span class="cdir-cell-value">' + esc(pair[1]) + '</span></div>').join('');
 
   let action;
   if (state === 'active'){
     action = '<button type="button" class="cdir-primary" data-career-continue="' + esc(event.id) + '">' +
       '<span class="pc-lamp is-amber"></span><span class="cdir-legend-wrap">' +
-      '<span class="cdir-legend">Continue</span><small>' + esc(event.name) + '</small></span>' +
+      '<span class="cdir-legend">Continue</span><small>' + esc(careerEventTitle(event)) + '</small></span>' +
       '<span class="pc-lamp is-amber"></span></button>';
   } else if (state === 'available'){
     action = '<button type="button" class="cdir-primary" data-career-enter="' + esc(event.id) + '">' +
@@ -1034,20 +1169,22 @@ function careerTrayHTML(event, state){
     ? '<button type="button" class="cdir-abandon" data-career-abandon="' + esc(event.id) + '">Abandon Event</button>'
     : '';
 
+  // The tray's own housing is the ONE frame here. Inside it the hierarchy
+  // is carried by spacing, a printed label rail, recessed surfaces and
+  // dividers — the portraits, the payout window and the action key are the
+  // only pieces that keep a frame of their own.
   return '<div class="cdir-tray"><div class="cdir-tray-inner">' +
-    '<div class="cdir-bay cdir-bay-' + threat.toLowerCase() + '">' +
-      '<span class="pc-label cdir-bay-label">Table</span>' +
+    '<div class="cdir-roster">' +
+      '<div class="cdir-rail"><span class="pc-label">Table</span>' +
+        '<span class="cdir-threat is-' + threat.toLowerCase() + '">' + threat +
+        (threat === 'SERIOUS' ? '<span class="cdir-threat-mark"></span>' : '') + '</span></div>' +
       '<div class="cdir-faces">' + faces + '</div></div>' +
-    '<div class="cdir-threat is-' + threat.toLowerCase() + '">' +
-      '<span class="pc-label">Table threat</span>' +
-      '<span class="cdir-threat-well cdir-crt"><span class="cdir-threat-value">' + threat + '</span></span>' +
-      (threat === 'SERIOUS' ? '<span class="cdir-threat-mark"></span>' : '') + '</div>' +
-    '<div class="cdir-terms">' + terms + '</div>' +
-    '<div class="cdir-payout"><span class="pc-label">Payout</span>' +
+    '<div class="cdir-strip cdir-crt">' + terms + '</div>' +
+    '<div class="cdir-payout">' +
+      '<span class="pc-label">Payout</span>' +
       '<span class="cdir-payout-well cdir-crt"><span class="cdir-payout-value">' +
       esc(careerPayoutSummary(event)) + '</span></span></div>' +
-    '<div class="cdir-note-well cdir-crt"><span class="cdir-note">' +
-      esc(careerRequirementText(event, state)) + '</span></div>' +
+    '<p class="cdir-note">' + esc(careerRequirementText(event, state)) + '</p>' +
     '<div class="cdir-actions">' +
       '<div class="cdir-cradle">' + action + '</div>' + abandon +
     '</div></div></div>';
@@ -1061,13 +1198,16 @@ function careerCassetteHTML(event, state){
   const flag = state === 'active' ? '<span class="cdir-flag is-active">ACTIVE</span>'
     : state === 'locked' ? '<span class="cdir-flag is-locked">LOCKED</span>'
     : '';
+  // The venue marker is directly above, so the plaque prints the SHORT
+  // title. The entry price is a fixed printed figure on the same plaque
+  // rather than a recessed window of its own: it never changes, and
+  // recessed glass is reserved for information that does.
   return '<div class="cdir-hatch is-' + state + (open ? ' is-open' : '') + '">' +
     '<div class="cdir-mount">' +
       '<button type="button" class="cdir-cassette" data-career-toggle="' + esc(event.id) + '"' +
         ' aria-expanded="' + (open ? 'true' : 'false') + '">' +
-        '<span class="cdir-cassette-name">' + esc(event.name) + '</span>' +
-        '<span class="cdir-money-window cdir-crt"><span class="cdir-money-value">' +
-          esc(careerEntryLabel(event)) + '</span></span>' + flag +
+        '<span class="cdir-cassette-name">' + esc(careerEventTitle(event)) + '</span>' +
+        '<span class="cdir-money-value">' + esc(careerEntryLabel(event)) + '</span>' + flag +
       '</button></div>' +
     (open ? careerTrayHTML(event, state) : '') +
   '</div>';
@@ -1104,8 +1244,11 @@ function renderCareerScreen(){
       const body = events.length
         ? events.map(entry=>careerCassetteHTML(entry.event, entry.state)).join('')
         : '<div class="cdir-door"><span class="cdir-door-text">LOCKED &middot; COMING SOON</span></div>';
+      // Header and events are ONE venue section: the marker is the top
+      // band of the venue's own housing, not a label pinned to a separate
+      // panel inside it.
       return '<section class="cdir-room cdir-room-' + room.key + '">' +
-        '<div class="cdir-room-plate"><span class="cdir-room-name">' + esc(room.venue) + '</span></div>' +
+        '<header class="cdir-room-plate"><span class="cdir-room-name">' + esc(room.venue) + '</span></header>' +
         '<div class="cdir-room-bay">' + body + '</div></section>';
     }).join('');
 

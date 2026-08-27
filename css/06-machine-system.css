@@ -168,11 +168,18 @@
   --ms-print:#A99E73;
 }
 
-/* ---- The cabinet ---- */
+/* ---- The cabinet ----
+   #career is deliberately NOT in this list. Every other screen here is a
+   single machine and correctly sits in one theme-coloured cabinet. The
+   Career screen is a machine ABOVE A WORLD: wrapping the venues in the
+   player's own cabinet made every location read as another small box
+   nested inside the player's dashboard, and tinted all six of them with
+   whichever machine theme happened to be selected. The player instrument
+   (.cpi) carries the cabinet on that screen instead — see THE CAREER
+   SCREEN below. */
 #setup .lobby-card,
 #rankings .lobby-card,
-#awards .lobby-card,
-#career .lobby-card{
+#awards .lobby-card{
   padding:11px;
   border:4px solid var(--ms-edge);
   border-radius:12px;
@@ -836,40 +843,66 @@
 
 
 /* ============================================================
-   THE CAREER DIRECTORY
-   Two machines mounted in one cabinet:
+   THE CAREER SCREEN
+   One instrument, then a world. The hierarchy is deliberately
 
-     1. .cpi   — the PLAYER INSTRUMENT. Personalised. Every value here
-                 resolves from the production palette, so changing the
-                 theme recolours it. No fixed colour of its own.
-     2. .cdir  — the HOUSE EVENT DIRECTORY. A fixed Poker Faces house
-                 machine whose palette and materials are DELIBERATELY
-                 fixed. Its values are scoped to the directory root, so
-                 they override the player theme locally and never mutate
-                 a global token or reach the player instrument.
+     PLAYER INSTRUMENT  →  VENUES  →  EVENTS
 
-   The rooms share one functional grammar and differ by material,
-   mounting, depth and restraint — plate width and alignment, frame
-   weight and aperture inset — so each stays identifiable in greyscale.
+   and the break between the first and the second is the strongest
+   visual statement on the screen:
+
+     1. .cpi   — the PLAYER INSTRUMENT. The player's own machine, and the
+                 ONLY framed cabinet here. Every value resolves from the
+                 production palette, so changing the machine theme
+                 recolours it. It has no fixed colour of its own.
+     2. .cdir  — the CAREER WORLD. NOT a cabinet: a transparent
+                 full-width column beneath the instrument, holding one
+                 broad section per venue. Its --h-* house values are
+                 scoped to its own root, so a venue's authored material
+                 identity is fixed and does NOT follow the machine theme.
+
+   Machine theme ≠ venue theme. Switching emerald / midnight / burgundy /
+   slate must repaint the instrument and leave every venue untouched.
+
+   The venues share one construction grammar and differ by material, band
+   weight, mounting depth and restraint, so each stays identifiable even
+   in greyscale.
    ============================================================ */
 
-/* Career's cabinet holds two stacked machines and one contained scroll. */
+/* The Career screen runs its venues wider than the lobby's other screens:
+   a venue is a place, not a card floating in a margin. Ordinary mobile
+   safe margins, and nothing more. Scoped to #career so #home and #setup
+   keep their existing lobby inset. */
+#career{ padding-left:12px; padding-right:12px; }
+
+/* One instrument, one contained scroll. The gap between them is the
+   hierarchy break — the instrument ends, then the world begins. */
 #career .lobby-card{
   height:100%; max-height:912px; min-height:0;
-  display:flex; flex-direction:column; gap:9px; overflow:hidden;
+  display:flex; flex-direction:column; gap:0; overflow:hidden;
 }
 #career .setup-head{ flex:0 0 auto; margin-bottom:0; }
-#career #career-new{ flex:0 0 auto; margin-top:0 !important; }
+#career #career-new{ flex:0 0 auto; margin-top:9px !important; }
+/* The seam the player instrument sits on. A single machined edge under
+   the cabinet, then clear air: the venues below are not inside it. */
+#career .cpi{ margin-top:9px; }
+#career .cdir{ margin-top:15px; }
 
 
-/* ---- 1. PLAYER INSTRUMENT ---------------------------------- */
+/* ---- 1. PLAYER INSTRUMENT ----------------------------------
+   The one framed cabinet on the Career screen, and the piece that now
+   carries the machine's rim and drop directly rather than borrowing them
+   from a wrapper around the whole screen. Every colour resolves from the
+   production palette, so this — and only this — repaints when the player
+   changes machine theme. */
 .cpi{
-  flex:0 0 auto; padding:7px;
+  flex:0 0 auto; padding:8px; border-radius:8px;
   display:flex; flex-direction:column; gap:6px;
-  background:var(--pc-plastic); border:3px solid var(--pc-edge-lo);
+  background:var(--pc-plastic); border:4px solid var(--pc-edge-lo);
   box-shadow:inset 3px 3px 0 var(--pc-plastic-hi),
              inset -3px -3px 0 var(--pc-plastic-lo),
-             0 4px 0 var(--pc-edge-lo);
+             0 0 0 2px var(--theme-rim),
+             0 6px 0 #090406;
 }
 
 /* An inset identification plate — not a heading, avatar or CRT. */
@@ -914,7 +947,10 @@
 #career .cpi-reel[data-cells="12"] .jp-cell{ height:42px; font-size:15px; }
 
 /* Three subordinate readouts: flat printed label, bounded window. */
-.cpi-stats{ display:grid; grid-template-columns:1.55fr 1fr 1fr; gap:5px; }
+/* align-items:end keeps the three windows on one baseline at narrow
+   widths, where a two-line label ("EVENTS PLAYED" at 320px) would
+   otherwise push its own window five pixels below the other two. */
+.cpi-stats{ display:grid; grid-template-columns:1.55fr 1fr 1fr; gap:5px; align-items:end; }
 .cpi-stat{ min-width:0; display:flex; flex-direction:column; gap:3px; }
 .cpi-stat .pc-label{ font-size:5.5px; line-height:1; letter-spacing:.04em; text-align:center; }
 .cpi-stat-well{
@@ -932,8 +968,23 @@
 
 
 /* ---- 2. HOUSE DIRECTORY ------------------------------------
-   Fixed house values, scoped to this root. They do not leak upward and
-   they do not follow the player's palette. */
+   Where the player's machine ends and the Career WORLD begins.
+
+   The directory itself is now a transparent full-width column, not a
+   cabinet: it declares the fixed house values every venue draws from,
+   scopes the scroll, and draws nothing of its own. Wrapping all six
+   venues in one more theme-independent frame was the outermost of the
+   redundant outlines this pass removed — the player instrument above is
+   the framed machine, and the venues below are places.
+
+   THEME BOUNDARY (explicit, not incidental): every declaration from here
+   down resolves either to an --h-* house value defined on this root or to
+   a literal. It must never reference --theme-*, --pc-*, --accent*,
+   --felt*, --panel*, --bg-* or --ink-*, because those follow the player's
+   selected machine palette and a venue's material identity does not.
+   --font-hdr and --radius are typography and geometry, not palette, and
+   are the only global tokens allowed through. `validation/career-events-checks.js`
+   asserts this rule against this file rather than trusting it. */
 .cdir{
   --h-ink-dim:#8A8371;
   --h-edge:#0A0A09;
@@ -947,17 +998,16 @@
   --h-button-hi:#FFE17B;
   --h-button-lo:#8D6818;
 
-  flex:1 1 auto; min-height:0; padding:8px 7px;
-  display:flex; flex-direction:column; gap:10px;
+  flex:1 1 auto; min-height:0; padding:2px 0 6px;
+  display:flex; flex-direction:column; gap:14px;
   overflow-y:auto; overflow-x:hidden; overscroll-behavior:contain;
   -webkit-overflow-scrolling:touch;
-  background:#0D0F0C; border:3px solid var(--h-edge);
-  box-shadow:inset 0 6px 0 #050604, inset 4px 0 0 rgba(0,0,0,.5),
-             inset -3px 0 0 rgba(0,0,0,.4);
 }
 
-/* Every CRT in the house machine: near-black recessed glass, inner bezel,
-   subtle scanlines, restrained bloom on its text. */
+/* Every recessed glass surface in the house machine: near-black, inner
+   bezel, subtle scanlines, restrained bloom on its text. Reserved for
+   information that CHANGES — payouts, readouts. A fixed printed figure
+   (an entry price, a room name) is ink on a physical part instead. */
 .cdir-crt{
   background:
     repeating-linear-gradient(180deg,transparent 0 2px,rgba(0,0,0,.34) 2px 3px),
@@ -967,40 +1017,50 @@
              inset -3px 0 0 rgba(0,0,0,.34), 0 1px 0 rgba(255,255,255,.07);
 }
 
-.cdir-room{ display:flex; flex-direction:column; }
-.cdir-room-plate{
-  align-self:flex-start; min-height:22px; padding:5px 11px;
-  display:flex; align-items:center; border:2px solid var(--h-edge);
-}
-.cdir-room-name{
-  font-family:var(--font-hdr); font-size:8px; line-height:1;
-  letter-spacing:.12em; text-transform:uppercase; white-space:nowrap; text-shadow:none;
-}
-.cdir-room-bay{
-  padding:8px; display:flex; flex-direction:column; gap:7px;
+/* ---- VENUE SECTIONS ----------------------------------------
+   One venue = one broad horizontal housing carrying its own authored
+   material. The marker band is the TOP OF THAT HOUSING, seated on the
+   venue's own surface and separated by an edge line rather than by a
+   second complete rectangle; the events sit in the body below it. Two
+   frames per venue became one.
+
+   The rooms share one construction grammar and differ by material,
+   band weight, mounting depth and restraint, so each stays identifiable
+   in greyscale — and stays identical in all four machine themes. */
+.cdir-room{
+  display:flex; flex-direction:column;
   border:3px solid var(--h-edge);
 }
-
-/* BACK ROOM — utilitarian dark machine plastic, shallow bevel, modest
-   muted-metal edging, restrained scuffing, simplest mounting. */
-.cdir-room-backroom .cdir-room-plate{
-  background:#2E4034; color:#B9C9AE;
-  box-shadow:inset 1px 1px 0 #445A49, inset -1px -1px 0 #1B271F, 0 2px 0 var(--h-edge);
+.cdir-room-plate{
+  min-height:26px; padding:7px 12px;
+  display:flex; align-items:center;
+  border-bottom:3px solid var(--h-edge);
 }
-.cdir-room-backroom .cdir-room-bay{
+.cdir-room-name{
+  font-family:var(--font-hdr); font-size:8.5px; line-height:1;
+  letter-spacing:.14em; text-transform:uppercase; text-shadow:none;
+  overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+}
+.cdir-room-bay{
+  padding:9px; display:flex; flex-direction:column; gap:8px;
+}
+
+/* BACK ROOM — utilitarian dark machine plastic, shallow bevel, muted
+   metal edging, restrained scuffing, the simplest mounting. */
+.cdir-room-backroom{
   background:
     repeating-linear-gradient(114deg,rgba(255,255,255,.022) 0 2px,transparent 2px 7px),
     #23261F;
   box-shadow:inset 2px 2px 0 #34382C, inset -2px -2px 0 #14160F, 0 3px 0 var(--h-edge);
 }
-
-/* PUB CIRCUIT — heavier fruit-machine cabinet, restrained wood casing,
-   muted mustard printed accents, deeper wells. */
-.cdir-room-pub .cdir-room-plate{
-  background:#4A3521; color:#E0B15F; border-width:3px;
-  box-shadow:inset 1px 1px 0 #6B4E31, inset -1px -1px 0 #2A1D12, 0 3px 0 var(--h-edge);
+.cdir-room-backroom .cdir-room-plate{
+  background:#2E4034; box-shadow:inset 0 1px 0 #445A49, inset 0 -1px 0 #1B271F;
 }
-.cdir-room-pub .cdir-room-bay{
+.cdir-room-backroom .cdir-room-name{ color:#B9C9AE; }
+
+/* PUB CIRCUIT — heavier fruit-machine cabinet, restrained timber casing,
+   muted mustard printed accents, deeper body. */
+.cdir-room-pub{
   background:
     repeating-linear-gradient(90deg,rgba(0,0,0,.16) 0 1px,transparent 1px 5px),
     repeating-linear-gradient(90deg,rgba(255,255,255,.03) 0 1px,transparent 1px 11px),
@@ -1008,93 +1068,100 @@
   border-width:4px;
   box-shadow:inset 3px 3px 0 #55402A, inset -3px -3px 0 #201509, 0 4px 0 var(--h-edge);
 }
+.cdir-room-pub .cdir-room-plate{
+  background:#4A3521; border-bottom-width:4px;
+  box-shadow:inset 0 1px 0 #6B4E31, inset 0 -1px 0 #2A1D12;
+}
+.cdir-room-pub .cdir-room-name{ color:#E0B15F; }
 
 /* CARD CLUB — professional room: burgundy fabric, cream edging, exact
-   geometry, a more formal full-width centred nameplate. */
-.cdir-room-cardclub .cdir-room-plate{
-  align-self:stretch; justify-content:center;
-  background:#4A2029; color:#EDE0C2; border-color:#C9BA92;
-  box-shadow:inset 1px 1px 0 #653039, inset -1px -1px 0 #2A1017, 0 3px 0 var(--h-edge);
-}
-.cdir-room-cardclub .cdir-room-bay{
+   geometry, a formal centred nameplate band. */
+.cdir-room-cardclub{
   background:
     repeating-conic-gradient(rgba(255,255,255,.028) 0 25%,transparent 0 50%) 0 0/5px 5px,
     #3A1A22;
   box-shadow:inset 0 0 0 2px #C9BA92, inset 0 5px 0 rgba(0,0,0,.4), 0 3px 0 var(--h-edge);
 }
+.cdir-room-cardclub .cdir-room-plate{
+  justify-content:center; background:#4A2029; border-bottom-color:#C9BA92;
+  box-shadow:inset 0 1px 0 #653039, inset 0 -1px 0 #2A1017;
+}
+.cdir-room-cardclub .cdir-room-name{ color:#EDE0C2; }
+.cdir-room-cardclub .cdir-room-bay{ padding:11px 10px; }
 
 /* CASINO FLOOR — near-black lacquer, restrained warm-gold latch detail,
    controlled dark-red inset, deeper compartment framing. */
-.cdir-room-casino .cdir-room-plate{
-  background:#15151A; color:#E4C77E; border-color:#8A6D2E; border-width:3px;
-  box-shadow:inset 1px 1px 0 #2C2C33, inset -1px -1px 0 #0A0A0D, 0 3px 0 var(--h-edge);
-}
-.cdir-room-casino .cdir-room-bay{
+.cdir-room-casino{
   background:linear-gradient(180deg,rgba(255,255,255,.05) 0 2px,transparent 2px 100%), #121216;
-  border-width:4px; padding:11px 10px;
+  border-width:4px;
   box-shadow:inset 0 0 0 2px #6E5626, inset 0 6px 0 rgba(0,0,0,.5), 0 4px 0 var(--h-edge);
 }
-
-/* HIGH ROLLER ROOM — severe: charcoal casing, thick heavy frame, a
-   narrower aperture and less exposed information. */
-.cdir-room-highroller .cdir-room-plate{
-  background:#1E1E1E; color:#CFC6AC; border-width:3px;
-  box-shadow:inset 1px 1px 0 #343434, inset -1px -1px 0 #0C0C0C, 0 3px 0 var(--h-edge);
+.cdir-room-casino .cdir-room-plate{
+  background:#15151A; border-bottom-color:#8A6D2E;
+  box-shadow:inset 0 1px 0 #2C2C33, inset 0 -1px 0 #0A0A0D;
 }
-.cdir-room-highroller .cdir-room-bay{
-  background:#191919; border-width:6px; padding:13px 20px;
+.cdir-room-casino .cdir-room-name{ color:#E4C77E; }
+.cdir-room-casino .cdir-room-bay{ padding:12px 11px; }
+
+/* HIGH ROLLER ROOM — severe: charcoal casing, the heaviest plain frame,
+   a narrower aperture and less exposed information. */
+.cdir-room-highroller{
+  background:#191919; border-width:6px;
   box-shadow:inset 3px 3px 0 #2A2A2A, inset -3px -3px 0 #0D0D0D, 0 4px 0 var(--h-edge);
 }
+.cdir-room-highroller .cdir-room-plate{
+  background:#1E1E1E; box-shadow:inset 0 1px 0 #343434, inset 0 -1px 0 #0C0C0C;
+}
+.cdir-room-highroller .cdir-room-name{ color:#CFC6AC; }
+.cdir-room-highroller .cdir-room-bay{ padding:14px 20px; }
 
 /* INVITATIONAL CHAMPIONSHIP — ceremonial: deep velvet housing,
    disciplined gold edging, the heaviest and most resolved door. */
-.cdir-room-invitational .cdir-room-plate{
-  align-self:stretch; justify-content:center;
-  background:#2A0E17; color:#EBC77A; border-color:#9A7A34; border-width:3px;
-  box-shadow:inset 1px 1px 0 #431720, inset -1px -1px 0 #150409, 0 3px 0 var(--h-edge);
-}
-.cdir-room-invitational .cdir-room-name{ letter-spacing:.16em; }
-.cdir-room-invitational .cdir-room-bay{
+.cdir-room-invitational{
   background:
     repeating-conic-gradient(rgba(255,255,255,.02) 0 25%,transparent 0 50%) 0 0/6px 6px,
     #200B12;
-  border-width:6px; padding:14px 12px;
+  border-width:6px;
   box-shadow:inset 0 0 0 3px #7C6029, inset 0 7px 0 rgba(0,0,0,.55), 0 5px 0 var(--h-edge);
 }
+.cdir-room-invitational .cdir-room-plate{
+  justify-content:center; background:#2A0E17; border-bottom-color:#9A7A34;
+  box-shadow:inset 0 1px 0 #431720, inset 0 -1px 0 #150409;
+}
+.cdir-room-invitational .cdir-room-name{ color:#EBC77A; letter-spacing:.18em; }
+.cdir-room-invitational .cdir-room-bay{ padding:15px 12px; }
 
-/* A room with no implemented event shows one compact heavy compartment
-   door. It is presentation only: no descriptor, payout or unlock exists. */
+/* A venue with no implemented event shows one compartment door on its own
+   material. Presentation only: no descriptor, payout or unlock exists. */
 .cdir-door{
   min-height:40px; padding:11px; display:flex; align-items:center; justify-content:center;
   background:
     repeating-linear-gradient(180deg,rgba(0,0,0,.24) 0 3px,transparent 3px 8px),
     var(--h-recess);
-  border:3px solid var(--h-edge);
   box-shadow:inset 0 5px 0 var(--h-recess-deep), inset 0 -3px 0 rgba(255,255,255,.05);
 }
 .cdir-door-text{
   font-family:var(--font-hdr); font-size:7px; line-height:1;
   letter-spacing:.14em; color:var(--h-ink-dim); text-shadow:none;
 }
-.cdir-room-highroller .cdir-door,
-.cdir-room-invitational .cdir-door{ min-height:48px; border-width:4px; }
 
 
-/* ---- 3. CLOSED EVENT CASSETTE ------------------------------
-   A chunky horizontal cartridge seated in a recessed mounting aperture.
-   The name is printed on the cassette face; the entry price sits in its
-   own small recessed money window. */
+/* ---- 3. CLOSED EVENT STRIP ---------------------------------
+   A compact horizontal plaque seated in a shallow recess. It carries the
+   short event title, the entry price and — only where the state needs one
+   — a physical flag. Nothing on it is separately framed, so a venue can
+   hold several events without the directory becoming exhausting. */
 .cdir-hatch{ display:flex; flex-direction:column; }
 .cdir-mount{
-  padding:4px; background:var(--h-recess); border:2px solid var(--h-edge);
-  box-shadow:inset 0 4px 0 var(--h-recess-deep), inset 3px 0 0 rgba(0,0,0,.4);
+  padding:3px;
+  background:var(--h-recess);
+  box-shadow:inset 0 3px 0 var(--h-recess-deep), inset 0 -2px 0 rgba(255,255,255,.045);
 }
 .cdir-hatch.is-open .cdir-mount{ padding-bottom:2px; }
 
 .cdir-cassette{
-  width:100%; min-height:58px; padding:8px 10px 9px; cursor:pointer;
-  display:grid; grid-template-columns:minmax(0,1fr) auto;
-  align-items:center; column-gap:8px; row-gap:6px; text-align:left;
+  width:100%; min-height:46px; padding:9px 11px; cursor:pointer;
+  display:flex; align-items:center; gap:9px; text-align:left;
   background:#C9BFA0; color:#20211A;
   border:3px solid var(--h-edge); border-radius:3px;
   box-shadow:inset 2px 2px 0 #EDE4C4, inset -2px -3px 0 #8A8268,
@@ -1102,24 +1169,22 @@
   transition:transform 150ms cubic-bezier(.34,1.56,.64,1), box-shadow 120ms ease-out;
 }
 .cdir-cassette-name{
-  grid-column:1 / -1; grid-row:1; min-width:0;
-  font-family:var(--font-hdr); font-size:9px; line-height:1.15;
-  letter-spacing:.04em; text-transform:uppercase; white-space:nowrap;
+  flex:1 1 auto; min-width:0;
+  font-family:var(--font-hdr); font-size:10px; line-height:1.1;
+  letter-spacing:.06em; text-transform:uppercase; white-space:nowrap;
   overflow:hidden; text-overflow:ellipsis; text-shadow:0 1px 0 rgba(255,255,255,.3);
 }
-.cdir-money-window{
-  grid-column:1; grid-row:2; justify-self:start;
-  min-height:19px; padding:4px 7px 3px;
-  display:flex; align-items:center; justify-content:center;
-}
+/* Money keeps its warm-gold semantic role, printed straight onto the
+   plaque: an entry price is a fixed fact about a physical part, not a
+   changing readout, so it takes ink rather than glass. */
 .cdir-money-value{
-  font-family:var(--font-hdr); font-size:6.5px; line-height:1; letter-spacing:.08em;
-  white-space:nowrap; color:var(--h-money);
-  text-shadow:0 0 5px color-mix(in srgb,currentColor 32%,transparent);
+  flex:0 0 auto;
+  font-family:var(--font-hdr); font-size:7px; line-height:1; letter-spacing:.08em;
+  white-space:nowrap; color:#7A5A0E; text-shadow:0 1px 0 rgba(255,255,255,.34);
 }
 /* State is carried by a physical flag, not by opacity alone. */
 .cdir-flag{
-  grid-column:2; grid-row:2; align-self:center;
+  flex:0 0 auto;
   padding:4px 7px; font-family:var(--font-hdr); font-size:6px; line-height:1;
   letter-spacing:.08em; white-space:nowrap; text-shadow:none;
   border:2px solid currentColor; border-radius:2px;
@@ -1133,7 +1198,7 @@
              0 1px 0 #6B6450, 0 3px 0 var(--h-edge);
   transition:transform 50ms linear, box-shadow 50ms linear;
 }
-/* A locked cassette is a duller, deader casting — not merely faded. */
+/* A locked plaque is a duller, deader casting — not merely faded. */
 .cdir-hatch.is-locked .cdir-cassette,
 .cdir-hatch.is-blocked .cdir-cassette{
   background:#8E8B78; color:#3A3A32;
@@ -1142,40 +1207,57 @@
 }
 .cdir-hatch.is-locked .cdir-cassette-name,
 .cdir-hatch.is-blocked .cdir-cassette-name{ text-shadow:none; }
+.cdir-hatch.is-locked .cdir-money-value,
+.cdir-hatch.is-blocked .cdir-money-value{ color:#4F4A3A; text-shadow:none; }
 .cdir-hatch.is-active .cdir-cassette{ background:#DCCF9F; }
 
 
 /* ---- 4. THE EXTENDING TRAY --------------------------------
    The tray's REAL height animates in three discrete beats, so later
-   events and rooms are genuinely pushed down. It never rotates, flips,
+   events and venues are genuinely pushed down. It never rotates, flips,
    overlays, scales from zero or eases smoothly. */
 .cdir-tray{ overflow:hidden; }
 .cdir-tray.is-extending{ transition:height 300ms steps(3, end); }
+/* The tray's housing is the ONE frame inside a venue body. Everything it
+   contains is separated by spacing, a printed rail, recessed surface and
+   dividers instead of further rectangles. */
 .cdir-tray-inner{
-  padding:8px; display:flex; flex-direction:column; gap:6px;
+  padding:9px; display:flex; flex-direction:column; gap:9px;
   background:var(--h-recess); border:3px solid var(--h-edge); border-top-width:0;
   box-shadow:inset 0 5px 0 var(--h-recess-deep), inset 3px 0 0 rgba(0,0,0,.4);
 }
 
 
-/* ---- 5. OPEN TRAY — FITTED CONTROL DECK -------------------- */
-.cdir-bay{
-  display:grid; grid-template-columns:auto minmax(0,1fr); align-items:center; gap:8px;
-  padding:7px 9px;
-  background:#0F120E; border:3px solid var(--h-edge);
-  box-shadow:inset 0 0 0 3px #6E6850, inset 0 5px 0 rgba(0,0,0,.5);
+/* ---- 5. OPEN TRAY — ROSTER, INFORMATION, ACTION ------------ */
+
+/* The people you are about to sit down with, on the tray's own recessed
+   surface. No extra cabinet around them — the portraits are the objects. */
+.cdir-roster{ display:flex; flex-direction:column; gap:7px; }
+/* A printed label rail: the section name at one end, the threat readout
+   at the other, divided by a hairline rather than boxed. */
+.cdir-rail{
+  display:flex; align-items:center; justify-content:space-between; gap:8px;
+  padding-bottom:5px; border-bottom:1px solid rgba(255,255,255,.09);
 }
-.cdir-bay-label{ color:var(--h-ink-dim); line-height:1; }
-.cdir-bay-serious{
-  padding:9px 9px 10px;
-  box-shadow:inset 0 0 0 3px #4E4838, inset 0 7px 0 rgba(0,0,0,.62);
+.cdir-rail .pc-label{ color:var(--h-ink-dim); line-height:1; }
+/* Threat: a concise instrument reading, not a framed object. */
+.cdir-threat{
+  display:inline-flex; align-items:center; gap:6px;
+  font-family:var(--font-hdr); font-size:8px; line-height:1; letter-spacing:.1em;
+  color:var(--h-glass-ink); text-shadow:0 0 5px color-mix(in srgb,currentColor 34%,transparent);
+}
+.cdir-threat.is-serious{ color:var(--h-danger); }
+/* One restrained coral marker. It does not blink. */
+.cdir-threat-mark{
+  width:9px; height:9px; border:2px solid var(--h-edge); background:var(--h-danger);
+  box-shadow:0 2px 0 #100807, inset 1px 1px 0 rgba(255,255,255,.3);
 }
 .cdir-faces{
   display:grid; grid-auto-flow:column; grid-auto-columns:minmax(0,1fr);
-  gap:6px; width:100%; min-width:0;
+  gap:7px; width:100%; min-width:0;
 }
 .cdir-hf{
-  width:100%; height:auto; min-width:0; max-width:58px; justify-self:center;
+  width:100%; height:auto; min-width:0; max-width:62px; justify-self:center;
   aspect-ratio:1; overflow:hidden;
   display:flex; align-items:center; justify-content:center;
   background:#13281C; border:3px solid #090806; border-radius:3px;
@@ -1183,76 +1265,53 @@
 }
 .cdir-hf .face{ width:100%; height:100%; margin:0; }
 
-/* Threat: a flat printed label on its bezel and a separate bounded status
-   window. Never a row of unexplained lamps. */
-.cdir-threat{
-  display:grid; grid-template-columns:auto minmax(0,1fr) auto;
-  align-items:center; gap:8px; padding:5px 9px;
-  background:#23261F; border:2px solid var(--h-edge);
-  box-shadow:inset 1px 1px 0 #34382C, inset -1px -1px 0 #14160F, 0 2px 0 var(--h-edge);
+/* ONE recessed information strip. Entry / players / stack / format share
+   a single surface and are separated by internal dividers — four framed
+   miniature cabinets inside another cabinet became one panel. */
+.cdir-strip{ display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); }
+.cdir-cell{
+  min-width:0; padding:6px 3px 7px;
+  display:flex; flex-direction:column; align-items:center; gap:4px;
 }
-.cdir-threat .pc-label{ color:var(--h-ink-dim); line-height:1; }
-.cdir-threat-well{
-  min-height:20px; padding:4px 8px 3px;
-  display:flex; align-items:center; justify-content:center;
+.cdir-cell + .cdir-cell{ box-shadow:inset 1px 0 0 rgba(159,211,168,.16); }
+.cdir-cell .pc-label{
+  font-size:5.5px; line-height:1; letter-spacing:.04em; text-align:center;
+  color:var(--h-ink-dim); text-shadow:none;
 }
-.cdir-threat-value{
-  font-family:var(--font-hdr); font-size:8px; line-height:1; letter-spacing:.1em;
-  color:var(--h-glass-ink); text-shadow:0 0 5px color-mix(in srgb,currentColor 34%,transparent);
-}
-.cdir-threat.is-serious .cdir-threat-well{
-  border-width:3px;
-  box-shadow:inset 0 6px 0 rgba(0,0,0,.82), inset 4px 0 0 rgba(0,0,0,.5);
-}
-.cdir-threat.is-serious .cdir-threat-value{ color:var(--h-danger); }
-/* One restrained coral marker. It does not blink. */
-.cdir-threat-mark{
-  width:9px; height:9px; border:2px solid var(--h-edge); background:var(--h-danger);
-  box-shadow:0 2px 0 #100807, inset 1px 1px 0 rgba(255,255,255,.3);
-}
-
-/* Four equal fitted instrument modules on one shared baseline. */
-.cdir-terms{ display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:5px; }
-.cdir-term,
-.cdir-payout{
-  min-width:0; display:flex; flex-direction:column; gap:3px;
-  background:#23261F; border:2px solid var(--h-edge);
-  box-shadow:inset 1px 1px 0 #34382C, inset -1px -1px 0 #14160F, 0 2px 0 var(--h-edge);
-}
-.cdir-term{ padding:5px 2px 6px; }
-.cdir-payout{ padding:5px 6px 6px; }
-.cdir-term .pc-label,
-.cdir-payout .pc-label{
-  font-size:5.5px; line-height:1; letter-spacing:.04em; text-align:center; color:var(--h-ink-dim);
-}
-.cdir-term-well,
-.cdir-payout-well,
-.cdir-note-well{
-  min-height:19px; padding:4px 2px 3px;
-  display:flex; align-items:center; justify-content:center;
-}
-.cdir-term-value{
-  font-family:var(--font-hdr); font-size:5.5px; line-height:1; letter-spacing:0;
+.cdir-cell-value{
+  font-family:var(--font-hdr); font-size:6px; line-height:1; letter-spacing:0;
   white-space:nowrap; color:var(--h-glass-ink);
   text-shadow:0 0 5px color-mix(in srgb,currentColor 32%,transparent);
 }
+
+/* Payout stays visually important and keeps the warm-gold semantic role:
+   a printed label above its own money window. */
+.cdir-payout{ display:flex; flex-direction:column; gap:4px; }
+.cdir-payout .pc-label{ color:var(--h-ink-dim); line-height:1; text-shadow:none; }
+.cdir-payout-well{
+  min-height:24px; padding:6px 8px 5px;
+  display:flex; align-items:center; justify-content:center;
+}
 .cdir-payout-value{
-  font-family:var(--font-hdr); font-size:7.5px; line-height:1; letter-spacing:.03em;
+  font-family:var(--font-hdr); font-size:8px; line-height:1; letter-spacing:.03em;
   white-space:nowrap; color:var(--h-money);
   text-shadow:0 0 6px color-mix(in srgb,currentColor 34%,transparent);
 }
+
+/* Availability, printed straight onto the tray. */
 .cdir-note{
-  font-family:var(--font-hdr); font-size:6px; line-height:1.2; letter-spacing:.04em;
-  white-space:nowrap; color:var(--h-ink-dim); text-shadow:none;
+  margin:0; font-family:var(--font-hdr); font-size:6px; line-height:1.35;
+  letter-spacing:.04em; color:var(--h-ink-dim); text-shadow:none;
 }
 
-/* Primary action: the large physical key seated in a cradle. Printed
-   text, no glow. */
+/* Primary action: ONE strong physical housing. The key is the framed
+   object; the cradle beneath it is a recessed seat, not a second frame
+   competing with it. */
 .cdir-actions{ flex:0 0 auto; }
 .cdir-cradle{
-  position:relative; padding:8px 7px 16px;
-  background:#B4A46F; border:4px solid var(--h-edge);
-  box-shadow:inset 4px 4px 0 #EEDDA5, inset -4px -3px 0 #756744, 0 3px 0 #2A190F;
+  position:relative; padding:7px 6px 13px;
+  background:#B4A46F;
+  box-shadow:inset 3px 3px 0 #EEDDA5, inset -3px -3px 0 #756744, 0 3px 0 #2A190F;
 }
 .cdir-primary{
   position:relative; width:100%; min-height:64px; padding:12px 8px 11px; cursor:pointer;

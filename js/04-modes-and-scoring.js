@@ -34,7 +34,8 @@ const CAREER_EVENT_LIST = Object.freeze([
   Object.freeze({
     id:'back-room-freezeout',
     venue:'BACK ROOM',
-    name:'BACK ROOM FREEZEOUT',
+    name:'BACK ROOM 3-HAND',
+    title:'3-HAND',
     format:'Freezeout',
     playerCount:3,
     opponentCount:2,
@@ -50,7 +51,8 @@ const CAREER_EVENT_LIST = Object.freeze([
   Object.freeze({
     id:'pub-freezeout',
     venue:'PUB CIRCUIT',
-    name:'PUB CIRCUIT FREEZEOUT',
+    name:'PUB CIRCUIT 4-HAND',
+    title:'4-HAND',
     format:'Freezeout',
     playerCount:4,
     opponentCount:3,
@@ -63,14 +65,15 @@ const CAREER_EVENT_LIST = Object.freeze([
     difficulty:'hard',
     unlockRequirement:Object.freeze({ type:'event-win', eventId:'back-room-freezeout' })
   }),
-  /* The first multi-place event. Same venue and buy-in as the Freezeout
+  /* The first multi-place event. Same venue and buy-in as the 4-HAND
      above, deliberately: the choice between them is a choice of RISK SHAPE
      (bigger top prize vs. a paid second place), not of stake. Only first
      place is a progression win — second place is money and nothing else. */
   Object.freeze({
     id:'pub-open',
     venue:'PUB CIRCUIT',
-    name:'PUB CIRCUIT OPEN',
+    name:'PUB CIRCUIT 5-HAND',
+    title:'5-HAND',
     format:'Freezeout',
     playerCount:5,
     opponentCount:4,
@@ -94,6 +97,7 @@ const CAREER_EVENT_LIST = Object.freeze([
     id:'second-chance',
     venue:'BACK ROOM',
     name:'SECOND CHANCE',
+    title:'SECOND CHANCE',
     format:'Freezeout',
     playerCount:3,
     opponentCount:2,
@@ -114,6 +118,105 @@ const CAREER_EVENTS = Object.freeze(CAREER_EVENT_LIST.reduce((registry,event)=>{
 
 function careerEventById(id){
   return typeof id === 'string' ? (CAREER_EVENTS[id] || null) : null;
+}
+
+/* NAMES. A descriptor carries two, for two different contexts:
+
+     `name`  — the full, venue-qualified record name. It is what a save
+               snapshot, a settled result and any copy WITHOUT a venue
+               heading above it must use, because on its own "4-HAND"
+               does not say where it was played.
+     `title` — the short label the event directory prints on the cassette,
+               where the venue marker is already directly above it.
+
+   The ids are untouched: 'back-room-freezeout', 'pub-freezeout' and
+   'pub-open' remain the save identifiers they have always been. This is a
+   presentation cleanup, not a schema change. `format` likewise still reads
+   'Freezeout' for all four, because all four ARE freezeouts — that is
+   exactly why the old "Freezeout vs Open" titles had to go. */
+function careerEventTitle(event){
+  if (!event) return '';
+  return typeof event.title === 'string' && event.title ? event.title : String(event.name || '');
+}
+
+/* ============================================================
+   EVENT ROSTER — the authoritative field for one event instance.
+
+   The rule this exists to enforce: THE ADVERTISED TABLE AND THE PLAYED
+   TABLE ARE THE SAME TABLE. Before this, the directory preview invented
+   its own portraits from a seat-index formula while newGame() separately
+   drew random personalities and random face colours at launch, so the
+   faces a player inspected were never the faces they sat down with.
+
+   A roster is drawn ONCE per event instance and then owned by Career
+   state: it drives the preview, the launch, the active save and the
+   resume. It is deliberately minimal — a personality key and a face
+   colour index per seat. No name, no dialogue, no familiarity, no
+   history: named residents are Phase 7 and nothing here anticipates them.
+
+   Both generators below are the PRODUCTION paths (pickPersonalities and
+   assignFaceColors), not copies of them, so a Career field is drawn from
+   exactly the same distribution a Single Player table is.
+   ============================================================ */
+function careerRosterSeats(event){
+  return event && Number.isInteger(event.opponentCount) && event.opponentCount > 0
+    ? event.opponentCount : 0;
+}
+
+/* Returns null rather than a partial field if the opponent systems are not
+   present (the isolated check harnesses load Career without them). Callers
+   treat null as "no authoritative field", never as an empty table. */
+function generateCareerRoster(event){
+  const seats = careerRosterSeats(event);
+  if (!seats) return null;
+  if (typeof pickPersonalities !== 'function' || typeof assignFaceColors !== 'function') return null;
+  const personas = pickPersonalities(seats);
+  if (!Array.isArray(personas) || personas.length < seats) return null;
+  // A throwaway seat list run through the real colour assigner, so the
+  // distinctness rule and the shuffle are the table's own, not a second
+  // implementation of them.
+  const seatList = [{ isHuman:true, faceColorIdx:null }];
+  for (let i = 0; i < seats; i++) seatList.push({ isHuman:false, faceColorIdx:null });
+  assignFaceColors(seatList);
+  const roster = [];
+  for (let i = 0; i < seats; i++){
+    const persona = personas[i];
+    const idx = seatList[i+1].faceColorIdx;
+    if (!persona || typeof persona.key !== 'string' || !Number.isInteger(idx)) return null;
+    roster.push({ personalityKey:persona.key, faceColorIdx:idx });
+  }
+  return roster;
+}
+
+/* A stored roster is trusted only if it still describes THIS event exactly:
+   the right number of seats, every personality key still in the roster of
+   archetypes, every face colour a real index, and no seat duplicating
+   another's persona or colour. Anything else returns null and is redrawn —
+   a malformed field must never reach a table half-built. */
+function normalizeCareerRoster(roster, event){
+  const seats = careerRosterSeats(event);
+  if (!seats || !Array.isArray(roster) || roster.length !== seats) return null;
+  const colours = typeof FACE_COLORS !== 'undefined' && Array.isArray(FACE_COLORS)
+    ? FACE_COLORS.length : 0;
+  const known = typeof PERSONALITIES_ALL !== 'undefined' && Array.isArray(PERSONALITIES_ALL)
+    ? PERSONALITIES_ALL : null;
+  const keys = new Set();
+  const used = new Set();
+  const normalized = [];
+  for (let i = 0; i < seats; i++){
+    const seat = roster[i];
+    if (!seat || typeof seat !== 'object') return null;
+    const key = seat.personalityKey;
+    if (typeof key !== 'string' || !key || keys.has(key)) return null;
+    if (known && !known.some(p=>p.key === key)) return null;
+    const idx = seat.faceColorIdx;
+    if (!Number.isInteger(idx) || idx < 0 || used.has(idx)) return null;
+    if (colours && idx >= colours) return null;
+    keys.add(key);
+    used.add(idx);
+    normalized.push({ personalityKey:key, faceColorIdx:idx });
+  }
+  return normalized;
 }
 
 /* Second Chance's recovery threshold is a FIXED approved value — never

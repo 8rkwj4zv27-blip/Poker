@@ -51,7 +51,7 @@ Do not build the full career ladder to answer either question.
 
 ---
 
-## Phase 1 — Paid places and Pub Circuit Open — COMPLETE (2026-08-23)
+## Phase 1 — Paid places and Pub Circuit 5-HAND (then "Open") — COMPLETE (2026-08-23)
 
 **Purpose:** extend the data-driven event schema to multi-place payouts without breaking saved active events.
 
@@ -59,7 +59,7 @@ Do not build the full career ladder to answer either question.
 
 - Represent payout places rather than a single winner-only prize.
 - Preserve existing Back Room and Pub descriptors and migrations.
-- Add Pub Circuit Open: $300, five players, 750 stack, working Hard AI, $1,050/$450 payouts.
+- Add Pub Circuit 5-HAND (shipped as "Pub Circuit Open"; renamed 2026-08-27, id `pub-open` unchanged): $300, five players, 750 stack, working Hard AI, $1,050/$450 payouts.
 - Settle first and second place exactly once.
 - Unlock Card Club preview status only from first place, never second.
 - Add focused regression checks for entry, settlement, duplicate-credit prevention, save/resume, and migrations.
@@ -268,7 +268,7 @@ deliberately not done, is in `docs/scoring/SCORING_SPEC.md` section 10.
 - One identity per resident, shared across cash and tournament play.
 - The three counters per resident: encounters, player knockouts of that resident, resident knockouts of the player.
 - Roster captured as a **paid term** in the event snapshot at the moment the player commits, exactly as buy-in and payouts already are.
-- Verify against the actual code whether AI personality is currently randomised per table launch, and pin or seed it at commitment either way.
+- ~~Verify against the actual code whether AI personality is currently randomised per table launch, and pin or seed it at commitment either way.~~ **Answered and built ahead of this phase** by the owner-directed roster-integrity pass of 2026-08-27: personality and face colour *were* randomised at launch, independently of the preview. An anonymous roster is now drawn once per event instance, captured into the active event as a paid term, and used by preview, launch and resume alike. This phase now only has to put authored names and counters onto that existing authority.
 - Surface named fields and the three counters on the Board's event cards.
 
 **Exclusions:** no dossier screen; no threshold-based reveal copy; no milestone titles; no records interface; no flagged-moment ring; no second venue's residents.

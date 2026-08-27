@@ -137,12 +137,38 @@ These are prototype commitments:
 
 | Event | Entry | Field | Stack | AI | Payout | Access |
 |---|---:|---:|---:|---|---|---|
-| Back Room Freezeout | $100 | 3 | 500 | Medium | $300 to 1st | Available from career start |
-| Pub Circuit Freezeout | $300 | 4 | 750 | Hard | $1,200 to 1st | Win Back Room Freezeout |
-| Pub Circuit Open | $300 | 5 | 750 | Hard working default | $1,050 to 1st; $450 to 2nd | Win Back Room Freezeout |
+| Back Room 3-HAND | $100 | 3 | 500 | Medium | $300 to 1st | Available from career start |
+| Pub Circuit 4-HAND | $300 | 4 | 750 | Hard | $1,200 to 1st | Win Back Room 3-HAND |
+| Pub Circuit 5-HAND | $300 | 5 | 750 | Hard working default | $1,050 to 1st; $450 to 2nd | Win Back Room 3-HAND |
 | Second Chance | Free | 3 | 500 | Medium | $150 to 1st | Bankroll below $100 only |
 
-The Pub Open's 70/30 split is a prototype value to test, not a universal approved ratio for every future event.
+The 5-HAND's 70/30 split is a prototype value to test, not a universal approved ratio for every future event.
+
+### Event naming
+
+Renamed on 2026-08-27 at the owner's direction. Entries, fields, stacks, AI,
+payouts, access rules and save ids are all unchanged — this was a vocabulary
+decision, not an economy one.
+
+- **The venue says where. The event title says which table. The details say how
+  it is structured.** A title never repeats the venue marker printed directly
+  above it in the directory.
+- The old titles named the *format* (`FREEZEOUT`) or implied a format
+  distinction that does not exist (`OPEN`). All four events are freezeouts and
+  the expanded details still say `FORMAT  FREEZEOUT`; a title that also said so
+  was noise, and `OPEN` was actively misleading.
+- Each descriptor therefore carries two names:
+  **`title`** — the short label the directory prints (`3-HAND`, `4-HAND`,
+  `5-HAND`, `SECOND CHANCE`), used only where the venue marker is already
+  above it; and **`name`** — the venue-qualified record name
+  (`BACK ROOM 3-HAND`, `PUB CIRCUIT 4-HAND`, `PUB CIRCUIT 5-HAND`,
+  `SECOND CHANCE`), used by saves, settled results and any copy with no venue
+  heading, because "4-HAND" alone does not say where it was played.
+- Save identifiers are **permanently** `back-room-freezeout`, `pub-freezeout`
+  and `pub-open`. They are not renamed to match the titles: they are the save
+  schema, and no display change is worth a migration.
+- Genuinely different future formats get genuinely different names — HEADS-UP,
+  SHORT STACK, DEEP STACK, BOUNTY — and only when the format actually differs.
 
 Card Club Freezeout appears as a locked preview but is not playable in this pass. From Board v1 it is one row of the complete locked ladder rather than the only future venue shown; see *Contextual career board*.
 
@@ -405,12 +431,21 @@ recurring-opponent progression; see *Outside the current build* below.
   player knockouts of that resident, resident knockouts of the player. Nothing
   else. Those counters and the authored style line are surfaced on the field
   preview, so the opponent-knowledge axis is testable at the Phase 11 gate.
-- **Roster authority is a hard requirement.** The roster shown before entry must
-  be the roster that actually launches and resumes. The roster is a **paid
-  term**, captured into the event snapshot at the moment the player commits,
-  exactly as buy-in and payouts already are. Whether AI personality is currently
-  randomised per table launch is a code question to answer at Phase 7; either
-  way it is pinned or seeded at commitment.
+- **Roster authority is a hard requirement — and it is now BUILT** (owner-directed
+  pass, 2026-08-27; see `STATUS.md`). The roster shown before entry is the roster
+  that launches and resumes.
+  - The open code question is answered: AI personality **was** randomised per
+    table launch, independently of the preview, and the preview portraits were
+    not a roster at all but a seat-index colour formula. The advertised faces
+    and the dealt opponents were therefore never the same table.
+  - The mechanism: an anonymous field of personality key + face colour is drawn
+    **once per event instance**, held in `career.rosters`, and moved into
+    `career.active.roster` — a **paid term**, exactly like buy-in and payouts —
+    at the moment the player commits. It drives the preview, the launch, the
+    active save and the resume, and it is retired when the event settles.
+  - **Phase 7 is unchanged in scope.** It replaces the anonymous field with
+    authored named residents and adds the three relationship counters. It no
+    longer has to invent the authority mechanism, only to name the people in it.
 - **Bounded data.** Authored copy lives in code or data and never in the save.
   The save holds the counters per character plus, later, a fixed-size ring of
   flagged moments (cap five per character) storing event keys, never free text.
@@ -418,7 +453,7 @@ recurring-opponent progression; see *Outside the current build* below.
   encounter thresholds — never generated — the flagged-moment ring, the career
   record, hand-authored milestone titles one per venue, and a rotating
   featured/visitor slot driven by completed events rather than any real-world
-  timer. **Staple events never rotate:** the Back Room Freezeout, the Pub events,
+  timer. **Staple events never rotate:** the Back Room 3-HAND, the Pub events,
   and the cash table are always available.
 
 ## Bosses
@@ -435,7 +470,7 @@ recurring-opponent progression; see *Outside the current build* below.
   first-clear flag.
 - This keeps the boss meaningful while the player grinds or rebuilds at the Back
   Room: the character is always there, but the ceremony happens once.
-- Pub Circuit Open is explicitly **not** a boss event. It remains a Top-2 cash
+- Pub Circuit 5-HAND is explicitly **not** a boss event. It remains a Top-2 cash
   opportunity, unrelated to unlock-gating.
 
 ## Progression ladder

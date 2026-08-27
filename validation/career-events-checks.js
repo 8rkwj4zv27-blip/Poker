@@ -11,6 +11,9 @@ const path = require('path');
 const vm = require('vm');
 
 const root = path.resolve(__dirname, '..');
+const mathSource = fs.readFileSync(path.join(root, 'js/01-poker-math.js'), 'utf8');
+const supportSource = fs.readFileSync(path.join(root, 'js/02-support-systems.js'), 'utf8');
+const opponentSource = fs.readFileSync(path.join(root, 'js/03-opponents.js'), 'utf8');
 const modesSource = fs.readFileSync(path.join(root, 'js/04-modes-and-scoring.js'), 'utf8');
 const engineSource = fs.readFileSync(path.join(root, 'js/05-game-engine.js'), 'utf8');
 const wiringSource = fs.readFileSync(path.join(root, 'js/07-ui-wiring.js'), 'utf8');
@@ -24,10 +27,44 @@ function sliceBetween(source, start, end){
 }
 
 const registryCode = sliceBetween(modesSource, 'const CAREER_START_BANKROLL', '/* ============================================================\n   ELIMINATION MODE');
+/* The REAL opponent systems, so a roster drawn in these checks is drawn by
+   the same pickPersonalities()/assignFaceColors() a real table uses rather
+   than by a stub that could drift from them. */
+const shuffleCode = sliceBetween(mathSource, 'function shuffle(deck){', 'function cardKey');
+const faceColorCode = sliceBetween(supportSource, 'const FACE_COLORS = [', '/* One entry per art batch');
+const assignColorCode = sliceBetween(supportSource, 'function assignFaceColors(players){', 'function faceHue');
+const personalityCode = sliceBetween(opponentSource, 'const PERSONALITIES_ALL = [', 'const RANDOM_FIRST_NAMES');
+const randomNameCode = sliceBetween(opponentSource, 'const RANDOM_FIRST_NAMES', 'const DIFFICULTY_PARAMS');
+const opponentCode = shuffleCode + '\n' + faceColorCode + '\n' + assignColorCode + '\n' + personalityCode;
+/* The REAL table builder, so the other half of the roster guarantee — that
+   newGame() actually seats the field it is handed — is tested against
+   production rather than against the stub the Career checks use. */
+const newGameCode = sliceBetween(engineSource, 'function makePlayer(', '/* ---------------- table save/resume ----------------');
+function makeTableContext(playerName){
+  const context = {
+    console,
+    BLIND_LEVELS:[[10,20],[15,30],[25,50],[50,100]],
+    ELIMINATION_CONFIG:{ startingStack:1000, smallBlind:10, bigBlind:20 },
+    normalizeOpponentCount:n=>n,
+    settings:{ playerName:playerName || 'You', opponentNames:'persona', lives:false }
+  };
+  vm.createContext(context);
+  vm.runInContext('var game=null;\n' + opponentCode + '\n' + randomNameCode + '\n' + newGameCode +
+    '\nglobalThis.__tableTest={ newGame, launchRoster:careerLaunchRoster, getGame:()=>game };', context);
+  return context.__tableTest;
+}
 const careerCode = sliceBetween(wiringSource, "const CAREER_KEY = 'felt.career';", 'function startSinglePlayerRun');
 const devCareerBankrollCode = sliceBetween(devSource, 'function normalizeDevCareerBankroll', 'function initDevPanel');
 
 function clone(value){ return value == null ? value : JSON.parse(JSON.stringify(value)); }
+/* The launch terms newGame() is handed, minus the roster. The roster is
+   asserted separately and by identity of CONTENT (see the roster-integrity
+   checks) rather than being restated inside every terms fixture. */
+function launchTerms(options){
+  const terms = Object.assign({}, options);
+  delete terms.roster;
+  return terms;
+}
 function makeContext(initialCareer){
   const storage = new Map();
   if (initialCareer !== undefined) storage.set('felt.career', clone(initialCareer));
@@ -67,6 +104,10 @@ function makeContext(initialCareer){
     document:{ createElement(){ return { className:'', textContent:'', dataset:{} }; } },
     $:element,
     showConfirmDialog(){},
+    /* Stands in for the production portrait path and records exactly which
+       face colour and mood the directory asked for, so a preview roster can
+       be compared against the roster the table is launched with. */
+    renderFace(p, mood){ return '<i data-c="' + p.faceColorIdx + '" data-m="' + mood + '"></i>'; },
     setTimeout, clearTimeout
   };
   context.newGame = options=>{
@@ -74,7 +115,7 @@ function makeContext(initialCareer){
     context.game = { mode:options.mode };
   };
   vm.createContext(context);
-  vm.runInContext('var game=null; var DEV_MODE=true; function refreshDevPanel(){}\n' + registryCode + '\n' + careerCode + '\n' + devCareerBankrollCode + `
+  vm.runInContext('var game=null; var DEV_MODE=true; function refreshDevPanel(){}\n' + opponentCode + '\n' + registryCode + '\n' + careerCode + '\n' + devCareerBankrollCode + `
     globalThis.__careerTest={
       events:CAREER_EVENT_LIST,
       eventById:careerEventById,
@@ -105,6 +146,16 @@ function makeContext(initialCareer){
       secondChanceThreshold:SECOND_CHANCE_BANKROLL_THRESHOLD,
       secondChanceEventId:SECOND_CHANCE_EVENT_ID,
       render:renderCareerScreen,
+      showScreen:showCareerScreen,
+      title:careerEventTitle,
+      trayHTML:careerTrayHTML,
+      cassetteHTML:careerCassetteHTML,
+      rosterFor:careerRosterFor,
+      activeRoster:careerActiveRoster,
+      releaseRoster:releaseCareerRoster,
+      materializeRosters:materializeCareerRosters,
+      generateRoster:generateCareerRoster,
+      normalizeRoster:normalizeCareerRoster,
       setDevMode:value=>{ DEV_MODE=value; },
       setDevBankroll:devSetCareerBankroll
     };`, context);
@@ -142,12 +193,14 @@ check('Career registry contains complete Back Room and Pub descriptors', ()=>{
   const { api } = makeContext();
   assert.strictEqual(api.events.length, 4);
   assert.deepStrictEqual(clone(api.eventById('back-room-freezeout')), {
-    id:'back-room-freezeout', venue:'BACK ROOM', name:'BACK ROOM FREEZEOUT', format:'Freezeout',
+    id:'back-room-freezeout', venue:'BACK ROOM', name:'BACK ROOM 3-HAND', title:'3-HAND',
+    format:'Freezeout',
     playerCount:3, opponentCount:2, buyIn:100, prize:300, payouts:[300], stack:500,
     initialBlindLevel:0, handsPerBlindLevel:10, difficulty:'medium', unlockRequirement:null
   });
   assert.deepStrictEqual(clone(api.eventById('pub-freezeout')), {
-    id:'pub-freezeout', venue:'PUB CIRCUIT', name:'PUB CIRCUIT FREEZEOUT', format:'Freezeout',
+    id:'pub-freezeout', venue:'PUB CIRCUIT', name:'PUB CIRCUIT 4-HAND', title:'4-HAND',
+    format:'Freezeout',
     playerCount:4, opponentCount:3, buyIn:300, prize:1200, payouts:[1200], stack:750,
     initialBlindLevel:0, handsPerBlindLevel:10, difficulty:'hard',
     unlockRequirement:{type:'event-win',eventId:'back-room-freezeout'}
@@ -157,7 +210,8 @@ check('Career registry contains complete Back Room and Pub descriptors', ()=>{
 check('Pub Circuit Open descriptor carries the approved Top-2 configuration', ()=>{
   const { api } = makeContext();
   assert.deepStrictEqual(clone(api.eventById('pub-open')), {
-    id:'pub-open', venue:'PUB CIRCUIT', name:'PUB CIRCUIT OPEN', format:'Freezeout',
+    id:'pub-open', venue:'PUB CIRCUIT', name:'PUB CIRCUIT 5-HAND', title:'5-HAND',
+    format:'Freezeout',
     playerCount:5, opponentCount:4, buyIn:300, prize:1050, payouts:[1050,450], stack:750,
     initialBlindLevel:0, handsPerBlindLevel:10, difficulty:'hard',
     unlockRequirement:{type:'event-win',eventId:'back-room-freezeout'}
@@ -178,7 +232,7 @@ check('Pub Circuit Open launches a five-player field and charges $300 once', ()=
   assert.strictEqual(api.enter('pub-open'), true);
   assert.strictEqual(api.getCareer().bankroll, 200);
   api.start();
-  assert.deepStrictEqual(calls.launches[0], {
+  assert.deepStrictEqual(launchTerms(calls.launches[0]), {
     mode:'career', difficulty:'hard', opponents:4, stack:750, blindLevel:0
   });
   const snapshot = api.getCareer().active.snapshot;
@@ -197,7 +251,7 @@ check('Pub Circuit Open resume rebuilds the five-player table without recharging
   const paid = api.getCareer().bankroll;
   api.resume();
   assert.strictEqual(api.getCareer().bankroll, paid);
-  assert.deepStrictEqual(calls.launches[0], {
+  assert.deepStrictEqual(launchTerms(calls.launches[0]), {
     mode:'career', difficulty:'hard', opponents:4, stack:750, blindLevel:0
   });
 });
@@ -357,7 +411,7 @@ check('Back Room entry and launch retain the approved original configuration', (
   assert.strictEqual(api.enter('back-room-freezeout'), true);
   assert.strictEqual(api.getCareer().bankroll, 400);
   assert.ok(api.start());
-  assert.deepStrictEqual(calls.launches[0], {
+  assert.deepStrictEqual(launchTerms(calls.launches[0]), {
     mode:'career', difficulty:'medium', opponents:2, stack:500, blindLevel:0
   });
   assert.strictEqual(calls.hands, 1);
@@ -368,7 +422,7 @@ check('Pub starts four-handed with its own stack and financial terms', ()=>{
   assert.strictEqual(api.enter('pub-freezeout'), true);
   assert.strictEqual(api.getCareer().bankroll, 200);
   api.start();
-  assert.deepStrictEqual(calls.launches[0], {
+  assert.deepStrictEqual(launchTerms(calls.launches[0]), {
     mode:'career', difficulty:'hard', opponents:3, stack:750, blindLevel:0
   });
   assert.strictEqual(api.getCareer().active.snapshot.prize, 1200);
@@ -437,7 +491,7 @@ check('Resume rebuilds the correct active event without charging again', ()=>{
   const paidBankroll = api.getCareer().bankroll;
   api.resume(); // no table checkpoint branch intentionally rebuilds hand zero
   assert.strictEqual(api.getCareer().bankroll, paidBankroll);
-  assert.deepStrictEqual(calls.launches[0], {
+  assert.deepStrictEqual(launchTerms(calls.launches[0]), {
     mode:'career', difficulty:'hard', opponents:3, stack:750, blindLevel:0
   });
   assert.strictEqual(api.enter('back-room-freezeout'), false);
@@ -644,7 +698,8 @@ check('Second Chance descriptor is free, three-handed and pays $150 to first onl
   const { api } = makeContext();
   assert.strictEqual(api.events.length, 4);
   assert.deepStrictEqual(clone(api.eventById('second-chance')), {
-    id:'second-chance', venue:'BACK ROOM', name:'SECOND CHANCE', format:'Freezeout',
+    id:'second-chance', venue:'BACK ROOM', name:'SECOND CHANCE', title:'SECOND CHANCE',
+    format:'Freezeout',
     playerCount:3, opponentCount:2, buyIn:0, prize:150, payouts:[150], stack:500,
     initialBlindLevel:0, handsPerBlindLevel:10, difficulty:'medium', unlockRequirement:null
   });
@@ -1112,7 +1167,7 @@ check('Threat wording follows the real event difficulty', ()=>{
 check('Requirement copy states the real unlock and the real shortfall', ()=>{
   const locked = makeContext(recoveryCareer(500));
   assert.strictEqual(locked.api.requirementText(locked.api.eventById('pub-open'), 'locked'),
-    'UNLOCKS BY WINNING BACK ROOM FREEZEOUT');
+    'UNLOCKS BY WINNING BACK ROOM 3-HAND');
 
   const short = makeContext(openCareer());
   short.api.getCareer().bankroll = 80;
@@ -1154,6 +1209,280 @@ check('The renderer reads live Career values rather than fixtures', ()=>{
   ['BACK ROOM','PUB CIRCUIT','CARD CLUB','CASINO FLOOR','HIGH ROLLER ROOM','INVITATIONAL CHAMPIONSHIP']
     .forEach(venue=>assert.ok(board.innerHTML.indexOf(venue) !== -1, venue));
   assert.ok(board.innerHTML.indexOf('LOCKED &middot; COMING SOON') !== -1);
+});
+
+/* ---- event display names ---- */
+
+check('Event titles are the short venue-relative labels, ids unchanged', ()=>{
+  const { api } = makeContext();
+  // The venue marker sits directly above the plaque, so the plaque prints
+  // the short title. The Freezeout/Open distinction is gone: all four ARE
+  // freezeouts, which is exactly why "Open" could not stay a title.
+  assert.strictEqual(api.title(api.eventById('back-room-freezeout')), '3-HAND');
+  assert.strictEqual(api.title(api.eventById('pub-freezeout')), '4-HAND');
+  assert.strictEqual(api.title(api.eventById('pub-open')), '5-HAND');
+  assert.strictEqual(api.title(api.eventById('second-chance')), 'SECOND CHANCE');
+  // The save identifiers are untouched by the rename.
+  assert.strictEqual(api.events.map(e=>e.id).sort().join('|'),
+    'back-room-freezeout|pub-freezeout|pub-open|second-chance');
+  // The venue-qualified record name is what a save and a settled result
+  // still carry, because on its own "4-HAND" does not say where.
+  assert.strictEqual(api.eventById('pub-freezeout').name, 'PUB CIRCUIT 4-HAND');
+  assert.strictEqual(api.eventById('pub-open').name, 'PUB CIRCUIT 5-HAND');
+  // Every event remains a freezeout and still says so.
+  api.events.forEach(event=>assert.strictEqual(event.format, 'Freezeout'));
+});
+
+check('The closed plaque prints the title and the tray still states FREEZEOUT', ()=>{
+  const { api } = makeContext(openCareer());
+  const plaque = api.cassetteHTML(api.eventById('pub-open'), 'available');
+  assert.ok(plaque.includes('>5-HAND<'), plaque);
+  assert.ok(!plaque.includes('PUB CIRCUIT 5-HAND'), 'the venue is already above the plaque');
+  assert.ok(plaque.includes('$300 ENTRY'));
+  ['pub-freezeout','pub-open'].forEach(id=>{
+    const tray = api.trayHTML(api.eventById(id), 'available');
+    assert.ok(tray.includes('Format'), id);
+    assert.ok(tray.includes('FREEZEOUT'), id);
+  });
+});
+
+/* ---- roster integrity: the advertised table IS the played table ---- */
+
+check('A drawn roster is a real, distinct field of the right size', ()=>{
+  const { api } = makeContext(openCareer());
+  const event = api.eventById('pub-open');
+  const roster = api.rosterFor('pub-open');
+  assert.strictEqual(roster.length, event.opponentCount);
+  assert.strictEqual(new Set(roster.map(s=>s.personalityKey)).size, roster.length);
+  assert.strictEqual(new Set(roster.map(s=>s.faceColorIdx)).size, roster.length);
+  roster.forEach(seat=>{
+    assert.ok(api.normalizeRoster([seat], {opponentCount:1}), 'seat must normalise');
+  });
+});
+
+check('Re-rendering the directory never rerolls the advertised opponents', ()=>{
+  const { api, calls } = makeContext(openCareer());
+  const first = clone(api.rosterFor('pub-open'));
+  const setsBefore = calls.sets;
+  // Every way the directory can be repainted: a full render, an opened
+  // tray, a closed tray, and a second look at the same event.
+  api.render();
+  const opened = api.trayHTML(api.eventById('pub-open'), 'available');
+  api.render();
+  api.trayHTML(api.eventById('pub-open'), 'available');
+  api.render();
+  assert.deepStrictEqual(clone(api.rosterFor('pub-open')), first);
+  // ...and none of it wrote a save.
+  assert.strictEqual(calls.sets, setsBefore);
+  // The portraits the tray asked for are that same field, in seat order.
+  const advertised = Array.from(opened.matchAll(/data-c="(\d+)"/g)).map(m=>Number(m[1]));
+  assert.deepStrictEqual(advertised, first.map(seat=>seat.faceColorIdx));
+});
+
+check('Entering an event launches exactly the advertised opponents', ()=>{
+  const { api, calls } = makeContext(openCareer());
+  const advertisedHTML = api.trayHTML(api.eventById('pub-open'), 'available');
+  const advertised = clone(api.rosterFor('pub-open'));
+  assert.strictEqual(api.enter('pub-open'), true);
+  api.start();
+  // This is the guarantee the whole roster book exists for.
+  assert.deepStrictEqual(clone(calls.launches[0].roster), advertised);
+  assert.deepStrictEqual(clone(api.activeRoster()), advertised);
+  const faces = Array.from(advertisedHTML.matchAll(/data-c="(\d+)"/g)).map(m=>Number(m[1]));
+  assert.deepStrictEqual(faces, calls.launches[0].roster.map(seat=>seat.faceColorIdx));
+});
+
+check('A seated roster survives save, reload and resume', ()=>{
+  const { api, storage } = makeContext(openCareer());
+  const advertised = clone(api.rosterFor('pub-freezeout'));
+  api.enter('pub-freezeout');
+  // Durable, not merely in memory.
+  assert.deepStrictEqual(clone(storage.get('felt.career').active.roster), advertised);
+  // Reload: a fresh context over the stored save resumes the same field.
+  const reloaded = makeContext(storage.get('felt.career'));
+  assert.deepStrictEqual(clone(reloaded.api.activeRoster()), advertised);
+  reloaded.api.resume();
+  assert.deepStrictEqual(clone(reloaded.calls.launches[0].roster), advertised);
+  assert.strictEqual(reloaded.api.getCareer().bankroll, api.getCareer().bankroll);
+});
+
+check('The seated field is retired with its event and a fresh one is drawn', ()=>{
+  const { api } = makeContext(openCareer());
+  const played = clone(api.rosterFor('back-room-freezeout'));
+  api.enter('back-room-freezeout');
+  // Seating it removes it from the book, so the directory is not still
+  // advertising a field that is already at a table.
+  assert.strictEqual(api.getCareer().rosters['back-room-freezeout'], undefined);
+  assert.strictEqual(api.settle({place:1}), true);
+  assert.strictEqual(api.getCareer().rosters['back-room-freezeout'], undefined);
+  const next = clone(api.rosterFor('back-room-freezeout'));
+  assert.strictEqual(next.length, played.length);
+  // A new instance is a new field; it is not required to differ (the draw
+  // is random), but it must be a valid, freshly stored one.
+  assert.ok(api.normalizeRoster(api.getCareer().rosters['back-room-freezeout'],
+    api.eventById('back-room-freezeout')));
+});
+
+check('Opening the Career screen persists fields; rendering it does not', ()=>{
+  const { api, calls, storage } = makeContext(openCareer());
+  const before = calls.sets;
+  api.showScreen();
+  // One write, for the fields drawn on this first visit.
+  assert.strictEqual(calls.sets, before + 1);
+  const stored = clone(storage.get('felt.career').rosters);
+  assert.ok(Object.keys(stored).length >= 3, 'every visible event has a field');
+  // A second visit has nothing new to draw and writes nothing.
+  api.showScreen();
+  assert.strictEqual(calls.sets, before + 1);
+  // Neither does any number of renders or tray openings.
+  api.render(); api.render();
+  assert.strictEqual(calls.sets, before + 1);
+  assert.deepStrictEqual(clone(storage.get('felt.career').rosters), stored);
+});
+
+check('A stored field survives a reload and is still what is advertised', ()=>{
+  const { api, storage } = makeContext(openCareer());
+  api.showScreen();
+  const stored = clone(storage.get('felt.career').rosters);
+  const reloaded = makeContext(storage.get('felt.career'));
+  reloaded.api.showScreen();
+  assert.deepStrictEqual(clone(reloaded.api.getCareer().rosters), stored);
+  assert.deepStrictEqual(clone(reloaded.api.rosterFor('pub-open')), stored['pub-open']);
+});
+
+check('A malformed or stale field is rejected and redrawn, never trusted', ()=>{
+  const { api } = makeContext(openCareer());
+  const event = api.eventById('pub-open');   // four seats
+  const good = api.rosterFor('pub-open');
+  [
+    null, undefined, {}, [], 'roster',
+    good.slice(0,2),                                                  // wrong size
+    good.concat([{personalityKey:'rock',faceColorIdx:1}]),            // too many
+    [{personalityKey:'nobody',faceColorIdx:0},{personalityKey:'rock',faceColorIdx:1},
+     {personalityKey:'shark',faceColorIdx:2},{personalityKey:'maniac',faceColorIdx:3}],
+    [{personalityKey:'rock',faceColorIdx:0},{personalityKey:'rock',faceColorIdx:1},
+     {personalityKey:'shark',faceColorIdx:2},{personalityKey:'maniac',faceColorIdx:3}],
+    [{personalityKey:'rock',faceColorIdx:0},{personalityKey:'grinder',faceColorIdx:0},
+     {personalityKey:'shark',faceColorIdx:2},{personalityKey:'maniac',faceColorIdx:3}],
+    [{personalityKey:'rock',faceColorIdx:0},{personalityKey:'grinder',faceColorIdx:1},
+     {personalityKey:'shark',faceColorIdx:2},{personalityKey:'maniac',faceColorIdx:999}],
+    [{personalityKey:'rock',faceColorIdx:0},{personalityKey:'grinder',faceColorIdx:1},
+     {personalityKey:'shark',faceColorIdx:2},{personalityKey:'maniac',faceColorIdx:1.5}]
+  ].forEach((bad,i)=>assert.strictEqual(api.normalizeRoster(bad, event), null, 'case ' + i));
+
+  // A stale entry in the book is discarded and a valid field drawn.
+  api.getCareer().rosters['pub-open'] = [{personalityKey:'rock',faceColorIdx:0}];
+  const redrawn = api.rosterFor('pub-open');
+  assert.strictEqual(redrawn.length, 4);
+  assert.ok(api.normalizeRoster(redrawn, event));
+  // A field belonging to no catalogue event is swept up on the next visit.
+  api.getCareer().rosters['a-room-that-never-shipped'] = redrawn;
+  api.materializeRosters();
+  assert.strictEqual(api.getCareer().rosters['a-room-that-never-shipped'], undefined);
+});
+
+check('Rosters are additive: a stored career without them is still valid', ()=>{
+  // A real, fully valid v4 save written before this pass. It has no
+  // rosters key at all and must NOT be routed through migration — this
+  // was an additive field, not a version bump. (openCareer() deliberately
+  // omits the second-chance unlock and so is NOT valid; it is a migration
+  // fixture. This one carries every catalogue key.)
+  const preRoster = openCareer({'back-room-freezeout':true,'pub-freezeout':true,
+    'pub-open':true,'second-chance':true});
+  const { api, calls } = makeContext(preRoster);
+  assert.strictEqual(calls.sets, 0, 'a valid v4 save is not rewritten on load');
+  assert.strictEqual(api.getCareer().rosters, undefined, 'nothing is invented at load');
+  assert.strictEqual(api.getCareer().v, api.saveVersion);
+  assert.strictEqual(api.getCareer().bankroll, 500);
+  // The field is simply drawn on the next visit.
+  assert.ok(api.rosterFor('back-room-freezeout'));
+  // And a stored book of malformed fields never invalidates the save.
+  const junk = makeContext(Object.assign(openCareer(), { rosters:{ 'pub-open':'nonsense' } }));
+  assert.strictEqual(junk.api.getCareer().bankroll, 500);
+  assert.strictEqual(junk.api.rosterFor('pub-open').length, 4);
+});
+
+/* ---- machine theme vs venue identity ---- */
+
+check('No venue material can follow the player machine theme', ()=>{
+  const css = fs.readFileSync(path.join(root, 'css/06-machine-system.css'), 'utf8');
+  const from = css.indexOf('/* ---- 2. HOUSE DIRECTORY');
+  assert.ok(from > 0, 'the house directory block must exist');
+  const block = css.slice(from);
+  // Every palette token that follows the selected machine theme. A venue's
+  // authored identity must not resolve through any of them — the separation
+  // is asserted here rather than left to whichever theme happens to be
+  // active while someone is looking at the screen.
+  const themed = ['--theme-','--pc-','--accent','--felt','--panel','--bg-','--ink-','--card-','--danger'];
+  Array.from(block.matchAll(/var\((--[a-z0-9-]+)/g)).forEach(match=>{
+    const token = match[1];
+    assert.ok(!themed.some(prefix=>token.startsWith(prefix)),
+      'the venue directory must not read the themed token ' + token);
+    assert.ok(token.startsWith('--h-') || token === '--font-hdr' || token === '--radius',
+      'unexpected token in the venue directory: ' + token);
+  });
+  // And the player instrument must still be theme-derived, so switching
+  // theme visibly changes something.
+  const cpi = css.slice(css.indexOf('/* ---- 1. PLAYER INSTRUMENT'), from);
+  assert.ok(cpi.includes('var(--pc-plastic)'));
+  assert.ok(cpi.includes('var(--theme-rim)'));
+  // The Career screen must not sit inside the shared themed cabinet, which
+  // is what used to tint every venue with the player's palette.
+  const cabinet = css.slice(css.indexOf('/* ---- The cabinet ----'), css.indexOf('/* ---- Cabinet top rail'));
+  assert.ok(!cabinet.includes('#career .lobby-card'), '#career must own its own construction');
+});
+
+check('newGame seats exactly the roster it is handed', ()=>{
+  const { api } = makeContext(openCareer());
+  const advertised = clone(api.rosterFor('pub-open'));
+  const table = makeTableContext('Tester');
+  table.newGame({ mode:'career', difficulty:'hard', opponents:4, stack:750,
+    blindLevel:0, roster:advertised });
+  const opponents = table.getGame().players.filter(p=>!p.isHuman);
+  assert.strictEqual(opponents.length, 4);
+  // Joined rather than deep-compared: these arrays are built inside the
+  // table's own VM realm, so deepStrictEqual would fail on prototype
+  // identity alone even when every value matches.
+  assert.strictEqual(opponents.map(p=>p.personality.key).join('|'),
+    advertised.map(s=>s.personalityKey).join('|'));
+  assert.strictEqual(opponents.map(p=>p.faceColorIdx).join('|'),
+    advertised.map(s=>s.faceColorIdx).join('|'));
+  // Same roster, built again: still the same table. Without a roster the
+  // two draws are independent, which is the defect this pass removes.
+  table.newGame({ mode:'career', difficulty:'hard', opponents:4, stack:750,
+    blindLevel:0, roster:advertised });
+  const again = table.getGame().players.filter(p=>!p.isHuman);
+  assert.strictEqual(again.map(p=>p.personality.key).join('|'),
+    advertised.map(s=>s.personalityKey).join('|'));
+  assert.strictEqual(again.map(p=>p.faceColorIdx).join('|'),
+    advertised.map(s=>s.faceColorIdx).join('|'));
+  // Table stakes are untouched by the roster.
+  assert.strictEqual(table.getGame().startingStack, 750);
+  assert.strictEqual(table.getGame().players.length, 5);
+});
+
+check('A table with no roster keeps the original random draw', ()=>{
+  const table = makeTableContext();
+  // Every non-Career caller passes no roster and must be unaffected.
+  [null, undefined, [], [{personalityKey:'rock',faceColorIdx:0}],
+   [{personalityKey:'nobody',faceColorIdx:0},{personalityKey:'rock',faceColorIdx:1},
+    {personalityKey:'shark',faceColorIdx:2}],
+   [{personalityKey:'rock',faceColorIdx:null},{personalityKey:'shark',faceColorIdx:1},
+    {personalityKey:'maniac',faceColorIdx:2}]
+  ].forEach((roster,i)=>{
+    assert.strictEqual(table.launchRoster(roster, 3), null, 'case ' + i);
+    table.newGame({ mode:'tournament', difficulty:'medium', opponents:3, stack:500,
+      blindLevel:0, roster });
+    const opponents = table.getGame().players.filter(p=>!p.isHuman);
+    // A rejected roster must never leave a seat without a persona or a
+    // colour — it falls back to the ordinary draw in full.
+    assert.strictEqual(opponents.length, 3, 'case ' + i);
+    opponents.forEach(p=>{
+      assert.ok(p.personality && typeof p.personality.key === 'string', 'case ' + i);
+      assert.ok(Number.isInteger(p.faceColorIdx), 'case ' + i);
+    });
+    assert.strictEqual(new Set(opponents.map(p=>p.faceColorIdx)).size, 3, 'case ' + i);
+  });
 });
 
 check('Production never loads the Career Lab', ()=>{
