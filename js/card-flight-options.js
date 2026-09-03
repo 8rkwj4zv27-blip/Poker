@@ -9,7 +9,7 @@
   const active=new Set();
   let direction='deal';
   const variant='dealer';
-  let housing='plinth';
+  let housing='naked';
   let playback='normal';
   let token=0;
   let refreshMs=0;
@@ -62,11 +62,10 @@
   };
 
   const HOUSINGS={
-    plinth:{key:'A',name:"Raised dealer's plinth",short:'Raised plinth',description:'A low burgundy platform with a gold edge and heavy shadow. The pile sits proudly above the felt without obstructing its top card.'},
-    guides:{key:'B',name:'Brass corner guides',short:'Brass guides',description:'Four solid brass registration corners hold a loose pile square while leaving the felt visible beneath it. Minimal, precise and tactile.'},
-    shoe:{key:'C',name:'Open-front casino shoe',short:'Casino shoe',description:'A compact casino shoe with rear and side walls, but a completely open flight line. More recognisably casino; slightly more device-like.'},
-    elevator:{key:'D',name:'Mechanical card elevator',short:'Card elevator',description:'A ribbed miniature mechanism presents the pile at a fixed height, with a warm status lamp and built-in counter. The strongest poker-machine character.'},
-    altar:{key:'E',name:'The velvet altar',short:'Velvet altar',description:'A raised octagonal velvet dais with ceremonial gold trim. Luxurious, strange and knowingly theatrical—the wild housing option.'}
+    naked:{key:'A',name:'The naked deck',description:'The physical pile sits directly on the felt. Only its layered cards and a tight contact shadow establish weight.'},
+    line:{key:'B',name:'The dealer line',description:'A single mustard registration line marks the deck position without surrounding or competing with the cards.'},
+    pad:{key:'C',name:'The slim deck pad',description:'A flat burgundy leather pad extends just five pixels beyond the pile, finished with one restrained gold front edge.'},
+    stack:{key:'D',name:'The shadow stack',description:'Extra cream card-stock edges and a deeper pile shadow make the deck feel full without introducing a separate housing.'}
   };
 
   function median(values){
@@ -290,8 +289,6 @@
       if (button!==dealer) button.classList.toggle('active',button.dataset.housing===housing);
     });
     document.querySelectorAll('[data-direction]').forEach(button=>button.classList.toggle('active',button.dataset.direction===direction));
-    $('cfo-housing-name').textContent=home.key+' · '+home.name;
-    $('cfo-dealer-label').textContent=home.short;
     $('cfo-description').textContent=home.description+' Motion: '+choice.name+'.';
     $('cfo-replay').textContent=direction==='return'?'Return one':'Deal one';
     $('cfo-sequence').textContent=direction==='return'?'Return five':'Deal five';

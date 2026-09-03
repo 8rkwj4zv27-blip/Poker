@@ -15,13 +15,13 @@ const serviceWorker=fs.readFileSync(path.join(root,'sw.js'),'utf8');
 let passed=0;
 function check(name,fn){ fn(); passed++; process.stdout.write('PASS  '+name+'\n'); }
 
-check('The workshop exposes five distinct deck housings',()=>{
-  for (const housing of ['plinth','guides','shoe','elevator','altar']){
+check('The workshop exposes four restrained deck treatments',()=>{
+  for (const housing of ['naked','line','pad','stack']){
     assert.ok(html.includes('data-housing="'+housing+'"'));
     assert.ok(source.includes(housing+':{'));
     assert.ok(css.includes('[data-housing="'+housing+'"]'));
   }
-  for (const name of ["Raised dealer's plinth",'Brass corner guides','Open-front casino shoe','Mechanical card elevator','The velvet altar']) assert.ok(source.includes(name));
+  for (const name of ['The naked deck','The dealer line','The slim deck pad','The shadow stack']) assert.ok(source.includes(name));
   assert.ok(html.includes('data-direction="deal"'));
   assert.ok(html.includes('data-direction="return"'));
 });
@@ -31,6 +31,16 @@ check('Chosen Option A motion is locked for deal and return',()=>{
   assert.ok(source.includes("dealer:{label:'Dealer flick'"));
   assert.ok(source.includes("dealer:{label:'House sweep'"));
   assert.ok(!html.includes('data-variant='));
+});
+
+check('Deck label, top card and count are authored on one centre axis',()=>{
+  assert.ok(css.includes('width:64px; height:91px'));
+  assert.ok(css.includes('left:50%; top:-14px; transform:translateX(-50%)'));
+  assert.ok(css.includes('z-index:2; left:8px; top:7px; width:43px'));
+  assert.ok(css.includes('left:50%; bottom:0; min-width:24px'));
+  assert.ok(css.includes('left:7px; top:2px; width:50px'));
+  assert.ok(css.includes('left:3px; top:65px; width:58px'));
+  assert.ok(css.includes('left:14px; top:11px; width:36px'));
 });
 
 check('Every option shares destination-anchored centre geometry',()=>{
@@ -53,7 +63,7 @@ check('The flight is the visible top deck card, not a spawned generic sprite',()
   assert.ok(source.includes('for (let index=0;index<10;index++)'));
 });
 
-check('One-card, five-card and five-housing comparison playback are all available',()=>{
+check('One-card, five-card and four-treatment comparison playback are all available',()=>{
   assert.ok(html.includes('id="cfo-replay"'));
   assert.ok(html.includes('id="cfo-sequence"'));
   assert.ok(html.includes('id="cfo-compare"'));
