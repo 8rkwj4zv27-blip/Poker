@@ -1,0 +1,109 @@
+*{ box-sizing:border-box; }
+html,body{ min-height:100%; }
+body{
+  margin:0; overflow:auto; display:grid; place-items:center; padding:10px;
+  color:var(--ink); background:
+    repeating-conic-gradient(rgba(255,255,255,.018) 0 25%,transparent 0 50%) 0 0/8px 8px,
+    var(--pc-leather-lo);
+}
+.cfo-machine{
+  width:min(410px,100%); border:4px solid var(--px-ink); background:var(--pc-leather);
+  box-shadow:inset 3px 3px 0 var(--pc-leather-hi),0 8px 0 rgba(0,0,0,.58);
+}
+.cfo-header{
+  min-height:52px; padding:9px 10px; display:flex; align-items:center; justify-content:space-between; gap:10px;
+  border-bottom:3px solid var(--px-ink); background:linear-gradient(180deg,rgba(255,255,255,.035),transparent);
+  font-family:var(--font-hdr); text-transform:uppercase;
+}
+.cfo-header div{ display:grid; gap:4px; }
+.cfo-header span{ color:var(--ink-faint); font-size:5px; letter-spacing:.12em; }
+.cfo-header strong{ color:var(--accent-bright); font-size:8px; letter-spacing:.08em; }
+.cfo-header output{ color:var(--pc-display-ink); font-size:6px; text-align:right; }
+.cfo-stage{
+  position:relative; height:318px; overflow:hidden; perspective:800px;
+  background:
+    radial-gradient(ellipse at 52% 42%,rgba(255,255,255,.045),transparent 45%),
+    repeating-conic-gradient(rgba(255,255,255,.022) 0 25%,transparent 0 50%) 0 0/6px 6px,
+    var(--felt-1);
+  box-shadow:inset 0 10px 22px rgba(0,0,0,.45),inset 0 -4px 0 var(--felt-2);
+}
+.cfo-target-row{
+  position:absolute; left:50%; top:75px; transform:translateX(-50%); display:flex; gap:5px;
+}
+.cfo-target{
+  position:relative; width:44px; height:62px; border:1px solid color-mix(in srgb,var(--accent) 22%,transparent);
+  border-radius:3px; background:color-mix(in srgb,var(--felt-2) 45%,transparent);
+}
+.cfo-target.is-centre{ border-color:color-mix(in srgb,var(--accent) 54%,transparent); }
+.cfo-target>.card{
+  position:absolute; inset:-1px; width:44px; height:62px; margin:0; opacity:0;
+}
+.cfo-dealer{ position:absolute; left:30px; bottom:24px; width:55px; height:82px; }
+.cfo-dealer-label{
+  position:absolute; left:0; right:0; top:-15px; color:var(--accent-bright); text-align:center;
+  font:6px var(--font-hdr); text-transform:uppercase; letter-spacing:.08em;
+}
+.cfo-deck{
+  position:absolute; left:6px; top:5px; width:43px; height:63px; border-radius:5px;
+  background:rgba(0,0,0,.48); box-shadow:inset 0 4px 5px rgba(0,0,0,.7),0 3px 0 rgba(0,0,0,.32);
+}
+.cfo-deck-card{
+  position:absolute!important; width:36px!important; height:52px!important; margin:0!important;
+  left:calc(2px + var(--layer) * .45px); top:calc(6px - var(--layer) * .55px);
+  transition:none!important;
+}
+.cfo-deck-count{
+  position:absolute; right:-7px; bottom:0; min-width:22px; padding:3px 3px 2px;
+  border:2px solid var(--px-ink); background:var(--pc-display); color:var(--pc-display-ink);
+  font:5px var(--font-hdr); text-align:center;
+}
+.cfo-path-label{
+  position:absolute; left:101px; right:22px; bottom:48px; display:flex; align-items:center; gap:8px;
+  color:rgba(255,255,255,.38); font:5px var(--font-hdr); text-transform:uppercase; letter-spacing:.08em;
+}
+.cfo-path-label i{ height:1px; flex:1; opacity:.45; background:repeating-linear-gradient(90deg,var(--accent) 0 4px,transparent 4px 9px); }
+.cfo-console{ padding:9px; border-top:3px solid var(--px-ink); background:var(--panel); }
+.cfo-options{ display:grid; grid-template-columns:repeat(3,1fr); gap:5px; }
+.cfo-options button,.cfo-actions button,.cfo-modes button{
+  min-height:36px; border:2px solid var(--px-ink); border-radius:2px; color:var(--ink); background:var(--panel-2);
+  box-shadow:0 3px 0 var(--px-ink); font-family:var(--font-hdr); cursor:pointer;
+}
+.cfo-options button{ min-height:50px; display:grid; grid-template-columns:18px 1fr; gap:4px; align-items:center; text-align:left; padding:6px; }
+.cfo-options strong{ color:var(--accent-bright); font-size:13px; }
+.cfo-options span{ font-size:5.5px; text-transform:uppercase; }
+.cfo-options button.active,.cfo-actions button.primary,.cfo-modes button.active{ color:var(--accent-ink); background:var(--accent); }
+.cfo-options button.active strong{ color:inherit; }
+.cfo-description{ min-height:30px; margin:7px 2px; color:var(--ink-dim); font-size:9px; line-height:1.35; }
+.cfo-actions{ display:grid; grid-template-columns:repeat(3,1fr); gap:5px; }
+.cfo-actions button,.cfo-modes button{ font-size:5.5px; }
+.cfo-modes{ display:grid; grid-template-columns:1fr 1.25fr .75fr; gap:5px; margin-top:6px; }
+.cfo-options button:active,.cfo-actions button:active,.cfo-modes button:active{ transform:translateY(2px); box-shadow:0 1px 0 var(--px-ink); }
+#cfo-readout{
+  display:block; min-height:47px; margin-top:8px; padding:7px; border:2px solid var(--px-ink);
+  color:var(--pc-display-ink); background:var(--pc-display); font:5.5px/1.55 var(--font-hdr);
+}
+.cfo-note{ margin:6px 1px 0; color:var(--ink-faint); font-size:8px; }
+.cfo-flight-shell{
+  position:fixed; z-index:80; pointer-events:none; transform-origin:50% 50%; transform-style:preserve-3d;
+  will-change:transform;
+}
+.cfo-flight-shell>.card{ position:absolute; inset:0; width:100%!important; height:100%!important; margin:0; }
+.cfo-flight-shadow{
+  position:absolute; z-index:-1; inset:3px 1px -5px; border-radius:4px; background:rgba(0,0,0,.48);
+  transform:translate3d(0,2px,-1px); opacity:.25; will-change:opacity,transform;
+}
+.cfo-stage.is-running .cfo-path-label{ opacity:.42; }
+@media (max-width:350px){
+  body{ padding:6px; }
+  .cfo-stage{ height:286px; }
+  .cfo-target-row{ top:66px; gap:3px; }
+  .cfo-dealer{ left:20px; bottom:20px; }
+  .cfo-options button{ padding:4px; }
+}
+@media (max-height:720px){
+  .cfo-stage{ height:270px; }
+  .cfo-target-row{ top:55px; }
+  .cfo-dealer{ bottom:17px; }
+  .cfo-console{ padding:7px; }
+  .cfo-description{ margin:5px 2px; }
+}

@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#16090D">
+<link rel="icon" href="data:,">
+<title>Card Flight Options</title>
+<link rel="stylesheet" href="css/01-foundation.css">
+<link rel="stylesheet" href="css/02-screens.css">
+<link rel="stylesheet" href="css/card-flight-options.css">
+</head>
+<body data-theme="burgundy" data-cardback="classic">
+  <main class="cfo-machine">
+    <header class="cfo-header">
+      <div><span>Motion workshop</span><strong>Card flight options</strong></div>
+      <output id="cfo-status" aria-live="polite">Ready</output>
+    </header>
+
+    <section id="cfo-stage" class="cfo-stage" aria-label="Card flight comparison stage">
+      <div class="cfo-target-row" aria-label="Landing positions">
+        <div class="cfo-target"><div class="card back small"></div></div>
+        <div class="cfo-target"><div class="card back small"></div></div>
+        <div class="cfo-target is-centre"><div class="card back small"></div></div>
+        <div class="cfo-target"><div class="card back small"></div></div>
+        <div class="cfo-target"><div class="card back small"></div></div>
+      </div>
+
+      <div class="cfo-dealer">
+        <span class="cfo-dealer-label">Deck</span>
+        <div id="cfo-deck" class="cfo-deck" aria-label="Full deck"></div>
+        <span id="cfo-deck-count" class="cfo-deck-count">52</span>
+      </div>
+
+      <div class="cfo-path-label"><span id="cfo-variant-name">Dealer flick</span><i></i></div>
+    </section>
+
+    <section class="cfo-console">
+      <div class="cfo-options" role="group" aria-label="Flight treatment">
+        <button class="active" data-variant="dealer" type="button"><strong>A</strong><span>Dealer flick</span></button>
+        <button data-variant="casino" type="button"><strong>B</strong><span>Casino pitch</span></button>
+        <button data-variant="machine" type="button"><strong>C</strong><span>Machine feed</span></button>
+      </div>
+
+      <p id="cfo-description" class="cfo-description">A visible pickup and shallow hand-thrown arc, with restrained wrist movement and a precise landing.</p>
+
+      <div class="cfo-actions">
+        <button id="cfo-replay" class="primary" type="button">Deal one</button>
+        <button id="cfo-sequence" type="button">Deal five</button>
+        <button id="cfo-compare" type="button">Compare A/B/C</button>
+      </div>
+      <div class="cfo-modes" role="group" aria-label="Playback speed">
+        <button class="active" data-speed="normal" type="button">Normal</button>
+        <button data-speed="slow" type="button">Slow inspection</button>
+        <button id="cfo-cancel" type="button">Reset</button>
+      </div>
+
+      <output id="cfo-readout">Measuring this browser’s refresh interval…</output>
+      <p class="cfo-note">Prototype only. Production dealing and game state are untouched.</p>
+    </section>
+  </main>
+  <script src="js/card-flight-options.js"></script>
+</body>
+</html>
