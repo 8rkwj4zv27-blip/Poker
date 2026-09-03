@@ -44,6 +44,7 @@ function makeTableContext(playerName){
   const context = {
     console,
     BLIND_LEVELS:[[10,20],[15,30],[25,50],[50,100]],
+    TOURNAMENT_HANDS_PER_LEVEL:10,
     ELIMINATION_CONFIG:{ startingStack:1000, smallBlind:10, bigBlind:20 },
     normalizeOpponentCount:n=>n,
     settings:{ playerName:playerName || 'You', opponentNames:'persona', lives:false }
@@ -92,6 +93,7 @@ function makeContext(initialCareer){
     Sound:{ unlock(){}, buttonRelease(){} },
     hideResultCard(){},
     makeEventRewardState(){ return { score:0, awardCounts:{}, decisionSnapshots:[] }; },
+    recordGameplayConclusion(){}, endQuickResolve(){},
     saveCareerTable(){ calls.savedTable = true; return true; },
     clearCareerTable(){ calls.clears++; },
     updateArcadeHUD(){}, showTableScreen(){}, initSeats(){},
@@ -100,7 +102,18 @@ function makeContext(initialCareer){
     // Career table save is what an older active event has instead of a
     // stored roster.
     loadCareerTable(){ return calls.careerTable || null; },
-    restoreTable(){},
+    restoreTable(save){ context.game = clone(save); },
+    isValidCareerCashTableSave(save){
+      return !!save && save.version === 1 && save.mode === 'career-cash'
+        && save.formatId === 'back-room-cash' && typeof save.cashSessionId === 'string'
+        && save.players && save.players.length === 4
+        && save.smallBlind === 1 && save.bigBlind === 2 && save.startingStack === 50
+        && save.players.filter(p=>p.isHuman).length === 1
+        && save.players.every(p=>Number.isSafeInteger(p.chips) && p.chips >= 0
+          && (p.isHuman || (Number.isSafeInteger(p.cashReserve) && p.cashReserve >= 0 && p.cashReserve%50===0)))
+        && save.players.reduce((n,p)=>n+p.chips+(p.isHuman?0:p.cashReserve),0)===500;
+    },
+    serializeTable(g){ return clone(g); },
     esc:value=>String(value),
     buildResultAmount(){},
     motionOff(){ return true; },
@@ -115,7 +128,15 @@ function makeContext(initialCareer){
   };
   context.newGame = options=>{
     calls.launches.push(clone(options));
-    context.game = { mode:options.mode };
+    context.game = {
+      version:1, mode:options.mode, formatId:options.formatId || null,
+      cashSessionId:options.cashSessionId || null,
+      startingStack:options.stack, smallBlind:options.smallBlind, bigBlind:options.bigBlind,
+      dealerIndex:-1, handNumber:0,
+      players:[{id:'you',name:'You',isHuman:true,chips:options.stack}].concat(
+        (options.roster||[]).map((seat,i)=>({id:'ai'+i,name:seat.personalityKey,isHuman:false,
+          chips:options.stack,cashReserve:100,personalityKey:seat.personalityKey})))
+    };
   };
   vm.createContext(context);
   vm.runInContext('var game=null; var DEV_MODE=true; function refreshDevPanel(){}\n' + opponentCode + '\n' + registryCode + '\n' + careerCode + '\n' + devCareerBankrollCode + `
@@ -164,6 +185,21 @@ function makeContext(initialCareer){
       generateRoster:generateCareerRoster,
       normalizeRoster:normalizeCareerRoster,
       seatedFromTable:careerSeatedRosterFromTable,
+      cashConfig:CAREER_CASH_CONFIG,
+      hasCash:careerHasOpenCashSession,
+      cashState:careerCashState,
+      canOpenCash:careerCanOpenCash,
+      openCash:openCareerCashSession,
+      checkpointCash:checkpointCareerCash,
+      settleCash:settleCareerCash,
+      endCash:endCareerCashSession,
+      resumeCash:startCareerCashSession,
+      moneyCommitted:careerMoneyCommitted,
+      totalOwned:careerTotalOwned,
+      cashCassetteHTML:careerCashCassetteHTML,
+      cashTrayHTML:careerCashTrayHTML,
+      riskBand:careerRiskBand,
+      validCash:isValidCareerCashSession,
       setDevMode:value=>{ DEV_MODE=value; },
       setDevBankroll:devSetCareerBankroll
     };`, context);
@@ -197,9 +233,9 @@ function check(name, fn){
   process.stdout.write('PASS  ' + name + '\n');
 }
 
-check('Career registry contains complete Back Room and Pub descriptors', ()=>{
+check('Career registry contains the complete six-room catalogue', ()=>{
   const { api } = makeContext();
-  assert.strictEqual(api.events.length, 4);
+  assert.strictEqual(api.events.length, 13);
   assert.deepStrictEqual(clone(api.eventById('back-room-freezeout')), {
     id:'back-room-freezeout', venue:'BACK ROOM', name:'BACK ROOM 3-HAND', title:'3-HAND',
     format:'Freezeout',
@@ -211,7 +247,7 @@ check('Career registry contains complete Back Room and Pub descriptors', ()=>{
     format:'Freezeout',
     playerCount:4, opponentCount:3, buyIn:300, prize:1200, payouts:[1200], stack:750,
     initialBlindLevel:0, handsPerBlindLevel:10, difficulty:'hard',
-    unlockRequirement:{type:'event-win',eventId:'back-room-freezeout'}
+    unlockRequirement:{type:'venue-win',venue:'BACK ROOM'}
   });
 });
 
@@ -222,7 +258,7 @@ check('Pub Circuit Open descriptor carries the approved Top-2 configuration', ()
     format:'Freezeout',
     playerCount:5, opponentCount:4, buyIn:300, prize:1050, payouts:[1050,450], stack:750,
     initialBlindLevel:0, handsPerBlindLevel:10, difficulty:'hard',
-    unlockRequirement:{type:'event-win',eventId:'back-room-freezeout'}
+    unlockRequirement:{type:'venue-win',venue:'BACK ROOM'}
   });
   // The snapshot must be a real copy, never an alias of the frozen descriptor.
   const snapshot = api.snapshot(api.eventById('pub-open'));
@@ -704,7 +740,7 @@ check('Classic and Arcade remain on their established non-Career boundaries', ()
 
 check('Second Chance descriptor is free, three-handed and pays $150 to first only', ()=>{
   const { api } = makeContext();
-  assert.strictEqual(api.events.length, 4);
+  assert.strictEqual(api.events.length, 13);
   assert.deepStrictEqual(clone(api.eventById('second-chance')), {
     id:'second-chance', venue:'BACK ROOM', name:'SECOND CHANCE', title:'SECOND CHANCE',
     format:'Freezeout',
@@ -915,22 +951,21 @@ check('DEV bankroll control safely drives Second Chance boundaries without touch
 
 
 /* ============================================================
-   CAREER DIRECTORY — save schema v4 and the two aggregate counters.
-   These are the ONLY records added: no event history, venue record,
-   rival record, dossier or title (all Phase 13).
+   CAREER DIRECTORY — save schema v6, aggregate counters and Champion bit.
    ============================================================ */
 
-check('Career save is version 4 and a fresh career starts both counters at zero', ()=>{
+check('Career save is version 6 and a fresh career starts without Champion status', ()=>{
   const { api } = makeContext();
-  assert.strictEqual(api.saveVersion, 4);
+  assert.strictEqual(api.saveVersion, 6);
   const fresh = clone(api.getCareer());
-  assert.strictEqual(fresh.v, 4);
+  assert.strictEqual(fresh.v, 6);
   assert.strictEqual(fresh.eventsPlayed, 0);
   assert.strictEqual(fresh.eventsWon, 0);
+  assert.strictEqual(fresh.champion, false);
   assert.strictEqual(fresh.bankroll, 500);
 });
 
-check('A version-3 save migrates to v4 with counters at zero and everything else verbatim', ()=>{
+check('A version-3 save migrates to v6 with counters at zero and no invented title', ()=>{
   const v3 = {
     v:3, bankroll:275,
     active:null,
@@ -939,19 +974,22 @@ check('A version-3 save migrates to v4 with counters at zero and everything else
   };
   const { api, storage } = makeContext(v3);
   const migrated = clone(api.getCareer());
-  assert.strictEqual(migrated.v, 4);
+  assert.strictEqual(migrated.v, 6);
   assert.strictEqual(migrated.eventsPlayed, 0);
   assert.strictEqual(migrated.eventsWon, 0);
+  assert.strictEqual(migrated.champion, false);
   // Totals are NEVER inferred from lastResult, unlocks or lifetime stats.
   assert.strictEqual(migrated.bankroll, 275);
-  assert.deepStrictEqual(clone(migrated.unlocks), v3.unlocks);
+  Object.keys(v3.unlocks).forEach(id=>assert.strictEqual(migrated.unlocks[id], v3.unlocks[id], id));
+  assert.strictEqual(migrated.unlocks['back-room-heads-up'], true);
+  assert.strictEqual(migrated.unlocks['pub-turbo'], true);
   assert.deepStrictEqual(clone(migrated.lastResult), v3.lastResult);
   // The migration persists exactly once, through the normal save path.
-  assert.strictEqual(storage.get('felt.career').v, 4);
+  assert.strictEqual(storage.get('felt.career').v, 6);
   assert.strictEqual(storage.get('felt.career').eventsPlayed, 0);
 });
 
-check('A version-3 active event stays resumable across the v4 migration', ()=>{
+check('A version-3 active event stays resumable across the v6 migration', ()=>{
   const paid = makeContext(openCareer());
   paid.api.enter('pub-open');
   const carried = clone(paid.api.getCareer());
@@ -961,7 +999,7 @@ check('A version-3 active event stays resumable across the v4 migration', ()=>{
 
   const { api, calls } = makeContext(stale);
   const migrated = clone(api.getCareer());
-  assert.strictEqual(migrated.v, 4);
+  assert.strictEqual(migrated.v, 6);
   assert.strictEqual(migrated.active.eventId, 'pub-open');
   assert.strictEqual(migrated.active.snapshot.buyIn, 300);
   assert.deepStrictEqual(migrated.active.snapshot.payouts, [1050,450]);
@@ -973,10 +1011,33 @@ check('A version-3 active event stays resumable across the v4 migration', ()=>{
   assert.strictEqual(api.getCareer().eventsPlayed, 0);
 });
 
-check('Version-1 and version-2 saves migrate through to v4 intact', ()=>{
+check('A Holiday-pass v5 save migrates to v6 without changing money or records', ()=>{
+  const v5={
+    v:5,bankroll:4321,active:null,eventsPlayed:19,eventsWon:6,
+    unlocks:{'back-room-freezeout':true,'back-room-heads-up':true,'second-chance':true,
+      'pub-freezeout':true,'pub-open':true,'pub-turbo':true,
+      'card-club-deep':true,'card-club-six':true},
+    lastResult:{outcome:'cash',place:2,prize:2400,eventId:'card-club-six',
+      eventName:'CARD CLUB CLUB SIX',venue:'CARD CLUB',delta:2400,bankroll:4321},
+    cash:null,cashClosed:[]
+  };
+  const { api, storage }=makeContext(v5);
+  const migrated=clone(api.getCareer());
+  assert.strictEqual(migrated.v,6);
+  assert.strictEqual(migrated.bankroll,4321);
+  assert.strictEqual(migrated.eventsPlayed,19);
+  assert.strictEqual(migrated.eventsWon,6);
+  assert.strictEqual(migrated.champion,false);
+  assert.deepStrictEqual(migrated.lastResult,v5.lastResult);
+  ['casino-main','casino-turbo','high-roller-feature','high-roller-pressure','invitational-final']
+    .forEach(id=>assert.strictEqual(migrated.unlocks[id],false,id));
+  assert.strictEqual(storage.get('felt.career').v,6);
+});
+
+check('Version-1 and version-2 saves migrate through to v6 intact', ()=>{
   const v1 = makeContext({v:1,bankroll:417,active:{eventId:'back-room-freezeout',buyIn:100,prize:300},lastResult:null});
   const one = clone(v1.api.getCareer());
-  assert.strictEqual(one.v, 4);
+  assert.strictEqual(one.v, 6);
   assert.strictEqual(one.bankroll, 417);
   assert.strictEqual(one.active.snapshot.buyIn, 100);
   assert.deepStrictEqual(one.active.snapshot.payouts, [300]);
@@ -989,7 +1050,7 @@ check('Version-1 and version-2 saves migrate through to v4 intact', ()=>{
     lastResult:{outcome:'win',delta:300,bankroll:650}
   });
   const two = clone(v2.api.getCareer());
-  assert.strictEqual(two.v, 4);
+  assert.strictEqual(two.v, 6);
   assert.strictEqual(two.bankroll, 650);
   assert.strictEqual(two.unlocks['pub-open'], true);   // equivalent-unlock rule survives
   assert.strictEqual(two.eventsPlayed, 0);
@@ -1132,6 +1193,364 @@ check('Counters survive a full entry/settle cycle without disturbing money or un
   assert.strictEqual(api.getCareer().active, null);
 });
 
+check('Career Heads-Up is a real two-player descriptor and a first place opens Pub', ()=>{
+  const { api } = makeContext(recoveryCareer(500));
+  const event = api.eventById('back-room-heads-up');
+  assert.deepStrictEqual({players:event.playerCount,opponents:event.opponentCount,stack:event.stack,cadence:event.handsPerBlindLevel,payouts:clone(event.payouts)},
+    {players:2,opponents:1,stack:600,cadence:8,payouts:[200]});
+  assert.strictEqual(api.enter(event.id),true);
+  assert.strictEqual(api.settle({place:1}),true);
+  assert.strictEqual(api.getCareer().bankroll,600);
+  assert.strictEqual(api.getCareer().unlocks['pub-freezeout'],true);
+  assert.strictEqual(api.getCareer().unlocks['pub-open'],true);
+  assert.strictEqual(api.getCareer().unlocks['pub-turbo'],true);
+});
+
+check('Career Turbo is shorter without changing four-handed no-rake payout arithmetic', ()=>{
+  const { api } = makeContext(openCareer());
+  const event = api.eventById('pub-turbo');
+  assert.deepStrictEqual({players:event.playerCount,stack:event.stack,cadence:event.handsPerBlindLevel,buyIn:event.buyIn,payouts:clone(event.payouts)},
+    {players:4,stack:600,cadence:6,buyIn:300,payouts:[1200]});
+  assert.strictEqual(api.enter(event.id),true);
+  assert.strictEqual(api.getCareer().bankroll,200);
+  assert.strictEqual(api.settle({place:1}),true);
+  assert.strictEqual(api.getCareer().bankroll,1400);
+});
+
+check('Card Club Deep Stack remains the technical winner-take-all anchor', ()=>{
+  const { api } = makeContext(openCareer());
+  const event=api.eventById('card-club-deep');
+  assert.deepStrictEqual({venue:event.venue,players:event.playerCount,stack:event.stack,cadence:event.handsPerBlindLevel,buyIn:event.buyIn,payouts:clone(event.payouts)},
+    {venue:'CARD CLUB',players:4,stack:1500,cadence:12,buyIn:1000,payouts:[4000]});
+  assert.strictEqual(api.state(event.id),'locked');
+});
+
+check('Card Club Club Six is a no-rake six-handed Top-2 alternative', ()=>{
+  const { api } = makeContext(openCareer());
+  const event=api.eventById('card-club-six');
+  assert.deepStrictEqual({venue:event.venue,players:event.playerCount,stack:event.stack,
+    cadence:event.handsPerBlindLevel,buyIn:event.buyIn,payouts:clone(event.payouts),
+    difficulty:event.difficulty,rosterKeys:clone(event.rosterKeys)},
+    {venue:'CARD CLUB',players:6,stack:1000,cadence:10,buyIn:1000,payouts:[3600,2400],
+      difficulty:'hard',rosterKeys:['shark','professor','grinder','hammer','wildcard']});
+  assert.strictEqual(event.payouts.reduce((n,v)=>n+v,0),event.buyIn*event.playerCount);
+  assert.strictEqual(api.state(event.id),'locked');
+});
+
+check('Only a Pub first place permanently unlocks Card Club', ()=>{
+  const win=makeContext(openCareer());
+  win.api.getCareer().bankroll=1500;
+  win.api.enter('pub-turbo');
+  win.api.settle({place:1});
+  assert.strictEqual(win.api.getCareer().unlocks['card-club-deep'],true);
+  assert.strictEqual(win.api.getCareer().unlocks['card-club-six'],true);
+  win.api.getCareer().bankroll=0;
+  assert.strictEqual(win.api.state('card-club-deep'),'unaffordable');
+  assert.strictEqual(win.api.highestAccess(),'CARD CLUB');
+
+  const second=makeContext(openCareer());
+  second.api.getCareer().bankroll=1500;
+  second.api.enter('pub-open');
+  second.api.settle({place:2});
+  assert.strictEqual(second.api.getCareer().unlocks['card-club-deep'],false);
+  assert.strictEqual(second.api.getCareer().unlocks['card-club-six'],false);
+});
+
+check('A provable Pub win in an older save migrates Card Club access', ()=>{
+  const old=openCareer();
+  old.lastResult={outcome:'win',place:1,eventId:'pub-open',venue:'PUB CIRCUIT',delta:1050,bankroll:old.bankroll};
+  const { api }=makeContext(old);
+  assert.strictEqual(api.getCareer().unlocks['card-club-deep'],true);
+  assert.strictEqual(api.getCareer().unlocks['card-club-six'],true);
+});
+
+check('Upper-room descriptors carry the approved economics, formats and curated fields', ()=>{
+  const { api }=makeContext();
+  const expected=[
+    ['casino-main','MAIN EVENT',6,3000,[9000,6000,3000],1200,10,'expert',
+      ['shark','professor','grinder','hammer','wildcard'],'CARD CLUB'],
+    ['casino-turbo','MIDNIGHT TURBO',4,3000,[12000],600,6,'expert',
+      ['maniac','hammer','wildcard'],'CARD CLUB'],
+    ['high-roller-feature','FEATURE TABLE',4,10000,[40000],2000,12,'elite',
+      ['shark','professor','grinder'],'CASINO FLOOR'],
+    ['high-roller-pressure','PRESSURE FIVE',5,10000,[35000,15000],1000,8,'elite',
+      ['shark','professor','hammer','rock'],'CASINO FLOOR'],
+    ['invitational-final','THE FINAL',6,30000,[100000,50000,30000],2400,12,'elite',
+      ['shark','professor','grinder','hammer','wildcard'],'HIGH ROLLER ROOM']
+  ];
+  expected.forEach(([id,title,players,buyIn,payouts,stack,cadence,difficulty,rosterKeys,requiredVenue])=>{
+    const event=api.eventById(id);
+    assert.deepStrictEqual({title:event.title,players:event.playerCount,buyIn:event.buyIn,
+      payouts:clone(event.payouts),stack:event.stack,cadence:event.handsPerBlindLevel,
+      difficulty:event.difficulty,rosterKeys:clone(event.rosterKeys),requiredVenue:event.unlockRequirement.venue},
+    {title,players,buyIn,payouts,stack,cadence,difficulty,rosterKeys,requiredVenue},id);
+    assert.strictEqual(event.opponentCount,players-1,id+' field');
+    assert.strictEqual(payouts.reduce((sum,value)=>sum+value,0),buyIn*players,id+' no rake');
+  });
+});
+
+check('One first place at each reached venue opens every event in the next room', ()=>{
+  const { api }=makeContext(openCareer());
+  const career=api.getCareer();
+  career.bankroll=50000;
+  career.unlocks['card-club-deep']=true;
+  career.unlocks['card-club-six']=true;
+
+  assert.strictEqual(api.enter('card-club-six'),true);
+  assert.strictEqual(api.settle({place:1}),true);
+  assert.strictEqual(career.unlocks['casino-main'],true);
+  assert.strictEqual(career.unlocks['casino-turbo'],true);
+
+  assert.strictEqual(api.enter('casino-main'),true);
+  assert.strictEqual(api.settle({place:1}),true);
+  assert.strictEqual(career.unlocks['high-roller-feature'],true);
+  assert.strictEqual(career.unlocks['high-roller-pressure'],true);
+
+  assert.strictEqual(api.enter('high-roller-pressure'),true);
+  assert.strictEqual(api.settle({place:1}),true);
+  assert.strictEqual(career.unlocks['invitational-final'],true);
+  assert.strictEqual(api.highestAccess(),'INVITATIONAL CHAMPIONSHIP');
+  assert.strictEqual(career.eventsWon,3);
+});
+
+check('Paid places below first never unlock the next upper room', ()=>{
+  const cases=[
+    ['card-club-six',2,['casino-main','casino-turbo']],
+    ['casino-main',2,['high-roller-feature','high-roller-pressure']],
+    ['high-roller-pressure',2,['invitational-final']]
+  ];
+  cases.forEach(([eventId,place,targets])=>{
+    const { api }=makeContext(openCareer());
+    const career=api.getCareer();
+    career.bankroll=50000;
+    ['card-club-deep','card-club-six','casino-main','casino-turbo',
+      'high-roller-feature','high-roller-pressure'].forEach(id=>{
+      if (id===eventId || api.events.findIndex(event=>event.id===id)<api.events.findIndex(event=>event.id===eventId)){
+        career.unlocks[id]=true;
+      }
+    });
+    assert.strictEqual(api.enter(eventId),true,eventId);
+    assert.strictEqual(api.settle({place}),true,eventId);
+    targets.forEach(id=>assert.strictEqual(career.unlocks[id],false,eventId+' -> '+id));
+  });
+});
+
+check('The first Invitational victory records Champion once and keeps The Final replayable', ()=>{
+  const { api }=makeContext(openCareer());
+  const career=api.getCareer();
+  career.bankroll=100000;
+  career.unlocks['invitational-final']=true;
+  assert.strictEqual(api.enter('invitational-final'),true);
+  assert.strictEqual(api.settle({place:1}),true);
+  assert.strictEqual(career.champion,true);
+  assert.strictEqual(career.lastResult.firstChampionship,true);
+  assert.strictEqual(career.bankroll,170000);
+  assert.strictEqual(api.state('invitational-final'),'available');
+
+  assert.strictEqual(api.enter('invitational-final'),true);
+  assert.strictEqual(api.settle({place:1}),true);
+  assert.strictEqual(career.champion,true);
+  assert.strictEqual(career.lastResult.firstChampionship,false);
+});
+
+check('Migration honours only provable upper-room wins and preserves a proved title', ()=>{
+  const cases=[
+    ['card-club-deep','CARD CLUB',['casino-main','casino-turbo']],
+    ['casino-main','CASINO FLOOR',['high-roller-feature','high-roller-pressure']],
+    ['high-roller-feature','HIGH ROLLER ROOM',['invitational-final']]
+  ];
+  cases.forEach(([eventId,venue,targets])=>{
+    const old=openCareer();
+    old.lastResult={outcome:'win',place:1,eventId,venue,delta:1,bankroll:old.bankroll};
+    const migrated=makeContext(old).api.getCareer();
+    targets.forEach(id=>assert.strictEqual(migrated.unlocks[id],true,eventId+' -> '+id));
+    assert.strictEqual(migrated.champion,false,eventId);
+  });
+  const champion=openCareer();
+  champion.lastResult={outcome:'win',place:1,eventId:'invitational-final',
+    venue:'INVITATIONAL CHAMPIONSHIP',delta:100000,bankroll:100000};
+  assert.strictEqual(makeContext(champion).api.getCareer().champion,true);
+});
+
+check('The redundant recommendation instrument is removed without weakening risky-entry confirmation', ()=>{
+  assert.ok(!wiringSource.includes('function careerGuidanceModel'));
+  assert.ok(!wiringSource.includes("$('career-guidance')"));
+  assert.ok(!fs.readFileSync(path.join(root,'index.html'),'utf8').includes('id="career-guidance"'));
+  const card=makeContext(openCareer());
+  card.api.getCareer().unlocks['card-club-deep']=true;
+  card.api.getCareer().bankroll=1000;
+  assert.strictEqual(card.api.riskBand(card.api.eventById('card-club-deep')),'risky');
+  assert.ok(wiringSource.includes("careerRiskBand(event)==='risky'"));
+});
+
+/* ============================================================
+   HOLIDAY PASS M1 — Back Room cash ledger and recovery.
+   ============================================================ */
+
+check('Cash buy-in affordability holds at every required bankroll boundary', ()=>{
+  [0,49].forEach(bankroll=>{
+    const { api } = makeContext(recoveryCareer(bankroll));
+    assert.strictEqual(api.canOpenCash(), false, String(bankroll));
+    assert.strictEqual(api.cashState(), 'unaffordable', String(bankroll));
+  });
+  [50,99,100,101].forEach(bankroll=>{
+    const { api } = makeContext(recoveryCareer(bankroll));
+    assert.strictEqual(api.canOpenCash(), true, String(bankroll));
+    assert.strictEqual(api.cashState(), 'available', String(bankroll));
+  });
+});
+
+check('Cash entry atomically debits $50 and records the full safe checkpoint', ()=>{
+  const { api, storage } = makeContext(recoveryCareer(100));
+  assert.strictEqual(api.openCash(), true);
+  const c = clone(api.getCareer());
+  assert.strictEqual(c.bankroll, 50);
+  assert.strictEqual(c.cash.stack, 50);
+  assert.strictEqual(c.cash.entry.buyIn, 50);
+  assert.strictEqual(c.cash.entry.debitApplied, true);
+  assert.strictEqual(c.cash.checkpoint.cashSessionId, c.cash.id);
+  assert.strictEqual(api.moneyCommitted(), 50);
+  assert.strictEqual(api.totalOwned(), 100);
+  assert.deepStrictEqual(storage.get('felt.career'), c);
+  assert.strictEqual(api.openCash(), false, 'a second entry cannot debit again');
+});
+
+check('Cash resume reloads the completed-hand checkpoint without another charge', ()=>{
+  const first = makeContext(recoveryCareer(100));
+  first.api.openCash();
+  const saved = clone(first.storage.get('felt.career'));
+  const reloaded = makeContext(saved);
+  assert.strictEqual(reloaded.api.resumeCash(), true);
+  assert.strictEqual(reloaded.api.getCareer().bankroll, 50);
+  assert.strictEqual(reloaded.context.game.cashSessionId, saved.cash.id);
+  assert.strictEqual(reloaded.calls.hands, 1);
+});
+
+check('A completed cash hand checkpoints the exact human stack in the ledger', ()=>{
+  const { api } = makeContext(recoveryCareer(100));
+  api.openCash();
+  const checkpoint = clone(api.getCareer().cash.checkpoint);
+  checkpoint.handNumber = 1;
+  checkpoint.players.find(p=>p.isHuman).chips = 73;
+  checkpoint.players.find(p=>!p.isHuman).chips -= 23;
+  assert.strictEqual(api.checkpointCash(checkpoint), true);
+  assert.strictEqual(api.moneyCommitted(), 73);
+  assert.strictEqual(api.totalOwned(), 123);
+  const wrong = clone(checkpoint);
+  wrong.cashSessionId = 'another-session';
+  assert.strictEqual(api.checkpointCash(wrong), false);
+  assert.strictEqual(api.moneyCommitted(), 73);
+});
+
+check('Cash Out and automatic table close return the whole stack exactly once', ()=>{
+  ['cash-out','table-close'].forEach(reason=>{
+    const { api } = makeContext(recoveryCareer(100));
+    api.openCash();
+    const checkpoint = clone(api.getCareer().cash.checkpoint);
+    checkpoint.players.find(p=>p.isHuman).chips = 73;
+    checkpoint.players.find(p=>!p.isHuman).chips -= 23;
+    api.checkpointCash(checkpoint);
+    const id = api.getCareer().cash.id;
+    assert.strictEqual(api.settleCash(id, reason), true, reason);
+    assert.strictEqual(api.getCareer().bankroll, 123, reason);
+    assert.strictEqual(api.getCareer().cash, null, reason);
+    assert.strictEqual(api.settleCash(id, reason), false, reason + ' duplicate');
+    assert.strictEqual(api.getCareer().bankroll, 123, reason + ' duplicate money');
+  });
+});
+
+check('Automatic table close checkpoints the just-finished human stack before returning it', ()=>{
+  const { api, context } = makeContext(recoveryCareer(100));
+  api.openCash();
+  const human=context.game.players.find(p=>p.isHuman);
+  const opponent=context.game.players.find(p=>!p.isHuman);
+  human.chips=73;
+  opponent.chips-=23;
+  const id=api.getCareer().cash.id;
+  assert.strictEqual(api.endCash(context.game,'table-close'),true);
+  assert.strictEqual(api.getCareer().bankroll,123);
+  assert.strictEqual(api.getCareer().cash,null);
+  assert.strictEqual(api.settleCash(id,'table-close'),false);
+  assert.strictEqual(api.getCareer().bankroll,123);
+});
+
+check('A human cash bust returns $0 and can never be settled twice', ()=>{
+  const { api } = makeContext(recoveryCareer(100));
+  api.openCash();
+  const checkpoint = clone(api.getCareer().cash.checkpoint);
+  checkpoint.players.find(p=>p.isHuman).chips = 0;
+  checkpoint.players.find(p=>!p.isHuman).chips += 50;
+  api.checkpointCash(checkpoint);
+  const id = api.getCareer().cash.id;
+  assert.strictEqual(api.settleCash(id, 'bust'), true);
+  assert.strictEqual(api.getCareer().bankroll, 50);
+  assert.strictEqual(api.getCareer().lastResult.returned, 0);
+  assert.strictEqual(api.settleCash(id, 'bust'), false);
+  assert.strictEqual(api.getCareer().bankroll, 50);
+});
+
+check('A corrupt cash checkpoint refunds only the provable buy-in, once', ()=>{
+  const opened = makeContext(recoveryCareer(100));
+  opened.api.openCash();
+  const corrupt = clone(opened.storage.get('felt.career'));
+  corrupt.cash.checkpoint.players[0].chips = 'unknown';
+  corrupt.cash.stack = 9000;
+  const recovered = makeContext(corrupt);
+  assert.strictEqual(recovered.api.getCareer().cash, null);
+  assert.strictEqual(recovered.api.getCareer().bankroll, 100);
+  assert.strictEqual(recovered.api.getCareer().lastResult.delta, 50);
+  const again = makeContext(recovered.storage.get('felt.career'));
+  assert.strictEqual(again.api.getCareer().bankroll, 100);
+});
+
+check('Corruption without a provable debit never invents a refund or a stack', ()=>{
+  const raw = recoveryCareer(50);
+  raw.cash = {id:'bad',entry:{transactionId:'bad',buyIn:999,debitApplied:true},stack:9999,checkpoint:null};
+  const { api } = makeContext(raw);
+  assert.strictEqual(api.getCareer().cash, null);
+  assert.strictEqual(api.getCareer().bankroll, 50);
+});
+
+check('Cash sessions and tournaments exclude one another in both directions', ()=>{
+  const cash = makeContext(recoveryCareer(500));
+  cash.api.openCash();
+  assert.strictEqual(cash.api.enter('back-room-freezeout'), false);
+  const tournament = makeContext(recoveryCareer(500));
+  assert.strictEqual(tournament.api.enter('back-room-freezeout'), true);
+  assert.strictEqual(tournament.api.canOpenCash(), false);
+  assert.strictEqual(tournament.api.openCash(), false);
+});
+
+check('The Career screen reports available, committed and total cash money', ()=>{
+  const { api, context } = makeContext(recoveryCareer(100));
+  api.openCash();
+  api.render();
+  assert.strictEqual(context.$('career-funds-available').textContent, '$50');
+  assert.strictEqual(context.$('career-funds-committed').textContent, '$50');
+  assert.strictEqual(context.$('career-funds-total').textContent, '$100');
+  const cassette = api.cashCassetteHTML();
+  const tray = api.cashTrayHTML();
+  assert.ok(cassette.includes('cdir-hatch is-active is-cash'));
+  assert.ok(cassette.includes('data-cash-toggle'));
+  assert.ok(tray.includes('data-cash-resume'));
+  assert.ok(tray.includes('data-cash-out'));
+  assert.ok(tray.includes('Cash Out $50'));
+});
+
+check('Cash Table is a restrained Back Room cassette, not a standalone buy-in panel', ()=>{
+  const { api, context }=makeContext(recoveryCareer(100));
+  const closed=api.cashCassetteHTML();
+  assert.ok(closed.includes('class="cdir-cassette"'));
+  assert.ok(closed.includes('cdir-flag is-cash">CASH'));
+  assert.ok(closed.includes('$50 BUY-IN'));
+  assert.ok(!closed.includes('data-cash-open'), 'buy-in control stays inside the opened tray');
+  assert.ok(!wiringSource.includes('career-cash-panel'));
+  api.render();
+  const board=context.$('career-events').innerHTML;
+  assert.ok(board.indexOf('BACK ROOM')<board.indexOf('CASH TABLE'));
+  assert.ok(board.indexOf('CASH TABLE')<board.indexOf('>3-HAND<'));
+});
+
 /* ---- the directory's presentation reads real state ---- */
 
 check('Highest access is derived from live unlocks and never reads "none"', ()=>{
@@ -1140,42 +1559,43 @@ check('Highest access is derived from live unlocks and never reads "none"', ()=>
   assert.strictEqual(makeContext(openCareer()).api.highestAccess(), 'PUB CIRCUIT');
 });
 
-check('The directory lists the six approved rooms and invents no catalogue entry', ()=>{
+check('The directory lists the complete 2/3/2/2/2/1 room catalogue', ()=>{
   const { api } = makeContext(openCareer());
   assert.strictEqual(api.rooms.map(room=>room.venue).join('|'),
     'BACK ROOM|PUB CIRCUIT|CARD CLUB|CASINO FLOOR|HIGH ROLLER ROOM|INVITATIONAL CHAMPIONSHIP');
-  // The four unimplemented rooms are presentation only: no descriptor
-  // exists for any of them, and the catalogue is still exactly four events.
-  assert.strictEqual(api.events.length, 4);
-  ['CARD CLUB','CASINO FLOOR','HIGH ROLLER ROOM','INVITATIONAL CHAMPIONSHIP'].forEach(venue=>{
-    assert.strictEqual(api.roomEvents(venue).length, 0, venue);
-    assert.ok(!api.events.some(event=>event.venue === venue), venue);
-  });
-  assert.strictEqual(api.roomEvents('PUB CIRCUIT').map(e=>e.id).join('|'), 'pub-freezeout|pub-open');
+  assert.strictEqual(api.events.length, 13);
+  assert.strictEqual(api.roomEvents('CASINO FLOOR').map(e=>e.id).join('|'), 'casino-main|casino-turbo');
+  assert.strictEqual(api.roomEvents('HIGH ROLLER ROOM').map(e=>e.id).join('|'), 'high-roller-feature|high-roller-pressure');
+  assert.strictEqual(api.roomEvents('INVITATIONAL CHAMPIONSHIP').map(e=>e.id).join('|'), 'invitational-final');
+  assert.strictEqual(api.roomEvents('PUB CIRCUIT').map(e=>e.id).join('|'), 'pub-freezeout|pub-open|pub-turbo');
+  assert.strictEqual(api.roomEvents('CARD CLUB').map(e=>e.id).join('|'), 'card-club-deep|card-club-six');
 });
 
 check('Within a room the free recovery event sorts above the paid one', ()=>{
   const { api } = makeContext(recoveryCareer(40));
   // Cheapest first, so Second Chance leads the Back Room.
   assert.strictEqual(api.roomEvents('BACK ROOM').map(e=>e.id).join('|'),
-    'second-chance|back-room-freezeout');
+    'second-chance|back-room-freezeout|back-room-heads-up');
   assert.strictEqual(api.entryLabel(api.eventById('second-chance')), 'FREE ENTRY');
   assert.strictEqual(api.entryLabel(api.eventById('back-room-freezeout')), '$100 ENTRY');
   assert.strictEqual(api.entryLabel(api.eventById('pub-open')), '$300 ENTRY');
 });
 
-check('Threat wording follows the real event difficulty', ()=>{
+check('Threat wording climbs through all six venues', ()=>{
   const { api } = makeContext();
-  assert.strictEqual(api.threatOf(api.eventById('back-room-freezeout')), 'MODERATE');
-  assert.strictEqual(api.threatOf(api.eventById('second-chance')), 'MODERATE');
-  assert.strictEqual(api.threatOf(api.eventById('pub-freezeout')), 'SERIOUS');
-  assert.strictEqual(api.threatOf(api.eventById('pub-open')), 'SERIOUS');
+  assert.strictEqual(api.threatOf(api.eventById('back-room-freezeout')), '1/6 · MODERATE');
+  assert.strictEqual(api.threatOf(api.eventById('second-chance')), '1/6 · MODERATE');
+  assert.strictEqual(api.threatOf(api.eventById('pub-freezeout')), '2/6 · SERIOUS');
+  assert.strictEqual(api.threatOf(api.eventById('card-club-deep')), '3/6 · SHARP');
+  assert.strictEqual(api.threatOf(api.eventById('casino-main')), '4/6 · EXPERT');
+  assert.strictEqual(api.threatOf(api.eventById('high-roller-feature')), '5/6 · ELITE');
+  assert.strictEqual(api.threatOf(api.eventById('invitational-final')), '6/6 · CHAMPIONSHIP');
 });
 
 check('Requirement copy states the real unlock and the real shortfall', ()=>{
   const locked = makeContext(recoveryCareer(500));
   assert.strictEqual(locked.api.requirementText(locked.api.eventById('pub-open'), 'locked'),
-    'UNLOCKS BY WINNING BACK ROOM 3-HAND');
+    'UNLOCKS WITH A BACK ROOM FIRST PLACE');
 
   const short = makeContext(openCareer());
   short.api.getCareer().bankroll = 80;
@@ -1216,7 +1636,7 @@ check('The renderer reads live Career values rather than fixtures', ()=>{
   const board = context.$('career-events');
   ['BACK ROOM','PUB CIRCUIT','CARD CLUB','CASINO FLOOR','HIGH ROLLER ROOM','INVITATIONAL CHAMPIONSHIP']
     .forEach(venue=>assert.ok(board.innerHTML.indexOf(venue) !== -1, venue));
-  assert.ok(board.innerHTML.indexOf('LOCKED &middot; COMING SOON') !== -1);
+  assert.ok(board.innerHTML.indexOf('LOCKED &middot; COMING SOON') === -1);
 });
 
 /* ---- event display names ---- */
@@ -1232,13 +1652,15 @@ check('Event titles are the short venue-relative labels, ids unchanged', ()=>{
   assert.strictEqual(api.title(api.eventById('second-chance')), 'SECOND CHANCE');
   // The save identifiers are untouched by the rename.
   assert.strictEqual(api.events.map(e=>e.id).sort().join('|'),
-    'back-room-freezeout|pub-freezeout|pub-open|second-chance');
+    'back-room-freezeout|back-room-heads-up|card-club-deep|card-club-six|casino-main|casino-turbo|high-roller-feature|high-roller-pressure|invitational-final|pub-freezeout|pub-open|pub-turbo|second-chance');
   // The venue-qualified record name is what a save and a settled result
   // still carry, because on its own "4-HAND" does not say where.
   assert.strictEqual(api.eventById('pub-freezeout').name, 'PUB CIRCUIT 4-HAND');
   assert.strictEqual(api.eventById('pub-open').name, 'PUB CIRCUIT 5-HAND');
-  // Every event remains a freezeout and still says so.
-  api.events.forEach(event=>assert.strictEqual(event.format, 'Freezeout'));
+  // Every ordinary event remains a freezeout; The Final names its championship treatment.
+  api.events.filter(event=>event.id!=='invitational-final')
+    .forEach(event=>assert.ok(event.format.includes('Freezeout')));
+  assert.strictEqual(api.eventById('invitational-final').format, 'Six-Hand Top-3 Championship');
 });
 
 check('The closed plaque prints the title and the tray still states FREEZEOUT', ()=>{
@@ -1389,16 +1811,24 @@ check('A malformed or stale field is rejected and redrawn, never trusted', ()=>{
   assert.strictEqual(api.getCareer().rosters['a-room-that-never-shipped'], undefined);
 });
 
-check('Rosters are additive: a stored career without them is still valid', ()=>{
-  // A real, fully valid v4 save written before this pass. It has no
+check('Rosters remain additive inside a current save', ()=>{
+  // A real, fully valid v6 save. It has no
   // rosters key at all and must NOT be routed through migration — this
   // was an additive field, not a version bump. (openCareer() deliberately
   // omits the second-chance unlock and so is NOT valid; it is a migration
   // fixture. This one carries every catalogue key.)
   const preRoster = openCareer({'back-room-freezeout':true,'pub-freezeout':true,
-    'pub-open':true,'second-chance':true});
+    'pub-open':true,'second-chance':true,'back-room-heads-up':true,'pub-turbo':true,
+    'card-club-deep':false,'card-club-six':false,
+    'casino-main':false,'casino-turbo':false,
+    'high-roller-feature':false,'high-roller-pressure':false,
+    'invitational-final':false});
+  preRoster.v = 6;
+  preRoster.champion = false;
+  preRoster.cash = null;
+  preRoster.cashClosed = [];
   const { api, calls } = makeContext(preRoster);
-  assert.strictEqual(calls.sets, 0, 'a valid v4 save is not rewritten on load');
+  assert.strictEqual(calls.sets, 0, 'a valid v6 save is not rewritten on load');
   assert.strictEqual(api.getCareer().rosters, undefined, 'nothing is invented at load');
   assert.strictEqual(api.getCareer().v, api.saveVersion);
   assert.strictEqual(api.getCareer().bankroll, 500);

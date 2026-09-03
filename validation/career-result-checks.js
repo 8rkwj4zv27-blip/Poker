@@ -46,9 +46,10 @@ const engineContext = {
 vm.createContext(engineContext);
 vm.runInContext(engineSource +
   ';globalThis.__careerChecks={careerResultHTML,buildCareerResultModel,showdownPotVerb,careerFinishPlace,' +
-  'careerStageModel,tableClearedModel,runOverModel,resultStageHTML};', engineContext);
+  'careerStageModel,tableClearedModel,runOverModel,resultStageHTML,shouldPresentChampionshipFinalTable};', engineContext);
 const { careerResultHTML, buildCareerResultModel, showdownPotVerb, careerFinishPlace,
-        careerStageModel, tableClearedModel, runOverModel, resultStageHTML } = engineContext.__careerChecks;
+        careerStageModel, tableClearedModel, runOverModel, resultStageHTML,
+        shouldPresentChampionshipFinalTable } = engineContext.__careerChecks;
 
 const winGame = {
   event:{ name:'BACK ROOM FREEZEOUT', playerCount:3, buyIn:100, prize:300, payouts:[300], reward:{score:5575} },
@@ -85,21 +86,57 @@ const forfeitModel = buildCareerResultModel({
   handNumber:2
 }, { outcome:'forfeit', place:null, prize:0, delta:-300, bankroll:200 });
 const forfeitHTML = careerResultHTML(forfeitModel);
+const championModel = buildCareerResultModel({
+  event:{ id:'invitational-final', name:'INVITATIONAL CHAMPIONSHIP THE FINAL',
+    playerCount:6, buyIn:30000, prize:100000, payouts:[100000,50000,30000], reward:{score:42000} },
+  handNumber:31
+}, { outcome:'win', place:1, prize:100000, eventId:'invitational-final',
+  firstChampionship:true, bankroll:170000 });
 
 check('Career result model captures the settled display values once', ()=>{
   assert.deepStrictEqual(JSON.parse(JSON.stringify(winModel)), {
-    outcome:'win', won:true, cashed:false, place:1, eventName:'BACK ROOM FREEZEOUT', prize:300,
+    outcome:'win', won:true, cashed:false, championship:false, firstChampionship:false,
+    place:1, eventName:'BACK ROOM FREEZEOUT', prize:300,
     buyIn:100, bankroll:600, eventScore:5575, hands:7, field:3
   });
 });
 
 check('A non-winning cash models the credited prize, not the headline first prize', ()=>{
   assert.deepStrictEqual(JSON.parse(JSON.stringify(cashModel)), {
-    outcome:'cash', won:false, cashed:true, place:2, eventName:'PUB CIRCUIT OPEN', prize:450,
+    outcome:'cash', won:false, cashed:true, championship:false, firstChampionship:false,
+    place:2, eventName:'PUB CIRCUIT OPEN', prize:450,
     buyIn:300, bankroll:600, eventScore:4120, hands:23, field:5
   });
   // The event's own first-place figure must never leak into a second place.
   assert.ok(!cashHTML.includes('1,050'));
+});
+
+check('A first Invitational win receives the one-time Champion result treatment', ()=>{
+  assert.strictEqual(championModel.championship,true);
+  assert.strictEqual(championModel.firstChampionship,true);
+  const model=careerStageModel(championModel);
+  assert.strictEqual(model.title,'CHAMPION');
+  assert.strictEqual(model.detail.line,'THE INVITATIONAL IS YOURS');
+  assert.strictEqual(model.detail.sub,'CHAMPION STATUS RECORDED');
+  assert.deepStrictEqual(JSON.parse(JSON.stringify(model.progress)),
+    {label:'CAREER CHAMPION',value:'',next:'NEXT: DEFEND THE TITLE'});
+  const replay=Object.assign({},championModel,{firstChampionship:false});
+  assert.strictEqual(careerStageModel(replay).title,'EVENT WON');
+});
+
+check('The final-table beat fires once at three or two remaining and changes no game state itself', ()=>{
+  const g={mode:'career',event:{id:'invitational-final'},championshipFinalTableReached:false};
+  assert.strictEqual(shouldPresentChampionshipFinalTable(g,4),false);
+  assert.strictEqual(shouldPresentChampionshipFinalTable(g,3),true);
+  assert.strictEqual(shouldPresentChampionshipFinalTable(g,2),true);
+  assert.strictEqual(shouldPresentChampionshipFinalTable(g,1),false);
+  g.championshipFinalTableReached=true;
+  assert.strictEqual(shouldPresentChampionshipFinalTable(g,3),false);
+  assert.strictEqual(shouldPresentChampionshipFinalTable(
+    {mode:'career',event:{id:'casino-main'},championshipFinalTableReached:false},3),false);
+  assert.ok(engineSource.includes('snapshot.championshipFinalTableReached = g.championshipFinalTableReached === true'));
+  assert.ok(engineSource.includes('championshipFinalTableReached:save.championshipFinalTableReached === true'));
+  assert.ok(engineSource.includes('g._safeSave = serializeTable(g)'));
 });
 
 check('A cash result reads as positive, placed and clearly not a win', ()=>{

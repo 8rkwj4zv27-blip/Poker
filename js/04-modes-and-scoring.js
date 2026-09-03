@@ -9,6 +9,19 @@ const BLIND_LEVELS = [
 ];
 const TOURNAMENT_HANDS_PER_LEVEL = 10;
 
+/* Configuration-only Hold'em variants. They all use the same deck, betting,
+   showdown and freezeout lifecycle; only field size, stack and blind cadence
+   differ. */
+const TOURNAMENT_FORMATS = Object.freeze({
+  turbo:Object.freeze({id:'turbo',name:'Turbo Freezeout',opponentCount:3,playerCount:4,
+    stack:600,initialBlindLevel:0,handsPerBlindLevel:6}),
+  deep:Object.freeze({id:'deep',name:'Deep Stack Freezeout',opponentCount:3,playerCount:4,
+    stack:1500,initialBlindLevel:0,handsPerBlindLevel:12}),
+  headsup:Object.freeze({id:'headsup',name:'Heads-Up Freezeout',opponentCount:1,playerCount:2,
+    stack:600,initialBlindLevel:0,handsPerBlindLevel:8})
+});
+function tournamentFormatById(id){ return typeof id === 'string' ? (TOURNAMENT_FORMATS[id] || null) : null; }
+
 /* ============================================================
    CAREER EVENTS — data only. A Career event is a real freezeout played on
    the ordinary table with the ordinary AI. Table chips and the off-table
@@ -49,6 +62,23 @@ const CAREER_EVENT_LIST = Object.freeze([
     unlockRequirement:null
   }),
   Object.freeze({
+    id:'back-room-heads-up',
+    venue:'BACK ROOM',
+    name:'BACK ROOM HEADS-UP',
+    title:'HEADS-UP',
+    format:'Heads-Up Freezeout',
+    playerCount:2,
+    opponentCount:1,
+    buyIn:100,
+    prize:200,
+    payouts:Object.freeze([200]),
+    stack:600,
+    initialBlindLevel:0,
+    handsPerBlindLevel:8,
+    difficulty:'medium',
+    unlockRequirement:null
+  }),
+  Object.freeze({
     id:'pub-freezeout',
     venue:'PUB CIRCUIT',
     name:'PUB CIRCUIT 4-HAND',
@@ -63,7 +93,7 @@ const CAREER_EVENT_LIST = Object.freeze([
     initialBlindLevel:0,
     handsPerBlindLevel:10,
     difficulty:'hard',
-    unlockRequirement:Object.freeze({ type:'event-win', eventId:'back-room-freezeout' })
+    unlockRequirement:Object.freeze({ type:'venue-win', venue:'BACK ROOM' })
   }),
   /* The first multi-place event. Same venue and buy-in as the 4-HAND
      above, deliberately: the choice between them is a choice of RISK SHAPE
@@ -84,7 +114,150 @@ const CAREER_EVENT_LIST = Object.freeze([
     initialBlindLevel:0,
     handsPerBlindLevel:10,
     difficulty:'hard',
-    unlockRequirement:Object.freeze({ type:'event-win', eventId:'back-room-freezeout' })
+    unlockRequirement:Object.freeze({ type:'venue-win', venue:'BACK ROOM' })
+  }),
+  Object.freeze({
+    id:'pub-turbo',
+    venue:'PUB CIRCUIT',
+    name:'PUB CIRCUIT TURBO',
+    title:'TURBO',
+    format:'Turbo Freezeout',
+    playerCount:4,
+    opponentCount:3,
+    buyIn:300,
+    prize:1200,
+    payouts:Object.freeze([1200]),
+    stack:600,
+    initialBlindLevel:0,
+    handsPerBlindLevel:6,
+    difficulty:'hard',
+    unlockRequirement:Object.freeze({ type:'venue-win', venue:'BACK ROOM' })
+  }),
+  Object.freeze({
+    id:'card-club-deep',
+    venue:'CARD CLUB',
+    name:'CARD CLUB DEEP STACK',
+    title:'DEEP STACK',
+    format:'Deep Stack Freezeout',
+    playerCount:4,
+    opponentCount:3,
+    buyIn:1000,
+    prize:4000,
+    payouts:Object.freeze([4000]),
+    stack:1500,
+    initialBlindLevel:0,
+    handsPerBlindLevel:12,
+    difficulty:'hard',
+    rosterKeys:Object.freeze(['shark','professor','grinder']),
+    unlockRequirement:Object.freeze({ type:'venue-win', venue:'PUB CIRCUIT' })
+  }),
+  Object.freeze({
+    id:'card-club-six',
+    venue:'CARD CLUB',
+    name:'CARD CLUB CLUB SIX',
+    title:'CLUB SIX',
+    format:'Six-Hand Top-2 Freezeout',
+    playerCount:6,
+    opponentCount:5,
+    buyIn:1000,
+    prize:3600,
+    payouts:Object.freeze([3600,2400]),
+    stack:1000,
+    initialBlindLevel:0,
+    handsPerBlindLevel:10,
+    difficulty:'hard',
+    rosterKeys:Object.freeze(['shark','professor','grinder','hammer','wildcard']),
+    unlockRequirement:Object.freeze({ type:'venue-win', venue:'PUB CIRCUIT' })
+  }),
+  Object.freeze({
+    id:'casino-main',
+    venue:'CASINO FLOOR',
+    name:'CASINO FLOOR MAIN EVENT',
+    title:'MAIN EVENT',
+    format:'Six-Hand Top-3 Freezeout',
+    playerCount:6,
+    opponentCount:5,
+    buyIn:3000,
+    prize:9000,
+    payouts:Object.freeze([9000,6000,3000]),
+    stack:1200,
+    initialBlindLevel:0,
+    handsPerBlindLevel:10,
+    difficulty:'expert',
+    rosterKeys:Object.freeze(['shark','professor','grinder','hammer','wildcard']),
+    unlockRequirement:Object.freeze({ type:'venue-win', venue:'CARD CLUB' })
+  }),
+  Object.freeze({
+    id:'casino-turbo',
+    venue:'CASINO FLOOR',
+    name:'CASINO FLOOR MIDNIGHT TURBO',
+    title:'MIDNIGHT TURBO',
+    format:'Turbo Freezeout',
+    playerCount:4,
+    opponentCount:3,
+    buyIn:3000,
+    prize:12000,
+    payouts:Object.freeze([12000]),
+    stack:600,
+    initialBlindLevel:0,
+    handsPerBlindLevel:6,
+    difficulty:'expert',
+    rosterKeys:Object.freeze(['maniac','hammer','wildcard']),
+    unlockRequirement:Object.freeze({ type:'venue-win', venue:'CARD CLUB' })
+  }),
+  Object.freeze({
+    id:'high-roller-feature',
+    venue:'HIGH ROLLER ROOM',
+    name:'HIGH ROLLER FEATURE TABLE',
+    title:'FEATURE TABLE',
+    format:'Deep Stack Freezeout',
+    playerCount:4,
+    opponentCount:3,
+    buyIn:10000,
+    prize:40000,
+    payouts:Object.freeze([40000]),
+    stack:2000,
+    initialBlindLevel:0,
+    handsPerBlindLevel:12,
+    difficulty:'elite',
+    rosterKeys:Object.freeze(['shark','professor','grinder']),
+    unlockRequirement:Object.freeze({ type:'venue-win', venue:'CASINO FLOOR' })
+  }),
+  Object.freeze({
+    id:'high-roller-pressure',
+    venue:'HIGH ROLLER ROOM',
+    name:'HIGH ROLLER PRESSURE FIVE',
+    title:'PRESSURE FIVE',
+    format:'Five-Hand Top-2 Freezeout',
+    playerCount:5,
+    opponentCount:4,
+    buyIn:10000,
+    prize:35000,
+    payouts:Object.freeze([35000,15000]),
+    stack:1000,
+    initialBlindLevel:0,
+    handsPerBlindLevel:8,
+    difficulty:'elite',
+    rosterKeys:Object.freeze(['shark','professor','hammer','rock']),
+    unlockRequirement:Object.freeze({ type:'venue-win', venue:'CASINO FLOOR' })
+  }),
+  Object.freeze({
+    id:'invitational-final',
+    venue:'INVITATIONAL CHAMPIONSHIP',
+    name:'INVITATIONAL CHAMPIONSHIP THE FINAL',
+    title:'THE FINAL',
+    format:'Six-Hand Top-3 Championship',
+    playerCount:6,
+    opponentCount:5,
+    buyIn:30000,
+    prize:100000,
+    payouts:Object.freeze([100000,50000,30000]),
+    stack:2400,
+    initialBlindLevel:0,
+    handsPerBlindLevel:12,
+    difficulty:'elite',
+    rosterKeys:Object.freeze(['shark','professor','grinder','hammer','wildcard']),
+    unlockRequirement:Object.freeze({ type:'venue-win', venue:'HIGH ROLLER ROOM' })
   }),
   /* The free recovery event. Its visibility/enterability is NOT the
      unlockRequirement mechanism above — it is governed entirely by the
@@ -170,7 +343,10 @@ function generateCareerRoster(event){
   const seats = careerRosterSeats(event);
   if (!seats) return null;
   if (typeof pickPersonalities !== 'function' || typeof assignFaceColors !== 'function') return null;
-  const personas = pickPersonalities(seats);
+  const curated = event && Array.isArray(event.rosterKeys) && event.rosterKeys.length === seats
+    ? event.rosterKeys.map(key=>PERSONALITIES_ALL.find(p=>p.key===key)) : null;
+  const personas = curated && curated.every(Boolean) && new Set(curated.map(p=>p.key)).size===seats
+    ? curated : pickPersonalities(seats);
   if (!Array.isArray(personas) || personas.length < seats) return null;
   // A throwaway seat list run through the real colour assigner, so the
   // distinctness rule and the shuffle are the table's own, not a second
@@ -243,6 +419,7 @@ function normalizeCareerRoster(roster, event){
    shared predicate for eligibility; every caller reads it rather than
    re-encoding "< 100" for itself. */
 const SECOND_CHANCE_EVENT_ID = 'second-chance';
+const INVITATIONAL_EVENT_ID = 'invitational-final';
 const SECOND_CHANCE_BANKROLL_THRESHOLD = 100;
 function isSecondChanceEligible(bankroll){
   return Number.isFinite(bankroll) && bankroll < SECOND_CHANCE_BANKROLL_THRESHOLD;
@@ -264,7 +441,8 @@ function careerEventSnapshot(event){
     handsPerBlindLevel:event.handsPerBlindLevel,
     difficulty:event.difficulty,
     unlockRequirement:event.unlockRequirement
-      ? { type:event.unlockRequirement.type, eventId:event.unlockRequirement.eventId }
+      ? { type:event.unlockRequirement.type, eventId:event.unlockRequirement.eventId,
+          venue:event.unlockRequirement.venue }
       : null
   };
 }
@@ -284,6 +462,7 @@ function isValidCareerEventSnapshot(event){
   const payouts = normalizeCareerPayouts(event.payouts);
   if (!payouts) return false;
   if (event.prize !== payouts[0]) return false;
+  if (event.buyIn > 0 && payouts.reduce((sum,amount)=>sum+amount,0) !== event.buyIn * event.playerCount) return false;
   return true;
 }
 
@@ -337,6 +516,26 @@ function applyPaidCareerTerms(snapshot, saved){
   }
   return snapshot;
 }
+
+/* Back Room cash is deliberately a descriptor consumed by the same table
+   builder as every other Hold'em game. It changes stakes and lifecycle, not
+   cards or betting rules. Resident reserves are table-session funding only;
+   they never enter the player's Career ledger. */
+const CAREER_CASH_CONFIG = Object.freeze({
+  id:'back-room-cash',
+  venue:'BACK ROOM',
+  name:'BACK ROOM CASH',
+  title:'CASH TABLE',
+  format:'Cash',
+  playerCount:4,
+  opponentCount:3,
+  buyIn:50,
+  stack:50,
+  smallBlind:1,
+  bigBlind:2,
+  residentReserve:100,
+  difficulty:'medium'
+});
 
 /* ============================================================
    ELIMINATION MODE — Phase 1 single-table elimination. One fixed-blind

@@ -727,13 +727,13 @@ const DEFAULT_SETTINGS = {
   // startGame() (Quick Deal included) keeps building a table it can build.
   // `gameType` is the player-facing choice on top of it, and it is the only
   // thing that knows about the run.
-  gameType:'cash', runOpponents:4,
+  gameType:'cash', runOpponents:4, tournamentPreset:null,
   seenIntro:false, devMode:false
 };
 const DEFAULT_STATS = { hands:0, won:0, showdownsWon:0, biggestPot:0, net:0 };
 const SAVE_VERSION = 1;
 /* Bump on every release so the main-menu header shows what's actually installed. */
-const BUILD_VERSION = 'v0.26.0-dev · Event UI Update';
+const BUILD_VERSION = 'v0.28.0-dev · Upper Ladder Pass';
 
 let settings = Object.assign({}, DEFAULT_SETTINGS, Store.get('felt.settings', {}));
 // The Settings menu cleanup dropped RELAXED from the Game Speed control

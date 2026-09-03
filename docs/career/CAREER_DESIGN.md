@@ -4,6 +4,96 @@ Status: approved direction
 Baseline date: 2026-08-22
 Expansion promoted: 2026-08-25
 
+Holiday Gameplay Pass authorised: 2026-09-02
+Upper Ladder Pass authorised: 2026-09-03
+
+## Owner-directed Upper Ladder Pass — 2026-09-03
+
+The owner has approved the full upper ladder as one design pass, implemented
+through sequential venue gates. The economic spine remains approximately
+**$1,000 → $3,000 → $10,000 → $30,000**. First place in any tournament at a
+venue permanently unlocks the next venue; a paid place that is not first moves
+money only. Every event is a no-rake Hold'em freezeout and every payout table
+sums exactly to the collected entries.
+
+| Venue / table | Entry | Field | Stack / cadence | Difficulty | Payouts |
+|---|---:|---:|---|---|---|
+| Card Club Deep Stack | $1,000 | 4 | 1,500 / 12 hands | Hard | $4,000 to 1st |
+| Card Club Club Six | $1,000 | 6 | 1,000 / 10 hands | Hard | $3,600 / $2,400 |
+| Casino Floor Main Event | $3,000 | 6 | 1,200 / 10 hands | Expert | $9,000 / $6,000 / $3,000 |
+| Casino Floor Midnight Turbo | $3,000 | 4 | 600 / 6 hands | Expert | $12,000 to 1st |
+| High Roller Feature Table | $10,000 | 4 | 2,000 / 12 hands | Elite | $40,000 to 1st |
+| High Roller Pressure Five | $10,000 | 5 | 1,000 / 8 hands | Elite | $35,000 / $15,000 |
+| Invitational The Final | $30,000 | 6 | 2,400 / 12 hands | Curated Elite | $100,000 / $50,000 / $30,000 |
+
+Card Club is format choice; Casino Floor is larger-field payout pressure versus
+a fast volatile route; High Roller is intimate, technically demanding pressure;
+the Invitational is one definitive championship rather than another catalogue
+of sibling events. When the Invitational field first falls to three or fewer
+survivors, a one-time Final Table beat fires without changing stacks, blinds or
+cards. The first win grants permanent Champion status and the largest Career
+result treatment; later wins remain replayable ordinary victories.
+
+The honest table-threat ladder is `MODERATE / SERIOUS / SHARP / EXPERT / ELITE /
+CHAMPIONSHIP`. Expert and Elite may improve only fair public-state poker:
+calculation stability, position, stack depth, paid-place pressure and disciplined
+call-offs. They receive no hidden-card access, future-deck access, rigging, luck
+bonus or unadvertised stack advantage. Upper fields use curated combinations of
+the existing archetypes; this does not resume the paused named-character or
+chatter work.
+
+Explicit exclusions: cash play above Back Room; bounties; satellites and seat
+inventory; alternative cards or poker rules; multi-table simulation; XP,
+currencies, perks or power-ups; chatter, dossiers, trophies and cosmetics. The
+figures above are prototype commitments for the pass, not a claim of final
+balance before real-session evidence exists.
+
+### Career directory refinement — 2026-09-03
+
+The Back Room Cash Table is presented as the first cassette inside the Back
+Room rack, using the same closed-plaque and printed-ticket grammar as tournament
+events. A restrained `CASH` flag and `$50 BUY-IN` label distinguish it; its
+opened ticket carries $1/$2 stakes, four-player field, 50-chip stack, no-rake
+rule and between-hand cash-out. The direct buy-in control lives inside that
+opened tray rather than as a large standalone promotion.
+
+The separate Recommended / Alternative / Next Target bankroll instrument is
+removed. The bankroll, permanent-access and event-state readouts plus the rack
+itself are sufficient; Career does not prescribe a route above the event list.
+
+## Owner-directed Holiday Gameplay Pass — 2026-09-02
+
+The owner has explicitly reprioritised the playable Career loop over the
+previous phase order. Cash play, configuration-driven poker formats, one
+playable Card Club destination, and contained pacing/AI work now ship before
+animation polish, character chatter, resident expansion, bosses, dossiers,
+trophies or cosmetics. This is an authorised roadmap change, not an exception
+future work should silently generalise.
+
+The pass proves one loop: **play → win or lose money → cash out safely → build a
+persistent bankroll → take a larger shot.** Bankroll remains the sole volatile
+currency and first-place tournament results remain the sole source of permanent
+venue access. Cash play changes money only.
+
+Working event values for this pass are deliberately contained and preserve
+no-rake tournament arithmetic:
+
+| Event | Entry | Field | Stack / cadence | Payout | Access |
+|---|---:|---:|---|---:|---|
+| Back Room Heads-Up | $100 | 2 | 600 / 8 hands | $200 to 1st | Career start |
+| Pub Circuit Turbo | $300 | 4 | 600 / 6 hands | $1,200 to 1st | Win a Back Room event |
+| Card Club Deep Stack | $1,000 | 4 | 1,500 / 12 hands | $4,000 to 1st | First place in any Pub Circuit event |
+
+The Back Room cash table keeps its already-approved $50, four-handed, $1/$2,
+50-chip, no-rake terms. Each resident has two further $50 bullets in a session
+(a $100 reserve); a resident unable to make a full rebuy leaves, and the table
+closes safely when the human plus fewer than two opponents remain. This finite
+reserve is a working pacing value, not a new Career currency or player-facing
+economy.
+
+Custom Game exposes Turbo, Deep Stack and Heads-Up as descriptors consumed by
+the shared Hold'em engine. No variant changes the deck, hand rules or showdown.
+
 This is the canonical product-design reference for Career Mode. Read it with:
 
 1. `BUILD_PLAN.md` for implementation phases and boundaries.
@@ -12,9 +102,10 @@ This is the canonical product-design reference for Career Mode. Read it with:
 If an older conversation, proposal, deck, or prompt conflicts with these files, these files win. Future-catalogue values are working hypotheses, not implementation requirements.
 
 On 2026-08-25 the owner approved an expansion of Career's direction — the soft
-poker RPG — and it is recorded here. **Approval is not implementation.** Nothing
-in the expanded direction is built. `STATUS.md` remains the only record of what
-exists, and every expanded system below names the phase that owns it.
+poker RPG — and it is recorded here. **Approval is not implementation.** The
+Holiday Gameplay Pass at the top is the explicit exception that has since
+shipped; `STATUS.md` remains the record of what exists, and every other expanded
+system below names the phase that owns it.
 
 ## Design classification
 
@@ -93,7 +184,8 @@ per-resident counters from Phase 7 exist before that.
 - Bankruptcy always has a playable recovery route.
 - Financial setbacks receive neutral “rebuilding” language, never humiliation or reputation loss.
 - The board shows a small contextual selection plus a Full Circuit view, and shows the complete venue ladder from its first version.
-- Satellites, seats, and upper-tier content are valuable later features, not requirements for the next prototype.
+- Satellites and seat inventory remain later features; the approved upper-tier
+  freezeout catalogue now ships without them.
 
 ## Core loop
 
@@ -115,7 +207,7 @@ Prize figures mean the total credited after the buy-in has already been deducted
 
 ### Optional cash loop — Back Room only
 
-**Approved direction, Phase 9. Not implemented.** This is a separate, optional
+**Implemented in the Holiday Gameplay Pass.** This is a separate, optional
 loop that sits alongside the tournament spine and never replaces it:
 
 Choose Back Room cash table → pay $50 buy-in → play completed hands → Resume or Cash Out → return the full remaining stack to bankroll.
@@ -190,11 +282,14 @@ decision, not an economy one.
 - Genuinely different future formats get genuinely different names — HEADS-UP,
   SHORT STACK, DEEP STACK, BOUNTY — and only when the format actually differs.
 
-Card Club Freezeout appears as a locked preview but is not playable in this pass. From Board v1 it is one row of the complete locked ladder rather than the only future venue shown; see *Contextual career board*.
+The Upper Ladder Pass completes the playable freezeout route from Card Club
+through The Final. Every event remains visible while locked or unaffordable;
+first place at the preceding venue grants permanent access. The exact catalogue
+and terms are the approved table at the top of this file.
 
 ### The Back Room cash table
 
-**Approved direction, Phase 9. Not implemented.** One permanent cash game sits
+**Implemented in the Holiday Gameplay Pass.** One permanent cash game sits
 outside the tournament ladder and answers a need freezeouts cannot: a short
 session with a clean, immediate stop point, and an early rebuilding route that
 is not free money.
@@ -245,8 +340,8 @@ Approved parameters:
 
 ## Money ownership and cash-session safety
 
-**Approved direction, Phase 9. Not implemented.** These principles govern the
-cash table when it is built; nothing about them is true of the code today.
+**Implemented in the Holiday Gameplay Pass.** These principles govern the
+shipped Back Room cash table and its version-5 Career save.
 
 - **`felt.career` is the single authoritative ledger** for Career bankroll and
   for the financial state of an open cash session. A table snapshot may hold
@@ -377,7 +472,7 @@ The three-buy-in Comfortable threshold is a working board rule, not certified ba
 
 If no event is Comfortable, Back Room remains Recommended and accurately shows whether it is Risky or unaffordable.
 
-Once the cash table exists (Phase 9), the Recovery state below $100 contains
+The Recovery state below $100 contains
 **two** affordable options rather than one: Second Chance, and the $50 cash
 table. Both must read as legitimate rebuilding routes.
 
@@ -386,7 +481,7 @@ table. Both must read as legitimate rebuilding routes.
 Working decision: keep entry on the event card. If paying the buy-in would take the player from Comfortable to Risky for that tier, the first tap expands the card and asks for an explicit second confirmation. Use concrete remaining-bankroll language rather than internal labels. Comfortable entries remain one tap.
 
 No meaningful buy-in may be spent by one accidental tap. The same rule covers the
-cash table's $50 buy-in when it exists.
+cash table's $50 buy-in.
 
 ## Recovery
 
@@ -495,7 +590,7 @@ recurring-opponent progression; see *Outside the current build* below.
 
 ## Progression ladder
 
-The six-stage fantasy is approved; exact upper-tier values are provisional:
+The six-stage fantasy and current prototype stakes are approved for this pass:
 
 | Stage | Working buy-in |
 |---|---:|
@@ -510,18 +605,20 @@ Casino Floor and High Roller Room share one connected physical casino environmen
 
 The desired first-championship length is provisionally 4–8 hours for a competent player and longer for a struggling player. Do not tune against this target until real event durations, Quick Resolve usage, win rates, and bankroll paths have been measured.
 
-Future stack depths, payout splits, field compositions, durations, and exact event counts are not approved.
+The current stack depths, payout splits, field compositions and event counts are
+the Upper Ladder prototype commitments above. They remain balance hypotheses
+until measured play, not permission to silently retune them.
 
 ## AI progression
 
-The provisional difficulty shape is gradual:
+The implemented difficulty shape is gradual:
 
 - Back Room: approachable Medium opponents.
-- Pub Circuit: stronger Medium/Hard play.
-- Card Club: predominantly Hard.
-- Casino Floor: advanced Hard with selected Elite opponents.
-- High Roller: predominantly Elite.
-- Invitational: strongest curated field.
+- Pub Circuit: Hard.
+- Card Club: Hard with curated fields.
+- Casino Floor: Expert.
+- High Roller: Elite.
+- Invitational: Elite with the strongest curated field.
 
 Difficulty should come from visible, fair poker behaviour and opponent composition—not hidden information or a blanket statistical handicap. AI must never use the player's hole cards or future deck information.
 
@@ -685,9 +782,10 @@ Satellite opponent composition, exact prices, UI collisions, and final expected 
 
 The long-run catalogue is deferred, and splits by cost:
 
-- **Descriptor-level variants** — Turbo, Deep Stack, an ordinary heads-up
-  freezeout — fit the existing field-size / stack-depth / blind-pace / AI /
-  buy-in / payout / qualification axes. Deferred as scope discipline.
+- **Descriptor-level variants** — Turbo, Deep Stack, and an ordinary heads-up
+  freezeout — now use the shared field-size / stack-depth / blind-pace / AI /
+  buy-in / payout / qualification axes. Further descriptor-only formats remain
+  deferred as scope discipline.
 - **State-requiring formats** — knockout bounties need per-elimination payout
   tracking; satellites and private invitations need seat issuance, consumption,
   and qualification state — need mechanisms beyond the current placement-based
@@ -697,9 +795,10 @@ The long-run catalogue is deferred, and splits by cost:
 
 Deferred, with the phase that owns each where one exists:
 
-- Playable Card Club or any higher venue — Phase 16.
-- Satellites, seats, knockout bounties, private invitations, Turbo and Deep Stack variants.
-- Full Elite AI.
+- Further event catalogue expansion beyond the approved 2 / 2 / 2 / 1 upper pass.
+- Satellites, seats, knockout bounties and private invitations.
+- Further Expert/Elite sophistication beyond the shipped fair sampling, noise,
+  position, stack and paid-place adjustments.
 - Duration estimates on the Board — blocked on Phase 6 measurements.
 - Automated board personalisation.
 - A new analytics platform or bot-simulation framework.

@@ -474,7 +474,7 @@ function normalizeDevCareerBankroll(value){
   return Number.isSafeInteger(amount) && amount >= 0 ? amount : null;
 }
 function devSetCareerBankroll(value){
-  if (!DEV_MODE || careerHasActiveEvent()) return false;
+  if (!DEV_MODE || careerHasActiveEvent() || careerHasOpenCashSession()) return false;
   const amount = normalizeDevCareerBankroll(value);
   if (amount === null) return false;
   career.bankroll = amount;
@@ -617,8 +617,8 @@ function initDevPanel(){
       if (input) input.value = String(careerBankroll());
       if (status) status.textContent = 'SET TO $' + careerBankroll().toLocaleString();
     } else if (status){
-      status.textContent = careerHasActiveEvent()
-        ? 'FINISH OR ABANDON THE ACTIVE EVENT FIRST'
+      status.textContent = careerHasActiveEvent() || careerHasOpenCashSession()
+        ? 'SETTLE THE OPEN CAREER TABLE FIRST'
         : 'ENTER A WHOLE-DOLLAR VALUE OF $0 OR MORE';
     }
   };
@@ -664,7 +664,7 @@ function refreshDevPanel(){
   $('dev-new-elim').classList.toggle('hidden', onTable && !game.over);
   $('dev-controls').classList.toggle('hidden', !onTable || game.over);
   $('dev-arcade-controls').classList.toggle('hidden', !rewardable);
-  const careerActive = careerHasActiveEvent();
+  const careerActive = careerHasActiveEvent() || careerHasOpenCashSession();
   const bankrollInput = $('dev-bankroll-input');
   const bankrollApply = $('dev-bankroll-apply');
   if (bankrollInput){
@@ -677,7 +677,7 @@ function refreshDevPanel(){
   });
   const bankrollStatus = $('dev-bankroll-status');
   if (bankrollStatus) bankrollStatus.textContent = careerActive
-    ? 'FINISH OR ABANDON THE ACTIVE EVENT FIRST'
+    ? 'SETTLE THE OPEN CAREER TABLE FIRST'
     : 'CURRENT: $' + careerBankroll().toLocaleString();
   const hip = handInProgress(), bh = betweenHands();
   $('dev-win-hand').disabled = !(onTable && hip);
@@ -722,6 +722,7 @@ function wireUI(){
   setSegment('diff-seg','diff',settings.difficulty);
   setSegment('type-seg','type',settings.gameType);
   setSegment('run-size-seg','runOpponents',normalizeOpponentCount(settings.runOpponents));
+  setSegment('tournament-preset-seg','preset',settings.tournamentPreset);
   setSegment('stack-seg','stack',settings.stack);
   setSegment('blind-seg','blind',settings.blindLevel);
   $('diff-hint').textContent = DIFF_COPY[settings.difficulty];
@@ -729,8 +730,8 @@ function wireUI(){
   $('stack-label').textContent = settings.stack.toLocaleString();
   applyGameTypeToSetup();
 
-  $('opp-minus').onclick = ()=>{ settings.opponents = Math.max(1, settings.opponents-1); syncOpp(); };
-  $('opp-plus').onclick  = ()=>{ settings.opponents = Math.min(8, settings.opponents+1); syncOpp(); };
+  $('opp-minus').onclick = ()=>{ settings.tournamentPreset=null; settings.opponents = Math.max(1, settings.opponents-1); setSegment('tournament-preset-seg','preset',null); syncOpp(); };
+  $('opp-plus').onclick  = ()=>{ settings.tournamentPreset=null; settings.opponents = Math.min(8, settings.opponents+1); setSegment('tournament-preset-seg','preset',null); syncOpp(); };
   function syncOpp(){
     $('opp-count').textContent = settings.opponents;
     $('opp-label').textContent = settings.opponents;
@@ -764,8 +765,22 @@ function wireUI(){
     setSegment('type-seg','type',settings.gameType);
     saveSettings(); applyGameTypeToSetup();
   });
+  document.querySelectorAll('#tournament-preset-seg button').forEach(b=>b.onclick=()=>{
+    const preset = tournamentFormatById(b.dataset.preset);
+    if (!preset) return;
+    settings.tournamentPreset = preset.id;
+    settings.opponents = preset.opponentCount;
+    settings.stack = preset.stack;
+    setSegment('tournament-preset-seg','preset',settings.tournamentPreset);
+    $('opp-count').textContent = settings.opponents;
+    $('opp-label').textContent = settings.opponents;
+    $('stack-label').textContent = settings.stack.toLocaleString();
+    saveSettings(); applyGameTypeToSetup();
+  });
   document.querySelectorAll('#stack-seg button').forEach(b=>b.onclick=()=>{
+    settings.tournamentPreset = null;
     settings.stack = parseInt(b.dataset.stack,10); setSegment('stack-seg','stack',settings.stack);
+    setSegment('tournament-preset-seg','preset',null);
     $('stack-label').textContent = settings.stack.toLocaleString(); saveSettings(); updateSetupSummary();
   });
   document.querySelectorAll('#blind-seg button').forEach(b=>b.onclick=()=>{

@@ -4,6 +4,65 @@ Status: approved sequence
 Baseline date: 2026-08-22
 Expansion promoted: 2026-08-25
 
+Holiday Gameplay Pass authorised: 2026-09-02
+Upper Ladder Pass authorised: 2026-09-03
+
+## Owner-directed sequence override — Upper Ladder Pass
+
+The owner has approved the complete upper-ladder design in
+`CAREER_DESIGN.md`, but implementation remains sequential:
+
+1. Catalogue, economy, any-first-place advancement and save-migration foundation.
+2. Card Club expansion, then regression gate.
+3. Casino Floor plus Expert AI and threat tier, then regression gate.
+4. High Roller plus Elite AI and threat tier, then regression gate.
+5. Invitational Final, persistent Champion state and one-time in-event Final
+   Table beat, then regression gate.
+6. Full payout/unlock/save audit and responsive rendering at
+   320 / 375 / 390 / 393 / 430.
+
+No venue is allowed to change the deck, betting rules or showdown. No payout
+table may create or destroy money. Already-paid event snapshots retain their
+captured terms across migration. The paused chatter and every unrelated Lab
+remain outside this pass.
+
+**Completed 2026-09-03.** Gates 1–5 and the automated portion of Gate 6 are
+complete in build `v0.28.0-dev · Upper Ladder Pass`, Career save schema v6 and
+cache `poker-v27-0`. The payout/unlock/save/scoring audits are green. The browser
+safety policy blocked automated reload of the existing `file://` preview, so the
+five-width visual inspection remains a manual gate before balance tuning.
+
+**Presentation follow-up completed 2026-09-03.** Owner review removed the
+redundant recommendation instrument and moved Cash Table into the Back Room rack
+as a differentiated cash cassette. Entry, resume, cash-out and financial safety
+paths are unchanged; focused checks pin the new hierarchy.
+
+## Owner-directed sequence override — Holiday Gameplay Pass
+
+The owner has explicitly superseded the earlier numeric execution order for
+this pass. The historical sixteen-phase plan below remains as a record, but its
+"one phase at a time, in numeric order" rule does not govern this owner-directed
+work. The active sequence is:
+
+1. Career cash table and safe full-stack Cash Out.
+2. Shared descriptor-driven Turbo, Deep Stack and Heads-Up freezeouts, with
+   Heads-Up and Turbo added to Career.
+3. One playable Card Club Deep Stack destination unlocked by a Pub first place.
+4. Runtime pacing measurements plus contained wait-time, short-stack,
+   heads-up and paid-place AI corrections.
+5. Full validation and responsive rendering at 320 / 375 / 390 / 393 / 430.
+
+The pass explicitly excludes character chatter and identity expansion,
+animation polish, trophies, cosmetics, extra currencies, alternative card
+rules, new dependencies and framework work. Each numbered item above is a
+sequential validation gate on the shared JavaScript surfaces.
+
+**Completed 2026-09-03.** All five gates landed in sequence. Career save schema
+is now version 5, the installed build marker is
+`v0.27.0-dev · Holiday Gameplay Pass`, and the cache is `poker-v26-0`. The next
+step is evidence gathering and tuning from the bounded local measurements, not
+another venue or system expansion.
+
 This plan implements the design in `CAREER_DESIGN.md` in small, testable stages. `STATUS.md` records which stage is current.
 
 On 2026-08-25 the owner approved the expanded Career direction and this file was

@@ -26,6 +26,60 @@ let bankPending = 0, potPending = 0;
    physical chips finish being collected into the bank, never before. */
 let humanBankDisplayFreeze = null;
 
+/* Bounded local pacing evidence. This records only format, durations and
+   public hand/session outcomes; no cards or action history are stored. */
+const GAMEPLAY_METRICS_KEY = 'felt.gameplay.metrics.v1';
+const GAMEPLAY_METRICS_HAND_LIMIT = 100;
+const GAMEPLAY_METRICS_SESSION_LIMIT = 30;
+function gameplayMetricFormat(g){
+  if (!g) return 'unknown';
+  if (g.mode==='career' && g.event) return g.event.id;
+  if (g.mode==='career-cash') return CAREER_CASH_CONFIG.id;
+  return g.formatId || g.mode || 'unknown';
+}
+function gameplayMetricsStore(){
+  const raw=Store.get(GAMEPLAY_METRICS_KEY,{v:1,formats:{}});
+  return raw && raw.v===1 && raw.formats && typeof raw.formats==='object'
+    ? raw : {v:1,formats:{}};
+}
+function recordGameplayHandMetric(g){
+  if (!g || !Number.isFinite(g._handStartedAt)) return null;
+  const durationMs=Math.max(0,Date.now()-g._handStartedAt);
+  const humanDecisionMs=Math.max(0,Math.min(durationMs,g._humanDecisionMs||0));
+  const item={durationMs,humanDecisionMs,nonDecisionMs:durationMs-humanDecisionMs,
+    flopSeen:Array.isArray(g.board)&&g.board.length>=3};
+  const store=gameplayMetricsStore(), id=gameplayMetricFormat(g);
+  const format=store.formats[id] || {hands:[],sessions:[]};
+  format.hands=(Array.isArray(format.hands)?format.hands:[]).concat(item).slice(-GAMEPLAY_METRICS_HAND_LIMIT);
+  if (!Array.isArray(format.sessions)) format.sessions=[];
+  store.formats[id]=format; Store.set(GAMEPLAY_METRICS_KEY,store);
+  return item;
+}
+function recordGameplayConclusion(g,result){
+  if (!g || g._metricsConcluded) return false;
+  g._metricsConcluded=true;
+  const store=gameplayMetricsStore(), id=gameplayMetricFormat(g);
+  const format=store.formats[id] || {hands:[],sessions:[]};
+  if (!Array.isArray(format.hands)) format.hands=[];
+  if (!Array.isArray(format.sessions)) format.sessions=[];
+  format.sessions.push({hands:g.handNumber,durationMs:Math.max(0,Date.now()-(g.metricsStartedAt||Date.now())),result:String(result||'ended')});
+  format.sessions=format.sessions.slice(-GAMEPLAY_METRICS_SESSION_LIMIT);
+  store.formats[id]=format; Store.set(GAMEPLAY_METRICS_KEY,store);
+  return true;
+}
+function gameplayMetricSummary(formatId){
+  const format=gameplayMetricsStore().formats[formatId];
+  const hands=format&&Array.isArray(format.hands)?format.hands:[];
+  if (!hands.length) return {hands:0,medianHandMs:0,nonDecisionPct:0,flopSeenPct:0};
+  const durations=hands.map(h=>h.durationMs).sort((a,b)=>a-b);
+  const mid=Math.floor(durations.length/2);
+  const median=durations.length%2?durations[mid]:Math.round((durations[mid-1]+durations[mid])/2);
+  const elapsed=hands.reduce((n,h)=>n+h.durationMs,0);
+  return {hands:hands.length,medianHandMs:median,
+    nonDecisionPct:elapsed?Math.round(hands.reduce((n,h)=>n+h.nonDecisionMs,0)*100/elapsed):0,
+    flopSeenPct:Math.round(hands.filter(h=>h.flopSeen).length*100/hands.length)};
+}
+
 function sleep(ms){ return new Promise(r=>setTimeout(r, ms)); }
 
 /* ---------------- QUICK RESOLVE ----------------
@@ -63,7 +117,7 @@ function quickResolveActive(){
   return quickResolveOn && !!game && game.handNumber === quickResolveHand;
 }
 
-/* Availability. False before the human folds, false the instant only one
+/* Availability. False before the human folds or commits all-in, false the instant only one
    contender is left (the hand is already ending), and false once phase has
    reached showdown/foldwin. Two all-in AIs with no decisions left still
    qualify — the street dealing between them is still waiting, which is
@@ -73,7 +127,7 @@ function canQuickResolve(){
   if (!g || g.over || pendingHumanPlayer) return false;
   if (!['preflop','flop','turn','river'].includes(g.phase)) return false;
   const human = g.players[0];
-  if (!human || !human.inHand || !human.folded) return false;
+  if (!human || !human.inHand || (!human.folded && !human.allIn)) return false;
   return g.players.filter(p=>p.inHand && !p.folded).length >= 2;
 }
 
@@ -223,9 +277,16 @@ function newGame(opts){
   // Only ever backfills a seat still without a colour, so a roster's
   // colours are never shuffled out from under it.
   assignFaceColors(players);
-  const lvl = opts.mode==='tournament' ? 0 : opts.blindLevel;
-  const smallBlind = elim ? ELIMINATION_CONFIG.smallBlind : BLIND_LEVELS[lvl][0];
-  const bigBlind = elim ? ELIMINATION_CONFIG.bigBlind : BLIND_LEVELS[lvl][1];
+  const lvl = opts.mode==='tournament' ? (opts.initialBlindLevel||0) : (opts.blindLevel||0);
+  const explicitBlinds = Number.isFinite(opts.smallBlind) && Number.isFinite(opts.bigBlind)
+    && opts.smallBlind > 0 && opts.bigBlind > opts.smallBlind;
+  const smallBlind = elim ? ELIMINATION_CONFIG.smallBlind
+    : explicitBlinds ? opts.smallBlind : BLIND_LEVELS[lvl][0];
+  const bigBlind = elim ? ELIMINATION_CONFIG.bigBlind
+    : explicitBlinds ? opts.bigBlind : BLIND_LEVELS[lvl][1];
+  if (opts.mode === 'career-cash'){
+    players.forEach(p=>{ if (!p.isHuman) p.cashReserve = CAREER_CASH_CONFIG.residentReserve; });
+  }
   game = {
     players, difficulty:opts.difficulty, mode:opts.mode,
     startingStack:stack, blindLevel:lvl,
@@ -235,6 +296,11 @@ function newGame(opts){
     phase:'setup', handNumber:0, log:[], over:false,
     buyIns:stack, netStart:stack,
     livesEnabled: opts.mode==='cash' && !!settings.lives,
+    formatId:opts.formatId || null,
+    handsPerBlindLevel:Number.isInteger(opts.handsPerBlindLevel) ? opts.handsPerBlindLevel : TOURNAMENT_HANDS_PER_LEVEL,
+    cashSessionId:typeof opts.cashSessionId === 'string' ? opts.cashSessionId : null,
+    championshipFinalTableReached:false,
+    metricsStartedAt:Date.now(),
     sess:{ bestWin:0, worstLoss:0 }
   };
 }
@@ -249,6 +315,9 @@ function serializeTable(g){
     savedAt: Date.now(),
     namesMode: settings.opponentNames,
     mode:g.mode, difficulty:g.difficulty, startingStack:g.startingStack,
+    formatId:g.formatId || null,
+    handsPerBlindLevel:g.handsPerBlindLevel,
+    metricsStartedAt:Number.isFinite(g.metricsStartedAt)?g.metricsStartedAt:Date.now(),
     blindLevel:Number.isFinite(g.blindLevel)?g.blindLevel:0, smallBlind:g.smallBlind, bigBlind:g.bigBlind,
     buyIns:g.buyIns, netStart:g.netStart, livesEnabled:g.livesEnabled,
     dealerIndex:g.dealerIndex, handNumber:g.handNumber,
@@ -259,9 +328,14 @@ function serializeTable(g){
       personalityKey: p.personality ? p.personality.key : null,
       moodState: p.moodState || null,
       faceMood: p.faceMood || null,
-      faceColorIdx: Number.isInteger(p.faceColorIdx) ? p.faceColorIdx : null
+      faceColorIdx: Number.isInteger(p.faceColorIdx) ? p.faceColorIdx : null,
+      cashReserve:Number.isSafeInteger(p.cashReserve) && p.cashReserve >= 0 ? p.cashReserve : null
     }))
   };
+  if (g.mode==='career-cash'){
+    snapshot.cashSessionId = g.cashSessionId;
+    snapshot.formatId = CAREER_CASH_CONFIG.id;
+  }
   if (g.mode==='elimination' && g.run) snapshot.run=JSON.parse(JSON.stringify(g.run));
   // Career carries its event the same way an elimination run carries g.run.
   // The reward state rides along deliberately: the event TOTAL is ephemeral
@@ -270,6 +344,7 @@ function serializeTable(g){
   // back to a zeroed score. equityPromise-bearing decisionSnapshots are
   // dropped, since a snapshot is only ever taken between hands.
   if (g.mode==='career' && g.event){
+    snapshot.championshipFinalTableReached = g.championshipFinalTableReached === true;
     snapshot.event = Object.assign(careerEventSnapshot(g.event), {
       reward: g.event.reward
         ? Object.assign({}, g.event.reward, { decisionSnapshots:[] })
@@ -312,6 +387,7 @@ function saveProgress(){
   // just as finishHand()/leaveTable() do. It must never overwrite the
   // player's independent Classic/Arcade resume slot.
   if (game.mode === 'career') return saveCareerTable();
+  if (game.mode === 'career-cash') return checkpointCareerCash(game._safeSave || serializeTable(game));
   const snapshot=game._safeSave || serializeTable(game);
   Store.set('felt.table', snapshot);
   return true;
@@ -357,6 +433,31 @@ function isValidCareerTableSave(save){
     if (p.personalityKey && !PERSONALITIES_ALL.some(pp=>pp.key===p.personalityKey)) return false;
   }
   return isValidCareerEventSnapshot(save.event);
+}
+
+function isValidCareerCashTableSave(save){
+  if (!save || typeof save !== 'object' || save.version !== SAVE_VERSION) return false;
+  if (save.mode !== 'career-cash' || save.formatId !== CAREER_CASH_CONFIG.id) return false;
+  if (typeof save.cashSessionId !== 'string' || !save.cashSessionId) return false;
+  if (!Array.isArray(save.players) || save.players.length !== CAREER_CASH_CONFIG.playerCount) return false;
+  if (save.smallBlind !== CAREER_CASH_CONFIG.smallBlind || save.bigBlind !== CAREER_CASH_CONFIG.bigBlind) return false;
+  if (save.startingStack !== CAREER_CASH_CONFIG.stack) return false;
+  const numbers = ['dealerIndex','handNumber','smallBlind','bigBlind','startingStack'];
+  if (numbers.some(key=>!Number.isSafeInteger(save[key]))) return false;
+  if (save.dealerIndex < -1 || save.dealerIndex >= save.players.length) return false;
+  let humans = 0;
+  let sessionFunds = 0;
+  for (const p of save.players){
+    if (!p || typeof p.id !== 'string' || !Number.isSafeInteger(p.chips) || p.chips < 0) return false;
+    if (p.isHuman) humans++;
+    else if (!Number.isSafeInteger(p.cashReserve) || p.cashReserve < 0
+      || p.cashReserve % CAREER_CASH_CONFIG.stack !== 0) return false;
+    sessionFunds += p.chips + (p.isHuman ? 0 : p.cashReserve);
+    if (p.personalityKey && !PERSONALITIES_ALL.some(pp=>pp.key===p.personalityKey)) return false;
+  }
+  const initialFunds = CAREER_CASH_CONFIG.stack
+    + CAREER_CASH_CONFIG.opponentCount * (CAREER_CASH_CONFIG.stack + CAREER_CASH_CONFIG.residentReserve);
+  return humans === 1 && sessionFunds === initialFunds;
 }
 
 /* Career table saves written before a schema change carry only part of a
@@ -420,6 +521,7 @@ function restoreTable(save){
       ? { family: sp.faceMood.family, intensity: clamp01(sp.faceMood.intensity) }
       : { family:'neutral', intensity:0 };
     p.faceColorIdx = Number.isInteger(sp.faceColorIdx) ? sp.faceColorIdx : null;
+    if (Number.isSafeInteger(sp.cashReserve) && sp.cashReserve >= 0) p.cashReserve = sp.cashReserve;
     return p;
   });
   // Backfills anyone missing a colour (a save from before this system
@@ -434,6 +536,11 @@ function restoreTable(save){
     phase:'setup', handNumber:save.handNumber, log:[], over:false,
     buyIns:save.buyIns, netStart:save.netStart,
     livesEnabled:save.livesEnabled,
+    formatId:save.formatId || null,
+    handsPerBlindLevel:Number.isInteger(save.handsPerBlindLevel) ? save.handsPerBlindLevel : TOURNAMENT_HANDS_PER_LEVEL,
+    cashSessionId:typeof save.cashSessionId === 'string' ? save.cashSessionId : null,
+    championshipFinalTableReached:save.championshipFinalTableReached === true,
+    metricsStartedAt:Number.isFinite(save.metricsStartedAt) ? save.metricsStartedAt : Date.now(),
     sess:{ bestWin:(save.sess&&save.sess.bestWin)||0, worstLoss:(save.sess&&save.sess.worstLoss)||0 }
   };
   if (save.mode==='elimination'){
@@ -569,6 +676,9 @@ async function startNewHand(){
   // A manual save during this hand resumes from this clean checkpoint,
   // never from a half-settled pot or partially completed betting round.
   g._safeSave=serializeTable(g);
+  g._handStartedAt=Date.now();
+  g._humanDecisionMs=0;
+  g._humanDecisionStartedAt=null;
   bannerOverride = null;
   g._humanCardsVisible = false;
   hideResultCard();
@@ -585,7 +695,7 @@ async function startNewHand(){
     const firstLevel = g.mode === 'career' && g.event
       ? g.event.initialBlindLevel : 0;
     const handsPerLevel = g.mode === 'career' && g.event
-      ? g.event.handsPerBlindLevel : TOURNAMENT_HANDS_PER_LEVEL;
+      ? g.event.handsPerBlindLevel : g.handsPerBlindLevel;
     const target = Math.min(BLIND_LEVELS.length-1,
       firstLevel + Math.floor(g.handNumber / handsPerLevel));
     if (target !== g.blindLevel){
@@ -594,6 +704,10 @@ async function startNewHand(){
       g.bigBlind = BLIND_LEVELS[target][1];
       logMsg('Blinds up — ' + g.smallBlind + ' / ' + g.bigBlind, true);
     }
+    g.players.forEach(p=>{ if (p.chips<=0) p.eliminated = true; });
+  } else if (g.mode === 'career-cash'){
+    // Cash attrition is resolved and checkpointed at the END of each hand.
+    // This branch is defensive only: no busted seat can be dealt back in.
     g.players.forEach(p=>{ if (p.chips<=0) p.eliminated = true; });
   } else if (g.mode === 'elimination'){
     // No rebuys, ever — $0 is permanent for this table. finishHand's
@@ -930,7 +1044,7 @@ function scheduleAutoDeal(){
   clearTimeout(autoDealT);
   if (!settings.autoDeal || settings.review) return;
   if (!game || game.over) return;
-  const delay = motionOff() ? 700 : Math.round(2600 * speedMult());
+  const delay = motionOff() ? 500 : Math.round(1800 * speedMult());
   autoDealT = setTimeout(async ()=>{
     if (!game || game.over) return;
     const nh = $('btn-next-hand');
@@ -1677,10 +1791,11 @@ function recordHandStatistics(g,outcome,netProfit){
 
 async function finishHand(outcome){
   const g = game;
+  recordGameplayHandMetric(g);
   // In a Single Player run the physical controls remain in their bay and
   // visibly lose power while the payout/K.O. sequence resolves. Other
   // modes keep their existing between-hand behaviour.
-  if ((g.mode==='elimination' && g.run && g.run.active) || g.mode==='career'){
+  if ((g.mode==='elimination' && g.run && g.run.active) || g.mode==='career' || g.mode==='career-cash'){
     $('actions-row').classList.remove('hidden');
     $('actions-row').classList.add('disabled');
   } else $('actions-row').classList.add('hidden');
@@ -1699,7 +1814,7 @@ async function finishHand(outcome){
   // assignment rather than an accumulation — letting a Career hand through
   // would overwrite the player's real figure. The lifetime counters above
   // stay mode-blind: a Career hand genuinely is a hand played.
-  if (g.mode !== 'career') stats.net = human.chips - g.buyIns;
+  if (g.mode !== 'career' && g.mode !== 'career-cash') stats.net = human.chips - g.buyIns;
   saveStats();
   renderStats();
 
@@ -1714,10 +1829,31 @@ async function finishHand(outcome){
   if (delta > g.sess.bestWin) g.sess.bestWin = delta;
   if (delta < g.sess.worstLoss) g.sess.worstLoss = delta;
 
-  if (g.mode === 'tournament'){
+  if (g.mode === 'career-cash'){
+    // Residents have finite table-session funds. A rebuy is always one full
+    // $50 stack, debited from that resident's own reserve; a short or unknown
+    // reserve is never rounded up or inferred.
+    g.players.forEach(p=>{
+      if (p.isHuman || p.eliminated || p.chips>0) return;
+      if (Number.isSafeInteger(p.cashReserve) && p.cashReserve >= CAREER_CASH_CONFIG.stack){
+        p.cashReserve -= CAREER_CASH_CONFIG.stack;
+        p.chips = CAREER_CASH_CONFIG.stack;
+        p.inHand = true;
+        logMsg(p.name + ' rebuys for $' + CAREER_CASH_CONFIG.stack, true);
+      } else {
+        p.eliminated = true;
+        p.inHand = false;
+        logMsg(p.name + ' leaves the cash table', true);
+      }
+    });
+    if (human.chips<=0){ endCareerCashSession(g,'bust'); return; }
+    const seated = g.players.filter(p=>p.chips>0 && !p.eliminated).length;
+    if (seated < 3){ endCareerCashSession(g,'table-close'); return; }
+  } else if (g.mode === 'tournament'){
     const alive = g.players.filter(p=>p.chips>0 && !p.eliminated);
     g.players.forEach(p=>{ if (p.chips<=0) p.eliminated = true; });
     if (human.chips<=0){
+      recordGameplayConclusion(g,'bust');
       const place = alive.length + 1;
       setBanner('Knocked out in <b>' + ordinal(place) + '</b> place.');
       Sound.busted(true);
@@ -1725,6 +1861,7 @@ async function finishHand(outcome){
       g.over = true; clearTableSave(); render(); return;
     }
     if (alive.length<=1){
+      recordGameplayConclusion(g,'win');
       setBanner('<b>Tournament won.</b> Every opponent is out.');
       $('btn-new-table').classList.remove('hidden');
       g.over = true; clearTableSave(); render(); return;
@@ -1797,6 +1934,16 @@ async function finishHand(outcome){
       endCareerEvent(g,{place:careerFinishPlace(g,human)});
       return;
     }
+    if (shouldPresentChampionshipFinalTable(g, aiRemaining.length + 1)){
+      g.championshipFinalTableReached = true;
+      g._safeSave = serializeTable(g);
+      saveCareerTable();
+      setBanner('<b>Final table.</b> ' + (aiRemaining.length + 1) + ' players remain.');
+      Sound.consoleShift();
+      haptic([24,42,24]);
+      render();
+      await sleep(motionOff() ? 0 : 1000);
+    }
   } else {
     if (g.livesEnabled) processLives(g);
     if (human.chips<=0){
@@ -1814,7 +1961,9 @@ async function finishHand(outcome){
   $('btn-next-hand').classList.remove('hidden');
   setBanner(handCommentary ? esc(handCommentary) : 'Hand complete.');
   render();
-  if (g.mode==='career') saveCareerTable(); else saveTable();
+  if (g.mode==='career') saveCareerTable();
+  else if (g.mode==='career-cash') checkpointCareerCash(serializeTable(g));
+  else saveTable();
   scheduleAutoDeal();
 }
 
@@ -1935,10 +2084,22 @@ function careerFinishPlace(g, human){
   return Math.min(g.players.length, Math.max(1, survivors + sameHandAhead + 1));
 }
 
+/* The Invitational stays one continuous six-player freezeout. Crossing to
+   three (or, after a multi-K.O. hand, two) remaining earns one theatrical
+   beat only; no stacks, seats, blinds, cards or payouts are reset. The bit
+   is checkpointed with the table so a reload cannot replay the moment. */
+function shouldPresentChampionshipFinalTable(g, remaining){
+  return !!g && g.mode === 'career' && !!g.event
+    && g.event.id === 'invitational-final'
+    && g.championshipFinalTableReached !== true
+    && Number.isInteger(remaining) && remaining >= 2 && remaining <= 3;
+}
+
 function endCareerEvent(g, result){
   if (!g || g.mode !== 'career') return;
   if (g._careerResultShown) return;
   if (!settleCareerEvent(result)) return;   // someone else already owns this ending
+  recordGameplayConclusion(g, result && result.place===1 ? 'win' : 'loss');
   g._careerResultShown = true;
   g.over = true;
   // Snapshot every displayed value ONCE, immediately after settlement and
@@ -1960,10 +2121,14 @@ function buildCareerResultModel(g, settled){
   const reward = g.event && g.event.reward;
   const record = settled || {};
   const outcome = record.outcome || 'loss';
+  const championship = outcome === 'win' && (ev.id === 'invitational-final'
+    || record.eventId === 'invitational-final');
   return {
     outcome,
     won: outcome === 'win',
     cashed: outcome === 'cash',
+    championship,
+    firstChampionship: championship && record.firstChampionship === true,
     place: Number.isInteger(record.place) && record.place >= 1 ? record.place : null,
     eventName: ev.name || 'CAREER EVENT',
     prize: Number.isFinite(record.prize) && record.prize > 0 ? record.prize : 0,
@@ -2422,10 +2587,11 @@ function careerStageModel(m){
   // false. Report the truthful, signless zero instead. Never reachable on a
   // win: a win's hero is always the prize, whatever the buy-in was.
   const freeLoss = !won && m.buyIn === 0;
+  const champion = won && m.firstChampionship === true;
   return {
     tone: won ? 'positive' : 'negative',
     eyebrow:m.eventName,
-    title: won ? 'EVENT WON' : 'EVENT LOST',
+    title: champion ? 'CHAMPION' : won ? 'EVENT WON' : 'EVENT LOST',
     hero:{
       label: won ? 'Prize' : freeLoss ? 'BANKROLL CHANGE' : 'Buy-in lost',
       reel: freeLoss
@@ -2451,10 +2617,12 @@ function careerStageModel(m){
     lamp:null,
     detail:{
       kind:'statement', label:'Result',
-      line: won ? 'EVERY OPPONENT IS OUT' : 'YOU WERE ELIMINATED',
-      sub: won ? 'PRIZE CREDITED TO BANKROLL' : freeLoss ? 'NO BUY-IN LOST' : 'BUY-IN FORFEITED'
+      line: champion ? 'THE INVITATIONAL IS YOURS' : won ? 'EVERY OPPONENT IS OUT' : 'YOU WERE ELIMINATED',
+      sub: champion ? 'CHAMPION STATUS RECORDED' : won ? 'PRIZE CREDITED TO BANKROLL' : freeLoss ? 'NO BUY-IN LOST' : 'BUY-IN FORFEITED'
     },
-    progress:{ label: won ? 'EVENT COMPLETE' : 'EVENT ENDED', value:'', next:'NEXT: EVENTS BOARD' }
+    progress: champion
+      ? { label:'CAREER CHAMPION', value:'', next:'NEXT: DEFEND THE TITLE' }
+      : { label: won ? 'EVENT COMPLETE' : 'EVENT ENDED', value:'', next:'NEXT: EVENTS BOARD' }
   };
 }
 
@@ -3285,6 +3453,7 @@ async function continueAction(){
 
     if (player.isHuman){
       pendingHumanPlayer = player;
+      game._humanDecisionStartedAt=Date.now();
       $('actions-row').classList.remove('hidden');
       Sound.turn(); haptic(18);
       updateActionControls();
@@ -3303,7 +3472,7 @@ async function continueAction(){
     applyAction(player, decision);
     game.turnPointer = idx+1;
     render();
-    await pacedSleep(600);
+    await pacedSleep(380);
     bannerOverride = null;
   }
 }
@@ -3311,6 +3480,10 @@ async function continueAction(){
 async function humanAct(action, amount){
   if (!pendingHumanPlayer) return;
   const p = pendingHumanPlayer;
+  if (game && Number.isFinite(game._humanDecisionStartedAt)){
+    game._humanDecisionMs += Math.max(0,Date.now()-game._humanDecisionStartedAt);
+    game._humanDecisionStartedAt=null;
+  }
   captureArcadeDecision(p,action,amount);
   pendingHumanPlayer = null;
   coachToken++;                 // cancel any in-flight coach calculation
@@ -3333,7 +3506,7 @@ async function humanAct(action, amount){
   // already has a real yield immediately after its own render() call; this
   // was the one place that didn't, and it's the one path users reported as
   // visually unreliable.
-  await pacedSleep(600);
+  await pacedSleep(420);
   bannerOverride = null;
   continueAction();
 }

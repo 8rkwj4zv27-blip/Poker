@@ -921,6 +921,12 @@
   letter-spacing:.14em; color:var(--pc-plastic); text-shadow:none;
   overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
 }
+.cpi-champion{
+  flex:0 0 auto; margin-left:auto; padding:3px 5px 2px;
+  font-family:var(--font-hdr); font-size:6px; line-height:1; letter-spacing:.09em;
+  text-transform:uppercase; color:#241309; background:#D7A83B;
+  border:1px solid #F0CF72; box-shadow:0 2px 0 #6A4011;
+}
 
 /* The dominant figure: eight cells filling a purpose-sized recess. */
 .cpi-bankroll-label{ line-height:1; }
@@ -964,9 +970,17 @@
   white-space:nowrap; color:var(--pc-display-ink);
   text-shadow:0 0 5px color-mix(in srgb,currentColor 34%,transparent);
 }
+.career-funds{
+  display:grid; grid-template-columns:repeat(3,1fr); gap:4px;
+}
+.career-funds > span{
+  min-width:0; padding:5px 3px; display:flex; flex-direction:column; gap:3px;
+  align-items:center; background:var(--pc-display); border:2px solid var(--pc-edge-lo);
+  box-shadow:inset 0 3px 0 rgba(0,0,0,.55);
+}
+.career-funds small{ font-family:var(--font-hdr); font-size:5px; text-transform:uppercase; color:#9A956F; }
+.career-funds b{ font-family:var(--font-hdr); font-size:8px; color:var(--pc-display-ink); }
 .cpi .career-last-result{ margin:0; }
-
-
 /* ---- 2. HOUSE DIRECTORY ------------------------------------
    Where the player's machine ends and the Career WORLD begins.
 
@@ -1003,7 +1017,6 @@
   overflow-y:auto; overflow-x:hidden; overscroll-behavior:contain;
   -webkit-overflow-scrolling:touch;
 }
-
 /* The directory's changing information now lives on the printed ticket
    rather than on recessed glass, so the shared .cdir-crt surface that the
    old dark drawer used is gone with it. The venue housings, plaques and
@@ -1183,6 +1196,8 @@
 }
 .cdir-flag.is-locked{ color:#6E6857; background:rgba(0,0,0,.14); }
 .cdir-flag.is-active{ color:#7A4A0B; background:#E7B633; border-color:#7A4A0B; }
+.cdir-flag.is-cash{ color:#284C38; background:#D7DFBE; border-color:#45654E; }
+.cdir-hatch.is-cash .cdir-cassette{ background:#C8C9A8; }
 
 .cdir-cassette:active{
   transform:translateY(3px);

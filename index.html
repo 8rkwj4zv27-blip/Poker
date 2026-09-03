@@ -161,6 +161,15 @@
            whole panel is withdrawn rather than shown with dead controls. -->
       <div class="panel-card" id="stakes-panel">
         <div class="card-label">Stakes</div>
+        <div class="field hidden" id="tournament-preset-field">
+          <div class="field-label">Freezeout preset</div>
+          <div class="segmented compact" id="tournament-preset-seg" role="group" aria-label="Tournament preset">
+            <button data-preset="turbo">Turbo</button>
+            <button data-preset="deep">Deep Stack</button>
+            <button data-preset="headsup">Heads-Up</button>
+          </div>
+          <div class="hint" id="tournament-preset-hint">Choose a complete field, stack and blind-cadence setup.</div>
+        </div>
         <div class="field">
           <div class="field-label">Starting stack <b id="stack-label">1,000</b></div>
           <div class="segmented compact" id="stack-seg" role="group" aria-label="Starting stack">
@@ -385,10 +394,16 @@
         <div class="cpi-nameplate">
           <span class="pc-label">Player</span>
           <span class="cpi-name" id="career-player-name"></span>
+          <span class="cpi-champion hidden" id="career-champion">Champion</span>
         </div>
         <span class="pc-label cpi-bankroll-label">Bankroll</span>
         <div class="cpi-bankroll-housing">
           <div class="amt-readout cpi-reel" id="career-bankroll" role="img" aria-label="Career bankroll"></div>
+        </div>
+        <div class="career-funds" id="career-funds" aria-label="Career funds">
+          <span><small>Available</small><b class="tabular" id="career-funds-available"></b></span>
+          <span><small>On table</small><b class="tabular" id="career-funds-committed"></b></span>
+          <span><small>Total owned</small><b class="tabular" id="career-funds-total"></b></span>
         </div>
         <div class="cpi-stats">
           <div class="cpi-stat">

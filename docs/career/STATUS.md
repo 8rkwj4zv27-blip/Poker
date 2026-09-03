@@ -1,21 +1,90 @@
 # Career Mode — Current Status
 
-Last verified: 2026-08-27
-Verified implementation baseline: `ed0f5d6` — `Printed event tickets and
-home-screen menu consolidation` (the owner-approved pass below), on top of
-`cbaf082` — `Career directory refinement and roster integrity`, on top of
-`2673dcb` —
-`Record the scoring correction commit in Career status`, on top of `4f9a351` —
-`Correct scoring attribution and feedback`, on top of `35d93c3` — `Integrate the
-Career event directory` (the owner-directed milestone below), on top of
-`cb9aee0` — `Career Phase 2: Second Chance recovery, truthful loss messaging,
-DEV bankroll tool`. Career logic baseline before Phase 2 was `d31b120` — `Add
-multi-place payouts and Pub Circuit Open` (Phase 1).
-Build `v0.26.0-dev · Event UI Update`, service-worker cache `poker-v25-0`.
-Career save schema **version 4** — unchanged by the 2026-08-27 pass, which
-added the roster book as a tolerant additive field rather than a fifth version.
+Last verified: 2026-09-03
+Verified working-tree implementation: Upper Ladder Pass, built on the
+committed `ed0f5d6` Career presentation baseline. Build
+`v0.28.0-dev · Upper Ladder Pass`, service-worker cache `poker-v27-0`,
+Career save schema **version 6**.
 
 This is the short handoff file. Update it whenever a Career milestone is completed or the immediate next task changes.
+
+## Upper Ladder Pass — COMPLETE (2026-09-03)
+
+The owner approved the proposed **2 / 2 / 2 / 1** upper-room structure:
+Card Club adds Club Six beside Deep Stack; Casino Floor adds Main Event and
+Midnight Turbo; High Roller adds Feature Table and Pressure Five; Invitational
+Championship contains one event, The Final. First place in any event at a venue
+unlocks the next venue. Expert and Elite must remain public-state-only and the
+Invitational adds a persistent Champion result plus a one-time Final Table beat.
+
+The pass is implemented through all venue gates. Card Club now offers Deep
+Stack and Club Six; Casino Floor offers Main Event and Midnight Turbo; High
+Roller offers Feature Table and Pressure Five; the Invitational contains The
+Final. All seven upper events use the approved fields, stack/cadence values and
+no-rake payout arithmetic. Any first place opens both events in the next venue;
+paid lower places move money only.
+
+Expert and Elite extend the existing honest AI with more stable equity sampling,
+less decision noise and stronger public position weighting. Curated fields use
+only the existing archetypes. The Invitational is one continuous event: crossing
+to three or two players fires one saved Final Table beat without resetting poker
+state. The first win records persistent Champion status and gets a dedicated
+CHAMPION result; later wins remain replayable ordinary event wins.
+
+Save schema v6 adds only the Champion boolean. Migration copies existing money,
+active-event terms, counters, cash state and rosters, and advances upper access
+only from a provable recorded venue win. The installed build/cache markers were
+bumped so the pass reaches PWAs.
+
+Owner visual review then removed the redundant Recommended / Alternative / Next
+Target instrument and replaced the standalone Cash Table promotion with the
+first cassette in the Back Room rack. Its `CASH` flag and `$50 BUY-IN` label
+distinguish it from freezeouts; opening it reveals the same printed-ticket and
+machine-control hierarchy as every event. Cash entry, resume, cash-out and ledger
+rules are unchanged.
+
+Validation at completion: **112** Career event checks, **41** Career result
+checks, **170** scoring checks, **20** gameplay-format/AI checks, **8** chatter
+isolation checks, and **0** scoring-audit divergences. JavaScript syntax checks
+pass. Browser automation could not reload the existing `file://` preview because
+that URL class is blocked by its safety policy, so a manual responsive look at
+320 / 375 / 390 / 393 / 430 px remains the immediate presentation gate.
+
+Immediate next task: manually inspect the expanded directory at the five iPhone
+widths, then use real sessions to tune Expert/Elite pace and upper-table balance.
+Do not add more upper content before that evidence.
+
+## Holiday Gameplay Pass — COMPLETE (2026-09-03)
+
+The owner explicitly reprioritised the roadmap and the sequential pass is now
+implemented: (1) Back Room cash and safe Cash Out, (2) shared Turbo / Deep Stack
+/ Heads-Up formats, (3) one playable Card Club destination, (4) bounded pacing
+instrumentation and contained AI corrections, and (5) full automated validation
+plus responsive rendering at 320 / 375 / 390 / 393 / 430 px.
+
+Cash entry and settlement are atomic and idempotent; a corrupt session refunds
+only a provable recorded buy-in; cash and tournaments are mutually exclusive;
+and the Board distinguishes available bankroll, on-table money, and total owned.
+Pub first place permanently unlocks Card Club Deep Stack. Local measurement
+keeps at most 100 hands and 30 conclusions per format and records duration,
+non-decision share, flop reach, and hands to conclusion without adding a new
+analytics dependency.
+
+Validation at completion: **104** Career event checks, **39** Career result
+checks, **170** scoring checks, **18** Holiday gameplay checks, and **0** scoring
+audit divergences. JavaScript syntax checks pass. Responsive rendering has no
+horizontal overflow on any required width.
+
+The Holiday pass's next-task instruction was superseded by the owner-authorised
+Upper Ladder Pass above.
+
+This completion block is the previous handoff. Lower dated milestone narratives
+and the old numeric phase table are archival snapshots and must not override the
+Upper Ladder completion block above.
+
+The paused chatter prototype and every untracked Lab remain out of scope and
+were preserved. Baseline before implementation was 87 Career event checks, 39
+Career result checks and 170 scoring checks, with 0 scoring-audit divergences.
 
 ## Direction update — 2026-08-25
 
@@ -1163,15 +1232,13 @@ or any non-negative whole-dollar value. It is intentionally disabled during an a
   no result card at all and settles at `delta:0` on the compact Career summary, which now renders
   that as a bare `$0`.
 - Exact upper-tier economy, event durations, and the 4–8-hour career target remain unvalidated.
-- Career pacing is unmeasured. Back Room instrumentation and the resulting
-  stack-depth and blind-cadence decision are Phase 6's job; blinds are not
-  accelerated before that measurement exists.
+- Career pacing now has bounded local measurement, but real-session evidence is
+  not yet sufficient for a further stack-depth or cadence change.
 
-## Do not start next
+## Historical "Do not start next" (superseded 2026-09-02)
 
-Rendered verification of the Phase 4 correction is the task in flight; Phase 5 is
-next after it. Nothing below is next, whether it is permanently excluded or
-approved for a later phase.
+This section records the pre-Holiday handoff and is no longer current. See the
+completed Holiday pass and its immediate next task at the top of this file.
 
 Permanently excluded:
 
@@ -1184,13 +1251,12 @@ Approved for a later phase — not now:
   a separate, separately approved workstream, not scheduled by
   `docs/scoring/SCORING_SPEC.md` and not by this file. Scoring **thresholds are
   frozen** and are not retuned before Phase 11's playtest evidence.
-- Pacing instrumentation or any blind-cadence change (Phase 6).
-- Named residents, relationship records, boss seat, or cash table (Phases 7–9).
+- Named-resident expansion, relationship records, or boss seat (Phases 7–8).
 - Career history, milestone titles, dossiers, trophies, or cosmetics
   (Phases 13–15). The previous blanket exclusion of career history, titles,
   records and recurring-opponent progression was reversed by the owner on
   2026-08-25; they are now scheduled, not forbidden.
-- Playable Card Club or upper tiers (Phase 16).
+- Additional Card Club events or higher playable tiers (Phase 16).
 
 Still deferred with no owning phase:
 

@@ -294,14 +294,17 @@ function updateSetupSummary(){
       ELIMINATION_CONFIG.smallBlind + '/' + ELIMINATION_CONFIG.bigBlind + '.';
     return;
   }
-  const n = settings.opponents;
+  const preset = settings.mode === 'tournament' ? tournamentFormatById(settings.tournamentPreset) : null;
+  const n = preset ? preset.opponentCount : settings.opponents;
   const mode = settings.mode === 'tournament' ? 'Tournament' : 'Cash game';
   const blinds = settings.mode === 'tournament'
     ? 'blinds rising from ' + BLIND_LEVELS[0][0] + '/' + BLIND_LEVELS[0][1]
     : 'blinds ' + BLIND_LEVELS[settings.blindLevel][0] + '/' + BLIND_LEVELS[settings.blindLevel][1];
+  const stack = preset ? preset.stack : settings.stack;
   el.innerHTML = '<b>' + mode + '</b> against <b>' + n + '</b> ' +
     (n === 1 ? 'opponent' : 'opponents') + ' &middot; ' +
-    settings.stack.toLocaleString() + ' stack &middot; ' + blinds + '.';
+    stack.toLocaleString() + ' stack &middot; ' + blinds +
+    (preset ? ' &middot; ' + preset.name + '.' : '.');
 }
 
 /* Shows only the controls the selected game type actually uses. */
@@ -309,9 +312,11 @@ function applyGameTypeToSetup(){
   const run = settings.gameType === 'elimination';
   const stepper = $('opp-stepper'), runField = $('run-size-field');
   const stakes = $('stakes-panel'), blindField = $('blind-field');
+  const presetField = $('tournament-preset-field');
   if (stepper) stepper.classList.toggle('hidden', run);
   if (runField) runField.classList.toggle('hidden', !run);
   if (stakes) stakes.classList.toggle('hidden', run);
+  if (presetField) presetField.classList.toggle('hidden', run || settings.mode !== 'tournament');
   // Tournament owns its own rising structure, so a fixed blind choice is
   // meaningless there — unchanged behaviour, just stated in one place now.
   if (blindField) blindField.classList.toggle('hidden', settings.mode === 'tournament');
@@ -337,12 +342,16 @@ function dealMeIn(){
 function startGame(){
   Sound.unlock();
   clearTableSave();
+  const preset = settings.mode === 'tournament' ? tournamentFormatById(settings.tournamentPreset) : null;
   newGame({
-    opponents: settings.opponents,
+    opponents: preset ? preset.opponentCount : settings.opponents,
     difficulty: settings.difficulty,
     mode: settings.mode,
-    stack: settings.stack,
-    blindLevel: settings.blindLevel
+    stack: preset ? preset.stack : settings.stack,
+    blindLevel: settings.blindLevel,
+    initialBlindLevel:preset ? preset.initialBlindLevel : 0,
+    handsPerBlindLevel:preset ? preset.handsPerBlindLevel : TOURNAMENT_HANDS_PER_LEVEL,
+    formatId:preset ? preset.id : null
   });
   $('home').classList.add('hidden');
   $('setup').classList.add('hidden');
@@ -374,10 +383,11 @@ function reconstructMainMenu(){
 function refreshCareerMenuButton(){
   const btn = $('open-career');
   if (!btn) return;
-  const active = careerHasActiveEvent();
+  const active = careerHasActiveEvent() || careerHasOpenCashSession();
   const label = $('career-btn-label'), sub = $('career-btn-sub');
   if (label) label.textContent = 'Career';
-  if (sub) sub.textContent = active ? 'Event in progress' : 'Build your bankroll';
+  if (sub) sub.textContent = careerHasOpenCashSession() ? 'Cash session open'
+    : active ? 'Event in progress' : 'Build your bankroll';
   btn.classList.toggle('career-active', active);
 }
 
@@ -530,8 +540,13 @@ const CAREER_KEY = 'felt.career';
 
    Bumped 3 -> 4 for the Career directory's player instrument, which needs
    two truthful aggregate counters. They are the ONLY records added: no
-   event history, venue record, rival record or dossier (all Phase 13). */
-const CAREER_SAVE_VERSION = 4;
+   event history, venue record, rival record or dossier (all Phase 13).
+
+   Bumped 5 -> 6 for one durable end-state bit: `champion`. It records the
+   first Invitational victory without closing the event, changing its
+   economics, or inventing a second progression system. */
+const CAREER_SAVE_VERSION = 6;
+const CAREER_CASH_CLOSED_LIMIT = 20;
 
 /* A stored counter is trusted only as a non-negative whole number. Anything
    else — negative, fractional, NaN, Infinity, a string, absent — becomes 0.
@@ -552,10 +567,70 @@ function defaultCareer(){
     lastResult:null,
     eventsPlayed:0,
     eventsWon:0,
+    champion:false,
+    cash:null,
+    cashClosed:[],
     // Drawn lazily on the first visit to the directory. See THE ROSTER
     // BOOK below: additive, tolerant, and NOT a schema version change.
     rosters:{}
   };
+}
+
+function normalizeCashClosed(value){
+  if (!Array.isArray(value)) return [];
+  const seen = new Set();
+  return value.filter(id=>typeof id === 'string' && id && !seen.has(id) && seen.add(id))
+    .slice(-CAREER_CASH_CLOSED_LIMIT);
+}
+
+function cashCheckpointHumanStack(checkpoint){
+  if (!checkpoint || !Array.isArray(checkpoint.players)) return null;
+  const humans = checkpoint.players.filter(p=>p && p.isHuman);
+  return humans.length === 1 && Number.isSafeInteger(humans[0].chips) && humans[0].chips >= 0
+    ? humans[0].chips : null;
+}
+
+function isValidCareerCashSession(session){
+  if (session === null) return true;
+  if (!session || typeof session !== 'object') return false;
+  if (typeof session.id !== 'string' || !session.id) return false;
+  if (!session.entry || session.entry.transactionId !== session.id
+      || session.entry.buyIn !== CAREER_CASH_CONFIG.buyIn
+      || session.entry.debitApplied !== true) return false;
+  if (!Number.isSafeInteger(session.openedAt) || session.openedAt < 0) return false;
+  if (!Number.isSafeInteger(session.stack) || session.stack < 0) return false;
+  if (!normalizeCareerRoster(session.roster, CAREER_CASH_CONFIG)) return false;
+  if (typeof isValidCareerCashTableSave !== 'function' || !isValidCareerCashTableSave(session.checkpoint)) return false;
+  return session.checkpoint.cashSessionId === session.id
+    && cashCheckpointHumanStack(session.checkpoint) === session.stack;
+}
+
+/* A malformed cash session never gets to invent a stack. Migration either
+   keeps a fully valid completed-hand checkpoint, or refunds exactly the
+   explicitly recorded entry debit once. */
+function migrateCareerCash(raw, migrated){
+  migrated.cashClosed = normalizeCashClosed(raw && raw.cashClosed);
+  const session = raw && raw.cash;
+  if (!session) return;
+  if (isValidCareerCashSession(session)){
+    migrated.cash = JSON.parse(JSON.stringify(session));
+    return;
+  }
+  const entry = session && session.entry;
+  const id = session && session.id;
+  const provable = typeof id === 'string' && id
+    && entry && entry.transactionId === id
+    && entry.buyIn === CAREER_CASH_CONFIG.buyIn
+    && entry.debitApplied === true;
+  if (provable && !migrated.cashClosed.includes(id)){
+    migrated.bankroll += entry.buyIn;
+    migrated.cashClosed.push(id);
+    migrated.cashClosed = migrated.cashClosed.slice(-CAREER_CASH_CLOSED_LIMIT);
+    migrated.lastResult = {
+      outcome:'cash-recovery', eventName:CAREER_CASH_CONFIG.name,
+      delta:entry.buyIn, bankroll:migrated.bankroll
+    };
+  }
 }
 /* Attaches a seated roster only when there genuinely is one, so an active
    event carried over from a save written before rosters existed keeps its
@@ -602,6 +677,9 @@ function normalizeCareerLastResult(raw){
   const result = Object.assign({}, raw);
   result.place = Number.isInteger(raw.place) && raw.place >= 1 ? raw.place : null;
   result.prize = Number.isFinite(raw.prize) && raw.prize >= 0 ? raw.prize : 0;
+  if (Object.prototype.hasOwnProperty.call(raw,'firstChampionship')){
+    result.firstChampionship = raw.firstChampionship === true;
+  }
   return result;
 }
 
@@ -612,20 +690,30 @@ function normalizeCareerLastResult(raw){
    event (Pub Circuit Open) locked after an update, when their save records
    only the unlock ids that existed when it was written. */
 function applyEquivalentUnlocks(unlocks){
-  const provenWins = new Set();
+  const provenRequirements = new Set();
+  const keyOf = requirement=>{
+    if (!requirement) return '';
+    if (requirement.type === 'venue-win') return 'venue:' + requirement.venue;
+    if (requirement.type === 'event-win') return 'event:' + requirement.eventId;
+    return '';
+  };
   CAREER_EVENT_LIST.forEach(event=>{
     const requirement = event.unlockRequirement;
-    if (requirement && requirement.type === 'event-win' && unlocks[event.id] === true){
-      provenWins.add(requirement.eventId);
-    }
+    const key = keyOf(requirement);
+    if (key && unlocks[event.id] === true) provenRequirements.add(key);
   });
   CAREER_EVENT_LIST.forEach(event=>{
-    const requirement = event.unlockRequirement;
-    if (requirement && requirement.type === 'event-win' && provenWins.has(requirement.eventId)){
-      unlocks[event.id] = true;
-    }
+    if (provenRequirements.has(keyOf(event.unlockRequirement))) unlocks[event.id] = true;
   });
   return unlocks;
+}
+
+function careerRequirementMetByWin(requirement, stake){
+  if (!requirement || !stake) return false;
+  if (stake.id === SECOND_CHANCE_EVENT_ID) return false;
+  if (requirement.type === 'event-win') return requirement.eventId === stake.id;
+  if (requirement.type === 'venue-win') return requirement.venue === stake.venue;
+  return false;
 }
 
 function migrateCareer(raw){
@@ -638,6 +726,8 @@ function migrateCareer(raw){
   // reconstructed from anything the save already holds.
   migrated.eventsPlayed = normalizeCareerCounter(raw.eventsPlayed);
   migrated.eventsWon = normalizeCareerCounter(raw.eventsWon);
+  migrated.champion = raw.champion === true;
+  migrateCareerCash(raw, migrated);
   // Advertised fields carry across verbatim where they still describe a
   // real event; anything else is dropped and redrawn on the next visit.
   if (raw.rosters && typeof raw.rosters === 'object' && !Array.isArray(raw.rosters)){
@@ -657,10 +747,23 @@ function migrateCareer(raw){
   if (raw.v === 1 && raw.lastResult && raw.lastResult.outcome === 'win'){
     CAREER_EVENT_LIST.forEach(event=>{
       const requirement = event.unlockRequirement;
-      if (requirement && requirement.type === 'event-win' && requirement.eventId === 'back-room-freezeout'){
+      if (careerRequirementMetByWin(requirement, {id:'back-room-freezeout',venue:'BACK ROOM'})){
         migrated.unlocks[event.id] = true;
       }
     });
+  }
+  // A recorded first place is direct proof of the next venue's access.
+  // Apply that proof generically so a player updating after any catalogue
+  // expansion keeps the progression they demonstrably earned. Merely
+  // having access to a venue is never treated as proof that it was won.
+  if (raw.lastResult && raw.lastResult.outcome === 'win'){
+    const wonEvent = careerEventById(raw.lastResult.eventId);
+    const wonStake = wonEvent || (typeof raw.lastResult.venue === 'string'
+      ? { id:raw.lastResult.eventId, venue:raw.lastResult.venue } : null);
+    CAREER_EVENT_LIST.forEach(event=>{
+      if (careerRequirementMetByWin(event.unlockRequirement, wonStake)) migrated.unlocks[event.id] = true;
+    });
+    if (wonStake && wonStake.id === INVITATIONAL_EVENT_ID) migrated.champion = true;
   }
   applyEquivalentUnlocks(migrated.unlocks);
   return migrated;
@@ -671,6 +774,9 @@ function isValidCareer(c){
     && typeof c.bankroll === 'number' && !Number.isNaN(c.bankroll) && c.bankroll >= 0
     && Number.isSafeInteger(c.eventsPlayed) && c.eventsPlayed >= 0
     && Number.isSafeInteger(c.eventsWon) && c.eventsWon >= 0
+    && typeof c.champion === 'boolean'
+    && isValidCareerCashSession(c.cash === undefined ? null : c.cash)
+    && Array.isArray(c.cashClosed) && normalizeCashClosed(c.cashClosed).length === c.cashClosed.length
     && !!c.unlocks && typeof c.unlocks === 'object'
     && CAREER_EVENT_LIST.every(event=>typeof c.unlocks[event.id] === 'boolean'
         && (!!event.unlockRequirement || c.unlocks[event.id] === true))
@@ -787,6 +893,9 @@ function materializeCareerRosters(){
 }
 function careerBankroll(){ return career.bankroll; }
 function careerHasActiveEvent(){ return !!career.active; }
+function careerHasOpenCashSession(){ return !!career.cash; }
+function careerMoneyCommitted(){ return career.cash ? career.cash.stack : 0; }
+function careerTotalOwned(){ return career.bankroll + careerMoneyCommitted(); }
 function careerActiveEventSnapshot(){
   return career.active ? career.active.snapshot : null;
 }
@@ -812,6 +921,7 @@ function careerEventState(eventId){
   if (career.active){
     return career.active.eventId === event.id ? 'active' : 'blocked';
   }
+  if (career.cash) return 'blocked';
   // Live eligibility, re-checked every call — never only at render time.
   // An event already active bypassed this above, so an active Second Chance
   // stays resumable even if bankroll (which cannot actually move while an
@@ -856,6 +966,108 @@ function enterCareerEvent(eventId){
   return true;
 }
 
+function newCareerCashSessionId(){
+  return 'cash-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2,10);
+}
+
+function careerCanOpenCash(){
+  return !career.active && !career.cash && career.bankroll >= CAREER_CASH_CONFIG.buyIn;
+}
+
+/* Build the initial between-hand snapshot first, then debit bankroll and
+   record the entry plus checkpoint in ONE felt.career write. */
+function openCareerCashSession(){
+  if (!careerCanOpenCash()) return false;
+  const id = newCareerCashSessionId();
+  const roster = generateCareerRoster(CAREER_CASH_CONFIG);
+  if (!roster) return false;
+  newGame({
+    mode:'career-cash', difficulty:CAREER_CASH_CONFIG.difficulty,
+    opponents:CAREER_CASH_CONFIG.opponentCount, stack:CAREER_CASH_CONFIG.stack,
+    blindLevel:0, smallBlind:CAREER_CASH_CONFIG.smallBlind,
+    bigBlind:CAREER_CASH_CONFIG.bigBlind, roster, cashSessionId:id,
+    formatId:CAREER_CASH_CONFIG.id
+  });
+  const checkpoint = serializeTable(game);
+  if (!isValidCareerCashTableSave(checkpoint)) return false;
+  career.bankroll -= CAREER_CASH_CONFIG.buyIn;
+  career.cash = {
+    id,
+    openedAt:Date.now(),
+    entry:{ transactionId:id, buyIn:CAREER_CASH_CONFIG.buyIn, debitApplied:true },
+    stack:CAREER_CASH_CONFIG.stack,
+    roster:JSON.parse(JSON.stringify(roster)),
+    checkpoint
+  };
+  career.lastResult = null;
+  saveCareer();
+  game._safeSave = checkpoint;
+  return true;
+}
+
+function checkpointCareerCash(checkpoint){
+  if (!career.cash || !isValidCareerCashTableSave(checkpoint)) return false;
+  if (checkpoint.cashSessionId !== career.cash.id) return false;
+  const stack = cashCheckpointHumanStack(checkpoint);
+  if (stack === null) return false;
+  career.cash.stack = stack;
+  career.cash.checkpoint = JSON.parse(JSON.stringify(checkpoint));
+  saveCareer();
+  if (game && game.mode === 'career-cash') game._safeSave = checkpoint;
+  return true;
+}
+
+function settleCareerCash(sessionId, reason){
+  if (!career.cash || career.cash.id !== sessionId) return false;
+  if (career.cashClosed.includes(sessionId)) return false;
+  if (!isValidCareerCashSession(career.cash)) return false;
+  const returnsStack = reason === 'cash-out' || reason === 'table-close';
+  if (!returnsStack && reason !== 'bust') return false;
+  const returned = returnsStack ? career.cash.stack : 0;
+  const buyIn = career.cash.entry.buyIn;
+  career.bankroll += returned;
+  career.cashClosed.push(sessionId);
+  career.cashClosed = normalizeCashClosed(career.cashClosed);
+  career.cash = null;
+  career.lastResult = {
+    outcome:reason === 'bust' ? 'cash-bust' : 'cash-out',
+    eventName:CAREER_CASH_CONFIG.name,
+    delta:returned - buyIn,
+    returned,
+    bankroll:career.bankroll
+  };
+  saveCareer();
+  return true;
+}
+
+function startCareerCashSession(){
+  if (!career.cash || !isValidCareerCashSession(career.cash)) return false;
+  Sound.unlock();
+  hideResultCard();
+  restoreTable(career.cash.checkpoint);
+  if (!game || game.mode !== 'career-cash' || game.cashSessionId !== career.cash.id) return false;
+  showTableScreen();
+  initSeats();
+  startNewHand();
+  return true;
+}
+
+function endCareerCashSession(g, reason){
+  if (!g || g.mode !== 'career-cash') return false;
+  const id = g.cashSessionId;
+  // A table close happens after a fully settled hand, so bank that exact
+  // final stack before the ledger returns it. A bust always returns zero and
+  // deliberately needs no inferred or last-second stack value.
+  if (reason==='table-close' && !checkpointCareerCash(serializeTable(g))) return false;
+  g.over = true;
+  recordGameplayConclusion(g, reason);
+  endQuickResolve();
+  pendingHumanPlayer = null;
+  const settled = settleCareerCash(id, reason);
+  if (settled) showCareerScreen();
+  return settled;
+}
+
 /* The gate between "what happened at the table" and "what gets paid". A
    placement is honoured ONLY as an integer within the paid event's own
    field size — anything else (zero, negative, fractional, a numeric string,
@@ -893,6 +1105,7 @@ function settleCareerEvent(result){
   const settlement = normalizeCareerSettlement(result, stake);
   const prize = settlement.forfeit ? 0 : careerPrizeForPlace(stake, settlement.place);
   const won = !settlement.forfeit && settlement.place === 1;
+  const firstChampionship = won && stake.id === INVITATIONAL_EVENT_ID && !career.champion;
   const outcome = settlement.forfeit ? 'forfeit'
     : won ? 'win'
     : prize > 0 ? 'cash'
@@ -906,10 +1119,11 @@ function settleCareerEvent(result){
     career.eventsWon = normalizeCareerCounter(career.eventsWon) + 1;
     CAREER_EVENT_LIST.forEach(event=>{
       const requirement = event.unlockRequirement;
-      if (requirement && requirement.type === 'event-win' && requirement.eventId === stake.id){
+      if (careerRequirementMetByWin(requirement, stake)){
         career.unlocks[event.id] = true; // idempotent; settlement's active guard owns the one write
       }
     });
+    if (stake.id === INVITATIONAL_EVENT_ID) career.champion = true;
   }
   career.lastResult = {
     outcome,
@@ -918,6 +1132,7 @@ function settleCareerEvent(result){
     eventId:stake.id,
     eventName:stake.name,
     venue:stake.venue,
+    firstChampionship,
     // Unchanged convention: the GROSS prize when one was paid, otherwise the
     // forfeited buy-in. Deliberately not net profit — see CAREER_DESIGN.md,
     // "prize figures mean the total credited after the buy-in has already
@@ -1061,9 +1276,7 @@ function returnToCareer(){
    abandon paths. Opening a tray is pure presentation and writes nothing.
    ============================================================ */
 
-/* The six rooms of the approved ladder, in progression order. The four
-   without implemented events are PRESENTATION ONLY — they deliberately
-   have no descriptor, no payout, no unlock rule and no opponents. */
+/* The six playable rooms of the approved ladder, in progression order. */
 const CAREER_ROOMS = Object.freeze([
   Object.freeze({ venue:'BACK ROOM',                 key:'backroom'     }),
   Object.freeze({ venue:'PUB CIRCUIT',               key:'pub'          }),
@@ -1118,9 +1331,19 @@ const CAREER_STATUS_WORD = {
 };
 function careerStatusWord(state){ return CAREER_STATUS_WORD[state] || 'CLOSED'; }
 
-/* Career's two live difficulties, stated in the machine's own words. */
+/* The threat ladder is venue progression made legible on the ticket. It is
+   presentation only: the real decision parameters remain `difficulty` on
+   the event descriptor and DIFFICULTY_PARAMS in the opponent system. */
+const CAREER_THREAT_BY_VENUE = Object.freeze({
+  'BACK ROOM':'1/6 · MODERATE',
+  'PUB CIRCUIT':'2/6 · SERIOUS',
+  'CARD CLUB':'3/6 · SHARP',
+  'CASINO FLOOR':'4/6 · EXPERT',
+  'HIGH ROLLER ROOM':'5/6 · ELITE',
+  'INVITATIONAL CHAMPIONSHIP':'6/6 · CHAMPIONSHIP'
+});
 function careerThreatOf(event){
-  return event && event.difficulty === 'hard' ? 'SERIOUS' : 'MODERATE';
+  return event ? (CAREER_THREAT_BY_VENUE[event.venue] || '—') : '—';
 }
 
 /* Highest permanent access: the deepest room in ladder order holding an
@@ -1149,6 +1372,81 @@ function careerRoomEvents(venue){
     .sort((a,b)=>a.buyIn - b.buyIn);
 }
 
+function careerCashState(){
+  if (career.cash) return 'active';
+  if (career.active) return 'blocked';
+  return career.bankroll >= CAREER_CASH_CONFIG.buyIn ? 'available' : 'unaffordable';
+}
+
+function careerCashTrayHTML(){
+  const state = careerCashState();
+  const shortfall = Math.max(0, CAREER_CASH_CONFIG.buyIn - career.bankroll);
+  const note = state === 'active'
+    ? '$' + careerMoneyCommitted().toLocaleString() + ' ON TABLE · SAVED BETWEEN HANDS'
+    : state === 'unaffordable'
+      ? 'NEEDS $' + shortfall.toLocaleString() + ' MORE THAN YOU HOLD'
+      : state === 'blocked' ? 'FINISH THE OPEN TOURNAMENT FIRST' : 'FULL-STACK CASH-OUT BETWEEN HANDS';
+  let controls;
+  if (state === 'active'){
+    controls = '<div class="cdir-cradle"><button type="button" class="cdir-primary" data-cash-resume>' +
+      '<span class="pc-lamp is-amber"></span><span class="cdir-legend-wrap">' +
+      '<span class="cdir-legend">Resume</span><small>Cash Table</small></span>' +
+      '<span class="pc-lamp is-amber"></span></button></div>' +
+      '<button type="button" class="cdir-abandon" data-cash-out>Cash Out $' +
+      careerMoneyCommitted().toLocaleString() + '</button>';
+  } else if (state === 'available'){
+    controls = '<div class="cdir-cradle"><button type="button" class="cdir-primary" data-cash-open>' +
+      '<span class="pc-lamp is-amber"></span><span class="cdir-legend-wrap">' +
+      '<span class="cdir-legend">Buy In $' + CAREER_CASH_CONFIG.buyIn + '</span></span>' +
+      '<span class="pc-lamp is-amber"></span></button></div>';
+  } else {
+    controls = '<div class="cdir-locked-strip"><span class="pc-lamp"></span><span>' +
+      esc(state === 'unaffordable' ? 'Bankroll short' : 'Finish your active event first') + '</span></div>';
+  }
+  const paper = '<div class="cdir-paper" data-prestige="basic">' +
+    '<div class="cdir-perf" aria-hidden="true"></div><div class="cdir-paperbody">' +
+      (state === 'active' ? '<span class="cdir-tk-punch" aria-hidden="true"></span>' : '') +
+      '<div class="cdir-tk-venue cdir-tk-venue-backroom">BACK ROOM</div>' +
+      '<h3 class="cdir-tk-name">CASH TABLE</h3><div class="cdir-tk-ref">BACK ROOM CASH</div>' +
+      '<div class="cdir-tk-stampline"><span class="cdir-tk-stamp is-' + state + '">' +
+        esc(careerStatusWord(state)) + '</span><span class="cdir-tk-threat"><b>THREAT</b>1/6 · MODERATE</span></div>' +
+      '<div class="cdir-tk-rule" aria-hidden="true"></div>' +
+      '<div class="cdir-tk-money"><div class="cdir-tk-payout"><span>Stakes</span><b>$1 / $2</b></div>' +
+        '<div class="cdir-tk-entry"><span>Buy-in</span><b>$' + CAREER_CASH_CONFIG.buyIn + '</b></div></div>' +
+      '<div class="cdir-tk-rule" aria-hidden="true"></div>' +
+      '<div class="cdir-tk-facts">' +
+        '<span class="cdir-tk-fact"><span>Players</span><b>' + CAREER_CASH_CONFIG.playerCount + '</b></span>' +
+        '<span class="cdir-tk-fact"><span>Stack</span><b>' + CAREER_CASH_CONFIG.stack + '</b></span>' +
+        '<span class="cdir-tk-fact"><span>Format</span><b>CASH GAME</b></span></div>' +
+      '<p class="cdir-tk-note' + (state === 'blocked' || state === 'unaffordable' ? ' is-requirement' : '') + '">' +
+        esc(note) + '</p><div class="cdir-tk-footer"><span class="cdir-tk-footmark">NO RAKE · CASH OUT BETWEEN HANDS</span></div>' +
+    '</div></div>';
+  return '<div class="cdir-tray"><div class="cdir-tray-inner"><div class="cdir-slot" aria-hidden="true"><i></i></div>' +
+    '<div class="cdir-feed">' + paper + '</div><div class="cdir-mount">' + controls + '</div></div></div>';
+}
+
+function careerCashCassetteHTML(){
+  const state = careerCashState();
+  const open = careerOpenEventId === CAREER_CASH_CONFIG.id;
+  const flag = state === 'active'
+    ? '<span class="cdir-flag is-active">ACTIVE</span>'
+    : '<span class="cdir-flag is-cash">CASH</span>';
+  const value = state === 'active'
+    ? '$' + careerMoneyCommitted().toLocaleString() + ' ON TABLE'
+    : '$' + CAREER_CASH_CONFIG.buyIn + ' BUY-IN';
+  return '<div class="cdir-hatch is-' + state + ' is-cash' + (open ? ' is-open' : '') + '">' +
+    '<div class="cdir-mount"><button type="button" class="cdir-cassette" data-cash-toggle' +
+      ' aria-expanded="' + (open ? 'true' : 'false') + '">' +
+      '<span class="cdir-cassette-name">CASH TABLE</span><span class="cdir-money-value">' +
+      esc(value) + '</span>' + flag + '</button></div>' + (open ? careerCashTrayHTML() : '') + '</div>';
+}
+
+function careerRiskBand(event){
+  if (!event || event.buyIn === 0) return 'comfortable';
+  if (career.bankroll < event.buyIn) return 'unaffordable';
+  return career.bankroll >= event.buyIn * 3 ? 'comfortable' : 'risky';
+}
+
 function careerPayoutSummary(event){
   const places = careerPayouts(event);
   if (!places.length) return '—';
@@ -1161,8 +1459,9 @@ function careerPayoutSummary(event){
    read from the same live values the gate itself uses. */
 function careerRequirementText(event, state){
   if (state === 'locked'){
-    const required = event.unlockRequirement
-      ? careerEventById(event.unlockRequirement.eventId) : null;
+    const requirement = event.unlockRequirement;
+    if (requirement && requirement.type === 'venue-win') return 'UNLOCKS WITH A ' + requirement.venue + ' FIRST PLACE';
+    const required = requirement ? careerEventById(requirement.eventId) : null;
     return required ? 'UNLOCKS BY WINNING ' + required.name : 'LOCKED';
   }
   if (state === 'unaffordable'){
@@ -1221,6 +1520,17 @@ let careerOpenEventId = null;
    event, and renderCareerScreen() disarms it as it consumes it. */
 let careerPrintArmed = false;
 
+/* Tournament and cash cassettes share the same physical printer. Keeping
+   the gesture here means exactly one user action can arm its sound/motion,
+   and opening either kind always closes the other. */
+function toggleCareerCassette(id){
+  const opening = careerOpenEventId !== id;
+  careerOpenEventId = opening ? id : null;
+  careerPrintArmed = opening;
+  if (opening) Sound.unlock();
+  renderCareerScreen();
+}
+
 /* The opened equipment tray. Built only when a cassette is open, so no
    opponent portrait exists in the document while it is closed.
 
@@ -1243,7 +1553,7 @@ function careerTrayHTML(event, state){
   const threat = careerThreatOf(event);
   const tier = careerVenueTier(event.venue);
   const seats = Math.max(0, event.opponentCount | 0);
-  const moods = threat === 'SERIOUS'
+  const moods = event.difficulty === 'hard' || event.difficulty === 'expert' || event.difficulty === 'elite'
     ? ['smug','sly','angry','gloating','smug','sly']
     : ['idle','think','idle','think','think','idle'];
   const paid = state === 'active';
@@ -1290,7 +1600,7 @@ function careerTrayHTML(event, state){
         /* 2. Status and table threat. One stamp only. */
         '<div class="cdir-tk-stampline">' +
           '<span class="cdir-tk-stamp is-' + state + '">' + esc(careerStatusWord(state)) + '</span>' +
-          '<span class="cdir-tk-threat"><b>TABLE</b>' + threat + '</span>' +
+          '<span class="cdir-tk-threat"><b>THREAT</b>' + threat + '</span>' +
         '</div>' +
         '<div class="cdir-tk-rule" aria-hidden="true"></div>' +
         /* 3. Prize and buy-in. Payout is the largest financial value. */
@@ -1381,27 +1691,35 @@ function renderCareerScreen(){
       ? settings.playerName.trim() : '';
     nameEl.textContent = (raw || 'PLAYER').toUpperCase();
   }
+  const championEl = $('career-champion');
+  if (championEl) championEl.classList.toggle('hidden', career.champion !== true);
   const accessEl = $('career-access');
   if (accessEl) accessEl.textContent = careerHighestAccess();
   const playedEl = $('career-played');
   if (playedEl) playedEl.textContent = String(normalizeCareerCounter(career.eventsPlayed));
   const wonEl = $('career-won');
   if (wonEl) wonEl.textContent = String(normalizeCareerCounter(career.eventsWon));
-
+  const available = $('career-funds-available');
+  const committed = $('career-funds-committed');
+  const total = $('career-funds-total');
+  if (available) available.textContent = '$' + careerBankroll().toLocaleString();
+  if (committed) committed.textContent = '$' + careerMoneyCommitted().toLocaleString();
+  if (total) total.textContent = '$' + careerTotalOwned().toLocaleString();
   const board = $('career-events');
   if (board){
     // An open tray belonging to an event that is no longer rendered (its
     // eligibility lapsed, or a fresh career replaced it) must not survive.
-    if (careerOpenEventId && careerEventState(careerOpenEventId) === 'hidden'){
+    if (careerOpenEventId && careerOpenEventId !== CAREER_CASH_CONFIG.id
+        && careerEventState(careerOpenEventId) === 'hidden'){
       careerOpenEventId = null;
     }
     board.innerHTML = CAREER_ROOMS.map(room=>{
       const events = careerRoomEvents(room.venue)
         .map(event=>({ event, state:careerEventState(event.id) }))
         .filter(entry=>entry.state !== 'hidden');
-      const body = events.length
-        ? events.map(entry=>careerCassetteHTML(entry.event, entry.state)).join('')
-        : '<div class="cdir-door"><span class="cdir-door-text">LOCKED &middot; COMING SOON</span></div>';
+      const eventCassettes = events.map(entry=>careerCassetteHTML(entry.event, entry.state)).join('');
+      const cassettes = (room.venue === 'BACK ROOM' ? careerCashCassetteHTML() : '') + eventCassettes;
+      const body = cassettes || '<div class="cdir-door"><span class="cdir-door-text">LOCKED &middot; COMING SOON</span></div>';
       // Header and events are ONE venue section: the marker is the top
       // band of the venue's own housing, not a label pinned to a separate
       // panel inside it.
@@ -1411,19 +1729,11 @@ function renderCareerScreen(){
     }).join('');
 
     board.querySelectorAll('[data-career-toggle]').forEach(button=>{
-      button.onclick = ()=>{
-        const id = button.dataset.careerToggle;
-        // Presentation only: no save, no debit, no unlock, no table state.
-        const opening = careerOpenEventId !== id;
-        careerOpenEventId = opening ? id : null;
-        // The ONE place the printer is armed: a real tap that opens an
-        // event. Closing one does not print, and neither does anything
-        // else that re-renders this board. Sound.unlock() has to happen
-        // inside the gesture for iOS to allow audio at all.
-        careerPrintArmed = opening;
-        if (opening) Sound.unlock();
-        renderCareerScreen();
-      };
+      // Presentation only: no save, no debit, no unlock, no table state.
+      button.onclick = ()=>toggleCareerCassette(button.dataset.careerToggle);
+    });
+    board.querySelectorAll('[data-cash-toggle]').forEach(button=>{
+      button.onclick = ()=>toggleCareerCassette(CAREER_CASH_CONFIG.id);
     });
     board.querySelectorAll('[data-career-enter]').forEach(button=>{
       button.onclick = ()=>{ Sound.buttonRelease('award'); careerEnterPressed(button.dataset.careerEnter); };
@@ -1433,6 +1743,15 @@ function renderCareerScreen(){
     });
     board.querySelectorAll('[data-career-abandon]').forEach(button=>{
       button.onclick = ()=>careerAbandonPressed(button.dataset.careerAbandon);
+    });
+    board.querySelectorAll('[data-cash-open]').forEach(button=>{
+      button.onclick = ()=>careerCashOpenPressed();
+    });
+    board.querySelectorAll('[data-cash-resume]').forEach(button=>{
+      button.onclick = ()=>startCareerCashSession();
+    });
+    board.querySelectorAll('[data-cash-out]').forEach(button=>{
+      button.onclick = ()=>careerCashOutPressed();
     });
 
     // The tray's REAL height extends in discrete mechanical beats, so every
@@ -1486,7 +1805,7 @@ function renderCareerScreen(){
 
   const hasAffordableUnlocked = CAREER_EVENT_LIST.some(event=>careerEventState(event.id) === 'available');
   const newBtn = $('career-new');
-  if (newBtn) newBtn.classList.toggle('hidden', careerHasActiveEvent() || hasAffordableUnlocked);
+  if (newBtn) newBtn.classList.toggle('hidden', careerHasActiveEvent() || careerHasOpenCashSession() || hasAffordableUnlocked);
 
   const resultEl = $('career-last-result');
   if (resultEl){
@@ -1499,6 +1818,9 @@ function renderCareerScreen(){
       const sign = r.delta > 0 ? '+' : r.delta < 0 ? '-' : '';
       const tag = r.outcome === 'win' ? 'Event won'
         : r.outcome === 'cash' ? 'Event cashed'
+        : r.outcome === 'cash-out' ? 'Cash session closed'
+        : r.outcome === 'cash-bust' ? 'Cash session lost'
+        : r.outcome === 'cash-recovery' ? 'Cash buy-in recovered'
         : 'Event lost';
       resultEl.innerHTML = '<span class="cr-tag">' + tag + '</span>' +
         '<span class="cr-amt tabular">' + sign + '$' + Math.abs(r.delta).toLocaleString() + '</span>';
@@ -1517,9 +1839,47 @@ function careerEnterPressed(eventId){
     if (career.active.eventId === eventId) continueCareerEvent();
     return;
   }
-  if (!enterCareerEvent(eventId)){ renderCareerScreen(); return; }
-  renderCareerScreen();       // bankroll visibly drops before the table appears
-  startCareerEvent();
+  const event=careerEventById(eventId);
+  const launch=()=>{
+    if (!enterCareerEvent(eventId)){ renderCareerScreen(); return; }
+    renderCareerScreen();       // bankroll visibly drops before the table appears
+    startCareerEvent();
+  };
+  if (event && event.buyIn>0 && careerRiskBand(event)==='risky'){
+    showConfirmDialog({
+      title:'Take a bankroll shot?',
+      body:'This $'+event.buyIn.toLocaleString()+' entry leaves $'+
+        (career.bankroll-event.buyIn).toLocaleString()+' available. Permanent room access is never lost.',
+      confirmLabel:'Enter Event',danger:false,onConfirm:launch
+    });
+    return;
+  }
+  launch();
+}
+
+function careerCashOpenPressed(){
+  if (!careerCanOpenCash()){ renderCareerScreen(); return; }
+  const launch = ()=>{
+    if (!openCareerCashSession()){ renderCareerScreen(); return; }
+    renderCareerScreen();
+    startCareerCashSession();
+  };
+  if (career.bankroll < CAREER_CASH_CONFIG.buyIn * 3){
+    showConfirmDialog({
+      title:'Take a bankroll shot?',
+      body:'This $50 buy-in leaves $' + (career.bankroll - CAREER_CASH_CONFIG.buyIn).toLocaleString() +
+        ' available. Your full remaining table stack can be cashed out between hands.',
+      confirmLabel:'Buy In', danger:false, onConfirm:launch
+    });
+    return;
+  }
+  launch();
+}
+
+function careerCashOutPressed(){
+  if (!career.cash) return;
+  settleCareerCash(career.cash.id, 'cash-out');
+  renderCareerScreen();
 }
 
 /* The ONLY path that forfeits a buy-in. Confirmation is mandatory and the
@@ -1608,6 +1968,9 @@ function leaveTable(){
   if (game && game.mode==='career' && careerHasActiveEvent() && !game._careerResultShown){
     saveCareerTable();
   }
+  // A cash hand is never persisted mid-hand. The ledger already contains
+  // the last completed-hand checkpoint, so leaving simply pauses and a
+  // later Resume replays from that safe boundary.
   doLeaveTable();
 }
 
@@ -1626,7 +1989,8 @@ function doLeaveTable(){
   // A *finished* Career event returns to the Career screen (its result is
   // waiting there). A *paused* one goes to the main menu, which advertises
   // the event as still active — see refreshCareerMenuButton().
-  const careerFinished = !!(game && game.mode==='career') && !careerHasActiveEvent();
+  const careerFinished = !!(game && (game.mode==='career' || game.mode==='career-cash'))
+    && !careerHasActiveEvent() && !careerHasOpenCashSession();
   const felt = $('felt');
   if (felt) felt.classList.remove('results-mode','tone-negative');
   clearCompletedEventConsole();

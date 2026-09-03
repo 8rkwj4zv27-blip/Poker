@@ -57,6 +57,8 @@ const DIFFICULTY_PARAMS = {
   easy:   {iterations:120, noise:.34, positionWeight:.00},
   medium: {iterations:260, noise:.15, positionWeight:.04},
   hard:   {iterations:500, noise:.05, positionWeight:.08},
+  expert: {iterations:700, noise:.025, positionWeight:.11},
+  elite:  {iterations:900, noise:.01, positionWeight:.14},
 };
 
 /* ============================================================
@@ -454,6 +456,28 @@ function pickDeadMood(){
   return pool[Math.floor(Math.random()*pool.length)];
 }
 
+/* Public-state-only format adjustments. This helper deliberately receives no
+   hole cards, deck or equity: heads-up width, short-stack pressure and a
+   paid-place bubble are properties visible to everyone at the table. */
+function aiFormatAdjustments(g, player, numOpp, bbLeft){
+  const freezeout = g && (g.mode==='tournament' || g.mode==='career' || g.mode==='elimination');
+  const headsUp = numOpp===1;
+  const paidPlaces = g && g.mode==='career' && g.event && Array.isArray(g.event.payouts)
+    ? g.event.payouts.length : 0;
+  const alive = g && Array.isArray(g.players)
+    ? g.players.filter(p=>p.chips>0 && !p.eliminated).length : 0;
+  const bubble = paidPlaces>1 && alive===paidPlaces+1;
+  return {
+    aggression:headsUp?0.08:(bubble&&bbLeft<=10?0.06:0),
+    tightness:headsUp?-0.08:(bubble?0.04:0),
+    bluffFreq:headsUp?0.04:0,
+    foldGateWiden:freezeout&&bbLeft<ELIMINATION_CONFIG.shortStackBB
+      ? (ELIMINATION_CONFIG.shortStackBB-bbLeft)*ELIMINATION_CONFIG.foldGateWidenPerBB : 0,
+    callOffFloor:headsUp?0.48:0.56,
+    headsUp,bubble,freezeout
+  };
+}
+
 async function aiDecide(player, g){
   const idx = g.players.indexOf(player);
   const numOpp = g.players.filter(p=>p.inHand && !p.folded && p.id!==player.id).length;
@@ -476,17 +500,20 @@ async function aiDecide(player, g){
     aggression = Math.min(1, aggression + 0.05*mood.intensity);
   }
 
-  const noise = (Math.random()-0.5) * dp.noise;
-  const tightAdj = (tightness - 0.5) * -0.10;
-  // late position (few players left to act) nudges confidence up slightly
-  const posAdj = dp.positionWeight * (1 - Math.min(1, seatsAfter(idx) / Math.max(1, numOpp)));
-  const perceived = clamp01(rawEquity + noise + tightAdj + posAdj);
-
   const toCall = Math.max(0, g.currentBet - player.betThisRound);
   const potOdds = toCall>0 ? toCall/(g.pot + toCall) : 0;
   const stack = player.chips;
   const bb = g.bigBlind;
   const bbLeft = stack / bb;
+  const formatAdj = aiFormatAdjustments(g,player,numOpp,bbLeft);
+  aggression = clamp01(aggression + formatAdj.aggression);
+  tightness = clamp01(tightness + formatAdj.tightness);
+  bluffFreq = clamp01(bluffFreq + formatAdj.bluffFreq);
+  const noise = (Math.random()-0.5) * dp.noise;
+  const tightAdj = (tightness - 0.5) * -0.10;
+  // late position (few players left to act) nudges confidence up slightly
+  const posAdj = dp.positionWeight * (1 - Math.min(1, seatsAfter(idx) / Math.max(1, numOpp)));
+  const perceived = clamp01(rawEquity + noise + tightAdj + posAdj);
   const shortStack = bbLeft <= ELIMINATION_CONFIG.shortStackBB;   // shoving territory — caps don't apply
   const preflop = g.board.length===0;
   const bluffRoll = Math.random() < bluffFreq * (preflop ? 0.5 : 1);
@@ -524,15 +551,9 @@ async function aiDecide(player, g){
     const facingRaise = g.currentBet > bb;
     let foldGate = 0.30 + tightness*0.14
       + (facingRaise ? 0.10 + Math.min(0.10, (toCall/Math.max(1,stack))*0.5) : 0);
-    // Elimination mode only — a short stack there is permanently short (no
-    // rebuy), so it needs to progressively widen rather than fold forever;
-    // cash/tournament AI stack-depth behaviour is deliberately left exactly
-    // as it was (cash rebuys almost immediately, tournament already has its
-    // own escalating-blind pressure — see the Phase 1 plan §9/§12).
-    if (g.mode === 'elimination'){
-      const widen = Math.max(0, ELIMINATION_CONFIG.shortStackBB - bbLeft) * ELIMINATION_CONFIG.foldGateWidenPerBB;
-      foldGate = Math.max(0, foldGate - widen);
-    }
+    // Every freezeout short stack widens gradually rather than folding into
+    // the blinds. Ordinary cash remains unchanged.
+    foldGate = Math.max(0, foldGate - formatAdj.foldGateWiden);
     if (toCall>0 && perceived < foldGate && !bluffRoll){
       // cheap completes from the small blind still happen with playable stuff
       if (toCall <= bb*0.5 && perceived > foldGate-0.10 && Math.random()<0.6) return {action:'call'};
@@ -543,10 +564,10 @@ async function aiDecide(player, g){
       (perceived > raiseGate || (bluffRoll && !facingRaise && Math.random()<0.5)) &&
       Math.random() < 0.30 + aggression*0.45;
     if (wantsRaise){
-      // Critical stack (elimination mode, < ~5BB): cappedTotal()'s 28%/45%
+      // Critical freezeout stack (< ~5BB): cappedTotal()'s 28%/45%
       // hand-start budget caps make no sense once the whole stack IS only
       // a few BB — jam it. Push/fold framing instead of a sized raise.
-      if (g.mode === 'elimination' && bbLeft < ELIMINATION_CONFIG.criticalStackBB){
+      if (formatAdj.freezeout && bbLeft < ELIMINATION_CONFIG.criticalStackBB){
         return raiseOrSettle(player.betThisRound + stack);
       }
       const mult = (facingRaise ? 2.6 + aggression*0.8 : 2.2 + aggression*0.9) * sizeMul;
@@ -592,6 +613,7 @@ async function aiDecide(player, g){
   // calling off a big chunk — judged against the whole hand's commitment —
   // still needs genuine strength
   const wouldCommit = (player.totalBetHand + toCall) / Math.max(1, player.chips + player.totalBetHand);
+  if (shortStack && toCall >= stack*0.7 && perceived < formatAdj.callOffFloor) return {action:'fold'};
   if (!shortStack && wouldCommit > 0.5 && perceived < 0.66) return {action:'fold'};
   if (!shortStack && toCall > stack*0.45 && perceived < 0.62) return {action:'fold'};
   return {action:'call'};
@@ -624,8 +646,8 @@ function aiThinkTime(player, decision, g){
     || decision.action==='raise' || decision.action==='bet'
     || (decision.action==='fold' && toCall > g.pot*0.5)
     || (decision.action==='call' && toCall > player.chips*0.3);
-  let ms = big ? 1700 + Math.random()*1500 : 900 + Math.random()*900;
-  if (allIn) ms += 900;
+  let ms = big ? 1350 + Math.random()*1050 : 550 + Math.random()*500;
+  if (allIn) ms += 500;
   return Math.round(ms * (player.personality.thinkSpeed || 1) * speedMult());
 }
 
@@ -638,4 +660,3 @@ function potSizedTotal(player, fraction){
   const raiseBy = Math.max(g.bigBlind, Math.round(fraction * potAfterCall));
   return player.betThisRound + toCall + raiseBy;
 }
-
