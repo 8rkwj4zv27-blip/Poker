@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#16090D">
 <link rel="icon" href="data:,">
-<title>Deck Housing Options</title>
+<title>Card Flight Workshop</title>
 <link rel="stylesheet" href="css/01-foundation.css">
 <link rel="stylesheet" href="css/02-screens.css">
 <link rel="stylesheet" href="css/card-flight-options.css">
@@ -13,7 +13,7 @@
 <body data-theme="burgundy" data-cardback="classic">
   <main class="cfo-machine">
     <header class="cfo-header">
-      <div><span>Motion workshop</span><strong>Deck housing options</strong></div>
+      <div><span>Motion workshop</span><strong>Card flight</strong></div>
       <output id="cfo-status" aria-live="polite">Ready</output>
     </header>
 
@@ -26,11 +26,8 @@
         <div class="cfo-target"><div class="card back small"></div></div>
       </div>
 
-      <div class="cfo-dealer" data-housing="naked">
-        <span class="cfo-dealer-label">Deck</span>
-        <div class="cfo-housing" aria-hidden="true"></div>
+      <div class="cfo-dealer">
         <div id="cfo-deck" class="cfo-deck" aria-label="Full deck"></div>
-        <span id="cfo-deck-count" class="cfo-deck-count">52</span>
       </div>
     </section>
 
@@ -39,19 +36,9 @@
         <button class="active" data-direction="deal" type="button">Deal from deck</button>
         <button data-direction="return" type="button">Return to deck</button>
       </div>
-      <div class="cfo-options" role="group" aria-label="Deck housing treatment">
-        <button class="active" data-housing="naked" type="button"><strong>A</strong><span>Naked deck</span></button>
-        <button data-housing="line" type="button"><strong>B</strong><span>Dealer line</span></button>
-        <button data-housing="pad" type="button"><strong>C</strong><span>Slim deck pad</span></button>
-        <button data-housing="stack" type="button"><strong>D</strong><span>Shadow stack</span></button>
-      </div>
-
-      <p id="cfo-description" class="cfo-description">The physical pile sits directly on the felt. Only its layered cards and a tight contact shadow establish weight.</p>
-
       <div class="cfo-actions">
         <button id="cfo-replay" class="primary" type="button">Deal one</button>
         <button id="cfo-sequence" type="button">Deal five</button>
-        <button id="cfo-compare" type="button">Compare A–D</button>
       </div>
       <div class="cfo-modes" role="group" aria-label="Playback speed">
         <button class="active" data-speed="normal" type="button">Normal</button>

@@ -38,67 +38,27 @@ body{
 .cfo-target>.card{
   position:absolute; inset:-1px; width:44px; height:62px; margin:0; opacity:0;
 }
-.cfo-dealer{ position:absolute; left:26px; bottom:20px; width:64px; height:91px; }
-.cfo-dealer-label{
-  position:absolute; z-index:5; left:50%; top:-14px; transform:translateX(-50%); color:var(--accent-bright); text-align:center;
-  font:5px var(--font-hdr); text-transform:uppercase; letter-spacing:.08em; white-space:nowrap;
-}
-.cfo-housing{ position:absolute; z-index:0; inset:0; pointer-events:none; }
+.cfo-dealer{ position:absolute; left:26px; bottom:28px; width:64px; height:70px; }
 .cfo-deck{
-  position:absolute; z-index:2; left:8px; top:7px; width:43px; height:63px; border-radius:4px;
+  position:absolute; left:8px; top:0; width:43px; height:63px;
   background:transparent;
 }
 .cfo-deck-card{
   position:absolute!important; width:36px!important; height:52px!important; margin:0!important;
   left:calc(2px + var(--layer) * .45px); top:calc(6px - var(--layer) * .55px);
-  transition:none!important;
+  transition:none!important; box-shadow:none!important; filter:none!important;
 }
-.cfo-deck-count{
-  position:absolute; z-index:6; left:50%; bottom:0; min-width:24px; padding:2px 3px 1px; transform:translateX(-50%);
-  border:1px solid var(--px-ink); background:var(--pc-display); color:var(--pc-display-ink);
-  font:5px var(--font-hdr); text-align:center;
-}
-/* Every option uses the same 64px centre axis; only the surface beneath changes. */
-.cfo-dealer[data-housing="naked"] .cfo-housing::after,
-.cfo-dealer[data-housing="line"] .cfo-housing::after{
-  content:""; position:absolute; left:11px; top:59px; width:42px; height:7px; border-radius:50%; background:rgba(0,0,0,.58); filter:blur(1px);
-}
-.cfo-dealer[data-housing="naked"] .cfo-deck{ filter:drop-shadow(0 3px 0 rgba(0,0,0,.42)); }
-/* B — a single precise registration mark printed into the felt. */
-.cfo-dealer[data-housing="line"] .cfo-housing::before{
-  content:""; position:absolute; z-index:1; left:3px; top:65px; width:58px; height:2px; background:#bf8e32;
-  box-shadow:0 1px 0 rgba(18,6,9,.55);
-}
-.cfo-dealer[data-housing="line"] .cfo-deck{ filter:drop-shadow(0 3px 0 rgba(0,0,0,.44)); }
-/* C — a pad only five pixels larger than the live pile, with no enclosing border. */
-.cfo-dealer[data-housing="pad"] .cfo-housing{
-  left:7px; top:2px; width:50px; height:68px; border-radius:2px;
-  background:#3a141d; border-bottom:2px solid #b98731;
-  box-shadow:0 3px 0 #17080d,0 5px 0 rgba(0,0,0,.32),inset 1px 1px 0 rgba(255,255,255,.07);
-}
-/* D — extra card-stock edges amplify the pile itself rather than enclosing it. */
-.cfo-dealer[data-housing="stack"] .cfo-housing::before{
-  content:""; position:absolute; left:14px; top:11px; width:36px; height:52px; border:2px solid #18090d; border-radius:2px;
-  background:#e4d7aa; box-shadow:-2px 2px 0 #8c7b50,2px 4px 0 #e4d7aa,0 6px 0 #18090d,0 8px 0 rgba(0,0,0,.48);
-}
-.cfo-dealer[data-housing="stack"] .cfo-deck{ filter:drop-shadow(0 3px 0 rgba(0,0,0,.38)); }
 .cfo-console{ padding:9px; border-top:3px solid var(--px-ink); background:var(--panel); }
 .cfo-direction{ display:grid; grid-template-columns:1fr 1fr; gap:5px; margin-bottom:6px; }
-.cfo-options{ display:grid; grid-template-columns:repeat(2,1fr); gap:5px; }
-.cfo-options button,.cfo-direction button,.cfo-actions button,.cfo-modes button{
+.cfo-direction button,.cfo-actions button,.cfo-modes button{
   min-height:36px; border:2px solid var(--px-ink); border-radius:2px; color:var(--ink); background:var(--panel-2);
   box-shadow:0 3px 0 var(--px-ink); font-family:var(--font-hdr); cursor:pointer;
 }
-.cfo-options button{ min-height:50px; display:grid; grid-template-columns:18px 1fr; gap:4px; align-items:center; text-align:left; padding:6px; }
-.cfo-options strong{ color:var(--accent-bright); font-size:13px; }
-.cfo-options span{ font-size:5.5px; text-transform:uppercase; }
-.cfo-options button.active,.cfo-direction button.active,.cfo-actions button.primary,.cfo-modes button.active{ color:var(--accent-ink); background:var(--accent); }
-.cfo-options button.active strong{ color:inherit; }
-.cfo-description{ min-height:30px; margin:7px 2px; color:var(--ink-dim); font-size:9px; line-height:1.35; }
-.cfo-actions{ display:grid; grid-template-columns:repeat(3,1fr); gap:5px; }
+.cfo-direction button.active,.cfo-actions button.primary,.cfo-modes button.active{ color:var(--accent-ink); background:var(--accent); }
+.cfo-actions{ display:grid; grid-template-columns:repeat(2,1fr); gap:5px; }
 .cfo-direction button,.cfo-actions button,.cfo-modes button{ font-size:5.5px; }
 .cfo-modes{ display:grid; grid-template-columns:1fr 1.25fr .75fr; gap:5px; margin-top:6px; }
-.cfo-options button:active,.cfo-direction button:active,.cfo-actions button:active,.cfo-modes button:active{ transform:translateY(2px); box-shadow:0 1px 0 var(--px-ink); }
+.cfo-direction button:active,.cfo-actions button:active,.cfo-modes button:active{ transform:translateY(2px); box-shadow:0 1px 0 var(--px-ink); }
 #cfo-readout{
   display:block; min-height:47px; margin-top:8px; padding:7px; border:2px solid var(--px-ink);
   color:var(--pc-display-ink); background:var(--pc-display); font:5.5px/1.55 var(--font-hdr);
@@ -117,13 +77,11 @@ body{
   body{ padding:6px; }
   .cfo-stage{ height:286px; }
   .cfo-target-row{ top:66px; gap:3px; }
-  .cfo-dealer{ left:20px; bottom:17px; }
-  .cfo-options button{ padding:4px; }
+  .cfo-dealer{ left:20px; bottom:24px; }
 }
 @media (max-height:720px){
   .cfo-stage{ height:270px; }
   .cfo-target-row{ top:55px; }
   .cfo-dealer{ bottom:17px; }
   .cfo-console{ padding:7px; }
-  .cfo-description{ margin:5px 2px; }
 }
