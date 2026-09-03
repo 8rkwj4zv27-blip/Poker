@@ -331,8 +331,8 @@ check('The development harness can exercise the shipped rail without starting or
 });
 
 check('Rail Five remains shipped after the later build/cache marker advance',()=>{
-  assert.ok(support.includes("const BUILD_VERSION = 'v0.31.0-dev · Card Turn'"));
-  assert.ok(serviceWorker.includes("const CACHE_NAME = 'poker-v31-0'"));
+  assert.ok(support.includes("const BUILD_VERSION = 'v0.31.1-dev · Card Turn'"));
+  assert.ok(serviceWorker.includes("const CACHE_NAME = 'poker-v31-1'"));
   assert.ok(production.includes('function presentShowdownRail(main)'));
 });
 
