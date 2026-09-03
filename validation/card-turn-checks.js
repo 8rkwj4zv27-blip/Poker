@@ -90,7 +90,7 @@ function faceDownElement(){ const el=new FakeElement(); el.className='card back'
     const el=faceDownElement();
     const promise=api.turnCard(el,false,card,false,'board');
     const animation=el.children[0].animations[0];
-    assert.strictEqual(animation.options.duration,430);
+    assert.strictEqual(animation.options.duration,700);
     animation.finish();
     await promise;
     assert.strictEqual(el.className,'card heart');
@@ -135,7 +135,7 @@ function faceDownElement(){ const el=new FakeElement(); el.className='card back'
   });
 
   await check('Normal and Fast speed scale the three production turn weights',async()=>{
-    const cases=[['hole',1,380],['board',1,430],['showdown',1,480],['hole',.55,209],['board',.55,237],['showdown',.55,264]];
+    const cases=[['hole',1,600],['board',1,700],['showdown',1,800],['hole',.55,330],['board',.55,385],['showdown',.55,440]];
     for (const [kind,speed,duration] of cases){
       context.speed=speed;
       const el=faceDownElement();
@@ -177,8 +177,8 @@ function faceDownElement(){ const el=new FakeElement(); el.className='card back'
   });
 
   await check('Build and offline cache markers are synchronised for Card Turn',()=>{
-    assert.ok(support.includes("const BUILD_VERSION = 'v0.31.2-dev · Card Turn'"));
-    assert.ok(serviceWorker.includes("const CACHE_NAME = 'poker-v31-2'"));
+    assert.ok(support.includes("const BUILD_VERSION = 'v0.31.3-dev · Card Turn'"));
+    assert.ok(serviceWorker.includes("const CACHE_NAME = 'poker-v31-3'"));
   });
 
   process.stdout.write('\n'+passed+' focused Card Turn checks passed.\n');
