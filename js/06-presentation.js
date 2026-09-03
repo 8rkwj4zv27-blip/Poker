@@ -222,27 +222,91 @@ function cardClass(faceDown, card, small){
 function cardLabel(faceDown, card){
   return faceDown ? 'Face-down card' : RANK_WORD[card.value] + ' of ' + SUIT_NAME[card.suit];
 }
-/* SFX V1 — `kind` ('board'|'hole', default 'hole') only affects the
-   community-cards-read-slightly-stronger nuance in Sound.cardFlip(); it
-   changes nothing about the actual flip visuals/timing. Sound only ever
-   plays for a genuine reveal (!faceDown) — this codebase never actually
-   flips a card back to face-down, but the guard costs nothing and keeps
-   the contract honest. */
-function flipCard(el, faceDown, card, small, kind){
-  if (motionOff()){
-    el.className = cardClass(faceDown, card, small);
-    el.innerHTML = faceDown ? '' : cardInner(card);
-    el.setAttribute('aria-label', cardLabel(faceDown, card));
-    return;
+/* CARD TURN — one small owner for every physical card reveal. Both faces are
+   mounted before movement begins, so the face changes naturally as the pair
+   crosses its edge; no midpoint DOM mutation or independently drifting timer
+   is involved. A turn always settles to its requested logical state, even if
+   a new render, hand boundary or navigation cancels it. */
+const CARD_TURN_TIMING = Object.freeze({ hole:260, board:300, showdown:340 });
+const activeCardTurns = new Set();
+const cardTurnByElement = new WeakMap();
+
+function setCardTurnFinal(el,faceDown,card,small){
+  el.className=cardClass(faceDown,card,small);
+  el.replaceChildren();
+  if (!faceDown) el.innerHTML=cardInner(card);
+  el.setAttribute('role','img');
+  el.setAttribute('aria-label',cardLabel(faceDown,card));
+}
+
+function settleCardTurn(run,completed){
+  if (!run || run.settled) return;
+  run.settled=true;
+  activeCardTurns.delete(run);
+  if (cardTurnByElement.get(run.el)===run) cardTurnByElement.delete(run.el);
+  setCardTurnFinal(run.el,run.faceDown,run.card,run.small);
+  run.resolve(!!completed);
+}
+
+function cancelCardTurn(run){
+  if (!run || run.settled) return;
+  settleCardTurn(run,false);
+  try{ run.animation.cancel(); }catch(e){}
+}
+
+function cancelAllCardTurns(){
+  Array.from(activeCardTurns).forEach(cancelCardTurn);
+}
+
+/* `kind` selects only the physical weight of this same turn: ordinary hole
+   cards are quickest, board cards slightly weightier, and deliberate
+   showdown reveals most readable. Existing game-speed scaling still owns the
+   player's Normal/Fast choice. */
+function turnCard(el,faceDown,card,small,kind){
+  if (!el) return Promise.resolve(false);
+  const previous=cardTurnByElement.get(el);
+  if (previous) cancelCardTurn(previous);
+  if (motionOff() || typeof el.animate!=='function'){
+    setCardTurnFinal(el,faceDown,card,small);
+    return Promise.resolve(true);
   }
+
   if (!faceDown) Sound.cardFlip(kind==='board');
-  el.classList.add('flip-out');
-  setTimeout(()=>{
-    el.className = cardClass(faceDown, card, small) + ' flip-in';
-    el.innerHTML = faceDown ? '' : cardInner(card);
-    el.setAttribute('aria-label', cardLabel(faceDown, card));
-    setTimeout(()=>el.classList.remove('flip-in'), 190);
-  }, 130);
+  const sizeClass=small?' small':'';
+  const current=document.createElement('div');
+  current.className=Array.from(el.classList)
+    .filter(name=>name!=='deal-anim' && name!=='card-turning')
+    .join(' ')+' card-turn-face card-turn-current';
+  current.innerHTML=el.innerHTML;
+  current.setAttribute('aria-hidden','true');
+  const target=document.createElement('div');
+  target.className=cardClass(faceDown,card,small)+' card-turn-face card-turn-target';
+  if (!faceDown) target.innerHTML=cardInner(card);
+  target.setAttribute('aria-hidden','true');
+  const flipper=document.createElement('div');
+  flipper.className='card-turn-flipper';
+  flipper.append(current,target);
+  el.className='card'+sizeClass+' card-turning';
+  el.replaceChildren(flipper);
+  flipper.style.willChange='transform';
+
+  const duration=Math.max(1,Math.round((CARD_TURN_TIMING[kind]||CARD_TURN_TIMING.hole)*speedMult()));
+  const animation=flipper.animate([
+    {transform:'translate3d(0,0,0) rotateY(0deg)',offset:0,easing:'cubic-bezier(.3,0,.6,.4)'},
+    {transform:'translate3d(0,-3px,6px) rotateY(-8deg)',offset:.12,easing:'cubic-bezier(.35,0,.65,1)'},
+    {transform:'translate3d(0,-4px,8px) rotateY(-88deg)',offset:.48,easing:'linear'},
+    {transform:'translate3d(0,-4px,8px) rotateY(-92deg)',offset:.52,easing:'cubic-bezier(.2,.72,.28,1)'},
+    {transform:'translate3d(0,-1px,2px) rotateY(-178deg)',offset:.88,easing:'cubic-bezier(.2,.75,.3,1)'},
+    {transform:'translate3d(0,1px,0) rotateY(-180deg)',offset:.95,easing:'linear'},
+    {transform:'translate3d(0,0,0) rotateY(-180deg)',offset:1}
+  ],{duration,easing:'linear',fill:'both'});
+  let resolve;
+  const promise=new Promise(done=>{ resolve=done; });
+  const run={el,faceDown,card,small,animation,resolve,promise,settled:false};
+  activeCardTurns.add(run);
+  cardTurnByElement.set(el,run);
+  animation.finished.then(()=>settleCardTurn(run,true),()=>settleCardTurn(run,false));
+  return promise;
 }
 function syncCardRow(container, cards, faceDownMask, small, kind){
   while (container.children.length > cards.length) container.lastElementChild.remove();
@@ -259,7 +323,7 @@ function syncCardRow(container, cards, faceDownMask, small, kind){
       if (!faceDown) el.innerHTML = cardInner(card);
       container.appendChild(el);
     } else if (el.dataset.state !== state){
-      flipCard(el, faceDown, card, small, kind);
+      turnCard(el, faceDown, card, small, kind);
       el.dataset.state = state;
     }
   }
@@ -470,7 +534,7 @@ async function dealCardFlight(el, card, opts){
   // need to flip up on landing — the caller says so explicitly instead.
   if ((wasFaceUp || opts.revealAfter) && !opts.deferFlip){
     await sleep(Math.round(DEAL_TIMING.settleBeforeFlipMs * speedMult()));
-    flipCard(el, false, card, small, opts.board ? 'board' : 'hole');
+    await turnCard(el, false, card, small, opts.board ? 'board' : 'hole');
   }
 }
 /* Sweeps a card's element back toward the deck's exact top-card spot — a
@@ -1201,6 +1265,7 @@ function queueRaiseReel(value, immediate){
   },wait);
 }
 function clearAllCardDOM(){
+  cancelAllCardTurns();
   resetShowdownRailPresentation();
   const board = $('board');
   if (board) board.innerHTML = '';
@@ -3770,7 +3835,7 @@ function render(){
     // — never simply because p.hand already holds the logically-dealt
     // cards. This is what stops a render() firing before/mid-deal from
     // flashing the real faces early.
-    syncCardRow(e.cardsContainer, p.hand, mine ? p.hand.map((_,i)=>!(p._holeRevealed&&p._holeRevealed[i])) : p.hand.map(()=>!p._reveal), !mine, 'hole');
+    syncCardRow(e.cardsContainer, p.hand, mine ? p.hand.map((_,i)=>!(p._holeRevealed&&p._holeRevealed[i])) : p.hand.map(()=>!p._reveal), !mine, g.phase==='showdown'?'showdown':'hole');
 
     // Fixed action-display slot — always rendered, same footprint whether
     // a player just checked or just shoved. Replaces the old floating

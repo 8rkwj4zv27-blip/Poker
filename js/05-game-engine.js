@@ -902,8 +902,8 @@ async function revealHoleCardsAnimated(){
         // wasFaceUp check, unchanged.
         const flight = dealCardFlight(el, card, isHuman ? {revealAfter:true} : undefined).then(()=>{
           if (!isHuman || game!==g || g.handNumber!==handAtDeal) return;
-          // Marks the true state immediately (even though flipCard's own
-          // visual swap lands a beat later via its internal timeout) so
+          // Marks the true state immediately (even though turnCard's visual
+          // landing completes a beat later on its own timeline) so
           // any render() firing in that gap sees a consistent target and
           // safely no-ops instead of re-triggering a duplicate flip.
           p._holeRevealed[round] = true;
@@ -1005,7 +1005,7 @@ async function dealCommunity(n){
     g.board.push(card);
     cards.push(card);
     // SFX V1 — the per-card FWIP/PAP/FWAP family now lives inside
-    // dealCardFlight()/flipCard() themselves (real deal/land/flip
+    // dealCardFlight()/turnCard() themselves (real deal/land/flip
     // events), so there's no separate blanket deal cue needed here any
     // more — the old Sound.deal() call that used to sit here would just
     // double up against the very next thing that happens.
@@ -1018,11 +1018,12 @@ async function dealCommunity(n){
   await Promise.all(pending);
   if (batch && !motionOff()){
     const boardEls = Array.from($('board').children).slice(-n);
+    const turns=[];
     for (let i=0;i<boardEls.length;i++){
-      flipCard(boardEls[i], false, cards[i], false, 'board');
+      turns.push(turnCard(boardEls[i], false, cards[i], false, 'board'));
       if (i < boardEls.length-1) await sleep(Math.round(50 * speedMult()));
     }
-    await sleep(Math.round(90 * speedMult()));
+    await Promise.all(turns);
   }
 }
 
@@ -1479,9 +1480,9 @@ async function handleShowdown(){
     for (const p of revealOrder){
       p._reveal = true;
       // SFX V1 — no separate cue here any more: render() below drives
-      // syncCardRow → flipCard for each of this player's real cards,
+      // syncCardRow → turnCard for each of this player's real cards,
       // which now plays its own FWAP exactly at the true reveal moment
-      // (see flipCard). That naturally reproduces "FWAP … beat … FWAP"
+      // (see turnCard). That naturally reproduces "FWAP … beat … FWAP"
       // across this loop's own existing per-player sleep, with no new
       // timing sequence invented for sound.
       render();

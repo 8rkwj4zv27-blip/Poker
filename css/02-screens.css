@@ -263,12 +263,21 @@
 }
 [data-cardback="classic"] .card.back.small::after{ inset:3px; }
 .card.deal-anim{ animation:dealIn .26s steps(5,end); }
-.card.flip-out{ animation:flipOut .12s steps(3,end) forwards; }
-.card.flip-in{ animation:flipIn .15s steps(3,end) forwards; }
+.card.card-turning{
+  background:transparent; border-color:transparent; box-shadow:none;
+  overflow:visible; perspective:600px;
+}
+.card-turn-flipper{
+  position:absolute; inset:0; transform-style:preserve-3d;
+  transform-origin:50% 50%;
+}
+.card.card-turn-face{
+  position:absolute; inset:0; margin:0;
+  backface-visibility:hidden; -webkit-backface-visibility:hidden;
+}
+.card-turn-target{ transform:rotateY(180deg); }
 .card.muck{ animation:muckOut .3s steps(5,end) forwards; }
 @keyframes dealIn{ from{ opacity:0; transform:translateY(-20px); } to{ opacity:1; transform:none; } }
-@keyframes flipOut{ from{ transform:scaleX(1); } to{ transform:scaleX(.05); } }
-@keyframes flipIn{ from{ transform:scaleX(.05); } to{ transform:scaleX(1); } }
 @keyframes muckOut{ to{ opacity:0; transform:translateY(-24px) scale(.7); } }
 
 /* ---- dealer station: label + deck as one compact unit recessed into the

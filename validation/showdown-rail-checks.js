@@ -297,7 +297,8 @@ check('Live cleanup cancels animations, restores sources and removes the lane',(
   assert.ok(reset.includes('animation.cancel()'));
   assert.ok(reset.includes("el.style.visibility=''"));
   assert.ok(reset.includes('lane.remove()'));
-  assert.ok(production.includes('function clearAllCardDOM(){\n  resetShowdownRailPresentation();'));
+  const clearCards=production.slice(production.indexOf('function clearAllCardDOM(){'),production.indexOf('async function muckCards'));
+  assert.ok(clearCards.indexOf('cancelAllCardTurns()')<clearCards.indexOf('resetShowdownRailPresentation()'));
 });
 
 check('Live payout clears the rail before any chip or bankroll mutation',()=>{
@@ -329,9 +330,10 @@ check('The development harness can exercise the shipped rail without starting or
   assert.ok(labSource.includes('player._handRes=evaluate7WithCards'));
 });
 
-check('Version codename and offline cache are synchronised for Rail Five',()=>{
-  assert.ok(support.includes("const BUILD_VERSION = 'v0.30.0-dev · Rail Five'"));
-  assert.ok(serviceWorker.includes("const CACHE_NAME = 'poker-v30-0'"));
+check('Rail Five remains shipped after the later build/cache marker advance',()=>{
+  assert.ok(support.includes("const BUILD_VERSION = 'v0.31.0-dev · Card Turn'"));
+  assert.ok(serviceWorker.includes("const CACHE_NAME = 'poker-v31-0'"));
+  assert.ok(production.includes('function presentShowdownRail(main)'));
 });
 
 process.stdout.write('\n'+passed+' focused Showdown Rail checks passed.\n');
