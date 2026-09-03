@@ -132,36 +132,122 @@ check('Hidden opponent fixture requires hole-card reveal from the winning seat',
   assert.strictEqual(m.winnerLabel,'MARA WINS');
 });
 
-check('Replay cleanup removes clones, source suppression and stale result state',()=>{
-  const reset=labSource.slice(labSource.indexOf('function resetPresentation'),labSource.indexOf('function sourceFor'));
-  assert.ok(reset.includes("$('sdr-rail-cards').replaceChildren()"));
-  assert.ok(reset.includes(".sdr-winning-source,.sdr-source-lifted,.is-award-winner"));
-  assert.ok(reset.includes("classList.remove('is-settling','is-result','is-reduced')"));
-  assert.ok(reset.includes("rail.classList.remove('is-armed','is-settled')"));
+check('Replay cancellation owns and cancels every active animation',()=>{
+  const reset=labSource.slice(labSource.indexOf('function cancelActivePresentation'),labSource.indexOf('function waitFrame'));
+  assert.ok(reset.includes('activeAnimations.forEach'));
+  assert.ok(reset.includes('animation.cancel()'));
+  assert.ok(reset.includes('activeAnimations.clear()'));
+  assert.ok(reset.includes("destinations.replaceChildren()"));
+  assert.ok(reset.includes("el.style.visibility=''"));
+  assert.ok(reset.includes("classList.remove('sdr-winner-seat')"));
 });
 
-check('Reduced motion reveals in place without flight or stagger choreography',()=>{
-  assert.ok(labSource.includes("if (reduced) $('sdr-table').classList.add('is-reduced')"));
-  assert.ok(labSource.includes("shell.classList.add('is-reduced-ready')"));
-  assert.ok(css.includes('[data-motion="off"] .sdr-connection{ display:none; }'));
-  assert.ok(css.includes('transition:none!important; animation:none!important;'));
+check('Fixture changes start from full presentation cleanup',()=>{
+  const select=labSource.slice(labSource.indexOf('async function selectFixture'),labSource.indexOf('async function init'));
+  const render=labSource.slice(labSource.indexOf('function renderFixtureState'),labSource.indexOf('function sourceFor'));
+  assert.ok(select.includes('renderFixtureState()'));
+  assert.ok(render.includes('cancelActivePresentation()'));
+  assert.ok(render.includes('lastSample=null'));
 });
 
-check('The isolated page loads production evaluator and card renderer but no live engine',()=>{
+check('Reduced motion crossfades directly without card travel, stagger or flip animation',()=>{
+  const replay=labSource.slice(labSource.indexOf('async function replay'),labSource.indexOf('function setMotion'));
+  const reduced=labSource.slice(labSource.indexOf('async function revealReduced'),labSource.indexOf('function settlePresentation'));
+  assert.ok(replay.includes('reduced?await revealReduced(entries,token):await animateWinningFive(entries,token)'));
+  assert.ok(reduced.includes("entry.shell.classList.add('is-ready')"));
+  assert.ok(reduced.includes("entry.flipper.style.transform=entry.startsDown?'rotateY(180deg)':'none'"));
+  assert.ok(!reduced.includes('staggerMs'));
+  assert.ok(!reduced.includes('entry.shell.animate'));
+  assert.ok(!reduced.includes('entry.flipper.animate'));
+});
+
+check('One JavaScript stagger source launches all five inside 100ms',()=>{
+  assert.ok(labSource.includes('staggerMs:22'));
+  assert.ok(labSource.includes('const delay=index*TIMING.staggerMs'));
+  assert.ok(!css.includes('--stagger'));
+  assert.ok(!/transition-delay|animation-delay/.test(css));
+  assert.ok(4*22<=100);
+});
+
+check('Settled result is gated on completion of every travelling-card animation',()=>{
+  const animateStart=labSource.indexOf('async function animateWinningFive');
+  const allFinished=labSource.indexOf('await Promise.all(cardAnimations.map(track))',animateStart);
+  const settleCall=labSource.indexOf('settlePresentation()',labSource.indexOf('async function replay'));
+  assert.ok(allFinished>animateStart);
+  assert.ok(settleCall>allFinished);
+  assert.ok(labSource.includes('if (!cardsReady||token!==runToken) return'));
+});
+
+check('Physical rail motion uses continuous easing and no stepped selectors',()=>{
+  assert.ok(!/steps\s*\(/i.test(css));
+  assert.ok(!/steps\s*\(/i.test(labSource));
+  assert.ok(labSource.includes("easing:'cubic-bezier(.32,0,.55,.35)'"));
+  assert.ok(labSource.includes("easing:'cubic-bezier(.2,.72,.24,1)'"));
+  assert.ok(!/filter\s*:|backdrop-filter\s*:/.test(css));
+});
+
+check('Card flights meet the continuous travel and launch-window timing contract',()=>{
+  assert.ok(labSource.includes('flightMinMs:440'));
+  assert.ok(labSource.includes('flightMaxMs:520'));
+  assert.ok(labSource.includes('readableHoldMs:1050'));
+  assert.ok(labSource.includes("{transform:'translate(0,-2px) scale(1.01)',offset:.95"));
+});
+
+check('Hidden cards use a true 3D face-up rotation with both faces mounted',()=>{
+  assert.ok(labSource.includes("productionCard(card,true,'sdr-flight-face sdr-flight-back')"));
+  assert.ok(labSource.includes("productionCard(card,false,'sdr-flight-face sdr-flight-front')"));
+  assert.ok(labSource.includes("{transform:'rotateY(180deg)',offset:.72}"));
+  assert.ok(css.includes('backface-visibility:hidden'));
+});
+
+check('The frame sampler records intervals, long gaps and transform diversity',()=>{
+  assert.ok(labSource.includes('timestamps.push(now)'));
+  assert.ok(labSource.includes('transforms.add(getComputedStyle(probe).transform)'));
+  assert.ok(labSource.includes('intervals.filter(v=>v>34).length'));
+  assert.ok(labSource.includes('distinctTransforms:transforms.size'));
+});
+
+check('The isolated page mounts the real production table without live wiring',()=>{
   assert.ok(html.includes('<script src="js/01-poker-math.js"></script>'));
+  assert.ok(html.includes('<script src="js/05-game-engine.js"></script>'));
   assert.ok(html.includes('<script src="js/06-presentation.js"></script>'));
-  assert.ok(!html.includes('js/05-game-engine.js'));
   assert.ok(!html.includes('js/07-ui-wiring.js'));
   assert.ok(!html.includes('js/08-dev-mode.js'));
-  assert.ok(labSource.includes('cardClass(faceDown,card,small)'));
+  assert.ok(labSource.includes("fetch('index.html',{cache:'no-store'})"));
+  assert.ok(labSource.includes("doc.querySelector('#table-screen')"));
+  assert.ok(!html.includes('class="seat'));
+  assert.ok(labSource.includes('cardClass(faceDown,card,false)'));
   assert.ok(labSource.includes('cardInner(card)'));
 });
 
-check('Rail markup and layout reserve exactly five responsive card positions',()=>{
-  assert.ok(html.includes('id="sdr-rail-cards"'));
+check('Inspection lane reserves exactly five crisp responsive card positions',()=>{
+  assert.ok(labSource.includes('id="sdr-destinations"'));
   assert.ok(css.includes('grid-template-columns:repeat(5,44px)'));
   assert.ok(css.includes('grid-template-columns:repeat(5,42px)'));
   assert.ok(!css.includes('overflow-x:auto'));
+});
+
+check('In-table presentation omits every rejected HUD element',()=>{
+  assert.ok(!html.includes('>WINNING FIVE<'));
+  assert.ok(!css.includes('WINNING FIVE'));
+  ['sdr-connection','sdr-result-copy','sdr-pot','connecting-beam'].forEach(name=>{
+    assert.ok(!html.includes(name),name+' html');
+    assert.ok(!css.includes(name),name+' css');
+  });
+  assert.ok(!css.includes('opaque'));
+});
+
+check('Result and payout reuse production CRT, pot-smash and opponent payout paths',()=>{
+  assert.ok(labSource.includes("paintCRT($('banner')"));
+  assert.ok(labSource.includes('await runPotSmashSequence('));
+  assert.ok(labSource.includes('await payoutTo(others[i],count)'));
+  assert.ok(labSource.includes('await clearWinningFive(token)'));
+});
+
+check('Prototype state remains memory-only and never invokes save APIs',()=>{
+  ['localStorage.setItem','Store.set','saveSettings(','saveStats(','serialize'].forEach(write=>assert.ok(!labSource.includes(write),write));
+  assert.ok(labSource.includes('storageUnchanged:storageSnapshot()===storageBaseline'));
+  assert.ok(html.includes('memory-only'));
 });
 
 process.stdout.write('\n'+passed+' focused Showdown Rail checks passed.\n');

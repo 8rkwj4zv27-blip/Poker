@@ -8,7 +8,7 @@
 <link rel="icon" href="data:,">
 <title>Showdown Rail Lab</title>
 
-<!-- Production visual system, in production order. -->
+<!-- The shipped visual system, in the same order as the game. -->
 <link rel="stylesheet" href="css/01-foundation.css">
 <link rel="stylesheet" href="css/02-screens.css">
 <link rel="stylesheet" href="css/03-action-console.css">
@@ -17,57 +17,55 @@
 <link rel="stylesheet" href="css/06-machine-system.css">
 <link rel="stylesheet" href="css/showdown-rail-lab.css">
 </head>
-<body data-theme="emerald" data-motion="on" class="sdr-body">
-  <main class="sdr-lab">
-    <header class="sdr-toolbar pc-material-leather">
-      <div class="sdr-title-row">
-        <div>
-          <span class="sdr-kicker">Presentation prototype</span>
-          <h1>Showdown Rail</h1>
-        </div>
-        <span class="sdr-state" id="sdr-state" aria-live="polite">Ready</span>
-      </div>
+<body data-theme="emerald" data-motion="on" data-cardback="classic" class="sdr-body">
+  <details class="sdr-dev-panel" id="sdr-dev-panel" open>
+    <summary>
+      <span>Showdown Lab</span>
+      <strong id="sdr-state" aria-live="polite">Loading production table…</strong>
+    </summary>
+    <div class="sdr-dev-controls">
       <label class="sdr-field" for="sdr-fixture">
         <span>Fixture</span>
         <select id="sdr-fixture" aria-label="Showdown fixture"></select>
       </label>
-      <div class="sdr-controls" aria-label="Prototype controls">
+      <label class="sdr-field" for="sdr-theme">
+        <span>Theme</span>
+        <select id="sdr-theme" aria-label="Table theme">
+          <option value="emerald">Emerald</option>
+          <option value="midnight">Midnight</option>
+          <option value="burgundy">Burgundy</option>
+          <option value="slate">Slate</option>
+        </select>
+      </label>
+      <div class="sdr-button-row" aria-label="Preview controls">
         <button id="sdr-before" type="button">Before</button>
-        <button id="sdr-replay" type="button" class="is-primary">Replay</button>
-        <div class="sdr-motion" role="group" aria-label="Motion preview">
-          <button type="button" data-motion-choice="on" class="active" aria-pressed="true">Normal</button>
-          <button type="button" data-motion-choice="off" aria-pressed="false">Reduced</button>
-        </div>
+        <button id="sdr-replay" type="button" class="is-primary">Winning five</button>
+        <button id="sdr-full" type="button">Full sequence</button>
+      </div>
+      <div class="sdr-motion" role="group" aria-label="Motion preview">
+        <button type="button" data-motion-choice="on" class="active" aria-pressed="true">Normal motion</button>
+        <button type="button" data-motion-choice="off" aria-pressed="false">Reduced motion</button>
       </div>
       <p id="sdr-note" class="sdr-note"></p>
-    </header>
+      <output id="sdr-sampler" class="sdr-sampler">Frame sampler waits for a replay.</output>
+      <p class="sdr-dev-hint">Collapse this panel for a clean table-only view.</p>
+    </div>
+  </details>
 
-    <section class="sdr-table-shell pc-material-leather" aria-label="Deterministic showdown table">
-      <div class="sdr-table" id="sdr-table">
-        <div class="sdr-felt-grain" aria-hidden="true"></div>
-        <div class="sdr-seats" id="sdr-seats"></div>
-        <div class="sdr-board-zone">
-          <span class="sdr-board-label">Community</span>
-          <div class="sdr-board" id="sdr-board" aria-label="Community cards"></div>
-          <div class="sdr-pot" id="sdr-pot">Pot</div>
-        </div>
-        <div class="sdr-connection" aria-hidden="true"></div>
-        <div class="sdr-rail" id="sdr-rail" aria-label="Winning five-card rail">
-          <div class="sdr-rail-label">Winning five</div>
-          <div class="sdr-rail-cards" id="sdr-rail-cards"></div>
-          <div class="sdr-result-copy">
-            <strong id="sdr-winner"></strong>
-            <span id="sdr-hand"></span>
-            <em id="sdr-award"></em>
-          </div>
-        </div>
-      </div>
-    </section>
-  </main>
+  <!-- index.html's real #table-screen is fetched, cloned and mounted here.
+       The live app initializer is never loaded, so fixture state remains
+       memory-only and cannot replace a table, bankroll or Career save. -->
+  <div id="app" class="sdr-production-host">
+    <div class="sdr-loading" id="sdr-production-mount">Mounting production table…</div>
+  </div>
 
-  <!-- Production evaluator and production card renderer. No game engine,
-       table state, save system, AI or showdown sequencer is loaded. -->
+  <!-- Production data, faces, scoring presentation, game helpers and table
+       renderer; deliberately no 07-ui-wiring.js or 08-dev-mode.js. -->
   <script src="js/01-poker-math.js"></script>
+  <script src="js/02-support-systems.js"></script>
+  <script src="js/03-opponents.js"></script>
+  <script src="js/04-modes-and-scoring.js"></script>
+  <script src="js/05-game-engine.js"></script>
   <script src="js/06-presentation.js"></script>
   <script src="js/showdown-rail-model.js"></script>
   <script src="js/showdown-rail-lab.js"></script>
