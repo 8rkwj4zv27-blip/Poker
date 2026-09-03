@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#16090D">
 <link rel="icon" href="data:,">
-<title>Card Turn Lab</title>
+<title>Card Motion Lab</title>
 <link rel="stylesheet" href="css/01-foundation.css">
 <link rel="stylesheet" href="css/02-screens.css">
 <link rel="stylesheet" href="css/03-action-console.css">
@@ -17,10 +17,11 @@
 <body data-theme="burgundy" data-motion="on" data-cardback="classic" class="ctl-body">
   <main class="ctl-machine">
     <header class="ctl-head">
-      <span>Card turn test instrument</span>
+      <span>Card motion test instrument</span>
       <strong id="ctl-state" aria-live="polite">Ready</strong>
     </header>
-    <section class="ctl-felt" aria-label="Card turn preview">
+    <section id="felt" class="ctl-felt" aria-label="Card motion preview">
+      <div class="ctl-deck-station"><span>Deck</span><div id="ctl-deck" class="card back" aria-hidden="true"></div></div>
       <div class="ctl-slot"><div id="ctl-card" class="card back" role="img" aria-label="Face-down card"></div></div>
     </section>
     <section class="ctl-controls">
@@ -32,9 +33,14 @@
         </select>
       </label>
       <div class="ctl-buttons">
-        <button id="ctl-replay" class="is-primary" type="button">Replay</button>
-        <button id="ctl-repeat" type="button">Repeat ×12</button>
-        <button id="ctl-cancel" type="button">Cancel midway</button>
+        <button id="ctl-replay" class="is-primary" type="button">Turn</button>
+        <button id="ctl-repeat" type="button">Turn ×12</button>
+        <button id="ctl-cancel" type="button">Cancel turn</button>
+      </div>
+      <div class="ctl-buttons ctl-flight-buttons">
+        <button id="ctl-deal" class="is-primary" type="button">Deal flight</button>
+        <button id="ctl-return" type="button">Return flight</button>
+        <button id="ctl-cancel-flight" type="button">Cancel flight</button>
       </div>
       <div class="ctl-buttons ctl-modes" role="group" aria-label="Motion mode">
         <button data-mode="normal" class="active" type="button">Normal</button>
@@ -43,7 +49,7 @@
         <button data-mode="reduced" type="button">Reduced</button>
       </div>
       <output id="ctl-sampler">Measuring this browser’s refresh interval…</output>
-      <p>Development-only fixture. It reads production card markup, timing and motion code and does not save game or settings data.</p>
+      <p>Development-only fixture. It reads production card markup, turn timing and flight code and does not save game or settings data.</p>
     </section>
   </main>
   <script src="js/01-poker-math.js"></script>

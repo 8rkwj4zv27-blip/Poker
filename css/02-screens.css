@@ -752,7 +752,7 @@
 /* ---- flying deal ghost: a body-appended card-back that travels from the
    dealer deck to its destination, mirroring the .fly-chip technique ---- */
 .fly-card{
-  position:fixed; z-index:60; pointer-events:none; will-change:transform,opacity;
+  position:fixed; z-index:60; pointer-events:none;
   transform-origin:50% 50%; margin:0;
 }
 /* Return-to-deck ghosts live inside #felt instead of body — #app is itself

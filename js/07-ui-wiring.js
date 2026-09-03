@@ -1976,6 +1976,7 @@ function leaveTable(){
 
 function doLeaveTable(){
   clearTimeout(autoDealT);
+  DealFX.cancelAll();
   cancelAllCardTurns();
   endQuickResolve();   // also releases any AI think wait still pending
   closeOverlays();

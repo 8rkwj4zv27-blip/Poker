@@ -68,8 +68,18 @@
   }
 
   function resetCard(){
+    DealFX.cancelAll();
     cancelAllCardTurns();
+    el.style.opacity='';
     setCardTurnFinal(el,true,card,false);
+  }
+
+  function reportSample(label,sample){
+    $('ctl-sampler').textContent=
+      label+' · refresh '+sample.observedRefreshMs.toFixed(2)+'ms · animation frames '+sample.animationFrames+
+      ' · average '+sample.averageMs.toFixed(2)+'ms · longest '+sample.longestMs.toFixed(2)+'ms · significant gaps '+sample.significantGaps+
+      ' (>'+sample.gapThresholdMs.toFixed(2)+'ms) · distinct transforms '+sample.distinctTransforms+
+      ' · active turns '+activeCardTurns.size+' · active flights '+DealFX.activeCount();
   }
 
   async function replay(){
@@ -86,10 +96,7 @@
     if (mode==='reduced'){
       $('ctl-sampler').textContent='Reduced motion · immediate face-up state · 0 animation objects · '+activeCardTurns.size+' active turns.';
     } else {
-      $('ctl-sampler').textContent=
-        'Refresh '+sample.observedRefreshMs.toFixed(2)+'ms · animation frames '+sample.animationFrames+
-        ' · average '+sample.averageMs.toFixed(2)+'ms · longest '+sample.longestMs.toFixed(2)+'ms · significant gaps '+sample.significantGaps+
-        ' (>'+sample.gapThresholdMs.toFixed(2)+'ms) · distinct transforms '+sample.distinctTransforms+' · active turns '+activeCardTurns.size;
+      reportSample('Turn',sample);
     }
     return completed;
   }
@@ -105,15 +112,53 @@
     setTimeout(()=>cancelAllCardTurns(),Math.max(1,Math.round(expected*.45)));
   }
 
+  async function replayFlight(style){
+    const token=++replayToken;
+    resetCard();
+    const returning=style==='return';
+    const from=returning?el:$('ctl-deck');
+    const to=returning?$('ctl-deck'):el;
+    const duration=returning?DEAL_TIMING.collectMs:DEAL_TIMING.dealMs;
+    $('ctl-state').textContent=(returning?'Returning':'Dealing')+' · '+mode;
+    el.style.opacity='0';
+    const promise=DealFX.flyGhost(from,to,{duration,style,rotate:returning?720:360});
+    const probe=document.querySelector('.fly-card');
+    if (mode==='reduced'){
+      const completed=await promise;
+      el.style.opacity='';
+      if (token!==replayToken) return false;
+      $('ctl-state').textContent='Reduced motion';
+      $('ctl-sampler').textContent='Reduced motion · immediate destination state · 0 flight animation objects · '+DealFX.activeCount()+' active flights.';
+      return completed;
+    }
+    const sampler=sampleFrames(probe,token);
+    const completed=await promise;
+    el.style.opacity='';
+    const sample=sampler.stop();
+    if (token!==replayToken) return false;
+    $('ctl-state').textContent=completed?(returning?'Returned':'Dealt'):'Flight cancelled · clean';
+    reportSample(returning?'Return':'Deal',sample);
+    return completed;
+  }
+
+  function cancelFlightMidway(){
+    replayFlight('deal');
+    const expected=DEAL_TIMING.dealMs*(settings.speed==='fast'?.55:settings.speed==='relaxed'?1.35:1);
+    setTimeout(()=>DealFX.cancelAll(),Math.max(1,Math.round(expected*.45)));
+  }
+
   $('ctl-replay').onclick=replay;
   $('ctl-repeat').onclick=repeat;
   $('ctl-cancel').onclick=cancelMidway;
+  $('ctl-deal').onclick=()=>replayFlight('deal');
+  $('ctl-return').onclick=()=>replayFlight('return');
+  $('ctl-cancel-flight').onclick=cancelFlightMidway;
   document.querySelectorAll('[data-mode]').forEach(button=>button.onclick=()=>{ applyMode(button.dataset.mode); replay(); });
   window.__cardTurnLab={
-    replay,repeat,cancelMidway,
+    replay,repeat,cancelMidway,replayDeal:()=>replayFlight('deal'),replayReturn:()=>replayFlight('return'),cancelFlightMidway,
     mode:value=>{ applyMode(value); return replay(); },
     kind:value=>{ $('ctl-kind').value=value; return replay(); },
-    state:()=>({mode,kind:$('ctl-kind').value,lastSample,activeTurns:activeCardTurns.size,className:el.className,label:el.getAttribute('aria-label'),faces:el.querySelectorAll('.card-turn-face').length})
+    state:()=>({mode,kind:$('ctl-kind').value,lastSample,activeTurns:activeCardTurns.size,activeFlights:DealFX.activeCount(),ghosts:document.querySelectorAll('.fly-card').length,className:el.className,label:el.getAttribute('aria-label'),faces:el.querySelectorAll('.card-turn-face').length})
   };
   applyMode('normal');
   resetCard();

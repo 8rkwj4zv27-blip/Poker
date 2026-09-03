@@ -13,7 +13,7 @@
 }
 .ctl-head strong{ color:var(--ink-faint); font-weight:400; text-align:right; }
 .ctl-felt{
-  height:270px; display:grid; place-items:center; overflow:hidden;
+  position:relative; height:270px; display:grid; place-items:center; overflow:hidden;
   background:repeating-conic-gradient(rgba(255,255,255,.025) 0 25%,transparent 0 50%) 0 0/6px 6px,var(--felt-1);
   box-shadow:inset 0 9px 18px rgba(0,0,0,.45),inset 0 -3px 0 var(--felt-2);
 }
@@ -23,6 +23,14 @@
   background:color-mix(in srgb,var(--felt-2) 75%,transparent); perspective:700px;
 }
 .ctl-slot>.card{ transform:scale(1.55); }
+.ctl-deck-station{
+  position:absolute; left:18px; bottom:18px; display:grid; justify-items:center; gap:4px;
+  color:var(--accent-bright); font-family:var(--font-hdr); font-size:5px; text-transform:uppercase;
+}
+.ctl-deck-station::before{
+  content:""; position:absolute; inset:13px -3px -3px 3px; border:2px solid var(--px-ink); background:var(--card-back-edge); z-index:0;
+}
+.ctl-deck-station>*{ position:relative; z-index:1; }
 .ctl-controls{ padding:10px; background:var(--panel); border-top:3px solid var(--px-ink); }
 .ctl-controls label{ display:grid; grid-template-columns:86px 1fr; gap:8px; align-items:center; font-family:var(--font-hdr); font-size:6px; text-transform:uppercase; }
 .ctl-controls select,.ctl-controls button{
@@ -30,6 +38,7 @@
   border-radius:2px; font-family:var(--font-hdr); font-size:6px;
 }
 .ctl-buttons{ display:grid; grid-template-columns:repeat(3,1fr); gap:5px; margin-top:7px; }
+.ctl-flight-buttons{ padding-top:7px; border-top:2px solid var(--px-ink); }
 .ctl-modes{ grid-template-columns:repeat(4,1fr); }
 .ctl-controls button{ box-shadow:0 3px 0 var(--px-ink); cursor:pointer; }
 .ctl-controls button:active{ transform:translateY(2px); box-shadow:0 1px 0 var(--px-ink); }

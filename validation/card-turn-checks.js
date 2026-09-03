@@ -160,8 +160,8 @@ function faceDownElement(){ const el=new FakeElement(); el.className='card back'
     assert.ok(production.includes('await turnCard(el, false, card, small'));
     assert.ok(engine.includes('turns.push(turnCard(boardEls[i]'));
     assert.ok(production.includes("g.phase==='showdown'?'showdown':'hole'"));
-    assert.ok(production.includes('function clearAllCardDOM(){\n  cancelAllCardTurns();'));
-    assert.ok(wiring.includes('function doLeaveTable(){\n  clearTimeout(autoDealT);\n  cancelAllCardTurns();'));
+    assert.ok(production.includes('function clearAllCardDOM(){\n  DealFX.cancelAll();\n  cancelAllCardTurns();'));
+    assert.ok(wiring.includes('function doLeaveTable(){\n  clearTimeout(autoDealT);\n  DealFX.cancelAll();\n  cancelAllCardTurns();'));
     assert.ok(!production.includes('function flipCard('));
     assert.ok(!engine.includes('flipCard('));
   });
@@ -176,9 +176,9 @@ function faceDownElement(){ const el=new FakeElement(); el.className='card back'
     assert.ok(lab.includes('activeTurns:activeCardTurns.size'));
   });
 
-  await check('Build and offline cache markers are synchronised for Card Turn',()=>{
-    assert.ok(support.includes("const BUILD_VERSION = 'v0.31.3-dev · Card Turn'"));
-    assert.ok(serviceWorker.includes("const CACHE_NAME = 'poker-v31-3'"));
+  await check('Card Turn remains shipped after the later build/cache marker advance',()=>{
+    assert.ok(support.includes("const BUILD_VERSION = 'v0.32.0-dev · Card Flight'"));
+    assert.ok(serviceWorker.includes("const CACHE_NAME = 'poker-v32-0'"));
   });
 
   process.stdout.write('\n'+passed+' focused Card Turn checks passed.\n');

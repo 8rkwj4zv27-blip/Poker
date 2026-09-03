@@ -351,6 +351,27 @@ const DEAL_TIMING = {
 };
 
 const DealFX = (function(){
+  const activeFlights=new Set();
+
+  function settleFlight(run,completed){
+    if (!run || run.settled) return;
+    run.settled=true;
+    activeFlights.delete(run);
+    run.ghost.style.willChange='';
+    run.ghost.remove();
+    run.resolve(!!completed);
+  }
+
+  function cancelFlight(run){
+    if (!run || run.settled) return;
+    settleFlight(run,false);
+    try{ run.animation.cancel(); }catch(e){}
+  }
+
+  function cancelAll(){
+    Array.from(activeFlights).forEach(cancelFlight);
+  }
+
   /* Weighted turn count for the END-OF-HAND RETURN only: 1 full rotation
      is the common case, 2 is an occasional flourish, 3 is genuinely rare.
      Always a clean multiple of 360 so the card is visually flat the
@@ -386,10 +407,9 @@ const DealFX = (function(){
   /* Spawns a card-back ghost that starts as an EXACT pixel match
      (position + size, via getBoundingClientRect on both ends) of
      `fromEl` — on frame one it IS the source card, not a lookalike spawned
-     nearby. It then runs a short chain of CSS transitions (the same
-     chained setTimeout/style.transition technique flyChip() already
-     uses for its chip toss, just with more stages) that together read as
-     one continuous physical motion, travelling in a TRUE STRAIGHT LINE
+     nearby. One WAAPI timeline carries every waypoint, so no transition
+     handoff or timer can freeze it between stages. It travels in a TRUE
+     STRAIGHT LINE
      (the ghost's centre moves directly from origin to destination — no
      lateral arc/bulge) while it spins around its own centre:
        deal   — very brief release (still "attached") → sharp acceleration
@@ -416,10 +436,10 @@ const DealFX = (function(){
      for real problems, but not this one). */
   function flyGhost(fromEl, toEl, opts){
     opts = opts || {};
-    if (motionOff() || !fromEl || !toEl) return Promise.resolve();
+    if (motionOff() || !fromEl || !toEl) return Promise.resolve(true);
     const a = fromEl.getBoundingClientRect();
     const b = toEl.getBoundingClientRect();
-    if (!a.width || !b.width) return Promise.resolve();
+    if (!a.width || !b.width) return Promise.resolve(true);
 
     const isReturn = opts.style === 'return';
     const felt = isReturn ? $('felt') : null;
@@ -454,52 +474,45 @@ const DealFX = (function(){
     // set above, needs to already be correct for that container.)
     function waypoint(distT, rotDeg){
       const sxT = 1 + (sx-1)*distT, syT = 1 + (sy-1)*distT;
-      return 'translate('+(dx*distT)+'px,'+(dy*distT)+'px) scale('+sxT+','+syT+') rotate('+rotDeg+'deg)';
+      return 'translate3d('+(dx*distT)+'px,'+(dy*distT)+'px,0) scale('+sxT+','+syT+') rotate('+rotDeg+'deg)';
     }
     function nudgeTo(px){
-      return 'translate('+(ux*px)+'px,'+(uy*px)+'px) scale(1,1) rotate(0deg)';
+      return 'translate3d('+(ux*px)+'px,'+(uy*px)+'px,0) scale(1,1) rotate(0deg)';
     }
 
-    let stages;
+    let keyframes;
     if (isReturn){
       const turns = opts.rotate != null ? opts.rotate : pickTurns();
-      stages = [
-        { t: nudgeTo(Math.min(6, dist*0.25)), frac:.10, ease:'cubic-bezier(.6,0,.9,.2)' },     // tug
-        { t: waypoint(.55, turns*.55),        frac:.35, ease:'cubic-bezier(.55,0,.85,.35)' },  // accelerating pull
-        { t: waypoint(1, turns),              frac:.55, ease:'cubic-bezier(.25,.4,.4,1)', fadeTo:0 }, // final approach — behind the deck, fading to gone in the same motion
+      keyframes = [
+        {transform:'translate3d(0,0,0) scale(1,1) rotate(0deg)',opacity:1,offset:0,easing:'cubic-bezier(.6,0,.9,.2)'},
+        {transform:nudgeTo(Math.min(6,dist*.25)),opacity:1,offset:.10,easing:'cubic-bezier(.55,0,.85,.35)'},
+        {transform:waypoint(.55,turns*.55),opacity:1,offset:.45,easing:'cubic-bezier(.25,.4,.4,1)'},
+        {transform:waypoint(1,turns),opacity:0,offset:1}
       ];
     } else {
       const spin = opts.rotate != null
         ? { peakDeg: opts.rotate, landDeg: Math.ceil(opts.rotate/360)*360 || 360 }
         : pickSpin();
       const dir = Math.random() < 0.5 ? 1 : -1;
-      stages = [
-        { t: nudgeTo(Math.min(2, dist*0.10)),      frac:.05, ease:'cubic-bezier(.5,0,.85,.2)' },    // release — very brief, still attached
-        { t: waypoint(.30, dir*spin.peakDeg*0.55), frac:.15, ease:'cubic-bezier(.15,.05,.25,.55)' }, // sharp acceleration
-        { t: waypoint(.90, dir*spin.peakDeg),      frac:.45, ease:'cubic-bezier(.3,0,.5,1)' },       // fast confident travel — reaches the named spin checkpoint
-        { t: waypoint(1, dir*spin.landDeg),        frac:.35, ease:'cubic-bezier(.1,.7,.2,1)' },      // decisive stop — resolves to a clean, flat landing
+      keyframes = [
+        {transform:'translate3d(0,0,0) scale(1,1) rotate(0deg)',offset:0,easing:'cubic-bezier(.5,0,.85,.2)'},
+        {transform:nudgeTo(Math.min(2,dist*.10)),offset:.05,easing:'cubic-bezier(.15,.05,.25,.55)'},
+        {transform:waypoint(.30,dir*spin.peakDeg*.55),offset:.20,easing:'cubic-bezier(.3,0,.5,1)'},
+        {transform:waypoint(.90,dir*spin.peakDeg),offset:.65,easing:'cubic-bezier(.1,.7,.2,1)'},
+        {transform:waypoint(1,dir*spin.landDeg),offset:1}
       ];
     }
 
-    ghost.style.transform = 'translate(0,0) scale(1,1) rotate(0deg)';
-    void ghost.offsetWidth;
-
-    return new Promise(resolve=>{
-      const run = (i)=>{
-        if (i >= stages.length){ ghost.remove(); resolve(); return; }
-        const s = stages[i];
-        const stageDur = Math.max(1, Math.round(dur * s.frac));
-        let transition = 'transform '+stageDur+'ms '+s.ease;
-        if (s.fadeTo != null) transition += ', opacity '+stageDur+'ms '+s.ease;
-        ghost.style.transition = transition;
-        ghost.style.transform = s.t;
-        if (s.fadeTo != null) ghost.style.opacity = String(s.fadeTo);
-        setTimeout(()=>run(i+1), stageDur);
-      };
-      run(0);
-    });
+    ghost.style.willChange='transform'+(isReturn?', opacity':'');
+    const animation=ghost.animate(keyframes,{duration:Math.max(1,dur),easing:'linear',fill:'both'});
+    let resolve;
+    const promise=new Promise(done=>{ resolve=done; });
+    const run={ghost,animation,resolve,promise,settled:false};
+    activeFlights.add(run);
+    animation.finished.then(()=>settleFlight(run,true),()=>settleFlight(run,false));
+    return promise;
   }
-  return { flyGhost };
+  return { flyGhost, cancelAll, activeCount:()=>activeFlights.size };
 })();
 
 /* One dealt card's full choreography: hide the real (already
@@ -525,8 +538,9 @@ async function dealCardFlight(el, card, opts){
   }
   el.style.opacity = '0';
   Sound.cardDeal();   // FWIP — leaves the dealer deck, right as the flight actually begins
-  await DealFX.flyGhost(deckTop, el, { duration:DEAL_TIMING.dealMs, style:'deal' });
+  const landed=await DealFX.flyGhost(deckTop, el, { duration:DEAL_TIMING.dealMs, style:'deal' });
   el.style.opacity = '';
+  if (!landed || !el.isConnected) return;
   Sound.cardLanded(); // soft PAP/TAK — reaches its destination (fires even for a deferred-flip flop card; the flip's own FWAP comes later)
   // opts.revealAfter: the human's own hole cards are now dealt genuinely
   // face-down (see revealHoleCardsAnimated/render's mine mask) rather than
@@ -556,7 +570,10 @@ function collectCardFlight(el){
   // of these firing close together into the requested little cascade,
   // not any new timing invented here.
   Sound.cardReturn();
-  return DealFX.flyGhost(el, deckTop, { duration:DEAL_TIMING.collectMs, style:'return' });
+  return DealFX.flyGhost(el, deckTop, { duration:DEAL_TIMING.collectMs, style:'return' }).then(completed=>{
+    if (!completed) el.style.opacity='';
+    return completed;
+  });
 }
 
 /* ============================================================
@@ -1265,6 +1282,7 @@ function queueRaiseReel(value, immediate){
   },wait);
 }
 function clearAllCardDOM(){
+  DealFX.cancelAll();
   cancelAllCardTurns();
   resetShowdownRailPresentation();
   const board = $('board');
