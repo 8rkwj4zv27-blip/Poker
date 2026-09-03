@@ -38,14 +38,16 @@ body{
 .cfo-target>.card{
   position:absolute; inset:-1px; width:44px; height:62px; margin:0; opacity:0;
 }
-.cfo-dealer{ position:absolute; left:30px; bottom:24px; width:55px; height:82px; }
+.cfo-dealer{ position:absolute; left:24px; bottom:21px; width:72px; height:91px; }
 .cfo-dealer-label{
-  position:absolute; left:0; right:0; top:-15px; color:var(--accent-bright); text-align:center;
-  font:6px var(--font-hdr); text-transform:uppercase; letter-spacing:.08em;
+  position:absolute; z-index:5; left:-7px; right:-7px; top:-15px; color:var(--accent-bright); text-align:center;
+  font:5px var(--font-hdr); text-transform:uppercase; letter-spacing:.06em; white-space:nowrap;
 }
+.cfo-housing{ position:absolute; z-index:0; inset:0; pointer-events:none; }
+.cfo-housing i{ position:absolute; display:none; }
 .cfo-deck{
-  position:absolute; left:6px; top:5px; width:43px; height:63px; border-radius:5px;
-  background:rgba(0,0,0,.48); box-shadow:inset 0 4px 5px rgba(0,0,0,.7),0 3px 0 rgba(0,0,0,.32);
+  position:absolute; z-index:2; left:14px; top:7px; width:43px; height:63px; border-radius:4px;
+  background:transparent;
 }
 .cfo-deck-card{
   position:absolute!important; width:36px!important; height:52px!important; margin:0!important;
@@ -53,9 +55,58 @@ body{
   transition:none!important;
 }
 .cfo-deck-count{
-  position:absolute; right:-7px; bottom:0; min-width:22px; padding:3px 3px 2px;
+  position:absolute; z-index:6; right:0; bottom:0; min-width:22px; padding:3px 3px 2px;
   border:2px solid var(--px-ink); background:var(--pc-display); color:var(--pc-display-ink);
   font:5px var(--font-hdr); text-align:center;
+}
+/* A — the stack sits on a small, unmistakably raised piece of table furniture. */
+.cfo-dealer[data-housing="plinth"] .cfo-housing{
+  left:6px; right:5px; top:1px; bottom:12px; border:2px solid #17090d; border-radius:4px;
+  background:linear-gradient(135deg,#6c2d32 0 9%,#3a151c 10% 78%,#230d13 79%);
+  box-shadow:inset 2px 2px 0 #965044,inset -2px -2px 0 #1a080d,5px 6px 0 rgba(0,0,0,.58);
+}
+.cfo-dealer[data-housing="plinth"] .cfo-housing::after{
+  content:""; position:absolute; left:4px; right:4px; top:4px; bottom:4px; border:1px solid #bd8730; border-radius:2px;
+}
+/* B — four brass registration corners, with felt visible beneath the pile. */
+.cfo-dealer[data-housing="guides"] .cfo-deck{ filter:drop-shadow(4px 6px 0 rgba(0,0,0,.52)); }
+.cfo-dealer[data-housing="guides"] .cfo-housing i{ display:block; width:15px; height:15px; border-color:#d3a33c; filter:drop-shadow(2px 2px 0 #1a080d); }
+.cfo-dealer[data-housing="guides"] .cfo-housing i:nth-child(1){ left:8px; top:1px; border-left:4px solid #d3a33c; border-top:4px solid #d3a33c; }
+.cfo-dealer[data-housing="guides"] .cfo-housing i:nth-child(2){ right:8px; top:1px; border-right:4px solid #d3a33c; border-top:4px solid #d3a33c; }
+.cfo-dealer[data-housing="guides"] .cfo-housing i:nth-child(3){ left:8px; top:59px; border-left:4px solid #d3a33c; border-bottom:4px solid #d3a33c; }
+.cfo-dealer[data-housing="guides"] .cfo-housing i:nth-child(4){ right:8px; top:59px; border-right:4px solid #d3a33c; border-bottom:4px solid #d3a33c; }
+/* C — a compact open-front casino shoe; its walls sit behind the live card anchor. */
+.cfo-dealer[data-housing="shoe"] .cfo-housing{
+  left:5px; right:4px; top:0; height:78px; border:3px solid #17090d; border-bottom-width:6px; border-radius:5px 5px 2px 2px;
+  background:linear-gradient(90deg,#2a0e14 0 9px,transparent 9px calc(100% - 9px),#2a0e14 calc(100% - 9px)),linear-gradient(#7d3839 0 17px,transparent 17px);
+  box-shadow:inset 0 3px 0 #b17a32,4px 5px 0 rgba(0,0,0,.5);
+}
+.cfo-dealer[data-housing="shoe"] .cfo-housing::after{
+  content:""; position:absolute; left:8px; right:8px; bottom:-6px; height:8px; background:#a77427; border:2px solid #17090d;
+}
+/* D — a compact mechanical lift with rails and a live status lamp. */
+.cfo-dealer[data-housing="elevator"] .cfo-housing{
+  left:3px; right:2px; top:0; bottom:3px; border:3px solid #16090d; border-radius:3px;
+  background:repeating-linear-gradient(90deg,#6e3c28 0 5px,#4b251d 5px 9px);
+  box-shadow:inset 3px 3px 0 #9a6638,inset -3px -3px 0 #27100f,5px 6px 0 rgba(0,0,0,.58);
+}
+.cfo-dealer[data-housing="elevator"] .cfo-housing::before{
+  content:""; position:absolute; left:8px; right:8px; top:4px; height:66px; border:2px solid #d09a34; background:#190b10;
+}
+.cfo-dealer[data-housing="elevator"] .cfo-housing::after{
+  content:""; position:absolute; left:10px; bottom:5px; width:6px; height:6px; border:2px solid #16090d; background:#efbe3e; box-shadow:10px 0 0 #55242a;
+}
+/* E — the deliberately theatrical choice: an octagonal velvet dais. */
+.cfo-dealer[data-housing="altar"] .cfo-housing{
+  left:1px; right:0; top:-2px; height:84px; clip-path:polygon(16% 0,84% 0,100% 16%,100% 84%,84% 100%,16% 100%,0 84%,0 16%);
+  background:linear-gradient(135deg,#9c6031 0 4%,#561c2a 5% 48%,#2a0c17 49% 100%);
+  filter:drop-shadow(6px 7px 0 rgba(0,0,0,.62));
+}
+.cfo-dealer[data-housing="altar"] .cfo-housing::before{
+  content:""; position:absolute; inset:5px; clip-path:inherit; border:2px solid #d4a33b; background:radial-gradient(circle at 50% 45%,#6c2636,#310f1d 72%);
+}
+.cfo-dealer[data-housing="altar"] .cfo-housing::after{
+  content:"◆"; position:absolute; left:0; right:0; bottom:3px; color:#efbd42; text-align:center; font:8px serif;
 }
 .cfo-path-label{
   position:absolute; left:101px; right:22px; bottom:48px; display:flex; align-items:center; gap:8px;
@@ -64,7 +115,10 @@ body{
 .cfo-path-label i{ height:1px; flex:1; opacity:.45; background:repeating-linear-gradient(90deg,var(--accent) 0 4px,transparent 4px 9px); }
 .cfo-console{ padding:9px; border-top:3px solid var(--px-ink); background:var(--panel); }
 .cfo-direction{ display:grid; grid-template-columns:1fr 1fr; gap:5px; margin-bottom:6px; }
-.cfo-options{ display:grid; grid-template-columns:repeat(2,1fr); gap:5px; }
+.cfo-options{ display:grid; grid-template-columns:repeat(6,1fr); gap:5px; }
+.cfo-options button{ grid-column:span 2; }
+.cfo-options button:nth-child(4){ grid-column:2/span 2; }
+.cfo-options button:nth-child(5){ grid-column:4/span 2; }
 .cfo-options button,.cfo-direction button,.cfo-actions button,.cfo-modes button{
   min-height:36px; border:2px solid var(--px-ink); border-radius:2px; color:var(--ink); background:var(--panel-2);
   box-shadow:0 3px 0 var(--px-ink); font-family:var(--font-hdr); cursor:pointer;
@@ -98,7 +152,7 @@ body{
   body{ padding:6px; }
   .cfo-stage{ height:286px; }
   .cfo-target-row{ top:66px; gap:3px; }
-  .cfo-dealer{ left:20px; bottom:20px; }
+  .cfo-dealer{ left:14px; bottom:17px; }
   .cfo-options button{ padding:4px; }
 }
 @media (max-height:720px){

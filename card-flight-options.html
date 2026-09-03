@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#16090D">
 <link rel="icon" href="data:,">
-<title>Card Flight Options</title>
+<title>Deck Housing Options</title>
 <link rel="stylesheet" href="css/01-foundation.css">
 <link rel="stylesheet" href="css/02-screens.css">
 <link rel="stylesheet" href="css/card-flight-options.css">
@@ -13,7 +13,7 @@
 <body data-theme="burgundy" data-cardback="classic">
   <main class="cfo-machine">
     <header class="cfo-header">
-      <div><span>Motion workshop</span><strong>Card flight options</strong></div>
+      <div><span>Motion workshop</span><strong>Deck housing options</strong></div>
       <output id="cfo-status" aria-live="polite">Ready</output>
     </header>
 
@@ -26,13 +26,16 @@
         <div class="cfo-target"><div class="card back small"></div></div>
       </div>
 
-      <div class="cfo-dealer">
-        <span class="cfo-dealer-label">Deck</span>
+      <div class="cfo-dealer" data-housing="plinth">
+        <span id="cfo-dealer-label" class="cfo-dealer-label">Raised plinth</span>
+        <div class="cfo-housing" aria-hidden="true">
+          <i></i><i></i><i></i><i></i>
+        </div>
         <div id="cfo-deck" class="cfo-deck" aria-label="Full deck"></div>
         <span id="cfo-deck-count" class="cfo-deck-count">52</span>
       </div>
 
-      <div class="cfo-path-label"><span id="cfo-variant-name">Dealer flick</span><i></i></div>
+      <div class="cfo-path-label"><span id="cfo-housing-name">A · Raised dealer's plinth</span><i></i></div>
     </section>
 
     <section class="cfo-console">
@@ -40,19 +43,20 @@
         <button class="active" data-direction="deal" type="button">Deal from deck</button>
         <button data-direction="return" type="button">Return to deck</button>
       </div>
-      <div class="cfo-options" role="group" aria-label="Flight treatment">
-        <button class="active" data-variant="dealer" type="button"><strong>A</strong><span>Dealer flick</span></button>
-        <button data-variant="casino" type="button"><strong>B</strong><span>Casino pitch</span></button>
-        <button data-variant="machine" type="button"><strong>C</strong><span>Machine feed</span></button>
-        <button data-variant="wild" type="button"><strong>D</strong><span>Showboat sling</span></button>
+      <div class="cfo-options" role="group" aria-label="Deck housing treatment">
+        <button class="active" data-housing="plinth" type="button"><strong>A</strong><span>Raised plinth</span></button>
+        <button data-housing="guides" type="button"><strong>B</strong><span>Brass guides</span></button>
+        <button data-housing="shoe" type="button"><strong>C</strong><span>Casino shoe</span></button>
+        <button data-housing="elevator" type="button"><strong>D</strong><span>Card elevator</span></button>
+        <button data-housing="altar" type="button"><strong>E</strong><span>Velvet altar</span></button>
       </div>
 
-      <p id="cfo-description" class="cfo-description">A visible pickup and shallow hand-thrown arc, with restrained wrist movement and a precise landing.</p>
+      <p id="cfo-description" class="cfo-description">A low burgundy platform with a gold edge and heavy shadow. The pile sits proudly above the felt without obstructing its top card.</p>
 
       <div class="cfo-actions">
         <button id="cfo-replay" class="primary" type="button">Deal one</button>
         <button id="cfo-sequence" type="button">Deal five</button>
-        <button id="cfo-compare" type="button">Compare A/B/C/D</button>
+        <button id="cfo-compare" type="button">Compare A–E</button>
       </div>
       <div class="cfo-modes" role="group" aria-label="Playback speed">
         <button class="active" data-speed="normal" type="button">Normal</button>

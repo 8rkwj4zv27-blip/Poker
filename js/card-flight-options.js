@@ -4,10 +4,12 @@
   const $=id=>document.getElementById(id);
   const stage=$('cfo-stage');
   const deck=$('cfo-deck');
+  const dealer=document.querySelector('.cfo-dealer');
   const targets=Array.from(document.querySelectorAll('.cfo-target>.card'));
   const active=new Set();
   let direction='deal';
-  let variant='dealer';
+  const variant='dealer';
+  let housing='plinth';
   let playback='normal';
   let token=0;
   let refreshMs=0;
@@ -57,6 +59,14 @@
         [.84,.95,22,0,2,1.014,'cubic-bezier(.16,.72,.2,1)',15],[.96,1,-4,0,0,1.016,'cubic-bezier(.24,0,.7,1)',0],[1,1,0,0,0,1,null,0]
       ]}
     }
+  };
+
+  const HOUSINGS={
+    plinth:{key:'A',name:"Raised dealer's plinth",short:'Raised plinth',description:'A low burgundy platform with a gold edge and heavy shadow. The pile sits proudly above the felt without obstructing its top card.'},
+    guides:{key:'B',name:'Brass corner guides',short:'Brass guides',description:'Four solid brass registration corners hold a loose pile square while leaving the felt visible beneath it. Minimal, precise and tactile.'},
+    shoe:{key:'C',name:'Open-front casino shoe',short:'Casino shoe',description:'A compact casino shoe with rear and side walls, but a completely open flight line. More recognisably casino; slightly more device-like.'},
+    elevator:{key:'D',name:'Mechanical card elevator',short:'Card elevator',description:'A ribbed miniature mechanism presents the pile at a fixed height, with a warm status lamp and built-in counter. The strongest poker-machine character.'},
+    altar:{key:'E',name:'The velvet altar',short:'Velvet altar',description:'A raised octagonal velvet dais with ceremonial gold trim. Luxurious, strange and knowingly theatrical—the wild housing option.'}
   };
 
   function median(values){
@@ -261,9 +271,9 @@
   async function compareAll(){
     resetStage();
     const compareToken=token;
-    for (const name of ['dealer','casino','machine','wild']){
+    for (const name of Object.keys(HOUSINGS)){
       if (compareToken!==token) return;
-      variant=name; paintSelection();
+      housing=name; paintSelection();
       prepareScene();
       const completed=await flyTo(targets[2],0,1,compareToken);
       if (!completed||compareToken!==token) return;
@@ -274,13 +284,15 @@
 
   function paintSelection(){
     const choice=treatment();
-    document.querySelectorAll('[data-variant]').forEach(button=>button.classList.toggle('active',button.dataset.variant===variant));
-    document.querySelectorAll('[data-direction]').forEach(button=>button.classList.toggle('active',button.dataset.direction===direction));
-    document.querySelectorAll('[data-variant]').forEach(button=>{
-      button.querySelector('span').textContent=VARIANTS[direction][button.dataset.variant].label;
+    const home=HOUSINGS[housing];
+    dealer.dataset.housing=housing;
+    document.querySelectorAll('[data-housing]').forEach(button=>{
+      if (button!==dealer) button.classList.toggle('active',button.dataset.housing===housing);
     });
-    $('cfo-variant-name').textContent=choice.name;
-    $('cfo-description').textContent=choice.description;
+    document.querySelectorAll('[data-direction]').forEach(button=>button.classList.toggle('active',button.dataset.direction===direction));
+    $('cfo-housing-name').textContent=home.key+' · '+home.name;
+    $('cfo-dealer-label').textContent=home.short;
+    $('cfo-description').textContent=home.description+' Motion: '+choice.name+'.';
     $('cfo-replay').textContent=direction==='return'?'Return one':'Deal one';
     $('cfo-sequence').textContent=direction==='return'?'Return five':'Deal five';
   }
@@ -295,12 +307,11 @@
     $('cfo-readout').textContent='Observed refresh interval '+refreshMs.toFixed(2)+'ms · choose a treatment and '+(direction==='return'?'return':'deal')+'.';
   }
 
-  document.querySelectorAll('[data-variant]').forEach(button=>button.onclick=()=>{
-    cancelAll(); variant=button.dataset.variant; paintSelection(); playOne();
+  document.querySelectorAll('.cfo-options [data-housing]').forEach(button=>button.onclick=()=>{
+    cancelAll(); housing=button.dataset.housing; paintSelection(); playOne();
   });
   document.querySelectorAll('[data-direction]').forEach(button=>button.onclick=()=>{
     direction=button.dataset.direction;
-    variant='dealer';
     paintSelection();
     resetStage();
   });
@@ -315,9 +326,9 @@
 
   window.__cardFlightOptions={
     playOne,playFive,compareAll,reset:resetStage,
-    choose:name=>{ if (VARIANTS[direction][name]){ variant=name; paintSelection(); } },
-    direction:name=>{ if (VARIANTS[name]){ direction=name; variant='dealer'; paintSelection(); resetStage(); } },
-    state:()=>({direction,variant,playback,active:active.size,flightCards:document.querySelectorAll('.cfo-flight-shell').length,visibleTargets:targets.filter(card=>card.style.opacity==='1').length,visibleDeckCards:Array.from(deck.children).filter(card=>card.style.visibility!=='hidden').length})
+    housing:name=>{ if (HOUSINGS[name]){ housing=name; paintSelection(); resetStage(); } },
+    direction:name=>{ if (VARIANTS[name]){ direction=name; paintSelection(); resetStage(); } },
+    state:()=>({direction,variant,housing,playback,active:active.size,flightCards:document.querySelectorAll('.cfo-flight-shell').length,visibleTargets:targets.filter(card=>card.style.opacity==='1').length,visibleDeckCards:Array.from(deck.children).filter(card=>card.style.visibility!=='hidden').length})
   };
   prepareScene();
   paintSelection();

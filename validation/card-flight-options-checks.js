@@ -15,18 +15,22 @@ const serviceWorker=fs.readFileSync(path.join(root,'sw.js'),'utf8');
 let passed=0;
 function check(name,fn){ fn(); passed++; process.stdout.write('PASS  '+name+'\n'); }
 
-check('The comparison exposes four treatments in both directions',()=>{
-  for (const variant of ['dealer','casino','machine','wild']){
-    assert.ok(html.includes('data-variant="'+variant+'"'));
-    assert.ok(source.includes(variant+':{'));
+check('The workshop exposes five distinct deck housings',()=>{
+  for (const housing of ['plinth','guides','shoe','elevator','altar']){
+    assert.ok(html.includes('data-housing="'+housing+'"'));
+    assert.ok(source.includes(housing+':{'));
+    assert.ok(css.includes('[data-housing="'+housing+'"]'));
   }
+  for (const name of ["Raised dealer's plinth",'Brass corner guides','Open-front casino shoe','Mechanical card elevator','The velvet altar']) assert.ok(source.includes(name));
   assert.ok(html.includes('data-direction="deal"'));
   assert.ok(html.includes('data-direction="return"'));
-  assert.ok(html.includes('Dealer flick'));
-  assert.ok(html.includes('Casino pitch'));
-  assert.ok(html.includes('Machine feed'));
-  assert.ok(html.includes('Showboat sling'));
-  for (const name of ['House sweep','Casino collect','Magnetic recall','Boomerang recall']) assert.ok(source.includes(name));
+});
+
+check('Chosen Option A motion is locked for deal and return',()=>{
+  assert.ok(source.includes("const variant='dealer'"));
+  assert.ok(source.includes("dealer:{label:'Dealer flick'"));
+  assert.ok(source.includes("dealer:{label:'House sweep'"));
+  assert.ok(!html.includes('data-variant='));
 });
 
 check('Every option shares destination-anchored centre geometry',()=>{
@@ -49,13 +53,13 @@ check('The flight is the visible top deck card, not a spawned generic sprite',()
   assert.ok(source.includes('for (let index=0;index<10;index++)'));
 });
 
-check('One-card, five-card and four-way comparison playback are all available',()=>{
+check('One-card, five-card and five-housing comparison playback are all available',()=>{
   assert.ok(html.includes('id="cfo-replay"'));
   assert.ok(html.includes('id="cfo-sequence"'));
   assert.ok(html.includes('id="cfo-compare"'));
   assert.ok(source.includes('async function playOne()'));
   assert.ok(source.includes('async function playFive()'));
-  assert.ok(source.includes("for (const name of ['dealer','casino','machine','wild'])"));
+  assert.ok(source.includes('for (const name of Object.keys(HOUSINGS))'));
 });
 
 check('Casino and wild treatments choose a fresh signed spin per card',()=>{
