@@ -227,7 +227,7 @@ function cardLabel(faceDown, card){
    crosses its edge; no midpoint DOM mutation or independently drifting timer
    is involved. A turn always settles to its requested logical state, even if
    a new render, hand boundary or navigation cancels it. */
-const CARD_TURN_TIMING = Object.freeze({ hole:300, board:340, showdown:380 });
+const CARD_TURN_TIMING = Object.freeze({ hole:380, board:430, showdown:480 });
 const activeCardTurns = new Set();
 const cardTurnByElement = new WeakMap();
 
