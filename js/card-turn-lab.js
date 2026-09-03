@@ -121,7 +121,7 @@
     const duration=returning?DEAL_TIMING.collectMs:DEAL_TIMING.dealMs;
     $('ctl-state').textContent=(returning?'Returning':'Dealing')+' · '+mode;
     el.style.opacity='0';
-    const promise=DealFX.flyGhost(from,to,{duration,style,rotate:returning?720:360});
+    const promise=DealFX.flyGhost(from,to,{duration,style,rotate:180});
     const probe=document.querySelector('.fly-card');
     if (mode==='reduced'){
       const completed=await promise;

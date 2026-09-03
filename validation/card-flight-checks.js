@@ -63,19 +63,21 @@ vm.createContext(context);
 vm.runInContext(flightSource+'\nthis.api={DealFX,DEAL_TIMING};',context);
 const api=context.api;
 
-function endpoints(){
-  return {
-    from:new FakeElement({left:40,top:390,width:44,height:62}),
-    to:new FakeElement({left:246,top:112,width:55,height:78})
-  };
+function endpoints(style='deal'){
+  const from=new FakeElement({left:40,top:390,width:44,height:62});
+  const to=new FakeElement({left:246,top:112,width:55,height:78});
+  from.className=style==='return'?'card back':'card back small';
+  to.className=style==='return'?'card back small':'card back';
+  return {from,to};
 }
 
 (async()=>{
   await check('A deal uses one continuous five-waypoint transform timeline',async()=>{
     const {from,to}=endpoints();
-    const promise=api.DealFX.flyGhost(from,to,{duration:api.DEAL_TIMING.dealMs,style:'deal',rotate:360});
+    const promise=api.DealFX.flyGhost(from,to,{duration:api.DEAL_TIMING.dealMs,style:'deal',rotate:180});
     assert.strictEqual(body.children.length,1);
     const ghost=body.children[0];
+    assert.strictEqual(ghost.className,'card back small fly-card');
     assert.strictEqual(ghost.animations.length,1);
     const animation=ghost.animations[0];
     assert.strictEqual(animation.options.duration,520);
@@ -90,26 +92,27 @@ function endpoints(){
     assert.strictEqual(api.DealFX.activeCount(),0);
   });
 
-  await check('A return keeps its tug, pull and fade in one four-waypoint timeline',async()=>{
-    const {from,to}=endpoints();
-    const promise=api.DealFX.flyGhost(from,to,{duration:api.DEAL_TIMING.collectMs,style:'return',rotate:720});
+  await check('A return stays solid and becomes the real deck-top card on contact',async()=>{
+    const {from,to}=endpoints('return');
+    const promise=api.DealFX.flyGhost(from,to,{duration:api.DEAL_TIMING.collectMs,style:'return',rotate:180});
     assert.strictEqual(felt.children.length,1);
     const ghost=felt.children[0];
-    assert.ok(ghost.className.includes('return'));
+    assert.strictEqual(ghost.className,'card back small fly-card return');
     assert.strictEqual(ghost.style.left,'32px');
     assert.strictEqual(ghost.style.top,'370px');
     const animation=ghost.animations[0];
     assert.strictEqual(animation.options.duration,650);
     assert.deepStrictEqual(Array.from(animation.keyframes,frame=>frame.offset),[0,.10,.45,1]);
-    assert.deepStrictEqual(Array.from(animation.keyframes,frame=>frame.opacity),[1,1,1,0]);
-    assert.strictEqual(ghost.style.willChange,'transform, opacity');
+    assert.ok(animation.keyframes.every(frame=>!Object.hasOwn(frame,'opacity')));
+    assert.ok(animation.keyframes.every(frame=>Math.abs(Number(frame.transform.match(/rotate\((-?[\d.]+)deg\)/)[1]))<=180));
+    assert.strictEqual(ghost.style.willChange,'transform');
     animation.finish();
     assert.strictEqual(await promise,true);
     assert.strictEqual(felt.children.length,0);
   });
 
   await check('Cancellation settles false and removes every animation owner',async()=>{
-    const firstEndpoints=endpoints(), secondEndpoints=endpoints();
+    const firstEndpoints=endpoints(), secondEndpoints=endpoints('return');
     const first=api.DealFX.flyGhost(firstEndpoints.from,firstEndpoints.to,{style:'deal'});
     const second=api.DealFX.flyGhost(secondEndpoints.from,secondEndpoints.to,{style:'return'});
     const animations=[body.children[0].animations[0],felt.children[0].animations[0]];
@@ -124,7 +127,7 @@ function endpoints(){
 
   await check('Repeated flights leave no ghosts, callbacks or active records behind',async()=>{
     for (let index=0;index<20;index++){
-      const {from,to}=endpoints();
+      const {from,to}=endpoints(index%2?'return':'deal');
       const promise=api.DealFX.flyGhost(from,to,{style:index%2?'return':'deal'});
       const container=index%2?felt:body;
       container.children[0].animations[0].finish();
@@ -148,6 +151,9 @@ function endpoints(){
     assert.ok(!flightSource.includes('offsetWidth'));
     assert.strictEqual((flightSource.match(/\.animate\(/g)||[]).length,1);
     assert.ok(!/\.fly-card\s*\{[^}]*will-change/s.test(css));
+    assert.ok(css.includes('.fly-card.return{ position:absolute; z-index:6; }'));
+    assert.ok(!flightSource.includes('opacity:0'));
+    assert.ok(!flightSource.includes('720'));
   });
 
   await check('Deal cadence and card-turn timing remain unchanged',()=>{
@@ -172,8 +178,8 @@ function endpoints(){
   });
 
   await check('Build and offline cache markers are synchronised for Card Flight',()=>{
-    assert.ok(support.includes("const BUILD_VERSION = 'v0.32.0-dev · Card Flight'"));
-    assert.ok(serviceWorker.includes("const CACHE_NAME = 'poker-v32-0'"));
+    assert.ok(support.includes("const BUILD_VERSION = 'v0.32.1-dev · Card Flight'"));
+    assert.ok(serviceWorker.includes("const CACHE_NAME = 'poker-v32-1'"));
   });
 
   process.stdout.write('\n'+passed+' focused Card Flight checks passed.\n');

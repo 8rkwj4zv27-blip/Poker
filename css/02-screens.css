@@ -755,13 +755,10 @@
   position:fixed; z-index:60; pointer-events:none;
   transform-origin:50% 50%; margin:0;
 }
-/* Return-to-deck ghosts live inside #felt instead of body — #app is itself
-   position:fixed (a stacking context of its own), so a body-level sibling
-   can never be placed behind anything inside it no matter its z-index.
-   Reparenting into #felt puts this ghost in the SAME local stacking
-   context as .dealer-deck (z-index:5), so z-index:4 here genuinely means
-   "behind the deck," not just "a smaller number." */
-.fly-card.return{ position:absolute; z-index:4; }
+/* Return ghosts share #felt's stacking context and sit one layer over the
+   dealer station (z-index:5), remaining a solid physical card until they
+   meet the identically styled top card beneath. */
+.fly-card.return{ position:absolute; z-index:6; }
 
 .seat{
   /* -38px (was -42px): the box grew a dedicated name row at the top but

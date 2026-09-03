@@ -372,37 +372,10 @@ const DealFX = (function(){
     Array.from(activeFlights).forEach(cancelFlight);
   }
 
-  /* Weighted turn count for the END-OF-HAND RETURN only: 1 full rotation
-     is the common case, 2 is an occasional flourish, 3 is genuinely rare.
-     Always a clean multiple of 360 so the card is visually flat the
-     instant it lands. */
-  function pickTurns(){
-    const r = Math.random();
-    const n = r < 0.72 ? 1 : r < 0.97 ? 2 : 3;
-    return n * 360 * (Math.random() < 0.5 ? -1 : 1);
-  }
-  /* Weighted spin for DEALT cards: a genuine full/half/double rotation
-     around the card's exact centre (`.fly-card`'s transform-origin is
-     50% 50%, not a corner — pivoting off-centre is what made rotation
-     swing the card's visual centre in an arc instead of spinning in
-     place). `peakDeg` is how far the card visibly spins during the fast
-     part of the flight (accelerate+travel) — this is the number that
-     actually differentiates "180" (a quick, light flick — most of its
-     motion happens in the FAST phase, covering only a half-turn) from
-     "360" (a full turn already complete by the time it's decelerating)
-     from "720" (two full turns, a rarer flourish). `landDeg` is always
-     the nearest clean multiple of 360, so every card is genuinely flat
-     the instant it lands: for 180 that means the deceleration stage
-     keeps rotating the SAME direction through the remaining half-turn
-     (interpolated smoothly as part of that stage's own easing, not a
-     separate snap) rather than reversing; for 360/720, landDeg equals
-     peakDeg already, so the deceleration stage adds no extra rotation. */
-  function pickSpin(){
-    const r = Math.random();
-    if (r < 0.60) return { peakDeg: 360, landDeg: 360 };
-    if (r < 0.90) return { peakDeg: 180, landDeg: 360 };
-    return { peakDeg: 720, landDeg: 720 };
-  }
+  /* A half-turn is enough to read as a dealer's wrist flick while still
+     landing a symmetrical card back in the deck's exact orientation.
+     Direction varies; rotation amount does not escalate into flourishes. */
+  function halfTurn(){ return 180 * (Math.random() < 0.5 ? -1 : 1); }
 
   /* Spawns a card-back ghost that starts as an EXACT pixel match
      (position + size, via getBoundingClientRect on both ends) of
@@ -416,24 +389,17 @@ const DealFX = (function(){
                 → fast confident travel → rapid deceleration into a crisp,
                 flat landing. A wrist flick, not a frisbee.
        return — a brief tug toward the deck → an accelerating straight
-                pull, spinning several turns → a firm landing exactly at
-                the deck, fading out in that same final stage so nothing
-                lingers at the destination.
+                pull with one restrained half-turn → a solid landing on
+                the deck's actual top-card position.
      Scale is interpolated alongside translate/rotate, since origin and
      destination card sizes can legitimately differ (the deck's stack vs.
      a hole card).
      Deal ghosts are appended to document.body (position:fixed, high
      z-index) so they're clearly visible travelling across the felt.
-     Return ghosts are appended to #felt instead (position:absolute) — see
-     .fly-card.return in CSS for why: #app is itself position:fixed and so
-     establishes its own stacking context, which means a body-level sibling
-     can NEVER be placed behind anything inside #app by z-index alone, no
-     matter how low. Reparenting the return ghost into #felt puts it in
-     the SAME local stacking context as .dealer-deck, so a lower z-index
-     there genuinely means "behind the deck." This was the actual bug
-     behind cards appearing to queue near the deck instead of merging into
-     it — not the flight curve or transform-origin (those were real fixes
-     for real problems, but not this one). */
+     Return ghosts are appended to #felt instead (position:absolute) so
+     they share the dealer station's stacking context and can land directly
+     over its top card. A body-level sibling cannot be layered relative to
+     anything inside #app because #app is itself a fixed stacking context. */
   function flyGhost(fromEl, toEl, opts){
     opts = opts || {};
     if (motionOff() || !fromEl || !toEl) return Promise.resolve(true);
@@ -446,7 +412,13 @@ const DealFX = (function(){
     const container = felt || document.body;
 
     const ghost = document.createElement('div');
-    ghost.className = 'card back fly-card' + (isReturn ? ' return' : '');
+    // Both directions borrow the real deck-top card's classes. This keeps
+    // its small-card inset, border and current card-back theme intact rather
+    // than introducing a generic lookalike sprite during the flight.
+    const deckSkin = isReturn ? toEl : fromEl;
+    const skinClasses = String(deckSkin.className || 'card back').split(/\s+/)
+      .filter(name=>name && name!=='fly-card' && name!=='return');
+    ghost.className = skinClasses.join(' ')+' fly-card'+(isReturn?' return':'');
     if (felt){
       const cRect = felt.getBoundingClientRect();
       ghost.style.left = (a.left - cRect.left) + 'px';
@@ -482,28 +454,25 @@ const DealFX = (function(){
 
     let keyframes;
     if (isReturn){
-      const turns = opts.rotate != null ? opts.rotate : pickTurns();
+      const turn = opts.rotate != null ? opts.rotate : halfTurn();
       keyframes = [
-        {transform:'translate3d(0,0,0) scale(1,1) rotate(0deg)',opacity:1,offset:0,easing:'cubic-bezier(.6,0,.9,.2)'},
-        {transform:nudgeTo(Math.min(6,dist*.25)),opacity:1,offset:.10,easing:'cubic-bezier(.55,0,.85,.35)'},
-        {transform:waypoint(.55,turns*.55),opacity:1,offset:.45,easing:'cubic-bezier(.25,.4,.4,1)'},
-        {transform:waypoint(1,turns),opacity:0,offset:1}
+        {transform:'translate3d(0,0,0) scale(1,1) rotate(0deg)',offset:0,easing:'cubic-bezier(.6,0,.9,.2)'},
+        {transform:nudgeTo(Math.min(6,dist*.25)),offset:.10,easing:'cubic-bezier(.55,0,.85,.35)'},
+        {transform:waypoint(.55,turn*.55),offset:.45,easing:'cubic-bezier(.25,.4,.4,1)'},
+        {transform:waypoint(1,turn),offset:1}
       ];
     } else {
-      const spin = opts.rotate != null
-        ? { peakDeg: opts.rotate, landDeg: Math.ceil(opts.rotate/360)*360 || 360 }
-        : pickSpin();
-      const dir = Math.random() < 0.5 ? 1 : -1;
+      const turn = opts.rotate != null ? opts.rotate : halfTurn();
       keyframes = [
         {transform:'translate3d(0,0,0) scale(1,1) rotate(0deg)',offset:0,easing:'cubic-bezier(.5,0,.85,.2)'},
         {transform:nudgeTo(Math.min(2,dist*.10)),offset:.05,easing:'cubic-bezier(.15,.05,.25,.55)'},
-        {transform:waypoint(.30,dir*spin.peakDeg*.55),offset:.20,easing:'cubic-bezier(.3,0,.5,1)'},
-        {transform:waypoint(.90,dir*spin.peakDeg),offset:.65,easing:'cubic-bezier(.1,.7,.2,1)'},
-        {transform:waypoint(1,dir*spin.landDeg),offset:1}
+        {transform:waypoint(.30,turn*.55),offset:.20,easing:'cubic-bezier(.3,0,.5,1)'},
+        {transform:waypoint(.90,turn),offset:.65,easing:'cubic-bezier(.1,.7,.2,1)'},
+        {transform:waypoint(1,turn),offset:1}
       ];
     }
 
-    ghost.style.willChange='transform'+(isReturn?', opacity':'');
+    ghost.style.willChange='transform';
     const animation=ghost.animate(keyframes,{duration:Math.max(1,dur),easing:'linear',fill:'both'});
     let resolve;
     const promise=new Promise(done=>{ resolve=done; });
@@ -552,23 +521,16 @@ async function dealCardFlight(el, card, opts){
   }
 }
 /* Sweeps a card's element back toward the deck's exact top-card spot — a
-   tug, then an accelerating magnetic pull, spinning as it goes — fading
-   out during its final approach (see flyGhost's return stages) so it's
-   gone by the moment it visually reaches the deck, rather than sitting
-   fully visible at the destination first. Purely decorative: the real
-   element is removed by clearAllCardDOM() shortly after via the existing
-   flow. */
+   tug, then an accelerating magnetic pull and restrained half-turn. The
+   ghost stays solid through contact and is styled from the real deck top,
+   so removing it at completion reveals the identical card beneath. */
 function collectCardFlight(el){
   const deck = $('dealer-deck');
   const deckTop = deck && deck.lastElementChild;
   if (!el || motionOff() || !deckTop) return Promise.resolve();
   el.style.opacity = '0';
-  // SFX V1 — the one discrete moment this flight actually has: it fades
-  // out during its own final approach (see the comment above), so there
-  // is no clean separate "arrival" instant to hook a second sound to —
-  // muckCards()' own existing random per-card stagger is what turns many
-  // of these firing close together into the requested little cascade,
-  // not any new timing invented here.
+  // SFX V1 — one return sound per card. muckCards()' existing random
+  // stagger turns many of them into the requested little cascade.
   Sound.cardReturn();
   return DealFX.flyGhost(el, deckTop, { duration:DEAL_TIMING.collectMs, style:'return' }).then(completed=>{
     if (!completed) el.style.opacity='';
