@@ -12,6 +12,10 @@ const modelSource=fs.readFileSync(path.join(root,'js/showdown-rail-model.js'),'u
 const labSource=fs.readFileSync(path.join(root,'js/showdown-rail-lab.js'),'utf8');
 const html=fs.readFileSync(path.join(root,'showdown-rail-lab.html'),'utf8');
 const css=fs.readFileSync(path.join(root,'css/showdown-rail-lab.css'),'utf8');
+const production=fs.readFileSync(path.join(root,'js/06-presentation.js'),'utf8');
+const productionCss=fs.readFileSync(path.join(root,'css/02-screens.css'),'utf8');
+const support=fs.readFileSync(path.join(root,'js/02-support-systems.js'),'utf8');
+const serviceWorker=fs.readFileSync(path.join(root,'sw.js'),'utf8');
 
 let passed=0;
 function check(name,fn){ fn(); passed++; process.stdout.write('PASS  '+name+'\n'); }
@@ -248,6 +252,86 @@ check('Prototype state remains memory-only and never invokes save APIs',()=>{
   ['localStorage.setItem','Store.set','saveSettings(','saveStats(','serialize'].forEach(write=>assert.ok(!labSource.includes(write),write));
   assert.ok(labSource.includes('storageUnchanged:storageSnapshot()===storageBaseline'));
   assert.ok(html.includes('memory-only'));
+});
+
+check('Live showdown now awaits the exact-five rail before winner and result treatment',()=>{
+  const sequence=production.slice(production.indexOf('async function runShowdownAwardSequence'),production.indexOf('await finishHand(outcome)'));
+  const rail=sequence.indexOf('await presentShowdownRail(main)');
+  const winner=sequence.indexOf('winnerIds.forEach(id=>celebrateWinnerSeat(id))');
+  const result=sequence.indexOf('showHudResultConsole(potResults)');
+  assert.ok(rail!==-1 && winner>rail && result>winner);
+  assert.ok(sequence.includes('if (main.cards)'));
+});
+
+check('Live rail reuses resolved pot cards and production card rendering',()=>{
+  const build=production.slice(production.indexOf('function buildShowdownRail'),production.indexOf('async function presentShowdownRail'));
+  assert.ok(build.includes('main.cards.length!==5'));
+  assert.ok(build.includes('arrangeHandForDisplay(main.cat,main.cards)'));
+  assert.ok(build.includes('strongWinningCardKeys(handRes.result.cat,handRes.result.tiebreak,handRes.cards)'));
+  assert.ok(build.includes('cardClass(false,card,false)'));
+  assert.ok(build.includes('cardInner(card)'));
+  assert.ok(!build.includes('evaluate5('));
+  assert.ok(!build.includes('evaluate7'));
+});
+
+check('Live rail has one stagger source and awaits every card before settling',()=>{
+  const present=production.slice(production.indexOf('async function presentShowdownRail'),production.indexOf('function showdownRailResultCopy'));
+  assert.ok(production.includes('staggerMs:22'));
+  assert.ok(present.includes('const delay=index*SHOWDOWN_RAIL_TIMING.staggerMs'));
+  assert.ok(present.includes('await Promise.all(cardAnimations.map(item=>trackShowdownRailAnimation(item.animation)))'));
+  assert.ok(present.lastIndexOf("lane.classList.add('is-settled')")>present.indexOf('await Promise.all'));
+  assert.ok(!/transition-delay|animation-delay/.test(productionCss.slice(productionCss.indexOf('/* RAIL FIVE'),productionCss.indexOf('.card.win-card'))));
+});
+
+check('Live reduced motion performs no travelling-card animation',()=>{
+  const present=production.slice(production.indexOf('async function presentShowdownRail'),production.indexOf('function showdownRailResultCopy'));
+  const reduced=present.slice(present.indexOf('if (motionOff())'),present.indexOf("await new Promise(resolve=>requestAnimationFrame(resolve))"));
+  assert.ok(reduced.includes("entry.shell.classList.add('is-ready')"));
+  assert.ok(!reduced.includes('.animate('));
+  assert.ok(!reduced.includes('staggerMs'));
+});
+
+check('Live cleanup cancels animations, restores sources and removes the lane',()=>{
+  const reset=production.slice(production.indexOf('function resetShowdownRailPresentation'),production.indexOf('function showdownRailSource'));
+  assert.ok(reset.includes('showdownRailAnimations.forEach'));
+  assert.ok(reset.includes('animation.cancel()'));
+  assert.ok(reset.includes("el.style.visibility=''"));
+  assert.ok(reset.includes('lane.remove()'));
+  assert.ok(production.includes('function clearAllCardDOM(){\n  resetShowdownRailPresentation();'));
+});
+
+check('Live payout clears the rail before any chip or bankroll mutation',()=>{
+  const sequence=production.slice(production.indexOf('async function runShowdownAwardSequence'),production.indexOf('await finishHand(outcome)'));
+  const clear=sequence.indexOf('await clearShowdownRailPresentation()');
+  const mutation=sequence.indexOf('w.chips += s.amount');
+  assert.ok(clear!==-1 && mutation>clear);
+});
+
+check('Live rail CSS is a shallow five-card guide with continuous physical motion',()=>{
+  const railCss=productionCss.slice(productionCss.indexOf('/* RAIL FIVE'),productionCss.indexOf('.card.win-card'));
+  assert.ok(railCss.includes('grid-template-columns:repeat(5,44px)'));
+  assert.ok(railCss.includes('grid-template-columns:repeat(5,42px)'));
+  assert.ok(!/steps\s*\(/i.test(railCss));
+  assert.ok(!/filter\s*:|backdrop-filter\s*:/.test(railCss));
+  assert.ok(!/winning five/i.test(railCss));
+});
+
+check('Live result uses the production CRT and keeps fold wins rail-free',()=>{
+  assert.ok(production.includes("paintCRT($('hand-strength')"));
+  assert.ok(production.includes("paintCRT($('banner')"));
+  assert.ok(production.includes("if (main.cards){\n    const railReady=await presentShowdownRail(main)"));
+});
+
+check('The development harness can exercise the shipped rail without starting or saving a game',()=>{
+  assert.ok(html.includes('id="sdr-live"'));
+  assert.ok(labSource.includes('const ready=await presentShowdownRail(main)'));
+  assert.ok(labSource.includes("$('sdr-live').onclick=replayLiveRail"));
+  assert.ok(labSource.includes('player._handRes=evaluate7WithCards'));
+});
+
+check('Version codename and offline cache are synchronised for Rail Five',()=>{
+  assert.ok(support.includes("const BUILD_VERSION = 'v0.30.0-dev · Rail Five'"));
+  assert.ok(serviceWorker.includes("const CACHE_NAME = 'poker-v30-0'"));
 });
 
 process.stdout.write('\n'+passed+' focused Showdown Rail checks passed.\n');

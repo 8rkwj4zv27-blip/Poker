@@ -43,7 +43,7 @@
   background:var(--machine-glass); border:2px solid var(--px-ink); border-radius:2px;
   font-family:var(--font-hdr); font-size:6px;
 }
-.sdr-button-row{ display:grid; grid-template-columns:.7fr 1.1fr 1.1fr; gap:5px; margin-top:7px; }
+.sdr-button-row{ display:grid; grid-template-columns:.65fr 1fr .8fr 1fr; gap:4px; margin-top:7px; }
 .sdr-motion{ display:grid; grid-template-columns:1fr 1fr; gap:5px; margin-top:5px; }
 .sdr-dev-panel button{
   min-width:0; min-height:32px; padding:5px 3px; color:var(--ink-dim);

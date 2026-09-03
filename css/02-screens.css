@@ -807,9 +807,9 @@
    interfering with face-rendering internals). The opponent's seat IS
    their celebration — see the separate, stronger .hud-frame win-* set
    below for the human's own noticeably bigger moment. */
-.winner-pop{ animation:winnerPunch .3s steps(4,end); }
+.winner-pop{ animation:winnerPunch .3s cubic-bezier(.2,.72,.3,1); }
 @keyframes winnerPunch{ 0%{ transform:scale(1); } 45%{ transform:scale(1.08); } 100%{ transform:scale(1); } }
-.seat.winner-pulse .avatar, .seat.winner-pulse .seat-card{ animation:winnerRim .55s steps(6,end) 2; }
+.seat.winner-pulse .avatar, .seat.winner-pulse .seat-card{ animation:winnerRim .55s cubic-bezier(.2,.72,.3,1) 2; }
 @keyframes winnerRim{
   0%,100%{ box-shadow:0 0 0 3px var(--good), 0 2px 0 rgba(0,0,0,.45); }
   50%{ box-shadow:0 0 0 6px var(--good), 0 2px 0 rgba(0,0,0,.45); }
@@ -1126,7 +1126,7 @@
    the existing --good/--accent-bright tokens (never a hardcoded colour,
    so this reads correctly in every theme), finite (2 flash cycles), then
    settles straight into the normal .result-mode look. */
-.hud-frame-win{ animation:hudWinShake .45s steps(8,end); }
+.hud-frame-win{ animation:hudWinShake .45s cubic-bezier(.2,.72,.3,1); }
 @keyframes hudWinShake{
   0%{ transform:translateY(0) scale(1); }
   15%{ transform:translateY(-3px) scale(1.015); }
@@ -1452,6 +1452,59 @@
   font-size:11.5px; color:var(--ink-faint); line-height:1.5; margin-top:9px;
   padding-top:8px; border-top:2px solid rgba(255,255,255,.09);
 }
+
+/* RAIL FIVE — a shallow registration lane over the real felt. It is not a
+   result panel: the existing CRT/dashboard owns the words and the existing
+   pot owns the money. Card travel itself is WAAPI-driven with continuous
+   transform easing in 06-presentation.js. */
+.showdown-inspection-lane{
+  position:absolute; z-index:12; left:50%; top:43%; width:min(268px,calc(100% - 22px));
+  height:74px; transform:translate(-50%,-50%); pointer-events:none; opacity:0;
+}
+.showdown-inspection-lane::before{
+  content:''; position:absolute; left:3px; right:3px; top:5px; bottom:5px;
+  border-top:2px solid color-mix(in srgb,var(--theme-rim) 34%,transparent);
+  border-bottom:2px solid color-mix(in srgb,var(--theme-rim) 24%,transparent);
+  background:
+    linear-gradient(90deg,var(--theme-rim),var(--theme-rim)) left 7px top 0/2px 7px no-repeat,
+    linear-gradient(90deg,var(--theme-rim),var(--theme-rim)) right 7px top 0/2px 7px no-repeat,
+    linear-gradient(90deg,var(--theme-rim),var(--theme-rim)) left 7px bottom 0/2px 7px no-repeat,
+    linear-gradient(90deg,var(--theme-rim),var(--theme-rim)) right 7px bottom 0/2px 7px no-repeat,
+    color-mix(in srgb,var(--felt-2) 54%,transparent);
+  box-shadow:inset 0 2px 0 rgba(0,0,0,.28),0 2px 0 rgba(255,255,255,.025);
+}
+.showdown-inspection-lane.is-present{ opacity:1; }
+.showdown-rail-destinations{
+  position:absolute; inset:6px 9px; display:grid; grid-template-columns:repeat(5,44px);
+  justify-content:center; gap:5px;
+}
+.showdown-rail-card{
+  position:relative; width:44px; height:62px; opacity:0;
+  transform-origin:50% 50%;
+}
+.showdown-rail-card.is-ready{ opacity:1; }
+.showdown-rail-face{ position:absolute!important; inset:0; width:44px!important; height:62px!important; }
+.showdown-inspection-lane.is-settled .showdown-rail-card[data-treatment="strong"] .showdown-rail-face{
+  border-color:#6FA56F;
+  box-shadow:0 3px 0 rgba(0,0,0,.5),inset 0 0 0 2px rgba(57,112,67,.42),inset 0 2px 0 #fff,0 2px 0 2px rgba(70,142,84,.26);
+}
+.showdown-inspection-lane.is-settled .showdown-rail-card[data-treatment="support"] .showdown-rail-face{
+  border-color:#B18A37;
+  box-shadow:0 3px 0 rgba(0,0,0,.5),inset 0 0 0 2px rgba(177,138,55,.29),inset 0 2px 0 #fff,0 2px 0 2px rgba(177,138,55,.19);
+}
+.showdown-source-unused{ opacity:.68; }
+.showdown-inspection-lane.is-clearing{ opacity:0; }
+
+@media (max-width:350px){
+  .showdown-inspection-lane{ width:266px; top:42%; }
+  .showdown-rail-destinations{ grid-template-columns:repeat(5,42px); gap:4px; }
+  .showdown-rail-card,.showdown-rail-face{ width:42px!important; height:60px!important; }
+  #table-screen #hud-mid .banner:has(.crt-line-primary){ font-size:4.75px; letter-spacing:-.02em; }
+}
+@media (orientation:portrait) and (max-height:720px){
+  .showdown-inspection-lane{ top:41%; }
+}
+[data-motion="off"] .showdown-rail-card{ transform:none!important; }
 
 
 .card.win-card{

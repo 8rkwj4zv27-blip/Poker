@@ -1201,6 +1201,7 @@ function queueRaiseReel(value, immediate){
   },wait);
 }
 function clearAllCardDOM(){
+  resetShowdownRailPresentation();
   const board = $('board');
   if (board) board.innerHTML = '';
   resetPile($('pot-stacks'), potPile());
@@ -3991,6 +3992,195 @@ function splitHandText(cat, handStr){
   return { category, descriptor };
 }
 
+/* Showdown inspection lane — production integration of the approved Rail
+   Five prototype. Poker evaluation is already complete when this runs:
+   `pot.cards` and the first winner's `_handRes` are the authoritative exact
+   five. This layer only orders those cards for reading, finds their existing
+   on-table DOM, and performs a presentation-only FLIP transfer. */
+const SHOWDOWN_RAIL_TIMING = Object.freeze({
+  staggerMs:22,
+  flightMinMs:440,
+  flightMaxMs:520,
+  readableHoldMs:1050,
+  clearMs:190
+});
+let showdownRailToken=0;
+const showdownRailAnimations=new Set();
+
+function trackShowdownRailAnimation(animation){
+  showdownRailAnimations.add(animation);
+  return animation.finished.then(
+    ()=>{ showdownRailAnimations.delete(animation); return true; },
+    ()=>{ showdownRailAnimations.delete(animation); return false; }
+  );
+}
+
+function resetShowdownRailPresentation(){
+  showdownRailToken++;
+  showdownRailAnimations.forEach(animation=>{ try{ animation.cancel(); }catch(e){} });
+  showdownRailAnimations.clear();
+  document.querySelectorAll('.showdown-rail-source').forEach(el=>{
+    el.style.visibility='';
+    el.classList.remove('showdown-rail-source','showdown-source-unused');
+  });
+  document.querySelectorAll('.showdown-source-unused').forEach(el=>el.classList.remove('showdown-source-unused'));
+  const lane=$('showdown-inspection-lane');
+  if (lane) lane.remove();
+}
+
+function showdownRailSource(card,winner){
+  const key=cardKey(card);
+  const boardIndex=game.board.findIndex(c=>cardKey(c)===key);
+  if (boardIndex!==-1 && $('board')) return $('board').children[boardIndex]||null;
+  if (!winner) return null;
+  const holeIndex=winner.hand.findIndex(c=>cardKey(c)===key);
+  const seat=seatEls[winner.id];
+  return holeIndex!==-1 && seat ? seat.cardsContainer.children[holeIndex]||null : null;
+}
+
+function showdownRailFlightDuration(from,to){
+  const distance=Math.hypot(
+    (from.left+from.width/2)-(to.left+to.width/2),
+    (from.top+from.height/2)-(to.top+to.height/2)
+  );
+  return Math.max(SHOWDOWN_RAIL_TIMING.flightMinMs,
+    Math.min(SHOWDOWN_RAIL_TIMING.flightMaxMs,Math.round(440+distance*.12)));
+}
+
+function buildShowdownRail(main){
+  const felt=$('felt');
+  const winner=game.players.find(p=>p.id===main.winnerIds[0]);
+  const handRes=winner && winner._handRes;
+  if (!felt || !winner || !handRes || !Array.isArray(main.cards) || main.cards.length!==5) return null;
+
+  const ordered=arrangeHandForDisplay(main.cat,main.cards);
+  const { strong }=strongWinningCardKeys(handRes.result.cat,handRes.result.tiebreak,handRes.cards);
+  const lane=document.createElement('div');
+  lane.id='showdown-inspection-lane';
+  lane.className='showdown-inspection-lane';
+  lane.setAttribute('role','group');
+  lane.setAttribute('aria-label','Winning five cards');
+  const destinations=document.createElement('div');
+  destinations.className='showdown-rail-destinations';
+  lane.appendChild(destinations);
+
+  const entries=ordered.map(card=>{
+    const source=showdownRailSource(card,winner);
+    if (source) source.classList.add('showdown-rail-source');
+    const shell=document.createElement('div');
+    shell.className='showdown-rail-card';
+    shell.dataset.cardKey=cardKey(card);
+    shell.dataset.treatment=strong.has(cardKey(card))?'strong':'support';
+    const face=document.createElement('div');
+    face.className=cardClass(false,card,false)+' showdown-rail-face';
+    face.setAttribute('role','img');
+    face.setAttribute('aria-label',cardLabel(false,card));
+    face.innerHTML=cardInner(card);
+    shell.appendChild(face);
+    destinations.appendChild(shell);
+    return {card,source,shell};
+  });
+
+  const used=new Set(ordered.map(cardKey));
+  Array.from($('board').children).forEach((el,index)=>{
+    const card=game.board[index];
+    if (card && !used.has(cardKey(card))) el.classList.add('showdown-source-unused');
+  });
+  Object.entries(seatEls).forEach(([id,seat])=>{
+    const player=game.players.find(p=>p.id===id);
+    if (!player) return;
+    Array.from(seat.cardsContainer.children).forEach((el,index)=>{
+      const card=player.hand[index];
+      if (card && !used.has(cardKey(card))) el.classList.add('showdown-source-unused');
+    });
+  });
+  felt.appendChild(lane);
+  return {lane,entries};
+}
+
+async function presentShowdownRail(main){
+  resetShowdownRailPresentation();
+  const token=showdownRailToken;
+  const built=buildShowdownRail(main);
+  if (!built) return false;
+  const {lane,entries}=built;
+  lane.classList.add('is-present');
+
+  if (motionOff()){
+    entries.forEach(entry=>{
+      entry.shell.classList.add('is-ready');
+      if (entry.source) entry.source.style.visibility='hidden';
+    });
+    lane.classList.add('is-settled');
+    return token===showdownRailToken;
+  }
+
+  await new Promise(resolve=>requestAnimationFrame(resolve));
+  if (token!==showdownRailToken) return false;
+  const geometry=entries.map(entry=>({
+    from:entry.source&&entry.source.getBoundingClientRect(),
+    to:entry.shell.getBoundingClientRect()
+  }));
+  const cardAnimations=[];
+  entries.forEach((entry,index)=>{
+    const geo=geometry[index];
+    if (!geo.from || !geo.from.width || !geo.to.width) return;
+    const dx=geo.from.left-geo.to.left,dy=geo.from.top-geo.to.top;
+    const sx=geo.from.width/geo.to.width,sy=geo.from.height/geo.to.height;
+    const duration=showdownRailFlightDuration(geo.from,geo.to);
+    const delay=index*SHOWDOWN_RAIL_TIMING.staggerMs;
+    entry.shell.classList.add('is-ready');
+    entry.shell.style.transform='translate('+dx+'px,'+dy+'px) scale('+sx+','+sy+')';
+    entry.shell.style.willChange='transform';
+    if (entry.source) entry.source.style.visibility='hidden';
+    const animation=entry.shell.animate([
+      {transform:'translate('+dx+'px,'+dy+'px) scale('+sx+','+sy+')',offset:0,easing:'cubic-bezier(.32,0,.55,.35)'},
+      {transform:'translate('+(dx*.91)+'px,'+(dy*.91-9)+'px) scale('+(sx*1.035)+','+(sy*1.035)+')',offset:.18,easing:'cubic-bezier(.18,.7,.24,1)'},
+      {transform:'translate('+(dx*.10)+'px,'+(dy*.08-5)+'px) scale(1.015)',offset:.82,easing:'cubic-bezier(.2,.72,.24,1)'},
+      {transform:'translate(0,-2px) scale(1.01)',offset:.95,easing:'cubic-bezier(.2,.75,.3,1)'},
+      {transform:'translate(0,0) scale(1)',offset:1}
+    ],{duration,delay,easing:'linear',fill:'both'});
+    cardAnimations.push({entry,animation});
+  });
+
+  const finished=await Promise.all(cardAnimations.map(item=>trackShowdownRailAnimation(item.animation)));
+  if (token!==showdownRailToken || finished.some(ok=>!ok)) return false;
+  cardAnimations.forEach(({entry,animation})=>{
+    entry.shell.style.transform='none';
+    entry.shell.style.willChange='';
+    animation.cancel();
+  });
+  lane.classList.add('is-settled');
+  return true;
+}
+
+function showdownRailResultCopy(main){
+  if (main.split) return main.winners.join(' + ')+' SPLIT · '+main.hand;
+  const lead=main.winnerIds.length===1 && main.winnerIds[0]==='you' ? 'YOU WIN' : main.winners.join(' & ')+' WINS';
+  return lead+' · '+main.hand;
+}
+
+function showShowdownRailResult(main){
+  paintCRT($('hand-strength'),'<b>'+esc(main.hand)+'</b>',false);
+  paintCRT($('banner'),'<span class="crt-line-primary">'+esc(showdownRailResultCopy(main).toUpperCase())+'</span>',false);
+}
+
+async function clearShowdownRailPresentation(){
+  const lane=$('showdown-inspection-lane');
+  if (!lane){ resetShowdownRailPresentation(); return; }
+  if (motionOff()){
+    resetShowdownRailPresentation();
+    return;
+  }
+  const token=showdownRailToken;
+  lane.classList.add('is-clearing');
+  const fade=lane.animate([{opacity:1},{opacity:0}],{
+    duration:SHOWDOWN_RAIL_TIMING.clearMs,easing:'cubic-bezier(.4,0,.7,1)',fill:'forwards'
+  });
+  const ok=await trackShowdownRailAnimation(fade);
+  if (ok && token===showdownRailToken) resetShowdownRailPresentation();
+}
+
 /* Showdown result console — pass 4. Replaces the old floating winner
    plaque entirely: builds the HUD result content (see
    showHudResultConsole() below) instead of a separate .result-card
@@ -4389,18 +4579,23 @@ async function runShowdownAwardSequence(potResults, contenders){
   potResults.forEach(pot=>pot.winnerIds.forEach(id=>winnerIds.add(id)));
 
   const main = potResults[0];
-  if (main.cards) highlightWinningCards(main, contenders);
+  if (main.cards){
+    const railReady=await presentShowdownRail(main);
+    if (railReady) showShowdownRailResult(main);
+  }
 
   winnerIds.forEach(id=>celebrateWinnerSeat(id));
+
+  if (main.cards) await (motionOff() ? sleep(0) : pacedSleep(SHOWDOWN_RAIL_TIMING.readableHoldMs));
 
   showHudResultConsole(potResults);
   const totalAmount = potResults.reduce((s,r)=>s+r.amount, 0);
   showAwardConsole('Award Pot · ' + totalAmount.toLocaleString());
   await waitForAwardPot();
   hideHudResultConsole();
-  // keep the winning-five highlight visible a tiny beat longer before
-  // the pot becomes the focus, per the approved sequencing.
-  await (motionOff() ? sleep(0) : pacedSleep(220));
+  // The arranged five clears as the pot becomes the sole focus. Source
+  // cards are restored before chip ownership or bankroll state changes.
+  await clearShowdownRailPresentation();
 
   // Captured BEFORE the real money mutation below — the one thing a
   // human pot-smash ceremony needs that isn't derivable afterwards: what

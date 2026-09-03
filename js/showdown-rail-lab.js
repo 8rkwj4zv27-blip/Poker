@@ -45,7 +45,7 @@
   }
 
   function controlsLocked(locked){
-    ['sdr-fixture','sdr-theme','sdr-before','sdr-replay','sdr-full'].forEach(id=>{
+    ['sdr-fixture','sdr-theme','sdr-before','sdr-replay','sdr-live','sdr-full'].forEach(id=>{
       const el=$(id); if (el) el.disabled=!!locked;
     });
     document.querySelectorAll('[data-motion-choice]').forEach(el=>{ el.disabled=!!locked; });
@@ -77,6 +77,7 @@
       if (destinations) destinations.replaceChildren();
     }
     document.querySelectorAll('.score-smash-layer,.chip-physics-layer').forEach(el=>el.remove());
+    if (typeof resetShowdownRailPresentation==='function') resetShowdownRailPresentation();
   }
 
   function waitFrame(){ return new Promise(resolve=>requestAnimationFrame(resolve)); }
@@ -184,6 +185,7 @@
       positions:Object.fromEntries(players.map((p,i)=>[p.id,i===0?'BTN':i===1?'BB':'SB'])),
       run:{arcade:makeArcadeRunState()}
     };
+    players.forEach(player=>{ player._handRes=evaluate7WithCards([...player.hand,...game.board]); });
     initSeats();
     renderBank();
     renderPot();
@@ -430,6 +432,30 @@
     controlsLocked(false);
   }
 
+  async function replayLiveRail(){
+    if (fullInProgress) return;
+    renderFixtureState();
+    model=buildShowdownRailModel(fixture);
+    const token=runToken;
+    controlsLocked(true);
+    setState('Production rail assembling','playing');
+    const main={
+      cards:model.cards.map(card=>({rank:card.rank,suit:card.suit,value:card.value})),
+      cat:model.category,
+      hand:model.handName,
+      winnerIds:model.winnerIds.slice(),
+      winners:model.winnerIds.map(id=>game.players.find(player=>player.id===id).name),
+      split:model.split
+    };
+    const ready=await presentShowdownRail(main);
+    if (!ready || token!==runToken) return;
+    model.winnerIds.forEach(id=>celebrateWinnerSeat(id));
+    showShowdownRailResult(main);
+    setState('Live rail settled · '+model.handName,'settled');
+    await waitOnTimeline(TIMING.readableHoldMs,token);
+    if (token===runToken) controlsLocked(false);
+  }
+
   function setMotion(value){
     if (fullInProgress) return;
     document.body.dataset.motion=value;
@@ -462,6 +488,7 @@
     $('sdr-theme').onchange=event=>{ document.body.dataset.theme=event.target.value; };
     $('sdr-before').onclick=()=>{ if(!fullInProgress){ model=buildShowdownRailModel(fixture); renderFixtureState(); } };
     $('sdr-replay').onclick=()=>replay(false);
+    $('sdr-live').onclick=replayLiveRail;
     $('sdr-full').onclick=()=>replay(true);
     document.querySelectorAll('[data-motion-choice]').forEach(button=>{ button.onclick=()=>setMotion(button.dataset.motionChoice); });
     model=buildShowdownRailModel(fixture);
