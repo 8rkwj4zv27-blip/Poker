@@ -1079,6 +1079,88 @@ function fmtActionAmount(n){
   if (n < 100000) return n.toLocaleString();
   return Math.round(n/1000).toLocaleString() + 'k';
 }
+
+/* QUICK BETS -------------------------------------------------
+   Presets select a total wager in the ordinary raise reel; they never act.
+   Keeping the definitions and arithmetic here makes the UI a thin caller of
+   the same legal min/max model used by the slider and Confirm button. */
+const QUICK_BET_PRESET_DEFINITIONS = Object.freeze({
+  preflopOpen:Object.freeze([
+    Object.freeze({id:'two-bb',label:'2 BB',kind:'wager-multiple',value:2}),
+    Object.freeze({id:'two-five-bb',label:'2.5 BB',kind:'wager-multiple',value:2.5}),
+    Object.freeze({id:'three-bb',label:'3 BB',kind:'wager-multiple',value:3}),
+    Object.freeze({id:'all-in',label:'All-in',kind:'all-in',priority:30})
+  ]),
+  preflopFacing:Object.freeze([
+    Object.freeze({id:'min',label:'Min',kind:'minimum',priority:20}),
+    Object.freeze({id:'two-five-x',label:'2.5×',kind:'wager-multiple',value:2.5}),
+    Object.freeze({id:'three-x',label:'3×',kind:'wager-multiple',value:3}),
+    Object.freeze({id:'all-in',label:'All-in',kind:'all-in',priority:30})
+  ]),
+  postflopOpen:Object.freeze([
+    Object.freeze({id:'third-pot',label:'⅓ Pot',kind:'pot-open',value:1/3}),
+    Object.freeze({id:'half-pot',label:'½ Pot',kind:'pot-open',value:1/2}),
+    Object.freeze({id:'three-quarter-pot',label:'¾ Pot',kind:'pot-open',value:3/4}),
+    Object.freeze({id:'pot',label:'Pot',kind:'pot-open',value:1})
+  ]),
+  postflopFacing:Object.freeze([
+    Object.freeze({id:'min',label:'Min',kind:'minimum',priority:20}),
+    Object.freeze({id:'half-pot',label:'½ Pot',kind:'pot-after-call',value:1/2}),
+    Object.freeze({id:'pot',label:'Pot',kind:'pot-after-call',value:1}),
+    Object.freeze({id:'all-in',label:'All-in',kind:'all-in',priority:30})
+  ])
+});
+
+function wagerBounds(g,player){
+  if (!g || !player) return null;
+  const currentBet=Math.max(0,Math.round(Number(g.currentBet)||0));
+  const playerBet=Math.max(0,Math.round(Number(player.betThisRound)||0));
+  const stack=Math.max(0,Math.round(Number(player.chips)||0));
+  const maxTotal=playerBet+stack;
+  const fullRaise=Math.max(
+    currentBet+Math.max(0,Math.round(Number(g.minRaise)||0)),
+    playerBet+Math.max(0,Math.round(Number(g.bigBlind)||0))
+  );
+  const minTotal=Math.min(maxTotal,fullRaise);
+  return {min:minTotal,max:maxTotal,currentBet,playerBet,stack};
+}
+
+function quickBetContext(g){
+  if (!g || !['preflop','flop','turn','river'].includes(g.phase)) return null;
+  const preflop=g.phase==='preflop';
+  if (preflop) return g.currentBet>g.bigBlind ? 'preflopFacing' : 'preflopOpen';
+  return g.currentBet>0 ? 'postflopFacing' : 'postflopOpen';
+}
+
+function quickBetPresetAmount(def,g,bounds){
+  const toCall=Math.max(0,bounds.currentBet-bounds.playerBet);
+  const pot=Math.max(0,Math.round(Number(g.pot)||0));
+  let raw=bounds.min;
+  if (def.kind==='all-in') raw=bounds.max;
+  else if (def.kind==='wager-multiple') raw=bounds.currentBet*def.value;
+  else if (def.kind==='pot-open') raw=bounds.playerBet+pot*def.value;
+  else if (def.kind==='pot-after-call') raw=bounds.playerBet+toCall+(pot+toCall)*def.value;
+  const rounded=Math.round(raw);
+  return Math.max(bounds.min,Math.min(bounds.max,rounded));
+}
+
+function quickBetPresets(g,player){
+  const bounds=wagerBounds(g,player), context=quickBetContext(g);
+  if (!bounds || !context || player.mayRaise===false || player.allIn || player.chips<=0
+      || bounds.max<=bounds.currentBet) return [];
+  const unique=[];
+  QUICK_BET_PRESET_DEFINITIONS[context].forEach(def=>{
+    const amount=quickBetPresetAmount(def,g,bounds);
+    const existing=unique.findIndex(p=>p.amount===amount);
+    const item={id:def.id,label:def.label,amount,context,_priority:def.priority||10};
+    if (existing<0) unique.push(item);
+    else if (item._priority>unique[existing]._priority) unique[existing]=item;
+  });
+  if (unique.length===1 && unique[0].amount===bounds.max && bounds.min===bounds.max){
+    unique[0]={id:'all-in',label:'All-in',amount:bounds.max,context,_priority:30};
+  }
+  return unique.map(({id,label,amount,context})=>({id,label,amount,context}));
+}
 function actionLabel(action, player, amt){
   if (player.allIn) return 'All-In';
   if (action==='fold') return 'Fold';

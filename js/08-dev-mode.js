@@ -942,14 +942,9 @@ function wireUI(){
     updateActionControls();
   };
   $('raise-slider').oninput = e=>{
-    // Display only — the underlying slider.value is left exactly as the
-    // browser set it (see the step-must-stay-1 note on updateActionControls'
-    // slider.step), clamped to the slider's own legal range so it never
-    // reads a hair outside min/max.
-    const slider = $('raise-slider');
-    const shown = Math.max(parseInt(slider.min,10)||0, Math.min(parseInt(e.target.value,10)||0, parseInt(slider.max,10)||0));
-    queueRaiseReel(shown,false);
-    syncSliderFill();
+    // Display only. Manual movement and quick buttons share the canonical
+    // setter; neither path commits chips until the existing Confirm action.
+    setWagerAmount(e.target.value,{immediate:false});
   };
   $('btn-next-hand').onclick = async ()=>{
     clearTimeout(autoDealT);

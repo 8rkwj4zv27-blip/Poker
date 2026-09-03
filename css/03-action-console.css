@@ -627,6 +627,30 @@ body #home #home-settings{ background:var(--theme-case-raised); color:var(--ink)
 }
 .raise-amt .mini-jackpot .jp-cell{ min-width:11px; width:11px; height:21px; font-size:9px; }
 .raise-amt .mini-jackpot .jp-sym{ min-width:9px; width:9px; }
+.quick-bets{
+  display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:4px;
+  margin:2px 0 3px;
+}
+.quick-bets.hidden{ display:none; }
+.quick-bet{
+  min-width:0; min-height:30px; padding:5px 2px 4px;
+  border:2px solid var(--px-ink); border-radius:3px;
+  background:var(--card-face); color:#24170D;
+  box-shadow:0 3px 0 var(--px-ink),inset 2px 2px 0 rgba(255,255,255,.72),inset -2px -2px 0 rgba(0,0,0,.14);
+  font-family:var(--font-hdr); font-size:7px; line-height:1; letter-spacing:.01em;
+  text-transform:uppercase; white-space:nowrap; cursor:pointer;
+  transition:transform .08s steps(2,end),box-shadow .08s steps(2,end),background-color var(--dur-fast);
+}
+.quick-bet:active,.quick-bet.is-pressed{
+  transform:translateY(2px);
+  box-shadow:0 1px 0 var(--px-ink),inset 2px 2px 0 rgba(0,0,0,.1);
+}
+.quick-bet.is-selected{
+  background:var(--accent); color:#15100A;
+  box-shadow:0 2px 0 var(--px-ink),inset 0 0 0 2px color-mix(in srgb,var(--accent-bright) 55%,transparent);
+  transform:translateY(1px);
+}
+.quick-bet:focus-visible{ outline:2px solid var(--accent-bright); outline-offset:2px; }
 .raise-row{ width:100%; margin:0; }
 .raise-panel .slider-wrap{ width:100%; flex:1 1 100%; }
 .raise-panel input[type=range]{ height:42px; }
@@ -701,3 +725,4 @@ body #home #home-settings{ background:var(--theme-case-raised); color:var(--ink)
   .btn-fold,.btn-check,.btn-call,.btn-raise,.btn-award-console,.btn-quick-resolve{ min-height:50px; padding:10px 3px; }
 }
 [data-motion="off"] .crt-screen,[data-motion="off"] .crt-refresh,[data-motion="off"] .crt-cursor{ animation:none; }
+[data-motion="off"] .quick-bet{ transition:none; }

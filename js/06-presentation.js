@@ -3816,6 +3816,56 @@ function syncSliderFill(){
   s.style.setProperty('--fill', pct.toFixed(1)+'%');
 }
 
+/* The one wager-amount setter for reel, slider, manual drags and presets.
+   It changes display state only; committing chips remains exclusively in the
+   existing Confirm handler. */
+function setWagerAmount(value,options){
+  const slider=$('raise-slider'), p=pendingHumanPlayer;
+  const bounds=wagerBounds(game,p);
+  if (!slider || !bounds) return null;
+  const requested=Math.round(Number(value));
+  const amount=Math.max(bounds.min,Math.min(bounds.max,Number.isFinite(requested)?requested:bounds.min));
+  slider.value=amount;
+  queueRaiseReel(amount,!!(options&&options.immediate));
+  syncSliderFill();
+  syncQuickBetSelection(amount);
+  return amount;
+}
+
+function syncQuickBetSelection(amount){
+  const row=$('quick-bets');
+  if (!row) return;
+  row.querySelectorAll('button').forEach(button=>{
+    const selected=Number(button.dataset.amount)===Number(amount);
+    button.classList.toggle('is-selected',selected);
+    button.setAttribute('aria-pressed',selected?'true':'false');
+  });
+}
+
+function renderQuickBetPresets(g,p){
+  const row=$('quick-bets');
+  if (!row) return;
+  const presets=quickBetPresets(g,p);
+  row.replaceChildren();
+  row.classList.toggle('hidden',presets.length===0);
+  presets.forEach(preset=>{
+    const button=document.createElement('button');
+    button.type='button';
+    button.className='quick-bet';
+    button.textContent=preset.label;
+    button.dataset.amount=String(preset.amount);
+    button.setAttribute('aria-label',preset.label+', set wager to '+preset.amount.toLocaleString());
+    button.setAttribute('aria-pressed','false');
+    const release=()=>button.classList.remove('is-pressed');
+    button.addEventListener('pointerdown',()=>button.classList.add('is-pressed'));
+    button.addEventListener('pointerup',release);
+    button.addEventListener('pointercancel',release);
+    button.addEventListener('pointerleave',release);
+    button.onclick=()=>setWagerAmount(preset.amount,{immediate:true});
+    row.appendChild(button);
+  });
+}
+
 /* Drives the console's inner two-face panel (see .actions-flip in
    03-action-console.css). The three-button row flips over as one stable
    unit to reveal a single full-width QUICK RESOLVE control on its reverse
@@ -3855,6 +3905,7 @@ function updateActionControls(){
     const cc0 = $('btn-checkcall');
     cc0.textContent = 'Check'; cc0.className = 'btn-check';
     $('btn-raise').textContent = 'Raise';
+    renderQuickBetPresets(null,null);
     return;
   }
   if (row) row.classList.remove('disabled');
@@ -3871,15 +3922,15 @@ function updateActionControls(){
   raiseBtn.textContent = panelOpen ? 'Confirm' : (toCall>0 ? 'Raise' : 'Bet');
   $('btn-fold').classList.remove('btn-disabled');
 
-  const maxTotal = p.chips + p.betThisRound;
-  const minTotal = Math.min(maxTotal, Math.max(g.currentBet + g.minRaise, p.betThisRound + g.bigBlind));
+  const bounds = wagerBounds(g,p);
+  const maxTotal = bounds.max;
+  const minTotal = bounds.min;
   const slider = $('raise-slider');
   /* step MUST stay 1. A coarse step silently rewrites values assigned to a
      range input as well as real drags. Free movement keeps the mechanical
      slider smooth and guarantees the displayed total is the committed one. */
   slider.min = minTotal; slider.max = maxTotal; slider.step = 1;
-  if (!panelOpen) slider.value = minTotal;
-  if (parseInt(slider.value,10) < minTotal) slider.value = minTotal;
+  const nextAmount=!panelOpen ? minTotal : slider.value;
 
   // raising is unavailable if you've already acted and face only a short all-in,
   // or you simply can't cover a legal raise
@@ -3887,8 +3938,8 @@ function updateActionControls(){
   if (!p.mayRaise || !canAffordRaise || p.chips<=0) raiseBtn.classList.add('btn-disabled');
   else raiseBtn.classList.remove('btn-disabled');
 
-  updateRaiseReel(parseInt(slider.value,10));
-  syncSliderFill();
+  renderQuickBetPresets(g,p);
+  setWagerAmount(nextAmount,{immediate:true});
 }
 
 function describeCurrentTurn(){
