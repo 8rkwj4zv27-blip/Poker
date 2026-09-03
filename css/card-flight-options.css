@@ -63,21 +63,22 @@ body{
 }
 .cfo-path-label i{ height:1px; flex:1; opacity:.45; background:repeating-linear-gradient(90deg,var(--accent) 0 4px,transparent 4px 9px); }
 .cfo-console{ padding:9px; border-top:3px solid var(--px-ink); background:var(--panel); }
-.cfo-options{ display:grid; grid-template-columns:repeat(3,1fr); gap:5px; }
-.cfo-options button,.cfo-actions button,.cfo-modes button{
+.cfo-direction{ display:grid; grid-template-columns:1fr 1fr; gap:5px; margin-bottom:6px; }
+.cfo-options{ display:grid; grid-template-columns:repeat(2,1fr); gap:5px; }
+.cfo-options button,.cfo-direction button,.cfo-actions button,.cfo-modes button{
   min-height:36px; border:2px solid var(--px-ink); border-radius:2px; color:var(--ink); background:var(--panel-2);
   box-shadow:0 3px 0 var(--px-ink); font-family:var(--font-hdr); cursor:pointer;
 }
 .cfo-options button{ min-height:50px; display:grid; grid-template-columns:18px 1fr; gap:4px; align-items:center; text-align:left; padding:6px; }
 .cfo-options strong{ color:var(--accent-bright); font-size:13px; }
 .cfo-options span{ font-size:5.5px; text-transform:uppercase; }
-.cfo-options button.active,.cfo-actions button.primary,.cfo-modes button.active{ color:var(--accent-ink); background:var(--accent); }
+.cfo-options button.active,.cfo-direction button.active,.cfo-actions button.primary,.cfo-modes button.active{ color:var(--accent-ink); background:var(--accent); }
 .cfo-options button.active strong{ color:inherit; }
 .cfo-description{ min-height:30px; margin:7px 2px; color:var(--ink-dim); font-size:9px; line-height:1.35; }
 .cfo-actions{ display:grid; grid-template-columns:repeat(3,1fr); gap:5px; }
-.cfo-actions button,.cfo-modes button{ font-size:5.5px; }
+.cfo-direction button,.cfo-actions button,.cfo-modes button{ font-size:5.5px; }
 .cfo-modes{ display:grid; grid-template-columns:1fr 1.25fr .75fr; gap:5px; margin-top:6px; }
-.cfo-options button:active,.cfo-actions button:active,.cfo-modes button:active{ transform:translateY(2px); box-shadow:0 1px 0 var(--px-ink); }
+.cfo-options button:active,.cfo-direction button:active,.cfo-actions button:active,.cfo-modes button:active{ transform:translateY(2px); box-shadow:0 1px 0 var(--px-ink); }
 #cfo-readout{
   display:block; min-height:47px; margin-top:8px; padding:7px; border:2px solid var(--px-ink);
   color:var(--pc-display-ink); background:var(--pc-display); font:5.5px/1.55 var(--font-hdr);

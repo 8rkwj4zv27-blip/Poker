@@ -36,10 +36,15 @@
     </section>
 
     <section class="cfo-console">
+      <div class="cfo-direction" role="group" aria-label="Flight direction">
+        <button class="active" data-direction="deal" type="button">Deal from deck</button>
+        <button data-direction="return" type="button">Return to deck</button>
+      </div>
       <div class="cfo-options" role="group" aria-label="Flight treatment">
         <button class="active" data-variant="dealer" type="button"><strong>A</strong><span>Dealer flick</span></button>
         <button data-variant="casino" type="button"><strong>B</strong><span>Casino pitch</span></button>
         <button data-variant="machine" type="button"><strong>C</strong><span>Machine feed</span></button>
+        <button data-variant="wild" type="button"><strong>D</strong><span>Showboat sling</span></button>
       </div>
 
       <p id="cfo-description" class="cfo-description">A visible pickup and shallow hand-thrown arc, with restrained wrist movement and a precise landing.</p>
@@ -47,7 +52,7 @@
       <div class="cfo-actions">
         <button id="cfo-replay" class="primary" type="button">Deal one</button>
         <button id="cfo-sequence" type="button">Deal five</button>
-        <button id="cfo-compare" type="button">Compare A/B/C</button>
+        <button id="cfo-compare" type="button">Compare A/B/C/D</button>
       </div>
       <div class="cfo-modes" role="group" aria-label="Playback speed">
         <button class="active" data-speed="normal" type="button">Normal</button>

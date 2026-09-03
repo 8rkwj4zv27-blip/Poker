@@ -15,14 +15,18 @@ const serviceWorker=fs.readFileSync(path.join(root,'sw.js'),'utf8');
 let passed=0;
 function check(name,fn){ fn(); passed++; process.stdout.write('PASS  '+name+'\n'); }
 
-check('The comparison exposes all three distinct flight treatments',()=>{
-  for (const variant of ['dealer','casino','machine']){
+check('The comparison exposes four treatments in both directions',()=>{
+  for (const variant of ['dealer','casino','machine','wild']){
     assert.ok(html.includes('data-variant="'+variant+'"'));
     assert.ok(source.includes(variant+':{'));
   }
+  assert.ok(html.includes('data-direction="deal"'));
+  assert.ok(html.includes('data-direction="return"'));
   assert.ok(html.includes('Dealer flick'));
   assert.ok(html.includes('Casino pitch'));
   assert.ok(html.includes('Machine feed'));
+  assert.ok(html.includes('Showboat sling'));
+  for (const name of ['House sweep','Casino collect','Magnetic recall','Boomerang recall']) assert.ok(source.includes(name));
 });
 
 check('Every option shares destination-anchored centre geometry',()=>{
@@ -32,29 +36,46 @@ check('Every option shares destination-anchored centre geometry',()=>{
   assert.ok(source.includes("shell.style.height=destinationRect.height+'px'"));
   assert.ok(source.includes('x-destinationX'));
   assert.ok(source.includes('y-destinationY'));
-  assert.ok(source.includes("[1,1,0,0,0,1,null]"));
+  assert.ok(source.includes("[1,1,0,0,0,1,null,0]"));
+  assert.ok(source.includes('normalX*curve'));
+  assert.ok(source.includes('normalY*curve-lift'));
 });
 
 check('The flight is the visible top deck card, not a spawned generic sprite',()=>{
-  assert.ok(source.includes('const source=availableDeckTop()'));
+  assert.ok(source.includes("const source=returning?targetCard:availableDeckTop()"));
   assert.ok(source.includes('const card=source.cloneNode(false)'));
   assert.ok(source.includes("source.style.visibility='hidden'"));
   assert.ok(source.includes("card.className='card back small'"));
   assert.ok(source.includes('for (let index=0;index<10;index++)'));
 });
 
-check('One-card, five-card and sequential comparison playback are all available',()=>{
+check('One-card, five-card and four-way comparison playback are all available',()=>{
   assert.ok(html.includes('id="cfo-replay"'));
   assert.ok(html.includes('id="cfo-sequence"'));
   assert.ok(html.includes('id="cfo-compare"'));
-  assert.ok(source.includes('async function dealOne()'));
-  assert.ok(source.includes('async function dealFive()'));
-  assert.ok(source.includes("for (const name of ['dealer','casino','machine'])"));
+  assert.ok(source.includes('async function playOne()'));
+  assert.ok(source.includes('async function playFive()'));
+  assert.ok(source.includes("for (const name of ['dealer','casino','machine','wild'])"));
+});
+
+check('Casino and wild treatments choose a fresh signed spin per card',()=>{
+  assert.ok((source.match(/spinChoices:\[180,360\]/g)||[]).length===2);
+  assert.ok((source.match(/spinChoices:\[360,540,720\]/g)||[]).length===2);
+  assert.ok(source.includes('Math.floor(Math.random()*choice.spinChoices.length)'));
+  assert.ok(source.includes("Math.random()<.5?-1:1"));
+});
+
+check('Return mode starts with dealt cards and rebuilds the deck layer by layer',()=>{
+  assert.ok(source.includes("Array.from(deck.children).slice(-5)"));
+  assert.ok(source.includes("targets.forEach(card=>{ card.style.opacity='1'; })"));
+  assert.ok(source.includes("const destination=returning?nextEmptyDeckLayer():targetCard"));
+  assert.ok(source.includes("if (returning) destination.style.visibility='visible'"));
+  assert.ok(source.includes("direction==='return'?targets.slice().reverse():targets"));
 });
 
 check('Slow inspection changes duration without changing the authored path',()=>{
   assert.ok(html.includes('data-speed="slow"'));
-  assert.ok(source.includes("treatment.duration*(playback==='slow'?2.5:1)"));
+  assert.ok(source.includes("choice.duration*(playback==='slow'?2.5:1)"));
 });
 
 check('The instrument measures refresh, transform diversity, gaps and landing drift',()=>{
