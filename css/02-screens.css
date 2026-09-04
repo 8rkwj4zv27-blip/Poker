@@ -767,8 +767,12 @@
   transition:border-color var(--dur-fast), color var(--dur-fast);
   box-shadow:0 2px 0 rgba(0,0,0,.45), inset 0 2px 0 rgba(255,255,255,.07);
 }
-.seat.winner .avatar{ border-color:var(--good); box-shadow:0 0 0 3px var(--good), 0 2px 0 rgba(0,0,0,.45); }
-.seat.winner .seat-name{ color:var(--good); }
+.seat.winner .avatar{
+  border-color:var(--pc-lamp-amber-hi);
+  background:color-mix(in srgb,var(--pc-lamp-amber) 24%,var(--seat-bg));
+  box-shadow:0 0 0 4px var(--pc-lamp-amber),0 0 14px color-mix(in srgb,var(--pc-lamp-amber) 58%,transparent),0 3px 0 rgba(0,0,0,.55);
+}
+.seat.winner .seat-name{ color:var(--pc-lamp-amber-hi); text-shadow:1px 1px 0 var(--px-ink); }
 /* Showdown result console — opponent-seat celebration. A brief punch/pop
    plus a finite (not infinite) rim pulse layered on top of the permanent
    .seat.winner glow above, triggered once by celebrateWinnerSeat() right
@@ -780,10 +784,11 @@
    below for the human's own noticeably bigger moment. */
 .winner-pop{ animation:winnerPunch .3s cubic-bezier(.2,.72,.3,1); }
 @keyframes winnerPunch{ 0%{ transform:scale(1); } 45%{ transform:scale(1.08); } 100%{ transform:scale(1); } }
-.seat.winner-pulse .avatar, .seat.winner-pulse .seat-card{ animation:winnerRim .55s cubic-bezier(.2,.72,.3,1) 2; }
+.seat.winner-pulse .avatar, .seat.winner-pulse .seat-card{ animation:winnerRim .72s cubic-bezier(.2,.72,.3,1); }
 @keyframes winnerRim{
-  0%,100%{ box-shadow:0 0 0 3px var(--good), 0 2px 0 rgba(0,0,0,.45); }
-  50%{ box-shadow:0 0 0 6px var(--good), 0 2px 0 rgba(0,0,0,.45); }
+  0%{ box-shadow:0 0 0 3px var(--pc-lamp-amber),0 2px 0 rgba(0,0,0,.45); }
+  58%{ box-shadow:0 0 0 7px var(--pc-lamp-amber-hi),0 0 19px color-mix(in srgb,var(--pc-lamp-amber) 72%,transparent),0 5px 0 rgba(0,0,0,.55); }
+  100%{ box-shadow:0 0 0 4px var(--pc-lamp-amber),0 0 12px color-mix(in srgb,var(--pc-lamp-amber) 48%,transparent),0 4px 0 rgba(0,0,0,.5); }
 }
 
 /* SB/BB token — one coherent circular physical-marker design shared with
@@ -907,7 +912,14 @@
   padding:3px; gap:2px;
   box-shadow:0 4px 0 rgba(0,0,0,.5), inset 0 2px 0 rgba(255,255,255,.08), inset 0 -2px 0 rgba(0,0,0,.3);
 }
-.seat.winner .seat-card{ border-color:var(--good); box-shadow:0 0 0 2px var(--good), 0 4px 0 rgba(0,0,0,.5); }
+.seat.winner .seat-card{
+  border-color:var(--pc-lamp-amber-hi);
+  background:
+    linear-gradient(rgba(255,255,255,.2) 0 0) top 2px left 2px/3px 3px no-repeat,
+    linear-gradient(rgba(255,255,255,.2) 0 0) top 2px right 2px/3px 3px no-repeat,
+    color-mix(in srgb,var(--pc-lamp-amber) 24%,var(--seat-bg));
+  box-shadow:0 0 0 4px var(--pc-lamp-amber),0 0 15px color-mix(in srgb,var(--pc-lamp-amber) 55%,transparent),0 5px 0 rgba(0,0,0,.55);
+}
 .seat-card .hearts{ margin:0; }
 .seat-card .seat-name{ margin-top:0; }
 /* Opponent bankroll aperture. The stable six-reel instrument is built by
@@ -1093,10 +1105,9 @@
    as a short-lived class on #hud-frame itself, right before it
    transforms into the result console — the existing dashboard housing
    getting a bigger moment, not a duplicated portrait or new element. A
-   brief mechanical shake/bounce plus a stepped rim-flash cycling between
-   the existing --good/--accent-bright tokens (never a hardcoded colour,
-   so this reads correctly in every theme), finite (2 flash cycles), then
-   settles straight into the normal .result-mode look. */
+   brief mechanical shake/bounce plus a smooth rim charge into the existing
+   machine's dedicated amber-lamp treatment (stable across every theme),
+   then settles into the result console. */
 .hud-frame-win{ animation:hudWinShake .45s cubic-bezier(.2,.72,.3,1); }
 @keyframes hudWinShake{
   0%{ transform:translateY(0) scale(1); }
@@ -1106,10 +1117,15 @@
   60%{ transform:translateY(-1px) translateX(-1px) scale(1.01); }
   100%{ transform:translateY(0) translateX(0) scale(1); }
 }
-.hud-frame-win-flash{ animation:hudWinFlash .6s steps(6,end) 2; }
+.hud-frame-win-flash{
+  border-color:var(--pc-lamp-amber-hi);
+  box-shadow:0 4px 0 rgba(0,0,0,.55),inset 0 2px 0 rgba(255,255,255,.1),inset 0 -2px 0 rgba(0,0,0,.3),0 0 0 5px var(--pc-lamp-amber),0 0 18px color-mix(in srgb,var(--pc-lamp-amber) 58%,transparent);
+  animation:hudWinFlash .72s cubic-bezier(.2,.72,.3,1);
+}
 @keyframes hudWinFlash{
-  0%,100%{ box-shadow:0 4px 0 rgba(0,0,0,.55), inset 0 2px 0 rgba(255,255,255,.08), inset 0 -2px 0 rgba(0,0,0,.3), 0 0 0 2px var(--good); }
-  50%{ box-shadow:0 4px 0 rgba(0,0,0,.55), inset 0 2px 0 rgba(255,255,255,.08), inset 0 -2px 0 rgba(0,0,0,.3), 0 0 0 6px var(--accent-bright); }
+  0%{ box-shadow:0 4px 0 rgba(0,0,0,.55),inset 0 2px 0 rgba(255,255,255,.08),inset 0 -2px 0 rgba(0,0,0,.3),0 0 0 2px var(--pc-lamp-amber); }
+  58%{ box-shadow:0 6px 0 rgba(0,0,0,.58),inset 0 2px 0 rgba(255,255,255,.14),inset 0 -2px 0 rgba(0,0,0,.3),0 0 0 8px var(--pc-lamp-amber-hi),0 0 24px color-mix(in srgb,var(--pc-lamp-amber) 72%,transparent); }
+  100%{ box-shadow:0 4px 0 rgba(0,0,0,.55),inset 0 2px 0 rgba(255,255,255,.1),inset 0 -2px 0 rgba(0,0,0,.3),0 0 0 5px var(--pc-lamp-amber),0 0 18px color-mix(in srgb,var(--pc-lamp-amber) 58%,transparent); }
 }
 /* RESULTS/dormant standby — the table-specific gameplay instruments power
    down while TABLE CLEARED is loaded (see powerDownDashboard() in
@@ -1424,30 +1440,32 @@
   padding-top:8px; border-top:2px solid rgba(255,255,255,.09);
 }
 
-/* RAIL FIVE — a shallow registration lane over the real felt. It is not a
-   result panel: the existing CRT/dashboard owns the words and the existing
-   pot owns the money. Card travel itself is WAAPI-driven with continuous
-   transform easing in 06-presentation.js. */
+/* RAIL FIVE / JACKPOT SWEEP — a shallow gold registration lane over the
+   real felt. It is not a result panel: the existing CRT/dashboard owns the
+   words and the existing pot owns the money. After the five physical card
+   transfers land, the made-hand cards rise and a warm lamp crosses the
+   complete combination; both movements are one-shot WAAPI timelines in
+   06-presentation.js, with these rules owning their exact final state. */
 .showdown-inspection-lane{
   position:absolute; z-index:12; left:50%; top:43%; width:min(268px,calc(100% - 22px));
   height:74px; transform:translate(-50%,-50%); pointer-events:none; opacity:0;
 }
 .showdown-inspection-lane::before{
   content:''; position:absolute; left:3px; right:3px; top:5px; bottom:5px;
-  border-top:2px solid color-mix(in srgb,var(--theme-rim) 34%,transparent);
-  border-bottom:2px solid color-mix(in srgb,var(--theme-rim) 24%,transparent);
+  border-top:2px solid color-mix(in srgb,var(--pc-lamp-amber) 68%,transparent);
+  border-bottom:2px solid color-mix(in srgb,var(--pc-lamp-amber) 52%,transparent);
   background:
-    linear-gradient(90deg,var(--theme-rim),var(--theme-rim)) left 7px top 0/2px 7px no-repeat,
-    linear-gradient(90deg,var(--theme-rim),var(--theme-rim)) right 7px top 0/2px 7px no-repeat,
-    linear-gradient(90deg,var(--theme-rim),var(--theme-rim)) left 7px bottom 0/2px 7px no-repeat,
-    linear-gradient(90deg,var(--theme-rim),var(--theme-rim)) right 7px bottom 0/2px 7px no-repeat,
-    color-mix(in srgb,var(--felt-2) 54%,transparent);
-  box-shadow:inset 0 2px 0 rgba(0,0,0,.28),0 2px 0 rgba(255,255,255,.025);
+    linear-gradient(90deg,var(--pc-lamp-amber),var(--pc-lamp-amber)) left 7px top 0/2px 7px no-repeat,
+    linear-gradient(90deg,var(--pc-lamp-amber),var(--pc-lamp-amber)) right 7px top 0/2px 7px no-repeat,
+    linear-gradient(90deg,var(--pc-lamp-amber),var(--pc-lamp-amber)) left 7px bottom 0/2px 7px no-repeat,
+    linear-gradient(90deg,var(--pc-lamp-amber),var(--pc-lamp-amber)) right 7px bottom 0/2px 7px no-repeat,
+    color-mix(in srgb,var(--felt-2) 48%,var(--pc-lamp-amber) 8%);
+  box-shadow:inset 0 2px 0 rgba(0,0,0,.32),0 3px 0 rgba(0,0,0,.22),0 0 12px color-mix(in srgb,var(--pc-lamp-amber) 22%,transparent);
 }
 .showdown-inspection-lane.is-present{ opacity:1; }
 .showdown-rail-destinations{
   position:absolute; inset:6px 9px; display:grid; grid-template-columns:repeat(5,44px);
-  justify-content:center; gap:5px;
+  justify-content:center; gap:5px; z-index:2;
 }
 .showdown-rail-card{
   position:relative; width:44px; height:62px; opacity:0;
@@ -1455,15 +1473,35 @@
 }
 .showdown-rail-card.is-ready{ opacity:1; }
 .showdown-rail-face{ position:absolute!important; inset:0; width:44px!important; height:62px!important; }
+.showdown-inspection-lane.is-settled .showdown-rail-card[data-treatment="strong"]{
+  z-index:3;
+  transform:perspective(800px) translate3d(0,-10px,8px) rotateZ(0deg) scale(1.045);
+}
+.showdown-inspection-lane.is-settled .showdown-rail-card[data-treatment="support"]{
+  transform:perspective(800px) translate3d(0,-2px,8px) rotateZ(0deg) scale(1.01);
+}
 .showdown-inspection-lane.is-settled .showdown-rail-card[data-treatment="strong"] .showdown-rail-face{
-  border-color:#6FA56F;
-  box-shadow:0 3px 0 rgba(0,0,0,.5),inset 0 0 0 2px rgba(57,112,67,.42),inset 0 2px 0 #fff,0 2px 0 2px rgba(70,142,84,.26);
+  border-color:var(--pc-lamp-amber-hi);
+  box-shadow:0 6px 0 rgba(0,0,0,.56),inset 0 0 0 2px color-mix(in srgb,var(--pc-lamp-amber) 48%,transparent),inset 0 2px 0 #fff,0 0 0 3px var(--pc-lamp-amber),0 0 17px color-mix(in srgb,var(--pc-lamp-amber) 64%,transparent);
 }
 .showdown-inspection-lane.is-settled .showdown-rail-card[data-treatment="support"] .showdown-rail-face{
-  border-color:#B18A37;
-  box-shadow:0 3px 0 rgba(0,0,0,.5),inset 0 0 0 2px rgba(177,138,55,.29),inset 0 2px 0 #fff,0 2px 0 2px rgba(177,138,55,.19);
+  border-color:color-mix(in srgb,var(--pc-lamp-amber) 76%,var(--px-ink));
+  box-shadow:0 4px 0 rgba(0,0,0,.52),inset 0 0 0 2px color-mix(in srgb,var(--pc-lamp-amber) 22%,transparent),inset 0 2px 0 #fff,0 0 0 2px color-mix(in srgb,var(--pc-lamp-amber) 58%,transparent);
 }
-.showdown-source-unused{ opacity:.68; }
+.showdown-rail-shine-clip{
+  position:absolute; z-index:4; left:3px; right:3px; top:5px; bottom:5px;
+  overflow:hidden; pointer-events:none;
+}
+.showdown-rail-sweep{
+  position:absolute; left:0; top:0; bottom:0; width:52px; opacity:0;
+  background:linear-gradient(90deg,transparent,color-mix(in srgb,var(--pc-lamp-amber) 76%,transparent),var(--pc-lamp-amber-hi),color-mix(in srgb,var(--pc-lamp-amber) 72%,transparent),transparent);
+  transform:translate3d(-62px,0,0) skewX(-12deg);
+}
+.showdown-source-unused{ opacity:.32; transition:opacity 280ms cubic-bezier(.2,.72,.3,1); }
+.felt.showdown-winner-locked .seat:not(.winner):not(.out){
+  opacity:.42; filter:saturate(.45) brightness(.72);
+  transition:opacity 280ms cubic-bezier(.2,.72,.3,1),filter 280ms cubic-bezier(.2,.72,.3,1);
+}
 .showdown-inspection-lane.is-clearing{ opacity:0; }
 
 @media (max-width:350px){
@@ -1475,7 +1513,7 @@
 @media (orientation:portrait) and (max-height:720px){
   .showdown-inspection-lane{ top:41%; }
 }
-[data-motion="off"] .showdown-rail-card{ transform:none!important; }
+[data-motion="off"] .showdown-rail-sweep{ display:none; }
 
 
 .card.win-card{

@@ -1245,6 +1245,8 @@ function clearAllCardDOM(){
   });
   const frame = $('hud-frame');
   if (frame) frame.classList.remove('hud-frame-win', 'hud-frame-win-flash');
+  const felt = $('felt');
+  if (felt) felt.classList.remove('showdown-winner-locked');
 }
 async function muckCards(){
   if (motionOff()) return;
@@ -4031,6 +4033,10 @@ const SHOWDOWN_RAIL_TIMING = Object.freeze({
   staggerMs:22,
   flightMinMs:440,
   flightMaxMs:520,
+  lockMs:430,
+  lockStaggerMs:42,
+  sweepMs:760,
+  sweepDelayMs:40,
   readableHoldMs:1050,
   clearMs:190
 });
@@ -4093,6 +4099,12 @@ function buildShowdownRail(main){
   const destinations=document.createElement('div');
   destinations.className='showdown-rail-destinations';
   lane.appendChild(destinations);
+  const shineClip=document.createElement('div');
+  shineClip.className='showdown-rail-shine-clip';
+  const sweep=document.createElement('div');
+  sweep.className='showdown-rail-sweep';
+  shineClip.appendChild(sweep);
+  lane.appendChild(shineClip);
 
   const entries=ordered.map(card=>{
     const source=showdownRailSource(card,winner);
@@ -4125,7 +4137,7 @@ function buildShowdownRail(main){
     });
   });
   felt.appendChild(lane);
-  return {lane,entries};
+  return {lane,entries,sweep};
 }
 
 async function presentShowdownRail(main){
@@ -4133,7 +4145,7 @@ async function presentShowdownRail(main){
   const token=showdownRailToken;
   const built=buildShowdownRail(main);
   if (!built) return false;
-  const {lane,entries}=built;
+  const {lane,entries,sweep}=built;
   lane.classList.add('is-present');
 
   if (motionOff()){
@@ -4176,11 +4188,61 @@ async function presentShowdownRail(main){
   const finished=await Promise.all(cardAnimations.map(item=>trackShowdownRailAnimation(item.animation)));
   if (token!==showdownRailToken || finished.some(ok=>!ok)) return false;
   cardAnimations.forEach(({entry,animation})=>{
-    entry.shell.style.transform='none';
+    entry.shell.style.transform='';
     entry.shell.style.willChange='';
     animation.cancel();
   });
+
+  // JACKPOT SWEEP — once all five physical transfers have genuinely
+  // landed, the made-hand cards lift out of the rail with the same
+  // continuous, lightly overshooting motion language as the deal/return
+  // flights. A warm table lamp crosses the complete five at the same
+  // moment. The lift ends at the exact transform owned by the settled CSS,
+  // so cancelling the WAAPI owners produces no final-frame snap.
   lane.classList.add('is-settled');
+  await new Promise(resolve=>requestAnimationFrame(resolve));
+  if (token!==showdownRailToken) return false;
+  const lockAnimations=entries.map((entry,index)=>{
+    const strong=entry.shell.dataset.treatment==='strong';
+    const finalY=strong?-10:-2;
+    const finalScale=strong?1.045:1.01;
+    const overshootY=strong?-13:-3;
+    const overshootScale=strong?1.06:1.018;
+    entry.shell.style.willChange='transform';
+    const animation=entry.shell.animate([
+      {transform:'perspective(800px) translate3d(0,0,0) rotateZ(0deg) scale(1)',offset:0,easing:'cubic-bezier(.2,.66,.28,1)'},
+      {transform:'perspective(800px) translate3d(0,'+overshootY+'px,10px) rotateZ('+(strong?(index%2?.35:-.35):0)+'deg) scale('+overshootScale+')',offset:.72,easing:'cubic-bezier(.22,.72,.3,1)'},
+      {transform:'perspective(800px) translate3d(0,'+finalY+'px,8px) rotateZ(0deg) scale('+finalScale+')',offset:1}
+    ],{
+      duration:SHOWDOWN_RAIL_TIMING.lockMs,
+      delay:index*SHOWDOWN_RAIL_TIMING.lockStaggerMs,
+      easing:'linear',fill:'both'
+    });
+    return {entry,animation};
+  });
+  const sweepDistance=lane.getBoundingClientRect().width+104;
+  sweep.style.willChange='transform,opacity';
+  const sweepAnimation=sweep.animate([
+    {transform:'translate3d(-62px,0,0) skewX(-12deg)',opacity:0,offset:0},
+    {opacity:.88,offset:.16,easing:'cubic-bezier(.18,.7,.26,1)'},
+    {opacity:.72,offset:.76,easing:'cubic-bezier(.3,0,.7,1)'},
+    {transform:'translate3d('+sweepDistance+'px,0,0) skewX(-12deg)',opacity:0,offset:1}
+  ],{
+    duration:SHOWDOWN_RAIL_TIMING.sweepMs,
+    delay:SHOWDOWN_RAIL_TIMING.sweepDelayMs,
+    easing:'linear',fill:'both'
+  });
+  const lockFinished=await Promise.all([
+    ...lockAnimations.map(item=>trackShowdownRailAnimation(item.animation)),
+    trackShowdownRailAnimation(sweepAnimation)
+  ]);
+  if (token!==showdownRailToken || lockFinished.some(ok=>!ok)) return false;
+  lockAnimations.forEach(({entry,animation})=>{
+    entry.shell.style.willChange='';
+    animation.cancel();
+  });
+  sweepAnimation.cancel();
+  sweep.style.willChange='';
   return true;
 }
 
@@ -4615,6 +4677,8 @@ async function runShowdownAwardSequence(potResults, contenders){
   }
 
   winnerIds.forEach(id=>celebrateWinnerSeat(id));
+  const felt=$('felt');
+  if (felt) felt.classList.add('showdown-winner-locked');
 
   if (main.cards) await (motionOff() ? sleep(0) : pacedSleep(SHOWDOWN_RAIL_TIMING.readableHoldMs));
 

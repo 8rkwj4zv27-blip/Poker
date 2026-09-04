@@ -449,8 +449,20 @@ body #home #home-settings{ background:var(--theme-case-raised); color:var(--ink)
     inset 1px 1px 0 color-mix(in srgb,var(--accent-bright) 42%,transparent);
 }
 .seat.winner:not(.you) .seat-card{
-  border-color:var(--good);
-  box-shadow:0 5px 0 color-mix(in srgb,var(--good) 48%,black),0 0 0 2px var(--good),0 8px 0 rgba(0,0,0,.34);
+  border-color:var(--pc-lamp-amber-hi);
+  background:
+    linear-gradient(rgba(255,255,255,.2) 0 0) top 2px left 2px/3px 3px no-repeat,
+    linear-gradient(rgba(255,255,255,.2) 0 0) top 2px right 2px/3px 3px no-repeat,
+    color-mix(in srgb,var(--pc-lamp-amber) 32%,var(--machine-case));
+  box-shadow:0 5px 0 color-mix(in srgb,var(--pc-lamp-amber) 58%,black),0 0 0 4px var(--pc-lamp-amber-hi),0 0 17px color-mix(in srgb,var(--pc-lamp-amber) 62%,transparent),0 9px 0 rgba(0,0,0,.4);
+}
+.seat.winner:not(.you) .avatar{
+  border-color:var(--pc-lamp-amber-hi);
+  box-shadow:0 0 0 3px var(--pc-lamp-amber),0 0 13px color-mix(in srgb,var(--pc-lamp-amber) 56%,transparent),0 3px 0 rgba(0,0,0,.52);
+}
+.seat.winner:not(.you) .seat-name{
+  color:var(--pc-edge-lo); background:var(--pc-lamp-amber-hi); border-color:var(--pc-lamp-amber);
+  text-shadow:none; box-shadow:0 3px 0 color-mix(in srgb,var(--pc-lamp-amber) 55%,black);
 }
 
 /* The lower dashboard is its own machine: a single textured housing with
@@ -466,6 +478,14 @@ body #home #home-settings{ background:var(--theme-case-raised); color:var(--ink)
     inset 2px 2px 0 rgba(255,255,255,.09),inset -2px -2px 0 rgba(0,0,0,.25);
 }
 #hud-frame:has(.seat.you.active){ border-color:var(--theme-case-raised); border-top-color:var(--theme-case-hi); }
+#hud-frame.hud-frame-win-flash{
+  border-color:var(--pc-lamp-amber-hi); border-top-color:var(--pc-lamp-amber-hi);
+  background:
+    repeating-conic-gradient(rgba(255,255,255,.035) 0 25%,transparent 0 50%) 0 0/7px 7px,
+    linear-gradient(color-mix(in srgb,var(--pc-lamp-amber) 18%,transparent),color-mix(in srgb,var(--pc-lamp-amber) 18%,transparent)),
+    var(--machine-case);
+  box-shadow:0 5px 0 color-mix(in srgb,var(--pc-lamp-amber) 55%,black),0 0 0 5px var(--pc-lamp-amber-hi),0 0 20px color-mix(in srgb,var(--pc-lamp-amber) 62%,transparent),0 9px 0 rgba(0,0,0,.5),inset 2px 2px 0 rgba(255,255,255,.12),inset -2px -2px 0 rgba(0,0,0,.25);
+}
 #hud-left,#hud-right{
   background:var(--machine-recess); border-color:color-mix(in srgb,var(--theme-case-raised) 68%,black);
   box-shadow:inset 0 5px 0 rgba(0,0,0,.55),inset 2px 0 0 rgba(0,0,0,.22),

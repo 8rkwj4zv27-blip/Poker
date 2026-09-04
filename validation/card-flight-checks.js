@@ -196,8 +196,8 @@ function endpoints(style='deal'){
   });
 
   await check('Build and offline cache markers are synchronised for Card Flight',()=>{
-    assert.ok(support.includes("const BUILD_VERSION = 'v0.32.2-dev · Card Flight Polish'"));
-    assert.ok(serviceWorker.includes("const CACHE_NAME = 'poker-v32-2'"));
+    assert.ok(support.includes("const BUILD_VERSION = 'v0.32.3-dev · Jackpot Sweep'"));
+    assert.ok(serviceWorker.includes("const CACHE_NAME = 'poker-v32-3'"));
   });
 
   process.stdout.write('\n'+passed+' focused Card Flight checks passed.\n');

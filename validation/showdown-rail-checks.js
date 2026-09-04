@@ -13,7 +13,9 @@ const labSource=fs.readFileSync(path.join(root,'js/showdown-rail-lab.js'),'utf8'
 const html=fs.readFileSync(path.join(root,'showdown-rail-lab.html'),'utf8');
 const css=fs.readFileSync(path.join(root,'css/showdown-rail-lab.css'),'utf8');
 const production=fs.readFileSync(path.join(root,'js/06-presentation.js'),'utf8');
+const foundationCss=fs.readFileSync(path.join(root,'css/01-foundation.css'),'utf8');
 const productionCss=fs.readFileSync(path.join(root,'css/02-screens.css'),'utf8');
+const actionCss=fs.readFileSync(path.join(root,'css/03-action-console.css'),'utf8');
 const support=fs.readFileSync(path.join(root,'js/02-support-systems.js'),'utf8');
 const serviceWorker=fs.readFileSync(path.join(root,'sw.js'),'utf8');
 
@@ -212,9 +214,9 @@ check('The frame sampler records intervals, long gaps and transform diversity',(
 });
 
 check('The isolated page mounts the real production table without live wiring',()=>{
-  assert.ok(html.includes('<script src="js/01-poker-math.js"></script>'));
-  assert.ok(html.includes('<script src="js/05-game-engine.js"></script>'));
-  assert.ok(html.includes('<script src="js/06-presentation.js"></script>'));
+  assert.ok(/<script src="js\/01-poker-math\.js(?:\?[^\"]+)?"><\/script>/.test(html));
+  assert.ok(/<script src="js\/05-game-engine\.js(?:\?[^\"]+)?"><\/script>/.test(html));
+  assert.ok(/<script src="js\/06-presentation\.js(?:\?[^\"]+)?"><\/script>/.test(html));
   assert.ok(!html.includes('js/07-ui-wiring.js'));
   assert.ok(!html.includes('js/08-dev-mode.js'));
   assert.ok(labSource.includes("fetch('index.html',{cache:'no-store'})"));
@@ -283,10 +285,45 @@ check('Live rail has one stagger source and awaits every card before settling',(
   assert.ok(!/transition-delay|animation-delay/.test(productionCss.slice(productionCss.indexOf('/* RAIL FIVE'),productionCss.indexOf('.card.win-card'))));
 });
 
+check('Jackpot Sweep locks the winning five with continuous physical lift',()=>{
+  const build=production.slice(production.indexOf('function buildShowdownRail'),production.indexOf('async function presentShowdownRail'));
+  const present=production.slice(production.indexOf('async function presentShowdownRail'),production.indexOf('function showdownRailResultCopy'));
+  assert.ok(production.includes('lockMs:430'));
+  assert.ok(production.includes('lockStaggerMs:42'));
+  assert.ok(production.includes('sweepMs:760'));
+  assert.ok(build.includes("shineClip.className='showdown-rail-shine-clip'"));
+  assert.ok(build.includes("sweep.className='showdown-rail-sweep'"));
+  assert.ok(present.includes("const strong=entry.shell.dataset.treatment==='strong'"));
+  assert.ok(present.includes('const finalY=strong?-10:-2'));
+  assert.ok(present.includes("transform:'perspective(800px) translate3d("));
+  assert.ok(present.includes('const sweepAnimation=sweep.animate(['));
+  assert.ok(present.includes('await Promise.all(['));
+  assert.ok(present.indexOf("lane.classList.add('is-settled')")<present.indexOf('const lockAnimations='));
+});
+
+check('Jackpot Sweep finishes gold and gives the actual winner dominant table focus',()=>{
+  const railCss=productionCss.slice(productionCss.indexOf('/* RAIL FIVE'),productionCss.indexOf('.card.win-card'));
+  assert.ok(foundationCss.includes('--pc-lamp-amber-hi:#FFE49B'));
+  assert.ok(railCss.includes('translate3d(0,-10px,8px)'));
+  assert.ok(railCss.includes('border-color:var(--pc-lamp-amber-hi)'));
+  assert.ok(railCss.includes('var(--pc-lamp-amber)'));
+  assert.ok(railCss.includes('.showdown-rail-sweep'));
+  assert.ok(railCss.includes('.felt.showdown-winner-locked .seat:not(.winner):not(.out)'));
+  assert.ok(actionCss.includes('.seat.winner:not(.you) .seat-card{'));
+  assert.ok(actionCss.includes('0 0 0 4px var(--pc-lamp-amber-hi)'));
+  assert.ok(actionCss.includes('#hud-frame.hud-frame-win-flash{'));
+  const sequence=production.slice(production.indexOf('async function runShowdownAwardSequence'),production.indexOf('await finishHand(outcome)'));
+  assert.ok(sequence.indexOf("felt.classList.add('showdown-winner-locked')")>sequence.indexOf('winnerIds.forEach(id=>celebrateWinnerSeat(id))'));
+  const cleanup=production.slice(production.indexOf('function clearAllCardDOM(){'),production.indexOf('async function muckCards'));
+  assert.ok(cleanup.includes("felt.classList.remove('showdown-winner-locked')"));
+  assert.ok(labSource.includes("felt.classList.add('showdown-winner-locked')"));
+});
+
 check('Live reduced motion performs no travelling-card animation',()=>{
   const present=production.slice(production.indexOf('async function presentShowdownRail'),production.indexOf('function showdownRailResultCopy'));
   const reduced=present.slice(present.indexOf('if (motionOff())'),present.indexOf("await new Promise(resolve=>requestAnimationFrame(resolve))"));
   assert.ok(reduced.includes("entry.shell.classList.add('is-ready')"));
+  assert.ok(reduced.includes("lane.classList.add('is-settled')"));
   assert.ok(!reduced.includes('.animate('));
   assert.ok(!reduced.includes('staggerMs'));
 });
@@ -313,7 +350,8 @@ check('Live rail CSS is a shallow five-card guide with continuous physical motio
   assert.ok(railCss.includes('grid-template-columns:repeat(5,44px)'));
   assert.ok(railCss.includes('grid-template-columns:repeat(5,42px)'));
   assert.ok(!/steps\s*\(/i.test(railCss));
-  assert.ok(!/filter\s*:|backdrop-filter\s*:/.test(railCss));
+  assert.ok(!/backdrop-filter\s*:/.test(railCss));
+  assert.ok(!/\.showdown-rail-(?:card|face|sweep)[^{]*\{[^}]*filter\s*:/s.test(railCss));
   assert.ok(!/winning five/i.test(railCss));
 });
 
@@ -331,8 +369,8 @@ check('The development harness can exercise the shipped rail without starting or
 });
 
 check('Rail Five remains shipped after the later build/cache marker advance',()=>{
-  assert.ok(support.includes("const BUILD_VERSION = 'v0.32.2-dev · Card Flight Polish'"));
-  assert.ok(serviceWorker.includes("const CACHE_NAME = 'poker-v32-2'"));
+  assert.ok(support.includes("const BUILD_VERSION = 'v0.32.3-dev · Jackpot Sweep'"));
+  assert.ok(serviceWorker.includes("const CACHE_NAME = 'poker-v32-3'"));
   assert.ok(production.includes('function presentShowdownRail(main)'));
 });
 

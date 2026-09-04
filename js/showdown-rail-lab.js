@@ -70,6 +70,8 @@
       el.classList.remove('sdr-unused-source');
     });
     document.querySelectorAll('.sdr-winner-seat').forEach(el=>el.classList.remove('sdr-winner-seat'));
+    const felt=$('felt');
+    if (felt) felt.classList.remove('showdown-winner-locked');
     const lane=$('sdr-inspection-lane');
     if (lane){
       lane.className='sdr-inspection-lane';
@@ -450,6 +452,8 @@
     const ready=await presentShowdownRail(main);
     if (!ready || token!==runToken) return;
     model.winnerIds.forEach(id=>celebrateWinnerSeat(id));
+    const felt=$('felt');
+    if (felt) felt.classList.add('showdown-winner-locked');
     showShowdownRailResult(main);
     setState('Live rail settled · '+model.handName,'settled');
     await waitOnTimeline(TIMING.readableHoldMs,token);
