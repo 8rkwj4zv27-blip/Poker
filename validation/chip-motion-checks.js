@@ -40,11 +40,39 @@ check('Flights own cancellation and preserve exact landing bookkeeping',()=>{
 });
 
 check('Large transfers retain their bounded self-correcting lane',()=>{
-  const transfer=slice('const MAX_CONCURRENT_FLIGHTS = 6;','function payoutTo(winner, n){');
+  const transfer=slice('const MAX_CONCURRENT_FLIGHTS = 14;','function payoutTo(winner, n){');
   assert.ok(transfer.includes('active>=MAX_CONCURRENT_FLIGHTS'));
   assert.ok(transfer.includes('gateOpen = false'));
   assert.ok(transfer.includes('onLand: ()=>{ active--; landed++'));
   assert.ok(transfer.includes('chipStaggerGapAt(n, launched, fast)'));
+});
+
+check('Large bets use separated lanes and a dense non-pulsing cadence',()=>{
+  const flight=slice('function flyChip(opts){','function chipStaggerGap(n, fast){');
+  const cadence=slice('function chipStaggerGap(n, fast){','const MAX_CONCURRENT_FLIGHTS = 14;');
+  assert.ok(flight.includes('batchIndex=0, batchSize=1'));
+  assert.ok(flight.includes('const lanePattern=[-2,1,-1,2,0]'));
+  assert.ok(flight.includes('normalX*laneOffset'));
+  assert.ok(flight.includes('batchSize>20?560'));
+  assert.ok(cadence.includes('n<=20 ? 52 : 38'));
+  assert.ok(cadence.includes('floorGap * 1.35'));
+});
+
+check('A new pot seeds a broad base before growing towers',()=>{
+  const pile=slice('function potPile(){','function towerHeight');
+  const claim=slice('function claimDestSlot(container, pile){','function settleSlot');
+  assert.ok(pile.includes('spreadMin:Math.min(5,grid.slots.length)'));
+  assert.ok(claim.includes('occupied<pile.spreadMin'));
+  assert.ok(claim.indexOf('occupied<pile.spreadMin')<claim.indexOf('h>0 && h<pile.caps[idx]'));
+  assert.ok(claim.includes('visualIndex=pile.order.reduce'));
+  assert.ok(claim.includes('visualIndex }'));
+});
+
+check('Concurrent opponent chips do not inherit one repeated colour packet',()=>{
+  const colour=slice('function pickChipColor','/* Each colour ships');
+  const flight=slice('function flyChip(opts){','function chipStaggerGap(n, fast){');
+  assert.ok(colour.includes('reservedIndex==null'));
+  assert.ok(flight.includes('pickChipColor(dstContainer,claimed.visualIndex)'));
 });
 
 check('Pot-smash frames mutate transform only',()=>{
@@ -76,6 +104,7 @@ check('The production-native fixture covers every approved direction and load',(
   assert.ok(lab.includes('transferChips(count'));
   assert.ok(lab.includes('payoutTo(opponent,count)'));
   assert.ok(lab.includes('runPotSmashSequence'));
+  assert.ok(lab.includes("kind==='bank-pot'||kind==='opponent-pot'"));
   assert.ok(lab.includes('averageMs'));
   assert.ok(lab.includes('over34'));
   assert.ok(lab.includes('storageUnchanged'));
@@ -88,8 +117,8 @@ check('Fixture remains outside the offline game shell',()=>{
 });
 
 check('Build and offline cache markers identify this checkpoint',()=>{
-  assert.ok(support.includes("const BUILD_VERSION = 'v0.32.7-dev · Chip Motion'"));
-  assert.ok(serviceWorker.includes("const CACHE_NAME = 'poker-v32-7'"));
+  assert.ok(support.includes("const BUILD_VERSION = 'v0.32.8-dev · Chip Flow'"));
+  assert.ok(serviceWorker.includes("const CACHE_NAME = 'poker-v32-8'"));
 });
 
 process.stdout.write('\n'+passed+' focused Chip Motion checks passed.\n');

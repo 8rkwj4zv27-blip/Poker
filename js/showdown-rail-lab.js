@@ -263,6 +263,19 @@
     const opponent=game.players.find(player=>!player.isHuman);
     const opponentSeat=opponent&&seatEls[opponent.id];
     const requested=chipCount();
+    // Each direction begins from a believable production state. Incoming
+    // bets need an empty destination pot; payouts and smash need a full
+    // source pot. The old lab always started full, so its 60-chip incoming
+    // test tried to build 60 chips beyond the production visual cap.
+    if (kind==='bank-pot'||kind==='opponent-pot'){
+      resetPile(pot,potPile());
+      // Production updates the authoritative pot value before its visual
+      // chips finish arriving, so retain the fixture's headline amount
+      // while starting only the decorative mound empty.
+      game.pot=10000;
+      $('pot-val').textContent=game.pot.toLocaleString();
+      $('pot-area').classList.remove('hidden');
+    }
     const sourceCount=kind==='bank-pot'?(bank._chipCount||0):((kind==='pot-opponent'||kind==='smash-bank')?(pot._chipCount||0):requested);
     const count=Math.max(0,Math.min(requested,sourceCount));
     controlsLocked(true);

@@ -535,8 +535,8 @@ const CHIP_COLOR_CLASSES = ['d-black','d-blue','d-green','d-purple','d-red','d-w
    meaning. The old 4-colour set (chip-red/blue/green/yellow.png, plus
    the retired 'cream'->yellow standin) is gone entirely; every entry
    here now names one of the 7 real assets. */
-function pickChipColor(container){
-  const i = (container._chipCount||0) % CHIP_COLOR_CLASSES.length;
+function pickChipColor(container, reservedIndex){
+  const i = (reservedIndex==null ? (container._chipCount||0) : reservedIndex) % CHIP_COLOR_CLASSES.length;
   return CHIP_COLOR_CLASSES[i];
 }
 /* Each colour ships 3 rotated visual variants (chip-<colour>-0{1,2,3}.png)
@@ -875,7 +875,11 @@ function potPile(){
   });
   const stacks = $('pot-stacks');
   if (stacks){ stacks.style.width = potW+'px'; stacks.style.height = potH+'px'; }
-  _potPile = { grid, caps, order, cap: grid.slots.length*grid.maxPerSlot };
+  // A pot must read as a mound from its first ordinary bet, not as one
+  // centre tower that only spreads after reaching its preferred cap.
+  // claimDestSlot seeds these central slots before it starts growing the
+  // shortest existing stacks; the later cap logic is otherwise unchanged.
+  _potPile = { grid, caps, order, cap: grid.slots.length*grid.maxPerSlot, spreadMin:Math.min(5,grid.slots.length) };
   return _potPile;
 }
 
@@ -936,11 +940,21 @@ function realTowerHeight(container, slotIdx){
    final keyframe for its continuous timeline. Caller must eventually
    call settleSlot() to swap the placeholder for the real element. */
 function claimDestSlot(container, pile){
+  const visualIndex=pile.order.reduce((total,idx)=>total+towerHeight(container,idx),0);
   let slotIdx=-1, best=Infinity;
-  pile.order.forEach(idx=>{
-    const h = towerHeight(container, idx);
-    if (h>0 && h<pile.caps[idx] && h<best){ best=h; slotIdx=idx; }
-  });
+  if (pile.spreadMin){
+    const occupied=pile.order.filter(idx=>towerHeight(container,idx)>0).length;
+    if (occupied<pile.spreadMin){
+      const seed=pile.order.find(idx=>towerHeight(container,idx)===0);
+      if (seed!=null) slotIdx=seed;
+    }
+  }
+  if (slotIdx===-1){
+    pile.order.forEach(idx=>{
+      const h = towerHeight(container, idx);
+      if (h>0 && h<pile.caps[idx] && h<best){ best=h; slotIdx=idx; }
+    });
+  }
   if (slotIdx===-1){
     const found = pile.order.find(idx=>towerHeight(container, idx)===0);
     if (found!=null) slotIdx = found;
@@ -958,7 +972,7 @@ function claimDestSlot(container, pile){
   placeholder.className = 'chip-disc';
   placeholder.style.visibility = 'hidden';
   tower.appendChild(placeholder);
-  return { slotIdx, tower, placeholder };
+  return { slotIdx, tower, placeholder, visualIndex };
 }
 /* Swaps a reserved placeholder for the real chip element in the exact
    DOM position it already occupied — a plain in-place replace, not a
@@ -1624,7 +1638,7 @@ function cancelAllChipFlights(){
    onLand(el) fires once the chip has actually settled (or been
    discarded) — used for pending-counter bookkeeping by transferChips. */
 function flyChip(opts){
-  const { srcContainer, srcPile, srcEl, dstContainer, dstPile, dstEl, fast, onLand } = opts;
+  const { srcContainer, srcPile, srcEl, dstContainer, dstPile, dstEl, fast, onLand, batchIndex=0, batchSize=1 } = opts;
   let el, a, needsChipClass=false;
   if (srcContainer && srcPile){
     const taken = takeChipFromPile(srcContainer, srcPile);
@@ -1633,6 +1647,14 @@ function flyChip(opts){
   } else {
     a = squareAnchor(srcEl ? srcEl.getBoundingClientRect() : null);
     if (!a) a = { left: innerWidth/2, top: innerHeight/2, width:24, height:24 };
+    // An opponent's readout is a single abstract source, but a real stack
+    // would leave the hand with tiny positional differences. Fan large
+    // batches across that footprint so consecutive chips do not occupy
+    // the exact same pixels during their first frames.
+    if (batchSize>10){
+      const sourceLane=(batchIndex%5)-2;
+      a={...a,left:a.left+sourceLane*1.6,top:a.top+((batchIndex%3)-1)*1.2};
+    }
     el = document.createElement('div');
     needsChipClass = true;
   }
@@ -1647,7 +1669,7 @@ function flyChip(opts){
   if (dstContainer && dstPile){
     const claimed = claimDestSlot(dstContainer, dstPile);
     placeholder = claimed.placeholder;
-    if (needsChipClass) el.className = 'chip-disc ' + pickChipColor(dstContainer) + ' ' + pickChipVariant(claimed.tower);
+    if (needsChipClass) el.className = 'chip-disc ' + pickChipColor(dstContainer,claimed.visualIndex) + ' ' + pickChipVariant(claimed.tower);
   }
   // No persistent destination pile (e.g. a payout fading out at an
   // opponent's seat, which never keeps a visible resting pile) — no
@@ -1730,10 +1752,17 @@ function flyChip(opts){
   const d0 = centerDelta(b0);
   const hop = -(6 + Math.random()*8);            // the "small arc" — a lift mid-flight, not a straight line
   const spin = (Math.random()<.5?-1:1) * (18 + Math.random()*30);  // a modest tumble, always resolved flat by landing
-  const dur = Math.round((fast ? 230 : 700) * speedMult());
+  const baseDur=fast?230:(batchSize>20?560:(batchSize>10?620:700));
+  const dur = Math.round((baseDur+((batchIndex%5)-2)*10) * speedMult());
+  const travel=Math.max(1,Math.hypot(d0.dx,d0.dy));
+  const normalX=-d0.dy/travel,normalY=d0.dx/travel;
+  const lanePattern=[-2,1,-1,2,0];
+  const lane=lanePattern[batchIndex%lanePattern.length];
+  const sway=lane*Math.min(12,Math.max(5,travel*.028));
   function waypoint(t, rotDeg){
     const sxT = 1+(d0.sx-1)*t, syT = 1+(d0.sy-1)*t;
-    return 'translate('+(d0.dx*t)+'px,'+(d0.dy*t+hop*Math.sin(Math.PI*Math.min(1,t*1.15)))+'px) scale('+sxT+','+syT+') rotate('+rotDeg+'deg)';
+    const laneOffset=sway*Math.sin(Math.PI*t);
+    return 'translate('+(d0.dx*t+normalX*laneOffset)+'px,'+(d0.dy*t+normalY*laneOffset+hop*Math.sin(Math.PI*Math.min(1,t*1.15)))+'px) scale('+sxT+','+syT+') rotate('+rotDeg+'deg)';
   }
 
   let animation=null,rafA=0,rafB=0,complete=false;
@@ -1778,8 +1807,8 @@ function flyChip(opts){
    a noticeably snappier, more energetic release — same shape, scaled
    down. */
 function chipStaggerGap(n, fast){
-  const base = n<=2 ? 70 : n<=6 ? 110 : n<=12 ? 95 : n<=20 ? 80 : 65;
-  return fast ? Math.max(30, Math.round(base*0.55)) : base;
+  const base = n<=2 ? 70 : n<=6 ? 85 : n<=12 ? 70 : n<=20 ? 52 : 38;
+  return fast ? Math.max(26, Math.round(base*0.55)) : base;
 }
 /* Large-transfer acceleration — v0.1. chipStaggerGap() above is
    UNCHANGED and still anchors the pace — this only decides how that pace
@@ -1799,7 +1828,7 @@ function chipStaggerGap(n, fast){
 function chipStaggerGapAt(n, launched, fast){
   const floorGap = chipStaggerGap(n, fast);
   if (n <= 10) return floorGap;
-  const startGap = Math.round(floorGap * 2.6);
+  const startGap = Math.round(floorGap * 1.35);
   const progress = Math.min(1, launched / (n-1));
   const eased = progress*progress;
   return Math.round(startGap - (startGap-floorGap)*eased);
@@ -1808,11 +1837,11 @@ function chipStaggerGapAt(n, launched, fast){
    landed) at once. Pass 3C.3: NOT a launch-rate limiter — the gap above
    already paces launches — this is a hard ceiling on concurrent
    in-flight chips so a very large transfer (a 40+ chip all-in) can't
-   still end up with dozens of simultaneous CSS transitions / will-change
-   compositor layers / pending placeholder-swaps in flight together, even
-   though at ordinary pacing (duration ÷ gap ≈ 5) it almost never
-   actually binds. */
-const MAX_CONCURRENT_FLIGHTS = 6;
+   still end up with dozens of simultaneous compositor layers and pending
+   placeholder-swaps. Fourteen is enough to sustain the denser large-bet
+   cadence without forcing later launches to pulse on earlier landings,
+   while remaining a firm mobile rendering bound. */
+const MAX_CONCURRENT_FLIGHTS = 14;
 
 /* Launches `n` flyChip() calls as one controlled, self-correcting queue —
    the batch version of a bank<->pot (or pot<->opponent-seat) transfer.
@@ -1867,7 +1896,7 @@ function transferChips(n, src, dst, addPending, fast){
   if (motionOff()){
     for (let i=0;i<n;i++){
       flyChip({ srcContainer:src.container, srcPile:src.pile, srcEl:src.el,
-        dstContainer:dst.container, dstPile:dst.pile, dstEl:dst.el, fast });
+        dstContainer:dst.container, dstPile:dst.pile, dstEl:dst.el, fast, batchIndex:i, batchSize:n });
     }
     return Promise.resolve();
   }
@@ -1883,7 +1912,8 @@ function transferChips(n, src, dst, addPending, fast){
       flyChip({
         srcContainer:src.container, srcPile:src.pile, srcEl:src.el,
         dstContainer:dst.container, dstPile:dst.pile, dstEl:dst.el,
-        fast, onLand: ()=>{ active--; landed++; addPending(0,-1); if (landed>=n) resolve(); pump(); }
+        fast, batchIndex:launched-1, batchSize:n,
+        onLand: ()=>{ active--; landed++; addPending(0,-1); if (landed>=n) resolve(); pump(); }
       });
       // chipStaggerGapAt (not the old flat chipStaggerGap) — see its own
       // comment: large transfers accelerate as `launched` climbs toward
