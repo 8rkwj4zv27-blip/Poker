@@ -4035,8 +4035,10 @@ const SHOWDOWN_RAIL_TIMING = Object.freeze({
   flightMaxMs:520,
   lockMs:430,
   lockStaggerMs:42,
-  sweepMs:760,
-  sweepDelayMs:40,
+  shineMs:360,
+  shineStaggerMs:66,
+  shineDelayMs:120,
+  stampMs:340,
   readableHoldMs:1050,
   clearMs:190
 });
@@ -4099,12 +4101,13 @@ function buildShowdownRail(main){
   const destinations=document.createElement('div');
   destinations.className='showdown-rail-destinations';
   lane.appendChild(destinations);
-  const shineClip=document.createElement('div');
-  shineClip.className='showdown-rail-shine-clip';
-  const sweep=document.createElement('div');
-  sweep.className='showdown-rail-sweep';
-  shineClip.appendChild(sweep);
-  lane.appendChild(shineClip);
+  const handText=splitHandText(main.cat,main.hand);
+  const stamp=document.createElement('div');
+  stamp.className='showdown-hand-stamp';
+  stamp.setAttribute('aria-hidden','true');
+  stamp.textContent=(handText.category||main.hand).toUpperCase();
+  lane.setAttribute('aria-label','Winning five cards, '+stamp.textContent);
+  lane.appendChild(stamp);
 
   const entries=ordered.map(card=>{
     const source=showdownRailSource(card,winner);
@@ -4119,8 +4122,17 @@ function buildShowdownRail(main){
     face.setAttribute('aria-label',cardLabel(false,card));
     face.innerHTML=cardInner(card);
     shell.appendChild(face);
+    let shine=null;
+    if (shell.dataset.treatment==='strong'){
+      const shineClip=document.createElement('div');
+      shineClip.className='showdown-card-shine-clip';
+      shine=document.createElement('div');
+      shine.className='showdown-card-shine';
+      shineClip.appendChild(shine);
+      shell.appendChild(shineClip);
+    }
     destinations.appendChild(shell);
-    return {card,source,shell};
+    return {card,source,shell,shine};
   });
 
   const used=new Set(ordered.map(cardKey));
@@ -4137,7 +4149,7 @@ function buildShowdownRail(main){
     });
   });
   felt.appendChild(lane);
-  return {lane,entries,sweep};
+  return {lane,entries,stamp};
 }
 
 async function presentShowdownRail(main){
@@ -4145,7 +4157,7 @@ async function presentShowdownRail(main){
   const token=showdownRailToken;
   const built=buildShowdownRail(main);
   if (!built) return false;
-  const {lane,entries,sweep}=built;
+  const {lane,entries,stamp}=built;
   lane.classList.add('is-present');
 
   if (motionOff()){
@@ -4153,7 +4165,7 @@ async function presentShowdownRail(main){
       entry.shell.classList.add('is-ready');
       if (entry.source) entry.source.style.visibility='hidden';
     });
-    lane.classList.add('is-settled');
+    lane.classList.add('is-settled','is-stamped');
     return token===showdownRailToken;
   }
 
@@ -4196,9 +4208,10 @@ async function presentShowdownRail(main){
   // JACKPOT SWEEP — once all five physical transfers have genuinely
   // landed, the made-hand cards lift out of the rail with the same
   // continuous, lightly overshooting motion language as the deal/return
-  // flights. A warm table lamp crosses the complete five at the same
-  // moment. The lift ends at the exact transform owned by the settled CSS,
-  // so cancelling the WAAPI owners produces no final-frame snap.
+  // flights. A warm table lamp crosses only those raised made-hand cards,
+  // never their green kickers or the rail. The lift ends at the exact
+  // transform owned by the settled CSS, so cancelling the WAAPI owners
+  // produces no final-frame snap.
   lane.classList.add('is-settled');
   await new Promise(resolve=>requestAnimationFrame(resolve));
   if (token!==showdownRailToken) return false;
@@ -4220,29 +4233,45 @@ async function presentShowdownRail(main){
     });
     return {entry,animation};
   });
-  const sweepDistance=lane.getBoundingClientRect().width+104;
-  sweep.style.willChange='transform,opacity';
-  const sweepAnimation=sweep.animate([
-    {transform:'translate3d(-62px,0,0) skewX(-12deg)',opacity:0,offset:0},
-    {opacity:.88,offset:.16,easing:'cubic-bezier(.18,.7,.26,1)'},
-    {opacity:.72,offset:.76,easing:'cubic-bezier(.3,0,.7,1)'},
-    {transform:'translate3d('+sweepDistance+'px,0,0) skewX(-12deg)',opacity:0,offset:1}
-  ],{
-    duration:SHOWDOWN_RAIL_TIMING.sweepMs,
-    delay:SHOWDOWN_RAIL_TIMING.sweepDelayMs,
-    easing:'linear',fill:'both'
+  const strongEntries=entries.filter(entry=>entry.shine);
+  const shineAnimations=strongEntries.map((entry,index)=>{
+    entry.shine.style.willChange='transform,opacity';
+    const animation=entry.shine.animate([
+      {transform:'translate3d(-30px,0,0) skewX(-12deg)',opacity:0,offset:0},
+      {opacity:.92,offset:.22,easing:'cubic-bezier(.18,.7,.26,1)'},
+      {opacity:.74,offset:.72,easing:'cubic-bezier(.3,0,.7,1)'},
+      {transform:'translate3d(58px,0,0) skewX(-12deg)',opacity:0,offset:1}
+    ],{
+      duration:SHOWDOWN_RAIL_TIMING.shineMs,
+      delay:SHOWDOWN_RAIL_TIMING.shineDelayMs+index*SHOWDOWN_RAIL_TIMING.shineStaggerMs,
+      easing:'linear',fill:'both'
+    });
+    return {entry,animation};
   });
   const lockFinished=await Promise.all([
     ...lockAnimations.map(item=>trackShowdownRailAnimation(item.animation)),
-    trackShowdownRailAnimation(sweepAnimation)
+    ...shineAnimations.map(item=>trackShowdownRailAnimation(item.animation))
   ]);
   if (token!==showdownRailToken || lockFinished.some(ok=>!ok)) return false;
   lockAnimations.forEach(({entry,animation})=>{
     entry.shell.style.willChange='';
     animation.cancel();
   });
-  sweepAnimation.cancel();
-  sweep.style.willChange='';
+  shineAnimations.forEach(({entry,animation})=>{
+    animation.cancel();
+    entry.shine.style.willChange='';
+  });
+  lane.classList.add('is-stamped');
+  stamp.style.willChange='transform,opacity';
+  const stampAnimation=stamp.animate([
+    {transform:'translate(-50%,5px) scale(.92) rotateZ(-.45deg)',opacity:0,offset:0},
+    {transform:'translate(-50%,-2px) scale(1.035) rotateZ(.2deg)',opacity:1,offset:.68,easing:'cubic-bezier(.18,.72,.28,1)'},
+    {transform:'translate(-50%,0) scale(1) rotateZ(0deg)',opacity:1,offset:1}
+  ],{duration:SHOWDOWN_RAIL_TIMING.stampMs,easing:'linear',fill:'both'});
+  const stampFinished=await trackShowdownRailAnimation(stampAnimation);
+  if (token!==showdownRailToken || !stampFinished) return false;
+  stampAnimation.cancel();
+  stamp.style.willChange='';
   return true;
 }
 

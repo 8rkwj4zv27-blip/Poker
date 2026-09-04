@@ -290,24 +290,36 @@ check('Jackpot Sweep locks the winning five with continuous physical lift',()=>{
   const present=production.slice(production.indexOf('async function presentShowdownRail'),production.indexOf('function showdownRailResultCopy'));
   assert.ok(production.includes('lockMs:430'));
   assert.ok(production.includes('lockStaggerMs:42'));
-  assert.ok(production.includes('sweepMs:760'));
-  assert.ok(build.includes("shineClip.className='showdown-rail-shine-clip'"));
-  assert.ok(build.includes("sweep.className='showdown-rail-sweep'"));
+  assert.ok(production.includes('shineMs:360'));
+  assert.ok(production.includes('shineStaggerMs:66'));
+  assert.ok(production.includes('stampMs:340'));
+  assert.ok(build.includes("if (shell.dataset.treatment==='strong')"));
+  assert.ok(build.includes("shineClip.className='showdown-card-shine-clip'"));
+  assert.ok(build.includes("shine.className='showdown-card-shine'"));
+  assert.ok(build.includes("stamp.className='showdown-hand-stamp'"));
+  assert.ok(build.includes("handText.category||main.hand"));
   assert.ok(present.includes("const strong=entry.shell.dataset.treatment==='strong'"));
   assert.ok(present.includes('const finalY=strong?-10:-2'));
   assert.ok(present.includes("transform:'perspective(800px) translate3d("));
-  assert.ok(present.includes('const sweepAnimation=sweep.animate(['));
+  assert.ok(present.includes('const strongEntries=entries.filter(entry=>entry.shine)'));
+  assert.ok(present.includes('const shineAnimations=strongEntries.map('));
+  assert.ok(present.includes('const stampAnimation=stamp.animate(['));
   assert.ok(present.includes('await Promise.all(['));
   assert.ok(present.indexOf("lane.classList.add('is-settled')")<present.indexOf('const lockAnimations='));
+  assert.ok(present.indexOf("lane.classList.add('is-stamped')")>present.indexOf('const shineAnimations='));
 });
 
-check('Jackpot Sweep finishes gold and gives the actual winner dominant table focus',()=>{
+check('Jackpot Sweep uses gold made cards, green kickers and gives the actual winner dominant table focus',()=>{
   const railCss=productionCss.slice(productionCss.indexOf('/* RAIL FIVE'),productionCss.indexOf('.card.win-card'));
   assert.ok(foundationCss.includes('--pc-lamp-amber-hi:#FFE49B'));
+  assert.ok(foundationCss.includes('--pc-lamp-green-hi:#B9EACB'));
   assert.ok(railCss.includes('translate3d(0,-10px,8px)'));
   assert.ok(railCss.includes('border-color:var(--pc-lamp-amber-hi)'));
-  assert.ok(railCss.includes('var(--pc-lamp-amber)'));
-  assert.ok(railCss.includes('.showdown-rail-sweep'));
+  assert.ok(railCss.includes('border-color:var(--pc-lamp-green-hi)'));
+  assert.ok(railCss.includes('.showdown-card-shine-clip'));
+  assert.ok(railCss.includes('.showdown-card-shine'));
+  assert.ok(railCss.includes('.showdown-hand-stamp'));
+  assert.ok(!railCss.includes('.showdown-rail-sweep'));
   assert.ok(railCss.includes('.felt.showdown-winner-locked .seat:not(.winner):not(.out)'));
   assert.ok(actionCss.includes('.seat.winner:not(.you) .seat-card{'));
   assert.ok(actionCss.includes('0 0 0 4px var(--pc-lamp-amber-hi)'));
@@ -323,7 +335,7 @@ check('Live reduced motion performs no travelling-card animation',()=>{
   const present=production.slice(production.indexOf('async function presentShowdownRail'),production.indexOf('function showdownRailResultCopy'));
   const reduced=present.slice(present.indexOf('if (motionOff())'),present.indexOf("await new Promise(resolve=>requestAnimationFrame(resolve))"));
   assert.ok(reduced.includes("entry.shell.classList.add('is-ready')"));
-  assert.ok(reduced.includes("lane.classList.add('is-settled')"));
+  assert.ok(reduced.includes("lane.classList.add('is-settled','is-stamped')"));
   assert.ok(!reduced.includes('.animate('));
   assert.ok(!reduced.includes('staggerMs'));
 });
@@ -351,7 +363,7 @@ check('Live rail CSS is a shallow five-card guide with continuous physical motio
   assert.ok(railCss.includes('grid-template-columns:repeat(5,42px)'));
   assert.ok(!/steps\s*\(/i.test(railCss));
   assert.ok(!/backdrop-filter\s*:/.test(railCss));
-  assert.ok(!/\.showdown-rail-(?:card|face|sweep)[^{]*\{[^}]*filter\s*:/s.test(railCss));
+  assert.ok(!/\.showdown-(?:rail-(?:card|face)|card-shine)[^{]*\{[^}]*filter\s*:/s.test(railCss));
   assert.ok(!/winning five/i.test(railCss));
 });
 
@@ -369,8 +381,8 @@ check('The development harness can exercise the shipped rail without starting or
 });
 
 check('Rail Five remains shipped after the later build/cache marker advance',()=>{
-  assert.ok(support.includes("const BUILD_VERSION = 'v0.32.3-dev · Jackpot Sweep'"));
-  assert.ok(serviceWorker.includes("const CACHE_NAME = 'poker-v32-3'"));
+  assert.ok(support.includes("const BUILD_VERSION = 'v0.32.4-dev · Winning Hand Stamp'"));
+  assert.ok(serviceWorker.includes("const CACHE_NAME = 'poker-v32-4'"));
   assert.ok(production.includes('function presentShowdownRail(main)'));
 });
 

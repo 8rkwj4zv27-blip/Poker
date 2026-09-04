@@ -1443,9 +1443,9 @@
 /* RAIL FIVE / JACKPOT SWEEP — a shallow gold registration lane over the
    real felt. It is not a result panel: the existing CRT/dashboard owns the
    words and the existing pot owns the money. After the five physical card
-   transfers land, the made-hand cards rise and a warm lamp crosses the
-   complete combination; both movements are one-shot WAAPI timelines in
-   06-presentation.js, with these rules owning their exact final state. */
+   transfers land, the made-hand cards rise and a warm lamp crosses only
+   those gold card faces. Green kickers remain deliberately outside that
+   sweep. A compact felt stamp names the winning category below. */
 .showdown-inspection-lane{
   position:absolute; z-index:12; left:50%; top:43%; width:min(268px,calc(100% - 22px));
   height:74px; transform:translate(-50%,-50%); pointer-events:none; opacity:0;
@@ -1485,18 +1485,27 @@
   box-shadow:0 6px 0 rgba(0,0,0,.56),inset 0 0 0 2px color-mix(in srgb,var(--pc-lamp-amber) 48%,transparent),inset 0 2px 0 #fff,0 0 0 3px var(--pc-lamp-amber),0 0 17px color-mix(in srgb,var(--pc-lamp-amber) 64%,transparent);
 }
 .showdown-inspection-lane.is-settled .showdown-rail-card[data-treatment="support"] .showdown-rail-face{
-  border-color:color-mix(in srgb,var(--pc-lamp-amber) 76%,var(--px-ink));
-  box-shadow:0 4px 0 rgba(0,0,0,.52),inset 0 0 0 2px color-mix(in srgb,var(--pc-lamp-amber) 22%,transparent),inset 0 2px 0 #fff,0 0 0 2px color-mix(in srgb,var(--pc-lamp-amber) 58%,transparent);
+  border-color:var(--pc-lamp-green-hi);
+  box-shadow:0 4px 0 rgba(0,0,0,.52),inset 0 0 0 2px color-mix(in srgb,var(--pc-lamp-green) 30%,transparent),inset 0 2px 0 #fff,0 0 0 2px var(--pc-lamp-green),0 0 10px color-mix(in srgb,var(--pc-lamp-green) 38%,transparent);
 }
-.showdown-rail-shine-clip{
-  position:absolute; z-index:4; left:3px; right:3px; top:5px; bottom:5px;
-  overflow:hidden; pointer-events:none;
+.showdown-card-shine-clip{
+  position:absolute; z-index:4; inset:2px; overflow:hidden; pointer-events:none; border-radius:2px;
 }
-.showdown-rail-sweep{
-  position:absolute; left:0; top:0; bottom:0; width:52px; opacity:0;
+.showdown-card-shine{
+  position:absolute; left:0; top:0; bottom:0; width:18px; opacity:0;
   background:linear-gradient(90deg,transparent,color-mix(in srgb,var(--pc-lamp-amber) 76%,transparent),var(--pc-lamp-amber-hi),color-mix(in srgb,var(--pc-lamp-amber) 72%,transparent),transparent);
-  transform:translate3d(-62px,0,0) skewX(-12deg);
+  transform:translate3d(-30px,0,0) skewX(-12deg);
 }
+.showdown-hand-stamp{
+  position:absolute; z-index:5; left:50%; top:75px; max-width:230px; padding:4px 10px 3px;
+  transform:translate(-50%,0); opacity:0; white-space:nowrap;
+  border:2px solid var(--pc-lamp-amber); border-radius:2px;
+  background:color-mix(in srgb,var(--felt-1) 88%,var(--pc-lamp-amber) 12%);
+  color:var(--pc-lamp-amber-hi); font-family:var(--font-hdr); font-size:7px; line-height:1.1;
+  letter-spacing:.09em; text-align:center; text-shadow:1px 1px 0 var(--px-ink);
+  box-shadow:0 3px 0 rgba(0,0,0,.44),inset 0 0 0 1px color-mix(in srgb,var(--pc-lamp-amber) 24%,transparent),0 0 10px color-mix(in srgb,var(--pc-lamp-amber) 20%,transparent);
+}
+.showdown-inspection-lane.is-stamped .showdown-hand-stamp{ opacity:1; }
 .showdown-source-unused{ opacity:.32; transition:opacity 280ms cubic-bezier(.2,.72,.3,1); }
 .felt.showdown-winner-locked .seat:not(.winner):not(.out){
   opacity:.42; filter:saturate(.45) brightness(.72);
@@ -1513,11 +1522,11 @@
 @media (orientation:portrait) and (max-height:720px){
   .showdown-inspection-lane{ top:41%; }
 }
-[data-motion="off"] .showdown-rail-sweep{ display:none; }
+[data-motion="off"] .showdown-card-shine{ display:none; }
 
 
 .card.win-card{
-  box-shadow:0 0 0 3px var(--accent-bright), 0 3px 0 rgba(0,0,0,.5), inset 0 2px 0 #FFFFFF;
+  box-shadow:0 0 0 3px var(--pc-lamp-green),0 0 10px color-mix(in srgb,var(--pc-lamp-green) 38%,transparent),0 3px 0 rgba(0,0,0,.5),inset 0 2px 0 #FFFFFF;
   transform:translateY(-4px);
   transition:box-shadow var(--dur) steps(2,end), transform var(--dur) steps(3,end), opacity var(--dur);
 }
@@ -1525,18 +1534,16 @@
    specifically the cards that FORM the named made hand (see
    strongWinningCardKeys) — kickers stay at the base .win-card ring above,
    so the eye reads "these are why you won" rather than just "these five
-   are involved." color-mix() derives the glow from the theme's own
-   --accent-bright (same technique already used for the AWARD button's
-   shadow) rather than a hardcoded colour, so it reads correctly in every
-   theme, not just the default gold one. */
+   are involved." The dedicated gold lamp remains separate from the green
+   support-card treatment and stays consistent across table themes. */
 .card.win-card.win-card-strong{
-  box-shadow:0 0 0 4px var(--accent-bright), 0 0 14px 2px color-mix(in srgb, var(--accent-bright) 65%, transparent), 0 4px 0 rgba(0,0,0,.5), inset 0 2px 0 #FFFFFF;
+  box-shadow:0 0 0 4px var(--pc-lamp-amber-hi),0 0 14px 2px color-mix(in srgb,var(--pc-lamp-amber) 65%,transparent),0 4px 0 rgba(0,0,0,.5),inset 0 2px 0 #FFFFFF;
   transform:translateY(-7px);
 }
 /* Full house only — the trips read as slightly more load-bearing than
    the pair, both already at the .win-card-strong tier above. */
 .card.win-card.win-card-strong.win-card-hero{
-  box-shadow:0 0 0 5px var(--accent-bright), 0 0 18px 3px color-mix(in srgb, var(--accent-bright) 78%, transparent), 0 4px 0 rgba(0,0,0,.5), inset 0 2px 0 #FFFFFF;
+  box-shadow:0 0 0 5px var(--pc-lamp-amber-hi),0 0 18px 3px color-mix(in srgb,var(--pc-lamp-amber) 78%,transparent),0 4px 0 rgba(0,0,0,.5),inset 0 2px 0 #FFFFFF;
   transform:translateY(-9px);
 }
 .card.dim-card{ opacity:.4; transition:opacity var(--dur); }

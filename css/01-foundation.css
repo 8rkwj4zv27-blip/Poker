@@ -87,7 +87,7 @@
   --pc-display:#152A1E; --pc-display-ink:#B6E0AF; --pc-display-dim:#6E9272;
   --pc-edge-hi:#FFF1C4; --pc-edge-mid:#9A895B; --pc-edge-lo:#16090D;
   --pc-button:#E7B633; --pc-button-hi:#FFE17B; --pc-button-lo:#8D6818;
-  --pc-lamp-amber:#F2B431; --pc-lamp-amber-hi:#FFE49B; --pc-lamp-green:#75C89B; --pc-lamp-off:#493C24;
+  --pc-lamp-amber:#F2B431; --pc-lamp-amber-hi:#FFE49B; --pc-lamp-green:#75C89B; --pc-lamp-green-hi:#B9EACB; --pc-lamp-off:#493C24;
   --pc-travel:6px; --pc-shadow-1:3px; --pc-shadow-2:7px;
   --pc-texture-strength:.12;
 }
