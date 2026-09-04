@@ -280,61 +280,26 @@
 @keyframes dealIn{ from{ opacity:0; transform:translateY(-20px); } to{ opacity:1; transform:none; } }
 @keyframes muckOut{ to{ opacity:0; transform:translateY(-24px) scale(.7); } }
 
-/* ---- dealer station: label + deck as one compact unit recessed into the
-   felt, tucked in a bottom corner away from the opponent arc, board and
-   pot — the physical source every dealt card visually flies from and
-   every collected card visibly returns to. Both pieces are positioned
-   from a single anchor and stacked with a small fixed gap (rather than
-   two independently-tuned percentages) specifically so they read as one
-   object instead of a label floating loose above the deck. The deck
-   itself is a precision-cut tray (tight corner radius matching its own
-   cards, dark interior, inset shadows for depth) — no outer border and
-   no external drop-shadow, so it reads as a recess in the table, not a
-   panel sitting on top of it. #dealer-deck keeps its id, its three
-   `.card` children and its own local geometry (just position:relative
-   now instead of position:absolute) — the deal/collect flight animation
-   only ever measures deck.lastElementChild's live getBoundingClientRect()
-   at flight time, so wrapping/resizing/repositioning the station here is
-   safe on its own; no JS changes needed.
-   Physical-polish pass, item 6: shifted from left:15% to left:27% — at
-   15% the deck sat almost directly above the bank compartment (#hud-left
-   is the dashboard's own left ~96px column, roughly the same horizontal
-   band), crowding the bank intake hatch's own "arc up to a point above
-   the hatch" approach path for collected chips (see
-   hatchApproachGeometry in 06-presentation.js). A modest rightward shift
-   gives the hatch a clear dedicated corridor while the deck keeps its
-   exact size/styling/dealing behaviour and stays well clear of the board
-   (left:50%) and every opponent seat (all up at top:7-12%, nowhere near
-   this bottom corner). */
+/* ---- dealer station: the bare physical pile. No tray, label, badge or
+   added shadow competes with the card artwork. Ten tightly offset card
+   backs provide enough visible stock to read as a full 52-card deck while
+   keeping the DOM and flight source lightweight. */
 .dealer-station{
   position:absolute; left:27%; top:89%; transform:translate(-50%,-50%);
-  display:flex; flex-direction:column; align-items:center; gap:2px;
+  width:52px; height:70px;
   z-index:5; pointer-events:none;
 }
-.dealer-label{
-  font-family:var(--font-hdr); font-size:7px; font-weight:400; letter-spacing:.12em;
-  text-transform:uppercase; color:rgba(255,255,255,.4);
-  text-shadow:1px 1px 0 rgba(0,0,0,.5); text-align:center;
-  background:rgba(0,0,0,.42); border-radius:3px 3px 0 0; padding:2px 7px 3px;
-}
 .dealer-deck{
-  position:relative;
+  position:absolute; inset:0;
   width:52px; height:70px; pointer-events:none;
-  box-sizing:border-box; padding:3px;
-  border-radius:6px;
-  background:rgba(0,0,0,.42);
-  box-shadow:
-    inset 0 4px 6px rgba(0,0,0,.6),
-    inset 0 1px 0 rgba(255,255,255,.10),
-    inset 0 -1px 0 rgba(0,0,0,.3);
+  background:transparent; box-shadow:none;
 }
-/* ~13% larger than before, card proportions preserved (width:height
-   ratio unchanged). A dedicated size override here only, so opponents'
-   actual hole cards (which also use .card.small) are untouched. */
-.dealer-deck .card{ position:absolute; margin:0; width:41px; height:59px; }
-.dealer-deck .card:nth-child(1){ top:7px; left:7px; }
-.dealer-deck .card:nth-child(2){ top:6px; left:6px; }
-.dealer-deck .card:nth-child(3){ top:5px; left:5px; }
+.dealer-deck .card{
+  position:absolute; margin:0; width:41px; height:59px;
+  left:calc(4px + var(--deck-layer) * .5px);
+  top:calc(9px - var(--deck-layer) * .6px);
+}
+.dealer-deck .card.back{ box-shadow:none; }
 
 /* Single-player round change: physical modules return to the stage in
    discrete, fully-awaited arcade beats. No opacity transition: these are

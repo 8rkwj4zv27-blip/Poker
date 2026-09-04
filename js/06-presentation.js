@@ -342,11 +342,11 @@ function syncCardRow(container, cards, faceDownMask, small, kind){
 /* Every dealing/collecting duration lives here so the feel can be tuned
    from one place without hunting through the choreography functions. */
 const DEAL_TIMING = {
-  dealMs: 520,                // punchy flick, ~0.5-0.55s target per card, pre-speedMult
+  dealMs: 560,                // approved Dealer Flick, pre-speedMult
   dealStaggerMs: 420,         // near-sequential: next card releases just before/around the previous one landing
   flopStaggerMs: 420,         // same one-at-a-time rhythm for community cards
   settleBeforeFlipMs: 90,
-  collectMs: 650,
+  collectMs: 610,             // approved House Sweep, pre-speedMult
   collectStaggerMaxMs: 140,   // randomized 0..this per card, for a lively non-uniform return
 };
 
@@ -359,6 +359,7 @@ const DealFX = (function(){
     activeFlights.delete(run);
     run.ghost.style.willChange='';
     run.ghost.remove();
+    if (run.pickupSource) run.pickupSource.style.visibility=run.sourceVisibility;
     run.resolve(!!completed);
   }
 
@@ -372,34 +373,32 @@ const DealFX = (function(){
     Array.from(activeFlights).forEach(cancelFlight);
   }
 
-  /* A half-turn is enough to read as a dealer's wrist flick while still
-     landing a symmetrical card back in the deck's exact orientation.
-     Direction varies; rotation amount does not escalate into flourishes. */
-  function halfTurn(){ return 180 * (Math.random() < 0.5 ? -1 : 1); }
+  /* The approved card-flight family from the motion workshop. Each tuple is:
+       offset, travel, lift, turn, pitch, extraScale, easing, lateralCurve.
+     Dealer Flick uses a shallow hand-thrown arc and only restrained wrist
+     movement. House Sweep reverses that physical language into a clean
+     table pickup and soft placement on the pile. Both finish at an exact
+     identity transform over the measured destination; no fade or sprite
+     handoff hides the landing. */
+  const DEAL_POINTS = [
+    [0,0,0,0,0,1,'cubic-bezier(.38,0,.62,1)',0],
+    [.10,.025,8,-7,5,1.012,'cubic-bezier(.25,0,.48,.38)',-2],
+    [.24,.16,23,-12,7,1.018,'cubic-bezier(.16,.05,.28,.74)',-8],
+    [.68,.78,27,4,3,1.01,'cubic-bezier(.24,.58,.3,1)',-5],
+    [.90,1,4,-2,0,1.004,'cubic-bezier(.18,.78,.22,1)',0],
+    [.96,1,-2,1,0,1.008,'cubic-bezier(.3,0,.7,1)',0],
+    [1,1,0,0,0,1,null,0]
+  ];
+  const RETURN_POINTS = [
+    [0,0,0,0,0,1,'cubic-bezier(.38,0,.62,1)',0],
+    [.10,.025,9,6,6,1.014,'cubic-bezier(.24,0,.46,.35)',3],
+    [.26,.18,25,11,7,1.018,'cubic-bezier(.14,.04,.25,.76)',10],
+    [.70,.80,24,-4,3,1.01,'cubic-bezier(.25,.56,.3,1)',7],
+    [.91,1,4,2,0,1.004,'cubic-bezier(.16,.8,.22,1)',0],
+    [.97,1,-2,-1,0,1.008,'cubic-bezier(.3,0,.7,1)',0],
+    [1,1,0,0,0,1,null,0]
+  ];
 
-  /* Spawns a card-back ghost that starts as an EXACT pixel match
-     (position + size, via getBoundingClientRect on both ends) of
-     `fromEl` — on frame one it IS the source card, not a lookalike spawned
-     nearby. One WAAPI timeline carries every waypoint, so no transition
-     handoff or timer can freeze it between stages. It travels in a TRUE
-     STRAIGHT LINE
-     (the ghost's centre moves directly from origin to destination — no
-     lateral arc/bulge) while it spins around its own centre:
-       deal   — very brief release (still "attached") → sharp acceleration
-                → fast confident travel → rapid deceleration into a crisp,
-                flat landing. A wrist flick, not a frisbee.
-       return — a brief tug toward the deck → an accelerating straight
-                pull with one restrained half-turn → a solid landing on
-                the deck's actual top-card position.
-     Scale is interpolated alongside translate/rotate, since origin and
-     destination card sizes can legitimately differ (the deck's stack vs.
-     a hole card).
-     Deal ghosts are appended to document.body (position:fixed, high
-     z-index) so they're clearly visible travelling across the felt.
-     Return ghosts are appended to #felt instead (position:absolute) so
-     they share the dealer station's stacking context and can land directly
-     over its top card. A body-level sibling cannot be layered relative to
-     anything inside #app because #app is itself a fixed stacking context. */
   function flyGhost(fromEl, toEl, opts){
     opts = opts || {};
     if (motionOff() || !fromEl || !toEl) return Promise.resolve(true);
@@ -419,64 +418,50 @@ const DealFX = (function(){
     const skinClasses = String(deckSkin.className || 'card back').split(/\s+/)
       .filter(name=>name && name!=='fly-card' && name!=='return');
     ghost.className = skinClasses.join(' ')+' fly-card'+(isReturn?' return':'');
-    if (felt){
-      const cRect = felt.getBoundingClientRect();
-      ghost.style.left = (a.left - cRect.left) + 'px';
-      ghost.style.top = (a.top - cRect.top) + 'px';
-    } else {
-      ghost.style.left = a.left + 'px';
-      ghost.style.top = a.top + 'px';
-    }
-    ghost.style.width = a.width + 'px';
-    ghost.style.height = a.height + 'px';
+    const cRect = felt ? felt.getBoundingClientRect() : {left:0,top:0};
+    const containerLeft = cRect.left + (felt ? felt.clientLeft : 0);
+    const containerTop = cRect.top + (felt ? felt.clientTop : 0);
+    // Pin the ghost to the destination. The last frame can therefore be a
+    // literal identity transform, which guarantees a seamless physical
+    // handoff to the real card beneath it.
+    ghost.style.left = (b.left - containerLeft) + 'px';
+    ghost.style.top = (b.top - containerTop) + 'px';
+    ghost.style.width = b.width + 'px';
+    ghost.style.height = b.height + 'px';
     container.appendChild(ghost);
 
-    const dx = b.left - a.left, dy = b.top - a.top;
-    const sx = b.width / a.width, sy = b.height / a.height;
-    const dist = Math.hypot(dx, dy) || 1;
-    const ux = dx / dist, uy = dy / dist;      // unit vector, for the small release/tug nudge
+    const sourceX=a.left+a.width/2, sourceY=a.top+a.height/2;
+    const destinationX=b.left+b.width/2, destinationY=b.top+b.height/2;
+    const routeX=destinationX-sourceX, routeY=destinationY-sourceY;
+    const sourceScaleX=a.width/b.width, sourceScaleY=a.height/b.height;
+    const dist=Math.hypot(routeX,routeY)||1;
+    const normalX=-routeY/dist, normalY=routeX/dist;
     const dur = Math.round((opts.duration || DEAL_TIMING.dealMs) * speedMult());
 
-    // A waypoint at fraction `distT` straight along the line from origin to
-    // destination — no lateral offset — with rotation at an explicit
-    // `rotDeg` and scale interpolated the same way as position. (Delta
-    // math here is viewport-pixel-equivalent regardless of which
-    // container the ghost lives in, since translate() is an offset, not
-    // an absolute position — only the ghost's own untransformed left/top,
-    // set above, needs to already be correct for that container.)
-    function waypoint(distT, rotDeg){
-      const sxT = 1 + (sx-1)*distT, syT = 1 + (sy-1)*distT;
-      return 'translate3d('+(dx*distT)+'px,'+(dy*distT)+'px,0) scale('+sxT+','+syT+') rotate('+rotDeg+'deg)';
-    }
-    function nudgeTo(px){
-      return 'translate3d('+(ux*px)+'px,'+(uy*px)+'px,0) scale(1,1) rotate(0deg)';
+    function transformFor(point){
+      const [,travel,lift,turn,pitch,extra]=point;
+      const curve=point[7]||0;
+      const x=sourceX+routeX*travel+normalX*curve;
+      const y=sourceY+routeY*travel+normalY*curve-lift;
+      const scaleX=(sourceScaleX+(1-sourceScaleX)*travel)*extra;
+      const scaleY=(sourceScaleY+(1-sourceScaleY)*travel)*extra;
+      return 'perspective(800px) translate3d('+(x-destinationX)+'px,'+(y-destinationY)+'px,'+(lift*.55)+'px) rotateZ('+turn+'deg) rotateX('+pitch+'deg) scale('+scaleX+','+scaleY+')';
     }
 
-    let keyframes;
-    if (isReturn){
-      const turn = opts.rotate != null ? opts.rotate : halfTurn();
-      keyframes = [
-        {transform:'translate3d(0,0,0) scale(1,1) rotate(0deg)',offset:0,easing:'cubic-bezier(.6,0,.9,.2)'},
-        {transform:nudgeTo(Math.min(6,dist*.25)),offset:.10,easing:'cubic-bezier(.55,0,.85,.35)'},
-        {transform:waypoint(.55,turn*.55),offset:.45,easing:'cubic-bezier(.25,.4,.4,1)'},
-        {transform:waypoint(1,turn),offset:1}
-      ];
-    } else {
-      const turn = opts.rotate != null ? opts.rotate : halfTurn();
-      keyframes = [
-        {transform:'translate3d(0,0,0) scale(1,1) rotate(0deg)',offset:0,easing:'cubic-bezier(.5,0,.85,.2)'},
-        {transform:nudgeTo(Math.min(2,dist*.10)),offset:.05,easing:'cubic-bezier(.15,.05,.25,.55)'},
-        {transform:waypoint(.30,turn*.55),offset:.20,easing:'cubic-bezier(.3,0,.5,1)'},
-        {transform:waypoint(.90,turn),offset:.65,easing:'cubic-bezier(.1,.7,.2,1)'},
-        {transform:waypoint(1,turn),offset:1}
-      ];
-    }
+    const points=isReturn?RETURN_POINTS:DEAL_POINTS;
+    const keyframes=points.map(point=>{
+      const frame={transform:transformFor(point),offset:point[0]};
+      if (point[6]) frame.easing=point[6];
+      return frame;
+    });
 
     ghost.style.willChange='transform';
+    const sourceVisibility=fromEl.style.visibility||'';
+    if (!isReturn) fromEl.style.visibility='hidden';
     const animation=ghost.animate(keyframes,{duration:Math.max(1,dur),easing:'linear',fill:'both'});
     let resolve;
     const promise=new Promise(done=>{ resolve=done; });
-    const run={ghost,animation,resolve,promise,settled:false};
+    const run={ghost,animation,resolve,promise,settled:false,pickupSource:isReturn?null:fromEl,sourceVisibility};
     activeFlights.add(run);
     animation.finished.then(()=>settleFlight(run,true),()=>settleFlight(run,false));
     return promise;
@@ -494,7 +479,7 @@ const DealFX = (function(){
 async function dealCardFlight(el, card, opts){
   opts = opts || {};
   const deck = $('dealer-deck');
-  const deckTop = deck && deck.lastElementChild;   // the visible top card, not the wrapper
+  const deckTop = deck && Array.from(deck.children).reverse().find(card=>card.style.visibility!=='hidden');
   if (!el) return;
   const small = el.classList.contains('small');
   if (motionOff() || !deckTop){ el.style.opacity = ''; return; }
@@ -521,12 +506,12 @@ async function dealCardFlight(el, card, opts){
   }
 }
 /* Sweeps a card's element back toward the deck's exact top-card spot — a
-   tug, then an accelerating magnetic pull and restrained half-turn. The
+   shallow pickup, accelerating pull and restrained wrist correction. The
    ghost stays solid through contact and is styled from the real deck top,
    so removing it at completion reveals the identical card beneath. */
 function collectCardFlight(el){
   const deck = $('dealer-deck');
-  const deckTop = deck && deck.lastElementChild;
+  const deckTop = deck && Array.from(deck.children).reverse().find(card=>card.style.visibility!=='hidden');
   if (!el || motionOff() || !deckTop) return Promise.resolve();
   el.style.opacity = '0';
   // SFX V1 — one return sound per card. muckCards()' existing random

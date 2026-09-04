@@ -50,6 +50,7 @@ class FakeElement{
 
 const body=new FakeElement(); body.isConnected=true;
 const felt=new FakeElement({left:8,top:20,width:374,height:500}); felt.isConnected=true;
+felt.clientLeft=2; felt.clientTop=2;
 const context={
   Promise,Set,Array,Object,Math,
   reduced:false,speed:1,
@@ -72,39 +73,47 @@ function endpoints(style='deal'){
 }
 
 (async()=>{
-  await check('A deal uses one continuous five-waypoint transform timeline',async()=>{
+  await check('Dealer Flick uses the approved continuous seven-waypoint arc',async()=>{
     const {from,to}=endpoints();
-    const promise=api.DealFX.flyGhost(from,to,{duration:api.DEAL_TIMING.dealMs,style:'deal',rotate:180});
+    const promise=api.DealFX.flyGhost(from,to,{duration:api.DEAL_TIMING.dealMs,style:'deal'});
     assert.strictEqual(body.children.length,1);
     const ghost=body.children[0];
     assert.strictEqual(ghost.className,'card back small fly-card');
     assert.strictEqual(ghost.animations.length,1);
     const animation=ghost.animations[0];
-    assert.strictEqual(animation.options.duration,520);
-    assert.deepStrictEqual(Array.from(animation.keyframes,frame=>frame.offset),[0,.05,.20,.65,1]);
-    assert.ok(animation.keyframes.every(frame=>frame.transform.startsWith('translate3d(')));
+    assert.strictEqual(animation.options.duration,560);
+    assert.deepStrictEqual(Array.from(animation.keyframes,frame=>frame.offset),[0,.10,.24,.68,.90,.96,1]);
+    assert.ok(animation.keyframes.every(frame=>frame.transform.startsWith('perspective(800px) translate3d(')));
     assert.ok(animation.keyframes.every(frame=>!Object.hasOwn(frame,'left')&&!Object.hasOwn(frame,'top')));
+    assert.strictEqual(ghost.style.left,'246px');
+    assert.strictEqual(ghost.style.top,'112px');
+    assert.strictEqual(ghost.style.width,'55px');
+    assert.strictEqual(ghost.style.height,'78px');
+    assert.strictEqual(from.style.visibility,'hidden');
+    assert.strictEqual(animation.keyframes.at(-1).transform,'perspective(800px) translate3d(0px,0px,0px) rotateZ(0deg) rotateX(0deg) scale(1,1)');
     assert.strictEqual(ghost.style.willChange,'transform');
     animation.finish();
     assert.strictEqual(await promise,true);
     assert.strictEqual(body.children.length,0);
     assert.strictEqual(ghost.style.willChange,'');
+    assert.strictEqual(from.style.visibility,'');
     assert.strictEqual(api.DealFX.activeCount(),0);
   });
 
-  await check('A return stays solid and becomes the real deck-top card on contact',async()=>{
+  await check('House Sweep stays solid and becomes the real deck-top card on contact',async()=>{
     const {from,to}=endpoints('return');
-    const promise=api.DealFX.flyGhost(from,to,{duration:api.DEAL_TIMING.collectMs,style:'return',rotate:180});
+    const promise=api.DealFX.flyGhost(from,to,{duration:api.DEAL_TIMING.collectMs,style:'return'});
     assert.strictEqual(felt.children.length,1);
     const ghost=felt.children[0];
     assert.strictEqual(ghost.className,'card back small fly-card return');
-    assert.strictEqual(ghost.style.left,'32px');
-    assert.strictEqual(ghost.style.top,'370px');
+    assert.strictEqual(ghost.style.left,'236px');
+    assert.strictEqual(ghost.style.top,'90px');
     const animation=ghost.animations[0];
-    assert.strictEqual(animation.options.duration,650);
-    assert.deepStrictEqual(Array.from(animation.keyframes,frame=>frame.offset),[0,.10,.45,1]);
+    assert.strictEqual(animation.options.duration,610);
+    assert.deepStrictEqual(Array.from(animation.keyframes,frame=>frame.offset),[0,.10,.26,.70,.91,.97,1]);
     assert.ok(animation.keyframes.every(frame=>!Object.hasOwn(frame,'opacity')));
-    assert.ok(animation.keyframes.every(frame=>Math.abs(Number(frame.transform.match(/rotate\((-?[\d.]+)deg\)/)[1]))<=180));
+    assert.ok(animation.keyframes.every(frame=>Math.abs(Number(frame.transform.match(/rotateZ\((-?[\d.]+)deg\)/)[1]))<=12));
+    assert.strictEqual(animation.keyframes.at(-1).transform,'perspective(800px) translate3d(0px,0px,0px) rotateZ(0deg) rotateX(0deg) scale(1,1)');
     assert.strictEqual(ghost.style.willChange,'transform');
     animation.finish();
     assert.strictEqual(await promise,true);
@@ -122,6 +131,7 @@ function endpoints(style='deal'){
     assert.ok(animations.every(animation=>animation.cancelled));
     assert.strictEqual(body.children.length,0);
     assert.strictEqual(felt.children.length,0);
+    assert.strictEqual(firstEndpoints.from.style.visibility,'');
     assert.strictEqual(api.DealFX.activeCount(),0);
   });
 
@@ -156,11 +166,19 @@ function endpoints(style='deal'){
     assert.ok(!flightSource.includes('720'));
   });
 
-  await check('Deal cadence and card-turn timing remain unchanged',()=>{
+  await check('Chosen flight and card-turn timings are locked',()=>{
     assert.deepStrictEqual(JSON.parse(JSON.stringify(api.DEAL_TIMING)),{
-      dealMs:520,dealStaggerMs:420,flopStaggerMs:420,settleBeforeFlipMs:90,collectMs:650,collectStaggerMaxMs:140
+      dealMs:560,dealStaggerMs:420,flopStaggerMs:420,settleBeforeFlipMs:90,collectMs:610,collectStaggerMaxMs:140
     });
     assert.ok(production.includes('const CARD_TURN_TIMING = Object.freeze({ hole:600, board:700, showdown:800 });'));
+  });
+
+  await check('The production dealer station is only a full bare card pile',()=>{
+    const index=fs.readFileSync(path.join(root,'index.html'),'utf8');
+    assert.strictEqual((index.match(/class="card back small" style="--deck-layer:/g)||[]).length,10);
+    assert.ok(!index.includes('dealer-label'));
+    assert.ok(css.includes('.dealer-deck .card.back{ box-shadow:none; }'));
+    assert.ok(css.includes('background:transparent; box-shadow:none;'));
   });
 
   await check('Hand resets and table navigation cancel shared flight ownership',()=>{
@@ -178,8 +196,8 @@ function endpoints(style='deal'){
   });
 
   await check('Build and offline cache markers are synchronised for Card Flight',()=>{
-    assert.ok(support.includes("const BUILD_VERSION = 'v0.32.1-dev · Card Flight'"));
-    assert.ok(serviceWorker.includes("const CACHE_NAME = 'poker-v32-1'"));
+    assert.ok(support.includes("const BUILD_VERSION = 'v0.32.2-dev · Card Flight Polish'"));
+    assert.ok(serviceWorker.includes("const CACHE_NAME = 'poker-v32-2'"));
   });
 
   process.stdout.write('\n'+passed+' focused Card Flight checks passed.\n');
