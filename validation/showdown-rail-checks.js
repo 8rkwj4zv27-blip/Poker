@@ -209,7 +209,7 @@ check('Hidden cards use a true 3D face-up rotation with both faces mounted',()=>
 
 check('The frame sampler records intervals, long gaps and transform diversity',()=>{
   assert.ok(labSource.includes('timestamps.push(now)'));
-  assert.ok(labSource.includes('transforms.add(getComputedStyle(probe).transform)'));
+  assert.ok(labSource.includes('transforms.add(getComputedStyle(target).transform)'));
   assert.ok(labSource.includes('intervals.filter(v=>v>34).length'));
   assert.ok(labSource.includes('distinctTransforms:transforms.size'));
 });
@@ -397,8 +397,8 @@ check('The development harness can exercise the shipped rail without starting or
 });
 
 check('Rail Five remains shipped after the later build/cache marker advance',()=>{
-  assert.ok(support.includes("const BUILD_VERSION = 'v0.32.6-dev · Showdown Anim'"));
-  assert.ok(serviceWorker.includes("const CACHE_NAME = 'poker-v32-6'"));
+  assert.ok(support.includes("const BUILD_VERSION = 'v0.32.7-dev · Chip Motion'"));
+  assert.ok(serviceWorker.includes("const CACHE_NAME = 'poker-v32-7'"));
   assert.ok(production.includes('function presentShowdownRail(main)'));
 });
 

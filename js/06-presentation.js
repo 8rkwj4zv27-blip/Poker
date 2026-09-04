@@ -932,8 +932,8 @@ function realTowerHeight(container, slotIdx){
    out by the browser exactly as it will be once the real chip takes its
    place — not a guessed one; and because nothing else can alter that box
    between reservation and landing (the placeholder physically holds the
-   space the whole time), measuring it at launch and again right before
-   landing (see flyChip) is guaranteed to agree. Caller must eventually
+   space the whole time), measuring it at launch gives flyChip the exact
+   final keyframe for its continuous timeline. Caller must eventually
    call settleSlot() to swap the placeholder for the real element. */
 function claimDestSlot(container, pile){
   let slotIdx=-1, best=Infinity;
@@ -982,7 +982,7 @@ function settleSlot(container, placeholder, el){
    (departures fire in strict launch order). Returns null if the pile has
    no real chip to give. The caller owns the returned element from here
    on — it is never destroyed, only ever moved. */
-function takeChipFromPile(container, pile){
+function takeChipFromPile(container, pile, measuredRects){
   if (!container._towers) return null;
   let slotIdx=-1, best=Infinity;
   pile.order.forEach(idx=>{
@@ -1007,7 +1007,7 @@ function takeChipFromPile(container, pile){
   // chip is ever taken for a flight, its one-time pop-in has already long
   // since played out.
   el.classList.remove('disc-in');
-  const rect = el.getBoundingClientRect();
+  const rect = (measuredRects && measuredRects.get(el)) || el.getBoundingClientRect();
   el.remove();
   container._chipCount = Math.max(0, (container._chipCount||0) - 1);
   return { el, rect };
@@ -1231,6 +1231,7 @@ function queueRaiseReel(value, immediate){
 function clearAllCardDOM(){
   DealFX.cancelAll();
   cancelAllCardTurns();
+  cancelAllChipFlights();
   resetShowdownRailPresentation();
   const board = $('board');
   if (board) board.innerHTML = '';
@@ -1598,6 +1599,13 @@ function squareAnchor(rect){
   const cx = rect.left + rect.width/2, cy = rect.top + rect.height/2;
   return { left: cx-d/2, top: cy-d/2, width: d, height: d };
 }
+/* Every ordinary chip flight is one cancellable compositor-owned motion.
+   Hand/screen teardown lands each owned chip through its normal bookkeeping
+   path, so no placeholder, pending counter or detached chip can survive. */
+const activeChipFlights=new Set();
+function cancelAllChipFlights(){
+  Array.from(activeChipFlights).forEach(owner=>owner.cancel());
+}
 /* Flies one real chip between two points on the table. Exactly one of
    {srcContainer+srcPile} / {srcEl} describes the start:
      - srcContainer+srcPile: take the actual chip already resting there
@@ -1612,7 +1620,7 @@ function squareAnchor(rect){
        that pile's destination tower, reserved (see claimDestSlot) before
        the flight starts so its landing position is already known.
      - dstEl: no persistent pile to join (an opponent's seat) — the chip
-       flies to dstEl's position, fades, and is discarded.
+       flies cleanly to dstEl's position and is discarded on arrival.
    onLand(el) fires once the chip has actually settled (or been
    discarded) — used for pending-counter bookkeeping by transferChips. */
 function flyChip(opts){
@@ -1676,12 +1684,10 @@ function flyChip(opts){
   // so bank (21px) vs pot (25px) chip sizing, stacking overlap and
   // colour are all automatically correct with zero manual geometry here.
   // Its rect can't drift between now and landing (the placeholder
-  // physically holds that space in the tower the whole flight), so
-  // reading it now is trustworthy — it's read again fresh right before
-  // the final approach below purely as a belt-and-braces guarantee.
-  const rectOf = ()=> placeholder ? placeholder.getBoundingClientRect()
+  // physically holds that space in the tower the whole flight), so this
+  // launch-time measurement is the exact final keyframe.
+  const b0 = placeholder ? placeholder.getBoundingClientRect()
     : (dstEl ? squareAnchor(dstEl.getBoundingClientRect()) : a);
-  const b0 = rectOf();
   if (!b0 || !b0.width){ land(); return; }
 
   // Reparent into the unclipped flight layer, pinned to its exact old
@@ -1725,77 +1731,43 @@ function flyChip(opts){
   const hop = -(6 + Math.random()*8);            // the "small arc" — a lift mid-flight, not a straight line
   const spin = (Math.random()<.5?-1:1) * (18 + Math.random()*30);  // a modest tumble, always resolved flat by landing
   const dur = Math.round((fast ? 230 : 700) * speedMult());
-  const s1 = Math.max(1, Math.round(dur*0.18)), s2 = Math.max(1, Math.round(dur*0.64)), s3 = Math.max(1, dur - s1 - s2);
   function waypoint(t, rotDeg){
     const sxT = 1+(d0.sx-1)*t, syT = 1+(d0.sy-1)*t;
     return 'translate('+(d0.dx*t)+'px,'+(d0.dy*t+hop*Math.sin(Math.PI*Math.min(1,t*1.15)))+'px) scale('+sxT+','+syT+') rotate('+rotDeg+'deg)';
   }
 
-  // Pass 3C.2: the pin above (transition:none, at the source rect) has to
-  // actually be PAINTED before we switch the transition on and move the
-  // chip — a single requestAnimationFrame only guarantees we're at the
-  // start of a frame whose style has been committed, not that the
-  // browser has presented that frame to the screen yet. Nesting a second
-  // rAF inside the first is the standard guarantee that a full pinned
-  // frame has been committed AND painted first, so the animation below
-  // has a real, on-screen "before" state to animate away from. Without
-  // this, the browser can coalesce the pin and the first animated frame
-  // into a single frame, and the chip appears to blip straight to
-  // wherever the animation is partway through instead of visibly leaving
-  // its source position.
-  requestAnimationFrame(()=>{
-    requestAnimationFrame(()=>{
-      // Pass 3C.4: release+arc is ONE continuous Web Animations API
-      // timeline (was two separately re-triggered CSS transitions,
-      // reassigning `transition`+`transform` a second time via setTimeout
-      // mid-flight). Real captured on-device data showed that second
-      // reassignment could leave the browser without a properly-registered
-      // running transition — the chip would freeze at whatever value the
-      // cascade last resolved to for a few hundred ms instead of
-      // continuing to move. A single animate() call has no such handoff —
-      // it's one timeline the browser owns start to finish — while still
-      // tracing the same release-then-arc path (a keyframe at the old
-      // waypoint(0.16) fraction) with the same two per-segment easing
-      // curves as before, so the visual shape of the motion is unchanged.
-      const midOffset = 0.16 / 0.93;
-      const anim = el.animate([
-        { transform: 'translate(0,0) scale(1,1) rotate(0deg)', easing: 'cubic-bezier(.4,0,.7,.3)' },
-        { transform: waypoint(0.16, spin*0.25), offset: midOffset, easing: 'cubic-bezier(.35,0,.6,1)' },
-        { transform: waypoint(0.93, spin*0.9) }
-      ], { duration: s1+s2, fill: 'forwards' });
-      anim.onfinish = ()=>{
-        // commitStyles()+cancel() bakes the animation's current frame into
-        // a plain inline style and releases the animation's hold on
-        // `transform` — the exact same category of "an Animation outranks
-        // inline styles for a property it's controlling" that made the
-        // stale disc-in class hijack flights in the first place, so this
-        // handoff has to be explicit rather than left to fill:'forwards'
-        // lingering indefinitely.
-        anim.commitStyles();
-        anim.cancel();
-        // Re-measured fresh right here, immediately before the final
-        // approach, rather than reusing d0 from launch — the literal
-        // guarantee (not just an assumption) that the flying chip's last
-        // frame and the resting chip's first frame are pixel-identical. A
-        // gentle back-out ease gives a 1-2px settle/bounce on arrival: the
-        // curve overshoots slightly mid-transition, but a CSS transition
-        // always ENDS exactly on the value it's given, so the chip still
-        // comes to rest precisely on the real target — there's nothing
-        // left to snap to once it gets there. Nothing else is animating
-        // `transform` at this point (the WAAPI animation above was just
-        // explicitly cancelled), so this is a single, uncontested
-        // transition — the one stage the on-device capture already showed
-        // behaving correctly.
-        const d = centerDelta(rectOf());
-        el.style.transition = 'transform '+s3+'ms cubic-bezier(.3,1.15,.4,1)';
-        el.style.transform = 'translate('+d.dx+'px,'+d.dy+'px) scale('+d.sx+','+d.sy+') rotate(0deg)';
-        setTimeout(()=>{
-          el.style.position=''; el.style.margin=''; el.style.left=''; el.style.top='';
-          el.style.width=''; el.style.height=''; el.style.zIndex=''; el.style.pointerEvents='';
-          el.style.transformOrigin=''; el.style.transform=''; el.style.transition=''; el.style.willChange='';
-          land();
-        }, s3);
-      };
+  let animation=null,rafA=0,rafB=0,complete=false;
+  const clearFlightStyles=()=>{
+    el.style.position=''; el.style.margin=''; el.style.left=''; el.style.top='';
+    el.style.width=''; el.style.height=''; el.style.zIndex=''; el.style.pointerEvents='';
+    el.style.transformOrigin=''; el.style.transform=''; el.style.transition=''; el.style.willChange='';
+  };
+  const finish=()=>{
+    if (complete) return;
+    complete=true;
+    if (rafA) cancelAnimationFrame(rafA);
+    if (rafB) cancelAnimationFrame(rafB);
+    if (animation){ try{ animation.cancel(); }catch(e){} }
+    activeChipFlights.delete(owner);
+    clearFlightStyles();
+    land();
+  };
+  const owner={cancel:finish};
+  activeChipFlights.add(owner);
+
+  // Keep the proven double-rAF departure pin, but own release, arc and
+  // exact landing in ONE transform timeline. The old WAAPI→CSS-transition
+  // handoff and its independent landing timer were the last visible hitch.
+  rafA=requestAnimationFrame(()=>{
+    rafB=requestAnimationFrame(()=>{
+      if (complete) return;
+      animation=el.animate([
+        {transform:'translate(0,0) scale(1,1) rotate(0deg)',offset:0,easing:'cubic-bezier(.32,0,.55,.35)'},
+        {transform:waypoint(.16,spin*.25),offset:.18,easing:'cubic-bezier(.3,0,.5,1)'},
+        {transform:waypoint(.93,spin*.9),offset:.82,easing:'cubic-bezier(.2,.72,.24,1)'},
+        {transform:'translate('+d0.dx+'px,'+d0.dy+'px) scale('+d0.sx+','+d0.sy+') rotate(0deg)',offset:1}
+      ],{duration:dur,easing:'linear',fill:'both'});
+      animation.finished.then(finish,()=>{ if (!complete) finish(); });
     });
   });
 }
@@ -1866,9 +1838,9 @@ const MAX_CONCURRENT_FLIGHTS = 6;
    real completion (not a precomputed cumulative offset), a stall delays
    the whole queue instead of compressing it — there is no way for two
    launches to end up sharing a frame except by genuine bad luck, not by
-   timer drift. Once a chip is actually launched it's just a running CSS
-   transition (see flyChip) — cheap, compositor-driven, costs nothing
-   further from this queue.
+   timer drift. Once a chip is actually launched it's one running WAAPI
+   transform timeline (see flyChip), compositor-driven and independent
+   of this queue.
 
    addPending(s,d) mirrors the pre-3B transferPile's bookkeeping
    contract: called once up front with (n,n) so both piles read "busy"
@@ -2392,10 +2364,10 @@ async function presentRewardBreakdown(early){
   clearArcadeLayer();
 }
 /* Applies one physics chip's current x/y/rot(/z) state to its DOM element.
-   Elements are position:fixed inside #chip-physics-layer, positioned by
-   plain left/top (not transform:translate) so the per-frame physics math
-   stays simple absolute coordinates — rotate/scale is all transform
-   carries. `z` (item 2 of the collection rework — fake height/lift) is a
+   left/top pin the element exactly once at spawn; every frame after that
+   is compositor-only translate3d/rotate/scale. The physics state remains
+   in simple absolute screen coordinates, translated relative to that
+   immutable origin only at this final presentation boundary. `z` is a
    free chip's implicit 0 or an attracting chip's cosmetic rise: it's
    subtracted from screen Y (so a "higher" chip draws further up) with a
    very small companion scale bump — the only two visual cues lift gets,
@@ -2403,10 +2375,9 @@ async function presentRewardBreakdown(early){
 function applyChipTransform(c){
   const cfg = POT_SMASH_PHYSICS_CONFIG;
   const z = c.z || 0;
-  c.el.style.left = (c.x - c.radius) + 'px';
-  c.el.style.top = (c.y - z - c.radius) + 'px';
+  const tx = c.x-c.originX, ty = c.y-z-c.originY;
   const scale = 1 + Math.min(1, z / cfg.liftPeakClampMax) * cfg.airborneScaleBoost;
-  c.el.style.transform = 'rotate(' + c.rot + 'deg)' + (z > 0.5 ? ' scale(' + scale.toFixed(3) + ')' : '');
+  c.el.style.transform = 'translate3d('+tx+'px,'+ty+'px,0) rotate('+c.rot+'deg)'+(z > 0.5 ? ' scale('+scale.toFixed(3)+')' : '');
 }
 /* Launch-class weighting for the initial burst (item 5 of the juice
    pass) — a real tower breaking apart doesn't send every chip out at a
@@ -2473,7 +2444,7 @@ function spawnPhysicsChip(taken, impactPoint, layer, pullIndex, liftRange){
   el.style.width = rect.width + 'px';
   el.style.height = rect.height + 'px';
   el.style.pointerEvents = 'none';
-  el.style.willChange = 'left,top,transform';
+  el.style.willChange = 'transform';
   layer.appendChild(el);
 
   const cfg = POT_SMASH_PHYSICS_CONFIG;
@@ -2495,7 +2466,7 @@ function spawnPhysicsChip(taken, impactPoint, layer, pullIndex, liftRange){
 
   return {
     el,
-    x:cx, y:cy, z:0, vz:0,
+    x:cx, y:cy, originX:cx, originY:cy, z:0, vz:0,
     vx: Math.cos(angle)*speed,
     vy: Math.sin(angle)*speed - kick,
     rot:0, vrot:(Math.random()<0.5?-1:1)*spin,
@@ -2980,8 +2951,17 @@ async function runPotBreakPhysics(potN, impactPoint){
     max: Math.max(cfg.liftPeakClampMin, Math.min(cfg.liftPeakClampMax, innerHeight*cfg.liftPeakMaxVh))
   };
   const chips = [];
+  // Read every resting geometry in one clean layout phase before changing
+  // the pile. The former read-remove-read-remove loop forced the browser
+  // to recalculate layout up to 60 times at the exact smash impact,
+  // producing one conspicuous four-frame hitch even though the ensuing
+  // physics loop itself was compositor-only. Resting chips are absolutely
+  // positioned inside their towers, so removing a top chip cannot change
+  // any lower chip's screen rect; this pre-measured map stays exact.
+  const restingRects = new Map();
+  potContainer.querySelectorAll('.chip-disc').forEach(el=>restingRects.set(el,el.getBoundingClientRect()));
   for (let i=0;i<potN;i++){
-    const taken = takeChipFromPile(potContainer, pPile);
+    const taken = takeChipFromPile(potContainer, pPile, restingRects);
     if (!taken){ potPending = Math.max(0, potPending-1); bankPending = Math.max(0, bankPending-1); continue; }
     potPending = Math.max(0, potPending-1);
     chips.push(spawnPhysicsChip(taken, impactPoint, layer, i, liftRange));

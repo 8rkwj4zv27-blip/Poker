@@ -10,6 +10,8 @@
 (function(){
   'use strict';
 
+  const chipMode=new URLSearchParams(location.search).get('chip-motion')==='1';
+
   const TIMING=Object.freeze({
     settleMs:150,
     staggerMs:22,
@@ -45,7 +47,8 @@
   }
 
   function controlsLocked(locked){
-    ['sdr-fixture','sdr-theme','sdr-before','sdr-replay','sdr-live','sdr-full'].forEach(id=>{
+    ['sdr-fixture','sdr-theme','sdr-before','sdr-replay','sdr-live','sdr-full','sdr-chip-count',
+      'sdr-chip-bank-pot','sdr-chip-opponent-pot','sdr-chip-pot-opponent','sdr-chip-smash-bank'].forEach(id=>{
       const el=$(id); if (el) el.disabled=!!locked;
     });
     document.querySelectorAll('[data-motion-choice]').forEach(el=>{ el.disabled=!!locked; });
@@ -61,6 +64,7 @@
 
   function cancelActivePresentation(){
     runToken++;
+    if (typeof cancelAllChipFlights==='function') cancelAllChipFlights();
     if (activeSampler) activeSampler.stop();
     activeSampler=null;
     activeAnimations.forEach(animation=>{ try{ animation.cancel(); }catch(e){} });
@@ -98,7 +102,8 @@
     function sample(now){
       if (!running || token!==runToken) return;
       timestamps.push(now);
-      if (probe && probe.isConnected) transforms.add(getComputedStyle(probe).transform);
+      const target=typeof probe==='function'?probe():probe;
+      if (target && target.isConnected) transforms.add(getComputedStyle(target).transform);
       raf=requestAnimationFrame(sample);
     }
     raf=requestAnimationFrame(sample);
@@ -197,14 +202,17 @@
     bankPending=0; potPending=0; humanBankDisplayFreeze=null;
     const players=fixture.players.map(fixturePlayer);
     const human=players.find(p=>p.isHuman);
+    if (chipMode) human.chips=10000;
     game={
       mode:'elimination',phase:'showdown',over:false,handNumber:42,smallBlind:10,bigBlind:20,
-      players,board:fixture.board.slice(),pot:model.award.amount,currentIndex:-1,currentBet:220,
+      players,board:fixture.board.slice(),pot:chipMode?10000:model.award.amount,currentIndex:-1,currentBet:220,
       positions:Object.fromEntries(players.map((p,i)=>[p.id,i===0?'BTN':i===1?'BB':'SB'])),
       run:{arcade:makeArcadeRunState()}
     };
     players.forEach(player=>{ player._handRes=evaluate7WithCards([...player.hand,...game.board]); });
     initSeats();
+    resetPile($('hud-tower'),bankPile());
+    resetPile($('pot-stacks'),potPile());
     renderBank();
     renderPot();
     $('pot-area').classList.remove('hidden');
@@ -227,9 +235,76 @@
     paintCRT($('hand-strength'),'<b>Showdown locked</b>',false);
     paintCRT($('banner'),actionRowsHTML('SHOWDOWN','VERIFYING FIVE',false),false);
     $('actions-row').classList.add('disabled');
-    $('sdr-note').textContent=fixture.note;
+    $('sdr-note').textContent=chipMode
+      ? 'Production chip paths · replayable, memory-only and measured on the live table geometry.'
+      : fixture.note;
     $('sdr-sampler').textContent='Frame sampler waits for a replay.';
-    setState('Before showdown','before');
+    setState(chipMode?'Ready · choose a transfer':'Before showdown',chipMode?'ready':'before');
+    controlsLocked(false);
+  }
+
+  function chipCount(){
+    return Math.max(1,Number($('sdr-chip-count').value)||6);
+  }
+
+  function activeFlightProbe(){
+    return Array.from(document.body.children).find(el=>el.classList&&el.classList.contains('chip-disc')&&el.style.position==='fixed')||null;
+  }
+
+  function physicsChipProbe(){
+    return document.querySelector('.chip-physics-layer .chip-disc');
+  }
+
+  async function replayChipMotion(kind){
+    if (fullInProgress) return;
+    renderFixtureState();
+    const token=runToken;
+    const bank=$('hud-tower'),pot=$('pot-stacks');
+    const opponent=game.players.find(player=>!player.isHuman);
+    const opponentSeat=opponent&&seatEls[opponent.id];
+    const requested=chipCount();
+    const sourceCount=kind==='bank-pot'?(bank._chipCount||0):((kind==='pot-opponent'||kind==='smash-bank')?(pot._chipCount||0):requested);
+    const count=Math.max(0,Math.min(requested,sourceCount));
+    controlsLocked(true);
+    fullInProgress=true;
+    setState((settings.reduceMotion?'Reduced · ':'Playing · ')+kind.replaceAll('-',' → '),'playing');
+    paintCRT($('banner'),actionRowsHTML('CHIP MOTION',kind.replaceAll('-',' → ').toUpperCase(),false),false);
+
+    let motion;
+    if (kind==='bank-pot'){
+      motion=transferChips(count,{container:bank,pile:bankPile()},{container:pot,pile:potPile()},
+        (s,d)=>{ bankPending+=s; potPending+=d; },false);
+    } else if (kind==='opponent-pot'){
+      motion=transferChips(count,{el:(opponentSeat&&opponentSeat.chips)||(opponentSeat&&opponentSeat.root)},
+        {container:pot,pile:potPile()},(s,d)=>{ potPending+=d; },false);
+    } else if (kind==='pot-opponent'){
+      motion=payoutTo(opponent,count);
+    } else {
+      const human=game.players.find(player=>player.isHuman);
+      human.chips+=game.pot;
+      motion=runPotSmashSequence({potN:count,scoreTotal:Math.max(100,count*25),human});
+    }
+
+    if (!settings.reduceMotion){
+      activeSampler=startFrameSampler(kind==='smash-bank'?physicsChipProbe:activeFlightProbe,token);
+    }
+    await motion;
+    if (activeSampler){ activeSampler.stop(); activeSampler=null; }
+    if (token!==runToken) return;
+    if (kind==='smash-bank'){
+      game.pot=0;
+      $('pot-val').textContent='0';
+      $('pot-area').classList.add('hidden');
+      updateJackpot(game.players.find(player=>player.isHuman).chips);
+    }
+    const residue=activeChipFlights.size+document.querySelectorAll('.chip-physics-layer, body > .chip-disc[style*="position: fixed"]').length;
+    if (settings.reduceMotion){
+      lastSample={frames:0,averageMs:0,longestMs:0,over34:0,distinctTransforms:0,reduced:true};
+      $('sdr-sampler').textContent='Reduced motion · direct settlement · no travelling-chip transforms.';
+    }
+    setState('Settled · '+count+' chips · residue '+residue,'complete');
+    paintCRT($('banner'),actionRowsHTML('CHIPS SETTLED',count+' · CLEAN '+(residue?'NO':'YES'),false),false);
+    fullInProgress=false;
     controlsLocked(false);
   }
 
@@ -485,7 +560,8 @@
       button.classList.toggle('active',active);
       button.setAttribute('aria-pressed',active?'true':'false');
     });
-    replay(false);
+    if (chipMode) renderFixtureState();
+    else replay(false);
   }
 
   async function selectFixture(id){
@@ -510,10 +586,22 @@
     $('sdr-replay').onclick=()=>replay(false);
     $('sdr-live').onclick=replayLiveRail;
     $('sdr-full').onclick=()=>replay(true);
+    $('sdr-chip-bank-pot').onclick=()=>replayChipMotion('bank-pot');
+    $('sdr-chip-opponent-pot').onclick=()=>replayChipMotion('opponent-pot');
+    $('sdr-chip-pot-opponent').onclick=()=>replayChipMotion('pot-opponent');
+    $('sdr-chip-smash-bank').onclick=()=>replayChipMotion('smash-bank');
     document.querySelectorAll('[data-motion-choice]').forEach(button=>{ button.onclick=()=>setMotion(button.dataset.motionChoice); });
     model=buildShowdownRailModel(fixture);
     renderFixtureState();
-    await replay(false);
+    if (chipMode){
+      $('sdr-title').textContent='Chip Motion Lab';
+      $('sdr-fixture-field').classList.add('hidden');
+      $('sdr-showdown-controls').classList.add('hidden');
+      $('sdr-chip-controls').classList.remove('hidden');
+      document.title='Chip Motion Lab';
+    } else {
+      await replay(false);
+    }
     window.__showdownRailLab={
       fixtureIds:SHOWDOWN_RAIL_FIXTURES.map(item=>item.id),
       select:selectFixture,
@@ -522,6 +610,14 @@
       before:()=>{ model=buildShowdownRailModel(fixture); renderFixtureState(); },
       state:()=>({fixture:fixture.id,phase,motion:document.body.dataset.motion,model,lastSample,activeAnimations:activeAnimations.size,storageUnchanged:storageSnapshot()===storageBaseline}),
       timing:TIMING
+    };
+    window.__chipMotionLab={
+      run:replayChipMotion,
+      state:()=>({phase,motion:document.body.dataset.motion,count:chipCount(),lastSample,
+        activeFlights:activeChipFlights.size,physicsLayers:document.querySelectorAll('.chip-physics-layer').length,
+        fixedChips:document.querySelectorAll('body > .chip-disc[style*="position: fixed"]').length,
+        bankChips:$('hud-tower')._chipCount||0,potChips:$('pot-stacks')._chipCount||0,
+        storageUnchanged:storageSnapshot()===storageBaseline})
     };
   }
 

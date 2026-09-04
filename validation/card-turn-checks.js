@@ -177,8 +177,8 @@ function faceDownElement(){ const el=new FakeElement(); el.className='card back'
   });
 
   await check('Card Turn remains shipped after the later build/cache marker advance',()=>{
-    assert.ok(support.includes("const BUILD_VERSION = 'v0.32.6-dev · Showdown Anim'"));
-    assert.ok(serviceWorker.includes("const CACHE_NAME = 'poker-v32-6'"));
+    assert.ok(support.includes("const BUILD_VERSION = 'v0.32.7-dev · Chip Motion'"));
+    assert.ok(serviceWorker.includes("const CACHE_NAME = 'poker-v32-7'"));
   });
 
   process.stdout.write('\n'+passed+' focused Card Turn checks passed.\n');
