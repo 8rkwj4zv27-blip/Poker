@@ -9,9 +9,9 @@
 <title>Showdown Rail Lab</title>
 
 <!-- The shipped visual system, in the same order as the game. -->
-<link rel="stylesheet" href="css/01-foundation.css?v=32-4">
-<link rel="stylesheet" href="css/02-screens.css?v=32-4">
-<link rel="stylesheet" href="css/03-action-console.css?v=32-4">
+<link rel="stylesheet" href="css/01-foundation.css?v=32-5">
+<link rel="stylesheet" href="css/02-screens.css?v=32-5">
+<link rel="stylesheet" href="css/03-action-console.css?v=32-5">
 <link rel="stylesheet" href="css/04-overlays-and-modes.css">
 <link rel="stylesheet" href="css/05-responsive-and-arcade.css">
 <link rel="stylesheet" href="css/06-machine-system.css">
@@ -53,9 +53,186 @@
     </div>
   </details>
 
-  <!-- index.html's real #table-screen is fetched, cloned and mounted here.
-       The live app initializer is never loaded, so fixture state remains
-       memory-only and cannot replace a table, bankroll or Career save. -->
+  <!-- Direct-file fallback. Browsers are allowed to block fetch() from a
+       file:// page, so this exact production table shell is embedded for
+       that launch path. Validation keeps it in lockstep with index.html. -->
+  <template id="sdr-production-template">
+  <div id="table-screen" class="screen hidden">
+    <div class="table-main">
+      <div class="topbar">
+        <div class="table-identity">
+          <div class="brandmini">POKER</div>
+          <div class="meta" id="table-meta">Hand 1</div>
+        </div>
+        <div class="table-tools">
+          <button class="table-save" id="save-progress" type="button">Save</button>
+          <button class="icon-btn table-settings" id="open-settings" aria-label="Settings">⚙</button>
+        </div>
+      </div>
+      <div class="arcade-score-machine hidden" id="arcade-score-machine" aria-label="Score 0">
+        <div class="arcade-score-label"><strong>SCORE</strong></div>
+        <div class="arcade-score-digits" id="arcade-score-value" aria-hidden="true">
+          <span>0</span><span>0</span><span>0</span><span>0</span><span>0</span><span>0</span><span>0</span>
+        </div>
+      </div>
+
+      <div class="felt-wrap">
+        <div class="stage-bay" id="stage-bay">
+          <div class="felt" id="felt">
+            <div id="shuffle-anim" class="hidden" aria-hidden="true">
+              <div class="sh-card"></div><div class="sh-card"></div><div class="sh-card"></div><div class="sh-card"></div><div class="sh-card"></div>
+            </div>
+            <div class="pot-area hidden" id="pot-area">
+              <div class="pot-stacks" id="pot-stacks" aria-hidden="true"></div>
+              <div class="pot-chip"><span class="pot-word">Pot</span><span class="v tabular" id="pot-val">0</span></div>
+            </div>
+            <div class="board" id="board" role="group" aria-label="Community cards"></div>
+            <div class="dealer-station" aria-hidden="true">
+              <div class="dealer-deck" id="dealer-deck">
+                <div class="card back small" style="--deck-layer:0"></div>
+                <div class="card back small" style="--deck-layer:1"></div>
+                <div class="card back small" style="--deck-layer:2"></div>
+                <div class="card back small" style="--deck-layer:3"></div>
+                <div class="card back small" style="--deck-layer:4"></div>
+                <div class="card back small" style="--deck-layer:5"></div>
+                <div class="card back small" style="--deck-layer:6"></div>
+                <div class="card back small" style="--deck-layer:7"></div>
+                <div class="card back small" style="--deck-layer:8"></div>
+                <div class="card back small" style="--deck-layer:9"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div id="your-seat-dock">
+        <div id="hud-frame">
+          <div id="hud-left">
+            <div id="hud-tower" aria-hidden="true"></div>
+            <div class="bank-hatch" id="bank-hatch" aria-hidden="true">
+              <div class="bank-hatch-leaf bank-hatch-leaf-l"></div>
+              <div class="bank-hatch-leaf bank-hatch-leaf-r"></div>
+            </div>
+          </div>
+          <div id="hud-mid">
+            <div id="hud-status">
+              <div id="hud-status-normal">
+                <div class="hand-strength crt-screen crt-hand" id="hand-strength"></div>
+                <div class="banner crt-screen crt-action" id="banner" role="status" aria-live="polite"></div>
+                <div class="stack-readout">
+                  <span class="instrument-label">Stack</span>
+                  <div id="jackpot" role="img" aria-label="Player stack"><span class="jp-cell jp-sym">$</span></div>
+                </div>
+              </div>
+              <div class="hud-result" id="hud-result"></div>
+            </div>
+          </div>
+          <div id="hud-right">
+            <div class="hearts hidden" id="hud-hearts" aria-hidden="true"></div>
+            <div class="blind-lamps" aria-label="Blind position">
+              <div class="blind-indicator" id="hud-sb-indicator"><span>SB</span></div>
+              <div class="blind-indicator" id="hud-bb-indicator"><span>BB</span></div>
+            </div>
+            <div class="bet-this-hand" aria-live="polite">
+              <span class="instrument-label">Bet this hand</span>
+              <div class="crt-screen" id="hud-invested" role="img" aria-label="Bet this hand: 0">$000</div>
+            </div>
+            <div class="hud-speaker" aria-hidden="true">
+              <i></i><i></i><i></i><i></i><i></i>
+              <i></i><i></i><i></i><i></i><i></i>
+              <i></i><i></i><i></i><i></i><i></i>
+              <i></i><i></i><i></i><i></i><i></i>
+            </div>
+            <div class="action-slot act-empty hidden" id="hud-action">–</div>
+            <div class="pos-btn hidden" id="hud-pos"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="action-area">
+      <div id="coach" class="hidden" aria-live="polite">
+        <div class="coach-head">
+          <span class="coach-title">Coach</span>
+          <span class="coach-rec" id="coach-rec">—</span>
+        </div>
+        <div class="coach-bars">
+          <div class="coach-metric">
+            <div class="lbl">Win chance</div>
+            <div class="val tabular" id="coach-equity">—</div>
+            <div class="meter"><i id="coach-equity-bar" style="width:0%"></i></div>
+          </div>
+          <div class="coach-metric">
+            <div class="lbl">Pot odds</div>
+            <div class="val tabular" id="coach-odds">—</div>
+            <div class="meter odds"><i id="coach-odds-bar" style="width:0%"></i></div>
+          </div>
+        </div>
+        <div class="coach-note" id="coach-note">Working out the numbers…</div>
+        <div class="coach-insight ci-draw hidden" id="coach-draw">
+          <span class="ci-tag">Drawing</span><span class="ci-text" id="coach-draw-text"></span>
+        </div>
+        <div class="coach-insight ci-watch hidden" id="coach-watch">
+          <span class="ci-tag">Watch</span><span class="ci-text" id="coach-watch-text"></span>
+        </div>
+        <div class="coach-foot">Estimated against random hands — it doesn't read opponents' betting.</div>
+      </div>
+
+      <div id="review" class="hidden" aria-live="polite">
+        <div class="review-head">Hand review</div>
+        <div id="review-body"></div>
+      </div>
+
+      <div class="actions-dock">
+        <div class="raise-panel" id="raise-panel">
+          <div class="raise-head">
+            <span class="raise-title">Raise to</span>
+            <div class="raise-amt crt-screen" id="raise-amt" role="img" aria-label="Raise to: 0">
+              <span class="raise-reels mini-jackpot"><span class="jp-cell jp-sym">$</span></span>
+            </div>
+            <button class="icon-btn raise-cancel" id="raise-cancel" aria-label="Cancel raise, keep my turn">✕</button>
+          </div>
+          <div class="quick-bets hidden" id="quick-bets" role="group" aria-label="Quick bet amounts"></div>
+          <div class="raise-row">
+            <div class="slider-wrap">
+              <input type="range" id="raise-slider" min="0" max="100" value="0" aria-label="Raise amount">
+            </div>
+          </div>
+        </div>
+
+        <div class="action-console" id="action-console">
+          <div class="console-flip" id="console-flip">
+            <div class="console-face console-face-actions">
+              <div class="actions-flip" id="actions-flip">
+                <div class="actions-face actions-face-play">
+                  <div class="actions-row disabled" id="actions-row">
+                    <button class="btn-fold" id="btn-fold">Fold</button>
+                    <button class="btn-check" id="btn-checkcall">Check</button>
+                    <button class="btn-raise" id="btn-raise">Raise</button>
+                  </div>
+                </div>
+                <div class="actions-face actions-face-quick">
+                  <button class="btn-quick-resolve" id="btn-quick-resolve" disabled>Quick Resolve</button>
+                </div>
+              </div>
+            </div>
+            <div class="console-face console-face-award" id="console-face-award">
+              <button class="btn-award-console" id="btn-award-pot-console">Award Pot</button>
+              <button class="btn-award-console results-secondary hidden" id="btn-result-secondary" type="button">Main Menu</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <button class="wide-btn hidden" id="btn-next-hand">Next Hand</button>
+      <button class="wide-btn hidden" id="btn-rebuy">Rebuy</button>
+      <button class="wide-btn hidden" id="btn-new-table">New Table</button>
+    </div>
+  </div>
+  </template>
+
+  <!-- The real #table-screen shell is mounted from index.html when served,
+       or from the validated embedded copy above when opened as file://.
+       Live wiring is never loaded, so fixtures remain memory-only. -->
   <div id="app" class="sdr-production-host">
     <div class="sdr-loading" id="sdr-production-mount">Mounting production table…</div>
   </div>
@@ -67,8 +244,8 @@
   <script src="js/03-opponents.js"></script>
   <script src="js/04-modes-and-scoring.js"></script>
   <script src="js/05-game-engine.js"></script>
-  <script src="js/06-presentation.js?v=32-4"></script>
+  <script src="js/06-presentation.js?v=32-5"></script>
   <script src="js/showdown-rail-model.js"></script>
-  <script src="js/showdown-rail-lab.js?v=32-4"></script>
+  <script src="js/showdown-rail-lab.js?v=32-5"></script>
 </body>
 </html>

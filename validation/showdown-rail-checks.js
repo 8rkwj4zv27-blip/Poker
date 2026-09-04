@@ -11,6 +11,7 @@ const poker=fs.readFileSync(path.join(root,'js/01-poker-math.js'),'utf8');
 const modelSource=fs.readFileSync(path.join(root,'js/showdown-rail-model.js'),'utf8');
 const labSource=fs.readFileSync(path.join(root,'js/showdown-rail-lab.js'),'utf8');
 const html=fs.readFileSync(path.join(root,'showdown-rail-lab.html'),'utf8');
+const indexHtml=fs.readFileSync(path.join(root,'index.html'),'utf8');
 const css=fs.readFileSync(path.join(root,'css/showdown-rail-lab.css'),'utf8');
 const production=fs.readFileSync(path.join(root,'js/06-presentation.js'),'utf8');
 const foundationCss=fs.readFileSync(path.join(root,'css/01-foundation.css'),'utf8');
@@ -221,9 +222,24 @@ check('The isolated page mounts the real production table without live wiring',(
   assert.ok(!html.includes('js/08-dev-mode.js'));
   assert.ok(labSource.includes("fetch('index.html',{cache:'no-store'})"));
   assert.ok(labSource.includes("doc.querySelector('#table-screen')"));
+  assert.ok(labSource.includes("location.protocol==='file:'"));
+  assert.ok(labSource.includes("get('source')==='embedded'"));
+  assert.ok(labSource.includes('if (!useEmbedded)'));
+  assert.ok(labSource.includes("template.content.querySelector('#table-screen')"));
+  assert.ok(labSource.includes('screen.dataset.labSource=sourceMode'));
   assert.ok(!html.includes('class="seat'));
   assert.ok(labSource.includes('cardClass(faceDown,card,false)'));
   assert.ok(labSource.includes('cardInner(card)'));
+});
+
+check('Direct-file fallback is an exact validated copy of the production table shell',()=>{
+  const productionStart=indexHtml.indexOf('  <div id="table-screen"');
+  const productionEnd=indexHtml.indexOf('\n\n  <div class="arcade-reward-layer',productionStart);
+  const embedded=html.match(/<template id="sdr-production-template">\s*([\s\S]*?)\s*<\/template>/);
+  assert.ok(productionStart!==-1 && productionEnd!==-1);
+  assert.ok(embedded);
+  const normalize=value=>value.replace(/\s+/g,' ').trim();
+  assert.strictEqual(normalize(embedded[1]),normalize(indexHtml.slice(productionStart,productionEnd)));
 });
 
 check('Inspection lane reserves exactly five crisp responsive card positions',()=>{
@@ -381,8 +397,8 @@ check('The development harness can exercise the shipped rail without starting or
 });
 
 check('Rail Five remains shipped after the later build/cache marker advance',()=>{
-  assert.ok(support.includes("const BUILD_VERSION = 'v0.32.4-dev · Winning Hand Stamp'"));
-  assert.ok(serviceWorker.includes("const CACHE_NAME = 'poker-v32-4'"));
+  assert.ok(support.includes("const BUILD_VERSION = 'v0.32.5-dev · Direct Preview Fix'"));
+  assert.ok(serviceWorker.includes("const CACHE_NAME = 'poker-v32-5'"));
   assert.ok(production.includes('function presentShowdownRail(main)'));
 });
 

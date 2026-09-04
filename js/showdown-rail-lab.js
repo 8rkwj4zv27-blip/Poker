@@ -132,12 +132,28 @@
   }
 
   async function mountProductionTable(){
-    const response=await fetch('index.html',{cache:'no-store'});
-    if (!response.ok) throw new Error('Could not load production table markup');
-    const doc=new DOMParser().parseFromString(await response.text(),'text/html');
-    const source=doc.querySelector('#table-screen');
+    let source=null;
+    let sourceMode='embedded';
+    const useEmbedded=location.protocol==='file:' || new URLSearchParams(location.search).get('source')==='embedded';
+    if (!useEmbedded){
+      try{
+        const response=await fetch('index.html',{cache:'no-store'});
+        if (response.ok){
+          const doc=new DOMParser().parseFromString(await response.text(),'text/html');
+          source=doc.querySelector('#table-screen');
+          if (source) sourceMode='live';
+        }
+      }catch(error){
+        console.warn('[showdown-rail-lab] live table unavailable; using embedded shell',error);
+      }
+    }
+    if (!source){
+      const template=$('sdr-production-template');
+      source=template&&template.content.querySelector('#table-screen');
+    }
     if (!source) throw new Error('Production #table-screen was not found');
     const screen=document.importNode(source,true);
+    screen.dataset.labSource=sourceMode;
     screen.classList.remove('hidden');
     screen.classList.add('sdr-preview-table');
     screen.setAttribute('aria-label','Production table showdown preview');
