@@ -4,8 +4,66 @@ Status: approved sequence
 Baseline date: 2026-08-22
 Expansion promoted: 2026-08-25
 
+Poker Faces V2 Career pass completed: 2026-09-21
+
+## Owner-directed ticket-reader integration — 2026-09-23
+
+The owner approved promoting the Career Hub ticket Lab to the live Career
+screen after correcting the Exit, CRT, card flip, intake and press issues. The
+production reader replaces the prior six-stop strip and cassette directory;
+it retains the live event catalogue, risk confirmation, real Career debit,
+stable opponent roster, resume, abandon and cash-out. The isolated Lab remains
+a fixture and cannot write the Career save. The implementation changes only
+the presentation and entry hand-off, not event terms or poker logic.
+
+Exit gate: verify front and reverse at 430×932 and compact phone sizes; browse
+locked and available events; test one actual isolated-origin buy-in, reload and
+check exactly one debit and the active-event routes; pass the focused Career
+and result suites; update the PWA cache; then commit only scoped files and sync.
+
+## Owner-directed presentation override — Poker Faces V2 Career
+
+The owner authorised a contained production pass over the Career event-selection
+experience. It replaces the long vertical room directory with a persistent
+Career status header, six-stop circuit strip, snapping horizontal cassette
+rack, one focused event reader, progressive details, and a short entry hand-off.
+
+The pass reuses the existing catalogue, live event states, authoritative
+rosters, entry/resume/abandon functions, risky-entry confirmation and cash
+session controls. It changes no event terms, unlock rule, save field, poker
+logic, AI, scoring, audio system or table presentation.
+
+Exit gate met: focused Career suites pass; the real screen was exercised at the
+requested 430x932 mobile target with no horizontal overflow or console errors;
+the primary action is visible before scrolling; locked preview, details,
+selection, entry, reload-to-active focus and Back navigation were verified.
+
 Holiday Gameplay Pass authorised: 2026-09-02
 Upper Ladder Pass authorised: 2026-09-03
+
+Enemy / Personality Pass authorised: 2026-09-04
+
+## Owner-directed sequence override — Enemy / Personality Pass
+
+The owner has brought the shared identity foundation and two lightweight
+discovery surfaces forward across Career, Single Player and Custom Game. This
+does not execute Phase 7's relationship counters or Phase 13's progressive
+records/dossier systems.
+
+The contained pass consists of: one canonical five-resident registry; stable
+resident-first seating with legacy archetype visitors above five opponents;
+resident poker preferences inside the existing fair decision function;
+resident-specific expressions driven only by public mood; House Faces on the
+main machine; and an in-table public dossier available only at presentation-
+stable reading moments. Existing saves retain their paid fields and legacy
+tables are not recast.
+
+Exit gate: the complete regression suite passes; the new identity/behaviour
+checks pass; House Faces and the dossier render without overflow at 320×700 and
+390×844 across all four palettes; keyboard focus survives selection; supported
+large tables retain a dependable dossier target; and opening a dossier cannot
+mask a card, chip, showdown or result animation. The work remains uncommitted
+until the owner approves the rendered result.
 
 ## Owner-directed sequence override — Upper Ladder Pass
 

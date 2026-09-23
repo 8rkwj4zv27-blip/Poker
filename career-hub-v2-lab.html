@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#07100d">
+  <meta name="format-detection" content="telephone=no">
+  <link rel="icon" href="data:,">
+  <title>Poker Faces — Career Hub V2 Lab</title>
+  <link rel="stylesheet" href="css/01-foundation.css">
+  <link rel="stylesheet" href="css/02-screens.css">
+  <link rel="stylesheet" href="css/03-action-console.css">
+  <link rel="stylesheet" href="css/04-overlays-and-modes.css">
+  <link rel="stylesheet" href="css/05-responsive-and-arcade.css">
+  <link rel="stylesheet" href="css/06-machine-system.css">
+  <link rel="stylesheet" href="css/career-hub-v2-lab.css?v=15">
+  <script defer src="js/career-hub-v2-lab.js?v=15"></script>
+</head>
+<body class="ch2-body">
+  <main class="ch2-machine" id="home" aria-label="Career Hub V2 prototype">
+    <header class="ch2-instrument">
+      <div class="ch2-utility-row">
+        <span class="pc-label ch2-instrument-title">Bankroll</span>
+      </div>
+      <div class="ch2-money-block">
+        <div class="cpi-bankroll-housing ch2-bankroll-housing">
+          <div class="amt-readout ch2-bankroll-reel" id="ch2-bankroll" role="img" aria-live="polite" aria-label="Bankroll $500"></div>
+        </div>
+      </div>
+      <button class="ch2-record crt" id="ch2-record" type="button" aria-label="Career record. Tap for next statistic">
+        <span class="ch2-crt-glass crt__content" id="ch2-crt-glass">
+          <span class="ch2-crt-stat"><small id="ch2-crt-label-a">GAMES PLAYED</small><strong class="tabular" id="ch2-crt-value-a">014</strong></span>
+          <span class="ch2-crt-stat"><small id="ch2-crt-label-b">GAMES WON</small><strong class="tabular" id="ch2-crt-value-b">005</strong><span class="crt-cursor" aria-hidden="true"></span></span>
+        </span>
+      </button>
+    </header>
+
+    <section class="ch2-reader" aria-label="Career event browser">
+      <div class="ch2-rack" id="ch2-rack">
+        <div class="ch2-track" id="ch2-track" role="listbox" aria-label="Flick through career events"></div>
+        <button class="icon-btn ch2-arrow ch2-arrow-prev" id="ch2-prev" type="button" aria-label="Previous event"><span class="ch2-nav-mark" aria-hidden="true"></span></button>
+        <button class="icon-btn ch2-arrow ch2-arrow-next" id="ch2-next" type="button" aria-label="Next event"><span class="ch2-nav-mark" aria-hidden="true"></span></button>
+      </div>
+    </section>
+
+    <div class="ch2-intake" id="ch2-intake" aria-hidden="true"><span class="ch2-intake-mouth"></span></div>
+
+    <div class="pc-primary-cradle ch2-action-cradle">
+      <span class="pc-slot-aperture" aria-hidden="true"><span class="pc-slot-door"></span></span>
+      <button class="pc-button pc-button-primary ch2-primary" id="ch2-primary" type="button">
+        <span class="pc-lamp is-amber" aria-hidden="true"></span>
+        <span><strong id="ch2-primary-main">BUY IN $50</strong><small id="ch2-primary-sub">TAKE SEAT</small></span>
+        <span class="pc-lamp is-amber" aria-hidden="true"></span>
+      </button>
+    </div>
+  </main>
+
+  <button class="ch2-lab-toggle" id="ch2-lab-toggle" type="button" aria-expanded="false" aria-controls="ch2-lab-panel">LAB</button>
+  <aside class="ch2-lab-panel" id="ch2-lab-panel" aria-label="Prototype controls" hidden>
+    <header><strong>CAREER HUB V2</strong><span>IN-MEMORY FIXTURES</span></header>
+    <div class="ch2-lab-group">
+      <span>SELECTED STATE</span>
+      <button type="button" data-state="auto">CATALOGUE</button>
+      <button type="button" data-state="available">AVAILABLE</button>
+      <button type="button" data-state="locked">LOCKED</button>
+      <button type="button" data-state="completed">COMPLETED</button>
+    </div>
+    <label class="ch2-lab-select">EVENT<select id="ch2-event-select"></select></label>
+    <label class="ch2-lab-select">BANKROLL<select id="ch2-bankroll-select"><option>40</option><option selected>500</option><option>3000</option><option>30000</option></select></label>
+    <label class="ch2-lab-check"><input id="ch2-motion" type="checkbox"> REDUCED MOTION</label>
+    <button class="ch2-lab-reset" id="ch2-reset" type="button">RESET ENTRY ANIMATION</button>
+  </aside>
+</body>
+</html>

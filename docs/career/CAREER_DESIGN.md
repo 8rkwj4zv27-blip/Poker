@@ -4,6 +4,51 @@ Status: approved direction
 Baseline date: 2026-08-22
 Expansion promoted: 2026-08-25
 
+Poker Faces V2 Career presentation approved and implemented: 2026-09-21
+
+## Ticket-reader presentation override — 2026-09-23
+
+The owner approved replacing the V2 cassette rack/venue strip with one focused
+physical invitation and clipped adjacent tickets. The six venues distinguish
+themselves through increasingly prestigious paper/stock, ink, trim and print;
+they do not need a separate persistent venue strip. Side keys and a swipe move
+between events. DETAILS turns the same card to a readable reverse. The
+dashboard uses one fixed-width seven-drum bankroll and a tap-to-cycle two-stat
+CRT. The ticket is accepted into an intake before the authoritative entry
+transaction updates the bankroll; an accepted ticket returns, and the existing
+table opens. Reduced Motion preserves the state change without the travel.
+
+This supersedes the cassette/strip and clamp-and-dim presentation rules below.
+It does not change catalogue, economics, unlocks, rosters, save schema,
+confirmation or poker rules. The Lab has no Exit; production retains its Back
+route and active-session exit options.
+
+## Poker Faces V2 — Career headquarters presentation
+
+Career is now a focused event reader rather than a vertical directory of
+equally weighted venue rows. The permanent product rules are:
+
+- The compact player instrument remains persistent and carries bankroll,
+  money on the table, highest access and the two aggregate event counters.
+- All six venues remain visible as a restrained circuit strip. It communicates
+  progression without turning unreached rooms into full-height locked panels.
+- The current catalogue is browsed as a horizontal, snapping cassette rack.
+  One cassette is selected at a time; adjacent events remain visibly and
+  physically reachable, and locked events remain inspectable.
+- One reading bay owns the screen. Venue, event, state, prize/stakes, entry,
+  field and opponents are legible before secondary details.
+- The primary action is mounted immediately below the selected ticket and
+  always precedes the progressive detail drawer. Available events use TAKE
+  SEAT; active events use CONTINUE; locked, blocked and unaffordable events use
+  a shallow status mechanism rather than a dead primary key.
+- Event selection uses short stepped lateral travel and a settle beat. Entry
+  uses a short clamp-and-dim hand-off to the existing table. Reduced Motion
+  removes both animations.
+
+This is a presentation decision only. The event catalogue, economics, unlocks,
+rosters, save schema, entry confirmations, cash ledger and poker engine remain
+authoritative and unchanged.
+
 Holiday Gameplay Pass authorised: 2026-09-02
 Upper Ladder Pass authorised: 2026-09-03
 
@@ -38,9 +83,9 @@ The honest table-threat ladder is `MODERATE / SERIOUS / SHARP / EXPERT / ELITE /
 CHAMPIONSHIP`. Expert and Elite may improve only fair public-state poker:
 calculation stability, position, stack depth, paid-place pressure and disciplined
 call-offs. They receive no hidden-card access, future-deck access, rigging, luck
-bonus or unadvertised stack advantage. Upper fields use curated combinations of
-the existing archetypes; this does not resume the paused named-character or
-chatter work.
+bonus or unadvertised stack advantage. Upper fields originally used curated
+combinations of the existing archetypes; that identity-only decision is
+superseded by the 2026-09-04 resident override below. Chatter remains paused.
 
 Explicit exclusions: cash play above Back Room; bounties; satellites and seat
 inventory; alternative cards or poker rules; multi-table simulation; XP,
@@ -528,9 +573,33 @@ Boundary validation set: **$0, $49, $50, $99, $100, $101.**
 
 ## Residents, rosters, and opponent knowledge
 
-**Approved direction, Phase 7 (minimal) and Phase 13 (full). Not implemented.**
+**Approved direction, Phase 7 (minimal) and Phase 13 (full). Identity and
+lightweight discovery brought forward 2026-09-04; relationship records remain
+unimplemented.**
 This reverses the earlier exclusion of career history, records, and
 recurring-opponent progression; see *Outside the current build* below.
+
+### Owner-directed identity override — 2026-09-04
+
+The **Enemy / Personality Pass** brings the identity foundation forward across
+the whole game. Harry, Tony, Lucy, Nigel and Steve are now the five canonical
+residents: each has one permanent colour, authored public biography and playing
+style, a resident-specific public-expression vocabulary and distinct poker
+preferences. New tables seat residents first and use the existing anonymous
+archetypes only as visitors when more than five opponents are requested.
+
+Two deliberately lightweight discovery surfaces also move forward: **House
+Faces** on the main machine and a compact in-table public dossier. They show
+authored identity, plain-language tendencies and only the same public mood the
+portrait already displays. They contain no encounter history, reveal tiers,
+flagged moments, generated text, private AI dials or hidden-card information.
+The full progressive dossier and records system remains Phase 13.
+
+This override settles identity and discovery only. Phase 7's three relationship
+counters remain unbuilt, as do boss status, first-clear ceremonies and every
+other relationship/progression system. Upper Career events may now curate these
+residents rather than the superseded anonymous archetype fields; paid active
+rosters remain immutable and legacy tables keep their original visitors.
 
 - **Venues have a stable cast** rather than an anonymous AI pool re-rolled per
   event. A resident has a fixed authored identity: portrait, public
@@ -804,9 +873,9 @@ Deferred, with the phase that owns each where one exists:
 - A new analytics platform or bot-simulation framework.
 - Cash Cut or any roguelite system.
 - **Additional currencies, XP, perks, and power-ups — excluded permanently, not deferred.**
-- Event history, venue records, head-to-head records, dossiers and titles remain
-  Phase 13. The two aggregate counters shipped on 2026-08-25 are the sole
-  exception and expand no further.
+- Event history, venue records, head-to-head records, progressive dossiers and
+  titles remain Phase 13. The lightweight public House Faces/in-table dossier
+  brought forward on 2026-09-04 contains none of those record systems.
 
 ### Exclusions reversed on 2026-08-25
 

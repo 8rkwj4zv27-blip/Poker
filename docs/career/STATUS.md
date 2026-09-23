@@ -1,5 +1,142 @@
 # Career Mode — Current Status
 
+## Career Hub ticket reader — production integration (2026-09-23)
+
+The owner approved replacing the V2 Career cassette directory with the tested
+ticket-reader Lab. The live Career screen now uses the six distinct ticket
+stocks, side navigation, a continuous physical card turn, fixed seven-drum
+bankroll, two-stat CRT, intake/return entry motion and table-style primary
+press. The Lab Exit was removed. The live screen keeps the existing bottom Back
+route; active events also retain Continue / Abandon, and active cash keeps
+Resume / Cash Out. The real Career entry and cash functions remain the sole
+source of debit, seating and settlement. Entry motion never debits a fixture.
+
+The owner-approved corrective pass removes the broken card-face flash, makes
+the ticket visibly descend behind the intake lip, rolls $100 entries in ten
+$10 display steps after successful acceptance, and keeps the primary key out of
+the home-screen VHS launch effect. Compact phone layouts use a shorter ticket
+grid, preserving both the front and the readable details reverse. The earlier
+Lab-only and V2 production descriptions below are historical checkpoints;
+this integration supersedes their screen-layout and immediate-next-task notes.
+
+Validation: 115 focused Career event checks and 41 Career result checks pass;
+live browser QA at 430×932, 390×844 and 320×700 covered both card faces,
+controls, and a live paid event on an isolated origin. Reload showed $400 from
+$500 after one $100 entry, the same active event, Continue and Abandon. The
+next task is on-device PWA feel and sound verification, then any owner-directed
+fine polish—not another catalogue or economy expansion.
+
+## Career Hub V2 UI Lab prototype — COMPLETE (2026-09-22)
+
+The owner-approved machine-intake polish pass is now in the isolated Lab. The
+bankroll plaque has a defined place beside, rather than beneath, the Exit key;
+the seven fixed drums, two-stat CRT and primary cartridge have measured bottom
+clearance at 320, 375, 390 and 430px. Short screens scroll the complete cabinet
+instead of cropping its action. Ticket stock is flat rather than edge-bevelled.
+Existing resident portraits make brief, irregular same-character expression
+changes on available fronts and rest during flips, browsing, entry and Reduced
+Motion. The redundant feeder above the ticket is gone. A dark intake immediately
+above BUY IN receives a downward-moving copy of the invitation; only after it
+is accepted do the bankroll drums roll and the paid state settle. The Lab
+fixture charges exactly once and blocks browsing and repeat entry during the
+sequence. This is still a visual fixture, not a production transaction: live
+integration must take its success/debit signal from Career's authoritative
+entry path. Validation: 115 Career event checks, 41 result checks, JavaScript
+syntax, visual/geometry checks at four phone widths, compact Back Room and
+Invitational reverses, normal and Reduced Motion entry, and no browser errors.
+
+An isolated, interactive `career-hub-v2-lab.html` prototype now explores the
+owner-supplied event-card direction at the 430×932 phone target. The approved
+continuity revision preserves the real pointer drag/flick/snap browsing but
+removes the artificial venue-tab pile: only one invitation is complete, with
+the immediate neighbours clipped at the reader edges and every other card off
+stage. The latest polish pass turns the top into one coherent player dashboard.
+The bankroll and two-stat CRT are equally justified full-width instruments;
+the small Exit key now occupies its own balanced utility row in the established
+Settings-key grammar and never overlaps either instrument. The fixed
+seven-drum bankroll has a clean flat gold perimeter, dark glass well and
+staggered roll response, so `$0000500` changes value without changing shape.
+The rectangular CRT automatically cycles four pairs of truthful fixture stats
+with the existing phosphor, scanline, cursor and refresh language and advances
+on touch. Its refresh is scoped to the glass and cannot flash the chassis or
+gold bankroll trim. Event navigation remains mounted as small physical tabs on
+the card-reader sides rather than as a detached row.
+
+The Lab loads the production stylesheet stack and directly reuses the game's
+bankroll reels, CRT display grammar, icon keys, primary cartridge, materials,
+typography and press travel. Redundant branding, slogans, plaques and footer
+copy remain removed. A lower intake now gives the invitation a machine
+destination, and selection gets a short paper-settle response. The six venues
+share one disciplined information grid but now rise through visibly different
+ticket-production standards: clean ruled Back Room note, perforated oxblood Pub
+admission, green membership docket, black-and-gold Casino ticket, dark charcoal
+and silver High Roller stock, and a double-bordered deep burgundy-and-gold
+Invitational. The accidental Back Room punch hole and diagonal crease are gone.
+The universal gradient metal venue plaque is gone; venue identity is printed,
+stamped or formalised directly into each ticket. Adjacent ticket peeks expose
+those changing materials before selection, while restrained reader lighting
+follows the chosen venue.
+
+DETAILS is now a narrower reinforced paper tab and turns to EVENT on the reverse.
+A 620ms perspective turn lifts the ticket, narrows it to a physical edge,
+changes face without mirrored text, and settles the reverse; Reduced Motion
+collapses that sequence. It opens a legible event brief rather than a matrix of equal boxes: format and a
+plain-English explanation, specification rows, payout/table rule, then buy-in
+and access. Decorative crop marks are gone, status marks are front-only and now
+behave like ink, punches or access marks applied to the stock, and a previously
+completed event still reads BUY IN / TAKE SEAT rather than REPLAY. Swiping
+restores the next card's front. Available, unaffordable, locked, completed and
+paid primary-key states are visually distinct. The primary cradle now preserves
+its full bottom plinth and safe edge clearance at every tested phone size. Dev
+controls remain available only with the explicit `?lab` query and never intrude
+on the player-facing test URL.
+
+The prototype loads no production JavaScript and reads or writes no Career
+save, localStorage, event transaction, navigation, poker, AI or economy state.
+The 14 / 5 / 9 record is deliberately a Lab fixture; production integration
+must settle what counts as Lost before deriving it from the existing counters.
+Production Career remains the `v0.34.0-dev` implementation described below.
+Validation passes **115** focused Career event checks and **41** Career result
+checks. Browser QA at 430×932, 390×844 and 320×700 found no page overflow or
+console errors; the equal-width dashboard, fixed reel, tap/automatic two-stat
+CRT cycling, all ticket tiers, compact Invitational reverse, full primary-key
+plinth, side tabs, touch flick, card turn, completed and paid paper marks,
+visual entry and unchanged localStorage were exercised. Immediate next task
+for this prototype is owner creative-direction review; do not integrate it into
+production without explicit approval.
+
+## Poker Faces V2 Career production pass — COMPLETE (2026-09-21)
+
+Career now opens as the player's single-player headquarters rather than a long
+database-like event list. The status instrument was compressed without removing
+bankroll, cash ownership, permanent access or aggregate results. All six venues
+remain present in a restrained circuit strip; the complete live catalogue now
+occupies a horizontal snapping cassette rack; and one selected event feeds a
+central reading bay with prize/stakes, entry, field, opponent preview, real
+availability requirement and the primary action before progressive details.
+
+Browsing uses short stepped lateral travel and a settle beat. Locked events are
+duller previews rather than full-size obstacles. Active tournament and cash
+sessions take focus automatically. TAKE SEAT / CONTINUE / BUY IN / RESUME reuse
+the existing transaction and launch paths, with a short clamp-and-dim transition
+into the existing poker table. Reduced Motion makes the hand-off immediate.
+
+No Career descriptor, economy, progression rule, roster, save field, cash
+ledger, poker rule, AI behaviour, scoring path, opponent emotion system or table
+presentation changed. Save schema remains v6. The release marker is
+`v0.34.0-dev · Poker Faces V2 Career`; service-worker cache is `poker-v34-0`.
+
+Validation: **115** focused Career event checks and **41** Career result checks
+pass; JavaScript syntax checks pass. Real-browser QA at the requested 430x932
+target covered initial state, several selections, locked preview, detail open /
+close, TAKE SEAT, table entry, reload-to-active focus and Back navigation. The
+document and Career screen had zero horizontal overflow, the primary action was
+inside the initial viewport, and the browser console had zero errors. Venue
+stops were raised to a 44px touch target after measurement.
+
+Immediate next task: on-device iPhone/PWA feel and sound verification. Do not
+continue into another Poker Faces V2 area without a new owner request.
+
 Last verified: 2026-09-03
 Verified working-tree implementation: Upper Ladder Pass, built on the
 committed `ed0f5d6` Career presentation baseline. Build
@@ -1103,6 +1240,97 @@ directed. Full entry in `CAREER_DESIGN.md`.
 
 Needs its own Career balance pass. No difficulty, AI or threat label was
 changed by the ticket work.
+
+## Side prototype — character chatter (2026-08-28; owner checkpoint 2026-09-02)
+
+The focused visual/audio review is complete. The selected direction is **E1 —
+Elastic / Clean**: a boxy cream speaker-owned bubble with a reliable stepped tail
+for left, right and centre speakers, live two-/three-character typing, an
+explicit two-line/50-character authoring limit, restrained seat/portrait
+emphasis, and the shared **Rapid Pixel Chatter** SFX (dense typing-synchronised
+ticks ending in a small bloop). E2 Paper-backed remains an alternate reference,
+not the winner. All eight focused Lab checks pass. See the retained decision
+record in `docs/career/CHATTER_PROTOTYPE.md`.
+
+**The work is now paused.** Character identities, dialogue, memory and emotion
+design are not approved. Harry, Tony, Lucy, Nigel and Steve remain fixtures, and
+the later characterisation discussion must not be treated as canon when the
+work resumes.
+
+**This is not a milestone and changes nothing below.** No Career save, unlock,
+roster, scoring or table code was touched; no Phase moved; the Immediate next
+task is unchanged. The prototype cast is a fixture and does **not** pre-empt the
+Phase 7 roster decision in `CAREER_DESIGN.md`.
+
+## Enemy / Personality Pass — CODE-COMPLETE, awaiting owner sign-off (2026-09-04)
+
+Owner-authorised. The five chatter-prototype residents — Harry, Tony, Lucy,
+Nigel and Steve — are now the production cast. This **settles the Phase 7
+identity question** in their favour: the paused-fixture wording below and in
+`CHATTER_PROTOTYPE.md` is superseded for identity only. Everything else about
+Phase 7 (the three relationship counters) remains unbuilt and out of scope.
+
+One canonical registry, `js/03-residents.js`, owns every resident's name,
+permanent portrait colour, resting face, expression vocabulary, biography,
+public style line, chatter voice and private AI tendency dials. The chatter
+prototype's own copy is gone; `js/chatter/01-residents.js` is now an adapter over
+the production record. Tables seat the cast first and fill any seat beyond five
+with an ordinary archetype **visitor** — a public style label and a minimal
+profile, no biography, no continuity — so every existing table size (Custom Game
+1–8, run 4/5/6, Career 1–5) is preserved and no resident is ever duplicated.
+
+The residents are measurably different at the table, driven from inside the
+existing `aiDecide()` rather than as a cosmetic multiplier. A visitor's profile
+is neutral, so ordinary archetype play is unchanged. Fixing this exposed a real
+pre-existing bug: `seatsAfter()` counted every live opponent rather than those
+still to act, so the positional term — and the whole difficulty
+`positionWeight` ladder — evaluated to zero in every ordinary hand. It now uses
+the existing `acted` flag.
+
+Two new player-visible surfaces, both rendering from one `dossierModel()`: a
+**House Faces** screen reached from the existing main-menu cast drawer (no new
+menu button), and a compact dossier opened by tapping a live opponent module at
+a presentation-stable reading moment.
+Neither exposes a hole card, an equity, a bluff flag or a tendency number; the
+mood line comes from `faceMood` only. The keyboard shortcut handler now refuses
+to submit a poker action while any menu is open, which also closes a
+pre-existing hole where typing `f` with Settings open folded the hand.
+
+**No save schema moved.** Table `SAVE_VERSION` stays 1 (bumping it deletes every
+table in progress) and Career stays **v6**. `residentId` is additive. A legacy
+table keeps the opponents it was dealt until it ends. `career.active.roster` is a
+paid term and is never redrawn; only the unpaid preview book is refreshed, which
+costs nothing and touches no money, unlock, counter or statistic.
+
+Build `v0.33.1-dev · Enemy Personalities`, service-worker cache `poker-v33-1`.
+
+Validation at code-completion: **112** Career event checks, **41** Career result
+checks, **170** scoring checks, **20** gameplay-format/AI checks, **9** chatter
+isolation checks, **10** resident behaviour checks (new), **28** resident
+identity and surface checks (new), and **0** scoring-audit divergences.
+JavaScript syntax checks pass.
+
+Correction and visual-QA pass: the canonical resident expression maps now drive
+the live faces instead of falling through to the shared generic pool; opening a
+dossier can no longer hide a card/chip flight and let it finish invisibly; the
+whole opponent module is the target, giving every seat a 46×129px hit area even
+at an eight-opponent 320px table; closed dossier content is inert and hidden
+from assistive technology; and House Faces changes selection in place so
+keyboard focus survives. Its selected tile now reads as a depressed machine
+control rather than a browser outline.
+
+Rendered QA passed at **390×844** and **320×700** with no horizontal overflow:
+House Faces remained aligned, the selected tile retained focus, an eight-
+opponent table preserved all target sizes, the live dossier fit with its Close
+control visible, close returned focus to the originating seat, and an attempted
+open during active AI play was rejected. The focused resident identity suite is
+now **28** checks. The complete validation run passes all suites and the scoring
+audit remains at **0 divergences**.
+
+**Not committed.** Automated and rendered Codex QA are complete; the owner still
+gets the final visual review before the pass is committed.
+Full architecture, migration policy and simulation evidence in
+`docs/ENEMY_PERSONALITY_PASS.md`.
 
 ## Immediate next task
 
