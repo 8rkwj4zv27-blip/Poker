@@ -72,6 +72,127 @@ async function enterCareerFromHome(){
   }
 }
 
+/* Career -> Table. `launch` is one of the real Career launch functions; it
+   builds the table under cover of the roll, and its first deal is held until
+   the house lights are up. Money has already moved before this is called,
+   and nothing here reads or writes Career state. A tap skips to the table. */
+let tableEntranceInFlight = false;
+
+function swallowNextClick(){
+  const stop = event => { event.stopPropagation(); event.preventDefault(); };
+  document.addEventListener('click',stop,true);
+  window.setTimeout(() => document.removeEventListener('click',stop,true),450);
+}
+
+function careerTableCallout(text){
+  const felt = $('felt');
+  if (!felt || !text || motionOff()) return;
+  const callout = document.createElement('div');
+  callout.className = 'table-round-callout is-career-event';
+  callout.textContent = text;
+  callout.style.setProperty('--run-announce-ms','1050ms');
+  const room = felt.clientWidth * .86;
+  callout.style.fontSize = Math.max(13,Math.min(22,Math.floor(room / (text.length * 1.18)))) + 'px';
+  felt.appendChild(callout);
+  window.setTimeout(() => callout.remove(),1100);
+}
+
+async function careerDepartToTable(launch, options = {}){
+  const app = $('app'), careerScreen = $('career'), table = $('table-screen');
+  if (!app || !careerScreen || !table || motionOff() || careerScreen.classList.contains('hidden')){
+    launch();
+    return;
+  }
+  if (tableEntranceInFlight) return;
+  tableEntranceInFlight = true;
+  let skipped = false, wake = null, built = false, dealArgs = null, dealt = false, raf = 0;
+  const realStartNewHand = startNewHand;
+  const wait = ms => skipped ? Promise.resolve() : new Promise(resolve => {
+    const timer = window.setTimeout(() => { wake = null; resolve(); },ms);
+    wake = () => { window.clearTimeout(timer); wake = null; resolve(); };
+  });
+  const skip = event => {
+    if (skipped || !built) return;
+    event.preventDefault();
+    skipped = true;
+    app.classList.add('table-entry-skip');
+    swallowNextClick();
+    if (wake) wake();
+  };
+  const build = () => {
+    if (built) return;
+    built = true;
+    startNewHand = (...args) => { dealArgs = args; };
+    try { launch(); } finally { startNewHand = realStartNewHand; }
+    if (!dealArgs) dealt = true;
+  };
+  const deal = () => {
+    if (dealt) return;
+    dealt = true;
+    realStartNewHand(...dealArgs);
+  };
+  app.addEventListener('pointerdown',skip,true);
+  try{
+    app.classList.add('table-entry-machine','table-entry-poweroff');
+    careerScreen.inert = true;
+    Sound.buttonPress('allin');
+    haptic([22,16,34]);
+    await wait(230);
+    app.classList.add('table-entry-recess');
+    Sound.stageUnlock();
+    await wait(250);
+
+    build();
+    if (table.classList.contains('hidden')){
+      // The launch refused (stale state). Nothing was seated; stay put.
+      return;
+    }
+    // showTableScreen() hid the reader; it rides the wheel out regardless.
+    careerScreen.classList.remove('hidden');
+    table.inert = true;
+    table.getBoundingClientRect();
+    await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+    app.classList.add('table-entry-rolling');
+    await new Promise(resolve => requestAnimationFrame(() => { app.classList.add('table-entry-rolled'); resolve(); }));
+
+    const travel = Math.max(1,table.getBoundingClientRect().height + 22);
+    let notch = 0;
+    const tick = () => {
+      if (skipped || !app.classList.contains('table-entry-rolling')) return;
+      const progress = Math.max(0,Math.min(1,(table.getBoundingClientRect().top + travel) / travel));
+      while (notch < 11 && progress >= (notch + 1) / 12){
+        notch++;
+        Sound.stageRollClick(Math.min(1,.36 + notch / 15),notch === 11);
+      }
+      raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    await wait(940);
+    cancelAnimationFrame(raf); raf = 0;
+    app.classList.remove('table-entry-rolling');
+    app.classList.add('table-entry-locked');
+    if (!skipped){ Sound.stageLock(); haptic([30,20,50]); }
+    await wait(200);
+    careerScreen.classList.add('hidden');
+    app.classList.add('table-entry-lights');
+    if (!skipped){ Sound.consoleShift(); careerTableCallout(options.callout); }
+    await wait(skipped ? 0 : 520);
+  } catch (error){
+    console.error('Table entrance failed; opening the table directly.',error);
+    build();
+  } finally{
+    if (raf) cancelAnimationFrame(raf);
+    app.removeEventListener('pointerdown',skip,true);
+    app.classList.remove('table-entry-machine','table-entry-poweroff','table-entry-recess','table-entry-rolling',
+      'table-entry-rolled','table-entry-locked','table-entry-lights','table-entry-skip');
+    careerScreen.inert = false;
+    table.inert = false;
+    if (built && !table.classList.contains('hidden')) careerScreen.classList.add('hidden');
+    tableEntranceInFlight = false;
+    if (built) deal();
+  }
+}
+
 (() => {
   const glass = $('home-title-glass');
   if (!glass) return;

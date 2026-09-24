@@ -1,13 +1,15 @@
-/* Home -> Career: the two real screens ride one masked cabinet wheel. */
-#app.career-entry-machine{ isolation:isolate; overflow:hidden; }
-#app.career-entry-machine::before{
+/* Home -> Career -> Table: the real screens ride one masked cabinet wheel,
+   always turning the same way, so every arrival reads as the next face of
+   one machine. */
+#app:is(.career-entry-machine,.table-entry-machine){ isolation:isolate; overflow:hidden; }
+#app:is(.career-entry-machine,.table-entry-machine)::before{
   content:""; position:absolute; z-index:48; inset:0; pointer-events:none;
   background:
     repeating-linear-gradient(90deg,transparent 0 24px,rgba(174,135,72,.24) 25px 27px,transparent 28px 47px),
     radial-gradient(ellipse at center,#3a2c19 0,#12100c 56%,#050504 100%);
   box-shadow:inset 0 25px 24px #040504,inset 0 -25px 24px #040504;
 }
-#app.career-entry-machine::after{
+#app:is(.career-entry-machine,.table-entry-machine)::after{
   content:""; position:absolute; z-index:54; left:-2px; right:-2px; top:-22px; height:23px;
   pointer-events:none; border:2px solid #070604;
   background:linear-gradient(#a5854b 0 3px,#14100a 3px 7px,#5a4b31 7px 17px,#090805 17px);
@@ -16,6 +18,9 @@
 }
 #app.career-entry-machine.career-entry-rolling::after{
   opacity:1; animation:careerWheelJoint 1160ms cubic-bezier(.13,.68,.18,1) both;
+}
+#app.table-entry-machine.table-entry-rolling::after{
+  opacity:1; animation:careerWheelJoint 920ms cubic-bezier(.16,.66,.16,1) both;
 }
 @keyframes careerWheelJoint{ to{ transform:translateY(calc(100dvh + 23px)); } }
 #app.career-entry-machine #home,
@@ -71,7 +76,101 @@
 .home-glass-object.is-chip .chip-disc{ width:38px; height:38px; margin:0; filter:drop-shadow(0 3px 0 #080705); }
 #home-title-glass.is-struck{ animation:homeGlassStruck 115ms steps(4,end); }
 @keyframes homeGlassStruck{ 40%{ box-shadow:inset 0 0 0 2px rgba(250,221,133,.45),inset 0 0 20px #090b06; } }
-@media(prefers-reduced-motion:reduce){
-  #app.career-entry-machine *{ animation-duration:.01ms!important; transition-duration:.01ms!important; }
+/* ---- Career -> Table: power down, roll the table in dark, lock, lights. */
+#app.table-entry-machine #career,
+#app.table-entry-machine #table-screen{ pointer-events:none; backface-visibility:hidden; will-change:transform; }
+#app.table-entry-machine #career{ z-index:51; transform:translateY(0) scale(1); }
+#app.table-entry-machine #table-screen{ z-index:50; transform:translateY(calc(-100% - 22px)) scale(.982); filter:brightness(.16) saturate(.45); }
+#app.table-entry-poweroff #career .setup-head,
+#app.table-entry-poweroff #career-hub .ch2-instrument,
+#app.table-entry-poweroff #career-hub .ch2-reader,
+#app.table-entry-poweroff #career-hub .ch2-intake{
+  animation:careerPowerOff 230ms steps(7,end) both;
 }
-[data-motion="off"] #app.career-entry-machine *{ animation-duration:.01ms!important; transition-duration:.01ms!important; }
+#app.table-entry-recess #career{
+  transform:translateY(0) scale(.982);
+  transition:transform 250ms cubic-bezier(.3,0,.35,1);
+}
+#app.table-entry-rolling #career,
+#app.table-entry-rolling #table-screen{
+  transition:transform 920ms cubic-bezier(.16,.66,.16,1),filter 920ms ease;
+}
+#app.table-entry-rolled #career{ transform:translateY(calc(100% + 22px)) scale(.974); filter:brightness(.3) saturate(.35); }
+#app.table-entry-rolled #table-screen{ transform:translateY(0) scale(.982); filter:brightness(.2) saturate(.5); }
+#app.table-entry-locked #table-screen{
+  transform:translateY(0) scale(1); filter:brightness(.2) saturate(.5);
+  transition:transform 190ms cubic-bezier(.16,.72,.18,1);
+}
+/* The house lights come up in hard steps, with one brown-out flicker. */
+#app.table-entry-lights #table-screen{ transform:none; animation:tableLightsOn 420ms steps(6,end) both; }
+@keyframes tableLightsOn{
+  0%{ filter:brightness(.2) saturate(.5); }
+  28%{ filter:brightness(.72) saturate(.82); }
+  42%{ filter:brightness(.38) saturate(.6); }
+  70%{ filter:brightness(.92) saturate(.96); }
+  100%{ filter:none; }
+}
+#app.table-entry-skip,#app.table-entry-skip *,#app.table-entry-skip::after{ animation-duration:.01ms!important; transition-duration:.01ms!important; }
+.table-round-callout.is-career-event{ color:var(--pc-lamp-amber,#f2b431); }
+
+/* ---- Event rack: a spring in JS owns every ticket's position each frame. */
+#career-hub .ch2-track .ch2-card,
+#career-hub .ch2-track.is-settling .ch2-card,
+#career-hub .ch2-track.is-dragging .ch2-card{
+  transition:none;
+  transform:perspective(900px)
+    translate3d(var(--card-x,0%),calc(var(--card-y,10px) + var(--hold-y,0px)),0)
+    rotate(var(--lean,0deg)) rotateX(var(--tilt-x,0deg)) rotateY(var(--tilt-y,0deg))
+    scale(var(--card-scale,1));
+  opacity:var(--card-o,0);
+  filter:var(--card-f,none);
+}
+/* A lifted ticket casts a hard, chunky drop shadow that grows with height. */
+#career-hub .ch2-track .ch2-card::before{
+  content:""; position:absolute; z-index:-1; inset:2px; pointer-events:none;
+  border-radius:var(--ticket-radius,2px); background:#060403;
+  opacity:calc(var(--lift,0) * .46);
+  transform:translate(calc(var(--lift,0) * 5px),calc(var(--lift,0) * 12px));
+}
+/* Light rakes across the stock as it tilts: paper on the early tickets,
+   foil on the black-and-gold and burgundy stocks. */
+#career-hub .ch2-track .ch2-card::after{
+  content:""; position:absolute; z-index:40; inset:0; pointer-events:none;
+  border-radius:var(--ticket-radius,2px);
+  background:linear-gradient(104deg,transparent 0 37%,rgba(255,246,214,.24) 46%,rgba(255,246,214,.07) 52%,transparent 61% 100%);
+  background-size:280% 100%; background-position:var(--sheen-x,50%) 0;
+  opacity:calc(var(--lift,0) * .85);
+}
+#career-hub .ch2-reader.is-venue-change{ animation:ch2VenueFlicker 200ms steps(4,end); }
+@keyframes ch2VenueFlicker{
+  0%,100%{ filter:none; } 25%{ filter:brightness(1.24) saturate(1.12); }
+  50%{ filter:brightness(.9); } 75%{ filter:brightness(1.1); }
+}
+#career-hub .ch2-reader.is-stop-left .ch2-rack{ animation:ch2StopLeft 170ms steps(4,end); }
+#career-hub .ch2-reader.is-stop-right .ch2-rack{ animation:ch2StopRight 170ms steps(4,end); }
+@keyframes ch2StopLeft{ 25%{ transform:translateX(-4px); } 50%{ transform:translateX(2px); } 75%{ transform:translateX(-1px); } }
+@keyframes ch2StopRight{ 25%{ transform:translateX(4px); } 50%{ transform:translateX(-2px); } 75%{ transform:translateX(1px); } }
+
+/* ---- Buy-in: the returning ticket is stamped, the cabinet takes the hit,
+   and the key's lamps turn green as the seat is accepted. */
+#career-hub .ch2-entry-ticket.is-returning .ch2-stamp-paid{
+  animation:ch2StampSlam 220ms cubic-bezier(.3,1.5,.55,1) 300ms both;
+}
+@keyframes ch2StampSlam{
+  0%{ opacity:0; transform:scale(2.7); }
+  62%{ opacity:1; transform:scale(.9); }
+  100%{ opacity:1; transform:scale(1); }
+}
+#career-hub.is-stamped{ animation:ch2CabinetThump 190ms steps(4,end); }
+@keyframes ch2CabinetThump{ 25%{ transform:translateY(4px); } 50%{ transform:translateY(-2px); } 75%{ transform:translateY(1px); } }
+#career-hub .ch2-primary.is-seating .pc-lamp{
+  background:var(--pc-lamp-green); box-shadow:0 2px 0 #100807,0 0 11px rgba(117,200,155,.62),inset 1px 1px 0 #C9F5DD;
+  animation:ch2LampBlink 300ms steps(2,end) 2;
+}
+@keyframes ch2LampBlink{ 50%{ filter:brightness(.45); } }
+#career-hub .ch2-primary.is-seating{ filter:none; }
+
+@media(prefers-reduced-motion:reduce){
+  #app:is(.career-entry-machine,.table-entry-machine) *{ animation-duration:.01ms!important; transition-duration:.01ms!important; }
+}
+[data-motion="off"] #app:is(.career-entry-machine,.table-entry-machine) *{ animation-duration:.01ms!important; transition-duration:.01ms!important; }

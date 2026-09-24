@@ -1,5 +1,51 @@
 # Career Mode — Current Status
 
+## Career Hub tactile rack and buy-in roll — awaiting owner device review (2026-09-24)
+
+Owner-directed presentation pass (Direction A). No Career transaction, save
+field, catalogue, roster, poker or AI code changed; the DETAILS flip is
+untouched.
+
+**Event rack.** A JS spring now owns every ticket's position each frame, so
+neighbours rise, brighten and scale continuously with the finger. The held
+ticket lifts with a hard pixel drop shadow, follows the finger off-axis
+(soft-capped, less downward because of the reader lip), swings with release
+speed, presses in 3D under the finger, and carries a raking sheen. A shallow
+detent potential plus `stageRollClick` makes each notch click like a heavy
+selector; crossing into a new venue gives a heavier click and a reader
+flicker. Throws are projected from release speed, so a hard flick travels
+several tickets (capped at eight); the ends give a thunk and a small jolt.
+Grabbing a travelling rack catches the nearest ticket. Reduced Motion keeps
+direct drag and snaps on release.
+
+**Buy-in.** Feed ratchet and intake bite, then the real debit, then drum ticks
+and an ENTRY PAID stamp slam with a cabinet thump. The cabinet powers down
+except the key, whose lamps go green (SEAT ACCEPTED; CRT reads NOW SEATING).
+The new `careerDepartToTable()` then rolls the dark table in on the same
+wheel as Home → Career, locks it, brings the house lights up in steps with the
+event name as the table callout, and only then releases the first deal. The
+real launch functions build the table under cover of the roll; its first
+`startNewHand()` call is held, not changed. A tap after the debit skips
+straight to the table. Continue / Resume use the short version. Previously
+`careerDepartToTable` was referenced but undefined, so every arrival was a
+hard cut.
+
+Validation: 112 Career event, 41 Career result, 170 scoring, 20 Holiday and
+14 quick-bet checks pass; JavaScript syntax passes. Playwright touch QA at
+430×932, 390×844 and 320×700: diagonal drag, multi-card flicks, end stops,
+keyboard, one $100 debit ($500 → $400, `eventsPlayed` 1), first hand dealt
+after the lights, reload → CONTINUE, tap-to-skip, Reduced Motion instant entry,
+no horizontal overflow and no console errors. `card-flight`, `card-turn`,
+`chip-motion` and `showdown-rail` checks fail identically on the untouched
+baseline (stale build-version assertions) and are unrelated. Cache
+`poker-v36-1`.
+
+iOS does not support `navigator.vibrate`, so on iPhone the tactility is carried
+by sound and motion; haptic calls only reach Android.
+
+Next: owner on-device feel review of swipe weight, flick reach and the buy-in
+roll length (about 3 seconds, skippable once paid), then tuning.
+
 
 ## Live motion pass — owner-approved for sync (2026-09-24)
 

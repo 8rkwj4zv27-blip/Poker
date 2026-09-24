@@ -15,7 +15,7 @@
   const amount = n => '$' + Number(n || 0).toLocaleString('en-US');
   const motionReduced = () => motionOff() || window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   const shortVenue = venue => venue.replace(' CHAMPIONSHIP','').replace('HIGH ROLLER ROOM','HIGH ROLLER');
-  const depart = launch => typeof careerDepartToTable === 'function' ? careerDepartToTable(launch) : launch();
+  const depart = (launch,options) => typeof careerDepartToTable === 'function' ? careerDepartToTable(launch,options) : launch();
   const queue = (fn, ms) => { const timer = window.setTimeout(fn, ms); motionTimers.push(timer); return timer; };
 
   function entries(){
@@ -146,10 +146,31 @@
     if (showBlink && !motionReduced()) { glass.classList.remove('crt-refresh'); void glass.offsetWidth; glass.classList.add('crt-refresh'); }
   }
 
+  /* Continuous rack geometry: `d` is a card's signed distance, in cards, from
+     the reader's centre. Integer distances reproduce the approved resting
+     layout exactly; everything between is interpolated so neighbours rise,
+     brighten and scale in step with the finger. */
+  function cardGeometry(d){
+    const a = Math.min(Math.abs(d),3);
+    const x = a <= 1 ? 91 * a : a <= 2 ? 91 + 27 * (a - 1) : 118;
+    const light = Math.min(a,1);
+    return {
+      x:(d < 0 ? -1 : 1) * x,
+      y:a <= 1 ? 10 + 12 * a : a <= 2 ? 22 + 6 * (a - 1) : 28,
+      scale:a <= 1 ? 1 - .06 * a : a <= 2 ? .94 - .04 * (a - 1) : .9,
+      opacity:a < 1 ? 1 - .18 * a : a < 2 ? .82 * (2 - a) : 0,
+      bright:1 - .46 * light,
+      sat:1 - .36 * light,
+      z:Math.max(1,Math.round(30 - a * 12))
+    };
+  }
+  const softCap = (value,limit) => limit * Math.tanh(value / limit);
+  const clamp = (value,lo,hi) => Math.max(lo,Math.min(hi,value));
+  let rackRaf = 0;
+
   function cardStates(root, all, current){
     const rack = root.querySelector('#ch2-rack');
     rack.scrollLeft = 0;
-    root.dataset.venue = all[current].key;
     root.querySelectorAll('.ch2-card').forEach((node,i) => {
       const delta = i - current;
       const abs = Math.abs(delta);
@@ -163,10 +184,6 @@
       node.classList.toggle('is-paid',all[i].state === 'active');
       node.setAttribute('aria-selected',String(delta === 0));
       node.tabIndex = delta === 0 ? 0 : -1;
-      node.style.setProperty('--card-x',(abs ? Math.sign(delta) * (abs === 1 ? 91 : 118) : 0) + '%');
-      node.style.setProperty('--card-y',(abs ? abs === 1 ? 22 : 28 : 10) + 'px');
-      node.style.setProperty('--card-scale',abs ? abs === 1 ? '.94' : '.9' : '1');
-      node.style.zIndex = String(abs ? abs === 1 ? 18 : 1 : 30);
       node.querySelector('.ch2-card-front').setAttribute('aria-hidden',String(delta === 0 && flipped));
       node.querySelector('.ch2-card-back').setAttribute('aria-hidden',String(!(delta === 0 && flipped)));
       node.querySelector('[data-card-flip="back"]').tabIndex = delta === 0 && !flipped ? 0 : -1;
@@ -224,37 +241,155 @@
     }
     const selected = () => all.findIndex(entry => entry.id === selectedId);
     const track = root.querySelector('#ch2-track');
-    let settleTimer = 0;
+    const rack = root.querySelector('#ch2-rack');
+    const reader = root.querySelector('.ch2-reader');
+    const cards = [...track.querySelectorAll('.ch2-card')];
+    const last = all.length - 1;
     let suppressEdgeTapUntil = 0;
-    const clearMotion = () => root.querySelectorAll('.ch2-card').forEach(card => {
-      card.style.setProperty('--motion-x','0px');
-      card.style.setProperty('--motion-angle','0deg');
-      card.style.setProperty('--motion-lift','0px');
-    });
-    const move = delta => {
-      if (accepting || turning) return;
-      const at = selected();
-      const next = Math.max(0,Math.min(all.length - 1,at + delta));
-      if (next === at) return;
-      window.clearTimeout(settleTimer);
-      const cards = [...track.querySelectorAll('.ch2-card')];
-      const oldPositions = cards.map(card => card.getBoundingClientRect().left);
+
+    /* The rack is one continuous position `s` (in cards) driven by a spring.
+       Hold springs give the grabbed ticket its finger pull, swing and press
+       tilt; they are presentation only and never select anything. */
+    const hold = () => ({x:0,v:0,goal:0});
+    const phys = {
+      s:current, v:0, target:current, held:current, detent:current,
+      dragging:false, landed:true, wall:0, lastT:0,
+      hy:hold(), lean:hold(), tx:hold(), ty:hold(), lift:hold()
+    };
+    const holds = [phys.hy,phys.lean,phys.tx,phys.ty,phys.lift];
+    const spring = (q,k,zeta,h) => {
+      q.v += (-k * (q.x - q.goal) - 2 * zeta * Math.sqrt(k) * q.v) * h;
+      q.x += q.v * h;
+    };
+    const rubber = s => s < 0 ? -softCap(-s * .42,.24) : s > last ? last + softCap((s - last) * .42,.24) : s;
+    // A shallow detent potential: the rack leans into each notch and snaps
+    // over the midpoint, like a heavy rotary selector.
+    const visualS = () => {
+      const s = rubber(phys.s);
+      if (s < 0 || s > last || motionReduced()) return s;
+      return s - .15 / (2 * Math.PI) * Math.sin(2 * Math.PI * (s - Math.round(s)));
+    };
+    const paint = () => {
+      const s = visualS();
+      const lift = phys.lift.x;
+      cards.forEach((card,i) => {
+        const d = i - s;
+        const far = Math.abs(d) >= 2.6 && i !== phys.held;
+        if (far && card._far) return;
+        card._far = far;
+        const g = cardGeometry(d);
+        const st = card.style;
+        const held = i === phys.held;
+        const share = held ? 1 : Math.abs(d) < 1.5 ? .28 : 0;
+        st.setProperty('--card-x',g.x.toFixed(3) + '%');
+        st.setProperty('--card-y',g.y.toFixed(2) + 'px');
+        st.setProperty('--card-scale',(g.scale * (held ? 1 + .028 * lift : 1)).toFixed(4));
+        st.setProperty('--card-o',g.opacity.toFixed(3));
+        st.setProperty('--card-f',g.bright > .996 ? 'none' : 'brightness(' + g.bright.toFixed(3) + ') saturate(' + g.sat.toFixed(3) + ')');
+        st.setProperty('--hold-y',(held ? phys.hy.x : 0).toFixed(2) + 'px');
+        st.setProperty('--lean',(phys.lean.x * share).toFixed(3) + 'deg');
+        st.setProperty('--tilt-x',(held ? phys.tx.x : 0).toFixed(3) + 'deg');
+        st.setProperty('--tilt-y',(held ? phys.ty.x : 0).toFixed(3) + 'deg');
+        st.setProperty('--lift',(held ? Math.max(0,lift) : 0).toFixed(3));
+        st.setProperty('--sheen-x',(held ? 50 + phys.ty.x * 7 + phys.lean.x * 2 : 50).toFixed(1) + '%');
+        st.zIndex = String(held && lift > .04 ? 33 : g.z);
+      });
+    };
+    const flashVenue = () => {
+      reader.classList.remove('is-venue-change');
+      void reader.offsetWidth;
+      reader.classList.add('is-venue-change');
+    };
+    const jolt = dir => {
+      reader.classList.remove('is-stop-left','is-stop-right');
+      void reader.offsetWidth;
+      reader.classList.add(dir < 0 ? 'is-stop-left' : 'is-stop-right');
+      Sound.koThunk(.55);
+      haptic(18);
+    };
+    const notchTo = (notch,energy) => {
+      if (notch === phys.detent) return;
+      const venueChange = all[notch].key !== all[phys.detent].key;
+      phys.detent = notch;
+      root.dataset.venue = all[notch].key;
+      if (venueChange){ Sound.stageRollClick(1,true); flashVenue(); haptic(14); }
+      else { Sound.stageRollClick(clamp(energy,.12,1),false); haptic(5); }
+    };
+    const snap = () => {
+      phys.s = phys.target; phys.v = 0; phys.held = phys.target; phys.landed = true;
+      holds.forEach(q => { q.x = q.goal = q.v = 0; });
+      notchTo(phys.target,.4);
+      paint();
+    };
+    const tick = now => {
+      rackRaf = 0;
+      if (!root.isConnected) return;
+      const dt = Math.min(.034,Math.max(.001,(now - (phys.lastT || now - 16)) / 1000));
+      phys.lastT = now;
+      if (phys.dragging && pointer){
+        // A finger that stops moving stops pulling; the ticket swings back
+        // on its own spring rather than freezing at its last lean.
+        const fade = Math.exp(-(performance.now() - pointer.t) / 70);
+        const vx = pointer.vx * fade, vy = pointer.vy * fade;
+        const grip = pointer.gy >= 0 ? 1 : -1;
+        phys.lean.goal = clamp(-vx * 6.5 * grip * (.55 + .45 * Math.abs(pointer.gy)),-10,10);
+        // The spot under the finger presses in; the leading edge rises.
+        phys.tx.goal = clamp(-pointer.gy * 4.5 + vy * 3.2,-8,8);
+        phys.ty.goal = clamp(pointer.gx * 5.5 - vx * 2.6,-9,9);
+      }
+      const steps = Math.ceil(dt * 120), h = dt / steps;
+      for (let n = 0; n < steps; n++){
+        if (!phys.dragging){
+          const zeta = Math.abs(phys.s - phys.target) > 1.2 ? .88 : .64;
+          phys.v += (-150 * (phys.s - phys.target) - 2 * zeta * Math.sqrt(150) * phys.v) * h;
+          phys.v = clamp(phys.v,-26,26);
+          phys.s += phys.v * h;
+        }
+        spring(phys.hy,230,.46,h);
+        spring(phys.lean,250,.34,h);
+        spring(phys.tx,290,.5,h);
+        spring(phys.ty,290,.5,h);
+        spring(phys.lift,210,.82,h);
+      }
+      notchTo(clamp(Math.round(visualS()),0,last),Math.abs(phys.v) / 9 + .12);
+      if (!phys.dragging && !phys.landed && Math.abs(phys.s - phys.target) < .03){
+        phys.landed = true;
+        if (phys.wall) jolt(phys.wall); else Sound.cardLanded();
+        phys.wall = 0;
+      }
+      paint();
+      const resting = !phys.dragging && Math.abs(phys.s - phys.target) < .0008 && Math.abs(phys.v) < .01 &&
+        holds.every(q => Math.abs(q.x - q.goal) < .01 && Math.abs(q.v) < .05);
+      if (resting){
+        phys.s = phys.target; phys.v = 0; phys.lastT = 0;
+        holds.forEach(q => { q.x = q.goal; q.v = 0; });
+        phys.held = phys.target;
+        paint();
+        return;
+      }
+      rackRaf = requestAnimationFrame(tick);
+    };
+    const kick = () => { if (!rackRaf){ phys.lastT = 0; rackRaf = requestAnimationFrame(tick); } };
+    const commit = next => {
+      if (next === phys.target) return;
+      phys.target = next; phys.landed = false;
       selectedId = all[next].id; flipped = false;
       root.querySelectorAll('.ch2-face.is-expressing').forEach(node => node.classList.remove('is-expressing'));
-      track.classList.remove('is-settling');
-      track.classList.add('is-dragging');
-      clearMotion();
       cardStates(root,all,next);
-      if (!motionReduced()) cards.forEach((card,i) => {
-        if (Math.abs(i-next) > 1 && Math.abs(i-at) > 1) return;
-        card.style.setProperty('--motion-x',(oldPositions[i]-card.getBoundingClientRect().left)+'px');
-      });
-      void track.offsetWidth;
-      track.classList.remove('is-dragging');
-      track.classList.add('is-settling');
-      requestAnimationFrame(clearMotion);
-      settleTimer = window.setTimeout(() => track.classList.remove('is-settling'),motionReduced() ? 0 : 390);
-      Sound.buttonRelease('award');
+    };
+    root._settleRack = () => { if (rackRaf) cancelAnimationFrame(rackRaf); rackRaf = 0; pointer = null; phys.dragging = false; snap(); };
+    const move = delta => {
+      if (accepting || turning || phys.dragging) return;
+      const next = clamp(phys.target + delta,0,last);
+      if (next === phys.target){
+        jolt(delta);
+        if (!motionReduced()){ phys.s += delta * .07; phys.v += delta * .8; kick(); }
+        return;
+      }
+      commit(next);
+      if (motionReduced()){ snap(); return; }
+      phys.v += delta * 3;
+      kick();
     };
     const flip = showBack => {
       if (accepting || turning) return;
@@ -280,49 +415,73 @@
       }
     });
     root.querySelector('#ch2-primary').onclick = () => accept(root,all[selected()],flip);
-    const rack = root.querySelector('#ch2-rack');
     rack.addEventListener('pointerdown',event => {
       if (accepting || turning || event.button > 0 || event.target.closest('button')) return;
-      pointer = {id:event.pointerId,x:event.clientX,time:performance.now(),last:event.clientX,velocity:0,dragX:0};
+      // Catching a travelling rack grabs the ticket nearest the finger.
+      phys.s = rubber(phys.s);
+      phys.held = clamp(Math.round(phys.s),0,last);
+      const card = cards[phys.held];
+      const r = card.getBoundingClientRect();
+      pointer = {
+        id:event.pointerId, x0:event.clientX, y0:event.clientY, lastX:event.clientX, lastY:event.clientY,
+        t:performance.now(), vx:0, vy:0, s0:phys.s, base:phys.held, moved:false,
+        spacing:Math.max(120,card.offsetWidth * .91),
+        gx:clamp((event.clientX - (r.left + r.width / 2)) / (r.width / 2),-1,1),
+        gy:clamp((event.clientY - (r.top + r.height * .42)) / (r.height / 2),-1,1)
+      };
       rack.setPointerCapture(event.pointerId);
-      track.classList.remove('is-settling');
-      track.classList.add('is-dragging');
+      phys.dragging = true; phys.landed = false; phys.v = 0; phys.wall = 0;
+      if (!motionReduced()){
+        phys.lift.goal = 1;
+        phys.lift.v += 3.5;
+      }
+      kick();
     });
     rack.addEventListener('pointermove',event => {
       if (!pointer || pointer.id !== event.pointerId) return;
       const now = performance.now();
-      pointer.velocity = .55 * pointer.velocity + .45 * ((event.clientX - pointer.last) / Math.max(8,now - pointer.time));
-      pointer.last = event.clientX; pointer.time = now;
-      const raw = event.clientX - pointer.x;
-      const blocked = (raw > 0 && selected() === 0) || (raw < 0 && selected() === all.length-1);
-      const cap = Math.min(210,rack.clientWidth*.57);
-      pointer.dragX = Math.max(-cap,Math.min(cap,raw*(blocked ? .22 : 1)));
-      const progress = Math.min(1,Math.abs(pointer.dragX)/Math.max(1,rack.clientWidth*.7));
-      track.querySelectorAll('.ch2-card').forEach((card,i) => {
-        const distance = i-selected();
-        if (Math.abs(distance)>1) return;
-        card.style.setProperty('--motion-x',pointer.dragX*(distance === 0 ? 1 : .82)+'px');
-        card.style.setProperty('--motion-angle',distance === 0 ? Math.max(-2,Math.min(2,pointer.dragX/85))+'deg' : '0deg');
-        card.style.setProperty('--motion-lift',distance === 0 ? -Math.round(progress*5)+'px' : '0px');
-      });
+      const span = Math.max(8,now - pointer.t);
+      pointer.vx = .5 * pointer.vx + .5 * ((event.clientX - pointer.lastX) / span);
+      pointer.vy = .5 * pointer.vy + .5 * ((event.clientY - pointer.lastY) / span);
+      pointer.lastX = event.clientX; pointer.lastY = event.clientY; pointer.t = now;
+      const dx = event.clientX - pointer.x0, dy = event.clientY - pointer.y0;
+      if (!pointer.moved && Math.hypot(dx,dy) > 9){ pointer.moved = true; Sound.cardFlip(false); }
+      phys.s = pointer.s0 - dx / pointer.spacing;
+      phys.v = -pointer.vx * 1000 / pointer.spacing;
+      // The ticket follows the finger off-axis too, up to a soft limit.
+      // Less travel downward: the reader lip sits just below the ticket.
+      if (!motionReduced()) phys.hy.goal = dy > 0 ? softCap(dy * .3,11) : softCap(dy * .34,22);
+      kick();
     });
     const release = (event,cancelled = false) => {
       if (!pointer || pointer.id !== event.pointerId) return;
-      const distance = pointer.dragX + pointer.velocity * 105;
-      if (Math.abs(event.clientX-pointer.x)>12) suppressEdgeTapUntil = performance.now()+350;
+      const p = pointer;
       pointer = null;
-      track.classList.remove('is-dragging');
-      root.querySelectorAll('.ch2-card').forEach(card => {
-        card.style.setProperty('--motion-angle','0deg');
-        card.style.setProperty('--motion-lift','0px');
-      });
-      if (!cancelled && Math.abs(distance)>48 && selected()+(distance<0?1:-1)>=0 && selected()+(distance<0?1:-1)<all.length){
-        move(distance<0?1:-1);
-      } else {
-        track.classList.add('is-settling');
-        requestAnimationFrame(clearMotion);
-        settleTimer = window.setTimeout(() => track.classList.remove('is-settling'),motionReduced() ? 0 : 320);
+      if (Math.abs(event.clientX - p.x0) > 12) suppressEdgeTapUntil = performance.now() + 350;
+      phys.dragging = false;
+      holds.forEach(q => { q.goal = 0; });
+      const outside = phys.s < 0 ? -1 : phys.s > last ? 1 : 0;
+      phys.s = rubber(phys.s);
+      const idle = performance.now() - p.t;
+      const vIdx = clamp(-(idle > 130 ? 0 : p.vx * Math.exp(-idle / 110)) * 1000 / p.spacing,-26,26);
+      phys.v = vIdx;
+      let next = clamp(Math.round(phys.s),0,last);
+      if (!cancelled){
+        // A throw is projected forward from its release speed, so a hard
+        // flick travels several tickets and a gentle drag still steps one.
+        // Faster throws carry disproportionately further, as on iOS.
+        const throwReach = vIdx * .24 + Math.sign(vIdx) * Math.max(0,Math.abs(vIdx) - 4) * .1;
+        const reach = phys.s + throwReach - p.base;
+        const steps = Math.abs(reach) < .18 ? 0 : Math.min(8,Math.max(1,Math.round(Math.abs(reach))));
+        const wanted = p.base + Math.sign(reach) * steps;
+        next = clamp(wanted,0,last);
+        if (wanted !== next || outside) phys.wall = wanted < 0 || outside < 0 ? -1 : 1;
+        if (Math.abs(vIdx) > 7) Sound.cardDeal();
       }
+      if (next === p.base && next === phys.target && !phys.wall && Math.abs(phys.s - next) < .03) phys.landed = true;
+      commit(next);
+      if (motionReduced()){ snap(); if (phys.wall) jolt(phys.wall); phys.wall = 0; return; }
+      kick();
     };
     rack.addEventListener('pointerup',release);
     rack.addEventListener('pointercancel',event => release(event,true));
@@ -333,7 +492,12 @@
       if (x<edge) move(-1);
       else if (x>rack.clientWidth-edge) move(1);
     });
+    if (rackRaf) cancelAnimationFrame(rackRaf);
+    rackRaf = 0;
+    pointer = null;
+    root.dataset.venue = all[current].key;
     cardStates(root,all,current);
+    paint();
     record(false);
     window.clearInterval(recordTimer);
     recordTimer = window.setInterval(() => { if (!accepting && !document.getElementById('career')?.classList.contains('hidden')) { recordIndex = (recordIndex + 1) % 3; record(true); } },3200);
@@ -373,42 +537,74 @@
     reel.setAttribute('aria-label','Bankroll ' + amount(value));
   }
 
+  function crt(root,labelA,valueA,labelB,valueB){
+    root.querySelector('#ch2-crt-label-a').textContent = labelA;
+    root.querySelector('#ch2-crt-value-a').textContent = valueA;
+    root.querySelector('#ch2-crt-label-b').textContent = labelB;
+    root.querySelector('#ch2-crt-value-b').textContent = valueB;
+    const glass = root.querySelector('#ch2-crt-glass');
+    if (!motionReduced()){ glass.classList.remove('crt-refresh'); void glass.offsetWidth; glass.classList.add('crt-refresh'); }
+  }
+
+  /* The seat is accepted: lamps go green, the CRT confirms, and the machine
+     rolls the table in. The launch is the real Career launch function. */
+  function seatAndDepart(root,entry,launch){
+    const button = root.querySelector('#ch2-primary');
+    button.classList.add('is-seating');
+    button.querySelectorAll('.pc-lamp').forEach(lamp => { lamp.classList.remove('is-amber'); lamp.classList.add('is-green'); });
+    root.querySelector('#ch2-primary-main').textContent = entry.state === 'active' ? 'RESUMING' : 'SEAT ACCEPTED';
+    root.querySelector('#ch2-primary-sub').textContent = entry.state === 'active' ? 'TABLE WAITING' : 'ENTRY PAID';
+    crt(root,'NOW SEATING',entry.cash ? 'CASH TABLE' : entry.title,'ROOM',shortVenue(entry.venue));
+    const done = () => {
+      accepting = false;
+      if (document.getElementById('table-screen')?.classList.contains('hidden')) renderCareerScreen();
+    };
+    Promise.resolve(depart(launch,{callout:entry.cash ? 'CASH TABLE' : entry.title})).then(done,done);
+  }
+
   function accept(root,entry,flip){
     if (!entry || accepting || turning || !['available','active'].includes(entry.state)) return;
+    root._settleRack?.();
+    const button = root.querySelector('#ch2-primary');
+    const backButton = document.getElementById('career-back');
     if (entry.state === 'active'){
-      if (entry.cash) depart(startCareerCashSession);
-      else depart(continueCareerEvent);
+      const launch = entry.cash ? startCareerCashSession : continueCareerEvent;
+      if (motionReduced()){ launch(); return; }
+      accepting = true;
+      if (backButton) backButton.disabled = true;
+      button.disabled = true;
+      button.classList.add('is-entry-pressed');
+      Sound.buttonPress('allin');
+      queue(() => button.classList.remove('is-entry-pressed'),115);
+      queue(() => { Sound.buttonRelease('award'); seatAndDepart(root,entry,launch); },120);
       return;
     }
     const price = entry.cash ? CAREER_CASH_CONFIG.buyIn : entry.event.buyIn;
     const confirm = () => {
       if (entry.cash ? !careerCanOpenCash() : !careerCanEnterEvent(entry.id)) { renderCareerScreen(); return; }
       accepting = true;
-      const backButton = document.getElementById('career-back');
       if (backButton) backButton.disabled = true;
-      const button = root.querySelector('#ch2-primary');
       button.disabled = true;
       button.classList.add('is-entry-pressed');
       const startBankroll = careerBankroll();
+      const launch = entry.cash ? startCareerCashSession : startCareerEvent;
       if (flipped) { flipped = false; root.querySelector('.ch2-card.is-selected').classList.remove('is-flipped'); }
+      const timers = [];
+      const later = (fn,ms) => { timers.push(window.setTimeout(fn,ms)); };
       const charge = () => {
         const accepted = entry.cash ? openCareerCashSession() : enterCareerEvent(entry.id);
-        if (!accepted){ accepting = false; if (backButton) backButton.disabled = false; renderCareerScreen(); return; }
-        const endBankroll = careerBankroll();
-        const change = Math.max(0,startBankroll - endBankroll);
-        const step = change <= 100 ? 10 : change <= 300 ? 20 : Math.max(50,Math.ceil(change / 12 / 10) * 10);
-        const ticks = Math.max(1,Math.ceil(change / step));
-        root.querySelector('#ch2-bankroll').setAttribute('aria-live','off');
-        if (!motionReduced()) for(let n=1;n<=ticks;n++) queue(() => paintLiveBankroll(root,Math.max(endBankroll,startBankroll - n * step)), 35 + n * Math.max(35,Math.min(75,470 / ticks)));
-        queue(() => {
-          paintLiveBankroll(root,endBankroll);
-          root.querySelector('#ch2-bankroll').setAttribute('aria-live','polite');
-          accepting = false;
-          if (entry.cash) startCareerCashSession(); else startCareerEvent();
-        },motionReduced() ? 0 : 580);
+        if (!accepted){ accepting = false; if (backButton) backButton.disabled = false; renderCareerScreen(); return false; }
+        return true;
       };
-      if (motionReduced()) { charge(); return; }
-      queue(() => button.classList.remove('is-entry-pressed'),115);
+      if (motionReduced()) {
+        if (!charge()) return;
+        accepting = false;
+        launch();
+        return;
+      }
+      Sound.buttonPress('allin');
+      haptic(16);
+      later(() => button.classList.remove('is-entry-pressed'),115);
       const selectedCard = root.querySelector('.ch2-card.is-selected');
       const cardRect = selectedCard.getBoundingClientRect();
       const rootRect = root.getBoundingClientRect();
@@ -425,12 +621,63 @@
       root.appendChild(ticket);
       selectedCard.classList.add('is-feeding');
       root.classList.add('is-accepting');
-      queue(() => {
-        charge();
+      // The intake ratchets the ticket down and bites.
+      [110,240,370,500].forEach((ms,i) => later(() => Sound.stageRollClick(.3 + i * .2,false),ms));
+      later(() => { Sound.hatchClose(); haptic(12); },640);
+
+      let skippable = false, finished = false;
+      const endBankroll = () => careerBankroll();
+      const tidy = () => {
+        ticket.remove();
+        selectedCard.classList.remove('is-feeding');
+        root.classList.remove('is-accepting','is-stamped');
+        paintLiveBankroll(root,endBankroll());
+        root.querySelector('#ch2-bankroll').setAttribute('aria-live','polite');
+      };
+      const finish = instant => {
+        if (finished) return;
+        finished = true;
+        root.removeEventListener('pointerdown',skip,true);
+        timers.forEach(timer => window.clearTimeout(timer));
+        tidy();
+        if (instant){ accepting = false; launch(); }
+        else seatAndDepart(root,entry,launch);
+      };
+      // Once the money has moved, a tap goes straight to the table.
+      const skip = event => {
+        if (!skippable) return;
+        event.preventDefault();
+        event.stopPropagation();
+        swallowNextClick();
+        finish(true);
+      };
+      root.addEventListener('pointerdown',skip,true);
+
+      later(() => {
+        if (!charge()){ finished = true; root.removeEventListener('pointerdown',skip,true); timers.forEach(timer => window.clearTimeout(timer)); return; }
+        skippable = true;
+        const end = endBankroll();
+        const change = Math.max(0,startBankroll - end);
+        const step = change <= 100 ? 10 : change <= 300 ? 20 : Math.max(50,Math.ceil(change / 12 / 10) * 10);
+        const ticks = Math.max(1,Math.ceil(change / step));
+        root.querySelector('#ch2-bankroll').setAttribute('aria-live','off');
+        for (let n = 1; n <= ticks; n++) later(() => {
+          paintLiveBankroll(root,Math.max(end,startBankroll - n * step));
+          Sound.counterTick(true);
+        },35 + n * Math.max(35,Math.min(75,470 / ticks)));
+        later(() => paintLiveBankroll(root,end),580);
+        selectedCard.classList.add('is-paid');
         ticket.classList.add('is-paid','is-returning');
         root.querySelector('.ch2-bankroll-housing').classList.add('is-payment');
+        // The ENTRY PAID stamp lands as the ticket clears the intake.
+        later(() => {
+          Sound.koThunk(1.15);
+          haptic([10,8,26]);
+          root.classList.remove('is-stamped'); void root.offsetWidth; root.classList.add('is-stamped');
+        },430);
       },710);
-      queue(() => { ticket.remove(); selectedCard.classList.remove('is-feeding'); root.classList.remove('is-accepting'); },1250);
+      later(tidy,1250);
+      later(() => { Sound.buttonRelease('award'); haptic(20); finish(false); },1330);
     };
     if (entry.cash && careerBankroll() < CAREER_CASH_CONFIG.buyIn * 3){
       showConfirmDialog({title:'Take a bankroll shot?',body:'This $50 buy-in leaves ' + amount(careerBankroll() - price) + ' available. Your remaining table stack can be cashed out between hands.',confirmLabel:'Buy In',danger:false,onConfirm:confirm});

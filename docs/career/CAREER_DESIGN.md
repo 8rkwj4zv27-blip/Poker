@@ -6,6 +6,16 @@ Expansion promoted: 2026-08-25
 
 Poker Faces V2 Career presentation approved and implemented: 2026-09-21
 
+## Tactile rack and buy-in roll — 2026-09-24
+
+The owner approved a physical rack and a full buy-in hand-off (Direction A).
+Tickets follow the finger on both axes, lean and tilt with the throw, click
+through detents, and a hard flick may travel several events. After the real
+entry transaction, the ticket is stamped, the key's lamps go green, and the
+table rolls in on the same cabinet wheel as Home → Career, locks, and lights
+up before the first deal. A tap after payment skips to the table. This is
+presentation only and changes no entry, catalogue, save or poker rule.
+
 ## Live motion and interaction override — 2026-09-23
 
 The owner rejected the isolated motion lab as the decision surface and approved
