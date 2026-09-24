@@ -26,6 +26,7 @@
   <link rel="stylesheet" href="css/table-intro.css?v=1">
   <link rel="stylesheet" href="css/home-boot.css?v=2">
   <link rel="stylesheet" href="css/press-feel.css?v=1">
+  <link rel="stylesheet" href="css/machine-crt.css?v=1">
 
 <meta name="format-detection" content="telephone=no">
 
@@ -39,7 +40,7 @@
     <div class="lobby-card pc-housing pc-material-leather" id="menu-contraption">
       <div class="home-topbar">
         <div class="pc-product-mark"><span id="pc-version-mark"></span><small>Electronic table game</small></div>
-        <div class="pc-ready-readout pc-display"><span class="pc-lamp is-green"></span>&nbsp; <span id="home-readout-text">DEALER READY</span></div>
+        <div class="pc-ready-readout pc-display machine-crt"><span class="pc-lamp is-green"></span>&nbsp; <span id="home-readout-text">DEALER READY</span></div>
         <button class="icon-btn" id="home-settings" aria-label="Settings">⚙</button>
       </div>
 
@@ -56,7 +57,7 @@
       </div>
 
       <div class="pc-readout-row">
-        <div class="panel-card stats-card pc-display">
+        <div class="panel-card stats-card pc-display machine-crt">
           <div class="stat-strip" id="stat-strip"></div>
         </div>
       </div>
@@ -279,8 +280,8 @@
           <div id="hud-mid">
             <div id="hud-status">
               <div id="hud-status-normal">
-                <div class="hand-strength crt-screen crt-hand" id="hand-strength"></div>
-                <div class="banner crt-screen crt-action" id="banner" role="status" aria-live="polite"></div>
+                <div class="hand-strength crt-screen crt-hand machine-crt" id="hand-strength"></div>
+                <div class="banner crt-screen crt-action machine-crt" id="banner" role="status" aria-live="polite"></div>
                 <div class="stack-readout">
                   <span class="instrument-label">Stack</span>
                   <div id="jackpot" role="img" aria-label="Player stack"><span class="jp-cell jp-sym">$</span></div>
@@ -297,7 +298,7 @@
             </div>
             <div class="bet-this-hand" aria-live="polite">
               <span class="instrument-label">Bet this hand</span>
-              <div class="crt-screen" id="hud-invested" role="img" aria-label="Bet this hand: 0">$000</div>
+              <div class="crt-screen machine-crt" data-crt-blink="off" id="hud-invested" role="img" aria-label="Bet this hand: 0">$000</div>
             </div>
             <div class="hud-speaker" aria-hidden="true">
               <i></i><i></i><i></i><i></i><i></i>
@@ -349,7 +350,7 @@
         <div class="raise-panel" id="raise-panel">
           <div class="raise-head">
             <span class="raise-title">Raise to</span>
-            <div class="raise-amt crt-screen" id="raise-amt" role="img" aria-label="Raise to: 0">
+            <div class="raise-amt crt-screen machine-crt" data-crt-blink="off" id="raise-amt" role="img" aria-label="Raise to: 0">
               <span class="raise-reels mini-jackpot"><span class="jp-cell jp-sym">$</span></span>
             </div>
             <button class="icon-btn raise-cancel" id="raise-cancel" aria-label="Cancel raise, keep my turn">✕</button>
@@ -622,7 +623,7 @@
 <script src="js/05-game-engine.js"></script>
 <script src="js/06-presentation.js"></script>
 <script src="js/07-ui-wiring.js?v=career-motion-1"></script>
-<script src="js/career-hub-live.js?v=cabinet-3"></script>
+<script src="js/career-hub-live.js?v=cabinet-4"></script>
 <script src="js/career-motion-live.js?v=4"></script>
 <script src="js/machine-wheel.js?v=2"></script>
 <script src="js/ticket-feed.js?v=1"></script>
@@ -631,6 +632,7 @@
 <script src="js/home-cast.js?v=1"></script>
 <script src="js/home-boot.js?v=2"></script>
 <script src="js/press-feel.js?v=1"></script>
+<script src="js/machine-crt.js?v=1"></script>
 
 <script id="pwa-service-worker">
 if ('serviceWorker' in navigator) {

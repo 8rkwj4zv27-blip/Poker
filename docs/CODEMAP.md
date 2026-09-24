@@ -13,7 +13,7 @@ by the code and by `CLAUDE.md`/`AGENTS.md`, not by this file.
 07-ui-wiring.js         career-hub-live.js      career-motion-live.js
 machine-wheel.js        ticket-feed.js          table-intro.js
 08-dev-mode.js          home-cast.js            home-boot.js
-press-feel.js
+press-feel.js           machine-crt.js
 ```
 
 Later files call into earlier ones freely; there's no module system, so
@@ -190,6 +190,19 @@ that played the clunk themselves call `pressFeelSounded(button)` first so
 it never plays twice. The big-button geometry rule (body as tall as the
 face, 7px lower; cradle padded 9px/23px for an even 7px rim) lives with
 `.pc-primary-cradle` in `css/04-overlays-and-modes.css`.
+
+## `css/machine-crt.css` + `js/machine-crt.js` + `pattern-book.html` — the Pattern Book (live)
+
+The visual library: one finish per job, so repeated parts never drift. Rules,
+the owner sign-off record and the "add it to the book first" process are in
+`docs/ui/PATTERN_BOOK.md`; `validation/pattern-book-checks.js` enforces them.
+Live so far: the CRT family. Every CRT screen carries `.machine-crt`, and
+`css/machine-crt.css` (loaded last) owns its glass, idle flicker, change
+blink, ink colours and Reduced Motion. `js/machine-crt.js` (loaded last)
+fires the change blink for CRTs whose own code doesn't. Approved buttons,
+keys, choice rows and headers move over one family per release.
+`pattern-book.html` is an isolated page like the Labs, never linked from
+production.
 
 ## `js/08-dev-mode.js` (~1,140 lines)
 

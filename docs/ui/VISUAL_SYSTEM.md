@@ -1,5 +1,11 @@
 # The Table UI grammar
 
+> **Superseded for CRTs, and being extended by the Pattern Book.** The owner
+> sign-off of 24 September 2026 (see `PATTERN_BOOK.md`) replaced the CRT
+> selections below and approved one finish per job for buttons, keys, choice
+> rows and headers. Where this file and `PATTERN_BOOK.md` disagree, the
+> Pattern Book wins.
+
 This document records the current isolated Design Lab direction. It is not approval to migrate a production screen.
 
 ## Physical machine
@@ -84,8 +90,8 @@ The UI Lab is the only implementation surface. No production screen, dashboard, 
 - Frames: F0 Current Baseline. F2, F3 and F5 were tried on the assembled console and in the game, and the baseline was kept.
 - Menu/launch button: retain the B0 current-cartridge construction with B0-C Soft Spring motion.
 - Live-table large actions: production FOLD/CALL/RAISE remain their own canonical family and are untouched.
-- CRT housing: C0 Current Upgrade.
-- CRT visual behaviour: C0-G Static Burst.
+- CRT housing: ~~C0 Current Upgrade~~ superseded 24 Sep 2026 by Pattern Book CRT glass B (blue record glass, no text bloom).
+- CRT visual behaviour: ~~C0-G Static Burst~~ superseded 24 Sep 2026 by Pattern Book CRT motion A (idle flicker and change blink on every CRT).
 - Printed markings: P0 Production ink.
 - Mechanical numbers: retain the existing production treatment without a new Lab design.
 - Major results: preserve the production TABLE CLEARED scale and chassis; RUN OVER must eventually become its negative sibling, but neither is approved for modification yet.

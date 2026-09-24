@@ -26,8 +26,8 @@ Standardise construction and semantics, not every screen's composition.
 | Main Menu Continue | Shelved | Known issue; leave untouched and do not let it distort the wider system. |
 | Live-table action buttons | Locked reference | Production FOLD/CALL/CHECK/RAISE construction remains the canonical large-action family. |
 | Menu/launch control | **In production** | B0 current cartridge with B0-C Soft Spring motion, on the menu control family only. Live-table action buttons keep their own press. |
-| CRT housing | **In production** | C0 Current Upgrade. Recessed physical housing, deep bezel, near-black glass. |
-| CRT visual effect | **In production** | C0-G Static Burst, delivered by retuning the existing `crtRefresh` keyframes that `paintCRT()` already triggers. |
+| CRT housing | **Superseded** | Replaced 24 Sep 2026 by the Pattern Book CRT finish (`docs/ui/PATTERN_BOOK.md`, `css/machine-crt.css`). |
+| CRT visual effect | **Superseded** | Replaced 24 Sep 2026 by the Pattern Book CRT motion (flicker and blink on every CRT). |
 | Printed markings | **In production** | P0 Production ink. P4 Etched fill was selected earlier and then superseded when the set was judged in the real game. |
 | Animated reflection | Rejected | No moving glass-reflection sweep. Static scanlines/vignette and text/signal behaviour are allowed. |
 | Frames | **Resolved** | F0 Current Baseline. F2, F3 and F5 were tried on the assembled console and in the real game; the baseline chassis was kept. |
