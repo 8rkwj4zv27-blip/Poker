@@ -11,7 +11,8 @@ by the code and by `CLAUDE.md`/`AGENTS.md`, not by this file.
 01-poker-math.js        02-support-systems.js   03-opponents.js
 04-modes-and-scoring.js 05-game-engine.js       06-presentation.js
 07-ui-wiring.js         career-hub-live.js      career-motion-live.js
-machine-wheel.js        08-dev-mode.js
+machine-wheel.js        ticket-feed.js          table-intro.js
+08-dev-mode.js
 ```
 
 Later files call into earlier ones freely; there's no module system, so
@@ -120,7 +121,7 @@ bodies** in `06-presentation.js`/`career-motion-live.js` (those remain only
 so `wheel-v2-lab.html` can switch back to compare). Tuning lives in
 `MACHINE_WHEEL_CONFIG`; sounds are `Sound.wheel*` in the `Sound` module.
 
-## `js/table-intro.js` + `css/table-intro.css` — Table Intro (Lab only, not shipped yet)
+## `js/table-intro.js` + `css/table-intro.css` — Table Intro (live)
 
 "The machine powers up": the beat between arriving at a table and its first
 deal. Stepped lights; the event's own ticket (built from the Hub's
@@ -134,17 +135,18 @@ Presentation only. `TableIntro.install()` wraps the table entry points
 Machine Wheel's `careerTableCallout` title flash. Tuning lives in
 `TABLE_INTRO_CONFIG`.
 
-## `js/ticket-feed.js` + `css/ticket-feed.css` — Career buy-in feed (Lab only, not shipped yet)
+## `js/ticket-feed.js` + `css/ticket-feed.css` — Career buy-in feed (live)
 
 Replaces the Hub's buy-in animation through the `careerTicketFeed` hook in
 `career-hub-live.js` (absent the file, the old feed runs unchanged). The
 ticket lifts and narrows to the intake mouth, is ratcheted over the plate's
-lip and into the mouth, then the cabinet shudders and spits shreds while the
+lip and into the mouth, then the cabinet shudders and grinds while the
 bankroll counts down; the ticket never returns to the rack — it reappears on the felt via the Table Intro. It
 receives the Hub's own `charge`/`depart` steps and owns no money.
 
-Neither pair is loaded by `index.html`/`sw.js` yet — `intro-lab.html`
-injects both into a sandboxed copy of the game for review.
+Both pairs are loaded by `index.html` (after `machine-wheel.js`) and
+precached by `sw.js`. `intro-lab.html` runs the real game sandboxed with
+NEW/OLD switches for each, for future tuning.
 
 ## `js/08-dev-mode.js` (~1,140 lines)
 

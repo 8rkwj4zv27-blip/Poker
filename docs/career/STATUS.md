@@ -7,8 +7,8 @@ something specific was built or decided, never by default.
 
 ## Current build
 
-- Build marker: `v0.37.1-dev · Machine Wheel` (main-menu footer / DEV panel).
-- Service-worker cache: `poker-v37-1`.
+- Build marker: `v0.38.0-dev · Table Intro` (main-menu footer / DEV panel).
+- Service-worker cache: `poker-v38-0`.
 - Career save schema: **version 6**.
 - Production Career Hub: ticket-reader presentation (six-venue rack,
   spring-driven touch physics, printed-ticket detail flip), integrated
@@ -35,10 +35,19 @@ presentation-only passes over the Career Hub and its transitions:
    wind-up, visible ratchet, overshoot and settle, stepped house lights.
    Settings chosen by the owner in `wheel-v2-lab.html`: FULL machinery,
    bolts off, 3px grain, standard weight, high overshoot, hum on.
+4. **Ticket feed + Table Intro** (2026-09-24, auditioned in
+   `intro-lab.html`). Buy-in: the ticket narrows to the intake mouth, is
+   ratcheted into it, and the cabinet shudders and grinds as the bankroll
+   counts down; the ticket never returns to the rack (`js/ticket-feed.js`,
+   via a guarded `careerTicketFeed` hook in `career-hub-live.js`). Arrival:
+   stepped lights, the same ticket slides across the felt stamped ENTRY
+   PAID, a clockwise seat roll call, chip stacks drop into the bank, pot
+   tray and deck (`js/table-intro.js`, every table entry incl. Single
+   Player and resume). Owner cut: no seat style labels, no paper shreds.
 
 Full detail for the first two is in `HISTORY.md` under the 2026-09-24 entries. No
 Career transaction, save field, catalogue, roster, poker or AI code changed
-in either pass; the DETAILS card flip is untouched.
+in any of these passes; the DETAILS card flip is untouched.
 
 ## Scope note — Phase 5/7/8 shelved (2026-09-24)
 

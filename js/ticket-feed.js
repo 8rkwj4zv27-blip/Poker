@@ -15,17 +15,16 @@
                  ticket passes IN FRONT of the intake plate's top lip and
                  disappears into the dark mouth (a clip box ending at the
                  mouth, not the plate), shading as it goes in
-     3. SHRED    the cabinet shudders and grinds, scraps of the ticket spit
-                 out of the mouth, the mouth goes green and the bankroll
-                 counts down
+     3. SHRED    the cabinet shudders and grinds, then the mouth goes green
+                 and the bankroll counts down
      4. DEPART   the ticket does NOT come back: its rack slot stays empty and
                  the table rolls in. The ticket reappears on the felt as the
                  table intro (js/table-intro.js), stamped ENTRY PAID.
 
    A tap once the money has moved goes straight to the table.
 
-   STATUS: Lab prototype (intro-lab.html injects this file). Not loaded by
-   index.html / sw.js yet.
+   Live: loaded by index.html (and precached by sw.js) after
+   career-hub-live.js. intro-lab.html can switch it off to compare.
    ============================================================ */
 
 const TICKET_FEED_CONFIG = {
@@ -35,7 +34,6 @@ const TICKET_FEED_CONFIG = {
   biteMs: 80,
   biteGapMs: 150,
   shredMs: 560,
-  shreds: 16,
   acceptMs: 700,
   departMs: 280
 };
@@ -111,7 +109,7 @@ function careerTicketFeed(ctx){
   }
   const swallowed = firstBite + (cfg.bites - 1) * cfg.biteGapMs + cfg.biteMs + 30;
 
-  let skippable = false, finished = false, shredBox = null;
+  let skippable = false, finished = false;
   const skip = event => {
     if (!skippable) return;
     event.preventDefault();
@@ -122,7 +120,6 @@ function careerTicketFeed(ctx){
   root.addEventListener('pointerdown', skip, true);
   const tidy = () => {
     win.remove();
-    if (shredBox) shredBox.remove();
     root.classList.remove('tf-feeding','tf-accepted','tf-shredding','is-stamped');
     intake.classList.remove('tf-bite');
     const reel = root.querySelector('#ch2-bankroll');
@@ -138,8 +135,7 @@ function careerTicketFeed(ctx){
     depart(instant);
   }
 
-  /* The shredder: the cabinet shudders, the motor grinds, and scraps of
-     the ticket's own paper spit out of the mouth and fall away. */
+  /* The shredder: the cabinet shudders and the motor grinds. */
   function shred(){
     root.classList.remove('tf-shredding'); void root.offsetWidth;
     root.classList.add('tf-shredding');
@@ -148,29 +144,6 @@ function careerTicketFeed(ctx){
     Sound.hatchClose();
     const grind = Math.round(cfg.shredMs / 34);
     for (let i = 0; i < grind; i++) later(() => Sound.wheelTooth(.9 - i / grind * .4, false), i * 34);
-    const paperStyle = getComputedStyle(card.querySelector('.ch2-paper') || card);
-    const paper = paperStyle.backgroundColor || '#e9ddb3';
-    const ink = paperStyle.color || '#171714';
-    const box = document.createElement('div');
-    box.className = 'tf-shreds';
-    box.style.left = mouthRect.left - rootRect.left + 'px';
-    box.style.top = mouthRect.top - rootRect.top + 'px';
-    box.style.width = mouthRect.width + 'px';
-    for (let i = 0; i < cfg.shreds; i++){
-      const bit = document.createElement('i');
-      const side = Math.random() < .5 ? -1 : 1;
-      bit.style.left = (10 + Math.random() * 80) + '%';
-      bit.style.background = i % 4 === 0 ? ink : paper;
-      bit.style.setProperty('--x', side * (18 + Math.random() * 60) + 'px');
-      bit.style.setProperty('--y', -(22 + Math.random() * 46) + 'px');
-      bit.style.setProperty('--fall', (60 + Math.random() * 70) + 'px');
-      bit.style.setProperty('--r', side * (120 + Math.random() * 300) + 'deg');
-      bit.style.setProperty('--d', (Math.random() * cfg.shredMs * .6 / scale) + 'ms');
-      bit.style.setProperty('--t', ((520 + Math.random() * 260) / scale) + 'ms');
-      box.appendChild(bit);
-    }
-    root.appendChild(box);
-    shredBox = box;
     later(() => {
       root.classList.remove('tf-shredding');
       root.classList.add('tf-accepted');

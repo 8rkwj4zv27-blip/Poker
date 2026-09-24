@@ -41,7 +41,7 @@
 @keyframes tfBite{ 0%{ transform:translateY(0); } 40%{ transform:translateY(2px); } 100%{ transform:translateY(0); } }
 @keyframes tfAccept{ 0%,66%{ filter:brightness(1.8); } 33%,100%{ filter:brightness(1); } }
 
-/* The shredder: a hard, stepped shudder of the whole cabinet… */
+/* The shredder: a hard, stepped shudder of the whole cabinet. */
 #career-hub.tf-shredding{ animation:tfShudder 70ms steps(1,end) infinite; }
 @keyframes tfShudder{
   0%{ transform:translate(0,0); }
@@ -54,17 +54,4 @@
 #career-hub.tf-shredding .ch2-intake-mouth{
   background:linear-gradient(180deg,#5a2a08 0,#1a0a02 70%);
   box-shadow:inset 0 3px 5px #000,0 0 0 1px rgba(242,120,49,.7),0 0 12px rgba(242,120,49,.55);
-}
-
-/* …and scraps of the ticket spit out of the mouth and fall away. */
-#career-hub .tf-shreds{ position:absolute; z-index:37; height:0; pointer-events:none; }
-#career-hub .tf-shreds i{
-  position:absolute; top:0; width:4px; height:9px; opacity:0;
-  box-shadow:0 0 0 1px rgba(0,0,0,.35);
-  animation:tfShred var(--t,600ms) cubic-bezier(.2,.6,.4,1) var(--d,0ms) forwards;
-}
-@keyframes tfShred{
-  0%{ opacity:1; transform:translate(0,0) rotate(0); }
-  35%{ opacity:1; transform:translate(calc(var(--x) * .6),var(--y)) rotate(calc(var(--r) * .4)); }
-  100%{ opacity:0; transform:translate(var(--x),var(--fall)) rotate(var(--r)); }
 }

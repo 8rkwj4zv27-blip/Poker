@@ -33,8 +33,8 @@
    A tap anywhere jumps straight to the finished state. Reduced Motion
    skips the intro entirely.
 
-   STATUS: Lab prototype (intro-lab.html injects this file). Not loaded by
-   index.html / sw.js yet.
+   Live: loaded by index.html (and precached by sw.js) after
+   machine-wheel.js. intro-lab.html can switch it off to compare.
    ============================================================ */
 
 const TABLE_INTRO_CONFIG = {
