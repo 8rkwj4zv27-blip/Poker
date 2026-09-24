@@ -33,6 +33,11 @@ const FINISH_SETS = [
     { id:'amber',     name:'Amber',       note:'A warm amber tube with a matching glow.' },
     { id:'black',     name:'Black',       note:'A deep black tube with strong bloom around the text.' }
   ]},
+  { attr:'finishCrtInk', group:'CRT screens', label:'Ink', options:[
+    { id:'',     name:'By meaning', note:'Signed off: pale blue for live table info, gold for money, cream for everything else.' },
+    { id:'one',  name:'One ink',    note:'Cream everywhere; gold kept for money.' },
+    { id:'mono', name:'Mono',       note:'Cream everywhere, money included.' }
+  ]},
   { attr:'finishCrtMotion', group:'CRT screens', label:'Motion', options:[
     { id:'',      name:'Flicker + blink', note:'Signed off: a faint idle flicker, and a static burst when the text changes.' },
     { id:'blink', name:'Blink only',      note:'Steady at rest; a static burst when the text changes.' },
@@ -76,7 +81,7 @@ const Finishes = (() => {
         if (group) html += '</div>';
         group = set.group;
         html += '<div class="sheet-section"><h3>' + group + '</h3>';
-        if (group === 'CRT screens') html += '<div class="finish-preview"><div class="pc-display machine-crt finish-crt" id="finish-crt-a">Dealer ready</div><div class="pc-display machine-crt finish-crt finish-crt-money" id="finish-crt-b">$1,250</div></div>';
+        if (group === 'CRT screens') html += '<div class="finish-preview"><div class="pc-display machine-crt finish-crt" data-ink="live" id="finish-crt-a">Dealer ready</div><div class="pc-display machine-crt finish-crt finish-crt-money" data-ink="money" id="finish-crt-b">$1,250</div></div>';
         if (group === 'Buttons') html += '<div class="finish-preview finish-keys"><button class="icon-btn" type="button" aria-label="Try the small key">⚙</button><button class="btn-secondary" type="button">Try me</button><button class="btn-primary" type="button">Big key</button></div>';
       }
       const now = current(set);
