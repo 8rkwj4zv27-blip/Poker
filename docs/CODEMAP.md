@@ -13,7 +13,7 @@ by the code and by `CLAUDE.md`/`AGENTS.md`, not by this file.
 07-ui-wiring.js         career-hub-live.js      career-motion-live.js
 machine-wheel.js        ticket-feed.js          table-intro.js
 08-dev-mode.js          home-cast.js            home-boot.js
-press-feel.js           machine-crt.js
+finishes.js             press-feel.js           machine-crt.js
 ```
 
 Later files call into earlier ones freely; there's no module system, so
@@ -180,7 +180,21 @@ neighbour's flare. Sparse, silent idle life; tapping a face flares it.
 The Home Boot drops the faces in and calls `HeroCast.arrive(i)` on each
 landing. Decorative only — not the table mood system.
 
-## `js/press-feel.js` + `css/press-feel.css` — big-button press feel (live)
+## `js/finishes.js` + `css/finishes.css` — Finishes menu (live)
+
+Settings → Finishes: a page inside the Settings sheet that swaps each
+Pattern Book set (CRT glass, CRT motion, button press) between named
+options, live, on this device only (`felt.finishes`). Options are
+attributes on `<html>` whose tokens live in the set's own stylesheet
+(`machine-crt.css`, `press-feel.css`). `FINISHES_MENU` switches it off.
+See `docs/ui/PATTERN_BOOK.md`.
+
+## `js/press-feel.js` + `css/press-feel.css` — press feel for every button (live)
+
+Now covers every button family, not just the big ones: one thunk scaled
+big / standard / small (sizes and classes in `SIZES`, tokens in the CSS).
+The original notes below still describe the big cartridges.
+
 
 Every `.pc-button-primary` on the menu and the Career Hub: the face sinks,
 lamps flare, the casing knocks and the clunk plays on finger-DOWN; on

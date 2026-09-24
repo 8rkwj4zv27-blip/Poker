@@ -1,0 +1,30 @@
+/* ============================================================
+   FINISHES (js/finishes.js) — a page inside the Settings sheet.
+   It borrows the sheet's own styling; this only swaps the page in and
+   lays out the option rows and previews.
+   ============================================================ */
+
+#settings-sheet #finishes-body{ display:none; }
+#settings-sheet.show-finishes #finishes-body{ display:block; }
+#settings-sheet.show-finishes > .sheet-body:not(#finishes-body){ display:none; }
+
+/* Option rows wrap: up to three per line. */
+#settings-sheet .finish-seg{ flex-wrap:wrap; row-gap:9px; }
+#settings-sheet .finish-seg button{ flex:1 1 28%; min-width:0; }
+.finish-field{ margin-bottom:16px; }
+
+/* Previews: two CRTs that change what they say, and three keys to press. */
+.finish-preview{ display:flex; gap:8px; margin:0 0 16px; }
+.finish-crt{
+  flex:1 1 0; min-width:0; height:40px; padding:0 8px;
+  display:flex; align-items:center; justify-content:center; text-align:center;
+  font-family:var(--font-hdr); font-size:8px; letter-spacing:.06em; text-transform:uppercase;
+  color:var(--crt-ink-info,#C3C8AD); white-space:nowrap; overflow:hidden;
+}
+.finish-crt-money{ flex:0 0 34%; font-size:13px; color:var(--crt-ink-money,#F6D06B); }
+.finish-keys{ align-items:center; }
+.finish-keys .btn-secondary,
+.finish-keys .btn-primary{ flex:1 1 0; min-width:0; margin:0; }
+/* A four-option row sits two by two rather than three and one. */
+#settings-sheet .finish-seg button:first-child:nth-last-child(4),
+#settings-sheet .finish-seg button:first-child:nth-last-child(4) ~ button{ flex-basis:40%; }

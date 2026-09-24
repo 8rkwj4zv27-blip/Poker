@@ -12,6 +12,9 @@
 <link rel="apple-touch-icon" href="icon-180.png">
 <link rel="icon" href="icon-192.png" type="image/png">
 <title>The Table — Texas Hold'em</title>
+<!-- Finishes (js/finishes.js): this device's chosen looks, applied before
+     first paint so nothing flashes. -->
+<script>try{var f=JSON.parse(localStorage.getItem('felt.finishes'))||{};for(var k in f)if(/^finish[A-Za-z]+$/.test(k)&&/^[a-z-]+$/.test(f[k]))document.documentElement.dataset[k]=f[k];}catch(e){}</script>
 <link rel="stylesheet" href="css/01-foundation.css">
 <link rel="stylesheet" href="css/02-screens.css">
 <link rel="stylesheet" href="css/03-action-console.css">
@@ -25,7 +28,8 @@
   <link rel="stylesheet" href="css/career-hub-cabinet.css?v=4">
   <link rel="stylesheet" href="css/table-intro.css?v=1">
   <link rel="stylesheet" href="css/home-boot.css?v=2">
-  <link rel="stylesheet" href="css/press-feel.css?v=1">
+  <link rel="stylesheet" href="css/press-feel.css?v=2">
+  <link rel="stylesheet" href="css/finishes.css?v=1">
   <link rel="stylesheet" href="css/machine-crt.css?v=1">
 
 <meta name="format-detection" content="telephone=no">
@@ -531,6 +535,11 @@
         </div>
       </div>
 
+      <div class="sheet-section" id="finishes-entry">
+        <h3>Finishes</h3>
+        <button class="btn-secondary" id="open-finishes" type="button">Finishes</button>
+        <div class="hint">Try different looks for the machine's screens and buttons. Your choice stays on this device.</div>
+      </div>
       <div class="sheet-section">
         <h3>Help</h3>
         <button class="btn-secondary" id="open-scoring-guide" type="button">Scoring Guide</button>
@@ -558,6 +567,18 @@
 
       <div class="sheet-section">
         <button class="btn-secondary" id="close-settings">Done</button>
+      </div>
+    </div>
+    <!-- Finishes page (js/finishes.js): swaps in for the settings list. -->
+    <div class="sheet-body" id="finishes-body">
+      <div class="sheet-section sheet-title-wrap">
+        <h2 class="sheet-title">Finishes</h2>
+      </div>
+      <div id="finishes-list"></div>
+      <div class="sheet-section">
+        <button class="btn-secondary" id="reset-finishes" type="button">Back to signed-off looks</button>
+        <div class="hint" style="margin-bottom:14px;">The first option in each row is the signed-off default.</div>
+        <button class="btn-secondary" id="close-finishes" type="button">Back</button>
       </div>
     </div>
   </div>
@@ -631,7 +652,8 @@
 <script src="js/08-dev-mode.js?v=home-cast-1"></script>
 <script src="js/home-cast.js?v=1"></script>
 <script src="js/home-boot.js?v=2"></script>
-<script src="js/press-feel.js?v=1"></script>
+<script src="js/finishes.js?v=1"></script>
+<script src="js/press-feel.js?v=2"></script>
 <script src="js/machine-crt.js?v=1"></script>
 
 <script id="pwa-service-worker">

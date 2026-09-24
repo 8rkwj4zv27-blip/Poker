@@ -733,7 +733,7 @@ const DEFAULT_SETTINGS = {
 const DEFAULT_STATS = { hands:0, won:0, showdownsWon:0, biggestPot:0, net:0 };
 const SAVE_VERSION = 1;
 /* Bump on every release so the main-menu header shows what's actually installed. */
-const BUILD_VERSION = 'v0.39.6-dev · Machine CRT';
+const BUILD_VERSION = 'v0.39.7-dev · Finishes';
 
 let settings = Object.assign({}, DEFAULT_SETTINGS, Store.get('felt.settings', {}));
 // The Settings menu cleanup dropped RELAXED from the Game Speed control
@@ -956,7 +956,12 @@ const Sound = (function(){
     raise:  { pFreq: 600, pDur:0.052, pThump: 88, pGain:0.07,  rFreq:1450, rGain:0.036 },
     fold:   { pFreq: 500, pDur:0.05,  pThump: 0,  pGain:0.05,  rFreq:1100, rGain:0.024, dull:true },
     allin:  { pFreq: 420, pDur:0.075, pThump: 62, pGain:0.10,  rFreq:1300, rGain:0.05  },
-    award:  { pFreq: 460, pDur:0.07,  pThump: 72, pGain:0.095, rFreq:1600, rGain:0.05  }
+    award:  { pFreq: 460, pDur:0.07,  pThump: 72, pGain:0.095, rFreq:1600, rGain:0.05  },
+    // Press Feel sizes (js/press-feel.js): the big keys use allin above;
+    // standard keys a lighter version of the same clunk; small keys a
+    // short, higher tick-thunk.
+    thunk:  { pFreq: 520, pDur:0.058, pThump: 80, pGain:0.075, rFreq:1400, rGain:0.04  },
+    key:    { pFreq: 820, pDur:0.034, pThump:118, pGain:0.05,  rFreq:1800, rGain:0.03  }
   };
   function doButtonPress(kind){
     const w = BUTTON_WEIGHT[kind] || BUTTON_WEIGHT.call;

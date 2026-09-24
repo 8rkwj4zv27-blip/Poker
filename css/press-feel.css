@@ -1,12 +1,37 @@
 /* ============================================================
-   PRESS FEEL (js/press-feel.js) — the big yellow buttons
+   PRESS FEEL (js/press-feel.js) — one heavy thunk for every button,
+   scaled by the key's mass. Pattern Book: docs/ui/PATTERN_BOOK.md.
+
+   Each size is a set of tokens: how far the face sinks (--pf-t), the three
+   bounce positions on the way back (--pf-o1..3), and how long the bounce
+   takes. Offsets are whole pixels so the art stays crisp. --pf-rest is a
+   button's resting offset (the table actions sit 1px proud).
    ============================================================ */
 
-/* DOWN: the face sinks 5px into its body at once, lamps flare. */
-:is(#home,#career-hub) .pc-button-primary.pf-down{
-  transform:translateY(5px); transition:none;
-  box-shadow:inset 3px 3px 0 var(--pc-button-hi);
+[data-pf="big"]  { --pf-t:5px; --pf-o1:-3px; --pf-o2:2px; --pf-o3:-1px; --pf-ms:300ms; }
+[data-pf="std"]  { --pf-t:3px; --pf-o1:-2px; --pf-o2:1px; --pf-o3:0px;  --pf-ms:240ms; }
+[data-pf="small"]{ --pf-t:2px; --pf-o1:-1px; --pf-o2:0px; --pf-o3:0px;  --pf-ms:170ms; }
+.btn-fold,.btn-check,.btn-call,.btn-raise,.btn-award-console,.btn-quick-resolve{ --pf-rest:-1px; }
+
+/* Finishes: heavier and lighter sets (js/finishes.js). */
+:root[data-finish-press="heavy"] [data-pf="big"]  { --pf-t:6px; --pf-o1:-4px; --pf-o2:2px; --pf-o3:-1px; --pf-ms:340ms; }
+:root[data-finish-press="heavy"] [data-pf="std"]  { --pf-t:4px; --pf-o1:-3px; --pf-o2:1px; --pf-o3:-1px; --pf-ms:280ms; }
+:root[data-finish-press="heavy"] [data-pf="small"]{ --pf-t:3px; --pf-o1:-2px; --pf-o2:1px; --pf-o3:0px;  --pf-ms:210ms; }
+:root[data-finish-press="light"] [data-pf="big"]  { --pf-t:4px; --pf-o1:-2px; --pf-o2:1px; --pf-o3:0px;  --pf-ms:250ms; }
+:root[data-finish-press="light"] [data-pf="std"]  { --pf-t:2px; --pf-o1:-1px; --pf-o2:0px; --pf-o3:0px;  --pf-ms:190ms; }
+:root[data-finish-press="light"] [data-pf="small"]{ --pf-t:1px; --pf-o1:-1px; --pf-o2:0px; --pf-o3:0px;  --pf-ms:140ms; }
+
+/* DOWN: the face snaps down at once. This owns the travel over each
+   button's older :active / .is-pressed offsets (which keep their pressed
+   shadows), hence !important; the release spring is an animation, which
+   still runs over it once the class is gone. */
+[data-pf].pf-down{
+  transform:translateY(calc(var(--pf-rest,0px) + var(--pf-t))) !important;
+  transition:none !important;
 }
+
+/* The big cartridges: the face drops into its body and the lamps flare. */
+:is(#home,#career-hub) .pc-button-primary.pf-down{ box-shadow:inset 3px 3px 0 var(--pc-button-hi); }
 :is(#home,#career-hub) .pc-button-primary.pf-down .pc-lamp{ filter:brightness(1.45); }
 
 /* The casing takes the knock. */
@@ -15,11 +40,11 @@
 
 /* UP: the face springs back — past its rest, down, a small lift, settle.
    Pixel steps, not a smooth tween. */
-:is(#home,#career-hub) .pc-button-primary.pf-spring{ animation:pfSpring 300ms both; }
+[data-pf].pf-spring{ animation:pfSpring var(--pf-ms) both; }
 @keyframes pfSpring{
-  0%{ transform:translateY(5px); animation-timing-function:steps(2,end); }
-  24%{ transform:translateY(-3px); animation-timing-function:steps(2,end); }
-  46%{ transform:translateY(2px); animation-timing-function:steps(1,end); }
-  66%{ transform:translateY(-1px); animation-timing-function:steps(1,end); }
-  84%,100%{ transform:translateY(0); }
+  0%{ transform:translateY(calc(var(--pf-rest,0px) + var(--pf-t))); animation-timing-function:steps(2,end); }
+  24%{ transform:translateY(calc(var(--pf-rest,0px) + var(--pf-o1))); animation-timing-function:steps(2,end); }
+  46%{ transform:translateY(calc(var(--pf-rest,0px) + var(--pf-o2))); animation-timing-function:steps(1,end); }
+  66%{ transform:translateY(calc(var(--pf-rest,0px) + var(--pf-o3))); animation-timing-function:steps(1,end); }
+  84%,100%{ transform:translateY(var(--pf-rest,0px)); }
 }
