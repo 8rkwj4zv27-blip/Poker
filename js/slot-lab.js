@@ -24,7 +24,7 @@
   const status = document.getElementById('il-status');
   const desc = document.getElementById('sl-desc');
   const GAME = 'index.html';
-  const state = { slot:'a', theme:'emerald', speed:'1', sound:'on' };
+  const state = { slot:'b', mount:'now', theme:'emerald', speed:'1', sound:'on' };
 
   const OPTIONS = {
     a: 'A · CRADLE — the cream casing the main button sits in, with the black cartridge hole as the mouth and two standard lamps. Reads as one console with the button below.',
@@ -32,6 +32,13 @@
     c: 'C · FLUSH — no plate. A recessed strip cut into the bottom of the ticket reader, two lamps, nothing else. The quietest option.',
     d: 'D · DOOR — A, plus the same dark door the menu’s Career slot drops. Shut until you buy in; opens for the ticket, drops shut once it is accepted.',
     live: 'LIVE — what is in the game now, for comparison.'
+  };
+  const MOUNTS = {
+    now: '1 · AS NOW — a separate plate between the reader and the button.',
+    stack: '2 · STACKED — the slot plate sits right on the button\u2019s cradle, same width: two tiers of one unit.',
+    housing: '3 · HOUSING — one dark console panel holds the slot at the top and the button (and Abandon) below.',
+    cradle: '4 · CRADLE — no dark plate: the cream cradle grows upward and the slot + readout are set into it above the button.',
+    reader: '5 · READER — the slot hangs from the bottom of the ticket reader as part of its frame; the button stands alone.'
   };
 
   // Each option's slot parts. .ch2-intake-mouth is the one the ticket feed
@@ -102,7 +109,7 @@
     return source
       .replace(swBlock, '')
       .replace(/<head>/i, '<head><base href="' + base + '"><script>' + SHIM + '<\/script>')
-      .replace(/<\/body>/i, '<link rel="stylesheet" href="css/slot-lab.css?v=1"><script>' + BRIDGE + '<\/script></body>');
+      .replace(/<\/body>/i, '<link rel="stylesheet" href="css/slot-lab.css?v=2"><script>' + BRIDGE + '<\/script></body>');
   }
 
   /* B's readout says what the slot is doing, from the same state the
@@ -122,7 +129,8 @@
     const intake = hub.querySelector('#ch2-intake');
     if (!intake) return;
     if (state.slot === 'live'){
-      if (hub.dataset.slot){ delete hub.dataset.slot; if (intake.dataset.original) intake.innerHTML = intake.dataset.original; }
+      if (hub.dataset.slot){ delete hub.dataset.slot; delete intake.dataset.slotBuilt; if (intake.dataset.original) intake.innerHTML = intake.dataset.original; }
+      placeMount(hub, intake);
       return;
     }
     if (!intake.dataset.original) intake.dataset.original = intake.innerHTML;
@@ -132,10 +140,30 @@
       intake.innerHTML = PARTS[state.slot];
     }
     const text = intake.querySelector('.sl-text');
+    placeMount(hub, intake);
     const next = readoutText(hub);
     // Only write on a change: the observer watching the hub would
     // otherwise see this write and call back in forever.
     if (text && text.textContent !== next) text.textContent = next;
+  }
+
+  /* Mounts 2–4 move the slot into the console or the cradle; the others
+     put it back between the reader and the console. Only moves when it is
+     in the wrong place, so the observer that calls this settles. */
+  function placeMount(hub, intake){
+    const mount = state.slot === 'b' ? state.mount : 'now';
+    if (hub.dataset.mount !== mount) hub.dataset.mount = mount;
+    const consoleEl = hub.querySelector('.ch2-console');
+    const cradle = hub.querySelector('.ch2-action-cradle');
+    if (!consoleEl || !cradle) return;
+    if (mount === 'cradle'){
+      if (cradle.firstChild !== intake) cradle.insertBefore(intake, cradle.firstChild);
+      return;
+    }
+    const inConsole = mount === 'stack' || mount === 'housing';
+    const parent = inConsole ? consoleEl : hub;
+    const before = inConsole ? cradle : consoleEl;
+    if (intake.parentNode !== parent || intake.nextSibling !== before) parent.insertBefore(intake, before);
   }
 
   function watch(){
@@ -189,7 +217,8 @@
     document.querySelectorAll('.il-seg').forEach(seg => {
       seg.querySelectorAll('button').forEach(btn => btn.classList.toggle('is-on', state[seg.dataset.key] === btn.dataset.v));
     });
-    desc.textContent = OPTIONS[state.slot];
+    desc.textContent = OPTIONS[state.slot] + (state.slot === 'b' ? '  ' + MOUNTS[state.mount] : '');
+    document.querySelector('.il-seg[data-key="mount"]').closest('.il-row').classList.toggle('is-off', state.slot !== 'b');
   }
   document.querySelectorAll('.il-seg').forEach(seg => {
     seg.addEventListener('click', e => {
