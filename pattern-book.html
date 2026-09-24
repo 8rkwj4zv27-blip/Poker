@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#1A0A0F">
+  <link rel="icon" href="data:,">
+  <title>The Table Pattern Book</title>
+  <!-- The visual library. Isolated like the *-lab pages: production never
+       links here. The CRT section runs on the real css/machine-crt.css and
+       js/machine-crt.js, so it cannot drift from the game. Rules and the
+       sign-off record live in docs/ui/PATTERN_BOOK.md. -->
+  <!-- 01-foundation carries the embedded pixel fonts; its full-screen game
+       sizing is undone below so the book scrolls. -->
+  <link rel="stylesheet" href="css/01-foundation.css">
+  <link rel="stylesheet" href="css/machine-crt.css">
+  <style>
+    :root{
+      --velvet:#1A0A0F; --velvet-2:#26111A; --plate:#0E0709; --line:#4A2530;
+      --gold:#E8B83A; --gold-hi:#F6D06B; --cream:#F4EFE1; --ink:#EDE3D2; --ink-dim:#B9A89A; --ink-faint:#8C7A70;
+      --px:'Pixelify Sans',ui-monospace,Menlo,monospace;
+      --hdr:'Press Start 2P',ui-monospace,Menlo,monospace;
+    }
+    *{ box-sizing:border-box; }
+    html,body{ height:auto; overflow:visible; user-select:text; -webkit-user-select:text; font-size:16px; }
+    html{ background:var(--velvet); }
+    body{ margin:0; padding:0 16px 80px; color:var(--ink); font:16px/1.55 var(--px);
+      background:repeating-conic-gradient(var(--velvet) 0 25%,#1D0C12 0 50%) 0 0/4px 4px; }
+    #app{ position:static; height:auto; max-width:1000px; margin:0 auto; }
+    h1,h2,h3{ font-family:var(--hdr); font-weight:400; letter-spacing:.04em; }
+    header.mast{ padding:36px 0 22px; border-bottom:3px solid var(--line); }
+    header.mast h1{ margin:0 0 10px; font-size:clamp(18px,4vw,28px); color:var(--gold-hi); text-shadow:0 3px 0 #000; }
+    header.mast p{ margin:0; color:var(--ink-dim); max-width:68ch; }
+    section{ margin-top:40px; }
+    section > h2{ font-size:14px; color:var(--gold-hi); margin:0 0 6px; }
+    .lead{ color:var(--ink-dim); margin:0 0 14px; max-width:68ch; }
+    .plate{ background:var(--velvet-2); border:3px solid #0A0406; box-shadow:0 4px 0 #000; padding:18px; margin-top:14px; }
+    .plate h3{ font-size:11px; color:var(--cream); margin:0 0 8px; }
+    .status{ display:inline-block; font-family:var(--hdr); font-size:8px; padding:5px 7px; margin-bottom:10px; }
+    .status.live{ background:var(--gold); color:#241A06; }
+    .status.pending{ border:2px solid var(--gold); color:var(--gold-hi); }
+    .spec{ display:grid; grid-template-columns:repeat(auto-fit,minmax(min(200px,100%),1fr)); gap:12px; }
+    .spec figure{ margin:0; }
+    .spec figcaption{ font-size:13px; color:var(--ink-faint); margin-top:5px; text-align:center; }
+    /* Specimen screens: layout only. Everything visual comes from .machine-crt. */
+    .crt-demo{ height:44px; display:flex; align-items:center; justify-content:center; padding:0 10px;
+      font-family:var(--hdr); font-size:9px; letter-spacing:.06em; text-transform:uppercase; text-align:center; }
+    .crt-demo.fig{ font-size:16px; }
+    .ink-info{ color:var(--crt-ink-info); } .ink-live{ color:var(--crt-ink-live); }
+    .ink-money{ color:var(--crt-ink-money); } .ink-danger{ color:var(--crt-ink-danger); }
+    .controls{ display:flex; gap:10px; margin-top:14px; flex-wrap:wrap; }
+    .controls button{ font-family:var(--hdr); font-size:9px; padding:10px 12px; background:var(--gold); color:#241A06; border:3px solid #000; box-shadow:0 3px 0 #000; cursor:pointer; }
+    .controls button:active{ transform:translateY(2px); box-shadow:0 1px 0 #000; }
+    table.rules{ width:100%; min-width:600px; border-collapse:collapse; font-size:14px; margin-top:12px; }
+    table.rules th, table.rules td{ text-align:left; padding:7px 8px; border-bottom:1px solid var(--line); vertical-align:top; }
+    table.rules th{ font-family:var(--hdr); font-size:7px; color:var(--gold); font-weight:400; letter-spacing:.08em; white-space:nowrap; }
+    table.rules td:first-child{ color:var(--cream); white-space:nowrap; }
+    .scroll{ overflow-x:auto; }
+    code{ font-family:ui-monospace,Menlo,monospace; font-size:.9em; color:var(--gold-hi); }
+    .shots{ display:flex; flex-wrap:wrap; gap:10px 14px; align-items:flex-end; }
+    .shots figure{ margin:0; max-width:100%; }
+    .shots img{ display:block; max-width:100%; height:auto; }
+    .shots figcaption{ font-size:12px; color:var(--ink-faint); margin-top:4px; }
+    .settled{ display:grid; grid-template-columns:repeat(auto-fit,minmax(min(230px,100%),1fr)); gap:10px; }
+    .settled div{ background:var(--plate); border:2px solid #000; padding:12px; font-size:14px; color:var(--ink-dim); }
+    .settled b{ display:block; color:var(--cream); margin-bottom:4px; }
+  </style>
+</head>
+<body>
+<div id="app">
+  <header class="mast">
+    <h1>The Table Pattern Book</h1>
+    <p>One finish per job. When the same kind of part appears on two screens it is built the same way: same material, glow, depth, motion and sound. What it says and where it sits stay free. New UI takes its parts from this book; a genuinely new part is signed off and added here first.</p>
+  </header>
+
+  <!-- ======================= CRT ======================= -->
+  <section>
+    <h2>CRT screens</h2>
+    <p class="lead">Any screen that shows information which changes while the machine runs. Signed off 24 September 2026: blue record glass, flicker and blink, four ink meanings.</p>
+
+    <div class="plate">
+      <span class="status live">LIVE IN THE GAME · v0.39.6</span>
+      <h3>The finish, running</h3>
+      <div class="spec">
+        <figure><div class="machine-crt crt-demo ink-info" id="demo-a">Dealer ready</div><figcaption>Info ink</figcaption></figure>
+        <figure><div class="machine-crt crt-demo ink-live" id="demo-b">Your turn · 20 to call</div><figcaption>Live ink</figcaption></figure>
+        <figure><div class="machine-crt crt-demo fig ink-money" id="demo-c">$1,250</div><figcaption>Money ink</figcaption></figure>
+        <figure><div class="machine-crt crt-demo ink-danger" id="demo-d">Bust</div><figcaption>Danger ink</figcaption></figure>
+      </div>
+      <div class="controls"><button type="button" id="demo-change">Change what they say</button></div>
+    </div>
+
+    <div class="plate">
+      <h3>Rules</h3>
+      <div class="scroll"><table class="rules">
+        <thead><tr><th>Part</th><th>Rule</th><th>Where it lives</th></tr></thead>
+        <tbody>
+          <tr><td>Use it</td><td>Add <code>machine-crt</code> to the screen element. Keep your own size, padding and layout.</td><td><code>css/machine-crt.css</code></td></tr>
+          <tr><td>Glass</td><td>Blue-tinted near-black tube, soft recessed bezel, vignette, static scanlines, faint halo. Never restyle the glass per screen.</td><td><code>#app .machine-crt</code></td></tr>
+          <tr><td>Text</td><td>No bloom or text shadow. Mechanical-number reels inside a CRT keep their own treatment.</td><td>same file</td></tr>
+          <tr><td>Idle</td><td>Faint stepped flicker, 5.8s cycle.</td><td><code>--crt-flicker</code></td></tr>
+          <tr><td>Change</td><td>Static-burst blink (0.23s) whenever the text changes. Automatic; call nothing. A screen whose change is shown by a number wheel sets <code>data-crt-blink="off"</code>.</td><td><code>js/machine-crt.js</code>, <code>--crt-blink</code></td></tr>
+          <tr><td>Ink</td><td><code>--crt-ink-info</code> ordinary machine info · <code>--crt-ink-live</code> live table info · <code>--crt-ink-money</code> money and reward · <code>--crt-ink-danger</code> danger and warnings. Fixed across colour themes.</td><td><code>:root</code> in the same file</td></tr>
+          <tr><td>Reduced Motion</td><td>No flicker, no blink.</td><td>same file</td></tr>
+        </tbody>
+      </table></div>
+      <p class="lead" style="margin-top:12px">In the game today: Home readout and stats · Career record and ticket slot · table hand readout, turn banner, bet and raise readouts · results-stage instruments and stat bank.</p>
+    </div>
+  </section>
+
+  <!-- ======================= APPROVED, NOT YET MIGRATED ======================= -->
+  <section>
+    <h2>Approved, moving over next</h2>
+    <p class="lead">Signed off on 24 September 2026 from in-game comparisons. Each will become a shared class like the CRT, one family per release. Until then, these captures are the reference.</p>
+
+    <div class="plate"><span class="status pending">APPROVED · A</span><h3>Hero button: machine cartridge</h3>
+      <div class="shots">
+        <figure><img src="docs/ui/pattern-book/hero__career__A.png" width="312" height="102" alt="Career button"><figcaption>Home: Career</figcaption></figure>
+        <figure><img src="docs/ui/pattern-book/hero__buyin__A.png" width="350" height="102" alt="Buy In button"><figcaption>Career: Buy In</figcaption></figure>
+        <figure><img src="docs/ui/pattern-book/hero__deal__A.png" width="336" height="102" alt="Deal Me In button"><figcaption>Custom Game: Deal Me In</figcaption></figure>
+      </div></div>
+
+    <div class="plate"><span class="status pending">APPROVED · B</span><h3>Standard button: dark tile</h3>
+      <div class="shots">
+        <figure><img src="docs/ui/pattern-book/standard__custom__B.png" width="334" height="71" alt="Custom Game button"><figcaption>Home: Custom Game</figcaption></figure>
+        <figure><img src="docs/ui/pattern-book/standard__quick__B.png" width="120" height="71" alt="Quick Deal button"><figcaption>Home: Quick Deal</figcaption></figure>
+        <figure><img src="docs/ui/pattern-book/standard__done__B.png" width="338" height="71" alt="Done button"><figcaption>Settings: Done</figcaption></figure>
+        <figure><img src="docs/ui/pattern-book/standard__cancel__B.png" width="370" height="71" alt="Cancel button"><figcaption>Dialog: Cancel</figcaption></figure>
+      </div></div>
+
+    <div class="plate"><span class="status pending">APPROVED · D3</span><h3>Danger button: dark key, coral print</h3>
+      <div class="shots">
+        <figure><img src="docs/ui/pattern-book/danger__reset__D3.png" width="338" height="68" alt="Reset Current Run button"><figcaption>Settings: Reset Current Run</figcaption></figure>
+        <figure><img src="docs/ui/pattern-book/danger__discard__D3.png" width="370" height="73" alt="Discard and Start New button"><figcaption>Dialog: Discard &amp; Start New</figcaption></figure>
+      </div></div>
+
+    <div class="plate"><span class="status pending">APPROVED · B</span><h3>Small key: cream</h3>
+      <div class="shots">
+        <figure><img src="docs/ui/pattern-book/key__hgear__B.png" width="47" height="51" alt="Settings key"><figcaption>Home ⚙</figcaption></figure>
+        <figure><img src="docs/ui/pattern-book/key__sback__B.png" width="47" height="51" alt="Back key"><figcaption>Custom Game ←</figcaption></figure>
+        <figure><img src="docs/ui/pattern-book/key__cback__B.png" width="47" height="51" alt="Career back key"><figcaption>Career ←</figcaption></figure>
+        <figure><img src="docs/ui/pattern-book/key__tgear__B.png" width="45" height="51" alt="Table settings key"><figcaption>Table ⚙</figcaption></figure>
+        <figure><img src="docs/ui/pattern-book/key__tsave__B.png" width="78" height="51" alt="Save key"><figcaption>Table: Save</figcaption></figure>
+      </div></div>
+
+    <div class="plate"><span class="status pending">APPROVED · A</span><h3>Choice row: small bold labels</h3>
+      <div class="shots">
+        <figure><img src="docs/ui/pattern-book/choice__speed__A.png" width="338" height="74" alt="Game speed choice"><figcaption>Settings: Game Speed</figcaption></figure>
+        <figure><img src="docs/ui/pattern-book/choice__type__A.png" width="298" height="74" alt="Game type choice"><figcaption>Custom Game: Game Type</figcaption></figure>
+        <figure><img src="docs/ui/pattern-book/choice__stack__A.png" width="298" height="74" alt="Starting stack choice"><figcaption>Custom Game: Starting Stack</figcaption></figure>
+      </div></div>
+
+    <div class="plate"><span class="status pending">APPROVED · A</span><h3>Screen header: dark plate, cream title</h3>
+      <div class="shots">
+        <figure><img src="docs/ui/pattern-book/header__setup__A.png" width="336" height="84" alt="Custom Game header"><figcaption>Custom Game</figcaption></figure>
+        <figure><img src="docs/ui/pattern-book/header__career__A.png" width="374" height="50" alt="Career header"><figcaption>Career</figcaption></figure>
+        <figure><img src="docs/ui/pattern-book/header__settings__A.png" width="370" height="63" alt="Settings header"><figcaption>Settings sheet</figcaption></figure>
+      </div>
+      <p class="lead" style="margin-top:10px">The keys inside a header follow the Small key finish.</p></div>
+  </section>
+
+  <section>
+    <h2>Settled elsewhere</h2>
+    <div class="settled">
+      <div><b>On/off switch</b>One version in the game; approved as is.</div>
+      <div><b>Stepper (− / +)</b>One version in the game; approved as is.</div>
+      <div><b>FOLD / CHECK / CALL / RAISE</b>Their own locked family.</div>
+      <div><b>Number wheels, press feel, sound</b>Round 2, signed off from live demos.</div>
+    </div>
+  </section>
+</div>
+<script>
+  // Book-only: the blink itself comes from js/machine-crt.js, exactly as in the game.
+  const LINES = [
+    ['Dealer ready','Your turn · 20 to call','$1,250','Bust'],
+    ['Shuffling','Shark raises to 60','$1,290','Warning: all in'],
+    ['Hand scanner ready','Pot 120','$1,170','Run over']
+  ];
+  let i = 0;
+  document.getElementById('demo-change').addEventListener('click', () => {
+    i = (i + 1) % LINES.length;
+    ['demo-a','demo-b','demo-c','demo-d'].forEach((id, n) => { document.getElementById(id).textContent = LINES[i][n]; });
+  });
+</script>
+<script src="js/machine-crt.js"></script>
+</body>
+</html>

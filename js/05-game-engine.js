@@ -2251,7 +2251,7 @@ function careerResultHTML(model){
   const money = n => '$' + Math.abs(Math.round(n)).toLocaleString();
   const v = value => '<span class="career-res-v tabular">' + esc(value) + '</span>';
   const cell = (label, value) =>
-    '<div class="stage-instrument pc-display"><span class="stage-instrument-label">' +
+    '<div class="stage-instrument pc-display machine-crt" data-crt-blink="off"><span class="stage-instrument-label">' +
     esc(label) + '</span>' + v(value) + '</div>';
   // Any credited prize reads as a prize, so a non-winning cash reports what it
   // actually earned rather than what it failed to win.
@@ -2268,14 +2268,14 @@ function careerResultHTML(model){
       '<span class="career-res-event">' + esc(model.eventName) + '</span>' +
       '<strong class="career-res-title">' + title + '</strong>' +
       '<i aria-hidden="true"></i></header>' +
-    '<div class="stage-score-hero pc-display">' +
+    '<div class="stage-score-hero pc-display machine-crt" data-crt-blink="off">' +
       '<span class="stage-instrument-label">' + moneyLabel + '</span>' + v(moneyValue) +
       '<span class="stage-score-carry"><span>BANKROLL</span>' + v(money(model.bankroll)) +
       '</span></div>' +
     '<div class="stage-results-deck pc-raised pc-material-plastic">' +
       '<div class="stage-results-instruments">' + finishCell +
         cell('EVENT SCORE', model.eventScore.toLocaleString()) + '</div>' +
-      '<div class="stage-results-recap pc-display">' +
+      '<div class="stage-results-recap pc-display machine-crt" data-crt-blink="off">' +
         '<div class="stage-recap-cell"><span class="stage-instrument-label">HANDS</span>' +
           v(String(model.hands)) + '</div>' +
       '</div>' +
@@ -2382,14 +2382,14 @@ function ratioResult(won,played){ return (won||0)+' / '+(played||0); }
    stageStatementHTML() instead. */
 function tableBestHandTrophyHTML(best){
   if (!best){
-    return '<div class="stage-trophy pc-display" data-result-beat="trophy">'+
+    return '<div class="stage-trophy pc-display machine-crt" data-crt-blink="off" data-result-beat="trophy">'+
       '<div class="stage-trophy-label">Best hand</div>'+
       '<div class="stage-trophy-empty">No showdown hand recorded</div></div>';
   }
   const split=splitHandText(best.result.cat,best.name);
   const displayCards=arrangeHandForDisplay(best.result.cat,best.cards);
   const cards=displayCards.map(c=>'<div class="'+cardClass(false,c,true)+'" aria-label="'+esc(cardLabel(false,c))+'">'+cardInner(c)+'</div>').join('');
-  return '<div class="stage-trophy pc-display" data-result-beat="trophy">'+
+  return '<div class="stage-trophy pc-display machine-crt" data-crt-blink="off" data-result-beat="trophy">'+
     '<div class="stage-trophy-label">Best hand</div>'+
     '<div class="stage-trophy-cards">'+cards+'</div>'+
     '<div class="stage-trophy-name">'+esc(split.category.toUpperCase())+'</div>'+
@@ -2469,7 +2469,7 @@ function stageHeadHTML(eyebrow, title){
     '<i aria-hidden="true"></i></header>';
 }
 function stageHeroHTML(hero){
-  return '<div class="stage-score-hero pc-display">'+
+  return '<div class="stage-score-hero pc-display machine-crt" data-crt-blink="off">'+
     '<span class="stage-instrument-label">'+esc(hero.label)+'</span>'+
     '<div class="amt-readout stage-score-readout'+(stageReelIsLong(hero.reel)?' is-long':'')+
       '" id="'+RESULT_HERO_REEL_ID+'"></div>'+
@@ -2503,14 +2503,14 @@ function stageInstrumentHTML(instrument){
     // readout family as the K.O. count, one size up.
     body = '<div class="stage-ko-readout stage-big-readout tabular">'+esc(instrument.value)+'</div>';
   }
-  return '<div class="stage-instrument pc-display"><span class="stage-instrument-label">'+
+  return '<div class="stage-instrument pc-display machine-crt" data-crt-blink="off"><span class="stage-instrument-label">'+
     esc(instrument.label)+'</span>'+body+'</div>';
 }
 /* Three-slot CRT memory bank. Core facts appear first; where a model
    supplies a second page it flickers in after the stage wakes, using
    only statistics the mode already tracks. */
 function stageRecapHTML(pages){
-  return '<div class="stage-results-recap pc-display" id="stage-stat-bank" data-result-beat="recap">'+
+  return '<div class="stage-results-recap pc-display machine-crt" data-crt-blink="off" id="stage-stat-bank" data-result-beat="recap">'+
     pages[0].map((stat,i)=>
       '<div class="stage-recap-cell" data-stage-stat="'+i+'"><span class="stage-instrument-label">'+esc(stat.label)+'</span>'+
         '<strong class="stage-recap-value tabular">'+esc(stat.value)+'</strong></div>'
@@ -2529,7 +2529,7 @@ function stageLampHTML(lamp){
    message the game already produces for the banner; the sub-line states
    what the settlement already did. Nothing here is calculated. */
 function stageStatementHTML(detail){
-  return '<div class="stage-trophy stage-trophy--statement pc-display" data-result-beat="trophy">'+
+  return '<div class="stage-trophy stage-trophy--statement pc-display machine-crt" data-crt-blink="off" data-result-beat="trophy">'+
     '<div class="stage-trophy-label">'+esc(detail.label)+'</div>'+
     // Line and sub-line are ONE block so they stay together in the middle
     // of the well rather than drifting apart as the stage grows.
@@ -2550,7 +2550,7 @@ function stageDetailHTML(detail){
 function stageProgressHTML(progress){
   const twoPart = !progress.value;
   return '<div class="stage-run-progress pc-display'+(twoPart?' is-two-part':'')+
-    '" data-result-beat="progress">'+
+    ' machine-crt" data-crt-blink="off" data-result-beat="progress">'+
     '<span>'+esc(progress.label)+'</span>'+
     (twoPart?'':'<strong class="tabular">'+esc(progress.value)+'</strong>')+
     '<em>'+esc(progress.next)+'</em></div>';

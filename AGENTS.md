@@ -47,6 +47,14 @@ The overall feeling is a strange velvet-covered poker machine.
 - Do not change visual design merely to make code or UI more conventional.
 - Preserve existing localStorage settings and lifetime statistics unless a task specifically requires changes to them.
 
+## Visual consistency (Pattern Book)
+
+Repeated UI parts (CRT screens, buttons, keys, choice rows, headers, number
+wheels) follow `docs/ui/PATTERN_BOOK.md`: same job, same finish. Use the
+book's shared class for a part rather than styling its finish locally. A
+genuinely new part is signed off and added to the book (and
+`validation/pattern-book-checks.js`) before it's used in the game.
+
 ## Codebase map
 
 Before searching the codebase cold, read `docs/CODEMAP.md` — it says which
