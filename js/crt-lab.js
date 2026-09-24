@@ -19,13 +19,8 @@
     { key:'change',  label:'On change',    values:['burst','roll','channel','wipe','type'] },
     { key:'ink',     label:'Ink',          values:['meaning','one','mono'] }
   ];
-  const PRESETS = [
-    { id:'clean',    name:'Clean',    hint:'mild',    dials:{ tint:'blue',  glow:0, scan:1, rgb:0, grain:0, curve:1, flicker:1, roll:0, tear:0, ghost:0, change:'burst',   ink:'meaning' } },
-    { id:'warm',     name:'Warm',     hint:'soft',    dials:{ tint:'dark',  glow:1, scan:1, rgb:0, grain:1, curve:2, flicker:1, roll:1, tear:0, ghost:0, change:'burst',   ink:'meaning' } },
-    { id:'pulp',     name:'Pulp',     hint:'punchy',  dials:{ tint:'amber', glow:2, scan:2, rgb:1, grain:1, curve:2, flicker:2, roll:2, tear:0, ghost:1, change:'roll',    ink:'meaning' } },
-    { id:'vhs',      name:'VHS',      hint:'tape',    dials:{ tint:'dark',  glow:2, scan:3, rgb:3, grain:3, curve:2, flicker:2, roll:2, tear:2, ghost:2, change:'channel', ink:'meaning' } },
-    { id:'meltdown', name:'Meltdown', hint:'extreme', dials:{ tint:'green', glow:4, scan:4, rgb:4, grain:4, curve:4, flicker:4, roll:4, tear:4, ghost:4, change:'channel', ink:'meaning' } }
-  ];
+  const HINTS = { clean:'mild', warm:'soft', pulp:'punchy', vhs:'tape', meltdown:'extreme' };
+  const PRESETS = CRT.PRESETS.map(p => Object.assign({ hint:HINTS[p.id] }, p));
 
   // ---------------- every CRT in the game ----------------
   const L = t => '<div class="crt-line">' + t + '</div>';

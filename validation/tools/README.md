@@ -74,3 +74,17 @@ then build one sheet from them instead of sending N separate images.
 - iOS Safari does not support `navigator.vibrate`; `haptic()` calls are
   silent no-ops there by design. Don't rely on haptics as evidence of
   anything when reasoning about the iPhone experience.
+
+## 5. `crt-consistency.js` — every CRT part against its twins
+
+The rendered-style guard for the CRT component (docs/ui/PATTERN_BOOK.md).
+Opens Home, Career, the table, TABLE CLEARED and RUN OVER and compares every
+CRT's glass, and every Line, Figure and Caption, as the browser draws them
+(size, weight, spacing, glow, and ink per meaning). Any difference fails,
+naming both screens.
+
+```
+node validation/tools/crt-consistency.js [width] [height] [theme]   # default 390 844 midnight
+```
+
+Run it after any change that touches a CRT, in a couple of themes and sizes.

@@ -14,13 +14,6 @@
   let pointer = null;
   const amount = n => '$' + Number(n || 0).toLocaleString('en-US');
   const motionReduced = () => motionOff() || window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  // The CRT blink, cleared afterwards (as paintCRT does) so the glass returns
-  // to its idle flicker instead of holding the finished burst.
-  const crtBlink = glass => {
-    glass.classList.remove('crt-refresh'); void glass.offsetWidth; glass.classList.add('crt-refresh');
-    clearTimeout(glass._crtRefreshT);
-    glass._crtRefreshT = setTimeout(() => glass.classList.remove('crt-refresh'), 250);
-  };
   const shortVenue = venue => venue.replace(' CHAMPIONSHIP','').replace('HIGH ROLLER ROOM','HIGH ROLLER');
   const depart = (launch,options) => typeof careerDepartToTable === 'function' ? careerDepartToTable(launch,options) : launch();
   const queue = (fn, ms) => { const timer = window.setTimeout(fn, ms); motionTimers.push(timer); return timer; };
@@ -149,8 +142,7 @@
     root.querySelector('#ch2-crt-label-b').textContent = values[1][0];
     root.querySelector('#ch2-crt-value-b').textContent = values[1][1];
     root.querySelector('#ch2-record').setAttribute('aria-label', values[0].join(' ') + '. ' + values[1].join(' ') + '. Tap for next statistics');
-    const glass = root.querySelector('#ch2-crt-glass');
-    if (showBlink && !motionReduced()) crtBlink(glass);
+    // The change effect is the CRT component's own (js/crt.js watches it).
   }
 
   /* Continuous rack geometry: `d` is a card's signed distance, in cards, from
@@ -252,7 +244,7 @@
     board.innerHTML = '<main class="ch2-machine" id="career-hub" aria-label="Career Hub">' +
       '<header class="ch2-instrument"><div class="ch2-utility-row"><button class="ch2-key" id="ch2-back" type="button" aria-label="Back to main menu"><span class="ch2-nav-mark" aria-hidden="true"></span></button><span class="pc-label ch2-instrument-title">Bankroll</span><button class="ch2-key" id="ch2-settings" type="button" aria-label="Settings">\u2699</button></div>' +
       '<div class="ch2-money-block"><div class="cpi-bankroll-housing ch2-bankroll-housing"><div class="amt-readout ch2-bankroll-reel" id="ch2-bankroll" role="img" aria-live="polite" aria-label="Bankroll ' + esc(amount(bank)) + '" style="grid-template-columns:21px repeat(' + Math.max(7,String(bank).length) + ',minmax(12px,1fr))">' + reelMarkup(bank) + '</div></div></div>' +
-      '<button class="ch2-record crt" id="ch2-record" type="button"><span class="ch2-crt-glass crt__content machine-crt" id="ch2-crt-glass"><span class="ch2-crt-stat"><small id="ch2-crt-label-a"></small><strong class="tabular" id="ch2-crt-value-a"></strong></span><span class="ch2-crt-stat"><small id="ch2-crt-label-b"></small><strong class="tabular" id="ch2-crt-value-b"></strong></span></span></button></header>' +
+      '<button class="ch2-record" id="ch2-record" type="button"><span class="ch2-crt-glass crt" id="ch2-crt-glass"><span class="ch2-crt-stat crt-cell"><small class="crt-caption" id="ch2-crt-label-a"></small><strong class="tabular crt-figure" id="ch2-crt-value-a"></strong></span><span class="ch2-crt-stat crt-cell"><small class="crt-caption" id="ch2-crt-label-b"></small><strong class="tabular crt-figure" id="ch2-crt-value-b"></strong></span></span></button></header>' +
       '<section class="ch2-reader" aria-label="Career event browser"><div class="ch2-rack" id="ch2-rack"><div class="ch2-track" id="ch2-track" role="listbox" tabindex="0" aria-label="Career events. Swipe, tap an exposed ticket edge, or use left and right arrow keys">' + all.map(card).join('') + '</div></div></section>' +
       // The console: one dark-plastic housing holding the ticket slot, the
       // main button and Abandon/Cash Out. In the slot only .ch2-intake and
@@ -261,7 +253,7 @@
       '<div class="ch2-console">' +
       '<div class="ch2-intake" id="ch2-intake" aria-hidden="true">' +
         '<span class="ch2-intake-mouth"></span>' +
-        '<span class="pc-display ch2-slot-readout machine-crt"><span class="pc-lamp ch2-slot-lamp"></span><span id="ch2-slot-text"></span></span>' +
+        '<span class="pc-display ch2-slot-readout crt"><span class="pc-lamp ch2-slot-lamp"></span><span id="ch2-slot-text"></span></span>' +
       '</div>' +
       '<div class="pc-primary-cradle ch2-action-cradle"><span class="pc-slot-aperture" aria-hidden="true"><span class="pc-slot-door"></span></span><button class="pc-button pc-button-primary ch2-primary" id="ch2-primary" type="button"><span class="pc-lamp is-amber" aria-hidden="true"></span><span><strong id="ch2-primary-main"></strong><small id="ch2-primary-sub"></small></span><span class="pc-lamp is-amber" aria-hidden="true"></span></button></div>' +
       '<button class="ch2-secondary" id="ch2-secondary" type="button" hidden></button>' +
@@ -609,8 +601,7 @@
     root.querySelector('#ch2-crt-value-a').textContent = valueA;
     root.querySelector('#ch2-crt-label-b').textContent = labelB;
     root.querySelector('#ch2-crt-value-b').textContent = valueB;
-    const glass = root.querySelector('#ch2-crt-glass');
-    if (!motionReduced()) crtBlink(glass);
+    // The change effect is the CRT component's own (js/crt.js watches it).
   }
 
   /* The seat is accepted: lamps go green, the CRT confirms, and the machine

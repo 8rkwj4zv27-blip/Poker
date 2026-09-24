@@ -674,13 +674,7 @@
 }
 .blind-indicator.is-on::before{ background:rgba(255,255,255,.18); }
 #hud-right .bet-this-hand{ width:100%; min-height:47px; padding:3px 3px 4px; gap:3px; background:transparent; border:0; box-shadow:none; }
-#hud-invested{
-  width:100%; min-height:29px; display:flex; align-items:center; justify-content:center;
-  color:#bde9ff; background:linear-gradient(180deg,#071116,#0b1b24 72%,#102630);
-  border:2px solid var(--px-ink); border-radius:2px;
-  box-shadow:inset 0 5px 0 rgba(0,0,0,.58),inset 2px 0 0 rgba(0,0,0,.3),inset 0 -1px 0 rgba(255,255,255,.08);
-  font-family:var(--font-hdr); font-size:13px; letter-spacing:.07em; text-shadow:0 0 7px rgba(105,196,239,.62),2px 2px 0 #000;
-}
+#hud-invested{ width:100%; min-height:29px; display:flex; align-items:center; justify-content:center; }
 .hud-speaker{
   width:32px; height:32px; box-sizing:border-box; margin:0 auto; padding:5px; display:grid;
   grid-template-columns:repeat(5,3px); grid-template-rows:repeat(4,3px); justify-content:space-between; align-content:space-between;
@@ -691,10 +685,7 @@
 .hud-speaker i{ display:block; width:3px; height:3px; border-radius:50%; background:#080b0b; box-shadow:inset 1px 1px 0 #000,0 1px 0 rgba(255,255,255,.07); }
 .action-console{ padding:4px; }
 .console-flip{ padding:0; }
-#hud-mid .crt-screen,#hud-invested{
-  background:linear-gradient(rgba(126,190,205,.09),transparent 48%),color-mix(in srgb,var(--machine-glass) 82%,#3c5660 18%);
-  box-shadow:inset 0 4px 0 rgba(0,0,0,.48),inset 2px 0 0 rgba(0,0,0,.2),inset 0 -1px 0 rgba(255,255,255,.1),0 0 5px rgba(108,178,201,.16),0 1px 0 color-mix(in srgb,var(--machine-case-hi) 38%,transparent);
-}
+
 #hud-right{ justify-content:space-evenly; gap:0; }
 #hud-right .bet-this-hand{ padding-top:0; padding-bottom:0; }
 @media (orientation:portrait){
@@ -722,7 +713,7 @@
   #jackpot .jp-cell{ height:23px; }
   .blind-lamps{ min-height:27px; }
   .blind-indicator{ height:23px; }
-  #hud-invested{ min-height:25px; font-size:11px; }
+  #hud-invested{ min-height:25px; }
   .hud-speaker{ display:none; }
   .stage-results{ padding:7px 9px; }
   .stage-results-machine{ gap:3px; padding:4px; grid-template-rows:auto auto auto minmax(44px,1fr) auto; }
@@ -732,8 +723,8 @@
   .stage-results-head i{ width:11px; height:11px; }
   .stage-score-hero{ min-height:39px; padding:4px 7px; }
   .stage-score-readout .jp-cell{ height:20px; min-width:13px; font-size:10px; }
-  .stage-score-carry{ gap:5px; font-size:6px; }
-  .stage-score-carry strong{ font-size:7px; }
+  .stage-score-carry{ gap:5px; }
+  
   .stage-results-instruments{ gap:4px; }
   .stage-results-deck{ padding:3px; gap:3px; }
   .stage-instrument{ padding:4px 5px; }
@@ -741,10 +732,10 @@
   .stage-instrument .amt-readout .jp-cell{ height:18px; min-width:12px; font-size:9px; }
   .stage-ko-slot{ width:9px; height:9px; }
   .stage-ko-lamps{ gap:3px; margin-top:1px; }
-  .stage-ko-readout{ margin-top:2px; font-size:9px; }
+  .stage-ko-readout{ margin-top:2px; }
   .stage-results-recap{ gap:0; }
   .stage-recap-cell{ min-height:32px; padding:4px 3px; }
-  .stage-recap-value{ margin-top:2px; font-size:10px; }
+  .stage-recap-value{ margin-top:2px; }
   .stage-recap-lamp{ min-height:20px; padding:3px; }
   .stage-trophy{ min-height:44px; gap:2px 7px; padding:4px 7px; }
   .stage-trophy-cards{ gap:2px; }
@@ -752,8 +743,8 @@
   .stage-trophy-cards .card.small .r{ font-size:8px; }
   .stage-trophy-cards .card.small .s{ top:10px; font-size:5px; }
   .stage-trophy-cards .card.small .pip{ font-size:8px; }
-  .stage-trophy-name{ font-size:10px; }
-  .stage-trophy-desc{ font-size:8px; }
+  
+  
   .stage-run-progress{ min-height:24px; padding:4px 5px; gap:4px; }
 }
 
@@ -769,7 +760,7 @@
   .stage-instrument,.stage-recap-cell{ padding:5px; }
   .stage-trophy{ min-height:54px; padding:5px 7px; gap:3px 7px; }
   .stage-trophy-cards .card.small{ width:22px; height:32px; }
-  .stage-trophy-name{ font-size:10px; }
+  
   .stage-run-progress{ min-height:28px; padding:4px 6px; }
 }
 

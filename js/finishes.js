@@ -4,9 +4,10 @@
    FINISHES — swap the look of each Pattern Book set, live
 
    Every repeated part of the machine is one shared set (see
-   docs/ui/PATTERN_BOOK.md), so trying a different look is one attribute on
-   <html>: css/machine-crt.css and css/press-feel.css redefine that set's
-   tokens for it, and every instance follows at once.
+   docs/ui/PATTERN_BOOK.md), so trying a different look is attributes on
+   <html>: the CRT look swaps the data-crt-* dials of css/crt.css to one of
+   the CRT Lab presets (CRT.PRESETS); the press swaps css/press-feel.css
+   tokens. Every instance follows at once.
 
    The menu is a page inside the Settings sheet (Settings → Finishes). A
    choice sticks on this device only (localStorage 'felt.finishes'); the
@@ -25,23 +26,13 @@ const FINISHES_MENU = true;
 const FINISHES_KEY = 'felt.finishes';
 
 const FINISH_SETS = [
-  { attr:'finishCrtGlass', group:'CRT screens', label:'Glass', options:[
-    { id:'',          name:'Blue',        note:'Signed off: blue-tinted tube, soft bezel, no glow.' },
-    { id:'blue-glow', name:'Blue + glow', note:'The same blue tube with a soft glow on the text.' },
-    { id:'dark',      name:'Dark',        note:'The earlier table glass: near-black tube, hard bezel, phosphor glow.' },
-    { id:'green',     name:'Green',       note:'A green phosphor tube with a matching glow.' },
-    { id:'amber',     name:'Amber',       note:'A warm amber tube with a matching glow.' },
-    { id:'black',     name:'Black',       note:'A deep black tube with strong bloom around the text.' }
-  ]},
-  { attr:'finishCrtInk', group:'CRT screens', label:'Ink', options:[
-    { id:'',     name:'By meaning', note:'Signed off: pale blue for live table info, gold for money, cream for everything else.' },
-    { id:'one',  name:'One ink',    note:'Cream everywhere; gold kept for money.' },
-    { id:'mono', name:'Mono',       note:'Cream everywhere, money included.' }
-  ]},
-  { attr:'finishCrtMotion', group:'CRT screens', label:'Motion', options:[
-    { id:'',      name:'Flicker + blink', note:'Signed off: a faint idle flicker, and a static burst when the text changes.' },
-    { id:'blink', name:'Blink only',      note:'Steady at rest; a static burst when the text changes.' },
-    { id:'still', name:'Still',           note:'No flicker, no burst. Text just swaps.' }
+  { attr:'finishCrt', group:'CRT screens', label:'Look', dials:true, options:[
+    { id:'',         name:'Game',     note:'Signed off: dark tube, heavy scanlines and grain, strong flicker, VHS tears, channel change with ghosting, one ink.' },
+    { id:'clean',    name:'Clean',    note:'CRT Lab preset 1: calm blue glass, a faint flicker.' },
+    { id:'warm',     name:'Warm',     note:'CRT Lab preset 2: soft glow, gentle flicker, a slight curve.' },
+    { id:'pulp',     name:'Pulp',     note:'CRT Lab preset 3: amber phosphor, colour fringe, a rolling bar.' },
+    { id:'vhs',      name:'VHS',      note:'CRT Lab preset 4: tracking lines, colour bleed, tears, channel change.' },
+    { id:'meltdown', name:'Meltdown', note:'CRT Lab preset 5: everything at full.' }
   ]},
   { attr:'finishPress', group:'Buttons', label:'Press', options:[
     { id:'',         name:'Thunk',    note:'Every button sinks and springs back with a clunk, scaled by size.' },
@@ -62,12 +53,35 @@ const Finishes = (() => {
     try{ localStorage.setItem(FINISHES_KEY, JSON.stringify(picks)); }
     catch(e){ /* this session only */ }
   }
+  // A CRT look writes that preset's dials; the game's own is on <html>
+  // (captured before any pick by the inline script, as window.CRT_RECIPE).
+  const camel = k => 'crt' + k[0].toUpperCase() + k.slice(1);
+  function crtDials(id){
+    const preset = id && typeof CRT !== 'undefined' && CRT.PRESETS.find(p => p.id === id);
+    if (!preset) return Object.assign({}, window.CRT_RECIPE || {});
+    const out = {};
+    Object.entries(preset.dials).forEach(([k, v]) => out[camel(k)] = String(v));
+    return out;
+  }
   function apply(picks){
     FINISH_SETS.forEach(set => {
       const v = picks[set.attr];
-      if (v && set.options.some(o => o.id === v)) root.dataset[set.attr] = v;
-      else delete root.dataset[set.attr];
+      const valid = v && set.options.some(o => o.id === v);
+      if (valid) root.dataset[set.attr] = v; else delete root.dataset[set.attr];
+      if (set.dials) Object.entries(crtDials(valid ? v : '')).forEach(([k, val]) => root.dataset[k] = val);
     });
+  }
+  // What gets saved: the picks, plus a CRT look's dials so the inline
+  // script can apply them before first paint. Older keys are dropped.
+  function stored(picks){
+    const out = {};
+    FINISH_SETS.forEach(set => {
+      const v = picks[set.attr];
+      if (!v || !set.options.some(o => o.id === v)) return;
+      out[set.attr] = v;
+      if (set.dials) Object.assign(out, crtDials(v));
+    });
+    return out;
   }
 
   function current(set){ return root.dataset[set.attr] || ''; }
@@ -81,7 +95,7 @@ const Finishes = (() => {
         if (group) html += '</div>';
         group = set.group;
         html += '<div class="sheet-section"><h3>' + group + '</h3>';
-        if (group === 'CRT screens') html += '<div class="finish-preview"><div class="pc-display machine-crt finish-crt" data-ink="live" id="finish-crt-a">Dealer ready</div><div class="pc-display machine-crt finish-crt finish-crt-money" data-ink="money" id="finish-crt-b">$1,250</div></div>';
+        if (group === 'CRT screens') html += '<div class="finish-preview"><div class="crt finish-crt" data-ink="live" id="finish-crt-a">Dealer ready</div><div class="crt finish-crt finish-crt-money" data-ink="money" id="finish-crt-b"><span class="crt-figure">$1,250</span></div></div>';
         if (group === 'Buttons') html += '<div class="finish-preview finish-keys"><button class="icon-btn" type="button" aria-label="Try the small key">⚙</button><button class="btn-secondary" type="button">Try me</button><button class="btn-primary" type="button">Big key</button></div>';
       }
       const now = current(set);
@@ -98,7 +112,7 @@ const Finishes = (() => {
   function choose(attr, value){
     const picks = load();
     if (value) picks[attr] = value; else delete picks[attr];
-    save(picks);
+    save(stored(picks));
     apply(picks);
     render();
   }
@@ -111,7 +125,7 @@ const Finishes = (() => {
     line = (line + 1) % LINES.length;
     const a = document.getElementById('finish-crt-a'), b = document.getElementById('finish-crt-b');
     if (a) a.textContent = LINES[line][0];
-    if (b) b.textContent = LINES[line][1];
+    if (b) b.innerHTML = '<span class="crt-figure">' + LINES[line][1] + '</span>';
   }
 
   function open(){
@@ -134,7 +148,9 @@ const Finishes = (() => {
       if (entry) entry.classList.add('hidden');
       return;
     }
-    apply(load());
+    const picks = stored(load());   // drops options that no longer exist
+    save(picks);
+    apply(picks);
     const openBtn = document.getElementById('open-finishes');
     const backBtn = document.getElementById('close-finishes');
     const resetBtn = document.getElementById('reset-finishes');

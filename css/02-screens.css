@@ -54,11 +54,8 @@
 
 .stats-card{ padding:4px 0; }
 .stats-card .stat-strip{ margin-bottom:0; gap:0; }
-.stats-card .stat-cell{
-  background:transparent; border:none; border-radius:0; padding:12px 6px;
-  border-right:2px solid rgba(255,255,255,.06); box-shadow:none;
-}
-.stats-card .stat-cell:last-child{ border-right:none; }
+.stats-card .stat-cell{ padding:12px 6px; }
+
 
 .identity-row{ display:flex; gap:12px; align-items:center; }
 .btn-hero{ margin-top:4px; }
@@ -545,22 +542,12 @@
   transition:opacity 130ms steps(3,end),transform 150ms steps(4,end),filter 150ms steps(4,end);
 }
 
-/* The one major table result: a mechanical counter, with the persistent
-   run total as its small carry-forward legend rather than another panel. */
-.stage-score-hero{
-  flex-shrink:0; min-height:58px; padding:7px 10px 8px;
-  display:grid; grid-template-columns:auto 1fr; grid-template-rows:auto auto; align-items:center; gap:3px 9px;
-  color:#b6e0af; background-color:#152a1e; border-color:#090b08;
-  box-shadow:inset 4px 0 0 #e7b633,inset 0 4px 5px rgba(0,0,0,.65),0 3px 0 #16090d;
-}
+.stage-score-hero{ flex-shrink:0; min-height:58px; padding:7px 10px 8px; display:grid; grid-template-columns:auto 1fr; grid-template-rows:auto auto; align-items:center; gap:3px 9px; }
 .stage-score-hero .stage-instrument-label{ grid-column:1; grid-row:1; align-self:end; margin:0; }
 .stage-score-readout{ grid-column:2; grid-row:1 / span 2; align-self:center; justify-self:end; justify-content:center; flex-wrap:nowrap; }
 .stage-score-readout .jp-cell{ height:28px; min-width:16px; font-size:13px; }
-.stage-score-carry{
-  grid-column:1; grid-row:2; display:flex; align-items:center; gap:8px;
-  color:#87a785; font-family:var(--font-hdr); font-size:7px; letter-spacing:.06em;
-}
-.stage-score-carry strong{ color:#b6e0af; font-size:8px; font-weight:400; text-shadow:0 0 5px rgba(182,224,175,.42); }
+.stage-score-carry{ grid-column:1; grid-row:2; display:flex; align-items:center; gap:8px; }
+
 
 .stage-results-deck{
   padding:8px; display:flex; flex-direction:column; gap:7px; color:#2a1710; border-color:#16090d;
@@ -568,24 +555,14 @@
 .stage-results-instruments{
   flex-shrink:0; display:grid; grid-template-columns:1.35fr 1fr; gap:8px;
 }
-.stage-instrument{
-  min-width:0; padding:9px 8px 10px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px;
-  color:#b6e0af; background-color:#152a1e; border-color:#090b08;
-}
-.stage-instrument-label{
-  align-self:flex-start; margin-bottom:2px;
-  font-family:var(--font-hdr); font-size:7px; font-weight:400; letter-spacing:.09em;
-  text-transform:uppercase; color:#87a785;
-}
+.stage-instrument{ min-width:0; padding:9px 8px 10px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px; }
+.stage-instrument-label{ align-self:flex-start; margin-bottom:2px; }
 .stage-results .amt-readout{
   align-items:center; justify-content:center; flex-wrap:nowrap;
   background:rgba(5,11,7,.82); border-color:#e7b633;
   box-shadow:0 3px 0 #090b08,inset 0 3px 5px rgba(0,0,0,.72),0 0 7px rgba(231,182,51,.12);
 }
-.stage-results .amt-readout .jp-cell{
-  display:flex; align-items:center; justify-content:center; padding:1px 1px 0;
-  line-height:1; text-align:center; text-shadow:0 0 7px rgba(242,180,49,.52),1px 1px 0 #090b08;
-}
+.stage-results .amt-readout .jp-cell{ display:flex; align-items:center; justify-content:center; padding:1px 1px 0; line-height:1; text-align:center; }
 .stage-instrument .amt-readout{ margin-top:4px; width:fit-content; }
 .stage-instrument .amt-readout .jp-cell{ height:26px; min-width:15px; font-size:12px; }
 .stage-ko-lamps{ display:flex; justify-content:center; gap:6px; margin-top:6px; }
@@ -600,27 +577,14 @@
 .stage-results:not(.wake-instruments) .stage-ko-slot.lit{
   background:var(--pc-lamp-off); box-shadow:0 2px 0 #100807,inset 1px 1px 0 rgba(255,255,255,.12);
 }
-.stage-ko-readout{ margin-top:6px; font-family:var(--font-hdr); font-size:11px; color:#b6e0af; }
+.stage-ko-readout{ margin-top:6px; }
 
-/* Three-slot CRT memory bank. Core performance facts appear first; a
-   reliable contextual page (all-ins/high-water/win-rate) flickers in after
-   the report wakes, using only stats already tracked by the run. */
-.stage-results-recap{
-  flex-shrink:0; display:grid; grid-template-columns:repeat(3,1fr);
-  border:2px solid #090b08; background-color:#152a1e; box-shadow:inset 0 3px 6px rgba(0,0,0,.62);
-}
-.stage-recap-cell{
-  min-width:0; min-height:48px; padding:7px 5px 8px; display:flex; flex-direction:column; align-items:center; justify-content:center;
-  text-align:center; border-right:2px solid #294735;
-}
-.stage-recap-cell:last-child{ border-right:0; }
-.stage-recap-cell .stage-instrument-label{ align-self:center; color:#87a785; line-height:1.15; }
-.stage-recap-value{
-  display:flex; min-height:18px; margin-top:4px; align-items:center; justify-content:center;
-  font-family:var(--font-hdr); font-size:12px; line-height:1; color:#b6e0af;
-  text-shadow:0 0 7px rgba(182,224,175,.5);
-}
-.stage-results-recap.is-switching .stage-recap-cell{ animation:stageStatFlicker 290ms steps(7,end); }
+.stage-results-recap{ flex-shrink:0; display:grid; grid-template-columns:repeat(3,1fr); }
+.stage-recap-cell{ min-width:0; min-height:48px; padding:7px 5px 8px; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; }
+
+.stage-recap-cell .stage-instrument-label{ align-self:center; }
+.stage-recap-value{ display:flex; min-height:18px; margin-top:4px; align-items:center; justify-content:center; }
+
 @keyframes stageStatFlicker{
   0%,100%{ opacity:1; filter:brightness(1); }
   16%{ opacity:.18; filter:brightness(.35); }
@@ -629,42 +593,24 @@
   64%{ opacity:.5; filter:brightness(.8); }
   78%{ opacity:.12; filter:brightness(.4); }
 }
-.stage-recap-lamp{
-  min-height:28px; padding:5px 8px; display:flex; align-items:center; justify-content:center; gap:7px;
-  background:#302518; border:2px solid #16090d;
-}
+.stage-recap-lamp{ min-height:28px; padding:5px 8px; display:flex; align-items:center; justify-content:center; gap:7px; }
 .stage-recap-lamp .pc-lamp{ width:11px; height:11px; }
-.stage-recap-lamp-text{ font-family:var(--font-hdr); font-size:8px; letter-spacing:.08em; color:#f2b431; text-align:center; white-space:nowrap; }
+.stage-recap-lamp-text{ text-align:center; white-space:nowrap; }
 
-/* BEST HAND trophy case — one centred composition: the larger card bank
-   and its result text share a single display rather than reading as two
-   unrelated modules. */
-.stage-trophy{
-  min-height:90px; display:grid; grid-template-columns:minmax(0,1.7fr) minmax(92px,.8fr); grid-template-rows:auto 1fr auto auto;
-  align-items:center; column-gap:8px; padding:9px 12px; color:#b6e0af; background-color:#152a1e; border-color:#090b08;
-}
-.stage-trophy-label{
-  grid-column:1 / -1; align-self:center;
-  font-family:var(--font-hdr); font-size:7px; font-weight:400; letter-spacing:.09em;
-  text-transform:uppercase; color:#87a785;
-}
+.stage-trophy{ min-height:90px; display:grid; grid-template-columns:minmax(0,1.7fr) minmax(92px,.8fr); grid-template-rows:auto 1fr auto auto; align-items:center; column-gap:8px; padding:9px 12px; }
+.stage-trophy-label{ grid-column:1 / -1; align-self:center; }
 .stage-trophy-cards{ grid-column:1; grid-row:2 / 5; display:flex; gap:5px; flex-wrap:nowrap; justify-self:center; justify-content:center; }
 .stage-trophy-cards .card.small{ width:34px; height:50px; border-width:2px; border-radius:3px; box-shadow:0 2px 0 rgba(0,0,0,.45); }
 .stage-trophy-cards .card.small .r{ font-size:11px; top:2px; left:3px; }
 .stage-trophy-cards .card.small .s{ font-size:8px; top:15px; left:3px; }
 .stage-trophy-cards .card.small .pip{ font-size:13px; }
-.stage-trophy-name{ grid-column:2; grid-row:2 / 4; align-self:end; font-family:var(--font-hdr); font-size:14px; line-height:1.18; letter-spacing:.04em; color:#f2b431; text-align:center; }
-.stage-trophy-desc{ grid-column:2; grid-row:4; align-self:start; margin-top:3px; font-size:10px; color:#b6e0af; text-align:center; }
-.stage-trophy-empty{ grid-column:1 / -1; font-family:var(--font-hdr); font-size:8px; color:#87a785; letter-spacing:.04em; text-align:center; }
-.stage-run-progress{
-  flex-shrink:0; min-height:34px; padding:6px 8px; display:grid; grid-template-columns:auto 1fr auto; align-items:center; gap:8px;
-  color:#b6e0af; background-color:#152a1e; border-color:#090b08;
-}
-.stage-run-progress span,.stage-run-progress em{
-  font-family:var(--font-hdr); font-size:6px; font-style:normal; letter-spacing:.06em; color:#87a785;
-}
-.stage-run-progress strong{ justify-self:center; font-family:var(--font-hdr); font-size:11px; color:#b6e0af; }
-.stage-run-progress em{ justify-self:end; color:#f2b431; }
+.stage-trophy-name{ grid-column:2; grid-row:2 / 4; align-self:end; text-align:center; }
+.stage-trophy-desc{ grid-column:2; grid-row:4; align-self:start; margin-top:3px; text-align:center; }
+.stage-trophy-empty{ grid-column:1 / -1; text-align:center; }
+.stage-run-progress{ flex-shrink:0; min-height:34px; padding:6px 8px; display:grid; grid-template-columns:auto 1fr auto; align-items:center; gap:8px; }
+
+.stage-run-progress strong{ justify-self:center; }
+.stage-run-progress em{ justify-self:end; }
 
 /* The failed run drains the table/action machinery only. The report is a
    sibling, so it stays fully saturated above the recognisable dead scene. */
@@ -1517,7 +1463,7 @@
   .showdown-inspection-lane{ width:266px; top:42%; }
   .showdown-rail-destinations{ grid-template-columns:repeat(5,42px); gap:4px; }
   .showdown-rail-card,.showdown-rail-face{ width:42px!important; height:60px!important; }
-  #table-screen #hud-mid .banner:has(.crt-line-primary){ font-size:4.75px; letter-spacing:-.02em; }
+  
 }
 @media (orientation:portrait) and (max-height:720px){
   .showdown-inspection-lane{ top:41%; }
