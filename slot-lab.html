@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#140709">
+  <meta name="format-detection" content="telephone=no">
+  <link rel="icon" href="data:,">
+  <title>Poker Faces — Ticket Slot Lab</title>
+  <link rel="stylesheet" href="css/intro-lab.css?v=3">
+  <script defer src="js/slot-lab.js?v=1"></script>
+</head>
+<body class="il-body">
+  <!-- The real game, sandboxed: in-memory storage, no service worker.
+       Nothing done in here can touch a real save. -->
+  <div class="il-stage">
+    <iframe class="il-frame" id="il-frame" title="Poker Faces (sandboxed copy)"></iframe>
+  </div>
+
+  <button class="il-tab" id="il-tab" type="button" aria-expanded="true" aria-controls="il-panel">SLOT</button>
+
+  <aside class="il-panel" id="il-panel" aria-label="Ticket slot lab controls">
+    <header class="il-head">
+      <strong>TICKET SLOT</strong>
+      <span id="il-status">LOADING…</span>
+    </header>
+
+    <section class="il-group">
+      <div class="il-row"><span class="il-label">OPTION</span>
+        <div class="il-seg" data-key="slot">
+          <button data-v="a">A</button><button data-v="b">B</button><button data-v="c">C</button><button data-v="d">D</button><button data-v="live">LIVE</button>
+        </div></div>
+      <p class="il-note" id="sl-desc"></p>
+    </section>
+
+    <section class="il-group" aria-label="Try it">
+      <div class="il-runs">
+        <button type="button" class="is-wide" data-run="buy">BUY IN — WATCH THE FEED ▸</button>
+        <button type="button" data-run="hub">BACK TO HUB</button>
+        <button type="button" data-run="reset">RESET</button>
+      </div>
+      <p class="il-note">Swipe the tickets in the game to see the lamps change: blinking amber = can buy, green = paid, dark = locked or can't afford. After a buy-in, BACK TO HUB shows the paid state.</p>
+    </section>
+
+    <section class="il-group">
+      <div class="il-row"><span class="il-label">THEME</span>
+        <div class="il-seg" data-key="theme"><button data-v="emerald">EMR</button><button data-v="midnight">MID</button><button data-v="burgundy">BRG</button><button data-v="slate">SLT</button></div></div>
+      <div class="il-row"><span class="il-label">FEED SPEED</span>
+        <div class="il-seg" data-key="speed"><button data-v="1">1×</button><button data-v="0.5">½×</button><button data-v="0.25">¼×</button></div></div>
+      <div class="il-row"><span class="il-label">SOUND</span>
+        <div class="il-seg" data-key="sound"><button data-v="on">ON</button><button data-v="off">OFF</button></div></div>
+    </section>
+
+    <footer class="il-foot">
+      <span>Sandboxed · no saves touched</span>
+    </footer>
+  </aside>
+</body>
+</html>

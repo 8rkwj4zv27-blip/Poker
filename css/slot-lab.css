@@ -1,0 +1,119 @@
+/* ============================================================
+   TICKET SLOT LAB — the four candidate slots.
+
+   Injected into the sandboxed game by js/slot-lab.js, after every
+   production stylesheet. Only active when #career-hub has data-slot set,
+   so the production slot is what shows with the lab switched off.
+
+   Rule for every option: built ONLY from parts the machine already has.
+   No new colours, no gradients, no rounded screws, no clip-path shapes.
+     A CRADLE  the cream casing the main button sits in (.pc-primary-cradle)
+               with the black cartridge hole (.pc-slot-aperture) as the
+               mouth and two standard .pc-lamp squares
+     B READOUT the dark-plastic top-bar material (.home-topbar) with the
+               mouth over a small .pc-display readout that says what the
+               slot is doing, in the DEALER READY voice
+     C FLUSH   no plate at all: a .pc-recess strip cut into the bottom
+               rail of the reader, two lamps, nothing else
+     D DOOR    A, plus the same dark door the home Career button's slot
+               drops (.pc-slot-door): shut until you buy in, opens for the
+               ticket, drops shut once it is accepted
+   ============================================================ */
+
+/* ---- Reset the production slot when an option is on ---- */
+#career-hub[data-slot] .ch2-intake{
+  height:auto; margin:-18px 30px 0; padding:0; border:0; border-radius:0;
+  background:none; box-shadow:none; display:grid; align-items:center;
+}
+#career-hub[data-slot] .ch2-intake-mouth{
+  position:relative; grid-column:2; width:auto; height:16px; overflow:hidden; border-radius:0;
+  /* the cartridge hole: exactly .pc-slot-aperture::before */
+  background:#080A07; border:3px solid #070504;
+  box-shadow:inset 0 6px 0 #020302,inset 4px 0 0 rgba(0,0,0,.5),inset -4px 0 0 rgba(0,0,0,.5);
+}
+#career-hub[data-slot] .sl-label{ grid-column:1 / -1; justify-self:center; }
+
+/* ---- Lamps: standard .pc-lamp, driven by state ---- */
+#career-hub[data-slot][data-entry="available"] .sl-lamp{ animation:slInvite 1.4s steps(1,end) infinite; }
+#career-hub[data-slot][data-entry="available"] .sl-lamp + .ch2-intake-mouth + .sl-lamp{ animation-delay:.12s; }
+#career-hub[data-slot][data-entry="active"] .sl-lamp,
+#career-hub[data-slot].tf-accepted .sl-lamp{
+  animation:none; background:var(--pc-lamp-green);
+  box-shadow:0 2px 0 #100807,0 0 7px rgba(117,200,155,.3),inset 1px 1px 0 #C9F5DD;
+}
+#career-hub[data-slot].tf-feeding .sl-lamp{ animation:slFeed 180ms steps(1,end) infinite; }
+#career-hub[data-slot].tf-shredding .sl-lamp{ animation:slFeed 70ms steps(1,end) infinite; }
+@keyframes slInvite{
+  0%,55%{ background:var(--pc-lamp-amber); box-shadow:0 2px 0 #100807,0 0 7px rgba(242,180,49,.34),inset 1px 1px 0 #FFE49B; }
+  56%,100%{ background:var(--pc-lamp-off); box-shadow:0 2px 0 #100807,inset 1px 1px 0 rgba(255,255,255,.28); }
+}
+@keyframes slFeed{
+  0%,50%{ background:var(--pc-lamp-amber); box-shadow:0 2px 0 #100807,0 0 7px rgba(242,180,49,.34),inset 1px 1px 0 #FFE49B; }
+  51%,100%{ background:var(--pc-lamp-off); box-shadow:0 2px 0 #100807,inset 1px 1px 0 rgba(255,255,255,.28); }
+}
+
+/* ---- A. CRADLE ---- */
+#career-hub[data-slot="a"] .ch2-intake,
+#career-hub[data-slot="d"] .ch2-intake{
+  grid-template-columns:9px minmax(0,1fr) 9px; grid-template-rows:16px auto; column-gap:12px; row-gap:6px;
+  padding:9px 14px 7px;
+  background:#B4A46F; border:4px solid #120907;
+  box-shadow:inset 4px 4px 0 #EEDDA5,inset -4px -3px 0 #756744,0 3px 0 #2A190F;
+}
+
+/* ---- B. READOUT ---- */
+#career-hub[data-slot="b"] .ch2-intake{
+  grid-template-columns:minmax(0,1fr); grid-template-rows:16px 22px; row-gap:6px;
+  padding:7px 12px 8px;
+  background:var(--pc-plastic-dark); border:3px solid var(--pc-edge-lo);
+  box-shadow:inset 2px 2px 0 var(--pc-plastic-dark-hi),inset -2px -2px 0 var(--pc-plastic-dark-lo),0 3px 0 #17090D;
+}
+#career-hub[data-slot="b"] .ch2-intake-mouth{ grid-column:1; }
+#career-hub[data-slot="b"] .sl-readout{
+  grid-column:1; justify-self:center; min-width:62%; height:22px; padding:0 10px;
+  display:flex; align-items:center; justify-content:center; gap:8px;
+  color:var(--pc-display-ink); font-family:var(--font-hdr); font-size:6px; letter-spacing:.08em; line-height:1;
+  text-shadow:0 0 6px currentColor,0 0 14px color-mix(in srgb,currentColor 34%,transparent);
+}
+
+/* ---- C. FLUSH ---- */
+#career-hub[data-slot="c"] .ch2-intake{
+  margin:-24px 20px 0;
+  grid-template-columns:9px minmax(0,1fr) 9px; column-gap:10px;
+  padding:6px 10px;
+  background:var(--pc-recess); border:3px solid var(--pc-edge-lo);
+  box-shadow:inset 0 5px 0 var(--pc-recess-deep),inset 4px 0 0 rgba(0,0,0,.38),inset -2px -2px 0 rgba(255,255,255,.07),0 3px 0 var(--pc-edge-lo);
+}
+
+/* ---- D. DOOR (A's plate + the Career slot's door) ---- */
+#career-hub[data-slot="d"] .sl-door{
+  position:absolute; inset:0; z-index:2;
+  /* exactly .pc-slot-door */
+  background:linear-gradient(180deg,#555440 0 3px,#34352A 3px calc(100% - 3px),#202118 calc(100% - 3px) 100%);
+  box-shadow:inset 2px 2px 0 #5D5D48,inset -2px -2px 0 #15160F;
+  transform:translateY(0);
+}
+#career-hub[data-slot="d"][data-entry="active"] .sl-door,
+#career-hub[data-slot="d"].tf-feeding .sl-door{ transform:translateY(-110%); transition:transform 120ms steps(3,end); }
+#career-hub[data-slot="d"].tf-accepted .sl-door{ animation:slDoorDrop 420ms steps(7,end) both; }
+@keyframes slDoorDrop{
+  0%{ transform:translateY(-110%); }
+  70%{ transform:translateY(2px); }
+  85%{ transform:translateY(-2px); }
+  100%{ transform:translateY(0); }
+}
+
+/* The feed's own mouth lighting (css/ticket-feed.css values), restated so
+   the options above don't mask it. */
+#career-hub[data-slot].tf-feeding .ch2-intake-mouth{
+  background:linear-gradient(180deg,#3a2a08 0,#120c02 70%);
+  box-shadow:inset 0 3px 5px #000,0 0 0 1px rgba(242,180,49,.55),0 0 10px rgba(242,180,49,.45);
+}
+#career-hub[data-slot].tf-shredding .ch2-intake-mouth{
+  background:linear-gradient(180deg,#5a2a08 0,#1a0a02 70%);
+  box-shadow:inset 0 3px 5px #000,0 0 0 1px rgba(242,120,49,.7),0 0 12px rgba(242,120,49,.55);
+}
+#career-hub[data-slot].tf-accepted .ch2-intake-mouth{
+  background:linear-gradient(180deg,#123a22 0,#04120a 70%);
+  box-shadow:inset 0 3px 5px #000,0 0 0 1px rgba(117,200,155,.7),0 0 14px rgba(117,200,155,.6);
+}

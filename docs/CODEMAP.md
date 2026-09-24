@@ -190,7 +190,7 @@ there manually.
 Files matching `*-lab.html`, `*-lab.js`, `*-lab.css` (`career-lab`,
 `career-hub-v2-lab`, `ticket-lab`, `card-flight-options`, `card-turn-lab`,
 `chip-motion-lab`, `design-lab`, `result-stage-lab`, `showdown-rail-lab`,
-`wheel-v2-lab`, `intro-lab`, `boot-lab`)
+`wheel-v2-lab`, `intro-lab`, `boot-lab`, `slot-lab`)
 are **isolated visual references and prototyping sandboxes**. Several are
 committed permanently as durable references even after their feature
 shipped. Rules:
