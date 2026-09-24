@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#140709">
+  <meta name="format-detection" content="telephone=no">
+  <link rel="icon" href="data:,">
+  <title>Poker Faces — Dashboard V2 Lab</title>
+  <link rel="stylesheet" href="css/dashboard-lab.css?v=1">
+  <script defer src="js/dashboard-lab.js?v=1"></script>
+</head>
+<body class="dl-body">
+  <!-- The real game, sandboxed: in-memory storage, no service worker.
+       css/dashboard-v2.css is injected into it; the switches below set
+       attributes on the game's <html>. Nothing here touches a real save. -->
+  <div class="dl-stage">
+    <iframe class="dl-frame" id="dl-frame" title="Poker Faces (sandboxed copy)"></iframe>
+  </div>
+
+  <button class="dl-tab" id="dl-tab" type="button" aria-expanded="true" aria-controls="dl-panel">DASH V2</button>
+
+  <aside class="dl-panel" id="dl-panel" aria-label="Dashboard V2 lab controls">
+    <header class="dl-head">
+      <strong>DASHBOARD V2</strong>
+      <span id="dl-status">LOADING…</span>
+    </header>
+
+    <section class="dl-group" aria-label="Direction">
+      <div class="dl-label">DIRECTION</div>
+      <div class="dl-dirs" id="dl-dirs">
+        <button type="button" data-dir="v1">V1<small>as live</small></button>
+        <button type="button" data-dir="a">A<small>Tidy</small></button>
+        <button type="button" data-dir="b">B<small>Cabinet</small></button>
+        <button type="button" data-dir="c">C<small>Instrument</small></button>
+      </div>
+      <button type="button" class="dl-compare" id="dl-compare">HOLD TO SEE V1</button>
+    </section>
+
+    <section class="dl-group" aria-label="Table state">
+      <div class="dl-label">PUT THE TABLE IN</div>
+      <div class="dl-runs">
+        <button type="button" data-run="turn">YOUR TURN</button>
+        <button type="button" data-run="raise">RAISE OPEN</button>
+        <button type="button" data-run="waiting">WAITING</button>
+        <button type="button" data-run="folded">FOLDED</button>
+        <button type="button" data-run="allin">ALL-IN</button>
+        <button type="button" data-run="won">WIN A POT</button>
+      </div>
+      <p class="dl-note">Each button plays the real game to that moment. The game stays playable: tap it to carry on.</p>
+    </section>
+
+    <section class="dl-group" aria-label="Parts" id="dl-parts">
+      <div class="dl-label">PART BY PART <span class="dl-dim">· mix directions freely</span></div>
+      <!-- Rows are built from PARTS in js/dashboard-lab.js. -->
+    </section>
+
+    <section class="dl-group" aria-label="View">
+      <div class="dl-row"><span class="dl-label">THEME</span>
+        <div class="dl-seg" data-view="theme">
+          <button data-v="emerald">EMER</button><button data-v="midnight">MIDN</button><button data-v="burgundy">BURG</button><button data-v="slate">SLATE</button>
+        </div></div>
+      <div class="dl-row dl-wide-only"><span class="dl-label">PHONE</span>
+        <div class="dl-seg" data-view="size">
+          <button data-v="320x700">320</button><button data-v="393x852">393</button><button data-v="430x932">430</button>
+        </div></div>
+      <div class="dl-row"><span class="dl-label">MOTION</span>
+        <div class="dl-seg" data-view="motion"><button data-v="on">ON</button><button data-v="off">REDUCED</button></div></div>
+      <div class="dl-row"><span class="dl-label">SOUND</span>
+        <div class="dl-seg" data-view="sound"><button data-v="off">OFF</button><button data-v="on">ON</button></div></div>
+    </section>
+
+    <footer class="dl-foot">
+      <button type="button" id="dl-reset">NEW TABLE</button>
+      <span>Sandboxed · no saves touched · choices live in the page address</span>
+    </footer>
+  </aside>
+</body>
+</html>

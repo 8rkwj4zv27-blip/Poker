@@ -1,0 +1,490 @@
+/* ============================================================
+   DASHBOARD V2 — candidate finishes for the player's dashboard
+   (the bottom HUD: chip bank, hole-card slot, readouts, right-hand
+   instruments, the FOLD/CHECK/RAISE bay and the raise drawer).
+
+   NOT LOADED BY THE GAME. dashboard-lab.html injects this file into a
+   sandboxed copy of the real game and switches options with attributes
+   on <html>:
+
+     data-dv-case    tidy | cabinet | bolted     housing and bays
+     data-dv-bank    tray | vault                chip bank
+     data-dv-slot    deep | clamp                hole-card slot
+     data-dv-read    plate                       hand + turn screens
+     data-dv-stack   plate | window              stack counter
+     data-dv-right   lamps | grille              right-hand column
+     data-dv-bay     cradle | hinge              action-button bay
+     data-dv-raise   drawer | tiles              raise drawer
+     data-dv-turn    edge | pilots               "your turn" signal
+
+   With no attribute set, nothing here applies: the lab's V1 is the real
+   V1. Rules are CSS only, over the existing markup; the layout (three
+   bays, card slot, three buttons) is unchanged, as agreed.
+
+   Owner rules this respects (docs/ui/PATTERN_BOOK.md, VISUAL_SYSTEM.md):
+   - CRT glass, ink, flicker and blink are never restyled here; only the
+     housings around the screens change.
+   - FOLD/CHECK/CALL/RAISE keep their locked finish; only their surround.
+   - Printed text on physical parts never glows.
+   - Cards, chip sprites and faces are untouched.
+   Once options are chosen, the chosen rules move into production (and
+   any new part into the Pattern Book first); this file stays the Lab's.
+   ============================================================ */
+
+:root{
+  --dv-screw-hi:color-mix(in srgb,var(--theme-case-hi, #69A880) 70%,white 12%);
+  --dv-ink:#0B0D0A;
+}
+
+/* ============================================================
+   1. CASE — the housing and its two side bays
+   ============================================================ */
+
+/* ---- tidy: same materials, one consistent construction ----
+   Both side bays become the same recessed well (the right one was a
+   lighter checker plate with a dark strip along its top), with an even
+   bevel; the seam to the button bay becomes a proper stitched seam. */
+html[data-dv-case] #hud-left,
+html[data-dv-case] #hud-right{
+  border:2px solid var(--dv-ink); border-radius:2px;
+  background:var(--machine-recess);
+  box-shadow:
+    inset 0 3px 0 rgba(0,0,0,.5),
+    inset 2px 0 0 rgba(0,0,0,.22),
+    inset 0 -2px 0 rgba(255,255,255,.06),
+    0 0 0 1px color-mix(in srgb,var(--theme-case-hi) 60%,transparent),
+    0 2px 0 rgba(0,0,0,.4);
+}
+html[data-dv-case] #hud-frame{
+  border:3px solid var(--theme-case-raised); border-top-color:var(--theme-case-hi);
+  border-bottom-color:color-mix(in srgb,var(--theme-case-raised) 58%,black);
+}
+html[data-dv-case] .action-console::before{
+  left:10px; right:10px; top:-3px; height:3px; border-radius:0;
+  background:repeating-linear-gradient(90deg,color-mix(in srgb,var(--machine-case-lo) 80%,black) 0 8px,transparent 8px 12px);
+  box-shadow:none;
+}
+
+/* ---- cabinet: the title cabinet's construction ----
+   Leather-textured case with the same bevel as the Home housing; each
+   side bay is seated in a raised theme-coloured frame, like the Home
+   readout row and cast drawer. */
+html[data-dv-case="cabinet"] #hud-frame,
+html[data-dv-case="bolted"] #hud-frame,
+html[data-dv-case="cabinet"] .action-console,
+html[data-dv-case="bolted"] .action-console{
+  background:
+    repeating-conic-gradient(rgba(255,255,255,.035) 0 25%,transparent 0 50%) 0 0/6px 6px,
+    color-mix(in srgb,var(--machine-case) 70%,var(--pc-leather, var(--machine-case)) 30%);
+}
+html[data-dv-case="cabinet"] #hud-frame,
+html[data-dv-case="bolted"] #hud-frame{
+  border:2px solid var(--dv-ink);
+  box-shadow:
+    inset 3px 3px 0 color-mix(in srgb,var(--theme-case-hi) 70%,transparent),
+    inset -3px -3px 0 color-mix(in srgb,var(--theme-case-raised) 45%,black),
+    0 5px 0 var(--machine-case-lo),0 9px 0 rgba(0,0,0,.5);
+}
+html[data-dv-case="cabinet"] .action-console,
+html[data-dv-case="bolted"] .action-console{
+  border:2px solid var(--dv-ink); border-top:0;
+  box-shadow:
+    inset 3px 0 0 color-mix(in srgb,var(--theme-case-hi) 70%,transparent),
+    inset -3px -3px 0 color-mix(in srgb,var(--theme-case-raised) 45%,black),
+    0 5px 0 var(--machine-case-lo),0 9px 0 rgba(0,0,0,.48);
+}
+html[data-dv-case="cabinet"] #hud-left,
+html[data-dv-case="cabinet"] #hud-right,
+html[data-dv-case="bolted"] #hud-left,
+html[data-dv-case="bolted"] #hud-right{
+  box-shadow:
+    inset 0 4px 0 rgba(0,0,0,.55),
+    inset 2px 0 0 rgba(0,0,0,.25),
+    inset 0 -2px 0 rgba(255,255,255,.06),
+    0 0 0 2px var(--theme-case-raised),
+    -1px -1px 0 2px var(--theme-case-hi),
+    1px 1px 0 2px color-mix(in srgb,var(--theme-case-raised) 50%,black);
+}
+
+/* ---- bolted: cabinet, plus rivets in each bay's corners ---- */
+html[data-dv-case="bolted"] #hud-right,
+html[data-dv-case="bolted"] #hud-left{
+  --dv-rivet:
+    linear-gradient(var(--dv-screw-hi) 0 0) top 3px left 3px/3px 3px no-repeat,
+    linear-gradient(var(--dv-screw-hi) 0 0) top 3px right 3px/3px 3px no-repeat,
+    linear-gradient(rgba(0,0,0,.8) 0 0) top 4px left 4px/3px 3px no-repeat,
+    linear-gradient(rgba(0,0,0,.8) 0 0) top 4px right 2px/3px 3px no-repeat;
+}
+html[data-dv-case="bolted"] #hud-right{ background:var(--dv-rivet),var(--machine-recess); }
+html[data-dv-case="bolted"]:not([data-dv-bank]) #hud-left{ background:var(--dv-rivet),var(--machine-recess); }
+html[data-dv-case="bolted"] .action-console{
+  background:
+    linear-gradient(var(--dv-screw-hi) 0 0) bottom 5px left 5px/4px 4px no-repeat,
+    linear-gradient(var(--dv-screw-hi) 0 0) bottom 5px right 5px/4px 4px no-repeat,
+    linear-gradient(rgba(0,0,0,.8) 0 0) bottom 4px left 6px/4px 4px no-repeat,
+    linear-gradient(rgba(0,0,0,.8) 0 0) bottom 4px right 4px/4px 4px no-repeat,
+    repeating-conic-gradient(rgba(255,255,255,.035) 0 25%,transparent 0 50%) 0 0/6px 6px,
+    color-mix(in srgb,var(--machine-case) 70%,var(--pc-leather, var(--machine-case)) 30%);
+}
+
+
+/* ============================================================
+   2. BANK — the chip bay on the left
+   Backgrounds only: the bay's box, and so the chip physics measured
+   from it, is unchanged.
+   ============================================================ */
+html[data-dv-bank] #hud-tower{ z-index:1; }
+html[data-dv-bank] #hud-left::before{
+  content:'BANK'; position:absolute; z-index:0; left:0; right:0; top:7px;
+  text-align:center; font-family:var(--font-hdr); font-size:6px; letter-spacing:.12em;
+  color:var(--ink-faint); text-shadow:none; pointer-events:none;
+}
+
+/* ---- tray: felt-lined tray, the chips stand on a lit floor ---- */
+html[data-dv-bank="tray"] #hud-left{
+  background:
+    linear-gradient(rgba(0,0,0,.62),transparent 34%),
+    linear-gradient(transparent calc(100% - 9px),color-mix(in srgb,var(--theme-case-hi) 34%,transparent) calc(100% - 9px) calc(100% - 8px),rgba(0,0,0,.34) calc(100% - 8px)),
+    repeating-conic-gradient(color-mix(in srgb,var(--felt-1) 62%,black) 0 25%,color-mix(in srgb,var(--felt-2) 62%,black) 0 50%) 0 0/6px 6px;
+}
+html[data-dv-case="bolted"][data-dv-bank="tray"] #hud-left{
+  background:
+    var(--dv-rivet),
+    linear-gradient(rgba(0,0,0,.62),transparent 34%),
+    linear-gradient(transparent calc(100% - 9px),color-mix(in srgb,var(--theme-case-hi) 34%,transparent) calc(100% - 9px) calc(100% - 8px),rgba(0,0,0,.34) calc(100% - 8px)),
+    repeating-conic-gradient(color-mix(in srgb,var(--felt-1) 62%,black) 0 25%,color-mix(in srgb,var(--felt-2) 62%,black) 0 50%) 0 0/6px 6px;
+}
+
+/* ---- vault: dark glass front, a gauge scale and a cream name plate ---- */
+html[data-dv-bank="vault"] #hud-left{
+  background:
+    linear-gradient(115deg,transparent 0 30%,rgba(255,255,255,.045) 30% 38%,transparent 38% 44%,rgba(255,255,255,.03) 44% 47%,transparent 47%),
+    repeating-linear-gradient(180deg,transparent 0 11px,color-mix(in srgb,var(--theme-case-hi) 45%,transparent) 11px 12px) right 3px top 20px/5px calc(100% - 26px) no-repeat,
+    repeating-linear-gradient(180deg,transparent 0 5px,color-mix(in srgb,var(--theme-case-hi) 22%,transparent) 5px 6px) right 3px top 20px/3px calc(100% - 26px) no-repeat,
+    linear-gradient(180deg,#05090A,#0A1113 70%,#0D1618);
+}
+html[data-dv-bank="vault"] #hud-left::before{
+  left:50%; right:auto; top:5px; transform:translateX(-50%);
+  padding:3px 5px 2px; border:2px solid var(--dv-ink); border-radius:2px;
+  background:#D0C28F; color:#30270F; letter-spacing:.1em;
+  box-shadow:0 2px 0 var(--dv-ink),inset 1px 1px 0 #FFF0BC,inset -1px -1px 0 #796B43;
+}
+
+
+/* ============================================================
+   3. SLOT — where the hole cards stand
+   .seat.you::before is the slot, ::after the lip in front of the cards.
+   ============================================================ */
+
+/* ---- deep: a darker, deeper slot and a bevelled lip with a finger notch ---- */
+html[data-dv-slot="deep"] .seat.you::before{
+  height:16px; border-color:var(--dv-ink);
+  background:linear-gradient(#000,color-mix(in srgb,var(--machine-recess) 60%,black));
+  box-shadow:inset 0 5px 0 rgba(0,0,0,.8),0 1px 0 var(--theme-case-hi),0 -1px 0 color-mix(in srgb,var(--theme-case-raised) 50%,black);
+}
+html[data-dv-slot="deep"] .seat.you::after{
+  height:10px; border:2px solid var(--dv-ink); border-radius:2px;
+  background:
+    linear-gradient(var(--dv-ink) 0 0) center top/22px 3px no-repeat,
+    linear-gradient(180deg,var(--theme-case-hi) 0 2px,var(--theme-case-raised) 2px calc(100% - 2px),color-mix(in srgb,var(--theme-case-raised) 50%,black) calc(100% - 2px));
+  box-shadow:0 3px 0 rgba(0,0,0,.55);
+}
+
+/* ---- clamp: a brass rail holds the cards, riveted at both ends ---- */
+html[data-dv-slot="clamp"] .seat.you::before{
+  border-color:var(--dv-ink);
+  background:color-mix(in srgb,var(--machine-recess) 55%,black);
+  box-shadow:inset 0 6px 0 rgba(0,0,0,.8),0 1px 0 var(--theme-case-hi);
+}
+html[data-dv-slot="clamp"] .seat.you::after{
+  height:10px; border:2px solid var(--dv-ink); border-radius:2px;
+  background:
+    linear-gradient(#FFF0BC 0 0) left 3px center/2px 2px no-repeat,
+    linear-gradient(#FFF0BC 0 0) right 3px center/2px 2px no-repeat,
+    linear-gradient(#5A3F0C 0 0) left 2px center/4px 4px no-repeat,
+    linear-gradient(#5A3F0C 0 0) right 2px center/4px 4px no-repeat,
+    linear-gradient(180deg,#F2D27A 0 2px,#C9962E 2px 6px,#8A6418 6px);
+  box-shadow:0 3px 0 rgba(0,0,0,.55);
+}
+
+
+/* ============================================================
+   4. READ — hand name and turn screens
+   plate: both screens seated in one raised plate. Drawn as an outline
+   around each screen (the glass's own border and shadow stay as they
+   are) so the two outlines meet into one plate across the gap.
+   ============================================================ */
+html[data-dv-read="plate"] #hud-status-normal{ gap:5px; padding:0 3px; box-sizing:border-box; }
+html[data-dv-read="plate"] #hand-strength,
+html[data-dv-read="plate"] #banner{
+  outline:3px solid color-mix(in srgb,var(--theme-case-raised) 85%,black);
+  outline-offset:0;
+}
+html[data-dv-read="plate"] #hand-strength{ margin-top:4px; }
+
+
+/* ============================================================
+   5. STACK — the player's stack counter
+   ============================================================ */
+
+/* ---- plate: gold lives only in the digits; STACK is a printed tab
+   fixed to the top of the counter's housing ---- */
+html[data-dv-stack] .stack-readout{ gap:0; margin-top:0; }
+html[data-dv-stack] .stack-readout .instrument-label{
+  position:relative; z-index:1; margin-bottom:-2px; padding:2px 6px 1px;
+  border:2px solid var(--dv-ink); border-bottom:0; border-radius:2px 2px 0 0;
+  background:var(--theme-case-raised); color:color-mix(in srgb,var(--ink) 88%,transparent);
+  box-shadow:inset 1px 1px 0 var(--theme-case-hi);
+  text-shadow:none; letter-spacing:.12em;
+}
+html[data-dv-stack] #jackpot{
+  border:2px solid var(--dv-ink); border-radius:2px;
+  background:linear-gradient(180deg,#05090A,#0B1214);
+  box-shadow:
+    0 0 0 2px var(--theme-case-raised),
+    0 2px 0 2px color-mix(in srgb,var(--theme-case-raised) 50%,black),
+    inset 0 3px 0 rgba(0,0,0,.6);
+}
+html[data-dv-stack] #jackpot .jp-cell{ border-color:rgba(255,255,255,.08); background:#030607; }
+
+/* ---- window: the plate, plus a screwed metal surround, like a
+   meter window on a real machine ---- */
+html[data-dv-stack="window"] #jackpot{
+  box-shadow:
+    0 0 0 1px var(--dv-ink),
+    0 0 0 4px var(--theme-case-raised),
+    -1px -1px 0 4px var(--theme-case-hi),
+    1px 1px 0 4px color-mix(in srgb,var(--theme-case-raised) 45%,black),
+    inset 0 3px 0 rgba(0,0,0,.6);
+  width:calc(100% - 8px);
+}
+html[data-dv-stack="window"] #jackpot .jp-cell{ height:22px; }
+html[data-dv-stack="window"] .stack-readout .instrument-label{ margin-bottom:2px; }
+
+
+/* ============================================================
+   6. RIGHT — blind lamps, BET THIS HAND, speaker
+   ============================================================ */
+
+/* ---- lamps: SB/BB become real pilot lamps (the Home amber lamp),
+   the printed label stops glowing, the column spaces evenly ---- */
+html[data-dv-right] #hud-right{ justify-content:space-between; padding:7px 4px 6px; }
+html[data-dv-right] .blind-lamps{
+  gap:10px; min-height:0; padding:2px 0 7px;
+  border-bottom:1px solid color-mix(in srgb,var(--theme-case-hi) 22%,transparent);
+}
+html[data-dv-right] .blind-indicator{
+  width:auto; height:auto; overflow:visible; flex-direction:column; gap:4px;
+  border:0; background:none; box-shadow:none;
+  color:color-mix(in srgb,var(--ink-faint) 80%,transparent); font-size:6px; letter-spacing:.1em; text-shadow:none;
+}
+html[data-dv-right] .blind-indicator::before{
+  content:''; position:static; display:block; width:12px; height:12px; inset:auto;
+  border:2px solid var(--dv-ink); border-radius:2px;
+  background:var(--pc-lamp-off, #493C24);
+  box-shadow:0 2px 0 rgba(0,0,0,.6),inset 2px 2px 0 rgba(255,255,255,.14),inset -2px -2px 0 rgba(0,0,0,.35);
+}
+html[data-dv-right] .blind-indicator.is-on{ color:var(--ink); background:none; box-shadow:none; text-shadow:none; }
+html[data-dv-right] .blind-indicator.is-on::before{
+  background:var(--pc-lamp-amber, #F2B431);
+  box-shadow:0 2px 0 rgba(0,0,0,.6),inset 2px 2px 0 var(--pc-lamp-amber-hi, #FFE49B),inset -2px -2px 0 rgba(120,70,0,.4),0 0 8px rgba(242,180,49,.5);
+}
+html[data-dv-right] #hud-right .bet-this-hand{ min-height:0; gap:5px; }
+html[data-dv-right] .bet-this-hand .instrument-label{
+  color:var(--ink-faint); text-shadow:none; letter-spacing:.1em; line-height:1.6;
+}
+html[data-dv-right] .hud-speaker{ margin-top:2px; }
+
+/* ---- grille: the lamps, plus a full-width slotted grille across
+   the foot of the column instead of the small dotted square ---- */
+html[data-dv-right="grille"] .hud-speaker{
+  width:100%; height:22px; padding:0; display:block;
+  border:2px solid var(--dv-ink); border-radius:2px;
+  background:
+    repeating-linear-gradient(180deg,#040606 0 2px,color-mix(in srgb,var(--theme-case-raised) 55%,black) 2px 4px);
+  box-shadow:inset 0 2px 0 rgba(0,0,0,.6),0 1px 0 color-mix(in srgb,var(--theme-case-hi) 35%,transparent);
+}
+html[data-dv-right="grille"] .hud-speaker i{ display:none; }
+
+
+/* ============================================================
+   7. BAY — where FOLD / CHECK / RAISE sit
+   The buttons themselves are the locked family and are not restyled.
+   ============================================================ */
+
+/* ---- cradle: the three keys sit down in one recessed cradle, like the
+   Home Career key ---- */
+html[data-dv-bay] .action-console{ padding:4px 5px 5px; }
+html[data-dv-bay] .console-flip{
+  padding:3px 4px 2px;
+  background:var(--machine-recess);
+  border:2px solid var(--dv-ink); border-radius:2px;
+  box-shadow:
+    inset 0 4px 0 rgba(0,0,0,.55),
+    inset 0 -1px 0 rgba(255,255,255,.06),
+    0 0 0 2px var(--theme-case-raised),
+    -1px -1px 0 2px var(--theme-case-hi),
+    1px 1px 0 2px color-mix(in srgb,var(--theme-case-raised) 50%,black);
+}
+html[data-dv-bay] .actions-row{ gap:6px; }
+
+/* ---- hinge: the cradle, plus a riveted hinge where the dashboard
+   meets the button bay ---- */
+html[data-dv-bay="hinge"] .action-console::before{
+  left:22px; right:22px; top:-5px; height:6px; z-index:3; border:2px solid var(--dv-ink); border-radius:2px;
+  background:
+    repeating-linear-gradient(90deg,var(--theme-case-hi) 0 1px,var(--theme-case-raised) 1px 16px,color-mix(in srgb,var(--theme-case-raised) 50%,black) 16px 18px,var(--dv-ink) 18px 20px);
+  box-shadow:0 2px 0 rgba(0,0,0,.5);
+}
+
+
+/* ============================================================
+   8. RAISE — the raise drawer
+   Same size and position (it has to cover the dashboard: it is 134px
+   tall and the stack counter sits 45px above the buttons).
+   ============================================================ */
+
+/* ---- drawer: the drawer is built like the cabinet: bevelled case,
+   printed title, cream keys with a lit amber choice, and a proper
+   fader (recessed slot with detents, knurled cap with an index line) ---- */
+html[data-dv-raise] .raise-panel{
+  border:2px solid var(--dv-ink); border-radius:3px;
+  background:
+    repeating-conic-gradient(rgba(255,255,255,.03) 0 25%,transparent 0 50%) 0 0/6px 6px,
+    var(--machine-case);
+  box-shadow:
+    inset 3px 3px 0 color-mix(in srgb,var(--theme-case-hi) 60%,transparent),
+    inset -3px -3px 0 color-mix(in srgb,var(--theme-case-raised) 45%,black),
+    0 4px 0 var(--machine-case-lo),0 7px 0 rgba(0,0,0,.4);
+  outline:2px solid var(--theme-rim); outline-offset:1px;
+  padding:9px 10px 8px;
+}
+html[data-dv-raise] .raise-head{ align-items:center; margin-bottom:6px; }
+html[data-dv-raise] .raise-title{
+  color:var(--ink); text-shadow:none; font-size:8px; letter-spacing:.14em;
+}
+html[data-dv-raise] .raise-cancel{
+  width:32px; height:32px; border:2px solid #070806; border-radius:3px;
+  background:#D0C28F; color:#30270F; text-shadow:none;
+  box-shadow:0 3px 0 #090806,inset 2px 2px 0 #FFF0BC,inset -2px -2px 0 #796B43;
+}
+html[data-dv-raise] .quick-bets{ gap:5px; margin:3px 0 4px; }
+html[data-dv-raise] .quick-bet{
+  min-height:30px; border:2px solid #070806; border-radius:3px;
+  background:#D0C28F; color:#30270F;
+  box-shadow:0 3px 0 #090806,inset 2px 2px 0 #FFF0BC,inset -2px -2px 0 #796B43;
+  text-shadow:none;
+}
+html[data-dv-raise] .quick-bet.is-selected{
+  background:var(--pc-lamp-amber, #F2B431); color:#2A1804;
+  box-shadow:0 1px 0 #090806,inset 2px 2px 0 var(--pc-lamp-amber-hi, #FFE49B),inset -2px -2px 0 rgba(120,70,0,.45),0 0 8px rgba(242,180,49,.35);
+}
+html[data-dv-raise] .raise-panel input[type=range]{ height:40px; }
+html[data-dv-raise] .raise-panel input[type=range]::-webkit-slider-runnable-track{
+  height:12px; border:2px solid var(--dv-ink); border-radius:2px;
+  background:
+    repeating-linear-gradient(90deg,transparent 0 10%,color-mix(in srgb,var(--theme-case-hi) 55%,transparent) 10% calc(10% + 1px)),
+    linear-gradient(90deg,var(--pc-lamp-amber, #F2B431) 0 var(--fill),#040606 var(--fill) 100%);
+  box-shadow:inset 0 3px 0 rgba(0,0,0,.55),0 0 0 2px color-mix(in srgb,var(--theme-case-raised) 60%,black),0 1px 0 2px var(--theme-case-hi);
+}
+html[data-dv-raise] .raise-panel input[type=range]::-webkit-slider-thumb{
+  width:24px; height:34px; margin-top:-13px; border:2px solid var(--dv-ink); border-radius:2px;
+  background:
+    linear-gradient(#F4EFE1 0 0) center/2px 100% no-repeat,
+    repeating-linear-gradient(180deg,var(--theme-case-hi) 0 2px,var(--theme-case-raised) 2px 4px,color-mix(in srgb,var(--theme-case-raised) 55%,black) 4px 5px);
+  box-shadow:0 4px 0 var(--dv-ink),inset 2px 2px 0 rgba(255,255,255,.25),inset -2px -2px 0 rgba(0,0,0,.3);
+}
+html[data-dv-raise] .raise-panel input[type=range]::-moz-range-track{
+  height:12px; border:2px solid var(--dv-ink);
+  background:linear-gradient(90deg,var(--pc-lamp-amber, #F2B431) 0 var(--fill),#040606 var(--fill) 100%);
+}
+html[data-dv-raise] .raise-panel input[type=range]::-moz-range-thumb{
+  width:20px; height:30px; border:2px solid var(--dv-ink); border-radius:2px;
+  background:linear-gradient(#F4EFE1 0 0) center/2px 100% no-repeat,var(--theme-case-raised);
+}
+
+/* ---- tiles: the drawer, with the quick bets as the Pattern Book's
+   standard button (the Home "Quick Deal" dark tile); the chosen one
+   lights its print amber and gets a lamp ---- */
+html[data-dv-raise="tiles"] .quick-bet{
+  position:relative; border:2px solid #090806; border-radius:2px;
+  background:#29291F; color:#C8BD92;
+  box-shadow:0 3px 0 #15150F,0 5px 0 #090605,inset 2px 2px 0 #4A4B39,inset -2px -2px 0 #171710;
+}
+html[data-dv-raise="tiles"] .quick-bet.is-selected{
+  background:#29291F; color:var(--pc-lamp-amber-hi, #FFE49B);
+  box-shadow:0 1px 0 #15150F,0 3px 0 #090605,inset 2px 2px 0 #4A4B39,inset -2px -2px 0 #171710,inset 0 0 0 4px rgba(242,180,49,.16);
+}
+html[data-dv-raise="tiles"] .quick-bet.is-selected::after{
+  content:''; position:absolute; top:3px; right:3px; width:4px; height:4px;
+  background:var(--pc-lamp-amber, #F2B431); box-shadow:0 0 5px rgba(242,180,49,.7);
+}
+
+
+/* ============================================================
+   9. TURN — the machine shows it is waiting for you
+   Persistent blinking is reserved for "awaiting action", which is
+   exactly this. Reduced Motion: lit, no blink.
+   ============================================================ */
+@keyframes dvTurnBlink{ 0%,100%{ opacity:1; } 50%{ opacity:.35; } }
+
+/* ---- edge: a lamp strip along the top edge of the case ---- */
+html[data-dv-turn="edge"] #hud-frame::after{
+  content:''; position:absolute; z-index:2; left:24%; right:24%; top:-3px; height:3px;
+  background:color-mix(in srgb,var(--pc-lamp-off, #493C24) 80%,black); pointer-events:none;
+}
+html[data-dv-turn="edge"] #hud-frame:has(.seat.you.active)::after{
+  background:var(--pc-lamp-amber, #F2B431);
+  box-shadow:0 0 6px rgba(242,180,49,.7),0 1px 0 var(--pc-lamp-amber-hi, #FFE49B) inset;
+  animation:dvTurnBlink 1.1s steps(2,end) infinite;
+}
+
+/* ---- pilots: two pilot lamps on the top rail, left and right ---- */
+html[data-dv-turn="pilots"] #your-seat-dock::before{
+  content:''; position:absolute; z-index:9; top:1px; left:22px; right:22px; height:9px; pointer-events:none;
+  --dv-lamp:color-mix(in srgb,var(--pc-lamp-off, #493C24) 85%,black);
+  background:
+    linear-gradient(rgba(255,255,255,.22) 0 0) left 2px top 2px/2px 2px no-repeat,
+    linear-gradient(rgba(255,255,255,.22) 0 0) right 5px top 2px/2px 2px no-repeat,
+    linear-gradient(var(--dv-lamp) 0 0) left 2px top 2px/5px 5px no-repeat,
+    linear-gradient(var(--dv-lamp) 0 0) right 2px top 2px/5px 5px no-repeat,
+    linear-gradient(var(--dv-ink) 0 0) left 0 top 0/9px 9px no-repeat,
+    linear-gradient(var(--dv-ink) 0 0) right 0 top 0/9px 9px no-repeat;
+}
+html[data-dv-turn="pilots"] #your-seat-dock:has(.seat.you.active)::before{
+  --dv-lamp:var(--pc-lamp-amber, #F2B431);
+  filter:drop-shadow(0 0 3px rgba(242,180,49,.8));
+  animation:dvTurnBlink 1.1s steps(2,end) infinite;
+}
+
+[data-motion="off"] #hud-frame::after,
+[data-motion="off"] #your-seat-dock::before{ animation:none !important; }
+@media (prefers-reduced-motion:reduce){
+  #hud-frame::after,
+  #your-seat-dock::before{ animation:none !important; }
+}
+
+/* ============================================================
+   SMALL PHONES — the options keep V1's fit at 320px wide and on
+   short screens (the same breakpoints V1 itself uses).
+   ============================================================ */
+@media (max-width:389px){
+  html[data-dv-bay] .action-console{ padding-left:3px; padding-right:3px; }
+  html[data-dv-bay] .console-flip{ padding-left:2px; padding-right:2px; }
+  html[data-dv-bay] .actions-row{ gap:4px; }
+  html[data-dv-right] .blind-lamps{ gap:6px; }
+}
+@media (orientation:portrait) and (max-height:700px){
+  html[data-dv-read="plate"] #hud-status-normal{ gap:4px; }
+  html[data-dv-read="plate"] #hand-strength{ margin-top:3px; }
+  /* V1 clips the bottom of its own stack counter here (by 8-13px at
+     320x700 and 390x664); the two screens above it give up a few pixels
+     so the counter fits whole. */
+  html[data-dv-stack] #hud-status-normal{ gap:3px; }
+  html[data-dv-stack] #hud-mid .hand-strength{ min-height:21px; padding-top:2px; padding-bottom:2px; }
+  html[data-dv-stack] #hud-mid .banner{ min-height:31px; padding-top:3px; padding-bottom:2px; gap:2px; }
+  html[data-dv-stack] .stack-readout .instrument-label{ padding:1px 5px 0; font-size:5px; }
+  html[data-dv-stack] #jackpot .jp-cell{ height:20px; }
+  html[data-dv-stack="window"] #jackpot .jp-cell{ height:18px; }
+  html[data-dv-right] .blind-indicator::before{ width:10px; height:10px; }
+}
