@@ -6,6 +6,22 @@ Expansion promoted: 2026-08-25
 
 Poker Faces V2 Career pass completed: 2026-09-21
 
+## Owner-directed live motion promotion — 2026-09-23
+
+The owner judged the isolated motion lab unsuitable and explicitly authorised
+putting the revised feel straight into the actual game. Keep this a contained
+presentation pass: a slower power-off/recess/linked-wheel/lock transition from
+Home to Career; one physical title-glass surprise per tap using real game face,
+card or chip styling; finger-led ticket movement, end resistance, and exposed
+edge taps without navigation arrows. Preserve the existing Career transactions,
+table routes, save and poker systems.
+
+Exit gate: mobile live-browser checks of the Home entrance, title-glass object,
+ticket drag/edge taps and details; syntax and focused Career suites; PWA cache
+bump including the new production assets; owner on-device feel review, now
+approved for sync. The earlier motion lab remains local history, not an
+integration gate.
+
 ## Owner-directed ticket-reader integration — 2026-09-23
 
 The owner approved promoting the Career Hub ticket Lab to the live Career

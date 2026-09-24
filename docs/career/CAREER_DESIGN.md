@@ -6,13 +6,30 @@ Expansion promoted: 2026-08-25
 
 Poker Faces V2 Career presentation approved and implemented: 2026-09-21
 
+## Live motion and interaction override — 2026-09-23
+
+The owner rejected the isolated motion lab as the decision surface and approved
+the presentation changes directly in the game. Entering Career from Home is a
+weighty, linked machine transition: the Home display powers down, the panel
+recedes, and the Career reader rolls into place and locks. Reduced Motion makes
+the same navigation immediate. The Poker Faces title glass has a contained
+tap Easter egg that throws exactly one existing-style face, card or chip into
+the glass with physical ricochet and appropriate impacts; it is not a game
+mechanic.
+
+Career tickets follow the finger during a swipe, resist the end stops, and
+settle one event at a time. The exposed left and right ticket edges also
+advance on tap, and keyboard arrows remain available. Separate side-arrow
+buttons are removed. These presentation changes do not alter paid entry,
+catalogue, bankroll, saves, poker or unlock rules.
+
 ## Ticket-reader presentation override — 2026-09-23
 
 The owner approved replacing the V2 cassette rack/venue strip with one focused
 physical invitation and clipped adjacent tickets. The six venues distinguish
 themselves through increasingly prestigious paper/stock, ink, trim and print;
-they do not need a separate persistent venue strip. Side keys and a swipe move
-between events. DETAILS turns the same card to a readable reverse. The
+they do not need a separate persistent venue strip. Swipes and exposed-edge
+taps move between events. DETAILS turns the same card to a readable reverse. The
 dashboard uses one fixed-width seven-drum bankroll and a tap-to-cycle two-stat
 CRT. The ticket is accepted into an intake before the authoritative entry
 transaction updates the bankroll; an accepted ticket returns, and the existing

@@ -1,0 +1,77 @@
+/* Home -> Career: the two real screens ride one masked cabinet wheel. */
+#app.career-entry-machine{ isolation:isolate; overflow:hidden; }
+#app.career-entry-machine::before{
+  content:""; position:absolute; z-index:48; inset:0; pointer-events:none;
+  background:
+    repeating-linear-gradient(90deg,transparent 0 24px,rgba(174,135,72,.24) 25px 27px,transparent 28px 47px),
+    radial-gradient(ellipse at center,#3a2c19 0,#12100c 56%,#050504 100%);
+  box-shadow:inset 0 25px 24px #040504,inset 0 -25px 24px #040504;
+}
+#app.career-entry-machine::after{
+  content:""; position:absolute; z-index:54; left:-2px; right:-2px; top:-22px; height:23px;
+  pointer-events:none; border:2px solid #070604;
+  background:linear-gradient(#a5854b 0 3px,#14100a 3px 7px,#5a4b31 7px 17px,#090805 17px);
+  box-shadow:0 4px 8px #000;
+  opacity:0;
+}
+#app.career-entry-machine.career-entry-rolling::after{
+  opacity:1; animation:careerWheelJoint 1160ms cubic-bezier(.13,.68,.18,1) both;
+}
+@keyframes careerWheelJoint{ to{ transform:translateY(calc(100dvh + 23px)); } }
+#app.career-entry-machine #home,
+#app.career-entry-machine #career{ pointer-events:none; backface-visibility:hidden; will-change:transform; }
+#app.career-entry-machine #home{ z-index:51; transform:translateY(0) scale(1); }
+#app.career-entry-machine #career{ z-index:50; transform:translateY(calc(-100% - 22px)) scale(.982); }
+#app.career-entry-machine.career-entry-recess #home{
+  transform:translateY(0) scale(.982); filter:brightness(.68) saturate(.67);
+  transition:transform 330ms cubic-bezier(.3,0,.35,1),filter 330ms ease;
+}
+#app.career-entry-machine.career-entry-rolling #home,
+#app.career-entry-machine.career-entry-rolling #career{
+  transition:transform 1160ms cubic-bezier(.13,.68,.18,1),filter 1160ms ease;
+}
+#app.career-entry-machine.career-entry-rolled #home{ transform:translateY(calc(100% + 22px)) scale(.974); filter:brightness(.28) saturate(.3); }
+#app.career-entry-machine.career-entry-rolled #career{ transform:translateY(0) scale(.982); filter:brightness(.79) saturate(.84); }
+#app.career-entry-machine.career-entry-locked #career{
+  transform:translateY(0) scale(1); filter:none;
+  transition:transform 260ms cubic-bezier(.16,.72,.18,1),filter 260ms ease;
+}
+#home #open-career.career-entry-pressed{
+  transform:translateY(5px);
+  box-shadow:inset 3px 5px 0 rgba(114,75,13,.5),inset -3px -2px 0 rgba(81,49,5,.35);
+}
+#app.career-entry-poweroff #home .pc-title-well,
+#app.career-entry-poweroff #home .pc-ready-readout,
+#app.career-entry-poweroff #home .pc-readout-row,
+#app.career-entry-poweroff #home .pc-cast-drawer{
+  animation:careerPowerOff 230ms steps(7,end) both;
+}
+@keyframes careerPowerOff{
+  0%,13%{ filter:brightness(1); } 14%,28%{ filter:brightness(.24); }
+  29%,43%{ filter:brightness(.88); } 44%,68%{ filter:brightness(.12); }
+  69%,100%{ filter:brightness(.32) saturate(.45); }
+}
+
+/* One physical, KO-style object per title-glass tap. All artwork is reused
+   from the actual seat portraits, card components and chip sprites. */
+#home-title-glass{ position:relative; cursor:pointer; touch-action:manipulation; }
+#home-title-glass .home-glass-layer{ position:absolute; z-index:5; inset:5px; overflow:hidden; pointer-events:none; }
+.home-glass-object{
+  position:absolute; left:0; top:0; margin:0; transform-origin:center;
+  will-change:transform; pointer-events:none;
+}
+.home-glass-object.is-face{
+  width:54px; height:54px; border:3px solid #090806; background:#1e3026;
+  box-shadow:0 4px 0 #0a0807,inset 0 2px 0 rgba(255,255,255,.2);
+}
+.home-glass-object.is-face .face-img,.home-glass-object.is-face svg{ display:block; width:100%; height:100%; object-fit:cover; image-rendering:pixelated; }
+.home-glass-object.is-card{ width:44px; height:62px; }
+.home-glass-object.is-card .card{ width:44px; height:62px; }
+.home-glass-object.is-chip{ width:38px; height:38px; }
+.home-glass-object.is-chip .chip-disc{ width:38px; height:38px; margin:0; filter:drop-shadow(0 3px 0 #080705); }
+#home-title-glass.is-struck{ animation:homeGlassStruck 115ms steps(4,end); }
+@keyframes homeGlassStruck{ 40%{ box-shadow:inset 0 0 0 2px rgba(250,221,133,.45),inset 0 0 20px #090b06; } }
+@media(prefers-reduced-motion:reduce){
+  #app.career-entry-machine *{ animation-duration:.01ms!important; transition-duration:.01ms!important; }
+}
+[data-motion="off"] #app.career-entry-machine *{ animation-duration:.01ms!important; transition-duration:.01ms!important; }

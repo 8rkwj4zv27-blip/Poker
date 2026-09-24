@@ -183,8 +183,6 @@
     else if (currentEntry.state === 'available') { main.textContent = currentEntry.cash ? 'BUY IN ' + amount(CAREER_CASH_CONFIG.buyIn) : currentEntry.event.buyIn ? 'BUY IN ' + amount(currentEntry.event.buyIn) : 'TAKE SEAT'; sub.textContent = 'TAKE SEAT'; }
     else if (currentEntry.state === 'unaffordable') { main.textContent = 'BANKROLL LOW'; sub.textContent = 'ENTRY UNAFFORDABLE'; }
     else { main.textContent = currentEntry.state === 'blocked' ? 'TABLE IN PLAY' : 'LOCKED'; sub.textContent = currentEntry.state === 'blocked' ? 'FINISH ACTIVE EVENT' : 'EVENT UNAVAILABLE'; }
-    root.querySelector('#ch2-prev').disabled = current === 0;
-    root.querySelector('#ch2-next').disabled = current === all.length - 1;
     const secondary = document.getElementById('ch2-secondary');
     if (secondary){
       secondary.hidden = currentEntry.state !== 'active';
@@ -210,8 +208,7 @@
       '<header class="ch2-instrument"><div class="ch2-utility-row"><span class="pc-label ch2-instrument-title">Bankroll</span></div>' +
       '<div class="ch2-money-block"><div class="cpi-bankroll-housing ch2-bankroll-housing"><div class="amt-readout ch2-bankroll-reel" id="ch2-bankroll" role="img" aria-live="polite" aria-label="Bankroll ' + esc(amount(bank)) + '" style="grid-template-columns:21px repeat(' + Math.max(7,String(bank).length) + ',minmax(12px,1fr))">' + reelMarkup(bank) + '</div></div></div>' +
       '<button class="ch2-record crt" id="ch2-record" type="button"><span class="ch2-crt-glass crt__content" id="ch2-crt-glass"><span class="ch2-crt-stat"><small id="ch2-crt-label-a"></small><strong class="tabular" id="ch2-crt-value-a"></strong></span><span class="ch2-crt-stat"><small id="ch2-crt-label-b"></small><strong class="tabular" id="ch2-crt-value-b"></strong></span></span></button></header>' +
-      '<section class="ch2-reader" aria-label="Career event browser"><div class="ch2-rack" id="ch2-rack"><div class="ch2-track" id="ch2-track" role="listbox" aria-label="Flick through career events">' + all.map(card).join('') + '</div>' +
-      '<button class="icon-btn ch2-arrow ch2-arrow-prev" id="ch2-prev" type="button" aria-label="Previous event"><span class="ch2-nav-mark" aria-hidden="true"></span></button><button class="icon-btn ch2-arrow ch2-arrow-next" id="ch2-next" type="button" aria-label="Next event"><span class="ch2-nav-mark" aria-hidden="true"></span></button></div></section>' +
+      '<section class="ch2-reader" aria-label="Career event browser"><div class="ch2-rack" id="ch2-rack"><div class="ch2-track" id="ch2-track" role="listbox" tabindex="0" aria-label="Career events. Swipe, tap an exposed ticket edge, or use left and right arrow keys">' + all.map(card).join('') + '</div></div></section>' +
       '<div class="ch2-intake" id="ch2-intake" aria-hidden="true"><span class="ch2-intake-mouth"></span></div>' +
       '<div class="pc-primary-cradle ch2-action-cradle"><span class="pc-slot-aperture" aria-hidden="true"><span class="pc-slot-door"></span></span><button class="pc-button pc-button-primary ch2-primary" id="ch2-primary" type="button"><span class="pc-lamp is-amber" aria-hidden="true"></span><span><strong id="ch2-primary-main"></strong><small id="ch2-primary-sub"></small></span><span class="pc-lamp is-amber" aria-hidden="true"></span></button></div>' +
       '</main>';
@@ -226,17 +223,37 @@
       head.appendChild(secondary);
     }
     const selected = () => all.findIndex(entry => entry.id === selectedId);
+    const track = root.querySelector('#ch2-track');
+    let settleTimer = 0;
+    let suppressEdgeTapUntil = 0;
+    const clearMotion = () => root.querySelectorAll('.ch2-card').forEach(card => {
+      card.style.setProperty('--motion-x','0px');
+      card.style.setProperty('--motion-angle','0deg');
+      card.style.setProperty('--motion-lift','0px');
+    });
     const move = delta => {
       if (accepting || turning) return;
       const at = selected();
       const next = Math.max(0,Math.min(all.length - 1,at + delta));
       if (next === at) return;
+      window.clearTimeout(settleTimer);
+      const cards = [...track.querySelectorAll('.ch2-card')];
+      const oldPositions = cards.map(card => card.getBoundingClientRect().left);
       selectedId = all[next].id; flipped = false;
       root.querySelectorAll('.ch2-face.is-expressing').forEach(node => node.classList.remove('is-expressing'));
-      const track = root.querySelector('#ch2-track');
-      track.classList.add('is-settling');
+      track.classList.remove('is-settling');
+      track.classList.add('is-dragging');
+      clearMotion();
       cardStates(root,all,next);
-      queue(() => track.classList.remove('is-settling'),270);
+      if (!motionReduced()) cards.forEach((card,i) => {
+        if (Math.abs(i-next) > 1 && Math.abs(i-at) > 1) return;
+        card.style.setProperty('--motion-x',(oldPositions[i]-card.getBoundingClientRect().left)+'px');
+      });
+      void track.offsetWidth;
+      track.classList.remove('is-dragging');
+      track.classList.add('is-settling');
+      requestAnimationFrame(clearMotion);
+      settleTimer = window.setTimeout(() => track.classList.remove('is-settling'),motionReduced() ? 0 : 390);
       Sound.buttonRelease('award');
     };
     const flip = showBack => {
@@ -251,38 +268,71 @@
       queue(() => { turning = false; selectedCard.querySelector('[data-card-flip="' + (flipped ? 'front' : 'back') + '"]')?.focus(); },motionReduced() ? 0 : 640);
       Sound.buttonRelease('award');
     };
-    root.querySelector('#ch2-prev').onclick = () => move(-1);
-    root.querySelector('#ch2-next').onclick = () => move(1);
     root.querySelector('#ch2-record').onclick = () => { if (accepting) return; recordIndex = (recordIndex + 1) % 3; record(true); };
-    root.querySelector('#ch2-track').onclick = event => {
+    track.onclick = event => {
       const button = event.target.closest('[data-card-flip]');
       if (button) flip(button.dataset.cardFlip === 'back');
     };
+    track.addEventListener('keydown',event => {
+      if (event.key === 'ArrowLeft' || event.key === 'ArrowRight'){
+        event.preventDefault();
+        move(event.key === 'ArrowRight' ? 1 : -1);
+      }
+    });
     root.querySelector('#ch2-primary').onclick = () => accept(root,all[selected()],flip);
     const rack = root.querySelector('#ch2-rack');
     rack.addEventListener('pointerdown',event => {
       if (accepting || turning || event.button > 0 || event.target.closest('button')) return;
-      pointer = {id:event.pointerId,x:event.clientX,time:performance.now(),last:event.clientX,velocity:0};
+      pointer = {id:event.pointerId,x:event.clientX,time:performance.now(),last:event.clientX,velocity:0,dragX:0};
       rack.setPointerCapture(event.pointerId);
-      root.querySelector('#ch2-track').classList.add('is-dragging');
+      track.classList.remove('is-settling');
+      track.classList.add('is-dragging');
     });
     rack.addEventListener('pointermove',event => {
       if (!pointer || pointer.id !== event.pointerId) return;
       const now = performance.now();
       pointer.velocity = .55 * pointer.velocity + .45 * ((event.clientX - pointer.last) / Math.max(8,now - pointer.time));
       pointer.last = event.clientX; pointer.time = now;
-      root.querySelector('#ch2-track').style.setProperty('--drag-x',Math.max(-125,Math.min(125,event.clientX - pointer.x)) + 'px');
+      const raw = event.clientX - pointer.x;
+      const blocked = (raw > 0 && selected() === 0) || (raw < 0 && selected() === all.length-1);
+      const cap = Math.min(210,rack.clientWidth*.57);
+      pointer.dragX = Math.max(-cap,Math.min(cap,raw*(blocked ? .22 : 1)));
+      const progress = Math.min(1,Math.abs(pointer.dragX)/Math.max(1,rack.clientWidth*.7));
+      track.querySelectorAll('.ch2-card').forEach((card,i) => {
+        const distance = i-selected();
+        if (Math.abs(distance)>1) return;
+        card.style.setProperty('--motion-x',pointer.dragX*(distance === 0 ? 1 : .82)+'px');
+        card.style.setProperty('--motion-angle',distance === 0 ? Math.max(-2,Math.min(2,pointer.dragX/85))+'deg' : '0deg');
+        card.style.setProperty('--motion-lift',distance === 0 ? -Math.round(progress*5)+'px' : '0px');
+      });
     });
-    const release = event => {
+    const release = (event,cancelled = false) => {
       if (!pointer || pointer.id !== event.pointerId) return;
-      const distance = event.clientX - pointer.x + pointer.velocity * 105;
+      const distance = pointer.dragX + pointer.velocity * 105;
+      if (Math.abs(event.clientX-pointer.x)>12) suppressEdgeTapUntil = performance.now()+350;
       pointer = null;
-      const track = root.querySelector('#ch2-track');
-      track.classList.remove('is-dragging'); track.style.setProperty('--drag-x','0px');
-      if (Math.abs(distance) > 48) move(distance < 0 ? 1 : -1);
+      track.classList.remove('is-dragging');
+      root.querySelectorAll('.ch2-card').forEach(card => {
+        card.style.setProperty('--motion-angle','0deg');
+        card.style.setProperty('--motion-lift','0px');
+      });
+      if (!cancelled && Math.abs(distance)>48 && selected()+(distance<0?1:-1)>=0 && selected()+(distance<0?1:-1)<all.length){
+        move(distance<0?1:-1);
+      } else {
+        track.classList.add('is-settling');
+        requestAnimationFrame(clearMotion);
+        settleTimer = window.setTimeout(() => track.classList.remove('is-settling'),motionReduced() ? 0 : 320);
+      }
     };
     rack.addEventListener('pointerup',release);
-    rack.addEventListener('pointercancel',release);
+    rack.addEventListener('pointercancel',event => release(event,true));
+    rack.addEventListener('click',event => {
+      if (event.target.closest('button') || performance.now()<suppressEdgeTapUntil) return;
+      const x = event.clientX-rack.getBoundingClientRect().left;
+      const edge = Math.max(36,Math.min(70,rack.clientWidth*.18));
+      if (x<edge) move(-1);
+      else if (x>rack.clientWidth-edge) move(1);
+    });
     cardStates(root,all,current);
     record(false);
     window.clearInterval(recordTimer);

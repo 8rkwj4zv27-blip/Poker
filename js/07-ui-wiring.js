@@ -1214,13 +1214,13 @@ function showTableScreen(){
   $('btn-new-table').classList.add('hidden');
 }
 
-function showCareerScreen(){
+function showCareerScreen(options){
   // Once per VISIT, before the first paint: any event without an
   // advertised field draws one and the book is persisted. Tray toggles
   // re-render without coming through here and so still write nothing.
   materializeCareerRosters();
   renderCareerScreen();
-  $('home').classList.add('hidden');
+  if (!options || !options.keepHomeVisible) $('home').classList.add('hidden');
   $('setup').classList.add('hidden');
   $('rankings').classList.add('hidden');
   $('awards').classList.add('hidden');

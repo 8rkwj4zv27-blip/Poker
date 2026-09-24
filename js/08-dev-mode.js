@@ -794,7 +794,7 @@ function wireUI(){
   $('deal-me-in').onclick = ()=>withNewTableConfirm(dealMeIn);
   $('setup-continue').onclick = ()=>{ if (loadTableSave()) continueTable(); };
   $('quick-play').onclick = ()=>withNewTableConfirm(startGame);
-  $('open-career').onclick = ()=>{ showCareerScreen(); };
+  $('open-career').onclick = ()=>{ enterCareerFromHome(); };
   $('career-back').onclick = ()=>{
     $('career').classList.add('hidden');
     $('home').classList.remove('hidden');

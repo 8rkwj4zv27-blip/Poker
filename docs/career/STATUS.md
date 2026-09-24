@@ -1,5 +1,23 @@
 # Career Mode — Current Status
 
+
+## Live motion pass — owner-approved for sync (2026-09-24)
+
+At the owner's direction, the rejected motion-lab feel was revised and put
+directly into the actual game. Home Career entry now powers off and recedes
+before a slower linked reader roll and mechanical lock. The title glass throws
+one randomly chosen existing-style face, card or chip per tap with free-flight
+ricochet and impact response. Live event tickets follow a finger drag, resist
+the rack ends, settle one event at a time, and change by exposed-edge tap or
+keyboard arrow. Visible side navigation arrows are gone. Reduced Motion
+preserves navigation and removes the travel. Career transactions, bankroll,
+save fields, poker and table flow were not changed by this pass. The PWA cache
+includes the production motion assets.
+
+The owner tested the real game and approved the feel for now. Next: further
+owner-directed polish only. The isolated motion lab remains local history,
+not the current approval surface.
+
 ## Career Hub ticket reader — production integration (2026-09-23)
 
 The owner approved replacing the V2 Career cassette directory with the tested
