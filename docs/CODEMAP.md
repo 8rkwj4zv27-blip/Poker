@@ -12,7 +12,7 @@ by the code and by `CLAUDE.md`/`AGENTS.md`, not by this file.
 04-modes-and-scoring.js 05-game-engine.js       06-presentation.js
 07-ui-wiring.js         career-hub-live.js      career-motion-live.js
 machine-wheel.js        ticket-feed.js          table-intro.js
-08-dev-mode.js          home-boot.js
+08-dev-mode.js          home-cast.js            home-boot.js
 ```
 
 Later files call into earlier ones freely; there's no module system, so
@@ -153,7 +153,7 @@ NEW/OLD switches for each, for future tuning.
 "The cabinet switches on": ~1.6s on the main menu, once per real page load
 (never on returning to the menu). Mains relay clunk, self-test lines in the
 top readout, marquee letters of the title catch one by one, the stripe runs
-out, House Faces shutters open, stats spin, control-bay buttons light, then
+out, the House Faces drop into their tray, stats spin, control-bay buttons light, then
 DEALER READY. Presentation only. The dark "armed" state is set by a small
 inline script right after `#home` in `index.html` (so the lit menu never
 flashes first, with a 4s fail-safe); a tap skips and its click is
@@ -162,6 +162,16 @@ because a cold launch has no user gesture (silent on iOS until the first
 tap). Tuning lives in `HOME_BOOT_CONFIG`; `boot-lab.html` replays it with
 speed and sound switches. The old title-glass tap toy was removed with this
 pass.
+
+## `js/home-cast.js` — House Faces drawer (live)
+
+The four title-screen portraits (`initHeroFaces`, called from `wireUI`).
+Each launch deals them four distinct temperaments from
+`HOME_CAST_TEMPERS` (hothead, showman, schemer, nervy, thinker, deadpan):
+a rest mood, a three-flash burst, an idle pool and a reaction to a
+neighbour's flare. Sparse, silent idle life; tapping a face flares it.
+The Home Boot drops the faces in and calls `HeroCast.arrive(i)` on each
+landing. Decorative only — not the table mood system.
 
 ## `js/08-dev-mode.js` (~1,140 lines)
 

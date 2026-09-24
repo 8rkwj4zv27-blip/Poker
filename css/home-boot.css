@@ -60,16 +60,32 @@
   100%{ box-shadow:none; }
 }
 
-/* ---- 4. Cast drawer: a slatted shutter over each face snaps up. ---- */
-#home.hb-boot .hero-faces .hf{ position:relative; overflow:hidden; }
-#home.hb-boot .hero-faces .hf::after{
-  content:''; position:absolute; z-index:3; inset:0; pointer-events:none;
-  background:repeating-linear-gradient(0deg,#0B0806 0 2px,#2A2114 2px 7px);
-  box-shadow:inset 0 -3px 0 #8E7E50,inset 0 2px 0 rgba(255,255,255,.08);
+/* ---- 4. Cast drawer: the faces drop into the tray from above, in a
+   random order (the script adds .hb-in), squash on landing and bounce.
+   Each landing jolts the whole tray (.hb-thud). ---- */
+#home.hb-boot .pc-cast-drawer{ overflow:hidden; }
+#home.hb-boot .hero-faces .hf{ opacity:0; transform-origin:50% 100%; }
+#home.hb-boot .hero-faces .hf.hb-in{ opacity:1; animation:hbDrop calc(460ms * var(--hb-slow,1)) both; }
+@keyframes hbDrop{
+  /* Falling: the gaps between keyframes grow, so it accelerates. Stepped
+     so it moves in pixel frames, not a smooth tween. */
+  0%{ transform:translateY(-108px); animation-timing-function:steps(2,end); }
+  22%{ transform:translateY(-78px); animation-timing-function:steps(2,end); }
+  38%{ transform:translateY(-36px); animation-timing-function:steps(2,end); }
+  48%{ transform:translateY(0) scale(1,1); animation-timing-function:steps(1,end); }
+  /* Touch down: squash, rebound, settle. */
+  56%{ transform:translateY(2px) scale(1.12,.84); animation-timing-function:steps(2,end); }
+  70%{ transform:translateY(-10px) scale(.94,1.07); animation-timing-function:steps(2,end); }
+  84%{ transform:translateY(0) scale(1.05,.95); animation-timing-function:steps(1,end); }
+  92%{ transform:translateY(-2px) scale(1,1); animation-timing-function:steps(1,end); }
+  100%{ transform:none; }
 }
-#home.hb-boot .hero-faces .hf.hb-open::after{ animation:hbShutter calc(200ms * var(--hb-slow,1)) steps(5,end) both; }
-@keyframes hbShutter{ from{ transform:translateY(0); } to{ transform:translateY(-104%); } }
-#home.hb-boot .hero-faces .hf.hb-open .face{ animation:facePop calc(300ms * var(--hb-slow,1)) steps(4,end) calc(140ms * var(--hb-slow,1)) both; }
+#home.hb-boot .pc-cast-drawer.hb-thud{ animation:hbThud calc(130ms * var(--hb-slow,1)) steps(1,end); }
+@keyframes hbThud{
+  0%{ transform:translateY(3px); }
+  45%{ transform:translateY(-1px); }
+  100%{ transform:none; }
+}
 
 /* ---- 5. Stats display flickers on (the script spins the digits). ---- */
 #home.hb-boot .stats-card .stat-strip{ opacity:0; }

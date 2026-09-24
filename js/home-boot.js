@@ -14,7 +14,9 @@
      3. MARQUEE  the POKER FACES letters catch one by one like marquee
                  bulbs (each flickers before it holds), then the stripe
                  under them runs out segment by segment
-     4. CAST     the four House Faces shutters snap open left to right
+     4. CAST     the four House Faces drop into the drawer in a random
+                 order, thud, and each flashes its temperament
+                 (js/home-cast.js decides who they are)
      5. STATS    the stats display flickers on, digits spin, then settle
      6. BAY      the control-bay lamps blink, the buttons light top to
                  bottom
@@ -47,7 +49,7 @@ const HOME_BOOT_CONFIG = {
   mainsAt: 140,                 // relay clunk; the cabinet steps up to full light
   test: { at: 330, stepMs: 150, lines: ['SELF TEST', 'DECK 52 OK', 'CHIPS OK', 'FACES OK'] },
   marquee: { at: 380, letterMs: 44 },
-  cast: { at: 800, faceMs: 85 },
+  cast: { at: 760, faceMs: 110, landMs: 220 },   // landMs: the hbDrop keyframe that touches down
   stats: { at: 1000, spinMs: 220 },
   bay: { at: 1110, buttonMs: 65 },
   readyAt: 1440,
@@ -143,11 +145,19 @@ const HomeBoot = (() => {
       sound(() => Sound.wheelRelay(.45));
     });
 
-    // 4. CAST shutters
-    [...el.querySelectorAll('.hero-faces .hf')].forEach((cell, i) => at(cfg.cast.at + i * cfg.cast.faceMs, () => {
-      cell.classList.add('hb-open');
-      sound(() => Sound.hatchOpen());
-    }));
+    // 4. CAST — dropped in a random order; each thuds, jolts the tray,
+    // and pulls its temperament's burst the moment it lands.
+    const cells = [...el.querySelectorAll('.hero-faces .hf')];
+    const drawer = el.querySelector('.pc-cast-drawer');
+    shuffle(cells.map((_, i) => i)).forEach((idx, n) => {
+      const dropAt = cfg.cast.at + n * cfg.cast.faceMs;
+      at(dropAt, () => cells[idx].classList.add('hb-in'));
+      at(dropAt + cfg.cast.landMs, () => {
+        if (drawer){ drawer.classList.remove('hb-thud'); void drawer.offsetWidth; drawer.classList.add('hb-thud'); }
+        sound(() => Sound.koPortraitImpact(.5 + n * .08, false));
+        if (typeof HeroCast !== 'undefined') HeroCast.arrive(idx);
+      });
+    });
 
     // 5. STATS — flicker on, digits spin, settle on the real values
     at(cfg.stats.at, () => {
@@ -238,7 +248,7 @@ const HomeBoot = (() => {
       el.removeEventListener('pointerdown', skip, true);
       el.classList.remove(...STAGES);
       el.style.removeProperty('--hb-slow');
-      el.querySelectorAll('.hb-lit, .hb-open, .hb-on').forEach(n => n.classList.remove('hb-lit', 'hb-open', 'hb-on'));
+      el.querySelectorAll('.hb-lit, .hb-in, .hb-on, .hb-thud').forEach(n => n.classList.remove('hb-lit', 'hb-in', 'hb-on', 'hb-thud'));
     }
     document.removeEventListener('keydown', skip, true);
     const housing = $('menu-contraption');
@@ -247,7 +257,10 @@ const HomeBoot = (() => {
     if (readout) readout.style.minWidth = '';
     const text = readoutText();
     if (text) text.textContent = 'DEALER READY';
-    if (skipped){ Sound.stageLock(); Sound.bootReady(); }
+    if (skipped){
+      if (typeof HeroCast !== 'undefined') HeroCast.settle();
+      Sound.stageLock(); Sound.bootReady();
+    }
   }
 
   /* Called once, after wireUI() has built the menu. */
