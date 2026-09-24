@@ -20,8 +20,16 @@
    ============================================================ */
 
 :root{
+  /* The approved finish. Each part is one token, so a Finishes option
+     (js/finishes.js) swaps a whole look by redefining tokens, below. */
   --crt-glass:#061014;
   --crt-bezel:#020706;
+  --crt-tint:rgba(120,192,211,.12);
+  --crt-vignette:rgba(0,0,0,.66);
+  --crt-scan:rgba(0,0,0,.38);
+  --crt-depth:inset 0 6px 8px rgba(0,0,0,.72),inset 6px 0 9px rgba(0,0,0,.42),inset -6px 0 9px rgba(0,0,0,.42);
+  --crt-halo:0 0 6px rgba(93,183,213,.14);
+  --crt-bloom:none;
   --crt-ink-info:#C3C8AD;    /* ordinary machine information */
   --crt-ink-live:#BDE9FF;    /* live / current table information */
   --crt-ink-money:#F6D06B;   /* money, reward, restrained positive */
@@ -35,17 +43,13 @@
   overflow:hidden;
   isolation:isolate;
   background:
-    radial-gradient(ellipse at 47% 38%,rgba(120,192,211,.12),transparent 55%),
-    radial-gradient(ellipse at 50% 50%,transparent 42%,rgba(0,0,0,.66) 100%),
-    repeating-linear-gradient(180deg,transparent 0 2px,rgba(0,0,0,.38) 2px 3px),
+    radial-gradient(ellipse at 47% 38%,var(--crt-tint),transparent 55%),
+    radial-gradient(ellipse at 50% 50%,transparent 42%,var(--crt-vignette) 100%),
+    repeating-linear-gradient(180deg,transparent 0 2px,var(--crt-scan) 2px 3px),
     var(--crt-glass);
   border:2px solid var(--crt-bezel);
   border-radius:2px;
-  box-shadow:
-    inset 0 6px 8px rgba(0,0,0,.72),
-    inset 6px 0 9px rgba(0,0,0,.42),
-    inset -6px 0 9px rgba(0,0,0,.42),
-    0 0 6px rgba(93,183,213,.14);
+  box-shadow:var(--crt-depth),var(--crt-halo);
   /* The screen's own element is left free for its screen's effects (the
      results stage's dormant dimming, reveal transitions); only the change
      blink below animates it. */
@@ -61,10 +65,10 @@
   animation:var(--crt-flicker);
 }
 
-/* No bloom on CRT text. Mechanical numbers inside a CRT (the reels) keep
-   their own treatment, so they're left alone. */
+/* Text bloom (none in the approved finish). Mechanical numbers inside a
+   CRT (the reels) keep their own treatment, so they're left alone. */
 #app .machine-crt,
-#app .machine-crt :not(.amt-readout,.amt-readout *,.jp-cell,.jp-cell *){ text-shadow:none; }
+#app .machine-crt :not(.amt-readout,.amt-readout *,.jp-cell,.jp-cell *){ text-shadow:var(--crt-bloom); }
 
 /* Content change: the same static burst everywhere. */
 #app .machine-crt.crt-refresh{ animation:var(--crt-blink); }
@@ -72,7 +76,7 @@
 /* Ink by meaning. Career's record glass was the only blue-inked screen that
    isn't live table information. */
 #app .machine-crt .ch2-crt-stat small,
-#app :is(#home,#career-hub) .ch2-record .machine-crt .ch2-crt-stat strong{ color:var(--crt-ink-info); text-shadow:none; }
+#app :is(#home,#career-hub) .ch2-record .machine-crt .ch2-crt-stat strong{ color:var(--crt-ink-info); text-shadow:var(--crt-bloom); }
 
 /* The two CRT motions, owned here so the Pattern Book page can load this
    file on its own. The flicker keeps the old crtIdleFlicker timing (steps at
@@ -97,3 +101,42 @@
   #app .machine-crt::after,
   #app .machine-crt.crt-refresh{ animation:none; }
 }
+
+/* ============================================================
+   FINISHES — alternative CRT looks and motion (js/finishes.js)
+   Only tokens change; every CRT follows. The default (no attribute) is the
+   signed-off finish above.
+   ============================================================ */
+/* Glass */
+:root[data-finish-crt-glass="blue-glow"]{
+  --crt-bloom:0 0 5px color-mix(in srgb,currentColor 55%,transparent);
+}
+:root[data-finish-crt-glass="dark"]{
+  --crt-glass:#060B0A; --crt-bezel:#040807;
+  --crt-tint:rgba(255,255,255,.05); --crt-vignette:rgba(0,0,0,.62); --crt-scan:rgba(0,0,0,.30);
+  --crt-depth:inset 0 7px 0 rgba(0,0,0,.74),inset 5px 0 0 rgba(0,0,0,.44),inset -5px 0 0 rgba(0,0,0,.34),inset 0 -3px 0 rgba(255,255,255,.05);
+  --crt-halo:0 2px 0 rgba(255,255,255,.10),0 0 0 2px rgba(0,0,0,.55);
+  --crt-bloom:0 0 6px currentColor,0 0 14px color-mix(in srgb,currentColor 34%,transparent);
+}
+:root[data-finish-crt-glass="green"]{
+  --crt-glass:#030D06; --crt-bezel:#020604;
+  --crt-tint:rgba(110,220,140,.13); --crt-vignette:rgba(0,0,0,.7); --crt-scan:rgba(0,0,0,.42);
+  --crt-halo:0 0 7px rgba(110,220,140,.16);
+  --crt-bloom:0 0 4px currentColor,0 0 11px color-mix(in srgb,currentColor 40%,transparent);
+}
+:root[data-finish-crt-glass="amber"]{
+  --crt-glass:#0E0803; --crt-bezel:#060302;
+  --crt-tint:rgba(240,168,60,.12); --crt-vignette:rgba(0,0,0,.68); --crt-scan:rgba(0,0,0,.40);
+  --crt-halo:0 0 7px rgba(240,168,60,.15);
+  --crt-bloom:0 0 4px currentColor,0 0 11px color-mix(in srgb,currentColor 38%,transparent);
+}
+:root[data-finish-crt-glass="black"]{
+  --crt-glass:#010202; --crt-bezel:#000;
+  --crt-tint:rgba(255,255,255,.035); --crt-vignette:rgba(0,0,0,.8); --crt-scan:rgba(0,0,0,.5);
+  --crt-depth:inset 0 8px 10px rgba(0,0,0,.85),inset 7px 0 10px rgba(0,0,0,.55),inset -7px 0 10px rgba(0,0,0,.55);
+  --crt-halo:0 0 0 1px rgba(255,255,255,.04);
+  --crt-bloom:0 0 3px currentColor,0 0 9px color-mix(in srgb,currentColor 60%,transparent),0 0 20px color-mix(in srgb,currentColor 28%,transparent);
+}
+/* Motion */
+:root[data-finish-crt-motion="blink"]{ --crt-flicker:none; }
+:root[data-finish-crt-motion="still"]{ --crt-flicker:none; --crt-blink:none; }

@@ -275,12 +275,12 @@
     root.querySelector('#ch2-back').onclick = () => {
       const back = document.getElementById('career-back');
       if (!back || back.disabled || accepting) return;
-      Sound.buttonPress('check');
+      if (typeof pressFeelSounded !== 'function' || !pressFeelSounded(root.querySelector('#ch2-back'))) Sound.buttonPress('check');
       back.click();
     };
     root.querySelector('#ch2-settings').onclick = () => {
       if (accepting) return;
-      Sound.buttonPress('check');
+      if (typeof pressFeelSounded !== 'function' || !pressFeelSounded(root.querySelector('#ch2-settings'))) Sound.buttonPress('check');
       openOverlay('settings');
     };
     const selected = () => all.findIndex(entry => entry.id === selectedId);

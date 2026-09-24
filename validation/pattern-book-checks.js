@@ -76,6 +76,22 @@ check('No other live stylesheet restyles CRT glass with a new recipe',()=>{
   live.forEach(f=>assert.ok(!read(f).includes('machine-crt'),f+' styles .machine-crt; put CRT finish changes in css/machine-crt.css'));
 });
 
+check('Every Finishes option has tokens behind it, and the menu can be switched off',()=>{
+  const finishes=read('js/finishes.js');
+  const css=read('css/machine-crt.css')+read('css/press-feel.css');
+  assert.ok(/const FINISHES_MENU = (true|false);/.test(finishes),'FINISHES_MENU switch missing');
+  const sets=[...finishes.matchAll(/attr:'(finish[A-Za-z]+)'[\s\S]*?\]\s*\}/g)];
+  assert.ok(sets.length>=3,'expected at least 3 finish sets');
+  sets.forEach(m=>{
+    const attr=m[1].replace(/[A-Z]/g,c=>'-'+c.toLowerCase());
+    const ids=[...m[0].matchAll(/id:'([a-z-]*)'/g)].map(x=>x[1]);
+    assert.strictEqual(ids[0],'',m[1]+': the first option must be the signed-off default (blank id)');
+    ids.slice(1).filter(id=>!(m[1]==='finishPress' && id==='original')).forEach(id=>
+      assert.ok(css.includes('[data-'+attr+'="'+id+'"]'),m[1]+' option "'+id+'" has no [data-'+attr+'] tokens'));
+  });
+  assert.ok(indexHtml.includes("localStorage.getItem('felt.finishes')"),'saved finishes must apply before first paint');
+});
+
 check('Production isolation audit: the Pattern Book page is never shipped or linked',()=>{
   assert.ok(!indexHtml.includes('pattern-book'),'index.html links the Pattern Book');
   assert.ok(!serviceWorker.includes('pattern-book'),'sw.js precaches the Pattern Book');

@@ -30,6 +30,24 @@ drift within a job is not.
    in `validation/pattern-book-checks.js`) **before** using it in the game.
 3. Changing an approved finish is a new sign-off, recorded below.
 
+## Trying other looks: Finishes
+
+Because each family is one shared set, trying a different look is one
+switch. **Settings → Finishes** (`js/finishes.js`, a page inside the
+Settings sheet) lists each set with its options; a tap applies it
+everywhere at once, in the real game. Choices stay on that device only
+(`localStorage` key `felt.finishes`); everyone else gets the defaults.
+
+- The first option of every set is the signed-off default (blank id).
+- An option is a named value of an attribute on `<html>` (e.g.
+  `data-finish-crt-glass="amber"`); the set's stylesheet redefines that
+  set's tokens for it. No screen is touched.
+- To add an option: one entry in `FINISH_SETS`, plus its token block in the
+  set's stylesheet. The check fails if an option has no tokens.
+- To make an option the new default: move its tokens into the set's base
+  tokens, record the sign-off below, and drop the option.
+- `FINISHES_MENU = false` hides the menu and returns devices to defaults.
+
 ## How sign-off works
 
 Each family is shown as a "Now" row (every real instance, cropped in the
@@ -52,7 +70,8 @@ Motion and sound are signed off from live demos, never stills.
 | Screen header | **A** Dark plate, cream title (Custom Game) | Approved, next |
 | On/off switch, stepper | Only one version exists; approved as is | Settled |
 | FOLD / CHECK / CALL / RAISE | Kept as their own locked family | Settled |
-| Number wheels, press feel, sound | Round 2, from live demos | To do |
+| Press feel | One heavy thunk on every button, scaled by size (big / standard / small), FOLD/CHECK/CALL/RAISE included | **Live** v0.39.7 |
+| Number wheels, sound | Round 2, from live demos | To do |
 
 Approved-but-not-migrated families have reference captures in
 `docs/ui/pattern-book/`. Each moves into a shared class, one family per
@@ -81,3 +100,29 @@ is blue-tinted with a soft bezel instead of the flat near-black C0 tube; CRT
 text has no phosphor bloom; idle flicker and the change blink now apply to
 every CRT, not only the table's; Career's record text moved from blue to the
 info ink (blue is reserved for live table information).
+
+## Press feel (live)
+
+Every button presses the same way: the heavy thunk from the big Career /
+Buy In keys, scaled by the key's mass. Owner: `js/press-feel.js` +
+`css/press-feel.css`.
+
+| Size | Buttons | Sink | Bounce back | Sound |
+|---|---|---|---|---|
+| Big | `.pc-button-primary`, `.btn-primary`, FOLD/CHECK/CALL/RAISE, Award Pot, Quick Resolve, `.wide-btn` | 5px | overshoot 3, dip 2, lift 1, settle (300ms) | `allin` clunk (+ casing knock on the cartridges) |
+| Standard | `.pc-button-secondary`, `.btn-secondary`, choice rows, quick bets, Career secondary keys | 3px | overshoot 2, dip 1, settle (240ms) | `thunk` |
+| Small | `.icon-btn`, `.ch2-key`, `.table-save`, steppers | 2px | overshoot 1, settle (170ms) | `key` |
+
+- The press happens on finger-down; the bounce plays on release, in pixel
+  steps. A key the game holds down (the Career launch) stays down.
+- The table actions keep their own per-action press sounds (fold, check,
+  raise…); they take the motion only. Their rest position is 1px proud, so
+  their travel is measured from there (`--pf-rest`).
+- A click handler that used to play its own press sound calls
+  `pressFeelSounded(button)` first.
+- New buttons: use one of the listed classes and the press comes free. A
+  button family that isn't listed gets no press until it's added to `SIZES`
+  in `press-feel.js` (and this table).
+- Finishes options: Thunk (default), Heavy, Light, Original (each button's
+  pre-book press, for comparison).
+- Reduced Motion: the face still sinks while held, but doesn't bounce.

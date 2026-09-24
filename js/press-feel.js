@@ -1,51 +1,85 @@
 "use strict";
 
 /* ============================================================
-   PRESS FEEL — the big yellow buttons press like real keys
+   PRESS FEEL — every button presses like a real key (Pattern Book)
 
-   For every .pc-button-primary on the menu (#home) and the Career Hub
-   (#career-hub):
+   One press for the whole machine: the heavy thunk that began on the big
+   yellow buttons. It is scaled by the key's mass, so the character is the
+   same everywhere and only the weight changes:
 
-     DOWN   the moment the finger lands: the face sinks into its body,
-            the lamps on it flare, the casing takes a 1px knock, and the
-            press clunk plays (it used to wait for the finger to lift)
+     big    Career, Buy In, Deal Me In, dialog confirms, FOLD/CHECK/CALL/
+            RAISE, Award Pot   — deepest sink, fullest bounce, the clunk
+     std    Custom Game, Done, Cancel, choice rows, quick bets — a lighter
+            sink and bounce, the same clunk a touch lighter
+     small  ⚙ ← Save, steppers — a short sink, one small bounce, a tick-thunk
+
+     DOWN   the moment the finger lands the face sinks (and, on the big
+            cartridges, the lamps flare and the casing takes a 1px knock)
+            and the press sound plays
      UP     the face springs back in pixel steps: past its rest, back
             down, a last small lift, settle
 
-   A button the game deliberately HOLDS down after the press (the menu's
-   Career key stays sunk while the screen rolls away) is left held: the
-   spring only plays when the key actually comes back up.
+   Travel and bounce per size are CSS tokens in css/press-feel.css; the
+   Finishes menu (js/finishes.js) can swap them for a heavier or lighter
+   set, or turn this off to compare with each button's original press.
 
-   The press clunk now happens on DOWN, so the click handlers that used
-   to play it on release ask pressFeelSounded(button) first and skip
-   theirs if this already played it. Keyboard/programmatic presses never
-   set it, so they sound exactly as before.
+   A button the game deliberately HOLDS down after the press (the menu's
+   Career key stays sunk while the screen rolls away) is left held.
+
+   The table actions keep their own per-action press sounds (fold, check,
+   raise…) from 08-dev-mode.js; they only take the motion. Click handlers
+   that used to play a press sound ask pressFeelSounded(button) first and
+   skip theirs if this already played it. Keyboard/programmatic presses
+   never set it, so they sound as before.
 
    Presentation only; never calls or blocks the buttons' own handlers.
    Reduced Motion: the face still sinks while held, but no spring.
    ============================================================ */
 
 const PRESS_FEEL_CONFIG = {
-  soundWindowMs: 900,       // how long a DOWN clunk counts for the click
+  soundWindowMs: 900,       // how long a DOWN sound counts for the click
   hitMs: 110                // the casing knock
 };
 
 const PressFeel = (() => {
   const cfg = PRESS_FEEL_CONFIG;
   const HELD = ['career-entry-pressed', 'pc-launch-clunk'];
+  // Allow-listed families by mass. Anything not listed (the Career ticket
+  // rack, sliders, switches, seats) is left alone.
+  const SIZES = [
+    ['big',   '.pc-button-primary, .btn-primary, .btn-fold, .btn-check, .btn-call, .btn-raise, .btn-award-console, .btn-quick-resolve, .wide-btn'],
+    ['small', '.icon-btn, .ch2-key, .table-save, .stepper button'],
+    ['std',   '.pc-button-secondary, .btn-secondary, .segmented button, .quick-bet, .ch2-secondary, .ch2-card-flip, .cdir-primary, .cdir-abandon']
+  ];
+  const SOUND = { big:'allin', std:'thunk', small:'key' };
+  // These play their own press sound on pointerdown.
+  const OWN_SOUND = '#btn-fold, #btn-checkcall, #btn-raise, #btn-award-pot-console, #btn-quick-resolve';
   let active = null;
 
-  const target = event => {
-    const btn = event.target.closest && event.target.closest('.pc-button-primary');
+  const off = () => document.documentElement.dataset.finishPress === 'original';
+
+  function sizeOf(btn){
+    for (const [size, sel] of SIZES) if (btn.matches(sel)) return size;
+    return null;
+  }
+
+  function target(event){
+    const btn = event.target.closest && event.target.closest('button');
     if (!btn || btn.disabled) return null;
-    return btn.closest('#home, #career-hub') ? btn : null;
-  };
+    const size = sizeOf(btn);
+    if (!size) return null;
+    // "Original" keeps only the big cartridges' press (the pre-book state).
+    if (off() && !(btn.matches('.pc-button-primary') && btn.closest('#home, #career-hub'))) return null;
+    return { btn, size };
+  }
 
   function down(event){
     if (event.button > 0) return;
-    const btn = target(event);
-    if (!btn) return;
+    const hit = target(event);
+    if (!hit) return;
+    const { btn, size } = hit;
     active = btn;
+    btn.dataset.pf = size;
     btn.classList.remove('pf-spring');
     btn.classList.add('pf-down');
     const cradle = btn.closest('.pc-primary-cradle');
@@ -53,8 +87,10 @@ const PressFeel = (() => {
       cradle.classList.remove('pf-hit'); void cradle.offsetWidth; cradle.classList.add('pf-hit');
       setTimeout(() => cradle.classList.remove('pf-hit'), cfg.hitMs);
     }
-    Sound.buttonPress('allin');
-    btn.dataset.pfSounded = String(performance.now());
+    if (!btn.matches(OWN_SOUND)){
+      Sound.buttonPress(off() ? 'allin' : SOUND[size]);
+      btn.dataset.pfSounded = String(performance.now());
+    }
   }
 
   function up(){
@@ -81,7 +117,7 @@ const PressFeel = (() => {
     document.addEventListener('animationend', springEnded, true);
   }
 
-  /* True (once) if the DOWN clunk for this button just played. */
+  /* True (once) if the DOWN sound for this button just played. */
   function sounded(btn){
     const at = Number(btn && btn.dataset.pfSounded);
     if (btn) delete btn.dataset.pfSounded;
