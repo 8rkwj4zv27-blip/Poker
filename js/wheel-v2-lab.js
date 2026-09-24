@@ -64,8 +64,16 @@
   document.addEventListener('touchend', unlockAudio, true);
   const win = () => frame.contentWindow;
   // The game's top-level const/let bindings (game, settings, MachineWheel…)
-  // are not window properties; read them through the frame's global scope.
-  const g = name => { try{ return win().eval(name); }catch(e){ return undefined; } };
+  // are not window properties; BRIDGE (injected after the game's scripts)
+  // exposes the few the lab needs, without eval.
+  const BRIDGE = `window.__wheelLab = {
+    wheel: typeof MachineWheel === 'undefined' ? null : MachineWheel,
+    get game(){ return typeof game === 'undefined' ? null : game; },
+    get settings(){ return typeof settings === 'undefined' ? null : settings; },
+    tableCleared(){ DEV_MODE = true; devTestResultStage('table-cleared'); }
+  };`;
+  const bridge = () => { try{ return win().__wheelLab || null; }catch(e){ return null; } };
+  const g = name => { const b = bridge(); return b ? (name === 'MachineWheel' ? b.wheel : b[name]) : undefined; };
   const sleep = ms => new Promise(r => setTimeout(r, ms));
 
   function setStatus(text){ status.textContent = text; }
@@ -85,7 +93,8 @@
       .replace(/<head>/i, '<head><base href="' + base + '"><script>' + SHIM + '<\/script>')
       .replace(/<\/body>/i,
         '<link rel="stylesheet" href="css/machine-wheel.css?v=' + V + '">' +
-        '<script src="js/machine-wheel.js?v=' + V + '"><\/script></body>');
+        '<script src="js/machine-wheel.js?v=' + V + '"><\/script>' +
+        '<script>' + BRIDGE + '<\/script></body>');
   }
 
   function loadFrame(){
@@ -110,7 +119,7 @@
 
   function applyConfig(){
     const w = win();
-    const wheel = w && g('typeof MachineWheel === "undefined" ? null : MachineWheel');
+    const wheel = w && g('MachineWheel');
     if (!wheel) return;
     const c = wheel.config;
     c.machinery = state.machinery;
@@ -181,8 +190,7 @@
     async results(){
       await loadFrame();
       const w = win();
-      w.eval('DEV_MODE = true');
-      w.devTestResultStage('table-cleared');
+      bridge().tableCleared();
     },
     async next(){
       const w = win();
