@@ -109,8 +109,11 @@ functions in `07-ui-wiring.js`; owns no money itself. Styled by
 `css/career-hub-v2-lab.css` (shared with the Lab, see below) plus
 `css/career-motion-live.css` for the transitions and
 `css/career-hub-cabinet.css` (live-only layout: Back/Settings keys on the
-top rail, the brass ticket slot, the console with Abandon/Cash Out under
-the main button; the old bottom `.setup-head` strip is hidden).
+top rail; one dark console housing the ticket slot — cartridge-hole mouth
+over a readout whose text `career-hub-live.js` keeps in step with the
+ticket state and the feed — plus the main button and Abandon/Cash Out; the
+old bottom `.setup-head` strip is hidden). Chosen in `slot-lab.html`
+(option B, mount 3).
 
 ## `js/machine-wheel.js` + `css/machine-wheel.css` — Machine Wheel V2 (live)
 

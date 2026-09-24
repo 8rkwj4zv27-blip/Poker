@@ -197,6 +197,7 @@
     action.className = 'pc-button pc-button-primary ch2-primary is-' + currentEntry.state;
     // The slot's lamps invite a ticket only when this one can be fed in.
     root.dataset.entry = currentEntry.state;
+    slotReadout(root);
     if (currentEntry.state === 'active') { main.textContent = currentEntry.cash ? 'RESUME TABLE' : 'CONTINUE'; sub.textContent = 'SEAT ACCEPTED'; }
     else if (currentEntry.state === 'available') { main.textContent = currentEntry.cash ? 'BUY IN ' + amount(CAREER_CASH_CONFIG.buyIn) : currentEntry.event.buyIn ? 'BUY IN ' + amount(currentEntry.event.buyIn) : 'TAKE SEAT'; sub.textContent = 'TAKE SEAT'; }
     else if (currentEntry.state === 'unaffordable') { main.textContent = 'BANKROLL LOW'; sub.textContent = 'ENTRY UNAFFORDABLE'; }
@@ -213,6 +214,25 @@
     }
   }
 
+  /* The slot's readout says what the slot is doing, in the DEALER READY
+     voice. It follows the selected ticket's state (data-entry, set in
+     cardStates) and the ticket feed's own stage classes on the hub, so
+     neither the feed nor anything else has to call into it. */
+  const SLOT_READOUT = { available:'INSERT TICKET', active:'ENTRY PAID', locked:'LOCKED', unaffordable:'FUNDS LOW', blocked:'TABLE IN PLAY' };
+  function slotReadout(root){
+    const text = root.querySelector('#ch2-slot-text');
+    if (!text) return;
+    const next = root.classList.contains('tf-accepted') ? 'ACCEPTED'
+      : root.classList.contains('tf-shredding') ? 'SHREDDING'
+      : root.classList.contains('tf-feeding') ? 'READING'
+      : SLOT_READOUT[root.dataset.entry] || 'READY';
+    if (text.textContent !== next) text.textContent = next;
+  }
+  function watchSlotReadout(root){
+    if (typeof MutationObserver === 'undefined') return;
+    new MutationObserver(() => slotReadout(root)).observe(root, { attributes:true, attributeFilter:['class','data-entry'] });
+  }
+
   function mount(board){
     if (accepting) return;
     const backButton = document.getElementById('career-back');
@@ -227,21 +247,21 @@
       '<div class="ch2-money-block"><div class="cpi-bankroll-housing ch2-bankroll-housing"><div class="amt-readout ch2-bankroll-reel" id="ch2-bankroll" role="img" aria-live="polite" aria-label="Bankroll ' + esc(amount(bank)) + '" style="grid-template-columns:21px repeat(' + Math.max(7,String(bank).length) + ',minmax(12px,1fr))">' + reelMarkup(bank) + '</div></div></div>' +
       '<button class="ch2-record crt" id="ch2-record" type="button"><span class="ch2-crt-glass crt__content" id="ch2-crt-glass"><span class="ch2-crt-stat"><small id="ch2-crt-label-a"></small><strong class="tabular" id="ch2-crt-value-a"></strong></span><span class="ch2-crt-stat"><small id="ch2-crt-label-b"></small><strong class="tabular" id="ch2-crt-value-b"></strong></span></span></button></header>' +
       '<section class="ch2-reader" aria-label="Career event browser"><div class="ch2-rack" id="ch2-rack"><div class="ch2-track" id="ch2-track" role="listbox" tabindex="0" aria-label="Career events. Swipe, tap an exposed ticket edge, or use left and right arrow keys">' + all.map(card).join('') + '</div></div></section>' +
-      // The ticket slot. Only .ch2-intake and .ch2-intake-mouth are
-      // load-bearing (the ticket feed measures the mouth); the rest is
-      // the plate's hardware.
-      '<div class="ch2-intake" id="ch2-intake" aria-hidden="true">' +
-        '<span class="ch2-intake-screw"></span><span class="ch2-intake-led"></span>' +
-        '<span class="ch2-intake-mouth"><span class="ch2-intake-rollers"></span></span>' +
-        '<span class="ch2-intake-led"></span><span class="ch2-intake-screw"></span>' +
-        '<span class="ch2-intake-label">Ticket in</span>' +
-      '</div>' +
+      // The console: one dark-plastic housing holding the ticket slot, the
+      // main button and Abandon/Cash Out. In the slot only .ch2-intake and
+      // .ch2-intake-mouth are load-bearing (the ticket feed finds the slot
+      // by id and measures the mouth); the readout says what it is doing.
       '<div class="ch2-console">' +
+      '<div class="ch2-intake" id="ch2-intake" aria-hidden="true">' +
+        '<span class="ch2-intake-mouth"></span>' +
+        '<span class="pc-display ch2-slot-readout"><span class="pc-lamp ch2-slot-lamp"></span><span id="ch2-slot-text"></span></span>' +
+      '</div>' +
       '<div class="pc-primary-cradle ch2-action-cradle"><span class="pc-slot-aperture" aria-hidden="true"><span class="pc-slot-door"></span></span><button class="pc-button pc-button-primary ch2-primary" id="ch2-primary" type="button"><span class="pc-lamp is-amber" aria-hidden="true"></span><span><strong id="ch2-primary-main"></strong><small id="ch2-primary-sub"></small></span><span class="pc-lamp is-amber" aria-hidden="true"></span></button></div>' +
       '<button class="ch2-secondary" id="ch2-secondary" type="button" hidden></button>' +
       '</div>' +
       '</main>';
     const root = board.querySelector('#career-hub');
+    watchSlotReadout(root);
     // Back and Settings live on the cabinet's top rail. Back goes through
     // the screen's own #career-back (hidden with the old bottom strip), so
     // its handler and its disabled-while-buying-in state stay the one truth.
