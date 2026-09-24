@@ -1251,6 +1251,104 @@ const Sound = (function(){
       setTimeout(()=>noise(0.065,0.065,{filterType:'lowpass',freq:170,freqSweepTo:55,decayPow:2}),34);
     });
   }
+  /* -- 14f. Machine Wheel V2 (js/machine-wheel.js). Additive: nothing in
+     production calls these until the V2 wheel is installed. The wheel
+     drives every one of them from its own measured motion, so none can
+     outlive the picture. */
+  function wheelReleaseSound(){
+    withVoiceCap(200, ()=>{
+      noise(0.018, 0.06, { filterType:'highpass', freq:2600, decayPow:2.6 });
+      blip(1320, 0.03, 'square', 0.024, 0.004);
+      noise(0.07, 0.085, { filterType:'lowpass', freq:340, freqSweepTo:90, decayPow:1.9, when:0.042 });
+      blip(104, 0.09, 'square', 0.04, 0.044);
+    });
+  }
+  /* One ratchet tooth. The top half is the existing V1 click; underneath,
+     a low body thump that only speaks when the drum is heavy and slow, so
+     the final teeth land like weight rather than like a clock. */
+  function wheelToothSound(speed, final){
+    stageRollClick(speed, final);
+    const slow = 1 - Math.max(0, Math.min(1, Number(speed)||0));
+    if (slow < .35 && !final) return;
+    withVoiceCap(110, ()=>{
+      noise(0.034, (final ? 0.07 : 0.03) * (.5 + slow*.5), { filterType:'lowpass', freq:230, freqSweepTo:70, decayPow:2.1 });
+    });
+  }
+  /* The pawl catching the drum as it coasts past the last tooth. */
+  function wheelCatchSound(){
+    withVoiceCap(160, ()=>{
+      noise(0.014, 0.05, { filterType:'bandpass', freq:2300, freqSweepTo:1400, Q:2.4, decayPow:3 });
+      blip(930, 0.05, 'triangle', 0.02, 0.004);
+      blip(700, 0.07, 'sine', 0.014, 0.03);
+    });
+  }
+  /* The drum easing back across the tooth it overshot. */
+  function wheelBackTickSound(){
+    withVoiceCap(60, ()=>noise(0.01, 0.022, { filterType:'bandpass', freq:1700, Q:2, decayPow:3.2 }));
+  }
+  function wheelBoltSound(){
+    withVoiceCap(160, ()=>{
+      noise(0.05, 0.05, { filterType:'bandpass', freq:1900, freqSweepTo:900, Q:1.1, decayPow:1.6 });
+      blip(240, 0.04, 'square', 0.02, 0.03);
+    });
+  }
+  /* The V1 CLUNK plus a short metallic ring from the housing. */
+  function wheelLockSound(){
+    stageLockSound();
+    withVoiceCap(360, ()=>{
+      blip(2140, 0.16, 'square', 0.006, 0.012);
+      blip(3310, 0.11, 'square', 0.004, 0.016);
+      noise(0.1, 0.03, { filterType:'bandpass', freq:2600, freqSweepTo:2000, Q:6, decayPow:1.7, when:0.012 });
+    });
+  }
+  /* House-light relay: one click per lamp bank. */
+  function wheelRelaySound(strength){
+    const s = Math.max(.3, Math.min(1, Number(strength)||.6));
+    withVoiceCap(90, ()=>{
+      noise(0.012, 0.04*s, { filterType:'highpass', freq:3200, decayPow:3 });
+      blip(58, 0.06, 'square', 0.016*s, 0.006);
+    });
+  }
+  /* Bearing hum under the ratchet: filtered noise plus a low tone, both
+     following the drum's measured speed. Returns a handle the wheel
+     updates every frame and stops when it stops. */
+  function wheelMotor(){
+    const c = ac();
+    if (!c) return { set(){}, stop(){} };
+    try{
+      const len = Math.floor(c.sampleRate * 0.5);
+      const buf = c.createBuffer(1, len, c.sampleRate);
+      const d = buf.getChannelData(0);
+      for (let i=0;i<len;i++) d[i] = Math.random()*2-1;
+      const src = c.createBufferSource(); src.buffer = buf; src.loop = true;
+      const f = c.createBiquadFilter(); f.type = 'bandpass'; f.frequency.value = 160; f.Q.value = 1.3;
+      const osc = c.createOscillator(); osc.type = 'triangle'; osc.frequency.value = 46;
+      const og = c.createGain(); og.gain.value = 0.35;
+      const g = c.createGain(); g.gain.value = 0.0001;
+      src.connect(f); f.connect(g); osc.connect(og); og.connect(g); g.connect(c.destination);
+      const t0 = c.currentTime; src.start(t0); osc.start(t0);
+      let stopped = false;
+      return {
+        set(speed){
+          if (stopped) return;
+          const v = Math.max(0, Math.min(1, Number(speed)||0)), t = c.currentTime;
+          g.gain.setTargetAtTime(0.0001 + v*0.05, t, 0.03);
+          f.frequency.setTargetAtTime(120 + v*260, t, 0.04);
+          osc.frequency.setTargetAtTime(38 + v*34, t, 0.04);
+        },
+        stop(){
+          if (stopped) return;
+          stopped = true;
+          const t = c.currentTime;
+          try{
+            g.gain.cancelScheduledValues(t);
+            g.gain.setTargetAtTime(0.0001, t, 0.025);
+            src.stop(t + 0.2); osc.stop(t + 0.2);
+          } catch(e){}
+        }
+      };
+    } catch(e){ return { set(){}, stop(){} }; }
+  }
   function consoleShiftSound(){
     withVoiceCap(180, ()=>{
       noise(0.025, 0.035, { filterType:'bandpass', freq:1250, freqSweepTo:720, Q:1.2, decayPow:2.8 });
@@ -1489,6 +1587,14 @@ const Sound = (function(){
     stageUnlock(){ if (this.sfxV1Enabled) stageUnlockSound(); },
     stageRollClick(speed,final){ if (this.sfxV1Enabled) stageRollClick(speed,final); },
     stageLock(){ if (this.sfxV1Enabled) stageLockSound(); },
+    wheelRelease(){ if (this.sfxV1Enabled) wheelReleaseSound(); },
+    wheelTooth(speed,final){ if (this.sfxV1Enabled) wheelToothSound(speed,final); },
+    wheelCatch(){ if (this.sfxV1Enabled) wheelCatchSound(); },
+    wheelBackTick(){ if (this.sfxV1Enabled) wheelBackTickSound(); },
+    wheelBolt(){ if (this.sfxV1Enabled) wheelBoltSound(); },
+    wheelLock(){ if (this.sfxV1Enabled) wheelLockSound(); },
+    wheelRelay(strength){ if (this.sfxV1Enabled) wheelRelaySound(strength); },
+    wheelMotor(){ return this.sfxV1Enabled ? wheelMotor() : { set(){}, stop(){} }; },
     consoleShift(){ if (this.sfxV1Enabled) consoleShiftSound(); }
   };
 })();

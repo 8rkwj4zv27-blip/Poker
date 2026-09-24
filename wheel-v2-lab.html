@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#140709">
+  <meta name="format-detection" content="telephone=no">
+  <link rel="icon" href="data:,">
+  <title>Poker Faces — Machine Wheel V2 Lab</title>
+  <link rel="stylesheet" href="css/wheel-v2-lab.css?v=1">
+  <script defer src="js/wheel-v2-lab.js?v=1"></script>
+</head>
+<body class="wl-body">
+  <!-- The real game, sandboxed: in-memory storage, no service worker.
+       Nothing played in here can touch a real save. -->
+  <div class="wl-stage">
+    <iframe class="wl-frame" id="wl-frame" title="Poker Faces (sandboxed copy)"></iframe>
+  </div>
+
+  <button class="wl-tab" id="wl-tab" type="button" aria-expanded="true" aria-controls="wl-panel">WHEEL</button>
+
+  <aside class="wl-panel" id="wl-panel" aria-label="Machine wheel lab controls">
+    <header class="wl-head">
+      <strong>MACHINE WHEEL</strong>
+      <span id="wl-status">LOADING…</span>
+    </header>
+
+    <section class="wl-group" aria-label="Run a transition">
+      <div class="wl-label">RUN</div>
+      <div class="wl-runs">
+        <button type="button" data-run="career">HOME → CAREER</button>
+        <button type="button" data-run="table">CAREER → TABLE</button>
+        <button type="button" data-run="results">TABLE → RESULTS</button>
+        <button type="button" data-run="next">RESULTS → NEXT</button>
+      </div>
+      <p class="wl-note">Or just play in the frame: every real route uses the selected wheel.</p>
+    </section>
+
+    <section class="wl-group">
+      <div class="wl-row"><span class="wl-label">WHEEL</span>
+        <div class="wl-seg" data-key="engine"><button data-v="v1">V1</button><button data-v="v2">V2</button></div></div>
+      <div class="wl-row" data-v2><span class="wl-label">MACHINERY</span>
+        <div class="wl-seg" data-key="machinery"><button data-v="clean">CLEAN</button><button data-v="rim">RIM</button><button data-v="full">FULL</button></div></div>
+      <div class="wl-row" data-v2><span class="wl-label">BOLTS</span>
+        <div class="wl-seg" data-key="bolts"><button data-v="on">ON</button><button data-v="off">OFF</button></div></div>
+      <div class="wl-row" data-v2><span class="wl-label">GRAIN</span>
+        <div class="wl-seg" data-key="grain"><button data-v="1">1PX</button><button data-v="2">2PX</button><button data-v="3">3PX</button></div></div>
+      <div class="wl-row" data-v2><span class="wl-label">WEIGHT</span>
+        <div class="wl-seg" data-key="weight"><button data-v="0.85">BRISK</button><button data-v="1">STD</button><button data-v="1.2">HEAVY</button></div></div>
+      <div class="wl-row" data-v2><span class="wl-label">OVERSHOOT</span>
+        <div class="wl-seg" data-key="overshoot"><button data-v="0">NONE</button><button data-v="0.5">LOW</button><button data-v="1">STD</button><button data-v="1.6">HIGH</button></div></div>
+      <div class="wl-row" data-v2><span class="wl-label">HUM</span>
+        <div class="wl-seg" data-key="hum"><button data-v="on">ON</button><button data-v="off">OFF</button></div></div>
+      <div class="wl-row"><span class="wl-label">SOUND</span>
+        <div class="wl-seg" data-key="sound"><button data-v="on">ON</button><button data-v="off">OFF</button></div></div>
+      <div class="wl-row" data-v2><span class="wl-label">SPEED</span>
+        <div class="wl-seg" data-key="speed"><button data-v="1">1×</button><button data-v="0.5">½×</button><button data-v="0.25">¼×</button></div></div>
+    </section>
+
+    <footer class="wl-foot">
+      <button type="button" id="wl-reset">RESET GAME</button>
+      <span>Sandboxed · no saves touched</span>
+    </footer>
+  </aside>
+</body>
+</html>

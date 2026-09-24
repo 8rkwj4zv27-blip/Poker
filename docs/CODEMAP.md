@@ -108,6 +108,17 @@ functions in `07-ui-wiring.js`; owns no money itself. Styled by
 `css/career-hub-v2-lab.css` (shared with the Lab, see below) plus
 `css/career-motion-live.css` for the transitions.
 
+## `js/machine-wheel.js` + `css/machine-wheel.css` — Machine Wheel V2 (audition only)
+
+Candidate V2 of the three screen-change rolls: one pixel-snapped drum
+engine (`machineWheelRig`) plus drop-in `rollStageTransitionV2`,
+`enterCareerFromHomeV2` and `careerDepartToTableV2`, each keeping its V1
+counterpart's contract. **Not loaded by `index.html`** — it's auditioned in
+`wheel-v2-lab.html`, which runs the real game in a storage-isolated iframe
+and swaps V1/V2 via `MachineWheel.install()/uninstall()`. Its sounds live
+in the `Sound` module as `Sound.wheel*` (additive; unused by production
+until V2 is wired in).
+
 ## `js/08-dev-mode.js` (~1,140 lines)
 
 The DEV panel. Every control drives real production functions
@@ -121,7 +132,8 @@ there manually.
 
 Files matching `*-lab.html`, `*-lab.js`, `*-lab.css` (`career-lab`,
 `career-hub-v2-lab`, `ticket-lab`, `card-flight-options`, `card-turn-lab`,
-`chip-motion-lab`, `design-lab`, `result-stage-lab`, `showdown-rail-lab`)
+`chip-motion-lab`, `design-lab`, `result-stage-lab`, `showdown-rail-lab`,
+`wheel-v2-lab`)
 are **isolated visual references and prototyping sandboxes**. Several are
 committed permanently as durable references even after their feature
 shipped. Rules:

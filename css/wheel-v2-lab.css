@@ -1,0 +1,60 @@
+/* Machine Wheel V2 Lab — the lab chrome only. The game in the frame uses
+   its own production stylesheets plus css/machine-wheel.css. */
+:root{
+  --wl-bg:#140709; --wl-panel:#2a0f13; --wl-panel-2:#3a1418; --wl-ink:#080405;
+  --wl-gold:#e8b83a; --wl-gold-dim:#8a6a26; --wl-cream:#f3e6c4; --wl-dim:#b69a7a;
+}
+*{ box-sizing:border-box; }
+html,body{ margin:0; height:100%; background:var(--wl-bg); color:var(--wl-cream); }
+body{ font:700 11px/1.3 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; letter-spacing:.06em; overflow:hidden; }
+button{ font:inherit; letter-spacing:inherit; color:inherit; cursor:pointer; -webkit-tap-highlight-color:transparent; }
+
+.wl-stage{ position:fixed; inset:0; }
+.wl-frame{ display:block; width:100%; height:100%; border:0; background:#000; }
+
+/* Phone: full-bleed game, the panel is a sheet you pull from the tab. */
+.wl-tab{
+  position:fixed; z-index:20; left:0; top:38%; padding:10px 4px;
+  writing-mode:vertical-rl; transform:rotate(180deg);
+  background:var(--wl-gold); color:var(--wl-ink); border:2px solid var(--wl-ink); border-left:0;
+  box-shadow:3px 0 0 var(--wl-ink); font-size:10px;
+}
+.wl-panel{
+  position:fixed; z-index:19; left:0; right:0; bottom:0; max-height:72dvh; overflow:auto;
+  padding:10px 12px calc(12px + env(safe-area-inset-bottom));
+  background:var(--wl-panel); border-top:3px solid var(--wl-ink);
+  box-shadow:0 -3px 0 var(--wl-gold-dim),0 -10px 0 rgba(0,0,0,.35);
+}
+.wl-panel[hidden]{ display:none; }
+
+.wl-head{ display:flex; justify-content:space-between; align-items:baseline; gap:8px; margin-bottom:8px; }
+.wl-head strong{ color:var(--wl-gold); font-size:13px; letter-spacing:.12em; }
+.wl-head span{ color:var(--wl-dim); font-size:10px; }
+.wl-group{ padding:8px 0; border-top:2px solid var(--wl-ink); }
+.wl-label{ color:var(--wl-dim); font-size:10px; }
+.wl-note{ margin:6px 0 0; color:var(--wl-dim); font-weight:400; font-size:10px; letter-spacing:.02em; }
+
+.wl-runs{ display:grid; grid-template-columns:1fr 1fr; gap:6px; margin-top:6px; }
+.wl-runs button,.wl-foot button{
+  padding:10px 6px; background:var(--wl-gold); color:var(--wl-ink); border:2px solid var(--wl-ink);
+  box-shadow:inset 0 2px 0 #ffe380,0 3px 0 var(--wl-ink);
+}
+.wl-runs button:active,.wl-foot button:active{ transform:translateY(2px); box-shadow:inset 0 2px 0 #ffe380,0 1px 0 var(--wl-ink); }
+.wl-runs button:disabled{ opacity:.45; }
+
+.wl-row{ display:flex; align-items:center; justify-content:space-between; gap:8px; padding:3px 0; }
+.wl-row.is-off{ opacity:.35; pointer-events:none; }
+.wl-seg{ display:flex; border:2px solid var(--wl-ink); background:var(--wl-ink); gap:2px; }
+.wl-seg button{ min-width:44px; padding:7px 7px; background:var(--wl-panel-2); border:0; color:var(--wl-dim); }
+.wl-seg button.is-on{ background:var(--wl-gold); color:var(--wl-ink); box-shadow:inset 0 2px 0 #ffe380; }
+
+.wl-foot{ display:flex; align-items:center; justify-content:space-between; gap:10px; padding-top:8px; border-top:2px solid var(--wl-ink); }
+.wl-foot span{ color:var(--wl-dim); font-weight:400; font-size:10px; }
+
+/* Desktop / tablet: a phone-sized frame with the panel beside it. */
+@media (min-width:760px){
+  .wl-stage{ right:340px; display:flex; align-items:center; justify-content:center; }
+  .wl-frame{ width:390px; height:min(844px,calc(100vh - 24px)); border:3px solid var(--wl-ink); box-shadow:0 0 0 3px var(--wl-gold-dim); }
+  .wl-tab{ display:none; }
+  .wl-panel,.wl-panel[hidden]{ display:block; left:auto; top:0; width:340px; max-height:none; border-top:0; border-left:3px solid var(--wl-ink); box-shadow:-3px 0 0 var(--wl-gold-dim); }
+}
