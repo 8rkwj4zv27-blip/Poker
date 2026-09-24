@@ -54,9 +54,14 @@
   background:var(--pc-plastic-dark); border:3px solid var(--pc-edge-lo); border-radius:3px;
   box-shadow:inset 2px 2px 0 var(--pc-plastic-dark-hi),inset -2px -2px 0 var(--pc-plastic-dark-lo),0 3px 0 #17090D;
 }
-/* The cradle sizes to its button: a fixed height let the 78px button run
-   past the casing and hide the cream rim's bottom edge. */
-#career-hub .ch2-action-cradle{ height:auto; flex:0 0 auto; margin:0; }
+/* The cradle sizes to its button, with the SAME bottom padding as the
+   home screen's Career cradle (22px): the button's dark body and shadow
+   sit 13px below its yellow face, and anything less lets them run into
+   the casing's bottom bevel so no cream shows under the button. */
+#career-hub .ch2-action-cradle{ height:auto; flex:0 0 auto; margin:0; padding-bottom:22px; }
+/* The body under the yellow face: 70px (its 3px borders add to that), as
+   on shorter phones already, so a band of cream casing shows below it. */
+#career-hub .ch2-action-cradle::before{ height:70px; }
 #career-hub .ch2-secondary{
   min-height:40px; margin:0; padding:6px 10px;
   border:3px solid var(--pc-edge-lo); border-radius:3px; background:var(--pc-plastic); color:var(--px-ink);
@@ -109,5 +114,6 @@
 @media (max-height:900px){
   #career-hub.ch2-machine{ gap:10px; padding-top:calc(max(8px,var(--safe-top,env(safe-area-inset-top))) + 6px); }
   #career-hub .ch2-card{ top:14px; height:calc(100% - 28px); }
+  #career-hub .ch2-action-cradle{ padding-bottom:22px; }
   #career-hub .ch2-card-front{ grid-template-rows:34px 38px 46px 46px minmax(80px,1fr) 35px; }
 }

@@ -7,8 +7,8 @@ something specific was built or decided, never by default.
 
 ## Current build
 
-- Build marker: `v0.39.3-dev · Slot Console` (main-menu footer / DEV panel).
-- Service-worker cache: `poker-v39-3`.
+- Build marker: `v0.39.4-dev · Slot Console` (main-menu footer / DEV panel).
+- Service-worker cache: `poker-v39-4`.
 - Career save schema: **version 6**.
 - Production Career Hub: ticket-reader presentation (six-venue rack,
   spring-driven touch physics, printed-ticket detail flip), integrated

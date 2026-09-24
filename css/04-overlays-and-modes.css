@@ -543,9 +543,11 @@ body:has(#table-screen.hidden) .arcade-bank-flight{
   box-shadow:inset 4px 4px 0 #EEDDA5,inset -4px -3px 0 #756744,0 3px 0 #2A190F;
 }
 /* The cartridge body is fixed in the slot. Only its yellow face travels when
-   pressed, keeping the bottom edge anchored like the secondary controls. */
+   pressed, keeping the bottom edge anchored like the secondary controls.
+   70px (+3px borders each side) leaves a band of casing visible below it;
+   at 78px the body ran into the casing's bottom bevel and hid the rim. */
 .pc-primary-cradle::before{
-  content:''; position:absolute; z-index:0; left:7px; right:7px; top:16px; height:78px;
+  content:''; position:absolute; z-index:0; left:7px; right:7px; top:16px; height:70px;
   background:var(--pc-button-lo); border:3px solid var(--pc-edge-lo); border-radius:5px;
   box-shadow:0 3px 0 #0D0805;
 }
