@@ -6,7 +6,7 @@
   background:
     repeating-conic-gradient(rgba(255,255,255,.016) 0% 25%, transparent 0% 50%) 0 0 / 10px 10px,
     var(--bg-deep);
-  padding:max(28px,env(safe-area-inset-top)) 22px max(28px,env(safe-area-inset-bottom));
+  padding:max(28px,var(--safe-top)) 22px max(28px,env(safe-area-inset-bottom));
   align-items:center;
 }
 .lobby-card{ width:100%; max-width:440px; margin:auto; }
@@ -104,7 +104,7 @@
 .table-main{ flex:1; display:flex; flex-direction:column; min-height:0; }
 .topbar{
   display:flex; align-items:center; justify-content:space-between; gap:10px;
-  padding:max(8px,env(safe-area-inset-top)) 14px 6px 14px; z-index:20; flex-shrink:0;
+  padding:max(8px,var(--safe-top)) 14px 6px 14px; z-index:20; flex-shrink:0;
 }
 .topbar .brandmini{ font-family:var(--font-hdr); font-size:10px; letter-spacing:.14em; color:var(--accent); font-weight:400; text-shadow:2px 2px 0 var(--px-ink); }
 .topbar .meta{ font-size:11px; color:var(--ink-faint); margin-top:3px; }

@@ -21,7 +21,7 @@ button{ touch-action:manipulation; }
   --ms-plate-lo:var(--pc-plastic-lo,color-mix(in srgb,var(--theme-case-raised) 58%,black));
   --ms-well:color-mix(in srgb,var(--panel) 50%,black);
   position:relative; width:min(100vw,430px); height:100%;
-  padding:max(8px,env(safe-area-inset-top)) 8px max(8px,env(safe-area-inset-bottom));
+  padding:max(8px,var(--safe-top,env(safe-area-inset-top))) 8px max(8px,env(safe-area-inset-bottom));
   display:grid; grid-template-rows:170px minmax(0,1fr) 26px 126px; gap:6px;
   align-items:stretch; overflow:hidden; isolation:isolate;
   background:

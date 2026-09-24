@@ -10,10 +10,10 @@
   .felt-wrap{ padding:0 6px 6px; }
   #action-area{
     width:300px; flex-shrink:0; display:flex; flex-direction:column; justify-content:center;
-    padding:max(10px,env(safe-area-inset-top)) max(14px,env(safe-area-inset-right)) max(10px,env(safe-area-inset-bottom)) 10px;
+    padding:max(10px,var(--safe-top)) max(14px,env(safe-area-inset-right)) max(10px,env(safe-area-inset-bottom)) 10px;
     background:linear-gradient(90deg,transparent 0, rgba(4,8,6,.92) 26%);
   }
-  .topbar{ padding-top:max(6px,env(safe-area-inset-top)); padding-bottom:2px; }
+  .topbar{ padding-top:max(6px,var(--safe-top)); padding-bottom:2px; }
   .banner{ min-height:32px; padding:5px 4px; }
   .actions-row button,.btn-quick-resolve{ min-height:52px; }
   .seat{ width:78px; margin-left:-39px; }
@@ -361,7 +361,7 @@
 #awards{
   overflow-y:auto; -webkit-overflow-scrolling:touch; align-items:center;
   background:repeating-conic-gradient(rgba(255,255,255,.016) 0 25%,transparent 0 50%) 0 0/10px 10px,var(--bg-deep);
-  padding:max(28px,env(safe-area-inset-top)) 18px max(28px,env(safe-area-inset-bottom));
+  padding:max(28px,var(--safe-top)) 18px max(28px,env(safe-area-inset-bottom));
 }
 .awards-card{ max-width:520px; margin:0 auto; }
 .awards-summary{ margin-bottom:14px; padding:11px; color:var(--ink-dim); text-align:center; font-size:11px; line-height:1.55; border:2px solid var(--px-ink); background:var(--panel); box-shadow:0 3px 0 var(--px-ink); }
@@ -425,8 +425,11 @@
   --action-area-h:clamp(92px,12.33vh,104px);
 }
 .topbar{
-  height:42px; min-height:42px; box-sizing:border-box;
-  padding:max(4px,env(safe-area-inset-top)) 8px 2px;
+  /* 36px of content plus whatever the top clearance needs. A fixed 42px
+     here squeezed the clearance into the box and pushed the title up
+     under the iPhone status bar. */
+  height:calc(max(4px,var(--safe-top)) + 38px); min-height:42px; box-sizing:border-box;
+  padding:max(4px,var(--safe-top)) 8px 2px;
 }
 .topbar .meta{ margin-top:2px; }
 .table-settings{

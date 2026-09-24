@@ -59,6 +59,12 @@
 }
 
 :root{
+  /* Top clearance for every screen. On a phone with a status bar / Dynamic
+     Island it's the safe area plus 14px, because iOS softens content a
+     little BELOW the status bar too; with no inset (desktop, older iPads)
+     it stays 0, so each rule's own max() minimum still applies. The min()
+     term is 0 when the inset is 0 and 14px as soon as there is one. */
+  --safe-top:calc(env(safe-area-inset-top,0px) + min(14px, env(safe-area-inset-top,0px) * 14));
   --px-ink:#0D0F0C;
   --card-face:#F4EFE1; --card-ink:#22201C;
   --suit-spade:#22201C; --suit-club:#22201C;

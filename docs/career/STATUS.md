@@ -7,8 +7,8 @@ something specific was built or decided, never by default.
 
 ## Current build
 
-- Build marker: `v0.37.0-dev · Machine Wheel` (main-menu footer / DEV panel).
-- Service-worker cache: `poker-v37-0`.
+- Build marker: `v0.37.1-dev · Machine Wheel` (main-menu footer / DEV panel).
+- Service-worker cache: `poker-v37-1`.
 - Career save schema: **version 6**.
 - Production Career Hub: ticket-reader presentation (six-venue rack,
   spring-driven touch physics, printed-ticket detail flip), integrated
