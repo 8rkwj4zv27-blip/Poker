@@ -120,6 +120,19 @@ bodies** in `06-presentation.js`/`career-motion-live.js` (those remain only
 so `wheel-v2-lab.html` can switch back to compare). Tuning lives in
 `MACHINE_WHEEL_CONFIG`; sounds are `Sound.wheel*` in the `Sound` module.
 
+## `js/table-intro.js` + `css/table-intro.css` — Table Intro (Lab only, not shipped yet)
+
+"The machine powers up": the beat between arriving at a table and its first
+deal (stepped lights, title marquee that docks into the top bar, clockwise
+seat roll call with style tags, bank load through the hatch, pot tray +
+deck drop). Presentation only. `TableIntro.install()` wraps the table entry
+points (`startCareerEvent`, `continueCareerEvent`, `startCareerCashSession`,
+`startSinglePlayerRun`, `continueTable`, `startGame`) to arm it and
+`startNewHand` to play it before the first deal; it also absorbs the
+Machine Wheel's `careerTableCallout` title flash. **Not loaded by
+`index.html`/`sw.js` yet** — `intro-lab.html` injects it into a sandboxed
+copy of the game for review. Tuning lives in `TABLE_INTRO_CONFIG`.
+
 ## `js/08-dev-mode.js` (~1,140 lines)
 
 The DEV panel. Every control drives real production functions
@@ -134,7 +147,7 @@ there manually.
 Files matching `*-lab.html`, `*-lab.js`, `*-lab.css` (`career-lab`,
 `career-hub-v2-lab`, `ticket-lab`, `card-flight-options`, `card-turn-lab`,
 `chip-motion-lab`, `design-lab`, `result-stage-lab`, `showdown-rail-lab`,
-`wheel-v2-lab`)
+`wheel-v2-lab`, `intro-lab`)
 are **isolated visual references and prototyping sandboxes**. Several are
 committed permanently as durable references even after their feature
 shipped. Rules:
