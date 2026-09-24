@@ -21,7 +21,7 @@
   const panel = document.getElementById('il-panel');
   const tab = document.getElementById('il-tab');
   const status = document.getElementById('il-status');
-  const V = '1';
+  const V = '2';
   // Where the game's page lives. A hosted copy of this lab can point this
   // at a renamed file with a data-game="..." attribute on any element.
   const gameHost = document.querySelector('[data-game]');
