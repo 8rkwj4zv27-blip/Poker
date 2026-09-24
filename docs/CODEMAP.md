@@ -13,7 +13,7 @@ by the code and by `CLAUDE.md`/`AGENTS.md`, not by this file.
 07-ui-wiring.js         career-hub-live.js      career-motion-live.js
 machine-wheel.js        ticket-feed.js          table-intro.js
 08-dev-mode.js          home-cast.js            home-boot.js
-finishes.js             press-feel.js           machine-crt.js
+crt.js                  finishes.js             press-feel.js
 ```
 
 Later files call into earlier ones freely; there's no module system, so
@@ -180,23 +180,14 @@ neighbour's flare. Sparse, silent idle life; tapping a face flares it.
 The Home Boot drops the faces in and calls `HeroCast.arrive(i)` on each
 landing. Decorative only — not the table mood system.
 
-## `crt-lab.html` + `js/crt-lab.js` + candidate `css/crt.css` / `js/crt.js` — CRT rebuild (Lab)
-
-The CRT rebuild, awaiting the owner's pick: `css/crt.css` is the one CRT
-component (glass / line / figure / caption / cells / lamp / meter / cards,
-every effect a `data-crt-*` dial) and `js/crt.js` its change engine
-(`CRT.set`). `crt-lab.html` shows all 15 game CRTs on it with five presets
-(Clean → Meltdown) and every dial; the recipe lives in the page address.
-Not loaded by the game yet — once a recipe is chosen, the old CRT styles are
-removed and every CRT is rebuilt on this component.
-
 ## `js/finishes.js` + `css/finishes.css` — Finishes menu (live)
 
 Settings → Finishes: a page inside the Settings sheet that swaps each
-Pattern Book set (CRT glass, CRT motion, button press) between named
-options, live, on this device only (`felt.finishes`). Options are
-attributes on `<html>` whose tokens live in the set's own stylesheet
-(`machine-crt.css`, `press-feel.css`). `FINISHES_MENU` switches it off.
+Pattern Book set (CRT look — the game recipe or a CRT Lab preset — and
+button press) live, on this device only (`felt.finishes`, applied before
+first paint by the inline script at the top of `index.html`, which also
+keeps the game's recipe as `window.CRT_RECIPE`). `FINISHES_MENU` switches
+it off.
 See `docs/ui/PATTERN_BOOK.md`.
 
 ## `js/press-feel.js` + `css/press-feel.css` — press feel for every button (live)
@@ -215,18 +206,22 @@ it never plays twice. The big-button geometry rule (body as tall as the
 face, 7px lower; cradle padded 9px/23px for an even 7px rim) lives with
 `.pc-primary-cradle` in `css/04-overlays-and-modes.css`.
 
-## `css/machine-crt.css` + `js/machine-crt.js` + `pattern-book.html` — the Pattern Book (live)
+## `css/crt.css` + `js/crt.js` — the CRT component (live) and `pattern-book.html`
 
-The visual library: one finish per job, so repeated parts never drift. Rules,
-the owner sign-off record and the "add it to the book first" process are in
-`docs/ui/PATTERN_BOOK.md`; `validation/pattern-book-checks.js` enforces them.
-Live so far: the CRT family. Every CRT screen carries `.machine-crt`, and
-`css/machine-crt.css` (loaded last) owns its glass, idle flicker, change
-blink, ink colours and Reduced Motion. `js/machine-crt.js` (loaded last)
-fires the change blink for CRTs whose own code doesn't. Approved buttons,
-keys, choice rows and headers move over one family per release.
-`pattern-book.html` is an isolated page like the Labs, never linked from
-production.
+Every CRT screen in the game is one component. `css/crt.css` (the last
+stylesheet) owns everything visual: glass, the text roles (line / figure /
+caption / cells), ink by meaning, and every effect as a `data-crt-*` dial;
+the signed-off recipe is those dials on `<html>` in `index.html`.
+`js/crt.js` watches every `.crt` and plays the change effect (and ghost of
+the old text) whenever anything rewrites it; `data-crt-quiet` opts out
+(number wheels, stage reveals). Layout (size, padding, grid) stays in each
+screen's own stylesheet; nothing else may style a CRT's glass or text —
+`validation/pattern-book-checks.js` reads every live stylesheet for that,
+and `validation/tools/crt-consistency.js` compares every part as drawn.
+`crt-lab.html` (+ `js/crt-lab.js`) is the Lab it was chosen in: every game
+CRT with five presets (`CRT.PRESETS`) and all dials. `pattern-book.html` is
+the visual library (isolated like the Labs). Rules and the sign-off record:
+`docs/ui/PATTERN_BOOK.md`.
 
 ## `js/08-dev-mode.js` (~1,140 lines)
 

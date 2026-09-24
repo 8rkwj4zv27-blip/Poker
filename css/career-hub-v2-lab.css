@@ -85,22 +85,13 @@ button{ touch-action:manipulation; }
   box-shadow:inset 2px 2px 0 var(--pc-plastic-hi),inset -2px -2px 0 rgba(0,0,0,.38),0 2px 0 #100a08;
   cursor:pointer;
 }
-:is(#home,#career-hub) .ch2-record .ch2-crt-glass{
-  position:relative; width:100%; height:100%; min-height:0; padding:4px 10px;
-  display:grid; grid-template-columns:1fr 1fr; align-items:stretch; overflow:hidden;
-  border:2px solid #020706; border-radius:2px; color:#bde9ff; text-align:center;
-  background:
-    radial-gradient(ellipse at 47% 38%,rgba(120,192,211,.12),transparent 55%),
-    radial-gradient(ellipse at center,transparent 42%,rgba(0,0,0,.66) 100%),
-    repeating-linear-gradient(180deg,transparent 0 2px,rgba(0,0,0,.38) 2px 3px),#061014;
-  box-shadow:inset 0 6px 8px rgba(0,0,0,.72),inset 6px 0 9px rgba(0,0,0,.42),inset -6px 0 9px rgba(0,0,0,.42),0 0 6px rgba(93,183,213,.14);
-}
-:is(#home,#career-hub) .ch2-record .ch2-crt-glass::before{ content:none; }
+:is(#home,#career-hub) .ch2-record .ch2-crt-glass{ position:relative; width:100%; height:100%; min-height:0; padding:4px 10px; display:grid; grid-template-columns:1fr 1fr; align-items:stretch; overflow:hidden; text-align:center; }
+
 .ch2-crt-stat{ position:relative; min-width:0; padding:0 9px; display:grid; grid-template-rows:12px 25px; align-content:center; justify-items:center; transform:translateY(-3px); }
-.ch2-crt-stat+.ch2-crt-stat{ border-left:1px solid rgba(151,210,225,.22); }
-:is(#home,#career-hub) .ch2-record .ch2-crt-stat small{ color:#a4d3dd; font:8px/1.2 var(--font-hdr); letter-spacing:.025em; white-space:nowrap; }
-:is(#home,#career-hub) .ch2-record .ch2-crt-stat strong{ margin:1px 0 0; color:#d2f4ff; font:18px/1.12 var(--font-hdr); font-weight:400; white-space:nowrap; text-shadow:0 0 4px currentColor,0 0 9px rgba(91,188,220,.32); }
-.ch2-crt-stat .crt-cursor{ position:absolute; right:5px; bottom:5px; width:4px; height:7px; margin:0; color:#a9dfed; }
+
+:is(#home,#career-hub) .ch2-record .ch2-crt-stat small{ white-space:nowrap; }
+:is(#home,#career-hub) .ch2-record .ch2-crt-stat strong{ margin:1px 0 0; white-space:nowrap; }
+.ch2-crt-stat .crt-cursor{ position:absolute; right:5px; bottom:5px; width:4px; height:7px; margin:0; }
 
 /* Only the selected invitation is complete. Immediate neighbours are clipped
    by the reader aperture; every more distant card is fully off-stage. */
@@ -417,7 +408,7 @@ button{ touch-action:manipulation; }
   .ch2-instrument{ grid-template-rows:26px 48px 58px; gap:3px; padding:4px 6px; }
   :is(#home,#career-hub) .ch2-record{ height:58px; }
   :is(#home,#career-hub) .ch2-bankroll-reel .jp-cell{ height:27px; font-size:17px; }
-  :is(#home,#career-hub) .ch2-record .ch2-crt-stat strong{ margin-top:1px; font-size:17px; }
+  :is(#home,#career-hub) .ch2-record .ch2-crt-stat strong{ margin-top:1px; }
   .ch2-card{ height:calc(100% - 23px); min-height:330px; }
   .ch2-card-front{ grid-template-rows:36px 40px 48px 48px minmax(70px,1fr) 35px; padding:9px 13px 10px; }
   .ch2-card-back{ grid-template-rows:36px 38px 86px minmax(96px,1fr) 58px 46px 35px; padding:9px 13px 10px; }
@@ -445,8 +436,8 @@ button{ touch-action:manipulation; }
   .ch2-card-front,.ch2-card-back{ padding-left:11px; padding-right:11px; }
   :is(#home,#career-hub) .ch2-record .ch2-crt-glass{ padding-left:5px; padding-right:5px; }
   .ch2-crt-stat{ padding-left:4px; padding-right:4px; }
-  :is(#home,#career-hub) .ch2-record .ch2-crt-stat small{ font-size:8px; }
-  :is(#home,#career-hub) .ch2-record .ch2-crt-stat strong{ font-size:15px; }
+  
+  
   .ch2-card[data-index="0"] .ch2-back-hero{ padding:3px 6px; }
   .ch2-card[data-index="0"] .ch2-back-hero strong{ margin-top:2px; font-size:9px; line-height:1.16; }
   .ch2-brief-row.is-long strong{ font-size:8px; letter-spacing:-.025em; }

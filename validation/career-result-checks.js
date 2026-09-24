@@ -168,9 +168,12 @@ check('Every finish with a known place reports it', ()=>{
 });
 check('Career win contains complete atomic formatted strings', ()=>{
   ['EVENT WON','BACK ROOM FREEZEOUT','+$300','5,575','7','$600'].forEach(value=>assert.ok(winHTML.includes(value), value));
-  assert.ok(winHTML.includes('<span class="career-res-v tabular">+$300</span>'));
-  assert.ok(winHTML.includes('<span class="career-res-v tabular">5,575</span>'));
-  assert.ok(winHTML.includes('<span class="career-res-v tabular">$600</span>'));
+  // Each value is one whole text node in its own span (the CRT Figure role
+  // class may ride along; see docs/ui/PATTERN_BOOK.md).
+  const atomic=v=>new RegExp('<span class="career-res-v tabular( crt-figure)?">'+v.replace(/[$+]/g,'\\$&')+'</span>');
+  assert.ok(atomic('+$300').test(winHTML));
+  assert.ok(atomic('5,575').test(winHTML));
+  assert.ok(atomic('$600').test(winHTML));
 });
 check('Career loss contains lost buy-in, score, hands and remaining bankroll', ()=>{
   ['EVENT LOST','BACK ROOM FREEZEOUT','-$100','1,275','4','$400'].forEach(value=>assert.ok(lossHTML.includes(value), value));
@@ -468,7 +471,7 @@ check('Tone is carried by the model, not by four separate treatments', ()=>{
 check('TABLE CLEARED baseline is unchanged', ()=>{
   assert.ok(clearedStage.includes('<span>TABLE 1</span><strong>CLEARED</strong>'));
   assert.ok(clearedStage.includes('Table score'));
-  assert.ok(clearedStage.includes('<span>RUN TOTAL</span><strong class="tabular">0000780</strong>'));
+  assert.ok(clearedStage.includes('<span class="crt-caption">RUN TOTAL</span><strong class="tabular">0000780</strong>'));
   assert.ok(clearedStage.includes('Finish stack'));
   assert.ok(clearedStage.includes('K.O.s') && clearedStage.includes('5 / 5'));
   assert.strictEqual((clearedStage.match(/stage-ko-slot/g)||[]).length, 5);
@@ -482,7 +485,7 @@ check('TABLE CLEARED baseline is unchanged', ()=>{
     assert.ok(clearedStage.includes(label), label));
   assert.ok(!clearedStage.includes('Biggest pot'), 'the gross-pot label must be gone');
   assert.ok(clearedStage.includes('No showdown hand recorded'));
-  assert.ok(clearedStage.includes('<span>TABLES CLEARED</span><strong class="tabular">1</strong><em>NEXT: TABLE 2</em>'));
+  assert.ok(clearedStage.includes('<span class="crt-caption">TABLES CLEARED</span><strong class="tabular crt-figure">1</strong><em class="crt-caption">NEXT: TABLE 2</em>'));
   // A flawless table still lights its lamp strip.
   assert.ok(clearedStage.includes('FLAWLESS SHOWDOWNS'));
   // The hero reel still shows the TABLE score, not the run total.
@@ -506,7 +509,7 @@ check('RUN OVER reports the run through the shared hierarchy', ()=>{
   assert.strictEqual(pageTwo, 'Total hands | Biggest reward | Win rate');
   assert.strictEqual(bustModel.recapPages[1][2].value, '75%');
   assert.ok(bustStage.includes('BUSTED BY MANIAC · FOUR OF A KIND, SIXES'));
-  assert.ok(bustStage.includes('<em>NO REBUY</em>'));
+  assert.ok(bustStage.includes('<em class="crt-caption">NO REBUY</em>'));
 });
 
 check('RUN OVER without a record reports the standing personal best', ()=>{
@@ -525,7 +528,7 @@ check('Career FIELD comes from the event snapshot, never the survivors', ()=>{
   assert.strictEqual(winModel.field, 3);           // Back Room Freezeout
   assert.strictEqual(cashModel.field, 5);          // Pub Circuit Open
   assert.ok(wonStage.includes('Field'));
-  assert.ok(/Field<\/span><strong class="stage-recap-value tabular">3<\/strong>/.test(wonStage));
+  assert.ok(/Field<\/span><strong class="stage-recap-value tabular crt-figure">3<\/strong>/.test(wonStage));
   // A snapshot written before playerCount existed reports no field rather
   // than a fabricated one.
   assert.strictEqual(buildCareerResultModel({ event:{ name:'X' }, handNumber:1 },
@@ -538,9 +541,9 @@ check('EVENT LOST never states the same buy-in twice', ()=>{
   // the stake goes to the payout that did not arrive.
   assert.ok(lostStage.includes('Buy-in lost'));
   assert.strictEqual((lostStage.match(/Buy-in/g)||[]).length, 1);
-  assert.ok(/Prize<\/span><strong class="stage-recap-value tabular">\$0<\/strong>/.test(lostStage));
+  assert.ok(/Prize<\/span><strong class="stage-recap-value tabular crt-figure">\$0<\/strong>/.test(lostStage));
   // The win does show its stake, once, and never a redundant prize cell.
-  assert.ok(/Buy-in<\/span><strong class="stage-recap-value tabular">\$100<\/strong>/.test(wonStage));
+  assert.ok(/Buy-in<\/span><strong class="stage-recap-value tabular crt-figure">\$100<\/strong>/.test(wonStage));
   assert.ok(!/Prize<\/span><strong class="stage-recap-value/.test(wonStage));
 });
 
@@ -595,12 +598,12 @@ check('An ordinary paid-event loss keeps its existing Buy-in lost / BUY-IN FORFE
 check('Career progression strip is a deliberate two-part layout', ()=>{
   [wonStage, lostStage].forEach(html=>{
     assert.ok(html.includes('stage-run-progress pc-display is-two-part'));
-    assert.ok(html.includes('<em>NEXT: EVENTS BOARD</em>'));
+    assert.ok(html.includes('<em class="crt-caption">NEXT: EVENTS BOARD</em>'));
     // No empty centre value.
     assert.ok(!/<strong class="tabular"><\/strong>/.test(html));
   });
-  assert.ok(wonStage.includes('<span>EVENT COMPLETE</span>'));
-  assert.ok(lostStage.includes('<span>EVENT ENDED</span>'));
+  assert.ok(wonStage.includes('<span class="crt-caption">EVENT COMPLETE</span>'));
+  assert.ok(lostStage.includes('<span class="crt-caption">EVENT ENDED</span>'));
   // Arcade keeps its three-slot strip with a real count.
   [clearedStage, bustStage].forEach(html=>assert.ok(!html.includes('is-two-part')));
 });

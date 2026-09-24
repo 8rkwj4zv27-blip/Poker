@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-crt-tint="dark" data-crt-glow="1" data-crt-scan="4" data-crt-rgb="0" data-crt-grain="4" data-crt-curve="0" data-crt-flicker="4" data-crt-roll="1" data-crt-tear="4" data-crt-ghost="2" data-crt-change="channel" data-crt-ink="mono">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
@@ -7,13 +7,13 @@
   <link rel="icon" href="data:,">
   <title>The Table Pattern Book</title>
   <!-- The visual library. Isolated like the *-lab pages: production never
-       links here. The CRT section runs on the real css/machine-crt.css and
-       js/machine-crt.js, so it cannot drift from the game. Rules and the
+       links here. The CRT section runs on the real css/crt.css and
+       js/crt.js with the game recipe, so it cannot drift from the game. Rules and the
        sign-off record live in docs/ui/PATTERN_BOOK.md. -->
   <!-- 01-foundation carries the embedded pixel fonts; its full-screen game
        sizing is undone below so the book scrolls. -->
   <link rel="stylesheet" href="css/01-foundation.css">
-  <link rel="stylesheet" href="css/machine-crt.css">
+  <link rel="stylesheet" href="css/crt.css">
   <style>
     :root{
       --velvet:#1A0A0F; --velvet-2:#26111A; --plate:#0E0709; --line:#4A2530;
@@ -42,10 +42,8 @@
     .spec{ display:grid; grid-template-columns:repeat(auto-fit,minmax(min(200px,100%),1fr)); gap:12px; }
     .spec figure{ margin:0; }
     .spec figcaption{ font-size:13px; color:var(--ink-faint); margin-top:5px; text-align:center; }
-    /* Specimen screens: layout only. Everything visual comes from .machine-crt. */
-    .crt-demo{ height:44px; display:flex; align-items:center; justify-content:center; padding:0 10px;
-      font-family:var(--hdr); font-size:9px; letter-spacing:.06em; text-transform:uppercase; text-align:center; }
-    .crt-demo.fig{ font-size:16px; }
+    /* Specimen screens: layout only. Everything visual comes from .crt. */
+    .crt-demo{ height:44px; display:flex; align-items:center; justify-content:center; padding:0 10px; }
     .controls{ display:flex; gap:10px; margin-top:14px; flex-wrap:wrap; }
     .controls button{ font-family:var(--hdr); font-size:9px; padding:10px 12px; background:var(--gold); color:#241A06; border:3px solid #000; box-shadow:0 3px 0 #000; cursor:pointer; }
     .controls button:active{ transform:translateY(2px); box-shadow:0 1px 0 #000; }
@@ -74,37 +72,36 @@
   <!-- ======================= CRT ======================= -->
   <section>
     <h2>CRT screens</h2>
-    <p class="lead">Any screen that shows information which changes while the machine runs. Signed off 24 September 2026: blue record glass, flicker and blink, four ink meanings.</p>
+    <p class="lead">Any screen that shows information which changes while the machine runs. Rebuilt as one component and signed off in the CRT Lab: dark glass · glow 1 · scanlines 4 · grain 4 · flicker 4 · rolling bar 1 · VHS tears 4 · ghosting 2 · channel change · mono ink.</p>
 
     <div class="plate">
-      <span class="status live">LIVE IN THE GAME · v0.39.6</span>
+      <span class="status live">LIVE IN THE GAME · v0.40.0 · REBUILT</span>
       <h3>The finish, running</h3>
       <div class="spec">
-        <figure><div class="machine-crt crt-demo" id="demo-a">Dealer ready</div><figcaption>Info ink</figcaption></figure>
-        <figure><div class="machine-crt crt-demo" data-ink="live" id="demo-b">Your turn · 20 to call</div><figcaption>Live ink</figcaption></figure>
-        <figure><div class="machine-crt crt-demo fig" data-ink="money" id="demo-c">$1,250</div><figcaption>Money ink</figcaption></figure>
-        <figure><div class="machine-crt crt-demo" data-ink="danger" id="demo-d">Bust</div><figcaption>Danger ink</figcaption></figure>
+        <figure><div class="crt crt-demo" id="demo-a">Dealer ready</div><figcaption>Info ink</figcaption></figure>
+        <figure><div class="crt crt-demo" data-ink="live" id="demo-b">Your turn · 20 to call</div><figcaption>Live ink</figcaption></figure>
+        <figure><div class="crt crt-demo" data-ink="money" id="demo-c"><span class="crt-figure crt-figure--lg">$1,250</span></div><figcaption>Money ink</figcaption></figure>
+        <figure><div class="crt crt-demo" data-ink="danger" id="demo-d">Bust</div><figcaption>Danger ink</figcaption></figure>
       </div>
       <div class="controls"><button type="button" id="demo-change">Change what they say</button></div>
     </div>
 
     <div class="plate">
-      <h3>Rules</h3>
+      <h3>Anatomy</h3>
       <div class="scroll"><table class="rules">
-        <thead><tr><th>Part</th><th>Rule</th><th>Where it lives</th></tr></thead>
+        <thead><tr><th>Part</th><th>Rule</th><th>Class</th></tr></thead>
         <tbody>
-          <tr><td>Use it</td><td>Add <code>machine-crt</code> to the screen element. Keep your own size, padding and layout.</td><td><code>css/machine-crt.css</code></td></tr>
-          <tr><td>Glass</td><td>Blue-tinted near-black tube, soft recessed bezel, vignette, static scanlines, faint halo. Never restyle the glass per screen.</td><td><code>#app .machine-crt</code></td></tr>
-          <tr><td>Text</td><td>No bloom or text shadow. Mechanical-number reels inside a CRT keep their own treatment.</td><td>same file</td></tr>
-          <tr><td>Idle</td><td>Faint stepped flicker, 5.8s cycle.</td><td><code>--crt-flicker</code></td></tr>
-          <tr><td>Change</td><td>Static-burst blink (0.23s) whenever the text changes. Automatic; call nothing. A screen whose change is shown by a number wheel sets <code>data-crt-blink="off"</code>.</td><td><code>js/machine-crt.js</code>, <code>--crt-blink</code></td></tr>
-          <tr><td>Ink</td><td>Declare the screen's meaning with <code>data-ink</code>: none (ordinary machine info) · <code>live</code> (live table info) · <code>money</code> · <code>danger</code>. Every character on the glass takes that ink; money reels inside any screen read as money. Fixed across colour themes. Never colour CRT text locally.</td><td><code>--crt-ink-*</code> in the same file</td></tr>
-          <tr><td>Captions</td><td>One size (7px), spacing and dimmer ink for the small labels on every screen.</td><td><code>--crt-label</code>, <code>--crt-ink-label</code></td></tr>
-          <tr><td>Cells</td><td>The glass is one surface: no inner panels. Multi-cell screens divide it with one thin rule.</td><td><code>--crt-rule</code></td></tr>
-          <tr><td>Reduced Motion</td><td>No flicker, no blink.</td><td>same file</td></tr>
+          <tr><td>Glass</td><td>The screen itself. Its layout (size, padding, grid) is the screen's own; everything visual is the component's.</td><td><code>.crt</code></td></tr>
+          <tr><td>Line</td><td>Status text. Plain text inside a CRT is a Line: 7px, regular weight, one spacing.</td><td><code>.crt-line</code> or none</td></tr>
+          <tr><td>Figure</td><td>A number or result word, 13px; 17px for the big ones.</td><td><code>.crt-figure</code>, <code>--lg</code></td></tr>
+          <tr><td>Caption</td><td>A small label, 7px, dimmer ink.</td><td><code>.crt-caption</code></td></tr>
+          <tr><td>Cells</td><td>Side-by-side sections, one thin rule between them.</td><td><code>.crt-cell</code></td></tr>
+          <tr><td>Ink</td><td>By meaning on the screen: none (info), <code>live</code>, <code>money</code>, <code>danger</code>. The recipe's ink scheme can fold these together (today: mono).</td><td><code>data-ink</code>, <code>.crt-danger</code></td></tr>
+          <tr><td>Changes</td><td>Automatic: whoever writes a CRT, js/crt.js plays the recipe's change effect and ghost. Number wheels and reveals opt out.</td><td><code>data-crt-quiet</code></td></tr>
+          <tr><td>Look</td><td>The recipe's twelve dials, set once on <code>&lt;html&gt;</code>. Try others in Settings → Finishes or the CRT Lab.</td><td><code>data-crt-*</code></td></tr>
         </tbody>
       </table></div>
-      <p class="lead" style="margin-top:12px">In the game today: Home readout and stats · Career record and ticket slot · table hand readout, turn banner, bet and raise readouts · results-stage instruments and stat bank.</p>
+      <p class="lead" style="margin-top:12px">In the game: Home readout and stats · Career record and ticket slot · table hand readout, turn banner, bet and raise readouts · results-stage score, instruments, stat bank, trophy and run progress. Nothing else may style them: <code>validation/pattern-book-checks.js</code> reads every stylesheet, and <code>validation/tools/crt-consistency.js</code> compares every part as drawn.</p>
     </div>
   </section>
 
@@ -170,7 +167,7 @@
   </section>
 </div>
 <script>
-  // Book-only: the blink itself comes from js/machine-crt.js, exactly as in the game.
+  // Book-only: the change effect comes from js/crt.js, exactly as in the game.
   const LINES = [
     ['Dealer ready','Your turn · 20 to call','$1,250','Bust'],
     ['Shuffling','Shark raises to 60','$1,290','Warning: all in'],
@@ -179,9 +176,12 @@
   let i = 0;
   document.getElementById('demo-change').addEventListener('click', () => {
     i = (i + 1) % LINES.length;
-    ['demo-a','demo-b','demo-c','demo-d'].forEach((id, n) => { document.getElementById(id).textContent = LINES[i][n]; });
+    ['demo-a','demo-b','demo-c','demo-d'].forEach((id, n) => {
+      const el = document.getElementById(id);
+      CRT.set(el, n === 2 ? '<span class="crt-figure crt-figure--lg">' + LINES[i][n] + '</span>' : LINES[i][n]);
+    });
   });
 </script>
-<script src="js/machine-crt.js"></script>
+<script src="js/crt.js"></script>
 </body>
 </html>

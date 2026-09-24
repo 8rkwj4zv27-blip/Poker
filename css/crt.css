@@ -4,8 +4,11 @@
    Every CRT in the game is built from these parts and nothing else:
 
      .crt                  the glass (one surface). data-ink="live|money|danger"
-                           sets the meaning; none = ordinary machine info
-       .crt-body           the picture: everything shown sits in here
+                           sets the meaning; none = ordinary machine info.
+                           Its direct children are the picture: the effects
+                           move them, so a screen keeps its own grid/flex
+                           layout. Plain text inside is a Line.
+       .crt-body           an optional centred column for simple screens
          .crt-line         a line of status text      (one size, one weight)
          .crt-figure       a number                   (--lg for the big ones)
          .crt-caption      a small label
@@ -30,8 +33,13 @@
      data-crt-change   burst | roll | channel | wipe | type   (js)
      data-crt-ink      meaning | one | mono
 
-   Content changes go through CRT.set() in js/crt.js.
-   Candidate: loaded by crt-lab.html only until the owner picks a recipe.
+   Content changes are noticed by js/crt.js whoever writes them (or go
+   through CRT.set()); data-crt-quiet on a screen whose changes are a number
+   wheel or its own reveal keeps it from the change effect.
+
+   Nothing outside this file may style a CRT's glass or text
+   (validation/pattern-book-checks.js). Layout (size, padding, position,
+   grid) stays with each screen.
    ============================================================ */
 
 :root{
@@ -59,10 +67,11 @@
 /* ---------------- the parts ---------------- */
 .crt{
   --crt-text:var(--crt-ink-info);
+  /* No display/alignment here: layout is the screen's own. */
   position:relative; overflow:hidden; isolation:isolate;
-  display:flex; align-items:stretch; justify-content:center;
   color:var(--crt-text);
-  font-family:var(--font-hdr,'Press Start 2P',ui-monospace,monospace); font-weight:400; text-transform:uppercase;
+  font-family:var(--font-hdr,'Press Start 2P',ui-monospace,monospace); font-weight:400; font-style:normal; text-transform:uppercase;
+  font-size:var(--crt-line-size); line-height:1.4; letter-spacing:.06em;
   background:
     radial-gradient(ellipse at 47% 34%,var(--crt-tint),transparent 58%),
     radial-gradient(ellipse at 50% 50%,transparent 40%,rgba(0,0,0,var(--crt-vig)) 100%),
@@ -78,31 +87,42 @@
     inset 0 calc(var(--crt-bulge) * 3px) calc(var(--crt-bulge) * 6px) rgba(255,255,255,calc(var(--crt-bulge) * .025)),
     0 0 6px var(--crt-halo);
 }
+.crt :where(b,strong,small,em,span,i,div){ font:inherit; letter-spacing:inherit; color:inherit; }
 .crt[data-ink="live"]{ --crt-text:var(--crt-ink-live); }
 .crt[data-ink="money"]{ --crt-text:var(--crt-ink-money); }
 .crt[data-ink="danger"]{ --crt-text:var(--crt-ink-danger); }
-.crt .crt-money{ --crt-text:var(--crt-ink-money); color:var(--crt-text); }
+.crt .crt-money,
+.crt .amt-readout{ --crt-text:var(--crt-ink-money); color:var(--crt-text); }
+.crt .crt-danger{ --crt-text:var(--crt-ink-danger); color:var(--crt-text); }
+/* A strong made hand reads as reward. */
+.crt.hand-tier-2, .crt.hand-tier-3{ --crt-text:var(--crt-ink-money); }
+/* The results stage's negative tone reaches the score and the statement
+   (see VISUAL_SYSTEM: tone reaches the hero figure only). */
+.tone-negative .crt.stage-score-hero,
+.tone-negative .crt .stage-statement{ --crt-text:var(--crt-ink-danger); color:var(--crt-text); }
 
 .crt-body{
-  position:relative; z-index:1; flex:1 1 auto; min-width:0;
+  flex:1 1 auto; min-width:0;
   display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px;
   padding:3px 8px;
-  animation:crtTear var(--crt-tear-ms) steps(1,end) infinite;
 }
-.crt, .crt-body *:not(.crt-cards, .crt-cards *){ text-shadow:var(--crt-rgb),var(--crt-bloom); }
+/* The picture: every direct child (not the ghost) tears with the tape. */
+.crt > :not(.crt-ghost){ animation:crtTear var(--crt-tear-ms) steps(1,end) infinite; }
+.crt, .crt *:not(.card, .card *, .crt-cards, .crt-cards *){ text-shadow:var(--crt-rgb),var(--crt-bloom); }
 
-.crt-line{ font-size:var(--crt-line-size); line-height:1.4; letter-spacing:.06em; white-space:nowrap; }
-.crt-figure{ font-size:var(--crt-fig); line-height:1; letter-spacing:.02em; white-space:nowrap; font-variant-numeric:tabular-nums; }
-.crt-figure--lg{ font-size:var(--crt-fig-lg); }
-.crt-caption{
-  font-size:var(--crt-caption-size); line-height:1.2; letter-spacing:.04em; white-space:nowrap;
+.crt .crt-line{ font-size:var(--crt-line-size); line-height:1.4; letter-spacing:.06em; white-space:nowrap; }
+.crt .crt-figure{ color:var(--crt-text); font-size:var(--crt-fig); line-height:1.15; letter-spacing:.02em; font-variant-numeric:tabular-nums; }
+.crt .crt-figure--lg{ font-size:var(--crt-fig-lg); }
+.crt .crt-caption{
+  font-size:var(--crt-caption-size); line-height:1.2; letter-spacing:.02em;
   color:color-mix(in srgb,var(--crt-text) 62%,#000);
 }
-.crt-row{ display:flex; align-items:center; justify-content:center; gap:7px; }
+.crt .crt-row{ display:flex; align-items:center; justify-content:center; gap:7px; }
 
-.crt-body.crt-cells{ display:grid; grid-auto-flow:column; grid-auto-columns:minmax(0,1fr); align-items:stretch; width:100%; padding:0; gap:0; }
-.crt-cell{ min-width:0; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:5px; padding:4px 4px; }
-.crt-cell + .crt-cell{ border-left:1px solid color-mix(in srgb,var(--crt-text) 20%,transparent); }
+.crt .crt-cells{ display:grid; grid-auto-flow:column; grid-auto-columns:minmax(0,1fr); align-items:stretch; width:100%; padding:0; gap:0; }
+.crt .crt-cells > .crt-cell{ min-width:0; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:5px; padding:4px 4px; }
+/* One divider rule between cells, on every screen. */
+.crt .crt-cell + .crt-cell{ border-left:1px solid color-mix(in srgb,var(--crt-text) 20%,transparent); }
 
 .crt-lamp{
   flex:0 0 auto; width:7px; height:7px; border:1px solid #0b0806;
@@ -149,7 +169,7 @@
 }
 
 /* ---------------- content change (js/crt.js adds the class) ---------------- */
-.crt-body.crt-chg-burst{ animation:crtBurst .23s steps(5,end); }
+.crt.crt-chg-burst > :not(.crt-ghost){ animation:crtBurst .23s steps(5,end); }
 @keyframes crtBurst{
   0%{ filter:brightness(2.4) contrast(.72); opacity:.35; }
   20%{ filter:brightness(.25) contrast(1.6); opacity:.68; }
@@ -157,14 +177,14 @@
   70%{ filter:brightness(.7) contrast(1.25); opacity:1; }
   100%{ filter:none; opacity:1; }
 }
-.crt-body.crt-chg-roll{ animation:crtRollIn .32s steps(6,end); }
+.crt.crt-chg-roll > :not(.crt-ghost){ animation:crtRollIn .32s steps(6,end); }
 @keyframes crtRollIn{
   0%{ transform:translateY(-110%); filter:brightness(1.8); }
   60%{ transform:translateY(12%); }
   80%{ transform:translateY(-4%); }
   100%{ transform:none; filter:none; }
 }
-.crt-body.crt-chg-channel{ animation:crtChannel .42s steps(7,end); }
+.crt.crt-chg-channel > :not(.crt-ghost){ animation:crtChannel .42s steps(7,end); }
 @keyframes crtChannel{
   0%{ transform:scale(1.4,.04); filter:brightness(3); opacity:1; }
   25%{ transform:scale(1,.04); filter:brightness(2); }
@@ -173,12 +193,12 @@
   100%{ transform:none; filter:none; }
 }
 .crt.crt-static::before{ opacity:.85; transition:none; }
-.crt-body.crt-chg-wipe{ animation:crtWipe .3s steps(6,end); }
+.crt.crt-chg-wipe > :not(.crt-ghost){ animation:crtWipe .3s steps(6,end); }
 @keyframes crtWipe{ from{ clip-path:inset(0 100% 0 0); filter:brightness(1.8); } to{ clip-path:inset(0 0 0 0); filter:none; } }
 
 /* The old picture burning out (ghosting) */
 .crt-ghost{
-  position:absolute; inset:0; z-index:0; pointer-events:none;
+  position:absolute; inset:0; z-index:0; pointer-events:none; box-sizing:border-box;
   animation:crtGhost var(--crt-ghost-ms,600ms) steps(8,end) forwards;
 }
 @keyframes crtGhost{
@@ -187,7 +207,7 @@
 }
 
 /* On-demand glitch */
-.crt.crt-glitch .crt-body{ animation:crtGlitch .6s steps(1,end); }
+.crt.crt-glitch > :not(.crt-ghost){ animation:crtGlitch .6s steps(1,end); }
 @keyframes crtGlitch{
   0%{ transform:translateX(6px) skewX(-8deg); filter:hue-rotate(40deg) brightness(1.6); }
   15%{ transform:translateX(-8px); clip-path:inset(20% 0 40% 0); }
@@ -260,8 +280,15 @@
 /* Reduced Motion: nothing moves on its own; changes just swap. */
 [data-motion="off"] .crt::before,
 [data-motion="off"] .crt::after,
-[data-motion="off"] .crt-body,
-[data-motion="off"] .crt-ghost{ animation:none !important; }
+[data-motion="off"] .crt > *{ animation:none !important; }
 @media (prefers-reduced-motion:reduce){
-  .crt::before, .crt::after, .crt-body, .crt-ghost{ animation:none !important; }
+  .crt::before, .crt::after, .crt > *{ animation:none !important; }
 }
+/* The thinking cursor on the turn banner keeps its own blink. */
+.crt .crt-cursor{ display:inline-block; margin-left:4px; animation:crtCursor .78s steps(2,end) infinite; }
+@keyframes crtCursor{ 50%{ opacity:.16; } }
+[data-motion="off"] .crt .crt-cursor{ animation:none; }
+
+/* Narrow phones: every line steps down together, so long table lines fit. */
+@media (max-width:389px){ :root{ --crt-line-size:6.5px; } }
+@media (max-width:350px){ :root{ --crt-line-size:5px; } }

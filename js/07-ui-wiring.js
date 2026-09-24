@@ -172,7 +172,7 @@ function renderStats(){
     {k:'Won', v: stats.hands ? Math.round(stats.won/stats.hands*100)+'%' : '—'},
     {k:'Best hand win', v: stats.biggestPot ? stats.biggestPot.toLocaleString() : '—'}
   ];
-  const html = cells.map(c=>'<div class="stat-cell"><div class="v tabular">'+c.v+'</div><div class="k">'+c.k+'</div></div>').join('');
+  const html = cells.map(c=>'<div class="stat-cell crt-cell"><div class="v tabular crt-figure crt-figure--lg">'+c.v+'</div><div class="k crt-caption">'+c.k+'</div></div>').join('');
   const a = $('stat-strip'), b = $('settings-stats');
   if (a) a.innerHTML = html;
   if (b) b.innerHTML = html;

@@ -6,24 +6,10 @@
   padding:8px 14px max(8px, calc(env(safe-area-inset-bottom) - 10px));
   background:linear-gradient(180deg,transparent 0, rgba(4,8,6,.92) 34%);
 }
-.banner{
-  text-align:center; font-size:14px; font-weight:700; color:var(--ink-dim);
-  padding:9px 4px; min-height:38px; display:flex; align-items:center; justify-content:center;
-}
-.banner b{ color:var(--accent-bright); }
-/* Fixed footprint, always in flow (never display:none) — this row lives
-   inside #hud-frame, which is a natural-height sibling of the flex:1
-   .felt-wrap inside .table-main. Toggling it with display:none (the old
-   .hidden approach) changed #hud-frame's height every time it became the
-   human's turn, which stole/returned space from .felt-wrap and shrank the
-   felt itself. min-height reserves the same one-line box whether or not
-   there's text in it, exactly like the .action-slot/#hud-action pattern
-   above. */
-.hand-strength{
-  text-align:center; font-size:12px; color:var(--ink-faint); margin:-4px 0 8px;
-  letter-spacing:.02em; min-height:14px;
-}
-.hand-strength b{ color:var(--ink-dim); font-weight:700; }
+.banner{ text-align:center; padding:9px 4px; min-height:38px; display:flex; align-items:center; justify-content:center; }
+
+.hand-strength{ text-align:center; margin:-4px 0 8px; min-height:14px; }
+
 
 #coach{
   background:var(--panel); border:2px solid var(--px-ink);
@@ -92,10 +78,7 @@
    of any kind; see closeRaisePanel()/the btn-raise handler in JS. */
 .raise-cancel{ width:32px; height:32px; font-size:13px; }
 .raise-row{ display:flex; align-items:center; gap:12px; margin-bottom:9px; }
-.raise-amt{
-  font-size:15px; font-weight:400; color:var(--accent-bright); min-width:88px; text-align:center;
-  background:var(--px-ink); border:2px solid var(--accent); border-radius:var(--radius); padding:6px 4px;
-}
+.raise-amt{ min-width:88px; text-align:center; padding:6px 4px; }
 .slider-wrap{ position:relative; flex:1; }
 /* pixel slider: chunky filled track + square thumb. --fill is set from JS. */
 input[type=range]{
@@ -385,7 +368,7 @@ body{
 }
 body #home .lobby-card.pc-housing{ box-shadow:inset 4px 4px 0 var(--pc-leather-hi),inset -5px -5px 0 var(--pc-leather-lo),0 0 0 2px var(--theme-rim),0 0 0 5px color-mix(in srgb,var(--pc-leather-hi) 70%,black),0 9px 0 #090406; }
 #home .pc-cast-drawer{ background:var(--pc-recess); }
-#home .hero-faces .hf,#home .stats-card .stat-cell{ background:var(--pc-display); }
+#home .hero-faces .hf{ background:var(--pc-display); }
 #home .text-input{ background:var(--pc-display); color:var(--pc-display-ink); }
 #home .pc-cast-drawer{
   box-shadow:inset 0 0 0 5px var(--theme-case-raised),inset 0 7px 0 var(--theme-case-hi),inset 0 -5px 0 color-mix(in srgb,var(--theme-case-raised) 58%,black),0 4px 0 var(--pc-edge-lo);
@@ -514,27 +497,10 @@ body #home #home-settings{ background:var(--theme-case-raised); color:var(--ink)
 .seat.you .seat-cards{ margin-top:-60px; gap:7px; z-index:3; }
 #hud-mid .hand-strength{ position:relative; z-index:5; }
 
-/* Miniature CRT glass: readable first, with scanlines, a small bloom and a
-   content-change flash. The two centre screens have distinct ink roles. */
-.crt-screen{
-  position:relative; overflow:hidden; isolation:isolate;
-  background:
-    linear-gradient(rgba(255,255,255,.025),transparent 38%),
-    var(--machine-glass);
-  border:2px solid var(--px-ink); border-radius:2px;
-  box-shadow:inset 0 4px 0 rgba(0,0,0,.58),inset 2px 0 0 rgba(0,0,0,.25),
-    inset 0 -1px 0 rgba(255,255,255,.07),0 1px 0 color-mix(in srgb,var(--machine-case-hi) 32%,transparent);
-  animation:crtIdleFlicker 5.8s steps(2,end) infinite;
-}
-.crt-screen::before{
-  content:''; position:absolute; z-index:4; inset:0; pointer-events:none; opacity:.24;
-  background:repeating-linear-gradient(180deg,transparent 0 2px,rgba(0,0,0,.32) 2px 3px);
-}
-.crt-screen::after{
-  content:''; position:absolute; z-index:4; left:3px; right:3px; top:2px; height:1px;
-  background:rgba(255,255,255,.09); pointer-events:none;
-}
-.crt-refresh{ animation:crtRefresh .23s steps(5,end); }
+.crt-screen{ position:relative; overflow:hidden; }
+
+
+
 @keyframes crtIdleFlicker{
   0%,84%,86%,89%,92%,96%,100%{ filter:brightness(1); }
   85%,93%{ filter:brightness(.84); }
@@ -546,29 +512,21 @@ body #home #home-settings{ background:var(--theme-case-raised); color:var(--ink)
   48%{ filter:brightness(1.4); }
   100%{ filter:brightness(1); opacity:1; }
 }
-.crt-cursor{ display:inline-block; margin-left:4px; animation:crtCursor .78s steps(2,end) infinite; }
+.crt-cursor{ display:inline-block; margin-left:4px; }
 @keyframes crtCursor{ 50%{ opacity:.16; } }
 #hud-status-normal{ gap:5px; }
-#hud-mid .hand-strength{
-  min-height:28px; margin:0; padding:6px 4px 5px; display:flex; align-items:center; justify-content:center;
-  color:color-mix(in srgb,var(--crt-hand-ink) 70%,var(--ink-faint)); font-family:var(--font-hdr);
-  font-size:7px; line-height:1.35; text-transform:uppercase; text-shadow:0 0 7px color-mix(in srgb,var(--crt-hand-ink) 55%,transparent);
-}
-#hud-mid .hand-strength b{ color:var(--crt-hand-ink); font-weight:400; }
-.crt-hand.hand-tier-0{ --crt-hand-ink:color-mix(in srgb,var(--ink-dim) 78%,var(--accent-bright) 22%); }
-.crt-hand.hand-tier-1{ --crt-hand-ink:var(--accent-bright); background:linear-gradient(rgba(255,255,255,.025),transparent 38%),color-mix(in srgb,var(--machine-glass) 88%,var(--accent) 12%); }
-.crt-hand.hand-tier-2{ --crt-hand-ink:color-mix(in srgb,var(--accent-bright) 72%,#FFF1B0); box-shadow:inset 0 4px 0 rgba(0,0,0,.58),inset 2px 0 0 rgba(0,0,0,.25),inset 0 -1px 0 rgba(255,255,255,.07),0 0 7px color-mix(in srgb,var(--accent) 25%,transparent); }
-.crt-hand.hand-tier-3{ --crt-hand-ink:#FFF0A0; animation:crtIdleFlicker 5.8s steps(2,end) infinite,handJackpotGlow 1.8s steps(4,end) infinite; }
+#hud-mid .hand-strength{ min-height:28px; margin:0; padding:6px 4px 5px; display:flex; align-items:center; justify-content:center; }
+
+
+
+
+
 @keyframes handJackpotGlow{ 50%{ box-shadow:inset 0 4px 0 rgba(0,0,0,.58),inset 2px 0 0 rgba(0,0,0,.25),0 0 10px color-mix(in srgb,var(--accent-bright) 48%,transparent); } }
-#hud-mid .banner{
-  min-height:39px; padding:5px 4px 4px; color:var(--crt-action-ink); font-family:var(--font-hdr);
-  font-size:7px; line-height:1.35; text-transform:uppercase; text-shadow:0 0 7px color-mix(in srgb,var(--crt-action-ink) 55%,transparent);
-  flex-direction:column; gap:4px;
-}
-#hud-mid .banner b{ color:var(--accent-bright); font-weight:400; }
+#hud-mid .banner{ min-height:39px; padding:5px 4px 4px; flex-direction:column; gap:4px; }
+
 .crt-line-primary,.crt-line-secondary{ display:block; width:100%; text-align:center; white-space:nowrap; }
-.crt-line-primary{ color:var(--crt-action-ink); }
-.crt-line-secondary{ color:var(--accent-bright); }
+
+
 .stack-readout{ display:flex; flex-direction:column; align-items:center; gap:2px; }
 .instrument-label{
   font-family:var(--font-hdr); font-size:6px; line-height:1.4; letter-spacing:.07em;
@@ -600,10 +558,7 @@ body #home #home-settings{ background:var(--theme-case-raised); color:var(--ink)
 .bet-this-hand .instrument-label,.seat:not(.you) .seat-name,.seat:not(.you) .action-slot{
   text-shadow:0 0 6px color-mix(in srgb,var(--crt-action-ink) 42%,transparent);
 }
-#hud-invested{
-  width:100%; color:var(--accent-bright); font-family:var(--font-hdr); font-weight:400;
-  text-shadow:0 0 6px color-mix(in srgb,var(--accent) 45%,transparent);
-}
+#hud-invested{ width:100%; }
 #hud-invested .jp-cell{ min-width:13px; width:13px; height:25px; font-size:10px; }
 #hud-invested .jp-sym{ min-width:10px; width:10px; }
 #hud-invested .reel-strip{ line-height:25px; }
@@ -641,10 +596,7 @@ body #home #home-settings{ background:var(--theme-case-raised); color:var(--ink)
 }
 .raise-head{ display:grid; grid-template-columns:auto 1fr 32px; gap:8px; margin-bottom:2px; }
 .raise-title{ font-size:8px; color:var(--accent-bright); }
-.raise-amt{
-  justify-self:end; min-width:104px; padding:3px 4px; display:flex; flex-direction:row; align-items:center; justify-content:center;
-  background:var(--machine-glass); border-color:var(--accent);
-}
+.raise-amt{ justify-self:end; min-width:104px; padding:3px 4px; display:flex; flex-direction:row; align-items:center; justify-content:center; }
 .raise-amt .mini-jackpot .jp-cell{ min-width:11px; width:11px; height:21px; font-size:9px; }
 .raise-amt .mini-jackpot .jp-sym{ min-width:9px; width:9px; }
 .quick-bets{
@@ -722,7 +674,7 @@ body #home #home-settings{ background:var(--theme-case-raised); color:var(--ink)
   #hud-frame{ grid-template-columns:86px minmax(0,1fr) 86px; gap:5px; padding-left:6px; padding-right:6px; }
   #hud-right{ padding-left:3px; padding-right:3px; }
   .blind-lamps{ gap:5px; }
-  #hud-mid .banner,#hud-mid .hand-strength{ font-size:6.5px; }
+  
   .action-console{ padding-left:5px; padding-right:5px; }
   .console-flip{ padding-left:5px; padding-right:5px; }
   .actions-row{ gap:6px; }
