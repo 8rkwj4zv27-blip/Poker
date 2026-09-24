@@ -117,3 +117,67 @@
   background:linear-gradient(180deg,#123a22 0,#04120a 70%);
   box-shadow:inset 0 3px 5px #000,0 0 0 1px rgba(117,200,155,.7),0 0 14px rgba(117,200,155,.6);
 }
+
+/* ============================================================
+   MOUNTS — how option B's slot sits with the BUY IN button.
+   js/slot-lab.js moves the slot element for 2–4; the ticket feed finds
+   it by id and measures it wherever it is, so the feed is unchanged.
+     1 AS NOW   a separate plate floating between reader and button
+     2 STACKED  the slot plate sits directly on the button's cradle,
+                same width, sharing its top edge: two tiers, one unit
+     3 HOUSING  one dark-plastic console panel holds the slot at the top
+                and the button cradle (and Abandon/Cash Out) below it
+     4 CRADLE   no dark plate: the cream cradle grows upward and the
+                mouth + readout are set into it, above the button
+     5 READER   the slot hangs from the bottom of the ticket reader as
+                part of its frame; the button stands on its own below
+   ============================================================ */
+
+/* 2–4 move the slot into the console: the machine loses a grid row. */
+#career-hub[data-mount="stack"],
+#career-hub[data-mount="housing"],
+#career-hub[data-mount="cradle"]{ grid-template-rows:auto minmax(0,1fr) auto; }
+
+/* ---- 2. STACKED ---- */
+#career-hub[data-mount="stack"] .ch2-console{ gap:0; }
+#career-hub[data-mount="stack"] .ch2-console > .ch2-intake{
+  position:relative; z-index:3; margin:0 7px -4px; border-bottom:0;
+  box-shadow:inset 2px 2px 0 var(--pc-plastic-dark-hi),inset -2px 0 0 var(--pc-plastic-dark-lo);
+}
+#career-hub[data-mount="stack"] .ch2-console > .ch2-secondary{ margin-top:8px; }
+
+/* ---- 3. HOUSING ---- */
+#career-hub[data-mount="housing"] .ch2-console{
+  gap:8px; padding:8px 8px 10px;
+  background:var(--pc-plastic-dark); border:3px solid var(--pc-edge-lo); border-radius:3px;
+  box-shadow:inset 2px 2px 0 var(--pc-plastic-dark-hi),inset -2px -2px 0 var(--pc-plastic-dark-lo),0 3px 0 #17090D;
+}
+#career-hub[data-mount="housing"] .ch2-console > .ch2-intake{
+  margin:0 7px; padding:2px 6px 0; border:0; background:none; box-shadow:none;
+}
+#career-hub[data-mount="housing"] .ch2-action-cradle{ margin:0; }
+#career-hub[data-mount="housing"] .ch2-secondary{ margin:0; }
+
+/* ---- 4. CRADLE: the slot is set into the cream casing ---- */
+#career-hub[data-mount="cradle"] .ch2-action-cradle{
+  --slot-h:52px; height:auto; min-height:calc(104px + var(--slot-h));
+}
+#career-hub[data-mount="cradle"] .ch2-action-cradle::before{ top:calc(16px + var(--slot-h)); }
+#career-hub[data-mount="cradle"] .ch2-action-cradle .pc-slot-aperture{ top:calc(9px + var(--slot-h)); }
+#career-hub[data-mount="cradle"] .ch2-action-cradle > .ch2-intake{
+  position:relative; z-index:3; height:calc(var(--slot-h) - 8px); margin:0 4px 8px; padding:0 6px;
+  border:0; background:none; box-shadow:none;
+}
+#career-hub[data-mount="cradle"] .ch2-action-cradle > .ch2-intake .sl-readout{ border-color:#120907; }
+@media (max-height:900px){
+  #career-hub[data-mount="cradle"] .ch2-action-cradle{ min-height:calc(94px + var(--slot-h)); }
+  #career-hub[data-mount="cradle"] .ch2-action-cradle::before{ top:calc(14px + var(--slot-h)); }
+  #career-hub[data-mount="cradle"] .ch2-action-cradle .pc-slot-aperture{ top:calc(7px + var(--slot-h)); }
+}
+
+/* ---- 5. READER: hangs from the reader's frame ---- */
+#career-hub[data-mount="reader"] > .ch2-intake{
+  margin:-16px 0 0; padding:9px 30px 9px;
+  border:4px solid var(--ms-edge); border-top:0; border-radius:0 0 5px 5px;
+  box-shadow:inset 2px 0 0 var(--pc-plastic-dark-hi),inset -2px -2px 0 var(--pc-plastic-dark-lo),0 4px 0 #17090d;
+}
