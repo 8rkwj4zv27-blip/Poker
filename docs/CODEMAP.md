@@ -180,6 +180,16 @@ neighbour's flare. Sparse, silent idle life; tapping a face flares it.
 The Home Boot drops the faces in and calls `HeroCast.arrive(i)` on each
 landing. Decorative only — not the table mood system.
 
+## `crt-lab.html` + `js/crt-lab.js` + candidate `css/crt.css` / `js/crt.js` — CRT rebuild (Lab)
+
+The CRT rebuild, awaiting the owner's pick: `css/crt.css` is the one CRT
+component (glass / line / figure / caption / cells / lamp / meter / cards,
+every effect a `data-crt-*` dial) and `js/crt.js` its change engine
+(`CRT.set`). `crt-lab.html` shows all 15 game CRTs on it with five presets
+(Clean → Meltdown) and every dial; the recipe lives in the page address.
+Not loaded by the game yet — once a recipe is chosen, the old CRT styles are
+removed and every CRT is rebuilt on this component.
+
 ## `js/finishes.js` + `css/finishes.css` — Finishes menu (live)
 
 Settings → Finishes: a page inside the Settings sheet that swaps each
@@ -231,7 +241,7 @@ there manually.
 
 Files matching `*-lab.html`, `*-lab.js`, `*-lab.css` (`career-lab`,
 `career-hub-v2-lab`, `ticket-lab`, `card-flight-options`, `card-turn-lab`,
-`chip-motion-lab`, `design-lab`, `result-stage-lab`, `showdown-rail-lab`,
+`chip-motion-lab`, `design-lab`, `result-stage-lab`, `showdown-rail-lab`, `crt-lab`,
 `wheel-v2-lab`, `intro-lab`, `boot-lab`, `slot-lab`)
 are **isolated visual references and prototyping sandboxes**. Several are
 committed permanently as durable references even after their feature

@@ -1,0 +1,267 @@
+/* ============================================================
+   CRT — the one CRT screen component (Pattern Book rebuild, candidate)
+
+   Every CRT in the game is built from these parts and nothing else:
+
+     .crt                  the glass (one surface). data-ink="live|money|danger"
+                           sets the meaning; none = ordinary machine info
+       .crt-body           the picture: everything shown sits in here
+         .crt-line         a line of status text      (one size, one weight)
+         .crt-figure       a number                   (--lg for the big ones)
+         .crt-caption      a small label
+         .crt-body.crt-cells > .crt-cell   side-by-side sections, one rule
+         .crt-lamp         an indicator lamp beside a line
+         .crt-meter > i    a progress meter (style="--v:60%")
+         .crt-cards        playing cards shown on the glass (keep their inks)
+
+   The look is a set of dials, each an attribute on any ancestor (the page
+   root in the game, a scope element in the Lab):
+
+     data-crt-tint     blue | dark | green | amber | black
+     data-crt-glow     0–4   text bloom, sized in em
+     data-crt-scan     0–4   scanlines
+     data-crt-rgb      0–4   RGB fringe / colour bleed
+     data-crt-grain    0–4   noise
+     data-crt-curve    0–4   tube curvature and vignette
+     data-crt-flicker  0–4   idle flicker
+     data-crt-roll     0–4   rolling scan bar
+     data-crt-tear     0–4   VHS tracking tears
+     data-crt-ghost    0–4   the old picture burning out on change (js)
+     data-crt-change   burst | roll | channel | wipe | type   (js)
+     data-crt-ink      meaning | one | mono
+
+   Content changes go through CRT.set() in js/crt.js.
+   Candidate: loaded by crt-lab.html only until the owner picks a recipe.
+   ============================================================ */
+
+:root{
+  --crt-ink-info:#C3C8AD;
+  --crt-ink-live:#BDE9FF;
+  --crt-ink-money:#F6D06B;
+  --crt-ink-danger:#FF8A7A;
+  --crt-line-size:7px;
+  --crt-caption-size:7px;
+  --crt-fig:13px;
+  --crt-fig-lg:17px;
+
+  /* dial defaults (level 0 / blue) */
+  --crt-glass:#061014; --crt-bezel:#020706; --crt-tint:rgba(120,192,211,.12); --crt-halo:rgba(93,183,213,.14);
+  --crt-bloom:0 0 0 transparent;
+  --crt-rgb:0 0 0 transparent;
+  --crt-scan-a:.2;
+  --crt-grain-a:0;
+  --crt-radius:2px; --crt-vig:.62; --crt-bulge:0;
+  --crt-flick-dip:0; --crt-flick-lift:0;
+  --crt-roll-a:0; --crt-roll-ms:6s;
+  --crt-tear-x:0px; --crt-tear-ms:9s;
+}
+
+/* ---------------- the parts ---------------- */
+.crt{
+  --crt-text:var(--crt-ink-info);
+  position:relative; overflow:hidden; isolation:isolate;
+  display:flex; align-items:stretch; justify-content:center;
+  color:var(--crt-text);
+  font-family:var(--font-hdr,'Press Start 2P',ui-monospace,monospace); font-weight:400; text-transform:uppercase;
+  background:
+    radial-gradient(ellipse at 47% 34%,var(--crt-tint),transparent 58%),
+    radial-gradient(ellipse at 50% 50%,transparent 40%,rgba(0,0,0,var(--crt-vig)) 100%),
+    repeating-linear-gradient(180deg,transparent 0 2px,rgba(0,0,0,var(--crt-scan-a)) 2px 3px),
+    var(--crt-glass);
+  border:2px solid var(--crt-bezel);
+  border-radius:var(--crt-radius);
+  box-shadow:
+    inset 0 6px 8px rgba(0,0,0,.72),
+    inset 6px 0 9px rgba(0,0,0,.42),
+    inset -6px 0 9px rgba(0,0,0,.42),
+    inset 0 0 0 1px rgba(255,255,255,calc(var(--crt-bulge) * .05)),
+    inset 0 calc(var(--crt-bulge) * 3px) calc(var(--crt-bulge) * 6px) rgba(255,255,255,calc(var(--crt-bulge) * .025)),
+    0 0 6px var(--crt-halo);
+}
+.crt[data-ink="live"]{ --crt-text:var(--crt-ink-live); }
+.crt[data-ink="money"]{ --crt-text:var(--crt-ink-money); }
+.crt[data-ink="danger"]{ --crt-text:var(--crt-ink-danger); }
+.crt .crt-money{ --crt-text:var(--crt-ink-money); color:var(--crt-text); }
+
+.crt-body{
+  position:relative; z-index:1; flex:1 1 auto; min-width:0;
+  display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px;
+  padding:3px 8px;
+  animation:crtTear var(--crt-tear-ms) steps(1,end) infinite;
+}
+.crt, .crt-body *:not(.crt-cards, .crt-cards *){ text-shadow:var(--crt-rgb),var(--crt-bloom); }
+
+.crt-line{ font-size:var(--crt-line-size); line-height:1.4; letter-spacing:.06em; white-space:nowrap; }
+.crt-figure{ font-size:var(--crt-fig); line-height:1; letter-spacing:.02em; white-space:nowrap; font-variant-numeric:tabular-nums; }
+.crt-figure--lg{ font-size:var(--crt-fig-lg); }
+.crt-caption{
+  font-size:var(--crt-caption-size); line-height:1.2; letter-spacing:.04em; white-space:nowrap;
+  color:color-mix(in srgb,var(--crt-text) 62%,#000);
+}
+.crt-row{ display:flex; align-items:center; justify-content:center; gap:7px; }
+
+.crt-body.crt-cells{ display:grid; grid-auto-flow:column; grid-auto-columns:minmax(0,1fr); align-items:stretch; width:100%; padding:0; gap:0; }
+.crt-cell{ min-width:0; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:5px; padding:4px 4px; }
+.crt-cell + .crt-cell{ border-left:1px solid color-mix(in srgb,var(--crt-text) 20%,transparent); }
+
+.crt-lamp{
+  flex:0 0 auto; width:7px; height:7px; border:1px solid #0b0806;
+  background:var(--crt-lamp,#75C89B); box-shadow:0 0 5px color-mix(in srgb,var(--crt-lamp,#75C89B) 60%,transparent);
+}
+.crt-lamp.is-amber{ --crt-lamp:#F2B431; }
+
+.crt-meter{ width:100%; height:7px; border:1px solid color-mix(in srgb,var(--crt-text) 35%,transparent); padding:1px; }
+.crt-meter > i{
+  display:block; height:100%; width:var(--v,0%);
+  background:repeating-linear-gradient(90deg,currentColor 0 4px,transparent 4px 5px);
+  box-shadow:var(--crt-bloom);
+}
+.crt-cards{ display:flex; gap:4px; justify-content:center; }
+
+/* ---------------- effect layers ---------------- */
+/* ::before  grain (an SVG noise tile, jumping in steps) */
+.crt::before{
+  content:''; position:absolute; inset:-20px; z-index:3; pointer-events:none;
+  opacity:var(--crt-grain-a);
+  background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='96' height='96'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 .9 0'/%3E%3C/filter%3E%3Crect width='96' height='96' filter='url(%23n)'/%3E%3C/svg%3E") 0 0/96px 96px;
+  mix-blend-mode:screen;
+  animation:crtGrain .5s steps(5,end) infinite;
+}
+/* ::after   idle flicker + rolling scan bar */
+.crt::after{
+  content:''; position:absolute; inset:0; z-index:4; pointer-events:none;
+  background:linear-gradient(180deg,transparent 0 42%,rgba(255,255,255,var(--crt-roll-a)) 50%,transparent 58% 100%) 0 0/100% 300%;
+  animation:crtFlicker 5.8s steps(2,end) infinite, crtRoll var(--crt-roll-ms) linear infinite;
+}
+
+@keyframes crtGrain{ 0%{ transform:translate(0,0); } 20%{ transform:translate(-9px,5px); } 40%{ transform:translate(6px,-8px); } 60%{ transform:translate(-4px,-3px); } 80%{ transform:translate(8px,7px); } 100%{ transform:translate(0,0); } }
+@keyframes crtFlicker{
+  0%,84%,86%,89%,92%,96%,100%{ background-color:transparent; }
+  85%,93%{ background-color:rgba(0,0,0,var(--crt-flick-dip)); }
+  87%,95%{ background-color:rgba(255,255,255,var(--crt-flick-lift)); }
+}
+@keyframes crtRoll{ from{ background-position:0 100%; } to{ background-position:0 0%; } }
+@keyframes crtTear{
+  0%,90.9%,92.4%,100%{ transform:none; }
+  91%{ transform:translateX(var(--crt-tear-x)) skewX(-4deg); }
+  91.4%{ transform:translateX(calc(var(--crt-tear-x) * -.6)); clip-path:inset(30% 0 35% 0); }
+  91.8%{ transform:translateX(calc(var(--crt-tear-x) * .4)) skewX(3deg); clip-path:none; }
+}
+
+/* ---------------- content change (js/crt.js adds the class) ---------------- */
+.crt-body.crt-chg-burst{ animation:crtBurst .23s steps(5,end); }
+@keyframes crtBurst{
+  0%{ filter:brightness(2.4) contrast(.72); opacity:.35; }
+  20%{ filter:brightness(.25) contrast(1.6); opacity:.68; }
+  45%{ filter:brightness(1.6) contrast(1.15); opacity:.9; }
+  70%{ filter:brightness(.7) contrast(1.25); opacity:1; }
+  100%{ filter:none; opacity:1; }
+}
+.crt-body.crt-chg-roll{ animation:crtRollIn .32s steps(6,end); }
+@keyframes crtRollIn{
+  0%{ transform:translateY(-110%); filter:brightness(1.8); }
+  60%{ transform:translateY(12%); }
+  80%{ transform:translateY(-4%); }
+  100%{ transform:none; filter:none; }
+}
+.crt-body.crt-chg-channel{ animation:crtChannel .42s steps(7,end); }
+@keyframes crtChannel{
+  0%{ transform:scale(1.4,.04); filter:brightness(3); opacity:1; }
+  25%{ transform:scale(1,.04); filter:brightness(2); }
+  45%{ transform:scale(1,1) translateX(4px); filter:brightness(.4) contrast(2); opacity:.5; }
+  65%{ transform:translateX(-3px); filter:brightness(1.4); opacity:1; }
+  100%{ transform:none; filter:none; }
+}
+.crt.crt-static::before{ opacity:.85; transition:none; }
+.crt-body.crt-chg-wipe{ animation:crtWipe .3s steps(6,end); }
+@keyframes crtWipe{ from{ clip-path:inset(0 100% 0 0); filter:brightness(1.8); } to{ clip-path:inset(0 0 0 0); filter:none; } }
+
+/* The old picture burning out (ghosting) */
+.crt-ghost{
+  position:absolute; inset:0; z-index:0; pointer-events:none;
+  animation:crtGhost var(--crt-ghost-ms,600ms) steps(8,end) forwards;
+}
+@keyframes crtGhost{
+  0%{ opacity:var(--crt-ghost-a,.5); filter:blur(0); transform:none; }
+  100%{ opacity:0; filter:blur(1.5px); transform:translateY(2px) scale(1.02); }
+}
+
+/* On-demand glitch */
+.crt.crt-glitch .crt-body{ animation:crtGlitch .6s steps(1,end); }
+@keyframes crtGlitch{
+  0%{ transform:translateX(6px) skewX(-8deg); filter:hue-rotate(40deg) brightness(1.6); }
+  15%{ transform:translateX(-8px); clip-path:inset(20% 0 40% 0); }
+  30%{ transform:translateX(3px) skewX(6deg); clip-path:inset(55% 0 5% 0); filter:none; }
+  45%{ transform:translateX(-2px); clip-path:none; filter:brightness(.4); }
+  60%{ transform:none; filter:brightness(1.3); }
+  100%{ transform:none; filter:none; }
+}
+
+/* ---------------- dials ---------------- */
+/* Tint */
+[data-crt-tint="dark"]{ --crt-glass:#060B0A; --crt-bezel:#040807; --crt-tint:rgba(255,255,255,.05); --crt-halo:rgba(255,255,255,.06); }
+[data-crt-tint="green"]{ --crt-glass:#030D06; --crt-bezel:#020604; --crt-tint:rgba(110,220,140,.14); --crt-halo:rgba(110,220,140,.16); }
+[data-crt-tint="amber"]{ --crt-glass:#0E0803; --crt-bezel:#060302; --crt-tint:rgba(240,168,60,.13); --crt-halo:rgba(240,168,60,.15); }
+[data-crt-tint="black"]{ --crt-glass:#010202; --crt-bezel:#000; --crt-tint:rgba(255,255,255,.035); --crt-halo:rgba(255,255,255,.03); }
+
+/* Glow — always em, so small and large text glow alike */
+[data-crt-glow="1"]{ --crt-bloom:0 0 .3em color-mix(in srgb,currentColor 35%,transparent); }
+[data-crt-glow="2"]{ --crt-bloom:0 0 .3em color-mix(in srgb,currentColor 55%,transparent),0 0 .9em color-mix(in srgb,currentColor 16%,transparent); }
+[data-crt-glow="3"]{ --crt-bloom:0 0 .25em color-mix(in srgb,currentColor 70%,transparent),0 0 .8em color-mix(in srgb,currentColor 28%,transparent),0 0 1.6em color-mix(in srgb,currentColor 10%,transparent); }
+[data-crt-glow="4"]{ --crt-bloom:0 0 .2em currentColor,0 0 .7em color-mix(in srgb,currentColor 45%,transparent),0 0 1.8em color-mix(in srgb,currentColor 22%,transparent); }
+
+/* Scanlines */
+[data-crt-scan="0"]{ --crt-scan-a:0; }
+[data-crt-scan="1"]{ --crt-scan-a:.2; }
+[data-crt-scan="2"]{ --crt-scan-a:.34; }
+[data-crt-scan="3"]{ --crt-scan-a:.48; }
+[data-crt-scan="4"]{ --crt-scan-a:.62; }
+
+/* RGB fringe / colour bleed */
+[data-crt-rgb="1"]{ --crt-rgb:.06em 0 0 rgba(255,40,80,.35),-.06em 0 0 rgba(40,200,255,.35); }
+[data-crt-rgb="2"]{ --crt-rgb:.1em 0 0 rgba(255,40,80,.45),-.1em 0 0 rgba(40,200,255,.45); }
+[data-crt-rgb="3"]{ --crt-rgb:.16em 0 .04em rgba(255,40,80,.55),-.16em 0 .04em rgba(40,200,255,.55); }
+[data-crt-rgb="4"]{ --crt-rgb:.24em 0 .08em rgba(255,40,80,.65),-.24em .03em .08em rgba(40,200,255,.65); }
+
+/* Grain */
+[data-crt-grain="1"]{ --crt-grain-a:.035; }
+[data-crt-grain="2"]{ --crt-grain-a:.06; }
+[data-crt-grain="3"]{ --crt-grain-a:.09; }
+[data-crt-grain="4"]{ --crt-grain-a:.13; }
+
+/* Curvature + vignette */
+[data-crt-curve="1"]{ --crt-radius:3px; --crt-vig:.66; --crt-bulge:1; }
+[data-crt-curve="2"]{ --crt-radius:5px; --crt-vig:.72; --crt-bulge:1.5; }
+[data-crt-curve="3"]{ --crt-radius:8px; --crt-vig:.8; --crt-bulge:2; }
+[data-crt-curve="4"]{ --crt-radius:12px; --crt-vig:.9; --crt-bulge:2.6; }
+
+/* Idle flicker */
+[data-crt-flicker="1"]{ --crt-flick-dip:.16; --crt-flick-lift:.05; }
+[data-crt-flicker="2"]{ --crt-flick-dip:.26; --crt-flick-lift:.09; }
+[data-crt-flicker="3"]{ --crt-flick-dip:.38; --crt-flick-lift:.14; }
+[data-crt-flicker="4"]{ --crt-flick-dip:.55; --crt-flick-lift:.22; }
+
+/* Rolling scan bar */
+[data-crt-roll="1"]{ --crt-roll-a:.035; --crt-roll-ms:7s; }
+[data-crt-roll="2"]{ --crt-roll-a:.06;  --crt-roll-ms:5s; }
+[data-crt-roll="3"]{ --crt-roll-a:.09;  --crt-roll-ms:3.6s; }
+[data-crt-roll="4"]{ --crt-roll-a:.14;  --crt-roll-ms:2.2s; }
+
+/* VHS tears (a brief jump once per cycle) */
+[data-crt-tear="1"]{ --crt-tear-x:2px; --crt-tear-ms:11s; }
+[data-crt-tear="2"]{ --crt-tear-x:4px; --crt-tear-ms:7s; }
+[data-crt-tear="3"]{ --crt-tear-x:7px; --crt-tear-ms:4.5s; }
+[data-crt-tear="4"]{ --crt-tear-x:11px; --crt-tear-ms:2.6s; }
+
+/* Ink scheme */
+[data-crt-ink="one"]{ --crt-ink-live:var(--crt-ink-info); }
+[data-crt-ink="mono"]{ --crt-ink-live:var(--crt-ink-info); --crt-ink-money:var(--crt-ink-info); }
+
+/* Reduced Motion: nothing moves on its own; changes just swap. */
+[data-motion="off"] .crt::before,
+[data-motion="off"] .crt::after,
+[data-motion="off"] .crt-body,
+[data-motion="off"] .crt-ghost{ animation:none !important; }
+@media (prefers-reduced-motion:reduce){
+  .crt::before, .crt::after, .crt-body, .crt-ghost{ animation:none !important; }
+}
