@@ -1,0 +1,127 @@
+/* ============================================================
+   CAREER HUB CABINET — live layout + ticket slot (v0.39.2)
+
+   Loaded after career-hub-v2-lab.css and ticket-feed.css, scoped to the
+   live hub (#career-hub) so career-hub-v2-lab.html keeps its reference
+   look.
+
+   - Back and Settings sit on the cabinet's top rail beside BANKROLL; the
+     old bottom strip (a lone back arrow over dead space) is gone.
+   - The cabinet starts a little lower under the status bar, sections get
+     real gaps, and the tickets get clear air on every side.
+   - The slot is a brass plate with screws, feed rollers, two lamps that
+     point the ticket in, and a stamped TICKET IN. Only .ch2-intake and
+     .ch2-intake-mouth matter to the ticket feed (it measures the mouth);
+     the shred sequence's classes (tf-feeding / tf-accepted / tf-shredding)
+     now also drive the lamps and rollers.
+   ============================================================ */
+
+/* ---- Frame ---- */
+#career:has(#career-hub) .setup-head{ display:none; }
+#career-hub.ch2-machine{
+  grid-template-rows:auto minmax(0,1fr) auto auto; gap:12px;
+  padding-top:calc(max(8px,var(--safe-top,env(safe-area-inset-top))) + 10px);
+  padding-bottom:max(12px,env(safe-area-inset-bottom));
+}
+
+/* ---- Top rail: [back] [BANKROLL] [settings] ---- */
+#career-hub .ch2-utility-row{ grid-template-columns:38px minmax(0,1fr) 38px; gap:7px; }
+#career-hub .ch2-key{
+  height:calc(100% - 3px); min-width:0; min-height:0; margin:0; padding:0;
+  display:flex; align-items:center; justify-content:center;
+  border:2px solid #070806; border-radius:3px; background:#D0C28F; color:#30270F;
+  font-family:inherit; font-size:16px; line-height:1; cursor:pointer;
+  box-shadow:0 3px 0 #090806,inset 2px 2px 0 #FFF0BC,inset -2px -2px 0 #796B43;
+}
+#career-hub .ch2-key:active{ transform:translateY(2px); box-shadow:0 1px 0 #090806,inset 2px 2px 0 #FFF0BC; }
+#career-hub .ch2-key .ch2-nav-mark{ width:14px; }
+
+/* ---- Tickets: clear air above, below and to the sides ---- */
+#career-hub .ch2-card{ top:16px; height:calc(100% - 50px); }
+
+/* The YOUR TABLE panel shrinks with the ticket (shorter phones, or when
+   the Abandon/Cash Out key takes room). Portraits are sized by the
+   panel's height as well as its width, so they never ride up over the
+   label. 44px = the label, the gap and the name under each face. */
+#career-hub .ch2-card-front{ grid-template-rows:42px 54px 58px 58px minmax(96px,1fr) 43px; }
+#career-hub .ch2-opponent-stage{ container-type:size; gap:9px; }
+#career-hub .ch2-opponent-stage .ch2-face{ max-width:max(40px,calc(100cqh - 34px)); }
+
+/* ---- Console: the main button, and Abandon / Cash Out under it ---- */
+#career-hub .ch2-console{ display:flex; flex-direction:column; gap:8px; min-width:0; }
+#career-hub .ch2-action-cradle{ height:104px; flex:0 0 auto; }
+#career-hub .ch2-secondary{
+  min-height:40px; margin:0 14px; padding:6px 10px;
+  border:3px solid var(--pc-edge-lo); border-radius:3px; background:var(--pc-plastic); color:var(--px-ink);
+  box-shadow:inset 2px 2px 0 var(--pc-plastic-hi),inset -2px -2px 0 var(--pc-plastic-lo),0 3px 0 var(--pc-edge-lo);
+  font:8px/1.15 var(--font-hdr); letter-spacing:.08em; cursor:pointer;
+}
+#career-hub .ch2-secondary:active{ transform:translateY(2px); box-shadow:inset 2px 2px 0 var(--pc-plastic-hi),0 1px 0 var(--pc-edge-lo); }
+#career-hub .ch2-secondary[hidden]{ display:none; }
+
+/* ---- The ticket slot ---- */
+#career-hub .ch2-intake{
+  z-index:35; height:auto; margin:-18px 26px 0; padding:6px 9px 5px;
+  display:grid; grid-template-columns:10px 14px minmax(0,1fr) 14px 10px;
+  grid-template-rows:18px 8px; column-gap:7px; row-gap:4px; align-items:center;
+  border:3px solid #120C04; border-radius:4px;
+  background:
+    repeating-linear-gradient(0deg,rgba(255,240,190,.07) 0 1px,transparent 1px 3px),
+    linear-gradient(180deg,#D9B75C 0,#B48A33 46%,#8A6522 100%);
+  box-shadow:inset 2px 2px 0 #F4DC92,inset -2px -2px 0 #5A3F12,0 4px 0 #0A0703,0 8px 12px rgba(0,0,0,.45);
+}
+#career-hub .ch2-intake-screw{
+  position:relative; grid-row:1 / span 2; width:10px; height:10px; border-radius:50%;
+  background:radial-gradient(circle at 35% 35%,#F6E2A0 0 2px,#B48A33 3px,#5A3F12 5px);
+  box-shadow:0 1px 0 rgba(255,240,190,.5),inset 0 0 0 1px #3A2708;
+}
+#career-hub .ch2-intake-screw::after{
+  content:""; position:absolute; left:2px; right:2px; top:4px; height:2px; background:#3A2708; transform:rotate(-35deg);
+}
+#career-hub .ch2-intake-screw:nth-child(5)::after{ transform:rotate(55deg); }
+/* Two lamps pointing down into the slot. */
+#career-hub .ch2-intake-led{
+  grid-row:1; justify-self:center; width:14px; height:9px; background:#5A3A0E;
+  clip-path:polygon(0 0,100% 0,50% 100%);
+}
+#career-hub .ch2-intake-mouth{
+  grid-row:1; grid-column:3; position:relative; width:auto; height:18px; overflow:hidden;
+  border:2px solid #050605; border-radius:1px; background:#020302;
+  box-shadow:inset 0 4px 5px #000,0 -1px 0 #5A3F12,0 1px 0 #F4DC92;
+}
+/* Rubber feed rollers just inside the lip. */
+#career-hub .ch2-intake-rollers{
+  position:absolute; left:3px; right:3px; bottom:2px; height:6px;
+  background:repeating-linear-gradient(90deg,#34322A 0 2px,#0E0E0B 2px 4px);
+  box-shadow:inset 0 2px 0 rgba(255,255,255,.07),inset 0 -2px 2px #000;
+}
+#career-hub .ch2-intake-label{
+  grid-row:2; grid-column:2 / 5; justify-self:center;
+  color:#4B3510; font:6px/1 var(--font-hdr); letter-spacing:.24em; text-transform:uppercase;
+  text-shadow:0 1px 0 rgba(255,236,170,.55);
+}
+
+/* Lamps: they only invite a ticket when the one on the reader can be
+   bought; a paid event shows steady green; locked/unaffordable stay dark. */
+#career-hub[data-entry="available"] .ch2-intake-led{ animation:ch2SlotInvite 1.4s steps(1,end) infinite; }
+#career-hub[data-entry="available"] .ch2-intake-led:nth-child(4){ animation-delay:.12s; }
+#career-hub[data-entry="active"] .ch2-intake-led{ background:#75C89B; }
+@keyframes ch2SlotInvite{ 0%,55%{ background:#F2B431; } 56%,100%{ background:#6B4510; } }
+
+/* The shred sequence (js/ticket-feed.js): lamps and rollers work with it. */
+#career-hub.tf-feeding .ch2-intake-led{ animation:ch2SlotFeed 180ms steps(1,end) infinite; }
+#career-hub.tf-feeding .ch2-intake-rollers{ animation:ch2Rollers 120ms steps(2,end) infinite; }
+#career-hub.tf-shredding .ch2-intake-led{ animation:ch2SlotShred 70ms steps(1,end) infinite; }
+#career-hub.tf-shredding .ch2-intake-rollers{ animation:ch2Rollers 50ms steps(2,end) infinite; }
+#career-hub.tf-accepted .ch2-intake-led{ animation:none; background:#75C89B; }
+@keyframes ch2SlotFeed{ 0%,50%{ background:#FFD35A; } 51%,100%{ background:#8A5A12; } }
+@keyframes ch2SlotShred{ 0%,50%{ background:#FF8A3D; } 51%,100%{ background:#7A2A0C; } }
+@keyframes ch2Rollers{ from{ background-position:0 0; } to{ background-position:4px 0; } }
+
+/* ---- Shorter phones ---- */
+@media (max-height:900px){
+  #career-hub.ch2-machine{ gap:10px; padding-top:calc(max(8px,var(--safe-top,env(safe-area-inset-top))) + 6px); }
+  #career-hub .ch2-card{ top:14px; height:calc(100% - 46px); }
+  #career-hub .ch2-action-cradle{ height:94px; }
+  #career-hub .ch2-card-front{ grid-template-rows:34px 38px 46px 46px minmax(80px,1fr) 35px; }
+}

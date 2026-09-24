@@ -107,7 +107,10 @@ transitions (`careerDepartToTable`, the Home entrance in
 `enterCareerFromHome`). Reads Career state and calls the real transaction
 functions in `07-ui-wiring.js`; owns no money itself. Styled by
 `css/career-hub-v2-lab.css` (shared with the Lab, see below) plus
-`css/career-motion-live.css` for the transitions.
+`css/career-motion-live.css` for the transitions and
+`css/career-hub-cabinet.css` (live-only layout: Back/Settings keys on the
+top rail, the brass ticket slot, the console with Abandon/Cash Out under
+the main button; the old bottom `.setup-head` strip is hidden).
 
 ## `js/machine-wheel.js` + `css/machine-wheel.css` — Machine Wheel V2 (live)
 

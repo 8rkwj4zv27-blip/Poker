@@ -195,6 +195,8 @@
     const sub = root.querySelector('#ch2-primary-sub');
     action.disabled = accepting || !['available','active'].includes(currentEntry.state);
     action.className = 'pc-button pc-button-primary ch2-primary is-' + currentEntry.state;
+    // The slot's lamps invite a ticket only when this one can be fed in.
+    root.dataset.entry = currentEntry.state;
     if (currentEntry.state === 'active') { main.textContent = currentEntry.cash ? 'RESUME TABLE' : 'CONTINUE'; sub.textContent = 'SEAT ACCEPTED'; }
     else if (currentEntry.state === 'available') { main.textContent = currentEntry.cash ? 'BUY IN ' + amount(CAREER_CASH_CONFIG.buyIn) : currentEntry.event.buyIn ? 'BUY IN ' + amount(currentEntry.event.buyIn) : 'TAKE SEAT'; sub.textContent = 'TAKE SEAT'; }
     else if (currentEntry.state === 'unaffordable') { main.textContent = 'BANKROLL LOW'; sub.textContent = 'ENTRY UNAFFORDABLE'; }
@@ -221,23 +223,39 @@
     flipped = false;
     const bank = careerBankroll();
     board.innerHTML = '<main class="ch2-machine" id="career-hub" aria-label="Career Hub">' +
-      '<header class="ch2-instrument"><div class="ch2-utility-row"><span class="pc-label ch2-instrument-title">Bankroll</span></div>' +
+      '<header class="ch2-instrument"><div class="ch2-utility-row"><button class="ch2-key" id="ch2-back" type="button" aria-label="Back to main menu"><span class="ch2-nav-mark" aria-hidden="true"></span></button><span class="pc-label ch2-instrument-title">Bankroll</span><button class="ch2-key" id="ch2-settings" type="button" aria-label="Settings">\u2699</button></div>' +
       '<div class="ch2-money-block"><div class="cpi-bankroll-housing ch2-bankroll-housing"><div class="amt-readout ch2-bankroll-reel" id="ch2-bankroll" role="img" aria-live="polite" aria-label="Bankroll ' + esc(amount(bank)) + '" style="grid-template-columns:21px repeat(' + Math.max(7,String(bank).length) + ',minmax(12px,1fr))">' + reelMarkup(bank) + '</div></div></div>' +
       '<button class="ch2-record crt" id="ch2-record" type="button"><span class="ch2-crt-glass crt__content" id="ch2-crt-glass"><span class="ch2-crt-stat"><small id="ch2-crt-label-a"></small><strong class="tabular" id="ch2-crt-value-a"></strong></span><span class="ch2-crt-stat"><small id="ch2-crt-label-b"></small><strong class="tabular" id="ch2-crt-value-b"></strong></span></span></button></header>' +
       '<section class="ch2-reader" aria-label="Career event browser"><div class="ch2-rack" id="ch2-rack"><div class="ch2-track" id="ch2-track" role="listbox" tabindex="0" aria-label="Career events. Swipe, tap an exposed ticket edge, or use left and right arrow keys">' + all.map(card).join('') + '</div></div></section>' +
-      '<div class="ch2-intake" id="ch2-intake" aria-hidden="true"><span class="ch2-intake-mouth"></span></div>' +
+      // The ticket slot. Only .ch2-intake and .ch2-intake-mouth are
+      // load-bearing (the ticket feed measures the mouth); the rest is
+      // the plate's hardware.
+      '<div class="ch2-intake" id="ch2-intake" aria-hidden="true">' +
+        '<span class="ch2-intake-screw"></span><span class="ch2-intake-led"></span>' +
+        '<span class="ch2-intake-mouth"><span class="ch2-intake-rollers"></span></span>' +
+        '<span class="ch2-intake-led"></span><span class="ch2-intake-screw"></span>' +
+        '<span class="ch2-intake-label">Ticket in</span>' +
+      '</div>' +
+      '<div class="ch2-console">' +
       '<div class="pc-primary-cradle ch2-action-cradle"><span class="pc-slot-aperture" aria-hidden="true"><span class="pc-slot-door"></span></span><button class="pc-button pc-button-primary ch2-primary" id="ch2-primary" type="button"><span class="pc-lamp is-amber" aria-hidden="true"></span><span><strong id="ch2-primary-main"></strong><small id="ch2-primary-sub"></small></span><span class="pc-lamp is-amber" aria-hidden="true"></span></button></div>' +
+      '<button class="ch2-secondary" id="ch2-secondary" type="button" hidden></button>' +
+      '</div>' +
       '</main>';
     const root = board.querySelector('#career-hub');
-    const head = board.closest('.lobby-card')?.querySelector('.setup-head');
-    if (head){
-      head.querySelector('#ch2-secondary')?.remove();
-      const secondary = document.createElement('button');
-      secondary.id = 'ch2-secondary';
-      secondary.className = 'ch2-secondary';
-      secondary.type = 'button';
-      head.appendChild(secondary);
-    }
+    // Back and Settings live on the cabinet's top rail. Back goes through
+    // the screen's own #career-back (hidden with the old bottom strip), so
+    // its handler and its disabled-while-buying-in state stay the one truth.
+    root.querySelector('#ch2-back').onclick = () => {
+      const back = document.getElementById('career-back');
+      if (!back || back.disabled || accepting) return;
+      Sound.buttonPress('check');
+      back.click();
+    };
+    root.querySelector('#ch2-settings').onclick = () => {
+      if (accepting) return;
+      Sound.buttonPress('check');
+      openOverlay('settings');
+    };
     const selected = () => all.findIndex(entry => entry.id === selectedId);
     const track = root.querySelector('#ch2-track');
     const rack = root.querySelector('#ch2-rack');
