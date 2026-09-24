@@ -634,7 +634,9 @@
       if (backButton) backButton.disabled = true;
       button.disabled = true;
       button.classList.add('is-entry-pressed');
-      Sound.buttonPress('allin');
+      // Played on finger-down by press-feel.js; only a key/programmatic
+      // press still needs it here.
+      if (typeof pressFeelSounded !== 'function' || !pressFeelSounded(button)) Sound.buttonPress('allin');
       queue(() => button.classList.remove('is-entry-pressed'),115);
       queue(() => { Sound.buttonRelease('award'); seatAndDepart(root,entry,launch); },120);
       return;
@@ -662,7 +664,9 @@
         launch();
         return;
       }
-      Sound.buttonPress('allin');
+      // Played on finger-down by press-feel.js; only a key/programmatic
+      // press still needs it here.
+      if (typeof pressFeelSounded !== 'function' || !pressFeelSounded(button)) Sound.buttonPress('allin');
       haptic(16);
       later(() => button.classList.remove('is-entry-pressed'),115);
       // Optional replacement feed animation (js/ticket-feed.js, Lab only

@@ -438,7 +438,9 @@ async function enterCareerFromHomeV2(){
   key.disabled = true;
   home.inert = true;
   key.classList.add('career-entry-pressed');
-  Sound.buttonPress('allin');
+  // press-feel.js plays the clunk on finger-down; only a key/programmatic
+  // press still needs it here.
+  if (typeof pressFeelSounded !== 'function' || !pressFeelSounded(key)) Sound.buttonPress('allin');
   haptic([25, 18, 42]);
   const profile = MACHINE_WHEEL_CONFIG.profiles.career;
   let rig = null;

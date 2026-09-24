@@ -1,0 +1,25 @@
+/* ============================================================
+   PRESS FEEL (js/press-feel.js) — the big yellow buttons
+   ============================================================ */
+
+/* DOWN: the face sinks 5px into its body at once, lamps flare. */
+:is(#home,#career-hub) .pc-button-primary.pf-down{
+  transform:translateY(5px); transition:none;
+  box-shadow:inset 3px 3px 0 var(--pc-button-hi);
+}
+:is(#home,#career-hub) .pc-button-primary.pf-down .pc-lamp{ filter:brightness(1.45); }
+
+/* The casing takes the knock. */
+.pc-primary-cradle.pf-hit{ animation:pfHit 110ms steps(1,end); }
+@keyframes pfHit{ 0%{ transform:translateY(1px); } 60%{ transform:translateY(0); } }
+
+/* UP: the face springs back — past its rest, down, a small lift, settle.
+   Pixel steps, not a smooth tween. */
+:is(#home,#career-hub) .pc-button-primary.pf-spring{ animation:pfSpring 300ms both; }
+@keyframes pfSpring{
+  0%{ transform:translateY(5px); animation-timing-function:steps(2,end); }
+  24%{ transform:translateY(-3px); animation-timing-function:steps(2,end); }
+  46%{ transform:translateY(2px); animation-timing-function:steps(1,end); }
+  66%{ transform:translateY(-1px); animation-timing-function:steps(1,end); }
+  84%,100%{ transform:translateY(0); }
+}
