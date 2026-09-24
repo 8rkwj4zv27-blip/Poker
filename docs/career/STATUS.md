@@ -7,8 +7,8 @@ something specific was built or decided, never by default.
 
 ## Current build
 
-- Build marker: `v0.39.2-dev · Career Cabinet` (main-menu footer / DEV panel).
-- Service-worker cache: `poker-v39-2`.
+- Build marker: `v0.39.3-dev · Slot Console` (main-menu footer / DEV panel).
+- Service-worker cache: `poker-v39-3`.
 - Career save schema: **version 6**.
 - Production Career Hub: ticket-reader presentation (six-venue rack,
   spring-driven touch physics, printed-ticket detail flip), integrated
@@ -50,8 +50,12 @@ presentation-only passes over the Career Hub and its transitions:
    `boot-lab.html`); the title-glass tap Easter egg was removed at the
    owner's request. v0.39.1: the House Faces drop in and have
    temperaments (`js/home-cast.js`). v0.39.2: Career Hub layout pass —
-   Back/Settings on the top rail, no bottom strip, roomier tickets, brass
-   ticket slot (`css/career-hub-cabinet.css`). Next main-menu passes discussed with the owner:
+   Back/Settings on the top rail, no bottom strip, roomier tickets
+   (`css/career-hub-cabinet.css`). v0.39.3: the slot is a readout slot in
+   one dark console with the button (picked in `slot-lab.html`). Owner
+   wants a further Career Hub spacing pass next, then a written visual
+   language guide (`docs/ui/VISUAL_LANGUAGE.md`) that future work must
+   follow or ask to break. Next main-menu passes discussed with the owner:
    top-bar clean-up, counter-drum stats, pokeable House Faces, live
    readout ticker, then the sub-screens.
 
