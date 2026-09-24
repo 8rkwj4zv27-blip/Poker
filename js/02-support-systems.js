@@ -733,7 +733,7 @@ const DEFAULT_SETTINGS = {
 const DEFAULT_STATS = { hands:0, won:0, showdownsWon:0, biggestPot:0, net:0 };
 const SAVE_VERSION = 1;
 /* Bump on every release so the main-menu header shows what's actually installed. */
-const BUILD_VERSION = 'v0.38.0-dev · Table Intro';
+const BUILD_VERSION = 'v0.39.0-dev · Home Boot';
 
 let settings = Object.assign({}, DEFAULT_SETTINGS, Store.get('felt.settings', {}));
 // The Settings menu cleanup dropped RELAXED from the Game Speed control
@@ -1349,6 +1349,25 @@ const Sound = (function(){
       };
     } catch(e){ return { set(){}, stop(){} }; }
   }
+  /* Boot sequence (js/home-boot.js). A marquee letter catching: a short
+     mains buzz with a bright filament tick on top — varied per letter so
+     a run of them reads as a sign warming up, not one sample repeated. */
+  function bootFilamentSound(){
+    withVoiceCap(35, ()=>{
+      blip(100+Math.random()*24, 0.05, 'square', 0.007);
+      noise(0.012, 0.018+Math.random()*0.008, { filterType:'highpass', freq:4200+Math.random()*1500, decayPow:3.2 });
+    });
+  }
+  /* The cabinet reporting ready: two small rising bell tones over a soft
+     relay settle. Quieter than any reward sound — it is a status, not a win. */
+  function bootReadySound(){
+    withVoiceCap(400, ()=>{
+      noise(0.03, 0.03, { filterType:'bandpass', freq:1900, Q:1.2, decayPow:2.4 });
+      blip(784, 0.09, 'square', 0.022, 0.02);
+      blip(1175, 0.16, 'triangle', 0.03, 0.10);
+      blip(2350, 0.08, 'sine', 0.008, 0.10);
+    });
+  }
   function consoleShiftSound(){
     withVoiceCap(180, ()=>{
       noise(0.025, 0.035, { filterType:'bandpass', freq:1250, freqSweepTo:720, Q:1.2, decayPow:2.8 });
@@ -1595,7 +1614,14 @@ const Sound = (function(){
     wheelLock(){ if (this.sfxV1Enabled) wheelLockSound(); },
     wheelRelay(strength){ if (this.sfxV1Enabled) wheelRelaySound(strength); },
     wheelMotor(){ return this.sfxV1Enabled ? wheelMotor() : { set(){}, stop(){} }; },
-    consoleShift(){ if (this.sfxV1Enabled) consoleShiftSound(); }
+    consoleShift(){ if (this.sfxV1Enabled) consoleShiftSound(); },
+    bootFilament(){ if (this.sfxV1Enabled) bootFilamentSound(); },
+    bootReady(){ if (this.sfxV1Enabled) bootReadySound(); },
+    /* True only when a sound would be heard NOW. Anything scheduled on a
+       context that is still suspended (no user gesture yet — e.g. a cold
+       PWA launch) would all fire at once on the first tap, so ambient
+       sequences that can start without a gesture check this first. */
+    audible(){ const c = ac(); return !!c && c.state === 'running'; }
   };
 })();
 function haptic(pattern){

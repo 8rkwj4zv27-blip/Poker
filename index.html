@@ -19,10 +19,11 @@
 <link rel="stylesheet" href="css/05-responsive-and-arcade.css">
 <link rel="stylesheet" href="css/06-machine-system.css">
 <link rel="stylesheet" href="css/career-hub-v2-lab.css?v=live-motion-1">
-<link rel="stylesheet" href="css/career-motion-live.css?v=3">
+<link rel="stylesheet" href="css/career-motion-live.css?v=4">
   <link rel="stylesheet" href="css/machine-wheel.css?v=1">
   <link rel="stylesheet" href="css/ticket-feed.css?v=1">
   <link rel="stylesheet" href="css/table-intro.css?v=1">
+  <link rel="stylesheet" href="css/home-boot.css?v=1">
 
 <meta name="format-detection" content="telephone=no">
 
@@ -36,12 +37,12 @@
     <div class="lobby-card pc-housing pc-material-leather" id="menu-contraption">
       <div class="home-topbar">
         <div class="pc-product-mark"><span id="pc-version-mark"></span><small>Electronic table game</small></div>
-        <div class="pc-ready-readout pc-display"><span class="pc-lamp is-green"></span>&nbsp; DEALER READY</div>
+        <div class="pc-ready-readout pc-display"><span class="pc-lamp is-green"></span>&nbsp; <span id="home-readout-text">DEALER READY</span></div>
         <button class="icon-btn" id="home-settings" aria-label="Settings">⚙</button>
       </div>
 
       <div class="hero pc-raised pc-material-plastic">
-        <div class="pc-title-well pc-recess pc-material-felt" id="home-title-glass" role="button" tabindex="0" aria-label="Poker Faces title glass. Tap for a surprise">
+        <div class="pc-title-well pc-recess pc-material-felt" id="home-title-glass">
           <h1 class="brand"><span>Poker</span><span>Faces</span></h1>
           <div class="brand-rule"></div>
         </div>
@@ -86,6 +87,23 @@
       </div>
     </div>
   </div>
+
+  <!-- Arm the home boot (js/home-boot.js) before the first paint, so the
+       lit menu never flashes before the cabinet switches on. Skipped under
+       Reduced Motion. Fail-safe: if the boot script never starts, the menu
+       lights itself after 4s. -->
+  <script>
+  (function(){
+    try{
+      var s = JSON.parse(localStorage.getItem('felt.settings') || '{}') || {};
+      var rm = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      if (s.reduceMotion || rm) return;
+      var home = document.getElementById('home');
+      home.classList.add('hb-boot');
+      window.__homeBootFailsafe = setTimeout(function(){ home.classList.remove('hb-boot'); }, 4000);
+    }catch(e){}
+  })();
+  </script>
 
   <!-- ============================ HAND RANKINGS ============================ -->
   <div id="rankings" class="screen hidden">
@@ -603,11 +621,12 @@
 <script src="js/06-presentation.js"></script>
 <script src="js/07-ui-wiring.js?v=career-motion-1"></script>
 <script src="js/career-hub-live.js?v=career-motion-4"></script>
-<script src="js/career-motion-live.js?v=3"></script>
+<script src="js/career-motion-live.js?v=4"></script>
 <script src="js/machine-wheel.js?v=1"></script>
 <script src="js/ticket-feed.js?v=1"></script>
 <script src="js/table-intro.js?v=1"></script>
 <script src="js/08-dev-mode.js?v=career-motion-1"></script>
+<script src="js/home-boot.js?v=1"></script>
 
 <script id="pwa-service-worker">
 if ('serviceWorker' in navigator) {

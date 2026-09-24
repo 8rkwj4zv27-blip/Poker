@@ -12,7 +12,7 @@ by the code and by `CLAUDE.md`/`AGENTS.md`, not by this file.
 04-modes-and-scoring.js 05-game-engine.js       06-presentation.js
 07-ui-wiring.js         career-hub-live.js      career-motion-live.js
 machine-wheel.js        ticket-feed.js          table-intro.js
-08-dev-mode.js
+08-dev-mode.js          home-boot.js
 ```
 
 Later files call into earlier ones freely; there's no module system, so
@@ -148,6 +148,21 @@ Both pairs are loaded by `index.html` (after `machine-wheel.js`) and
 precached by `sw.js`. `intro-lab.html` runs the real game sandboxed with
 NEW/OLD switches for each, for future tuning.
 
+## `js/home-boot.js` + `css/home-boot.css` — Home Boot (live)
+
+"The cabinet switches on": ~1.6s on the main menu, once per real page load
+(never on returning to the menu). Mains relay clunk, self-test lines in the
+top readout, marquee letters of the title catch one by one, the stripe runs
+out, House Faces shutters open, stats spin, control-bay buttons light, then
+DEALER READY. Presentation only. The dark "armed" state is set by a small
+inline script right after `#home` in `index.html` (so the lit menu never
+flashes first, with a 4s fail-safe); a tap skips and its click is
+swallowed; Reduced Motion skips it. Sounds are gated by `Sound.audible()`
+because a cold launch has no user gesture (silent on iOS until the first
+tap). Tuning lives in `HOME_BOOT_CONFIG`; `boot-lab.html` replays it with
+speed and sound switches. The old title-glass tap toy was removed with this
+pass.
+
 ## `js/08-dev-mode.js` (~1,140 lines)
 
 The DEV panel. Every control drives real production functions
@@ -162,7 +177,7 @@ there manually.
 Files matching `*-lab.html`, `*-lab.js`, `*-lab.css` (`career-lab`,
 `career-hub-v2-lab`, `ticket-lab`, `card-flight-options`, `card-turn-lab`,
 `chip-motion-lab`, `design-lab`, `result-stage-lab`, `showdown-rail-lab`,
-`wheel-v2-lab`, `intro-lab`)
+`wheel-v2-lab`, `intro-lab`, `boot-lab`)
 are **isolated visual references and prototyping sandboxes**. Several are
 committed permanently as durable references even after their feature
 shipped. Rules:
