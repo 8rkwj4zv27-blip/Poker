@@ -34,6 +34,9 @@
   --crt-ink-live:#BDE9FF;    /* live / current table information */
   --crt-ink-money:#F6D06B;   /* money, reward, restrained positive */
   --crt-ink-danger:#FF8A7A;  /* danger, defeat, warnings */
+  --crt-ink-label:color-mix(in srgb,var(--crt-ink-info) 66%,#000);  /* small captions */
+  --crt-rule:1px solid color-mix(in srgb,var(--crt-ink-info) 20%,transparent);  /* cell dividers */
+  --crt-label:7px;           /* caption size */
   --crt-flicker:crtFlickerLayer 5.8s steps(2,end) infinite;
   --crt-blink:crtRefresh .23s steps(5,end);
 }
@@ -65,18 +68,41 @@
   animation:var(--crt-flicker);
 }
 
-/* Text bloom (none in the approved finish). Mechanical numbers inside a
-   CRT (the reels) keep their own treatment, so they're left alone. */
+/* TEXT — the CRT owns every character on its glass: one ink by meaning,
+   fixed across colour themes, and one bloom. A screen declares its meaning
+   with data-ink (info is the default); money figures inside any screen
+   (reels) read as money. The older per-screen colours, several of which
+   followed the colour theme, are overridden, hence !important. Playing
+   cards shown on a CRT (the results trophy) keep their own inks. */
+#app .machine-crt{ --crt-text:var(--crt-ink-info); }
+#app .machine-crt[data-ink="live"]{ --crt-text:var(--crt-ink-live); }
+#app .machine-crt[data-ink="money"],
+#app .machine-crt .amt-readout{ --crt-text:var(--crt-ink-money); }
+#app .machine-crt[data-ink="danger"],
+#app .tone-negative .machine-crt .stage-score-readout{ --crt-text:var(--crt-ink-danger); }
+/* A strong made hand reads as reward. */
+#app .machine-crt.hand-tier-2,
+#app .machine-crt.hand-tier-3{ --crt-text:var(--crt-ink-money); }
 #app .machine-crt,
-#app .machine-crt :not(.amt-readout,.amt-readout *,.jp-cell,.jp-cell *){ text-shadow:var(--crt-bloom); }
+#app .machine-crt :not(.card,.card *){ color:var(--crt-text) !important; text-shadow:var(--crt-bloom) !important; }
+
+/* Captions: one size, spacing and dimmer ink on every screen. */
+#app .machine-crt :is(.stat-cell .k,.ch2-crt-stat small,.stage-instrument-label){
+  --crt-text:var(--crt-ink-label);
+  font-size:var(--crt-label) !important; letter-spacing:.04em !important; white-space:nowrap;
+}
+
+/* Cells: the glass is one surface. Multi-cell screens divide it with one
+   thin rule instead of panels of their own. */
+#app #home .machine-crt .stat-cell,
+#app .machine-crt .stage-recap-cell,
+#app .machine-crt .ch2-crt-stat{ background:none; border:0; box-shadow:none; }
+#app #home .machine-crt .stat-cell + .stat-cell,
+#app .machine-crt .stage-recap-cell + .stage-recap-cell,
+#app .machine-crt .ch2-crt-stat + .ch2-crt-stat{ border-left:var(--crt-rule); }
 
 /* Content change: the same static burst everywhere. */
 #app .machine-crt.crt-refresh{ animation:var(--crt-blink); }
-
-/* Ink by meaning. Career's record glass was the only blue-inked screen that
-   isn't live table information. */
-#app .machine-crt .ch2-crt-stat small,
-#app :is(#home,#career-hub) .ch2-record .machine-crt .ch2-crt-stat strong{ color:var(--crt-ink-info); text-shadow:var(--crt-bloom); }
 
 /* The two CRT motions, owned here so the Pattern Book page can load this
    file on its own. The flicker keeps the old crtIdleFlicker timing (steps at
@@ -137,6 +163,9 @@
   --crt-halo:0 0 0 1px rgba(255,255,255,.04);
   --crt-bloom:0 0 3px currentColor,0 0 9px color-mix(in srgb,currentColor 60%,transparent),0 0 20px color-mix(in srgb,currentColor 28%,transparent);
 }
+/* Ink */
+:root[data-finish-crt-ink="one"]{ --crt-ink-live:var(--crt-ink-info); }
+:root[data-finish-crt-ink="mono"]{ --crt-ink-live:var(--crt-ink-info); --crt-ink-money:var(--crt-ink-info); }
 /* Motion */
 :root[data-finish-crt-motion="blink"]{ --crt-flicker:none; }
 :root[data-finish-crt-motion="still"]{ --crt-flicker:none; --crt-blink:none; }

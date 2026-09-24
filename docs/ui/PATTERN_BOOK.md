@@ -85,10 +85,12 @@ Any screen showing information that changes while the machine runs.
 |---|---|---|
 | Use it | Add `machine-crt` to the screen element. Keep your own size, padding and layout. | `css/machine-crt.css` |
 | Glass | Blue record glass. Never restyle it per screen; put finish changes in `machine-crt.css` (the check fails otherwise). | `#app .machine-crt` |
-| Text | No bloom or text shadow. Mechanical-number reels inside a CRT (`.amt-readout`, `.jp-cell`) keep their own treatment. | same |
+| Text | The CRT owns every character on its glass: colour and bloom come from the finish, never from the screen's own CSS (overridden with `!important`). Playing cards shown on a CRT keep their inks. | same |
+| Ink | Declare the screen's meaning with `data-ink`: none = ordinary machine info, `live` = live table info, `money`, `danger`. Money reels inside any screen read as money; a strong made hand (tier 2–3) reads as money. Fixed across colour themes. | `--crt-ink-*` |
+| Captions | One size (7px), spacing and dimmer ink on every screen, one line. | `--crt-label`, `--crt-ink-label` |
+| Cells | The glass is one surface: no inner panels. Multi-cell screens divide it with one thin rule. | `--crt-rule` |
 | Idle | Stepped flicker (5.8s cycle) on the `::after` layer, so the element itself stays free for its screen's own effects (e.g. the results stage's dormant dimming). | `--crt-flicker` |
 | Change | Static-burst blink (`crt-refresh`, 0.23s) whenever the text changes. Automatic via `js/machine-crt.js`; `paintCRT()` and the Career record fire it themselves. A screen whose change is a number wheel or its own reveal sets `data-crt-blink="off"`. | `js/machine-crt.js`, `--crt-blink` |
-| Ink | `--crt-ink-info` ordinary machine information · `--crt-ink-live` live table information · `--crt-ink-money` money and reward · `--crt-ink-danger` danger and warnings. Fixed across colour themes. | `:root` in `machine-crt.css` |
 | Reduced Motion | No flicker, no blink (the Reduced Motion setting and the OS preference). | same |
 
 In the game: Home readout and stats; Career record and ticket slot; table

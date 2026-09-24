@@ -46,8 +46,6 @@
     .crt-demo{ height:44px; display:flex; align-items:center; justify-content:center; padding:0 10px;
       font-family:var(--hdr); font-size:9px; letter-spacing:.06em; text-transform:uppercase; text-align:center; }
     .crt-demo.fig{ font-size:16px; }
-    .ink-info{ color:var(--crt-ink-info); } .ink-live{ color:var(--crt-ink-live); }
-    .ink-money{ color:var(--crt-ink-money); } .ink-danger{ color:var(--crt-ink-danger); }
     .controls{ display:flex; gap:10px; margin-top:14px; flex-wrap:wrap; }
     .controls button{ font-family:var(--hdr); font-size:9px; padding:10px 12px; background:var(--gold); color:#241A06; border:3px solid #000; box-shadow:0 3px 0 #000; cursor:pointer; }
     .controls button:active{ transform:translateY(2px); box-shadow:0 1px 0 #000; }
@@ -82,10 +80,10 @@
       <span class="status live">LIVE IN THE GAME · v0.39.6</span>
       <h3>The finish, running</h3>
       <div class="spec">
-        <figure><div class="machine-crt crt-demo ink-info" id="demo-a">Dealer ready</div><figcaption>Info ink</figcaption></figure>
-        <figure><div class="machine-crt crt-demo ink-live" id="demo-b">Your turn · 20 to call</div><figcaption>Live ink</figcaption></figure>
-        <figure><div class="machine-crt crt-demo fig ink-money" id="demo-c">$1,250</div><figcaption>Money ink</figcaption></figure>
-        <figure><div class="machine-crt crt-demo ink-danger" id="demo-d">Bust</div><figcaption>Danger ink</figcaption></figure>
+        <figure><div class="machine-crt crt-demo" id="demo-a">Dealer ready</div><figcaption>Info ink</figcaption></figure>
+        <figure><div class="machine-crt crt-demo" data-ink="live" id="demo-b">Your turn · 20 to call</div><figcaption>Live ink</figcaption></figure>
+        <figure><div class="machine-crt crt-demo fig" data-ink="money" id="demo-c">$1,250</div><figcaption>Money ink</figcaption></figure>
+        <figure><div class="machine-crt crt-demo" data-ink="danger" id="demo-d">Bust</div><figcaption>Danger ink</figcaption></figure>
       </div>
       <div class="controls"><button type="button" id="demo-change">Change what they say</button></div>
     </div>
@@ -100,7 +98,9 @@
           <tr><td>Text</td><td>No bloom or text shadow. Mechanical-number reels inside a CRT keep their own treatment.</td><td>same file</td></tr>
           <tr><td>Idle</td><td>Faint stepped flicker, 5.8s cycle.</td><td><code>--crt-flicker</code></td></tr>
           <tr><td>Change</td><td>Static-burst blink (0.23s) whenever the text changes. Automatic; call nothing. A screen whose change is shown by a number wheel sets <code>data-crt-blink="off"</code>.</td><td><code>js/machine-crt.js</code>, <code>--crt-blink</code></td></tr>
-          <tr><td>Ink</td><td><code>--crt-ink-info</code> ordinary machine info · <code>--crt-ink-live</code> live table info · <code>--crt-ink-money</code> money and reward · <code>--crt-ink-danger</code> danger and warnings. Fixed across colour themes.</td><td><code>:root</code> in the same file</td></tr>
+          <tr><td>Ink</td><td>Declare the screen's meaning with <code>data-ink</code>: none (ordinary machine info) · <code>live</code> (live table info) · <code>money</code> · <code>danger</code>. Every character on the glass takes that ink; money reels inside any screen read as money. Fixed across colour themes. Never colour CRT text locally.</td><td><code>--crt-ink-*</code> in the same file</td></tr>
+          <tr><td>Captions</td><td>One size (7px), spacing and dimmer ink for the small labels on every screen.</td><td><code>--crt-label</code>, <code>--crt-ink-label</code></td></tr>
+          <tr><td>Cells</td><td>The glass is one surface: no inner panels. Multi-cell screens divide it with one thin rule.</td><td><code>--crt-rule</code></td></tr>
           <tr><td>Reduced Motion</td><td>No flicker, no blink.</td><td>same file</td></tr>
         </tbody>
       </table></div>

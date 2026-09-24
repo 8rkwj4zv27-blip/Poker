@@ -19,9 +19,9 @@
   flex:1 1 0; min-width:0; height:40px; padding:0 8px;
   display:flex; align-items:center; justify-content:center; text-align:center;
   font-family:var(--font-hdr); font-size:8px; letter-spacing:.06em; text-transform:uppercase;
-  color:var(--crt-ink-info,#C3C8AD); white-space:nowrap; overflow:hidden;
+  white-space:nowrap; overflow:hidden;
 }
-.finish-crt-money{ flex:0 0 34%; font-size:13px; color:var(--crt-ink-money,#F6D06B); }
+.finish-crt-money{ flex:0 0 34%; font-size:13px; }
 .finish-keys{ align-items:center; }
 .finish-keys .btn-secondary,
 .finish-keys .btn-primary{ flex:1 1 0; min-width:0; margin:0; }

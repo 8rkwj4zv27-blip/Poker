@@ -59,6 +59,14 @@ check('The CRT file owns glass, motion, blink, ink and Reduced Motion',()=>{
    '[data-motion="off"] #app .machine-crt','prefers-reduced-motion'].forEach(s=>assert.ok(crtCss.includes(s),'machine-crt.css is missing '+s));
 });
 
+check('CRT text takes its ink from the finish, declared by meaning',()=>{
+  assert.ok(crtCss.includes('color:var(--crt-text) !important'),'the finish must own CRT text colour');
+  [['hand-strength','live'],['banner','live'],['hud-invested','money'],['raise-amt','money']].forEach(([id,ink])=>{
+    const tag=indexHtml.match(new RegExp('<[^>]*id="'+id+'"[^>]*>'));
+    assert.ok(tag && tag[0].includes('data-ink="'+ink+'"'),id+' must declare data-ink="'+ink+'"');
+  });
+});
+
 check('Number-wheel CRTs opt out of the text blink; the blink respects Reduced Motion',()=>{
   ['hud-invested','raise-amt'].forEach(id=>{
     const tag=indexHtml.match(new RegExp('<[^>]*id="'+id+'"[^>]*>'));

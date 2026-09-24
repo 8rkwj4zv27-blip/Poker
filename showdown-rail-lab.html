@@ -133,8 +133,8 @@
           <div id="hud-mid">
             <div id="hud-status">
               <div id="hud-status-normal">
-                <div class="hand-strength crt-screen crt-hand machine-crt" id="hand-strength"></div>
-                <div class="banner crt-screen crt-action machine-crt" id="banner" role="status" aria-live="polite"></div>
+                <div class="hand-strength crt-screen crt-hand machine-crt" data-ink="live" id="hand-strength"></div>
+                <div class="banner crt-screen crt-action machine-crt" data-ink="live" id="banner" role="status" aria-live="polite"></div>
                 <div class="stack-readout">
                   <span class="instrument-label">Stack</span>
                   <div id="jackpot" role="img" aria-label="Player stack"><span class="jp-cell jp-sym">$</span></div>
@@ -151,7 +151,7 @@
             </div>
             <div class="bet-this-hand" aria-live="polite">
               <span class="instrument-label">Bet this hand</span>
-              <div class="crt-screen machine-crt" data-crt-blink="off" id="hud-invested" role="img" aria-label="Bet this hand: 0">$000</div>
+              <div class="crt-screen machine-crt" data-crt-blink="off" data-ink="money" id="hud-invested" role="img" aria-label="Bet this hand: 0">$000</div>
             </div>
             <div class="hud-speaker" aria-hidden="true">
               <i></i><i></i><i></i><i></i><i></i>
@@ -203,7 +203,7 @@
         <div class="raise-panel" id="raise-panel">
           <div class="raise-head">
             <span class="raise-title">Raise to</span>
-            <div class="raise-amt crt-screen machine-crt" data-crt-blink="off" id="raise-amt" role="img" aria-label="Raise to: 0">
+            <div class="raise-amt crt-screen machine-crt" data-crt-blink="off" data-ink="money" id="raise-amt" role="img" aria-label="Raise to: 0">
               <span class="raise-reels mini-jackpot"><span class="jp-cell jp-sym">$</span></span>
             </div>
             <button class="icon-btn raise-cancel" id="raise-cancel" aria-label="Cancel raise, keep my turn">✕</button>
