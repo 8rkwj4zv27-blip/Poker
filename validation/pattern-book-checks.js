@@ -67,6 +67,12 @@ check('CRT text takes its ink from the finish, declared by meaning',()=>{
   });
 });
 
+check('CRT glow is sized relative to the text, never in fixed pixels',()=>{
+  const blooms=[...crtCss.matchAll(/--crt-bloom:([^;]+);/g)].map(m=>m[1]).filter(v=>v.trim()!=='none');
+  assert.ok(blooms.length>=5,'expected the glow options');
+  blooms.forEach(v=>assert.ok(!/\d(\.\d+)?px/.test(v),'glow must use em, not px: '+v));
+});
+
 check('Number-wheel CRTs opt out of the text blink; the blink respects Reduced Motion',()=>{
   ['hud-invested','raise-amt'].forEach(id=>{
     const tag=indexHtml.match(new RegExp('<[^>]*id="'+id+'"[^>]*>'));
