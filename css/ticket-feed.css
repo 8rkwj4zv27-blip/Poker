@@ -1,0 +1,34 @@
+/* ============================================================
+   TICKET FEED (js/ticket-feed.js) — the Career buy-in feed.
+   ============================================================ */
+
+/* The clip box: its bottom edge is the intake's top edge. */
+#career-hub .tf-window{
+  position:absolute; left:0; right:0; top:0; z-index:34; overflow:hidden; pointer-events:none;
+}
+#career-hub .tf-window .ch2-card.tf-ticket{
+  position:absolute!important; margin:0!important; min-height:0!important;
+  opacity:1!important; filter:none!important; pointer-events:none!important;
+  transform:none; transform-origin:50% 100%; will-change:transform;
+  animation:none;
+}
+#career-hub .tf-window .ch2-card.tf-ticket::after{ opacity:0!important; }
+#career-hub .tf-window .tf-ticket .ch2-paper{
+  box-shadow:inset 0 0 0 2px color-mix(in srgb,var(--paper) 78%,white),0 5px 0 color-mix(in srgb,var(--venue) 42%,#6b593a),0 8px 0 #0b0805,0 14px 16px rgba(0,0,0,.4);
+}
+
+/* The intake: its mouth lights while it feeds, and goes green once the
+   entry is accepted. Each bite shudders the plate. */
+#career-hub.tf-feeding .ch2-intake{ animation:none; }
+#career-hub.tf-feeding .ch2-intake-mouth{
+  background:linear-gradient(180deg,#3a2a08 0,#120c02 70%);
+  box-shadow:inset 0 3px 5px #000,0 0 0 1px rgba(242,180,49,.55),0 0 10px rgba(242,180,49,.45);
+}
+#career-hub.tf-accepted .ch2-intake-mouth{
+  background:linear-gradient(180deg,#123a22 0,#04120a 70%);
+  box-shadow:inset 0 3px 5px #000,0 0 0 1px rgba(117,200,155,.7),0 0 14px rgba(117,200,155,.6);
+  animation:tfAccept 360ms steps(3,end);
+}
+#career-hub .ch2-intake.tf-bite{ animation:tfBite 110ms steps(3,end); }
+@keyframes tfBite{ 0%{ transform:translateY(0); } 40%{ transform:translateY(2px); } 100%{ transform:translateY(0); } }
+@keyframes tfAccept{ 0%,66%{ filter:brightness(1.8); } 33%,100%{ filter:brightness(1); } }

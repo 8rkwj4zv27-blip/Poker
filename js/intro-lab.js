@@ -27,7 +27,7 @@
   const gameHost = document.querySelector('[data-game]');
   const GAME = (gameHost && gameHost.dataset.game) || 'index.html';
 
-  const state = { event:'back-room-freezeout', opponents:'4', intro:'on', speed:'1', sound:'on' };
+  const state = { event:'back-room-freezeout', opponents:'4', intro:'on', feed:'on', speed:'1', sound:'on' };
 
   const SHIM = `(function(){
     var mem = Object.create(null);
@@ -54,7 +54,10 @@
     wheel: typeof MachineWheel === 'undefined' ? null : MachineWheel,
     get game(){ return typeof game === 'undefined' ? null : game; },
     get settings(){ return typeof settings === 'undefined' ? null : settings; },
-    get career(){ return typeof career === 'undefined' ? null : career; }
+    get career(){ return typeof career === 'undefined' ? null : career; },
+    cashId: typeof CAREER_CASH_CONFIG === 'undefined' ? null : CAREER_CASH_CONFIG.id,
+    feed: typeof careerTicketFeed === 'function' ? careerTicketFeed : null,
+    feedConfig: typeof TICKET_FEED_CONFIG === 'undefined' ? null : TICKET_FEED_CONFIG
   };`;
 
   let source = null, busy = false, audio = null;
@@ -88,6 +91,7 @@
     const base = new URL('.', location.href).href;
     // Inject the intro only into a copy that doesn't already ship it.
     const ships = /js\/table-intro\.js/.test(source);
+    const shipsFeed = /js\/ticket-feed\.js/.test(source);
     return source
       .replace(swBlock, '')
       .replace(/<head>/i, '<head><base href="' + base + '"><script>' + SHIM + '<\/script>')
@@ -95,6 +99,9 @@
         (ships ? '' :
           '<link rel="stylesheet" href="css/table-intro.css?v=' + V + '">' +
           '<script src="js/table-intro.js?v=' + V + '"><\/script>') +
+        (shipsFeed ? '' :
+          '<link rel="stylesheet" href="css/ticket-feed.css?v=' + V + '">' +
+          '<script src="js/ticket-feed.js?v=' + V + '"><\/script>') +
         '<script>' + BRIDGE + '<\/script></body>');
   }
 
@@ -122,6 +129,9 @@
       if (state.intro === 'on') b.intro.install(); else b.intro.uninstall();
     }
     if (b.wheel) b.wheel.config.timeScale = speed;
+    if (b.feedConfig) b.feedConfig.timeScale = speed;
+    // OLD feed: hide the hook, so career-hub-live.js runs its own feed.
+    try{ win().careerTicketFeed = state.feed === 'on' ? b.feed : undefined; }catch(e){}
     if (b.settings) b.settings.sound = state.sound === 'on';
   }
 
@@ -157,39 +167,50 @@
   }
 
   /* Sandbox-only Career setup: make the chosen event affordable and
-     unlocked in the frame's in-memory Career. */
+     unlocked in the frame's in-memory Career, so the real Hub can sell it. */
   function openEvent(id){
     const w = win(), c = bridge().career;
     const ev = w.careerEventById(id);
     if (!ev) throw new Error('unknown event ' + id);
     c.unlocks = c.unlocks || {};
     c.unlocks[id] = true;
-    c.bankroll = Math.max(c.bankroll, (ev.buyIn || 0) + 5000);
+    c.bankroll = Math.max(c.bankroll, (ev.buyIn || 0) * 20 + 1000);
     return ev;
   }
   async function toCareer(){
-    const w = win();
-    w.showCareerScreen();
+    win().showCareerScreen();
     await sleep(500);
   }
-  const depart = (launch, callout) => win().careerDepartToTable(launch, { callout });
+  /* Walks the real rack to a ticket with the arrow keys, then presses the
+     real BUY IN key: the whole Hub path runs, feed and all. */
+  async function buyThroughHub(id){
+    const d = win().document;
+    const track = d.getElementById('ch2-track');
+    if (!track) throw new Error('Career rack not found');
+    const index = () => [...d.querySelectorAll('#career-hub .ch2-track .ch2-card')].findIndex(c => c.dataset.eventId === id);
+    const selected = () => [...d.querySelectorAll('#career-hub .ch2-track .ch2-card')].findIndex(c => c.classList.contains('is-selected'));
+    if (index() < 0) throw new Error(id + ' is not on the rack');
+    for (let guard = 0; selected() !== index() && guard < 30; guard++){
+      track.dispatchEvent(new (win().KeyboardEvent)('keydown', { key: selected() < index() ? 'ArrowRight' : 'ArrowLeft', bubbles:true }));
+      await sleep(300);
+    }
+    await sleep(450);
+    d.getElementById('ch2-primary').click();
+  }
 
   const RUNS = {
     async event(){
       await loadFrame();
-      const w = win();
-      const ev = openEvent(state.event);
+      openEvent(state.event);
       await toCareer();
-      if (!w.enterCareerEvent(ev.id)) throw new Error('could not enter ' + ev.id);
-      await depart(w.startCareerEvent, w.careerEventTitle(ev));
+      await buyThroughHub(state.event);
     },
     async cash(){
       await loadFrame();
-      const w = win();
-      bridge().career.bankroll = Math.max(bridge().career.bankroll, 5000);
+      const c = bridge().career;
+      c.bankroll = Math.max(c.bankroll, 5000);
       await toCareer();
-      if (!w.openCareerCashSession()) throw new Error('could not open the cash table');
-      await depart(w.startCareerCashSession, 'CASH TABLE');
+      await buyThroughHub(bridge().cashId);
     },
     async resume(){
       await RUNS.event();
@@ -199,14 +220,13 @@
       // Leave only once the first deal has fully landed: leaving mid-deal
       // and resuming at once trips an existing, unrelated race in the
       // abandoned hand's deal (not part of this intro).
-      await waitFor(() => b.game && b.game.phase !== 'setup' && b.game._humanCardsVisible, 25000);
+      await waitFor(() => b.game && b.game.phase !== 'setup' && b.game._humanCardsVisible, 30000);
       await sleep(1500);
       w.leaveTable();
       await sleep(300);
       await toCareer();
       setStatus('RESUMING');
-      const ev = w.careerEventById(state.event);
-      await depart(w.continueCareerEvent, w.careerEventTitle(ev));
+      await buyThroughHub(state.event);
     },
     async single(){
       await loadFrame();

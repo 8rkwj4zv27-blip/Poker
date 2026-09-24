@@ -123,15 +123,28 @@ so `wheel-v2-lab.html` can switch back to compare). Tuning lives in
 ## `js/table-intro.js` + `css/table-intro.css` — Table Intro (Lab only, not shipped yet)
 
 "The machine powers up": the beat between arriving at a table and its first
-deal (stepped lights, title marquee that docks into the top bar, clockwise
-seat roll call with style tags, bank load through the hatch, pot tray +
-deck drop). Presentation only. `TableIntro.install()` wraps the table entry
-points (`startCareerEvent`, `continueCareerEvent`, `startCareerCashSession`,
+deal. Stepped lights; the event's own ticket (built from the Hub's
+`.ch2-card`/`.ch2-paper` venue styling) slides in from the right, holds,
+stamps ENTRY PAID, and leaves left; a clockwise seat roll call; the bank
+loads whole chip stacks through the hatch; pot tray + deck drop.
+Presentation only. `TableIntro.install()` wraps the table entry points
+(`startCareerEvent`, `continueCareerEvent`, `startCareerCashSession`,
 `startSinglePlayerRun`, `continueTable`, `startGame`) to arm it and
 `startNewHand` to play it before the first deal; it also absorbs the
-Machine Wheel's `careerTableCallout` title flash. **Not loaded by
-`index.html`/`sw.js` yet** — `intro-lab.html` injects it into a sandboxed
-copy of the game for review. Tuning lives in `TABLE_INTRO_CONFIG`.
+Machine Wheel's `careerTableCallout` title flash. Tuning lives in
+`TABLE_INTRO_CONFIG`.
+
+## `js/ticket-feed.js` + `css/ticket-feed.css` — Career buy-in feed (Lab only, not shipped yet)
+
+Replaces the Hub's buy-in animation through the `careerTicketFeed` hook in
+`career-hub-live.js` (absent the file, the old feed runs unchanged). The
+ticket lifts, is ratcheted into the intake and clipped exactly at the slot
+line, the intake goes green and the bankroll counts down; the ticket never
+returns to the rack — it reappears on the felt via the Table Intro. It
+receives the Hub's own `charge`/`depart` steps and owns no money.
+
+Neither pair is loaded by `index.html`/`sw.js` yet — `intro-lab.html`
+injects both into a sandboxed copy of the game for review.
 
 ## `js/08-dev-mode.js` (~1,140 lines)
 

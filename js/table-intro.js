@@ -9,12 +9,13 @@
 
      1. LIGHTS   the felt comes up in stepped relay clunks, console lamps
                  flicker on left to right
-     2. MARQUEE  the table's name types out on a lamp strip, a details line
-                 under it, then the strip docks into the top bar
-     3. ROLL     opponents' seats light one by one, clockwise; each gets a
-                 short style tag and its stack reels count up. Your console
-                 lights last.
-     4. BANK     the bank hatch opens, your chips stack in, the hatch shuts
+     2. TICKET   the event's own ticket (the same one fed into the Career
+                 machine, same venue styling) slides in from the right,
+                 sits centred to be read, and slides out to the left
+     3. ROLL     opponents' seats light one by one, clockwise, their stack
+                 reels counting up. Your console lights last.
+     4. BANK     the bank hatch opens and your chips drop in as whole
+                 stacks, back row first, left to right; the hatch shuts
      5. POT      the pot tray opens, the deck drops onto the station
 
    Then the real startNewHand() runs unchanged (blinds, riffle, deal).
@@ -40,27 +41,11 @@ const TABLE_INTRO_CONFIG = {
   enabled: true,
   timeScale: 1,            // 0.5 = half speed (Lab only)
   lights: { steps: [.32, .62, 1], stepMs: 150 },
-  marquee: { typeMs: 42, holdMs: 420, prestigeHoldMs: 700, dockMs: 320 },
+  ticket: { inMs: 420, holdMs: 1500, prestigeHoldMs: 1900, outMs: 340 },
   roll: { seatMs: 240, youMs: 340 },
-  bank: { hatchMs: 140, chipsMs: 520, settleMs: 160 },
+  bank: { hatchMs: 150, stackGapMs: 95, dropMs: 260, settleMs: 140 },
   pot: { trayMs: 240, deckMs: 300 },
   resume: { seatSweepMs: 60 }
-};
-
-/* One short style readout per archetype. Personalities are already named
-   on the seat plate (ROCK, SHARK...), so the tag says HOW they play, not
-   who they are — the kind of note a machine would print on a tape. Two
-   short lines, printed over the seat's own (still empty) action readout so
-   it fits the narrowest 6-seat plate and never spills onto a neighbour. */
-const TABLE_INTRO_TAGS = {
-  rock: 'TIGHT\nQUIET',
-  shark: 'SHARP\nSOLID',
-  maniac: 'LOOSE\nWILD',
-  station: 'CALLS\nLIGHT',
-  grinder: 'STEADY\nPATIENT',
-  wildcard: 'HARD TO\nREAD',
-  professor: 'THINKS\nIT OVER',
-  hammer: 'BETS\nHEAVY'
 };
 
 const TableIntro = (() => {
@@ -107,41 +92,48 @@ const TableIntro = (() => {
 
   /* ---------- the sequence ---------- */
 
+  const money = n => '$' + Number(n || 0).toLocaleString('en-US');
+  function venueKey(venue){
+    const room = typeof CAREER_ROOMS !== 'undefined' && CAREER_ROOMS.find(r => r.venue === venue);
+    return (room && room.key) || 'backroom';
+  }
+  const shortVenue = v => String(v || '').replace(' CHAMPIONSHIP','').replace('HIGH ROLLER ROOM','HIGH ROLLER');
+
+  /* What the ticket says. Career tickets match their Career Hub card:
+     venue, title, the same headline, then the table's live numbers. */
   function tableInfo(intro){
     const g = game;
     const seats = g.players.filter(p => !p.eliminated).length;
-    const blinds = (g.smallBlind != null && g.bigBlind != null) ? g.smallBlind + '/' + g.bigBlind : '';
-    const money = g.mode === 'career' || g.mode === 'career-cash';
-    const blindText = blinds ? (money ? '$' + g.smallBlind + '/$' + g.bigBlind : 'BLINDS ' + blinds) : '';
-    const join = parts => parts.filter(Boolean).join(' · ');
+    const cashLike = g.mode === 'career' || g.mode === 'career-cash';
+    const blinds = g.smallBlind != null && g.bigBlind != null
+      ? (cashLike ? money(g.smallBlind) + '/' + money(g.bigBlind) : g.smallBlind + '/' + g.bigBlind) : '—';
     const ev = g.event || null;
-    // Two short lines under the title: what kind of game, then the stakes.
-    const stakes = join([blindText, seats + ' SEATS']);
-    let pre = '', title = intro.title || '', sub = [], prestige = false;
+    let venue = '', key = 'backroom', title = intro.title || '', headline = '', stamp = '', prestige = false;
     if (g.mode === 'career-cash'){
-      pre = (typeof CAREER_CASH_CONFIG !== 'undefined' && CAREER_CASH_CONFIG.venue) || 'BACK ROOM';
+      venue = (typeof CAREER_CASH_CONFIG !== 'undefined' && CAREER_CASH_CONFIG.venue) || 'BACK ROOM';
+      key = venueKey(venue);
       title = title || 'CASH TABLE';
-      sub = ['SEATS OPEN', stakes];
+      headline = money(g.smallBlind) + ' / ' + money(g.bigBlind) + ' CASH';
+      stamp = 'ENTRY PAID';
     } else if (g.mode === 'career' && ev){
-      pre = ev.venue || '';
+      venue = ev.venue || '';
+      key = venueKey(venue);
       title = title || (typeof careerEventTitle === 'function' ? careerEventTitle(ev) : ev.name) || 'EVENT';
       prestige = PRESTIGE_VENUES.includes(ev.venue);
-      sub = [String(ev.format || '').toUpperCase(), stakes];
+      const payouts = typeof careerPayouts === 'function' ? careerPayouts(ev) : [ev.prize];
+      headline = money(payouts[0]) + (payouts.length > 1 ? ' TOP PRIZE' : ' PRIZE');
+      stamp = 'ENTRY PAID';
     } else if (g.mode === 'elimination' && g.run){
-      pre = 'SINGLE PLAYER';
+      venue = 'SINGLE PLAYER';
       title = title || 'TABLE ' + g.run.tableNumber;
-      sub = ['ELIMINATION', stakes];
+      headline = 'LAST ONE STANDING';
     } else {
-      pre = g.mode === 'tournament' ? 'TOURNAMENT' : 'HOUSE GAME';
+      venue = g.mode === 'tournament' ? 'TOURNAMENT' : 'HOUSE GAME';
       title = title || 'TABLE';
-      sub = [stakes];
+      headline = 'NO LIMIT HOLD\'EM';
     }
-    if (intro.kind === 'resume'){
-      pre = 'RESUMING';
-      sub = ['HAND ' + ((g.handNumber || 0) + 1), stakes];
-    }
-    sub = sub.filter(Boolean);
-    return { pre, title:String(title).toUpperCase(), sub, prestige };
+    if (intro.kind === 'resume') stamp = 'RESUMED · HAND ' + ((g.handNumber || 0) + 1);
+    return { venue:shortVenue(venue), key, title:String(title).toUpperCase(), headline, blinds, seats, stamp, prestige };
   }
 
   async function play(intro){
@@ -172,13 +164,15 @@ const TableIntro = (() => {
     const info = tableInfo(intro);
     const full = intro.kind !== 'resume';
     const quickSeats = intro.kind === 'resume' || g.mode === 'career-cash';
-    const fx = { marquee:null, tags:[] };
+    const fx = { ticket:null };
     try{
       await lights(run, wait, alive);
-      if (alive()) await marquee(run, wait, alive, info, fx);
+      // The ticket's exit overlaps the roll call: the seats start lighting
+      // as it clears the felt.
+      if (alive()) await ticket(run, wait, alive, info, fx);
       if (alive()){
         if (quickSeats) await sweepSeats(run, wait, alive);
-        else await rollCall(run, wait, alive, fx);
+        else await rollCall(run, wait, alive);
       }
       if (alive()) await youLight(run, wait);
       if (alive() && full) await loadBank(run, wait, alive);
@@ -207,58 +201,51 @@ const TableIntro = (() => {
     }
   }
 
-  /* 2. MARQUEE — types on, holds, docks into the top bar's table line. */
-  async function marquee(run, wait, alive, info, fx){
+  /* 2. TICKET — in from the right, held centre stage, out to the left. */
+  async function ticket(run, wait, alive, info, fx){
     const felt = $('felt');
     if (!felt) return;
-    const m = document.createElement('div');
-    m.className = 'ti-marquee' + (info.prestige ? ' is-prestige' : '');
-    m.setAttribute('aria-hidden','true');
-    m.innerHTML =
-      '<span class="ti-bulbs" aria-hidden="true"></span>' +
-      (info.pre ? '<span class="ti-pre">' + esc(info.pre) + '</span>' : '') +
-      '<span class="ti-title"></span>' +
-      (info.sub.length ? '<span class="ti-sub">' + info.sub.map(line => '<span>' + esc(line) + '</span>').join('') + '</span>' : '');
-    felt.appendChild(m);
-    fx.marquee = m;
-    const titleEl = m.querySelector('.ti-title');
-    // Font size from the felt's real width, like careerTableCallout.
-    const room = felt.clientWidth * .78;
-    titleEl.style.fontSize = Math.max(13, Math.min(24, Math.floor(room / (info.title.length * 1.2)))) + 'px';
-    titleEl.innerHTML = [...info.title].map(ch => '<i>' + (ch === ' ' ? '&nbsp;' : esc(ch)) + '</i>').join('');
-    const letters = [...titleEl.children];
-    m.getBoundingClientRect();
-    m.classList.add('is-on');
-    Sound.consoleShift();
-    await wait(90);
-    for (let i = 0; i < letters.length; i++){
+    const lane = document.createElement('div');
+    lane.className = 'ti-ticket-lane';
+    lane.setAttribute('aria-hidden','true');
+    lane.innerHTML =
+      '<article class="ch2-card ti-ticket' + (info.prestige ? ' is-prestige' : '') + '" data-venue="' + esc(info.key) + '">' +
+        '<div class="ch2-card-inner"><section class="ch2-card-face ch2-card-front ch2-paper">' +
+          '<header class="ch2-card-venue">' + esc(info.venue) + '</header>' +
+          '<h2>' + esc(info.title) + '</h2>' +
+          '<div class="ch2-headline">' + esc(info.headline) + '</div>' +
+          '<div class="ch2-card-stats"><span><small>BLINDS</small><strong>' + esc(info.blinds) + '</strong></span>' +
+          '<span><small>SEATS</small><strong>' + info.seats + '</strong></span></div>' +
+        '</section></div>' +
+        // Outside the paper (which clips), so it can overhang the corner.
+        (info.stamp ? '<div class="ch2-stamp ch2-stamp-paid ti-ticket-stamp">' + esc(info.stamp) + '</div>' : '') +
+      '</article>';
+    felt.appendChild(lane);
+    fx.ticket = lane;
+    const t = lane.firstElementChild;
+    const scale = Math.max(.05, cfg.timeScale || 1);
+    t.style.setProperty('--ti-in-ms', (cfg.ticket.inMs / scale) + 'ms');
+    t.style.setProperty('--ti-out-ms', (cfg.ticket.outMs / scale) + 'ms');
+    t.getBoundingClientRect();
+    t.classList.add('is-in');
+    Sound.cardDeal();
+    await wait(cfg.ticket.inMs * .8);
+    if (!alive()) return;
+    Sound.deckSettle();
+    if (info.stamp){
+      await wait(260);
       if (!alive()) return;
-      letters[i].classList.add('on');
-      if (info.title[i] !== ' ' && i % 2 === 0) Sound.counterTick(i === letters.length - 1);
-      await wait(cfg.marquee.typeMs);
+      t.classList.add('is-stamped');
+      Sound.koThunk(.8);
     }
+    await wait(info.prestige ? cfg.ticket.prestigeHoldMs : cfg.ticket.holdMs);
     if (!alive()) return;
-    m.classList.add('is-sub');
-    Sound.counterLock(true);
-    await wait(info.prestige ? cfg.marquee.prestigeHoldMs : cfg.marquee.holdMs);
-    if (!alive()) return;
-    // Dock: fly the strip into #table-meta (FLIP), where the title stays
-    // until the first hand's own readout replaces it.
-    const meta = $('table-meta');
-    const from = m.getBoundingClientRect();
-    const to = meta && meta.getBoundingClientRect();
-    if (to && to.width !== undefined){
-      const dx = (to.left + 30) - (from.left + from.width / 2);
-      const dy = (to.top + to.height / 2) - (from.top + from.height / 2);
-      m.style.setProperty('--ti-dx', dx + 'px');
-      m.style.setProperty('--ti-dy', dy + 'px');
-      m.style.setProperty('--ti-dock-ms', (cfg.marquee.dockMs / Math.max(.05, cfg.timeScale || 1)) + 'ms');
-      m.classList.add('is-docking');
-    }
-    await wait(cfg.marquee.dockMs);
+    t.classList.add('is-out');
+    Sound.cardReturn();
     dockTitle(info);
-    m.remove();
-    fx.marquee = null;
+    // Let it clear before the seats light, but only just.
+    await wait(cfg.ticket.outMs * .6);
+    window.setTimeout(() => { lane.remove(); if (fx.ticket === lane) fx.ticket = null; }, cfg.ticket.outMs / scale + 60);
   }
 
   function dockTitle(info){
@@ -275,42 +262,21 @@ const TableIntro = (() => {
   }
 
   /* 3. ROLL CALL — one seat at a time. */
-  async function rollCall(run, wait, alive, fx){
+  async function rollCall(run, wait, alive){
     for (const p of seatOrder()){
       if (!alive()) return;
       const e = seatEls[p.id];
       e.root.classList.remove('ti-unlit');
       if (p.eliminated){ e.root.classList.add('ti-lit-dead'); continue; }
       e.root.classList.add('ti-lit');
-      // Stack reels first: they give the plate its final height, which the
-      // tag below is measured against.
       if (e.chips) updateSeatReels(e.chips, p.chips);
-      const key = p.personality && p.personality.key;
-      const tagText = key && TABLE_INTRO_TAGS[key];
-      if (tagText){
-        const tag = document.createElement('span');
-        tag.className = 'ti-tag';
-        tag.setAttribute('aria-hidden','true');
-        tag.textContent = tagText;
-        // Laid over the action readout, measured against the seat itself
-        // (already the positioned box) so no seat styling has to change.
-        const slot = e.actionSlot || e.chips;
-        if (slot){
-          const r = slot.getBoundingClientRect(), base = e.root.getBoundingClientRect();
-          tag.style.top = Math.round(r.top - base.top - 2) + 'px';
-          tag.style.left = Math.round(r.left - base.left) + 'px';
-          tag.style.width = Math.round(r.width) + 'px';
-        }
-        e.root.appendChild(tag);
-        fx.tags.push(tag);
-      }
       Sound.wheelTooth(.6, false);
       await wait(cfg.roll.seatMs);
     }
   }
 
   /* Cash and resume: the room is already live — every seat in one quick
-     sweep, no tags. */
+     sweep. */
   async function sweepSeats(run, wait, alive){
     for (const p of seatOrder()){
       if (!alive()) return;
@@ -332,25 +298,41 @@ const TableIntro = (() => {
     await wait(cfg.roll.youMs);
   }
 
-  /* 4. BANK — hatch opens, chips stack in, hatch shuts. */
-  async function loadBank(run, wait, alive){
+  /* 4. BANK — the finished pile is built first (the game's own pile
+     layout, exactly what the table would show), then each stack drops in
+     whole through the hatch in a fixed order: back row first, left to
+     right. CSS runs the motion, so it never stutters on timers; the few
+     sounds are scheduled to the landings. */
+  function buildBankStacks(){
     const human = game.players.find(p => p.isHuman);
     const tower = $('hud-tower');
-    if (!human || !tower) return;
+    if (!human || !tower) return [];
+    resetPile(tower, bankPile());
+    const n = visualChipCount(human.chips);
+    for (let i = 0; i < n; i++) createRestingChip(tower, bankPile());
+    tower.querySelectorAll('.disc-in').forEach(c => c.classList.remove('disc-in'));
+    return Object.values(tower._towers || {}).sort((a, b) =>
+      (+a.style.zIndex || 0) - (+b.style.zIndex || 0) || parseFloat(a.style.left) - parseFloat(b.style.left));
+  }
+  async function loadBank(run, wait, alive){
+    const human = game.players.find(p => p.isHuman);
+    if (!human) return;
     openHatch();
     Sound.hatchOpen();
     await wait(cfg.bank.hatchMs);
-    resetPile(tower, bankPile());
-    const n = visualChipCount(human.chips);
+    if (!alive()) return;
+    const stacks = buildBankStacks();
+    const scale = Math.max(.05, cfg.timeScale || 1);
+    const gap = cfg.bank.stackGapMs, drop = cfg.bank.dropMs;
+    stacks.forEach((stack, i) => {
+      stack.style.setProperty('--ti-delay', (i * gap / scale) + 'ms');
+      stack.style.setProperty('--ti-drop-ms', (drop / scale) + 'ms');
+      stack.classList.add('ti-stack-drop');
+      window.setTimeout(() => { if (!run.skipped) Sound.chipCollect(1 + Math.min(.4, stack.children.length / 40)); },
+        (i * gap + drop * .72) / scale);
+    });
     updateJackpot(human.chips);
-    const gap = n ? Math.max(9, Math.min(34, cfg.bank.chipsMs / n)) : 0;
-    for (let i = 0; i < n; i++){
-      if (!alive()) return;
-      createRestingChip(tower, bankPile());
-      if (i % 2 === 0 || i === n - 1) Sound.chipLand();
-      await wait(gap);
-    }
-    await wait(cfg.bank.settleMs);
+    await wait(stacks.length * gap + drop + cfg.bank.settleMs);
     closeHatch();
     Sound.hatchClose();
   }
@@ -389,8 +371,8 @@ const TableIntro = (() => {
     const human = g.players.find(p => p.isHuman);
     const tower = $('hud-tower');
     if (human && tower){
-      const want = visualChipCount(human.chips);
-      while ((tower._chipCount || 0) < want) createRestingChip(tower, bankPile());
+      if ((tower._chipCount || 0) !== visualChipCount(human.chips)) buildBankStacks();
+      tower.querySelectorAll('.ti-stack-drop').forEach(el => el.classList.remove('ti-stack-drop'));
       updateJackpot(human.chips);
     }
     const hatch = $('bank-hatch');
@@ -409,12 +391,7 @@ const TableIntro = (() => {
     }, 700);
   }
   function cleanup(fx){
-    if (fx && fx.marquee) fx.marquee.remove();
-    if (fx) fx.tags.forEach(tag => {
-      tag.classList.add('is-out');
-      window.setTimeout(() => tag.remove(), 260);
-    });
-    if (fx){ fx.marquee = null; fx.tags = []; }
+    if (fx && fx.ticket){ fx.ticket.remove(); fx.ticket = null; }
   }
 
   /* ---------- install ---------- */
@@ -446,7 +423,7 @@ const TableIntro = (() => {
     originals.careerTableCallout = window.careerTableCallout;
     window.careerTableCallout = function(text){
       // The wheel hands the table's name over after it locks; the intro
-      // shows it on the marquee instead of the old one-second flash.
+      // shows it on the ticket instead of the old one-second flash.
       if (armed && active()){ armed.title = text || armed.title; return; }
       return originals.careerTableCallout.apply(this, arguments);
     };
@@ -477,7 +454,6 @@ const TableIntro = (() => {
 
   return {
     config: cfg,
-    tags: TABLE_INTRO_TAGS,
     install, uninstall,
     get installed(){ return installed; },
     get playing(){ return !!playing; },

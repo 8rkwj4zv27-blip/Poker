@@ -627,6 +627,17 @@
       Sound.buttonPress('allin');
       haptic(16);
       later(() => button.classList.remove('is-entry-pressed'),115);
+      // Optional replacement feed animation (js/ticket-feed.js, Lab only
+      // for now). It gets the same charge/depart steps, so the money path
+      // stays here; absent that file, the feed below runs unchanged.
+      if (typeof careerTicketFeed === 'function'){
+        careerTicketFeed({
+          root, card:root.querySelector('.ch2-card.is-selected'), charge, startBankroll,
+          paintBankroll:value => paintLiveBankroll(root,value),
+          depart:instant => { if (instant){ accepting = false; launch(); } else seatAndDepart(root,entry,launch); }
+        });
+        return;
+      }
       const selectedCard = root.querySelector('.ch2-card.is-selected');
       const cardRect = selectedCard.getBoundingClientRect();
       const rootRect = root.getBoundingClientRect();
