@@ -1,4 +1,4 @@
-const CACHE_NAME = 'poker-v39-9';
+const CACHE_NAME = 'poker-v39-10';
 const APP_SHELL = [
   './',
   './index.html',
@@ -123,15 +123,23 @@ self.addEventListener('fetch', event => {
   const req = event.request;
 
   // Network-first for page navigations so new GitHub Pages deploys appear quickly.
+  // Only the game page itself is kept as the offline copy of the game: the
+  // Lab pages share this site, and opening one must never replace it.
   if (req.mode === 'navigate') {
+    const path = new URL(req.url).pathname;
+    const isGame = path.endsWith('/') || path.endsWith('/index.html');
     event.respondWith(
       fetch(req)
         .then(response => {
-          const copy = response.clone();
-          caches.open(CACHE_NAME).then(cache => cache.put('./index.html', copy));
+          if (isGame && response && response.ok) {
+            const copy = response.clone();
+            caches.open(CACHE_NAME).then(cache => cache.put('./index.html', copy));
+          }
           return response;
         })
-        .catch(() => caches.match('./index.html').then(r => r || caches.match('./')))
+        .catch(() => isGame
+          ? caches.match('./index.html').then(r => r || caches.match('./'))
+          : caches.match(req))
     );
     return;
   }

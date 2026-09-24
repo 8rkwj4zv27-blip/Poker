@@ -48,6 +48,10 @@ check('The CRT finish is loaded after every other stylesheet, and its script aft
   assert.ok(scripts[scripts.length-1].startsWith('js/machine-crt.js'),'machine-crt.js must be the last script');
 });
 
+check('Opening a Lab page never replaces the offline copy of the game',()=>{
+  assert.ok(/const isGame = /.test(serviceWorker) && serviceWorker.includes("if (isGame && response && response.ok)"),'sw.js must only cache the game page as ./index.html');
+});
+
 check('The service worker precaches the CRT finish',()=>{
   assert.ok(serviceWorker.includes("'./css/machine-crt.css"),'sw.js is missing css/machine-crt.css');
   assert.ok(serviceWorker.includes("'./js/machine-crt.js"),'sw.js is missing js/machine-crt.js');
@@ -108,6 +112,7 @@ check('Every Finishes option has tokens behind it, and the menu can be switched 
 
 check('Production isolation audit: the Pattern Book page is never shipped or linked',()=>{
   assert.ok(!indexHtml.includes('pattern-book'),'index.html links the Pattern Book');
+  assert.ok(!indexHtml.includes('crt-lab') && !serviceWorker.includes('crt-lab'),'the CRT Lab must never ship with the game');
   assert.ok(!serviceWorker.includes('pattern-book'),'sw.js precaches the Pattern Book');
   assert.ok(book.includes('css/machine-crt.css') && book.includes('js/machine-crt.js'),'the book must run on the real CRT files');
 });
