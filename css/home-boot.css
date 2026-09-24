@@ -1,0 +1,102 @@
+/* ============================================================
+   HOME BOOT — the cabinet switching on (js/home-boot.js)
+
+   Every rule is scoped to #home.hb-boot, which exists only for the ~1.6s
+   of a cold-launch boot. Stage classes are added in order by the script
+   (hb-mains, hb-rule, hb-stats, hb-bay, hb-ready) and per element
+   (.hb-lit letter, .hb-open face, .hb-on button); removing them all
+   always leaves the ordinary menu exactly as it was.
+
+   Everything moves in steps() — relays and bulbs, never easing. Durations
+   are multiplied by --hb-slow (set only by the Lab's slow-motion switch).
+   ============================================================ */
+
+/* ---- 0. Off: the cabinet is visible but unpowered. ---- */
+#home.hb-boot .lobby-card.pc-housing{ filter:brightness(.3) saturate(.5); }
+
+/* ---- 1. Mains: three stepped relay jumps up to full light. ---- */
+#home.hb-boot.hb-mains .lobby-card.pc-housing{ animation:hbMains calc(280ms * var(--hb-slow,1)) steps(1,end) both; }
+@keyframes hbMains{
+  0%{ filter:brightness(.3) saturate(.5); }
+  18%{ filter:brightness(.8) saturate(.85); }
+  40%{ filter:brightness(.48) saturate(.6); }
+  64%,100%{ filter:brightness(1) saturate(1); }
+}
+
+/* ---- 2. Self-test readout. Lamp dark until mains, then blinks amber
+   while testing, then turns green on ready. ---- */
+#home.hb-boot .pc-ready-readout .pc-lamp{ filter:brightness(.3) grayscale(1); }
+#home.hb-boot.hb-mains:not(.hb-ready) .pc-ready-readout .pc-lamp{
+  filter:none;
+  background:var(--pc-lamp-amber);
+  box-shadow:0 2px 0 #100807,0 0 7px rgba(242,180,49,.34),inset 1px 1px 0 #FFE49B;
+  animation:hbTestBlink calc(300ms * var(--hb-slow,1)) steps(1,end) infinite;
+}
+@keyframes hbTestBlink{ 50%{ filter:brightness(.35) grayscale(.7); } }
+#home.hb-boot.hb-ready .pc-ready-readout .pc-lamp{ filter:none; animation:hbLampOn calc(220ms * var(--hb-slow,1)) steps(1,end) both; }
+@keyframes hbLampOn{
+  0%{ filter:brightness(1.7); box-shadow:0 2px 0 #100807,0 0 14px rgba(117,200,155,.8),inset 1px 1px 0 #C9F5DD; }
+  50%{ filter:brightness(.6); }
+  100%{ filter:none; }
+}
+
+/* ---- 3. Marquee: each letter is an unlit bulb until it catches. ---- */
+#home.hb-boot .hero .brand .hb-l{ opacity:.1; }
+#home.hb-boot .hero .brand .hb-l.hb-lit{ animation:hbBulb calc(200ms * var(--hb-slow,1)) steps(1,end) both; }
+@keyframes hbBulb{
+  0%{ opacity:.1; }
+  16%{ opacity:1; }
+  38%{ opacity:.28; }
+  60%,100%{ opacity:1; }
+}
+/* The stripe under the title runs out one segment at a time. */
+#home.hb-boot .hero .brand-rule{ clip-path:inset(0 100% 0 0); }
+#home.hb-boot.hb-rule .hero .brand-rule{ animation:hbRule calc(250ms * var(--hb-slow,1)) steps(6,end) both; }
+@keyframes hbRule{ from{ clip-path:inset(0 100% 0 0); } to{ clip-path:inset(0 0 0 0); } }
+/* The glass flares once as the last segment lands. */
+#home.hb-boot.hb-rule .pc-title-well{ animation:hbGlassFlare calc(360ms * var(--hb-slow,1)) steps(3,end) calc(220ms * var(--hb-slow,1)) both; }
+@keyframes hbGlassFlare{
+  0%{ box-shadow:inset 0 0 0 2px rgba(250,221,133,.42),inset 0 0 26px rgba(242,199,85,.18); }
+  100%{ box-shadow:none; }
+}
+
+/* ---- 4. Cast drawer: a slatted shutter over each face snaps up. ---- */
+#home.hb-boot .hero-faces .hf{ position:relative; overflow:hidden; }
+#home.hb-boot .hero-faces .hf::after{
+  content:''; position:absolute; z-index:3; inset:0; pointer-events:none;
+  background:repeating-linear-gradient(0deg,#0B0806 0 2px,#2A2114 2px 7px);
+  box-shadow:inset 0 -3px 0 #8E7E50,inset 0 2px 0 rgba(255,255,255,.08);
+}
+#home.hb-boot .hero-faces .hf.hb-open::after{ animation:hbShutter calc(200ms * var(--hb-slow,1)) steps(5,end) both; }
+@keyframes hbShutter{ from{ transform:translateY(0); } to{ transform:translateY(-104%); } }
+#home.hb-boot .hero-faces .hf.hb-open .face{ animation:facePop calc(300ms * var(--hb-slow,1)) steps(4,end) calc(140ms * var(--hb-slow,1)) both; }
+
+/* ---- 5. Stats display flickers on (the script spins the digits). ---- */
+#home.hb-boot .stats-card .stat-strip{ opacity:0; }
+#home.hb-boot.hb-stats .stats-card .stat-strip{ animation:hbDisplayOn calc(220ms * var(--hb-slow,1)) steps(1,end) both; }
+@keyframes hbDisplayOn{
+  0%{ opacity:0; }
+  22%{ opacity:.85; }
+  44%{ opacity:.2; }
+  66%,100%{ opacity:1; }
+}
+
+/* ---- 6. Control bay: lamps blink on, buttons light top to bottom. ---- */
+#home.hb-boot .pc-control-bay .pc-lamp{ filter:brightness(.3) grayscale(1); }
+#home.hb-boot.hb-bay .pc-control-bay .pc-lamp{ animation:hbBayLamp calc(300ms * var(--hb-slow,1)) steps(1,end) both; }
+@keyframes hbBayLamp{
+  0%{ filter:brightness(1.5); }
+  25%{ filter:brightness(.3) grayscale(1); }
+  50%{ filter:brightness(1.5); }
+  75%,100%{ filter:none; }
+}
+#home.hb-boot .pc-control-bay .pc-button,
+#home.hb-boot .pc-control-bay .home-row .btn-secondary{ filter:brightness(.42) saturate(.35); }
+#home.hb-boot .pc-control-bay .pc-button.hb-on,
+#home.hb-boot .pc-control-bay .home-row .btn-secondary.hb-on{ animation:hbKeyOn calc(200ms * var(--hb-slow,1)) steps(1,end) both; }
+@keyframes hbKeyOn{
+  0%{ filter:brightness(.42) saturate(.35); }
+  25%{ filter:brightness(1.22) saturate(1.05); }
+  55%{ filter:brightness(.72) saturate(.8); }
+  100%{ filter:none; }
+}

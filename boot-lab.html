@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#140709">
+  <meta name="format-detection" content="telephone=no">
+  <link rel="icon" href="data:,">
+  <title>Poker Faces — Home Boot Lab</title>
+  <link rel="stylesheet" href="css/intro-lab.css?v=3">
+  <script defer src="js/boot-lab.js?v=1"></script>
+</head>
+<body class="il-body">
+  <!-- The real game, sandboxed: in-memory storage, no service worker.
+       Nothing done in here can touch a real save. -->
+  <div class="il-stage">
+    <iframe class="il-frame" id="il-frame" title="Poker Faces (sandboxed copy)"></iframe>
+  </div>
+
+  <button class="il-tab" id="il-tab" type="button" aria-expanded="true" aria-controls="il-panel">BOOT</button>
+
+  <aside class="il-panel" id="il-panel" aria-label="Home boot lab controls">
+    <header class="il-head">
+      <strong>HOME BOOT</strong>
+      <span id="il-status">LOADING…</span>
+    </header>
+
+    <section class="il-group" aria-label="Play the boot">
+      <div class="il-label">PLAY</div>
+      <div class="il-runs">
+        <button type="button" class="is-wide" data-run="replay">REPLAY BOOT ▸</button>
+        <button type="button" class="is-wide" data-run="cold">COLD LOAD</button>
+      </div>
+      <p class="il-note">REPLAY runs the boot again on the menu, with sound. COLD LOAD reloads the game exactly as a fresh launch does (checks the menu never flashes lit first); like a real iPhone launch it is silent until you tap. Tap the game during the boot to skip it.</p>
+    </section>
+
+    <section class="il-group">
+      <div class="il-row"><span class="il-label">SPEED</span>
+        <div class="il-seg" data-key="speed"><button data-v="1">1×</button><button data-v="0.5">½×</button><button data-v="0.25">¼×</button></div></div>
+      <div class="il-row"><span class="il-label">SOUND</span>
+        <div class="il-seg" data-key="sound"><button data-v="on">ON</button><button data-v="off">OFF</button></div></div>
+    </section>
+
+    <footer class="il-foot">
+      <span>Sandboxed · no saves touched</span>
+    </footer>
+  </aside>
+</body>
+</html>

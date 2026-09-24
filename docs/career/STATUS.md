@@ -7,8 +7,8 @@ something specific was built or decided, never by default.
 
 ## Current build
 
-- Build marker: `v0.38.0-dev · Table Intro` (main-menu footer / DEV panel).
-- Service-worker cache: `poker-v38-0`.
+- Build marker: `v0.39.0-dev · Home Boot` (main-menu footer / DEV panel).
+- Service-worker cache: `poker-v39-0`.
 - Career save schema: **version 6**.
 - Production Career Hub: ticket-reader presentation (six-venue rack,
   spring-driven touch physics, printed-ticket detail flip), integrated
@@ -44,6 +44,13 @@ presentation-only passes over the Career Hub and its transitions:
    PAID, a clockwise seat roll call, chip stacks drop into the bank, pot
    tray and deck (`js/table-intro.js`, every table entry incl. Single
    Player and resume). Owner cut: no seat style labels, no paper shreds.
+
+5. **Home Boot** (2026-09-24, outside Career — main menu). The menu
+   powers up on a cold launch (`js/home-boot.js`, replay in
+   `boot-lab.html`); the title-glass tap Easter egg was removed at the
+   owner's request. Next main-menu passes discussed with the owner:
+   top-bar clean-up, counter-drum stats, pokeable House Faces, live
+   readout ticker, then the sub-screens.
 
 Full detail for the first two is in `HISTORY.md` under the 2026-09-24 entries. No
 Career transaction, save field, catalogue, roster, poker or AI code changed

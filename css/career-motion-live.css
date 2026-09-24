@@ -57,25 +57,6 @@
   69%,100%{ filter:brightness(.32) saturate(.45); }
 }
 
-/* One physical, KO-style object per title-glass tap. All artwork is reused
-   from the actual seat portraits, card components and chip sprites. */
-#home-title-glass{ position:relative; cursor:pointer; touch-action:manipulation; }
-#home-title-glass .home-glass-layer{ position:absolute; z-index:5; inset:5px; overflow:hidden; pointer-events:none; }
-.home-glass-object{
-  position:absolute; left:0; top:0; margin:0; transform-origin:center;
-  will-change:transform; pointer-events:none;
-}
-.home-glass-object.is-face{
-  width:54px; height:54px; border:3px solid #090806; background:#1e3026;
-  box-shadow:0 4px 0 #0a0807,inset 0 2px 0 rgba(255,255,255,.2);
-}
-.home-glass-object.is-face .face-img,.home-glass-object.is-face svg{ display:block; width:100%; height:100%; object-fit:cover; image-rendering:pixelated; }
-.home-glass-object.is-card{ width:44px; height:62px; }
-.home-glass-object.is-card .card{ width:44px; height:62px; }
-.home-glass-object.is-chip{ width:38px; height:38px; }
-.home-glass-object.is-chip .chip-disc{ width:38px; height:38px; margin:0; filter:drop-shadow(0 3px 0 #080705); }
-#home-title-glass.is-struck{ animation:homeGlassStruck 115ms steps(4,end); }
-@keyframes homeGlassStruck{ 40%{ box-shadow:inset 0 0 0 2px rgba(250,221,133,.45),inset 0 0 20px #090b06; } }
 /* ---- Career -> Table: power down, roll the table in dark, lock, lights. */
 #app.table-entry-machine #career,
 #app.table-entry-machine #table-screen{ pointer-events:none; backface-visibility:hidden; will-change:transform; }
