@@ -4,9 +4,12 @@
    MACHINE WHEEL V2 — candidate replacement for the three screen-change
    rolls (table <-> results stage, Home -> Career, Career -> table).
 
-   STATUS: audition only. index.html does not load this file; the lab
-   (wheel-v2-lab.html) injects it into a sandboxed copy of the real game
-   and swaps the three V1 functions for the V2 ones below. Nothing here
+   STATUS: live. index.html loads this right after career-motion-live.js
+   and the last line installs V2 over the three V1 functions, which stay
+   in place only so wheel-v2-lab.html can still switch back to compare.
+   The defaults below are the owner's picks from that lab (2026-09-24):
+   FULL machinery, bolts off, 3px grain, standard weight, high overshoot,
+   hum on. Nothing here
    reads or writes poker, Career or save state — every V2 function keeps
    its V1 counterpart's contract, guards and call order exactly, and only
    the presentation between those calls differs.
@@ -29,14 +32,14 @@
    ============================================================ */
 
 const MACHINE_WHEEL_CONFIG = {
-  machinery: 'rim',   // 'clean' | 'rim' | 'full' — how much mechanism shows
-  bolts: true,        // latch bolts shoot in at the lock
-  grain: 2,           // px; every moving part snaps to this grid
+  machinery: 'full',  // 'clean' | 'rim' | 'full' — how much mechanism shows
+  bolts: false,       // latch bolts shoot in at the lock
+  grain: 3,           // px; every moving part snaps to this grid
   shadeSteps: 6,      // shading quantisation
   hum: true,          // bearing hum under the ratchet
   timeScale: 1,       // lab slow-motion only (0.25 = quarter speed)
   durationScale: 1,   // lab tuning: stretches wind-up, roll and settle
-  overshootScale: 1,  // lab tuning: how far the drum coasts past its tooth
+  overshootScale: 1.6, // how far the drum coasts past its tooth (lab 'HIGH')
   stutter: .72,       // 0..<1: how hard the drum catches on each tooth at low speed
   ease: [.5, 0, .2, 1], // spin-up then a long brake to a dead stop at the overshoot peak
   gap: { clean: 22, rim: 22, full: 40 },
@@ -564,3 +567,5 @@ const MachineWheel = (() => {
     }
   };
 })();
+
+MachineWheel.install();

@@ -7,8 +7,8 @@ something specific was built or decided, never by default.
 
 ## Current build
 
-- Build marker: `v0.36.2-dev · Hub Feel` (main-menu footer / DEV panel).
-- Service-worker cache: `poker-v36-2`.
+- Build marker: `v0.37.0-dev · Machine Wheel` (main-menu footer / DEV panel).
+- Service-worker cache: `poker-v37-0`.
 - Career save schema: **version 6**.
 - Production Career Hub: ticket-reader presentation (six-venue rack,
   spring-driven touch physics, printed-ticket detail flip), integrated
@@ -19,8 +19,8 @@ something specific was built or decided, never by default.
 The playable Career spine — all six venues, the Upper Ladder catalogue,
 named residents with stable rosters, the Back Room cash table, Second
 Chance recovery, scoring, and the Poker Faces V2 / ticket-reader
-presentation — is complete and live. The most recent work was three
-presentation-only passes over the Career Hub:
+presentation — is complete and live. The most recent work was these
+presentation-only passes over the Career Hub and its transitions:
 
 1. **Tactile event rack + buy-in roll** — the ticket rack got real touch
    physics (finger pull, lean, multi-card flicks) and buy-in got an actual
@@ -30,8 +30,13 @@ presentation-only passes over the Career Hub:
    shimmered while moving (a per-frame CSS filter was re-rasterising on
    iOS) and the card swap felt like a fade-and-pop. Fixed with an
    opacity-only shade layer and a proper lift-over-then-lay-down swap.
+3. **Machine Wheel V2** — the Home->Career, Career->table and table<->results
+   rolls now run on one pixel-snapped drum engine (`js/machine-wheel.js`):
+   wind-up, visible ratchet, overshoot and settle, stepped house lights.
+   Settings chosen by the owner in `wheel-v2-lab.html`: FULL machinery,
+   bolts off, 3px grain, standard weight, high overshoot, hum on.
 
-Full detail for both is in `HISTORY.md` under the 2026-09-24 entries. No
+Full detail for the first two is in `HISTORY.md` under the 2026-09-24 entries. No
 Career transaction, save field, catalogue, roster, poker or AI code changed
 in either pass; the DETAILS card flip is untouched.
 

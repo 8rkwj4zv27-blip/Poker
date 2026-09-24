@@ -22,8 +22,8 @@
   const V = '1';
 
   const state = {
-    engine: 'v2', machinery: 'rim', bolts: 'on', grain: '2',
-    weight: '1', overshoot: '1', hum: 'on', sound: 'on', speed: '1'
+    engine: 'v2', machinery: 'full', bolts: 'off', grain: '3',
+    weight: '1', overshoot: '1.6', hum: 'on', sound: 'on', speed: '1'
   };
 
   // Seeded in-memory settings: sound on (the game defaults it off) and the
@@ -91,9 +91,12 @@
     return source
       .replace(swBlock, '')
       .replace(/<head>/i, '<head><base href="' + base + '"><script>' + SHIM + '<\/script>')
+      // The game loads the wheel itself now; inject it only into an older
+      // copy that doesn't (a second load would redeclare its consts).
       .replace(/<\/body>/i,
-        '<link rel="stylesheet" href="css/machine-wheel.css?v=' + V + '">' +
-        '<script src="js/machine-wheel.js?v=' + V + '"><\/script>' +
+        (/js\/machine-wheel\.js/.test(source) ? '' :
+          '<link rel="stylesheet" href="css/machine-wheel.css?v=' + V + '">' +
+          '<script src="js/machine-wheel.js?v=' + V + '"><\/script>') +
         '<script>' + BRIDGE + '<\/script></body>');
   }
 
