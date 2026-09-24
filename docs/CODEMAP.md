@@ -13,6 +13,7 @@ by the code and by `CLAUDE.md`/`AGENTS.md`, not by this file.
 07-ui-wiring.js         career-hub-live.js      career-motion-live.js
 machine-wheel.js        ticket-feed.js          table-intro.js
 08-dev-mode.js          home-cast.js            home-boot.js
+press-feel.js
 ```
 
 Later files call into earlier ones freely; there's no module system, so
@@ -178,6 +179,17 @@ a rest mood, a three-flash burst, an idle pool and a reaction to a
 neighbour's flare. Sparse, silent idle life; tapping a face flares it.
 The Home Boot drops the faces in and calls `HeroCast.arrive(i)` on each
 landing. Decorative only — not the table mood system.
+
+## `js/press-feel.js` + `css/press-feel.css` — big-button press feel (live)
+
+Every `.pc-button-primary` on the menu and the Career Hub: the face sinks,
+lamps flare, the casing knocks and the clunk plays on finger-DOWN; on
+release the face springs back in pixel steps. A key the game holds down
+(`career-entry-pressed`, `pc-launch-clunk`) is left held. Click handlers
+that played the clunk themselves call `pressFeelSounded(button)` first so
+it never plays twice. The big-button geometry rule (body as tall as the
+face, 7px lower; cradle padded 9px/23px for an even 7px rim) lives with
+`.pc-primary-cradle` in `css/04-overlays-and-modes.css`.
 
 ## `js/08-dev-mode.js` (~1,140 lines)
 

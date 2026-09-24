@@ -538,16 +538,18 @@ body:has(#table-screen.hidden) .arcade-bank-flight{
    has its own clipped viewport in .pc-slot-aperture below, which is the
    only thing that ever needed clipping. */
 .pc-primary-cradle{
-  position:relative; isolation:isolate; padding:9px 7px 22px; margin-bottom:12px;
+  position:relative; isolation:isolate; padding:9px 7px 23px; margin-bottom:12px;
   background:#B4A46F; border:4px solid #120907;
   box-shadow:inset 4px 4px 0 #EEDDA5,inset -4px -3px 0 #756744,0 3px 0 #2A190F;
 }
 /* The cartridge body is fixed in the slot. Only its yellow face travels when
    pressed, keeping the bottom edge anchored like the secondary controls.
-   70px (+3px borders each side) leaves a band of casing visible below it;
-   at 78px the body ran into the casing's bottom bevel and hid the rim. */
+   The rule for every big button: the body is as tall as the face (plus
+   its 3px borders) and sits 7px lower, giving 13px of chunk under the
+   face; the cradle pads 9px above and 23px below, so the casing shows an
+   even 7px rim on all four sides. */
 .pc-primary-cradle::before{
-  content:''; position:absolute; z-index:0; left:7px; right:7px; top:16px; height:70px;
+  content:''; position:absolute; z-index:0; left:7px; right:7px; top:16px; height:78px;
   background:var(--pc-button-lo); border:3px solid var(--pc-edge-lo); border-radius:5px;
   box-shadow:0 3px 0 #0D0805;
 }
@@ -668,6 +670,7 @@ body:has(#table-screen.hidden) .arcade-bank-flight{
   #home .hero .brand{ font-size:29px; }
   #home .hero-faces .hf{ width:54px; height:54px; }
   #home .pc-button-primary{ font-size:12px; min-height:62px; padding-left:28px; padding-right:28px; }
+  #home .pc-primary-cradle::before{ height:62px; }   /* body matches the smaller face */
 }
 @media (max-height:820px){
   #home{ overflow-y:auto; align-items:flex-start; }

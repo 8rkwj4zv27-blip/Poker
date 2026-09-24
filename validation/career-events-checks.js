@@ -2007,7 +2007,10 @@ check('The featured cartridge is never cropped by its own housing', ()=>{
   const cradle = css.slice(css.indexOf('.pc-primary-cradle{'), css.indexOf('.pc-primary-cradle::before'));
   // The cradle's bottom padding IS the visible plinth. It must not clip.
   assert.ok(!/overflow\s*:\s*hidden/.test(cradle), 'the cradle must not clip its own plinth');
-  assert.ok(/padding:9px 7px 22px/.test(cradle), 'the plinth padding is intact');
+  // At least the original 22px of plinth; the big-button rule (v0.39.5)
+  // sets 23px so the rim under the button body matches its sides.
+  const pad = cradle.match(/padding:9px 7px (\d+)px/);
+  assert.ok(pad && Number(pad[1]) >= 22, 'the plinth padding is intact');
   const bay = css.slice(css.indexOf('.pc-control-bay{'), css.indexOf('.pc-control-head{'));
   assert.ok(!/overflow\s*:\s*hidden/.test(bay), 'the bay must not crop the controls');
   assert.ok(/min-height:min-content/.test(bay), 'the bay may not shrink below its contents');

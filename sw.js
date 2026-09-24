@@ -1,4 +1,4 @@
-const CACHE_NAME = 'poker-v39-4';
+const CACHE_NAME = 'poker-v39-5';
 const APP_SHELL = [
   './',
   './index.html',
@@ -16,9 +16,10 @@ const APP_SHELL = [
   './css/career-motion-live.css?v=4',
   './css/machine-wheel.css?v=1',
   './css/ticket-feed.css?v=1',
-  './css/career-hub-cabinet.css?v=3',
+  './css/career-hub-cabinet.css?v=4',
   './css/table-intro.css?v=1',
   './css/home-boot.css?v=2',
+  './css/press-feel.css?v=1',
   './js/01-poker-math.js',
   './js/02-support-systems.js',
   './js/03-opponents.js',
@@ -26,14 +27,15 @@ const APP_SHELL = [
   './js/05-game-engine.js',
   './js/06-presentation.js',
   './js/07-ui-wiring.js?v=career-motion-1',
-  './js/career-hub-live.js?v=cabinet-2',
+  './js/career-hub-live.js?v=cabinet-3',
   './js/career-motion-live.js?v=4',
-  './js/machine-wheel.js?v=1',
+  './js/machine-wheel.js?v=2',
   './js/ticket-feed.js?v=1',
   './js/table-intro.js?v=1',
   './js/08-dev-mode.js?v=home-cast-1',
   './js/home-cast.js?v=1',
   './js/home-boot.js?v=2',
+  './js/press-feel.js?v=1',
   // FACE_ART (js/02-support-systems.js) — every illustrated portrait an
   // opponent can wear, precached so a live seat's expression can always
   // swap from Cache Storage rather than depending on a network round-trip
