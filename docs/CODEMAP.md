@@ -1,0 +1,167 @@
+# Code map
+
+Where things live, so a session can jump straight to the right file instead
+of searching. Read this once per session when the task isn't already
+pointing at a specific file. It is a map, not a spec — behaviour is defined
+by the code and by `CLAUDE.md`/`AGENTS.md`, not by this file.
+
+## Load order (`index.html`, mirrored in `sw.js`)
+
+```
+01-poker-math.js        02-support-systems.js   03-opponents.js
+04-modes-and-scoring.js 05-game-engine.js       06-presentation.js
+07-ui-wiring.js         career-hub-live.js      career-motion-live.js
+08-dev-mode.js
+```
+
+Later files call into earlier ones freely; there's no module system, so
+everything is a global. `08-dev-mode.js` (the DEV panel) is the only file
+gated out of the page entirely when `DEV_MODE` is off.
+
+## `js/01-poker-math.js` (~320 lines)
+
+Pure card/hand math, safe to run inside the AI worker. `createDeck`,
+`shuffle`, `evaluate7` / `evaluate7WithCards` (best-5-of-7 hand evaluation),
+hand-name/description helpers. No DOM, no game state — if you need a poker
+rule question answered precisely, it's answered here.
+
+## `js/02-support-systems.js` (~1,500 lines)
+
+Grab-bag of self-contained systems: cartoon face SVG generation
+(`faceSVG`), `localStorage` wrapper (`Store`), settings, `motionOff()`
+(Reduced Motion check), `haptic()` (no-ops on iOS — see below), and the
+entire `Sound` module (procedural Web Audio, ~500 lines from `doButtonPress`
+down to `stageRollClick`/`stageLockSound`). `BUILD_VERSION` is declared
+here (~line 736) — **bump it on every release** so the main-menu footer
+shows what's installed; keep its version number in sync with `sw.js`'s
+`CACHE_NAME` (the `card-flight`/`card-turn`/`chip-motion`/`showdown-rail`
+checks assert this).
+
+## `js/03-opponents.js` (~660 lines)
+
+AI. `PERSONALITIES_ALL` (the 8 base archetypes: rock, shark, maniac,
+station, grinder, wildcard, professor, hammer — sizing/tightness/aggression/
+bluff dials), `aiDecide()` (the actual decision function — difficulty,
+position, stack depth and paid-place pressure all weight into this, never
+hidden cards), face-colour/personality assignment for a fresh table.
+
+**Note:** `HISTORY.md` documents an "Enemy / Personality Pass" (named
+residents Harry/Tony/Lucy/Nigel/Steve, `js/03-residents.js`, House Faces,
+dossiers) as code-complete. Checked 2026-09-24: **it was never actually
+committed** — there is no `js/03-residents.js`, no `residentId`, no House
+Faces screen in this codebase, only the anonymous `PERSONALITIES_ALL`
+archetypes above. `HISTORY.md`'s own entry says "Not committed... the owner
+still gets the final visual review"; that review evidently didn't happen or
+didn't land. Don't assume residents exist without checking the code first.
+
+## `js/04-modes-and-scoring.js` (~1,740 lines)
+
+Game *formats*, not game *state*. `TOURNAMENT_FORMATS` (turbo/deep/headsup
+descriptors), `BLIND_LEVELS`, the Career event catalogue (`CAREER_ROOMS`,
+`CAREER_EVENT_LIST`, per-event descriptors), Career naming/threat helpers
+(`careerEventTitle`, `careerThreatOf`), and the scoring/award system (the
+objective award catalogue — `POT WINNINGS`, `BIG WIN`, `MONSTER HAND`,
+`K.O.`, `EVENT WON`/`TABLE CLEARED` — see `docs/scoring/SCORING_SPEC.md` for
+the authoritative rules on all of this).
+
+## `js/05-game-engine.js` (~3,600 lines, the largest file)
+
+The actual game state machine. `game` (global state), `newGame()` (table
+setup — accepts `opts.roster` for Career's pinned field), `applyAction()`
+(every betting decision funnels through here), hand lifecycle
+(`startNewHand`, `finishHand`, `resolveEliminations`), Career table
+persistence (`saveCareerTable`/`loadCareerTable`/`restoreTable`),
+`careerFinishPlace()` (placement is measured from the table, never
+inferred), and the shared result-stage model (`careerStageModel`,
+`resultStageHTML` — one chassis for `TABLE CLEARED`/`RUN OVER`/`EVENT WON`/
+`EVENT LOST`). If a poker rule or Career settlement number looks wrong,
+it's almost certainly in here.
+
+## `js/06-presentation.js` (~4,800 lines, second largest)
+
+Rendering and animation only — reads `game`, never mutates poker state.
+`render()` (the main table repaint), `initSeats()`, card flight/deal
+animation (`DealFX`), chip flight/pile animation, the coach/hint system,
+Hand Review panel, showdown presentation. If a visual bug doesn't affect
+outcomes (wrong chip count on screen, a card animating oddly, a stat
+misdisplayed), it's here, not in `05-game-engine.js`.
+
+## `js/07-ui-wiring.js` (~2,000 lines)
+
+Screen navigation and all Career money/transaction logic.
+`showTableScreen`/`showCareerScreen`/`renderCareerScreen`, the single-player
+menu-launch sequence (`stageInitialRunArrival` etc.), and every Career
+money function: `enterCareerEvent`, `settleCareerEvent`, `startCareerEvent`,
+`continueCareerEvent`, `startCareerCashSession`/`endCareerCashSession`,
+`saveCareer`. **This is the one place Career's money rules are enforced** —
+buy-in debited and persisted before the table exists; settlement guarded
+against duplicate credit; `felt.career` is the sole authoritative ledger.
+Don't duplicate a transaction path elsewhere.
+
+## `js/career-hub-live.js` + `js/career-motion-live.js` + `css/career-motion-live.css`
+
+The live (production) Career Hub presentation: the touch-physics event
+rack, ticket cards, buy-in sequence, and the Home↔Career↔table motion
+transitions (`careerDepartToTable`, the Home entrance in
+`enterCareerFromHome`). Reads Career state and calls the real transaction
+functions in `07-ui-wiring.js`; owns no money itself. Styled by
+`css/career-hub-v2-lab.css` (shared with the Lab, see below) plus
+`css/career-motion-live.css` for the transitions.
+
+## `js/08-dev-mode.js` (~1,140 lines)
+
+The DEV panel. Every control drives real production functions
+(`applyAction`, `resolveEliminations`, etc.) rather than a parallel fake
+path — see the file's own header comment. Entirely absent from the DOM when
+`DEV_MODE` is false. Useful for reaching a specific game state
+(forced all-ins, rigged deals, Career bankroll presets) without playing
+there manually.
+
+## Labs vs. production — do not confuse the two
+
+Files matching `*-lab.html`, `*-lab.js`, `*-lab.css` (`career-lab`,
+`career-hub-v2-lab`, `ticket-lab`, `card-flight-options`, `card-turn-lab`,
+`chip-motion-lab`, `design-lab`, `result-stage-lab`, `showdown-rail-lab`)
+are **isolated visual references and prototyping sandboxes**. Several are
+committed permanently as durable references even after their feature
+shipped. Rules:
+
+- A production file (`index.html`, `sw.js`) never links to a Lab file.
+  Several validation suites assert this explicitly (grep for
+  "production-isolation audit" in `validation/*.js`).
+- A Lab may load real production systems (e.g. `Sound` from
+  `02-support-systems.js`) to audition them accurately, but never writes to
+  `localStorage`, `felt.career`, or any real save.
+- `css/career-hub-v2-lab.css` is the one exception worth knowing:
+  production's live Career Hub (`career-hub-live.js`) **also** loads this
+  stylesheet — it's the real production ticket/card CSS, not lab-only,
+  despite the filename. Don't assume `*-lab.css` is always inert.
+- If you're not sure whether a file is live, check `index.html`'s
+  `<script>`/`<link>` tags and `sw.js`'s `APP_SHELL` array — if it's not
+  listed there, it's not shipped to players.
+
+## `validation/*.js`
+
+One focused check suite per feature area, run with plain `node`, no test
+framework. `node validation/<name>.js` prints pass/fail per assertion and a
+final count. Run the relevant suite(s) before and after any change — see
+`docs/career/STATUS.md` for the current Career-specific set and
+`validation/tools/README.md` for a browser/touch-emulation harness you can
+reuse instead of writing a new Playwright script from scratch each time.
+
+## `docs/`
+
+- `docs/career/STATUS.md` — **read first** for any Career task. Current
+  build, current state, immediate next task.
+- `docs/career/CAREER_DESIGN.md` — product rules and economy. Read only
+  when the task touches catalogue, pricing, unlock rules, or other product
+  decisions.
+- `docs/career/BUILD_PLAN.md` — the phase sequence and what each phase's
+  scope/exit condition is. Read only when the task is about sequencing or
+  which phase something belongs to.
+- `docs/career/HISTORY.md` — dated archive of every completed milestone.
+  Reference only, never a default read.
+- `docs/scoring/SCORING_SPEC.md` — authoritative scoring/award rules for
+  both Career and Single Player.
+- `docs/ui/handover/` — earlier UI handover notes; a `python3 -m http.server`
+  one-liner for local previews lives in its `README.md`.

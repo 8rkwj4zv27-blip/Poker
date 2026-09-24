@@ -6,6 +6,19 @@ Expansion promoted: 2026-08-25
 
 Poker Faces V2 Career presentation approved and implemented: 2026-09-21
 
+## Phase 5/7/8 shelved — 2026-09-24
+
+The owner does not currently want Phase 5's contextual Recommended /
+Alternative / Next Target selection logic built. The Full Circuit half of
+Phase 5 — all six venues visible, including locked ones — already shipped
+as part of the production ticket-reader Hub, so that need is met without
+the smart-selection layer on top. Phase 7 (named-resident relationship
+counters and dossiers) and Phase 8 (a boss seat with a one-time first-clear
+ceremony) are also shelved: Career has no boss encounter today and none is
+wanted for now. This does not remove either phase from `BUILD_PLAN.md`; it
+supersedes their "Next" scheduling until the owner asks for them again. See
+`STATUS.md`'s scope note.
+
 ## Tactile rack and buy-in roll — 2026-09-24
 
 The owner approved a physical rack and a full buy-in hand-off (Direction A).

@@ -47,14 +47,34 @@ The overall feeling is a strange velvet-covered poker machine.
 - Do not change visual design merely to make code or UI more conventional.
 - Preserve existing localStorage settings and lifetime statistics unless a task specifically requires changes to them.
 
+## Codebase map
+
+Before searching the codebase cold, read `docs/CODEMAP.md` — it says which
+file owns what, which files are production vs. isolated Lab prototypes, and
+where the test suites and local-preview instructions are. It's a map, not a
+spec: the code and this file remain authoritative over it.
+
 ## Career mode continuity
 
-Before planning, reviewing, or implementing Career work, read these files in order:
+Before Career work, read `docs/career/STATUS.md` first — it's short, and
+states the current build and the one concrete Immediate next task. Only
+read `docs/career/CAREER_DESIGN.md` (product rules/economy) or
+`docs/career/BUILD_PLAN.md` (phase sequence and scope) when the task
+actually touches those — most presentation, polish, or bug-fix work needs
+neither. `docs/career/HISTORY.md` is a dated archive of completed
+milestones and superseded plans; open it only to research how something
+specific was already built or decided, never as a default read — and don't
+assume something it describes as shipped actually is without checking the
+code (`STATUS.md`'s "Where we are" and `docs/CODEMAP.md` reflect what's
+actually in the codebase; `HISTORY.md` entries occasionally describe work
+that was written up as complete but never actually committed).
 
-1. `docs/career/CAREER_DESIGN.md`
-2. `docs/career/BUILD_PLAN.md`
-3. `docs/career/STATUS.md`
+Treat `STATUS.md` as the source of truth over old chats, decks, prompts, or
+speculative proposals. Do not treat provisional future-catalogue numbers as
+implementation requirements. Work only on the Immediate next task in
+`STATUS.md` unless the user explicitly changes scope.
 
-Treat them as the source of truth over old chats, decks, prompts, or speculative proposals. Do not treat provisional future-catalogue numbers as implementation requirements. Work only on the Immediate next task in `STATUS.md` unless the user explicitly changes scope.
-
-After a Career milestone, update `STATUS.md`. Update `BUILD_PLAN.md` when scope or order changes, and update `CAREER_DESIGN.md` only when a product decision changes.
+After a Career milestone, update `STATUS.md` (moving older entries into
+`HISTORY.md` if `STATUS.md` is getting long again). Update `BUILD_PLAN.md`
+when scope or order changes, and update `CAREER_DESIGN.md` only when a
+product decision changes.

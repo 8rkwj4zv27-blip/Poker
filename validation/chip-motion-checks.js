@@ -117,8 +117,15 @@ check('Fixture remains outside the offline game shell',()=>{
 });
 
 check('Build and offline cache markers identify this checkpoint',()=>{
-  assert.ok(support.includes("const BUILD_VERSION = 'v0.32.8-dev · Chip Flow'"));
-  assert.ok(serviceWorker.includes("const CACHE_NAME = 'poker-v32-8'"));
+  // Evergreen: BUILD_VERSION and CACHE_NAME must both exist and carry the
+  // SAME numeric version (e.g. v0.36.2-dev <-> poker-v36-2), never a
+  // frozen historical string — that pin broke on every later release.
+  const buildMatch = support.match(/const BUILD_VERSION = 'v(\d+)\.(\d+)\.(\d+)-dev/);
+  const cacheMatch = serviceWorker.match(/const CACHE_NAME = 'poker-v(\d+)-(\d+)'/);
+  assert.ok(buildMatch,'BUILD_VERSION missing or malformed in 02-support-systems.js');
+  assert.ok(cacheMatch,'CACHE_NAME missing or malformed in sw.js');
+  assert.strictEqual(buildMatch[2]+'-'+buildMatch[3],cacheMatch[1]+'-'+cacheMatch[2],
+    'BUILD_VERSION major.minor must match CACHE_NAME (bump both together on release)');
 });
 
 process.stdout.write('\n'+passed+' focused Chip Motion checks passed.\n');
