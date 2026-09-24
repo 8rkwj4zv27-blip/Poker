@@ -138,9 +138,9 @@ Machine Wheel's `careerTableCallout` title flash. Tuning lives in
 
 Replaces the Hub's buy-in animation through the `careerTicketFeed` hook in
 `career-hub-live.js` (absent the file, the old feed runs unchanged). The
-ticket lifts, is ratcheted into the intake and clipped exactly at the slot
-line, the intake goes green and the bankroll counts down; the ticket never
-returns to the rack — it reappears on the felt via the Table Intro. It
+ticket lifts and narrows to the intake mouth, is ratcheted over the plate's
+lip and into the mouth, then the cabinet shudders and spits shreds while the
+bankroll counts down; the ticket never returns to the rack — it reappears on the felt via the Table Intro. It
 receives the Hub's own `charge`/`depart` steps and owns no money.
 
 Neither pair is loaded by `index.html`/`sw.js` yet — `intro-lab.html`
