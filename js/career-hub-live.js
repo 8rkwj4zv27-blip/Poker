@@ -148,19 +148,18 @@
 
   /* Continuous rack geometry: `d` is a card's signed distance, in cards, from
      the reader's centre. Integer distances reproduce the approved resting
-     layout exactly; everything between is interpolated so neighbours rise,
-     brighten and scale in step with the finger. */
+     layout exactly; everything between is interpolated. Tickets never fade:
+     they stay solid, dim under an opacity-only shade layer, and slide under
+     their neighbours and out past the clipped reader edges. */
   function cardGeometry(d){
     const a = Math.min(Math.abs(d),3);
     const x = a <= 1 ? 91 * a : a <= 2 ? 91 + 27 * (a - 1) : 118;
-    const light = Math.min(a,1);
     return {
       x:(d < 0 ? -1 : 1) * x,
       y:a <= 1 ? 10 + 12 * a : a <= 2 ? 22 + 6 * (a - 1) : 28,
       scale:a <= 1 ? 1 - .06 * a : a <= 2 ? .94 - .04 * (a - 1) : .9,
-      opacity:a < 1 ? 1 - .18 * a : a < 2 ? .82 * (2 - a) : 0,
-      bright:1 - .46 * light,
-      sat:1 - .36 * light,
+      visible:a < 2.5,
+      shade:.46 * Math.min(a,1),
       z:Math.max(1,Math.round(30 - a * 12))
     };
   }
@@ -254,7 +253,10 @@
     const phys = {
       s:current, v:0, target:current, held:current, detent:current,
       dragging:false, landed:true, wall:0, lastT:0,
-      hy:hold(), lean:hold(), tx:hold(), ty:hold(), lift:hold()
+      hy:hold(), lean:hold(), tx:hold(), ty:hold(), lift:hold(),
+      // Per-ticket rise: the ticket being travelled towards lifts off the
+      // stack, crosses over the current one, then lays down on the reader.
+      rise:cards.map(hold), arriving:-1
     };
     const holds = [phys.hy,phys.lean,phys.tx,phys.ty,phys.lift];
     const spring = (q,k,zeta,h) => {
@@ -271,34 +273,40 @@
     };
     const paint = () => {
       const s = visualS();
-      const lift = phys.lift.x;
+      const lift = Math.max(0,phys.lift.x);
       cards.forEach((card,i) => {
         const d = i - s;
-        const far = Math.abs(d) >= 2.6 && i !== phys.held;
+        const rise = Math.max(0,phys.rise[i].x);
+        const far = Math.abs(d) >= 2.6 && i !== phys.held && rise < .001;
         if (far && card._far) return;
         card._far = far;
         const g = cardGeometry(d);
         const st = card.style;
         const held = i === phys.held;
+        const heldLift = held ? lift : 0;
         const share = held ? 1 : Math.abs(d) < 1.5 ? .28 : 0;
         st.setProperty('--card-x',g.x.toFixed(3) + '%');
-        st.setProperty('--card-y',g.y.toFixed(2) + 'px');
-        st.setProperty('--card-scale',(g.scale * (held ? 1 + .028 * lift : 1)).toFixed(4));
-        st.setProperty('--card-o',g.opacity.toFixed(3));
-        st.setProperty('--card-f',g.bright > .996 ? 'none' : 'brightness(' + g.bright.toFixed(3) + ') saturate(' + g.sat.toFixed(3) + ')');
+        st.setProperty('--card-y',(g.y - 5 * rise).toFixed(2) + 'px');
+        st.setProperty('--card-scale',(g.scale * (1 + .03 * heldLift + .06 * rise)).toFixed(4));
+        st.setProperty('--card-o',g.visible || rise > .001 ? '1' : '0');
+        st.setProperty('--shade',(g.shade * (1 - .75 * Math.min(1,rise))).toFixed(3));
         st.setProperty('--hold-y',(held ? phys.hy.x : 0).toFixed(2) + 'px');
         st.setProperty('--lean',(phys.lean.x * share).toFixed(3) + 'deg');
         st.setProperty('--tilt-x',(held ? phys.tx.x : 0).toFixed(3) + 'deg');
         st.setProperty('--tilt-y',(held ? phys.ty.x : 0).toFixed(3) + 'deg');
-        st.setProperty('--lift',(held ? Math.max(0,lift) : 0).toFixed(3));
-        st.setProperty('--sheen-x',(held ? 50 + phys.ty.x * 7 + phys.lean.x * 2 : 50).toFixed(1) + '%');
-        st.zIndex = String(held && lift > .04 ? 33 : g.z);
+        st.setProperty('--lift',Math.max(heldLift,rise).toFixed(3));
+        const arriving = i === phys.arriving || rise > .02;
+        st.zIndex = String(arriving ? 40 : held && lift > .04 ? 33 : g.z);
       });
     };
-    const flashVenue = () => {
-      reader.classList.remove('is-venue-change');
-      void reader.offsetWidth;
-      reader.classList.add('is-venue-change');
+    // The ticket being travelled towards: set by the finger's direction while
+    // dragging, never by the halfway point, so reversing never pops.
+    const arrivingIndex = () => {
+      const s = rubber(phys.s);
+      const dir = phys.dragging && pointer ? s - pointer.base : phys.target - s;
+      if (Math.abs(dir) < .015) return -1;
+      const i = dir > 0 ? Math.ceil(s - 1e-6) : Math.floor(s + 1e-6);
+      return i >= 0 && i <= last ? i : -1;
     };
     const jolt = dir => {
       reader.classList.remove('is-stop-left','is-stop-right');
@@ -312,12 +320,14 @@
       const venueChange = all[notch].key !== all[phys.detent].key;
       phys.detent = notch;
       root.dataset.venue = all[notch].key;
-      if (venueChange){ Sound.stageRollClick(1,true); flashVenue(); haptic(14); }
+      if (venueChange){ Sound.stageRollClick(1,true); haptic(14); }
       else { Sound.stageRollClick(clamp(energy,.12,1),false); haptic(5); }
     };
     const snap = () => {
       phys.s = phys.target; phys.v = 0; phys.held = phys.target; phys.landed = true;
       holds.forEach(q => { q.x = q.goal = q.v = 0; });
+      phys.rise.forEach(q => { q.x = q.goal = q.v = 0; });
+      phys.arriving = -1;
       notchTo(phys.target,.4);
       paint();
     };
@@ -336,7 +346,15 @@
         // The spot under the finger presses in; the leading edge rises.
         phys.tx.goal = clamp(-pointer.gy * 4.5 + vy * 3.2,-8,8);
         phys.ty.goal = clamp(pointer.gx * 5.5 - vx * 2.6,-9,9);
+        // The grabbed ticket settles lower as it is pushed out of the way.
+        if (!motionReduced()) phys.lift.goal = 1 - .8 * clamp(Math.abs(rubber(phys.s) - pointer.base) / .5,0,1);
       }
+      phys.arriving = motionReduced() ? -1 : arrivingIndex();
+      phys.rise.forEach((q,i) => {
+        if (i !== phys.arriving){ q.goal = 0; return; }
+        // Held up while the finger carries it; lays down over the last stretch.
+        q.goal = phys.dragging ? 1 : clamp(Math.abs(i - rubber(phys.s)) / .3,0,1);
+      });
       const steps = Math.ceil(dt * 120), h = dt / steps;
       for (let n = 0; n < steps; n++){
         if (!phys.dragging){
@@ -350,6 +368,7 @@
         spring(phys.tx,290,.5,h);
         spring(phys.ty,290,.5,h);
         spring(phys.lift,210,.82,h);
+        phys.rise.forEach(q => { if (q.x || q.goal || q.v) spring(q,260,.62,h); });
       }
       notchTo(clamp(Math.round(visualS()),0,last),Math.abs(phys.v) / 9 + .12);
       if (!phys.dragging && !phys.landed && Math.abs(phys.s - phys.target) < .03){
@@ -359,10 +378,13 @@
       }
       paint();
       const resting = !phys.dragging && Math.abs(phys.s - phys.target) < .0008 && Math.abs(phys.v) < .01 &&
-        holds.every(q => Math.abs(q.x - q.goal) < .01 && Math.abs(q.v) < .05);
+        holds.every(q => Math.abs(q.x - q.goal) < .01 && Math.abs(q.v) < .05) &&
+        phys.rise.every(q => Math.abs(q.x) < .004 && Math.abs(q.v) < .05);
       if (resting){
         phys.s = phys.target; phys.v = 0; phys.lastT = 0;
         holds.forEach(q => { q.x = q.goal; q.v = 0; });
+        phys.rise.forEach(q => { q.x = q.goal = q.v = 0; });
+        phys.arriving = -1;
         phys.held = phys.target;
         paint();
         return;

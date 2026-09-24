@@ -1,5 +1,31 @@
 # Career Mode — Current Status
 
+## Career Hub lift-over swap and shimmer fix — awaiting owner device review (2026-09-24)
+
+Owner feedback on the tactile rack: tickets shimmered while moving, and the
+fade-then-pop swap did not feel physical. Presentation only; no Career,
+save, poker or flip code changed.
+
+- **Shimmer:** removed the per-frame CSS `filter` dimming (it toggled on and
+  off as tickets crossed the centre, forcing iOS to re-rasterise the paper),
+  the moving sheen and the venue-border reader flicker. Dimming is now an
+  opacity-only shade layer on its own compositing layer.
+- **Lift-over swap (pronounced):** the ticket being travelled towards is on
+  top from the first movement, chosen by drag direction rather than the
+  halfway point. It rises (about 6% larger, a small upward move, deep hard
+  shadow), rides over the current ticket, then lays down on the reader. The
+  grabbed ticket lowers and darkens as it is pushed aside. Tickets never fade;
+  they slide under their neighbours and out past the clipped reader edges.
+  Multi-ticket flicks deal each ticket over the last.
+
+Validation: 112 Career event and 41 result checks; Playwright touch QA at
+430×932, 390×844 and 320×700 (drag frames, flicks, one debit, resume,
+tap-to-skip, Reduced Motion), no overflow and no console errors. Cache
+`poker-v36-2`.
+
+Next: owner on-device check that the shimmer is gone and the lift height
+feels right.
+
 ## Career Hub tactile rack and buy-in roll — awaiting owner device review (2026-09-24)
 
 Owner-directed presentation pass (Direction A). No Career transaction, save

@@ -123,28 +123,25 @@
     rotate(var(--lean,0deg)) rotateX(var(--tilt-x,0deg)) rotateY(var(--tilt-y,0deg))
     scale(var(--card-scale,1));
   opacity:var(--card-o,0);
-  filter:var(--card-f,none);
+  /* Never a per-frame filter: on iOS that re-rasterises the ticket and
+     reads as a soft flash. Dimming is the shade layer below. */
+  filter:none;
 }
 /* A lifted ticket casts a hard, chunky drop shadow that grows with height. */
 #career-hub .ch2-track .ch2-card::before{
   content:""; position:absolute; z-index:-1; inset:2px; pointer-events:none;
   border-radius:var(--ticket-radius,2px); background:#060403;
-  opacity:calc(var(--lift,0) * .46);
-  transform:translate(calc(var(--lift,0) * 5px),calc(var(--lift,0) * 12px));
+  opacity:calc(var(--lift,0) * .5);
+  transform:translate(calc(var(--lift,0) * 7px),calc(var(--lift,0) * 20px));
+  will-change:transform,opacity;
 }
-/* Light rakes across the stock as it tilts: paper on the early tickets,
-   foil on the black-and-gold and burgundy stocks. */
+/* Tickets away from the reader sit in shadow. Opacity only, on its own
+   layer, so the compositor dims it without repainting the paper. */
 #career-hub .ch2-track .ch2-card::after{
-  content:""; position:absolute; z-index:40; inset:0; pointer-events:none;
-  border-radius:var(--ticket-radius,2px);
-  background:linear-gradient(104deg,transparent 0 37%,rgba(255,246,214,.24) 46%,rgba(255,246,214,.07) 52%,transparent 61% 100%);
-  background-size:280% 100%; background-position:var(--sheen-x,50%) 0;
-  opacity:calc(var(--lift,0) * .85);
-}
-#career-hub .ch2-reader.is-venue-change{ animation:ch2VenueFlicker 200ms steps(4,end); }
-@keyframes ch2VenueFlicker{
-  0%,100%{ filter:none; } 25%{ filter:brightness(1.24) saturate(1.12); }
-  50%{ filter:brightness(.9); } 75%{ filter:brightness(1.1); }
+  content:""; position:absolute; z-index:45; inset:0; pointer-events:none;
+  border-radius:var(--ticket-radius,2px); background:#0b0c09;
+  opacity:var(--shade,0);
+  will-change:opacity;
 }
 #career-hub .ch2-reader.is-stop-left .ch2-rack{ animation:ch2StopLeft 170ms steps(4,end); }
 #career-hub .ch2-reader.is-stop-right .ch2-rack{ animation:ch2StopRight 170ms steps(4,end); }
