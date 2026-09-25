@@ -3988,8 +3988,17 @@ function updateActionControls(){
 function describeCurrentTurn(){
   const g = game;
   if (g.over || ['showdown','foldwin'].includes(g.phase)) return '';
+  // All in and nobody left to bet: the board just runs out. No one is
+  // thinking, and the human's own seat never "is thinking".
+  const canAct = x => x.inHand && !x.folded && !x.allIn && x.chips>0;
+  const live = g.players.filter(x=>x.inHand && !x.folded);
+  const actors = live.filter(canAct);
+  if (live.length>1 && live.some(x=>x.allIn) &&
+      (actors.length===0 || (actors.length===1 && actors[0].betThisRound>=g.currentBet))){
+    return actionRowsHTML('ALL IN','RUNNING IT OUT',false);
+  }
   const p = g.players[g.currentIndex];
-  return p ? actionRowsHTML(p.name,'IS THINKING…',true) : '';
+  return p && !p.isHuman && canAct(p) ? actionRowsHTML(p.name,'IS THINKING…',true) : '';
 }
 
 function renderLog(){
@@ -4324,6 +4333,7 @@ async function clearShowdownRailPresentation(){
    winning SEAT (or, for the human, the HUD itself) is the "who won"
    signal now, not a duplicated avatar. */
 function buildResultHTML(potResults){
+  potResults = mergePotResultsForDisplay(potResults);
   const main = potResults[0];
   const mainWinnerIds = new Set(main.winnerIds);
   let primaryAmount = main.amount;

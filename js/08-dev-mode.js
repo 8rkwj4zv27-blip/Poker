@@ -1025,10 +1025,7 @@ function wireUI(){
     });
   };
 
-  $('fr-dismiss').onclick = ()=>{
-    $('first-run').classList.add('hidden');
-    settings.seenIntro = true; saveSettings();
-  };
+  $('fr-dismiss').onclick = dismissFirstRun;
 
   // keyboard shortcuts
   document.addEventListener('keydown', e=>{

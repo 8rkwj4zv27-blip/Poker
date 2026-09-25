@@ -603,6 +603,11 @@ function findNextActor(startIndex){
   return -1;
 }
 
+/* Log wording: the human's seat is named "You", which takes the
+   second-person verb ("You call 40", not "You calls 40"). */
+function actorVerb(player, third, second){
+  return player && player.isHuman ? second : third;
+}
 function logMsg(text, isMarker){
   game.log.push({t:text, m:!!isMarker});
   if (game.log.length > 250) game.log.splice(0, game.log.length-250);
@@ -810,8 +815,8 @@ async function startNewHand(){
   g.positions = computePositions();
 
   logMsg('Hand ' + g.handNumber, true);
-  logMsg(g.players[g.sbIndex].name + ' posts small blind (' + g.smallBlind + ')');
-  logMsg(g.players[g.bbIndex].name + ' posts big blind (' + g.bigBlind + ')');
+  logMsg(g.players[g.sbIndex].name + ' ' + actorVerb(g.players[g.sbIndex],'posts','post') + ' small blind (' + g.smallBlind + ')');
+  logMsg(g.players[g.bbIndex].name + ' ' + actorVerb(g.players[g.bbIndex],'posts','post') + ' big blind (' + g.bigBlind + ')');
 
   $('btn-next-hand').classList.add('hidden');
   $('btn-rebuy').classList.add('hidden');
@@ -1200,7 +1205,7 @@ function applyAction(player, decision){
 
   if (action==='fold'){
     player.folded = true;
-    text = player.name + ' folds';
+    text = player.name + ' ' + actorVerb(player,'folds','fold');
     // SFX V1 — the human's own fold now sounds via the physical button
     // release (see resolveButtonKind/pressFeedback), not here; AI
     // opponents keep this exact same sound they always had.
@@ -1213,13 +1218,13 @@ function applyAction(player, decision){
       };
     }
   } else if (action==='check'){
-    text = player.name + ' checks';
+    text = player.name + ' ' + actorVerb(player,'checks','check');
     if (!player.isHuman) Sound.check();
   } else if (action==='call'){
     const amt = commitTo(g.currentBet);
     shortAmt = amt;
-    if (amt>0){ text = player.name + ' calls ' + amt; if (!player.isHuman) Sound.chip(); }
-    else { action='check'; text = player.name + ' checks'; if (!player.isHuman) Sound.check(); }
+    if (amt>0){ text = player.name + ' ' + actorVerb(player,'calls','call') + ' ' + amt; if (!player.isHuman) Sound.chip(); }
+    else { action='check'; text = player.name + ' ' + actorVerb(player,'checks','check'); if (!player.isHuman) Sound.check(); }
   } else if (action==='bet' || action==='raise' || action==='allin'){
     const prevBet = g.currentBet;
     let target;
@@ -1231,7 +1236,7 @@ function applyAction(player, decision){
     settleAggression(prevBet);
     shortAmt = prevBet<=0 ? player.betThisRound : player.betThisRound;
     action = prevBet<=0 ? 'bet' : 'raise';
-    const verb = prevBet<=0 ? 'bets' : 'raises to';
+    const verb = prevBet<=0 ? actorVerb(player,'bets','bet') : actorVerb(player,'raises to','raise to');
     text = player.name + ' ' + verb + ' ' + player.betThisRound + (player.allIn ? ' (all-in)' : '');
     if (!player.isHuman) Sound.chip();
     // SFX V1 — all-in drama. The human's own all-in is already fully
@@ -1374,6 +1379,25 @@ function projectedSettlement(p, potResults){
 /* Result-banner grammar is a tiny rule, but keeping it named makes both
    branches independently testable: the human is second person (YOU WIN),
    while named opponents remain third person (WILDCARD WINS). */
+/* One entry per pot as the player sees it: consecutive layers that share a
+   display group (see the label in the showdown) are summed. Presentation
+   only — never feed this to payout, scoring or elimination code. */
+function mergePotResultsForDisplay(potResults){
+  const out = [];
+  (potResults || []).forEach(r=>{
+    const last = out[out.length-1];
+    if (last && r.group != null && last.group === r.group){
+      last.amount += r.amount;
+      (r.winnerShares||[]).forEach(s=>{
+        const m = last.winnerShares.find(x=>x.id===s.id);
+        if (m) m.amount += s.amount; else last.winnerShares.push(Object.assign({}, s));
+      });
+      return;
+    }
+    out.push(Object.assign({}, r, { winnerShares:(r.winnerShares||[]).map(s=>Object.assign({}, s)) }));
+  });
+  return out;
+}
 function showdownPotVerb(result){
   if (result && result.split) return 'split';
   const ids = result && Array.isArray(result.winnerIds) ? result.winnerIds : [];
@@ -1417,7 +1441,7 @@ async function handleFoldWin(){
     // even have been in the pot), so this is never the humanLose flavor.
     Sound.resultSting('opponentWin');
   }
-  logMsg(winner.name + ' wins ' + amt + ' (everyone else folded)');
+  logMsg(winner.name + ' ' + actorVerb(winner,'wins','win') + ' ' + amt + ' (everyone else folded)');
 
   // No showdown occurred, so there's no evaluated hand/winning-five to show
   // or highlight — hand/cat/cards stay null and runShowdownAwardSequence's
@@ -1493,6 +1517,20 @@ async function handleShowdown(){
 
   const potResults = [];
   const winnerIds = new Set();
+  // Display groups for the pot NAMES only. computePots() starts a layer at
+  // every contribution level, a folded player's included, so two adjacent
+  // layers can have exactly the same players able to win them. To the
+  // player that is one pot, so it gets one name ("Pot", or "Main pot" +
+  // "Side pot 1"...). Payout, scoring and K.O. still read every layer.
+  const potGroup = [];
+  let potGroups = 0, prevEligibleKey = null;
+  pots.forEach((pot, i)=>{
+    if (!pot.eligible.length) return;
+    const key = pot.eligible.slice().sort().join(',');
+    if (key !== prevEligibleKey) potGroups++;
+    prevEligibleKey = key;
+    potGroup[i] = potGroups - 1;
+  });
   pots.forEach((pot, i)=>{
     const eligible = pot.eligible.map(id=>g.players.find(p=>p.id===id));
     if (!eligible.length) return;
@@ -1512,7 +1550,8 @@ async function handleShowdown(){
       return { name:w.name, id:w.id, amount:amt };
     });
     potResults.push({
-      label: pots.length===1 ? 'Pot' : (i===0 ? 'Main pot' : 'Side pot ' + i),
+      label: potGroups===1 ? 'Pot' : (potGroup[i]===0 ? 'Main pot' : 'Side pot ' + potGroup[i]),
+      group: potGroup[i],
       amount: pot.amount,
       winners: winners.map(w=>w.name),
       winnerIds: winners.map(w=>w.id),
@@ -1597,11 +1636,12 @@ async function handleShowdown(){
 
   // Hand-history log entries are pure record-keeping — write them now,
   // rather than deferring them into the player-paced award loop below.
-  potResults.forEach(r=>{
+  mergePotResultsForDisplay(potResults).forEach(r=>{
+    const name = r.label==='Pot' ? 'the pot' : /^Main/.test(r.label) ? 'the main pot' : r.label.toLowerCase();
     if (r.split){
-      logMsg(r.winnerShares.map(s=>s.name+' '+s.amount).join(' / ') + ' split ' + r.label.toLowerCase() + ' (' + r.amount.toLocaleString() + ') with ' + r.hand);
+      logMsg(r.winnerShares.map(s=>s.name+' '+s.amount.toLocaleString()).join(' / ') + ' split ' + name + ' (' + r.amount.toLocaleString() + ') with ' + r.hand);
     } else {
-      logMsg(r.winners.join(' & ') + ' win ' + r.label.toLowerCase() + ' ' + r.amount.toLocaleString() + ' with ' + r.hand);
+      logMsg(r.winners.join(' & ') + ' ' + showdownPotVerb(r) + ' ' + name + ' (' + r.amount.toLocaleString() + ') with ' + r.hand);
     }
   });
   if (winnerIds.has('you')){

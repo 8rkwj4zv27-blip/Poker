@@ -92,7 +92,7 @@ function buildReview(outcome){
   }
 
   // showdown
-  const results = outcome.potResults;
+  const results = mergePotResultsForDisplay(outcome.potResults);
   const humanWon = outcome.winnerIds.has('you');
   const humanShowed = outcome.contenders.some(p=>p.isHuman);
 
@@ -361,9 +361,25 @@ function startGame(){
   $('table-screen').classList.remove('hidden');
   initSeats();
   if (!settings.seenIntro){
-    $('first-run').classList.remove('hidden');
+    // First table ever: the tips come before the machine powers up, so
+    // they never cover the Table Intro and no card is dealt under them.
+    showFirstRun(()=>startNewHand());
+    return;
   }
   startNewHand();
+}
+
+let firstRunThen = null;
+function showFirstRun(then){
+  firstRunThen = then || null;
+  $('first-run').classList.remove('hidden');
+}
+function dismissFirstRun(){
+  $('first-run').classList.add('hidden');
+  settings.seenIntro = true; saveSettings();
+  const then = firstRunThen;
+  firstRunThen = null;
+  if (then) then();
 }
 
 let menuLaunchInFlight = false;
