@@ -107,7 +107,12 @@
       }
       const house = make('<div class="do-bethouse"><span class="do-bet-print">THIS HAND</span><div class="do-betdrum mini-jackpot"><span class="jp-cell jp-sym">$</span></div><div class="do-tape"><div class="do-tape-paper"></div></div></div>');
       if (order.bet === 'tape') house.querySelector('.do-bet-print').remove();
-      row.appendChild(house);
+      // The small drum sits in the right bay under the blinds, so the bank
+      // and the right bay mirror each other and the stack drum gets the
+      // whole bankroll row.
+      const right = $id('hud-right'), blinds = right && right.querySelector('.blind-lamps');
+      if (order.bet === 'drum' && blinds){ blinds.after(house); house.classList.add('do-in-bay'); }
+      else row.appendChild(house);
     }
 
     // Key seats (layout-neutral unless a bay option styles them).

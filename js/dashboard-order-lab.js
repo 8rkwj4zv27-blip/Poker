@@ -22,7 +22,7 @@
   const status = t => { $('#ol-status').textContent = t; };
   const gameHost = document.querySelector('[data-game]');
   const GAME = (gameHost && gameHost.dataset.game) || 'index.html';
-  const V = '2';
+  const V = '3';
 
   /* The form. First option of every row is V1 (value '0'). Round 2: the
      owner's picks from round 1 are fixed (FIXED below) and no longer rows. */
@@ -92,8 +92,9 @@
   // Signed off in round 1: the bankroll row (no STACK label, one screen), V1 height, pucks.
   const FIXED = { layout:'rows', blinds:'pucks' };
   const V1 = Object.fromEntries(JOBS.map(j => [j.key, '0']).concat(Object.keys(FIXED).map(k => [k, '0'])));
-  const SUGGESTED = { build:'chunky', recess:'sunk', rim:'channel', light:'0', tray:'slot', bet:'drum', bay:'flush',
-    raise:'drumf', sizing:'fader', knock:'on', peek:'0', allin:'hold' };
+  // The owner's round-2 order: the Dashboard V2 build spec.
+  const SUGGESTED = { build:'smooth', recess:'sunk', rim:'channel', light:'bold', tray:'0', bet:'drum', bay:'cradle',
+    raise:'barrel', sizing:'fader', knock:'on', peek:'hold', allin:'hold' };
   let order = Object.assign({}, SUGGESTED);
   const view = { theme:'emerald', sound:'on', motion:'on', size:'430' };
   // Phone sizes the rules ask for: [width, height, top safe area, bottom safe area, name].

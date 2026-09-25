@@ -202,7 +202,9 @@ hold-to-charge all in). Options are `data-do-*` attributes on the game's
 `<html>`; the rim light reads `data-do-lit` (turn / allin / win / bust),
 set from game state. Behaviours hook the real `humanAct()`,
 `setWagerAmount()`, `updateFixedReel()` and `rollStageTransition()`. The
-View panel switches phone size (430 / 390 / 320). Every part is built to
+View panel switches phone size (430 / 390 / 320). The default order ("YOUR
+ORDER") is the owner's signed-off build spec, recorded in
+`docs/ui/PATTERN_BOOK.md` (Dashboard V2). Every part is built to
 `docs/ui/DASHBOARD_V2_RULES.md`. Not loaded by the game.
 
 ## `dashboard-v2-lab.html` + `js/dashboard-v2-lab.js` + `css/dashboard-v2-lab.css` — Dashboard 2.0 (Lab)

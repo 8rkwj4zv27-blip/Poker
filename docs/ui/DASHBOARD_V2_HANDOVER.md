@@ -40,8 +40,25 @@ Read `AGENTS.md` / `CLAUDE.md`, `docs/CODEMAP.md` and
   drum back, barrel, slide; mechanical, stepped, with sound, never a
   fade), SIZING (chunky fader, thumbwheel, combination digits; every
   change rolls the drum), and the three behaviours.
-- Waiting on: the owner's round-2 order. Their feedback arrives per form
-  row; fix, then republish (artifact: "Dashboard Order Form").
+- **Round 2 order (signed off, the build spec):** BUILD smooth, RECESS
+  hard sunk, RIM LIGHT channel, LIGHT bold, CARD TRAY V1, BET THIS HAND
+  small drum, BUTTON BAY cradle, MECHANISM barrel, SIZING fader, KNOCK on,
+  CARD PEEK hold (a setting, off by default in the game), ALL IN hold to
+  charge. It is the lab's default ("YOUR ORDER"), recorded part by part in
+  `docs/ui/PATTERN_BOOK.md` (Dashboard V2) and guarded by
+  `validation/pattern-book-checks.js`.
+- **Round 3 (lock-in pass on that order):** one grid (bank, screen and
+  right bay share top and bottom lines); the screen is a fixed size whatever
+  it says; the tray and screen never touch; the bet drum moved under the
+  blinds so the layout is symmetrical and the stack drum runs the full width
+  with big reels; the smooth frame and its light are one piece (no joins in
+  the corners, underglow clean round them); knock jolts the whole machine
+  so the rim never sits over the cards.
+- **Next, each in a fresh chat:** (1) production build of the order, one
+  part per release (frame + rim, then bays + screen, then the raise);
+  (2) the raise mechanism animation; (3) card tray options; (4) the theatre
+  pass (ALL IN moment, bust with cards and keys blasted out like the enemy
+  KO, the win); (5) the chip bank and chips.
 - Earlier labs below are history only.
 
 ## The goal

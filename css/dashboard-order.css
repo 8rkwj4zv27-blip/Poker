@@ -553,7 +553,7 @@ html[data-do-raise="slide"] #hud-frame.do-rolled > *{ transform:none !important;
 /* Barrel edge: the drum's next face, seen edge-on above the sizing face. */
 .do-barrel{ display:none; }
 html[data-do-raise="barrel"] .do-barrel{
-  display:flex; position:absolute !important; left:0; right:0; top:-11px; height:11px; z-index:2 !important;
+  display:flex; position:absolute !important; left:7px; right:7px; top:7px; height:9px; z-index:2 !important;
   align-items:center; justify-content:space-around; pointer-events:none;
   font-family:var(--font-hdr); font-size:6px; letter-spacing:.3em; color:color-mix(in srgb,var(--ink-faint) 70%,transparent);
   background:linear-gradient(180deg,#050606,color-mix(in srgb,var(--machine-case) 55%,black));
@@ -664,7 +664,7 @@ html[data-do-sizing="combo"] .raise-amt .reel-digit{ cursor:ns-resize; touch-act
    ============================================================ */
 .do-knock-ring{ position:absolute; z-index:20; width:14px; height:14px; margin:-7px 0 0 -7px; border:3px solid var(--card-face); border-radius:50%; pointer-events:none; animation:doKnock .45s steps(5,end) forwards; }
 @keyframes doKnock{ to{ transform:scale(4.5); opacity:0; border-width:1px; } }
-#your-seat-dock.do-knocked #hud-frame{ animation:doJolt .16s steps(2,end); }
+#your-seat-dock.do-knocked{ animation:doJolt .16s steps(2,end); }
 @keyframes doJolt{ 50%{ transform:translateY(2px); } }
 #hud-frame.do-deny #banner{ animation:doDeny .32s steps(6,end); }
 @keyframes doDeny{ 20%{ transform:translateX(-4px); } 40%{ transform:translateX(4px); } 60%{ transform:translateX(-3px); } 80%{ transform:translateX(2px); } }
@@ -746,3 +746,90 @@ html[data-do-allin="hold"]:not([data-do-raise]):not([data-do-sizing]) .do-allin-
   html[data-do-bay] .actions-row button{ font-size:9px; padding-left:2px; padding-right:2px; }
 }
 [data-motion="off"][data-do-lit="bust"] #your-seat-dock::after,[data-motion="off"][data-do-lit="bust"] .actions-dock::after{ opacity:0; }
+
+/* ============================================================
+   ROUND 3 — THE LOCKED ORDER, ON ONE GRID
+   The owner's order (smooth, hard sunk, channel, bold, V1 tray, small
+   drum, cradle, barrel, fader) with these rules:
+   - the bank, the screen and the right bay share a top line and a bottom
+     line; the bankroll row runs the full width under them;
+   - the screen is hardware: a fixed size whatever it says (the hand line
+     and the turn lines are fixed boxes); it only changes when the mode
+     changes (the result face);
+   - the cards' tray and the screen never touch;
+   - symmetry: bank on the left, blinds + bet drum on the right, the stack
+     drum across the whole dashboard.
+   ============================================================ */
+html[data-do-layout="rows"] #hud-frame{ align-items:stretch; }
+html[data-do-layout="rows"] #hud-left,html[data-do-layout="rows"] #hud-right,html[data-do-layout="rows"] #hud-mid{ align-self:stretch; height:auto; margin:0; }
+html[data-do-layout="rows"] #hud-mid{ display:flex; flex-direction:column; gap:0; justify-content:flex-start; }
+/* The tray keeps a fixed slot at the top of the middle column; the screen
+   starts a clear gap under its lip. */
+html[data-do-layout="rows"] #hud-mid > .seat.you{ flex:0 0 var(--do-tray-h,38px); height:var(--do-tray-h,38px); padding-bottom:0; }
+html[data-do-layout="rows"] #hud-status{ flex:1 1 0; min-height:0; display:flex; flex-direction:column; margin:0 !important; }
+html[data-do-layout="rows"] #hud-status:not(.showing-result) #hud-status-normal{ flex:1 1 0; min-height:0; gap:0; }
+html[data-do-layout="rows"] .do-screen{ flex:1 1 0; width:100%; min-height:0; overflow:hidden; box-sizing:border-box; }
+html[data-do-layout="rows"] .do-screen-top{ flex:0 0 var(--do-hand-h,20px); height:var(--do-hand-h,20px); }
+html[data-do-layout="rows"] .do-screen #hand-strength{
+  height:100% !important; min-height:0 !important; box-sizing:border-box; overflow:hidden;
+  display:flex !important; align-items:center; justify-content:center; white-space:nowrap; text-overflow:ellipsis;
+  padding-top:0 !important; padding-bottom:0 !important;
+}
+html[data-do-layout="rows"] .do-screen #banner{ flex:1 1 0 !important; min-height:0 !important; height:auto !important; overflow:hidden; box-sizing:border-box; }
+
+/* Bankroll row: the stack drum across the whole dashboard, big reels. */
+html[data-do-bet="drum"] .do-row-stack #jackpot,html[data-do-bet="crt"] .do-row-stack #jackpot{ gap:4px; padding:4px 6px; }
+html[data-do-bet="drum"] .do-row-stack #jackpot .jp-cell,html[data-do-bet="crt"] .do-row-stack #jackpot .jp-cell{
+  flex:1 1 0; width:auto; min-width:0; height:32px; font-size:20px;
+}
+html[data-do-bet="drum"] .do-row-stack #jackpot .jp-sym,html[data-do-bet="crt"] .do-row-stack #jackpot .jp-sym{ flex:0 0 22px; }
+html[data-do-bet="drum"] .do-row-stack #jackpot .reel-strip,html[data-do-bet="crt"] .do-row-stack #jackpot .reel-strip{ line-height:32px; }
+
+/* The small drum in the right bay, under the blinds; the grille goes. */
+html[data-do-bet="drum"] #hud-right .hud-speaker{ display:none !important; }
+html[data-do-bet="drum"] #hud-right{ justify-content:flex-start; }
+html[data-do-bet="drum"] #hud-right .blind-lamps{ width:100%; }
+.do-bethouse.do-in-bay{
+  flex:1 1 auto; width:100%; flex-direction:column; justify-content:center; gap:4px; padding:0 !important;
+  border:0 !important; background:none !important; box-shadow:none !important;
+}
+.do-bethouse.do-in-bay .do-bet-print{ font-size:6px; }
+
+/* SMOOTH, as one moulded piece: a single rounded shell behind the whole
+   console, so the bevels follow the corners with no joins. */
+html[data-do-build="smooth"] .actions-dock::before{ display:none; }
+html[data-do-build="smooth"] #your-seat-dock::before{
+  bottom:calc((var(--action-area-h) + var(--do-band) - 8px) * -1);
+  border:2px solid var(--do-ink); border-radius:var(--do-rad);
+  background:var(--theme-case-raised);
+  box-shadow:
+    inset 1px 1px 0 var(--theme-case-hi),inset 3px 3px 0 var(--do-mid-hi),
+    inset -2px -2px 0 var(--do-lo),inset -4px -4px 0 var(--do-mid-lo),
+    0 5px 0 rgba(0,0,0,.5);
+}
+/* The channel follows the same curve, and the underglow runs clean round
+   the corners. */
+html[data-do-build="smooth"][data-do-rim] #your-seat-dock::after{ border-radius:calc(var(--do-rad) - 4px) calc(var(--do-rad) - 4px) 0 0; }
+html[data-do-build="smooth"][data-do-rim] .actions-dock::after{ border-radius:0 0 calc(var(--do-rad) - 4px) calc(var(--do-rad) - 4px); }
+html[data-do-build="smooth"][data-do-rim="channel"] .actions-dock::after,
+html[data-do-build="smooth"][data-do-rim="under"] .actions-dock::after{ display:none; }
+html[data-do-build="smooth"][data-do-rim="channel"] #your-seat-dock::after{
+  bottom:calc((var(--action-area-h) + var(--do-band) - 8px) * -1 + var(--do-band) / 2 - 2px);
+  border-bottom:4px solid color-mix(in srgb,var(--do-lamp) 55%,#030404);
+  border-radius:calc(var(--do-rad) - 4px);
+}
+html[data-do-build="smooth"][data-do-rim="channel"][data-do-lit] #your-seat-dock::after{ border-color:var(--do-lamp); }
+html[data-do-build="smooth"][data-do-rim="under"] #your-seat-dock::after{
+  clip-path:none; bottom:calc((var(--action-area-h) + var(--do-band) - 8px) * -1 + 3px); border-radius:var(--do-rad);
+}
+html[data-do-build="smooth"][data-do-rim="under"][data-do-lit] #your-seat-dock::after{
+  box-shadow:0 3px calc(var(--do-glow) * 1.6 + 8px) calc(var(--do-glow) / 2 + 3px) color-mix(in srgb,var(--do-lamp) var(--do-glow-a),transparent);
+}
+/* Narrow phones: the hand line keeps its fixed box but may take two short
+   lines, so long hand names never clip. */
+@media (max-width:389px){
+  html[data-do-layout="rows"]{ --do-hand-h:22px; }
+  html[data-do-layout="rows"] .do-screen #hand-strength{ white-space:normal; text-align:center; line-height:1.25; font-size:5.5px !important; }
+  html[data-do-peek="hold"] #app #hud-frame.do-unpeeked #hand-strength::before{ font-size:5.5px; line-height:1.3; padding:0 4px; text-align:center; }
+}
+html[data-do-raise="barrel"] .raise-panel{ padding-top:20px; }

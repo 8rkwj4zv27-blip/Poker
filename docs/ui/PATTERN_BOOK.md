@@ -72,6 +72,7 @@ Motion and sound are signed off from live demos, never stills.
 | FOLD / CHECK / CALL / RAISE | Kept as their own locked family | Settled |
 | Press feel | One heavy thunk on every button, scaled by size (big / standard / small), FOLD/CHECK/CALL/RAISE included | **Live** v0.39.7 |
 | Number wheels, sound | Round 2, from live demos | To do |
+| Dashboard V2 | The owner's order from the order form (25 September 2026); see **Dashboard V2** below | Approved, built in the lab; production next |
 
 Approved-but-not-migrated families have reference captures in
 `docs/ui/pattern-book/`. Each moves into a shared class, one family per
@@ -128,3 +129,32 @@ Buy In keys, scaled by the key's mass. Owner: `js/press-feel.js` +
 - Finishes options: Thunk (default), Heavy, Light, Original (each button's
   pre-book press, for comparison).
 - Reduced Motion: the face still sinks while held, but doesn't bounce.
+
+## Dashboard V2 (approved, lab-built)
+
+The player's dashboard, ordered by the owner on the Dashboard V2 order form
+(`dashboard-order-lab.html`, rules in `docs/ui/DASHBOARD_V2_RULES.md`). The
+parts are built in `css/dashboard-order.css` and `js/dashboard-order.js`
+behind `data-do-*` attributes; they are **not in the game yet**. When one
+moves into production it becomes a shared class, gets a section in
+`pattern-book.html`, and its check below moves from the lab file to the
+live one. Universal parts inside the dashboard (CRT glass, FOLD / CHECK /
+CALL / RAISE, the reel counters, cream small keys, press feel) keep their
+own entries above and are used as they are.
+
+| Part | Order | The finish |
+|---|---|---|
+| Frame | **SMOOTH** | The dashboard is its own instrument, lifted off the table by a dark gap: one moulded shell behind the whole console (top, sides and bottom as one rounded piece, so the bevels follow the corners with no joins), 2px ink edge, two-step soft bevel, hard shadow under it. The case inside is one checker surface; a dark groove seams the instruments from the key bay. |
+| Recess | **HARD SUNK** | Every bay: near-black, 2px ink edge, a hard 5px shadow along the top, a lit lip below. |
+| Rim light | **CHANNEL**, **BOLD** | A groove running round the frame, dark at rest. It is the machine's one state light: your turn amber (steady), all in red (slow pulse), a win warm (brief), bust flickers out and stays dark. Every change switches on in steps with a relay click. It never sits over the cards. |
+| Layout | fixed | The bank (left) and the blinds + bet (right) mirror each other; the screen sits between them under the cards. The three share a top line and a bottom line. The stack drum runs the full width of the dashboard under them, with no label. |
+| Screen | fixed | One CRT, a fixed size whatever it says: a fixed hand line on top (two short lines on narrow phones), the turn lines below. It only changes size when the mode changes (the result face). |
+| Card tray | **V1** | Today's lip. The cards stand up out of the machine; the tray and the screen never touch. New tray options are a later pass. |
+| Blinds | **PUCKS** | Round tokens, cream and lifted when the blind is yours. |
+| Bet this hand | **SMALL DRUM** | A small reel counter (the stack's own part, gold frame) under the blinds in the right bay, with a printed THIS HAND caption. |
+| Button bay | **CRADLE** | One shallow recessed cradle; the key tops sit level inside its rim and nothing overlaps it. |
+| Raise | **BARREL**, **FADER** | RAISE rolls the instrument panel over, in steps with an overshoot and a lock, to the sizing face; the drum's next face shows edge-on inside its top. The face: printed title, cream cancel key, the raise drum in a gold frame, a chunky cream fader cap in a deep slot that clicks at each notch, cream quick keys, the hold-to-charge ALL IN key. Every change rolls the drum. (The animation gets its own pass.) |
+| Behaviours | **ON** | Knock to check (double-tap the case; refused with a buzz facing a bet; the whole machine jolts, never the case alone), card peek (a setting, off by default in the game), hold to charge ALL IN. |
+
+Parked for later passes: the raise animation, card tray options, the
+theatre pass (ALL IN moment, bust, win), and the chip bank and chips.

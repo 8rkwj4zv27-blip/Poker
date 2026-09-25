@@ -116,4 +116,5 @@ The order form is built: `dashboard-order-lab.html` (see `docs/CODEMAP.md`).
    changes, and buttons put the real game into your turn, facing a bet,
    all-in, win and bust.
 4. The owner's order becomes the build spec; new parts go into the Pattern
-   Book; then production, one part per release.
+   Book; then production, one part per release. **Done to here** (25
+   September 2026): the order is in `docs/ui/PATTERN_BOOK.md` (Dashboard V2).

@@ -117,4 +117,25 @@ check('Production isolation audit: the Pattern Book page is never shipped or lin
   assert.ok(book.includes('css/machine-crt.css') && book.includes('js/machine-crt.js'),'the book must run on the real CRT files');
 });
 
+check('Dashboard V2: the approved order is the lab default, and its parts keep to the rules',()=>{
+  const lab=read('js/dashboard-order-lab.js'), css=read('css/dashboard-order.css'), js=read('js/dashboard-order.js');
+  const order={ build:'smooth', recess:'sunk', rim:'channel', light:'bold', tray:'0', bet:'drum', bay:'cradle', raise:'barrel', sizing:'fader', knock:'on', peek:'hold', allin:'hold' };
+  const def=lab.match(/const SUGGESTED = \{([\s\S]*?)\};/);
+  assert.ok(def,'the order form must define its default order');
+  Object.entries(order).forEach(([k,v])=>assert.ok(new RegExp('\\b'+k+":'"+v+"'").test(def[1]),'the default order must set '+k+' to '+v));
+  // The rim light has exactly the four states, and only lamp colours or red.
+  ['turn','allin','win','bust'].forEach(st=>assert.ok(css.includes('html[data-do-lit="'+st+'"]'),'rim light state '+st+' missing'));
+  // The smooth frame is one piece, so its bevels follow the corners.
+  assert.ok(/html\[data-do-build="smooth"\] \.actions-dock::before\{ display:none; \}/.test(css),'the smooth frame must be one piece');
+  // Knock jolts the whole machine; a transform on the case alone lifts it under the rim light.
+  assert.ok(!css.includes('.do-knocked #hud-frame'),'knock must not transform the case on its own');
+  // The screen is a fixed size: its parts take fixed boxes, not their content's height.
+  assert.ok(css.includes('.do-screen-top{ flex:0 0 var(--do-hand-h'),'the hand line must be a fixed box');
+  // No CRT glass recipe outside machine-crt.css.
+  assert.ok(!css.includes('machine-crt'),'dashboard-order.css must not style CRT glass');
+  // Lab only: never shipped with the game.
+  ['dashboard-order'].forEach(n=>{ assert.ok(!indexHtml.includes(n),'index.html links '+n); assert.ok(!serviceWorker.includes(n),'sw.js precaches '+n); });
+  assert.ok(js.includes("humanAct('check')") && js.includes('setWagerAmount('),'behaviours must act through the real game functions');
+});
+
 process.stdout.write('\n'+passed+' Pattern Book checks passed.\n');
