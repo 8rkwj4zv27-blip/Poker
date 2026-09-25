@@ -63,12 +63,12 @@
   }
 
   function formatNote(entry){
-    if (entry.cash) return 'Play hand by hand. Cash out your remaining stack between hands.';
-    if (entry.id === SECOND_CHANCE_EVENT_ID) return 'One life. First place collects the prize; this event does not unlock a venue.';
-    if (entry.event.playerCount === 2) return 'One opponent. One life. Winner takes the prize.';
+    if (entry.cash) return 'Play hand by hand. Cash out between hands.';
+    if (entry.id === SECOND_CHANCE_EVENT_ID) return 'One life. First place wins; no venue unlock.';
+    if (entry.event.playerCount === 2) return 'One opponent, one life. Winner takes all.';
     const paid = careerPayouts(entry.event).length;
-    return paid === 1 ? 'One life. Last player standing collects the prize.'
-      : 'One life. The top ' + paid + ' places pay; first place opens the next room.';
+    return paid === 1 ? 'One life. Last player standing wins.'
+      : 'One life. Top ' + paid + ' paid; first opens the next room.';
   }
 
   function card(entry, index){
@@ -79,8 +79,8 @@
     const headline = entry.cash ? '$1 / $2 CASH' : amount(payouts[0]) + (payouts.length > 1 ? ' TOP PRIZE' : ' PRIZE');
     const detailFormat = entry.cash ? 'NO-RAKE CASH TABLE' : String(event.format).toUpperCase();
     const facts = entry.cash
-      ? [['STARTING STACK',amount(CAREER_CASH_CONFIG.stack)],['BLINDS','$1 / $2 FIXED'],['TABLE',players + ' PLAYERS'],['CASH-OUT','BETWEEN HANDS']]
-      : [['STARTING STACK',amount(event.stack)],['BLINDS RISE',event.handsPerBlindLevel + ' HANDS'],['TABLE',players + ' PLAYERS'],['THREAT',careerThreatOf(event).split('·').pop().trim()]];
+      ? [['STACK',amount(CAREER_CASH_CONFIG.stack)],['BLINDS','$1 / $2 FIXED'],['TABLE',players + ' PLAYERS'],['CASH-OUT','BETWEEN HANDS']]
+      : [['STACK',amount(event.stack)],['BLINDS RISE',event.handsPerBlindLevel + ' HANDS'],['TABLE',players + ' PLAYERS'],['THREAT',careerThreatOf(event).split('·').pop().trim()]];
     const factHTML = facts.map(([label,value]) => '<span class="ch2-brief-row' + (value.length > 11 ? ' is-long' : '') + '"><small>' + esc(label) + '</small><strong>' + esc(value) + '</strong></span>').join('');
     const payoutHTML = entry.cash ? '<strong>CASH OUT BETWEEN HANDS</strong>'
       : payouts.length > 1 ? '<div class="ch2-payout-places">' + payouts.map((value,i) =>
@@ -106,7 +106,7 @@
         '<section class="ch2-card-face ch2-card-back ch2-paper" aria-hidden="true">' +
           '<header class="ch2-card-venue">' + esc(shortVenue(entry.venue)) + '</header>' +
           '<div class="ch2-back-title"><h2>' + esc(entry.title) + '</h2></div>' +
-          '<div class="ch2-format-brief"><small>FORMAT</small><strong>' + esc(detailFormat) + '</strong><p>' + esc(formatNote(entry)) + '</p></div>' +
+          '<div class="ch2-format-brief"><small>FORMAT</small><strong>' + esc(detailFormat).replace(/(\S+-\S+)/g,'<span class="nobr">$1</span>') + '</strong><p>' + esc(formatNote(entry)) + '</p></div>' +
           '<div class="ch2-brief-list">' + factHTML + '</div>' +
           '<div class="ch2-back-hero"><small>' + (entry.cash ? 'TABLE RULE' : payouts.length > 1 ? 'PAYOUTS' : 'PRIZE') + '</small>' + payoutHTML + '</div>' +
           '<div class="ch2-back-entry"><span><small>BUY-IN</small><strong>' + esc(buyIn ? amount(buyIn) : 'FREE') + '</strong></span><b>' + esc(requirement) + '</b></div>' +

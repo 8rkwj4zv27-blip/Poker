@@ -55,8 +55,6 @@
   font-family:var(--font-hdr); font-size:14px; font-weight:400; letter-spacing:.08em;
   text-transform:uppercase; color:var(--accent); margin:0;
 }
-.sheet-dev-toggle{ padding-top:10px; border-top:2px solid rgba(255,255,255,.06); opacity:.6; }
-.sheet-dev-toggle .tl{ font-size:12px; font-weight:400; }
 
 /* ---- Menu-over-gameplay layering (see js/06-presentation.js's DealFX/
    flyChip/ejectPortrait and js/04-modes-and-scoring.js's flyArcadeScore) —
@@ -87,6 +85,9 @@ body:has(#confirm-dialog:not(.hidden)) .chip-physics-layer,
 body:has(#confirm-dialog:not(.hidden)) .ko-physics-layer,
 body:has(#confirm-dialog:not(.hidden)) .score-smash-layer,
 body:has(#confirm-dialog:not(.hidden)) .arcade-bank-flight,
+body:has(#first-run:not(.hidden)) .fly-card,
+body:has(#first-run:not(.hidden)) .fly-chip,
+body:has(#first-run:not(.hidden)) > .chip-disc,
 body:has(#table-screen.hidden) .fly-card,
 body:has(#table-screen.hidden) .fly-chip,
 body:has(#table-screen.hidden) > .chip-disc,
@@ -668,6 +669,21 @@ body:has(#table-screen.hidden) .arcade-bank-flight{
   #home .hero{ min-height:292px; flex-basis:292px; }
   .pc-cast-drawer{ flex-basis:94px; }
   #home .hero-faces .hf{ width:52px; height:52px; }
+}
+/* iPhone SE and smaller: the whole cabinet fits without scrolling. The
+   title well, face tray and stats give up height; the controls keep their
+   full size. */
+@media (orientation:portrait) and (max-height:700px){
+  #home .lobby-card.pc-housing{ gap:5px; }
+  #home .hero{ min-height:0; flex-basis:auto; padding:6px 8px 8px; gap:6px; }
+  #home .pc-title-well{ flex:0 0 auto; padding:10px 10px 9px; }
+  #home .hero .brand{ font-size:26px; }
+  #home .hero .brand-rule{ margin-top:9px; }
+  .pc-cast-drawer{ flex-basis:auto; padding:7px 12px; }
+  #home .hero-faces .hf{ width:46px; height:46px; }
+  .pc-readout-row{ flex-basis:64px; padding:5px; }
+  .pc-control-bay{ padding:9px 10px 12px; }
+  .pc-control-head{ margin-bottom:7px; }
 }
 
 /* hand rankings page */

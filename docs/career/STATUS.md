@@ -7,8 +7,8 @@ something specific was built or decided, never by default.
 
 ## Current build
 
-- Build marker: `v0.39.5-dev · Press Feel` (main-menu footer / DEV panel).
-- Service-worker cache: `poker-v39-5`.
+- Build marker: `v0.40.1-dev · Fix Pass` (main-menu footer / DEV panel).
+- Service-worker cache: `poker-v40-1`.
 - Career save schema: **version 6**.
 - Production Career Hub: ticket-reader presentation (six-venue rack,
   spring-driven touch physics, printed-ticket detail flip), integrated
@@ -59,6 +59,18 @@ presentation-only passes over the Career Hub and its transitions:
    top-bar clean-up, counter-drum stats, pokeable House Faces, live
    readout ticker, then the sub-screens.
 
+6. **Visual audit + fix pass** (2026-09-25, v0.40.1). A whole-game visual
+   audit (`docs/ui/VISUAL_AUDIT.md`, findings F1-F21) and a fix pass of
+   everything that wasn't a design decision: pixel-font ligatures ("fi"
+   drew as "A"), hand-log grammar, the all-in banner, pot/side-pot names
+   (labels and log only), first-run card timing, pot plate vs deck,
+   showdown lane on the board row, reward text over a dark band, result
+   stages / Home / Custom Game / ticket DETAILS fitting standard and SE
+   phones, Hub bankroll-rail spacing, a tidied Settings sheet, and the
+   back paths (Career->Home, Back to Events, Leave table) turning the
+   Machine Wheel the other way. The player dashboard was deliberately left
+   alone. What's left is the **V2 design pass** list in the audit.
+
 Full detail for the first two is in `HISTORY.md` under the 2026-09-24 entries. No
 Career transaction, save field, catalogue, roster, poker or AI code changed
 in any of these passes; the DETAILS card flip is untouched.
@@ -82,9 +94,11 @@ either.
 
 ## Immediate next task
 
-**Owner on-device (iPhone/PWA) feel review** of the Hub polish above: swipe
-weight, flick reach, the lift-over swap, and the buy-in roll length (~3s,
-skippable once paid). Tune from that feedback. No new Career system or
+**Owner on-device (iPhone/PWA) review** of the fix pass (item 6) and the
+Hub polish above: swipe weight, flick reach, the lift-over swap, the
+buy-in roll length, and the new back rolls. Tune from that feedback, then
+start the V2 design pass in `docs/ui/VISUAL_AUDIT.md` ("V2 design pass")
+one Lab at a time. No new Career system or
 venue work is scheduled until the owner asks for it — see the scope note.
 
 ## How to test

@@ -156,6 +156,8 @@ const Finishes = (() => {
     const resetBtn = document.getElementById('reset-finishes');
     if (openBtn) openBtn.addEventListener('click', open);
     if (backBtn) backBtn.addEventListener('click', close);
+    const headBack = document.getElementById('finishes-back');
+    if (headBack) headBack.addEventListener('click', close);
     if (resetBtn) resetBtn.addEventListener('click', () => { save({}); apply({}); render(); });
     const list = document.getElementById('finishes-list');
     if (list) list.addEventListener('click', event => {

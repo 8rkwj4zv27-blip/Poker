@@ -596,6 +596,20 @@
 .stage-recap-lamp{ min-height:28px; padding:5px 8px; display:flex; align-items:center; justify-content:center; gap:7px; }
 .stage-recap-lamp .pc-lamp{ width:11px; height:11px; }
 .stage-recap-lamp-text{ text-align:center; white-space:nowrap; }
+/* Phones up to 900px tall: the machine is ~425px, so the rows tighten a
+   little to keep Best Hand and the run-progress strip on screen instead
+   of below the machine's own scroll edge. */
+@media (orientation:portrait) and (max-height:900px) and (min-height:700px){
+  .stage-results-machine{ gap:4px; grid-template-rows:auto auto auto minmax(72px,1fr) auto; }
+  .stage-results-head{ min-height:48px; }
+  .stage-results-deck{ gap:5px; padding:6px; }
+  .stage-instrument{ padding:7px 8px 8px; }
+  .stage-recap-cell{ min-height:44px; padding:6px 5px; }
+  .stage-trophy{ min-height:72px; padding:7px 12px; }
+}
+@media (orientation:portrait) and (max-height:699px){
+  .stage-recap-lamp.is-negative .stage-recap-lamp-text:is(*){ white-space:nowrap; }
+}
 
 .stage-trophy{ min-height:90px; display:grid; grid-template-columns:minmax(0,1.7fr) minmax(92px,.8fr); grid-template-rows:auto 1fr auto auto; align-items:center; column-gap:8px; padding:9px 12px; }
 .stage-trophy-label{ grid-column:1 / -1; align-self:center; }
@@ -1392,10 +1406,15 @@
    transfers land, the made-hand cards rise and a warm lamp crosses only
    those gold card faces. Green kickers remain deliberately outside that
    sweep. A compact felt stamp names the winning category below. */
+/* The lane sits on the board's own row (same top and lift as .board), so
+   the five form where the community cards are: it never covers a seat's
+   hole cards above, and the board cards it replaces are hidden under it
+   rather than peeking out below with the stamp on top of them. */
 .showdown-inspection-lane{
-  position:absolute; z-index:12; left:50%; top:43%; width:min(268px,calc(100% - 22px));
-  height:74px; transform:translate(-50%,-50%); pointer-events:none; opacity:0;
+  position:absolute; z-index:12; left:50%; top:57%; width:min(268px,calc(100% - 22px));
+  height:74px; transform:translate(-50%,calc(-50% - 18px)); pointer-events:none; opacity:0;
 }
+.felt:has(.showdown-inspection-lane.is-present) .board .showdown-source-unused{ opacity:0; }
 .showdown-inspection-lane::before{
   content:''; position:absolute; left:3px; right:3px; top:5px; bottom:5px;
   border-top:2px solid color-mix(in srgb,var(--pc-lamp-amber) 68%,transparent);
@@ -1460,14 +1479,12 @@
 .showdown-inspection-lane.is-clearing{ opacity:0; }
 
 @media (max-width:350px){
-  .showdown-inspection-lane{ width:266px; top:42%; }
+  .showdown-inspection-lane{ width:266px; }
   .showdown-rail-destinations{ grid-template-columns:repeat(5,42px); gap:4px; }
   .showdown-rail-card,.showdown-rail-face{ width:42px!important; height:60px!important; }
   
 }
-@media (orientation:portrait) and (max-height:720px){
-  .showdown-inspection-lane{ top:41%; }
-}
+
 [data-motion="off"] .showdown-card-shine{ display:none; }
 
 

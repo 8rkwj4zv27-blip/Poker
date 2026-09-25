@@ -127,6 +127,9 @@ replaces the three V1 globals, so **edit the V2 functions here, not the V1
 bodies** in `06-presentation.js`/`career-motion-live.js` (those remain only
 so `wheel-v2-lab.html` can switch back to compare). Tuning lives in
 `MACHINE_WHEEL_CONFIG`; sounds are `Sound.wheel*` in the `Sound` module.
+`machineWheelBack()` turns the same drum the other way (profile `back`)
+for the back paths — Career->Home, Back to Events and Leave table call it
+through `rollBackTo()` in `07-ui-wiring.js`.
 
 ## `js/table-intro.js` + `css/table-intro.css` — Table Intro (live)
 
@@ -277,6 +280,9 @@ reuse instead of writing a new Playwright script from scratch each time.
   which phase something belongs to.
 - `docs/career/HISTORY.md` — dated archive of every completed milestone.
   Reference only, never a default read.
+- `docs/ui/VISUAL_AUDIT.md` — 2026-09-25 visual/motion/glitch audit of the
+  whole game: findings F1–F21 with causes, a motion map of every screen
+  change, level-up ideas and a phased plan. Proposals, not approvals.
 - `docs/scoring/SCORING_SPEC.md` — authoritative scoring/award rules for
   both Career and Single Player.
 - `docs/ui/handover/` — earlier UI handover notes; a `python3 -m http.server`

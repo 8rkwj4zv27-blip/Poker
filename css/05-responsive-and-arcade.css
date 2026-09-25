@@ -114,6 +114,10 @@
   position:fixed; z-index:72; left:50%; top:46%; width:min(94vw,620px); transform:translate(-50%,-50%);
   display:flex; flex-direction:column; align-items:center; justify-content:center; gap:7px;
   text-align:center; pointer-events:none; isolation:isolate;
+  /* A dark band under the words: the reward is read over the board's own
+     cards (see placeArcadeLayer), so they dim instead of fighting it. */
+  padding-block:12px; min-height:92px;
+  background:linear-gradient(90deg,transparent,rgba(6,3,5,.8) 12%,rgba(6,3,5,.8) 88%,transparent);
 }
 .arcade-reward-layer::before{
   content:''; position:absolute; z-index:-1; width:88%; height:150%; opacity:0;
@@ -746,6 +750,19 @@
   
   
   .stage-run-progress{ min-height:24px; padding:4px 5px; gap:4px; }
+  /* iPhone SE: RUN OVER's extra lamp strip used to push Best Hand and
+     the progress strip past the machine's edge; every row gives a little. */
+  .stage-results-machine{ gap:2px; }
+  .stage-results-head{ min-height:32px; }
+  .stage-results-deck{ padding:2px; gap:2px; }
+  .stage-instrument{ padding:2px 5px; }
+  .stage-recap-cell{ min-height:28px; padding:2px 3px; }
+  .stage-recap-lamp{ min-height:16px; padding:2px 3px; }
+  .stage-trophy{ padding:2px 7px; }
+  .stage-trophy-label{ grid-column:1; grid-row:1; }
+  .stage-trophy-name{ grid-row:1 / 5; align-self:center; }
+  .stage-trophy-desc{ display:none; }
+  .stage-run-progress{ min-height:20px; padding:2px 5px; }
 }
 
 @media (orientation:landscape) and (max-height:430px){

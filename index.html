@@ -149,7 +149,7 @@
       <div class="panel-card">
         <div class="card-label">Game type</div>
         <div class="field">
-          <div class="segmented" id="type-seg" role="group" aria-label="Game type">
+          <div class="segmented compact" id="type-seg" role="group" aria-label="Game type">
             <button data-type="cash" class="active">Cash</button>
             <button data-type="tournament">Tournament</button>
             <button data-type="elimination">Elimination</button>
@@ -171,7 +171,7 @@
              a size the run cannot build. Stored separately from the
              cash/tournament size, so neither overwrites the other. -->
         <div class="field hidden" id="run-size-field">
-          <div class="segmented" id="run-size-seg" role="group" aria-label="Run table size">
+          <div class="segmented compact" id="run-size-seg" role="group" aria-label="Run table size">
             <button data-run-opponents="4">4</button>
             <button data-run-opponents="5">5</button>
             <button data-run-opponents="6">6</button>
@@ -180,7 +180,7 @@
         </div>
         <div class="field" style="margin-top:18px;">
           <div class="field-label">Difficulty</div>
-          <div class="segmented" id="diff-seg" role="group" aria-label="Difficulty">
+          <div class="segmented compact" id="diff-seg" role="group" aria-label="Difficulty">
             <button data-diff="easy">Easy</button>
             <button data-diff="medium" class="active">Medium</button>
             <button data-diff="hard">Hard</button>
@@ -483,13 +483,17 @@
   <div class="sheet" id="settings-sheet" role="dialog" aria-label="Settings">
     <div class="sheet-grip"></div>
     <div class="sheet-body">
-      <div class="sheet-section sheet-title-wrap">
-        <h2 class="sheet-title">Settings</h2>
+      <!-- Screen header A (Pattern Book): the same dark plate and cream
+           title as Custom Game, with the back key to close. -->
+      <div class="setup-head">
+        <button class="icon-btn" id="settings-back" type="button" aria-label="Close settings">&larr;</button>
+        <h2 class="setup-title">Settings</h2>
+        <div class="setup-head-spacer" aria-hidden="true"></div>
       </div>
 
       <div class="sheet-section">
         <h3>Game</h3>
-        <div class="field" style="margin-bottom:16px;">
+        <div class="field">
           <div class="field-label">Game speed</div>
           <div class="segmented compact" id="speed-seg" role="group" aria-label="Game speed">
             <button data-speed="normal" class="active">Normal</button>
@@ -512,16 +516,16 @@
       </div>
 
       <div class="sheet-section">
-        <h3>Audio</h3>
+        <h3>Sound &amp; display</h3>
         <div class="toggle-row">
           <div><div class="tl">Sound</div><div class="ts">Turns game sound effects on or off.</div></div>
           <button class="switch" id="sw-sound" role="switch" aria-checked="false" aria-label="Sound"></button>
         </div>
-      </div>
-
-      <div class="sheet-section">
-        <h3>Visual</h3>
-        <div class="field" style="margin-bottom:16px;">
+        <div class="toggle-row">
+          <div><div class="tl">Reduced Motion</div><div class="ts">Reduces screen shake and large arcade motion effects.</div></div>
+          <button class="switch" id="sw-motion" role="switch" aria-checked="false" aria-label="Reduced Motion"></button>
+        </div>
+        <div class="field">
           <div class="field-label">Colour theme</div>
           <div class="segmented compact" id="theme-seg" role="group" aria-label="Theme">
             <button data-theme="emerald" class="active">Emerald</button>
@@ -531,50 +535,47 @@
           </div>
           <div class="hint">Changes the colour scheme of the poker machine.</div>
         </div>
-        <div class="toggle-row">
-          <div><div class="tl">Reduced Motion</div><div class="ts">Reduces screen shake and large arcade motion effects.</div></div>
-          <button class="switch" id="sw-motion" role="switch" aria-checked="false" aria-label="Reduced Motion"></button>
+      </div>
+
+      <div class="sheet-section">
+        <h3>Machine</h3>
+        <div class="sheet-keys">
+          <div id="finishes-entry"><button class="btn-secondary" id="open-finishes" type="button">Finishes</button></div>
+          <button class="btn-secondary" id="open-scoring-guide" type="button">Scoring Guide</button>
+        </div>
+        <div class="hint">Finishes tries other looks for the screens and buttons, on this device only. The Scoring Guide explains every award.</div>
+      </div>
+
+      <!-- Shown only where it applies (see refreshSettingsContext): Leave
+           table on a table; Reset current run on a table or wherever a
+           saved standalone table exists. -->
+      <div class="sheet-section" id="settings-table-section">
+        <h3>This table</h3>
+        <button class="btn-secondary" id="leave-table" type="button">Leave table</button>
+        <div class="settings-reset" id="settings-reset">
+          <button class="btn-secondary btn-danger" id="reset-run" type="button">Reset current run</button>
+          <div class="hint">Deletes your current run progress and starts fresh.</div>
         </div>
       </div>
 
-      <div class="sheet-section" id="finishes-entry">
-        <h3>Finishes</h3>
-        <button class="btn-secondary" id="open-finishes" type="button">Finishes</button>
-        <div class="hint">Try different looks for the machine's screens and buttons. Your choice stays on this device.</div>
-      </div>
-      <div class="sheet-section">
-        <h3>Help</h3>
-        <button class="btn-secondary" id="open-scoring-guide" type="button">Scoring Guide</button>
-      </div>
-
-      <div class="sheet-section">
-        <h3>System</h3>
-        <button class="btn-secondary btn-danger" id="reset-run" type="button">Reset Current Run</button>
-        <div class="hint" style="margin-bottom:14px;">Deletes your current run progress and starts fresh.</div>
-        <button class="btn-secondary" id="leave-table" type="button">Leave table</button>
-      </div>
-
-      <div class="sheet-section sheet-dev-toggle">
+      <div class="sheet-section sheet-service">
         <div class="toggle-row">
-          <div><div class="tl">Developer Mode</div></div>
+          <div><div class="tl">Developer Mode</div><div class="ts" id="settings-build">Build</div></div>
           <button class="switch" id="sw-devmode" role="switch" aria-checked="false" aria-label="Developer Mode"></button>
         </div>
+        <div class="hint hidden" id="settings-dev-section">The developer test panel is in the corner while Developer Mode is on.</div>
       </div>
 
-      <div class="sheet-section hidden" id="settings-dev-section">
-        <h3>Developer</h3>
-        <div class="hint">The developer test panel is available in the corner while Developer Mode is on.</div>
-        <div class="hint" id="dev-build-readout" style="margin-top:8px;"></div>
-      </div>
-
-      <div class="sheet-section">
+      <div class="sheet-section sheet-done">
         <button class="btn-secondary" id="close-settings">Done</button>
       </div>
     </div>
     <!-- Finishes page (js/finishes.js): swaps in for the settings list. -->
     <div class="sheet-body" id="finishes-body">
-      <div class="sheet-section sheet-title-wrap">
-        <h2 class="sheet-title">Finishes</h2>
+      <div class="setup-head">
+        <button class="icon-btn" id="finishes-back" type="button" aria-label="Back to settings">&larr;</button>
+        <h2 class="setup-title">Finishes</h2>
+        <div class="setup-head-spacer" aria-hidden="true"></div>
       </div>
       <div id="finishes-list"></div>
       <div class="sheet-section">
@@ -588,8 +589,10 @@
   <div class="sheet" id="scoring-guide-sheet" role="dialog" aria-label="Scoring Guide">
     <div class="sheet-grip"></div>
     <div class="sheet-body">
-      <div class="sheet-section sheet-title-wrap">
-        <h2 class="sheet-title">Scoring Guide</h2>
+      <div class="setup-head">
+        <button class="icon-btn" id="scoring-guide-back" type="button" aria-label="Back to settings">&larr;</button>
+        <h2 class="setup-title">Scoring Guide</h2>
+        <div class="setup-head-spacer" aria-hidden="true"></div>
       </div>
       <div class="sheet-section" id="scoring-guide-list"></div>
       <div class="sheet-section">
@@ -631,7 +634,6 @@
       <ul class="fr-list">
         <li>Tap <b>Raise</b> once to open the sizing slider, then <b>Confirm</b> to commit.</li>
         <li>The blinking gold frame around a seat shows whose turn it is.</li>
-        <li>Tap <b>Coach</b> at the top of the table for live odds and a suggested action.</li>
       </ul>
       <button class="btn-primary" id="fr-dismiss">Got it</button>
     </div>
