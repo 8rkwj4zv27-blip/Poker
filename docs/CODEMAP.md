@@ -13,7 +13,8 @@ by the code and by `CLAUDE.md`/`AGENTS.md`, not by this file.
 07-ui-wiring.js         career-hub-live.js      career-motion-live.js
 machine-wheel.js        ticket-feed.js          table-intro.js
 08-dev-mode.js          home-cast.js            home-boot.js
-crt.js                  finishes.js             press-feel.js
+dashboard.js            crt.js                  finishes.js
+press-feel.js
 ```
 
 Later files call into earlier ones freely; there's no module system, so
@@ -183,6 +184,45 @@ neighbour's flare. Sparse, silent idle life; tapping a face flares it.
 The Home Boot drops the faces in and calls `HeroCast.arrive(i)` on each
 landing. Decorative only — not the table mood system.
 
+## `css/dashboard.css` + `js/dashboard.js` — Dashboard V2 (live, release 1)
+
+The production home of the Dashboard V2 parts, moved in from the order
+form one part per release (`docs/ui/PATTERN_BOOK.md`, Dashboard V2). Live
+now: the smooth one-piece frame (`.dash-frame` on `#your-seat-dock`,
+`.dash-frame-base` on `#action-area`), hard-sunk bays (`.dash-bay`) and the
+channel rim light (`data-rim`, set by `DashRim` in `js/dashboard.js` from
+the table: turn / allin / win / bust; `celebrateWinnerSeat()` calls
+`DashRim.win()`). Presentation only. The stylesheet loads just before
+`css/crt.css`; later releases (layout, raise, behaviours) add to these two
+files.
+
+## `dashboard-order-lab.html` + `js/dashboard-order-lab.js` + candidate `css/dashboard-order.css` / `js/dashboard-order.js` — Dashboard V2 order form (Lab)
+
+The current Dashboard V2 surface. Runs the **real game** sandboxed (like
+`intro-lab.html`) with the two candidate files injected, so it already
+shows the live frame, bays and rim light (`css/dashboard.css`). Round 2:
+the owner's round-1 picks are fixed (bankroll row with no STACK label, one
+screen, V1 height, pucks); the form orders the parts still to ship (card
+tray, bet this hand, button bay), the raise (mechanism, sizing control)
+and behaviours (knock to check, card peek, hold-to-charge all in). Options
+are `data-do-*` attributes on the game's `<html>`. Behaviours hook the real
+`humanAct()`, `setWagerAmount()` and `updateFixedReel()`. The
+View panel switches phone size (430 / 390 / 320). The default order ("YOUR
+ORDER") is the owner's signed-off build spec, recorded in
+`docs/ui/PATTERN_BOOK.md` (Dashboard V2). Every part is built to
+`docs/ui/DASHBOARD_V2_RULES.md`. Not loaded by the game.
+
+## `dashboard-v2-lab.html` + `js/dashboard-v2-lab.js` + `css/dashboard-v2-lab.css` — Dashboard 2.0 (Lab)
+
+Standalone prototype of the player's dashboard: four directions (V1+,
+Console, Slot, Cockpit), three sizes, and every interaction and big moment
+(knock to check, card peek, lever/dial/throttle raises, covered all-in,
+chip dragging, all-in ceremony, payout, bust-and-rebuild). Reuses the real
+cards, chips, faces, fonts, hand evaluation and `Sound`; runs its own small
+hold'em driver, so it never touches the engine or a save. **Rejected by
+the owner as a visual direction**; see `docs/ui/DASHBOARD_V2_HANDOVER.md`
+for what carries forward.
+
 ## `js/finishes.js` + `css/finishes.css` — Finishes menu (live)
 
 Settings → Finishes: a page inside the Settings sheet that swaps each
@@ -239,7 +279,7 @@ there manually.
 
 Files matching `*-lab.html`, `*-lab.js`, `*-lab.css` (`career-lab`,
 `career-hub-v2-lab`, `ticket-lab`, `card-flight-options`, `card-turn-lab`,
-`chip-motion-lab`, `design-lab`, `result-stage-lab`, `showdown-rail-lab`, `crt-lab`,
+`chip-motion-lab`, `design-lab`, `result-stage-lab`, `showdown-rail-lab`, `crt-lab`, `dashboard-v2-lab`, `dashboard-order-lab`,
 `wheel-v2-lab`, `intro-lab`, `boot-lab`, `slot-lab`)
 are **isolated visual references and prototyping sandboxes**. Several are
 committed permanently as durable references even after their feature

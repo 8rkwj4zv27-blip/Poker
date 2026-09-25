@@ -13,6 +13,7 @@
   <!-- 01-foundation carries the embedded pixel fonts; its full-screen game
        sizing is undone below so the book scrolls. -->
   <link rel="stylesheet" href="css/01-foundation.css">
+  <link rel="stylesheet" href="css/dashboard.css">
   <link rel="stylesheet" href="css/crt.css">
   <style>
     :root{
@@ -60,6 +61,21 @@
     .settled{ display:grid; grid-template-columns:repeat(auto-fit,minmax(min(230px,100%),1fr)); gap:10px; }
     .settled div{ background:var(--plate); border:2px solid #000; padding:12px; font-size:14px; color:var(--ink-dim); }
     .settled b{ display:block; color:var(--cream); margin-bottom:4px; }
+    /* Dashboard V2 specimen: layout only. The frame, bays and rim come from
+       css/dashboard.css; the two machine tokens mirror the game's (body, in
+       css/03-action-console.css). */
+    .dash-spec{ --hud-dock-h:120px; --action-area-h:64px; max-width:430px; margin:0 auto;
+      --machine-case:color-mix(in srgb,var(--panel-2) 78%,var(--theme-case-raised) 22%);
+      --machine-recess:color-mix(in srgb,var(--panel) 52%,black); background:var(--felt-2); padding:40px 0 0; border:3px solid #000; }
+    .dash-spec .dash-frame{ position:relative; z-index:1; height:calc(var(--hud-dock-h) + 7px); box-sizing:border-box; padding:13px 12px 0; }
+    .dash-spec .dash-case{ height:100%; display:grid; grid-template-columns:90px 1fr 90px; gap:7px; padding:7px 8px 6px; box-sizing:border-box; border-radius:11px 11px 0 0;
+      background:repeating-conic-gradient(rgba(255,255,255,.035) 0 25%,transparent 0 50%) 0 0/6px 6px,var(--machine-case); }
+    .dash-spec .dash-cards{ position:relative; z-index:3; display:flex; justify-content:center; gap:7px; margin-top:-46px; }
+    .dash-spec .dash-cards i{ width:44px; height:62px; background:var(--card-face,#F4EFE1); border:2px solid #0B0D0A; border-radius:4px; }
+    .dash-spec .dash-keys{ position:relative; z-index:2; height:calc(var(--action-area-h) + 7px); box-sizing:border-box; padding:0 12px 15px; }
+    .dash-spec .dash-keys > div{ height:100%; border-radius:0 0 11px 11px; display:grid; grid-template-columns:repeat(3,1fr); gap:8px; padding:6px 8px 7px; box-sizing:border-box;
+      background:repeating-conic-gradient(rgba(255,255,255,.035) 0 25%,transparent 0 50%) 0 0/6px 6px,var(--machine-case); border-top:2px solid #0B0D0A; }
+    .dash-spec .dash-keys b{ background:#0B0D0A; border-radius:4px; opacity:.55; }
   </style>
 </head>
 <body>
@@ -102,6 +118,48 @@
         </tbody>
       </table></div>
       <p class="lead" style="margin-top:12px">In the game: Home readout and stats · Career record and ticket slot · table hand readout, turn banner, bet and raise readouts · results-stage score, instruments, stat bank, trophy and run progress. Nothing else may style them: <code>validation/pattern-book-checks.js</code> reads every stylesheet, and <code>validation/tools/crt-consistency.js</code> compares every part as drawn.</p>
+    </div>
+  </section>
+
+  <!-- ======================= DASHBOARD V2 ======================= -->
+  <section>
+    <h2>Dashboard V2: frame, bays, rim light</h2>
+    <p class="lead">The player's dashboard as its own instrument, from the owner's order (Dashboard V2 order form, 25 September 2026). Release 1 of 4: the frame lifting it off the table, hard-sunk bays and the channel rim light. The layout, the raise and the behaviours follow in later releases.</p>
+
+    <div class="plate">
+      <span class="status live">LIVE IN THE GAME · v0.40.2</span>
+      <h3>The finish, running</h3>
+      <div class="dash-spec" data-theme="emerald" id="dash-spec">
+        <div class="dash-frame" id="dash-demo">
+          <div class="dash-case">
+            <div class="dash-bay"></div>
+            <div><div class="dash-cards"><i></i><i></i></div></div>
+            <div class="dash-bay"></div>
+          </div>
+        </div>
+        <div class="dash-keys"><div><b></b><b></b><b></b></div></div>
+      </div>
+      <div class="controls" id="dash-controls">
+        <button type="button" data-rim="">Dark</button>
+        <button type="button" data-rim="turn">Your turn</button>
+        <button type="button" data-rim="allin">All in</button>
+        <button type="button" data-rim="win">Win</button>
+        <button type="button" data-rim="bust">Bust</button>
+        <button type="button" data-theme-next>Next theme</button>
+      </div>
+    </div>
+
+    <div class="plate">
+      <h3>Anatomy</h3>
+      <div class="scroll"><table class="rules">
+        <thead><tr><th>Part</th><th>Rule</th><th>Class</th></tr></thead>
+        <tbody>
+          <tr><td>Frame</td><td>Smooth: one moulded shell behind the whole console (dashboard and key bay), lifted off the table by a dark gap. 2px ink edge, two-step soft bevel, hard shadow. The case inside is one checker surface; a dark groove seams the instruments from the key bay. The frame's band and gap are fixed; narrow phones only move it closer to the screen edge.</td><td><code>.dash-frame</code> (#your-seat-dock), <code>.dash-frame-base</code> (#action-area)</td></tr>
+          <tr><td>Bay</td><td>Hard sunk: near-black, 2px ink edge, a hard 5px shadow along the top, a lit lip below.</td><td><code>.dash-bay</code></td></tr>
+          <tr><td>Rim light</td><td>Channel, bold: a groove round the frame, dark at rest. The machine's one state light: your turn amber (steady), all in red (slow pulse), a win warm (brief), bust flickers out and stays dark. Every switch-on steps in with a relay click. The cards always stand in front of it; the win shake moves the whole machine, never the case alone.</td><td><code>data-rim</code> on <code>.dash-frame</code>, set by <code>js/dashboard.js</code></td></tr>
+          <tr><td>Reduced Motion</td><td>No relay flicker, pulse or shake; the win is a steady warm light and bust is simply dark.</td><td></td></tr>
+        </tbody>
+      </table></div>
     </div>
   </section>
 
@@ -167,6 +225,17 @@
   </section>
 </div>
 <script>
+  // Book-only: the rim states the game sets from the table (js/dashboard.js).
+  const THEMES = ['emerald','midnight','burgundy','slate'];
+  document.getElementById('dash-controls').addEventListener('click', e => {
+    const b = e.target.closest('button'); if (!b) return;
+    const spec = document.getElementById('dash-spec'), demo = document.getElementById('dash-demo');
+    if (b.hasAttribute('data-theme-next')){ spec.dataset.theme = THEMES[(THEMES.indexOf(spec.dataset.theme) + 1) % THEMES.length]; return; }
+    const rim = b.dataset.rim;
+    demo.removeAttribute('data-rim'); void demo.offsetWidth;
+    if (rim) demo.setAttribute('data-rim', rim);
+    if (rim && rim !== 'bust'){ demo.classList.remove('dash-relay'); void demo.offsetWidth; demo.classList.add('dash-relay'); setTimeout(() => demo.classList.remove('dash-relay'), 340); }
+  });
   // Book-only: the change effect comes from js/crt.js, exactly as in the game.
   const LINES = [
     ['Dealer ready','Your turn · 20 to call','$1,250','Bust'],

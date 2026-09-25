@@ -15,6 +15,7 @@
 <link rel="stylesheet" href="css/04-overlays-and-modes.css">
 <link rel="stylesheet" href="css/05-responsive-and-arcade.css">
 <link rel="stylesheet" href="css/06-machine-system.css">
+<link rel="stylesheet" href="css/dashboard.css">
 <link rel="stylesheet" href="css/showdown-rail-lab.css?v=32-8">
 </head>
 <body data-theme="emerald" data-motion="on" data-cardback="classic" class="sdr-body">
@@ -121,9 +122,9 @@
           </div>
         </div>
       </div>
-      <div id="your-seat-dock">
+      <div id="your-seat-dock" class="dash-frame">
         <div id="hud-frame">
-          <div id="hud-left">
+          <div id="hud-left" class="dash-bay">
             <div id="hud-tower" aria-hidden="true"></div>
             <div class="bank-hatch" id="bank-hatch" aria-hidden="true">
               <div class="bank-hatch-leaf bank-hatch-leaf-l"></div>
@@ -143,7 +144,7 @@
               <div class="hud-result" id="hud-result"></div>
             </div>
           </div>
-          <div id="hud-right">
+          <div id="hud-right" class="dash-bay">
             <div class="hearts hidden" id="hud-hearts" aria-hidden="true"></div>
             <div class="blind-lamps" aria-label="Blind position">
               <div class="blind-indicator" id="hud-sb-indicator"><span>SB</span></div>
@@ -166,7 +167,7 @@
       </div>
     </div>
 
-    <div id="action-area">
+    <div id="action-area" class="dash-frame-base">
       <div id="coach" class="hidden" aria-live="polite">
         <div class="coach-head">
           <span class="coach-title">Coach</span>

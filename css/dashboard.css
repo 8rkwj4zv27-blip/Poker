@@ -1,0 +1,170 @@
+/* ============================================================
+   DASHBOARD V2 — production parts
+   The owner's signed-off order from dashboard-order-lab.html, moved into
+   the game one part per release (docs/ui/PATTERN_BOOK.md, Dashboard V2;
+   rules in docs/ui/DASHBOARD_V2_RULES.md).
+
+   Release 1: the frame, the bays and the rim light.
+     .dash-frame       #your-seat-dock: the smooth one-piece frame that
+                       lifts the dashboard off the table, drawn on its
+                       ::before; the channel rim light on its ::after.
+     .dash-frame-base  #action-area: the key bay's side of the same frame
+                       (the shell itself runs down behind it from above).
+     .dash-bay         a hard-sunk bay (today the bank and the right bay).
+     data-rim          on .dash-frame: turn | allin | win | bust, set by
+                       js/dashboard.js. Absent = dark.
+
+   Universal parts inside (CRT glass, FOLD / CHECK / RAISE, reels, press
+   feel) keep their own files; nothing here styles them. Loaded after
+   every other stylesheet except css/crt.css.
+   ============================================================ */
+
+#app .dash-frame{
+  --dash-ink:#0B0D0A;
+  --dash-gap:5px;            /* dark gap between the table and the frame */
+  --dash-band:8px;           /* the frame's width */
+  --dash-side:4px;
+  --dash-rad:18px;
+  /* Room under the frame: 7px, or the home-indicator area where it is
+     taller (the same clearance V1's key bay kept). */
+  --dash-foot:max(7px,calc(env(safe-area-inset-bottom) - 10px));
+  /* How far the shell runs down past the dock: the whole key bay. */
+  --dash-drop:calc(var(--action-area-h) + 7px - var(--dash-foot));
+  /* Theme-derived frame shades. */
+  --dash-lo:color-mix(in srgb,var(--theme-case-raised) 46%,black);
+  --dash-mid-hi:color-mix(in srgb,var(--theme-case-raised) 50%,var(--theme-case-hi));
+  --dash-mid-lo:color-mix(in srgb,var(--theme-case-raised) 72%,black);
+  /* The rim lamp: dark at rest. */
+  --dash-lamp:#2A2418; --dash-glow:12px; --dash-glow-a:0%;
+}
+#app .dash-frame[data-rim="turn"]{ --dash-lamp:var(--pc-lamp-amber); --dash-glow-a:90%; }
+#app .dash-frame[data-rim="allin"],
+#app .dash-frame[data-rim="bust"]{ --dash-lamp:var(--danger); --dash-glow-a:90%; }
+#app .dash-frame[data-rim="win"]{ --dash-lamp:var(--pc-lamp-amber-hi); --dash-glow-a:90%; }
+
+/* ---- Bays: hard sunk ----
+   Near-black, 2px ink edge, a hard 5px shadow along the top, a lit lip
+   below. */
+#app .dash-bay{
+  border:2px solid var(--dash-ink,#0B0D0A); border-radius:7px;
+  background-color:var(--machine-recess);
+  box-shadow:inset 0 5px 0 rgba(0,0,0,.62),inset 3px 0 0 rgba(0,0,0,.24),
+    0 2px 0 color-mix(in srgb,var(--theme-case-hi) 45%,transparent),0 -2px 0 rgba(0,0,0,.32);
+}
+
+/* ---- The frame: one moulded shell behind the whole console ----
+   Top, sides and bottom are one rounded piece, so the bevels follow the
+   corners with no joins: 2px ink edge, a two-step soft bevel (light top
+   and left, dark bottom and right), a hard shadow under it. It sits
+   behind the case, so the cards still stand up out of the machine. */
+#app .dash-frame::before{
+  content:''; position:absolute; z-index:-1; pointer-events:none; box-sizing:border-box;
+  left:var(--dash-side); right:var(--dash-side); top:var(--dash-gap);
+  bottom:calc(var(--dash-drop) * -1);
+  border:2px solid var(--dash-ink); border-radius:var(--dash-rad);
+  background:var(--theme-case-raised);
+  box-shadow:
+    inset 1px 1px 0 var(--theme-case-hi),inset 3px 3px 0 var(--dash-mid-hi),
+    inset -2px -2px 0 var(--dash-lo),inset -4px -4px 0 var(--dash-mid-lo),
+    0 5px 0 rgba(0,0,0,.5);
+}
+
+/* ---- Rim light: the channel ----
+   A groove running round the middle of the frame, dark at rest and lit
+   by the machine's state. It sits under the cards (they stand in front
+   of it at z-index 3) and follows the frame's corners. */
+#app .dash-frame::after{
+  content:''; position:absolute; z-index:2; pointer-events:none; box-sizing:border-box;
+  left:calc(var(--dash-side) + var(--dash-band) / 2 - 2px); right:calc(var(--dash-side) + var(--dash-band) / 2 - 2px);
+  top:calc(var(--dash-gap) + var(--dash-band) / 2 - 2px);
+  bottom:calc(var(--dash-drop) * -1 + var(--dash-band) / 2 - 2px);
+  border:4px solid color-mix(in srgb,var(--dash-lamp) 55%,#030404);
+  border-radius:calc(var(--dash-rad) - 4px);
+  background:none;
+}
+#app .dash-frame[data-rim]::after{
+  border-color:var(--dash-lamp);
+  filter:drop-shadow(0 0 var(--dash-glow) color-mix(in srgb,var(--dash-lamp) var(--dash-glow-a),transparent));
+}
+/* The cards always stand in front of the rim. */
+#app .dash-frame .seat.you .seat-cards{ position:relative; z-index:3; }
+
+/* Every change switches on in steps (js/dashboard.js adds .dash-relay
+   with the relay click). All in: a slow red pulse. Bust: flickers out and
+   stays dark. */
+#app .dash-frame.dash-relay::after{ animation:dashRelay .32s steps(1,end); }
+#app .dash-frame[data-rim="allin"]:not(.dash-relay)::after{ animation:dashPulse 1s steps(1,end) infinite; }
+#app .dash-frame[data-rim="bust"]::after{ animation:dashFlickOut 1.1s steps(1,end) forwards; }
+
+/* The table geometry is portrait: the phone game. Landscape keeps its
+   side-by-side layout, V1's case and its thin rim
+   (css/03-action-console.css), so the frame is not drawn there; only the
+   bays take the new finish. */
+@media (orientation:portrait){
+  /* ---- Geometry: the dock and the key bay make room for the frame ---- */
+  #app #your-seat-dock.dash-frame{
+    height:calc(var(--hud-dock-h) + 7px); flex-basis:calc(var(--hud-dock-h) + 7px);
+    padding:calc(var(--dash-gap) + var(--dash-band)) calc(var(--dash-side) + var(--dash-band)) 0;
+  }
+  #app #action-area.dash-frame-base{
+    --dash-band:8px; --dash-side:4px;
+    --dash-foot:max(7px,calc(env(safe-area-inset-bottom) - 10px));
+    height:calc(var(--action-area-h) + 7px); flex-basis:calc(var(--action-area-h) + 7px);
+    padding:0 calc(var(--dash-side) + var(--dash-band)) calc(var(--dash-band) + var(--dash-foot));
+    background:none;
+  }
+  #app #action-area.dash-frame-base > .actions-dock{
+    max-width:none; left:calc(var(--dash-side) + var(--dash-band)); right:calc(var(--dash-side) + var(--dash-band));
+    bottom:calc(var(--dash-band) + var(--dash-foot));
+  }
+
+  /* The case inside: one checker surface from the top of the dashboard to
+     the bottom of the key bay, with no outline of its own. */
+  #app .dash-frame #hud-frame,
+  #app .dash-frame-base .action-console{
+    background:repeating-conic-gradient(rgba(255,255,255,.035) 0 25%,transparent 0 50%) 0 0/6px 6px,var(--machine-case);
+    border:0; outline:0; box-shadow:none;
+  }
+  #app .dash-frame #hud-frame{ border-radius:11px 11px 0 0; padding:7px 8px 6px; gap:7px; }
+  #app .dash-frame-base .action-console{ border-radius:0 0 11px 11px; padding:6px 8px 7px; }
+  /* The win is the rim's to show now: the case keeps its finish. */
+  #app .dash-frame #hud-frame.hud-frame-win-flash{ background:repeating-conic-gradient(rgba(255,255,255,.035) 0 25%,transparent 0 50%) 0 0/6px 6px,var(--machine-case); border:0; box-shadow:none; }
+  /* The seam between the instruments and the key bay: a dark, even groove. */
+  #app .dash-frame-base .action-console::before{
+    left:8px; right:8px; top:-1px; height:2px; border-radius:0;
+    background:var(--dash-ink); box-shadow:0 1px 0 color-mix(in srgb,var(--theme-case-hi) 30%,transparent);
+  }
+  #app .dash-frame-base .console-flip{ border-radius:7px; }
+
+  /* The win shake moves the whole machine, never the case alone: a
+     transform on the case would lift it (and the cards) under the rim. */
+  #app .dash-frame #hud-frame.hud-frame-win{ animation:none; }
+  #app .dash-frame.dash-shake{ animation:hudWinShake .45s cubic-bezier(.2,.72,.3,1); }
+
+  /* Narrow phones: the frame keeps its band but sits closer to the screen
+     edge, and the case gives back V1's padding, so the keys and the stack
+     drum keep their V1 width. */
+  @media (max-width:389px){
+    #app .dash-frame,#app .dash-frame-base{ --dash-side:2px; }
+    #app .dash-frame #hud-frame{ padding:5px 6px; gap:5px; }
+    #app .dash-frame-base .action-console{ padding:5px 3px 6px; }
+    #app .dash-frame-base .actions-row{ gap:5px; }
+  }
+}
+@media (orientation:landscape){
+  #app #your-seat-dock.dash-frame::before,#app #your-seat-dock.dash-frame::after{ display:none; }
+}
+
+/* Reduced Motion: no relay flicker, no pulse, no shake; bust is simply
+   dark. */
+[data-motion="off"] #app .dash-frame::after,
+[data-motion="off"] #app .dash-frame.dash-shake{ animation:none !important; }
+[data-motion="off"] #app .dash-frame[data-rim="bust"]::after{ opacity:0; }
+@media (prefers-reduced-motion:reduce){
+  #app .dash-frame::after,#app .dash-frame.dash-shake{ animation:none !important; }
+  #app .dash-frame[data-rim="bust"]::after{ opacity:0; }
+}
+
+@keyframes dashRelay{ 0%{ opacity:.25; } 25%{ opacity:1; } 45%{ opacity:.35; } 65%,100%{ opacity:1; } }
+@keyframes dashPulse{ 55%{ opacity:.45; } }
+@keyframes dashFlickOut{ 0%{ opacity:1; } 12%{ opacity:.1; } 20%{ opacity:1; } 34%{ opacity:.15; } 40%{ opacity:.8; } 58%{ opacity:.05; } 64%{ opacity:.5; } 80%,100%{ opacity:0; } }

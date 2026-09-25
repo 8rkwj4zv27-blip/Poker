@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#140709">
+  <link rel="icon" href="data:,">
+  <title>Dashboard V2 Lab</title>
+  <!-- Real game tokens, fonts, cards and chip art. -->
+  <link rel="stylesheet" href="css/01-foundation.css">
+  <link rel="stylesheet" href="css/02-screens.css">
+  <link rel="stylesheet" href="css/dashboard-v2-lab.css?v=1">
+</head>
+<body class="lab">
+  <!-- Isolated prototype (like every *-lab page): never linked from the game,
+       never reads or writes a save. It runs its own small hand of poker
+       (real deck, real hand evaluation from js/01-poker-math.js, real
+       sounds from js/02-support-systems.js) so every dashboard moment can
+       be played and replayed. See docs/ui/DASHBOARD_V2.md. -->
+
+  <aside class="lab-side lab-left" aria-label="Design">
+    <header class="lab-brand">
+      <strong>DASHBOARD 2.0</strong>
+      <span>Player dashboard lab</span>
+    </header>
+
+    <section class="lab-group">
+      <h2>Direction</h2>
+      <div class="lab-dirs" data-set="dir">
+        <button type="button" data-v="tidy"><b>V1+</b><small>Tidied, alive</small></button>
+        <button type="button" data-v="console"><b>CONSOLE</b><small>Instruments</small></button>
+        <button type="button" data-v="slot"><b>SLOT</b><small>Lever &amp; reels</small></button>
+        <button type="button" data-v="cockpit"><b>COCKPIT</b><small>Switches</small></button>
+      </div>
+      <p class="lab-note" id="lab-dir-note"></p>
+    </section>
+
+    <section class="lab-group">
+      <h2>Dashboard size</h2>
+      <div class="lab-seg" data-set="size">
+        <button type="button" data-v="compact">COMPACT</button>
+        <button type="button" data-v="standard">STANDARD</button>
+        <button type="button" data-v="tall">TALL</button>
+      </div>
+      <p class="lab-note" id="lab-size-note"></p>
+    </section>
+
+    <section class="lab-group">
+      <h2>Theatre</h2>
+      <div class="lab-seg" data-set="theatre">
+        <button type="button" data-v="1">NORMAL</button>
+        <button type="button" data-v="1.5">BIG</button>
+        <button type="button" data-v="2">MAX</button>
+      </div>
+      <p class="lab-note">How long and how loud the big moments are.</p>
+    </section>
+
+    <section class="lab-group">
+      <h2>Table</h2>
+      <div class="lab-row"><span>Theme</span>
+        <div class="lab-seg" data-set="theme">
+          <button type="button" data-v="emerald">EMER</button><button type="button" data-v="midnight">MIDN</button><button type="button" data-v="burgundy">BURG</button><button type="button" data-v="slate">SLATE</button>
+        </div></div>
+      <div class="lab-row"><span>Sound</span>
+        <div class="lab-seg" data-set="sound"><button type="button" data-v="on">ON</button><button type="button" data-v="off">OFF</button></div></div>
+      <div class="lab-row"><span>Motion</span>
+        <div class="lab-seg" data-set="motion"><button type="button" data-v="on">FULL</button><button type="button" data-v="off">REDUCED</button></div></div>
+    </section>
+  </aside>
+
+  <main class="lab-stage">
+    <div class="phone" id="phone">
+      <div class="phone-screen" id="screen" data-theme="emerald" data-cardback="table"></div>
+    </div>
+    <p class="lab-caption">iPhone 15 Pro Max · 430 × 932</p>
+  </main>
+
+  <aside class="lab-side lab-right" aria-label="Play">
+    <section class="lab-group">
+      <h2>Moments</h2>
+      <div class="lab-moments">
+        <button type="button" data-moment="deal" class="is-wide">DEAL A NEW HAND</button>
+        <button type="button" data-moment="monster">MONSTER HAND</button>
+        <button type="button" data-moment="shove">OPPONENT SHOVES</button>
+        <button type="button" data-moment="allinwin">ALL-IN · WIN</button>
+        <button type="button" data-moment="allinlose">ALL-IN · BUST</button>
+        <button type="button" data-moment="bigwin">BIG POT WIN</button>
+        <button type="button" data-moment="rebuild">REBUILD</button>
+      </div>
+      <p class="lab-note">Or just play: the table runs real hands against three opponents.</p>
+    </section>
+
+    <section class="lab-group">
+      <h2>Next all-in</h2>
+      <div class="lab-seg" data-set="rig">
+        <button type="button" data-v="random">FAIR</button><button type="button" data-v="win">I WIN</button><button type="button" data-v="lose">I LOSE</button>
+      </div>
+      <p class="lab-note">Rig the cards for the next all-in you make, to see the win or the break.</p>
+    </section>
+
+    <section class="lab-group">
+      <h2>Controls to try</h2>
+      <div class="lab-row"><span>Raise with</span>
+        <div class="lab-seg" data-set="raise">
+          <button type="button" data-v="auto">AUTO</button><button type="button" data-v="slider">SLIDER</button><button type="button" data-v="dial">DIAL</button><button type="button" data-v="throttle">THROTTLE</button>
+        </div></div>
+      <div class="lab-row"><span>All-in by</span>
+        <div class="lab-seg" data-set="allin">
+          <button type="button" data-v="auto">AUTO</button><button type="button" data-v="cover">COVER</button><button type="button" data-v="hold">HOLD</button>
+        </div></div>
+      <div class="lab-row"><span>Keys when waiting</span>
+        <div class="lab-seg" data-set="keys">
+          <button type="button" data-v="shutter">SHUTTER</button><button type="button" data-v="sink">SINK</button><button type="button" data-v="static">STAY</button>
+        </div></div>
+      <div class="lab-row"><span>Card peek</span>
+        <div class="lab-seg" data-set="peek"><button type="button" data-v="on">ON</button><button type="button" data-v="off">OFF</button></div></div>
+      <div class="lab-row"><span>Knock to check</span>
+        <div class="lab-seg" data-set="knock"><button type="button" data-v="on">ON</button><button type="button" data-v="off">OFF</button></div></div>
+      <div class="lab-row"><span>Drag chips to bet</span>
+        <div class="lab-seg" data-set="drag"><button type="button" data-v="on">ON</button><button type="button" data-v="off">OFF</button></div></div>
+      <div class="lab-row"><span>Machinery</span>
+        <div class="lab-seg" data-set="life"><button type="button" data-v="on">ALIVE</button><button type="button" data-v="off">STILL</button></div></div>
+    </section>
+
+    <section class="lab-group lab-howto">
+      <h2>How to</h2>
+      <ul>
+        <li><b>Knock:</b> double-tap the dashboard case to check.</li>
+        <li><b>Peek:</b> press and hold your cards.</li>
+        <li><b>Chips:</b> drag from the bank up onto the felt, or tap a stack.</li>
+        <li><b>All-in:</b> flip the cover, then press. Or hold the key.</li>
+      </ul>
+    </section>
+  </aside>
+
+  <script src="js/01-poker-math.js"></script>
+  <script src="js/02-support-systems.js"></script>
+  <script src="js/dashboard-v2-lab.js?v=1"></script>
+</body>
+</html>

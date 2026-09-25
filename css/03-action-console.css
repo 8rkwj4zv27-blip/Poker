@@ -652,21 +652,24 @@ body #home #home-settings{ background:var(--theme-case-raised); color:var(--ink)
   .actions-dock{ max-width:430px; }
 }
 
-/* One continuous live rim: the upper half belongs to the dashboard dock,
-   the lower half to the action area, and their open edges meet without a
-   doubled line at the structural seam. */
-#your-seat-dock::after{
-  content:''; position:absolute; z-index:2; pointer-events:none;
-  left:7px; right:7px; top:1px; bottom:-7px;
-  border:2px solid var(--theme-rim); border-bottom:0; border-radius:5px 5px 0 0;
-  filter:drop-shadow(0 0 3px color-mix(in srgb,var(--theme-rim) 28%,transparent));
-}
+/* In portrait the dashboard's rim is the Dashboard V2 frame's channel
+   light (.dash-frame in css/dashboard.css). Landscape keeps V1's one
+   continuous thin rim: the upper half belongs to the dashboard dock, the
+   lower half to the action area. */
 #action-area{ position:relative; }
-.actions-dock::after{
-  content:''; position:absolute; z-index:40; pointer-events:none;
-  left:-1px; right:-1px; top:-7px; bottom:-1px;
-  border:2px solid var(--theme-rim); border-top:0; border-radius:0 0 5px 5px;
-  filter:drop-shadow(0 0 3px color-mix(in srgb,var(--theme-rim) 28%,transparent));
+@media (orientation:landscape){
+  #your-seat-dock::after{
+    content:''; position:absolute; z-index:2; pointer-events:none;
+    left:7px; right:7px; top:1px; bottom:-7px;
+    border:2px solid var(--theme-rim); border-bottom:0; border-radius:5px 5px 0 0;
+    filter:drop-shadow(0 0 3px color-mix(in srgb,var(--theme-rim) 28%,transparent));
+  }
+  .actions-dock::after{
+    content:''; position:absolute; z-index:40; pointer-events:none;
+    left:-1px; right:-1px; top:-7px; bottom:-1px;
+    border:2px solid var(--theme-rim); border-top:0; border-radius:0 0 5px 5px;
+    filter:drop-shadow(0 0 3px color-mix(in srgb,var(--theme-rim) 28%,transparent));
+  }
 }
 .raise-panel{ outline:2px solid var(--theme-rim); outline-offset:-2px; }
 

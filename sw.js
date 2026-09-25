@@ -1,4 +1,4 @@
-const CACHE_NAME = 'poker-v40-1';
+const CACHE_NAME = 'poker-v40-2';
 const APP_SHELL = [
   './',
   './index.html',
@@ -21,6 +21,7 @@ const APP_SHELL = [
   './css/home-boot.css?v=2',
   './css/press-feel.css?v=2',
   './css/finishes.css?v=3',
+  './css/dashboard.css?v=1',
   './css/crt.css?v=1',
   './js/01-poker-math.js',
   './js/02-support-systems.js',
@@ -37,6 +38,7 @@ const APP_SHELL = [
   './js/08-dev-mode.js?v=home-cast-1',
   './js/home-cast.js?v=1',
   './js/home-boot.js?v=2',
+  './js/dashboard.js?v=1',
   './js/crt.js?v=1',
   './js/finishes.js?v=3',
   './js/press-feel.js?v=2',
