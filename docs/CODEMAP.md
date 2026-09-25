@@ -239,7 +239,7 @@ there manually.
 
 Files matching `*-lab.html`, `*-lab.js`, `*-lab.css` (`career-lab`,
 `career-hub-v2-lab`, `ticket-lab`, `card-flight-options`, `card-turn-lab`,
-`chip-motion-lab`, `design-lab`, `result-stage-lab`, `showdown-rail-lab`, `crt-lab`,
+`chip-motion-lab`, `chip-lab`, `design-lab`, `result-stage-lab`, `showdown-rail-lab`, `crt-lab`,
 `wheel-v2-lab`, `intro-lab`, `boot-lab`, `slot-lab`)
 are **isolated visual references and prototyping sandboxes**. Several are
 committed permanently as durable references even after their feature
@@ -283,6 +283,10 @@ reuse instead of writing a new Playwright script from scratch each time.
 - `docs/ui/VISUAL_AUDIT.md` — 2026-09-25 visual/motion/glitch audit of the
   whole game: findings F1–F21 with causes, a motion map of every screen
   change, level-up ideas and a phased plan. Proposals, not approvals.
+- `docs/ui/CHIP_PLAN.md` — the chip upgrade plan (bank, bet spots + sweep,
+  pot, payouts, feel), the owner's answers so far, and the options built
+  in `chip-lab.html` (+ `js/chip-lab.js`, `css/chip-lab.css`: the real
+  table with switchable chip values, opponent chips and bank styles).
 - `docs/scoring/SCORING_SPEC.md` — authoritative scoring/award rules for
   both Career and Single Player.
 - `docs/ui/handover/` — earlier UI handover notes; a `python3 -m http.server`
