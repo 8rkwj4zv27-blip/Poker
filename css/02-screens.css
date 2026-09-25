@@ -595,7 +595,22 @@
 }
 .stage-recap-lamp{ min-height:28px; padding:5px 8px; display:flex; align-items:center; justify-content:center; gap:7px; }
 .stage-recap-lamp .pc-lamp{ width:11px; height:11px; }
-.stage-recap-lamp-text{ text-align:center; white-space:nowrap; }
+.stage-recap-lamp-text{ text-align:center; white-space:nowrap; font-family:var(--font-hdr); font-size:8px; line-height:1.45; letter-spacing:.04em; text-transform:uppercase; }
+/* Phones up to 900px tall: the machine is ~425px, so the rows tighten a
+   little to keep Best Hand and the run-progress strip on screen instead
+   of below the machine's own scroll edge. */
+@media (orientation:portrait) and (max-height:900px) and (min-height:700px){
+  .stage-results-machine{ gap:4px; grid-template-rows:auto auto auto minmax(72px,1fr) auto; }
+  .stage-results-head{ min-height:48px; }
+  .stage-results-deck{ gap:5px; padding:6px; }
+  .stage-instrument{ padding:7px 8px 8px; }
+  .stage-recap-cell{ min-height:44px; padding:6px 5px; }
+  .stage-trophy{ min-height:72px; padding:7px 12px; }
+}
+@media (orientation:portrait) and (max-height:699px){
+  .stage-recap-lamp-text{ font-size:6px; letter-spacing:.02em; }
+  .stage-recap-lamp.is-negative .stage-recap-lamp-text:is(*){ white-space:nowrap; }
+}
 
 .stage-trophy{ min-height:90px; display:grid; grid-template-columns:minmax(0,1.7fr) minmax(92px,.8fr); grid-template-rows:auto 1fr auto auto; align-items:center; column-gap:8px; padding:9px 12px; }
 .stage-trophy-label{ grid-column:1 / -1; align-self:center; }

@@ -672,6 +672,21 @@ body:has(#table-screen.hidden) .arcade-bank-flight{
   .pc-cast-drawer{ flex-basis:94px; }
   #home .hero-faces .hf{ width:52px; height:52px; }
 }
+/* iPhone SE and smaller: the whole cabinet fits without scrolling. The
+   title well, face tray and stats give up height; the controls keep their
+   full size. */
+@media (orientation:portrait) and (max-height:700px){
+  #home .lobby-card.pc-housing{ gap:5px; }
+  #home .hero{ min-height:0; flex-basis:auto; padding:6px 8px 8px; gap:6px; }
+  #home .pc-title-well{ flex:0 0 auto; padding:10px 10px 9px; }
+  #home .hero .brand{ font-size:26px; }
+  #home .hero .brand-rule{ margin-top:9px; }
+  .pc-cast-drawer{ flex-basis:auto; padding:7px 12px; }
+  #home .hero-faces .hf{ width:46px; height:46px; }
+  .pc-readout-row{ flex-basis:64px; padding:5px; }
+  .pc-control-bay{ padding:9px 10px 12px; }
+  .pc-control-head{ margin-bottom:7px; }
+}
 
 /* hand rankings page */
 #rankings{
