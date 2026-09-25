@@ -190,6 +190,18 @@ every effect a `data-crt-*` dial) and `js/crt.js` its change engine
 Not loaded by the game yet — once a recipe is chosen, the old CRT styles are
 removed and every CRT is rebuilt on this component.
 
+## `dashboard-order-lab.html` + `js/dashboard-order-lab.js` + candidate `css/dashboard-order.css` / `js/dashboard-order.js` — Dashboard V2 order form (Lab)
+
+The current Dashboard V2 surface. Runs the **real game** sandboxed (like
+`intro-lab.html`) with the two candidate files injected; a form beside the
+phone orders one option per dashboard job (layout, height, case, card tray,
+stack, bank, blinds, bet, button bay, raise drawer) and per behaviour (your
+turn, knock to check, card peek, all-in key, all-in moment, chip dragging,
+win, bust). Options are `data-do-*` attributes on the game's `<html>`;
+behaviours hook the real `humanAct()`, `setWagerAmount()` and
+`rollStageTransition()`. Every part is built to
+`docs/ui/DASHBOARD_V2_RULES.md`. Not loaded by the game.
+
 ## `dashboard-v2-lab.html` + `js/dashboard-v2-lab.js` + `css/dashboard-v2-lab.css` — Dashboard 2.0 (Lab)
 
 Standalone prototype of the player's dashboard: four directions (V1+,
@@ -252,7 +264,7 @@ there manually.
 
 Files matching `*-lab.html`, `*-lab.js`, `*-lab.css` (`career-lab`,
 `career-hub-v2-lab`, `ticket-lab`, `card-flight-options`, `card-turn-lab`,
-`chip-motion-lab`, `design-lab`, `result-stage-lab`, `showdown-rail-lab`, `crt-lab`, `dashboard-v2-lab`,
+`chip-motion-lab`, `design-lab`, `result-stage-lab`, `showdown-rail-lab`, `crt-lab`, `dashboard-v2-lab`, `dashboard-order-lab`,
 `wheel-v2-lab`, `intro-lab`, `boot-lab`, `slot-lab`)
 are **isolated visual references and prototyping sandboxes**. Several are
 committed permanently as durable references even after their feature

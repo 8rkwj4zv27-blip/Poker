@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#140709">
+  <link rel="icon" href="data:,">
+  <title>Dashboard Order Form</title>
+  <link rel="stylesheet" href="css/01-foundation.css">
+  <link rel="stylesheet" href="css/dashboard-order-lab.css?v=1">
+  <script defer src="js/dashboard-order-lab.js?v=1"></script>
+</head>
+<body class="ol">
+  <!-- Isolated Lab: the REAL game runs sandboxed in the frame (in-memory
+       storage, no service worker), with css/dashboard-order.css and
+       js/dashboard-order.js injected. The form sets the order on the game's
+       <html>. Never linked from the game; never touches a real save.
+       Rules: docs/ui/DASHBOARD_V2_RULES.md. -->
+  <aside class="ol-side ol-form" aria-label="Order form">
+    <header class="ol-head">
+      <strong>DASHBOARD ORDER FORM</strong>
+      <span>Pick a part for each job. The real dashboard rebuilds as you go.</span>
+    </header>
+    <div id="ol-rows"></div>
+  </aside>
+
+  <main class="ol-stage">
+    <div class="ol-phone" id="ol-phone">
+      <iframe id="ol-frame" title="Poker Faces (sandboxed copy)"></iframe>
+    </div>
+    <p class="ol-caption"><span id="ol-status">LOADING…</span> · iPhone 15 Pro Max · 430 × 932</p>
+  </main>
+
+  <aside class="ol-side ol-play" aria-label="Moments and order">
+    <section class="ol-group">
+      <h2>Put the real game in</h2>
+      <div class="ol-moments">
+        <button type="button" data-moment="deal" class="is-wide">NEW TABLE · YOUR TURN</button>
+        <button type="button" data-moment="raise">RAISE OPEN</button>
+        <button type="button" data-moment="shove">OPPONENT ALL IN</button>
+        <button type="button" data-moment="allin">GO ALL IN · WIN</button>
+        <button type="button" data-moment="win">WIN A POT</button>
+        <button type="button" data-moment="bust" class="is-danger is-wide">BUST (RUN OVER)</button>
+      </div>
+      <p class="ol-note">These play the real game to that moment. You can also just play: tap the game.</p>
+    </section>
+
+    <section class="ol-group">
+      <h2>Quick orders</h2>
+      <div class="ol-moments">
+        <button type="button" data-preset="v1">ALL V1</button>
+        <button type="button" data-preset="suggested">SUGGESTED</button>
+      </div>
+      <button type="button" class="ol-compare" id="ol-compare">HOLD TO SEE V1</button>
+    </section>
+
+    <section class="ol-group">
+      <h2>Your order</h2>
+      <ol class="ol-summary" id="ol-summary"></ol>
+      <button type="button" class="ol-copy" id="ol-copy">COPY ORDER</button>
+      <p class="ol-note" id="ol-copied">Paste it into the chat when you're happy.</p>
+    </section>
+
+    <section class="ol-group">
+      <h2>View</h2>
+      <div class="ol-row"><span>Theme</span><div class="ol-seg" data-view="theme"><button data-v="emerald">EMER</button><button data-v="midnight">MIDN</button><button data-v="burgundy">BURG</button><button data-v="slate">SLATE</button></div></div>
+      <div class="ol-row"><span>Sound</span><div class="ol-seg" data-view="sound"><button data-v="on">ON</button><button data-v="off">OFF</button></div></div>
+      <div class="ol-row"><span>Motion</span><div class="ol-seg" data-view="motion"><button data-v="on">FULL</button><button data-v="off">REDUCED</button></div></div>
+    </section>
+  </aside>
+</body>
+</html>

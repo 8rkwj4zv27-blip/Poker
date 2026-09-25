@@ -1,0 +1,58 @@
+/* Dashboard Order Form — the lab chrome only. The game in the frame is the
+   real game plus css/dashboard-order.css. */
+body.ol{
+  --ol-bg:#140709; --ol-panel:#24100F; --ol-panel-2:#34171A; --ol-ink:#080405;
+  --ol-gold:#E8B83A; --ol-cream:#F3E6C4; --ol-dim:#B69A7A; --ol-red:#D9534A;
+  position:fixed; inset:0; height:100%; overflow:hidden; display:grid; grid-template-columns:360px minmax(0,1fr) 300px;
+  background:radial-gradient(ellipse at 50% 40%,#2A1113,transparent 70%),repeating-conic-gradient(rgba(255,255,255,.02) 0 25%,transparent 0 50%) 0 0/8px 8px,var(--ol-bg);
+  color:var(--ol-cream); font:500 14px/1.4 var(--font-px); user-select:none;
+}
+.ol button{ font:inherit; color:inherit; cursor:pointer; }
+.ol-side{ overflow:auto; padding:18px 16px 28px; display:flex; flex-direction:column; gap:14px; background:rgba(8,4,5,.4); }
+.ol-form{ border-right:3px solid var(--ol-ink); }
+.ol-play{ border-left:3px solid var(--ol-ink); }
+.ol-head strong{ display:block; font-family:var(--font-hdr); font-size:11px; letter-spacing:.08em; color:var(--ol-gold); line-height:1.5; }
+.ol-head span{ display:block; margin-top:6px; color:var(--ol-dim); }
+.ol-sec{ margin:6px 0 0; padding-top:12px; border-top:2px solid var(--ol-ink); font-family:var(--font-hdr); font-size:8px; letter-spacing:.14em; color:var(--ol-gold); font-weight:400; }
+.ol-job{ display:flex; flex-direction:column; gap:6px; padding:9px 0; border-bottom:1px dashed rgba(182,154,122,.16); }
+.ol-job-head{ display:flex; justify-content:space-between; align-items:baseline; gap:8px; }
+.ol-job-head b{ font-family:var(--font-hdr); font-size:8px; font-weight:400; letter-spacing:.06em; }
+.ol-job-head small{ color:var(--ol-dim); font-size:12px; text-align:right; }
+.ol-job .ol-seg{ width:100%; }
+.ol-job .ol-seg button{ flex:1; }
+.ol-job-note{ color:var(--ol-dim); font-size:12px; min-height:16px; }
+.ol-seg{ display:flex; flex-wrap:wrap; gap:2px; padding:2px; background:var(--ol-ink); border-radius:3px; }
+.ol-seg button{ min-width:44px; padding:8px 6px; background:var(--ol-panel-2); border:0; color:var(--ol-dim); font-family:var(--font-hdr); font-size:7px; letter-spacing:.04em; border-radius:2px; }
+.ol-seg button.is-on{ background:var(--ol-gold); color:var(--ol-ink); box-shadow:inset 0 2px 0 #FFE380; }
+.ol-seg button[data-v="0"].is-on{ background:#6E5B3E; color:var(--ol-cream); box-shadow:inset 0 2px 0 #8C7650; }
+.ol-group{ display:flex; flex-direction:column; gap:8px; padding-top:12px; border-top:2px solid var(--ol-ink); }
+.ol-group:first-child{ border-top:0; padding-top:0; }
+.ol-group h2{ margin:0; font-family:var(--font-hdr); font-size:8px; font-weight:400; letter-spacing:.12em; color:var(--ol-dim); }
+.ol-note{ margin:0; color:var(--ol-dim); font-size:12px; }
+.ol-moments{ display:grid; grid-template-columns:1fr 1fr; gap:6px; }
+.ol-moments button,.ol-copy{
+  padding:11px 6px; background:var(--ol-gold); color:var(--ol-ink); border:2px solid var(--ol-ink); border-radius:3px;
+  box-shadow:inset 0 2px 0 #FFE380,0 3px 0 var(--ol-ink); font-family:var(--font-hdr); font-size:7px; letter-spacing:.04em;
+}
+.ol-moments button:active,.ol-copy:active{ transform:translateY(2px); box-shadow:inset 0 2px 0 #FFE380,0 1px 0 var(--ol-ink); }
+.ol-moments button:disabled{ opacity:.45; }
+.ol-moments .is-wide{ grid-column:1 / -1; }
+.ol-moments .is-danger{ background:var(--ol-red); box-shadow:inset 0 2px 0 #FF9C8F,0 3px 0 var(--ol-ink); }
+.ol-compare{ padding:10px; background:var(--ol-ink); color:var(--ol-dim); border:2px solid #6E5B3E; border-radius:3px; font-family:var(--font-hdr); font-size:7px; touch-action:none; }
+.ol-compare.is-held{ background:#6E5B3E; color:var(--ol-cream); }
+.ol-summary{ margin:0; padding-left:18px; display:flex; flex-direction:column; gap:3px; font-size:13px; color:var(--ol-dim); }
+.ol-summary b{ color:var(--ol-cream); font-weight:700; }
+.ol-summary .is-v1{ opacity:.55; }
+.ol-row{ display:flex; align-items:center; justify-content:space-between; gap:8px; }
+.ol-row > span{ color:var(--ol-dim); font-size:13px; }
+.ol-stage{ position:relative; display:flex; flex-direction:column; align-items:center; justify-content:center; min-width:0; padding:16px 0; }
+/* The iPhone 15 Pro Max: 430 x 932 with its safe areas (59px top for the
+   status bar and Dynamic Island, 34px bottom for the home bar). The game
+   inside the frame sees env() insets of 0, so the frame is given only the
+   safe region, which is what the game lays out into on the device. */
+.ol-phone{ --fit:1; zoom:var(--fit); position:relative; width:430px; height:932px; padding:59px 0 34px; box-sizing:border-box; border-radius:58px; overflow:hidden; flex-shrink:0; background:#0C1510;
+  box-shadow:0 0 0 12px #1B1A1C,0 0 0 14px #3A3739,0 0 0 16px #0E0D0E,0 30px 60px rgba(0,0,0,.6); }
+.ol-phone::before{ content:''; position:absolute; left:50%; top:11px; width:124px; height:36px; margin-left:-62px; border-radius:20px; background:#000; z-index:2; }
+.ol-phone::after{ content:''; position:absolute; left:50%; bottom:9px; width:140px; height:5px; margin-left:-70px; border-radius:3px; background:#E9EEE9; opacity:.75; z-index:2; }
+.ol-phone iframe{ display:block; width:100%; height:100%; border:0; }
+.ol-caption{ margin:12px 0 0; color:var(--ol-dim); font-size:12px; }

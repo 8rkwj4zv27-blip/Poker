@@ -1,6 +1,7 @@
 # Dashboard V2 — the rules
 
-Status: **draft for owner sign-off** (25 September 2026). Every Dashboard V2
+Status: **signed off by the owner** (25 September 2026), with rule 6 widened
+at their request. Every Dashboard V2
 part, bespoke or shared, must pass these rules before it is shown. Written
 after the owner rejected the Dashboard 2.0 lab for losing the game's visual
 language (`DASHBOARD_V2_HANDOVER.md`). References: the Home screen with its
@@ -77,12 +78,17 @@ Taken from the boot, the Machine Wheel, press feel and the Hub's ticket rack:
 - **Theatre is allowed to be big for big moments** (all-in, bust, big win),
   and small elsewhere.
 
-## 6. Out, after the 2.0 lab
+## 6. The 2.0 lab's ideas, rebuilt properly
 
-Decorative machinery (the cogs), paytables, marquee dot-lights, annunciator
-tiles, levers, dials and throttles, chip dragging, keys falling off, cracks
-and smoke, flat or gradient cases, new colours. Any of these returns only if
-the owner asks for it.
+The owner wants creative options, all inside one visual style. Ideas from the
+2.0 lab (levers, chip dragging, the bust break with keys falling off and
+smoke, dials, warning lamps, a lit paytable) may come back as options, **but
+only rebuilt to rules 1–5**: made of the game's own materials and housings,
+readable, not overlapping, with motion that has a cause.
+
+Still out: decorative machinery that moves on its own (the cogs), because
+rule 5 already forbids it. Also out: the 2.0 lab's flat cases, stripes and
+new colours.
 
 ## 7. Carried forward: behaviours the owner liked
 
@@ -94,6 +100,9 @@ the owner asks for it.
   run-out.
 
 ## 8. The process from here
+
+The order form is built: `dashboard-order-lab.html` (see `docs/CODEMAP.md`).
+
 
 1. Owner signs off these rules.
 2. Dashboard jobs are listed: your cards, hand name, turn and amount to
