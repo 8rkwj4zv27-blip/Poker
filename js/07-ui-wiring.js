@@ -1262,6 +1262,13 @@ function showCareerScreen(options){
 
 /* Returning from a finished event. The event is already settled by then
    (endCareerEvent owns that), so this only tears the table down. */
+/* Going back to a screen: machine-wheel.js turns the drum the other way
+   (machineWheelBack); without it, the screens simply change. */
+function rollBackTo(fromEl, toEl, reveal, settle){
+  if (typeof machineWheelBack === 'function') return machineWheelBack(fromEl, toEl, reveal, settle);
+  reveal(); settle();
+}
+
 /* BACK TO EVENTS. One-shot: the button stays bound while the console
    animates out, so a second press must be inert. It performs no money
    operation of any kind — settlement completed before the result was ever
@@ -1274,20 +1281,26 @@ function returnToCareer(){
   clearTimeout(autoDealT);
   endQuickResolve();
   closeOverlays();
-  hideResultCard();
-  exitResultsConsole();
-  clearCompletedEventConsole();
   if (game){ game.over = true; game._careerReturnDone = true; }
   pendingHumanPlayer = null;
   coachToken++;
-  setArcadeMode(false);
-  const felt = $('felt');
-  if (felt) felt.classList.remove('results-mode','tone-negative');
-  $('btn-new-table').textContent = 'New Table';
-  $('btn-new-table').classList.add('hidden');
-  applyTheme();
-  showCareerScreen();
-  careerReturnInFlight = false;
+  // The results stage rides away on the drum (turned back up) and the
+  // Hub comes round from below; the table is torn down once it's gone.
+  rollBackTo($('table-screen'), $('career'),
+    ()=>showCareerScreen(),
+    ()=>{
+      hideResultCard();
+      exitResultsConsole();
+      clearCompletedEventConsole();
+      setArcadeMode(false);
+      const felt = $('felt');
+      if (felt) felt.classList.remove('results-mode','tone-negative');
+      $('btn-new-table').textContent = 'New Table';
+      $('btn-new-table').classList.add('hidden');
+      $('table-screen').classList.add('hidden');
+      applyTheme();
+      careerReturnInFlight = false;
+    });
 }
 
 /* Board presentation of a payout table. One place reads as a plain amount;
@@ -2019,22 +2032,28 @@ function doLeaveTable(){
   }
   pendingHumanPlayer = null;
   coachToken++;
-  setArcadeMode(false);
   // A *finished* Career event returns to the Career screen (its result is
   // waiting there). A *paused* one goes to the main menu, which advertises
   // the event as still active — see refreshCareerMenuButton().
   const careerFinished = !!(game && (game.mode==='career' || game.mode==='career-cash'))
     && !careerHasActiveEvent() && !careerHasOpenCashSession();
-  const felt = $('felt');
-  if (felt) felt.classList.remove('results-mode','tone-negative');
-  clearCompletedEventConsole();
-  $('btn-new-table').textContent = 'New Table';
-  $('table-screen').classList.add('hidden');
-  applyTheme();
-  if (careerFinished){ showCareerScreen(); renderStats(); return; }
-  $('home').classList.remove('hidden');
-  reconstructMainMenu();
-  renderStats();
+  // The table rides away on the drum turned back up (machine-wheel.js);
+  // it's torn down once it has gone.
+  rollBackTo($('table-screen'), careerFinished ? $('career') : $('home'),
+    ()=>{
+      if (careerFinished) showCareerScreen();
+      else { $('home').classList.remove('hidden'); reconstructMainMenu(); }
+      renderStats();
+    },
+    ()=>{
+      setArcadeMode(false);
+      const felt = $('felt');
+      if (felt) felt.classList.remove('results-mode','tone-negative');
+      clearCompletedEventConsole();
+      $('btn-new-table').textContent = 'New Table';
+      $('table-screen').classList.add('hidden');
+      applyTheme();
+    });
 }
 
 /* Settings > Reset Current Run — unlike Leave Table, also discards the

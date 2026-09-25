@@ -793,10 +793,11 @@ function wireUI(){
   $('setup-continue').onclick = ()=>{ if (loadTableSave()) continueTable(); };
   $('quick-play').onclick = ()=>withNewTableConfirm(startGame);
   $('open-career').onclick = ()=>{ enterCareerFromHome(); };
+  // Back to the menu turns the same drum the other way (machine-wheel.js).
   $('career-back').onclick = ()=>{
-    $('career').classList.add('hidden');
-    $('home').classList.remove('hidden');
-    reconstructMainMenu();
+    rollBackTo($('career'), $('home'),
+      ()=>{ $('home').classList.remove('hidden'); reconstructMainMenu(); },
+      ()=>{ $('career').classList.add('hidden'); });
   };
   $('career-new').onclick = ()=>{
     showConfirmDialog({

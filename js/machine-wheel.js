@@ -51,7 +51,10 @@ const MACHINE_WHEEL_CONFIG = {
     // Home -> Career
     career:     { releaseMs: 300, windupMs: 190, windup: .018, rollMs: 1420, overshoot: .03,  settleMs: 400, teeth: 16, flicker: 'power', lights: true },
     // Career -> table
-    table:      { releaseMs: 280, windupMs: 180, windup: .018, rollMs: 1300, overshoot: .03,  settleMs: 380, teeth: 14, flicker: 'power', lights: true }
+    table:      { releaseMs: 280, windupMs: 180, windup: .018, rollMs: 1300, overshoot: .03,  settleMs: 380, teeth: 14, flicker: 'power', lights: true },
+    // Going back (Career -> Home, results -> Career, Leave table): the same
+    // drum turned the other way, brisker, since the player is leaving
+    back:       { releaseMs: 150, windupMs: 120, windup: .014, rollMs: 620,  overshoot: .026, settleMs: 260, teeth: 10, flicker: 'soft',  lights: false }
   }
 };
 
@@ -204,8 +207,10 @@ function machineWheelRig(host, options){
     later(() => front.classList.remove('is-flash'), 110 / Math.max(.05, cfg.timeScale || 1));
   }
   function drawMachinery(yOut, yIn){
-    // Three hinges: above the incoming face, between the two, below the outgoing.
-    const ys = [yIn - gap, yOut - gap, yOut + H];
+    // Three hinges: above the upper face, between the two, below the lower
+    // one (the incoming face is above when rolling down, below going back).
+    const top = Math.min(yOut, yIn), bottom = Math.max(yOut, yIn);
+    const ys = [top - gap, bottom - gap, bottom + H];
     joints.forEach((j, i) => { j.style.transform = 'translate3d(0,' + ys[i] + 'px,0)'; });
     // Knurled side rails turn with the drum; the gear inside an open hinge
     // sits nearer the axle, so it travels slower (parallax).
@@ -225,19 +230,20 @@ function machineWheelRig(host, options){
     get hurried(){ return hurried; },
     wait,
 
-    /* Parks a face one position up the drum, ready to be revealed. Call
-       before the face becomes visible so it never flashes in place. */
-    park(face, power){
+    /* Parks a face one position up the drum (down it, for dir -1), ready
+       to be revealed. Call before the face becomes visible so it never
+       flashes in place. */
+    park(face, power, dir = 1){
       claim(face, power);
-      place(face, -T);
-      drawMachinery(0, -T);
+      place(face, -dir * T);
+      drawMachinery(0, -dir * T);
     },
 
     /* The face powers down, the cabinet lips close over its edges and the
        latch lets go. */
-    async release(face, profile){
+    async release(face, profile, dir = 1){
       claim(face, powerOf(face));
-      drawMachinery(0, -T);
+      drawMachinery(0, -dir * T);
       if (sound) sound.wheelRelease();
       buzz([18, 12, 26]);
       front.classList.add('is-engaged');
@@ -251,8 +257,9 @@ function machineWheelRig(host, options){
     },
 
     /* Wind-up, drive, coast, catch, settle. Resolves once the incoming
-       face sits exactly in its detent. */
-    roll(outgoing, incoming, profile){
+       face sits exactly in its detent. dir 1 turns the drum down (the new
+       face arrives from above); -1 turns it back up. */
+    roll(outgoing, incoming, profile, dir = 1){
       const p = profile;
       const ds = Math.max(.25, cfg.durationScale || 1);
       const os = Math.max(0, cfg.overshootScale == null ? 1 : cfg.overshootScale);
@@ -270,9 +277,9 @@ function machineWheelRig(host, options){
         const finish = () => {
           raf = 0;
           if (motor){ motor.stop(); motor = null; }
-          place(outgoing, snap(T));
+          place(outgoing, dir * snap(T));
           place(incoming, 0);
-          drawMachinery(snap(T), 0);
+          drawMachinery(dir * snap(T), 0);
           glint.style.opacity = 0;
           resolve();
         };
@@ -320,10 +327,10 @@ function machineWheelRig(host, options){
             return;
           }
           if (motor) motor.set(speed);
-          const yOut = snap(x * T);
+          const yOut = dir * snap(x * T);
           place(outgoing, yOut);
-          place(incoming, yOut - T);
-          drawMachinery(yOut, yOut - T);
+          place(incoming, yOut - dir * T);
+          drawMachinery(yOut, yOut - dir * T);
           glint.style.opacity = quant(speed * .55);
           raf = requestAnimationFrame(frame);
         };
@@ -539,6 +546,52 @@ async function careerDepartToTableV2(launch, options = {}){
     if (built && !table.classList.contains('hidden')) careerScreen.classList.add('hidden');
     tableEntranceInFlight = false;
     if (built) deal();
+  }
+}
+
+/* ---- Going back: the drum turned the other way ----
+   reveal() makes the destination visible and current WITHOUT hiding the
+   screen being left; settle() is the real state change (it hides what is
+   left, tears the table down, etc.) and runs once the drum has turned, so
+   the outgoing face rides away exactly as the player left it. A tap
+   throws the drum round to its stop. Reduced Motion, a missing screen or
+   a roll already in flight just runs both at once. */
+let machineWheelBackInFlight = false;
+async function machineWheelBack(fromEl, toEl, reveal, settle){
+  const app = $('app');
+  const plain = () => { reveal(); settle(); };
+  if (!app || !fromEl || !toEl || motionOff() || fromEl.classList.contains('hidden')){ plain(); return; }
+  if (machineWheelBackInFlight || careerEntranceInFlight || tableEntranceInFlight){ plain(); return; }
+  machineWheelBackInFlight = true;
+  const profile = MACHINE_WHEEL_CONFIG.profiles.back;
+  let rig = null, revealed = false, settled = false;
+  const skip = event => { if (!rig) return; event.preventDefault(); rig.hurry(); swallowNextClick(); };
+  app.addEventListener('pointerdown', skip, true);
+  try{
+    fromEl.inert = true;
+    rig = machineWheelRig(app, { z: { back: 47, face: 50, front: 56 } });
+    rig.claim(fromEl, 0);
+    await rig.release(fromEl, profile, -1);
+    rig.park(toEl, .6, -1);
+    reveal(); revealed = true;
+    fromEl.classList.remove('hidden');
+    toEl.inert = true;
+    toEl.getBoundingClientRect();
+    await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+    await rig.roll(fromEl, toEl, profile, -1);
+    settled = true; settle();
+    fromEl.classList.add('hidden');
+    await rig.lock(toEl, profile);
+  } catch (error){
+    console.error('Back roll failed; changing screens directly.', error);
+  } finally{
+    if (rig) rig.destroy();
+    app.removeEventListener('pointerdown', skip, true);
+    fromEl.inert = false;
+    toEl.inert = false;
+    if (!revealed) reveal();
+    if (!settled){ settled = true; settle(); }
+    machineWheelBackInFlight = false;
   }
 }
 
