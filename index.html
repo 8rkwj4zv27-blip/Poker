@@ -32,6 +32,7 @@
   <link rel="stylesheet" href="css/home-boot.css?v=2">
   <link rel="stylesheet" href="css/press-feel.css?v=2">
   <link rel="stylesheet" href="css/finishes.css?v=3">
+  <link rel="stylesheet" href="css/dashboard.css?v=1">
   <link rel="stylesheet" href="css/crt.css?v=1">
 
 <meta name="format-detection" content="telephone=no">
@@ -274,9 +275,9 @@
           </div>
         </div>
       </div>
-      <div id="your-seat-dock">
+      <div id="your-seat-dock" class="dash-frame">
         <div id="hud-frame">
-          <div id="hud-left">
+          <div id="hud-left" class="dash-bay">
             <div id="hud-tower" aria-hidden="true"></div>
             <div class="bank-hatch" id="bank-hatch" aria-hidden="true">
               <div class="bank-hatch-leaf bank-hatch-leaf-l"></div>
@@ -296,7 +297,7 @@
               <div class="hud-result" id="hud-result"></div>
             </div>
           </div>
-          <div id="hud-right">
+          <div id="hud-right" class="dash-bay">
             <div class="hearts hidden" id="hud-hearts" aria-hidden="true"></div>
             <div class="blind-lamps" aria-label="Blind position">
               <div class="blind-indicator" id="hud-sb-indicator"><span>SB</span></div>
@@ -319,7 +320,7 @@
       </div>
     </div>
 
-    <div id="action-area">
+    <div id="action-area" class="dash-frame-base">
       <div id="coach" class="hidden" aria-live="polite">
         <div class="coach-head">
           <span class="coach-title">Coach</span>
@@ -656,6 +657,7 @@
 <script src="js/08-dev-mode.js?v=home-cast-1"></script>
 <script src="js/home-cast.js?v=1"></script>
 <script src="js/home-boot.js?v=2"></script>
+<script src="js/dashboard.js?v=1"></script>
 <script src="js/crt.js?v=1"></script>
 <script src="js/finishes.js?v=3"></script>
 <script src="js/press-feel.js?v=2"></script>

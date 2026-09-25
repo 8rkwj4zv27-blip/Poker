@@ -13,7 +13,8 @@ by the code and by `CLAUDE.md`/`AGENTS.md`, not by this file.
 07-ui-wiring.js         career-hub-live.js      career-motion-live.js
 machine-wheel.js        ticket-feed.js          table-intro.js
 08-dev-mode.js          home-cast.js            home-boot.js
-crt.js                  finishes.js             press-feel.js
+dashboard.js            crt.js                  finishes.js
+press-feel.js
 ```
 
 Later files call into earlier ones freely; there's no module system, so
@@ -183,18 +184,29 @@ neighbour's flare. Sparse, silent idle life; tapping a face flares it.
 The Home Boot drops the faces in and calls `HeroCast.arrive(i)` on each
 landing. Decorative only — not the table mood system.
 
+## `css/dashboard.css` + `js/dashboard.js` — Dashboard V2 (live, release 1)
+
+The production home of the Dashboard V2 parts, moved in from the order
+form one part per release (`docs/ui/PATTERN_BOOK.md`, Dashboard V2). Live
+now: the smooth one-piece frame (`.dash-frame` on `#your-seat-dock`,
+`.dash-frame-base` on `#action-area`), hard-sunk bays (`.dash-bay`) and the
+channel rim light (`data-rim`, set by `DashRim` in `js/dashboard.js` from
+the table: turn / allin / win / bust; `celebrateWinnerSeat()` calls
+`DashRim.win()`). Presentation only. The stylesheet loads just before
+`css/crt.css`; later releases (layout, raise, behaviours) add to these two
+files.
+
 ## `dashboard-order-lab.html` + `js/dashboard-order-lab.js` + candidate `css/dashboard-order.css` / `js/dashboard-order.js` — Dashboard V2 order form (Lab)
 
 The current Dashboard V2 surface. Runs the **real game** sandboxed (like
-`intro-lab.html`) with the two candidate files injected. Round 2: the
-owner's round-1 picks are fixed (bankroll row with no STACK label, one
-screen, V1 height, pucks); the form orders the frame (build, recess, rim
-light, light strength), parts (card tray, bet this hand, button bay), the
-raise (mechanism, sizing control) and behaviours (knock to check, card peek,
-hold-to-charge all in). Options are `data-do-*` attributes on the game's
-`<html>`; the rim light reads `data-do-lit` (turn / allin / win / bust),
-set from game state. Behaviours hook the real `humanAct()`,
-`setWagerAmount()`, `updateFixedReel()` and `rollStageTransition()`. The
+`intro-lab.html`) with the two candidate files injected, so it already
+shows the live frame, bays and rim light (`css/dashboard.css`). Round 2:
+the owner's round-1 picks are fixed (bankroll row with no STACK label, one
+screen, V1 height, pucks); the form orders the parts still to ship (card
+tray, bet this hand, button bay), the raise (mechanism, sizing control)
+and behaviours (knock to check, card peek, hold-to-charge all in). Options
+are `data-do-*` attributes on the game's `<html>`. Behaviours hook the real
+`humanAct()`, `setWagerAmount()` and `updateFixedReel()`. The
 View panel switches phone size (430 / 390 / 320). The default order ("YOUR
 ORDER") is the owner's signed-off build spec, recorded in
 `docs/ui/PATTERN_BOOK.md` (Dashboard V2). Every part is built to

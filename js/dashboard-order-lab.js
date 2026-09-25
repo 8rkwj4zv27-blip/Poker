@@ -22,32 +22,11 @@
   const status = t => { $('#ol-status').textContent = t; };
   const gameHost = document.querySelector('[data-game]');
   const GAME = (gameHost && gameHost.dataset.game) || 'index.html';
-  const V = '3';
+  const V = '4';
 
   /* The form. First option of every row is V1 (value '0'). Round 2: the
      owner's picks from round 1 are fixed (FIXED below) and no longer rows. */
   const SECTIONS = [
-    { title:'FRAME', jobs:[
-      { key:'build', name:'BUILD', hint:'the dashboard as its own instrument', opts:[
-        ['0','V1', 'Today\'s case and thin rim line, sitting on the table.'],
-        ['chunky','CHUNKY', 'Lifted off the table: a thick stepped frame all round, a deep lip, a heavy shadow.'],
-        ['smooth','SMOOTH', 'A moulded shell: big round corners, soft two-step bevels, rounded bays.'],
-        ['rail','PADDED RAIL', 'The rim is a stitched bumper, like a poker table\'s padded rail.'],
-        ['whacky','WHACKY', 'Cut corners, a heavy top lip that throws a shadow, a stepped foot.']] },
-      { key:'recess', name:'RECESS', hint:'how the bays are sunk', opts:[
-        ['0','V1', 'Today\'s bays.'],
-        ['sunk','HARD SUNK', 'Near-black, a hard shadow along the top, a lit lip below.'],
-        ['ring','RINGED', 'A raised bevelled ring round each bay, then the recess.'],
-        ['double','DOUBLE STEP', 'Two steps down, like a trench.']] },
-      { key:'rim', name:'RIM LIGHT', hint:'where the light lives', opts:[
-        ['0','OFF', 'No light.'],
-        ['channel','CHANNEL', 'A groove round the frame with a light strip in it.'],
-        ['lamps','LAMP ROW', 'Square lamps set into the top and bottom of the frame. They light together, never chase.'],
-        ['under','UNDERGLOW', 'Light spills out from under the machine onto the table.'],
-        ['pipe','LIGHT PIPE', 'Only the top edge lights, behind smoked glass.']] },
-      { key:'light', name:'LIGHT', hint:'turn amber · all in red · win warm · bust dark', opts:[
-        ['0','SUBTLE', 'A soft light.'], ['bold','BOLD', 'Brighter, with more spill.']] }
-    ]},
     { title:'PARTS', jobs:[
       { key:'tray', name:'CARD TRAY', hint:'where your cards stand', opts:[
         ['0','V1', 'Today\'s thin lip.'],
@@ -93,7 +72,9 @@
   const FIXED = { layout:'rows', blinds:'pucks' };
   const V1 = Object.fromEntries(JOBS.map(j => [j.key, '0']).concat(Object.keys(FIXED).map(k => [k, '0'])));
   // The owner's round-2 order: the Dashboard V2 build spec.
-  const SUGGESTED = { build:'smooth', recess:'sunk', rim:'channel', light:'bold', tray:'0', bet:'drum', bay:'cradle',
+  // The frame (SMOOTH, HARD SUNK, CHANNEL, BOLD) is live in the game since
+  // v0.40.2 (css/dashboard.css), so it is no longer a row here.
+  const SUGGESTED = { tray:'0', bet:'drum', bay:'cradle',
     raise:'barrel', sizing:'fader', knock:'on', peek:'hold', allin:'hold' };
   let order = Object.assign({}, SUGGESTED);
   const view = { theme:'emerald', sound:'on', motion:'on', size:'430' };

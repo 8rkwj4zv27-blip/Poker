@@ -11,8 +11,7 @@
    seats, sizing controls, the all-in key), and runs the behaviours
    through the game's own functions: humanAct() for every action,
    setWagerAmount() for every sizing change, updateFixedReel() for every
-   reel, and rollStageTransition() is wrapped so the rim can go dark before
-   the RUN OVER roll. Poker rules and state are only ever changed by those
+   reel. Poker rules and state are only ever changed by those
    real functions.
    ============================================================ */
 (function(){
@@ -88,7 +87,7 @@
 
     if (order.layout === 'rows'){
       // One screen: the hand line (and, for the CRT bet, a money cell) on top, the turn below.
-      const screen = make('<div class="do-screen"><div class="do-screen-top"></div></div>');
+      const screen = make('<div class="do-screen dash-bay"><div class="do-screen-top"></div></div>');
       hand.parentNode.insertBefore(screen, hand);
       screen.firstChild.appendChild(hand);
       screen.firstChild.appendChild(make('<div class="do-crtbet crt-screen machine-crt" data-ink="money" data-crt-blink="off"><small>BET</small><b>$0</b></div>'));
@@ -150,7 +149,7 @@
       else root.removeAttribute('data-do-' + k);
     });
     build();
-    litState = ''; tick(true);
+    tick(true);
   }
 
   /* ---------- bet this hand: every readout follows the game's own number ---------- */
@@ -183,25 +182,13 @@
     setTimeout(() => tape.classList.remove('tear'), 450);
   }
 
-  /* ---------- the rim light ---------- */
-  let litState = '', winUntil = 0, bustLit = false, lastWinFlash = false;
-  function setLit(state, force){
-    if (state === litState && !force) return;
-    litState = state;
-    if (state) root.setAttribute('data-do-lit', state); else root.removeAttribute('data-do-lit');
-    if (on('rim') && state && state !== 'bust'){
-      root.classList.remove('do-relay'); void root.offsetWidth; root.classList.add('do-relay');
-      setTimeout(() => root.classList.remove('do-relay'), 340);
-      voice.relay();
-    }
-  }
+  /* The rim light is production now (js/dashboard.js, DashRim). */
 
   /* ---------- the watch loop: turns table state into dashboard state ---------- */
   let last = { handKey:'' };
   function tick(force){
     const dock = $id('your-seat-dock'); if (!dock) return;
     const h = human();
-    const turn = myTurn();
 
     // The raise face covers the instrument panel exactly.
     const frame = $id('hud-frame'), ad = document.querySelector('.actions-dock');
@@ -219,20 +206,6 @@
     }
 
     syncBet(!!force);
-
-    // Rim light: bust > win > all in > your turn > dark.
-    const win = frame.classList.contains('hud-frame-win-flash');
-    if (win && !lastWinFlash) winUntil = performance.now() + 1700;
-    lastWinFlash = win;
-    if (h && h.chips > 0) bustLit = false;
-    const mine = !!(h && h.allIn && inHand() && !h.folded);
-    const facing = turn && game.players.some(p => !p.isHuman && p.allIn && !p.folded) && toCall() > 0;
-    let state = '';
-    if (bustLit) state = 'bust';
-    else if (performance.now() < winUntil) state = 'win';
-    else if (mine || facing) state = 'allin';
-    else if (turn) state = 'turn';
-    setLit(state, force);
   }
   setInterval(tick, 120);
 
@@ -410,21 +383,6 @@
       const up = () => { window.removeEventListener('pointerup', up); window.removeEventListener('pointercancel', up); if (key.classList.contains('charging')) stop(); };
       window.addEventListener('pointerup', up); window.addEventListener('pointercancel', up);
     });
-  }
-
-  /* ---------- bust: the rim flickers out before the RUN OVER roll ---------- */
-  const sleep = ms => new Promise(r => setTimeout(r, quiet() ? 0 : ms));
-  if (typeof rollStageTransition === 'function'){
-    const realRoll = rollStageTransition;
-    rollStageTransition = async function(){
-      const h = human();
-      if (h && h.chips <= 0 && on('rim')){
-        bustLit = true; setLit('bust');
-        snd('busted', true); voice.relay();
-        await sleep(1150);
-      }
-      return realRoll.apply(this, arguments);
-    };
   }
 
   window.DashOrder = { apply, get order(){ return Object.assign({}, order); } };

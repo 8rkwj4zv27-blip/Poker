@@ -7,8 +7,8 @@ something specific was built or decided, never by default.
 
 ## Current build
 
-- Build marker: `v0.40.1-dev · Fix Pass` (main-menu footer / DEV panel).
-- Service-worker cache: `poker-v40-1`.
+- Build marker: `v0.40.2-dev · Dash Frame` (main-menu footer / DEV panel).
+- Service-worker cache: `poker-v40-2`.
 - Career save schema: **version 6**.
 - Production Career Hub: ticket-reader presentation (six-venue rack,
   spring-driven touch physics, printed-ticket detail flip), integrated
