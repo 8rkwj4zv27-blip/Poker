@@ -54,11 +54,23 @@ Read `AGENTS.md` / `CLAUDE.md`, `docs/CODEMAP.md` and
   with big reels; the smooth frame and its light are one piece (no joins in
   the corners, underglow clean round them); knock jolts the whole machine
   so the rim never sits over the cards.
-- **Next, each in a fresh chat:** (1) production build of the order, one
-  part per release (frame + rim, then bays + screen, then the raise);
-  (2) the raise mechanism animation; (3) card tray options; (4) the theatre
-  pass (ALL IN moment, bust with cards and keys blasted out like the enemy
-  KO, the win); (5) the chip bank and chips.
+- **Production, release 1 of 4: live v0.40.2** (25 September 2026). The
+  frame (smooth, one piece), hard-sunk bays and the channel rim light
+  (bold) are in the game: `css/dashboard.css` (`.dash-frame`,
+  `.dash-frame-base`, `.dash-bay`) and `js/dashboard.js` (`DashRim` sets
+  `data-rim`: turn / allin / win / bust; no hold before the RUN OVER roll).
+  Checked in the four themes, Reduced Motion, 430 / 390 / 320. Screenshots:
+  `docs/ui/dashboard-v2/`. The lab now shows the production frame; its
+  frame rows are retired. Known and out of scope: the landscape layout
+  (unused) draws no rim.
+- **Next, each in a fresh chat:** (1) production release 2, layout and
+  parts (the one grid, fixed screen, full-width stack drum, pucks, small
+  bet drum, V1 tray, cradle key bay); then release 3, the raise (barrel,
+  fader, hold-to-charge ALL IN); then release 4, behaviours (knock; card
+  peek as a Settings option, off by default); (2) the raise mechanism
+  animation; (3) card tray options; (4) the theatre pass (ALL IN moment,
+  bust with cards and keys blasted out like the enemy KO, the win);
+  (5) the chip bank and chips.
 - Earlier labs below are history only.
 
 ## The goal
