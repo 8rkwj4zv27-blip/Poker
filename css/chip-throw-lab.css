@@ -1,0 +1,27 @@
+/* ============================================================
+   CHIP THROW LAB — the air layer, felt shadows and seat chutes.
+   Panel, bet spots, pot and bank styling come from chip-lab.css.
+   Not loaded by index.html.
+   ============================================================ */
+.ct-air,.ct-shadows{ position:fixed; inset:0; pointer-events:none; }
+.ct-shadows{ z-index:590; }
+.ct-air{ z-index:600; }
+.ct-air .cl-chip{ position:absolute; transform-origin:50% 50%; will-change:transform; }
+.ct-shadow{
+  position:absolute; left:0; top:0; border-radius:50%;
+  background:rgba(0,0,0,.9); will-change:transform,opacity;
+}
+/* A small slot in the felt under each seat: the machine dispenses chips. */
+.ct-chute{
+  position:absolute; z-index:5; width:26px; height:7px; transform:translateX(-50%);
+  background:linear-gradient(180deg,#000 0 60%,#1a1a14 60%);
+  border:2px solid var(--px-ink); border-top-color:color-mix(in srgb,var(--accent) 55%,#000);
+  border-radius:2px; box-shadow:0 1px 0 rgba(255,255,255,.08);
+}
+.ct-chute.is-kick{ animation:ctKick .16s steps(2,end); }
+@keyframes ctKick{
+  0%{ border-top-color:var(--accent-bright); box-shadow:0 -2px 4px color-mix(in srgb,var(--accent) 60%,transparent); }
+  100%{ border-top-color:color-mix(in srgb,var(--accent) 55%,#000); }
+}
+.ct-panel .cl-row{ padding:1px 0; }
+.ct-panel .cl-seg-sm button{ padding:6px 7px; }

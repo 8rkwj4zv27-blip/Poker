@@ -96,3 +96,35 @@ with amount plates, and the sweep.
 New parts (bet spot, rack/tray, hatch, gauge) go into
 `docs/ui/PATTERN_BOOK.md` and `validation/pattern-book-checks.js` once
 signed off, before they reach the game.
+
+## Chip motion (`chip-throw-lab.html`), 26 Sep 2026
+
+Owner feedback on `chip-lab`: bet spots before the pot, the bank and the
+tidy tap are good, but chip travel reads as liquid ("vomit"), worst when
+it comes out of an opponent's face. Keep LOTS of chips; make each one a
+heavy, real piece.
+
+Why it read as liquid: one chip per flight at 34–90ms gaps (a stream),
+chips spawned at the portrait, a different sideways sway and spin per
+chip (droplets), and 400–700ms soft easing where the rest of the game
+moves in hard, stepped beats.
+
+The lab's switches (combine freely; four presets):
+- **Throw:** stream (today) / handfuls of 2–6 with gaps / splash
+  (everything at once on flights of different lengths).
+- **Timing:** even / uneven.
+- **Air:** eased (today) / gravity: a true ballistic arc whose height
+  scales with distance, the chip flipping end over end and landing flat.
+- **Shadow:** each chip's shadow stays on the felt, shrinking with height.
+- **Landing:** settle / bounce + skid onto the exact slot.
+- **Rollers:** about 1 in 10 flat landings rolls on its edge, wobbles and
+  falls flat.
+- **Pile knock:** a landing nudges nearby resting chips.
+- **Source:** face (today) / table edge / a chute in the felt under each
+  seat.
+- **Sweep:** stream (today) / push (each spot slides in as a group).
+- **Frames:** smooth / stepped at 12fps.
+
+Presets: Today (reference) · Weight (recommended: handfuls, gravity,
+shadows, bounce, rollers, knock, chute, push) · Splash · Machine (stepped
+motion, dead landings).

@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en" data-crt-tint="dark" data-crt-glow="1" data-crt-scan="4" data-crt-rgb="0" data-crt-grain="4" data-crt-curve="0" data-crt-flicker="4" data-crt-roll="1" data-crt-tear="4" data-crt-ghost="2" data-crt-change="channel" data-crt-ink="mono">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#16090D">
+<link rel="icon" href="data:,">
+<title>Chip Throw Lab</title>
+<!-- CHIP THROW LAB — how chips travel (docs/ui/CHIP_PLAN.md). The real
+     #table-screen and renderers on memory-only state, plus a small chip
+     physics engine with every idea as a switch. Reuses chip-lab.css for
+     the panel, bet spots and bank. Never loaded by index.html or sw.js;
+     never writes a save. -->
+<link rel="stylesheet" href="css/01-foundation.css">
+<link rel="stylesheet" href="css/02-screens.css">
+<link rel="stylesheet" href="css/03-action-console.css">
+<link rel="stylesheet" href="css/04-overlays-and-modes.css">
+<link rel="stylesheet" href="css/05-responsive-and-arcade.css">
+<link rel="stylesheet" href="css/06-machine-system.css">
+<link rel="stylesheet" href="css/career-hub-v2-lab.css">
+<link rel="stylesheet" href="css/career-motion-live.css">
+<link rel="stylesheet" href="css/machine-wheel.css">
+<link rel="stylesheet" href="css/table-intro.css">
+<link rel="stylesheet" href="css/press-feel.css">
+<link rel="stylesheet" href="css/finishes.css">
+<link rel="stylesheet" href="css/crt.css">
+<link rel="stylesheet" href="css/chip-lab.css">
+<link rel="stylesheet" href="css/chip-throw-lab.css">
+</head>
+<body data-theme="emerald" data-deck="classic" data-motion="on" data-cardback="table" class="cl-body">
+  <div id="app" class="cl-host">
+    <div class="cl-loading" id="cl-mount">Mounting production table…</div>
+  </div>
+
+  <button class="cl-tab" id="cl-tab" type="button" aria-expanded="true" aria-controls="cl-panel">THROW</button>
+
+  <aside class="cl-panel ct-panel" id="cl-panel" aria-label="Chip throw lab controls">
+    <header class="cl-head">
+      <strong>CHIP THROW LAB</strong>
+      <span id="cl-status">LOADING…</span>
+    </header>
+
+    <section class="cl-group">
+      <div class="cl-label">PRESET</div>
+      <div class="cl-seg" data-opt="preset">
+        <button type="button" data-v="today">TODAY</button>
+        <button type="button" data-v="weight">WEIGHT</button>
+        <button type="button" data-v="splash">SPLASH</button>
+        <button type="button" data-v="machine">MACHINE</button>
+      </div>
+      <p class="cl-note" id="ct-preset-note"></p>
+    </section>
+
+    <section class="cl-group">
+      <div class="cl-label">TRIGGER</div>
+      <div class="cl-runs">
+        <button type="button" data-run="opp-bet">OPPONENT BET</button>
+        <button type="button" data-run="opp-allin">OPPONENT ALL-IN</button>
+        <button type="button" data-run="you-bet">YOUR BET</button>
+        <button type="button" data-run="you-allin">YOUR ALL-IN</button>
+        <button type="button" data-run="sweep">SWEEP</button>
+        <button type="button" data-run="pay-you">PAY YOU</button>
+        <button type="button" data-run="pay-opp">PAY MANIAC</button>
+        <button type="button" data-run="reset">RESET</button>
+        <button type="button" class="is-primary" data-run="street">A STREET ▸</button>
+        <button type="button" class="is-primary" data-run="showdown">ALL-IN + WIN ▸</button>
+      </div>
+    </section>
+
+    <section class="cl-group">
+      <div class="cl-label">MIX YOUR OWN</div>
+      <div class="cl-row"><span class="cl-label">THROW</span>
+        <div class="cl-seg cl-seg-sm" data-opt="throw"><button type="button" data-v="stream">STREAM</button><button type="button" data-v="handful">HANDFULS</button><button type="button" data-v="splash">SPLASH</button></div></div>
+      <div class="cl-row"><span class="cl-label">TIMING</span>
+        <div class="cl-seg cl-seg-sm" data-opt="timing"><button type="button" data-v="even">EVEN</button><button type="button" data-v="irregular">UNEVEN</button></div></div>
+      <div class="cl-row"><span class="cl-label">AIR</span>
+        <div class="cl-seg cl-seg-sm" data-opt="air"><button type="button" data-v="eased">EASED</button><button type="button" data-v="gravity">GRAVITY</button></div></div>
+      <div class="cl-row"><span class="cl-label">SHADOW</span>
+        <div class="cl-seg cl-seg-sm" data-opt="shadow"><button type="button" data-v="on">ON</button><button type="button" data-v="off">OFF</button></div></div>
+      <div class="cl-row"><span class="cl-label">LANDING</span>
+        <div class="cl-seg cl-seg-sm" data-opt="land"><button type="button" data-v="settle">SETTLE</button><button type="button" data-v="bounce">BOUNCE</button></div></div>
+      <div class="cl-row"><span class="cl-label">ROLLERS</span>
+        <div class="cl-seg cl-seg-sm" data-opt="roll"><button type="button" data-v="on">ON</button><button type="button" data-v="off">OFF</button></div></div>
+      <div class="cl-row"><span class="cl-label">PILE KNOCK</span>
+        <div class="cl-seg cl-seg-sm" data-opt="react"><button type="button" data-v="on">ON</button><button type="button" data-v="off">OFF</button></div></div>
+      <div class="cl-row"><span class="cl-label">SOURCE</span>
+        <div class="cl-seg cl-seg-sm" data-opt="source"><button type="button" data-v="face">FACE</button><button type="button" data-v="edge">EDGE</button><button type="button" data-v="chute">CHUTE</button></div></div>
+      <div class="cl-row"><span class="cl-label">SWEEP</span>
+        <div class="cl-seg cl-seg-sm" data-opt="sweep"><button type="button" data-v="stream">STREAM</button><button type="button" data-v="push">PUSH</button></div></div>
+      <div class="cl-row"><span class="cl-label">FRAMES</span>
+        <div class="cl-seg cl-seg-sm" data-opt="frames"><button type="button" data-v="smooth">SMOOTH</button><button type="button" data-v="stepped">STEPPED</button></div></div>
+    </section>
+
+    <section class="cl-group">
+      <div class="cl-row"><span class="cl-label">SPEED</span>
+        <div class="cl-seg cl-seg-sm" data-opt="speed"><button type="button" data-v="1">1×</button><button type="button" data-v="0.35">SLOW</button></div></div>
+      <div class="cl-row"><span class="cl-label">SOUND</span>
+        <div class="cl-seg cl-seg-sm" data-opt="sound"><button type="button" data-v="on">ON</button><button type="button" data-v="off">OFF</button></div></div>
+      <p class="cl-note">Tap the bank to tidy it. Collapse this panel with the THROW tab to watch the table clean.</p>
+    </section>
+  </aside>
+
+  <script src="js/01-poker-math.js"></script>
+  <script src="js/02-support-systems.js"></script>
+  <script src="js/03-opponents.js"></script>
+  <script src="js/04-modes-and-scoring.js"></script>
+  <script src="js/05-game-engine.js"></script>
+  <script src="js/06-presentation.js"></script>
+  <script src="js/crt.js"></script>
+  <script src="js/chip-throw-lab.js"></script>
+</body>
+</html>
