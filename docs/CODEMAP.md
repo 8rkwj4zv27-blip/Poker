@@ -127,6 +127,9 @@ replaces the three V1 globals, so **edit the V2 functions here, not the V1
 bodies** in `06-presentation.js`/`career-motion-live.js` (those remain only
 so `wheel-v2-lab.html` can switch back to compare). Tuning lives in
 `MACHINE_WHEEL_CONFIG`; sounds are `Sound.wheel*` in the `Sound` module.
+`machineWheelBack()` turns the same drum the other way (profile `back`)
+for the back paths — Career->Home, Back to Events and Leave table call it
+through `rollBackTo()` in `07-ui-wiring.js`.
 
 ## `js/table-intro.js` + `css/table-intro.css` — Table Intro (live)
 

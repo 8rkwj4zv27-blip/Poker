@@ -4,6 +4,49 @@ Build audited: v0.40.0-dev · CRT rebuild (branch claude/poker-faces-design-audi
 
 A full-screen/motion/glitch audit of the whole game, captured in the real game in headless Chromium at iPhone sizes. The illustrated version (screenshots for every finding) was published as a private Artifact for the owner; this file is the durable copy for future sessions. It is a proposal, not approval: nothing here changes a signed-off finish until the owner picks it (see `PATTERN_BOOK.md`).
 
+## Status after the fix pass (v0.40.1, 25 September 2026)
+
+The owner split the work: **fix everything that isn't a design decision now**,
+then a **V2 design pass** across the whole game. The player dashboard was to be
+left exactly as it is for now.
+
+**Fixed in the fix pass**
+- F1 ligatures (off on every element; a `font:` shorthand had re-enabled them).
+- F2 first-run card now shows before the Table Intro and the deal waits for it;
+  F3 the line about the unreachable Coach button is gone.
+- F4 all-in runouts read ALL IN / RUNNING IT OUT; F5 hand-log grammar.
+- F6 pot names: layers with the same eligible players share one name and one
+  log/review line (presentation only; payout, scoring and K.O. untouched).
+- F7 pot plate clears the deck; F8 showdown lane forms on the board row;
+  F9 reward/K.O. text sits on a dark band centred on the board;
+  F10 the pot plate holds and counts down instead of reading POT 0.
+- F11 result stages fit 390x844 and the SE (the busted-by line was unstyled
+  15px type); F12 Home fits the SE; F13 Custom Game uses the approved compact
+  choice rows; F14 Settings: coral danger key, Leave table/Reset only where
+  they apply, Developer Mode on a quiet service row.
+- Owner-spotted: ticket DETAILS side re-laid out (no overlap, compact SE
+  layout, shared baselines, payouts columns, TOP-2 kept together); Hub
+  bankroll rail keys no longer touch.
+- Settings tidied (Screen header A with a back key on Settings, Finishes and
+  Scoring Guide; one spacing rhythm; opens at the top).
+- Back paths (Career->Home, Back to Events, Leave table) turn the Machine
+  Wheel the other way instead of hard-cutting.
+
+**V2 design pass (not started — each starts in a Lab for sign-off)**
+- Player dashboard: rims/borders overlapping at close zoom; the bank (revamp;
+  chips vanish just before the hatch and the pile pops back in one go — the
+  intake removes each chip at the rim, then `rebuildBankPileFromState()`);
+  stale readouts in results mode (F17); STACK reel half hidden behind NEXT
+  TABLE on TABLE CLEARED (F11b); the banner CRT clipping long lines such as
+  "YOU WIN · PAIR OF FOU…".
+- Chips: the pot pile's chips overlap in ways that aren't physically possible.
+- Enemy seat cards, table talk (F21), gameplay animations (all-in reveal,
+  reward plates, bet spots, dealer puck), sub-screen page change and dialog
+  motion, the sub-screens themselves, Coach, themes/Velvet (F19), Home
+  nameplate (F18), reel cell counts (F15), CRT ghosting (F16).
+- Career Hub on an iPhone SE: BUY IN still starts below the fold — fitting
+  it needs a compact ticket and cartridge, which is a design change.
+
 ## Verdict
 
 The showpieces are very good. Home Boot, the Machine Wheel, the Career ticket rack, the buy-in feed, the Table Intro, press feel, and the CRT system all look and move like one strange velvet poker machine. They set the standard.
