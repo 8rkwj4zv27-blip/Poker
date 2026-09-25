@@ -9,6 +9,17 @@ Read `AGENTS.md` / `CLAUDE.md`, `docs/CODEMAP.md` and
 - Production files are **unchanged** on this branch. Everything below is Lab
   or docs.
 
+## Current state (latest, read this first)
+
+- Signed-off rules: `docs/ui/DASHBOARD_V2_RULES.md`.
+- Current lab: **`dashboard-order-lab.html`**, the order form on the real game
+  (see `docs/CODEMAP.md`). Parts are in `css/dashboard-order.css`
+  (`data-do-*` attributes), behaviours in `js/dashboard-order.js`, the form
+  and moments in `js/dashboard-order-lab.js`.
+- Owner's verdict on the order form: "a better place, but a lot of this
+  doesn't work". Their feedback arrives per form row; fix, then republish.
+- Earlier labs below are history only.
+
 ## The goal
 
 Upgrade the player's dashboard (the bottom HUD: hole cards, chip bank, hand
