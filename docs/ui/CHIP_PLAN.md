@@ -128,3 +128,34 @@ The lab's switches (combine freely; four presets):
 Presets: Today (reference) · Weight (recommended: handfuls, gravity,
 shadows, bounce, rollers, knock, chute, push) · Splash · Machine (stepped
 motion, dead landings).
+
+### v2 (26 Sep 2026)
+
+Owner on v1: the arc and landing feel really good. Push further: smaller,
+simpler chips (the 350px art shrunk to 20px is noisy); handfuls looked
+like two frozen stacks travelling; more bounce; flips; more knocks; maybe
+messy, then tidy; "super video gamey, fun to watch over and over". The v1
+drawer also hid the table.
+
+v2 rebuilds the lab around a chip physics world: every chip on the felt
+is a body (ground point, height, velocity), not a DOM pile slot.
+- **Art:** current / pixel. Pixel chips are drawn by code at their real
+  size, with six tilt frames (face, tilts, edge-on), so flips and rollers
+  are real pixel animation. Resting chips use the table's viewing tilt.
+  Placeholder art the owner can replace.
+- **Size:** S 13 / M 15 / L 17px (bank chips +5).
+- **Handfuls:** rigid (v1) / bloom: each chip has its own release time,
+  speed, aim and flip count, so a handful spreads in the air.
+- **Flips:** 1 / 2–6. **Bounces:** 1 / 1–3, glancing off chips they hit.
+- **Coin wobble:** some chips spin down like a coin before dropping flat.
+- **Knock-offs:** hard landings pop resting chips loose, and chips stacked
+  on them topple. Sliding chips shove resting ones.
+- **After landing:** neat (v1: straight to a slot) / mess then auto-tidy
+  (colour by colour, ratchet and lock) / mess until you tap the felt.
+- **Juice:** dust puffs, chute rattle, and a hit-stop plus stage shake on
+  all-ins.
+- **Lab chrome:** a trigger bar over the (inactive) action buttons, a
+  settings drawer that closes on any trigger, Replay, and a sweep that
+  puts bets down first if the spots are empty.
+Presets: Today · Weight (recommended) · Chaos · Machine. Reduced Motion
+places every chip directly where it ends.

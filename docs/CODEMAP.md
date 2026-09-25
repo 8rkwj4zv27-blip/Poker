@@ -288,9 +288,10 @@ reuse instead of writing a new Playwright script from scratch each time.
   in `chip-lab.html` (+ `js/chip-lab.js`, `css/chip-lab.css`: the real
   table with switchable chip values, opponent chips and bank styles).
   `chip-throw-lab.html` (+ `js/chip-throw-lab.js`, `css/chip-throw-lab.css`)
-  is its companion for how chips travel: a small chip physics engine
-  (gravity arcs, felt shadows, bounce/skid/rollers, pile knock, seat
-  chutes) with every idea as a switch and four presets.
+  is its companion for how chips travel: a chip physics world (every
+  chip on the felt is a body: gravity arcs, flips through code-drawn pixel
+  frames, bounces, knock-offs, coin wobble, mess then tidy, seat chutes)
+  with every idea as a switch and four presets.
 - `docs/scoring/SCORING_SPEC.md` — authoritative scoring/award rules for
   both Career and Single Player.
 - `docs/ui/handover/` — earlier UI handover notes; a `python3 -m http.server`

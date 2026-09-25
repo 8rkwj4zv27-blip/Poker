@@ -1,17 +1,26 @@
 /* ============================================================
-   CHIP THROW LAB — the air layer, felt shadows and seat chutes.
-   Panel, bet spots, pot and bank styling come from chip-lab.css.
-   Not loaded by index.html.
+   CHIP THROW LAB v2 — the air layer, felt shadows, pixel chips, dust
+   puffs, seat chutes, and the lab's bottom bar + drawer. Bet spots, the
+   pot ring and the bank come from chip-lab.css. Not loaded by index.html.
    ============================================================ */
 .ct-air,.ct-shadows{ position:fixed; inset:0; pointer-events:none; }
 .ct-shadows{ z-index:590; }
 .ct-air{ z-index:600; }
 .ct-air .cl-chip{ position:absolute; transform-origin:50% 50%; will-change:transform; }
-.ct-shadow{
-  position:absolute; left:0; top:0; border-radius:50%;
-  background:rgba(0,0,0,.9); will-change:transform,opacity;
+.cl-chip.ct-px{ background-repeat:no-repeat; background-size:100% 100%; image-rendering:pixelated; image-rendering:crisp-edges; }
+.ct-shadow{ position:absolute; left:0; top:0; border-radius:50%; background:rgba(0,0,0,.9); will-change:transform,opacity; }
+
+/* dust puff: four pixel motes kicked out from the impact */
+.ct-puff{ position:absolute; left:0; top:0; width:2px; height:2px; z-index:99999; pointer-events:none; }
+.ct-puff::before{
+  content:''; position:absolute; left:0; top:0; width:2px; height:2px; background:transparent;
+  box-shadow:-4px 0 0 rgba(230,240,225,.55), 4px 0 0 rgba(230,240,225,.55), -2px -2px 0 rgba(230,240,225,.4), 2px -2px 0 rgba(230,240,225,.4);
+  animation:ctPuff .26s steps(3,end) forwards;
 }
-/* A small slot in the felt under each seat: the machine dispenses chips. */
+.ct-puff.is-big::before{ box-shadow:-6px 0 0 rgba(230,240,225,.6), 6px 0 0 rgba(230,240,225,.6), -3px -3px 0 rgba(230,240,225,.45), 3px -3px 0 rgba(230,240,225,.45), 0 -4px 0 rgba(230,240,225,.35); }
+@keyframes ctPuff{ from{ transform:scale(.6); opacity:1; } to{ transform:scale(2.2) translateY(-2px); opacity:0; } }
+
+/* a small slot in the felt under each seat: the machine dispenses chips */
 .ct-chute{
   position:absolute; z-index:5; width:26px; height:7px; transform:translateX(-50%);
   background:linear-gradient(180deg,#000 0 60%,#1a1a14 60%);
@@ -19,9 +28,39 @@
   border-radius:2px; box-shadow:0 1px 0 rgba(255,255,255,.08);
 }
 .ct-chute.is-kick{ animation:ctKick .16s steps(2,end); }
+.ct-chute.is-rattle{ animation:ctRattle .12s steps(4,end) infinite; }
 @keyframes ctKick{
   0%{ border-top-color:var(--accent-bright); box-shadow:0 -2px 4px color-mix(in srgb,var(--accent) 60%,transparent); }
   100%{ border-top-color:color-mix(in srgb,var(--accent) 55%,#000); }
 }
-.ct-panel .cl-row{ padding:1px 0; }
-.ct-panel .cl-seg-sm button{ padding:6px 7px; }
+@keyframes ctRattle{ 25%{ transform:translateX(calc(-50% - 1px)); } 75%{ transform:translateX(calc(-50% + 1px)); } }
+
+/* ---------------- lab chrome ---------------- */
+.ct-bar{
+  position:fixed; z-index:700; left:0; right:0; bottom:0;
+  padding:5px 6px calc(5px + env(safe-area-inset-bottom));
+  background:#2a0f13; border-top:3px solid #080405; box-shadow:0 -3px 0 #8a6a26;
+  font:700 9px/1.15 ui-monospace,Menlo,monospace; letter-spacing:.03em; color:#f3e6c4;
+}
+.ct-bar-row{ display:flex; gap:4px; overflow-x:auto; scrollbar-width:none; }
+.ct-bar-row::-webkit-scrollbar{ display:none; }
+.ct-bar button{
+  flex:0 0 auto; min-width:52px; padding:7px 6px; background:#3a1418; color:#f3e6c4;
+  border:2px solid #080405; box-shadow:0 3px 0 #080405; font:inherit; cursor:pointer;
+}
+.ct-bar button:active{ transform:translateY(2px); box-shadow:0 1px 0 #080405; }
+.ct-bar button.is-primary{ background:#e8b83a; color:#080405; box-shadow:inset 0 2px 0 #ffe380,0 3px 0 #080405; }
+.ct-bar button.is-live{ outline:2px solid #f6d06b; outline-offset:-4px; }
+.ct-bar-foot{ margin-top:5px; align-items:center; }
+.ct-bar-foot button{ padding:5px 7px; min-width:0; }
+.ct-replay{ background:#e8b83a !important; color:#080405 !important; }
+.ct-gear.is-on{ background:#e8b83a; color:#080405; }
+.ct-status{ flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:#b69a7a; font-weight:400; text-align:center; }
+.ct-status b{ color:#e8b83a; }
+.ct-drawer{ bottom:calc(88px + env(safe-area-inset-bottom)); max-height:58dvh; z-index:699; }
+.ct-drawer .cl-row{ padding:1px 0; }
+.ct-drawer .cl-seg-sm button{ padding:6px 7px; }
+@media (min-width:760px){
+  .ct-bar{ left:calc(50% - 390px); right:auto; width:390px; }
+  .ct-drawer,.ct-drawer[hidden]{ display:block; bottom:0; }
+}
