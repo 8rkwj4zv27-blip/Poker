@@ -114,6 +114,10 @@
   position:fixed; z-index:72; left:50%; top:46%; width:min(94vw,620px); transform:translate(-50%,-50%);
   display:flex; flex-direction:column; align-items:center; justify-content:center; gap:7px;
   text-align:center; pointer-events:none; isolation:isolate;
+  /* A dark band under the words: the reward is read over the board's own
+     cards (see placeArcadeLayer), so they dim instead of fighting it. */
+  padding-block:12px; min-height:92px;
+  background:linear-gradient(90deg,transparent,rgba(6,3,5,.8) 12%,rgba(6,3,5,.8) 88%,transparent);
 }
 .arcade-reward-layer::before{
   content:''; position:absolute; z-index:-1; width:88%; height:150%; opacity:0;

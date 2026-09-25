@@ -1024,7 +1024,40 @@ function takeChipFromPile(container, pile, measuredRects){
   const rect = (measuredRects && measuredRects.get(el)) || el.getBoundingClientRect();
   el.remove();
   container._chipCount = Math.max(0, (container._chipCount||0) - 1);
+  if (container.id === 'pot-stacks') paintPotValue();
   return { el, rect };
+}
+
+/* The pot plate never reads 0 while chips still sit in the pot. Once the
+   pot is paid out (g.pot already 0), the plate holds the last pot and
+   counts down with the chips as they actually leave the pile, then hides
+   with the pile. Also keeps the plate clear of the dealer deck. */
+function paintPotValue(){
+  const g = game, val = $('pot-val'), pile = $('pot-stacks');
+  if (!g || !val) return;
+  const chips = pile ? (pile._chipCount||0) : 0;
+  let shown = g.pot;
+  if (g.pot > 0){
+    val._lastPot = g.pot; val._drain = null;
+  } else if (chips > 0 && val._lastPot > 0){
+    if (!val._drain) val._drain = { from: val._lastPot, chips };
+    shown = Math.round(val._drain.from * chips / Math.max(1, val._drain.chips));
+  } else {
+    val._lastPot = 0; val._drain = null;
+  }
+  const text = shown.toLocaleString();
+  if (val.textContent !== text) val.textContent = text;
+  // Measure only when the plate's width could have changed.
+  const key = text + '|' + innerWidth + '|' + innerHeight;
+  if (val._clearKey !== key){ val._clearKey = key; keepPotClearOfDeck(); }
+}
+function keepPotClearOfDeck(){
+  const area = $('pot-area'), plate = area && area.querySelector('.pot-chip'), deck = $('dealer-deck');
+  if (!area || !plate || !deck || area.classList.contains('hidden')){ if ($('pot-val')) $('pot-val')._clearKey = null; return; }
+  const cur = parseFloat(area.style.marginLeft) || 0;
+  const overlap = deck.getBoundingClientRect().right + 6 - (plate.getBoundingClientRect().left - cur);
+  const nudge = overlap > 0 ? Math.ceil(overlap) : 0;
+  if (nudge !== cur) area.style.marginLeft = nudge ? nudge + 'px' : '';
 }
 /* Instantly creates and rests a brand-new chip in a pile — no flight, no
    source. Only for moments with genuinely no physical chip to move: cold
@@ -2373,6 +2406,7 @@ async function presentRewardBreakdown(early){
     subtotal += item.def.base*item.count;
     clearArcadeLayer();
     layer.className = 'arcade-reward-layer pot-smash-breakdown tier-'+(item.def.tier||'standard')+' cat-'+(item.def.type||'event');
+    placeArcadeLayer(layer);
     layer.classList.remove('hidden');
     $('arcade-hero').textContent = item.def.name;
     fitArcadeHeroText($('arcade-hero'));
@@ -2384,6 +2418,7 @@ async function presentRewardBreakdown(early){
   }
   clearArcadeLayer();
   layer.className = 'arcade-reward-layer pot-smash-breakdown is-total';
+  placeArcadeLayer(layer);
   layer.classList.remove('hidden');
   $('arcade-hero').textContent = 'TOTAL';
   $('arcade-total').textContent = '+'+Math.round(early.total).toLocaleString();
@@ -3732,7 +3767,7 @@ function render(){
   renderPot();
   if (g.pot>0 || (potContainer && (potContainer._chipCount||0)>0)){
     potArea.classList.remove('hidden');
-    $('pot-val').textContent = g.pot.toLocaleString();
+    paintPotValue();
   } else {
     potArea.classList.add('hidden');
   }

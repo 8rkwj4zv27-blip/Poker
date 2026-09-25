@@ -1425,6 +1425,15 @@ function fitArcadeHeroText(el){
     guard++;
   }
 }
+/* Reward text sits centred on the board row (over a dark band, see
+   .arcade-reward-layer) rather than at a fixed screen height, so it never
+   lands half on the seats' cards and half on the board. */
+function placeArcadeLayer(layer){
+  const board=$('board'), table=$('table-screen');
+  if (!layer || !board || !table || table.classList.contains('hidden') || !board.children.length){ if (layer) layer.style.top=''; return; }
+  const r=board.getBoundingClientRect();
+  layer.style.top=Math.round(r.top+r.height/2)+'px';
+}
 function clearArcadeLayer(){
   const layer=$('arcade-reward-layer'); if (!layer) return;
   layer.className='arcade-reward-layer hidden';
@@ -1471,6 +1480,7 @@ async function presentArcadeAward(g,award){
   const points=award.def.base*award.count;
   clearArcadeLayer();
   layer.className='arcade-reward-layer tier-'+tier+' cat-'+award.def.type;
+  placeArcadeLayer(layer);
   layer.classList.remove('hidden');
   $('arcade-hero').textContent=award.def.name;
   fitArcadeHeroText($('arcade-hero'));
