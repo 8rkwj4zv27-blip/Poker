@@ -459,8 +459,6 @@ function syncDevSection(){
   const section = $('settings-dev-section');
   if (!section) return;
   section.classList.toggle('hidden', !settings.devMode);
-  const readout = $('dev-build-readout');
-  if (readout) readout.textContent = 'Build ' + BUILD_VERSION;
 }
 
 /* DEV-only Career testing control. This changes only the off-table bankroll
@@ -969,6 +967,7 @@ function wireUI(){
   $('close-log').onclick = closeOverlays;
   $('open-settings').onclick = ()=>openOverlay('settings');
   $('close-settings').onclick = closeOverlays;
+  $('settings-back').onclick = closeOverlays;
   $('scrim').onclick = closeOverlays;
   $('leave-table').onclick = leaveTable;
   $('save-progress').onclick = ()=>{
@@ -1014,6 +1013,7 @@ function wireUI(){
     $('scoring-guide-sheet').classList.remove('open');
     $('settings-sheet').classList.add('open');
   };
+  $('scoring-guide-back').onclick = ()=>$('close-scoring-guide').click();
 
   $('reset-run').onclick = ()=>{
     showConfirmDialog({

@@ -215,8 +215,24 @@ function openOverlay(which){
   clearTimeout(autoDealT);   // overlays pause the between-hand clock
   $('scrim').classList.add('open');
   if (which==='log'){ logDirty = true; renderLog(); $('log-drawer').classList.add('open'); }
-  if (which==='settings'){ $('settings-sheet').classList.add('open'); }
+  if (which==='settings'){ refreshSettingsContext(); $('settings-sheet').classList.add('open'); }
   if (which==='newtable'){ $('confirm-newtable').classList.add('open'); }
+}
+/* Settings only offers what applies where it was opened: Leave table on a
+   table; Reset current run on a table, or on Home / Custom Game when a
+   saved standalone table exists (never from Career, whose events have
+   their own Abandon). The build string sits on the service row. */
+function refreshSettingsContext(){
+  const onTable = !$('table-screen').classList.contains('hidden');
+  const onCareer = !$('career').classList.contains('hidden');
+  const canReset = onTable || (!onCareer && !!loadTableSave());
+  $('leave-table').classList.toggle('hidden', !onTable);
+  $('settings-reset').classList.toggle('hidden', !canReset);
+  $('settings-table-section').classList.toggle('hidden', !onTable && !canReset);
+  const body = document.querySelector('#settings-sheet > .sheet-body');
+  if (body) body.scrollTop = 0;
+  const build = $('settings-build');
+  if (build && typeof BUILD_VERSION !== 'undefined') build.textContent = 'Build ' + BUILD_VERSION;
 }
 function closeOverlays(){
   $('scrim').classList.remove('open');

@@ -55,8 +55,6 @@
   font-family:var(--font-hdr); font-size:14px; font-weight:400; letter-spacing:.08em;
   text-transform:uppercase; color:var(--accent); margin:0;
 }
-.sheet-dev-toggle{ padding-top:10px; border-top:2px solid rgba(255,255,255,.06); opacity:.6; }
-.sheet-dev-toggle .tl{ font-size:12px; font-weight:400; }
 
 /* ---- Menu-over-gameplay layering (see js/06-presentation.js's DealFX/
    flyChip/ejectPortrait and js/04-modes-and-scoring.js's flyArcadeScore) —
