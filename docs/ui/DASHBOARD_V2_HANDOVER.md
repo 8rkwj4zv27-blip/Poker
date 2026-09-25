@@ -5,7 +5,8 @@ so a new session (Codex or Claude) can pick it up without the original chat.
 Read `AGENTS.md` / `CLAUDE.md`, `docs/CODEMAP.md` and
 `docs/ui/PATTERN_BOOK.md` first, then this file.
 
-- Branch: `claude/poker-dashboard-v2-upgrade-7xgsx9` (not merged; no PR yet).
+- Branch: `claude/poker-dashboard-v2-upgrade-7xgsx9` (rounds 0–1), continued on
+  `claude/loving-lovelace-tdwz17` (round 2). Not merged; no PR yet.
 - Production files are **unchanged** on this branch. Everything below is Lab
   or docs.
 
@@ -16,8 +17,31 @@ Read `AGENTS.md` / `CLAUDE.md`, `docs/CODEMAP.md` and
   (see `docs/CODEMAP.md`). Parts are in `css/dashboard-order.css`
   (`data-do-*` attributes), behaviours in `js/dashboard-order.js`, the form
   and moments in `js/dashboard-order-lab.js`.
-- Owner's verdict on the order form: "a better place, but a lot of this
-  doesn't work". Their feedback arrives per form row; fix, then republish.
+- Round 1 verdict: "a better place, but a lot of this doesn't work".
+  Kept and now fixed in the lab (not form rows any more): the bankroll row
+  with **no STACK label**, one screen (hand + turn joined), **V1 height**,
+  **pucks** for blinds, cards standing up out of the machine. Liked
+  behaviours: knock to check, hold-to-charge ALL IN; card peek becomes a
+  setting (off by default). Parked for a later **theatre pass**: the ALL IN
+  moment, busting (the owner wants it violent: cards and keys blasted out,
+  like the enemy KO), the win moment. Parked for its own redesign: the chip
+  bank and chips. Dropped: Hub Stack layout, +40/+80 height, stack name
+  plate, chip dragging, chase lamps, keys-rise / shutter / pilot-lamp turn
+  indicators (keys-rise and shutter also hid AWARD POT).
+- Round 2 (this build), agreed with the owner before building: the
+  dashboard is its own instrument, lifted off the table in a thick frame;
+  a **lit rim** is the one light for the machine's state (your turn amber,
+  all in red pulse, win warm, bust flickers out). Form rows: BUILD (chunky,
+  smooth, padded rail, whacky; no screws or bolts), RECESS (hard sunk,
+  ringed, double step), RIM LIGHT (channel, lamp row, underglow, light
+  pipe), LIGHT (subtle, bold), CARD TRAY (slot, slot + rise), BET THIS HAND
+  (small drum, window in the stack drum, CRT cell, paper tape), BUTTON BAY
+  (flush bed, plinths, key bank, fixed cradle), RAISE MECHANISM (drum,
+  drum back, barrel, slide; mechanical, stepped, with sound, never a
+  fade), SIZING (chunky fader, thumbwheel, combination digits; every
+  change rolls the drum), and the three behaviours.
+- Waiting on: the owner's round-2 order. Their feedback arrives per form
+  row; fix, then republish (artifact: "Dashboard Order Form").
 - Earlier labs below are history only.
 
 ## The goal

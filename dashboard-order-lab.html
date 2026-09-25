@@ -7,8 +7,8 @@
   <link rel="icon" href="data:,">
   <title>Dashboard Order Form</title>
   <link rel="stylesheet" href="css/01-foundation.css">
-  <link rel="stylesheet" href="css/dashboard-order-lab.css?v=1">
-  <script defer src="js/dashboard-order-lab.js?v=1"></script>
+  <link rel="stylesheet" href="css/dashboard-order-lab.css?v=2">
+  <script defer src="js/dashboard-order-lab.js?v=2"></script>
 </head>
 <body class="ol">
   <!-- Isolated Lab: the REAL game runs sandboxed in the frame (in-memory
@@ -28,7 +28,7 @@
     <div class="ol-phone" id="ol-phone">
       <iframe id="ol-frame" title="Poker Faces (sandboxed copy)"></iframe>
     </div>
-    <p class="ol-caption"><span id="ol-status">LOADING…</span> · iPhone 15 Pro Max · 430 × 932</p>
+    <p class="ol-caption"><span id="ol-status">LOADING…</span> · <span id="ol-size">iPhone 15 Pro Max · 430 × 932</span></p>
   </main>
 
   <aside class="ol-side ol-play" aria-label="Moments and order">
@@ -64,6 +64,7 @@
     <section class="ol-group">
       <h2>View</h2>
       <div class="ol-row"><span>Theme</span><div class="ol-seg" data-view="theme"><button data-v="emerald">EMER</button><button data-v="midnight">MIDN</button><button data-v="burgundy">BURG</button><button data-v="slate">SLATE</button></div></div>
+      <div class="ol-row"><span>Phone</span><div class="ol-seg" data-view="size"><button data-v="430">430</button><button data-v="390">390</button><button data-v="320">320</button></div></div>
       <div class="ol-row"><span>Sound</span><div class="ol-seg" data-view="sound"><button data-v="on">ON</button><button data-v="off">OFF</button></div></div>
       <div class="ol-row"><span>Motion</span><div class="ol-seg" data-view="motion"><button data-v="on">FULL</button><button data-v="off">REDUCED</button></div></div>
     </section>

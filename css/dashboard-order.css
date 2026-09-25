@@ -1,305 +1,663 @@
 /* ============================================================
-   DASHBOARD V2 — ORDER FORM PARTS
+   DASHBOARD V2 — ORDER FORM PARTS (round 2)
    Injected by dashboard-order-lab.html into a sandboxed copy of the real
    game. NOT loaded by the game. Every option sits behind an attribute on
    <html> (data-do-<job>="<option>"); with none set, this file does
    nothing and the game is V1.
 
    Built to docs/ui/DASHBOARD_V2_RULES.md: universal parts (CRT glass,
-   FOLD/CHECK/RAISE, reels, lamps) are used as they are; bespoke parts use
-   the housing construction (case > raised frame > recess > content), the
-   four materials, hard pixel light, and motion with a cause.
+   FOLD/CHECK/RAISE, reels, lamps, cream keys) are used as they are;
+   bespoke parts use the housing construction (case > raised frame >
+   recess > content), the four materials, hard pixel light, and motion
+   with a cause.
+
+   Round 2 follows the owner's notes on round 1: V1 height, the bankroll
+   row with no STACK label, cards standing up out of the machine, one
+   screen, pucks for blinds; options for the frame, recesses, a lit rim,
+   the bet readout, the key bay, the raise mechanism and sizing control.
    ============================================================ */
 
-:root{
-  --do-ink:#0B0D0A;
-  --do-frame:
-    0 0 0 3px var(--theme-case-raised),
-    -1px -1px 0 3px var(--theme-case-hi),
-    1px 1px 0 3px color-mix(in srgb,var(--theme-case-raised) 48%,black);
-  --do-recess:inset 0 5px 0 rgba(0,0,0,.6),inset 2px 0 0 rgba(0,0,0,.22),inset 0 -2px 0 rgba(255,255,255,.05);
+:root{ --do-ink:#0B0D0A; }
+/* Colours derived from the table theme resolve on <body>, where the game
+   sets data-theme. */
+body{
+  --do-lo:color-mix(in srgb,var(--theme-case-raised) 46%,black);
+  --do-mid-hi:color-mix(in srgb,var(--theme-case-raised) 50%,var(--theme-case-hi));
+  --do-mid-lo:color-mix(in srgb,var(--theme-case-raised) 72%,black);
   --do-plate-bg:color-mix(in srgb,var(--panel) 70%,black);
 }
-
-/* ============================================================
-   HEIGHT — the felt gives up the room
-   ============================================================ */
-html[data-do-height="plus40"] #table-screen{ --hud-dock-h:214px; }
-html[data-do-height="plus80"] #table-screen{ --hud-dock-h:254px; }
-
-/* ============================================================
-   LAYOUT
-   rows: the stack counter leaves the middle column and becomes a full
-   width bankroll row along the bottom, as in the Career Hub.
-   hub: cards alone at the top, both screens side by side in one row,
-   then the bankroll row. Needs the extra height.
-   (The lab moves the elements into .do-row-* containers.)
-   ============================================================ */
-html[data-do-layout="rows"] #hud-frame,
-html[data-do-layout="hub"] #hud-frame{ grid-template-rows:minmax(0,1fr) auto; row-gap:7px; }
-html[data-do-layout="hub"] #hud-frame{ grid-template-rows:minmax(0,1fr) auto auto; }
-.do-row{ grid-column:1 / -1; display:flex; align-items:stretch; gap:7px; min-width:0; }
-#hud-frame.result-mode .do-row{ display:none; }
-#hud-frame.event-complete .do-row{ display:none; }
-
-/* the bankroll row */
-.do-row-stack .stack-readout{ flex:1; min-width:0; flex-direction:row; align-items:stretch; gap:0; margin:0; }
-.do-row-stack .stack-readout .instrument-label{
-  display:grid; place-items:center; padding:0 9px; margin-right:-2px; position:relative; z-index:1;
-  font-size:7px; letter-spacing:.12em; color:var(--ink);
-  background:var(--do-plate-bg); border:2px solid var(--do-ink); border-radius:3px 0 0 3px;
-  box-shadow:inset 2px 2px 0 rgba(255,255,255,.08);
+:root{
+  /* The rim lamp: dark unless the game lights it (see data-do-lit). */
+  --do-lamp:#2A2418; --do-lamp-hi:#3A3222; --do-glow:0px; --do-glow-a:0%;
 }
-.do-row-stack #jackpot{ flex:1; width:auto; justify-content:center; border-radius:0 3px 3px 0; }
+
+/* ============================================================
+   FIXED BASE — the bankroll row
+   The stack counter leaves the middle column and becomes a full-width
+   bankroll row along the bottom; no STACK label (the gold drum and $
+   already say what it is). The bet readout sits at its right end, in the
+   form chosen under BET THIS HAND. The two middle CRTs join into one
+   screen. (The lab moves the elements into .do-row / .do-screen.)
+   ============================================================ */
+html[data-do-layout="rows"] #hud-frame{ grid-template-rows:minmax(0,1fr) auto; row-gap:7px; }
+.do-row{ grid-column:1 / -1; display:flex; align-items:stretch; gap:7px; min-width:0; }
+#hud-frame.result-mode .do-row,#hud-frame.event-complete .do-row{ display:none; }
+.do-row-stack .stack-readout{ flex:1; min-width:0; flex-direction:row; align-items:stretch; gap:0; margin:0; }
+.do-row-stack .stack-readout .instrument-label{ display:none; }
+.do-row-stack #jackpot{ flex:1; width:auto; justify-content:center; }
 html[data-do-layout] .do-row-stack #jackpot .jp-cell{ min-width:24px; width:24px; height:30px; font-size:14px; }
 html[data-do-layout] .do-row-stack #jackpot .jp-sym{ min-width:16px; width:16px; }
-.do-row-stack .bet-this-hand{ flex:0 0 92px; min-height:0 !important; padding:0 !important; gap:3px !important; justify-content:center; }
+.do-row-stack .bet-this-hand{ flex:0 0 96px; min-height:0 !important; padding:0 !important; gap:3px !important; justify-content:center; }
 .do-row-stack .bet-this-hand .instrument-label{ font-size:6px; line-height:1.2; }
 .do-row-stack #hud-invested{ min-height:26px !important; }
 
-/* the screens row (hub) */
-.do-row-screens > .crt-screen{ flex:1 1 0; min-width:0; min-height:40px !important; margin:0 !important;
-  display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center;
-  font-family:var(--font-hdr); font-size:7px; line-height:1.5; text-transform:uppercase; padding:5px 6px; }
-.do-row-screens > #hand-strength{ flex:1.1 1 0; }
-html[data-do-layout="hub"] #hud-mid{ justify-content:flex-end; }
-html[data-do-layout="hub"] .seat.you{ padding-bottom:4px; }
-html[data-do-layout="hub"] #hud-status{ display:none; }
-html[data-do-layout="hub"] #hud-frame.result-mode #hud-status{ display:block; }
+/* One screen: the hand line on top, the turn below, one glass. */
+.do-screen{ display:flex; flex-direction:column; min-height:0; }
+.do-screen-top{ display:flex; min-width:0; }
+.do-screen-top > #hand-strength{ flex:1 1 auto; min-width:0; }
+.do-screen #hand-strength{ margin:0 !important; border-bottom-left-radius:0 !important; border-bottom-right-radius:0 !important; }
+.do-screen #banner{ margin:0 !important; border-top-left-radius:0 !important; border-top-right-radius:0 !important; flex:1 1 auto; }
+.do-screen > #banner{ border-top-width:1px !important; }
 
-/* ============================================================
-   CASE
-   hub: the Home / Career Hub construction. A checker-textured case with a
-   thick bevel, each bay seated in a raised theme frame; the button bay is
-   the same cabinet.
-   ============================================================ */
-html[data-do-case="hub"] #hud-frame,
-html[data-do-case="hub"] .action-console{
-  background:
-    repeating-conic-gradient(rgba(255,255,255,.035) 0 25%,transparent 0 50%) 0 0/6px 6px,
-    var(--machine-case);
-  border:2px solid var(--do-ink);
-}
-html[data-do-case="hub"] #hud-frame{
-  padding:9px 10px 9px;
-  box-shadow:
-    inset 4px 4px 0 color-mix(in srgb,var(--theme-case-hi) 55%,transparent),
-    inset -4px -4px 0 color-mix(in srgb,var(--theme-case-raised) 40%,black),
-    0 5px 0 var(--machine-case-lo),0 9px 0 rgba(0,0,0,.5);
-  gap:9px;
-}
-html[data-do-case="hub"] .action-console{
-  border-top:0;
-  box-shadow:
-    inset 4px 0 0 color-mix(in srgb,var(--theme-case-hi) 55%,transparent),
-    inset -4px -4px 0 color-mix(in srgb,var(--theme-case-raised) 40%,black),
-    0 5px 0 var(--machine-case-lo),0 9px 0 rgba(0,0,0,.48);
-}
-html[data-do-case="hub"] #hud-left,
-html[data-do-case="hub"] #hud-right{
-  border:2px solid var(--do-ink); border-radius:2px;
-  background:var(--machine-recess);
-  box-shadow:var(--do-recess),var(--do-frame);
-}
-html[data-do-case="hub"] .action-console::before{
-  left:12px; right:12px; top:-3px; height:3px; border-radius:0;
-  background:repeating-linear-gradient(90deg,color-mix(in srgb,var(--machine-case-lo) 80%,black) 0 8px,transparent 8px 13px);
-  box-shadow:none;
-}
-html[data-do-case="hub"] .do-row-stack #jackpot,
-html[data-do-case="hub"] .do-row-screens > .crt-screen{ box-shadow:var(--do-frame); }
-
-/* ============================================================
-   CARD TRAY — where your cards stand
-   tray: a deep recessed slot and a bevelled lip with a finger notch.
-   rise: the tray, and each new hand's cards rise up out of it.
-   ============================================================ */
-html[data-do-tray] .seat.you::before{
-  height:17px; border-color:var(--do-ink);
-  background:linear-gradient(#000,color-mix(in srgb,var(--machine-recess) 60%,black));
-  box-shadow:inset 0 6px 0 rgba(0,0,0,.85),0 1px 0 var(--theme-case-hi),0 -1px 0 color-mix(in srgb,var(--theme-case-raised) 50%,black);
-}
-html[data-do-tray] .seat.you::after{
-  height:11px; border:2px solid var(--do-ink); border-radius:2px;
-  background:
-    linear-gradient(var(--do-ink) 0 0) center top/24px 3px no-repeat,
-    linear-gradient(180deg,var(--theme-case-hi) 0 2px,var(--theme-case-raised) 2px calc(100% - 2px),color-mix(in srgb,var(--theme-case-raised) 48%,black) calc(100% - 2px));
-  box-shadow:0 3px 0 rgba(0,0,0,.55);
-}
-html[data-do-tray="rise"] .seat.you.do-rise .seat-cards .card{ animation:doCardRise .52s steps(7,end) both; }
-html[data-do-tray="rise"] .seat.you.do-rise .seat-cards .card:nth-child(2){ animation-delay:.12s; }
-@keyframes doCardRise{ 0%{ transform:translateY(58px); } 78%{ transform:translateY(-4px); } 100%{ transform:translateY(0); } }
-
-/* ============================================================
-   STACK
-   plate: the Pattern Book's screen-header plate names the counter, like
-   the Career Hub's BANKROLL plate.
-   ============================================================ */
-html[data-do-stack="plate"] .stack-readout .instrument-label{
-  position:relative; z-index:1; margin-bottom:-2px; padding:3px 8px 2px;
-  font-size:6px; letter-spacing:.14em; color:var(--ink); text-shadow:none;
-  background:var(--do-plate-bg); border:2px solid var(--do-ink); border-bottom:0; border-radius:3px 3px 0 0;
-  box-shadow:inset 2px 2px 0 rgba(255,255,255,.08);
-}
-html[data-do-stack="plate"] .stack-readout{ gap:0; }
-html[data-do-stack="plate"] .do-row-stack .stack-readout .instrument-label{ margin:0 -2px 0 0; padding:0 10px; border:2px solid var(--do-ink); border-right:0; border-radius:3px 0 0 3px; }
-
-/* ============================================================
-   CHIP BANK
-   tray: felt-lined, a lit floor the chips stand on, BANK printed.
-   vault: dark glass front, a gauge scale up the side, a cream name plate.
-   ============================================================ */
-html[data-do-bank] #hud-tower{ z-index:1; }
-html[data-do-bank] #hud-left::before{
-  content:'BANK'; position:absolute; z-index:0; left:0; right:0; top:8px; text-align:center;
-  font-family:var(--font-hdr); font-size:6px; letter-spacing:.14em; color:var(--ink-faint); pointer-events:none;
-}
-html[data-do-bank="tray"] #hud-left{
-  background:
-    linear-gradient(rgba(0,0,0,.62),transparent 34%),
-    linear-gradient(transparent calc(100% - 9px),color-mix(in srgb,var(--theme-case-hi) 34%,transparent) calc(100% - 9px) calc(100% - 8px),rgba(0,0,0,.34) calc(100% - 8px)),
-    repeating-conic-gradient(color-mix(in srgb,var(--felt-1) 62%,black) 0 25%,color-mix(in srgb,var(--felt-2) 62%,black) 0 50%) 0 0/6px 6px;
-}
-html[data-do-bank="vault"] #hud-left{
-  background:
-    linear-gradient(115deg,transparent 0 30%,rgba(255,255,255,.045) 30% 38%,transparent 38% 44%,rgba(255,255,255,.03) 44% 47%,transparent 47%),
-    repeating-linear-gradient(180deg,transparent 0 11px,color-mix(in srgb,var(--theme-case-hi) 45%,transparent) 11px 12px) right 3px top 22px/5px calc(100% - 28px) no-repeat,
-    repeating-linear-gradient(180deg,transparent 0 5px,color-mix(in srgb,var(--theme-case-hi) 22%,transparent) 5px 6px) right 3px top 22px/3px calc(100% - 28px) no-repeat,
-    linear-gradient(180deg,#05090A,#0A1113 70%,#0D1618);
-}
-html[data-do-bank="vault"] #hud-left::before{
-  left:50%; right:auto; top:6px; transform:translateX(-50%); padding:3px 5px 2px;
-  border:2px solid #070806; border-radius:2px; background:#D0C28F; color:#30270F; letter-spacing:.1em;
-  box-shadow:0 2px 0 #070806,inset 1px 1px 0 #FFF0BC,inset -1px -1px 0 #796B43;
-}
-
-/* ============================================================
-   BLINDS & DEALER
-   lamps: SB / BB become the game's square pilot lamps with printed
-   labels. pucks: round tokens, cream when lit, like the table's buttons.
-   ============================================================ */
+/* Blinds: pucks (the owner's pick). Round tokens that light cream and
+   lift when the blind is yours. */
 html[data-do-blinds] .blind-lamps{ gap:12px; min-height:0; padding:4px 0 8px; border-bottom:1px solid color-mix(in srgb,var(--theme-case-hi) 22%,transparent); }
 html[data-do-blinds] .blind-indicator{
-  width:auto; height:auto; overflow:visible; flex-direction:column; gap:4px; border:0; background:none; box-shadow:none;
+  width:auto; height:auto; overflow:visible; flex-direction:row; gap:4px; border:0; background:none; box-shadow:none;
   color:var(--ink-faint); font-size:6px; letter-spacing:.12em; text-shadow:none;
 }
-html[data-do-blinds] .blind-indicator::before{ content:''; position:static; display:block; inset:auto; }
+html[data-do-blinds] .blind-indicator::before{ display:none; }
 html[data-do-blinds] .blind-indicator.is-on{ color:var(--ink); background:none; box-shadow:none; text-shadow:none; }
-html[data-do-blinds="lamps"] .blind-indicator::before{
-  width:12px; height:12px; border:2px solid #190C0B; border-radius:0; background:var(--pc-lamp-off);
-  box-shadow:0 2px 0 #100807,inset 1px 1px 0 rgba(255,255,255,.28);
-}
-html[data-do-blinds="lamps"] .blind-indicator.is-on::before{
-  background:var(--pc-lamp-amber); box-shadow:0 2px 0 #100807,0 0 8px rgba(242,180,49,.5),inset 1px 1px 0 var(--pc-lamp-amber-hi);
-}
-html[data-do-blinds="pucks"] .blind-indicator{ flex-direction:row; }
-html[data-do-blinds="pucks"] .blind-indicator::before{ display:none; }
-html[data-do-blinds="pucks"] .blind-indicator span{
+html[data-do-blinds] .blind-indicator span{
   display:grid; place-items:center; width:27px; height:27px; border-radius:50%;
   font-size:7px; color:rgba(244,239,225,.28); background:color-mix(in srgb,var(--machine-recess) 70%,black);
   border:2px solid var(--do-ink); box-shadow:inset 0 3px 0 rgba(0,0,0,.5),0 1px 0 rgba(255,255,255,.06);
 }
-html[data-do-blinds="pucks"] .blind-indicator.is-on span{
+html[data-do-blinds] .blind-indicator.is-on span{
   color:#24170D; background:var(--card-face); box-shadow:0 3px 0 var(--do-ink),inset 0 2px 0 #fff,inset 0 0 0 3px rgba(0,0,0,.08);
   transform:translateY(-2px);
 }
 
 /* ============================================================
-   BET THIS HAND
-   plate: the label becomes a printed plate on the screen, on one line.
+   FRAME — the dashboard as its own instrument
+   Any build lifts the console off the table: a dark gap above it, a
+   thick moulded frame all the way round, a hard shadow under it. The
+   frame is drawn on #your-seat-dock::before (top and sides) and
+   .actions-dock::before (sides and bottom), behind the case, so the
+   cards still stand up out of it. The case inside is one surface.
    ============================================================ */
-html[data-do-bet="plate"] .bet-this-hand{ gap:0 !important; }
-html[data-do-bet="plate"] .bet-this-hand .instrument-label{
-  position:relative; z-index:1; margin-bottom:-2px; padding:3px 5px 2px; white-space:nowrap;
-  font-size:5.5px; letter-spacing:.1em; color:var(--ink); text-shadow:none;
-  background:var(--do-plate-bg); border:2px solid var(--do-ink); border-bottom:0; border-radius:3px 3px 0 0;
+html[data-do-build]{ --do-gap:5px; --do-band:8px; --do-side:4px; --do-rad:6px; --do-foot:7px; --do-lip:0px; }
+html[data-do-build="chunky"]{ --do-band:12px; --do-side:3px; --do-foot:8px; }
+html[data-do-build="rail"]{ --do-band:11px; --do-side:3px; --do-rad:12px; }
+html[data-do-build="smooth"]{ --do-rad:18px; }
+html[data-do-build="whacky"]{ --do-band:10px; --do-side:3px; --do-rad:0px; --do-lip:5px; }
+
+html[data-do-build] #your-seat-dock{
+  height:calc(var(--hud-dock-h) + 7px); flex-basis:calc(var(--hud-dock-h) + 7px);
+  padding:calc(var(--do-gap) + var(--do-band) + var(--do-lip)) calc(var(--do-side) + var(--do-band)) 0;
 }
-html[data-do-bet="plate"] .bet-this-hand .instrument-label::after{ content:''; }
+html[data-do-build] #action-area{
+  padding:0 calc(var(--do-side) + var(--do-band)) calc(var(--do-band) + var(--do-foot));
+  background:none;
+}
+html[data-do-build] #action-area{ flex-basis:calc(var(--action-area-h) + var(--do-band) + var(--do-foot) - 8px); height:calc(var(--action-area-h) + var(--do-band) + var(--do-foot) - 8px); }
+html[data-do-build] #action-area > .actions-dock{
+  max-width:none; left:calc(var(--do-side) + var(--do-band)); right:calc(var(--do-side) + var(--do-band)); bottom:calc(var(--do-band) + var(--do-foot));
+}
+/* V1's thin rim line is replaced by the frame (it comes back only as a lamp). */
+html[data-do-build] #your-seat-dock::after,html[data-do-build] .actions-dock::after{ display:none; }
+html[data-do-build] #your-seat-dock::before,
+html[data-do-build] .actions-dock::before{
+  content:''; position:absolute; z-index:-1; pointer-events:none; box-sizing:border-box;
+}
+html[data-do-build] #your-seat-dock::before{
+  left:var(--do-side); right:var(--do-side); top:var(--do-gap); bottom:0;
+  border-radius:var(--do-rad) var(--do-rad) 0 0;
+}
+html[data-do-build] .actions-dock::before{
+  left:calc(var(--do-band) * -1); right:calc(var(--do-band) * -1); top:0; bottom:calc(var(--do-band) * -1);
+  border-radius:0 0 var(--do-rad) var(--do-rad);
+}
+
+/* The case: one surface from the top of the dashboard to the bottom of
+   the key bay, the Hub's checker, no outline of its own. */
+html[data-do-build] #hud-frame,
+html[data-do-build] .action-console{
+  background:repeating-conic-gradient(rgba(255,255,255,.035) 0 25%,transparent 0 50%) 0 0/6px 6px,var(--machine-case);
+  border:0 !important; outline:0;
+}
+html[data-do-build] #hud-frame{ border-radius:0; padding:7px 8px 6px; gap:7px; box-shadow:none; }
+html[data-do-build] .action-console{ border-radius:0; box-shadow:none; padding:6px 8px 7px; }
+/* The seam between the instruments and the key bay: a dark, even groove. */
+html[data-do-build] .action-console::before{
+  left:8px; right:8px; top:-1px; height:2px; border-radius:0;
+  background:var(--do-ink); box-shadow:0 1px 0 color-mix(in srgb,var(--theme-case-hi) 30%,transparent);
+}
+
+/* ---- CHUNKY: thick stepped bevels, a deep lip, a heavy shadow ---- */
+html[data-do-build="chunky"] #your-seat-dock::before{
+  background:
+    linear-gradient(180deg,var(--do-ink) 0 2px,var(--theme-case-hi) 2px 4px,var(--theme-case-raised) 4px 9px,var(--do-lo) 9px 10px,var(--do-ink) 10px 12px) 0 0/100% 12px no-repeat,
+    linear-gradient(90deg,var(--do-ink) 0 2px,var(--theme-case-hi) 2px 4px,var(--theme-case-raised) 4px 9px,var(--do-lo) 9px 10px,var(--do-ink) 10px 12px) 0 0/12px 100% no-repeat,
+    linear-gradient(270deg,var(--do-ink) 0 2px,var(--do-lo) 2px 4px,var(--theme-case-raised) 4px 9px,var(--do-mid-hi) 9px 10px,var(--do-ink) 10px 12px) 100% 0/12px 100% no-repeat;
+}
+html[data-do-build="chunky"] .actions-dock::before{
+  background:
+    linear-gradient(0deg,var(--do-ink) 0 2px,var(--do-lo) 2px 4px,var(--theme-case-raised) 4px 9px,var(--do-mid-hi) 9px 10px,var(--do-ink) 10px 12px) 0 100%/100% 12px no-repeat,
+    linear-gradient(90deg,var(--do-ink) 0 2px,var(--theme-case-hi) 2px 4px,var(--theme-case-raised) 4px 9px,var(--do-lo) 9px 10px,var(--do-ink) 10px 12px) 0 0/12px 100% no-repeat,
+    linear-gradient(270deg,var(--do-ink) 0 2px,var(--do-lo) 2px 4px,var(--theme-case-raised) 4px 9px,var(--do-mid-hi) 9px 10px,var(--do-ink) 10px 12px) 100% 0/12px 100% no-repeat;
+  box-shadow:0 4px 0 var(--do-ink),0 8px 0 rgba(0,0,0,.45);
+}
+html[data-do-build="chunky"] #hud-frame{ box-shadow:inset 0 4px 0 rgba(0,0,0,.34),inset 3px 0 0 rgba(0,0,0,.16); }
+
+/* ---- SMOOTH: a moulded shell, big round corners, soft two-step bevels ---- */
+html[data-do-build="smooth"] #your-seat-dock::before{
+  background:
+    linear-gradient(180deg,var(--do-ink) 0 2px,var(--theme-case-hi) 2px 3px,var(--do-mid-hi) 3px 5px,var(--theme-case-raised) 5px 7px,var(--do-mid-lo) 7px 8px) 0 0/100% 8px no-repeat,
+    linear-gradient(90deg,var(--do-ink) 0 2px,var(--theme-case-hi) 2px 3px,var(--do-mid-hi) 3px 5px,var(--theme-case-raised) 5px 7px,var(--do-mid-lo) 7px 8px) 0 0/8px 100% no-repeat,
+    linear-gradient(270deg,var(--do-ink) 0 2px,var(--do-lo) 2px 3px,var(--do-mid-lo) 3px 5px,var(--theme-case-raised) 5px 8px) 100% 0/8px 100% no-repeat,
+    var(--theme-case-raised);
+}
+html[data-do-build="smooth"] .actions-dock::before{
+  background:
+    linear-gradient(0deg,var(--do-ink) 0 2px,var(--do-lo) 2px 3px,var(--do-mid-lo) 3px 5px,var(--theme-case-raised) 5px 8px) 0 100%/100% 8px no-repeat,
+    linear-gradient(90deg,var(--do-ink) 0 2px,var(--theme-case-hi) 2px 3px,var(--do-mid-hi) 3px 5px,var(--theme-case-raised) 5px 7px,var(--do-mid-lo) 7px 8px) 0 0/8px 100% no-repeat,
+    linear-gradient(270deg,var(--do-ink) 0 2px,var(--do-lo) 2px 3px,var(--do-mid-lo) 3px 5px,var(--theme-case-raised) 5px 8px) 100% 0/8px 100% no-repeat,
+    var(--theme-case-raised);
+  box-shadow:0 5px 0 rgba(0,0,0,.5);
+}
+html[data-do-build="smooth"] #hud-frame{ border-radius:11px 11px 0 0; }
+html[data-do-build="smooth"] .action-console{ border-radius:0 0 11px 11px; }
+html[data-do-build="smooth"] #hud-left,html[data-do-build="smooth"] #hud-right,
+html[data-do-build="smooth"] .do-screen,html[data-do-build="smooth"] .do-bethouse,
+html[data-do-build="smooth"] .console-flip{ border-radius:7px !important; }
+
+/* ---- PADDED RAIL: the rim is a stitched bumper, like a poker table's rail ---- */
+html[data-do-build="rail"] body{ --do-rail:color-mix(in srgb,var(--theme-case-raised) 62%,black); --do-rail-hi:color-mix(in srgb,var(--theme-case-raised) 88%,white 6%); --do-stitch:color-mix(in srgb,var(--theme-case-hi) 80%,white 10%); }
+html[data-do-build="rail"] #your-seat-dock::before{
+  background:
+    repeating-linear-gradient(90deg,var(--do-stitch) 0 4px,transparent 4px 8px) 10px 5px/calc(100% - 20px) 1px no-repeat,
+    repeating-linear-gradient(180deg,var(--do-stitch) 0 4px,transparent 4px 8px) 5px 10px/1px calc(100% - 10px) no-repeat,
+    repeating-linear-gradient(180deg,var(--do-stitch) 0 4px,transparent 4px 8px) calc(100% - 5px) 10px/1px calc(100% - 10px) no-repeat,
+    linear-gradient(180deg,var(--do-ink) 0 2px,var(--do-rail) 2px 3px,var(--do-rail-hi) 3px 4px,var(--theme-case-raised) 4px 7px,var(--do-rail) 7px 9px,var(--do-ink) 9px 11px) 0 0/100% 11px no-repeat,
+    linear-gradient(90deg,var(--do-ink) 0 2px,var(--do-rail) 2px 3px,var(--do-rail-hi) 3px 4px,var(--theme-case-raised) 4px 7px,var(--do-rail) 7px 9px,var(--do-ink) 9px 11px) 0 0/11px 100% no-repeat,
+    linear-gradient(270deg,var(--do-ink) 0 2px,var(--do-lo) 2px 4px,var(--do-rail) 4px 7px,var(--theme-case-raised) 7px 8px,var(--do-rail) 8px 9px,var(--do-ink) 9px 11px) 100% 0/11px 100% no-repeat;
+}
+html[data-do-build="rail"] .actions-dock::before{
+  background:
+    repeating-linear-gradient(90deg,var(--do-stitch) 0 4px,transparent 4px 8px) 10px calc(100% - 5px)/calc(100% - 20px) 1px no-repeat,
+    repeating-linear-gradient(180deg,var(--do-stitch) 0 4px,transparent 4px 8px) 5px 0/1px calc(100% - 10px) no-repeat,
+    repeating-linear-gradient(180deg,var(--do-stitch) 0 4px,transparent 4px 8px) calc(100% - 5px) 0/1px calc(100% - 10px) no-repeat,
+    linear-gradient(0deg,var(--do-ink) 0 2px,var(--do-lo) 2px 4px,var(--do-rail) 4px 7px,var(--theme-case-raised) 7px 8px,var(--do-rail) 8px 9px,var(--do-ink) 9px 11px) 0 100%/100% 11px no-repeat,
+    linear-gradient(90deg,var(--do-ink) 0 2px,var(--do-rail) 2px 3px,var(--do-rail-hi) 3px 4px,var(--theme-case-raised) 4px 7px,var(--do-rail) 7px 9px,var(--do-ink) 9px 11px) 0 0/11px 100% no-repeat,
+    linear-gradient(270deg,var(--do-ink) 0 2px,var(--do-lo) 2px 4px,var(--do-rail) 4px 7px,var(--theme-case-raised) 7px 8px,var(--do-rail) 8px 9px,var(--do-ink) 9px 11px) 100% 0/11px 100% no-repeat;
+  box-shadow:0 5px 0 rgba(0,0,0,.5);
+}
+
+/* ---- WHACKY: cut corners, a heavy top lip that overhangs, a stepped foot ---- */
+html[data-do-build="whacky"] #your-seat-dock::before{
+  clip-path:polygon(20px 0,calc(100% - 20px) 0,100% 20px,100% 100%,0 100%,0 20px);
+  background:
+    linear-gradient(135deg,transparent 0 13px,var(--do-ink) 13px 16px,transparent 16px) 0 0/28px 28px no-repeat,
+    linear-gradient(225deg,transparent 0 13px,var(--do-ink) 13px 16px,transparent 16px) 100% 0/28px 28px no-repeat,
+    linear-gradient(180deg,var(--do-ink) 0 2px,var(--theme-case-hi) 2px 5px,var(--do-mid-hi) 5px 8px,var(--theme-case-raised) 8px 11px,var(--do-ink) 11px 13px,rgba(0,0,0,.5) 13px 15px) 0 0/100% 15px no-repeat,
+    linear-gradient(90deg,var(--do-ink) 0 2px,var(--do-mid-hi) 2px 4px,var(--theme-case-raised) 4px 8px,var(--do-ink) 8px 10px) 0 0/10px 100% no-repeat,
+    linear-gradient(270deg,var(--do-ink) 0 2px,var(--do-lo) 2px 4px,var(--theme-case-raised) 4px 8px,var(--do-ink) 8px 10px) 100% 0/10px 100% no-repeat,
+    var(--theme-case-raised);
+}
+html[data-do-build="whacky"] .actions-dock::before{
+  bottom:calc((var(--do-band) + 8px) * -1);
+  clip-path:polygon(0 0,100% 0,100% calc(100% - 20px),calc(100% - 20px) 100%,20px 100%,0 calc(100% - 20px));
+  background:
+    linear-gradient(45deg,transparent 0 13px,var(--do-ink) 13px 16px,transparent 16px) 0 100%/28px 28px no-repeat,
+    linear-gradient(315deg,transparent 0 13px,var(--do-ink) 13px 16px,transparent 16px) 100% 100%/28px 28px no-repeat,
+    linear-gradient(0deg,var(--do-ink) 0 2px,var(--machine-case-lo) 2px 8px,var(--do-ink) 8px 10px,var(--do-lo) 10px 12px,var(--theme-case-raised) 12px 16px,var(--do-ink) 16px 18px) 0 100%/100% 18px no-repeat,
+    linear-gradient(90deg,var(--do-ink) 0 2px,var(--do-mid-hi) 2px 4px,var(--theme-case-raised) 4px 8px,var(--do-ink) 8px 10px) 0 0/10px 100% no-repeat,
+    linear-gradient(270deg,var(--do-ink) 0 2px,var(--do-lo) 2px 4px,var(--theme-case-raised) 4px 8px,var(--do-ink) 8px 10px) 100% 0/10px 100% no-repeat,
+    var(--theme-case-raised);
+}
+html[data-do-build="whacky"]{ --do-foot:9px; }
+html[data-do-build="whacky"] #hud-frame{ box-shadow:inset 0 5px 0 rgba(0,0,0,.4); }
+html[data-do-build="whacky"] .actions-dock::before{ box-shadow:none; }
 
 /* ============================================================
-   BUTTON BAY
-   cradle: the three keys sit down in one recessed cradle, like the Home
-   CAREER key. The keys themselves are the locked family.
+   RECESS — how every bay is sunk into the case
    ============================================================ */
-html[data-do-bay="cradle"] .action-console{ padding:5px 7px 7px; }
+html[data-do-recess] #hud-left,html[data-do-recess] #hud-right,
+html[data-do-recess] .do-screen,html[data-do-recess] .do-bethouse{
+  border:2px solid var(--do-ink) !important; border-radius:3px;
+  background-color:var(--machine-recess);
+}
+html[data-do-recess="sunk"] #hud-left,html[data-do-recess="sunk"] #hud-right,
+html[data-do-recess="sunk"] .do-screen,html[data-do-recess="sunk"] .do-bethouse{
+  box-shadow:inset 0 5px 0 rgba(0,0,0,.62),inset 3px 0 0 rgba(0,0,0,.24),
+    0 2px 0 color-mix(in srgb,var(--theme-case-hi) 45%,transparent),0 -2px 0 rgba(0,0,0,.32) !important;
+}
+html[data-do-recess="ring"] #hud-left,html[data-do-recess="ring"] #hud-right,
+html[data-do-recess="ring"] .do-screen,html[data-do-recess="ring"] .do-bethouse{
+  box-shadow:inset 0 5px 0 rgba(0,0,0,.6),inset 2px 0 0 rgba(0,0,0,.22),
+    0 0 0 3px var(--theme-case-raised),-1px -1px 0 3px var(--theme-case-hi),1px 1px 0 3px var(--do-lo),1px 1px 0 5px var(--do-ink) !important;
+}
+html[data-do-recess="double"] #hud-left,html[data-do-recess="double"] #hud-right,
+html[data-do-recess="double"] .do-screen,html[data-do-recess="double"] .do-bethouse{
+  box-shadow:inset 0 0 0 3px color-mix(in srgb,var(--machine-recess) 55%,var(--machine-case-lo)),inset 0 3px 0 3px rgba(0,0,0,.35),
+    inset 0 9px 0 rgba(0,0,0,.5),
+    0 0 0 3px var(--machine-case-lo),0 -3px 0 3px rgba(0,0,0,.35),0 2px 0 3px color-mix(in srgb,var(--theme-case-hi) 40%,transparent) !important;
+}
+html[data-do-recess="double"] #hud-left,html[data-do-recess="double"] #hud-right{ padding-top:6px; }
+
+/* ============================================================
+   RIM LIGHT — one light for the machine's state
+   Dark at rest. The lab sets data-do-lit on <html>: turn (amber,
+   steady), allin (red, a slow pulse), win (warm, brief), bust (flickers
+   out). Every change switches on in steps with a relay click.
+   ============================================================ */
+html[data-do-lit="turn"]{ --do-lamp:var(--pc-lamp-amber); --do-lamp-hi:var(--pc-lamp-amber-hi); --do-glow-a:55%; }
+html[data-do-lit="allin"]{ --do-lamp:#E8473A; --do-lamp-hi:#FFB3A8; --do-glow-a:65%; }
+html[data-do-lit="win"]{ --do-lamp:#F6D06B; --do-lamp-hi:#FFF4C9; --do-glow-a:70%; }
+html[data-do-rim]{ --do-glow:5px; }
+html[data-do-light="bold"]{ --do-glow:12px; }
+html[data-do-light="bold"][data-do-lit]{ --do-glow-a:90%; }
+
+/* V1 build: the thin line itself becomes the lamp. */
+html[data-do-rim]:not([data-do-build])[data-do-lit] #your-seat-dock::after,
+html[data-do-rim]:not([data-do-build])[data-do-lit] .actions-dock::after{
+  border-color:var(--do-lamp); filter:drop-shadow(0 0 var(--do-glow) color-mix(in srgb,var(--do-lamp) var(--do-glow-a),transparent));
+}
+
+/* Shared: the lamp layer rides the frame band on the ::after pieces. */
+html[data-do-build][data-do-rim] #your-seat-dock::after,
+html[data-do-build][data-do-rim] .actions-dock::after{
+  display:block; content:''; position:absolute; pointer-events:none; box-sizing:border-box; filter:none;
+  border-radius:0; border:0;
+}
+/* CHANNEL: a groove running round the middle of the frame, lit inside. */
+html[data-do-build][data-do-rim="channel"] #your-seat-dock::after,
+html[data-do-build][data-do-rim="channel"] .actions-dock::after{
+  z-index:2; border:4px solid color-mix(in srgb,var(--do-lamp) 55%,#030404);
+  background:none;
+}
+html[data-do-build][data-do-rim="channel"] #your-seat-dock::after{
+  left:calc(var(--do-side) + var(--do-band) / 2 - 2px); right:calc(var(--do-side) + var(--do-band) / 2 - 2px);
+  top:calc(var(--do-gap) + var(--do-lip) + var(--do-band) / 2 - 2px); bottom:0; border-bottom:0;
+  border-radius:max(0px,calc(var(--do-rad) - 3px)) max(0px,calc(var(--do-rad) - 3px)) 0 0;
+}
+html[data-do-build][data-do-rim="channel"] .actions-dock::after{
+  left:calc(var(--do-band) / -2 - 2px); right:calc(var(--do-band) / -2 - 2px);
+  top:0; bottom:calc(var(--do-band) / -2 - 2px); border-top:0; z-index:40;
+  border-radius:0 0 max(0px,calc(var(--do-rad) - 3px)) max(0px,calc(var(--do-rad) - 3px));
+}
+html[data-do-build][data-do-rim="channel"][data-do-lit] #your-seat-dock::after,
+html[data-do-build][data-do-rim="channel"][data-do-lit] .actions-dock::after{
+  border-color:var(--do-lamp);
+  filter:drop-shadow(0 0 var(--do-glow) color-mix(in srgb,var(--do-lamp) var(--do-glow-a),transparent));
+}
+/* LAMP ROW: a row of square lamps set into the top and bottom of the frame. */
+html[data-do-build][data-do-rim="lamps"] #your-seat-dock::after,
+html[data-do-build][data-do-rim="lamps"] .actions-dock::after{
+  z-index:2; height:7px;
+  --do-lamp-core:color-mix(in srgb,var(--do-lamp) 60%,#0B0A07);
+  background:
+    repeating-linear-gradient(90deg,transparent 0 2px,var(--do-lamp-core) 2px 7px,transparent 7px 18px) 0 1px/100% 5px no-repeat,
+    repeating-linear-gradient(90deg,var(--do-ink) 0 9px,transparent 9px 18px) 0 0/100% 7px no-repeat;
+  left:calc(var(--do-side) + var(--do-band) + 12px); right:calc(var(--do-side) + var(--do-band) + 12px);
+}
+html[data-do-build][data-do-rim="lamps"] #your-seat-dock::after{ top:calc(var(--do-gap) + var(--do-lip) + var(--do-band) / 2 - 3px); }
+html[data-do-build][data-do-rim="lamps"] .actions-dock::after{ top:auto; bottom:calc(var(--do-band) / -2 - 4px); left:12px; right:12px; z-index:40; }
+html[data-do-build][data-do-rim="lamps"][data-do-lit] #your-seat-dock::after,
+html[data-do-build][data-do-rim="lamps"][data-do-lit] .actions-dock::after{
+  --do-lamp-core:var(--do-lamp);
+  filter:drop-shadow(0 0 calc(var(--do-glow) / 2 + 1px) color-mix(in srgb,var(--do-lamp) var(--do-glow-a),transparent));
+}
+/* UNDERGLOW: light spills out from under the machine onto the table. */
+html[data-do-build][data-do-rim="under"] #your-seat-dock::after,
+html[data-do-build][data-do-rim="under"] .actions-dock::after{ z-index:-2; background:none; }
+html[data-do-build][data-do-rim="under"] #your-seat-dock::after{ clip-path:inset(-60px -60px 0 -60px); left:calc(var(--do-side) + 3px); right:calc(var(--do-side) + 3px); top:calc(var(--do-gap) + 3px); bottom:0; border-radius:var(--do-rad) var(--do-rad) 0 0; }
+html[data-do-build][data-do-rim="under"] .actions-dock::after{ clip-path:inset(0 -60px -60px -60px); left:calc(var(--do-band) * -1 + 3px); right:calc(var(--do-band) * -1 + 3px); top:0; bottom:calc(var(--do-band) * -1 + 1px); border-radius:0 0 var(--do-rad) var(--do-rad); }
+html[data-do-build][data-do-rim="under"][data-do-lit] #your-seat-dock::after,
+html[data-do-build][data-do-rim="under"][data-do-lit] .actions-dock::after{
+  box-shadow:0 0 calc(var(--do-glow) * 1.6 + 6px) calc(var(--do-glow) / 2 + 2px) color-mix(in srgb,var(--do-lamp) var(--do-glow-a),transparent);
+}
+html[data-do-build][data-do-rim="under"][data-do-lit] .actions-dock::after{
+  box-shadow:0 5px calc(var(--do-glow) * 1.6 + 8px) calc(var(--do-glow) / 2 + 3px) color-mix(in srgb,var(--do-lamp) var(--do-glow-a),transparent);
+}
+/* TOP LIGHT PIPE: only the top edge lights, behind smoked glass. */
+html[data-do-build][data-do-rim="pipe"] .actions-dock::after{ display:none; }
+html[data-do-build][data-do-rim="pipe"] #your-seat-dock::after{
+  z-index:2; left:calc(var(--do-side) + var(--do-band) + 2px); right:calc(var(--do-side) + var(--do-band) + 2px);
+  top:calc(var(--do-gap) + var(--do-lip) + 2px); height:calc(var(--do-band) - 3px); border:1px solid var(--do-ink); border-radius:2px;
+  background:
+    linear-gradient(180deg,rgba(255,255,255,.16) 0 1px,transparent 1px),
+    repeating-linear-gradient(90deg,rgba(0,0,0,.35) 0 1px,transparent 1px 3px),
+    color-mix(in srgb,var(--do-lamp) 40%,#050606);
+}
+html[data-do-build][data-do-rim="pipe"][data-do-lit] #your-seat-dock::after{
+  background:
+    linear-gradient(180deg,rgba(255,255,255,.4) 0 1px,transparent 1px),
+    repeating-linear-gradient(90deg,rgba(0,0,0,.28) 0 1px,transparent 1px 3px),
+    linear-gradient(180deg,var(--do-lamp-hi),var(--do-lamp));
+  box-shadow:0 0 calc(var(--do-glow) + 2px) 1px color-mix(in srgb,var(--do-lamp) var(--do-glow-a),transparent),0 -2px calc(var(--do-glow) * 2) 0 color-mix(in srgb,var(--do-lamp) calc(var(--do-glow-a) / 2),transparent);
+}
+
+/* Switch-on: a relay flicker in steps. All in: a slow red pulse. Bust:
+   flickers out and stays dark. */
+html.do-relay[data-do-rim] #your-seat-dock::after,html.do-relay[data-do-rim] .actions-dock::after{ animation:doRelay .32s steps(1,end); }
+@keyframes doRelay{ 0%{ opacity:.25; } 25%{ opacity:1; } 45%{ opacity:.35; } 65%,100%{ opacity:1; } }
+html[data-do-lit="allin"]:not(.do-relay)[data-do-rim] #your-seat-dock::after,
+html[data-do-lit="allin"]:not(.do-relay)[data-do-rim] .actions-dock::after{ animation:doPulse 1s steps(1,end) infinite; }
+@keyframes doPulse{ 55%{ opacity:.45; } }
+html[data-do-lit="bust"]{ --do-lamp:#E8473A; --do-lamp-hi:#FFB3A8; --do-glow-a:55%; }
+html[data-do-lit="bust"][data-do-rim] #your-seat-dock::after,
+html[data-do-lit="bust"][data-do-rim] .actions-dock::after{ animation:doFlickOut 1.1s steps(1,end) forwards; }
+@keyframes doFlickOut{ 0%{ opacity:1; } 12%{ opacity:.1; } 20%{ opacity:1; } 34%{ opacity:.15; } 40%{ opacity:.8; } 58%{ opacity:.05; } 64%{ opacity:.5; } 80%,100%{ opacity:0; } }
+
+/* ============================================================
+   CARD TRAY — where your cards stand
+   slot: the cards stand in a slot cut into the top edge of the machine,
+   the lower part of the cards sunk into it, a chunky front lip with a
+   finger notch. rise: the slot, and each new hand's cards rise out of it.
+   ============================================================ */
+html[data-do-tray] #your-seat-dock .seat.you::before{
+  left:50%; width:156px; transform:translateX(-50%); z-index:1;
+  top:calc(-7px - var(--do-band, 0px) - var(--do-lip, 0px) - 1px); height:calc(35px + var(--do-band, 0px) + var(--do-lip, 0px));
+  border:2px solid var(--do-ink); border-top:0; border-radius:0 0 3px 3px;
+  background:linear-gradient(180deg,#010202,color-mix(in srgb,var(--machine-recess) 55%,black));
+  box-shadow:inset 5px 0 0 rgba(0,0,0,.55),inset -5px 0 0 rgba(0,0,0,.55),inset 0 -3px 0 rgba(0,0,0,.4),
+    -2px 0 0 var(--theme-case-hi),2px 0 0 var(--do-lo),0 2px 0 var(--do-lo);
+}
+html[data-do-tray] #your-seat-dock .seat.you::after{
+  left:50%; width:166px; transform:translateX(-50%); z-index:4;
+  top:19px; height:14px; border:2px solid var(--do-ink); border-radius:2px;
+  background:
+    radial-gradient(ellipse 14px 7px at 50% 0,var(--do-ink) 0 70%,transparent 72%) 0 0/100% 100% no-repeat,
+    linear-gradient(180deg,var(--theme-case-hi) 0 2px,var(--theme-case-raised) 2px calc(100% - 3px),var(--do-lo) calc(100% - 3px));
+  box-shadow:0 3px 0 rgba(0,0,0,.6),inset 2px 0 0 color-mix(in srgb,var(--theme-case-hi) 50%,transparent);
+}
+html[data-do-tray] #your-seat-dock .seat.you .seat-cards{ transform:translateY(3px); }
+html[data-do-tray] #your-seat-dock .seat.you{ padding-bottom:12px; }
+html[data-do-tray="rise"] .seat.you.do-rise .seat-cards .card{ animation:doCardRise .56s steps(8,end) both; }
+html[data-do-tray="rise"] .seat.you.do-rise .seat-cards .card:nth-child(2){ animation-delay:.14s; }
+@keyframes doCardRise{ 0%{ transform:translateY(72px); } 76%{ transform:translateY(-6px); } 88%{ transform:translateY(2px); } 100%{ transform:translateY(0); } }
+
+/* ============================================================
+   BET THIS HAND — right end of the bankroll row
+   drum: a small reel counter, the stack's own part, in a housing.
+   window: small reels inside the stack drum's gold frame, after a divider.
+   crt: a money cell on the one screen's top line; the row is all drum.
+   tape: an adding-machine tape: each bet prints the new total and the
+   paper feeds up a line; a new hand tears it off.
+   ============================================================ */
+.do-bethouse,.do-winwrap,.do-crtbet{ display:none; }
+html[data-do-bet] .do-row-stack .bet-this-hand{ display:none !important; }
+html[data-do-bet="drum"] .do-bethouse,html[data-do-bet="tape"] .do-bethouse{ display:flex; }
+.do-bethouse{ flex:0 0 94px; min-width:0; position:relative; align-items:center; justify-content:center; gap:5px; padding:3px 5px; box-sizing:border-box; }
+.do-bet-print{ font-family:var(--font-hdr); font-size:6px; letter-spacing:.12em; line-height:1.3; color:var(--ink-faint); text-align:center; }
+.do-betdrum,.do-tape{ display:none; }
+html[data-do-bet="drum"] .do-betdrum{ display:flex; }
+html[data-do-bet="drum"] .do-bethouse{ flex-direction:column; gap:2px; padding:3px 4px; }
+.do-betdrum{ gap:2px; padding:2px 3px; border:2px solid var(--accent); border-radius:3px; background:rgba(0,0,0,.5); box-shadow:0 2px 0 rgba(0,0,0,.5),inset 0 2px 0 rgba(0,0,0,.5); }
+.do-betdrum .jp-cell,.do-winreels .jp-cell{ min-width:13px; width:13px; height:20px; font-size:10px; line-height:1; padding:0; }
+.do-betdrum .jp-sym,.do-winreels .jp-sym{ min-width:9px; width:9px; }
+.do-betdrum .reel-strip,.do-winreels .reel-strip{ line-height:20px; }
+
+/* window */
+html[data-do-bet="window"] .do-winwrap{ display:flex; }
+.do-winwrap{ flex:1; min-width:0; align-items:center; justify-content:center; gap:5px; padding:4px 6px;
+  background:rgba(0,0,0,.5); border:2px solid var(--accent); border-radius:3px; box-shadow:0 3px 0 rgba(0,0,0,.5),inset 0 2px 0 rgba(0,0,0,.5); }
+.do-winwrap #jackpot{ flex:0 0 auto !important; border:0 !important; background:none !important; box-shadow:none !important; padding:0 !important; }
+.do-windiv{ align-self:stretch; width:4px; margin:0 2px; background:var(--accent); border-left:1px solid color-mix(in srgb,var(--accent) 50%,black); box-shadow:inset -1px 0 0 var(--accent-bright); }
+.do-winside{ display:flex; flex-direction:column; align-items:center; gap:2px; }
+.do-winside .do-bet-print{ color:var(--accent); font-size:5.5px; }
+html[data-do-bet="window"] .do-row-stack #jackpot .jp-cell{ min-width:20px; width:20px; }
+
+/* crt */
+html[data-do-bet="crt"] .do-crtbet{ display:flex; }
+.do-crtbet{ flex:0 0 58px; min-width:0; margin:0 !important; align-items:center; justify-content:center; flex-direction:column; gap:1px;
+  font-family:var(--font-hdr); font-size:9px; line-height:1; padding:3px 2px !important; border-left-width:1px !important;
+  border-bottom-left-radius:0 !important; border-top-left-radius:0 !important; border-bottom-right-radius:0 !important; }
+.do-crtbet small{ font-size:5.5px; letter-spacing:.1em; opacity:.8; }
+html[data-do-bet="crt"] .do-screen-top > #hand-strength{ border-top-right-radius:0 !important; }
+
+/* tape */
+html[data-do-bet="tape"] .do-tape{ display:block; }
+html[data-do-bet="tape"] .do-bethouse{ padding:3px; }
+.do-tape{ position:relative; width:100%; height:100%; min-height:34px; overflow:hidden; border-radius:1px;
+  background:#0A0B09; box-shadow:inset 0 4px 0 rgba(0,0,0,.6); }
+.do-tape-paper{ position:absolute; left:6px; right:6px; bottom:0; min-height:calc(100% + 12px); box-sizing:border-box; display:flex; flex-direction:column; justify-content:flex-end;
+  padding:0 5px 3px; background:
+    repeating-linear-gradient(180deg,transparent 0 10px,rgba(90,70,40,.08) 10px 11px),
+    var(--card-face);
+  box-shadow:inset 3px 0 0 rgba(0,0,0,.08),inset -3px 0 0 rgba(0,0,0,.08); transition:transform .2s steps(3,end); }
+.do-tape-paper span{ display:flex; justify-content:space-between; height:11px; line-height:11px; font-family:var(--font-hdr); font-size:6.5px; color:#6C6150; letter-spacing:.04em; }
+.do-tape-paper span:last-child{ color:#1B120C; font-size:8px; }
+.do-tape-paper span:last-child::before{ content:'\2605'; font-size:5px; color:#B23A2E; }
+.do-tape::after{ content:''; position:absolute; left:3px; right:3px; top:0; height:6px; background:linear-gradient(180deg,#000,transparent); pointer-events:none; }
+.do-tape.feed .do-tape-paper{ animation:doFeed .26s steps(4,end); }
+@keyframes doFeed{ from{ transform:translateY(11px); } to{ transform:translateY(0); } }
+.do-tape.tear .do-tape-paper{ animation:doTear .4s steps(5,end); }
+@keyframes doTear{ 0%{ transform:translateY(0); } 40%{ transform:translateY(-40px); opacity:1; } 41%{ transform:translateY(20px); opacity:0; } 100%{ transform:translateY(0); opacity:1; } }
+
+/* ============================================================
+   BUTTON BAY — FOLD / CHECK / RAISE are the locked family; only their
+   seat changes. The lab wraps each key in a .do-seat (layout-neutral
+   unless a bay option styles it).
+   flush: each key sits in its own well in the case surface, dark seams.
+   plinth: each key stands on its own raised base.
+   bank: one moulded key bank, dividers between the keys.
+   cradle: one shallow recessed cradle; key tops level with its rim.
+   ============================================================ */
+.do-seat{ display:contents; }
+html[data-do-bay] .action-console{ padding:6px 8px 4px; }
+html[data-do-bay] .console-flip{ background:none; border:0; box-shadow:none; padding:0; }
+html[data-do-bay] .actions-row button{ height:auto !important; min-height:0 !important; padding-top:8px; padding-bottom:8px; }
+html[data-do-bay] .actions-row{ gap:8px; padding-top:0; }
+html[data-do-bay] .do-seat{ display:flex; flex:1 1 0; min-width:0; position:relative; box-sizing:border-box; }
+html[data-do-bay] .do-seat > button{ flex:1; min-width:0; }
+html[data-do-bay] .actions-row{ align-items:stretch; }
+/* flush */
+html[data-do-bay="flush"] .do-seat{
+  padding:2px 2px 8px; border:2px solid var(--do-ink); border-radius:5px; background:var(--machine-recess);
+  box-shadow:inset 0 4px 0 rgba(0,0,0,.6),inset 2px 0 0 rgba(0,0,0,.25),0 2px 0 color-mix(in srgb,var(--theme-case-hi) 40%,transparent);
+}
+html[data-do-bay="flush"] .actions-row{ gap:9px; }
+/* plinth */
+html[data-do-bay="plinth"] .do-seat{
+  padding:4px 4px 10px; border:2px solid var(--do-ink); border-radius:4px;
+  background:repeating-conic-gradient(rgba(255,255,255,.04) 0 25%,transparent 0 50%) 0 0/6px 6px,var(--theme-case-raised);
+  box-shadow:inset 2px 2px 0 var(--theme-case-hi),inset -2px -3px 0 var(--do-lo),0 3px 0 var(--do-ink),0 5px 0 rgba(0,0,0,.35);
+}
+/* bank */
+html[data-do-bay="bank"] .actions-row{
+  gap:0; padding:4px 3px 10px; border:2px solid var(--do-ink); border-radius:5px;
+  background:repeating-conic-gradient(rgba(255,255,255,.04) 0 25%,transparent 0 50%) 0 0/6px 6px,var(--do-mid-lo);
+  box-shadow:inset 0 2px 0 var(--theme-case-raised),inset 0 -3px 0 rgba(0,0,0,.35),0 3px 0 var(--do-ink),0 5px 0 rgba(0,0,0,.3);
+}
+html[data-do-bay="bank"] .do-seat{ padding:0 4px; }
+html[data-do-bay="bank"] .do-seat + .do-seat{ border-left:3px solid var(--do-ink); box-shadow:inset 1px 0 0 color-mix(in srgb,var(--theme-case-hi) 35%,transparent); }
+/* cradle */
 html[data-do-bay="cradle"] .console-flip{
-  padding:4px 5px 3px; background:var(--machine-recess); border:2px solid var(--do-ink); border-radius:3px;
-  box-shadow:var(--do-recess),var(--do-frame);
+  padding:3px 4px 9px !important; background:var(--machine-recess); border:2px solid var(--do-ink); border-radius:5px;
+  box-shadow:inset 0 3px 0 rgba(0,0,0,.55),inset 2px 0 0 rgba(0,0,0,.2),0 2px 0 color-mix(in srgb,var(--theme-case-hi) 45%,transparent),0 -2px 0 rgba(0,0,0,.3);
 }
-html[data-do-bay="cradle"] .actions-row{ gap:7px; }
+html[data-do-bay="cradle"] .do-seat{ display:contents; }
+
+/* The AWARD POT / QUICK RESOLVE faces keep their own full-width key. */
+html[data-do-bay] .console-face-award,html[data-do-bay] .actions-face-quick{ padding:0; }
 
 /* ============================================================
-   RAISE DRAWER
-   hub: built like the cabinet, printed title, dark-tile quick keys (the
-   Pattern Book standard button), a fader with detents.
+   RAISE — the mechanism. The raise face covers the instrument panel
+   exactly (the lab sets --do-hud-h), and the cards still stand up above
+   it, as if you are still holding them.
+   drumf: the panel is a drum; RAISE rolls it forward, the sizing face
+     comes up from below, overshoots and locks.
+   drumb: the same drum rolling the other way.
+   barrel: the forward drum with its edge showing: the next face's name
+     printed on the band above.
+   slide: the sizing tray slides up out of the seam in steps and locks.
    ============================================================ */
-html[data-do-raise="hub"] .raise-panel{
-  border:2px solid var(--do-ink); border-radius:4px; padding:10px 11px 9px;
-  background:repeating-conic-gradient(rgba(255,255,255,.03) 0 25%,transparent 0 50%) 0 0/6px 6px,var(--machine-case);
-  box-shadow:
-    inset 4px 4px 0 color-mix(in srgb,var(--theme-case-hi) 55%,transparent),
-    inset -4px -4px 0 color-mix(in srgb,var(--theme-case-raised) 40%,black),
-    0 5px 0 var(--machine-case-lo),0 8px 0 rgba(0,0,0,.4);
-  outline:2px solid var(--theme-rim); outline-offset:1px;
+html[data-do-raise] .raise-panel{
+  left:0; right:0; bottom:100%; margin:0; height:var(--do-hud-h,150px); box-sizing:border-box;
+  opacity:1; visibility:hidden; transform:none; transition:none; pointer-events:none; outline:0;
+  border:0; border-radius:0; box-shadow:none;
+  background:
+    repeating-conic-gradient(rgba(255,255,255,.03) 0 25%,transparent 0 50%) 0 0/6px 6px,
+    color-mix(in srgb,var(--machine-recess) 70%,var(--machine-case));
 }
-html[data-do-raise="hub"] .raise-title{ color:var(--ink); text-shadow:none; font-size:8px; letter-spacing:.14em; }
-html[data-do-raise="hub"] .raise-cancel{
-  border:2px solid #070806; border-radius:3px; background:#D0C28F; color:#30270F; text-shadow:none;
+html[data-do-raise]:not([data-do-build]) .raise-panel{ outline:2px solid var(--theme-rim); outline-offset:-2px; }
+html[data-do-raise] .raise-panel::before{
+  content:''; position:absolute; inset:0; pointer-events:none; z-index:0;
+  box-shadow:inset 0 3px 0 var(--theme-case-hi),inset 0 5px 0 var(--theme-case-raised),inset 0 7px 0 var(--do-ink),
+    inset 0 -3px 0 var(--do-lo),inset 0 -5px 0 var(--do-ink),inset 3px 0 0 rgba(0,0,0,.25),inset -3px 0 0 rgba(0,0,0,.25);
+}
+html[data-do-raise] .raise-panel > *{ position:relative; z-index:1; }
+html[data-do-raise] .raise-panel.show,html[data-do-raise] .raise-panel.do-closing{ visibility:visible; }
+html[data-do-raise] .raise-panel.show{ pointer-events:auto; }
+html[data-do-raise] .actions-dock{ perspective:900px; }
+
+html[data-do-raise="drumf"] .raise-panel,html[data-do-raise="barrel"] .raise-panel{ transform-origin:50% 50% -60px; }
+html[data-do-raise="drumb"] .raise-panel{ transform-origin:50% 50% -60px; }
+html[data-do-raise="drumf"] .raise-panel.show,html[data-do-raise="barrel"] .raise-panel.show{ animation:doRollUp .56s steps(9,end) both; }
+html[data-do-raise="drumf"] .raise-panel.do-closing,html[data-do-raise="barrel"] .raise-panel.do-closing{ animation:doRollUp .38s steps(6,end) reverse both; }
+html[data-do-raise="drumb"] .raise-panel.show{ animation:doRollDown .56s steps(9,end) both; }
+html[data-do-raise="drumb"] .raise-panel.do-closing{ animation:doRollDown .38s steps(6,end) reverse both; }
+@keyframes doRollUp{
+  0%{ transform:rotateX(-88deg); filter:brightness(.25); }
+  66%{ transform:rotateX(5deg); filter:brightness(1.08); }
+  82%{ transform:rotateX(-2deg); filter:brightness(1); }
+  100%{ transform:rotateX(0); filter:none; }
+}
+@keyframes doRollDown{
+  0%{ transform:rotateX(88deg); filter:brightness(.25); }
+  66%{ transform:rotateX(-5deg); filter:brightness(1.08); }
+  82%{ transform:rotateX(2deg); filter:brightness(1); }
+  100%{ transform:rotateX(0); filter:none; }
+}
+html[data-do-raise="slide"] .raise-panel{ clip-path:inset(-60px 0 0 0); }
+html[data-do-raise="slide"] .raise-panel.show{ animation:doSlideUp .5s steps(7,end) both; }
+html[data-do-raise="slide"] .raise-panel.do-closing{ animation:doSlideUp .34s steps(5,end) reverse both; }
+@keyframes doSlideUp{
+  0%{ transform:translateY(100%); clip-path:inset(0 0 100% 0); }
+  70%{ transform:translateY(-5px); clip-path:inset(-60px 0 0 0); }
+  84%{ transform:translateY(2px); }
+  100%{ transform:translateY(0); clip-path:inset(-60px 0 0 0); }
+}
+/* The instruments behind roll away with it: they darken in steps and
+   tip back, and come back when the drum rolls home. */
+#hud-frame.do-rolled > #hud-left,#hud-frame.do-rolled > #hud-right,#hud-frame.do-rolled > .do-row,#hud-frame.do-rolled #hud-status{
+  filter:brightness(.3); transform:translateY(-6px) scaleY(.92); transition:filter .3s steps(4,end),transform .3s steps(4,end);
+}
+html[data-do-raise="drumb"] #hud-frame.do-rolled > #hud-left,html[data-do-raise="drumb"] #hud-frame.do-rolled > #hud-right,
+html[data-do-raise="drumb"] #hud-frame.do-rolled > .do-row,html[data-do-raise="drumb"] #hud-frame.do-rolled #hud-status{ transform:translateY(6px) scaleY(.92); }
+html[data-do-raise="slide"] #hud-frame.do-rolled > *{ transform:none !important; }
+
+/* Barrel edge: the drum's next face, seen edge-on above the sizing face. */
+.do-barrel{ display:none; }
+html[data-do-raise="barrel"] .do-barrel{
+  display:flex; position:absolute !important; left:0; right:0; top:-11px; height:11px; z-index:2 !important;
+  align-items:center; justify-content:space-around; pointer-events:none;
+  font-family:var(--font-hdr); font-size:6px; letter-spacing:.3em; color:color-mix(in srgb,var(--ink-faint) 70%,transparent);
+  background:linear-gradient(180deg,#050606,color-mix(in srgb,var(--machine-case) 55%,black));
+  border-top:2px solid var(--do-ink); box-shadow:inset 0 -1px 0 rgba(255,255,255,.08);
+}
+html[data-do-raise="barrel"] .do-barrel span{ transform:scaleY(.55); }
+
+/* The sizing face layout (any new mechanism or sizing option). */
+html[data-do-raise] .raise-panel,html[data-do-sizing] .raise-panel{
+  display:grid; grid-template-columns:minmax(0,1fr) 80px; align-content:center; column-gap:8px; row-gap:6px;
+  grid-template-areas:"title cancel" "drum drum" "ctrl ctrl" "quick allin";
+  padding:12px 14px 12px;
+}
+html[data-do-raise] .raise-head,html[data-do-sizing] .raise-head{ display:contents; }
+html[data-do-raise] .raise-title,html[data-do-sizing] .raise-title{ grid-area:title; align-self:center; color:var(--ink); text-shadow:none; font-size:8px; letter-spacing:.16em; }
+html[data-do-raise] .raise-cancel,html[data-do-sizing] .raise-cancel{
+  grid-area:cancel; justify-self:end; width:30px; height:24px;
+  border:2px solid #070806; border-radius:3px; background:#D0C28F; color:#30270F; text-shadow:none; font-size:11px;
   box-shadow:0 3px 0 #090806,inset 2px 2px 0 #FFF0BC,inset -2px -2px 0 #796B43;
 }
-html[data-do-raise="hub"] .quick-bet{
-  border:2px solid #090806; border-radius:2px; background:#29291F; color:#C8BD92;
-  box-shadow:0 3px 0 #15150F,0 5px 0 #090605,inset 2px 2px 0 #4A4B39,inset -2px -2px 0 #171710;
+html[data-do-raise] .raise-amt,html[data-do-sizing] .raise-amt{
+  grid-area:drum; justify-self:center; min-width:0; padding:4px 6px !important;
+  background:rgba(0,0,0,.55) !important; border:2px solid var(--accent) !important; border-radius:3px !important;
+  box-shadow:0 3px 0 rgba(0,0,0,.5),inset 0 2px 0 rgba(0,0,0,.5);
 }
-html[data-do-raise="hub"] .quick-bet.is-selected{
-  color:var(--pc-lamp-amber-hi); background:#29291F;
-  box-shadow:0 1px 0 #15150F,0 3px 0 #090605,inset 2px 2px 0 #4A4B39,inset 0 0 0 4px rgba(242,180,49,.18);
-}
-html[data-do-raise="hub"] .raise-panel input[type=range]::-webkit-slider-runnable-track{
-  height:12px; border:2px solid var(--do-ink); border-radius:2px;
-  background:
-    repeating-linear-gradient(90deg,transparent 0 10%,color-mix(in srgb,var(--theme-case-hi) 55%,transparent) 10% calc(10% + 1px)),
-    linear-gradient(90deg,var(--pc-lamp-amber) 0 var(--fill),#040606 var(--fill) 100%);
-  box-shadow:inset 0 3px 0 rgba(0,0,0,.55),0 0 0 2px color-mix(in srgb,var(--theme-case-raised) 60%,black);
-}
-html[data-do-raise="hub"] .raise-panel input[type=range]::-webkit-slider-thumb{
-  width:24px; height:34px; margin-top:-13px; border:2px solid var(--do-ink); border-radius:2px;
-  background:linear-gradient(#F4EFE1 0 0) center/2px 100% no-repeat,repeating-linear-gradient(180deg,var(--theme-case-hi) 0 2px,var(--theme-case-raised) 2px 4px,color-mix(in srgb,var(--theme-case-raised) 55%,black) 4px 5px);
-  box-shadow:0 4px 0 var(--do-ink),inset 2px 2px 0 rgba(255,255,255,.25);
-}
+html[data-do-raise] .raise-amt .mini-jackpot,html[data-do-sizing] .raise-amt .mini-jackpot{ gap:3px; }
+html[data-do-raise] .raise-amt .mini-jackpot .jp-cell,html[data-do-sizing] .raise-amt .mini-jackpot .jp-cell{ min-width:22px; width:22px; height:28px; font-size:14px; }
+html[data-do-raise] .raise-amt .mini-jackpot .jp-sym,html[data-do-sizing] .raise-amt .mini-jackpot .jp-sym{ min-width:14px; width:14px; }
+html[data-do-raise] .raise-amt .mini-jackpot .reel-strip,html[data-do-sizing] .raise-amt .mini-jackpot .reel-strip{ line-height:28px; }
+html[data-do-raise] .raise-row,html[data-do-sizing] .raise-row{ grid-area:ctrl; margin:0; }
+html[data-do-raise] .quick-bets,html[data-do-sizing] .quick-bets{ grid-area:quick; margin:0; }
+html[data-do-raise] .quick-bet,html[data-do-sizing] .quick-bet{ min-height:24px; }
+html[data-do-raise]:not([data-do-allin]) .quick-bets,html[data-do-sizing]:not([data-do-allin]) .quick-bets{ grid-column:1 / -1; }
+html[data-do-raise] .raise-panel input[type=range],html[data-do-sizing] .raise-panel input[type=range]{ height:30px; }
 
 /* ============================================================
-   BEHAVIOUR: YOUR TURN
-   rise: waiting keys sink into the console and dim; on your turn they
-   rise and settle (stepped, overshoot).
-   shutter: a roll-top in the case's own colours closes over the keys
-   while the others act and rolls up on your turn.
-   pilots: two square pilot lamps on the case top light on your turn.
+   SIZING — how you set the amount. Every change rolls the drum.
+   fader: a big cap in a deep slot, notches that click as it moves.
+   wheel: a ridged thumbwheel half-sunk in the case; roll it, flick it.
+   combo: flick the drum's digits up and down, like a safe lock.
    ============================================================ */
-html[data-do-turn="rise"] .console-flip,html[data-do-turn="shutter"] .console-flip{ overflow:hidden; }
-html[data-do-turn="rise"] .actions-row.disabled button{ opacity:1; transform:translateY(58%); filter:brightness(.5) saturate(.55); transition:transform .3s steps(5,end),filter .2s steps(3,end); }
-html[data-do-turn="rise"] .actions-row:not(.disabled) button{ animation:doKeyWake .42s steps(6,end); }
-@keyframes doKeyWake{ 0%{ transform:translateY(58%); filter:brightness(.5); } 70%{ transform:translateY(-4px); } 100%{ transform:translateY(-1px); filter:none; } }
-.do-shutter{ display:none; }
-html[data-do-turn="shutter"] .do-shutter{
-  display:grid; place-items:center; position:absolute; inset:-2px; z-index:5; pointer-events:none;
-  transform:translateY(-104%); transition:transform .42s steps(7,end);
+.do-scale,.do-wheel,.do-combo{ display:none; }
+/* fader */
+html[data-do-sizing="fader"] .raise-row{ position:relative; }
+html[data-do-sizing="fader"] .raise-panel input[type=range]{ height:40px; }
+html[data-do-sizing="fader"] .raise-panel input[type=range]::-webkit-slider-runnable-track{
+  height:14px; border:2px solid var(--do-ink); border-radius:2px;
+  background:linear-gradient(90deg,var(--accent) 0 var(--fill),#020303 var(--fill) 100%);
+  box-shadow:inset 0 5px 0 rgba(0,0,0,.5),0 2px 0 color-mix(in srgb,var(--theme-case-hi) 45%,transparent),0 -2px 0 rgba(0,0,0,.4);
+}
+html[data-do-sizing="fader"] .raise-panel input[type=range]::-webkit-slider-thumb{
+  -webkit-appearance:none; appearance:none; width:36px; height:36px; margin-top:-13px;
+  border:2px solid var(--do-ink); border-radius:4px;
   background:
-    linear-gradient(transparent 0 calc(100% - 8px),var(--do-ink) calc(100% - 8px) calc(100% - 6px),var(--theme-case-hi) calc(100% - 6px) calc(100% - 4px),var(--theme-case-raised) calc(100% - 4px)),
-    repeating-linear-gradient(180deg,color-mix(in srgb,var(--theme-case-hi) 80%,transparent) 0 1px,var(--theme-case-raised) 1px 7px,color-mix(in srgb,var(--theme-case-raised) 48%,black) 7px 9px);
-  border-radius:4px;
+    linear-gradient(90deg,transparent 0 15px,#2A2118 15px 19px,transparent 19px) 0 5px/100% calc(100% - 12px) no-repeat,
+    repeating-linear-gradient(90deg,transparent 0 3px,rgba(60,45,25,.2) 3px 5px) 3px 9px/9px calc(100% - 18px) no-repeat,
+    repeating-linear-gradient(90deg,transparent 0 3px,rgba(60,45,25,.2) 3px 5px) 23px 9px/9px calc(100% - 18px) no-repeat,
+    linear-gradient(180deg,#FFFFFF 0 3px,var(--card-face) 3px calc(100% - 7px),#CFC4A6 calc(100% - 7px) calc(100% - 3px),#9C9275 calc(100% - 3px));
+  box-shadow:0 5px 0 var(--do-ink),0 8px 0 rgba(0,0,0,.35),inset 3px 0 0 rgba(255,255,255,.7),inset -3px 0 0 rgba(0,0,0,.12);
+  cursor:grab;
 }
-html[data-do-turn="shutter"] .do-shutter span{ font-family:var(--font-hdr); font-size:7px; letter-spacing:.2em; color:var(--ink); background:var(--do-plate-bg); padding:4px 8px 3px; border:2px solid var(--do-ink); border-radius:2px; }
-html[data-do-turn="shutter"] .do-waiting .do-shutter{ transform:translateY(0); }
-html[data-do-turn="shutter"] .actions-row.disabled button{ opacity:1; }
-.do-pilot{ display:none; }
-html[data-do-turn="pilots"] .do-pilot{
-  display:block; position:absolute; z-index:9; top:-1px; width:14px; height:10px; pointer-events:none;
-  border:2px solid #190C0B; background:var(--pc-lamp-off); box-shadow:0 2px 0 #100807,inset 1px 1px 0 rgba(255,255,255,.2);
+html[data-do-sizing="fader"] .raise-panel input[type=range]:active::-webkit-slider-thumb{
+  transform:translateY(-3px); cursor:grabbing;
+  box-shadow:0 8px 0 var(--do-ink),0 12px 0 rgba(0,0,0,.3),inset 3px 0 0 rgba(255,255,255,.7),inset -3px 0 0 rgba(0,0,0,.12);
 }
-.do-pilot-l{ left:26px; } .do-pilot-r{ right:26px; }
-html[data-do-turn="pilots"] .do-myturn .do-pilot{ background:var(--pc-lamp-amber); box-shadow:0 2px 0 #100807,0 0 10px rgba(242,180,49,.7),inset 1px 1px 0 var(--pc-lamp-amber-hi); animation:doPilot 1.1s steps(1) infinite; }
-@keyframes doPilot{ 60%{ background:color-mix(in srgb,var(--pc-lamp-amber) 45%,#190C0B); box-shadow:0 2px 0 #100807; } }
+html[data-do-sizing="fader"] .do-scale{
+  display:block; position:absolute; left:18px; right:16px; bottom:-6px; height:7px; pointer-events:none;
+  background:
+    linear-gradient(90deg,var(--card-face) 0 2px,transparent 2px) 0 0/50% 7px repeat-x,
+    linear-gradient(90deg,color-mix(in srgb,var(--theme-case-hi) 80%,transparent) 0 2px,transparent 2px) 0 0/10% 4px repeat-x,
+    linear-gradient(var(--card-face) 0 0) 100% 0/2px 7px no-repeat;
+  opacity:.55;
+}
+/* wheel */
+html[data-do-sizing="wheel"] .raise-row .slider-wrap,html[data-do-sizing="combo"] .raise-row .slider-wrap{ display:none; }
+html[data-do-sizing="wheel"] .do-wheel{
+  display:block; position:relative; height:30px; width:100%; cursor:ew-resize; touch-action:none;
+  border:2px solid var(--do-ink); border-radius:3px; background:#030404;
+  box-shadow:inset 0 3px 0 rgba(0,0,0,.6),0 2px 0 color-mix(in srgb,var(--theme-case-hi) 45%,transparent);
+}
+.do-wheel i{
+  position:absolute; inset:3px 14px; border-radius:2px;
+  background:
+    linear-gradient(90deg,rgba(0,0,0,.78),rgba(0,0,0,.08) 22%,rgba(255,255,255,.06) 50%,rgba(0,0,0,.08) 78%,rgba(0,0,0,.78)),
+    linear-gradient(180deg,rgba(255,255,255,.22) 0 2px,transparent 2px calc(100% - 3px),rgba(0,0,0,.4) calc(100% - 3px)),
+    repeating-linear-gradient(90deg,var(--theme-case-hi) 0 2px,var(--theme-case-raised) 2px 6px,var(--do-lo) 6px 8px) var(--wx,0px) 0/8px 100%;
+  box-shadow:0 0 0 2px var(--do-ink);
+}
+.do-wheel b{ position:absolute; left:50%; top:-2px; bottom:-2px; width:2px; margin-left:-1px; background:var(--accent); box-shadow:0 0 0 1px var(--do-ink); }
+.do-wheel::before,.do-wheel::after{ content:'\25C0'; position:absolute; top:50%; transform:translateY(-50%); left:2px; font-size:7px; color:var(--ink-faint); }
+.do-wheel::after{ content:'\25B6'; left:auto; right:2px; }
+/* combo: a row of up keys over the drum and down keys under it, one per digit */
+html[data-do-sizing="combo"] .raise-panel{ grid-template-areas:"title cancel" "up up" "drum drum" "down down" "quick allin"; row-gap:4px; padding-top:10px; padding-bottom:10px; }
+html[data-do-sizing="combo"] .raise-row{ display:none; }
+html[data-do-sizing="combo"] .do-combo{ display:contents; }
+.do-crow{ display:grid; grid-template-columns:14px repeat(6,22px); gap:3px; justify-content:center; padding:0 8px; }
+.do-cup{ grid-area:up; align-items:end; } .do-cdown{ grid-area:down; align-items:start; }
+.do-crow button{
+  grid-column:auto; height:16px; padding:0; border:2px solid #070806; border-radius:2px; background:#D0C28F; color:#30270F;
+  font-size:7px; line-height:1; cursor:pointer; box-shadow:0 2px 0 #090806,inset 1px 1px 0 #FFF0BC,inset -1px -1px 0 #796B43;
+}
+.do-crow button:first-of-type{ grid-column:2; }
+.do-crow button:active{ transform:translateY(2px); box-shadow:0 0 0 #090806,inset 1px 1px 0 #796B43; }
+html[data-do-sizing="combo"] .raise-amt .reel-digit{ cursor:ns-resize; touch-action:none; }
 
 /* ============================================================
    BEHAVIOUR: KNOCK, PEEK
@@ -317,10 +675,6 @@ html[data-do-peek="hold"] .seat.you .seat-cards .card:not(.back)::after{
   background:repeating-conic-gradient(rgba(255,255,255,.13) 0% 25%,transparent 0% 50%) 0 0/6px 6px,var(--felt-2);
   border:2px solid var(--px-ink); box-shadow:inset 0 0 0 2px var(--rail);
 }
-html[data-cardback="classic"][data-do-peek="hold"] .seat.you .seat-cards .card:not(.back)::after,
-html[data-do-peek="hold"] [data-cardback="classic"] .seat.you .seat-cards .card:not(.back)::after{
-  background:repeating-conic-gradient(rgba(0,0,0,.18) 0% 25%,transparent 0% 50%) 0 0/6px 6px,#8F2029; box-shadow:inset 0 0 0 2px #D9A93B;
-}
 html[data-do-peek="hold"] .seat.you .seat-cards{ cursor:grab; transition:transform .12s steps(3,end); }
 html[data-do-peek="hold"] #hud-frame.do-peeking .seat.you .seat-cards .card::after{ display:none; }
 html[data-do-peek="hold"] #hud-frame.do-peeking .seat.you .seat-cards{ transform:translateY(-10px); }
@@ -334,16 +688,15 @@ html[data-do-peek="hold"] #app #hud-frame.do-unpeeked #hand-strength::before{
 }
 
 /* ============================================================
-   BEHAVIOUR: ALL IN
-   The key sits in the raise drawer. hold: press and hold to charge.
-   cover: a flip-up clear cover over the key; lift it, then press.
+   BEHAVIOUR: ALL IN — hold to charge (the key sits on the sizing face)
    ============================================================ */
 .do-allin-wrap{ display:none; }
-html[data-do-allin="hold"] .do-allin-wrap,html[data-do-allin="cover"] .do-allin-wrap{ display:block; position:relative; margin-top:6px; height:40px; }
+html[data-do-allin="hold"] .do-allin-wrap{ display:block; position:relative; grid-area:allin; min-height:26px; }
+html[data-do-allin="hold"]:not([data-do-raise]):not([data-do-sizing]) .do-allin-wrap{ margin-top:6px; height:40px; }
 .do-allin-key{
   --charge:0; position:absolute; inset:0; width:100%; overflow:hidden; cursor:pointer;
   border:2px solid #090806; border-radius:3px; background:#2A1512; color:#FF8A7A;
-  font-family:var(--font-hdr); font-size:8px; letter-spacing:.1em;
+  font-family:var(--font-hdr); font-size:7px; letter-spacing:.08em; line-height:1.2;
   box-shadow:0 3px 0 #15100F,0 5px 0 #090605,inset 2px 2px 0 #4A2A26,inset -2px -2px 0 #170C0B,inset 0 0 0 4px rgba(217,83,74,.18);
 }
 .do-allin-key i{ position:absolute; left:0; top:0; bottom:0; width:calc(var(--charge) * 100%); background:repeating-linear-gradient(90deg,#D9534A 0 6px,#A93A32 6px 8px); }
@@ -351,66 +704,45 @@ html[data-do-allin="hold"] .do-allin-wrap,html[data-do-allin="cover"] .do-allin-
 .do-allin-key.charging{ animation:doBuzz .1s steps(2,end) infinite; }
 .do-allin-key.charging span{ color:#FFE9E4; }
 @keyframes doBuzz{ 50%{ transform:translate(1px,-1px); } }
-.do-cover{ display:none; }
-html[data-do-allin="cover"] .do-cover{
-  display:block; position:absolute; inset:-3px; z-index:2; cursor:pointer; transform-origin:50% 0; transition:transform .24s steps(4,end);
-  border:2px solid #090806; border-radius:4px;
-  background:linear-gradient(160deg,rgba(244,239,225,.42),rgba(244,239,225,.12) 45%,rgba(244,239,225,.28));
-  box-shadow:inset 0 0 0 2px rgba(255,255,255,.2),0 3px 0 rgba(0,0,0,.4);
-}
-html[data-do-allin="cover"] .do-cover::before{ content:''; position:absolute; left:50%; bottom:3px; width:30px; height:6px; margin-left:-15px; background:#D0C28F; border:2px solid #090806; border-radius:2px; }
-html[data-do-allin="cover"] .do-allin-wrap.open .do-cover{ transform:perspective(200px) rotateX(-160deg); }
-
-/* The moment itself: beacons on the case, the machine hums, the case
-   shakes, the felt dims; each card of the run-out lands on a heartbeat. */
-.do-beacon{ display:none; }
-html[data-do-allinfx] .do-beacon{
-  display:block; position:absolute; z-index:9; top:-7px; width:16px; height:12px; pointer-events:none;
-  border:2px solid #190C0B; background:#3A1512; box-shadow:0 2px 0 #100807,inset 1px 1px 0 rgba(255,255,255,.15); opacity:0;
-}
-.do-beacon-l{ left:8px; } .do-beacon-r{ right:8px; }
-html[data-do-allinfx] .do-allin .do-beacon,html[data-do-allinfx] .do-facing .do-beacon{ opacity:1; animation:doBeacon .5s steps(1) infinite; }
-html[data-do-allinfx] .do-facing:not(.do-allin) .do-beacon{ animation-duration:1s; }
-@keyframes doBeacon{ 0%{ background:#FF4A3A; box-shadow:0 2px 0 #100807,0 0 16px 6px rgba(255,74,58,.55); } 50%{ background:#5A1510; box-shadow:0 2px 0 #100807; } }
-html[data-do-allinfx] #your-seat-dock.do-allin #hud-frame{ border-color:#D9534A !important; }
-html[data-do-allinfx="full"] #your-seat-dock.do-allin-hit #hud-frame,
-html[data-do-allinfx="full"] #your-seat-dock.do-allin-hit ~ #action-area .action-console{ animation:doShake .09s steps(2,end) 8; }
-@keyframes doShake{ 50%{ transform:translate(2px,-1px); } }
-.do-dim{ position:absolute; inset:0; z-index:0; pointer-events:none; border-radius:inherit; background:rgba(0,0,0,0); transition:background .4s steps(4,end); }
-html[data-do-allinfx="full"] #table-screen.do-allin-table .do-dim{ background:rgba(0,0,0,.32); }
-html[data-do-allinfx="full"] #table-screen.do-beat #hud-frame{ animation:doBeat .4s steps(3,end); }
-@keyframes doBeat{ 30%{ transform:scale(1.012); box-shadow:0 0 0 3px #D9534A,0 0 22px rgba(217,83,74,.55); } }
-
-/* ============================================================
-   BEHAVIOUR: WIN — lamps chase round the case when you win a pot
-   ============================================================ */
-.do-chase{ display:none; }
-html[data-do-win="chase"] .do-chase{ display:block; position:absolute; inset:0; z-index:8; pointer-events:none; }
-.do-chase i{ position:absolute; width:6px; height:6px; margin:-3px 0 0 -3px; background:var(--pc-lamp-off); border:1px solid #190C0B; opacity:0; }
-html[data-do-win="chase"] #hud-frame.hud-frame-win-flash ~ .do-chase i,
-html[data-do-win="chase"] .do-winning .do-chase i{ opacity:1; animation:doChase .42s steps(1) infinite; animation-delay:calc(var(--i) * -.14s); }
-@keyframes doChase{ 0%{ background:var(--pc-lamp-amber-hi); box-shadow:0 0 6px var(--pc-lamp-amber); } 34%,100%{ background:var(--pc-lamp-off); box-shadow:none; } }
-
-/* ============================================================
-   BEHAVIOUR: BUST — before the RUN OVER roll
-   powerdown: every instrument switches off in steps; the stack reels
-   stop out of line.
-   break: the power-down, then the machine gives: keys drop off their
-   mounts, the case sags, sparks and smoke in pixel squares.
-   ============================================================ */
-#your-seat-dock.do-bust-1 #hud-frame .machine-crt,
-#your-seat-dock.do-bust-1 #hud-invested{ filter:brightness(.25) saturate(.3); transition:filter .5s steps(4,end); }
-#your-seat-dock.do-bust-1 #jackpot .jp-cell:nth-child(3) .reel-strip{ transform:translateY(-38%) !important; }
-#your-seat-dock.do-bust-1 #jackpot .jp-cell:nth-child(5) .reel-strip{ transform:translateY(-62%) !important; }
-#your-seat-dock.do-bust-1 .blind-indicator,#your-seat-dock.do-bust-1 .blind-indicator::before{ filter:brightness(.2) !important; }
-#your-seat-dock.do-bust-2 #hud-frame{ transform:rotate(-.7deg) translateY(3px); transition:transform .3s steps(3,end); }
-#action-area.do-bust-2 .btn-fold{ animation:doDrop 1s steps(10,end) forwards; }
-#action-area.do-bust-2 .btn-raise{ animation:doHang 1s steps(8,end) forwards; }
-@keyframes doDrop{ 0%{ transform:translateY(-1px); } 30%{ transform:translateY(-8px) rotate(-10deg); } 100%{ transform:translateY(200px) translateX(-26px) rotate(-60deg); opacity:0; } }
-@keyframes doHang{ 0%{ transform:translateY(-1px); } 50%{ transform:translateY(7px) rotate(13deg); } 70%{ transform:translateY(5px) rotate(9deg); } 100%{ transform:translateY(9px) rotate(16deg); } }
-.do-spark{ position:fixed; z-index:200; width:4px; height:4px; background:var(--pc-lamp-amber-hi); box-shadow:0 0 5px var(--pc-lamp-amber); pointer-events:none; }
-.do-smoke{ position:fixed; z-index:199; width:12px; height:12px; background:rgba(150,150,140,.55); pointer-events:none; box-shadow:6px -4px 0 rgba(150,150,140,.35),-5px -7px 0 rgba(120,120,110,.3); }
 
 /* Reduced motion: lit, not moving. */
-[data-motion="off"] .do-beacon,[data-motion="off"] .do-pilot,[data-motion="off"] .do-chase i,
-[data-motion="off"] #hud-frame,[data-motion="off"] .actions-row button,[data-motion="off"] .seat.you .card{ animation:none !important; }
+[data-motion="off"] #your-seat-dock::after,[data-motion="off"] .actions-dock::after,
+[data-motion="off"] .raise-panel,[data-motion="off"] #hud-frame,[data-motion="off"] .seat.you .card,
+[data-motion="off"] .do-tape-paper{ animation:none !important; transition:none !important; }
+
+/* ============================================================
+   SMALL PHONES (390 and 320 wide, or short screens): the same parts,
+   tightened so nothing overlaps or clips.
+   ============================================================ */
+@media (max-width:389px), (max-height:800px){
+  html[data-do-layout] .do-row-stack #jackpot{ padding:3px 4px; gap:2px; }
+  html[data-do-layout] .do-row-stack #jackpot .jp-cell{ min-width:19px; width:19px; height:25px; font-size:12px; }
+  html[data-do-layout] .do-row-stack #jackpot .jp-sym{ min-width:12px; width:12px; }
+  html[data-do-layout] .do-row-stack #jackpot .reel-strip{ line-height:25px; }
+  html[data-do-layout] #hud-frame{ row-gap:5px; }
+  .do-screen #hand-strength{ min-height:19px !important; padding-top:3px !important; padding-bottom:2px !important; }
+  .do-screen #banner{ min-height:27px !important; padding-top:3px !important; padding-bottom:3px !important; }
+  html[data-do-tray] #your-seat-dock .seat.you{ padding-bottom:6px; }
+  .do-bethouse{ flex-basis:80px; }
+  html[data-do-bet="drum"] .do-bethouse{ gap:1px; padding:2px 3px; }
+  .do-bethouse .do-bet-print{ font-size:5.5px; line-height:1.1; }
+  .do-betdrum{ padding:1px 2px; }
+  .do-betdrum .jp-cell,.do-winreels .jp-cell{ height:17px; }
+  .do-betdrum .reel-strip,.do-winreels .reel-strip{ line-height:17px; }
+  .do-row{ max-height:40px; }
+  .do-tape{ min-height:0; }
+}
+@media (max-width:389px){
+  html[data-do-tray] #your-seat-dock .seat.you::before{ width:calc(100% + 6px); }
+  html[data-do-tray] #your-seat-dock .seat.you::after{ width:calc(100% + 14px); }
+  html[data-do-layout] .do-row-stack #jackpot .jp-cell{ min-width:15px; width:15px; font-size:11px; }
+  .do-bethouse{ flex-basis:72px; padding:2px 3px; }
+  .do-betdrum .jp-cell,.do-winreels .jp-cell{ min-width:10px; width:10px; font-size:8px; }
+  html[data-do-bet="window"] .do-row-stack #jackpot .jp-cell{ min-width:13px; width:13px; }
+  html[data-do-raise] .raise-panel,html[data-do-sizing] .raise-panel{ grid-template-columns:minmax(0,1fr) 64px; padding-left:9px; padding-right:9px; column-gap:6px; }
+  html[data-do-raise] .raise-amt .mini-jackpot .jp-cell,html[data-do-sizing] .raise-amt .mini-jackpot .jp-cell{ min-width:18px; width:18px; font-size:12px; }
+  .do-crow{ grid-template-columns:14px repeat(6,18px); }
+  html[data-do-bay] .actions-row{ gap:6px; }
+  html[data-do-bay] .actions-row button{ font-size:9px; padding-left:2px; padding-right:2px; }
+}
+[data-motion="off"][data-do-lit="bust"] #your-seat-dock::after,[data-motion="off"][data-do-lit="bust"] .actions-dock::after{ opacity:0; }

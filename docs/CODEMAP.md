@@ -193,13 +193,16 @@ removed and every CRT is rebuilt on this component.
 ## `dashboard-order-lab.html` + `js/dashboard-order-lab.js` + candidate `css/dashboard-order.css` / `js/dashboard-order.js` — Dashboard V2 order form (Lab)
 
 The current Dashboard V2 surface. Runs the **real game** sandboxed (like
-`intro-lab.html`) with the two candidate files injected; a form beside the
-phone orders one option per dashboard job (layout, height, case, card tray,
-stack, bank, blinds, bet, button bay, raise drawer) and per behaviour (your
-turn, knock to check, card peek, all-in key, all-in moment, chip dragging,
-win, bust). Options are `data-do-*` attributes on the game's `<html>`;
-behaviours hook the real `humanAct()`, `setWagerAmount()` and
-`rollStageTransition()`. Every part is built to
+`intro-lab.html`) with the two candidate files injected. Round 2: the
+owner's round-1 picks are fixed (bankroll row with no STACK label, one
+screen, V1 height, pucks); the form orders the frame (build, recess, rim
+light, light strength), parts (card tray, bet this hand, button bay), the
+raise (mechanism, sizing control) and behaviours (knock to check, card peek,
+hold-to-charge all in). Options are `data-do-*` attributes on the game's
+`<html>`; the rim light reads `data-do-lit` (turn / allin / win / bust),
+set from game state. Behaviours hook the real `humanAct()`,
+`setWagerAmount()`, `updateFixedReel()` and `rollStageTransition()`. The
+View panel switches phone size (430 / 390 / 320). Every part is built to
 `docs/ui/DASHBOARD_V2_RULES.md`. Not loaded by the game.
 
 ## `dashboard-v2-lab.html` + `js/dashboard-v2-lab.js` + `css/dashboard-v2-lab.css` — Dashboard 2.0 (Lab)

@@ -22,70 +22,82 @@
   const status = t => { $('#ol-status').textContent = t; };
   const gameHost = document.querySelector('[data-game]');
   const GAME = (gameHost && gameHost.dataset.game) || 'index.html';
-  const V = '1';
+  const V = '2';
 
-  /* The form. First option of every row is V1 (value '0'). */
+  /* The form. First option of every row is V1 (value '0'). Round 2: the
+     owner's picks from round 1 are fixed (FIXED below) and no longer rows. */
   const SECTIONS = [
-    { title:'SHAPE', jobs:[
-      { key:'layout', name:'LAYOUT', hint:'how the parts are arranged', opts:[
-        ['0','V1', 'Three bays, as today.'],
-        ['rows','BANKROLL ROW', 'The stack becomes a full-width bankroll row along the bottom, like the Career Hub, with your bet beside it.'],
-        ['hub','HUB STACK', 'Cards alone at the top, both screens side by side, then the bankroll row. Order with extra height.']] },
-      { key:'height', name:'HEIGHT', hint:'the felt gives up the room', opts:[
-        ['0','V1', 'Today\'s height.'], ['plus40','+40PX', 'A little more room for every part.'], ['plus80','+80PX', 'The most room; the table gets noticeably shorter.']] },
-      { key:'case', name:'CASE', hint:'the housing', opts:[
-        ['0','V1', 'Today\'s case.'],
-        ['hub','HUB BUILD', 'The Home / Career Hub construction: checker case, thick bevel, every bay seated in a raised frame.']] }
+    { title:'FRAME', jobs:[
+      { key:'build', name:'BUILD', hint:'the dashboard as its own instrument', opts:[
+        ['0','V1', 'Today\'s case and thin rim line, sitting on the table.'],
+        ['chunky','CHUNKY', 'Lifted off the table: a thick stepped frame all round, a deep lip, a heavy shadow.'],
+        ['smooth','SMOOTH', 'A moulded shell: big round corners, soft two-step bevels, rounded bays.'],
+        ['rail','PADDED RAIL', 'The rim is a stitched bumper, like a poker table\'s padded rail.'],
+        ['whacky','WHACKY', 'Cut corners, a heavy top lip that throws a shadow, a stepped foot.']] },
+      { key:'recess', name:'RECESS', hint:'how the bays are sunk', opts:[
+        ['0','V1', 'Today\'s bays.'],
+        ['sunk','HARD SUNK', 'Near-black, a hard shadow along the top, a lit lip below.'],
+        ['ring','RINGED', 'A raised bevelled ring round each bay, then the recess.'],
+        ['double','DOUBLE STEP', 'Two steps down, like a trench.']] },
+      { key:'rim', name:'RIM LIGHT', hint:'where the light lives', opts:[
+        ['0','OFF', 'No light.'],
+        ['channel','CHANNEL', 'A groove round the frame with a light strip in it.'],
+        ['lamps','LAMP ROW', 'Square lamps set into the top and bottom of the frame. They light together, never chase.'],
+        ['under','UNDERGLOW', 'Light spills out from under the machine onto the table.'],
+        ['pipe','LIGHT PIPE', 'Only the top edge lights, behind smoked glass.']] },
+      { key:'light', name:'LIGHT', hint:'turn amber · all in red · win warm · bust dark', opts:[
+        ['0','SUBTLE', 'A soft light.'], ['bold','BOLD', 'Brighter, with more spill.']] }
     ]},
     { title:'PARTS', jobs:[
       { key:'tray', name:'CARD TRAY', hint:'where your cards stand', opts:[
-        ['0','V1', 'Today\'s thin lip.'], ['tray','DEEP TRAY', 'A deep recessed slot and a bevelled lip with a finger notch.'],
-        ['rise','TRAY + RISE', 'The deep tray, and each new hand\'s cards rise up out of it.']] },
-      { key:'stack', name:'STACK', hint:'your chip counter', opts:[
-        ['0','V1', 'Printed label above the drum.'], ['plate','NAME PLATE', 'The drum gets a name plate, like the Career Hub\'s BANKROLL.']] },
-      { key:'bank', name:'CHIP BANK', hint:'left bay', opts:[
-        ['0','V1', 'Black bay.'], ['tray','FELT TRAY', 'Felt-lined, with a lit floor the chips stand on.'],
-        ['vault','GLASS VAULT', 'Dark glass front, a gauge up the side, a cream name plate.']] },
-      { key:'blinds', name:'BLINDS', hint:'SB / BB markers', opts:[
-        ['0','V1', 'Grey blocks.'], ['lamps','PILOT LAMPS', 'The game\'s square lamps, lit amber when the blind is yours.'],
-        ['pucks','PUCKS', 'Round tokens that light cream and lift when the blind is yours.']] },
-      { key:'bet', name:'BET THIS HAND', hint:'right bay', opts:[
-        ['0','V1', 'Two-line printed label.'], ['plate','NAME PLATE', 'A one-line plate on top of the screen.']] },
+        ['0','V1', 'Today\'s thin lip.'],
+        ['slot','SLOT', 'A slot cut into the top edge of the machine; the cards stand down in it behind a chunky lip.'],
+        ['rise','SLOT + RISE', 'The slot, and each new hand\'s cards rise up out of it.']] },
+      { key:'bet', name:'BET THIS HAND', hint:'right end of the bankroll row', opts:[
+        ['0','V1', 'A printed label over a screen.'],
+        ['drum','SMALL DRUM', 'A small reel counter, the stack\'s own part, in its own housing.'],
+        ['window','WINDOW', 'Small reels inside the stack drum\'s gold frame, after a divider.'],
+        ['crt','CRT CELL', 'A money cell on the screen\'s top line; the row is all drum.'],
+        ['tape','PAPER TAPE', 'An adding-machine tape: each bet prints the new total, a new hand tears it off.']] },
       { key:'bay', name:'BUTTON BAY', hint:'FOLD / CHECK / RAISE unchanged', opts:[
-        ['0','V1', 'Keys on the case.'], ['cradle','CRADLE', 'The keys sit down in one recessed cradle, like the Home CAREER key.']] },
-      { key:'raise', name:'RAISE DRAWER', hint:'tap RAISE', opts:[
-        ['0','V1', 'Today\'s drawer.'], ['hub','HUB DRAWER', 'Built like the cabinet: dark-tile quick keys, a fader with detents.']] }
+        ['0','V1', 'Keys in today\'s recess.'],
+        ['flush','FLUSH BED', 'Each key sits in its own well in the case, dark seams, no frame over it.'],
+        ['plinth','PLINTHS', 'Each key stands on its own raised base.'],
+        ['bank','KEY BANK', 'One moulded block with dividers, like a typewriter\'s key row.'],
+        ['cradle','CRADLE', 'One shallow cradle; key tops level with its rim, nothing overlaps.']] }
+    ]},
+    { title:'RAISE', jobs:[
+      { key:'raise', name:'MECHANISM', hint:'tap RAISE (or BET)', opts:[
+        ['0','V1', 'Today\'s drawer.'],
+        ['drumf','DRUM', 'The panel is a drum: it rolls forward, the sizing face comes up, overshoots and locks.'],
+        ['drumb','DRUM BACK', 'The same drum, rolling the other way.'],
+        ['barrel','BARREL', 'The drum with its edge showing: the next face\'s name printed on the band above.'],
+        ['slide','SLIDE', 'The sizing tray slides up out of the seam in steps and locks.']] },
+      { key:'sizing', name:'SIZING', hint:'every change rolls the drum', opts:[
+        ['0','V1', 'Today\'s slider.'],
+        ['fader','FADER', 'A cream cap in a deep slot; it clicks at each notch and lifts while you hold it.'],
+        ['wheel','THUMBWHEEL', 'A ridged wheel half-sunk in the case: roll it, or flick it and let it spin down.'],
+        ['combo','COMBINATION', 'Up and down keys under every digit of the drum; you can drag the digits too.']] }
     ]},
     { title:'BEHAVIOURS', jobs:[
-      { key:'turn', name:'YOUR TURN', hint:'how the machine shows it', opts:[
-        ['0','V1', 'Keys dim while others act.'], ['rise','KEYS RISE', 'Waiting keys sink into the console; on your turn they rise and settle.'],
-        ['shutter','SHUTTER', 'A roll-top closes over the keys while others act and rolls up on your turn.'],
-        ['pilots','PILOT LAMPS', 'Two lamps on the case top blink amber on your turn.']] },
       { key:'knock', name:'KNOCK TO CHECK', hint:'double-tap the dashboard', opts:[
         ['0','OFF', 'Buttons only.'], ['on','ON', 'Double-tap the case to check. Facing a bet, it refuses with a buzz.']] },
-      { key:'peek', name:'CARD PEEK', hint:'press and hold your cards', opts:[
-        ['0','OFF', 'Cards face up.'], ['hold','HOLD TO PEEK', 'Cards stay face-down until you hold them. The hand screen waits for your first peek.']] },
-      { key:'allin', name:'ALL IN KEY', hint:'in the raise drawer', opts:[
-        ['0','V1', 'Slide to max, or the quick key.'], ['hold','HOLD TO CHARGE', 'A danger key: hold it and it charges, with rising ticks and hum. Let go early to cancel.'],
-        ['cover','FLIP COVER', 'The key sits under a clear cover. Lift the cover, then press.']] },
-      { key:'allinfx', name:'ALL IN MOMENT', hint:'when you go all in', opts:[
-        ['0','V1', 'As today.'], ['lights','LIGHTS + HUM', 'Beacons on the case and the machine hums until the hand ends.'],
-        ['full','FULL THEATRE', 'Lights and hum, the case shakes, the felt dims, and every card of the run-out lands on a heartbeat.']] },
-      { key:'drag', name:'CHIP DRAGGING', hint:'from the bank to the felt', opts:[
-        ['0','OFF', 'Buttons only.'], ['on','ON', 'Drag a chip from your bank onto the felt to open the raise; each chip after adds one big blind.']] },
-      { key:'win', name:'WINNING A POT', hint:'your win', opts:[
-        ['0','V1', 'The rim flash.'], ['chase','CHASE LAMPS', 'Lamps chase round the case, with a bell.']] },
-      { key:'bust', name:'BUSTING', hint:'before RUN OVER', opts:[
-        ['0','V1', 'Straight to the roll.'], ['power','POWER DOWN', 'Every instrument switches off in steps, the reels stop out of line, sparks from the counter.'],
-        ['break','BREAK', 'The power-down, then the machine gives: keys drop off, the case sags, sparks and smoke.']] }
+      { key:'peek', name:'CARD PEEK', hint:'a setting, off by default', opts:[
+        ['0','OFF', 'Cards face up.'], ['hold','HOLD TO PEEK', 'Cards stay face-down until you hold them. The screen waits for your first peek.']] },
+      { key:'allin', name:'ALL IN KEY', hint:'on the sizing face', opts:[
+        ['0','V1', 'The ALL-IN quick key, then confirm.'], ['hold','HOLD TO CHARGE', 'A danger key: hold it and it charges, with rising ticks and hum. Let go early to cancel.']] }
     ]}
   ];
   const JOBS = SECTIONS.flatMap(s => s.jobs);
-  const V1 = Object.fromEntries(JOBS.map(j => [j.key, '0']));
-  const SUGGESTED = { layout:'rows', height:'plus40', case:'hub', tray:'rise', stack:'plate', bank:'tray', blinds:'lamps', bet:'plate', bay:'cradle', raise:'hub',
-    turn:'rise', knock:'on', peek:'hold', allin:'hold', allinfx:'full', drag:'0', win:'chase', bust:'power' };
+  // Signed off in round 1: the bankroll row (no STACK label, one screen), V1 height, pucks.
+  const FIXED = { layout:'rows', blinds:'pucks' };
+  const V1 = Object.fromEntries(JOBS.map(j => [j.key, '0']).concat(Object.keys(FIXED).map(k => [k, '0'])));
+  const SUGGESTED = { build:'chunky', recess:'sunk', rim:'channel', light:'0', tray:'slot', bet:'drum', bay:'flush',
+    raise:'drumf', sizing:'fader', knock:'on', peek:'0', allin:'hold' };
   let order = Object.assign({}, SUGGESTED);
-  const view = { theme:'emerald', sound:'on', motion:'on' };
+  const view = { theme:'emerald', sound:'on', motion:'on', size:'430' };
+  // Phone sizes the rules ask for: [width, height, top safe area, bottom safe area, name].
+  const SIZES = { '430':[430,932,59,34,'iPhone 15 Pro Max'], '390':[390,844,47,34,'iPhone 15'], '320':[320,700,20,0,'small phone'] };
   let comparing = false;
 
   function readHash(){
@@ -126,7 +138,7 @@
   const bridge = () => { try{ return win().__orderLab || null; }catch(e){ return null; } };
   function send(){
     const b = bridge(); if (!b || !win().DashOrder) return;
-    win().DashOrder.apply(comparing ? V1 : order);
+    win().DashOrder.apply(comparing ? V1 : Object.assign({}, order, FIXED));
   }
   function applyView(){
     const b = bridge(); if (!b || !b.settings) return;
@@ -258,7 +270,13 @@
   const hold = on => { comparing = on; cmp.classList.toggle('is-held', on); send(); };
   cmp.addEventListener('pointerdown', e => { e.preventDefault(); hold(true); });
   ['pointerup','pointercancel','pointerleave'].forEach(t => cmp.addEventListener(t, () => { if (comparing) hold(false); }));
-  $$('[data-view]').forEach(seg => seg.addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; view[seg.dataset.view] = b.dataset.v; sync(); applyView(); }));
+  $$('[data-view]').forEach(seg => seg.addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; view[seg.dataset.view] = b.dataset.v; sync(); applyView(); applySize(); }));
+  function applySize(){
+    const z = SIZES[view.size] || SIZES['430'], ph = $('#ol-phone');
+    ph.style.width = z[0] + 'px'; ph.style.height = z[1] + 'px'; ph.style.paddingTop = z[2] + 'px'; ph.style.paddingBottom = z[3] + 'px';
+    $('#ol-size').textContent = z[4] + ' · ' + z[0] + ' × ' + z[1];
+    fit();
+  }
   $('#ol-copy').addEventListener('click', async () => {
     const text = 'Dashboard order:\n' + JOBS.map(j => '- ' + j.name + ': ' + j.opts.find(o => o[0] === order[j.key])[1]).join('\n');
     try{ await navigator.clipboard.writeText(text); $('#ol-copied').textContent = 'Copied. Paste it into the chat.'; }
@@ -273,6 +291,6 @@
 
   window.__orderForm = { MOMENTS, get order(){ return Object.assign({}, order); }, set(o){ Object.assign(order, o); sync(); send(); }, get busy(){ return busy; } };
 
-  readHash(); buildForm(); sync(); fit();
+  readHash(); buildForm(); sync(); applySize();
   (async () => { busy = true; try{ await freshTable(); status('YOUR TURN'); }catch(err){ console.error(err); status('ERROR — ' + err.message); } finally{ busy = false; } })();
 })();

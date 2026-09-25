@@ -1,27 +1,31 @@
 "use strict";
 
 /* ============================================================
-   DASHBOARD V2 — ORDER FORM BEHAVIOURS
+   DASHBOARD V2 — ORDER FORM BEHAVIOURS (round 2)
    Injected by dashboard-order-lab.html into a sandboxed copy of the real
    game, after every production script. NOT loaded by the game.
 
    It sets the order's attributes on <html> (css/dashboard-order.css reads
-   them), moves dashboard elements into rows for the layout options, adds
-   the few extra parts the options need (shutter, lamps, all-in key), and
-   runs the behaviours through the game's own functions: humanAct() for
-   every action, setWagerAmount() for chip dragging, rollStageTransition()
-   is wrapped to play the bust before the RUN OVER roll. Poker rules and
-   state are only ever changed by those real functions.
+   them), moves dashboard elements into the bankroll row and the one
+   screen, adds the few extra parts the options need (bet readouts, key
+   seats, sizing controls, the all-in key), and runs the behaviours
+   through the game's own functions: humanAct() for every action,
+   setWagerAmount() for every sizing change, updateFixedReel() for every
+   reel, and rollStageTransition() is wrapped so the rim can go dark before
+   the RUN OVER roll. Poker rules and state are only ever changed by those
+   real functions.
    ============================================================ */
 (function(){
   const order = {};
   const $id = id => document.getElementById(id);
   const on = (k, v) => v === undefined ? (order[k] && order[k] !== '0') : order[k] === v;
+  const root = document.documentElement;
   const human = () => (typeof game !== 'undefined' && game) ? game.players.find(p => p.isHuman) : null;
   const inHand = () => typeof game !== 'undefined' && game && ['preflop','flop','turn','river'].includes(game.phase);
   const myTurn = () => typeof pendingHumanPlayer !== 'undefined' && !!pendingHumanPlayer && !$id('actions-row').classList.contains('disabled');
   const toCall = () => myTurn() ? Math.max(0, game.currentBet - pendingHumanPlayer.betThisRound) : 0;
   const quiet = () => typeof motionOff === 'function' && motionOff();
+  const snd = (name, ...a) => { try{ if (typeof Sound !== 'undefined' && Sound[name]) return Sound[name](...a); }catch(e){} };
 
   /* ---------- small lab-only voices (the game's Sound covers the rest) ---------- */
   let ctx = null;
@@ -49,153 +53,290 @@
   const voice = {
     knock(){ thud(0.5); thud(0.45, 0.15); },
     buzz(){ tone(150, 0.12, 'square', 0.04); tone(110, 0.16, 'square', 0.04, 0.1); },
-    heart(){ tone(58, 0.12, 'sine', 0.45); tone(52, 0.14, 'sine', 0.34, 0.19); },
     tick(n){ tone(300 + n * 70, 0.05, 'square', 0.025); },
-    bell(){ tone(1568, 0.8, 'triangle', 0.045); tone(2093, 0.6, 'sine', 0.025, 0.02); },
-    spark(){ for (let i = 0; i < 5; i++){ tone(4000 + Math.random() * 3000, 0.02, 'square', 0.015, i * 0.04); } }
+    detent(){ tone(1900, 0.018, 'square', 0.02); tone(700, 0.03, 'triangle', 0.02); },
+    relay(){ tone(2400, 0.012, 'square', 0.03); tone(180, 0.04, 'square', 0.03, 0.012); },
+    print(){ for (let i = 0; i < 3; i++) tone(900 + i * 140, 0.025, 'square', 0.018, i * 0.045); },
+    tear(){ const c = ac(); if (!c) return; thud(0.12); tone(3200, 0.06, 'sawtooth', 0.012); }
   };
-  let hum = null;
-  function humOn(level){
-    if (!on('allinfx') || typeof Sound === 'undefined') return;
-    if (!hum) hum = Sound.wheelMotor();
-    hum.set(level);
-  }
-  function humOff(){ if (hum){ hum.stop(); hum = null; } }
 
-  /* ---------- extra parts ---------- */
-  function ensureParts(){
-    const dock = $id('your-seat-dock');
-    if (dock && !dock.querySelector('.do-pilot')){
-      dock.insertAdjacentHTML('beforeend',
-        '<i class="do-pilot do-pilot-l"></i><i class="do-pilot do-pilot-r"></i>' +
-        '<i class="do-beacon do-beacon-l"></i><i class="do-beacon do-beacon-r"></i>' +
-        '<div class="do-chase">' + Array.from({ length:30 }, (_, i) => '<i style="--i:' + i + '"></i>').join('') + '</div>');
-    }
-    const felt = $id('felt');
-    if (felt && !felt.querySelector('.do-dim')) felt.insertAdjacentHTML('afterbegin', '<i class="do-dim"></i>');
-    const face = document.querySelector('.actions-face-play');
-    if (face && !face.querySelector('.do-shutter')){
-      face.style.position = 'relative';
-      face.insertAdjacentHTML('beforeend', '<div class="do-shutter"><span>WAITING</span></div>');
-    }
-    const panel = $id('raise-panel');
-    if (panel && !panel.querySelector('.do-allin-wrap')){
-      panel.insertAdjacentHTML('beforeend', '<div class="do-allin-wrap"><button type="button" class="do-allin-key"><i></i><span>HOLD FOR ALL IN</span></button><button type="button" class="do-cover" aria-label="Lift the all-in cover"></button></div>');
-      wireAllIn(panel.querySelector('.do-allin-wrap'));
-    }
-  }
-  function layChase(){
-    const dock = $id('your-seat-dock'), host = dock && dock.querySelector('.do-chase'), frame = $id('hud-frame');
-    if (!host || !frame) return;
-    const r = frame.getBoundingClientRect(), d = dock.getBoundingClientRect();
-    const x0 = r.left - d.left + 4, y0 = r.top - d.top + 4, w = r.width - 8, h = r.height - 8, per = 2 * (w + h);
-    host.querySelectorAll('i').forEach((lamp, i, all) => {
-      let t = i / all.length * per, x, y;
-      if (t < w){ x = t; y = 0; } else if ((t -= w) < h){ x = w; y = t; } else if ((t -= h) < w){ x = w - t; y = h; } else { t -= w; x = 0; y = h - t; }
-      lamp.style.left = (x0 + x) + 'px'; lamp.style.top = (y0 + y) + 'px';
-    });
-  }
-
-  /* ---------- layout: move elements into rows, and back ---------- */
+  /* ---------- structure: moved elements go home before every rebuild ---------- */
   const homes = new Map();
   function remember(el){ if (el && !homes.has(el)) homes.set(el, { parent:el.parentNode, next:el.nextSibling }); }
   function restore(el){
     const h = homes.get(el); if (!h) return;
     if (h.next && h.next.parentNode === h.parent) h.parent.insertBefore(el, h.next); else h.parent.appendChild(el);
   }
-  function row(cls){
-    const frame = $id('hud-frame');
-    let r = frame.querySelector('.' + cls);
-    if (!r){ r = document.createElement('div'); r.className = 'do-row ' + cls; frame.appendChild(r); }
-    return r;
-  }
-  function applyLayout(){
+  const made = [];   // elements this file created for the current order
+  function make(html){ const t = document.createElement('div'); t.innerHTML = html.trim(); const el = t.firstChild; made.push(el); return el; }
+
+  function teardown(){
     const frame = $id('hud-frame'); if (!frame) return;
-    const stack = frame.querySelector('.stack-readout'), bet = frame.querySelector('.bet-this-hand');
-    const hand = $id('hand-strength'), banner = $id('banner');
-    [stack, bet, hand, banner].forEach(remember);
-    [hand, banner, stack, bet].forEach(restore);
-    frame.querySelectorAll('.do-row').forEach(r => r.remove());
-    const L = order.layout;
-    if (L === 'hub'){
-      const rs = row('do-row-screens'); rs.appendChild(hand); rs.appendChild(banner);
+    const hand = $id('hand-strength'), banner = $id('banner'), stack = frame.querySelector('.stack-readout'),
+      bet = frame.querySelector('.bet-this-hand'), jackpot = $id('jackpot');
+    [jackpot, hand, banner, stack, bet].forEach(restore);
+    made.splice(0).forEach(el => el.remove());
+    document.querySelectorAll('.do-seat').forEach(s => { while (s.firstChild) s.parentNode.insertBefore(s.firstChild, s); s.remove(); });
+  }
+
+  function build(){
+    const frame = $id('hud-frame'); if (!frame) return;
+    const hand = $id('hand-strength'), banner = $id('banner'), stack = frame.querySelector('.stack-readout'),
+      bet = frame.querySelector('.bet-this-hand'), jackpot = $id('jackpot');
+    [jackpot, hand, banner, stack, bet].forEach(remember);
+    teardown();
+
+    if (order.layout === 'rows'){
+      // One screen: the hand line (and, for the CRT bet, a money cell) on top, the turn below.
+      const screen = make('<div class="do-screen"><div class="do-screen-top"></div></div>');
+      hand.parentNode.insertBefore(screen, hand);
+      screen.firstChild.appendChild(hand);
+      screen.firstChild.appendChild(make('<div class="do-crtbet crt-screen machine-crt" data-ink="money" data-crt-blink="off"><small>BET</small><b>$0</b></div>'));
+      screen.appendChild(banner);
+
+      // The bankroll row.
+      const row = make('<div class="do-row do-row-stack"></div>');
+      frame.appendChild(row);
+      row.appendChild(stack); row.appendChild(bet);
+      if (order.bet === 'window'){
+        const wrap = make('<div class="do-winwrap"></div>');
+        stack.appendChild(wrap); wrap.appendChild(jackpot);
+        wrap.appendChild(make('<i class="do-windiv"></i>'));
+        const side = make('<div class="do-winside"><span class="do-bet-print">THIS HAND</span><div class="do-winreels mini-jackpot"><span class="jp-cell jp-sym">$</span></div></div>');
+        wrap.appendChild(side);
+      }
+      const house = make('<div class="do-bethouse"><span class="do-bet-print">THIS HAND</span><div class="do-betdrum mini-jackpot"><span class="jp-cell jp-sym">$</span></div><div class="do-tape"><div class="do-tape-paper"></div></div></div>');
+      if (order.bet === 'tape') house.querySelector('.do-bet-print').remove();
+      row.appendChild(house);
     }
-    if (L === 'rows' || L === 'hub'){
-      const rk = row('do-row-stack'); rk.appendChild(stack); rk.appendChild(bet);
+
+    // Key seats (layout-neutral unless a bay option styles them).
+    const keys = $id('actions-row');
+    if (keys) keys.querySelectorAll(':scope > button').forEach(b => {
+      const seat = document.createElement('span'); seat.className = 'do-seat';
+      b.parentNode.insertBefore(seat, b); seat.appendChild(b);
+    });
+
+    // The sizing face's extra parts.
+    const panel = $id('raise-panel');
+    if (panel){
+      panel.appendChild(make('<div class="do-barrel" aria-hidden="true"><span>DASHBOARD</span><span>DASHBOARD</span></div>'));
+      const rowEl = panel.querySelector('.raise-row');
+      if (rowEl){
+        rowEl.appendChild(make('<i class="do-scale" aria-hidden="true"></i>'));
+        const wheel = make('<div class="do-wheel" role="slider" aria-label="Roll to set the raise"><i></i><b></b></div>');
+        rowEl.appendChild(wheel); wireWheel(wheel);
+      }
+      const combo = make('<div class="do-combo" aria-label="Set each digit"></div>');
+      panel.appendChild(combo); buildCombo(combo);
+      if (!panel.querySelector('.do-allin-wrap')){
+        panel.insertAdjacentHTML('beforeend', '<div class="do-allin-wrap"><button type="button" class="do-allin-key"><i></i><span>HOLD<br>ALL IN</span></button></div>');
+        wireAllIn(panel.querySelector('.do-allin-wrap'));
+      }
     }
-    requestAnimationFrame(layChase);
+    betShown = null; syncBet(true);
   }
 
   /* ---------- the order ---------- */
   function apply(next){
     Object.assign(order, next || {});
-    const root = document.documentElement;
     Object.keys(order).forEach(k => {
       if (order[k] && order[k] !== '0') root.setAttribute('data-do-' + k, order[k]);
       else root.removeAttribute('data-do-' + k);
     });
-    ensureParts();
-    applyLayout();
-    const key = document.querySelector('.do-allin-key span');
-    if (key) key.textContent = order.allin === 'cover' ? 'ALL IN' : 'HOLD FOR ALL IN';
-    tick(true);
+    build();
+    litState = ''; tick(true);
+  }
+
+  /* ---------- bet this hand: every readout follows the game's own number ---------- */
+  let betShown = null, tapeLines = [], tapeHand = '';
+  const betValue = () => { const el = $id('hud-invested'); const m = el && /([\d,]+)\s*$/.exec(el.getAttribute('aria-label') || ''); return m ? Number(m[1].replace(/,/g, '')) : 0; };
+  function syncBet(immediate){
+    const v = betValue();
+    if (v === betShown) return;
+    const prev = betShown; betShown = v;
+    const opts = { digits:4, label:'Bet this hand', cascade:18 };
+    if (typeof updateFixedReel === 'function'){
+      document.querySelectorAll('.do-betdrum,.do-winreels').forEach(el => updateFixedReel(el, v, opts));
+    }
+    document.querySelectorAll('.do-crtbet b').forEach(b => { b.textContent = '$' + v.toLocaleString(); });
+    // The tape: a new hand tears it off; each rise prints the new total.
+    const tape = document.querySelector('.do-tape');
+    const h = human(), key = h && h.hand && h.hand.length ? h.hand.map(c => c.rank + c.suit).join() : '';
+    if (key !== tapeHand){ tapeHand = key; if (tapeLines.some(n => n > 0) && !immediate) tearTape(tape); tapeLines = []; }
+    if (!tapeLines.length || v > tapeLines[tapeLines.length - 1]) tapeLines.push(v);
+    tapeLines = tapeLines.filter((n, i) => n > 0 || i === tapeLines.length - 1).slice(-4);
+    if (tape){
+      const paper = tape.querySelector('.do-tape-paper');
+      paper.innerHTML = tapeLines.map(n => '<span>$' + n.toLocaleString() + '</span>').join('');
+      if (!immediate && prev !== null && v > prev && on('bet', 'tape') && !quiet()){ tape.classList.remove('feed'); void tape.offsetWidth; tape.classList.add('feed'); voice.print(); }
+    }
+  }
+  function tearTape(tape){
+    if (!tape || !on('bet', 'tape') || quiet()) return;
+    tape.classList.remove('tear'); void tape.offsetWidth; tape.classList.add('tear'); voice.tear();
+    setTimeout(() => tape.classList.remove('tear'), 450);
+  }
+
+  /* ---------- the rim light ---------- */
+  let litState = '', winUntil = 0, bustLit = false, lastWinFlash = false;
+  function setLit(state, force){
+    if (state === litState && !force) return;
+    litState = state;
+    if (state) root.setAttribute('data-do-lit', state); else root.removeAttribute('data-do-lit');
+    if (on('rim') && state && state !== 'bust'){
+      root.classList.remove('do-relay'); void root.offsetWidth; root.classList.add('do-relay');
+      setTimeout(() => root.classList.remove('do-relay'), 340);
+      voice.relay();
+    }
   }
 
   /* ---------- the watch loop: turns table state into dashboard state ---------- */
-  let last = { handKey:'', board:0, allIn:false, win:false, turn:false };
+  let last = { handKey:'' };
   function tick(force){
     const dock = $id('your-seat-dock'); if (!dock) return;
     const h = human();
     const turn = myTurn();
-    dock.classList.toggle('do-myturn', turn);
-    const face = document.querySelector('.actions-face-play');
-    if (face) face.classList.toggle('do-waiting', !turn && inHand() && !!h && !h.folded);
-    if (turn !== last.turn && on('turn') && typeof Sound !== 'undefined' && !force){
-      if (order.turn === 'shutter' || order.turn === 'rise') Sound.consoleShift();
-    }
-    last.turn = turn;
+
+    // The raise face covers the instrument panel exactly.
+    const frame = $id('hud-frame'), ad = document.querySelector('.actions-dock');
+    if (frame && ad){ const hTop = frame.getBoundingClientRect().top, aTop = ad.getBoundingClientRect().top; if (aTop > hTop) ad.style.setProperty('--do-hud-h', Math.round(aTop - hTop) + 'px'); }
 
     // New hand: cards rise, peek resets.
     const handKey = h && h.hand && h.hand.length ? h.hand.map(c => c.rank + c.suit).join() + ':' + (game.handNumber || game.handNum || '') : '';
     if (handKey !== last.handKey){
       last.handKey = handKey;
       if (handKey){
-        $id('hud-frame').classList.add('do-unpeeked');
+        frame.classList.add('do-unpeeked');
         const seat = document.querySelector('.seat.you');
-        if (seat && order.tray === 'rise' && !quiet()){ seat.classList.remove('do-rise'); void seat.offsetWidth; seat.classList.add('do-rise'); setTimeout(() => seat.classList.remove('do-rise'), 900); }
+        if (seat && order.tray === 'rise' && !quiet()){ seat.classList.remove('do-rise'); void seat.offsetWidth; seat.classList.add('do-rise'); setTimeout(() => seat.classList.remove('do-rise'), 950); }
       }
     }
 
-    // All in: yours, or one you're facing.
+    syncBet(!!force);
+
+    // Rim light: bust > win > all in > your turn > dark.
+    const win = frame.classList.contains('hud-frame-win-flash');
+    if (win && !lastWinFlash) winUntil = performance.now() + 1700;
+    lastWinFlash = win;
+    if (h && h.chips > 0) bustLit = false;
     const mine = !!(h && h.allIn && inHand() && !h.folded);
     const facing = turn && game.players.some(p => !p.isHuman && p.allIn && !p.folded) && toCall() > 0;
-    dock.classList.toggle('do-allin', mine);
-    dock.classList.toggle('do-facing', facing);
-    $id('table-screen').classList.toggle('do-allin-table', mine && on('allinfx', 'full'));
-    if (mine && !last.allIn){
-      if (on('allinfx')){
-        dock.classList.add('do-allin-hit'); setTimeout(() => dock.classList.remove('do-allin-hit'), 900);
-        if (typeof Sound !== 'undefined') Sound.allIn(true);
-        humOn(0.45);
-      }
-    }
-    if (!mine && last.allIn) humOff();
-    if (mine && on('allinfx', 'full') && game.board.length > last.board){
-      voice.heart(); const ts = $id('table-screen'); ts.classList.remove('do-beat'); void ts.offsetWidth; ts.classList.add('do-beat');
-      humOn(0.3 + game.board.length * 0.08);
-    }
-    last.allIn = mine;
-    last.board = game && game.board ? game.board.length : 0;
-
-    // Win: lamps chase round the case.
-    const win = $id('hud-frame').classList.contains('hud-frame-win-flash');
-    if (win && !last.win && on('win')){ dock.classList.add('do-winning'); voice.bell(); layChase(); setTimeout(() => dock.classList.remove('do-winning'), 2600); }
-    last.win = win;
-
-    // A fresh run after a bust: the machine is whole again.
-    if (h && h.chips > 0){ dock.classList.remove('do-bust-1', 'do-bust-2'); $id('action-area').classList.remove('do-bust-2'); }
+    let state = '';
+    if (bustLit) state = 'bust';
+    else if (performance.now() < winUntil) state = 'win';
+    else if (mine || facing) state = 'allin';
+    else if (turn) state = 'turn';
+    setLit(state, force);
   }
   setInterval(tick, 120);
+
+  /* ---------- the raise mechanism: sound, closing roll, instruments roll away ---------- */
+  (function watchRaise(){
+    const panel = $id('raise-panel'); if (!panel) return;
+    let open = panel.classList.contains('show'), closeT = 0;
+    new MutationObserver(() => {
+      const now = panel.classList.contains('show');
+      if (now === open) return;
+      open = now;
+      const frame = $id('hud-frame');
+      if (!on('raise')){ frame.classList.remove('do-rolled'); return; }
+      clearTimeout(closeT);
+      if (now){
+        panel.classList.remove('do-closing');
+        frame.classList.add('do-rolled');
+        if (!quiet()){ snd('consoleShift'); snd('stageRollClick', 1, false); setTimeout(() => snd('stageRollClick', 1, false), 140); setTimeout(() => snd('stageLock'), order.raise === 'slide' ? 360 : 400); }
+      } else {
+        frame.classList.remove('do-rolled');
+        if (quiet()) return;
+        panel.classList.add('do-closing'); snd('consoleShift');
+        closeT = setTimeout(() => { panel.classList.remove('do-closing'); snd('counterLock', true); }, 400);
+      }
+    }).observe(panel, { attributes:true, attributeFilter:['class'] });
+  })();
+
+  /* ---------- sizing: every change clicks and rolls the drum ---------- */
+  const slider = () => $id('raise-slider');
+  const bounds = () => { const s = slider(); return s ? { min:Number(s.min), max:Number(s.max), v:Number(s.value) } : null; };
+  const stepSize = () => Math.max(1, Math.round(((game && game.bigBlind) || 20) / 2));
+  function setAmount(v){
+    if (!myTurn() || typeof setWagerAmount !== 'function') return null;
+    const before = Number(slider().value);
+    const got = setWagerAmount(v, { immediate:true });
+    if (got !== null && got !== before) voice.detent();
+    return got;
+  }
+  // Fader: a detent click whenever the value crosses a notch (a tenth of the travel).
+  (function wireFader(){
+    const s = slider(); if (!s) return;
+    let lastNotch = null;
+    s.addEventListener('input', () => {
+      if (!on('sizing', 'fader')) return;
+      const b = bounds(), n = b.max > b.min ? Math.round((b.v - b.min) / (b.max - b.min) * 10) : 0;
+      if (lastNotch !== null && n !== lastNotch){ voice.detent(); if (typeof navigator.vibrate === 'function') try{ navigator.vibrate(4); }catch(e){} }
+      lastNotch = n;
+    });
+  })();
+  // Thumbwheel: drag to roll, one step per 7px of ridge; a flick keeps it spinning.
+  function wireWheel(wheel){
+    const ridges = wheel.querySelector('i');
+    let x0 = 0, acc = 0, pos = 0, vel = 0, lastX = 0, lastT = 0, raf = 0;
+    const PX = 7;
+    const nudge = dx => {
+      pos += dx; ridges.style.setProperty('--wx', pos + 'px');
+      acc += dx;
+      while (Math.abs(acc) >= PX){
+        const dir = acc > 0 ? 1 : -1; acc -= dir * PX;
+        const b = bounds(); if (!b) return false;
+        const got = setAmount(b.v + dir * stepSize());
+        if (got === b.v) return false;   // hit the end stop
+      }
+      return true;
+    };
+    wheel.addEventListener('pointerdown', e => {
+      if (!myTurn()) return;
+      e.preventDefault(); cancelAnimationFrame(raf); wheel.setPointerCapture(e.pointerId);
+      x0 = lastX = e.clientX; lastT = performance.now(); vel = 0;
+    });
+    wheel.addEventListener('pointermove', e => {
+      if (!wheel.hasPointerCapture(e.pointerId)) return;
+      const dx = e.clientX - lastX, t = performance.now();
+      vel = dx / Math.max(1, t - lastT) * 16; lastX = e.clientX; lastT = t;
+      nudge(dx);
+    });
+    const release = e => {
+      if (!wheel.hasPointerCapture(e.pointerId)) return;
+      wheel.releasePointerCapture(e.pointerId);
+      if (quiet() || Math.abs(vel) < 2) return;
+      const spin = () => { vel *= 0.9; if (Math.abs(vel) < 0.8 || !nudge(vel)) return; raf = requestAnimationFrame(spin); };
+      raf = requestAnimationFrame(spin);
+    };
+    wheel.addEventListener('pointerup', release); wheel.addEventListener('pointercancel', release);
+  }
+  // Combination: an up and a down key under every digit; drag a digit too.
+  function buildCombo(combo){
+    const keys = d => [5,4,3,2,1,0].map(p => '<button type="button" data-p="' + p + '" data-d="' + d + '" aria-label="' + (d > 0 ? 'Up' : 'Down') + '">' + (d > 0 ? '\u25B2' : '\u25BC') + '</button>').join('');
+    combo.innerHTML = '<div class="do-crow do-cup">' + keys(1) + '</div><div class="do-crow do-cdown">' + keys(-1) + '</div>';
+    combo.addEventListener('click', e => {
+      const b = e.target.closest('button'); if (!b) return;
+      const bd = bounds(); if (!bd) return;
+      setAmount(bd.v + Number(b.dataset.d) * Math.pow(10, Number(b.dataset.p)));
+    });
+  }
+  document.addEventListener('pointerdown', e => {
+    if (!on('sizing', 'combo') || !myTurn()) return;
+    const cell = e.target.closest('#raise-amt .reel-digit'); if (!cell) return;
+    const cells = [...document.querySelectorAll('#raise-amt .reel-digit')];
+    const p = cells.length - 1 - cells.indexOf(cell);
+    e.preventDefault();
+    let y0 = e.clientY;
+    const move = ev => {
+      const dy = y0 - ev.clientY;
+      if (Math.abs(dy) >= 14){ const bd = bounds(); setAmount(bd.v + Math.sign(dy) * Math.pow(10, p)); y0 = ev.clientY; }
+    };
+    const up = () => { window.removeEventListener('pointermove', move); window.removeEventListener('pointerup', up); window.removeEventListener('pointercancel', up); };
+    window.addEventListener('pointermove', move); window.addEventListener('pointerup', up); window.addEventListener('pointercancel', up);
+  }, true);
 
   /* ---------- knock to check ---------- */
   let lastTap = 0, lx = 0, ly = 0;
@@ -237,22 +378,22 @@
     e.preventDefault();
     const f = $id('hud-frame');
     f.classList.add('do-peeking'); f.classList.remove('do-unpeeked');
-    if (typeof Sound !== 'undefined') Sound.cardFlip(false);
+    snd('cardFlip', false);
     const up = () => { f.classList.remove('do-peeking'); window.removeEventListener('pointerup', up); window.removeEventListener('pointercancel', up); };
     window.addEventListener('pointerup', up); window.addEventListener('pointercancel', up);
   }, true);
 
-  /* ---------- all in: hold to charge, or lift the cover ---------- */
+  /* ---------- all in: hold to charge ---------- */
+  let hum = null;
   function wireAllIn(wrap){
-    const key = wrap.querySelector('.do-allin-key'), cover = wrap.querySelector('.do-cover');
-    let raf = 0, t0 = 0, ticks = 0, closeTimer = 0;
-    const stop = () => { cancelAnimationFrame(raf); key.classList.remove('charging'); key.style.setProperty('--charge', 0); humOffIfIdle(); };
-    const commit = () => { stop(); wrap.classList.remove('open'); if (myTurn()) humanAct('allin'); };
+    const key = wrap.querySelector('.do-allin-key');
+    let raf = 0, t0 = 0, ticks = 0;
+    const stop = () => { cancelAnimationFrame(raf); key.classList.remove('charging'); key.style.setProperty('--charge', 0); if (hum){ hum.stop(); hum = null; } };
+    const commit = () => { stop(); if (myTurn()) humanAct('allin'); };
     key.addEventListener('pointerdown', e => {
       if (!myTurn()) return;
-      if (order.allin === 'cover'){ return; }
       e.preventDefault(); t0 = performance.now(); ticks = 0; key.classList.add('charging');
-      if (on('allinfx')) humOn(0.2);
+      if (typeof Sound !== 'undefined'){ hum = Sound.wheelMotor(); hum.set(0.2); }
       const step = now => {
         const k = (now - t0) / 1150;
         key.style.setProperty('--charge', Math.min(1, k));
@@ -264,94 +405,22 @@
       const up = () => { window.removeEventListener('pointerup', up); window.removeEventListener('pointercancel', up); if (key.classList.contains('charging')) stop(); };
       window.addEventListener('pointerup', up); window.addEventListener('pointercancel', up);
     });
-    key.addEventListener('click', () => { if (order.allin === 'cover' && wrap.classList.contains('open')) commit(); });
-    cover.addEventListener('click', () => {
-      if (!myTurn()) return;
-      wrap.classList.toggle('open');
-      if (typeof Sound !== 'undefined') Sound.buttonPress('key');
-      clearTimeout(closeTimer);
-      if (wrap.classList.contains('open')){ const d = $id('your-seat-dock'); d.classList.add('do-facing'); closeTimer = setTimeout(() => wrap.classList.remove('open'), 4000); }
-    });
   }
-  function humOffIfIdle(){ const h = human(); if (!(h && h.allIn)) humOff(); }
 
-  /* ---------- drag chips from the bank to size a bet ---------- */
-  document.addEventListener('pointerdown', e => {
-    if (!on('drag') || !myTurn()) return;
-    const bank = e.target.closest('#hud-left'); if (!bank) return;
-    e.preventDefault(); e.stopPropagation();
-    const colours = ['d-white', 'd-red', 'd-blue', 'd-black', 'd-green'];
-    const chip = document.createElement('i');
-    chip.className = 'chip-disc ' + colours[Math.floor(Math.random() * colours.length)] + ' v-' + (1 + Math.floor(Math.random() * 3));
-    Object.assign(chip.style, { position:'fixed', zIndex:300, width:'30px', height:'30px', margin:0, pointerEvents:'none', filter:'drop-shadow(0 5px 0 rgba(0,0,0,.4))' });
-    document.body.appendChild(chip);
-    const move = ev => { chip.style.left = (ev.clientX - 15) + 'px'; chip.style.top = (ev.clientY - 15) + 'px'; };
-    move(e);
-    if (typeof Sound !== 'undefined') Sound.buttonPress('key');
-    const up = ev => {
-      window.removeEventListener('pointermove', move); window.removeEventListener('pointerup', up);
-      chip.remove();
-      const dockTop = $id('your-seat-dock').getBoundingClientRect().top;
-      if (ev.clientY >= dockTop || !myTurn()) return;
-      const panel = $id('raise-panel');
-      if (!panel.classList.contains('show')) $id('btn-raise').click();
-      else if (typeof setWagerAmount === 'function'){
-        const s = $id('raise-slider');
-        setWagerAmount(Number(s.value) + (game.bigBlind || 20));
-        if (typeof updateActionControls === 'function') updateActionControls();
-      }
-      if (typeof Sound !== 'undefined') Sound.chipLand();
-    };
-    window.addEventListener('pointermove', move); window.addEventListener('pointerup', up);
-  }, true);
-
-  /* ---------- bust: before the RUN OVER roll ---------- */
+  /* ---------- bust: the rim flickers out before the RUN OVER roll ---------- */
   const sleep = ms => new Promise(r => setTimeout(r, quiet() ? 0 : ms));
   if (typeof rollStageTransition === 'function'){
     const realRoll = rollStageTransition;
     rollStageTransition = async function(){
       const h = human();
-      if (h && h.chips <= 0 && on('bust')) await bustSequence();
+      if (h && h.chips <= 0 && on('rim')){
+        bustLit = true; setLit('bust');
+        snd('busted', true); voice.relay();
+        await sleep(1150);
+      }
       return realRoll.apply(this, arguments);
     };
   }
-  async function bustSequence(){
-    const dock = $id('your-seat-dock'), area = $id('action-area');
-    humOff();
-    if (typeof Sound !== 'undefined') Sound.busted(true);
-    dock.classList.add('do-bust-1');
-    sparks($id('jackpot'), 10); voice.spark();
-    await sleep(900);
-    if (order.bust === 'break'){
-      dock.classList.add('do-bust-2'); area.classList.add('do-bust-2');
-      if (typeof Sound !== 'undefined'){ Sound.koThunk(1); setTimeout(() => Sound.koThunk(0.7), 220); }
-      sparks($id('hud-frame'), 14); smoke($id('hud-frame'));
-      await sleep(1500);
-    }
-  }
-  function sparks(el, n){
-    if (!el || quiet()) return;
-    const r = el.getBoundingClientRect(), cx = r.left + r.width / 2, cy = r.top + r.height / 2;
-    for (let i = 0; i < n; i++){
-      const s = document.createElement('i'); s.className = 'do-spark'; s.style.left = cx + 'px'; s.style.top = cy + 'px';
-      document.body.appendChild(s);
-      const a = Math.random() * Math.PI * 2, d = 30 + Math.random() * 60;
-      s.animate([{ transform:'translate(0,0)', opacity:1 }, { transform:'translate(' + Math.cos(a) * d + 'px,' + (Math.sin(a) * d + 30) + 'px)', opacity:0 }],
-        { duration:450 + Math.random() * 300, easing:'steps(6,end)', fill:'forwards' }).onfinish = () => s.remove();
-    }
-  }
-  function smoke(el){
-    if (!el || quiet()) return;
-    const r = el.getBoundingClientRect();
-    for (let i = 0; i < 6; i++){
-      const s = document.createElement('i'); s.className = 'do-smoke';
-      s.style.left = (r.left + 20 + Math.random() * (r.width - 40)) + 'px'; s.style.top = (r.top + 10) + 'px';
-      document.body.appendChild(s);
-      s.animate([{ transform:'translateY(0) scale(.6)', opacity:0 }, { opacity:.9, offset:.2 }, { transform:'translate(14px,-110px) scale(2.2)', opacity:0 }],
-        { duration:2200, delay:i * 180, easing:'steps(10,end)', fill:'forwards' }).onfinish = () => s.remove();
-    }
-  }
 
-  window.addEventListener('resize', () => requestAnimationFrame(layChase));
   window.DashOrder = { apply, get order(){ return Object.assign({}, order); } };
 })();
