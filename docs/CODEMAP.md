@@ -190,16 +190,15 @@ every effect a `data-crt-*` dial) and `js/crt.js` its change engine
 Not loaded by the game yet — once a recipe is chosen, the old CRT styles are
 removed and every CRT is rebuilt on this component.
 
-## `dashboard-lab.html` + `js/dashboard-lab.js` + candidate `css/dashboard-v2.css` — Dashboard V2 (Lab)
+## `dashboard-v2-lab.html` + `js/dashboard-v2-lab.js` + `css/dashboard-v2-lab.css` — Dashboard 2.0 (Lab)
 
-The player's dashboard polish, awaiting the owner's pick. `css/dashboard-v2.css`
-holds every candidate finish for the bottom HUD, each behind a
-`data-dv-<part>` attribute on `<html>` (no attribute = V1, so the lab's V1
-is the live game). `dashboard-lab.html` runs the real game sandboxed with
-that file injected: directions V1/A/B/C, part-by-part switches, table-state
-buttons (your turn, raise open, waiting, folded, all-in, win a pot), theme,
-phone size, and the recipe in the page address. Not loaded by the game.
-Plan, findings and the migration steps: `docs/ui/DASHBOARD_V2.md`.
+Standalone prototype of the player's dashboard: four directions (V1+,
+Console, Slot, Cockpit), three sizes, and every interaction and big moment
+(knock to check, card peek, lever/dial/throttle raises, covered all-in,
+chip dragging, all-in ceremony, payout, bust-and-rebuild). Reuses the real
+cards, chips, faces, fonts, hand evaluation and `Sound`; runs its own small
+hold'em driver, so it never touches the engine or a save. Plan:
+`docs/ui/DASHBOARD_V2.md`.
 
 ## `js/finishes.js` + `css/finishes.css` — Finishes menu (live)
 
@@ -252,7 +251,7 @@ there manually.
 
 Files matching `*-lab.html`, `*-lab.js`, `*-lab.css` (`career-lab`,
 `career-hub-v2-lab`, `ticket-lab`, `card-flight-options`, `card-turn-lab`,
-`chip-motion-lab`, `design-lab`, `result-stage-lab`, `showdown-rail-lab`, `crt-lab`, `dashboard-lab`,
+`chip-motion-lab`, `design-lab`, `result-stage-lab`, `showdown-rail-lab`, `crt-lab`, `dashboard-v2-lab`,
 `wheel-v2-lab`, `intro-lab`, `boot-lab`, `slot-lab`)
 are **isolated visual references and prototyping sandboxes**. Several are
 committed permanently as durable references even after their feature
