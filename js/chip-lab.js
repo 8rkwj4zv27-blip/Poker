@@ -310,11 +310,22 @@
 
   /* ---------------- table mount ---------------- */
   async function mountTable(){
+    // 'index.html' is the ordinary repo/local-server path. A hosted copy of
+    // this Lab (e.g. published as a standalone artifact) can't publish a
+    // file literally named index.html alongside its own page, so it ships
+    // the same production file under 'prod-table.html' instead — try that
+    // second, never first, so local dev always sees the live repo file.
     let src=null;
-    const res=await fetch('index.html',{cache:'no-store'});
-    const doc=new DOMParser().parseFromString(await res.text(),'text/html');
-    src=doc.querySelector('#table-screen');
-    if (!src) throw new Error('No #table-screen in index.html');
+    for (const path of ['index.html','prod-table.html']){
+      try{
+        const res=await fetch(path,{cache:'no-store'});
+        if (!res.ok) continue;
+        const doc=new DOMParser().parseFromString(await res.text(),'text/html');
+        const found=doc.querySelector('#table-screen');
+        if (found){ src=found; break; }
+      }catch(e){ /* try the next candidate */ }
+    }
+    if (!src) throw new Error('No #table-screen found (tried index.html, prod-table.html)');
     const screen=document.importNode(src,true);
     screen.classList.remove('hidden'); screen.classList.add('cl-table');
     $('cl-mount').replaceWith(screen);
