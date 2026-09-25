@@ -277,6 +277,9 @@ reuse instead of writing a new Playwright script from scratch each time.
   which phase something belongs to.
 - `docs/career/HISTORY.md` — dated archive of every completed milestone.
   Reference only, never a default read.
+- `docs/ui/VISUAL_AUDIT.md` — 2026-09-25 visual/motion/glitch audit of the
+  whole game: findings F1–F21 with causes, a motion map of every screen
+  change, level-up ideas and a phased plan. Proposals, not approvals.
 - `docs/scoring/SCORING_SPEC.md` — authoritative scoring/award rules for
   both Career and Single Player.
 - `docs/ui/handover/` — earlier UI handover notes; a `python3 -m http.server`
