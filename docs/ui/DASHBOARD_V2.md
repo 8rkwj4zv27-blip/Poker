@@ -6,7 +6,11 @@ restrictive. V2 may move things, add parts and add gameplay moments, as long
 as it stays in the game's visual language. The machine should feel alive:
 powering up, whirring, recessing, and, when you bust, breaking.
 
-Status: **prototype lab, awaiting the owner's picks.** Nothing is live.
+Status: **the owner rejected this lab (25 September 2026).** It lost the
+original charm and reads as a cheap 2D flash game. Kept only as a behaviour
+reference for the four ideas the owner liked (double-tap check, card peek,
+hold-to-charge all-in, all-in lights and hum). Read
+`docs/ui/DASHBOARD_V2_HANDOVER.md` before continuing. Nothing is live.
 
 - Lab: `dashboard-v2-lab.html` + `js/dashboard-v2-lab.js` +
   `css/dashboard-v2-lab.css`. Isolated like every Lab; it reuses the real

@@ -197,8 +197,9 @@ Console, Slot, Cockpit), three sizes, and every interaction and big moment
 (knock to check, card peek, lever/dial/throttle raises, covered all-in,
 chip dragging, all-in ceremony, payout, bust-and-rebuild). Reuses the real
 cards, chips, faces, fonts, hand evaluation and `Sound`; runs its own small
-hold'em driver, so it never touches the engine or a save. Plan:
-`docs/ui/DASHBOARD_V2.md`.
+hold'em driver, so it never touches the engine or a save. **Rejected by
+the owner as a visual direction**; see `docs/ui/DASHBOARD_V2_HANDOVER.md`
+for what carries forward.
 
 ## `js/finishes.js` + `css/finishes.css` — Finishes menu (live)
 
