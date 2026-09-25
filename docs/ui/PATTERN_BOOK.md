@@ -6,8 +6,11 @@ a slightly different finish on two screens.
 
 - **Live page:** `pattern-book.html` (isolated like the `*-lab.html` pages;
   production never links to it). Its CRT section runs on the real
-  `css/machine-crt.css` and `js/machine-crt.js`.
-- **Checks:** `node validation/pattern-book-checks.js`.
+  `css/crt.css` and `js/crt.js` with the game's recipe.
+- **Labs:** `crt-lab.html`, every game CRT with presets and dials.
+- **Checks:** `node validation/pattern-book-checks.js` (reads every live
+  stylesheet) and `node validation/tools/crt-consistency.js` (compares
+  every CRT part as the browser draws it; needs the local server).
 
 ## The rule
 
@@ -39,11 +42,13 @@ everywhere at once, in the real game. Choices stay on that device only
 (`localStorage` key `felt.finishes`); everyone else gets the defaults.
 
 - The first option of every set is the signed-off default (blank id).
-- An option is a named value of an attribute on `<html>` (e.g.
-  `data-finish-crt-glass="amber"`); the set's stylesheet redefines that
-  set's tokens for it. No screen is touched.
-- To add an option: one entry in `FINISH_SETS`, plus its token block in the
-  set's stylesheet. The check fails if an option has no tokens.
+- The CRT look is the game's recipe or a CRT Lab preset (`CRT.PRESETS`);
+  picking one rewrites the `data-crt-*` dials on `<html>`. The press is a
+  named value of `data-finish-press`, whose tokens live in
+  `css/press-feel.css`. No screen is touched.
+- To add an option: a preset in `CRT.PRESETS` (CRT) or an entry in
+  `FINISH_SETS` plus its token block (press). The check fails if an option
+  has nothing behind it.
 - To make an option the new default: move its tokens into the set's base
   tokens, record the sign-off below, and drop the option.
 - `FINISHES_MENU = false` hides the menu and returns devices to defaults.
@@ -59,9 +64,7 @@ Motion and sound are signed off from live demos, never stills.
 
 | Family | Approved | Status |
 |---|---|---|
-| CRT glass | **B** Blue record glass: blue-tinted near-black tube, soft recessed bezel, vignette, static scanlines, faint halo, no text bloom | **Live** v0.39.6 |
-| CRT motion | **A** Flicker and blink: faint stepped idle flicker plus the static-burst blink on every content change | **Live** v0.39.6 |
-| CRT ink | **A** Four meanings: info, live table, money, danger | **Live** v0.39.6 |
+| CRT screens | Rebuilt as one component and chosen in the CRT Lab: **Pulp (tweaked)** · glass dark · glow 1 · scanlines 4 · RGB split 0 · grain 4 · curve 0 · flicker 4 · rolling bar 1 · VHS tears 4 · ghosting 2 · change: channel · ink: mono | **Live** v0.40.0 |
 | Hero button | **A** Machine cartridge (Home: Career) | Approved, next |
 | Standard button | **B** Dark tile (Home: Quick Deal) | Approved, next |
 | Danger button | **D3** Dark key, coral print, coral inner edge | Approved, next |
@@ -80,29 +83,50 @@ release, with before/after screenshots.
 
 ## CRT screens (live)
 
-Any screen showing information that changes while the machine runs.
+Any screen showing information that changes while the machine runs. Every
+one is the same component, `css/crt.css` + `js/crt.js`. It was rebuilt from
+scratch rather than layered on the older per-screen recipes: those were
+stripped of every glass and text declaration, keeping only each screen's
+layout.
 
-| Part | Rule | Owner |
+**Anatomy.** A CRT can only be built from these parts:
+
+| Part | Rule | Class |
 |---|---|---|
-| Use it | Add `machine-crt` to the screen element. Keep your own size, padding and layout. | `css/machine-crt.css` |
-| Glass | Blue record glass. Never restyle it per screen; put finish changes in `machine-crt.css` (the check fails otherwise). | `#app .machine-crt` |
-| Text | The CRT owns every character on its glass: colour and bloom come from the finish, never from the screen's own CSS (overridden with `!important`). Playing cards shown on a CRT keep their inks. | same |
-| Ink | Declare the screen's meaning with `data-ink`: none = ordinary machine info, `live` = live table info, `money`, `danger`. Money reels inside any screen read as money; a strong made hand (tier 2–3) reads as money. Fixed across colour themes. | `--crt-ink-*` |
-| Captions | One size (7px), spacing and dimmer ink on every screen, one line. | `--crt-label`, `--crt-ink-label` |
-| Cells | The glass is one surface: no inner panels. Multi-cell screens divide it with one thin rule. | `--crt-rule` |
-| Idle | Stepped flicker (5.8s cycle) on the `::after` layer, so the element itself stays free for its screen's own effects (e.g. the results stage's dormant dimming). | `--crt-flicker` |
-| Change | Static-burst blink (`crt-refresh`, 0.23s) whenever the text changes. Automatic via `js/machine-crt.js`; `paintCRT()` and the Career record fire it themselves. A screen whose change is a number wheel or its own reveal sets `data-crt-blink="off"`. | `js/machine-crt.js`, `--crt-blink` |
-| Reduced Motion | No flicker, no blink (the Reduced Motion setting and the OS preference). | same |
+| Glass | The screen itself. Its layout (size, padding, grid, flex) is the screen's own; everything visual is the component's. | `.crt` |
+| Line | Status text. Plain text inside a CRT is a Line: 7px, regular, one spacing. Narrow phones step every line down together (6.5px ≤389px, 5px ≤350px). | `.crt-line` or none |
+| Figure | A number or a result word: 13px, or 17px for the big ones. | `.crt-figure`, `.crt-figure--lg` |
+| Caption | A small label: 7px, dimmer ink. | `.crt-caption` |
+| Cells | Side-by-side sections, one thin rule between them; no inner panels. | `.crt-cell` |
+| Lamp, meter, cards | An indicator lamp, a progress meter, playing cards (keep their own inks). | `.crt-lamp`, `.crt-meter`, `.crt-cards` |
+| Ink | By meaning on the screen: none (info), `live`, `money`, `danger`; `.crt-danger` on a single element. Strong hands and money reels read as money; the negative results tone inks the score and statement as danger. The recipe's ink scheme can fold these together (the game uses mono). | `data-ink` |
+
+**Look.** Twelve dials, set once on `<html>` in `index.html` (the recipe
+above): tint, glow (always in em), scanlines, RGB split, grain, curve,
+flicker, rolling bar, VHS tears, ghosting, change effect, ink scheme. The
+component turns them into tokens; no screen sets any of them.
+
+**Changes.** `js/crt.js` watches every `.crt`. Whoever rewrites a screen
+(the table's `paintCRT`, the Home Boot, Career's record pages, the results
+stat bank), the recipe's change effect plays and the old text ghosts out.
+Rapid runs settle into one change; first text is never a change;
+`data-crt-quiet` opts out a screen whose changes are a number wheel or its
+own reveal (bet, raise, results score and instruments, Home stats). Reduced
+Motion: text just swaps.
+
+**Rules.**
+- To add a CRT: put `crt` on the element, give its text the roles above,
+  and set `data-ink` if it isn't ordinary info. Layout in your own CSS.
+- Never set a CRT's colour, font, glow, background, border or animation
+  anywhere but `css/crt.css`. `validation/pattern-book-checks.js` reads
+  every live stylesheet and fails on it; `validation/tools/crt-consistency.js`
+  opens every screen and fails if two same parts are drawn differently.
+- Mechanical-number reels inside a CRT keep their own geometry (Round 2),
+  and take the CRT's ink and glow.
 
 In the game: Home readout and stats; Career record and ticket slot; table
 hand readout, turn banner, bet and raise readouts; results-stage score,
 instruments, stat bank, trophy case and run progress.
-
-Changes from the earlier C0 system that this sign-off superseded: the glass
-is blue-tinted with a soft bezel instead of the flat near-black C0 tube; CRT
-text has no phosphor bloom; idle flicker and the change blink now apply to
-every CRT, not only the table's; Career's record text moved from blue to the
-info ink (blue is reserved for live table information).
 
 ## Press feel (live)
 

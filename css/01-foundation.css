@@ -130,10 +130,14 @@ html,body{
   font-size:15px;
 }
 [data-textsize="large"]{ font-size:17px; }
-[data-textsize="large"] .banner{ font-size:16px; }
+
 [data-textsize="large"] .seat-name{ font-size:12px; }
 [data-textsize="large"] .coach-note,[data-textsize="large"] .review-row{ font-size:14px; }
 .tabular{ font-family:var(--font-hdr); font-variant-numeric:tabular-nums; font-feature-settings:"tnum"; }
+/* The embedded Pixelify Sans draws its fi/fl ligatures as an "A"
+   ("conArm", "Axed"), so ligatures are off on every element. Important
+   because any `font:` shorthand elsewhere resets them to normal. */
+*,*::before,*::after{ font-variant-ligatures:none !important; }
 .hidden{ display:none !important; }
 /* Same dvh-over-percentage reasoning as html,body above, applied to the
    element the whole game actually renders inside — position:fixed's

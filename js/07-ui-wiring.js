@@ -92,7 +92,7 @@ function buildReview(outcome){
   }
 
   // showdown
-  const results = outcome.potResults;
+  const results = mergePotResultsForDisplay(outcome.potResults);
   const humanWon = outcome.winnerIds.has('you');
   const humanShowed = outcome.contenders.some(p=>p.isHuman);
 
@@ -172,7 +172,7 @@ function renderStats(){
     {k:'Won', v: stats.hands ? Math.round(stats.won/stats.hands*100)+'%' : '—'},
     {k:'Best hand win', v: stats.biggestPot ? stats.biggestPot.toLocaleString() : '—'}
   ];
-  const html = cells.map(c=>'<div class="stat-cell"><div class="v tabular">'+c.v+'</div><div class="k">'+c.k+'</div></div>').join('');
+  const html = cells.map(c=>'<div class="stat-cell crt-cell"><div class="v tabular crt-figure crt-figure--lg">'+c.v+'</div><div class="k crt-caption">'+c.k+'</div></div>').join('');
   const a = $('stat-strip'), b = $('settings-stats');
   if (a) a.innerHTML = html;
   if (b) b.innerHTML = html;
@@ -215,8 +215,24 @@ function openOverlay(which){
   clearTimeout(autoDealT);   // overlays pause the between-hand clock
   $('scrim').classList.add('open');
   if (which==='log'){ logDirty = true; renderLog(); $('log-drawer').classList.add('open'); }
-  if (which==='settings'){ $('settings-sheet').classList.add('open'); }
+  if (which==='settings'){ refreshSettingsContext(); $('settings-sheet').classList.add('open'); }
   if (which==='newtable'){ $('confirm-newtable').classList.add('open'); }
+}
+/* Settings only offers what applies where it was opened: Leave table on a
+   table; Reset current run on a table, or on Home / Custom Game when a
+   saved standalone table exists (never from Career, whose events have
+   their own Abandon). The build string sits on the service row. */
+function refreshSettingsContext(){
+  const onTable = !$('table-screen').classList.contains('hidden');
+  const onCareer = !$('career').classList.contains('hidden');
+  const canReset = onTable || (!onCareer && !!loadTableSave());
+  $('leave-table').classList.toggle('hidden', !onTable);
+  $('settings-reset').classList.toggle('hidden', !canReset);
+  $('settings-table-section').classList.toggle('hidden', !onTable && !canReset);
+  const body = document.querySelector('#settings-sheet > .sheet-body');
+  if (body) body.scrollTop = 0;
+  const build = $('settings-build');
+  if (build && typeof BUILD_VERSION !== 'undefined') build.textContent = 'Build ' + BUILD_VERSION;
 }
 function closeOverlays(){
   $('scrim').classList.remove('open');
@@ -361,9 +377,25 @@ function startGame(){
   $('table-screen').classList.remove('hidden');
   initSeats();
   if (!settings.seenIntro){
-    $('first-run').classList.remove('hidden');
+    // First table ever: the tips come before the machine powers up, so
+    // they never cover the Table Intro and no card is dealt under them.
+    showFirstRun(()=>startNewHand());
+    return;
   }
   startNewHand();
+}
+
+let firstRunThen = null;
+function showFirstRun(then){
+  firstRunThen = then || null;
+  $('first-run').classList.remove('hidden');
+}
+function dismissFirstRun(){
+  $('first-run').classList.add('hidden');
+  settings.seenIntro = true; saveSettings();
+  const then = firstRunThen;
+  firstRunThen = null;
+  if (then) then();
 }
 
 let menuLaunchInFlight = false;
@@ -1230,6 +1262,13 @@ function showCareerScreen(options){
 
 /* Returning from a finished event. The event is already settled by then
    (endCareerEvent owns that), so this only tears the table down. */
+/* Going back to a screen: machine-wheel.js turns the drum the other way
+   (machineWheelBack); without it, the screens simply change. */
+function rollBackTo(fromEl, toEl, reveal, settle){
+  if (typeof machineWheelBack === 'function') return machineWheelBack(fromEl, toEl, reveal, settle);
+  reveal(); settle();
+}
+
 /* BACK TO EVENTS. One-shot: the button stays bound while the console
    animates out, so a second press must be inert. It performs no money
    operation of any kind — settlement completed before the result was ever
@@ -1242,20 +1281,26 @@ function returnToCareer(){
   clearTimeout(autoDealT);
   endQuickResolve();
   closeOverlays();
-  hideResultCard();
-  exitResultsConsole();
-  clearCompletedEventConsole();
   if (game){ game.over = true; game._careerReturnDone = true; }
   pendingHumanPlayer = null;
   coachToken++;
-  setArcadeMode(false);
-  const felt = $('felt');
-  if (felt) felt.classList.remove('results-mode','tone-negative');
-  $('btn-new-table').textContent = 'New Table';
-  $('btn-new-table').classList.add('hidden');
-  applyTheme();
-  showCareerScreen();
-  careerReturnInFlight = false;
+  // The results stage rides away on the drum (turned back up) and the
+  // Hub comes round from below; the table is torn down once it's gone.
+  rollBackTo($('table-screen'), $('career'),
+    ()=>showCareerScreen(),
+    ()=>{
+      hideResultCard();
+      exitResultsConsole();
+      clearCompletedEventConsole();
+      setArcadeMode(false);
+      const felt = $('felt');
+      if (felt) felt.classList.remove('results-mode','tone-negative');
+      $('btn-new-table').textContent = 'New Table';
+      $('btn-new-table').classList.add('hidden');
+      $('table-screen').classList.add('hidden');
+      applyTheme();
+      careerReturnInFlight = false;
+    });
 }
 
 /* Board presentation of a payout table. One place reads as a plain amount;
@@ -1987,22 +2032,28 @@ function doLeaveTable(){
   }
   pendingHumanPlayer = null;
   coachToken++;
-  setArcadeMode(false);
   // A *finished* Career event returns to the Career screen (its result is
   // waiting there). A *paused* one goes to the main menu, which advertises
   // the event as still active — see refreshCareerMenuButton().
   const careerFinished = !!(game && (game.mode==='career' || game.mode==='career-cash'))
     && !careerHasActiveEvent() && !careerHasOpenCashSession();
-  const felt = $('felt');
-  if (felt) felt.classList.remove('results-mode','tone-negative');
-  clearCompletedEventConsole();
-  $('btn-new-table').textContent = 'New Table';
-  $('table-screen').classList.add('hidden');
-  applyTheme();
-  if (careerFinished){ showCareerScreen(); renderStats(); return; }
-  $('home').classList.remove('hidden');
-  reconstructMainMenu();
-  renderStats();
+  // The table rides away on the drum turned back up (machine-wheel.js);
+  // it's torn down once it has gone.
+  rollBackTo($('table-screen'), careerFinished ? $('career') : $('home'),
+    ()=>{
+      if (careerFinished) showCareerScreen();
+      else { $('home').classList.remove('hidden'); reconstructMainMenu(); }
+      renderStats();
+    },
+    ()=>{
+      setArcadeMode(false);
+      const felt = $('felt');
+      if (felt) felt.classList.remove('results-mode','tone-negative');
+      clearCompletedEventConsole();
+      $('btn-new-table').textContent = 'New Table';
+      $('table-screen').classList.add('hidden');
+      applyTheme();
+    });
 }
 
 /* Settings > Reset Current Run — unlike Leave Table, also discards the

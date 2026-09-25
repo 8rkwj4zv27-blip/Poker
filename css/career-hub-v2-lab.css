@@ -85,22 +85,13 @@ button{ touch-action:manipulation; }
   box-shadow:inset 2px 2px 0 var(--pc-plastic-hi),inset -2px -2px 0 rgba(0,0,0,.38),0 2px 0 #100a08;
   cursor:pointer;
 }
-:is(#home,#career-hub) .ch2-record .ch2-crt-glass{
-  position:relative; width:100%; height:100%; min-height:0; padding:4px 10px;
-  display:grid; grid-template-columns:1fr 1fr; align-items:stretch; overflow:hidden;
-  border:2px solid #020706; border-radius:2px; color:#bde9ff; text-align:center;
-  background:
-    radial-gradient(ellipse at 47% 38%,rgba(120,192,211,.12),transparent 55%),
-    radial-gradient(ellipse at center,transparent 42%,rgba(0,0,0,.66) 100%),
-    repeating-linear-gradient(180deg,transparent 0 2px,rgba(0,0,0,.38) 2px 3px),#061014;
-  box-shadow:inset 0 6px 8px rgba(0,0,0,.72),inset 6px 0 9px rgba(0,0,0,.42),inset -6px 0 9px rgba(0,0,0,.42),0 0 6px rgba(93,183,213,.14);
-}
-:is(#home,#career-hub) .ch2-record .ch2-crt-glass::before{ content:none; }
+:is(#home,#career-hub) .ch2-record .ch2-crt-glass{ position:relative; width:100%; height:100%; min-height:0; padding:4px 10px; display:grid; grid-template-columns:1fr 1fr; align-items:stretch; overflow:hidden; text-align:center; }
+
 .ch2-crt-stat{ position:relative; min-width:0; padding:0 9px; display:grid; grid-template-rows:12px 25px; align-content:center; justify-items:center; transform:translateY(-3px); }
-.ch2-crt-stat+.ch2-crt-stat{ border-left:1px solid rgba(151,210,225,.22); }
-:is(#home,#career-hub) .ch2-record .ch2-crt-stat small{ color:#a4d3dd; font:8px/1.2 var(--font-hdr); letter-spacing:.025em; white-space:nowrap; }
-:is(#home,#career-hub) .ch2-record .ch2-crt-stat strong{ margin:1px 0 0; color:#d2f4ff; font:18px/1.12 var(--font-hdr); font-weight:400; white-space:nowrap; text-shadow:0 0 4px currentColor,0 0 9px rgba(91,188,220,.32); }
-.ch2-crt-stat .crt-cursor{ position:absolute; right:5px; bottom:5px; width:4px; height:7px; margin:0; color:#a9dfed; }
+
+:is(#home,#career-hub) .ch2-record .ch2-crt-stat small{ white-space:nowrap; }
+:is(#home,#career-hub) .ch2-record .ch2-crt-stat strong{ margin:1px 0 0; white-space:nowrap; }
+.ch2-crt-stat .crt-cursor{ position:absolute; right:5px; bottom:5px; width:4px; height:7px; margin:0; }
 
 /* Only the selected invitation is complete. Immediate neighbours are clipped
    by the reader aperture; every more distant card is fully off-stage. */
@@ -196,9 +187,12 @@ button{ touch-action:manipulation; }
   padding:12px 16px 13px; display:grid;
   grid-template-rows:46px 58px 64px 62px minmax(100px,1fr) 43px; align-content:stretch;
 }
+/* The back's text rows size to their content and the facts grid takes
+   what is left, so no block is squeezed into a fixed row too small for
+   it (the EVENT tab used to overlap the buy-in box by a few px). */
 .ch2-card-back{
   padding:12px 16px 13px; display:grid;
-  grid-template-rows:38px 42px 100px minmax(105px,1fr) 68px 46px 36px; align-content:stretch;
+  grid-template-rows:38px 42px auto minmax(0,1fr) auto auto auto; align-content:stretch; row-gap:4px;
 }
 .ch2-card-venue{
   position:relative; margin:0 8px; display:flex; align-items:center; justify-content:center;
@@ -268,6 +262,7 @@ button{ touch-action:manipulation; }
   box-shadow:inset 1px 1px 0 color-mix(in srgb,var(--paper-hi) 72%,white),inset -2px -2px 0 rgba(0,0,0,.18),0 3px 0 color-mix(in srgb,var(--ticket-border) 54%,#20180d);
   font-size:8px; line-height:1; letter-spacing:.08em;
 }
+:is(#home,#career-hub) .ch2-card-back .ch2-card-flip{ margin-top:0; }
 :is(#home,#career-hub) .ch2-card-flip::before,:is(#home,#career-hub) .ch2-card-flip::after{ content:""; position:absolute; top:50%; width:7px; border-top:2px solid color-mix(in srgb,var(--mark) 48%,transparent); }
 :is(#home,#career-hub) .ch2-card-flip::before{ left:8px; } :is(#home,#career-hub) .ch2-card-flip::after{ right:8px; }
 :is(#home,#career-hub) .ch2-card-flip:active{
@@ -276,33 +271,35 @@ button{ touch-action:manipulation; }
 .ch2-back-title{ margin:0 8px; display:flex; align-items:center; justify-content:center; border-bottom:2px solid color-mix(in srgb,var(--mark) 34%,transparent); }
 .ch2-back-title h2{ width:100%; margin:0; padding:4px; border:0; font-size:clamp(16px,4.8vw,20px); line-height:1.12; }
 .ch2-back-hero{
-  min-width:0; margin:5px 8px 4px; padding:8px 12px; display:flex; flex-direction:column; align-items:center; justify-content:center;
+  min-width:0; margin:2px 8px; padding:8px 12px; display:flex; flex-direction:column; align-items:center; justify-content:center;
   border-top:3px double color-mix(in srgb,var(--mark) 58%,transparent); border-bottom:3px double color-mix(in srgb,var(--mark) 58%,transparent); background:color-mix(in srgb,var(--venue) 8%,transparent);
 }
 .ch2-back-hero small{ color:var(--mark); }
 .ch2-back-hero strong{ max-width:100%; margin-top:7px; font-family:var(--font-hdr); font-size:clamp(12px,3.8vw,16px); line-height:1.25; font-weight:400; text-align:center; text-wrap:balance; overflow-wrap:anywhere; }
-.ch2-payout-places{ width:100%; margin-top:7px; display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:4px; }
+.ch2-payout-places{ width:100%; margin-top:7px; display:grid; grid-auto-flow:column; grid-auto-columns:minmax(0,1fr); gap:4px; }
 .ch2-payout-places span{ min-width:0; display:flex; flex-direction:column; align-items:center; gap:6px; }
 .ch2-payout-places span+span{ border-left:1px solid var(--ticket-rule); }
 .ch2-payout-places b{ font:10px/1.2 var(--font-hdr); color:var(--ticket-ink); white-space:nowrap; }
-.ch2-format-brief{ min-width:0; margin:5px 8px 6px; padding:12px 13px 11px; display:flex; flex-direction:column; justify-content:center; border-left:5px solid var(--mark); background:color-mix(in srgb,var(--venue) 8%,transparent); }
+.ch2-format-brief{ min-width:0; margin:2px 8px 0; padding:12px 13px 11px; display:flex; flex-direction:column; justify-content:center; border-left:5px solid var(--mark); background:color-mix(in srgb,var(--venue) 8%,transparent); }
 .ch2-format-brief small{ color:var(--mark); }
+.ch2-format-brief .nobr{ white-space:nowrap; }
 .ch2-format-brief strong{ margin-top:7px; font-family:var(--font-hdr); font-size:11px; line-height:1.28; font-weight:400; text-wrap:balance; }
 .ch2-format-brief p{ max-width:27em; margin:9px 0 0; color:var(--ticket-muted); font:11px/1.45 var(--font-px); }
-.ch2-brief-list{ min-height:0; margin:0 8px 5px; display:grid; grid-template-columns:1fr 1fr; grid-template-rows:1fr 1fr; border-top:2px solid var(--ticket-rule); border-bottom:2px solid var(--ticket-rule); background:var(--ticket-panel); }
-.ch2-brief-row{ min-width:0; min-height:0; padding:11px 9px; display:flex; flex-direction:column; align-items:flex-start; justify-content:center; gap:8px; }
+.ch2-brief-list{ min-height:0; margin:0 8px; display:grid; grid-template-columns:1fr 1fr; grid-template-rows:1fr 1fr; border-top:2px solid var(--ticket-rule); border-bottom:2px solid var(--ticket-rule); background:var(--ticket-panel); }
+.ch2-brief-row{ min-width:0; min-height:0; padding:11px 10px; display:flex; flex-direction:column; align-items:flex-start; justify-content:center; gap:8px; }
+.ch2-brief-row small{ white-space:nowrap; }
 .ch2-brief-row:nth-child(even){ border-left:1px solid var(--ticket-rule); }
 .ch2-brief-row:nth-child(n+3){ border-top:1px solid var(--ticket-rule); }
 .ch2-brief-row small{ color:var(--ticket-muted); }
 .ch2-brief-row strong{ max-width:100%; font-family:var(--font-hdr); font-size:10px; line-height:1.25; font-weight:400; text-align:left; overflow-wrap:anywhere; }
 .ch2-brief-row.is-long strong{ font-size:9px; letter-spacing:-.015em; overflow-wrap:normal; }
 .ch2-back-entry{
-  margin:1px 8px 2px; padding:6px 10px; display:grid; grid-template-columns:auto 1fr; align-items:center; gap:12px;
+  margin:1px 8px 2px; padding:7px 10px; display:grid; grid-template-columns:auto 1fr; align-items:center; gap:12px;
   border:2px solid color-mix(in srgb,var(--mark) 44%,transparent); background:color-mix(in srgb,var(--venue) 6%,transparent);
 }
 .ch2-back-entry span{ display:flex; flex-direction:column; }
 .ch2-back-entry span strong{ margin-top:5px; font-family:var(--font-hdr); font-size:12px; font-weight:400; }
-.ch2-back-entry>b{ color:var(--mark); font-family:var(--font-hdr); font-size:8px; line-height:1.3; font-weight:400; text-align:right; }
+.ch2-back-entry>b{ color:var(--mark); font-family:var(--font-hdr); font-size:8px; line-height:1.4; font-weight:400; text-align:right; text-wrap:balance; }
 
 .ch2-stamp{ display:none; position:absolute; z-index:5; font-family:var(--font-hdr); font-weight:400; text-align:center; pointer-events:none; }
 .ch2-stamp-lock{ left:28px; right:auto; top:calc(46px + 58px + 64px + 62px + 32px); padding:5px 7px 4px; rotate:-3deg; border:3px double var(--mark); color:var(--mark); background:var(--paper); font-size:9px; letter-spacing:.04em; }
@@ -417,10 +414,10 @@ button{ touch-action:manipulation; }
   .ch2-instrument{ grid-template-rows:26px 48px 58px; gap:3px; padding:4px 6px; }
   :is(#home,#career-hub) .ch2-record{ height:58px; }
   :is(#home,#career-hub) .ch2-bankroll-reel .jp-cell{ height:27px; font-size:17px; }
-  :is(#home,#career-hub) .ch2-record .ch2-crt-stat strong{ margin-top:1px; font-size:17px; }
+  :is(#home,#career-hub) .ch2-record .ch2-crt-stat strong{ margin-top:1px; }
   .ch2-card{ height:calc(100% - 23px); min-height:330px; }
   .ch2-card-front{ grid-template-rows:36px 40px 48px 48px minmax(70px,1fr) 35px; padding:9px 13px 10px; }
-  .ch2-card-back{ grid-template-rows:36px 38px 86px minmax(96px,1fr) 58px 46px 35px; padding:9px 13px 10px; }
+  .ch2-card-back{ grid-template-rows:34px 36px auto minmax(0,1fr) auto auto auto; row-gap:3px; padding:9px 13px 10px; }
   .ch2-card-venue{ font-size:9px; }
   .ch2-card h2{ font-size:18px; }
   .ch2-headline{ font-size:15px; }
@@ -433,9 +430,32 @@ button{ touch-action:manipulation; }
   .ch2-stamp-lock{ top:calc(36px + 40px + 48px + 48px + 24px); }
   .ch2-back-hero strong{ margin-top:5px; font-size:12px; line-height:1.2; }
   :is(#home,#career-hub) .ch2-card-flip{ min-height:34px; margin-top:4px; }
+  :is(#home,#career-hub) .ch2-card-back .ch2-card-flip{ min-height:32px; }
   :is(#home,#career-hub) .ch2-action-cradle{ margin-left:6px; margin-right:6px; padding-top:7px; padding-bottom:10px; }
   :is(#home,#career-hub) .ch2-action-cradle::before{ height:70px; }
   :is(#home,#career-hub) .ch2-primary{ min-height:70px; }
+}
+
+/* Short phones (iPhone SE and smaller): the ticket is ~320px tall, too
+   short for the full back at its normal spacing. Tighten it and drop the
+   one-line format note so every block keeps readable room. */
+@media (max-height:740px){
+  .ch2-card-back{ grid-template-rows:28px 30px auto minmax(56px,1fr) auto auto auto; row-gap:3px; padding:8px 11px 8px; }
+  .ch2-card-back .ch2-card-venue{ font-size:8px; }
+  .ch2-back-title h2{ font-size:15px; padding:2px; }
+  .ch2-format-brief{ padding:5px 9px; }
+  .ch2-format-brief strong{ margin-top:3px; font-size:9px; }
+  .ch2-format-brief p{ display:none; }
+  .ch2-brief-row{ padding:4px 7px; gap:3px; }
+  .ch2-brief-row small,.ch2-back-hero small,.ch2-back-entry small{ font-size:7px; }
+  .ch2-back-hero{ padding:4px 10px; }
+  .ch2-back-hero strong{ margin-top:3px; font-size:11px; }
+  .ch2-payout-places{ margin-top:3px; }
+  .ch2-payout-places span{ gap:2px; }
+  .ch2-back-entry{ padding:4px 8px; gap:8px; }
+  .ch2-back-entry span strong{ margin-top:3px; font-size:11px; }
+  .ch2-back-entry>b{ font-size:7px; }
+  :is(#home,#career-hub) .ch2-card-back .ch2-card-flip{ min-height:28px; padding-top:6px; padding-bottom:5px; }
 }
 
 @media (max-width:370px){
@@ -445,8 +465,8 @@ button{ touch-action:manipulation; }
   .ch2-card-front,.ch2-card-back{ padding-left:11px; padding-right:11px; }
   :is(#home,#career-hub) .ch2-record .ch2-crt-glass{ padding-left:5px; padding-right:5px; }
   .ch2-crt-stat{ padding-left:4px; padding-right:4px; }
-  :is(#home,#career-hub) .ch2-record .ch2-crt-stat small{ font-size:8px; }
-  :is(#home,#career-hub) .ch2-record .ch2-crt-stat strong{ font-size:15px; }
+  
+  
   .ch2-card[data-index="0"] .ch2-back-hero{ padding:3px 6px; }
   .ch2-card[data-index="0"] .ch2-back-hero strong{ margin-top:2px; font-size:9px; line-height:1.16; }
   .ch2-brief-row.is-long strong{ font-size:8px; letter-spacing:-.025em; }

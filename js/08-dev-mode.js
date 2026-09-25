@@ -459,8 +459,6 @@ function syncDevSection(){
   const section = $('settings-dev-section');
   if (!section) return;
   section.classList.toggle('hidden', !settings.devMode);
-  const readout = $('dev-build-readout');
-  if (readout) readout.textContent = 'Build ' + BUILD_VERSION;
 }
 
 /* DEV-only Career testing control. This changes only the off-table bankroll
@@ -795,10 +793,11 @@ function wireUI(){
   $('setup-continue').onclick = ()=>{ if (loadTableSave()) continueTable(); };
   $('quick-play').onclick = ()=>withNewTableConfirm(startGame);
   $('open-career').onclick = ()=>{ enterCareerFromHome(); };
+  // Back to the menu turns the same drum the other way (machine-wheel.js).
   $('career-back').onclick = ()=>{
-    $('career').classList.add('hidden');
-    $('home').classList.remove('hidden');
-    reconstructMainMenu();
+    rollBackTo($('career'), $('home'),
+      ()=>{ $('home').classList.remove('hidden'); reconstructMainMenu(); },
+      ()=>{ $('career').classList.add('hidden'); });
   };
   $('career-new').onclick = ()=>{
     showConfirmDialog({
@@ -969,6 +968,7 @@ function wireUI(){
   $('close-log').onclick = closeOverlays;
   $('open-settings').onclick = ()=>openOverlay('settings');
   $('close-settings').onclick = closeOverlays;
+  $('settings-back').onclick = closeOverlays;
   $('scrim').onclick = closeOverlays;
   $('leave-table').onclick = leaveTable;
   $('save-progress').onclick = ()=>{
@@ -1014,6 +1014,7 @@ function wireUI(){
     $('scoring-guide-sheet').classList.remove('open');
     $('settings-sheet').classList.add('open');
   };
+  $('scoring-guide-back').onclick = ()=>$('close-scoring-guide').click();
 
   $('reset-run').onclick = ()=>{
     showConfirmDialog({
@@ -1025,10 +1026,7 @@ function wireUI(){
     });
   };
 
-  $('fr-dismiss').onclick = ()=>{
-    $('first-run').classList.add('hidden');
-    settings.seenIntro = true; saveSettings();
-  };
+  $('fr-dismiss').onclick = dismissFirstRun;
 
   // keyboard shortcuts
   document.addEventListener('keydown', e=>{

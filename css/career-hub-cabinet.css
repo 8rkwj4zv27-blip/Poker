@@ -26,9 +26,15 @@
 }
 
 /* ---- Top rail: [back] [BANKROLL] [settings] ---- */
-#career-hub .ch2-utility-row{ grid-template-columns:38px minmax(0,1fr) 38px; gap:7px; }
+/* Every part here casts a 3px drop shadow, so the old 3px row gap left
+   the keys, the bankroll housing and the record touching. 8px leaves an
+   even 5px of plastic between each shadow and the next part. */
+#career-hub .ch2-instrument{ gap:8px; padding:7px 9px 9px; grid-template-rows:30px 54px 58px; }
+@media (max-height:900px){ #career-hub .ch2-instrument{ grid-template-rows:30px 48px 58px; } }
+#career-hub .ch2-instrument-title{ height:27px; align-self:start; }
+#career-hub .ch2-utility-row{ grid-template-columns:38px minmax(0,1fr) 38px; gap:8px; }
 #career-hub .ch2-key{
-  height:calc(100% - 3px); min-width:0; min-height:0; margin:0; padding:0;
+  height:27px; align-self:start; min-width:0; min-height:0; margin:0; padding:0;
   display:flex; align-items:center; justify-content:center;
   border:2px solid #070806; border-radius:3px; background:#D0C28F; color:#30270F;
   font-family:inherit; font-size:16px; line-height:1; cursor:pointer;
@@ -81,12 +87,7 @@
   background:#080A07; border:3px solid #070504;
   box-shadow:inset 0 6px 0 #020302,inset 4px 0 0 rgba(0,0,0,.5),inset -4px 0 0 rgba(0,0,0,.5);
 }
-#career-hub .ch2-slot-readout{
-  justify-self:center; min-width:62%; height:22px; padding:0 10px;
-  display:flex; align-items:center; justify-content:center; gap:8px;
-  color:var(--pc-display-ink); font-family:var(--font-hdr); font-size:6px; letter-spacing:.08em; line-height:1;
-  text-shadow:0 0 6px currentColor,0 0 14px color-mix(in srgb,currentColor 34%,transparent);
-}
+#career-hub .ch2-slot-readout{ justify-self:center; min-width:62%; height:22px; padding:0 10px; display:flex; align-items:center; justify-content:center; gap:8px; }
 
 /* The readout's lamp (a standard .pc-lamp): blinks amber while the ticket
    on the reader can be bought, green once paid, dark otherwise; fast amber

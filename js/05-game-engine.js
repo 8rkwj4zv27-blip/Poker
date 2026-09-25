@@ -603,6 +603,11 @@ function findNextActor(startIndex){
   return -1;
 }
 
+/* Log wording: the human's seat is named "You", which takes the
+   second-person verb ("You call 40", not "You calls 40"). */
+function actorVerb(player, third, second){
+  return player && player.isHuman ? second : third;
+}
 function logMsg(text, isMarker){
   game.log.push({t:text, m:!!isMarker});
   if (game.log.length > 250) game.log.splice(0, game.log.length-250);
@@ -616,11 +621,8 @@ function paintCRT(el, html, thinking){
   if (el.dataset.crtText === key) return;
   el.dataset.crtText = key;
   el.innerHTML = key;
-  if (!motionOff()){
-    el.classList.remove('crt-refresh'); void el.offsetWidth; el.classList.add('crt-refresh');
-    clearTimeout(el._crtRefreshT);
-    el._crtRefreshT=setTimeout(()=>el.classList.remove('crt-refresh'),250);
-  }
+  // The change effect is the CRT component's own: js/crt.js watches every
+  // .crt and plays it (and the ghost of the old text) on a real change.
 }
 function paintBanner(html){
   const plain = String(html||'').replace(/<[^>]*>/g,'').toLowerCase();
@@ -813,8 +815,8 @@ async function startNewHand(){
   g.positions = computePositions();
 
   logMsg('Hand ' + g.handNumber, true);
-  logMsg(g.players[g.sbIndex].name + ' posts small blind (' + g.smallBlind + ')');
-  logMsg(g.players[g.bbIndex].name + ' posts big blind (' + g.bigBlind + ')');
+  logMsg(g.players[g.sbIndex].name + ' ' + actorVerb(g.players[g.sbIndex],'posts','post') + ' small blind (' + g.smallBlind + ')');
+  logMsg(g.players[g.bbIndex].name + ' ' + actorVerb(g.players[g.bbIndex],'posts','post') + ' big blind (' + g.bigBlind + ')');
 
   $('btn-next-hand').classList.add('hidden');
   $('btn-rebuy').classList.add('hidden');
@@ -1203,7 +1205,7 @@ function applyAction(player, decision){
 
   if (action==='fold'){
     player.folded = true;
-    text = player.name + ' folds';
+    text = player.name + ' ' + actorVerb(player,'folds','fold');
     // SFX V1 — the human's own fold now sounds via the physical button
     // release (see resolveButtonKind/pressFeedback), not here; AI
     // opponents keep this exact same sound they always had.
@@ -1216,13 +1218,13 @@ function applyAction(player, decision){
       };
     }
   } else if (action==='check'){
-    text = player.name + ' checks';
+    text = player.name + ' ' + actorVerb(player,'checks','check');
     if (!player.isHuman) Sound.check();
   } else if (action==='call'){
     const amt = commitTo(g.currentBet);
     shortAmt = amt;
-    if (amt>0){ text = player.name + ' calls ' + amt; if (!player.isHuman) Sound.chip(); }
-    else { action='check'; text = player.name + ' checks'; if (!player.isHuman) Sound.check(); }
+    if (amt>0){ text = player.name + ' ' + actorVerb(player,'calls','call') + ' ' + amt; if (!player.isHuman) Sound.chip(); }
+    else { action='check'; text = player.name + ' ' + actorVerb(player,'checks','check'); if (!player.isHuman) Sound.check(); }
   } else if (action==='bet' || action==='raise' || action==='allin'){
     const prevBet = g.currentBet;
     let target;
@@ -1234,7 +1236,7 @@ function applyAction(player, decision){
     settleAggression(prevBet);
     shortAmt = prevBet<=0 ? player.betThisRound : player.betThisRound;
     action = prevBet<=0 ? 'bet' : 'raise';
-    const verb = prevBet<=0 ? 'bets' : 'raises to';
+    const verb = prevBet<=0 ? actorVerb(player,'bets','bet') : actorVerb(player,'raises to','raise to');
     text = player.name + ' ' + verb + ' ' + player.betThisRound + (player.allIn ? ' (all-in)' : '');
     if (!player.isHuman) Sound.chip();
     // SFX V1 — all-in drama. The human's own all-in is already fully
@@ -1377,6 +1379,25 @@ function projectedSettlement(p, potResults){
 /* Result-banner grammar is a tiny rule, but keeping it named makes both
    branches independently testable: the human is second person (YOU WIN),
    while named opponents remain third person (WILDCARD WINS). */
+/* One entry per pot as the player sees it: consecutive layers that share a
+   display group (see the label in the showdown) are summed. Presentation
+   only — never feed this to payout, scoring or elimination code. */
+function mergePotResultsForDisplay(potResults){
+  const out = [];
+  (potResults || []).forEach(r=>{
+    const last = out[out.length-1];
+    if (last && r.group != null && last.group === r.group){
+      last.amount += r.amount;
+      (r.winnerShares||[]).forEach(s=>{
+        const m = last.winnerShares.find(x=>x.id===s.id);
+        if (m) m.amount += s.amount; else last.winnerShares.push(Object.assign({}, s));
+      });
+      return;
+    }
+    out.push(Object.assign({}, r, { winnerShares:(r.winnerShares||[]).map(s=>Object.assign({}, s)) }));
+  });
+  return out;
+}
 function showdownPotVerb(result){
   if (result && result.split) return 'split';
   const ids = result && Array.isArray(result.winnerIds) ? result.winnerIds : [];
@@ -1420,7 +1441,7 @@ async function handleFoldWin(){
     // even have been in the pot), so this is never the humanLose flavor.
     Sound.resultSting('opponentWin');
   }
-  logMsg(winner.name + ' wins ' + amt + ' (everyone else folded)');
+  logMsg(winner.name + ' ' + actorVerb(winner,'wins','win') + ' ' + amt + ' (everyone else folded)');
 
   // No showdown occurred, so there's no evaluated hand/winning-five to show
   // or highlight — hand/cat/cards stay null and runShowdownAwardSequence's
@@ -1496,6 +1517,20 @@ async function handleShowdown(){
 
   const potResults = [];
   const winnerIds = new Set();
+  // Display groups for the pot NAMES only. computePots() starts a layer at
+  // every contribution level, a folded player's included, so two adjacent
+  // layers can have exactly the same players able to win them. To the
+  // player that is one pot, so it gets one name ("Pot", or "Main pot" +
+  // "Side pot 1"...). Payout, scoring and K.O. still read every layer.
+  const potGroup = [];
+  let potGroups = 0, prevEligibleKey = null;
+  pots.forEach((pot, i)=>{
+    if (!pot.eligible.length) return;
+    const key = pot.eligible.slice().sort().join(',');
+    if (key !== prevEligibleKey) potGroups++;
+    prevEligibleKey = key;
+    potGroup[i] = potGroups - 1;
+  });
   pots.forEach((pot, i)=>{
     const eligible = pot.eligible.map(id=>g.players.find(p=>p.id===id));
     if (!eligible.length) return;
@@ -1515,7 +1550,8 @@ async function handleShowdown(){
       return { name:w.name, id:w.id, amount:amt };
     });
     potResults.push({
-      label: pots.length===1 ? 'Pot' : (i===0 ? 'Main pot' : 'Side pot ' + i),
+      label: potGroups===1 ? 'Pot' : (potGroup[i]===0 ? 'Main pot' : 'Side pot ' + potGroup[i]),
+      group: potGroup[i],
       amount: pot.amount,
       winners: winners.map(w=>w.name),
       winnerIds: winners.map(w=>w.id),
@@ -1600,11 +1636,12 @@ async function handleShowdown(){
 
   // Hand-history log entries are pure record-keeping — write them now,
   // rather than deferring them into the player-paced award loop below.
-  potResults.forEach(r=>{
+  mergePotResultsForDisplay(potResults).forEach(r=>{
+    const name = r.label==='Pot' ? 'the pot' : /^Main/.test(r.label) ? 'the main pot' : r.label.toLowerCase();
     if (r.split){
-      logMsg(r.winnerShares.map(s=>s.name+' '+s.amount).join(' / ') + ' split ' + r.label.toLowerCase() + ' (' + r.amount.toLocaleString() + ') with ' + r.hand);
+      logMsg(r.winnerShares.map(s=>s.name+' '+s.amount.toLocaleString()).join(' / ') + ' split ' + name + ' (' + r.amount.toLocaleString() + ') with ' + r.hand);
     } else {
-      logMsg(r.winners.join(' & ') + ' win ' + r.label.toLowerCase() + ' ' + r.amount.toLocaleString() + ' with ' + r.hand);
+      logMsg(r.winners.join(' & ') + ' ' + showdownPotVerb(r) + ' ' + name + ' (' + r.amount.toLocaleString() + ') with ' + r.hand);
     }
   });
   if (winnerIds.has('you')){
@@ -2249,9 +2286,9 @@ function careerResultRow(label, value){
    given, and the win/loss branches remain covered by the focused checks. */
 function careerResultHTML(model){
   const money = n => '$' + Math.abs(Math.round(n)).toLocaleString();
-  const v = value => '<span class="career-res-v tabular">' + esc(value) + '</span>';
+  const v = value => '<span class="career-res-v tabular crt-figure">' + esc(value) + '</span>';
   const cell = (label, value) =>
-    '<div class="stage-instrument pc-display machine-crt" data-crt-blink="off"><span class="stage-instrument-label">' +
+    '<div class="stage-instrument pc-display crt" data-crt-quiet><span class="stage-instrument-label crt-caption">' +
     esc(label) + '</span>' + v(value) + '</div>';
   // Any credited prize reads as a prize, so a non-winning cash reports what it
   // actually earned rather than what it failed to win.
@@ -2268,15 +2305,15 @@ function careerResultHTML(model){
       '<span class="career-res-event">' + esc(model.eventName) + '</span>' +
       '<strong class="career-res-title">' + title + '</strong>' +
       '<i aria-hidden="true"></i></header>' +
-    '<div class="stage-score-hero pc-display machine-crt" data-crt-blink="off">' +
-      '<span class="stage-instrument-label">' + moneyLabel + '</span>' + v(moneyValue) +
-      '<span class="stage-score-carry"><span>BANKROLL</span>' + v(money(model.bankroll)) +
+    '<div class="stage-score-hero pc-display crt" data-crt-quiet>' +
+      '<span class="stage-instrument-label crt-caption">' + moneyLabel + '</span>' + v(moneyValue) +
+      '<span class="stage-score-carry"><span class="crt-caption">BANKROLL</span><span class="career-res-v tabular">' + esc(money(model.bankroll)) + '</span>' +
       '</span></div>' +
     '<div class="stage-results-deck pc-raised pc-material-plastic">' +
       '<div class="stage-results-instruments">' + finishCell +
         cell('EVENT SCORE', model.eventScore.toLocaleString()) + '</div>' +
-      '<div class="stage-results-recap pc-display machine-crt" data-crt-blink="off">' +
-        '<div class="stage-recap-cell"><span class="stage-instrument-label">HANDS</span>' +
+      '<div class="stage-results-recap pc-display crt">' +
+        '<div class="stage-recap-cell crt-cell"><span class="stage-instrument-label crt-caption">HANDS</span>' +
           v(String(model.hands)) + '</div>' +
       '</div>' +
     '</div>' +
@@ -2382,17 +2419,17 @@ function ratioResult(won,played){ return (won||0)+' / '+(played||0); }
    stageStatementHTML() instead. */
 function tableBestHandTrophyHTML(best){
   if (!best){
-    return '<div class="stage-trophy pc-display machine-crt" data-crt-blink="off" data-result-beat="trophy">'+
-      '<div class="stage-trophy-label">Best hand</div>'+
+    return '<div class="stage-trophy pc-display crt" data-result-beat="trophy">'+
+      '<div class="stage-trophy-label crt-caption">Best hand</div>'+
       '<div class="stage-trophy-empty">No showdown hand recorded</div></div>';
   }
   const split=splitHandText(best.result.cat,best.name);
   const displayCards=arrangeHandForDisplay(best.result.cat,best.cards);
   const cards=displayCards.map(c=>'<div class="'+cardClass(false,c,true)+'" aria-label="'+esc(cardLabel(false,c))+'">'+cardInner(c)+'</div>').join('');
-  return '<div class="stage-trophy pc-display machine-crt" data-crt-blink="off" data-result-beat="trophy">'+
-    '<div class="stage-trophy-label">Best hand</div>'+
+  return '<div class="stage-trophy pc-display crt" data-result-beat="trophy">'+
+    '<div class="stage-trophy-label crt-caption">Best hand</div>'+
     '<div class="stage-trophy-cards">'+cards+'</div>'+
-    '<div class="stage-trophy-name">'+esc(split.category.toUpperCase())+'</div>'+
+    '<div class="stage-trophy-name crt-figure">'+esc(split.category.toUpperCase())+'</div>'+
     (split.descriptor?'<div class="stage-trophy-desc">'+esc(split.descriptor)+'</div>':'')+
   '</div>';
 }
@@ -2469,11 +2506,11 @@ function stageHeadHTML(eyebrow, title){
     '<i aria-hidden="true"></i></header>';
 }
 function stageHeroHTML(hero){
-  return '<div class="stage-score-hero pc-display machine-crt" data-crt-blink="off">'+
-    '<span class="stage-instrument-label">'+esc(hero.label)+'</span>'+
+  return '<div class="stage-score-hero pc-display crt" data-crt-quiet>'+
+    '<span class="stage-instrument-label crt-caption">'+esc(hero.label)+'</span>'+
     '<div class="amt-readout stage-score-readout'+(stageReelIsLong(hero.reel)?' is-long':'')+
       '" id="'+RESULT_HERO_REEL_ID+'"></div>'+
-    '<span class="stage-score-carry"><span>'+esc(hero.carryLabel)+'</span>'+
+    '<span class="stage-score-carry"><span class="crt-caption">'+esc(hero.carryLabel)+'</span>'+
     '<strong class="tabular">'+esc(hero.carryValue)+'</strong></span></div>';
 }
 /* Six or more cells is where a reel stops fitting its instrument at
@@ -2496,24 +2533,24 @@ function stageInstrumentHTML(instrument){
     const lamps = Array.from({length:instrument.total}, (_,i)=>
       '<span class="stage-ko-slot'+(i<instrument.lit?' lit':'')+'"></span>').join('');
     body = '<div class="stage-ko-lamps">'+lamps+'</div>'+
-      '<div class="stage-ko-readout tabular">'+esc(instrument.readout)+'</div>';
+      '<div class="stage-ko-readout tabular crt-figure">'+esc(instrument.readout)+'</div>';
   } else {
     // A single settled figure that is neither money nor a bounded count —
     // a finishing place, an unbounded K.O. total, an event score. Same
     // readout family as the K.O. count, one size up.
-    body = '<div class="stage-ko-readout stage-big-readout tabular">'+esc(instrument.value)+'</div>';
+    body = '<div class="stage-ko-readout stage-big-readout tabular crt-figure crt-figure--lg">'+esc(instrument.value)+'</div>';
   }
-  return '<div class="stage-instrument pc-display machine-crt" data-crt-blink="off"><span class="stage-instrument-label">'+
+  return '<div class="stage-instrument pc-display crt" data-crt-quiet><span class="stage-instrument-label crt-caption">'+
     esc(instrument.label)+'</span>'+body+'</div>';
 }
 /* Three-slot CRT memory bank. Core facts appear first; where a model
    supplies a second page it flickers in after the stage wakes, using
    only statistics the mode already tracks. */
 function stageRecapHTML(pages){
-  return '<div class="stage-results-recap pc-display machine-crt" data-crt-blink="off" id="stage-stat-bank" data-result-beat="recap">'+
+  return '<div class="stage-results-recap pc-display crt" id="stage-stat-bank" data-result-beat="recap">'+
     pages[0].map((stat,i)=>
-      '<div class="stage-recap-cell" data-stage-stat="'+i+'"><span class="stage-instrument-label">'+esc(stat.label)+'</span>'+
-        '<strong class="stage-recap-value tabular">'+esc(stat.value)+'</strong></div>'
+      '<div class="stage-recap-cell crt-cell" data-stage-stat="'+i+'"><span class="stage-instrument-label crt-caption">'+esc(stat.label)+'</span>'+
+        '<strong class="stage-recap-value tabular crt-figure">'+esc(stat.value)+'</strong></div>'
     ).join('')+'</div>';
 }
 /* One extra fact about this outcome. Positive: FLAWLESS SHOWDOWNS.
@@ -2523,18 +2560,18 @@ function stageLampHTML(lamp){
   const negative = lamp.tone === 'negative';
   return '<div class="stage-recap-lamp'+(negative?' is-negative':'')+'">'+
     '<span class="pc-lamp '+(negative?'is-danger':'is-amber')+'"></span>'+
-    '<span class="stage-recap-lamp-text">'+esc(lamp.text)+'</span></div>';
+    '<span class="stage-recap-lamp-text'+(negative?' crt-danger':'')+'">'+esc(lamp.text)+'</span></div>';
 }
 /* Region four when no best hand is tracked. The line is the outcome
    message the game already produces for the banner; the sub-line states
    what the settlement already did. Nothing here is calculated. */
 function stageStatementHTML(detail){
-  return '<div class="stage-trophy stage-trophy--statement pc-display machine-crt" data-crt-blink="off" data-result-beat="trophy">'+
-    '<div class="stage-trophy-label">'+esc(detail.label)+'</div>'+
+  return '<div class="stage-trophy stage-trophy--statement pc-display crt" data-result-beat="trophy">'+
+    '<div class="stage-trophy-label crt-caption">'+esc(detail.label)+'</div>'+
     // Line and sub-line are ONE block so they stay together in the middle
     // of the well rather than drifting apart as the stage grows.
     '<div class="stage-statement-block">'+
-      '<div class="stage-statement">'+esc(detail.line)+'</div>'+
+      '<div class="stage-statement crt-figure">'+esc(detail.line)+'</div>'+
       (detail.sub?'<div class="stage-statement-sub">'+esc(detail.sub)+'</div>':'')+
     '</div>'+
   '</div>';
@@ -2550,10 +2587,10 @@ function stageDetailHTML(detail){
 function stageProgressHTML(progress){
   const twoPart = !progress.value;
   return '<div class="stage-run-progress pc-display'+(twoPart?' is-two-part':'')+
-    ' machine-crt" data-crt-blink="off" data-result-beat="progress">'+
-    '<span>'+esc(progress.label)+'</span>'+
-    (twoPart?'':'<strong class="tabular">'+esc(progress.value)+'</strong>')+
-    '<em>'+esc(progress.next)+'</em></div>';
+    ' crt" data-result-beat="progress">'+
+    '<span class="crt-caption">'+esc(progress.label)+'</span>'+
+    (twoPart?'':'<strong class="tabular crt-figure">'+esc(progress.value)+'</strong>')+
+    '<em class="crt-caption">'+esc(progress.next)+'</em></div>';
 }
 function resultStageHTML(model){
   return '<div class="stage-results-machine pc-material-leather">'+

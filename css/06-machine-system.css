@@ -1,57 +1,6 @@
-/* ============================================================
-   THE MACHINE SYSTEM
-   The approved visual system from the Design Lab, applied to the game.
-
-   Selections it implements:
-     P0  Production ink        printed markings
-     C0  Current Upgrade       recessed near-black CRT glass
-     C0-G Static Burst         finite resynchronisation on CRT change
-     B0-C Soft Spring          menu/launch control press
-     F0  Current baseline      chassis unchanged
-     plus the machine construction for the six screens that never
-     received it, and the result-stage corrections.
-
-   Loaded last, so it layers over the existing sheets without editing
-   them. Removing the one <link> in index.html reverts everything.
-
-   No JavaScript was changed for any of this. The CRT burst reuses the
-   .crt-refresh hook paintCRT() already fires in 05-game-engine.js, and
-   the press reuses the :active state the menu buttons already have.
-   ============================================================ */
 
 
-/* ============================================================
-   1. C0 CURRENT UPGRADE — CRT glass
-   Near-black recessed tube, corner vignette, uneven illumination.
-   The second selector matches the one in 05-responsive-and-arcade.css
-   that would otherwise outrank this, so no !important is needed.
-   ============================================================ */
-.crt-screen,
-.pc-display,
-#hud-mid .crt-screen,
-#hud-invested{
-  background:
-    radial-gradient(ellipse at 50% 38%,rgba(255,255,255,.05),transparent 60%),
-    radial-gradient(ellipse at 50% 50%,transparent 38%,rgba(0,0,0,.62) 100%),
-    repeating-linear-gradient(180deg,transparent 0 2px,rgba(0,0,0,.30) 2px 3px),
-    #060B0A;
-  border-color:#040807;
-  box-shadow:
-    inset 0 7px 0 rgba(0,0,0,.74),
-    inset 5px 0 0 rgba(0,0,0,.44),
-    inset -5px 0 0 rgba(0,0,0,.34),
-    inset 0 -3px 0 rgba(255,255,255,.05),
-    0 2px 0 rgba(255,255,255,.10),
-    0 0 0 2px rgba(0,0,0,.55);
-}
 
-/* Restrained phosphor bloom on what the tube is showing. */
-.crt-line-primary,
-.crt-line-secondary,
-.hand-strength,
-#home .pc-ready-readout{
-  text-shadow:0 0 6px currentColor,0 0 14px color-mix(in srgb,currentColor 34%,transparent);
-}
 
 
 /* ============================================================
@@ -112,31 +61,11 @@
   text-shadow:0 1px 0 rgba(255,255,255,.30);
 }
 
-#home .pc-button-secondary,
-#home .home-row .btn-secondary,
-.btn-secondary,
-.segmented button,
-.table-save,
-.pc-label,
-.pc-product-mark,
-.pc-product-mark small,
-.pc-cast-index,
-.sheet h3,
-.drawer-head h3,
-.sg-section-label,
-.instrument-label,
-.blind-indicator,
-.field-label,
-.card-label,
-.stepper-val .cap,
-#home .stats-card .stat-cell .k{
+#home .pc-button-secondary,#home .home-row .btn-secondary,.btn-secondary,.segmented button,.table-save,.pc-label,.pc-product-mark,.pc-product-mark small,.pc-cast-index,.sheet h3,.drawer-head h3,.sg-section-label,.instrument-label,.blind-indicator,.field-label,.card-label,.stepper-val .cap{
   text-shadow:none;
 }
 
-/* The result name is printed on the physical stage face, so it loses the
-   glow it previously carried. */
-.stage-results-head span,
-.stage-instrument-label{
+.stage-results-head span{
   text-shadow:none;
 }
 
@@ -158,7 +87,8 @@
 #rankings,
 #awards,
 #career,
-#settings-sheet .sheet-body{
+#settings-sheet .sheet-body,
+#scoring-guide-sheet .sheet-body{
   --ms-edge:var(--pc-edge-lo,#0B0F0C);
   --ms-plate:var(--pc-plastic,var(--theme-case-raised));
   --ms-plate-hi:var(--pc-plastic-hi,var(--theme-case-hi));
@@ -197,7 +127,9 @@
 #setup .setup-head,
 #rankings .setup-head,
 #awards .setup-head,
-#career .setup-head{
+#career .setup-head,
+#settings-sheet .setup-head,
+#scoring-guide-sheet .setup-head{
   margin-bottom:11px;
   padding:5px 7px;
   border:3px solid var(--ms-edge);
@@ -211,7 +143,9 @@
 #setup .setup-title,
 #rankings .setup-title,
 #awards .setup-title,
-#career .setup-title{
+#career .setup-title,
+#settings-sheet .setup-title,
+#scoring-guide-sheet .setup-title{
   font-size:9px;
   letter-spacing:.12em;
   color:#E9DDAE;
@@ -362,7 +296,9 @@
 #setup .icon-btn,
 #rankings .icon-btn,
 #awards .icon-btn,
-#career .icon-btn{
+#career .icon-btn,
+#settings-sheet .icon-btn,
+#scoring-guide-sheet .icon-btn{
   border:3px solid var(--ms-edge);
   border-radius:3px;
   background:var(--ms-plate);
@@ -427,7 +363,8 @@
 #awards .award-glossary-meta{ color:var(--ms-print); }
 
 /* ---- Settings: the same construction, deliberately quieter ---- */
-#settings-sheet .sheet-body{
+#settings-sheet .sheet-body,
+#scoring-guide-sheet .sheet-body{
   background:
     repeating-conic-gradient(rgba(255,255,255,.04) 0 25%,transparent 0 50%) 0 0/8px 8px,
     var(--pc-leather);
@@ -435,7 +372,8 @@
   box-shadow:inset 0 4px 0 var(--pc-leather-hi),inset 0 -5px 0 var(--pc-leather-lo);
 }
 
-#settings-sheet .sheet-section{
+#settings-sheet .sheet-section,
+#scoring-guide-sheet .sheet-section{
   padding:12px 13px;
   border:3px solid var(--ms-edge);
   border-radius:4px;
@@ -461,13 +399,49 @@
   box-shadow:inset 0 3px 0 rgba(0,0,0,.44),0 2px 0 var(--ms-edge);
 }
 
-#settings-sheet .btn-secondary{
+#settings-sheet .btn-secondary,
+#scoring-guide-sheet .btn-secondary{
   border:3px solid var(--ms-edge);
   border-radius:4px;
   background:var(--ms-plate);
   color:var(--ink);
   box-shadow:0 4px 0 var(--ms-plate-lo),0 6px 0 var(--ms-edge),inset 2px 2px 0 var(--ms-plate-hi);
 }
+
+/* Settings layout: one rhythm. The header is Screen header A (the same
+   plate and back key as Custom Game); each plate stacks its rows with
+   one 8px gap instead of per-row margins. */
+#settings-sheet .setup-head,
+#scoring-guide-sheet .setup-head{ margin:0 0 12px; }
+.setup-head .setup-title{ margin:0; }
+.setup-head-spacer{ width:44px; flex-shrink:0; }
+#settings-sheet .sheet-section{ display:flex; flex-direction:column; gap:8px; margin-bottom:12px; }
+#scoring-guide-sheet .sheet-section{ margin-bottom:12px; }
+#scoring-guide-sheet .sheet-section .btn-secondary{ margin-top:0; }
+#settings-sheet .sheet-section > h3{ margin:0 0 2px; }
+#settings-sheet .field{ margin:0; }
+#settings-sheet .field .hint{ margin-top:6px; }
+#settings-sheet .sheet-section .btn-secondary{ margin-top:0; }
+#settings-sheet .toggle-row .tl{ font-size:13px; }
+#settings-sheet .sheet-keys{ display:flex; gap:10px; }
+#settings-sheet .sheet-keys > *{ flex:1 1 0; min-width:0; }
+#settings-sheet .sheet-keys .btn-secondary{ padding-left:6px; padding-right:6px; font-size:9px; }
+#settings-sheet .settings-reset{ display:flex; flex-direction:column; gap:6px; margin-top:4px; }
+
+/* Danger key — Pattern Book D3: a dark key with coral print and a coral
+   inner edge, so a destructive action never looks like Done. */
+#settings-sheet .btn-secondary.btn-danger{
+  background:var(--pc-plastic-dark,#16100E);
+  color:var(--danger);
+  box-shadow:0 4px 0 color-mix(in srgb,var(--danger) 30%,black),0 6px 0 var(--ms-edge),
+    inset 0 0 0 2px color-mix(in srgb,var(--danger) 72%,transparent),inset 3px 3px 0 rgba(255,255,255,.05);
+}
+
+/* The service row (build + Developer Mode) sits quietly at the bottom. */
+#settings-sheet .sheet-service{ padding:6px 10px; background:transparent; box-shadow:none; border-color:color-mix(in srgb,var(--ms-edge) 60%,transparent); opacity:.72; }
+#settings-sheet .sheet-service .toggle-row{ padding:4px 2px; border:0; background:transparent; box-shadow:none; }
+#settings-sheet .sheet-service .tl{ font-size:11px; }
+#settings-sheet .sheet-done{ padding:10px 13px 14px; }
 
 
 /* ============================================================
@@ -515,7 +489,12 @@
    (7px vertical / 9px horizontal). Driving it from one variable keeps the
    gap even there too. */
 @media (orientation:portrait) and (max-height:700px){
-  .felt.results-mode{ --stage-gap:9px; }
+  .felt.results-mode{ --stage-gap:6px; }
+}
+/* Standard iPhones (700-900px tall): 12px keeps RUN OVER's Best Hand row
+   inside the machine rather than past its scroll edge. */
+@media (orientation:portrait) and (min-height:701px) and (max-height:900px){
+  .felt.results-mode{ --stage-gap:12px; }
 }
 
 @media (orientation:landscape) and (max-height:430px){
@@ -573,24 +552,14 @@
   text-shadow:0 0 7px color-mix(in srgb,var(--danger) 40%,transparent),2px 2px 0 #2A0F11;
 }
 
-/* The hero's gold edge stripe becomes coral in the same 4px slot — the
-   same part, in a different state. The headline figure follows it; a
-   forfeited buy-in and a dead run are not rewards. */
-.felt.results-mode.tone-negative .stage-score-hero{
-  box-shadow:inset 4px 0 0 var(--danger),inset 0 4px 5px rgba(0,0,0,.65),0 3px 0 #16090d;
-}
+
 .felt.results-mode.tone-negative .stage-score-readout{
   border-color:color-mix(in srgb,var(--danger) 78%,#7a2b28);
   box-shadow:0 3px 0 #090b08,inset 0 3px 5px rgba(0,0,0,.72),0 0 7px rgba(217,83,74,.14);
 }
-.felt.results-mode.tone-negative .stage-score-readout .jp-digit{
-  color:#F0B7B3;
-  text-shadow:0 0 7px rgba(217,83,74,.5),1px 1px 0 #090b08;
-}
-.felt.results-mode.tone-negative .stage-score-readout .jp-sym{ color:#E9A3A0; }
-/* Gold is money and records at rest, so the carry legend keeps it in
-   both states. Only the headline figure changes colour. */
-.felt.results-mode.tone-negative .stage-score-carry strong{ color:#F2B431; }
+
+
+
 
 
 /* ============================================================
@@ -636,19 +605,7 @@
 .stage-recap-lamp .stage-recap-lamp-text{ min-width:0; }
 .stage-trophy-name{ overflow-wrap:anywhere; }
 
-/* ---- 7b. A third instrument body ----
-   Production shipped two: a reel readout (money) and the bounded K.O.
-   lamp bank. RUN OVER and both Career results need a third — a single
-   settled figure that is not money and has no bounded total (a finishing
-   place, an unbounded K.O. count, an event score). It reuses the K.O.
-   readout's type so it is visibly the same family, one size up, rather
-   than a new widget. */
-.stage-big-readout{
-  margin-top:2px;
-  font-size:20px; line-height:1;
-  color:#b6e0af;
-  text-shadow:0 0 8px rgba(182,224,175,.42);
-}
+.stage-big-readout{ margin-top:2px; }
 
 /* ---- 7c. Outcome-detail region ----
    The BEST HAND trophy case is region four. Career tracks no best hand,
@@ -667,16 +624,9 @@
   display:flex; flex-direction:column; align-items:center; gap:7px;
   max-width:100%;
 }
-.stage-statement{
-  font-family:var(--font-hdr); font-size:13px; line-height:1.5; letter-spacing:.05em;
-  color:#f2b431; text-shadow:0 0 8px rgba(242,180,49,.28);
-}
-.stage-statement-sub{
-  font-family:var(--font-hdr); font-size:8px; letter-spacing:.07em; color:#87a785;
-}
-.felt.results-mode.tone-negative .stage-statement{
-  color:#F0B7B3; text-shadow:0 0 8px rgba(217,83,74,.3);
-}
+
+
+
 
 /* ---- 7d. Lamp strip, negative state ----
    The FLAWLESS SHOWDOWNS strip becomes the general "one extra fact about
@@ -685,10 +635,8 @@
   background:var(--danger);
   box-shadow:0 2px 0 #100807,0 0 7px rgba(217,83,74,.36),inset 1px 1px 0 #F4C3C0;
 }
-.stage-recap-lamp.is-negative{ background:#2A1416; border-color:#16090d; }
-.stage-recap-lamp.is-negative .stage-recap-lamp-text{
-  color:#E9A3A0; white-space:normal; line-height:1.45;
-}
+
+.stage-recap-lamp.is-negative .stage-recap-lamp-text{ white-space:normal; }
 
 /* ---- 7e. Two-part progression strip ----
    Career has no counted progression left once BANKROLL sits in the hero
@@ -826,16 +774,9 @@
   white-space:nowrap;
 }
 
-.career-result-panel .stage-score-hero .career-res-v{
-  font-size:19px;
-  color:var(--accent-bright);
-  text-shadow:0 0 8px color-mix(in srgb,var(--accent) 46%,transparent);
-}
 
-.career-result-panel .stage-score-carry .career-res-v{
-  font-size:12px;
-  color:var(--accent-bright);
-}
+
+
 
 .career-result-panel .stage-results-instruments{ gap:5px; }
 .career-result-panel .stage-instrument{ min-height:0; }

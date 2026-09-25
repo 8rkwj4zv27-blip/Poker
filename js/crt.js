@@ -3,21 +3,39 @@
 /* ============================================================
    CRT — the change engine for the CRT component (css/crt.css)
 
-   CRT.set(screen, html)  changes what a .crt shows, with the change
-                          effect chosen by the nearest data-crt-change
-                          (burst | roll | channel | wipe | type) and the
-                          ghost of the old picture (data-crt-ghost 0–4).
-                          Same content: nothing happens. Reduced Motion:
-                          the text just swaps.
-   CRT.glitch(screen)     a one-off signal glitch.
-   CRT.onChange = fn      called after each change (the Lab's crackle).
+   Every .crt on the page is watched: whenever what it shows changes (the
+   table's paintCRT, the Home Boot's self-test, Career's record pages, the
+   results stage's stat pages — whoever writes it), the change effect set by
+   the nearest data-crt-change plays (burst | roll | channel | wipe | type),
+   and the old picture burns out behind it (data-crt-ghost 0–4).
 
-   Candidate: loaded by crt-lab.html only until the owner picks a recipe.
+   - Runs of rapid changes (a spinning counter) settle into one change.
+   - A screen's first text is never treated as a change.
+   - data-crt-quiet on a screen opts it out (its changes are a number wheel
+     or its own reveal).
+   - Reduced Motion: text just swaps.
+
+   CRT.set(screen, html)  write + change in one call (the Lab uses this).
+   CRT.glitch(screen)     a one-off signal glitch.
+   CRT.onChange = fn      called after each change.
+
+   Presentation only.
    ============================================================ */
 
 const CRT = (() => {
+  // The CRT Lab's presets, mild to extreme; the Lab and the Finishes menu
+  // both read them from here. The game's own recipe is on <html>.
+  const PRESETS = [
+    { id:'clean',    name:'Clean',    dials:{ tint:'blue',  glow:0, scan:1, rgb:0, grain:0, curve:1, flicker:1, roll:0, tear:0, ghost:0, change:'burst',   ink:'meaning' } },
+    { id:'warm',     name:'Warm',     dials:{ tint:'dark',  glow:1, scan:1, rgb:0, grain:1, curve:2, flicker:1, roll:1, tear:0, ghost:0, change:'burst',   ink:'meaning' } },
+    { id:'pulp',     name:'Pulp',     dials:{ tint:'amber', glow:2, scan:2, rgb:1, grain:1, curve:2, flicker:2, roll:2, tear:0, ghost:1, change:'roll',    ink:'meaning' } },
+    { id:'vhs',      name:'VHS',      dials:{ tint:'dark',  glow:2, scan:3, rgb:3, grain:3, curve:2, flicker:2, roll:2, tear:2, ghost:2, change:'channel', ink:'meaning' } },
+    { id:'meltdown', name:'Meltdown', dials:{ tint:'green', glow:4, scan:4, rgb:4, grain:4, curve:4, flicker:4, roll:4, tear:4, ghost:4, change:'channel', ink:'meaning' } }
+  ];
+  const SETTLE_MS = 120;
   const GHOST = { 1:[.25,380], 2:[.4,560], 3:[.55,800], 4:[.7,1100] };   // opacity, ms
   const DUR = { burst:260, roll:340, channel:440, wipe:320 };
+  const KINDS = ['burst','roll','channel','wipe'];
 
   const reduced = () =>
     (typeof motionOff === 'function' && motionOff()) ||
@@ -29,57 +47,121 @@ const CRT = (() => {
     return host ? host.getAttribute('data-crt-' + name) : fallback;
   };
 
-  function body(el){
-    let b = el.querySelector(':scope > .crt-body');
-    if (!b){ b = document.createElement('div'); b.className = 'crt-body'; while (el.firstChild) b.appendChild(el.firstChild); el.appendChild(b); }
-    return b;
+  // What a screen shows, without any ghost left in it.
+  function picture(el){
+    let html = '';
+    for (const c of el.childNodes){
+      if (c.nodeType === 1 && c.classList.contains('crt-ghost')) continue;
+      html += c.nodeType === 1 ? c.outerHTML : (c.nodeType === 3 ? c.nodeValue : '');
+    }
+    return html;
   }
+  const textOf = html => { const d = document.createElement('div'); d.innerHTML = html; return d.textContent.trim(); };
 
-  function ghost(el, b, level){
-    const g = GHOST[level]; if (!g) return;
-    const shade = b.cloneNode(true);
-    shade.classList.remove('crt-chg-burst','crt-chg-roll','crt-chg-channel','crt-chg-wipe');
-    shade.classList.add('crt-ghost');
+  // The old picture, laid out like the screen, fading behind the new one.
+  function ghost(el, oldHTML, level){
+    const g = GHOST[level]; if (!g || !oldHTML) return;
+    const cs = getComputedStyle(el);
+    const shade = document.createElement('div');
+    shade.className = 'crt-ghost';
     shade.setAttribute('aria-hidden', 'true');
+    ['display','flexDirection','alignItems','justifyContent','gap','gridTemplateColumns','gridTemplateRows','paddingTop','paddingRight','paddingBottom','paddingLeft','textAlign']
+      .forEach(p => { shade.style[p] = cs[p]; });
     shade.style.setProperty('--crt-ghost-a', g[0]);
     shade.style.setProperty('--crt-ghost-ms', g[1] + 'ms');
-    el.insertBefore(shade, b);
+    shade.innerHTML = oldHTML;
+    shade.querySelectorAll('[id]').forEach(n => n.removeAttribute('id'));
+    el.insertBefore(shade, el.firstChild);
     setTimeout(() => shade.remove(), g[1] + 40);
   }
 
-  function typeOn(b){
-    const walker = document.createTreeWalker(b, NodeFilter.SHOW_TEXT);
-    const nodes = []; let n;
-    while ((n = walker.nextNode())) if (n.nodeValue.trim()) nodes.push([n, n.nodeValue]);
+  function typeOn(el){
+    const nodes = [];
+    const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT, {
+      acceptNode: n => n.parentElement.closest('.crt-ghost') ? NodeFilter.FILTER_REJECT : NodeFilter.FILTER_ACCEPT });
+    let n; while ((n = walker.nextNode())) if (n.nodeValue.trim()) nodes.push([n, n.nodeValue]);
     nodes.forEach(([node]) => node.nodeValue = '');
     let i = 0, j = 0;
+    el._typing = true;
     const step = () => {
-      if (i >= nodes.length) return;
+      if (i >= nodes.length){ el._typing = false; return; }
       const [node, full] = nodes[i];
       j += 2; node.nodeValue = full.slice(0, j);
       if (j >= full.length){ i++; j = 0; }
-      b._typeT = setTimeout(step, 16);
+      el._typeT = setTimeout(step, 16);
     };
-    clearTimeout(b._typeT); step();
+    clearTimeout(el._typeT); step();
   }
 
-  function set(el, html){
-    const b = body(el);
-    if (b.innerHTML === html) return;
-    if (reduced()){ b.innerHTML = html; return; }
+  // Play the change effect for a screen whose picture just changed.
+  function play(el, oldHTML){
+    if (reduced()) return;
     const kind = setting(el, 'change', 'burst');
-    ghost(el, b, Number(setting(el, 'ghost', 0)));
-    b.innerHTML = html;
-    if (kind === 'type'){ typeOn(b); }
+    ghost(el, oldHTML, Number(setting(el, 'ghost', 0)));
+    if (kind === 'type'){ typeOn(el); }
     else {
-      b.classList.remove('crt-chg-burst','crt-chg-roll','crt-chg-channel','crt-chg-wipe');
-      void b.offsetWidth;
-      b.classList.add('crt-chg-' + kind);
+      el.classList.remove(...KINDS.map(k => 'crt-chg-' + k));
+      void el.offsetWidth;
+      el.classList.add('crt-chg-' + kind);
       if (kind === 'channel'){ el.classList.add('crt-static'); setTimeout(() => el.classList.remove('crt-static'), 140); }
-      clearTimeout(b._chgT);
-      b._chgT = setTimeout(() => b.classList.remove('crt-chg-' + kind), DUR[kind] || 300);
+      clearTimeout(el._chgT);
+      el._chgT = setTimeout(() => el.classList.remove('crt-chg-' + kind), DUR[kind] || 300);
     }
     if (typeof CRT.onChange === 'function') CRT.onChange(el, kind);
+  }
+
+  // ---- watching ----
+  const seen = new WeakSet();
+  const shown = new WeakMap();    // last settled picture
+  const timers = new WeakMap();
+
+  function settle(el){
+    if (el._typing) return;
+    const now = picture(el);
+    const before = shown.get(el) || '';
+    shown.set(el, now);
+    if (now === before) return;
+    if (!textOf(before)) return;          // first text, not a change
+    if (textOf(before) === textOf(now)) return;   // markup-only change
+    play(el, before);
+  }
+
+  const watcher = new MutationObserver(records => {
+    for (const r of records){
+      const node = r.target.nodeType === 1 ? r.target : r.target.parentElement;
+      if (!node || node.closest('.crt-ghost')) continue;
+      const el = node.closest('.crt');
+      if (!el || el.hasAttribute('data-crt-quiet') || el._typing) continue;
+      clearTimeout(timers.get(el));
+      timers.set(el, setTimeout(() => settle(el), SETTLE_MS));
+    }
+  });
+
+  function adopt(el){
+    if (seen.has(el)) return;
+    seen.add(el);
+    shown.set(el, picture(el));
+    watcher.observe(el, { childList:true, characterData:true, subtree:true });
+  }
+  function scan(root){
+    if (root.nodeType !== 1) return;
+    if (root.classList.contains('crt')) adopt(root);
+    root.querySelectorAll('.crt').forEach(adopt);
+  }
+  function watch(){
+    new MutationObserver(records => { for (const r of records) r.addedNodes.forEach(scan); })
+      .observe(document.body, { childList:true, subtree:true });
+    scan(document.body);
+  }
+
+  // ---- direct use ----
+  function set(el, html){
+    const target = el.querySelector(':scope > .crt-body') || el;
+    if (target.innerHTML === html) return;
+    const before = picture(el);
+    target.innerHTML = html;
+    shown.set(el, picture(el));   // the watcher will see nothing new
+    play(el, before);
   }
 
   function glitch(el){
@@ -88,5 +170,8 @@ const CRT = (() => {
     setTimeout(() => el.classList.remove('crt-glitch'), 620);
   }
 
-  return { set, glitch, body, onChange:null };
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', watch);
+  else watch();
+
+  return { set, glitch, onChange:null, PRESETS };
 })();
