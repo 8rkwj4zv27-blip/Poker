@@ -1005,6 +1005,14 @@ function wireUI(){
   });
   setSegment('theme-seg','theme',settings.theme);
 
+  document.querySelectorAll('#coin-sound-seg button').forEach(b=>b.onclick=()=>{
+    settings.coinSound = b.dataset.coin;
+    setSegment('coin-sound-seg','coin',settings.coinSound);
+    saveSettings();
+    if (typeof CoinTable!=='undefined') CoinTable.preview();
+  });
+  setSegment('coin-sound-seg','coin',settings.coinSound);
+
   $('open-scoring-guide').onclick = ()=>{
     buildScoringGuide();
     $('settings-sheet').classList.remove('open');

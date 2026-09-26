@@ -571,10 +571,32 @@
   let WALLS=null;               // { felt:{L,T,R,B,rc}, blocks:[{L,T,R,B}] }
   let TRAY=null;                // the pot tray's inside edge, for its lip
 
+  // HOST: by default the layers are fixed to the page (the lab). The game
+  // hosts them inside its table screen instead, so coins ride along when
+  // the screen slides or rolls, and sit under the game's overlays: the
+  // layers are then absolute, offset so their origin is still the
+  // viewport's (every coordinate here is a client coordinate).
+  let host=null, hostZ=null;
+  function setHost(el,z){
+    host=el||null; hostZ=z||null;
+    if (air){ (host||document.body).append(shadows,air); alignLayers(); }
+  }
+  function alignLayers(){
+    if (!air) return;
+    [shadows,air].forEach((l,i)=>{
+      if (host && host!==document.body){
+        const r=host.getBoundingClientRect();
+        Object.assign(l.style,{ position:'absolute', inset:'auto', left:(-r.left-host.clientLeft)+'px', top:(-r.top-host.clientTop)+'px', width:innerWidth+'px', height:innerHeight+'px' });
+      } else Object.assign(l.style,{ position:'', inset:'', left:'', top:'', width:'', height:'' });
+      l.style.zIndex=hostZ?String(hostZ[i]):'';
+    });
+  }
   function ensureLayers(){
     if (air) return;
-    shadows=document.createElement('div'); shadows.className='ct-shadows'; document.body.appendChild(shadows);
-    air=document.createElement('div'); air.className='ct-air'; document.body.appendChild(air);
+    shadows=document.createElement('div'); shadows.className='ct-shadows';
+    air=document.createElement('div'); air.className='ct-air';
+    (host||document.body).append(shadows,air);
+    alignLayers();
   }
   function kick(){ if (!raf){ lastT=performance.now(); raf=requestAnimationFrame(loop); } }
   function loop(now){
@@ -642,6 +664,9 @@
     add($('dealer-deck'));
     add(document.querySelector('#pot-area .pot-chip'));
     document.querySelectorAll('#felt .seat-card').forEach(add);
+    // solid things the caller knows about that may not be showing yet (the
+    // game's pot plate hides while the pot is empty)
+    extraBlocks.forEach(k=>blocks.push({ ...k }));
     document.querySelectorAll('#hud-mid .seat-cards .card').forEach(add);
     WALLS={ felt:{ L:f.left+inset, T:f.top+inset, R:f.right-inset, B:f.bottom-inset, rc:40 }, blocks };
     fitTray();
@@ -651,6 +676,7 @@
   // land. Measured from layout offsets (a card mid-deal is transformed),
   // and remembered for streets with no cards out.
   let ROW=null;
+  let extraBlocks=[];
   function boardRow(){
     const bd=$('board'), cards=bd?bd.querySelectorAll('.card'):[];
     if (cards.length){
@@ -1444,7 +1470,7 @@
     zone, zoneBusy, neatSlots, tidyZone, scheduleTidy, supportUnder, stackAt, topple,
     launch, throwAll, plan, kindFor,
     glint, glintAt, glintPile, shake, puff,
-    clearWorld,
+    clearWorld, setHost, alignLayers, setExtraBlocks:list=>{ extraBlocks=(list||[]).slice(); },
     setTray:t=>{ TRAY=t; fitTray(); }, tray:()=>TRAY, walls:()=>WALLS, airLayer:()=>air,
     stats:()=>({ stuck:stuckCount, log:stuckLog })
   };

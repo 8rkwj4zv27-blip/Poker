@@ -19,6 +19,10 @@ let pendingNewTableAction = null;
    approximation of p.chips/game.pot (see visualChipCount), never
    required to sum to it exactly. */
 let bankPending = 0, potPending = 0;
+/* Gold-coin table (js/coin-table.js, docs/ui/CHIP_PLAN.md): when it's
+   loaded and on, bets land on bet spots and are swept into the pot tray
+   instead of flying straight into #pot-stacks. Presentation only. */
+function coinTableOn(){ return typeof CoinTable!=='undefined' && CoinTable.on(); }
 /* Pot-smash bank-display freeze (see runHumanPotSmashCeremony in
    06-presentation.js) — while non-null, render()'s human stack reel shows
    this frozen pre-win value instead of the player's real (already
@@ -963,6 +967,7 @@ function postBlind(p, amount){
   // chip count for the rest of the hand whenever the human posts one —
   // trim it straight to the new target count instantly instead (no
   // flight, matching how blinds have never animated).
+  if (actual>0 && coinTableOn()){ CoinTable.bet(p, actual, p.chips===0); return; }
   if (p.isHuman && actual>0){
     const container = $('hud-tower'), pile = bankPile();
     const target = visualChipCount(p.chips);
@@ -1065,6 +1070,8 @@ async function advancePhase(){
   // happened (the transferChips call in applyAction) — there is no resting
   // pile to sweep here any more, just the street-scoped bookkeeping reset.
   g.players.forEach(p=>{ p.betThisRound=0; });
+  // the street's bets jump off their spots into the pot tray
+  if (coinTableOn()) await CoinTable.sweep();
   if (g.players.filter(p=>p.inHand && !p.folded).length<=1){ g.phase='foldwin'; return; }
 
   if (g.phase==='preflop'){ logMsg('Flop', true); await dealCommunity(3); beginBettingRound('flop'); }
@@ -1177,6 +1184,7 @@ function actionLabel(action, player, amt){
 function applyAction(player, decision){
   const g = game;
   const toCall = g.currentBet - player.betThisRound;
+  const betBefore = player.betThisRound;
   let text='', shortAmt=0, action=decision.action;
 
   function commitTo(targetTotal){
@@ -1276,7 +1284,9 @@ function applyAction(player, decision){
   player.streetAction = { type: player.allIn ? 'allin' : action, label: streetLabel, amount: shortAmt };
   setActionRows(player.name,streetLabel,false);
   flashAction(player.id, streetLabel);
-  if (action!=='fold' && action!=='check'){
+  if (action!=='fold' && action!=='check' && coinTableOn()){
+    CoinTable.bet(player, player.betThisRound-betBefore, !!player.allIn);
+  } else if (action!=='fold' && action!=='check'){
     if (player.isHuman){
       // Real chips physically leave the bank pile and fly to the pot —
       // the number moved is just the drop in the bank's own approximate
@@ -1410,6 +1420,7 @@ async function handleFoldWin(){
   // the banner, sting, award console, chip payout and everything after it
   // run at their real production timing. See QUICK RESOLVE above.
   endQuickResolve();
+  if (coinTableOn()) await CoinTable.sweep();
   const winner = g.players.find(p=>p.inHand && !p.folded);
   const amt = g.pot;
   // most fold-wins reach here directly (checkHandEndedByFold in the main
@@ -1466,6 +1477,7 @@ async function handleShowdown(){
   const g = game;
   // Normal speed from here on: the staged reveal below IS the payoff.
   endQuickResolve();
+  if (coinTableOn()) await CoinTable.sweep();
   // Defensive: inHand/folded should already exclude an eliminated player
   // from ever reaching here (see resolveEliminations/startNewHand), but
   // showdown eligibility is the one place a missed elimination would do

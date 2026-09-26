@@ -10,8 +10,9 @@ by the code and by `CLAUDE.md`/`AGENTS.md`, not by this file.
 ```
 01-poker-math.js        02-support-systems.js   03-opponents.js
 04-modes-and-scoring.js 05-game-engine.js       06-presentation.js
-coin-world.js           07-ui-wiring.js         career-hub-live.js      career-motion-live.js
-machine-wheel.js        ticket-feed.js          table-intro.js
+coin-world.js           coin-table.js           07-ui-wiring.js
+career-hub-live.js      career-motion-live.js   machine-wheel.js
+ticket-feed.js          table-intro.js
 08-dev-mode.js          home-cast.js            home-boot.js
 crt.js                  finishes.js             press-feel.js
 ```
@@ -94,9 +95,17 @@ The chip upgrade's physics world (docs/ui/CHIP_PLAN.md): every coin on the
 felt a body (arcs, spin, bounces, stacks, topples), pixel coins drawn by
 code, walls from the live table, bet-spot/pot zones, ten procedural sound
 sets. Exposes `window.CoinWorld`; does nothing at load. Built in
-`chip-throw-lab.html`, which runs on it. In the game from integration step
-1 (loaded, not yet called); later steps wire bets, the sweep, payouts and
-the bank to it.
+`chip-throw-lab.html`, which runs on it.
+
+`js/coin-table.js` is the game's side (`CoinTable`, presentation only):
+lays the pot tray, bet spots and walls over the live table; throws every
+bet and blind onto its spot (`applyAction`/`postBlind`); sweeps spots into
+the tray (`advancePhase`, `handleFoldWin`, `handleShowdown`); pays winners
+(`payoutTo`, and the pot smash's burst in `runPotBreakPhysics`); owns your
+bank as a coin rack in `#hud-left` (`renderBank`,
+`rebuildBankPileFromState`, the table intro's bank load); plays the
+`settings.coinSound` set. Every hook is behind `coinTableOn()`
+(05-game-engine.js); `COIN_TABLE_ON=false` restores the old chip piles.
 
 ## `js/07-ui-wiring.js` (~2,000 lines)
 

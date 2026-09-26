@@ -307,6 +307,8 @@ const TableIntro = (() => {
     const human = game.players.find(p => p.isHuman);
     const tower = $('hud-tower');
     if (!human || !tower) return [];
+    // the gold-coin rack (js/coin-table.js) fills itself through the hatch
+    if (coinTableOn()){ CoinTable.loadBank(); return []; }
     resetPile(tower, bankPile());
     const n = visualChipCount(human.chips);
     for (let i = 0; i < n; i++) createRestingChip(tower, bankPile());
@@ -371,7 +373,8 @@ const TableIntro = (() => {
     const human = g.players.find(p => p.isHuman);
     const tower = $('hud-tower');
     if (human && tower){
-      if ((tower._chipCount || 0) !== visualChipCount(human.chips)) buildBankStacks();
+      if (coinTableOn()) CoinTable.renderBank();
+      else if ((tower._chipCount || 0) !== visualChipCount(human.chips)) buildBankStacks();
       tower.querySelectorAll('.ti-stack-drop').forEach(el => el.classList.remove('ti-stack-drop'));
       updateJackpot(human.chips);
     }
