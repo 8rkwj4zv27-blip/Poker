@@ -1,0 +1,338 @@
+/* ============================================================
+   ENEMY CARDS, ROUND 2 — ORDER FORM CANDIDATES (css)
+   Injected by enemy-card-lab.html with js/enemy-card.js. NOT loaded by
+   the game. Every rule is gated on a data-ec-* attribute on <html>, so
+   with no order set the table is exactly V1.
+
+   --ec-own   the seat's face colour (set per seat by the script)
+   ============================================================ */
+
+/* ---------------- CABINET: painted ---------------- */
+[data-ec-cabinet="painted"] .seat:not(.you):not(.winner) .seat-card{
+  --ec-rivet:color-mix(in srgb,var(--ec-own) 80%,white);
+  border-color:color-mix(in srgb,var(--ec-own) 45%,var(--machine-case-lo));
+  background:
+    linear-gradient(var(--ec-rivet) 0 0) top 3px left 3px / 2px 2px no-repeat,
+    linear-gradient(var(--ec-rivet) 0 0) top 3px right 3px / 2px 2px no-repeat,
+    linear-gradient(var(--ec-rivet) 0 0) bottom 3px left 3px / 2px 2px no-repeat,
+    linear-gradient(var(--ec-rivet) 0 0) bottom 3px right 3px / 2px 2px no-repeat,
+    repeating-conic-gradient(rgba(255,255,255,.035) 0 25%,transparent 0 50%) 0 0/6px 6px,
+    color-mix(in srgb,var(--ec-own) 30%,var(--machine-case));
+  box-shadow:0 6px 0 color-mix(in srgb,var(--ec-own) 42%,#0b0806),0 10px 0 rgba(0,0,0,.42),
+    inset 2px 2px 0 color-mix(in srgb,var(--machine-case-hi) 62%,transparent),
+    inset -2px -2px 0 rgba(0,0,0,.34);
+}
+[data-ec-cabinet="painted"] .seat:not(.you):not(.winner) .seat-name{
+  box-shadow:inset 0 3px 0 rgba(0,0,0,.48), inset 0 -2px 0 var(--ec-own);
+}
+/* with no rim light ordered, their turn is still V1's gold border */
+[data-ec-cabinet="painted"]:not([data-ec-rim]) .seat.active:not(.you) .seat-card{ border-color:var(--accent); }
+
+/* ---------------- READOUT: two-line CRT ---------------- */
+.ec-read{ display:none; }
+[data-ec-readout] .seat:not(.you) .action-slot{ display:none; }
+[data-ec-readout] .seat:not(.you) .ec-read{ display:block; width:100%; margin-top:2px; }
+.ec-glass{
+  --crt-line-size:7px;
+  display:flex; flex-direction:column; align-items:center; justify-content:center; gap:1px;
+  height:23px; box-sizing:border-box; padding:1px 2px;
+}
+.ec-glass .crt-line{ line-height:1.2; letter-spacing:.02em; }
+.ec-glass .ec-a:empty{ display:none; }
+.ec-read[data-act="empty"] .ec-glass{ --crt-text:color-mix(in srgb,var(--crt-ink-info) 40%,#000); }
+.ec-read[data-act="fold"] .ec-glass{ --crt-text:color-mix(in srgb,var(--crt-ink-danger) 70%,#000); }
+.ec-glass.ec-blip{ animation:ecBlip .3s steps(3,end); }
+@keyframes ecBlip{ 0%{ filter:brightness(2.1); } 60%{ filter:brightness(1.3); } 100%{ filter:none; } }
+.seat.folded .ec-read{ opacity:1; }
+.felt.opponents-5 .ec-glass{ --crt-line-size:6.5px; height:22px; }
+.felt.opponents-6 .ec-glass{ --crt-line-size:6px; height:21px; padding:1px; }
+
+/* ---------------- HOLE CARDS: out of the box, tucked under its edge ----------------
+   js moves the card row out of .seat-card to the seat itself, behind the
+   cabinet; only a strip shows under the bottom edge. At showdown (the
+   seat's cards are revealed) they slide all the way out. */
+[data-ec-cards] .seat:not(.you) .seat-card{ z-index:2; }
+.seat:not(.you) > .seat-cards.ec-out{
+  --ec-ch:46px; --ec-peek:22px;
+  position:absolute; left:50%; bottom:calc(var(--ec-peek) * -1); z-index:1;
+  display:flex; gap:2px; margin:0; height:var(--ec-ch); zoom:1;
+  transform:translateX(-50%);
+  filter:drop-shadow(0 2px 0 rgba(0,0,0,.4));
+  transition:bottom .3s steps(6,end), opacity .25s steps(3,end);
+}
+.seat:not(.you) > .seat-cards.ec-out .card.small{ width:32px; height:46px; border-radius:2px; }
+.seat:not(.you) > .seat-cards.ec-out .card.small .r{ font-size:11px; }
+.seat:not(.you) > .seat-cards.ec-out .card.small .s{ font-size:8px; }
+.seat:not(.you) > .seat-cards.ec-out .card.small .pip{ font-size:13px; }
+.felt.opponents-5 .seat:not(.you) > .seat-cards.ec-out,
+.felt.opponents-6 .seat:not(.you) > .seat-cards.ec-out{ --ec-ch:36px; --ec-peek:18px; }
+.felt.opponents-5 .seat:not(.you) > .seat-cards.ec-out .card.small,
+.felt.opponents-6 .seat:not(.you) > .seat-cards.ec-out .card.small{ width:25px; height:36px; }
+.felt.opponents-5 .seat:not(.you) > .seat-cards.ec-out .card.small .r,
+.felt.opponents-6 .seat:not(.you) > .seat-cards.ec-out .card.small .r{ font-size:9px; }
+.felt.opponents-5 .seat:not(.you) > .seat-cards.ec-out .card.small .pip,
+.felt.opponents-6 .seat:not(.you) > .seat-cards.ec-out .card.small .pip{ font-size:10px; }
+/* fanned: the pair splays from under the edge */
+[data-ec-cards="fan"] .seat:not(.you) > .seat-cards.ec-out{ gap:0; }
+[data-ec-cards="fan"] .seat:not(.you) > .seat-cards.ec-out .card:first-child{ transform:rotate(-11deg) translate(2px,-1px); transform-origin:50% 0; }
+[data-ec-cards="fan"] .seat:not(.you) > .seat-cards.ec-out .card:last-child{ transform:rotate(11deg) translate(-2px,-1px); transform-origin:50% 0; }
+/* showdown: out all the way, straight */
+.seat.ec-shown:not(.you) > .seat-cards.ec-out{ bottom:calc((var(--ec-ch) + 5px) * -1); }
+[data-ec-cards="fan"] .seat.ec-shown:not(.you) > .seat-cards.ec-out{ gap:2px; }
+[data-ec-cards="fan"] .seat.ec-shown:not(.you) > .seat-cards.ec-out .card{ transform:none; }
+
+/* ---------------- FOLD: the cards go in ---------------- */
+[data-ec-fold="in"] .seat.folded:not(.you) > .seat-cards.ec-out{ bottom:0; opacity:0; }
+[data-ec-fold="in"] .seat.folded:not(.you) .seat-card .seat-cards{ transform:translateY(-12px); opacity:0; transition:transform .25s steps(4,end), opacity .25s steps(3,end); }
+[data-ec-fold="in"] .seat.folded:not(.you) .seat-card{ filter:saturate(.62) brightness(.86); }
+
+/* ---------------- THE COIN SLOT ---------------- */
+.ec-slot{ display:none; }
+[data-ec-slot] .seat:not(.you) .ec-slot{ display:block; position:relative; width:100%; height:8px; margin-top:1px; }
+.ec-mouth{
+  position:absolute; left:20%; right:20%; top:2px; height:4px; border-radius:1px;
+  background:#050404;
+  box-shadow:inset 0 2px 0 #000, 0 -1px 0 rgba(0,0,0,.5), 0 1px 0 rgba(255,255,255,.14);
+}
+.ec-slot.is-open .ec-mouth{
+  background:linear-gradient(#1a1204,#5c3f0c);
+  box-shadow:inset 0 2px 0 #000, 0 1px 0 rgba(255,255,255,.2), 0 0 7px color-mix(in srgb,var(--pc-lamp-amber) 70%,transparent);
+  animation:ecSlotGlint .5s steps(2,end) infinite;
+}
+@keyframes ecSlotGlint{ 50%{ filter:brightness(1.6); } }
+.ec-door{ display:none; }
+/* hatch: two little doors over the mouth that part when coins pass */
+[data-ec-slot="hatch"] .ec-slot{ height:10px; }
+[data-ec-slot="hatch"] .ec-mouth{ top:2px; height:6px; left:16%; right:16%; }
+[data-ec-slot="hatch"] .ec-door{
+  display:block; position:absolute; top:2px; height:6px; width:34%; z-index:2;
+  background:color-mix(in srgb,var(--ec-own,#777) 38%,var(--machine-case-hi));
+  border:1px solid #0b0806; box-sizing:border-box;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.3), inset 0 -1px 0 rgba(0,0,0,.35);
+  transition:transform .16s steps(3,end);
+}
+[data-ec-slot="hatch"] .ec-door.ec-l{ left:16%; }
+[data-ec-slot="hatch"] .ec-door.ec-r{ right:16%; }
+[data-ec-slot="hatch"] .ec-slot.is-open .ec-door.ec-l{ transform:translateX(-78%); }
+[data-ec-slot="hatch"] .ec-slot.is-open .ec-door.ec-r{ transform:translateX(78%); }
+/* cup: a coin-return cup sunk into the base */
+[data-ec-slot="cup"] .ec-slot{ height:11px; }
+[data-ec-slot="cup"] .ec-mouth{
+  top:1px; height:9px; left:24%; right:24%; border-radius:0 0 7px 7px;
+  background:linear-gradient(#030303,#1c1612);
+  box-shadow:inset 0 3px 0 #000, inset 2px 0 0 rgba(0,0,0,.6), inset -2px 0 0 rgba(0,0,0,.6), 0 1px 0 rgba(255,255,255,.16), 0 -2px 0 color-mix(in srgb,var(--ec-own,#777) 35%,#0b0806);
+}
+
+/* ---------------- RIM LIGHT ----------------
+   A lamp tube laid over the cabinet's own 2px border: no extra footprint.
+   Dark (unlit) at rest, lit by the seat's state (js sets data-rim). */
+[data-ec-rim] .seat:not(.you) .seat-card{ --ec-lamp:#1c1712; --ec-glow:0px; --ec-glow-a:0%; }
+[data-ec-rim] .seat:not(.you) .seat-card::after{
+  content:''; position:absolute; inset:-2px; z-index:5; pointer-events:none; box-sizing:border-box;
+  border:2px solid var(--ec-lamp); border-radius:var(--radius);
+  filter:drop-shadow(0 0 var(--ec-glow) color-mix(in srgb,var(--ec-lamp) var(--ec-glow-a),transparent));
+}
+/* V1's own turn and win rings step aside for the lamp */
+[data-ec-rim] .seat.active:not(.you) .seat-card{ box-shadow:0 6px 0 var(--machine-case-lo),0 10px 0 rgba(0,0,0,.42),inset 2px 2px 0 color-mix(in srgb,var(--machine-case-hi) 62%,transparent),inset -2px -2px 0 rgba(0,0,0,.34); }
+[data-ec-rim] .seat.winner:not(.you) .seat-card{ box-shadow:0 5px 0 color-mix(in srgb,var(--pc-lamp-amber) 58%,black),0 9px 0 rgba(0,0,0,.4); }
+[data-ec-rim][data-ec-cabinet="painted"] .seat.active:not(.you) .seat-card{ box-shadow:0 6px 0 color-mix(in srgb,var(--ec-own) 42%,#0b0806),0 10px 0 rgba(0,0,0,.42),inset 2px 2px 0 color-mix(in srgb,var(--machine-case-hi) 62%,transparent),inset -2px -2px 0 rgba(0,0,0,.34); }
+
+/* own colour: the tube glows faintly in the seat's colour at rest */
+[data-ec-rim="own"] .seat:not(.you) .seat-card,
+[data-ec-rim="ownall"] .seat:not(.you) .seat-card{ --ec-lamp:color-mix(in srgb,var(--ec-own) 55%,#0b0806); --ec-glow:3px; --ec-glow-a:35%; }
+
+/* the states */
+[data-ec-rim] .seat:not(.you) .seat-card[data-rim="turn"],
+[data-ec-rim] .seat:not(.you) .seat-card[data-rim="think"],
+[data-ec-rim] .seat:not(.you) .seat-card[data-rim="flash"]{ --ec-lamp:var(--pc-lamp-amber); --ec-glow:8px; --ec-glow-a:90%; }
+[data-ec-rim="ownall"] .seat:not(.you) .seat-card[data-rim="turn"],
+[data-ec-rim="ownall"] .seat:not(.you) .seat-card[data-rim="think"],
+[data-ec-rim="ownall"] .seat:not(.you) .seat-card[data-rim="flash"]{ --ec-lamp:color-mix(in srgb,var(--ec-own) 82%,white); }
+[data-ec-rim] .seat:not(.you) .seat-card[data-rim="next"]{ --ec-lamp:color-mix(in srgb,var(--pc-lamp-amber) 45%,#0b0806); --ec-glow:0px; }
+[data-ec-rim="ownall"] .seat:not(.you) .seat-card[data-rim="next"]{ --ec-lamp:color-mix(in srgb,var(--ec-own) 70%,#0b0806); }
+[data-ec-rim] .seat:not(.you) .seat-card[data-rim="win"]{ --ec-lamp:var(--pc-lamp-amber-hi); --ec-glow:12px; --ec-glow-a:95%; }
+[data-ec-rim] .seat:not(.you) .seat-card[data-rim="allin"]{ --ec-lamp:var(--danger); --ec-glow:9px; --ec-glow-a:90%; }
+[data-ec-rim] .seat:not(.you) .seat-card[data-rim="fold"]{ --ec-lamp:#120f0c; --ec-glow:0px; }
+[data-ec-rim] .seat:not(.you) .seat-card[data-rim="out"]{ --ec-lamp:var(--danger); --ec-glow:6px; --ec-glow-a:80%; }
+
+/* motion: every change switches on with the dashboard's relay click;
+   thinking breathes, a bet flashes, all in pulses, out flickers dark */
+[data-ec-rim] .seat:not(.you) .seat-card.ec-relay::after{ animation:dashRelay .32s steps(1,end); }
+[data-ec-rim] .seat:not(.you) .seat-card[data-rim="think"]:not(.ec-relay)::after{ animation:ecBreathe 1.4s steps(4,end) infinite; }
+[data-ec-rim] .seat:not(.you) .seat-card[data-rim="flash"]:not(.ec-relay)::after{ animation:ecFlash .5s steps(2,end) forwards; }
+[data-ec-rim] .seat:not(.you) .seat-card[data-rim="allin"]:not(.ec-relay)::after{ animation:dashPulse 1s steps(1,end) infinite; }
+[data-ec-rim] .seat:not(.you) .seat-card[data-rim="out"]::after{ animation:dashFlickOut 1.1s steps(1,end) forwards; }
+@keyframes ecBreathe{ 0%,100%{ opacity:1; } 50%{ opacity:.45; } }
+@keyframes ecFlash{ 0%{ opacity:1; filter:brightness(1.6) drop-shadow(0 0 10px var(--pc-lamp-amber-hi)); } 100%{ opacity:1; } }
+
+/* ---------------- NEXT TO ACT: a pip on the name plate ---------------- */
+[data-ec-next="pip"] .seat:not(.you) .seat-name{ position:relative; }
+.seat:not(.you) .seat-card.ec-is-next .seat-name::after{
+  content:''; position:absolute; right:3px; top:50%; width:4px; height:4px; margin-top:-2px;
+  background:var(--pc-lamp-amber); border:1px solid #0b0806;
+  box-shadow:0 0 5px color-mix(in srgb,var(--pc-lamp-amber) 70%,transparent);
+  animation:ecPip 1.2s steps(1,end) infinite;
+}
+@keyframes ecPip{ 60%{ opacity:.25; } }
+
+/* ---------------- STACK GAUGE ---------------- */
+.ec-gauge{ display:none; }
+[data-ec-gauge] .seat:not(.you) .seat-chips{ position:relative; padding-bottom:5px; }
+[data-ec-gauge] .seat:not(.you) .ec-gauge{
+  display:block; position:absolute; left:4px; right:4px; bottom:2px; height:2px;
+  background:rgba(0,0,0,.65); box-shadow:0 0 0 1px rgba(0,0,0,.35);
+}
+.ec-gauge b{ display:block; height:100%; width:var(--v,0%); background:var(--accent); transition:width .4s steps(6,end); }
+.ec-gauge.is-short b{ background:var(--danger); animation:ecPip .9s steps(1,end) infinite; }
+
+/* ---------------- BET SQUARES on the felt ---------------- */
+.ec-square{ display:none; }
+[data-ec-squares] .felt .ec-square{ display:block; position:absolute; z-index:1; pointer-events:none; border-radius:2px; }
+[data-ec-squares="faint"] .felt .ec-square{ background:rgba(0,0,0,.13); }
+[data-ec-squares="pressed"] .felt .ec-square{
+  background:rgba(0,0,0,.15);
+  box-shadow:inset 0 2px 0 rgba(0,0,0,.28), inset 2px 0 0 rgba(0,0,0,.12), inset 0 -1px 0 rgba(255,255,255,.06);
+}
+[data-ec-squares="stitched"] .felt .ec-square{
+  background:rgba(0,0,0,.12);
+  outline:1px dashed rgba(255,255,255,.14); outline-offset:-3px;
+}
+
+/* ---------------- BLIND PUCKS ----------------
+   Wider and flatter than a coin: a disc face on a thin edge. */
+[data-ec-blinds] .seat .pos-btn{ display:none !important; }
+.ec-puck{ position:absolute; z-index:5; width:26px; height:18px; margin:-9px 0 0 -13px; pointer-events:none; will-change:transform; }
+.ec-puck i{
+  position:absolute; left:0; right:0; top:0; height:13px; box-sizing:border-box;
+  border:2px solid #0b0806; border-radius:50%;
+  background:var(--ec-puck-face);
+  box-shadow:0 2px 0 var(--ec-puck-edge), 0 4px 0 #0b0806, 0 6px 3px rgba(0,0,0,.35), inset 0 2px 0 rgba(255,255,255,.4), inset 0 -2px 0 rgba(0,0,0,.18);
+}
+.ec-puck b{
+  position:absolute; left:0; right:0; top:3px; text-align:center;
+  font-family:var(--font-hdr); font-size:6px; line-height:1; letter-spacing:0; font-weight:400;
+  color:var(--ec-puck-ink);
+}
+.ec-puck.ec-sb{ --ec-puck-face:#D9534A; --ec-puck-edge:#8A2922; --ec-puck-ink:#FFF3DC; }
+.ec-puck.ec-bb{ --ec-puck-face:#EAC04A; --ec-puck-edge:#9A6E12; --ec-puck-ink:#2A1A06; }
+
+/* ---------------- THE FILE ---------------- */
+.ec-back, .ec-tab{ display:none; }
+/* the file's content, on a CRT (flip, drawer) or on paper (index card) */
+.ec-file-head{ display:flex; justify-content:space-between; align-items:baseline; gap:3px; padding:0 1px 2px; font-family:var(--font-hdr); text-transform:uppercase; }
+.ec-file-head b{ font-size:6px; font-weight:400; color:var(--ink,#F3E6C4); letter-spacing:.02em; }
+.ec-file-head small{ font-size:5px; color:color-mix(in srgb,var(--ec-own,#B69A7A) 70%,white); letter-spacing:.06em; }
+.ec-file-glass{ --crt-line-size:5px; --crt-caption-size:5px; --crt-fig:6px; display:flex; flex-direction:column; gap:2px; padding:3px 2px; }
+.ec-gauge-dial{ position:relative; height:21px; }
+.ec-gauge-dial svg{ display:block; width:36px; height:21px; margin:0 auto; overflow:visible; }
+.ec-gauge-dial .ec-arc{ fill:none; stroke:color-mix(in srgb,var(--crt-text) 45%,transparent); stroke-width:1; }
+.ec-gauge-dial .ec-ticks line{ stroke:color-mix(in srgb,var(--crt-text) 70%,transparent); stroke-width:1; }
+.ec-gauge-dial .ec-needle{ transform:rotate(var(--a)); transform-origin:20px 20px; transition:transform .6s cubic-bezier(.3,1.6,.4,1); }
+.ec-gauge-dial .ec-needle line{ stroke:var(--crt-ink-money); stroke-width:1.5; }
+.ec-gauge-dial .ec-hub{ fill:var(--crt-text); }
+.ec-gauge-dial.is-reading .ec-needle{ animation:ecReading 1.1s steps(6,end) infinite; }
+@keyframes ecReading{ 0%{ transform:rotate(-14deg); } 30%{ transform:rotate(9deg); } 55%{ transform:rotate(-4deg); } 80%{ transform:rotate(16deg); } 100%{ transform:rotate(-14deg); } }
+.ec-dial-l, .ec-dial-r{ position:absolute; bottom:-1px; font-size:4px; line-height:1; letter-spacing:0; color:color-mix(in srgb,var(--crt-text) 70%,#000); }
+.ec-dial-l{ left:0; } .ec-dial-r{ right:0; }
+.ec-file-row{ display:flex; flex-direction:column; align-items:center; gap:1px; }
+.ec-file-row .crt-caption{ font-size:4px; letter-spacing:.04em; }
+.ec-tallies{ display:flex; flex-wrap:wrap; justify-content:center; gap:2px; min-height:6px; }
+.ec-tally{ position:relative; display:inline-flex; gap:1px; height:6px; }
+.ec-tally b{ display:block; width:1px; height:6px; background:var(--crt-text); }
+.ec-tally s{ position:absolute; left:-1px; right:-1px; top:2px; height:1px; background:var(--crt-text); transform:rotate(-24deg); }
+.ec-tallies em{ font-size:4px; line-height:6px; }
+.ec-shown{ display:flex; align-items:center; gap:2px; }
+.ec-shown > span{ font-size:4px; line-height:1.1; max-width:26px; white-space:normal; text-align:left; }
+.ec-shown.is-none > span{ max-width:none; color:color-mix(in srgb,var(--crt-text) 55%,#000); }
+.ec-mini{ display:inline-flex; flex-direction:column; align-items:center; justify-content:center; width:10px; height:14px; background:#F3E6C4; border:1px solid #0b0806; border-radius:1px; color:#1a1208; text-shadow:none !important; }
+.ec-mini b{ font-size:5px !important; line-height:1; } .ec-mini i{ font-size:5px !important; line-height:1; font-style:normal; }
+.ec-mini.is-red{ color:#C2352C; }
+.ec-best{ font-size:6px !important; }
+
+/* FLIP: the card turns over; the file is on its back */
+[data-ec-file="flip"] .seat:not(.you) .seat-card.ec-flipped > *:not(.ec-back){ visibility:hidden; }
+[data-ec-file="flip"] .seat:not(.you) .seat-card.ec-flipped > .ec-back{
+  display:flex; flex-direction:column; position:absolute; inset:0; z-index:6; padding:3px; box-sizing:border-box; gap:2px;
+  background:inherit; border-radius:inherit;
+}
+[data-ec-file="flip"] .seat:not(.you) .seat-card.ec-flipped .ec-file-glass{ flex:1 1 auto; justify-content:space-around; }
+[data-ec-file="flip"] .seat.ec-file-open:not(.you) > .seat-cards.ec-out{ opacity:0; }
+
+/* DRAWER: a FILE tab under the card; the file slides out beneath it */
+[data-ec-file="drawer"] .seat:not(.you) .ec-tab{
+  display:block; position:absolute; z-index:4; right:5px; bottom:-9px; width:26px; height:10px; padding:0;
+  border:2px solid #0b0806; border-top:0; border-radius:0 0 3px 3px;
+  background:color-mix(in srgb,var(--ec-own,#B69A7A) 45%,var(--machine-case-hi));
+  font-family:var(--font-hdr); font-size:4px; line-height:8px; letter-spacing:.04em; color:#0b0806; cursor:pointer;
+  box-shadow:0 2px 0 rgba(0,0,0,.45);
+}
+[data-ec-file="drawer"] .seat.ec-file-open:not(.you) .ec-tab{ visibility:hidden; }
+
+/* the layer the drawer and the index card float in (above the coins);
+   each is clipped at its card's bottom edge and slides down out of it */
+#ec-files{ position:absolute; inset:0; z-index:40; pointer-events:none; }
+.ec-clip{ position:absolute; height:190px; overflow:hidden; pointer-events:auto; }
+.ec-clip > *{ transform:translateY(-102%); transition:transform .3s steps(6,end); }
+.ec-clip.is-open > *{ transform:none; }
+.ec-drawer{ padding:0; }
+.ec-drawer-in{
+  box-sizing:border-box; height:136px; padding:4px 3px 3px;
+  display:flex; flex-direction:column; gap:2px;
+  background:color-mix(in srgb,var(--ec-own,#777) 26%,var(--machine-case));
+  border:2px solid #0b0806; border-top:0; border-radius:0 0 3px 3px;
+  box-shadow:inset 0 4px 0 rgba(0,0,0,.45), 0 4px 0 rgba(0,0,0,.4);
+}
+.ec-drawer-in .ec-file-glass{ flex:1 1 auto; justify-content:space-around; }
+.ec-drawer-in .ec-gauge-dial, .seat-card .ec-back .ec-gauge-dial{ margin-bottom:2px; }
+.ec-drawer-in::after{ content:'FILE'; align-self:flex-end; margin:1px 2px 0 0; font-family:var(--font-hdr); font-size:4px; color:color-mix(in srgb,var(--ec-own,#B69A7A) 60%,white); }
+
+/* INDEX CARD: a cream file card, typed up */
+.ec-index{
+  box-sizing:border-box; padding:5px 7px 7px;
+  background:
+    linear-gradient(#C8483E 0 0) 0 17px / 100% 1px no-repeat,
+    repeating-linear-gradient(180deg,transparent 0 12px,rgba(70,110,160,.22) 12px 13px) 0 18px / 100% calc(100% - 18px) no-repeat,
+    #F3E6C4;
+  border:2px solid #0b0806; border-top:0; border-radius:0 0 2px 2px; color:#2A1A0E;
+  box-shadow:0 4px 0 rgba(0,0,0,.45);
+  font-family:var(--font-hdr); text-transform:uppercase;
+}
+.ec-index .ec-file-head b{ font-size:7px; color:#2A1A0E; }
+.ec-index .ec-file-head small{ font-size:5px; color:#8A2922; }
+.ec-paper.ec-file-glass{ --crt-text:#2A1A0E; --crt-ink-money:#8A2922; display:flex; flex-direction:column; gap:4px; padding:4px 0 0; }
+.ec-paper .crt-caption{ font-size:5px; color:#6A5238; letter-spacing:.04em; white-space:nowrap; }
+.ec-paper .ec-gauge-dial{ height:25px; margin-bottom:3px; }
+.ec-paper .ec-gauge-dial svg{ width:44px; height:25px; }
+.ec-paper .ec-dial-l, .ec-paper .ec-dial-r{ font-size:5px; color:#6A5238; bottom:1px; }
+.ec-paper .ec-file-row{ flex-direction:row; justify-content:space-between; align-items:center; min-height:12px; }
+.ec-paper .ec-shown > span{ font-size:5px; max-width:none; white-space:nowrap; }
+.ec-paper .ec-tallies em, .ec-paper .ec-best{ font-size:7px !important; }
+.ec-paper .ec-best{ color:#8A2922; font-weight:400; }
+.ec-paper .ec-tally b, .ec-paper .ec-tally s{ background:#2A1A0E; }
+.ec-paper .ec-mini{ width:11px; height:15px; }
+.ec-paper .ec-mini b, .ec-paper .ec-mini i{ font-size:6px !important; }
+
+/* the open seat stands in front of its neighbours */
+[data-ec-file] .seat.ec-file-open:not(.you){ z-index:12; }
+[data-ec-file] .seat:not(.you) .seat-card{ cursor:pointer; }
+
+/* ---------------- CABINET MOVES ---------------- */
+[data-ec-moves] .seat:not(.you) .seat-card.ec-knock{ animation:ecKnock .42s steps(1,end); }
+@keyframes ecKnock{ 0%{ transform:translateY(0); } 8%{ transform:translateY(2px); } 20%{ transform:translateY(0); } 36%{ transform:translateY(2px); } 48%,100%{ transform:translateY(0); } }
+[data-ec-moves="both"] .seat:not(.you) .seat-card.ec-shudder{ animation:ecShudder .5s steps(1,end); }
+@keyframes ecShudder{ 0%{ transform:none; } 10%{ transform:translate(-3px,1px); } 20%{ transform:translate(3px,-1px); } 32%{ transform:translate(-2px,0); } 44%{ transform:translate(2px,1px); } 58%{ transform:translate(-1px,0); } 70%,100%{ transform:none; } }
+
+/* ---------------- FACE SIZE ---------------- */
+[data-ec-face="95"] .seat:not(.you) .avatar-wrap{ width:calc(var(--avatar-w,52px) * .95); height:calc(var(--avatar-w,52px) * .95); }
+[data-ec-face="90"] .seat:not(.you) .avatar-wrap{ width:calc(var(--avatar-w,52px) * .9); height:calc(var(--avatar-w,52px) * .9); }
+
+/* ---------------- reduced motion ---------------- */
+body[data-motion="off"] .ec-glass.ec-blip,
+body[data-motion="off"] .seat-card::after{ animation:none !important; }
+body[data-motion="off"] .seat:not(.you) > .seat-cards.ec-out,
+body[data-motion="off"] .ec-clip > *,
+body[data-motion="off"] .ec-door{ transition:none !important; }
+@media (prefers-reduced-motion:reduce){
+  .ec-glass.ec-blip, .ec-gauge-dial .ec-needle, .ec-slot.is-open .ec-mouth{ animation:none !important; }
+  .seat:not(.you) > .seat-cards.ec-out, .ec-clip > *, .ec-door{ transition:none !important; }
+}

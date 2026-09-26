@@ -263,6 +263,25 @@ COPY SETTINGS gives the owner's picks as text; the settings live in the
 URL hash. Since v0.40.7 (release 2) its TODAY is the shipped layout, with a
 BEFORE preset for the table as it was. Not loaded by the game.
 
+## `enemy-card-lab.html` + `js/enemy-card-lab.js` + `css/enemy-card-lab.css` + candidate `css/enemy-card.css` / `js/enemy-card.js` — Enemy Cards order form, round 2 (Lab)
+
+The opponents' seat cards and their places on the felt. Runs the **real
+game** sandboxed at the owner's phone (430 x 932, safe areas rewritten to
+59px / 34px as in `table-space-lab.html`, whose chrome it shares) with the
+two candidate files injected; options are `data-ec-*` attributes on the
+game's `<html>`, set by `EnemyCard.apply()`. Jobs: cabinet, name, two-line
+readout, hole cards tucked under the card, coin slot, face size, rim light
+(and what it reacts to), next-to-act, stack gauge, bet squares on the felt
+(yours too), SB/BB pucks on the felt, cabinet moves, fold, and the
+player's file (flip / drawer / index card; the drawer and index card float
+in `#ec-files` above the coin world). The candidate only reads state
+(wraps `render()`, `applyAction()`, `finishHand()`, `initSeats()` and
+`CoinTable.bet/payout/layout`). The coin slot needs a seam the game
+doesn't have: the lab copy loads `coin-table.js` patched so
+`edgeSource(p)` asks `window.EC_SOURCE(p)` first; the real file is
+unchanged. Shows each card's footprint against V1 at the same table.
+Not loaded by the game.
+
 ## `js/finishes.js` + `css/finishes.css` — Finishes menu (live)
 
 Settings → Finishes: a page inside the Settings sheet that swaps each
@@ -320,7 +339,7 @@ there manually.
 Files matching `*-lab.html`, `*-lab.js`, `*-lab.css` (`career-lab`,
 `career-hub-v2-lab`, `ticket-lab`, `card-flight-options`, `card-turn-lab`,
 `chip-motion-lab`, `chip-lab`, `chip-throw-lab`, `design-lab`, `result-stage-lab`, `showdown-rail-lab`, `crt-lab`, `dashboard-v2-lab`, `dashboard-order-lab`,
-`wheel-v2-lab`, `intro-lab`, `boot-lab`, `slot-lab`, `table-space-lab`)
+`wheel-v2-lab`, `intro-lab`, `boot-lab`, `slot-lab`, `table-space-lab`, `enemy-card-lab`)
 are **isolated visual references and prototyping sandboxes**. Several are
 committed permanently as durable references even after their feature
 shipped. Rules:
