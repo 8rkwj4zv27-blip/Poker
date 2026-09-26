@@ -1035,7 +1035,7 @@ function takeChipFromPile(container, pile, measuredRects){
 function paintPotValue(){
   const g = game, val = $('pot-val'), pile = $('pot-stacks');
   if (!g || !val) return;
-  const coins = coinTableOn();
+  const coins = (typeof coinTableOn==="function" && coinTableOn());
   const chips = coins ? CoinTable.potCoins() : (pile ? (pile._chipCount||0) : 0);
   let shown = coins ? CoinTable.shownPot() : g.pot;
   if (g.pot > 0 && coins){
@@ -1098,7 +1098,7 @@ function bootstrapPile(container, pile, amount){
   for (let i=0;i<n;i++){ createRestingChip(container, pile); }
 }
 function renderBank(){
-  if (coinTableOn()){ CoinTable.renderBank(); return; }
+  if ((typeof coinTableOn==="function" && coinTableOn())){ CoinTable.renderBank(); return; }
   const p = game && game.players.find(x=>x.isHuman);
   const container = $('hud-tower');
   if (!container || !p) return;
@@ -1110,7 +1110,7 @@ function renderBank(){
   }
 }
 function renderPot(){
-  if (coinTableOn()) return;          // the coin tray owns the pot's look
+  if ((typeof coinTableOn==="function" && coinTableOn())) return;          // the coin tray owns the pot's look
   const g = game;
   const container = $('pot-stacks');
   if (!container || !g) return;
@@ -1132,7 +1132,7 @@ function renderPot(){
    rebuild regardless of whatever transient DOM state physics left
    behind. */
 function rebuildBankPileFromState(){
-  if (coinTableOn()){ CoinTable.rebuildBank(); return; }
+  if ((typeof coinTableOn==="function" && coinTableOn())){ CoinTable.rebuildBank(); return; }
   const human = game && game.players.find(p=>p.isHuman);
   const container = $('hud-tower');
   if (!container || !human) return;
@@ -1973,7 +1973,7 @@ function transferChips(n, src, dst, addPending, fast){
    completion Promise so callers can await every chip actually landing. */
 function payoutTo(winner, n){
   if (!n || n<=0) return Promise.resolve();
-  if (coinTableOn()) return CoinTable.payout(winner, n);
+  if ((typeof coinTableOn==="function" && coinTableOn())) return CoinTable.payout(winner, n);
   const potContainer = $('pot-stacks'), pPile = potPile();
   const e = seatEls[winner.id];
   const src = { container: potContainer, pile: pPile };
@@ -3006,7 +3006,7 @@ function runPhysicsAttractionPhase(chips, bounds, cardRects, bankContainer, bank
 async function runPotBreakPhysics(potN, impactPoint){
   if (!(potN>0)) return;
   // the gold-coin tray: your coins heave out of it into the hatch
-  if (coinTableOn() && CoinTable.potCoins()>0){ await CoinTable.payout(game.players.find(p=>p.isHuman), potN, { jackpot:true, fanfare:false }); return; }
+  if ((typeof coinTableOn==="function" && coinTableOn()) && CoinTable.potCoins()>0){ await CoinTable.payout(game.players.find(p=>p.isHuman), potN, { jackpot:true, fanfare:false }); return; }
   const potContainer = $('pot-stacks'), pPile = potPile();
   const bankContainer = $('hud-tower'), bankP = bankPile();
   potPending += potN; bankPending += potN;
@@ -3776,7 +3776,7 @@ function render(){
   // last chips are still draining out after g.pot has already dropped
   // to 0.
   renderPot();
-  const potShowing = coinTableOn()
+  const potShowing = (typeof coinTableOn==="function" && coinTableOn())
     ? (CoinTable.shownPot()>0 || CoinTable.potCoins()>0)
     : (g.pot>0 || (potContainer && (potContainer._chipCount||0)>0));
   if (potShowing){
@@ -4813,7 +4813,7 @@ async function runShowdownAwardSequence(potResults, contenders){
     totalByPlayer.set(s.id, (totalByPlayer.get(s.id)||0) + s.amount);
   }));
 
-  let remainingPile = coinTableOn() ? CoinTable.potCoins() : ($('pot-stacks')._chipCount || 0);
+  let remainingPile = (typeof coinTableOn==="function" && coinTableOn()) ? CoinTable.potCoins() : ($('pot-stacks')._chipCount || 0);
   const ids = [...totalByPlayer.keys()];
   const visualByPlayer = new Map();
   ids.forEach((id,k)=>{
