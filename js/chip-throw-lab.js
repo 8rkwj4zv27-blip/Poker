@@ -1187,30 +1187,76 @@
     $('ct-note').textContent=NOTES[OPT.preset];
     $('ct-preset-name').textContent=OPT.preset.toUpperCase();
   }
+  function setOpt(k,v){
+    if (k==='preset'){ OPT.preset=v; OPT.eased=false; Object.assign(OPT,PRESETS[v]); }
+    else { OPT[k]=k==='speed'?Number(v):v; if (!['speed','sound','random'].includes(k)){ OPT.preset='custom'; OPT.eased=false; } }
+    settings.sound=OPT.sound==='on';
+    syncPanel();
+    if (['source','preset','art','size','after'].includes(k)) setup();
+  }
   function wire(){
     document.querySelectorAll('.cl-seg').forEach(seg=>seg.addEventListener('click',ev=>{
       const b=ev.target.closest('button'); if (!b) return;
-      const k=seg.dataset.opt, v=b.dataset.v;
-      if (k==='preset'){ OPT.preset=v; OPT.eased=false; Object.assign(OPT,PRESETS[v]); }
-      else { OPT[k]=k==='speed'?Number(v):v; if (!['speed','sound','random'].includes(k)){ OPT.preset='custom'; OPT.eased=false; } }
-      settings.sound=OPT.sound==='on';
-      syncPanel();
-      if (['source','preset','art','size','after'].includes(k)) setup();
+      setOpt(seg.dataset.opt,b.dataset.v);
     }));
     document.querySelectorAll('[data-run]').forEach(b=>b.addEventListener('click',()=>run(b.dataset.run)));
     $('ct-gear').addEventListener('click',()=>{ const d=$('ct-drawer'); d.hidden=!d.hidden; $('ct-gear').classList.toggle('is-on',!d.hidden); });
     window.addEventListener('resize',()=>{ clearTimeout(wire.t); wire.t=setTimeout(()=>{ if (!busy) setup(); },300); });
   }
 
+  /* Desktop: the production table is built to fill a phone screen, so on
+     a wide window this page hosts itself in a phone-sized frame (scaled
+     to fit the window height) and keeps every trigger and option visible
+     beside it, driving the framed lab through its __chipThrowLab API. */
+  function desktop(){
+    document.body.classList.add('ct-desk-mode');
+    $('app').remove();
+    const wrap=document.createElement('div'); wrap.className='ct-desk';
+    const stage=document.createElement('div'); stage.className='ct-desk-stage';
+    const frame=document.createElement('iframe'); frame.className='ct-desk-frame'; frame.title='Chip Throw Lab table';
+    frame.setAttribute('allow','autoplay');
+    const u=new URL(location.href); u.searchParams.set('embed','1'); frame.src=u.toString();
+    stage.appendChild(frame);
+    const side=document.createElement('div'); side.className='ct-desk-side';
+    const hint=document.createElement('p'); hint.className='ct-desk-hint';
+    hint.textContent='Phone-sized table on the left (scaled to fit). Tap the bank to tidy it; with MESS·TAP, click the felt.';
+    const bar=document.querySelector('.ct-bar'), drawer=$('ct-drawer');
+    drawer.hidden=false; $('ct-gear').hidden=true;
+    side.append(bar,drawer,hint);
+    wrap.append(stage,side); document.body.appendChild(wrap);
+    const fit=()=>{
+      const sc=Math.min(1,(innerHeight-24)/844,Math.max(.4,(innerWidth-440)/390));
+      stage.style.width=Math.round(390*sc)+'px'; stage.style.height=Math.round(844*sc)+'px';
+      frame.style.transform='scale('+sc+')';
+    };
+    fit(); addEventListener('resize',fit);
+    const api=()=>{ try{ return frame.contentWindow.__chipThrowLab; }catch(e){ return null; } };
+    side.addEventListener('click',ev=>{
+      const b=ev.target.closest('button'), a=api(); if (!b || !a) return;
+      if (b.dataset.run){ a.run(b.dataset.run); return; }
+      const seg=b.closest('.cl-seg');
+      if (seg){ a.set(seg.dataset.opt,b.dataset.v); Object.assign(OPT,a.OPT); syncPanel(); }
+    });
+    let synced=false;
+    setInterval(()=>{
+      const a=api(); if (!a) return;
+      if (!synced){ synced=true; Object.assign(OPT,a.OPT); syncPanel(); }
+      try{ status(frame.contentDocument.getElementById('ct-status').textContent); markBar(a.busy()?a.last():null); }catch(e){}
+    },200);
+  }
+
   async function init(){
     const q=new URLSearchParams(location.search);
+    const embed=q.get('embed')==='1';
+    if (embed) document.body.classList.add('ct-embed');
+    else if (window.matchMedia && matchMedia('(min-width:760px)').matches){ syncPanel(); desktop(); return; }
     if (q.get('preset') && PRESETS[q.get('preset')]){ OPT.preset=q.get('preset'); Object.assign(OPT,PRESETS[OPT.preset]); }
     Object.keys(OPT).forEach(k=>{ if (q.get(k) && k!=='preset') OPT[k]=k==='speed'?Number(q.get(k)):q.get(k); });
     await mountTable();
     syncPanel(); wire();
     await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));
     setup();
-    window.__chipThrowLab={ run, OPT, setup, busy:()=>busy, walls:()=>WALLS,
+    window.__chipThrowLab={ run, OPT, setup, set:setOpt, last:()=>lastRun, busy:()=>busy, walls:()=>WALLS,
       state:()=>({ bank:bank.chips.length, pot:zones.pot.list.length, potNeat:zones.pot.neat, active:active.size,
         air:air?air.querySelectorAll('.cl-chip').length:0, you:P[0].chips,
         spots:Object.keys(zones).filter(k=>k.startsWith('spot:')).map(k=>k.slice(5)+':'+zones[k].list.length).join(' ') }),

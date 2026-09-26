@@ -73,3 +73,21 @@
   animation:ctGlint .26s steps(3,end) forwards;
 }
 @keyframes ctGlint{ 0%{ transform:scale(.4); opacity:1; } 50%{ transform:scale(1.2); opacity:1; } 100%{ transform:scale(.6); opacity:0; } }
+
+/* ---------------- desktop: framed phone table + always-open controls ----------------
+   On a wide window the page hosts itself (?embed=1) in a 390x844 frame,
+   scaled to fit; inside the frame the phone layout applies unchanged. */
+.ct-embed .ct-bar,.ct-embed .ct-drawer{ display:none !important; }
+body.ct-desk-mode{ overflow:hidden; background:#0b0506; }
+.ct-desk{ display:flex; gap:22px; justify-content:center; align-items:center; height:100vh; padding:12px; box-sizing:border-box; }
+.ct-desk-stage{ position:relative; flex:0 0 auto; overflow:hidden; outline:3px solid #080405; box-shadow:0 0 0 6px #2a0f13,0 0 0 9px #8a6a26; background:#000; }
+.ct-desk-frame{ position:absolute; left:0; top:0; width:390px; height:844px; border:0; transform-origin:0 0; background:#000; }
+.ct-desk-side{ display:flex; flex-direction:column; gap:10px; width:390px; height:calc(100vh - 24px); min-height:0; }
+body.ct-desk-mode .ct-bar{ position:static; left:auto; right:auto; width:auto; padding:8px; border:3px solid #080405; box-shadow:none; }
+body.ct-desk-mode .ct-bar-row:first-child{ flex-wrap:wrap; overflow:visible; }
+body.ct-desk-mode .ct-bar button{ min-width:58px; }
+body.ct-desk-mode .ct-drawer,body.ct-desk-mode .ct-drawer[hidden]{
+  display:block; position:static; left:auto; right:auto; top:auto; bottom:auto; width:auto; max-height:none;
+  flex:1 1 auto; min-height:0; overflow:auto; border:3px solid #080405; box-shadow:none;
+}
+.ct-desk-hint{ margin:0; color:#b69a7a; font:400 10px/1.4 ui-monospace,Menlo,monospace; }
