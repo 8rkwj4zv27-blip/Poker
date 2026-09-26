@@ -705,10 +705,18 @@ async function startNewHand(){
     const target = Math.min(BLIND_LEVELS.length-1,
       firstLevel + Math.floor(g.handNumber / handsPerLevel));
     if (target !== g.blindLevel){
+      const was = [g.smallBlind, g.bigBlind], rose = target > g.blindLevel;
       g.blindLevel = target;
       g.smallBlind = BLIND_LEVELS[target][0];
       g.bigBlind = BLIND_LEVELS[target][1];
       logMsg('Blinds up — ' + g.smallBlind + ' / ' + g.bigBlind, true);
+      // BLINDS UP card between hands (never on a table's first hand, where
+      // the table intro's ticket already shows the blinds). Presentation
+      // only: the new blinds are already set above.
+      if (rose && g.handNumber > 0 && typeof TableIntro !== 'undefined' && TableIntro.blindsUp){
+        await TableIntro.blindsUp(was, [g.smallBlind, g.bigBlind]);
+        if (game !== g) return;
+      }
     }
     g.players.forEach(p=>{ if (p.chips<=0) p.eliminated = true; });
   } else if (g.mode === 'career-cash'){

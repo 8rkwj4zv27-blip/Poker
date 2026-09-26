@@ -133,3 +133,8 @@
   85%{ transform:translateY(-2px); }
   100%{ transform:none; }
 }
+
+/* ---- BLINDS UP: the same ticket between hands (TableIntro.blindsUp) ---- */
+.ch2-card.ti-ticket.ti-blinds{ height:176px; }
+.ti-blinds .ch2-card-front{ grid-template-rows:26px minmax(0,1fr) 30px 44px; }
+.ch2-card.ti-ticket.is-still{ transform:translate(-50%,-50%); }

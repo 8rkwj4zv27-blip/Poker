@@ -160,7 +160,9 @@ deal. Stepped lights; the event's own ticket (built from the Hub's
 `.ch2-card`/`.ch2-paper` venue styling) slides in from the right, holds,
 stamps ENTRY PAID, and leaves left; a clockwise seat roll call; the bank
 loads whole chip stacks through the hatch; pot tray + deck drop.
-Presentation only. `TableIntro.install()` wraps the table entry points
+Presentation only. `TableIntro.blindsUp()` sends the same ticket across
+between hands when the blinds rise (`startNewHand()` awaits it).
+`TableIntro.install()` wraps the table entry points
 (`startCareerEvent`, `continueCareerEvent`, `startCareerCashSession`,
 `startSinglePlayerRun`, `continueTable`, `startGame`) to arm it and
 `startNewHand` to play it before the first deal; it also absorbs the
@@ -258,7 +260,8 @@ world's tray and bet spots (`CoinWorld.zone` is wrapped so it re-runs after
 each `CoinTable.layout`). Meters measure the felt, the gaps between parts
 and the open felt against today. Presets TODAY / SAFE / MODERATE / BOLD;
 COPY SETTINGS gives the owner's picks as text; the settings live in the
-URL hash. Not loaded by the game.
+URL hash. Since v0.40.7 (release 2) its TODAY is the shipped layout, with a
+BEFORE preset for the table as it was. Not loaded by the game.
 
 ## `js/finishes.js` + `css/finishes.css` — Finishes menu (live)
 

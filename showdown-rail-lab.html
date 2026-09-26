@@ -75,16 +75,12 @@
        file:// page, so this exact production table shell is embedded for
        that launch path. Validation keeps it in lockstep with index.html. -->
   <template id="sdr-production-template">
-  <div id="table-screen" class="screen hidden">
+    <div id="table-screen" class="screen hidden">
     <div class="table-main">
       <div class="topbar">
         <div class="table-identity">
           <div class="brandmini">POKER</div>
           <div class="meta" id="table-meta">Hand 1</div>
-        </div>
-        <div class="table-tools">
-          <button class="table-save" id="save-progress" type="button">Save</button>
-          <button class="icon-btn table-settings" id="open-settings" aria-label="Settings">⚙</button>
         </div>
       </div>
       <div class="arcade-score-machine hidden" id="arcade-score-machine" aria-label="Score 0">
@@ -154,12 +150,9 @@
               <span class="instrument-label">Bet this hand</span>
               <div class="crt-screen crt" data-crt-quiet data-ink="money" id="hud-invested" role="img" aria-label="Bet this hand: 0">$000</div>
             </div>
-            <div class="hud-speaker" aria-hidden="true">
-              <i></i><i></i><i></i><i></i><i></i>
-              <i></i><i></i><i></i><i></i><i></i>
-              <i></i><i></i><i></i><i></i><i></i>
-              <i></i><i></i><i></i><i></i><i></i>
-            </div>
+            <!-- The table's settings key (the top bar is gone: table spacing
+                 pass, docs/ui/CHIP_PLAN.md). Same small key as before. -->
+            <button class="icon-btn table-settings" id="open-settings" aria-label="Settings">⚙</button>
             <div class="action-slot act-empty hidden" id="hud-action">–</div>
             <div class="pos-btn hidden" id="hud-pos"></div>
           </div>

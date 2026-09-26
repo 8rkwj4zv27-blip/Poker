@@ -31,79 +31,74 @@
      only matters with another choice. Ranges: [min, max, step, unit]. */
   const SECTIONS = [
     { title:'TOP OF THE SCREEN', rows:[
-      { k:'score', name:'SCORE BAR', today:'on', seg:[['on','SHOWN','Today: the SCORE row above the table.'],['off','GONE','Removed with the XP (agreed). The table grows into its row.']] },
-      { k:'top', name:'TOP BAR', hint:'POKER · hand · Save · settings', today:'today', seg:[
-        ['today','TODAY','Title, hand and blinds, SAVE and the settings key.'],
-        ['trim','TRIM','The same bar, shorter, sitting closer to the status bar.'],
-        ['gone','GONE','No bar. Hand and blinds are printed on the felt; the settings key moves (below); SAVE would move into the settings menu.']] },
-      { k:'topGap', name:'GAP UNDER STATUS BAR', today:14, range:[0,14,1,'px'], when:s => s.top !== 'today', note:'Space between the phone\'s clock row and the game.' },
+      { k:'top', name:'TOP BAR', hint:'POKER · hand · blinds', today:'gone', seg:[
+        ['gone','GONE','Today (v0.40.7): no bar. The settings key is in the dashboard, SAVE in the settings menu.'],
+        ['trim','TRIM','The bar back, shorter (title, hand and blinds only).'],
+        ['full','FULL','The bar back at its old size (title, hand and blinds only).']] },
+      { k:'topGap', name:'GAP UNDER STATUS BAR', today:0, range:[0,14,1,'px'], when:s => s.top !== 'full', note:'Space between the phone\'s clock row and the game.' },
       { k:'topH', name:'BAR HEIGHT', today:38, range:[26,38,1,'px'], when:s => s.top === 'trim' },
       { k:'gear', name:'SETTINGS KEY', today:'dash', when:s => s.top === 'gone', seg:[
         ['dash','DASHBOARD','In the right-hand bay, where the speaker grille is.'],
         ['felt','FELT CORNER','A small key on the bottom-right corner of the table.']] },
-      { k:'printY', name:'HAND · BLINDS PRINT', today:66, range:[50,96,1,'%'], when:s => s.top === 'gone', note:'Printed on the felt, like a casino table. Height on the table.' }
+      { k:'print', name:'HAND · BLINDS PRINT', today:'off', when:s => s.top === 'gone', seg:[['off','OFF','Today: nothing printed on the felt.'],['on','ON','Printed faintly on the felt, like a casino table.']] },
+      { k:'printY', name:'PRINT HEIGHT', today:66, range:[50,96,1,'%'], when:s => s.top === 'gone' && s.print === 'on' }
     ]},
     { title:'OPPONENTS', rows:[
       { k:'face', name:'FACE SIZE', today:100, range:[70,100,1,'%'] },
-      { k:'hole', name:'THEIR CARDS', today:100, range:[70,100,1,'%'], note:'The two cards under each opponent.' },
+      { k:'hole', name:'THEIR CARDS', today:95, range:[70,100,1,'%'], note:'The two cards under each opponent.' },
       { k:'rows', name:'NAME / STACK / ACTION ROWS', today:'today', seg:[['today','TODAY','Today\'s padding.'],['slim','SLIM','The same three rows with less padding.']] },
       { k:'action', name:'ACTION (CALL 40, FOLD…)', today:'row', seg:[
         ['row','OWN ROW','Today: its own row under the stack.'],
         ['name','IN NAME STRIP','Shows in the name strip while there is one; the name comes back on the next street. Saves a row.']] },
-      { k:'podY', name:'OPPONENT ROW HEIGHT', today:0, range:[-24,16,1,'px'], note:'Moves the opponents up (−) or down (+).' },
-      { k:'oppDrop', name:'THEIR BET SPOTS', today:0, range:[-10,30,1,'px'], note:'Where their coins land, further from their cards (+).' }
+      { k:'podY', name:'OPPONENT ROW HEIGHT', today:2, range:[-24,16,1,'px'], note:'Moves the opponents up (−) or down (+).' },
+      { k:'oppDrop', name:'THEIR BET SPOTS', today:0, range:[-20,30,1,'px'], note:'Where their coins land, further from their cards (+); 0 is today\'s spot.' }
     ]},
     { title:'MIDDLE OF THE TABLE', rows:[
-      { k:'boardY', name:'SHARED CARDS HEIGHT', today:57, range:[40,66,.5,'%'], note:'The five cards in the middle. Height on the table.' },
-      { k:'potY', name:'POT COUNTER HEIGHT', today:79, range:[60,92,.5,'%'], note:'The POT box. Height on the table.' },
+      { k:'boardY', name:'SHARED CARDS HEIGHT', today:53, range:[40,66,.5,'%'], note:'The five cards in the middle. Height on the table.' },
+      { k:'potY', name:'POT COUNTER HEIGHT', today:77.5, range:[60,92,.5,'%'], note:'The POT box. Height on the table.' },
       { k:'trayAt', name:'POT COINS', today:'above', seg:[
         ['above','ABOVE COUNTER','Today: the coins sit between the shared cards and the POT box.'],
         ['below','BELOW COUNTER','The POT box sits between the shared cards and the coins.']] },
       { k:'tray', name:'POT COIN AREA', today:'well', seg:[['well','ROUNDED','Today\'s rounded dark well.'],['box','RECTANGLE','A square-cornered printed box, matching the bet boxes.']] },
-      { k:'trayW', name:'POT COIN AREA WIDTH', today:200, range:[120,240,2,'px'] },
-      { k:'trayH', name:'POT COIN AREA DEPTH', today:58, range:[36,70,1,'px'] },
-      { k:'deckX', name:'DECK: ACROSS', today:27, range:[8,50,.5,'%'] },
-      { k:'deckY', name:'DECK: DOWN', today:89, range:[60,95,.5,'%'] },
+      { k:'trayW', name:'POT COIN AREA WIDTH', today:210, range:[120,240,2,'px'] },
+      { k:'trayH', name:'POT COIN AREA DEPTH', today:62, range:[36,70,1,'px'] },
+      { k:'deckX', name:'DECK: ACROSS', today:16, range:[8,50,.5,'%'] },
+      { k:'deckY', name:'DECK: DOWN', today:88.5, range:[60,95,.5,'%'] },
       { k:'deckS', name:'DECK SIZE', today:100, range:[60,100,1,'%'] }
     ]},
     { title:'BET SPOTS', rows:[
       { k:'boxes', name:'BET BOXES', today:'off', seg:[['off','OFF','Today: coins land on bare felt.'],['on','RECTANGLES','A printed rectangle where each player\'s bet lands.']] },
       { k:'boxW', name:'BOX WIDTH', today:46, range:[28,80,1,'px'], when:s => s.boxes === 'on' },
       { k:'boxH', name:'BOX HEIGHT', today:34, range:[22,56,1,'px'], when:s => s.boxes === 'on' },
-      { k:'you', name:'YOUR BET SPOT', today:'today', seg:[
-        ['today','TODAY','Right of the deck, low on the felt.'],
-        ['centre','ABOVE YOUR CARDS','Straight above your two cards.'],
-        ['right','RIGHT OF CARDS','Beside your cards, on the right.']] }
+      { k:'you', name:'YOUR BET SPOT', today:'centre', seg:[
+        ['centre','ABOVE YOUR CARDS','Today: straight above your two cards.'],
+        ['right','RIGHT OF CARDS','Beside your cards, on the right.'],
+        ['old','LOW RIGHT','Where it was before v0.40.7: right of the deck, low on the felt.']] }
     ]},
     { title:'DASHBOARD', rows:[
       { k:'readouts', name:'DASHBOARD READOUTS', today:'today', seg:[
         ['today','TODAY','Today\'s screens and spacing.'],
         ['compact','COMPACT','The same screens with less air around them, and no STACK label (as picked for Dashboard V2). Lets the dashboard get shorter without cutting anything off.']] },
       { k:'dockH', name:'DASHBOARD HEIGHT', today:181, range:[130,181,1,'px'], note:'Bank, hand name, messages, stack, bet this hand.' },
-      { k:'rise', name:'YOUR CARDS POKE UP', today:58, range:[30,70,1,'px'], note:'How far your two cards rise out of the dashboard into the table.' },
-      { k:'actH', name:'BUTTON BAY HEIGHT', today:91, range:[66,100,1,'px'], note:'FOLD / CALL / RAISE and the space around them, down to the bottom of the screen.' },
-      { k:'btnH', name:'BUTTON HEIGHT', today:54, range:[42,54,1,'px'], note:'FOLD / CALL / RAISE.' },
-      { k:'foot', name:'GAP ABOVE HOME BAR', today:24, range:[8,24,1,'px'], note:'Under the buttons. Below ~16px your thumb meets the swipe-home bar.' }
+      { k:'rise', name:'YOUR CARDS POKE UP', today:55, range:[30,70,1,'px'], note:'How far your two cards rise out of the dashboard into the table.' },
+      { k:'actH', name:'BUTTON BAY HEIGHT', today:98, range:[66,100,1,'px'], note:'FOLD / CALL / RAISE and the space around them, down to the bottom of the screen.' },
+      { k:'btnH', name:'BUTTON HEIGHT', today:51, range:[42,54,1,'px'], note:'FOLD / CALL / RAISE.' },
+      { k:'foot', name:'GAP ABOVE HOME BAR', today:21, range:[8,24,1,'px'], note:'Under the buttons. Below ~16px your thumb meets the swipe-home bar.' }
     ]}
   ];
   const ROWS = SECTIONS.flatMap(s => s.rows);
   const TODAY = Object.fromEntries(ROWS.map(r => [r.k, r.today]));
 
-  // Starting points, not answers.
+  // TODAY is the game (v0.40.7, the owner's picks from this lab). BEFORE
+  // is the table as it was before the spacing pass, to compare against.
   const PRESETS = [
-    { id:'today', name:'TODAY', note:'The game as it ships.', s:{} },
-    { id:'safe', name:'SAFE', note:'Score bar gone, top bar trimmed. Nothing else changes.',
-      s:{ score:'off', top:'trim', topGap:4, topH:32 } },
-    { id:'moderate', name:'MODERATE', note:'Safe, plus slimmer opponents, bet boxes and a slightly shorter dashboard.',
-      s:{ score:'off', top:'trim', topGap:4, topH:32, face:90, hole:88, rows:'slim', boxes:'on', you:'centre', tray:'box',
-        potY:80, trayW:180, trayH:50, readouts:'compact', dockH:166, actH:84, btnH:50 } },
-    { id:'bold', name:'BOLD', note:'No top bar, actions in the name strip, a compact dashboard.',
-      s:{ score:'off', top:'gone', topGap:4, gear:'dash', printY:67, face:84, hole:82, rows:'slim', action:'name', podY:-8,
-        boardY:52, potY:76, trayAt:'below', tray:'box', trayW:170, trayH:46, deckX:12, deckY:90, deckS:86,
-        boxes:'on', boxW:44, boxH:32, you:'centre', readouts:'compact', dockH:152, rise:50, actH:78, btnH:48, foot:18 } }
+    { id:'today', name:'TODAY', note:'The game as it ships (v0.40.7).', s:{} },
+    { id:'before', name:'BEFORE', note:'The table before the spacing pass (top bar back; score bar not shown: the XP is shelved).',
+      s:{ top:'full', hole:100, podY:0, oppDrop:10, boardY:57, potY:79, trayW:200, trayH:58, deckX:27, deckY:89,
+        you:'old', rise:58, actH:91, btnH:54, foot:24 } }
   ];
 
-  let S = Object.assign({}, TODAY, PRESETS[2].s);
+  let S = Object.assign({}, TODAY);
   let opp = '4';
   let comparing = false;
 
