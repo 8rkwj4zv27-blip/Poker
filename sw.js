@@ -1,4 +1,4 @@
-const CACHE_NAME = 'poker-v40-5';
+const CACHE_NAME = 'poker-v40-6';
 const APP_SHELL = [
   './',
   './index.html',
@@ -10,7 +10,7 @@ const APP_SHELL = [
   './css/02-screens.css',
   './css/03-action-console.css',
   './css/04-overlays-and-modes.css',
-  './css/05-responsive-and-arcade.css',
+  './css/05-responsive-and-arcade.css?v=xp-0',
   './css/06-machine-system.css',
   './css/career-hub-v2-lab.css?v=live-motion-1',
   './css/career-motion-live.css?v=4',
@@ -25,11 +25,11 @@ const APP_SHELL = [
   './css/coin-world.css?v=2',
   './css/crt.css?v=1',
   './js/01-poker-math.js',
-  './js/02-support-systems.js?v=coin-2',
+  './js/02-support-systems.js?v=xp-0',
   './js/03-opponents.js',
-  './js/04-modes-and-scoring.js',
-  './js/05-game-engine.js?v=coin-1',
-  './js/06-presentation.js?v=coin-2',
+  './js/04-modes-and-scoring.js?v=xp-0',
+  './js/05-game-engine.js?v=xp-0',
+  './js/06-presentation.js?v=xp-0',
   './js/coin-world.js?v=2',
   './js/coin-table.js?v=3',
   './js/07-ui-wiring.js?v=career-motion-1',

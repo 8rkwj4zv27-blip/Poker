@@ -513,8 +513,8 @@ is a fixed 200×58 well above the pot plate.
 
 **Owner, 26 Sep 2026 (later):** the XP is shelved: the score bar, the
 award messages and the rest come out of the game for now, and scoring gets
-its own plan later. Not built yet; `SCORING_SPEC.md` still describes the
-shipping behaviour. The spacing pass is for the owner's phone only (iPhone
+its own plan later. **Done in v0.40.6** (release 1 of the spacing pass):
+`ARCADE_XP_ON = false`; see the note atop `SCORING_SPEC.md`. The spacing pass is for the owner's phone only (iPhone
 15 Pro Max, installed app); other sizes come later. Board cards stay their
 size: the aim is room for things the game may add later, not bigger parts.
 
@@ -525,3 +525,16 @@ phone's size, with meters. Measured there (4 opponents): today the felt is
 opponent pods, bet boxes, a compact dashboard) 587px; BOLD (no top bar,
 actions in the name strip, deck in the corner) 639px. The owner picks
 settings there and pastes them back; the build follows from those.
+
+**The owner's picks (26 Sep 2026)** from the lab, for release 2 (layout):
+score bar and top bar gone (no gap under the status bar); the settings key
+in the dashboard's right bay (in place of the speaker grille); SAVE moves
+into the settings menu; no hand/blinds print on the felt, and a short
+"BLINDS UP" card pops in between hands when the blinds rise (like the
+event ticket in the table intro); their cards 95%; opponent row +2px;
+their bet spots -10px; shared cards 53% (the owner asked for them a little
+lower than the 50.5% picked in the lab); pot counter 77.5%; pot coins above
+the counter in the rounded area, 210 x 62; deck 16% across, 88.5% down;
+your bet spot above your cards; your cards poke up 55px; button bay 98px;
+buttons 51px; gap above the home bar 21px. Everything else as today.
+Lab link with these: `table-space-lab.html#score=off&top=gone&topGap=0&gear=dash&hole=95&podY=2&oppDrop=-10&boardY=53&potY=77.5&trayW=210&trayH=62&deckX=16&deckY=88.5&you=centre&rise=55&actH=98&btnH=51&foot=21`.

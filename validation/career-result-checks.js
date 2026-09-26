@@ -31,6 +31,11 @@ function esc(s){
 const engineContext = {
   console,
   esc,
+  // The XP is shelved in the game (ARCADE_XP_ON=false, 04-modes-and-scoring.js).
+  // This context keeps checking the shelved XP screens exactly, so they come
+  // back intact; the score-free screens the game shows now are checked in
+  // their own context at the end of this file.
+  ARCADE_XP_ON:true,
   careerBankroll:()=>600,
   arcadeProfile:{ highScore:4200 },
   makeArcadeRunState:()=>({ score:0, biggestReward:0, awardCounts:{}, newHighScore:false }),
@@ -692,6 +697,58 @@ check('The DEV transition tester settles nothing and persists nothing', ()=>{
   ['table-cleared','run-over','event-won','event-lost'].forEach(kind=>
     assert.ok(dev.includes('data-result-test="' + kind + '"'), kind));
   assert.ok(dev.includes('if (!DEV_MODE) return;'));
+});
+
+/* ---------------- XP shelved: the screens the game shows now ---------------- */
+const noXPContext = Object.assign({}, engineContext, { ARCADE_XP_ON:false });
+vm.createContext(noXPContext);
+vm.runInContext(engineSource +
+  ';globalThis.__noXP={careerResultHTML,careerStageModel,tableClearedModel,runOverModel,resultStageHTML};', noXPContext);
+const NX = noXPContext.__noXP;
+const nxCleared = NX.tableClearedModel(clearedGame), nxBust = NX.runOverModel(bustGame);
+const nxStages = [NX.resultStageHTML(nxCleared), NX.resultStageHTML(nxBust),
+  NX.resultStageHTML(NX.careerStageModel(winModel)), NX.resultStageHTML(NX.careerStageModel(lossModel))];
+
+check('XP shelved: all four outcomes keep the chassis and show no score', ()=>{
+  nxStages.forEach(html=>{
+    ['stage-results-machine','stage-results-head','stage-score-hero','stage-results-deck',
+     'stage-results-instruments','stage-results-recap','stage-run-progress'].forEach(part=>assert.ok(html.includes(part), part));
+    assert.strictEqual((html.match(/class="stage-instrument /g)||[]).length, 2);
+    assert.strictEqual((html.match(/data-stage-stat=/g)||[]).length, 3);
+    assert.strictEqual((html.match(/id="stage-results-score"/g)||[]).length, 1);
+    assert.ok(!/score|high score|scoring|reward/i.test(html.replace(/stage-score-|stage-results-score|wake-score/g, '')),
+      'no score, record or reward copy');
+  });
+});
+
+check('XP shelved: TABLE CLEARED leads with the finish stack, RUN OVER with the table reached', ()=>{
+  assert.strictEqual(nxCleared.hero.label, 'Finish stack');
+  assert.strictEqual(nxCleared.hero.reel.amount, 530);
+  assert.strictEqual(nxCleared.hero.reel.prefix, '$');
+  assert.strictEqual(nxCleared.hero.carryValue, '$1,200');
+  assert.strictEqual(nxCleared.recapPages[1].map(x=>x.label).join(' | '), 'All-ins won | Win rate | Run hands');
+  assert.strictEqual(nxBust.hero.label, 'Table reached');
+  assert.strictEqual(nxBust.hero.reel.amount, 1);
+  assert.ok(nxStages[1].includes('BUSTED BY MANIAC'));
+  assert.ok(nxStages[1].includes('NO REBUY'));
+  // the Career stage reports the players outlasted instead of the event score
+  assert.strictEqual(NX.careerStageModel(lossModel).instruments[1].label, 'Outlasted');
+  assert.strictEqual(NX.careerStageModel(lossModel).instruments[1].value, '0');
+  assert.ok(!NX.careerResultHTML(cashModel).includes('EVENT SCORE'));
+  assert.ok(NX.careerResultHTML(cashModel).includes('FIELD'));
+});
+
+check('XP shelved: the live call sites evaluate, show and save nothing', ()=>{
+  const scoring = fs.readFileSync(path.join(root, 'js/04-modes-and-scoring.js'), 'utf8');
+  const html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
+  assert.ok(/\nconst ARCADE_XP_ON = false;/.test(scoring));
+  assert.ok(scoring.includes('const a=ARCADE_XP_ON?rewardState(game):null;'), 'no SCORE bar');
+  assert.strictEqual((engineSource.match(/ARCADE_XP_ON \? await resolveArcadeHandLate\(/g)||[]).length, 2, 'no awards or commentary');
+  assert.strictEqual((engineSource.match(/await resolveArcadeHandLate\(/g)||[]).length, 2);
+  assert.ok(engineSource.includes('if (ARCADE_XP_ON) finalizeArcadeRun(g);'), 'no high score write');
+  assert.ok(presentationSource.includes("const humanArcadeWin = ARCADE_XP_ON && !!rewardState(g)"), 'no pot smash');
+  assert.ok(html.includes('class="btn-secondary hidden" id="open-awards"'), 'no Score / Awards');
+  assert.ok(html.includes('class="btn-secondary hidden" id="open-scoring-guide"'), 'no Scoring Guide');
 });
 
 process.stdout.write('\n' + passed + ' focused Career result and result-stage checks passed.\n');
