@@ -1,0 +1,112 @@
+/* ============================================================
+   SHOWDOWN BEATS — candidate styles for the showdown pass (Lab only)
+   See js/showdown-beats.js and docs/ui/SHOWDOWN_PLAN.md. Every rule here
+   answers a data-sd-* option or a class the candidate adds for one beat;
+   with every option at TODAY nothing here applies. Not loaded by the
+   game. New parts (the meter, the plates, the duel, the pot plates) go to
+   the Pattern Book once they're signed off.
+   ============================================================ */
+
+/* The overlay: above the coins (the coin table's layers are z 35/36 in
+   #table-screen), under the game's sheets. */
+.sd-layer{ position:absolute; inset:0; z-index:40; pointer-events:none; }
+.sd-layer > *{ position:absolute; }
+
+/* ---------------- 1 · THE LOCK ---------------- */
+/* the house lights dip for a beat (a panel over the felt, in the overlay:
+   the felt's own ::before/::after are its surface) */
+.sd-dipper{ pointer-events:none; background:rgba(4,6,4,.55); border-radius:18px; animation:sdDip .62s steps(5,end) both; }
+@keyframes sdDip{ 0%{ opacity:0; } 20%{ opacity:1; } 60%{ opacity:.7; } 100%{ opacity:0; } }
+/* the SHOWDOWN face: lit and locked, lamps chasing along its edge */
+#console-face-award.sd-lit .btn-award-console:disabled{
+  opacity:1; cursor:default; color:var(--pc-lamp-amber-hi);
+  animation:sdLamps .5s steps(1,end) infinite;
+}
+@keyframes sdLamps{
+  0%{ box-shadow:inset 0 0 0 3px var(--pc-lamp-amber), inset 0 0 0 5px transparent, 0 0 12px color-mix(in srgb,var(--pc-lamp-amber) 50%,transparent); }
+  50%{ box-shadow:inset 0 0 0 3px var(--pc-lamp-off), inset 0 0 0 5px color-mix(in srgb,var(--pc-lamp-amber) 70%,transparent), 0 0 6px color-mix(in srgb,var(--pc-lamp-amber) 25%,transparent); }
+}
+
+/* ---------------- 2 · THE ALL-IN SWEAT ---------------- */
+/* the win-chance meter under the pot plate: a CRT (the component owns the
+   glass and the text), laid out here */
+.sd-meter{ width:196px; transform:translate(-50%,0); padding:5px 7px 4px; display:flex; flex-direction:column; gap:4px; }
+.sd-meter-bar{ display:flex; height:8px; gap:2px; }
+.sd-meter-bar i{ display:block; flex:1 1 0; min-width:2px; background:var(--c); box-shadow:inset 0 2px 0 rgba(255,255,255,.25); transition:flex-grow .6s steps(6,end); }
+.sd-meter-keys{ display:flex; justify-content:space-between; gap:6px; font-family:var(--font-hdr); font-size:6px; line-height:1.2; }
+.sd-meter-keys span{ color:var(--c); white-space:nowrap; }
+.sd-meter-keys em{ font-style:normal; color:var(--pc-lamp-amber-hi); }
+/* your hand screen's tags: LEADS / BEATEN / the win chance */
+.sd-tag{ display:inline-block; margin-left:6px; padding:0 3px; font-size:.86em; border:1px solid currentColor; }
+.sd-tag.is-lead{ color:var(--pc-lamp-amber-hi); }
+.sd-tag.is-beaten{ color:#FF7A6B; }
+.sd-tag.is-eq{ color:var(--pc-lamp-green-hi); }
+/* the river's peek: a corner lifts, twice, before it turns */
+.board .card.sd-peek{ animation:sdPeek .52s steps(6,end); transform-origin:50% 100%; }
+@keyframes sdPeek{
+  0%{ transform:none; } 25%{ transform:perspective(300px) rotateX(-24deg) translateY(-3px); }
+  45%{ transform:none; } 70%{ transform:perspective(300px) rotateX(-34deg) translateY(-4px); } 100%{ transform:none; }
+}
+
+/* ---------------- 3 · THE REVEAL ---------------- */
+.seat[data-sd-state="beaten"] .seat-cards .card{ filter:saturate(.35) brightness(.72); }
+.seat[data-sd-state="lead"] .seat-cards .card,
+.seat[data-sd-state="win"] .seat-cards .card{ box-shadow:0 0 0 2px var(--pc-lamp-amber), 0 3px 0 rgba(0,0,0,.5); }
+#your-seat-dock[data-sd-state="beaten"] .seat.you .seat-cards .card{ filter:saturate(.35) brightness(.75); }
+#your-seat-dock[data-sd-state="lead"] .seat.you .seat-cards .card{ box-shadow:0 0 0 2px var(--pc-lamp-amber), 0 3px 0 rgba(0,0,0,.5); }
+.seat.you .seat-cards.sd-lift{ animation:sdLift .5s steps(5,end); }
+@keyframes sdLift{ 0%,100%{ transform:none; } 40%{ transform:translateY(-10px); } }
+/* LOSING HANDS · STAY READABLE: the seat isn't greyed, its cards stay up */
+html[data-sd-losers="lit"] .felt.showdown-winner-locked .seat.sd-loser:not(.out){ opacity:1; filter:none; }
+html[data-sd-losers="lit"] .seat.sd-loser .seat-cards .card{ opacity:1; filter:brightness(.9); }
+
+/* ---------------- 4 · THE VERDICT ---------------- */
+/* plates: stamped onto the felt, the rail stamp's finish */
+.sd-plate{
+  transform:translate(-50%,-50%) rotate(-3deg); padding:4px 9px 3px; white-space:nowrap; text-align:center;
+  border:2px solid var(--pc-lamp-amber); border-radius:2px;
+  background:color-mix(in srgb,var(--felt-1) 86%,var(--pc-lamp-amber) 14%);
+  color:var(--pc-lamp-amber-hi); font-family:var(--font-hdr); font-size:7px; line-height:1.2; letter-spacing:.09em;
+  text-shadow:1px 1px 0 var(--px-ink); box-shadow:0 3px 0 rgba(0,0,0,.45),0 0 10px color-mix(in srgb,var(--pc-lamp-amber) 22%,transparent);
+}
+.sd-plate.sd-hand{ font-size:9px; padding:5px 12px 4px; }
+.sd-plate.sd-split{ font-size:18px; padding:6px 16px 5px; letter-spacing:.14em; border-width:3px; color:#FFF3D6; background:color-mix(in srgb,#8E2A2A 70%,var(--px-ink)); border-color:#FF9C7A; }
+.sd-plate.sd-split small{ display:block; margin-top:3px; font-size:6px; letter-spacing:.08em; color:var(--pc-lamp-amber-hi); }
+.sd-plate.sd-kicker{ border-color:var(--pc-lamp-green); color:var(--pc-lamp-green-hi); background:color-mix(in srgb,var(--felt-1) 86%,var(--pc-lamp-green) 14%); transform:translate(-50%,-50%) rotate(4deg); }
+/* the duel: the best losing five, under the rail */
+.sd-duel{ transform:translate(-50%,0); display:flex; flex-direction:column; align-items:center; gap:3px; padding:4px 6px 3px;
+  background:color-mix(in srgb,var(--px-ink) 72%,transparent); border:2px solid color-mix(in srgb,#FF9C7A 60%,transparent); border-radius:2px;
+  box-shadow:0 3px 0 rgba(0,0,0,.4); }
+.sd-duel-cards{ display:flex; gap:3px; }
+.sd-duel .card.sd-duel-card{ position:relative; width:26px; height:37px; filter:saturate(.45) brightness(.8); }
+.sd-duel-cap{ font-family:var(--font-hdr); font-size:6px; letter-spacing:.08em; color:#FF9C7A; white-space:nowrap; }
+
+/* ---------------- 5 · THE POTS ---------------- */
+/* a plate per pot where the pot plate was, same finish, a size down */
+#felt.sd-stacked #pot-area{ visibility:hidden; }
+.sd-potplate.pot-chip{ transform:translate(-50%,-50%); padding:4px 6px; gap:4px; white-space:nowrap; }
+.sd-potplate.pot-chip .pot-word{ font-size:5px; }
+.sd-potplate.pot-chip .v{ font-size:9px; }
+
+/* ---------------- 6 · THE PAYOUT ---------------- */
+/* the chop's blade */
+.sd-blade{ width:4px; transform:translate(-50%,-50%); background:#FFF6DC; box-shadow:0 0 0 2px var(--pc-lamp-amber),0 0 14px var(--pc-lamp-amber-hi);
+  animation:sdBlade .5s steps(5,end) forwards; transform-origin:50% 0; }
+@keyframes sdBlade{ 0%{ clip-path:inset(0 0 100% 0); } 40%{ clip-path:inset(0 0 0 0); opacity:1; } 100%{ clip-path:inset(0 0 0 0); opacity:0; } }
+/* OVER THE TOP: the lamps chase round the felt (a frame in the overlay) */
+.sd-chaser{ pointer-events:none; border-radius:18px; border:4px dashed var(--pc-lamp-amber); animation:sdChase .24s steps(1,end) infinite;
+  box-shadow:0 0 16px color-mix(in srgb,var(--pc-lamp-amber) 45%,transparent) inset; }
+@keyframes sdChase{ 0%{ border-color:var(--pc-lamp-amber); } 50%{ border-color:var(--pc-lamp-amber-hi); border-style:dotted; } }
+/* THEIR WIN · GLOAT: the others glance over */
+.seat[data-sd-glance="l"] .avatar{ transform:translateX(-2px); transition:transform .2s steps(2,end); }
+.seat[data-sd-glance="r"] .avatar{ transform:translateX(2px); transition:transform .2s steps(2,end); }
+/* YOUR LOSS · DIM */
+#your-seat-dock.sd-lost #hud-frame{ filter:brightness(.72) saturate(.7); transition:filter .5s steps(5,end); }
+#your-seat-dock.sd-lost #hand-strength{ animation:sdFlicker .6s steps(1,end) 1; }
+@keyframes sdFlicker{ 0%,30%,60%{ opacity:.35; } 15%,45%,100%{ opacity:1; } }
+
+/* ---------------- 7 · SHOW ---------------- */
+.seat.you .seat-cards.sd-shown .card{ transform:translateY(-8px); box-shadow:0 0 0 2px var(--pc-lamp-amber),0 0 14px color-mix(in srgb,var(--pc-lamp-amber) 50%,transparent),0 5px 0 rgba(0,0,0,.5); transition:transform .18s steps(3,end); }
+
+[data-motion="off"] .sd-dipper, [data-motion="off"] .sd-chaser{ display:none; }
+[data-motion="off"] .sd-peek, [data-motion="off"] .sd-lift, [data-motion="off"] #console-face-award.sd-lit .btn-award-console:disabled{ animation:none; }

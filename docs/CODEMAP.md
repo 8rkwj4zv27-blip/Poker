@@ -292,6 +292,20 @@ the coin table's `EnemyCards` questions itself. Its default ("YOUR ORDER")
 is the shipped order. Shows each card's footprint against V1. Not loaded
 by the game.
 
+## `showdown-lab.html` + `js/showdown-lab.js` + `css/showdown-lab.css` + candidate `css/showdown-beats.css` / `js/showdown-beats.js` — Showdown order form (Lab)
+
+The showdown pass (`docs/ui/SHOWDOWN_PLAN.md`): the end of a hand as beats
+(the lock, the all-in sweat, the reveal, the verdict, the pots, the payout,
+a fold-win's SHOW), each with options whose first is TODAY. Runs the
+**real game** sandboxed at the owner's phone (like `enemy-card-lab.html`)
+with the candidate injected; options are `data-sd-*` attributes on the
+game's `<html>` (`ShowdownBeats.apply()`). The candidate replaces
+`handleShowdown()`/`runShowdownAwardSequence()` with copies whose pot and
+settlement code is production's verbatim, and hands straight back to the
+shipped functions when every option is TODAY. Moments deal a fresh table
+and stack the undealt deck for the wanted winner (side pots, splits,
+suck-outs, monster pots…). Not loaded by the game.
+
 ## `js/finishes.js` + `css/finishes.css` — Finishes menu (live)
 
 Settings → Finishes: a page inside the Settings sheet that swaps each
@@ -349,7 +363,7 @@ there manually.
 Files matching `*-lab.html`, `*-lab.js`, `*-lab.css` (`career-lab`,
 `career-hub-v2-lab`, `ticket-lab`, `card-flight-options`, `card-turn-lab`,
 `chip-motion-lab`, `chip-lab`, `chip-throw-lab`, `design-lab`, `result-stage-lab`, `showdown-rail-lab`, `crt-lab`, `dashboard-v2-lab`, `dashboard-order-lab`,
-`wheel-v2-lab`, `intro-lab`, `boot-lab`, `slot-lab`, `table-space-lab`, `enemy-card-lab`)
+`wheel-v2-lab`, `intro-lab`, `boot-lab`, `slot-lab`, `table-space-lab`, `enemy-card-lab`, `showdown-lab`)
 are **isolated visual references and prototyping sandboxes**. Several are
 committed permanently as durable references even after their feature
 shipped. Rules:
@@ -392,6 +406,9 @@ reuse instead of writing a new Playwright script from scratch each time.
 - `docs/ui/VISUAL_AUDIT.md` — 2026-09-25 visual/motion/glitch audit of the
   whole game: findings F1–F21 with causes, a motion map of every screen
   change, level-up ideas and a phased plan. Proposals, not approvals.
+- `docs/ui/SHOWDOWN_PLAN.md` — the showdown pass: what the end of a hand
+  does today, the owner's answers, every beat's options in
+  `showdown-lab.html`, and the release plan after the owner's order.
 - `docs/ui/CHIP_PLAN.md` — the chip upgrade plan (bank, bet spots + sweep,
   pot, payouts, feel), the owner's answers so far, and the options built
   in `chip-lab.html` (+ `js/chip-lab.js`, `css/chip-lab.css`: the real

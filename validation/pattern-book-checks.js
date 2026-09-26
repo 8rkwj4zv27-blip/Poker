@@ -252,4 +252,15 @@ check('Enemy Cards V2: live, shared, presentation only, and to the order',()=>{
   assert.ok(book.includes('css/enemy-cards.css') && book.includes('class="seat ec-seat"'),'the Pattern Book must show the cards on the real css/enemy-cards.css');
 });
 
+check('Showdown lab: isolated, and its candidate never ships',()=>{
+  // docs/ui/SHOWDOWN_PLAN.md: the order form and its candidate are Lab only.
+  ['showdown-lab','js/showdown-beats.js','css/showdown-beats.css'].forEach(n=>{ assert.ok(!indexHtml.includes(n),'index.html links '+n); assert.ok(!serviceWorker.includes(n),'sw.js precaches '+n); });
+  const lab=read('js/showdown-lab.js'), cand=read('js/showdown-beats.js');
+  assert.ok(lab.includes('__sdLabIsolated') && lab.includes("pwa-service-worker"),'the lab must run the game on in-memory storage with no service worker');
+  assert.ok(!/localStorage\.(setItem|removeItem|clear)/.test(lab.replace(/`[\s\S]*?`/g,'')),'the lab page itself must never write storage');
+  // With every option at TODAY the candidate hands straight back to the shipped functions.
+  assert.ok(/today\(\) \? orig\.handleShowdown/.test(cand) && /today\(\) \|\| !coinsOn\(\) \? orig\.award/.test(cand),'TODAY must run the shipped showdown and award');
+  assert.ok(!/data-sd-/.test(indexHtml),'production must not use the lab\'s data-sd-* attributes');
+});
+
 process.stdout.write('\n'+passed+' Pattern Book checks passed.\n');
