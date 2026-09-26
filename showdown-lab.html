@@ -9,8 +9,8 @@
   <link rel="stylesheet" href="css/01-foundation.css">
   <!-- The chrome is the Table Space Lab's (the phone frame and the form). -->
   <link rel="stylesheet" href="css/table-space-lab.css?v=1">
-  <link rel="stylesheet" href="css/showdown-lab.css?v=2">
-  <script defer src="js/showdown-lab.js?v=2"></script>
+  <link rel="stylesheet" href="css/showdown-lab.css?v=3">
+  <script defer src="js/showdown-lab.js?v=3"></script>
 </head>
 <body class="sl sd-lab">
   <!-- Phone only: the keys that bring up the form and the moments. -->
@@ -22,12 +22,11 @@
        Never linked from the game; never touches a real save. -->
   <aside class="sl-side sl-form" aria-label="Order form">
     <header class="sl-head">
-      <strong>SHOWDOWN ORDER FORM · ROUND 2</strong>
-      <span>The end of a hand, beat by beat: the lock, the all-in sweat, the reveal, the verdict, the pots, the payout. Pick a part for each job; it plays on the real game at your phone's size.</span>
+      <strong>SHOWDOWN ORDER FORM · ROUND 3 · THE COOK</strong>
+      <span>The smash is now the cook: hold AWARD POT on a monster pot and the pot's well heats up, cooking the coins; let go and they go bang, then flip into your bank. Pick each part of it. COOK IT deals straight to one.</span>
     </header>
     <div class="sl-presets" id="sd-presets">
-      <button type="button" data-preset="today">TODAY</button>
-      <button type="button" data-preset="yours">YOUR ORDER</button>
+      <button type="button" data-preset="suggested">START OVER</button>
       <p class="sl-preset-note" id="sd-preset-note"></p>
     </div>
     <div id="sl-rows"></div>
@@ -46,12 +45,13 @@
     <section class="sl-group">
       <h2>Deal a moment</h2>
       <div class="sl-moments">
+        <button type="button" data-moment="cook" class="is-wide">COOK IT · MONSTER POT</button>
         <button type="button" data-moment="win">YOU WIN</button>
         <button type="button" data-moment="lose">YOU LOSE</button>
         <button type="button" data-moment="threeway">3-WAY SHOWDOWN</button>
         <button type="button" data-moment="kicker">ON THE KICKER</button>
         <button type="button" data-moment="big">BIG POT · YOU</button>
-        <button type="button" data-moment="monster">MONSTER · SMASH</button>
+        <button type="button" data-moment="monster">MONSTER · FULL HAND</button>
         <button type="button" data-moment="suckout">ALL IN · SUCK OUT</button>
         <button type="button" data-moment="badbeat">ALL IN · BAD BEAT</button>
         <button type="button" data-moment="multi">3-WAY ALL IN</button>
@@ -63,7 +63,7 @@
         <button type="button" data-moment="foldwin" class="is-wide">EVERYONE FOLDS TO YOU</button>
         <button type="button" data-moment="replay" class="is-wide" id="sd-replay">PLAY IT AGAIN</button>
       </div>
-      <p class="sl-note">Each deals a fresh table and plays the real game to that moment; you press AWARD POT yourself. On MONSTER · SMASH, press and hold it. The winner is set by stacking the deck, never by changing a result. You can also just play: tap the game.</p>
+      <p class="sl-note">Each deals a fresh table and plays the real game to that moment; you press AWARD POT yourself. On a monster pot, press and hold it to cook; let go to fire. The winner is set by stacking the deck, never by changing a result. You can also just play: tap the game.</p>
     </section>
 
     <section class="sl-group">

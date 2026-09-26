@@ -14,7 +14,7 @@
                five, or in place; KICKER and SPLIT plates
      pots      side pots as their own stacks and plates, paid pot by pot
                (the last side pot first, the main pot last)
-     payout    by pot size, the smash (slam, geyser, avalanche, rain),
+     payout    by pot size, the smash (THE COOK: hold to heat the pot),
                their shove and gloat, the chop, your loss, the numbers
      fold win  a SHOW key for your cards
 
@@ -34,7 +34,9 @@
 const ShowdownBeats = (function(){
   const DEF = { lock:'0', runout:'0', equity:'off', river:'0', order:'0', callout:'0', losers:'0',
     verdict:'0', kicker:'off', split:'0', pots:'0', award:'0', press:'always',
-    tiers:'off', smash:'0', smashon:'monster', charge:'hold', stamp:'0', cards:'0', opp:'0', chop:'0', loss:'0', meters:'0', show:'off' };
+    tiers:'off', smash:'0', smashon:'monster', stamp:'0', cards:'0', opp:'0',
+    cheat:'ember', ctime:'1000', csteps:'9', ccoins:'glow', crattle:'build', csparks:'embers', csound:'sizzle', cearly:'weaker', cfull:'hold',
+    cforce:'big', cdir:'out', cceil:'bounce', cstop:'90', cjolt:'small', ccool:'flight', csettle:'450', cbank:'flip', cpace:'faster', cfinish:'clack', chop:'0', loss:'0', meters:'0', show:'off' };
   const root = () => document.documentElement;
   const opt = k => root().getAttribute('data-sd-' + k) || DEF[k];
   function apply(order){ Object.keys(DEF).forEach(k => root().setAttribute('data-sd-' + k, order && order[k] != null ? order[k] : DEF[k])); }
@@ -528,15 +530,9 @@ const ShowdownBeats = (function(){
     humanBankDisplayFreeze = null; render();
   }
 
-  /* ---------------- THE SMASH (round 2) ----------------
+  /* ---------------- THE SMASH ----------------
      Earned, and done by you: on a monster pot AWARD POT becomes HOLD TO
-     SMASH. Holding charges it in nine notches (the gauge on the key, a
-     rising ratchet, your dashboard humming, the machine winding up in the
-     chosen style's own way); letting go fires it, as hard as you charged
-     it. The coins do the rest as physics: the hit, the scatter, then the
-     pour through your hatch one coin at a time, each clink a step higher,
-     your stack counting with them, a heavy thunk and a clack to finish.
-     No lamps, no signs. */
+     COOK (see THE COOK below). */
   const smashFor = amount => {
     const tier = tierOf(amount), on = opt('smashon');
     return opt('smash') !== '0' && (on === 'every' || tier === 'monster' || (on === 'big' && tier === 'big'));
@@ -547,7 +543,7 @@ const ShowdownBeats = (function(){
     const tier = tierOf(amount);
     const c = countOn(bodies, amount);
     try{
-      if (smashFor(amount)) await smashPay(h, bodies, opt('smash'), firePower == null ? .6 : firePower);
+      if (smashFor(amount)) await smashPay(h, bodies, firePower == null ? .6 : firePower);
       else if (opt('tiers') === 'on') await payWith(h, bodies, { jackpot:tier !== 'small', fanfare:tier !== 'small' });
       else await payWith(h, bodies);
     } finally { if (c) c.done = true; }
@@ -610,21 +606,14 @@ const ShowdownBeats = (function(){
     return () => { run = false; };
   }
 
-  // the pour: one coin at a time into your hatch, each clink a step higher
-  function pour(items, p){
-    const W = CW(), combo = { n:0 };
-    const gap = Math.max(22, Math.min(70, 900 / Math.max(1, items.length)));
-    const order = items.slice().sort((a, c) => Math.hypot(a.b.x - a.to.x, a.b.y - a.to.y) - Math.hypot(c.b.x - c.to.x, c.b.y - c.to.y));
-    return Promise.all(order.map((it, i) => W.launch(it.b, it.to, { wait:i * gap, T:rr(.36, .5), flips:2, combo })));
-  }
-  function finale(){
-    sfx('thump', 1, .5);
-    setTimeout(() => { sfx('win', 1); try{ Sound.counterLock && Sound.counterLock(true); }catch(e){} }, 120);
-  }
-
-  /* each style: arm() when the key appears, step(k) per notch of the
-     charge, fire(p) on release (before the hatch opens), then pour(items)
-     through the hatch */
+  /* ---------------- THE COOK (round 3) ----------------
+     The one smash. Hold AWARD POT and the pot's recessed well heats up in
+     steps, from ember red to hot, cooking the coins in it: they redden,
+     rattle and throw off embers. Let go and they go BANG off the tray,
+     spin, bounce off the cards and the table's top frame and cool back to
+     gold; once they've settled they flip one by one into your bank. No
+     machinery: the well glows and the coins do the rest. Every part is an
+     option (data-sd-c*), chosen in the lab. */
   function trayEl(){ return document.querySelector('#felt .ct-tray'); }
   function trayCoins(){ const W = CW(); return Object.values(W.zones).filter(z => z.id === 'pot' || String(z.id).startsWith('sd:')).flatMap(z => z.list); }
   function rattle(k, scale){
@@ -636,193 +625,185 @@ const ShowdownBeats = (function(){
     });
     CW().kick();
   }
-  const STYLE = {
-    slam:{
-      arm(){
-        const T = CW().tray(), f = $('felt'); if (!T || !f) return;
-        const press = put('sd-press', '<i class="sd-press-shaft"></i><b class="sd-press-head"><em></em><em></em><em></em></b>', (T.L + T.R) / 2, T.T - 34);
-        if (!press) return;
-        const ft = f.getBoundingClientRect().top;
-        press.dataset.rest = T.T - 34; press.dataset.top = ft;
-        press.style.setProperty('--shaft', Math.max(20, T.T - 34 - ft) + 'px');
-        if (!quiet()) press.animate([{ transform:'translate(-50%,-100%) translateY(' + (-(T.T - ft)) + 'px)' }, { transform:'translate(-50%,-100%) translateY(4px)', offset:.8 }, { transform:'translate(-50%,-100%)' }], { duration:420, easing:'steps(7,end)' });
-        setTimeout(() => sfx('thump', .6, .9), 320);
-      },
-      step(k){
-        const press = layer() && layer().querySelector('.sd-press'); if (!press) return;
-        const y = +press.dataset.rest - 62 * k;
-        place(press, parseFloat(press.style.left) + $('table-screen').getBoundingClientRect().left, y);
-        press.style.setProperty('--shaft', Math.max(12, y - +press.dataset.top) + 'px');
-        sfx('rock', .8, 1 + k * .4);
-      },
-      async fire(bodies, p){
-        const press = layer() && layer().querySelector('.sd-press'), T = CW().tray(), ts = $('table-screen').getBoundingClientRect();
-        if (press && T && !quiet()){
-          const from = parseFloat(press.style.top), to = (T.T + T.B) / 2 - 2 - ts.top;
-          await press.animate([{ top:from + 'px' }, { top:to + 'px' }], { duration:70 + 50 * (1 - p), easing:'steps(3,end)', fill:'forwards' }).finished.catch(() => {});
-        }
-        hitStop(70 + 70 * p);
-        impact(p);
-        bodies.forEach(q => loose(q, rr(-1, 1) * (70 + 190 * p), rr(-90, 50) * (.6 + p * .6), rr(300, 480) + 420 * p));
-        if (press && !quiet()){
-          setTimeout(() => press.animate([{ transform:'translate(-50%,-100%)' }, { transform:'translate(-50%,-100%) translateY(-20px)', offset:.3 }, { transform:'translate(-50%,-100%) translateY(-260px)', opacity:1, offset:.9 }, { transform:'translate(-50%,-100%) translateY(-280px)', opacity:0 }], { duration:700, delay:140, easing:'steps(8,end)', fill:'forwards' }).finished.then(() => press.remove(), () => press.remove()), 60);
-        } else if (press) press.remove();
-        await settled(bodies, 1500);
-        await hold(160);
-      },
-      pour(items, p){ return pour(items, p); }
-    },
-    geyser:{
-      arm(){},
-      step(k){ rattle(k, 1); sfx('roll', .5 + .5 * k, 1.1 + k * .6); },
-      async fire(bodies, p){
-        hitStop(60); impact(p * .6);
-        const stop = ceiling(bodies, p);
-        const shots = bodies.slice().sort(() => Math.random() - .5);
-        const gap = 22 + 34 * (1 - p);
-        for (let i = 0; i < shots.length; i++){
-          const b = shots[i];
-          loose(b, rr(-50, 50) * (1 + p), rr(-20, 30), rr(1050, 1300) + 700 * p);
-          sfx('bounce', .9, 1 + Math.min(1.2, i * .04));
-          if (i % 4 === 0) CW().puff && CW().puff(b.x, b.y, 700);
-          await sleep(quiet() ? 0 : gap);
-        }
-        await settled(bodies, 3400);
-        stop();
-        await hold(220);
-      },
-      pour(items, p){ return pour(items, p); }
-    },
-    avalanche:{
-      arm(){},
-      step(k){
-        const t = trayEl();
-        if (t && !quiet()) t.style.transform = 'rotate(' + (-1.2 * k * 6).toFixed(1) + 'deg) translateY(' + (k * 2).toFixed(1) + 'px)';
-        trayCoins().forEach(b => {
-          if (b.state !== 'rest') return;
-          Object.assign(b, { target:{}, opts:{}, vx:rr(-8, 8), vy:30 + 55 * k, state:'slide', t:0, moving:0 });
-          CW().active.add(b);
-        });
-        CW().kick(); sfx('rock', .9, .7 + k * .3); if (k > .5) sfx('roll', .6, .8);
-      },
-      async fire(bodies, p){
-        const t = trayEl();
-        hitStop(50); impact(p * .7); sfx('collect', 1);
-        if (t && !quiet()) t.animate([{ transform:t.style.transform || 'none' }, { transform:'rotate(-14deg) translateY(6px)', offset:.25 }, { transform:'rotate(-14deg) translateY(6px)', offset:.7 }, { transform:'none' }], { duration:1200, easing:'steps(8,end)' }).finished.then(() => { t.style.transform = ''; }, () => { t.style.transform = ''; });
-        const fr = $('felt').getBoundingClientRect(), hl = ($('hud-left') || $('felt')).getBoundingClientRect();
-        const cx = Math.max(fr.left + 40, Math.min(fr.right - 40, hl.left + hl.width / 2 + 50));
-        // off the tray's lip (a coin still in the pot is held by it), then a
-        // wave: the front slides, the top tumbles over it
-        bodies.forEach(q => { if (q.zone) CW().removeFromZone(q); });
-        bodies.slice().sort((a, c) => c.y - a.y).forEach((b, i) => {
-          const tx = cx + rr(-70, 70), ty = fr.bottom - 26 - rr(0, 44) * (1.2 - p), L = Math.max(1, Math.hypot(tx - b.x, ty - b.y));
-          const v = Math.sqrt(2 * CW().FRICTION * L) * (1.15 + .45 * p);
-          if (i % 3 === 0) loose(b, (tx - b.x) / L * v * .7, (ty - b.y) / L * v * .7, rr(120, 260) * (.6 + p));
-          else { Object.assign(b, { target:{}, opts:{}, vx:(tx - b.x) / L * v, vy:(ty - b.y) / L * v, state:'slide', t:0, moving:0, inFelt:true }); CW().active.add(b); }
-        });
-        CW().kick();
-        await settled(bodies, 2200);
-        await hold(160);
-      },
-      pour(items, p){
-        const W = CW(), combo = { n:0 };
-        const order = items.slice().sort((a, c) => c.b.y - a.b.y);
-        return Promise.all(order.map((it, k) => W.launch(it.b, it.to, { wait:k * 30, T:rr(.26, .34), flips:1, combo })));
-      }
-    },
-    rain:{
-      arm(){},
-      step(k){
-        const t = trayEl();
-        if (t && !quiet()) t.style.transform = 'translateY(' + (k * 5).toFixed(1) + 'px) scale(' + (1 + k * .03).toFixed(3) + ',' + (1 - k * .06).toFixed(3) + ')';
-        rattle(k, .7); sfx('rock', .8, .8 + k * .5);
-      },
-      async fire(){ const t = trayEl(); if (t){ t.style.transform = ''; if (!quiet()) t.animate([{ transform:'translateY(6px) scale(1.03,.94)' }, { transform:'translateY(-6px) scale(.97,1.05)', offset:.3 }, { transform:'none' }], { duration:300, easing:'steps(5,end)' }); } },
-      // the hatch is open for this one: flung up, off the top frame, down
-      // onto your dashboard, off its rim and in
-      pour(items, p){
-        const W = CW(), sp = W.OPT.speed, combo = { n:0 };
-        const dock = ($('your-seat-dock') || $('felt')).getBoundingClientRect();
-        const bodies = items.map(it => it.b);
-        hitStop(60); impact(p);
-        const done = new Map();
-        const land = it => {
-          if (done.has(it.b)) return; done.set(it.b, true);
-          const m = mouthOf(it);
-          const to = Math.random() < .75 ? { x:rr(dock.left + 12, dock.right - 12), y:dock.top + 3, z:0, rim:true, d:W.D() + 5, then:m } : m;
-          it.p = W.launch(it.b, to, { T:rr(.42, .62), flips:3, combo });
-          it.res(it.p);
-        };
-        const stop = ceiling(bodies, p, b => {
-          const it = items.find(x => x.b === b);
-          if (it) setTimeout(() => land(it), rr(120, 320) / sp);
-        });
-        const all = items.map((it, i) => new Promise(res => {
-          it.res = res;
-          setTimeout(() => {
-            loose(it.b, rr(-1, 1) * (140 + 200 * p), rr(-30, 30), rr(1150, 1400) + 600 * p);
-            if (i % 3 === 0) sfx('bounce', .8, 1 + Math.min(1, i * .03));
-          }, i * (10 + 16 * (1 - p)) / sp);
-          // one that never reaches the frame still comes down onto the dash
-          setTimeout(() => land(it), (2200 + i * 20) / sp);
-        }).then(pr => pr));
-        return Promise.all(all).then(r => { stop(); return r; });
-      }
-    }
+  // the heat, as the well's colour at each step of the charge
+  const HEAT = {
+    ember:['#2A0A06','#5E1208','#921D0B','#C42F0E','#E24A12','#F46F18','#FF9A26','#FFC447','#FFE38A'],
+    allin:['#2A0707','#4F0D0E','#761416','#9C1C1E','#C02627','#D9534A','#E8745F','#F29A82','#FFC2AE'],
+    white:['#2A0A06','#6B1509','#A8260D','#DB4513','#F47C2B','#FFAA5C','#FFD097','#FFEBCF','#FFFFFF']
   };
+  const heatColour = k => { const pal = HEAT[opt('cheat')] || HEAT.ember; return pal[Math.max(0, Math.min(pal.length - 1, Math.round(k * (pal.length - 1))))]; };
+  let heatNow = 0;
+  function heat(k){
+    heatNow = k;
+    const t = trayEl(); if (!t) return;
+    let bed = t.querySelector('.sd-heatbed');
+    if (!bed){ bed = document.createElement('i'); bed.className = 'sd-heatbed'; t.appendChild(bed); }
+    const c = heatColour(k);
+    t.style.setProperty('--hc', c); t.style.setProperty('--hk', k.toFixed(2));
+    t.classList.toggle('sd-hot', k > 0);
+    coinsHeat(k);
+  }
+  // the coins take the heat (their layer is tinted; nothing else is on it
+  // at this moment)
+  function coinsHeat(k){
+    const air = CW().airLayer && CW().airLayer(); if (!air) return;
+    const mode = opt('ccoins');
+    if (mode === 'none' || k <= 0){ air.style.filter = ''; return; }
+    air.style.transition = 'none';
+    air.style.filter = 'sepia(' + (.8 * k).toFixed(2) + ') saturate(' + (1 + 2.6 * k).toFixed(2) + ') hue-rotate(' + (-28 * k).toFixed(0) + 'deg) brightness(' + (1 + .12 * k).toFixed(2) + ')' +
+      (mode === 'glow' ? ' drop-shadow(0 0 ' + (1 + 4 * k).toFixed(1) + 'px ' + heatColour(k) + ')' : '');
+  }
+  function coolCoins(ms){
+    const air = CW().airLayer && CW().airLayer(); if (!air) return;
+    air.style.transition = ms && !quiet() ? 'filter ' + ms + 'ms steps(6,end)' : 'none';
+    air.style.filter = '';
+    setTimeout(() => { air.style.transition = ''; }, (ms || 0) + 60);
+  }
+  function ember(k){
+    const T = CW().tray(); if (!T || quiet() || opt('csparks') !== 'embers') return;
+    const n = k > .7 ? 2 : 1;
+    for (let i = 0; i < n; i++){
+      const e = put('sd-ember', '', rr(T.L + 10, T.R - 10), rr(T.T + 8, T.B - 4));
+      if (!e) continue;
+      e.style.setProperty('--hc', heatColour(Math.min(1, k + .2)));
+      e.animate([{ transform:'translate(0,0)', opacity:1 }, { transform:'translate(' + rr(-8, 8).toFixed(0) + 'px,' + (-rr(26, 60)).toFixed(0) + 'px)', opacity:0 }],
+        { duration:rr(500, 800), easing:'steps(6,end)' }).onfinish = () => e.remove();
+    }
+  }
+  function sizzle(k, n, i){
+    const s = opt('csound');
+    if (s === 'quiet') return;
+    // smooth steps are many: only every third one clicks
+    if (n > 9 && i % 3) return;
+    sfx('knock', .45 + .05 * k * 9, .8 + k * .8);
+    if (s === 'sizzle') for (let j = 0; j < 2 + Math.round(3 * k); j++) setTimeout(() => sfx('bounce', .25 + .3 * k, rr(1.8, 2.8)), rr(0, 110));
+  }
+
+  // BANG: the well flashes and snaps cold; the coins fire off it
+  async function bang(bodies, p){
+    const W = CW(), T = W.tray();
+    const t = trayEl(), bed = t && t.querySelector('.sd-heatbed');
+    if (bed && !quiet()){ bed.classList.remove('sd-flash'); void bed.offsetWidth; bed.classList.add('sd-flash'); }
+    heat(0);
+    const air = W.airLayer && W.airLayer();
+    // the coins keep their heat until the cooling option lets it go
+    if (air && opt('ccoins') !== 'none') air.style.filter = 'sepia(.8) saturate(3.6) hue-rotate(-28deg) brightness(1.12)' + (opt('ccoins') === 'glow' ? ' drop-shadow(0 0 5px ' + heatColour(p) + ')' : '');
+    const stop = +opt('cstop') || 0; if (stop) hitStop(stop);
+    const jolt = opt('cjolt');
+    if (jolt !== 'none'){ bump(jolt === 'big' ? 1 : .35); W.shake(); if (jolt === 'big') setTimeout(() => W.shake(), 90); }
+    if (typeof DashRim !== 'undefined') DashRim.win();
+    sfx('thump', 1, .5 + .15 * p); sfx('knock', 1, .7); setTimeout(() => sfx('thump', .8, .4), 60);
+    for (let j = 0; j < 6; j++) setTimeout(() => sfx('stack', .9, rr(1, 1.6)), 20 + j * 25);
+    const f = { medium:1, big:1.25, huge:1.6 }[opt('cforce')] || 1.25, dir = opt('cdir');
+    const cx = T ? (T.L + T.R) / 2 : 0, cy = T ? (T.T + T.B) / 2 : 0, pw = .45 + .75 * p;
+    bodies.forEach(b => { if (b.zone) W.removeFromZone(b); });   // off the tray's lip
+    bodies.forEach(b => {
+      let vx, vy, vz;
+      if (dir === 'up'){ vx = rr(-70, 70) * f; vy = rr(-25, 25); vz = rr(720, 1000) * f * pw; }
+      else if (dir === 'you'){ vx = rr(-130, 130) * f; vy = rr(190, 330) * f * pw; vz = rr(340, 520) * f * pw; }
+      else {
+        const dx = b.x - cx + rr(-4, 4), dy = b.y - cy + rr(-3, 3), L = Math.max(1, Math.hypot(dx, dy));
+        vx = dx / L * rr(130, 280) * f * pw + rr(-40, 40); vy = dy / L * rr(50, 130) * f + rr(-30, 40); vz = rr(430, 650) * f * pw;
+      }
+      loose(b, vx, vy, vz);
+    });
+    const stopCeil = opt('cceil') === 'bounce' ? ceiling(bodies, p) : () => {};
+    const cool = opt('ccool');
+    if (cool === 'flight') coolCoins(650); else if (cool === 'instant') coolCoins(0);
+    await settled(bodies, 3200);
+    stopCeil();
+    if (cool === 'land') coolCoins(300);
+    const pause = +opt('csettle') || 0;
+    if (pause) await hold(pause);
+  }
+  // INTO THE BANK: each coin flips up off the felt and arcs into your hatch
+  function intoBank(items){
+    const W = CW(), combo = { n:0 }, mode = opt('cbank'), faster = opt('cpace') === 'faster';
+    const n = items.length;
+    const order = items.slice().sort((a, c) => Math.hypot(a.b.x - a.to.x, a.b.y - a.to.y) - Math.hypot(c.b.x - c.to.x, c.b.y - c.to.y));
+    const base = mode === 'all' ? 0 : mode === 'ripple' ? Math.max(18, Math.min(40, 700 / Math.max(1, n))) : Math.max(45, Math.min(110, 1500 / Math.max(1, n)));
+    let at = 0;
+    return Promise.all(order.map((it, i) => {
+      const wait = mode === 'all' ? rr(0, 140) : at;
+      at += base * (faster ? 1.5 - 1.1 * i / Math.max(1, n - 1) : 1);
+      const flip = mode === 'flip';
+      if (flip && !quiet()) setTimeout(() => sfx('bounce', .6, 1.4), wait / W.OPT.speed);
+      return W.launch(it.b, it.to, { wait, T:flip ? rr(.5, .62) : rr(.36, .48), flips:flip ? 4 : 2, combo });
+    }));
+  }
+  function finale(){
+    const f = opt('cfinish'); if (f === 'none') return;
+    sfx('thump', 1, .5);
+    setTimeout(() => {
+      if (f === 'run') sfx('win', 1);
+      else try{ Sound.counterLock && Sound.counterLock(true); }catch(e){ sfx('stack', 1, .7); }
+    }, 120);
+  }
   function mouthOf(it){ return it.to && it.to.rim ? it.to.then : it.to; }
 
-  async function smashPay(h, bodies, style, p){
-    const W = CW(), S = STYLE[style]; if (!bodies.length || !S) return payWith(h, bodies, { jackpot:true });
-    if (S.fire) await S.fire(bodies, p);
+  async function smashPay(h, bodies, p){
+    const W = CW(); if (!bodies.length) return;
+    await bang(bodies, p);
     const orig = W.throwAll;
     // take over only the throw into your hatch; anyone else's throw passes
     W.throwAll = function(items, kind, extra){
       if (items.length && items.every(it => it.to && (it.to.mouth || it.to.rim))){
         W.throwAll = orig;
-        const clean = items.map(it => ({ b:it.b, to:mouthOf(it) }));
-        return S.pour(clean, p);
+        return intoBank(items.map(it => ({ b:it.b, to:mouthOf(it) })));
       }
       return orig.apply(this, arguments);
     };
     try{ await payWith(h, bodies, { jackpot:true, fanfare:false }); }
-    finally{ if (W.throwAll !== orig) W.throwAll = orig; }
+    finally{ if (W.throwAll !== orig) W.throwAll = orig; coolCoins(0); }
     finale();
   }
 
-  /* HOLD TO SMASH: the AWARD POT key charges while held */
+  /* HOLD TO COOK: the AWARD POT key heats the well while held */
   function hum(on){ const f = $('hud-frame'); if (f) f.classList.toggle('sd-hum', !!on && !quiet()); }
-  function chargeGate(label, style, press){
-    const S = STYLE[style] || STYLE.slam;
+  function chargeGate(label, press){
     consoleFace(null);
-    // the rail stays up to be read until you take hold of the key; then it
-    // clears and the machine arms
+    const N = opt('csteps') === 'smooth' ? 24 : (+opt('csteps') || 9);
+    const time = +opt('ctime') || 1000, every = time / N;
+    const rat = opt('crattle');
     let armed = false;
-    const arm = () => { if (armed) return; armed = true; clearShowdownRailPresentation(); clearVerdict(); if (S.arm) S.arm(); };
+    // the rail stays up to be read until you take hold of the key
+    const arm = () => { if (armed) return; armed = true; clearShowdownRailPresentation(); clearVerdict(); };
+    const step = (n) => {
+      const k = n / N;
+      heat(k);
+      if (rat === 'build') rattle(k, 1); else if (rat === 'steady') rattle(.45, 1);
+      if (n % Math.max(1, Math.round(N / 9)) === 0) ember(k);
+      sizzle(k, N, n);
+    };
     if (!press){
+      // nobody to press it: it cooks itself, then fires
       arm();
       hideAwardConsole();
-      return hold(1500).then(() => .6);
+      return new Promise(res => { let n = 0; const iv = setInterval(() => { n++; step(n); if (n >= N){ clearInterval(iv); setTimeout(() => res(.8), 300); } }, every); });
     }
     return new Promise(resolve => {
       const btn = $('btn-award-pot-console');
       if (!btn){ resolve(.6); return; }
-      const N = 9;
-      let t0 = null, n = 0, timer = 0, done = false;
-      const tapOnly = opt('charge') === 'tap';
+      let t0 = null, n = 0, timer = 0, keep = 0, over = 0, done = false, lastDown = 0;
+      const mustFull = opt('cearly') === 'full';
       btn.classList.add('sd-charge'); btn.style.setProperty('--c', '0');
-      showAwardConsole(tapOnly ? label : 'Hold to smash · ' + label.replace(/^Award (Pot|Main|Side \d+) · /, ''));
+      showAwardConsole('Hold to cook · ' + label.replace(/^Award (Pot|Main|Side \d+) · /, ''));
       const tick = () => {
         if (n >= N) return;
         n++;
         btn.style.setProperty('--c', (n / N).toFixed(3));
-        sfx('knock', .5 + .05 * n, .8 + n * .09);
-        if (S.step) S.step(n / N);
-        if (n === N){ sfx('stack', 1, 2.1); btn.classList.add('is-full'); }
+        step(n);
+        if (n === N){
+          btn.classList.add('is-full'); sfx('stack', 1, 2.1);
+          // full heat: it keeps cooking in your hand
+          keep = setInterval(() => { if (rat !== 'none') rattle(1, 1.1); ember(1); sizzle(1, 9, 0); }, 170);
+          if (opt('cfull') === 'overheat') over = setTimeout(() => finish(1), 1000);
+        }
       };
+      const stopTimers = () => { clearTimeout(timer); clearInterval(timer); clearInterval(keep); clearTimeout(over); };
       const finish = pw => {
         if (done) return; done = true;
-        clearTimeout(timer); clearInterval(timer); hum(false); arm();
+        stopTimers(); hum(false); arm();
         window.removeEventListener('pointerup', up); window.removeEventListener('pointercancel', up);
         btn.removeEventListener('pointerdown', down);
         btn.onclick = null; btn.classList.remove('sd-charge', 'is-full'); btn.style.removeProperty('--c');
@@ -830,12 +811,29 @@ const ShowdownBeats = (function(){
         hideAwardConsole();
         resolve(pw);
       };
-      const down = () => { if (done || t0 != null || tapOnly) return; arm(); t0 = performance.now(); hum(true); timer = setTimeout(() => { tick(); timer = setInterval(tick, 115); }, 260); };
-      const up = () => { if (t0 == null || done) return; finish(Math.max(.25, n / N)); };
+      // let go before it's red hot (MUST BE RED HOT): it cools off again
+      const coolOff = () => {
+        stopTimers(); hum(false);
+        const from = n; t0 = null; n = 0;
+        btn.style.setProperty('--c', '0'); btn.classList.remove('is-full');
+        sfx('roll', .5, .7);
+        for (let i = 1; i <= from; i++) setTimeout(() => heat(Math.max(0, (from - i) / N)), i * 35);
+      };
+      const down = () => {
+        if (done || t0 != null) return;
+        lastDown = performance.now();
+        arm(); t0 = lastDown; hum(true);
+        timer = setTimeout(() => { tick(); timer = setInterval(tick, every); }, 160);
+      };
+      const up = () => {
+        if (t0 == null || done) return;
+        if (n < N && mustFull){ coolOff(); return; }
+        finish(Math.max(.2, n / N));
+      };
       btn.addEventListener('pointerdown', down);
       window.addEventListener('pointerup', up); window.addEventListener('pointercancel', up);
-      // a click with no hold (a keyboard, or a quick tap) is a light hit
-      btn.onclick = () => { if (t0 == null) finish(tapOnly ? .7 : .3); };
+      // a click with no hold behind it (a keyboard): a medium bang
+      btn.onclick = () => { if (t0 == null && performance.now() - lastDown > 1500) finish(.6); };
     });
   }
 
@@ -934,7 +932,7 @@ const ShowdownBeats = (function(){
   // `smash`: the style when this press pays you a smash (HOLD TO SMASH)
   async function awardGate(label, press, smash){
     firePower = null;
-    if (smash){ firePower = await chargeGate(label, smash, press); return; }
+    if (smash){ firePower = await chargeGate(label, press); return; }
     consoleFace(null);
     if (press){ showAwardConsole(label); await waitForAwardPot(); }
     else { hideAwardConsole(); await hold(1500); }
@@ -1187,7 +1185,8 @@ const ShowdownBeats = (function(){
     const l = layer(); if (l) l.innerHTML = '';
     const felt = $('felt'); if (felt) felt.classList.remove('sd-stacked');
     hum(false);
-    const t = trayEl(); if (t) t.style.transform = '';
+    const t = trayEl(); if (t){ t.style.transform = ''; t.classList.remove('sd-hot'); const bed = t.querySelector('.sd-heatbed'); if (bed) bed.remove(); }
+    try{ coolCoins(0); }catch(e){}
     const dock = $('your-seat-dock'); if (dock) dock.classList.remove('sd-lost');
     document.querySelectorAll('.sd-loser').forEach(el => el.classList.remove('sd-loser'));
     document.querySelectorAll('.sd-shown,.sd-lift').forEach(el => el.classList.remove('sd-shown', 'sd-lift'));
@@ -1222,8 +1221,6 @@ const ShowdownBeats = (function(){
     const sec = document.createElement('div');
     sec.className = 'sheet-section'; sec.id = 'sd-settings';
     sec.innerHTML = '<h3>Showdown</h3>' +
-      seg('sd-smash-seg', 'smash', 'The smash', [['slam','Slam'],['geyser','Geyser'],['avalanche','Avalanche'],['rain','Rain'],['0','Off']],
-        'How your biggest wins hit the pot. Hold AWARD POT to charge it; let go to fire.') +
       '<div class="toggle-row"><div><div class="tl">Win chance</div><div class="ts">When everyone is all in, a meter under the pot shows each hand\'s chance to win.</div></div>' +
       '<button class="switch" id="sd-sw-equity" role="switch" aria-checked="false" aria-label="Win chance"></button></div>' +
       seg('sd-press-seg', 'press', 'Award pot', [['always','Every hand'],['mine','Mine + big'],['auto','Never']],
@@ -1239,7 +1236,7 @@ const ShowdownBeats = (function(){
       if (e.target.closest('#sd-sw-equity')){ root().setAttribute('data-sd-equity', opt('equity') !== 'off' ? 'off' : 'meter'); sync(); }
     });
     sync();
-    new MutationObserver(sync).observe(root(), { attributes:true, attributeFilter:['data-sd-smash','data-sd-press','data-sd-equity'] });
+    new MutationObserver(sync).observe(root(), { attributes:true, attributeFilter:['data-sd-press','data-sd-equity'] });
   }
 
   /* ---------------- install ---------------- */
@@ -1300,3 +1297,5 @@ const ShowdownBeats = (function(){
   settingsSection();
   return { apply, install, opt, DEF };
 })();
+// the lab reaches the candidate through the frame's window
+window.ShowdownBeats = ShowdownBeats;

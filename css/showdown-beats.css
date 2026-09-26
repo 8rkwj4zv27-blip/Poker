@@ -128,13 +128,17 @@ html[data-sd-stamp="rail"] .showdown-hand-stamp{ top:-27px; z-index:6; }
 #hud-frame.sd-hum{ animation:sdHum .09s steps(2,end) infinite; }
 @keyframes sdHum{ 0%{ transform:translate(0,0); } 50%{ transform:translate(1px,-1px); } 100%{ transform:translate(-1px,0); } }
 
-/* SLAM: the press. A brass head on a steel shaft that runs up to the
-   table's top rail; it cocks back as you charge and comes down on release */
-.sd-press{ transform:translate(-50%,-100%); width:128px; display:flex; flex-direction:column; align-items:center; pointer-events:none; }
-.sd-press-shaft{ display:block; width:16px; height:var(--shaft,80px);
-  background:linear-gradient(90deg,#3B3A36 0 3px,#8D8B82 3px 6px,#C8C5B8 6px 9px,#6F6D66 9px 13px,#2C2B28 13px 16px);
-  box-shadow:0 0 0 2px #120F0C; }
-.sd-press-head{ position:relative; display:flex; justify-content:space-around; align-items:center; width:128px; height:26px; margin-top:-2px;
-  background:linear-gradient(180deg,#FFE49B 0 3px,#E0A93A 3px 9px,#B98326 9px 18px,#7A531A 18px 23px,#3F2A0E 23px 26px);
-  box-shadow:0 0 0 2px #120F0C,0 5px 0 rgba(0,0,0,.45),inset 3px 0 0 rgba(255,255,255,.18),inset -3px 0 0 rgba(0,0,0,.25); }
-.sd-press-head em{ display:block; width:6px; height:6px; background:#FFE49B; box-shadow:inset -2px -2px 0 #7A531A,0 0 0 1px #3F2A0E; }
+/* THE COOK: the pot's well heats in steps (--hk 0..1, --hc its colour);
+   a bed of heat laid into the well, under the coins, and a glow round it */
+.ct-tray .sd-heatbed{
+  position:absolute; inset:3px; border-radius:8px; pointer-events:none; opacity:calc(var(--hk,0) * .95);
+  background:radial-gradient(ellipse 60% 70% at 50% 58%,var(--hc,#000) 0,color-mix(in srgb,var(--hc,#000) 55%,transparent) 55%,transparent 100%);
+  box-shadow:inset 0 0 0 2px color-mix(in srgb,var(--hc,#000) 80%,transparent),inset 0 3px 0 rgba(0,0,0,.35);
+}
+.ct-tray.sd-hot{
+  box-shadow:inset 0 4px 0 rgba(0,0,0,.3), 0 0 0 2px color-mix(in srgb,var(--hc) 45%,transparent), 0 0 calc(4px + var(--hk,0) * 16px) var(--hc);
+}
+.ct-tray .sd-heatbed.sd-flash{ animation:sdHeatFlash .32s steps(4,end) forwards; }
+@keyframes sdHeatFlash{ 0%{ opacity:1; background:#FFF6DC; box-shadow:0 0 24px #FFE38A; } 100%{ opacity:0; } }
+.sd-ember{ width:3px; height:3px; background:var(--hc); box-shadow:0 0 4px var(--hc); }
+[data-motion="off"] .ct-tray .sd-heatbed.sd-flash{ animation:none; opacity:0; }

@@ -160,6 +160,28 @@ Feedback, and what round 2 does about it:
 - Also fixed: the table bump no longer scales the stage (a scale turns
   the felt brown for a frame, the same cause as `feltImpactBump()`).
 
+## Round 3: the cook (27 Sep 2026)
+
+Owner: no press or machinery; remove the other options and keep the
+round-1 order (locked in, with the round-2 fixes). The smash becomes **the
+cook**, kept simple so the coins do the satisfying part:
+
+1. **Hold AWARD POT** on a monster pot: the pot's recessed well glows and
+   heats in steps, cooking the coins (they redden, rattle, throw embers),
+   a ticking sizzle climbing, the dashboard humming.
+2. **Let go: BANG.** The well flashes and snaps cold; the coins fire off
+   it, spin, bounce off the cards and the top frame, and cool to gold.
+3. **Settle**, a beat.
+4. **Into the bank**: one by one each coin flips up off the felt and arcs
+   into the hatch, the stack counting, a thunk and a clack to finish.
+
+Every part is a lab row for the owner to tune (heat colour, time to full,
+steps, the coins, rattle, embers, sound, letting go early, full heat,
+force, direction, top frame, hit-stop, jolt, cooling, settle, the flip,
+pace, finish). Player settings are now Win chance and Award pot only.
+Also fixed: the form's picks never reached the game copy (the candidate
+wasn't on the frame's window), which is why styles snapped back to Slam.
+
 ## Plan after the owner's order
 
 1. **Release 1: the reveal.** The lock, the reveal order and readouts,
