@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en" data-crt-tint="dark" data-crt-glow="1" data-crt-scan="4" data-crt-rgb="0" data-crt-grain="4" data-crt-curve="0" data-crt-flicker="4" data-crt-roll="1" data-crt-tear="4" data-crt-ghost="2" data-crt-change="channel" data-crt-ink="mono">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#16090D">
+<link rel="icon" href="data:,">
+<title>Chip Lab</title>
+<!-- CHIP LAB — isolated prototype for the CHIP plan (docs/ui/CHIP_PLAN.md).
+     Mounts the real #table-screen from index.html and the shipped
+     renderers against memory-only state, then layers the prototype chip
+     language, bank, bet spots and sweep on top. Never loaded by
+     index.html or sw.js; never writes a save. -->
+<link rel="stylesheet" href="css/01-foundation.css">
+<link rel="stylesheet" href="css/02-screens.css">
+<link rel="stylesheet" href="css/03-action-console.css">
+<link rel="stylesheet" href="css/04-overlays-and-modes.css">
+<link rel="stylesheet" href="css/05-responsive-and-arcade.css">
+<link rel="stylesheet" href="css/06-machine-system.css">
+<link rel="stylesheet" href="css/career-hub-v2-lab.css">
+<link rel="stylesheet" href="css/career-motion-live.css">
+<link rel="stylesheet" href="css/machine-wheel.css">
+<link rel="stylesheet" href="css/table-intro.css">
+<link rel="stylesheet" href="css/press-feel.css">
+<link rel="stylesheet" href="css/finishes.css">
+<link rel="stylesheet" href="css/crt.css">
+<link rel="stylesheet" href="css/chip-lab.css">
+</head>
+<body data-theme="emerald" data-deck="classic" data-motion="on" data-cardback="table" class="cl-body">
+  <div id="app" class="cl-host">
+    <div class="cl-loading" id="cl-mount">Mounting production table…</div>
+  </div>
+
+  <button class="cl-tab" id="cl-tab" type="button" aria-expanded="true" aria-controls="cl-panel">CHIPS</button>
+
+  <aside class="cl-panel" id="cl-panel" aria-label="Chip lab controls">
+    <header class="cl-head">
+      <strong>CHIP LAB</strong>
+      <span id="cl-status">LOADING…</span>
+    </header>
+
+    <section class="cl-group">
+      <div class="cl-label">1 · CHIP VALUES</div>
+      <div class="cl-seg" data-opt="value">
+        <button type="button" data-v="count">A · TODAY</button>
+        <button type="button" data-v="denom">B · DENOMS</button>
+        <button type="button" data-v="weighted">C · WEIGHTED</button>
+      </div>
+      <p class="cl-note" data-note="value"></p>
+    </section>
+
+    <section class="cl-group">
+      <div class="cl-label">2 · OPPONENT CHIPS</div>
+      <div class="cl-seg" data-opt="seat">
+        <button type="button" data-v="spot">A · SPOTS</button>
+        <button type="button" data-v="gauge">B · GAUGE</button>
+        <button type="button" data-v="stack">C · STACK</button>
+      </div>
+      <p class="cl-note" data-note="seat"></p>
+    </section>
+
+    <section class="cl-group">
+      <div class="cl-label">3 · YOUR BANK</div>
+      <div class="cl-seg" data-opt="bank">
+        <button type="button" data-v="rack">A · RACK</button>
+        <button type="button" data-v="heap">B · HEAP</button>
+        <button type="button" data-v="tidy">C · HEAP+TIDY</button>
+      </div>
+      <p class="cl-note" data-note="bank"></p>
+    </section>
+
+    <section class="cl-group">
+      <div class="cl-label">PLAY</div>
+      <div class="cl-runs">
+        <button type="button" class="is-primary" data-run="hand">PLAY · YOU WIN ▸</button>
+        <button type="button" data-run="opp-win">PLAY · MANIAC WINS</button>
+        <button type="button" data-run="small">SMALL POT</button>
+        <button type="button" data-run="big">BIG ALL-IN</button>
+        <button type="button" class="is-wide" data-run="compare">POT SIZES SIDE BY SIDE</button>
+        <button type="button" data-run="reset">RESET</button>
+        <button type="button" data-run="bank-full">BANK · $8,000</button>
+      </div>
+    </section>
+
+    <section class="cl-group">
+      <div class="cl-row">
+        <span class="cl-label">SPEED</span>
+        <div class="cl-seg cl-seg-sm" data-opt="speed">
+          <button type="button" data-v="1">1×</button>
+          <button type="button" data-v="0.4">SLOW</button>
+        </div>
+      </div>
+      <div class="cl-row">
+        <span class="cl-label">MOTION</span>
+        <div class="cl-seg cl-seg-sm" data-opt="motion">
+          <button type="button" data-v="on">NORMAL</button>
+          <button type="button" data-v="off">REDUCED</button>
+        </div>
+      </div>
+      <div class="cl-row">
+        <span class="cl-label">SOUND</span>
+        <div class="cl-seg cl-seg-sm" data-opt="sound">
+          <button type="button" data-v="on">ON</button>
+          <button type="button" data-v="off">OFF</button>
+        </div>
+      </div>
+      <div class="cl-row">
+        <span class="cl-label">THEME</span>
+        <div class="cl-seg cl-seg-sm" data-opt="theme">
+          <button type="button" data-v="emerald">EMERALD</button>
+          <button type="button" data-v="burgundy">BURGUNDY</button>
+        </div>
+      </div>
+      <p class="cl-note">Tap the bank to tidy it (option C). Collapse this panel with the CHIPS tab for a clean table.</p>
+    </section>
+  </aside>
+
+  <!-- Production data, faces and table renderers only: no 07-ui-wiring,
+       no dev mode, no game loop. -->
+  <script src="js/01-poker-math.js"></script>
+  <script src="js/02-support-systems.js"></script>
+  <script src="js/03-opponents.js"></script>
+  <script src="js/04-modes-and-scoring.js"></script>
+  <script src="js/05-game-engine.js"></script>
+  <script src="js/06-presentation.js"></script>
+  <script src="js/crt.js"></script>
+  <script src="js/chip-lab.js"></script>
+</body>
+</html>

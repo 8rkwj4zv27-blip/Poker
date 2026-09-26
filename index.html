@@ -33,6 +33,7 @@
   <link rel="stylesheet" href="css/press-feel.css?v=2">
   <link rel="stylesheet" href="css/finishes.css?v=3">
   <link rel="stylesheet" href="css/dashboard.css?v=1">
+  <link rel="stylesheet" href="css/coin-world.css?v=2">
   <link rel="stylesheet" href="css/crt.css?v=1">
 
 <meta name="format-detection" content="telephone=no">
@@ -522,6 +523,22 @@
           <div><div class="tl">Sound</div><div class="ts">Turns game sound effects on or off.</div></div>
           <button class="switch" id="sw-sound" role="switch" aria-checked="false" aria-label="Sound"></button>
         </div>
+        <div class="field">
+          <div class="field-label">Coin sound</div>
+          <div class="segmented compact wrap" id="coin-sound-seg" role="group" aria-label="Coin sound">
+            <button data-coin="clack">Clack</button>
+            <button data-coin="clackplus">Clack+</button>
+            <button data-coin="clay" class="active">Clay</button>
+            <button data-coin="thock">Thock</button>
+            <button data-coin="thud">Thud</button>
+            <button data-coin="coin">Coin</button>
+            <button data-coin="clink">Clink</button>
+            <button data-coin="retro">Retro</button>
+            <button data-coin="pop">Pop</button>
+            <button data-coin="old">Classic</button>
+          </div>
+          <div class="hint">How the coins sound as they land, stack and pay out.</div>
+        </div>
         <div class="toggle-row">
           <div><div class="tl">Reduced Motion</div><div class="ts">Reduces screen shake and large arcade motion effects.</div></div>
           <button class="switch" id="sw-motion" role="switch" aria-checked="false" aria-label="Reduced Motion"></button>
@@ -648,13 +665,15 @@
 <script src="js/04-modes-and-scoring.js"></script>
 <script src="js/05-game-engine.js"></script>
 <script src="js/06-presentation.js"></script>
+<script src="js/coin-world.js?v=2"></script>
+<script src="js/coin-table.js?v=1"></script>
 <script src="js/07-ui-wiring.js?v=career-motion-1"></script>
 <script src="js/career-hub-live.js?v=cabinet-4"></script>
 <script src="js/career-motion-live.js?v=4"></script>
 <script src="js/machine-wheel.js?v=2"></script>
 <script src="js/ticket-feed.js?v=1"></script>
-<script src="js/table-intro.js?v=1"></script>
-<script src="js/08-dev-mode.js?v=home-cast-1"></script>
+<script src="js/table-intro.js?v=2"></script>
+<script src="js/08-dev-mode.js?v=coin-1"></script>
 <script src="js/home-cast.js?v=1"></script>
 <script src="js/home-boot.js?v=2"></script>
 <script src="js/dashboard.js?v=1"></script>

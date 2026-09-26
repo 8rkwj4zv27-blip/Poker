@@ -10,8 +10,9 @@ by the code and by `CLAUDE.md`/`AGENTS.md`, not by this file.
 ```
 01-poker-math.js        02-support-systems.js   03-opponents.js
 04-modes-and-scoring.js 05-game-engine.js       06-presentation.js
-07-ui-wiring.js         career-hub-live.js      career-motion-live.js
-machine-wheel.js        ticket-feed.js          table-intro.js
+coin-world.js           coin-table.js           07-ui-wiring.js
+career-hub-live.js      career-motion-live.js   machine-wheel.js
+ticket-feed.js          table-intro.js
 08-dev-mode.js          home-cast.js            home-boot.js
 dashboard.js            crt.js                  finishes.js
 press-feel.js
@@ -88,6 +89,24 @@ animation (`DealFX`), chip flight/pile animation, the coach/hint system,
 Hand Review panel, showdown presentation. If a visual bug doesn't affect
 outcomes (wrong chip count on screen, a card animating oddly, a stat
 misdisplayed), it's here, not in `05-game-engine.js`.
+
+## `js/coin-world.js` + `css/coin-world.css` — the gold-coin world
+
+The chip upgrade's physics world (docs/ui/CHIP_PLAN.md): every coin on the
+felt a body (arcs, spin, bounces, stacks, topples), pixel coins drawn by
+code, walls from the live table, bet-spot/pot zones, ten procedural sound
+sets. Exposes `window.CoinWorld`; does nothing at load. Built in
+`chip-throw-lab.html`, which runs on it.
+
+`js/coin-table.js` is the game's side (`CoinTable`, presentation only):
+lays the pot tray, bet spots and walls over the live table; throws every
+bet and blind onto its spot (`applyAction`/`postBlind`); sweeps spots into
+the tray (`advancePhase`, `handleFoldWin`, `handleShowdown`); pays winners
+(`payoutTo`, and the pot smash's burst in `runPotBreakPhysics`); owns your
+bank as a coin rack in `#hud-left` (`renderBank`,
+`rebuildBankPileFromState`, the table intro's bank load); plays the
+`settings.coinSound` set. Every hook is behind `coinTableOn()`
+(05-game-engine.js); `COIN_TABLE_ON=false` restores the old chip piles.
 
 ## `js/07-ui-wiring.js` (~2,000 lines)
 
@@ -279,7 +298,7 @@ there manually.
 
 Files matching `*-lab.html`, `*-lab.js`, `*-lab.css` (`career-lab`,
 `career-hub-v2-lab`, `ticket-lab`, `card-flight-options`, `card-turn-lab`,
-`chip-motion-lab`, `design-lab`, `result-stage-lab`, `showdown-rail-lab`, `crt-lab`, `dashboard-v2-lab`, `dashboard-order-lab`,
+`chip-motion-lab`, `chip-lab`, `chip-throw-lab`, `design-lab`, `result-stage-lab`, `showdown-rail-lab`, `crt-lab`, `dashboard-v2-lab`, `dashboard-order-lab`,
 `wheel-v2-lab`, `intro-lab`, `boot-lab`, `slot-lab`)
 are **isolated visual references and prototyping sandboxes**. Several are
 committed permanently as durable references even after their feature
@@ -323,6 +342,17 @@ reuse instead of writing a new Playwright script from scratch each time.
 - `docs/ui/VISUAL_AUDIT.md` — 2026-09-25 visual/motion/glitch audit of the
   whole game: findings F1–F21 with causes, a motion map of every screen
   change, level-up ideas and a phased plan. Proposals, not approvals.
+- `docs/ui/CHIP_PLAN.md` — the chip upgrade plan (bank, bet spots + sweep,
+  pot, payouts, feel), the owner's answers so far, and the options built
+  in `chip-lab.html` (+ `js/chip-lab.js`, `css/chip-lab.css`: the real
+  table with switchable chip values, opponent chips and bank styles).
+  `chip-throw-lab.html` (+ `js/chip-throw-lab.js`, `css/chip-throw-lab.css`)
+  is its companion for how chips travel: a chip physics world (every
+  chip on the felt is a body: gravity arcs, flips through code-drawn pixel
+  frames, bounces, knock-offs, mess then tidy; the rail and the cards are
+  solid; throws vary by bet size; gold coin art by default). Since v10
+  the owner's settled mix is built in, the drawer keeps only the sound
+  set, coins per bet and speed, and PLAY HAND plays a real hand on it.
 - `docs/scoring/SCORING_SPEC.md` — authoritative scoring/award rules for
   both Career and Single Player.
 - `docs/ui/handover/` — earlier UI handover notes; a `python3 -m http.server`

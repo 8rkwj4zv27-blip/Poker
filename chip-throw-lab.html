@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en" data-crt-tint="dark" data-crt-glow="1" data-crt-scan="4" data-crt-rgb="0" data-crt-grain="4" data-crt-curve="0" data-crt-flicker="4" data-crt-roll="1" data-crt-tear="4" data-crt-ghost="2" data-crt-change="channel" data-crt-ink="mono">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#16090D">
+<link rel="icon" href="data:,">
+<title>Chip Throw Lab</title>
+<!-- CHIP THROW LAB v11 — how chips travel (docs/ui/CHIP_PLAN.md). The real
+     #table-screen and renderers on memory-only state, plus a chip physics
+     world where every chip on the felt is a body. Reuses chip-lab.css for
+     the drawer, bet spots and bank. Never loaded by index.html or sw.js;
+     never writes a save. -->
+<link rel="stylesheet" href="css/01-foundation.css">
+<link rel="stylesheet" href="css/02-screens.css">
+<link rel="stylesheet" href="css/03-action-console.css">
+<link rel="stylesheet" href="css/04-overlays-and-modes.css">
+<link rel="stylesheet" href="css/05-responsive-and-arcade.css">
+<link rel="stylesheet" href="css/06-machine-system.css">
+<link rel="stylesheet" href="css/career-hub-v2-lab.css">
+<link rel="stylesheet" href="css/career-motion-live.css">
+<link rel="stylesheet" href="css/machine-wheel.css">
+<link rel="stylesheet" href="css/table-intro.css">
+<link rel="stylesheet" href="css/press-feel.css">
+<link rel="stylesheet" href="css/finishes.css">
+<link rel="stylesheet" href="css/crt.css">
+<link rel="stylesheet" href="css/chip-lab.css">
+<link rel="stylesheet" href="css/coin-world.css">
+<link rel="stylesheet" href="css/chip-throw-lab.css">
+</head>
+<body data-theme="emerald" data-deck="classic" data-motion="on" data-cardback="table" class="cl-body ct-body">
+  <div id="app" class="cl-host">
+    <div class="cl-loading" id="cl-mount">Mounting production table…</div>
+  </div>
+
+  <!-- Triggers live in a strip over the (inactive) action buttons, so the
+       felt stays visible while chips fly. Options are a drawer that
+       closes itself when a trigger is tapped. -->
+  <nav class="ct-bar" aria-label="Chip throw triggers">
+    <div class="ct-bar-row" id="ct-main">
+      <button type="button" class="is-primary" data-run="play">PLAY<br>HAND</button>
+      <button type="button" data-run="toss-test">TOSS<br>TEST</button>
+      <button type="button" data-run="opp-bet">OPP<br>RAISE</button>
+      <button type="button" data-run="opp-allin">OPP<br>ALL-IN</button>
+      <button type="button" data-run="you-bet">YOUR<br>RAISE</button>
+      <button type="button" data-run="you-allin">YOUR<br>ALL-IN</button>
+      <button type="button" data-run="sweep">SWEEP</button>
+      <button type="button" data-run="pay-you">PAY<br>YOU</button>
+      <button type="button" data-run="pay-opp">PAY<br>MANIAC</button>
+      <button type="button" data-run="board">BOARD<br>3·4·5</button>
+    </div>
+    <!-- PLAY HAND: your move -->
+    <div class="ct-bar-row ct-play" id="ct-play" hidden>
+      <button type="button" data-act="fold">FOLD</button>
+      <button type="button" data-act="call">CALL</button>
+      <button type="button" class="is-primary" data-act="raise">RAISE</button>
+      <button type="button" data-act="allin">ALL-IN</button>
+    </div>
+    <div class="ct-bar-row ct-bar-foot">
+      <button type="button" class="ct-replay" data-run="replay" aria-label="Replay the last move">↻ REPLAY</button>
+      <button type="button" data-run="reset">RESET</button>
+      <span class="ct-status"><b id="ct-preset-name">V11</b> · <span id="ct-status">LOADING…</span></span>
+      <button type="button" class="ct-gear" id="ct-gear" aria-label="Options">⚙ OPTIONS</button>
+    </div>
+  </nav>
+
+  <!-- v10: the look, spin, tray and stacking are settled and built in (the
+       owner's mix). Left here: the sound set (a player option in the game
+       later), how many coins a bet throws, and speed. -->
+  <aside class="cl-panel ct-drawer" id="ct-drawer" hidden aria-label="Chip throw options">
+    <section class="cl-group">
+      <p class="cl-note" id="ct-note"></p>
+    </section>
+    <section class="cl-group">
+      <div class="cl-label">SOUND</div>
+      <div class="cl-seg ct-seg-wrap" data-opt="sfx"><button type="button" data-v="clack">CLACK</button><button type="button" data-v="clackplus">CLACK+</button><button type="button" data-v="clay">CLAY</button><button type="button" data-v="thock">THOCK</button><button type="button" data-v="thud">THUD</button><button type="button" data-v="coin">COIN</button><button type="button" data-v="clink">CLINK</button><button type="button" data-v="retro">RETRO</button><button type="button" data-v="pop">POP</button><button type="button" data-v="old">OLD</button></div>
+      <div class="cl-row"><span class="cl-label">SOUND</span>
+        <div class="cl-seg cl-seg-sm" data-opt="sound"><button type="button" data-v="on">ON</button><button type="button" data-v="off">OFF</button></div></div>
+    </section>
+    <section class="cl-group">
+      <div class="cl-label">COINS</div>
+      <div class="cl-row"><span class="cl-label">PER BET</span>
+        <div class="cl-seg cl-seg-sm" data-opt="coins"><button type="button" data-v="few">FEW</button><button type="button" data-v="some">SOME</button><button type="button" data-v="more">MORE</button><button type="button" data-v="lots">LOTS</button></div></div>
+      <div class="cl-row"><span class="cl-label">SPEED</span>
+        <div class="cl-seg cl-seg-sm" data-opt="speed"><button type="button" data-v="1">1×</button><button type="button" data-v="0.35">SLOW</button></div></div>
+      <p class="cl-note">MORE (default): a call is one or two coins, a raise of 400 about a dozen, an all-in a proper splash of 16 to 24. The pot holds about 60 coins and a bet only throws what the pot still has room for, so every pile on the felt sweeps in whole and nothing melts away; once the pot is full a bet throws a single coin and the numbers carry the rest. Your bank holds up to 40; a big win pours the extra into the hatch. FEW and SOME throw less; LOTS is v9. PLAY HAND deals a real hand: the bar turns into FOLD / CALL / RAISE / ALL-IN when it&#39;s your move. BOARD 3·4·5 lays out a flop, turn or river. Tap the felt to tidy; tap a tower to topple it.</p>
+    </section>
+  </aside>
+
+  <script src="js/01-poker-math.js"></script>
+  <script src="js/02-support-systems.js"></script>
+  <script src="js/03-opponents.js"></script>
+  <script src="js/04-modes-and-scoring.js"></script>
+  <script src="js/05-game-engine.js"></script>
+  <script src="js/06-presentation.js"></script>
+  <script src="js/crt.js"></script>
+  <script src="js/coin-world.js"></script>
+  <script src="js/chip-throw-lab.js"></script>
+</body>
+</html>

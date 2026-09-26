@@ -1035,15 +1035,18 @@ function takeChipFromPile(container, pile, measuredRects){
 function paintPotValue(){
   const g = game, val = $('pot-val'), pile = $('pot-stacks');
   if (!g || !val) return;
-  const chips = pile ? (pile._chipCount||0) : 0;
-  let shown = g.pot;
-  if (g.pot > 0){
+  const coins = coinTableOn();
+  const chips = coins ? CoinTable.potCoins() : (pile ? (pile._chipCount||0) : 0);
+  let shown = coins ? CoinTable.shownPot() : g.pot;
+  if (g.pot > 0 && coins){
+    val._lastPot = shown; val._drain = null;
+  } else if (g.pot > 0){
     val._lastPot = g.pot; val._drain = null;
   } else if (chips > 0 && val._lastPot > 0){
     if (!val._drain) val._drain = { from: val._lastPot, chips };
     shown = Math.round(val._drain.from * chips / Math.max(1, val._drain.chips));
   } else {
-    val._lastPot = 0; val._drain = null;
+    val._lastPot = 0; val._drain = null; shown = 0;
   }
   const text = shown.toLocaleString();
   if (val.textContent !== text) val.textContent = text;
@@ -1095,6 +1098,7 @@ function bootstrapPile(container, pile, amount){
   for (let i=0;i<n;i++){ createRestingChip(container, pile); }
 }
 function renderBank(){
+  if (coinTableOn()){ CoinTable.renderBank(); return; }
   const p = game && game.players.find(x=>x.isHuman);
   const container = $('hud-tower');
   if (!container || !p) return;
@@ -1106,6 +1110,7 @@ function renderBank(){
   }
 }
 function renderPot(){
+  if (coinTableOn()) return;          // the coin tray owns the pot's look
   const g = game;
   const container = $('pot-stacks');
   if (!container || !g) return;
@@ -1127,6 +1132,7 @@ function renderPot(){
    rebuild regardless of whatever transient DOM state physics left
    behind. */
 function rebuildBankPileFromState(){
+  if (coinTableOn()){ CoinTable.rebuildBank(); return; }
   const human = game && game.players.find(p=>p.isHuman);
   const container = $('hud-tower');
   if (!container || !human) return;
@@ -1283,6 +1289,7 @@ function clearAllCardDOM(){
   const board = $('board');
   if (board) board.innerHTML = '';
   resetPile($('pot-stacks'), potPile());
+  if (typeof CoinTable!=='undefined') CoinTable.clear();
   // A hand boundary can't leave a stale pending count blocking future
   // bootstrap checks — any in-flight pot transfer is visually done by now.
   potPending = 0;
@@ -1599,6 +1606,7 @@ function initSeats(){
       // every other "money changed with no transfer" case.
       resetPile($('hud-tower'), bankPile()); resetPile($('pot-stacks'), potPile());
       bankPending = 0; potPending = 0;
+      if (typeof CoinTable!=='undefined') CoinTable.reset();
     }
   });
 }
@@ -1965,6 +1973,7 @@ function transferChips(n, src, dst, addPending, fast){
    completion Promise so callers can await every chip actually landing. */
 function payoutTo(winner, n){
   if (!n || n<=0) return Promise.resolve();
+  if (coinTableOn()) return CoinTable.payout(winner, n);
   const potContainer = $('pot-stacks'), pPile = potPile();
   const e = seatEls[winner.id];
   const src = { container: potContainer, pile: pPile };
@@ -2996,6 +3005,8 @@ function runPhysicsAttractionPhase(chips, bounds, cardRects, bankContainer, bank
    in-flight physics layer for the same DOM elements. */
 async function runPotBreakPhysics(potN, impactPoint){
   if (!(potN>0)) return;
+  // the gold-coin tray: your coins heave out of it into the hatch
+  if (coinTableOn() && CoinTable.potCoins()>0){ await CoinTable.payout(game.players.find(p=>p.isHuman), potN, { jackpot:true, fanfare:false }); return; }
   const potContainer = $('pot-stacks'), pPile = potPile();
   const bankContainer = $('hud-tower'), bankP = bankPile();
   potPending += potN; bankPending += potN;
@@ -3765,7 +3776,10 @@ function render(){
   // last chips are still draining out after g.pot has already dropped
   // to 0.
   renderPot();
-  if (g.pot>0 || (potContainer && (potContainer._chipCount||0)>0)){
+  const potShowing = coinTableOn()
+    ? (CoinTable.shownPot()>0 || CoinTable.potCoins()>0)
+    : (g.pot>0 || (potContainer && (potContainer._chipCount||0)>0));
+  if (potShowing){
     potArea.classList.remove('hidden');
     paintPotValue();
   } else {
@@ -4799,7 +4813,7 @@ async function runShowdownAwardSequence(potResults, contenders){
     totalByPlayer.set(s.id, (totalByPlayer.get(s.id)||0) + s.amount);
   }));
 
-  let remainingPile = $('pot-stacks')._chipCount || 0;
+  let remainingPile = coinTableOn() ? CoinTable.potCoins() : ($('pot-stacks')._chipCount || 0);
   const ids = [...totalByPlayer.keys()];
   const visualByPlayer = new Map();
   ids.forEach((id,k)=>{
