@@ -6,7 +6,7 @@
 <meta name="theme-color" content="#16090D">
 <link rel="icon" href="data:,">
 <title>Chip Throw Lab</title>
-<!-- CHIP THROW LAB v2 — how chips travel (docs/ui/CHIP_PLAN.md). The real
+<!-- CHIP THROW LAB v3 — how chips travel (docs/ui/CHIP_PLAN.md). The real
      #table-screen and renderers on memory-only state, plus a chip physics
      world where every chip on the felt is a body. Reuses chip-lab.css for
      the drawer, bet spots and bank. Never loaded by index.html or sw.js;
@@ -33,13 +33,16 @@
   </div>
 
   <!-- Triggers live in a strip over the (inactive) action buttons, so the
-       felt stays visible while chips fly. Settings are a drawer that
+       felt stays visible while chips fly. Options are a drawer that
        closes itself when a trigger is tapped. -->
   <nav class="ct-bar" aria-label="Chip throw triggers">
     <div class="ct-bar-row">
-      <button type="button" data-run="opp-bet">OPP<br>BET</button>
+      <button type="button" data-run="opp-call">OPP<br>CALL</button>
+      <button type="button" data-run="opp-bet">OPP<br>RAISE</button>
+      <button type="button" data-run="opp-big">OPP BIG<br>RAISE</button>
       <button type="button" data-run="opp-allin">OPP<br>ALL-IN</button>
-      <button type="button" data-run="you-bet">YOUR<br>BET</button>
+      <button type="button" data-run="you-call">YOUR<br>CALL</button>
+      <button type="button" data-run="you-bet">YOUR<br>RAISE</button>
       <button type="button" data-run="you-allin">YOUR<br>ALL-IN</button>
       <button type="button" data-run="sweep">SWEEP</button>
       <button type="button" data-run="pay-you">PAY<br>YOU</button>
@@ -50,8 +53,8 @@
     <div class="ct-bar-row ct-bar-foot">
       <button type="button" class="ct-replay" data-run="replay" aria-label="Replay the last move">↻ REPLAY</button>
       <button type="button" data-run="reset">RESET</button>
-      <span class="ct-status"><b id="ct-preset-name">WEIGHT</b> · <span id="ct-status">LOADING…</span></span>
-      <button type="button" class="ct-gear" id="ct-gear" aria-label="Settings">⚙ OPTIONS</button>
+      <span class="ct-status"><b id="ct-preset-name">V3</b> · <span id="ct-status">LOADING…</span></span>
+      <button type="button" class="ct-gear" id="ct-gear" aria-label="Options">⚙ OPTIONS</button>
     </div>
   </nav>
 
@@ -59,36 +62,34 @@
     <section class="cl-group">
       <div class="cl-label">PRESET</div>
       <div class="cl-seg" data-opt="preset">
-        <button type="button" data-v="today">TODAY</button>
-        <button type="button" data-v="weight">WEIGHT</button>
+        <button type="button" data-v="v3">V3</button>
+        <button type="button" data-v="auto">V3 + TIDY</button>
         <button type="button" data-v="chaos">CHAOS</button>
-        <button type="button" data-v="machine">MACHINE</button>
+        <button type="button" data-v="today">TODAY</button>
       </div>
       <p class="cl-note" id="ct-note"></p>
     </section>
     <section class="cl-group">
       <div class="cl-label">LOOK</div>
       <div class="cl-row"><span class="cl-label">ART</span>
-        <div class="cl-seg cl-seg-sm" data-opt="art"><button type="button" data-v="current">CURRENT</button><button type="button" data-v="pixel">PIXEL</button></div></div>
+        <div class="cl-seg cl-seg-sm" data-opt="art"><button type="button" data-v="gold">GOLD</button><button type="button" data-v="pixel">COLOURS</button><button type="button" data-v="current">ORIGINAL</button></div></div>
       <div class="cl-row"><span class="cl-label">SIZE</span>
         <div class="cl-seg cl-seg-sm" data-opt="size"><button type="button" data-v="s">S</button><button type="button" data-v="m">M</button><button type="button" data-v="l">L</button></div></div>
       <div class="cl-row"><span class="cl-label">SHADOW</span>
         <div class="cl-seg cl-seg-sm" data-opt="shadow"><button type="button" data-v="on">ON</button><button type="button" data-v="off">OFF</button></div></div>
-      <div class="cl-row"><span class="cl-label">FRAMES</span>
-        <div class="cl-seg cl-seg-sm" data-opt="frames"><button type="button" data-v="smooth">SMOOTH</button><button type="button" data-v="stepped">STEPPED</button></div></div>
     </section>
     <section class="cl-group">
       <div class="cl-label">THROW</div>
       <div class="cl-row"><span class="cl-label">THROW</span>
-        <div class="cl-seg cl-seg-sm" data-opt="throw"><button type="button" data-v="stream">STREAM</button><button type="button" data-v="handful">HANDFULS</button><button type="button" data-v="splash">SPLASH</button></div></div>
+        <div class="cl-seg cl-seg-sm" data-opt="throw"><button type="button" data-v="bybet">BY BET</button><button type="button" data-v="handful">HANDFULS</button><button type="button" data-v="splash">SPLASH</button></div></div>
       <div class="cl-row"><span class="cl-label">HANDFULS</span>
         <div class="cl-seg cl-seg-sm" data-opt="hand"><button type="button" data-v="rigid">RIGID</button><button type="button" data-v="bloom">BLOOM</button></div></div>
       <div class="cl-row"><span class="cl-label">TIMING</span>
         <div class="cl-seg cl-seg-sm" data-opt="timing"><button type="button" data-v="even">EVEN</button><button type="button" data-v="irregular">UNEVEN</button></div></div>
-      <div class="cl-row"><span class="cl-label">AIR</span>
-        <div class="cl-seg cl-seg-sm" data-opt="air"><button type="button" data-v="eased">EASED</button><button type="button" data-v="gravity">GRAVITY</button></div></div>
       <div class="cl-row"><span class="cl-label">FLIPS</span>
         <div class="cl-seg cl-seg-sm" data-opt="flips"><button type="button" data-v="one">1</button><button type="button" data-v="many">2–6</button></div></div>
+      <div class="cl-row"><span class="cl-label">COIN TOSS</span>
+        <div class="cl-seg cl-seg-sm" data-opt="toss"><button type="button" data-v="on">ON</button><button type="button" data-v="off">OFF</button></div></div>
       <div class="cl-row"><span class="cl-label">SOURCE</span>
         <div class="cl-seg cl-seg-sm" data-opt="source"><button type="button" data-v="face">FACE</button><button type="button" data-v="edge">EDGE</button><button type="button" data-v="chute">CHUTE</button></div></div>
     </section>
@@ -96,8 +97,8 @@
       <div class="cl-label">LANDING</div>
       <div class="cl-row"><span class="cl-label">BOUNCES</span>
         <div class="cl-seg cl-seg-sm" data-opt="bounces"><button type="button" data-v="one">1</button><button type="button" data-v="multi">1–3</button></div></div>
-      <div class="cl-row"><span class="cl-label">COIN WOBBLE</span>
-        <div class="cl-seg cl-seg-sm" data-opt="wobble"><button type="button" data-v="on">ON</button><button type="button" data-v="off">OFF</button></div></div>
+      <div class="cl-row"><span class="cl-label">ROCK</span>
+        <div class="cl-seg cl-seg-sm" data-opt="rock"><button type="button" data-v="on">ON</button><button type="button" data-v="off">OFF</button></div></div>
       <div class="cl-row"><span class="cl-label">ROLLERS</span>
         <div class="cl-seg cl-seg-sm" data-opt="roll"><button type="button" data-v="on">ON</button><button type="button" data-v="off">OFF</button></div></div>
       <div class="cl-row"><span class="cl-label">KNOCK-OFFS</span>
@@ -110,11 +111,13 @@
         <div class="cl-seg cl-seg-sm" data-opt="sweep"><button type="button" data-v="stream">STREAM</button><button type="button" data-v="push">PUSH</button></div></div>
     </section>
     <section class="cl-group">
+      <div class="cl-row"><span class="cl-label">RANDOM</span>
+        <div class="cl-seg cl-seg-sm" data-opt="random"><button type="button" data-v="fresh">FRESH</button><button type="button" data-v="same">SAME</button></div></div>
       <div class="cl-row"><span class="cl-label">SPEED</span>
         <div class="cl-seg cl-seg-sm" data-opt="speed"><button type="button" data-v="1">1×</button><button type="button" data-v="0.35">SLOW</button></div></div>
       <div class="cl-row"><span class="cl-label">SOUND</span>
         <div class="cl-seg cl-seg-sm" data-opt="sound"><button type="button" data-v="on">ON</button><button type="button" data-v="off">OFF</button></div></div>
-      <p class="cl-note">Juice = dust puffs, chute rattle, and a hit-stop + felt shake on all-ins. Tap the bank to tidy it; with MESS·TAP, tap the felt to tidy the table.</p>
+      <p class="cl-note">BY BET: a call is a low flick, a raise a lob of handfuls, a big raise a shove along the felt, an all-in a heave (handfuls, then a splash). COIN TOSS: one or two coins per throw go high, flipping, with a glint. JUICE: dust puffs, chute rattle, glints, and a hit-stop and shake on all-ins. RANDOM SAME makes every replay identical, for comparing. Tap the bank to tidy it; with MESS·TAP, tap the felt.</p>
     </section>
   </aside>
 

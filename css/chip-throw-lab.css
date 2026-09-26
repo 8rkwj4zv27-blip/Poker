@@ -64,3 +64,12 @@
   .ct-bar{ left:calc(50% - 390px); right:auto; width:390px; }
   .ct-drawer,.ct-drawer[hidden]{ display:block; bottom:0; }
 }
+
+/* v3: a glint at the top of a tossed coin's arc */
+.ct-glint{ position:absolute; left:0; top:0; width:1px; height:1px; z-index:99999; pointer-events:none; }
+.ct-glint::before{
+  content:''; position:absolute; left:0; top:0; width:1px; height:1px; background:#fffbe0;
+  box-shadow:0 -2px 0 #fffbe0, 0 2px 0 #fffbe0, -2px 0 0 #fffbe0, 2px 0 0 #fffbe0, 0 -3px 0 rgba(255,251,224,.5), 0 3px 0 rgba(255,251,224,.5);
+  animation:ctGlint .26s steps(3,end) forwards;
+}
+@keyframes ctGlint{ 0%{ transform:scale(.4); opacity:1; } 50%{ transform:scale(1.2); opacity:1; } 100%{ transform:scale(.6); opacity:0; } }

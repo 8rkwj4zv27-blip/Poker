@@ -159,3 +159,40 @@ is a body (ground point, height, velocity), not a DOM pile slot.
   puts bets down first if the spots are empty.
 Presets: Today · Weight (recommended) · Chaos · Machine. Reduced Motion
 places every chip directly where it ends.
+
+### v3 (26 Sep 2026)
+
+Owner on v2: good, but your chips overshot your spot; after a sweep chips
+sat on the cards; overshooting chips nearly left the screen; collisions
+could be better and chips clunkier; the wobble shimmered; flips weren't
+visible; every throw looked the same; handfuls were slow; eased and
+stepped didn't work. Size M is right. The coin should be a plain gold
+video-game coin (no symbol, which wouldn't read at this size), with the
+old colours kept as an option. After throws and returns: the chip areas
+(bank, pots).
+
+v3:
+- **Containment:** the rail is a wall; board cards, deck, pot plate, seat
+  cards and your hole cards are solid blocks. Coins bounce off them and
+  never rest on them. The sweep and pay-outs clamp their targets clear of
+  them. Checked over repeated runs: 0 coins resting on cards, 0 off the
+  felt.
+- **Landing control:** the first impact caps horizontal speed (felt
+  grip), throws aim short by their predicted carry, and the felt grips
+  harder away from a chip's spot. Measured over 6 runs each: your raise
+  lands a median of 11px from the spot centre (v3 before the carry fix:
+  26px); opponents' raise 10px, call 5px.
+- **Heavier:** gravity 3300 (was 2600), bounce 0.18–0.32, friction 1500,
+  a squash frame on impact, equal-mass chip collisions (in the air too,
+  when low), two physics half-steps per frame. The wobble became a rock:
+  a slow tip or two, then a clunk.
+- **Coin:** a gold coin drawn by code (face, darker rim, slot line,
+  highlight, reeded edge, darker back), so flips read. ART switch: gold /
+  colours (v2 pixel) / original.
+- **Throws by bet:** call = flick, raise = lob (blooming handfuls, each
+  with its own arc height, 70–140ms apart), big raise (15BB+) = shove along
+  the felt with the front coins tumbling, all-in = heave (handfuls, then a
+  splash). One or two coins per throw are tossed high with 3–5 flips and a
+  glint. Randomness is fresh each run (SAME for identical replays).
+- Eased and stepped removed; the owner's v2 settings are the new V3
+  default (edge source, mess until tap). V3 + TIDY auto-tidies.
