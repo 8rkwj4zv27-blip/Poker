@@ -25,6 +25,11 @@
 [data-ec-cabinet="painted"] .seat:not(.you):not(.winner) .seat-name{
   box-shadow:inset 0 3px 0 rgba(0,0,0,.48), inset 0 -2px 0 var(--ec-own);
 }
+/* ---------------- NAME: the character name, a size up ---------------- */
+[data-ec-name="cast"] .seat:not(.you) .seat-name{ font-size:12px; line-height:1.15; padding:1px 3px; letter-spacing:.02em; }
+[data-ec-name="cast"] .felt.opponents-5 .seat:not(.you) .seat-name{ font-size:11px; }
+[data-ec-name="cast"] .felt.opponents-6 .seat:not(.you) .seat-name{ font-size:11px; padding:1px 2px; }
+
 /* with no rim light ordered, their turn is still V1's gold border */
 [data-ec-cabinet="painted"]:not([data-ec-rim]) .seat.active:not(.you) .seat-card{ border-color:var(--accent); }
 
@@ -76,9 +81,19 @@
 [data-ec-cards="fan"] .seat:not(.you) > .seat-cards.ec-out{ gap:0; }
 [data-ec-cards="fan"] .seat:not(.you) > .seat-cards.ec-out .card:first-child{ transform:rotate(-11deg) translate(2px,-1px); transform-origin:50% 0; }
 [data-ec-cards="fan"] .seat:not(.you) > .seat-cards.ec-out .card:last-child{ transform:rotate(11deg) translate(-2px,-1px); transform-origin:50% 0; }
-/* showdown: out all the way, straight */
-.seat.ec-shown:not(.you) > .seat-cards.ec-out{ bottom:calc((var(--ec-ch) + 5px) * -1); }
-[data-ec-cards="fan"] .seat.ec-shown:not(.you) > .seat-cards.ec-out{ gap:2px; }
+/* dealing: the cards are dealt to just below the card, in plain sight,
+   then slide up and tuck in (js: dealIn / tuckCheck) */
+.seat.ec-dealing:not(.you) > .seat-cards.ec-out{ bottom:calc(var(--ec-peek) * -1 - 16px); transition:none; }
+[data-ec-cards="fan"] .seat.ec-dealing:not(.you) > .seat-cards.ec-out{ gap:2px; }
+[data-ec-cards="fan"] .seat.ec-dealing:not(.you) > .seat-cards.ec-out .card{ transform:none; }
+/* showdown: out all the way, straight, and a size up so they read */
+.seat.ec-shown:not(.you){ z-index:8; }
+.seat.ec-shown:not(.you) > .seat-cards.ec-out{
+  bottom:calc((var(--ec-ch) + 4px) * -1); gap:3px;
+  transform:translateX(-50%) scale(1.38); transform-origin:50% 0;
+  filter:drop-shadow(0 3px 0 rgba(0,0,0,.5));
+  transition:bottom .3s steps(6,end), transform .3s steps(6,end) .1s, opacity .25s steps(3,end);
+}
 [data-ec-cards="fan"] .seat.ec-shown:not(.you) > .seat-cards.ec-out .card{ transform:none; }
 
 /* ---------------- FOLD: the cards go in ---------------- */
@@ -216,106 +231,6 @@
 .ec-puck.ec-sb{ --ec-puck-face:#D9534A; --ec-puck-edge:#8A2922; --ec-puck-ink:#FFF3DC; }
 .ec-puck.ec-bb{ --ec-puck-face:#EAC04A; --ec-puck-edge:#9A6E12; --ec-puck-ink:#2A1A06; }
 
-/* ---------------- THE FILE ---------------- */
-.ec-back, .ec-tab{ display:none; }
-/* the file's content, on a CRT (flip, drawer) or on paper (index card) */
-.ec-file-head{ display:flex; justify-content:space-between; align-items:baseline; gap:3px; padding:0 1px 2px; font-family:var(--font-hdr); text-transform:uppercase; }
-.ec-file-head b{ font-size:6px; font-weight:400; color:var(--ink,#F3E6C4); letter-spacing:.02em; }
-.ec-file-head small{ font-size:5px; color:color-mix(in srgb,var(--ec-own,#B69A7A) 70%,white); letter-spacing:.06em; }
-.ec-file-glass{ --crt-line-size:5px; --crt-caption-size:5px; --crt-fig:6px; display:flex; flex-direction:column; gap:2px; padding:3px 2px; }
-.ec-gauge-dial{ position:relative; height:21px; }
-.ec-gauge-dial svg{ display:block; width:36px; height:21px; margin:0 auto; overflow:visible; }
-.ec-gauge-dial .ec-arc{ fill:none; stroke:color-mix(in srgb,var(--crt-text) 45%,transparent); stroke-width:1; }
-.ec-gauge-dial .ec-ticks line{ stroke:color-mix(in srgb,var(--crt-text) 70%,transparent); stroke-width:1; }
-.ec-gauge-dial .ec-needle{ transform:rotate(var(--a)); transform-origin:20px 20px; transition:transform .6s cubic-bezier(.3,1.6,.4,1); }
-.ec-gauge-dial .ec-needle line{ stroke:var(--crt-ink-money); stroke-width:1.5; }
-.ec-gauge-dial .ec-hub{ fill:var(--crt-text); }
-.ec-gauge-dial.is-reading .ec-needle{ animation:ecReading 1.1s steps(6,end) infinite; }
-@keyframes ecReading{ 0%{ transform:rotate(-14deg); } 30%{ transform:rotate(9deg); } 55%{ transform:rotate(-4deg); } 80%{ transform:rotate(16deg); } 100%{ transform:rotate(-14deg); } }
-.ec-dial-l, .ec-dial-r{ position:absolute; bottom:-1px; font-size:4px; line-height:1; letter-spacing:0; color:color-mix(in srgb,var(--crt-text) 70%,#000); }
-.ec-dial-l{ left:0; } .ec-dial-r{ right:0; }
-.ec-file-row{ display:flex; flex-direction:column; align-items:center; gap:1px; }
-.ec-file-row .crt-caption{ font-size:4px; letter-spacing:.04em; }
-.ec-tallies{ display:flex; flex-wrap:wrap; justify-content:center; gap:2px; min-height:6px; }
-.ec-tally{ position:relative; display:inline-flex; gap:1px; height:6px; }
-.ec-tally b{ display:block; width:1px; height:6px; background:var(--crt-text); }
-.ec-tally s{ position:absolute; left:-1px; right:-1px; top:2px; height:1px; background:var(--crt-text); transform:rotate(-24deg); }
-.ec-tallies em{ font-size:4px; line-height:6px; }
-.ec-shown{ display:flex; align-items:center; gap:2px; }
-.ec-shown > span{ font-size:4px; line-height:1.1; max-width:26px; white-space:normal; text-align:left; }
-.ec-shown.is-none > span{ max-width:none; color:color-mix(in srgb,var(--crt-text) 55%,#000); }
-.ec-mini{ display:inline-flex; flex-direction:column; align-items:center; justify-content:center; width:10px; height:14px; background:#F3E6C4; border:1px solid #0b0806; border-radius:1px; color:#1a1208; text-shadow:none !important; }
-.ec-mini b{ font-size:5px !important; line-height:1; } .ec-mini i{ font-size:5px !important; line-height:1; font-style:normal; }
-.ec-mini.is-red{ color:#C2352C; }
-.ec-best{ font-size:6px !important; }
-
-/* FLIP: the card turns over; the file is on its back */
-[data-ec-file="flip"] .seat:not(.you) .seat-card.ec-flipped > *:not(.ec-back){ visibility:hidden; }
-[data-ec-file="flip"] .seat:not(.you) .seat-card.ec-flipped > .ec-back{
-  display:flex; flex-direction:column; position:absolute; inset:0; z-index:6; padding:3px; box-sizing:border-box; gap:2px;
-  background:inherit; border-radius:inherit;
-}
-[data-ec-file="flip"] .seat:not(.you) .seat-card.ec-flipped .ec-file-glass{ flex:1 1 auto; justify-content:space-around; }
-[data-ec-file="flip"] .seat.ec-file-open:not(.you) > .seat-cards.ec-out{ opacity:0; }
-
-/* DRAWER: a FILE tab under the card; the file slides out beneath it */
-[data-ec-file="drawer"] .seat:not(.you) .ec-tab{
-  display:block; position:absolute; z-index:4; right:5px; bottom:-9px; width:26px; height:10px; padding:0;
-  border:2px solid #0b0806; border-top:0; border-radius:0 0 3px 3px;
-  background:color-mix(in srgb,var(--ec-own,#B69A7A) 45%,var(--machine-case-hi));
-  font-family:var(--font-hdr); font-size:4px; line-height:8px; letter-spacing:.04em; color:#0b0806; cursor:pointer;
-  box-shadow:0 2px 0 rgba(0,0,0,.45);
-}
-[data-ec-file="drawer"] .seat.ec-file-open:not(.you) .ec-tab{ visibility:hidden; }
-
-/* the layer the drawer and the index card float in (above the coins);
-   each is clipped at its card's bottom edge and slides down out of it */
-#ec-files{ position:absolute; inset:0; z-index:40; pointer-events:none; }
-.ec-clip{ position:absolute; height:190px; overflow:hidden; pointer-events:auto; }
-.ec-clip > *{ transform:translateY(-102%); transition:transform .3s steps(6,end); }
-.ec-clip.is-open > *{ transform:none; }
-.ec-drawer{ padding:0; }
-.ec-drawer-in{
-  box-sizing:border-box; height:136px; padding:4px 3px 3px;
-  display:flex; flex-direction:column; gap:2px;
-  background:color-mix(in srgb,var(--ec-own,#777) 26%,var(--machine-case));
-  border:2px solid #0b0806; border-top:0; border-radius:0 0 3px 3px;
-  box-shadow:inset 0 4px 0 rgba(0,0,0,.45), 0 4px 0 rgba(0,0,0,.4);
-}
-.ec-drawer-in .ec-file-glass{ flex:1 1 auto; justify-content:space-around; }
-.ec-drawer-in .ec-gauge-dial, .seat-card .ec-back .ec-gauge-dial{ margin-bottom:2px; }
-.ec-drawer-in::after{ content:'FILE'; align-self:flex-end; margin:1px 2px 0 0; font-family:var(--font-hdr); font-size:4px; color:color-mix(in srgb,var(--ec-own,#B69A7A) 60%,white); }
-
-/* INDEX CARD: a cream file card, typed up */
-.ec-index{
-  box-sizing:border-box; padding:5px 7px 7px;
-  background:
-    linear-gradient(#C8483E 0 0) 0 17px / 100% 1px no-repeat,
-    repeating-linear-gradient(180deg,transparent 0 12px,rgba(70,110,160,.22) 12px 13px) 0 18px / 100% calc(100% - 18px) no-repeat,
-    #F3E6C4;
-  border:2px solid #0b0806; border-top:0; border-radius:0 0 2px 2px; color:#2A1A0E;
-  box-shadow:0 4px 0 rgba(0,0,0,.45);
-  font-family:var(--font-hdr); text-transform:uppercase;
-}
-.ec-index .ec-file-head b{ font-size:7px; color:#2A1A0E; }
-.ec-index .ec-file-head small{ font-size:5px; color:#8A2922; }
-.ec-paper.ec-file-glass{ --crt-text:#2A1A0E; --crt-ink-money:#8A2922; display:flex; flex-direction:column; gap:4px; padding:4px 0 0; }
-.ec-paper .crt-caption{ font-size:5px; color:#6A5238; letter-spacing:.04em; white-space:nowrap; }
-.ec-paper .ec-gauge-dial{ height:25px; margin-bottom:3px; }
-.ec-paper .ec-gauge-dial svg{ width:44px; height:25px; }
-.ec-paper .ec-dial-l, .ec-paper .ec-dial-r{ font-size:5px; color:#6A5238; bottom:1px; }
-.ec-paper .ec-file-row{ flex-direction:row; justify-content:space-between; align-items:center; min-height:12px; }
-.ec-paper .ec-shown > span{ font-size:5px; max-width:none; white-space:nowrap; }
-.ec-paper .ec-tallies em, .ec-paper .ec-best{ font-size:7px !important; }
-.ec-paper .ec-best{ color:#8A2922; font-weight:400; }
-.ec-paper .ec-tally b, .ec-paper .ec-tally s{ background:#2A1A0E; }
-.ec-paper .ec-mini{ width:11px; height:15px; }
-.ec-paper .ec-mini b, .ec-paper .ec-mini i{ font-size:6px !important; }
-
-/* the open seat stands in front of its neighbours */
-[data-ec-file] .seat.ec-file-open:not(.you){ z-index:12; }
-[data-ec-file] .seat:not(.you) .seat-card{ cursor:pointer; }
-
 /* ---------------- CABINET MOVES ---------------- */
 [data-ec-moves] .seat:not(.you) .seat-card.ec-knock{ animation:ecKnock .42s steps(1,end); }
 @keyframes ecKnock{ 0%{ transform:translateY(0); } 8%{ transform:translateY(2px); } 20%{ transform:translateY(0); } 36%{ transform:translateY(2px); } 48%,100%{ transform:translateY(0); } }
@@ -330,9 +245,8 @@
 body[data-motion="off"] .ec-glass.ec-blip,
 body[data-motion="off"] .seat-card::after{ animation:none !important; }
 body[data-motion="off"] .seat:not(.you) > .seat-cards.ec-out,
-body[data-motion="off"] .ec-clip > *,
 body[data-motion="off"] .ec-door{ transition:none !important; }
 @media (prefers-reduced-motion:reduce){
   .ec-glass.ec-blip, .ec-gauge-dial .ec-needle, .ec-slot.is-open .ec-mouth{ animation:none !important; }
-  .seat:not(.you) > .seat-cards.ec-out, .ec-clip > *, .ec-door{ transition:none !important; }
+  .seat:not(.you) > .seat-cards.ec-out, .ec-door{ transition:none !important; }
 }

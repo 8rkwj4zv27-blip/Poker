@@ -11,11 +11,14 @@
    order: one row per job on the opponents' seats and their places on the
    felt. Each change goes to the game with EnemyCard.apply().
 
-   The coin table's edgeSource() (where a seat's coins leave from and go
-   home to) is not reachable from outside js/coin-table.js, so the copy
-   loads a patched coin-table.js with one seam: window.EC_SOURCE(p), which
-   the candidate answers with the coin slot's mouth. The real file is not
-   changed; shipping the slot would add the same seam.
+   The coin table places each seat's bet spot and coin source inside
+   js/coin-table.js, out of reach, so the copy loads a patched
+   coin-table.js with three seams the candidate answers:
+   window.EC_SOURCE(p) (edgeSource: coins leave from / go home to the coin
+   cup), window.EC_SPOT(p, fr) (layout: the spot is the bet square under
+   the seat) and window.EC_ROWKEY(p) (layoutKey: the spots re-lay when the
+   seat moves, not when its tucked cards do). The real file is not
+   changed; shipping these parts adds the same seams.
 
    ISOLATION: the same scheme as the other order-form Labs. The copy is
    built as srcdoc with a shim that replaces Storage in the frame with an
@@ -49,7 +52,7 @@
         ['roll','TWO LINE + COUNT', 'The same, and the amount counts up like a till when it changes.']] },
       { key:'cards', name:'HOLE CARDS', hint:'where their cards sit', opts:[
         ['0','IN THE BOX', 'Today: a row inside the card, hanging out of the bottom.'],
-        ['under','TUCKED UNDER', 'Out of the box, behind the cabinet: a strip shows under the bottom edge. At showdown they slide right out. The card gets about 35px shorter.'],
+        ['under','TUCKED UNDER', 'Out of the box, behind the cabinet: a strip shows under the bottom edge. They\'re dealt to just below the card and slide up under it; at showdown they slide right out, a size up.'],
         ['fan','TUCKED + FANNED', 'The same, the pair splayed a little as it peeks out.']] },
       { key:'slot', name:'COIN SLOT', hint:'where coins leave and come home', opts:[
         ['0','NONE', 'Today: coins appear from under their cards and vanish there.'],
@@ -82,7 +85,7 @@
     { title:'ON THE FELT', jobs:[
       { key:'squares', name:'BET SQUARE', hint:'where their coins land (yours too)', opts:[
         ['0','NONE', 'Today: the coins land on plain felt.'],
-        ['faint','FAINT', 'A square of slightly darker felt under each bet spot.'],
+        ['faint','FAINT', 'A square of slightly darker felt right under each seat, and one above your cards; the coins land in it.'],
         ['pressed','PRESSED', 'Darker, and pressed a little into the table.'],
         ['stitched','STITCHED', 'Darker, with a faint stitched edge like the rail.']] },
       { key:'blinds', name:'BLINDS', hint:'SB and BB', opts:[
@@ -97,18 +100,14 @@
         ['both','KNOCK + SHUDDER', 'And an all in: the whole cabinet shudders once.']] },
       { key:'fold', name:'FOLD', hint:'their cards', opts:[
         ['0','V1', 'Today: the card and cards dim.'],
-        ['in','CARDS GO IN', 'The cards slide back into the cabinet and are gone; the card dims.']] },
-      { key:'file', name:'THEIR FILE', hint:'tap an opponent', opts:[
-        ['0','NONE', 'Tapping an opponent does nothing.'],
-        ['flip','FLIP', 'The card turns over like a playing card; the file is on its back. It turns back on their turn, a new hand, or a tap.'],
-        ['drawer','DRAWER', 'A FILE tab under the card: tap it (or the card) and a drawer slides out beneath with the file.'],
-        ['index','INDEX CARD', 'A cream file card slides down out from behind the cabinet, typed up.']] }
+        ['in','CARDS GO IN', 'The cards slide back into the cabinet and are gone; the card dims.']] }
     ]}
   ];
   const JOBS = SECTIONS.flatMap(s => s.jobs);
   const V1 = Object.fromEntries(JOBS.map(j => [j.key, j.opts[0][0]]));
-  const SUGGESTED = { cabinet:'painted', name:'cast', readout:'two', cards:'under', slot:'slit', face:'0',
-    rim:'own', react:'full', next:'rim', gauge:'0', squares:'faint', blinds:'toss', moves:'both', fold:'in', file:'flip' };
+  // The owner's round-2 order (27 Sep 2026), now the default.
+  const SUGGESTED = { cabinet:'painted', name:'cast', readout:'roll', cards:'under', slot:'cup', face:'0',
+    rim:'ownall', react:'full', next:'rim', gauge:'0', squares:'pressed', blinds:'0', moves:'both', fold:'in' };
   let order = Object.assign({}, SUGGESTED);
   const view = { opp:'4', theme:'emerald', sound:'on', motion:'on' };
   let comparing = false;
@@ -235,7 +234,13 @@
     const seam = 'function edgeSource(p){';
     if (!sw.test(source) || !ct.test(source) || !/<head>/i.test(source) || !/<\/body>/i.test(source) || coinTable.indexOf(seam) === -1)
       throw new Error('game page shape changed; refusing to build an unisolated copy');
-    const patched = coinTable.replace(seam, seam + ' { const ec = window.EC_SOURCE && window.EC_SOURCE(p); if (ec) return ec; }');
+    const rowSeam = 'return e && !p.isHuman ? Math.round(e.cardsContainer.getBoundingClientRect().bottom) : \'\';';
+    const spotSeam = "const z = CW.zone('spot:'+p.id, fr.left+x, fr.top+y+2, 7, 5, 16);";
+    if (coinTable.indexOf(rowSeam) === -1 || coinTable.indexOf(spotSeam) === -1) throw new Error('coin-table.js changed; the lab seams need updating');
+    const patched = coinTable
+      .replace(seam, seam + ' { const ec = window.EC_SOURCE && window.EC_SOURCE(p); if (ec) return ec; }')
+      .replace(rowSeam, 'return e && !p.isHuman ? ((window.EC_ROWKEY && window.EC_ROWKEY(p)) || Math.round(e.cardsContainer.getBoundingClientRect().bottom)) : \'\';')
+      .replace(spotSeam, '{ const ec = window.EC_SPOT && window.EC_SPOT(p, fr); if (ec){ x = ec.x; y = ec.y; room = ec.room; } } ' + spotSeam);
     const base = new URL('.', location.href).href;
     return source.replace(sw, '')
       .replace(ct, () => '<script>' + patched.replace(/<\/script/gi, '<\\/script') + '<\/script>')
@@ -381,35 +386,20 @@
         b.setDev(false);
       }
     },
+    // Hurries the rest of this hand, then lets the new deal play at its
+    // real speed so the cards can be watched going under the cabinets.
     async nexthand(){
       await ensureTurn();
-      const n = g().handNumber;
+      const n = g().handNumber, b = bridge();
+      b.setDev(true, true);
       await waitFor(() => {
         award(); nextHandKey();
         if (myTurn() && g().handNumber === n) win().humanAct('fold');
-        return g().handNumber > n && myTurn();
+        return g().handNumber > n;
       }, 40000);
-    },
-    async hands(){
-      await ensureTurn();
-      const b = bridge(); b.setDev(true, true);
-      const start = g().handNumber;
-      await waitFor(() => {
-        award(); nextHandKey();
-        if (myTurn()) win().humanAct('fold');
-        status('PLAYING… hand ' + (g().handNumber - start) + ' / 8');
-        return g().handNumber - start >= 8 || g().over;
-      }, 150000);
       b.setDev(false);
-      await waitFor(() => { award(); nextHandKey(); return myTurn(); }, 20000);
+      await waitFor(() => { award(); nextHandKey(); return myTurn(); }, 30000);
     },
-    async file(){
-      if (!g()) await freshTable();
-      if (order.file === '0'){ order.file = 'flip'; sync(); send(); await sleep(200); }
-      const opps = g().players.filter(p => !p.isHuman && !p.eliminated);
-      const p = opps[Math.floor((opps.length - 1) / 2)] || opps[0];
-      if (p) win().EnemyCard.open(p.id);
-    }
   };
   let busy = false;
   const lock = on => { busy = on; $$('[data-moment]').forEach(x => x.disabled = on); };
@@ -434,7 +424,7 @@
     }
   }));
   $('#sl-copy').addEventListener('click', async () => {
-    const text = 'Enemy cards order (round 2):\n' + JOBS.map(j => '- ' + j.name + ': ' + j.opts.find(o => o[0] === order[j.key])[1]).join('\n');
+    const text = 'Enemy cards order (round 3):\n' + JOBS.map(j => '- ' + j.name + ': ' + j.opts.find(o => o[0] === order[j.key])[1]).join('\n');
     try{ await navigator.clipboard.writeText(text); $('#sl-copied').textContent = 'Copied. Paste it into the chat.'; }
     catch(e){ $('#sl-copied').textContent = 'Copy blocked here; the list above is your order.'; }
   });

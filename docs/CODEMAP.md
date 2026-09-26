@@ -263,24 +263,26 @@ COPY SETTINGS gives the owner's picks as text; the settings live in the
 URL hash. Since v0.40.7 (release 2) its TODAY is the shipped layout, with a
 BEFORE preset for the table as it was. Not loaded by the game.
 
-## `enemy-card-lab.html` + `js/enemy-card-lab.js` + `css/enemy-card-lab.css` + candidate `css/enemy-card.css` / `js/enemy-card.js` — Enemy Cards order form, round 2 (Lab)
+## `enemy-card-lab.html` + `js/enemy-card-lab.js` + `css/enemy-card-lab.css` + candidate `css/enemy-card.css` / `js/enemy-card.js` — Enemy Cards order form (Lab, round 3)
 
 The opponents' seat cards and their places on the felt. Runs the **real
 game** sandboxed at the owner's phone (430 x 932, safe areas rewritten to
 59px / 34px as in `table-space-lab.html`, whose chrome it shares) with the
 two candidate files injected; options are `data-ec-*` attributes on the
-game's `<html>`, set by `EnemyCard.apply()`. Jobs: cabinet, name, two-line
-readout, hole cards tucked under the card, coin slot, face size, rim light
-(and what it reacts to), next-to-act, stack gauge, bet squares on the felt
-(yours too), SB/BB pucks on the felt, cabinet moves, fold, and the
-player's file (flip / drawer / index card; the drawer and index card float
-in `#ec-files` above the coin world). The candidate only reads state
-(wraps `render()`, `applyAction()`, `finishHand()`, `initSeats()` and
-`CoinTable.bet/payout/layout`). The coin slot needs a seam the game
-doesn't have: the lab copy loads `coin-table.js` patched so
-`edgeSource(p)` asks `window.EC_SOURCE(p)` first; the real file is
-unchanged. Shows each card's footprint against V1 at the same table.
-Not loaded by the game.
+game's `<html>`, set by `EnemyCard.apply()`. Its default ("YOUR ORDER") is
+the owner's round-2 pick: painted cabinet, character names (a game change
+if shipped), two-line CRT readout that counts, hole cards tucked under the
+card (dealt to just below it, then tucked; out and a size up at
+showdown), coin cup, own-colour rim light reacting to everything with a
+next-to-act pre-light, pressed bet squares under each seat and above your
+cards, knock + shudder, cards going in on a fold. The candidate only reads
+state (wraps `render()`, `initSeats()` and `CoinTable.bet/payout/layout`).
+The coin parts need seams the game doesn't have: the lab copy loads
+`coin-table.js` patched so `edgeSource(p)` asks `window.EC_SOURCE(p)`,
+`layout()` asks `window.EC_SPOT(p, fr)` for each seat's spot and
+`layoutKey()` asks `window.EC_ROWKEY(p)`; the real file is unchanged.
+Shows each card's footprint against V1 at the same table. Not loaded by
+the game.
 
 ## `js/finishes.js` + `css/finishes.css` — Finishes menu (live)
 
