@@ -538,3 +538,15 @@ the counter in the rounded area, 210 x 62; deck 16% across, 88.5% down;
 your bet spot above your cards; your cards poke up 55px; button bay 98px;
 buttons 51px; gap above the home bar 21px. Everything else as today.
 Lab link with these: `table-space-lab.html#score=off&top=gone&topGap=0&gear=dash&hole=95&podY=2&oppDrop=-10&boardY=53&potY=77.5&trayW=210&trayH=62&deckX=16&deckY=88.5&you=centre&rise=55&actH=98&btnH=51&foot=21`.
+
+**Release 2 shipped (v0.40.7, 26 Sep 2026)** with those picks: the rules
+are one block at the end of `css/05-responsive-and-arcade.css`; the pot
+tray (210 x 62) and the bet spots (theirs 10px nearer their cards, yours
+above your cards) are in `layout()` in `js/coin-table.js`; the settings key
+is in `#hud-right` in place of the speaker grille, SAVE is in the settings
+sheet's "This table" row, and the top bar is hidden (`#table-meta` stays in
+the markup). BLINDS UP is `TableIntro.blindsUp()` (`js/table-intro.js`,
+styled in `css/table-intro.css`), awaited by `startNewHand()` when the
+blinds rise after a table's first hand (tournament and Career events). The
+lab's TODAY is now this layout, and a BEFORE preset shows the old one.
+

@@ -50,28 +50,22 @@
     const out = [];
     const add = x => out.push(x);
     const ch = (...ks) => ks.some(k => s[k] !== t[k]);
-    // TOP
-    if (s.score === 'off'){
-      add('#arcade-score-machine{display:none!important}');
-      add('.arcade-reward-layer{display:none!important}');
+    // TOP (the game has no top bar since v0.40.7; TRIM / FULL bring it
+    // back, with its title, hand and blinds only)
+    if (s.top === 'trim' || s.top === 'full'){
+      add('#table-screen .topbar{display:flex!important}');
+      add('#table-screen .table-main{padding-top:0!important}');
     }
     if (s.top === 'trim'){
       const pad = SAFE.top + s.topGap, h = s.topH;
       add(`.topbar{height:${pad + h}px!important;min-height:0!important;padding-top:${pad}px!important;padding-bottom:0!important;align-items:center!important}`);
-      const k = Math.min(1, (h - 4) / 34);
-      add(`.topbar .table-save,.topbar .table-settings{height:${Math.round(30 * k)}px!important;min-height:0!important}`);
-      add(`.topbar .table-settings{width:${Math.round(30 * k)}px!important;min-width:0!important}`);
       if (h < 34) add(`.topbar .meta{margin-top:0!important;font-size:${h < 30 ? 9 : 10}px!important}.topbar .brandmini{font-size:${h < 30 ? 8 : 9}px!important}`);
     }
     if (s.top === 'gone'){
-      add('#table-screen .topbar{display:none!important}');
-      add(`#table-screen .table-main{padding-top:${SAFE.top + s.topGap}px!important}`);
+      if (ch('topGap')) add(`#table-screen .table-main{padding-top:${SAFE.top + s.topGap}px!important}`);
       add(`.sl-print{position:absolute;left:0;right:0;top:${s.printY}%;transform:translateY(-50%);z-index:1;text-align:center;pointer-events:none;
         font-family:var(--font-hdr);font-size:7px;letter-spacing:.16em;text-transform:uppercase;color:rgba(255,255,255,.2);text-shadow:0 1px 0 rgba(0,0,0,.35)}`);
-      if (s.gear === 'dash'){
-        add('#hud-right .hud-speaker{display:none!important}');
-        add('#hud-right .sl-gear{width:32px!important;height:32px!important;min-width:0!important;min-height:0!important;margin:0 auto!important;font-size:14px!important;opacity:1!important}');
-      } else {
+      if (s.gear === 'felt'){
         add('#felt .sl-gear{position:absolute!important;right:18px;bottom:16px;z-index:7;width:30px!important;height:30px!important;min-width:0!important;min-height:0!important;font-size:13px!important}');
       }
     }
@@ -83,9 +77,9 @@
       add('#felt .ct-tray[data-tray="well"]{border-radius:3px!important;background:rgba(0,0,0,.14)!important;box-shadow:inset 0 0 0 2px rgba(255,255,255,.1),inset 0 3px 0 rgba(0,0,0,.22)!important}');
     }
     // OPPONENTS
-    if (s.podY) add(`#felt .seat:not(.you){translate:0 ${s.podY}px}`);
+    if (ch('podY')) add(`#felt .seat:not(.you){translate:0 ${s.podY}px!important}`);
     if (s.face !== 100) add(`#felt .seat:not(.you) .avatar-wrap{zoom:${s.face / 100}}`);
-    if (s.hole !== 100) add(`#felt .seat:not(.you) .seat-cards{zoom:${s.hole / 100}}`);
+    if (ch('hole')) add(`#felt .seat:not(.you) .seat-cards{zoom:${s.hole / 100}!important}`);
     if (s.rows === 'slim'){
       add('#felt .seat:not(.you) .seat-card{padding:2px!important;gap:1px!important}');
       add('#felt .seat:not(.you) .seat-name{padding:0 4px!important;line-height:1.25!important}');
@@ -131,22 +125,22 @@
     return out.join('\n');
   }
 
-  // the settings key and the table print: DOM moves CSS can't make
+  // the settings key and the table print: DOM moves CSS can't make. The
+  // key's home is the dashboard's right bay (v0.40.7).
   let gearHome = null;
   function placeGear(){
     const gear = $('open-settings'); if (!gear) return;
     if (!gearHome) gearHome = { parent:gear.parentNode, next:gear.nextSibling };
-    const want = S && S.top === 'gone' ? (S.gear === 'dash' ? $('hud-right') : $('felt')) : gearHome.parent;
+    const want = S && S.top === 'gone' && S.gear === 'felt' ? $('felt') : gearHome.parent;
     gear.classList.toggle('sl-gear', want !== gearHome.parent);
     if (gear.parentNode === want) return;
     if (want === gearHome.parent) want.insertBefore(gear, gearHome.next && gearHome.next.parentNode === want ? gearHome.next : null);
-    else if (want.id === 'hud-right') want.insertBefore(gear, q('#hud-right .hud-speaker'));
     else want.appendChild(gear);
   }
   let printEl = null, metaObs = null;
   function placePrint(){
     const felt = $('felt'), meta = $('table-meta');
-    if (!S || S.top !== 'gone'){ if (printEl) printEl.remove(); printEl = null; return; }
+    if (!S || S.top !== 'gone' || S.print !== 'on'){ if (printEl) printEl.remove(); printEl = null; return; }
     if (!printEl){ printEl = document.createElement('div'); printEl.className = 'sl-print'; }
     if (printEl.parentNode !== felt) felt.appendChild(printEl);
     const copy = () => { if (printEl && meta) printEl.textContent = meta.textContent.replace(/\s*·\s*/g, '  ·  '); };
@@ -206,9 +200,10 @@
       if (!z.__base) z.__base = { cx:z.cx, cy:z.cy, room:z.room };
       const b = z.__base;
       if (p.isHuman){
+        // the game's own spot is above your cards (v0.40.7)
         z.cx = b.cx; z.cy = b.cy;
-        if (hero && S.you === 'centre'){ z.cx = (hero.L + hero.R) / 2; z.cy = hero.T - 12; }
         if (hero && S.you === 'right'){ z.cx = hero.R + 38; z.cy = Math.min(hero.T + 26, fr.bottom - 26); }
+        if (S.you === 'old'){ z.cx = fr.left + fr.width * .80; z.cy = fr.top + fr.height * .80 + 2; }
       } else {
         z.cx = b.cx; z.cy = b.cy + S.oppDrop;
         if (b.room) z.room = b.room + S.oppDrop;

@@ -91,22 +91,30 @@ const CoinTable = (function(){
       CW.setExtraBlocks(pr.width ? [{ L:pr.left, T:pr.top, R:pr.right, B:pr.bottom }] : []);
       CW.buildWalls();
       const bb = CW.boardRow();
-      // the tray: a well centred on the pot pile, under the coins
+      // the tray: a well centred on the pot pile, under the coins; its
+      // bottom edge tucks 8px under the pot plate (the owner's 210 x 62,
+      // table spacing pass)
       felt.querySelectorAll('.ct-tray').forEach(el=>el.remove());
-      const TW=200, TH=58;
+      const TW=210, TH=62, cx=pr.left+pr.width/2, yc=pr.top+8-TH/2;
       const tray = document.createElement('div'); tray.className = 'ct-tray'; tray.dataset.tray = 'well';
       Object.assign(tray.style,{ width:TW+'px', height:TH+'px',
-        left:Math.round(pr.left+pr.width/2-fr.left-TW/2)+'px', top:Math.round(pr.top-fr.top-16-TH/2-5)+'px' });
+        left:Math.round(cx-fr.left-TW/2)+'px', top:Math.round(yc-fr.top-TH/2)+'px' });
       felt.appendChild(tray);
       // keep coins already on the felt: re-home each zone's list
       const old = {}; Object.keys(CW.zones).forEach(k=>{ old[k] = CW.zones[k]; delete CW.zones[k]; });
-      CW.zone('pot', pr.left+pr.width/2, pr.top-16, 9, 15, 44);
-      if (bb) CW.zones.pot.room = (pr.top-16)-bb.B-10;
-      CW.setTray({ L:pr.left+pr.width/2-TW/2+6, R:pr.left+pr.width/2+TW/2-6, T:pr.top-16-5-TH/2+4, B:pr.top-16-5+TH/2-4 });
+      CW.zone('pot', cx, yc+5, 9, 15, 44);
+      if (bb) CW.zones.pot.room = (yc+5)-bb.B-10;
+      CW.setTray({ L:cx-TW/2+6, R:cx+TW/2-6, T:yc-TH/2+4, B:yc+TH/2-4 });
+      // your cards, dealt or not: the spot sits just above them
+      const mine = document.querySelector('#hud-mid .seat.you .seat-cards');
+      const hr = mine && mine.getBoundingClientRect();
       game.players.forEach(p=>{
         const e = seatEls[p.id]; if (!e) return;
         let x, y, room=0;
-        if (p.isHuman){ x = fr.width*.80; y = fr.height*.80; }
+        if (p.isHuman){
+          if (hr && hr.height){ x = hr.left+hr.width/2-fr.left; y = hr.top-fr.top-14; }
+          else { x = fr.width*.80; y = fr.height*.80; }
+        }
         else {
           const cr = e.cardsContainer.getBoundingClientRect();
           const ax = cr.left+cr.width/2-fr.left, ay = cr.bottom-fr.top;
@@ -117,6 +125,8 @@ const CoinTable = (function(){
             if (ax<rl){ x = (inset+rl)/2; y = rt+22; }
             else if (ax>rR){ x = (fr.width-inset+rR)/2; y = rt+22; }
             else { x = ax+(fr.width/2-ax)*.15; y = ay+(rt-ay)*.64; }
+            // 10px nearer their cards than the first cut (owner's pick)
+            y -= 10;
             room = y-ay-4;
           }
         }

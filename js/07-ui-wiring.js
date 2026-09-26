@@ -227,6 +227,7 @@ function refreshSettingsContext(){
   const onCareer = !$('career').classList.contains('hidden');
   const canReset = onTable || (!onCareer && !!loadTableSave());
   $('leave-table').classList.toggle('hidden', !onTable);
+  $('save-progress').classList.toggle('hidden', !onTable);
   $('settings-reset').classList.toggle('hidden', !canReset);
   $('settings-table-section').classList.toggle('hidden', !onTable && !canReset);
   const body = document.querySelector('#settings-sheet > .sheet-body');

@@ -21,14 +21,14 @@
 <link rel="stylesheet" href="css/02-screens.css">
 <link rel="stylesheet" href="css/03-action-console.css">
 <link rel="stylesheet" href="css/04-overlays-and-modes.css">
-<link rel="stylesheet" href="css/05-responsive-and-arcade.css?v=xp-0">
+<link rel="stylesheet" href="css/05-responsive-and-arcade.css?v=space-1">
 <link rel="stylesheet" href="css/06-machine-system.css">
 <link rel="stylesheet" href="css/career-hub-v2-lab.css?v=live-motion-1">
 <link rel="stylesheet" href="css/career-motion-live.css?v=4">
   <link rel="stylesheet" href="css/machine-wheel.css?v=1">
   <link rel="stylesheet" href="css/ticket-feed.css?v=1">
   <link rel="stylesheet" href="css/career-hub-cabinet.css?v=4">
-  <link rel="stylesheet" href="css/table-intro.css?v=1">
+  <link rel="stylesheet" href="css/table-intro.css?v=space-1">
   <link rel="stylesheet" href="css/home-boot.css?v=2">
   <link rel="stylesheet" href="css/press-feel.css?v=2">
   <link rel="stylesheet" href="css/finishes.css?v=3">
@@ -238,10 +238,6 @@
           <div class="brandmini">POKER</div>
           <div class="meta" id="table-meta">Hand 1</div>
         </div>
-        <div class="table-tools">
-          <button class="table-save" id="save-progress" type="button">Save</button>
-          <button class="icon-btn table-settings" id="open-settings" aria-label="Settings">⚙</button>
-        </div>
       </div>
       <div class="arcade-score-machine hidden" id="arcade-score-machine" aria-label="Score 0">
         <div class="arcade-score-label"><strong>SCORE</strong></div>
@@ -310,12 +306,9 @@
               <span class="instrument-label">Bet this hand</span>
               <div class="crt-screen crt" data-crt-quiet data-ink="money" id="hud-invested" role="img" aria-label="Bet this hand: 0">$000</div>
             </div>
-            <div class="hud-speaker" aria-hidden="true">
-              <i></i><i></i><i></i><i></i><i></i>
-              <i></i><i></i><i></i><i></i><i></i>
-              <i></i><i></i><i></i><i></i><i></i>
-              <i></i><i></i><i></i><i></i><i></i>
-            </div>
+            <!-- The table's settings key (the top bar is gone: table spacing
+                 pass, docs/ui/CHIP_PLAN.md). Same small key as before. -->
+            <button class="icon-btn table-settings" id="open-settings" aria-label="Settings">⚙</button>
             <div class="action-slot act-empty hidden" id="hud-action">–</div>
             <div class="pos-btn hidden" id="hud-pos"></div>
           </div>
@@ -571,7 +564,10 @@
            saved standalone table exists. -->
       <div class="sheet-section" id="settings-table-section">
         <h3>This table</h3>
-        <button class="btn-secondary" id="leave-table" type="button">Leave table</button>
+        <div class="sheet-keys">
+          <button class="btn-secondary" id="save-progress" type="button">Save</button>
+          <button class="btn-secondary" id="leave-table" type="button">Leave table</button>
+        </div>
         <div class="settings-reset" id="settings-reset">
           <button class="btn-secondary btn-danger" id="reset-run" type="button">Reset current run</button>
           <div class="hint">Deletes your current run progress and starts fresh.</div>
@@ -662,19 +658,19 @@
 </div>
 
 <script src="js/01-poker-math.js"></script>
-<script src="js/02-support-systems.js?v=xp-0"></script>
+<script src="js/02-support-systems.js?v=space-1"></script>
 <script src="js/03-opponents.js"></script>
 <script src="js/04-modes-and-scoring.js?v=xp-0"></script>
-<script src="js/05-game-engine.js?v=xp-0"></script>
+<script src="js/05-game-engine.js?v=space-1"></script>
 <script src="js/06-presentation.js?v=xp-0"></script>
 <script src="js/coin-world.js?v=2"></script>
-<script src="js/coin-table.js?v=3"></script>
-<script src="js/07-ui-wiring.js?v=career-motion-1"></script>
+<script src="js/coin-table.js?v=space-1"></script>
+<script src="js/07-ui-wiring.js?v=space-1"></script>
 <script src="js/career-hub-live.js?v=cabinet-4"></script>
 <script src="js/career-motion-live.js?v=4"></script>
 <script src="js/machine-wheel.js?v=2"></script>
 <script src="js/ticket-feed.js?v=1"></script>
-<script src="js/table-intro.js?v=3"></script>
+<script src="js/table-intro.js?v=space-1"></script>
 <script src="js/08-dev-mode.js?v=coin-1"></script>
 <script src="js/home-cast.js?v=1"></script>
 <script src="js/home-boot.js?v=2"></script>

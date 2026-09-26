@@ -45,7 +45,9 @@ const TABLE_INTRO_CONFIG = {
   roll: { seatMs: 240, youMs: 340 },
   bank: { hatchMs: 150, stackGapMs: 95, dropMs: 260, settleMs: 140 },
   pot: { trayMs: 240, deckMs: 300 },
-  resume: { seatSweepMs: 60 }
+  resume: { seatSweepMs: 60 },
+  // BLINDS UP: the same ticket between hands when the blinds rise
+  blinds: { inMs: 380, holdMs: 1150, outMs: 320, reducedMs: 1100 }
 };
 
 const TableIntro = (() => {
@@ -397,6 +399,66 @@ const TableIntro = (() => {
     if (fx && fx.ticket){ fx.ticket.remove(); fx.ticket = null; }
   }
 
+  /* ---------- BLINDS UP ----------
+     Between hands, when the blinds rise (tournament and Career events):
+     the event ticket's own card crosses the felt with the new blinds,
+     like the table intro's ticket. startNewHand() awaits it before the
+     blinds are posted. A tap hurries it off; Reduced Motion shows it
+     still, briefly. Presentation only. */
+  async function blindsUp(was, now){
+    const g = game, felt = $('felt');
+    if (!g || !felt || !now) return;
+    const b = cfg.blinds;
+    const info = tableInfo({});
+    const cashLike = g.mode === 'career' || g.mode === 'career-cash';
+    const fmt = pair => pair ? (cashLike ? money(pair[0]) + '/' + money(pair[1]) : pair[0] + '/' + pair[1]) : '—';
+    const lane = document.createElement('div');
+    lane.className = 'ti-ticket-lane ti-blinds-lane';
+    lane.setAttribute('role','status');
+    lane.setAttribute('aria-label','Blinds up: ' + fmt(now));
+    lane.innerHTML =
+      '<article class="ch2-card ti-ticket ti-blinds' + (info.prestige ? ' is-prestige' : '') + '" data-venue="' + esc(info.key) + '">' +
+        '<div class="ch2-card-inner"><section class="ch2-card-face ch2-card-front ch2-paper">' +
+          '<header class="ch2-card-venue">' + esc(info.venue) + '</header>' +
+          '<h2>BLINDS UP</h2>' +
+          '<div class="ch2-headline">HAND ' + ((g.handNumber || 0) + 1) + '</div>' +
+          '<div class="ch2-card-stats"><span><small>BLINDS</small><strong>' + esc(fmt(now)) + '</strong></span>' +
+          '<span><small>WAS</small><strong>' + esc(fmt(was)) + '</strong></span></div>' +
+        '</section></div>' +
+      '</article>';
+    felt.appendChild(lane);
+    const t = lane.firstElementChild;
+    const app = $('app') || document;
+    let hurry = null;
+    const onTap = event => { event.preventDefault(); if (typeof swallowNextClick === 'function') swallowNextClick(); if (hurry) hurry(); };
+    const wait = ms => new Promise(resolve => { const id = window.setTimeout(resolve, ms); hurry = () => { window.clearTimeout(id); hurry = null; resolve(); }; });
+    app.addEventListener('pointerdown', onTap, true);
+    try{
+      if (motionOff()){
+        t.classList.add('is-still');
+        await wait(b.reducedMs);
+        return;
+      }
+      t.style.setProperty('--ti-in-ms', b.inMs + 'ms');
+      t.style.setProperty('--ti-out-ms', b.outMs + 'ms');
+      t.getBoundingClientRect();
+      t.classList.add('is-in');
+      Sound.cardDeal();
+      await wait(b.inMs * .8);
+      if (game !== g) return;
+      Sound.deckSettle();
+      await wait(b.holdMs);
+      if (game !== g) return;
+      t.classList.remove('is-in');
+      t.classList.add('is-out');
+      Sound.cardReturn();
+      await new Promise(resolve => window.setTimeout(resolve, b.outMs));
+    } finally{
+      app.removeEventListener('pointerdown', onTap, true);
+      lane.remove();
+    }
+  }
+
   /* ---------- install ---------- */
 
   function wrapEntry(name, kind){
@@ -457,7 +519,7 @@ const TableIntro = (() => {
 
   return {
     config: cfg,
-    install, uninstall,
+    install, uninstall, blindsUp,
     get installed(){ return installed; },
     get playing(){ return !!playing; },
     hurry(){ if (playing){ playing.skipped = true; playing.wakers.forEach(w => w()); } }

@@ -844,3 +844,39 @@ body {
 button, [role="button"], input[type="button"], input[type="submit"] {
   touch-action: manipulation;
 }
+
+/* ============================================================
+   TABLE SPACING PASS, release 2 (owner, 26 Sep 2026). Picked in
+   table-space-lab.html on the owner's iPhone 15 Pro Max (installed app);
+   the values and the reasons are in docs/ui/CHIP_PLAN.md. Other phone
+   sizes get their own pass later.
+   ============================================================ */
+/* No top bar: the table starts under the status bar. #table-meta stays
+   in the markup (code still writes it); the settings key lives in the
+   dashboard's right bay and SAVE in the settings sheet. */
+#table-screen .topbar{ display:none; }
+#hud-right .table-settings{ flex:0 0 auto; margin:0 auto; opacity:1; }
+@media (orientation:portrait){
+  #table-screen .table-main{ padding-top:env(safe-area-inset-top,0px); }
+  /* the middle of the table: shared cards a little higher, the pot
+     counter just under them, the deck out to the left */
+  #felt .board{ top:53%; }
+  #felt .pot-area{ top:77.5%; }
+  #felt .dealer-station{ left:16%; top:88.5%; }
+  /* opponents' hole cards at 95% */
+  #felt .seat:not(.you) .seat-cards{ zoom:.95; }
+  /* the key bay: 98px tall, never squeezed; 51px keys; 21px over the
+     home bar (7px where there is none) */
+  #table-screen{ --action-area-h:91px; }
+  #app #table-screen #action-area.dash-frame-base{ flex-shrink:0; }
+  #app .btn-fold,#app .btn-check,#app .btn-call,#app .btn-raise,#app .btn-award-console,#app .btn-quick-resolve{ height:51px; min-height:51px; }
+  /* (#table-screen: css/dashboard.css loads later and sets the same) */
+  #app #table-screen .dash-frame,#app #table-screen #action-area.dash-frame-base{ --dash-foot:max(7px,calc(env(safe-area-inset-bottom) - 13px)); }
+}
+@media (orientation:portrait) and (min-width:390px){
+  #felt .seat:not(.you){ translate:0 2px; }
+}
+@media (orientation:portrait) and (min-height:701px){
+  /* your cards rise 55px out of the dashboard (was 58) */
+  #hud-mid .seat.you .seat-cards{ margin-top:-55px; }
+}
