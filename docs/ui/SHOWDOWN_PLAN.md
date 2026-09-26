@@ -115,6 +115,51 @@ are the game's. The smash takes over only the throw into your hatch.
 Plates, stamps, the duel and the meter sit in one overlay (`.sd-layer`)
 above the coins.
 
+## Round 1 order and round 2 (27 Sep 2026)
+
+The owner's round-1 order: lock CONSOLE · hands FACE UP + NAMED · win
+chance METER · river SQUEEZE + SWEAT · order CASINO · readouts LEADER
+BOARD · losing hands STAY READABLE · winning five RAIL + DUEL · kicker
+PLATE · split STAMP · side pots OWN STACKS · POT BY POT · AWARD POT EVERY
+HAND · TIERED · smash SLAM on MONSTER, LOUD · their win SHOVE + GLOAT ·
+CHOP · your loss DIM · COUNT · SHOW KEY.
+
+Feedback, and what round 2 does about it:
+
+- **The smash wasn't fun or earned enough, and the casino lamps and
+  JACKPOT sign had to go.** Both are gone. On a monster pot AWARD POT
+  becomes HOLD TO SMASH. Holding charges it in nine notches: the key's
+  gauge fills, a ratchet climbs, your dashboard hums and the machine winds
+  up in the style's own way. Letting go fires it as hard as you charged.
+  Then the pour: one coin at a time into the hatch, each clink a step
+  higher, the stack counting with them, and a thunk and a clack to finish.
+  - SLAM: a brass press drops in over the tray and cocks back; it comes
+    down with a hit-stop and every coin jumps.
+  - GEYSER: pressure rattles the coins; they fire straight up one after
+    another, **hit the table's top frame and are thrown back down**
+    (owner's ask), bouncing off the cards.
+  - AVALANCHE: each notch tips the tray and the pile creeps; the release
+    sends it down the felt and over the edge.
+  - RAIN: the tray is a spring; the pile is flung up, **hits the top
+    frame** (owner's ask) and comes down across the dashboard, off its rim
+    and in.
+  Owner: press and hold, yes. Big pots stay a plain tap (a heavier pour).
+- **The winning hand's plate sat under the pot's coins.** It's now a
+  nameplate on the rail's top edge (HAND NAME · ON THE RAIL), with KICKER
+  beside it.
+- **The rim light overlapped their cards.** At the showdown their cards
+  slid out behind the cabinet, so its rim glow (up to 12px on a win) and
+  its base shadow drew over the card tops. They now sit in front of the
+  cabinet and 9px lower (THEIR CARDS · CLEAR OF THE RIM). The gold rings
+  round LEADS/WIN cards are gone; the readout carries it.
+- **Player settings** (owner: yes). Settings → Showdown in the game:
+  the smash (Slam, Geyser, Avalanche, Rain, Off), Win chance (the meter,
+  on/off) and Award pot (Every hand, Mine + big, Never). In the lab the
+  section is live in the game's own Settings sheet and in section 8 of the
+  form. In the real game the win chance should default off.
+- Also fixed: the table bump no longer scales the stage (a scale turns
+  the felt brown for a frame, the same cause as `feltImpactBump()`).
+
 ## Plan after the owner's order
 
 1. **Release 1: the reveal.** The lock, the reveal order and readouts,

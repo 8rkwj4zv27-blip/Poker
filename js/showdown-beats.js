@@ -34,7 +34,7 @@
 const ShowdownBeats = (function(){
   const DEF = { lock:'0', runout:'0', equity:'off', river:'0', order:'0', callout:'0', losers:'0',
     verdict:'0', kicker:'off', split:'0', pots:'0', award:'0', press:'always',
-    tiers:'off', smash:'0', smashon:'monster', smashsize:'tasteful', opp:'0', chop:'0', loss:'0', meters:'0', show:'off' };
+    tiers:'off', smash:'0', smashon:'monster', charge:'hold', stamp:'0', cards:'0', opp:'0', chop:'0', loss:'0', meters:'0', show:'off' };
   const root = () => document.documentElement;
   const opt = k => root().getAttribute('data-sd-' + k) || DEF[k];
   function apply(order){ Object.keys(DEF).forEach(k => root().setAttribute('data-sd-' + k, order && order[k] != null ? order[k] : DEF[k])); }
@@ -427,7 +427,9 @@ const ShowdownBeats = (function(){
     }
     const loser = bestLoser(pot);
     if (opt('kicker') === 'plate' && loser && !pot.split && r && loser._handRes.result.cat === pot.cat){
-      plate('sd-kicker', 'KICKER', r.right - 20, r.top + 4, 260);
+      // beside the hand's nameplate (on the rail with it, or under the rail)
+      const onRail = opt('stamp') === 'rail';
+      plate('sd-kicker', 'KICKER', r.left + r.width / 2 + 74, onRail ? r.top - 20 : r.bottom + 8, 260);
       sfx('stack', .7, 1.5);
     }
   }
@@ -526,110 +528,315 @@ const ShowdownBeats = (function(){
     humanBankDisplayFreeze = null; render();
   }
 
-  async function payHuman(h, bodies, amount){
+  /* ---------------- THE SMASH (round 2) ----------------
+     Earned, and done by you: on a monster pot AWARD POT becomes HOLD TO
+     SMASH. Holding charges it in nine notches (the gauge on the key, a
+     rising ratchet, your dashboard humming, the machine winding up in the
+     chosen style's own way); letting go fires it, as hard as you charged
+     it. The coins do the rest as physics: the hit, the scatter, then the
+     pour through your hatch one coin at a time, each clink a step higher,
+     your stack counting with them, a heavy thunk and a clack to finish.
+     No lamps, no signs. */
+  const smashFor = amount => {
     const tier = tierOf(amount), on = opt('smashon');
-    const smash = opt('smash') !== '0' && (on === 'every' || tier === 'monster' || (on === 'big' && tier === 'big'));
+    return opt('smash') !== '0' && (on === 'every' || tier === 'monster' || (on === 'big' && tier === 'big'));
+  };
+  let firePower = null;       // how hard the last charge was let go (.25–1)
+
+  async function payHuman(h, bodies, amount){
+    const tier = tierOf(amount);
     const c = countOn(bodies, amount);
     try{
-      if (smash) await smashPay(h, bodies, opt('smash'), opt('smashsize'));
+      if (smashFor(amount)) await smashPay(h, bodies, opt('smash'), firePower == null ? .6 : firePower);
       else if (opt('tiers') === 'on') await payWith(h, bodies, { jackpot:tier !== 'small', fanfare:tier !== 'small' });
       else await payWith(h, bodies);
     } finally { if (c) c.done = true; }
   }
 
-  // THE SMASH. The coins do the work; the size adds the machine around them.
-  function mouthOf(it){ return it.to && it.to.rim ? it.to.then : it.to; }
-  const CHOREO = {
-    // (the pop already happened) the mess is heaved in, some off the rim
-    slam(items, extra, orig){ return orig(items, 'heave', Object.assign({}, extra, { big:true })); },
-    // straight up out of the tray, one after another, over and in
-    geyser(items){
-      const W = CW(), sp = W.OPT.speed;
-      return Promise.all(items.map((it, i) => new Promise(res => {
-        const b = it.b, T = rr(.62, .78), wait = i * 52;
-        W.launch(b, { x:b.x + rr(-5, 5), y:b.y + rr(-2, 2), z:0, d:W.D() }, { wait, T, flips:4 });
-        setTimeout(() => sfx('bounce', .7, 1 + Math.min(1, i * .035)), wait / sp);
-        setTimeout(() => { W.glint(b); W.launch(b, it.to, { T:rr(.44, .56), flips:2 }).then(res); }, (wait + T * 480) / sp);
-      })));
-    },
-    // the tray tips: the pile slides down the felt, then over the edge
-    async avalanche(items, extra, orig){
-      const W = CW(), sp = W.OPT.speed;
-      const fr = $('felt').getBoundingClientRect(), hl = ($('hud-left') || $('felt')).getBoundingClientRect();
-      const tray = document.querySelector('#felt .ct-tray');
-      if (tray && !quiet()) tray.animate([{ transform:'none' }, { transform:'rotate(-3deg) translateY(2px)' }, { transform:'rotate(-3deg) translateY(2px)', offset:.7 }, { transform:'none' }], { duration:900, easing:'steps(6,end)' });
-      sfx('collect', 1);
-      const cx = Math.max(fr.left + 40, Math.min(fr.right - 40, hl.left + hl.width / 2 + 40));
-      const stage = items.map(it => ({ b:it.b, to:{ x:cx + rr(-60, 60), y:fr.bottom - 30 - rr(0, 36), z:0, d:W.D() } }));
-      await within(orig(stage, 'shove'), 1500 / sp);
-      await sleep(120 / sp);
-      const order = items.slice().sort((a, c) => c.b.y - a.b.y);
-      return Promise.all(order.map((it, k) => W.launch(it.b, it.to, { wait:k * 26, T:rr(.26, .34), flips:1 })));
-    },
-    // flung up off the top of the screen, raining onto your dashboard
-    rain(items){
-      const W = CW(), sp = W.OPT.speed;
-      const dock = ($('your-seat-dock') || $('felt')).getBoundingClientRect();
-      return Promise.all(items.map((it, i) => new Promise(res => {
-        const b = it.b, T = rr(1.15, 1.3), wait = i * 22 + rr(0, 90);
-        W.launch(b, { x:b.x + rr(-30, 30), y:b.y, z:0, d:W.D() }, { wait, T, flips:6 });
-        const m = mouthOf(it);
-        const to = Math.random() < .7 ? { x:rr(dock.left + 14, dock.right - 14), y:dock.top + 3, z:0, rim:true, d:W.D() + 5, then:m } : m;
-        setTimeout(() => { W.launch(b, to, { T:rr(.55, .8), flips:3 }).then(res); }, (wait + T * 500 + rr(0, 500)) / sp);
-      })));
-    }
-  };
   // the table takes the hit (production's feltImpactBump() turns the felt
   // brown for a frame, so the bump is done here instead)
-  function bump(){
+  function bump(k){
     const el = $('stage-bay'); if (!el || quiet()) return;
-    el.animate([{ transform:'none' }, { transform:'translateY(3px) scale(1.008,.988)', offset:.2 }, { transform:'translateY(-1px) scale(.995,1.006)', offset:.46 }, { transform:'none' }], { duration:300, easing:'steps(6,end)' });
+    const a = 2 + 3 * (k || .5);
+    // translate only: a scale on the table turns the felt brown for a frame
+    el.animate([{ transform:'none' }, { transform:'translateY(' + a + 'px)', offset:.2 }, { transform:'translateY(' + (-a / 3) + 'px)', offset:.46 }, { transform:'none' }], { duration:320, easing:'steps(6,end)' });
   }
-  function slamPop(bodies){
-    const W = CW();
-    bump();
-    W.shake(); sfx('thump', 1, .7); sfx('knock', 1, .8);
-    bodies.forEach(q => {
-      Object.assign(q, { target:{}, opts:{}, bounces:0, maxB:1, e:.3, knocked:true, inFelt:true, edge:false,
-        vx:rr(-150, 150), vy:rr(-80, 50), vz:rr(420, 680), fr:Math.PI * 2 * 3 / .5, phi:0, t:.1, T:0, d0:q.d, d1:q.d,
-        state:'air', axis:'toss', spinA:rr(0, 6), spinDir:Math.random() < .5 ? -1 : 1, spinRate:rr(3, 6) });
-      W.active.add(q);
+  // a hit-stop: the whole coin world holds its breath for a few frames
+  function hitStop(ms){
+    const W = CW(); if (quiet()) return;
+    const sp = W.OPT.speed; W.OPT.speed = .0001;
+    setTimeout(() => { W.OPT.speed = sp; W.kick(); }, ms);
+  }
+  function impact(p){
+    bump(p); CW().shake(); if (p > .55) setTimeout(() => CW().shake(), 90);
+    if (typeof DashRim !== 'undefined') DashRim.win();
+    sfx('thump', 1, .55 + .15 * p); sfx('knock', 1, .7); setTimeout(() => sfx('thump', .8, .45), 70);
+  }
+  // a coin let loose with a velocity (the physics does the rest)
+  function loose(q, vx, vy, vz){
+    Object.assign(q, { target:{}, opts:{}, bounces:0, maxB:2, e:.34, knocked:true, inFelt:true, edge:false,
+      vx, vy, vz, fr:Math.PI * 2 * 3 / .5, phi:0, t:.1, T:0, d0:q.d, d1:q.d, moving:0,
+      state:'air', axis:'toss', spinA:rr(0, 6), spinDir:Math.random() < .5 ? -1 : 1, spinRate:rr(3, 7) });
+    CW().active.add(q); CW().kick();
+  }
+  const resting = bodies => bodies.every(b => b.state === 'rest' || !CW().active.has(b));
+  async function settled(bodies, ms){ const end = performance.now() + ms; while (performance.now() < end && !resting(bodies)) await sleep(60); }
+  // THE TOP FRAME: coins that reach the table's top rail hit it and are
+  // thrown back down, hard and sideways, instead of leaving the screen
+  function ceiling(bodies, p, onHit){
+    const f = $('felt'); if (!f || quiet()) return () => {};
+    const top = f.getBoundingClientRect().top + 6;
+    let run = true, hits = 0, shookAt = 0;
+    const tickFn = () => {
+      if (!run) return;
+      bodies.forEach(b => {
+        if (b.state !== 'air' || b.vz <= 0) return;
+        const coinTop = b.y - b.z - b.d * 1.2;
+        if (coinTop > top) return;
+        b.z = b.y - top - b.d * 1.2;
+        b.vz = -Math.abs(b.vz) * rr(.45, .72);
+        b.vx += rr(-1, 1) * (180 + 220 * p); b.vy += rr(10, 110);
+        b.spinRate = (b.spinRate || 4) * 1.6; b.bounces = 0; b.maxB = 2;
+        hits++;
+        sfx('knock', 1, rr(.95, 1.35)); if (hits % 3 === 1) sfx('stack', .9, rr(1.2, 1.6));
+        CW().glintAt(b.x, top + 4);
+        const now = performance.now();
+        if (now - shookAt > 160){ shookAt = now; CW().shake(); }
+        if (onHit) onHit(b);
+      });
+      requestAnimationFrame(tickFn);
+    };
+    requestAnimationFrame(tickFn);
+    return () => { run = false; };
+  }
+
+  // the pour: one coin at a time into your hatch, each clink a step higher
+  function pour(items, p){
+    const W = CW(), combo = { n:0 };
+    const gap = Math.max(22, Math.min(70, 900 / Math.max(1, items.length)));
+    const order = items.slice().sort((a, c) => Math.hypot(a.b.x - a.to.x, a.b.y - a.to.y) - Math.hypot(c.b.x - c.to.x, c.b.y - c.to.y));
+    return Promise.all(order.map((it, i) => W.launch(it.b, it.to, { wait:i * gap, T:rr(.36, .5), flips:2, combo })));
+  }
+  function finale(){
+    sfx('thump', 1, .5);
+    setTimeout(() => { sfx('win', 1); try{ Sound.counterLock && Sound.counterLock(true); }catch(e){} }, 120);
+  }
+
+  /* each style: arm() when the key appears, step(k) per notch of the
+     charge, fire(p) on release (before the hatch opens), then pour(items)
+     through the hatch */
+  function trayEl(){ return document.querySelector('#felt .ct-tray'); }
+  function trayCoins(){ const W = CW(); return Object.values(W.zones).filter(z => z.id === 'pot' || String(z.id).startsWith('sd:')).flatMap(z => z.list); }
+  function rattle(k, scale){
+    trayCoins().forEach(b => {
+      if (b.state !== 'rest' || Math.random() > .25 + .5 * k) return;
+      Object.assign(b, { target:{ zone:b.zone }, opts:{}, bounces:1, maxB:0, e:.2, knocked:true, inFelt:true, vx:rr(-12, 12) * k, vy:rr(-6, 6) * k,
+        vz:(40 + 160 * k) * (scale || 1) * rr(.6, 1.1), fr:0, phi:0, t:.1, T:0, state:'air', moving:0 });
+      CW().active.add(b);
     });
-    W.kick();
-    return hold(1000);
+    CW().kick();
   }
-  function quake(ms){
-    const ts = $('table-screen'); if (!ts || quiet()) return;
-    ts.animate([{ transform:'none' }, { transform:'translate(3px,-2px)' }, { transform:'translate(-3px,1px)' }, { transform:'translate(2px,2px)' }, { transform:'translate(-2px,-1px)' }, { transform:'none' }], { duration:ms || 520, easing:'steps(6,end)' });
-  }
-  function lamps(on){
-    const l = layer(); if (!l) return;
-    l.querySelectorAll('.sd-chaser').forEach(el => el.remove());
-    if (on && !quiet()) overFelt('sd-chaser');
-  }
-  async function smashPay(h, bodies, style, size){
-    const W = CW(); if (!bodies.length) return;
-    const loud = size !== 'tasteful', top = size === 'top';
-    sfx('thump', 1, .8);
-    if (loud){ bump(); W.shake(); if (typeof DashRim !== 'undefined') DashRim.win(); }
-    if (top){
-      quake(620); lamps(true);
-      bodies.forEach((b, i) => W.glintAt(b.x, b.y - b.z - b.d, i * 18));
-      setBanner('<span class="crt-line-primary">JACKPOT</span><span class="crt-line-secondary">' + bodies.length + ' COINS</span>');
+  const STYLE = {
+    slam:{
+      arm(){
+        const T = CW().tray(), f = $('felt'); if (!T || !f) return;
+        const press = put('sd-press', '<i class="sd-press-shaft"></i><b class="sd-press-head"><em></em><em></em><em></em></b>', (T.L + T.R) / 2, T.T - 34);
+        if (!press) return;
+        const ft = f.getBoundingClientRect().top;
+        press.dataset.rest = T.T - 34; press.dataset.top = ft;
+        press.style.setProperty('--shaft', Math.max(20, T.T - 34 - ft) + 'px');
+        if (!quiet()) press.animate([{ transform:'translate(-50%,-100%) translateY(' + (-(T.T - ft)) + 'px)' }, { transform:'translate(-50%,-100%) translateY(4px)', offset:.8 }, { transform:'translate(-50%,-100%)' }], { duration:420, easing:'steps(7,end)' });
+        setTimeout(() => sfx('thump', .6, .9), 320);
+      },
+      step(k){
+        const press = layer() && layer().querySelector('.sd-press'); if (!press) return;
+        const y = +press.dataset.rest - 62 * k;
+        place(press, parseFloat(press.style.left) + $('table-screen').getBoundingClientRect().left, y);
+        press.style.setProperty('--shaft', Math.max(12, y - +press.dataset.top) + 'px');
+        sfx('rock', .8, 1 + k * .4);
+      },
+      async fire(bodies, p){
+        const press = layer() && layer().querySelector('.sd-press'), T = CW().tray(), ts = $('table-screen').getBoundingClientRect();
+        if (press && T && !quiet()){
+          const from = parseFloat(press.style.top), to = (T.T + T.B) / 2 - 2 - ts.top;
+          await press.animate([{ top:from + 'px' }, { top:to + 'px' }], { duration:70 + 50 * (1 - p), easing:'steps(3,end)', fill:'forwards' }).finished.catch(() => {});
+        }
+        hitStop(70 + 70 * p);
+        impact(p);
+        bodies.forEach(q => loose(q, rr(-1, 1) * (70 + 190 * p), rr(-90, 50) * (.6 + p * .6), rr(300, 480) + 420 * p));
+        if (press && !quiet()){
+          setTimeout(() => press.animate([{ transform:'translate(-50%,-100%)' }, { transform:'translate(-50%,-100%) translateY(-20px)', offset:.3 }, { transform:'translate(-50%,-100%) translateY(-260px)', opacity:1, offset:.9 }, { transform:'translate(-50%,-100%) translateY(-280px)', opacity:0 }], { duration:700, delay:140, easing:'steps(8,end)', fill:'forwards' }).finished.then(() => press.remove(), () => press.remove()), 60);
+        } else if (press) press.remove();
+        await settled(bodies, 1500);
+        await hold(160);
+      },
+      pour(items, p){ return pour(items, p); }
+    },
+    geyser:{
+      arm(){},
+      step(k){ rattle(k, 1); sfx('roll', .5 + .5 * k, 1.1 + k * .6); },
+      async fire(bodies, p){
+        hitStop(60); impact(p * .6);
+        const stop = ceiling(bodies, p);
+        const shots = bodies.slice().sort(() => Math.random() - .5);
+        const gap = 22 + 34 * (1 - p);
+        for (let i = 0; i < shots.length; i++){
+          const b = shots[i];
+          loose(b, rr(-50, 50) * (1 + p), rr(-20, 30), rr(1050, 1300) + 700 * p);
+          sfx('bounce', .9, 1 + Math.min(1.2, i * .04));
+          if (i % 4 === 0) CW().puff && CW().puff(b.x, b.y, 700);
+          await sleep(quiet() ? 0 : gap);
+        }
+        await settled(bodies, 3400);
+        stop();
+        await hold(220);
+      },
+      pour(items, p){ return pour(items, p); }
+    },
+    avalanche:{
+      arm(){},
+      step(k){
+        const t = trayEl();
+        if (t && !quiet()) t.style.transform = 'rotate(' + (-1.2 * k * 6).toFixed(1) + 'deg) translateY(' + (k * 2).toFixed(1) + 'px)';
+        trayCoins().forEach(b => {
+          if (b.state !== 'rest') return;
+          Object.assign(b, { target:{}, opts:{}, vx:rr(-8, 8), vy:30 + 55 * k, state:'slide', t:0, moving:0 });
+          CW().active.add(b);
+        });
+        CW().kick(); sfx('rock', .9, .7 + k * .3); if (k > .5) sfx('roll', .6, .8);
+      },
+      async fire(bodies, p){
+        const t = trayEl();
+        hitStop(50); impact(p * .7); sfx('collect', 1);
+        if (t && !quiet()) t.animate([{ transform:t.style.transform || 'none' }, { transform:'rotate(-14deg) translateY(6px)', offset:.25 }, { transform:'rotate(-14deg) translateY(6px)', offset:.7 }, { transform:'none' }], { duration:1200, easing:'steps(8,end)' }).finished.then(() => { t.style.transform = ''; }, () => { t.style.transform = ''; });
+        const fr = $('felt').getBoundingClientRect(), hl = ($('hud-left') || $('felt')).getBoundingClientRect();
+        const cx = Math.max(fr.left + 40, Math.min(fr.right - 40, hl.left + hl.width / 2 + 50));
+        // off the tray's lip (a coin still in the pot is held by it), then a
+        // wave: the front slides, the top tumbles over it
+        bodies.forEach(q => { if (q.zone) CW().removeFromZone(q); });
+        bodies.slice().sort((a, c) => c.y - a.y).forEach((b, i) => {
+          const tx = cx + rr(-70, 70), ty = fr.bottom - 26 - rr(0, 44) * (1.2 - p), L = Math.max(1, Math.hypot(tx - b.x, ty - b.y));
+          const v = Math.sqrt(2 * CW().FRICTION * L) * (1.15 + .45 * p);
+          if (i % 3 === 0) loose(b, (tx - b.x) / L * v * .7, (ty - b.y) / L * v * .7, rr(120, 260) * (.6 + p));
+          else { Object.assign(b, { target:{}, opts:{}, vx:(tx - b.x) / L * v, vy:(ty - b.y) / L * v, state:'slide', t:0, moving:0, inFelt:true }); CW().active.add(b); }
+        });
+        CW().kick();
+        await settled(bodies, 2200);
+        await hold(160);
+      },
+      pour(items, p){
+        const W = CW(), combo = { n:0 };
+        const order = items.slice().sort((a, c) => c.b.y - a.b.y);
+        return Promise.all(order.map((it, k) => W.launch(it.b, it.to, { wait:k * 30, T:rr(.26, .34), flips:1, combo })));
+      }
+    },
+    rain:{
+      arm(){},
+      step(k){
+        const t = trayEl();
+        if (t && !quiet()) t.style.transform = 'translateY(' + (k * 5).toFixed(1) + 'px) scale(' + (1 + k * .03).toFixed(3) + ',' + (1 - k * .06).toFixed(3) + ')';
+        rattle(k, .7); sfx('rock', .8, .8 + k * .5);
+      },
+      async fire(){ const t = trayEl(); if (t){ t.style.transform = ''; if (!quiet()) t.animate([{ transform:'translateY(6px) scale(1.03,.94)' }, { transform:'translateY(-6px) scale(.97,1.05)', offset:.3 }, { transform:'none' }], { duration:300, easing:'steps(5,end)' }); } },
+      // the hatch is open for this one: flung up, off the top frame, down
+      // onto your dashboard, off its rim and in
+      pour(items, p){
+        const W = CW(), sp = W.OPT.speed, combo = { n:0 };
+        const dock = ($('your-seat-dock') || $('felt')).getBoundingClientRect();
+        const bodies = items.map(it => it.b);
+        hitStop(60); impact(p);
+        const done = new Map();
+        const land = it => {
+          if (done.has(it.b)) return; done.set(it.b, true);
+          const m = mouthOf(it);
+          const to = Math.random() < .75 ? { x:rr(dock.left + 12, dock.right - 12), y:dock.top + 3, z:0, rim:true, d:W.D() + 5, then:m } : m;
+          it.p = W.launch(it.b, to, { T:rr(.42, .62), flips:3, combo });
+          it.res(it.p);
+        };
+        const stop = ceiling(bodies, p, b => {
+          const it = items.find(x => x.b === b);
+          if (it) setTimeout(() => land(it), rr(120, 320) / sp);
+        });
+        const all = items.map((it, i) => new Promise(res => {
+          it.res = res;
+          setTimeout(() => {
+            loose(it.b, rr(-1, 1) * (140 + 200 * p), rr(-30, 30), rr(1150, 1400) + 600 * p);
+            if (i % 3 === 0) sfx('bounce', .8, 1 + Math.min(1, i * .03));
+          }, i * (10 + 16 * (1 - p)) / sp);
+          // one that never reaches the frame still comes down onto the dash
+          setTimeout(() => land(it), (2200 + i * 20) / sp);
+        }).then(pr => pr));
+        return Promise.all(all).then(r => { stop(); return r; });
+      }
     }
-    if (style === 'slam') await slamPop(bodies);
+  };
+  function mouthOf(it){ return it.to && it.to.rim ? it.to.then : it.to; }
+
+  async function smashPay(h, bodies, style, p){
+    const W = CW(), S = STYLE[style]; if (!bodies.length || !S) return payWith(h, bodies, { jackpot:true });
+    if (S.fire) await S.fire(bodies, p);
     const orig = W.throwAll;
     // take over only the throw into your hatch; anyone else's throw passes
     W.throwAll = function(items, kind, extra){
       if (items.length && items.every(it => it.to && (it.to.mouth || it.to.rim))){
         W.throwAll = orig;
-        return CHOREO[style](items, extra, orig);
+        const clean = items.map(it => ({ b:it.b, to:mouthOf(it) }));
+        return S.pour(clean, p);
       }
       return orig.apply(this, arguments);
     };
-    try{ await payWith(h, bodies, { jackpot:true, fanfare:true }); }
-    finally{ if (W.throwAll !== orig) W.throwAll = orig; setTimeout(() => lamps(false), 900); }
-    if (top) quake(300);
+    try{ await payWith(h, bodies, { jackpot:true, fanfare:false }); }
+    finally{ if (W.throwAll !== orig) W.throwAll = orig; }
+    finale();
+  }
+
+  /* HOLD TO SMASH: the AWARD POT key charges while held */
+  function hum(on){ const f = $('hud-frame'); if (f) f.classList.toggle('sd-hum', !!on && !quiet()); }
+  function chargeGate(label, style, press){
+    const S = STYLE[style] || STYLE.slam;
+    consoleFace(null);
+    // the rail stays up to be read until you take hold of the key; then it
+    // clears and the machine arms
+    let armed = false;
+    const arm = () => { if (armed) return; armed = true; clearShowdownRailPresentation(); clearVerdict(); if (S.arm) S.arm(); };
+    if (!press){
+      arm();
+      hideAwardConsole();
+      return hold(1500).then(() => .6);
+    }
+    return new Promise(resolve => {
+      const btn = $('btn-award-pot-console');
+      if (!btn){ resolve(.6); return; }
+      const N = 9;
+      let t0 = null, n = 0, timer = 0, done = false;
+      const tapOnly = opt('charge') === 'tap';
+      btn.classList.add('sd-charge'); btn.style.setProperty('--c', '0');
+      showAwardConsole(tapOnly ? label : 'Hold to smash · ' + label.replace(/^Award (Pot|Main|Side \d+) · /, ''));
+      const tick = () => {
+        if (n >= N) return;
+        n++;
+        btn.style.setProperty('--c', (n / N).toFixed(3));
+        sfx('knock', .5 + .05 * n, .8 + n * .09);
+        if (S.step) S.step(n / N);
+        if (n === N){ sfx('stack', 1, 2.1); btn.classList.add('is-full'); }
+      };
+      const finish = pw => {
+        if (done) return; done = true;
+        clearTimeout(timer); clearInterval(timer); hum(false); arm();
+        window.removeEventListener('pointerup', up); window.removeEventListener('pointercancel', up);
+        btn.removeEventListener('pointerdown', down);
+        btn.onclick = null; btn.classList.remove('sd-charge', 'is-full'); btn.style.removeProperty('--c');
+        try{ Sound.buttonRelease && Sound.buttonRelease('award'); }catch(e){}
+        hideAwardConsole();
+        resolve(pw);
+      };
+      const down = () => { if (done || t0 != null || tapOnly) return; arm(); t0 = performance.now(); hum(true); timer = setTimeout(() => { tick(); timer = setInterval(tick, 115); }, 260); };
+      const up = () => { if (t0 == null || done) return; finish(Math.max(.25, n / N)); };
+      btn.addEventListener('pointerdown', down);
+      window.addEventListener('pointerup', up); window.addEventListener('pointercancel', up);
+      // a click with no hold (a keyboard, or a quick tap) is a light hit
+      btn.onclick = () => { if (t0 == null) finish(tapOnly ? .7 : .3); };
+    });
   }
 
   // THEIR WIN: shoved across to their square, a beat, then home to the cup
@@ -724,11 +931,15 @@ const ShowdownBeats = (function(){
     const total = shown.reduce((s, r) => s + r.amount, 0);
     return contenders.some(p => p.isHuman) || shown.some(r => r.winnerIds.includes('you')) || tierOf(total) !== 'small';
   }
-  async function awardGate(label, press){
+  // `smash`: the style when this press pays you a smash (HOLD TO SMASH)
+  async function awardGate(label, press, smash){
+    firePower = null;
+    if (smash){ firePower = await chargeGate(label, smash, press); return; }
     consoleFace(null);
     if (press){ showAwardConsole(label); await waitForAwardPot(); }
     else { hideAwardConsole(); await hold(1500); }
   }
+  const smashIn = pots => pots.some(r => r.winnerShares.some(s => s.id === 'you' && s.amount > 0 && smashFor(s.amount))) ? opt('smash') : null;
 
   /* ---------------- the award sequence ----------------
      The production sequence (06-presentation.js) with the beats above;
@@ -778,7 +989,7 @@ const ShowdownBeats = (function(){
           esc(r.winners.join(' & ').toUpperCase()) + ' ' + showdownPotVerb(r).toUpperCase() + ' · ' + r.amount.toLocaleString() + '</span>');
         await hold(quiet() ? 0 : SHOWDOWN_RAIL_TIMING.readableHoldMs);
         showHudResultConsole([r]);
-        await awardGate((i === 0 ? 'Award Main' : 'Award ' + r.label.replace(/^Side pot /i, 'Side ')) + ' · ' + r.amount.toLocaleString(), press);
+        await awardGate((i === 0 ? 'Award Main' : 'Award ' + r.label.replace(/^Side pot /i, 'Side ')) + ' · ' + r.amount.toLocaleString(), press, smashIn([r]));
         hideHudResultConsole();
         await clearShowdownRailPresentation(); clearVerdict();
         settle(r); render();
@@ -793,7 +1004,7 @@ const ShowdownBeats = (function(){
       if (main.cards) await hold(quiet() ? 0 : SHOWDOWN_RAIL_TIMING.readableHoldMs);
       showHudResultConsole(potResults);
       if (foldWin && opt('show') === 'key' && main.winnerIds[0] === 'you') offerShow();
-      await awardGate('Award Pot · ' + totalAmount.toLocaleString(), press);
+      await awardGate('Award Pot · ' + totalAmount.toLocaleString(), press, smashIn(shown));
       closeShow();
       hideHudResultConsole();
       await clearShowdownRailPresentation(); clearVerdict();
@@ -975,6 +1186,8 @@ const ShowdownBeats = (function(){
     eqShown = null;
     const l = layer(); if (l) l.innerHTML = '';
     const felt = $('felt'); if (felt) felt.classList.remove('sd-stacked');
+    hum(false);
+    const t = trayEl(); if (t) t.style.transform = '';
     const dock = $('your-seat-dock'); if (dock) dock.classList.remove('sd-lost');
     document.querySelectorAll('.sd-loser').forEach(el => el.classList.remove('sd-loser'));
     document.querySelectorAll('.sd-shown,.sd-lift').forEach(el => el.classList.remove('sd-shown', 'sd-lift'));
@@ -992,6 +1205,41 @@ const ShowdownBeats = (function(){
     const g = typeof game !== 'undefined' ? game : null;
     const key = g ? g.handNumber + ':' + (g.players ? g.players.length : 0) : null;
     if (key !== cleanHand){ cleanHand = key; cleanup(); }
+  }
+
+  /* ---------------- PLAYER SETTINGS ----------------
+     Three of the beats are the player's to pick, in Settings → Showdown:
+     the smash, the win chance meter and when AWARD POT waits. Built from
+     the sheet's own parts (segmented keys, a switch); in the lab they set
+     the same data-sd-* options the order form does. */
+  function settingsSection(){
+    const sheet = $('settings-sheet'); if (!sheet || $('sd-settings')) return;
+    const first = sheet.querySelector('.sheet-section'); if (!first) return;
+    const seg = (id, key, label, opts, hint) => '<div class="field"><div class="field-label">' + label + '</div>' +
+      '<div class="segmented compact wrap" id="' + id + '" role="group" aria-label="' + label + '">' +
+      opts.map(o => '<button type="button" data-sd-set="' + key + '" data-v="' + o[0] + '">' + o[1] + '</button>').join('') +
+      '</div><div class="hint">' + hint + '</div></div>';
+    const sec = document.createElement('div');
+    sec.className = 'sheet-section'; sec.id = 'sd-settings';
+    sec.innerHTML = '<h3>Showdown</h3>' +
+      seg('sd-smash-seg', 'smash', 'The smash', [['slam','Slam'],['geyser','Geyser'],['avalanche','Avalanche'],['rain','Rain'],['0','Off']],
+        'How your biggest wins hit the pot. Hold AWARD POT to charge it; let go to fire.') +
+      '<div class="toggle-row"><div><div class="tl">Win chance</div><div class="ts">When everyone is all in, a meter under the pot shows each hand\'s chance to win.</div></div>' +
+      '<button class="switch" id="sd-sw-equity" role="switch" aria-checked="false" aria-label="Win chance"></button></div>' +
+      seg('sd-press-seg', 'press', 'Award pot', [['always','Every hand'],['mine','Mine + big'],['auto','Never']],
+        'When the machine waits for your AWARD POT press before paying out.');
+    first.after(sec);
+    const sync = () => {
+      sec.querySelectorAll('[data-sd-set]').forEach(b => b.classList.toggle('active', opt(b.dataset.sdSet) === b.dataset.v));
+      $('sd-sw-equity').setAttribute('aria-checked', opt('equity') !== 'off' ? 'true' : 'false');
+    };
+    sec.addEventListener('click', e => {
+      const b = e.target.closest('[data-sd-set]');
+      if (b){ root().setAttribute('data-sd-' + b.dataset.sdSet, b.dataset.v); sync(); try{ Sound.buttonRelease && Sound.buttonRelease('small'); }catch(err){} return; }
+      if (e.target.closest('#sd-sw-equity')){ root().setAttribute('data-sd-equity', opt('equity') !== 'off' ? 'off' : 'meter'); sync(); }
+    });
+    sync();
+    new MutationObserver(sync).observe(root(), { attributes:true, attributeFilter:['data-sd-smash','data-sd-press','data-sd-equity'] });
   }
 
   /* ---------------- install ---------------- */
@@ -1049,5 +1297,6 @@ const ShowdownBeats = (function(){
     }
   }
   install();
+  settingsSection();
   return { apply, install, opt, DEF };
 })();

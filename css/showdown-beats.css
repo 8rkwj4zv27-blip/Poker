@@ -50,10 +50,7 @@
 
 /* ---------------- 3 · THE REVEAL ---------------- */
 .seat[data-sd-state="beaten"] .seat-cards .card{ filter:saturate(.35) brightness(.72); }
-.seat[data-sd-state="lead"] .seat-cards .card,
-.seat[data-sd-state="win"] .seat-cards .card{ box-shadow:0 0 0 2px var(--pc-lamp-amber), 0 3px 0 rgba(0,0,0,.5); }
 #your-seat-dock[data-sd-state="beaten"] .seat.you .seat-cards .card{ filter:saturate(.35) brightness(.75); }
-#your-seat-dock[data-sd-state="lead"] .seat.you .seat-cards .card{ box-shadow:0 0 0 2px var(--pc-lamp-amber), 0 3px 0 rgba(0,0,0,.5); }
 .seat.you .seat-cards.sd-lift{ animation:sdLift .5s steps(5,end); }
 @keyframes sdLift{ 0%,100%{ transform:none; } 40%{ transform:translateY(-10px); } }
 /* LOSING HANDS · STAY READABLE: the seat isn't greyed, its cards stay up */
@@ -93,10 +90,6 @@ html[data-sd-losers="lit"] .seat.sd-loser .seat-cards .card{ opacity:1; filter:b
 .sd-blade{ width:4px; transform:translate(-50%,-50%); background:#FFF6DC; box-shadow:0 0 0 2px var(--pc-lamp-amber),0 0 14px var(--pc-lamp-amber-hi);
   animation:sdBlade .5s steps(5,end) forwards; transform-origin:50% 0; }
 @keyframes sdBlade{ 0%{ clip-path:inset(0 0 100% 0); } 40%{ clip-path:inset(0 0 0 0); opacity:1; } 100%{ clip-path:inset(0 0 0 0); opacity:0; } }
-/* OVER THE TOP: the lamps chase round the felt (a frame in the overlay) */
-.sd-chaser{ pointer-events:none; border-radius:18px; border:4px dashed var(--pc-lamp-amber); animation:sdChase .24s steps(1,end) infinite;
-  box-shadow:0 0 16px color-mix(in srgb,var(--pc-lamp-amber) 45%,transparent) inset; }
-@keyframes sdChase{ 0%{ border-color:var(--pc-lamp-amber); } 50%{ border-color:var(--pc-lamp-amber-hi); border-style:dotted; } }
 /* THEIR WIN · GLOAT: the others glance over */
 .seat[data-sd-glance="l"] .avatar{ transform:translateX(-2px); transition:transform .2s steps(2,end); }
 .seat[data-sd-glance="r"] .avatar{ transform:translateX(2px); transition:transform .2s steps(2,end); }
@@ -108,5 +101,40 @@ html[data-sd-losers="lit"] .seat.sd-loser .seat-cards .card{ opacity:1; filter:b
 /* ---------------- 7 · SHOW ---------------- */
 .seat.you .seat-cards.sd-shown .card{ transform:translateY(-8px); box-shadow:0 0 0 2px var(--pc-lamp-amber),0 0 14px color-mix(in srgb,var(--pc-lamp-amber) 50%,transparent),0 5px 0 rgba(0,0,0,.5); transition:transform .18s steps(3,end); }
 
-[data-motion="off"] .sd-dipper, [data-motion="off"] .sd-chaser{ display:none; }
+[data-motion="off"] .sd-dipper{ display:none; }
 [data-motion="off"] .sd-peek, [data-motion="off"] .sd-lift, [data-motion="off"] #console-face-award.sd-lit .btn-award-console:disabled{ animation:none; }
+
+/* ---------------- ROUND 2 ---------------- */
+/* THEIR CARDS · CLEAR OF THE RIM: out at the showdown, the cards sit in
+   front of the cabinet and below its base shadow, so the rim light (up to
+   12px of glow on a win) and the case's shadow never cover them */
+html[data-sd-cards="clear"] .seat.ec-seat.ec-shown > .seat-cards.ec-out{ z-index:3; bottom:calc((var(--ec-ch) + 13px) * -1); }
+/* HAND NAME · ON THE RAIL: the stamp is a nameplate on the lane's top
+   edge, above the five, never under the tray's coins */
+html[data-sd-stamp="rail"] .showdown-hand-stamp{ top:-27px; z-index:6; }
+
+/* HOLD TO SMASH: a gauge fills along the key in nine notches */
+.btn-award-console.sd-charge{ position:relative; overflow:hidden; }
+.btn-award-console.sd-charge::after{
+  content:''; position:absolute; left:6px; right:6px; bottom:5px; height:6px; pointer-events:none;
+  background:
+    repeating-linear-gradient(90deg,transparent 0 calc(100% / 9 - 2px),rgba(0,0,0,.55) calc(100% / 9 - 2px) calc(100% / 9)),
+    linear-gradient(90deg,#FFF1C2 0,#F2B431 calc(var(--c,0) * 100%),rgba(0,0,0,.35) calc(var(--c,0) * 100%));
+  box-shadow:inset 0 0 0 1px rgba(0,0,0,.5);
+}
+.btn-award-console.sd-charge.is-full::after{ animation:sdFull .18s steps(1,end) infinite; }
+@keyframes sdFull{ 50%{ filter:brightness(1.5); } }
+/* your dashboard hums while it charges */
+#hud-frame.sd-hum{ animation:sdHum .09s steps(2,end) infinite; }
+@keyframes sdHum{ 0%{ transform:translate(0,0); } 50%{ transform:translate(1px,-1px); } 100%{ transform:translate(-1px,0); } }
+
+/* SLAM: the press. A brass head on a steel shaft that runs up to the
+   table's top rail; it cocks back as you charge and comes down on release */
+.sd-press{ transform:translate(-50%,-100%); width:128px; display:flex; flex-direction:column; align-items:center; pointer-events:none; }
+.sd-press-shaft{ display:block; width:16px; height:var(--shaft,80px);
+  background:linear-gradient(90deg,#3B3A36 0 3px,#8D8B82 3px 6px,#C8C5B8 6px 9px,#6F6D66 9px 13px,#2C2B28 13px 16px);
+  box-shadow:0 0 0 2px #120F0C; }
+.sd-press-head{ position:relative; display:flex; justify-content:space-around; align-items:center; width:128px; height:26px; margin-top:-2px;
+  background:linear-gradient(180deg,#FFE49B 0 3px,#E0A93A 3px 9px,#B98326 9px 18px,#7A531A 18px 23px,#3F2A0E 23px 26px);
+  box-shadow:0 0 0 2px #120F0C,0 5px 0 rgba(0,0,0,.45),inset 3px 0 0 rgba(255,255,255,.18),inset -3px 0 0 rgba(0,0,0,.25); }
+.sd-press-head em{ display:block; width:6px; height:6px; background:#FFE49B; box-shadow:inset -2px -2px 0 #7A531A,0 0 0 1px #3F2A0E; }

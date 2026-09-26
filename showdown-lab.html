@@ -9,8 +9,8 @@
   <link rel="stylesheet" href="css/01-foundation.css">
   <!-- The chrome is the Table Space Lab's (the phone frame and the form). -->
   <link rel="stylesheet" href="css/table-space-lab.css?v=1">
-  <link rel="stylesheet" href="css/showdown-lab.css?v=1">
-  <script defer src="js/showdown-lab.js?v=1"></script>
+  <link rel="stylesheet" href="css/showdown-lab.css?v=2">
+  <script defer src="js/showdown-lab.js?v=2"></script>
 </head>
 <body class="sl sd-lab">
   <!-- Phone only: the keys that bring up the form and the moments. -->
@@ -22,14 +22,12 @@
        Never linked from the game; never touches a real save. -->
   <aside class="sl-side sl-form" aria-label="Order form">
     <header class="sl-head">
-      <strong>SHOWDOWN ORDER FORM · ROUND 1</strong>
+      <strong>SHOWDOWN ORDER FORM · ROUND 2</strong>
       <span>The end of a hand, beat by beat: the lock, the all-in sweat, the reveal, the verdict, the pots, the payout. Pick a part for each job; it plays on the real game at your phone's size.</span>
     </header>
     <div class="sl-presets" id="sd-presets">
       <button type="button" data-preset="today">TODAY</button>
-      <button type="button" data-preset="suggested">MY PICKS</button>
-      <button type="button" data-preset="loud">ALL LOUD</button>
-      <button type="button" data-preset="quiet">QUIET MACHINE</button>
+      <button type="button" data-preset="yours">YOUR ORDER</button>
       <p class="sl-preset-note" id="sd-preset-note"></p>
     </div>
     <div id="sl-rows"></div>
@@ -53,7 +51,7 @@
         <button type="button" data-moment="threeway">3-WAY SHOWDOWN</button>
         <button type="button" data-moment="kicker">ON THE KICKER</button>
         <button type="button" data-moment="big">BIG POT · YOU</button>
-        <button type="button" data-moment="monster">MONSTER · YOU</button>
+        <button type="button" data-moment="monster">MONSTER · SMASH</button>
         <button type="button" data-moment="suckout">ALL IN · SUCK OUT</button>
         <button type="button" data-moment="badbeat">ALL IN · BAD BEAT</button>
         <button type="button" data-moment="multi">3-WAY ALL IN</button>
@@ -65,7 +63,7 @@
         <button type="button" data-moment="foldwin" class="is-wide">EVERYONE FOLDS TO YOU</button>
         <button type="button" data-moment="replay" class="is-wide" id="sd-replay">PLAY IT AGAIN</button>
       </div>
-      <p class="sl-note">Each deals a fresh table and plays the real game to that moment; you press AWARD POT yourself. The winner is set by stacking the deck, never by changing a result. You can also just play: tap the game.</p>
+      <p class="sl-note">Each deals a fresh table and plays the real game to that moment; you press AWARD POT yourself. On MONSTER · SMASH, press and hold it. The winner is set by stacking the deck, never by changing a result. You can also just play: tap the game.</p>
     </section>
 
     <section class="sl-group">
