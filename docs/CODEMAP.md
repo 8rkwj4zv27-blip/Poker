@@ -242,6 +242,22 @@ hold'em driver, so it never touches the engine or a save. **Rejected by
 the owner as a visual direction**; see `docs/ui/DASHBOARD_V2_HANDOVER.md`
 for what carries forward.
 
+## `table-space-lab.html` + `js/table-space-lab.js` + `js/table-space-lab-frame.js` + `css/table-space-lab.css` — Table Space Lab
+
+The table spacing pass (docs/ui/CHIP_PLAN.md, "Next: a table spacing
+pass"). Runs the **real game** sandboxed (like `dashboard-order-lab.html`)
+at the owner's phone, iPhone 15 Pro Max as an installed app: the frame is
+the full 430 x 932 screen and `table-space-lab-frame.js` rewrites every
+`env(safe-area-*)` in the game's stylesheets to 59px top / 34px bottom.
+Every control resizes or moves one part live (score bar, top bar, opponent
+pods, shared cards, pot counter and coin area, deck, bet boxes, your bet
+spot, dashboard, buttons); the frame script also re-places the coin
+world's tray and bet spots (`CoinWorld.zone` is wrapped so it re-runs after
+each `CoinTable.layout`). Meters measure the felt, the gaps between parts
+and the open felt against today. Presets TODAY / SAFE / MODERATE / BOLD;
+COPY SETTINGS gives the owner's picks as text; the settings live in the
+URL hash. Not loaded by the game.
+
 ## `js/finishes.js` + `css/finishes.css` — Finishes menu (live)
 
 Settings → Finishes: a page inside the Settings sheet that swaps each
@@ -299,7 +315,7 @@ there manually.
 Files matching `*-lab.html`, `*-lab.js`, `*-lab.css` (`career-lab`,
 `career-hub-v2-lab`, `ticket-lab`, `card-flight-options`, `card-turn-lab`,
 `chip-motion-lab`, `chip-lab`, `chip-throw-lab`, `design-lab`, `result-stage-lab`, `showdown-rail-lab`, `crt-lab`, `dashboard-v2-lab`, `dashboard-order-lab`,
-`wheel-v2-lab`, `intro-lab`, `boot-lab`, `slot-lab`)
+`wheel-v2-lab`, `intro-lab`, `boot-lab`, `slot-lab`, `table-space-lab`)
 are **isolated visual references and prototyping sandboxes**. Several are
 committed permanently as durable references even after their feature
 shipped. Rules:
