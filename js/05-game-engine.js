@@ -1813,6 +1813,8 @@ function celebrateWinnerSeat(id){
   e.root.classList.add('winner');
 
   if (id === 'you'){
+    // The Dashboard V2 rim shows the win (warm flash, whole-machine shake).
+    if (typeof DashRim !== 'undefined') DashRim.win();
     const frame = $('hud-frame');
     if (frame && !motionOff()){
       frame.classList.remove('hud-frame-win', 'hud-frame-win-flash');

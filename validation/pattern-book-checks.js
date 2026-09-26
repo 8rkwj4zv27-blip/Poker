@@ -164,4 +164,63 @@ check('Production isolation audit: the Pattern Book and CRT Lab are never shippe
   assert.ok(book.includes('css/crt.css') && book.includes('js/crt.js'),'the book must run on the real CRT files');
 });
 
+check('Dashboard V2 frame, bays and rim light: live, shared, and to the rules',()=>{
+  const css=read('css/dashboard.css'), js=read('js/dashboard.js'), consoleCss=read('css/03-action-console.css'), engine=read('js/05-game-engine.js');
+  // The parts are shared classes on the real dashboard, not lab attributes.
+  [['your-seat-dock','dash-frame'],['action-area','dash-frame-base'],['hud-left','dash-bay'],['hud-right','dash-bay']].forEach(([id,cls])=>{
+    const tag=indexHtml.match(new RegExp('<[^>]*id="'+id+'"[^>]*>'));
+    assert.ok(tag && new RegExp('class="[^"]*\\b'+cls+'\\b').test(tag[0]),'#'+id+' must carry .'+cls);
+  });
+  assert.ok(!/data-do-/.test(indexHtml) && !/data-do-/.test(css) && !/data-do-/.test(js),'production must not use the lab\'s data-do-* attributes');
+  // Loaded by the game (before the CRT component, which stays last) and precached.
+  const links=[...indexHtml.matchAll(/<link rel="stylesheet" href="([^"?]+)/g)].map(m=>m[1]);
+  assert.ok(links.includes('css/dashboard.css') && links.indexOf('css/dashboard.css')<links.indexOf('css/crt.css'),'index.html must load css/dashboard.css before css/crt.css');
+  assert.ok(/<script src="js\/dashboard\.js/.test(indexHtml),'index.html must load js/dashboard.js');
+  ["'./css/dashboard.css","'./js/dashboard.js"].forEach(f=>assert.ok(serviceWorker.includes(f),'sw.js is missing '+f));
+  // The rim has exactly the four states, lit only by lamp colours or danger red.
+  ['turn','allin','win','bust'].forEach(st=>assert.ok(css.includes('.dash-frame[data-rim="'+st+'"]'),'rim light state '+st+' missing'));
+  const lamps=[...css.matchAll(/--dash-lamp:([^;]+);/g)].map(m=>m[1].trim());
+  lamps.forEach(v=>assert.ok(['#2A2418','var(--pc-lamp-amber)','var(--pc-lamp-amber-hi)','var(--danger)'].includes(v),'the rim may only use lamp colours or danger red, found '+v));
+  // The smooth frame is one piece: one shell on the dock runs down behind the key bay.
+  assert.ok(/\.dash-frame::before\{[^}]*bottom:calc\(var\(--dash-drop\) \* -1\)/.test(css),'the frame must be one shell running down behind the key bay');
+  assert.ok(!/\.actions-dock::(before|after)/.test(css),'the frame must not be drawn in two pieces');
+  // V1's thin rim line is gone from the portrait game (landscape, which keeps
+  // its own side-by-side layout, keeps it).
+  const v1Rim=consoleCss.indexOf('#your-seat-dock::after'), landscape=consoleCss.lastIndexOf('@media (orientation:landscape){',v1Rim);
+  assert.ok(v1Rim===-1 || (landscape!==-1 && !consoleCss.slice(landscape,v1Rim).includes('\n}\n')),'V1\'s thin rim may only remain for landscape');
+  assert.ok(/@media \(orientation:landscape\)\{\s*#app #your-seat-dock\.dash-frame::before,#app #your-seat-dock\.dash-frame::after\{ display:none; \}/.test(css),'landscape must not draw the portrait frame');
+  // The rim never sits over the cards: they stand in front of it, and nothing
+  // transforms the case alone (the win shake moves the whole machine).
+  const rimZ=+(css.match(/\.dash-frame::after\{[^}]*z-index:(\d+)/)||[])[1], cardZ=+(css.match(/\.seat\.you \.seat-cards\{[^}]*z-index:(\d+)/)||[])[1];
+  assert.ok(rimZ && cardZ && cardZ>rimZ,'the cards must stand in front of the rim');
+  assert.ok(css.includes('#hud-frame.hud-frame-win{ animation:none; }') && css.includes('.dash-frame.dash-shake{'),'the win shake must move the whole machine, never the case alone');
+  assert.ok(!/#hud-frame[^{]*\{[^}]*transform/.test(css),'dashboard.css must not transform the case on its own');
+  // Motion: stepped, with a relay click, and Reduced Motion honoured.
+  assert.ok(/animation:dashRelay [^;]*steps\(/.test(css) && /animation:dashPulse [^;]*steps\(/.test(css) && /animation:dashFlickOut [^;]*steps\(/.test(css),'rim changes must switch in steps');
+  assert.ok(css.includes('[data-motion="off"] #app .dash-frame') && css.includes('prefers-reduced-motion'),'the rim must honour Reduced Motion');
+  assert.ok(js.includes('Sound.wheelRelay') && js.includes('motionOff()'),'the rim clicks with the machine relay and honours Reduced Motion');
+  // Presentation only: the rim reads the table and never writes it.
+  assert.ok(!/\b(game|pendingHumanPlayer)(\.[A-Za-z_]+)*\s*=[^=]/.test(js) && !/\b(applyAction|humanAct)\(/.test(js),'js/dashboard.js must never change game state');
+  assert.ok(/if \(typeof DashRim !== 'undefined'\) DashRim\.win\(\);/.test(engine),'a win at your seat must light the rim');
+  // The book shows the real part.
+  assert.ok(book.includes('css/dashboard.css') && book.includes('class="dash-frame"'),'the Pattern Book must show the frame on the real css/dashboard.css');
+});
+
+check('Dashboard V2: the rest of the approved order is the lab default, and its parts keep to the rules',()=>{
+  const lab=read('js/dashboard-order-lab.js'), css=read('css/dashboard-order.css'), js=read('js/dashboard-order.js');
+  const order={ tray:'0', bet:'drum', bay:'cradle', raise:'barrel', sizing:'fader', knock:'on', peek:'hold', allin:'hold' };
+  const def=lab.match(/const SUGGESTED = \{([\s\S]*?)\};/);
+  assert.ok(def,'the order form must define its default order');
+  Object.entries(order).forEach(([k,v])=>assert.ok(new RegExp('\\b'+k+":'"+v+"'").test(def[1]),'the default order must set '+k+' to '+v));
+  // The frame, bays and rim are production parts now: the lab no longer draws its own.
+  assert.ok(!/data-do-(build|recess|rim|light|lit)\b/.test(css+js+lab),'the lab must use the production frame, not its own');
+  // Knock jolts the whole machine; a transform on the case alone lifts it under the rim light.
+  assert.ok(!css.includes('.do-knocked #hud-frame'),'knock must not transform the case on its own');
+  // The screen is a fixed size: its parts take fixed boxes, not their content's height.
+  assert.ok(css.includes('.do-screen-top{ flex:0 0 var(--do-hand-h'),'the hand line must be a fixed box');
+  // Lab only: never shipped with the game.
+  ['dashboard-order'].forEach(n=>{ assert.ok(!indexHtml.includes(n),'index.html links '+n); assert.ok(!serviceWorker.includes(n),'sw.js precaches '+n); });
+  assert.ok(js.includes("humanAct('check')") && js.includes('setWagerAmount('),'behaviours must act through the real game functions');
+});
+
 process.stdout.write('\n'+passed+' Pattern Book checks passed.\n');
