@@ -984,6 +984,16 @@ const ShowdownBeats = (function(){
     if (countBase != null) countEnd();
   }
 
+  // A new hand clears the beats' leftovers. Keyed off the hand number, not
+  // only startNewHand(): another wrapper (the table intro's uninstall) can
+  // put the original startNewHand back over this one.
+  let cleanHand = null;
+  function fresh(){
+    const g = typeof game !== 'undefined' ? game : null;
+    const key = g ? g.handNumber + ':' + (g.players ? g.players.length : 0) : null;
+    if (key !== cleanHand){ cleanHand = key; cleanup(); }
+  }
+
   /* ---------------- install ---------------- */
   const orig = {};
   function install(){
@@ -1018,6 +1028,7 @@ const ShowdownBeats = (function(){
       return orig.dealCommunity.apply(this, arguments);
     };
     updateHandInstrument = function(){
+      fresh();
       if (game && paintHuman()) return;
       return orig.updateHandInstrument.apply(this, arguments);
     };
@@ -1030,6 +1041,7 @@ const ShowdownBeats = (function(){
     if (typeof EnemyCards !== 'undefined'){
       const paint = EnemyCards.paint;
       EnemyCards.paint = function(){
+        fresh();
         paint.apply(this, arguments);
         const g = game;
         if (inRunout(g)) g.players.forEach(p => { const e = seatEls[p.id]; if (e && e._ec && p._reveal) e.root.classList.add('ec-shown'); });
