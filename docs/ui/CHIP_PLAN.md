@@ -502,6 +502,10 @@ Seen in the owner's phone screenshots (3-handed run, Dashboard V2):
 - The SCORE bar takes a full row at the top of the screen.
 - Your own spot (bottom right of the felt) reads as a stray coin in empty
   felt.
+- (Fixed in v0.40.5) the bank rack drifted from the stack: bets took coins
+  by bet size and nothing topped it back up, so it could show fewer coins
+  at $320 than at $268. Your bets now throw the coins the stack no longer
+  earns, and the rack re-matches the stack at every new hand.
 
 Spot placement lives in `layout()` in `js/coin-table.js` (the same rules as
 the lab's `buildTable`). Tower heights are capped by `zone.room`; the tray
