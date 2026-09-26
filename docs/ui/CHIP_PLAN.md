@@ -510,3 +510,18 @@ Seen in the owner's phone screenshots (3-handed run, Dashboard V2):
 Spot placement lives in `layout()` in `js/coin-table.js` (the same rules as
 the lab's `buildTable`). Tower heights are capped by `zone.room`; the tray
 is a fixed 200×58 well above the pot plate.
+
+**Owner, 26 Sep 2026 (later):** the XP is shelved: the score bar, the
+award messages and the rest come out of the game for now, and scoring gets
+its own plan later. Not built yet; `SCORING_SPEC.md` still describes the
+shipping behaviour. The spacing pass is for the owner's phone only (iPhone
+15 Pro Max, installed app); other sizes come later. Board cards stay their
+size: the aim is room for things the game may add later, not bigger parts.
+
+`table-space-lab.html` is the lab for it (see `docs/CODEMAP.md`): every
+proposal from the review as a live control on the real game at that
+phone's size, with meters. Measured there (4 opponents): today the felt is
+476px; SAFE (score bar gone, top bar trimmed) 565px; MODERATE (plus slimmer
+opponent pods, bet boxes, a compact dashboard) 587px; BOLD (no top bar,
+actions in the name strip, deck in the corner) 639px. The owner picks
+settings there and pastes them back; the build follows from those.

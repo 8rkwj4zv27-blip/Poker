@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#140709">
+  <link rel="icon" href="data:,">
+  <title>Table Space Lab</title>
+  <link rel="stylesheet" href="css/01-foundation.css">
+  <link rel="stylesheet" href="css/table-space-lab.css?v=1">
+  <script defer src="js/table-space-lab.js?v=1"></script>
+</head>
+<body class="sl">
+  <!-- Isolated Lab: the REAL game runs sandboxed in the frame (in-memory
+       storage, no service worker) at the iPhone 15 Pro Max's size and safe
+       areas, with js/table-space-lab-frame.js injected. The controls resize
+       and move the table's parts live. Never linked from the game; never
+       touches a real save. -->
+  <aside class="sl-side sl-form" aria-label="Sizes">
+    <header class="sl-head">
+      <strong>TABLE SPACE LAB</strong>
+      <span>Shrink and move the table's parts on your phone's screen. Everything is live on the real game; nothing here changes the game itself.</span>
+    </header>
+    <div class="sl-presets" id="sl-presets"></div>
+    <div id="sl-rows"></div>
+  </aside>
+
+  <main class="sl-stage">
+    <div class="sl-phone" id="sl-phone">
+      <iframe id="sl-frame" title="The Table (sandboxed copy)"></iframe>
+      <div class="sl-status" aria-hidden="true"><span>9:41</span><i class="sl-island"></i><span class="sl-batt"><b></b></span></div>
+      <div class="sl-homebar" aria-hidden="true"></div>
+    </div>
+    <p class="sl-caption"><span id="sl-status">LOADING…</span> · iPhone 15 Pro Max · 430 × 932, installed app</p>
+  </main>
+
+  <aside class="sl-side sl-play" aria-label="Game and results">
+    <section class="sl-group">
+      <h2>Put the real game in</h2>
+      <div class="sl-row"><span>Opponents</span><div class="sl-seg" id="sl-opp"><button data-v="4">4</button><button data-v="5">5</button><button data-v="6">6</button></div></div>
+      <div class="sl-moments">
+        <button type="button" data-moment="deal" class="is-wide">NEW TABLE · YOUR TURN</button>
+        <button type="button" data-moment="flop">CALL TO FLOP</button>
+        <button type="button" data-moment="river">CALL TO RIVER</button>
+        <button type="button" data-moment="win" class="is-wide">WIN A POT</button>
+      </div>
+      <p class="sl-note">These play the real game to that moment (you call everything). You can also just play: tap the game.</p>
+      <button type="button" class="sl-compare" id="sl-compare">HOLD TO SEE TODAY</button>
+    </section>
+
+    <section class="sl-group">
+      <h2>Space on the table</h2>
+      <div class="sl-meters" id="sl-meters"></div>
+      <p class="sl-note">Measured live from the game. "Today" is the game as it ships now.</p>
+    </section>
+
+    <section class="sl-group">
+      <h2>Your settings</h2>
+      <ol class="sl-summary" id="sl-summary"></ol>
+      <button type="button" class="sl-copy" id="sl-copy">COPY SETTINGS</button>
+      <p class="sl-note" id="sl-copied">Paste them into the chat when you're happy.</p>
+    </section>
+  </aside>
+</body>
+</html>
