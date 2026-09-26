@@ -403,3 +403,69 @@ and river? Merging coins into bigger coins, bars and diamonds is deferred
 
 Next: production integration (plan first): the throw/sweep/payout engine
 and the sound-set setting into the game, driven by real game events.
+
+### v11 (26 Sep 2026)
+
+Owner on v10: didn't love coins flying into a pile and melting; no sound
+when anyone wins; wants more coins than SOME, fewer than LOTS; start
+pushing into the game (gold coins everywhere, Career included; CLAY
+default).
+
+- **MORE** (default): 20→2, 100→5, 400→12, 1,000→18, capped 24; all-in
+  at least 16. Pot ~60, bank 40, spot 30.
+- **No melting on the felt:** a bet throws only what its spot and the pot
+  still have room for (at least one coin), so every pile sweeps in whole.
+  Only a big win pours its extra coins into the hatch (a real opening).
+  An all-in with no room for the whole bank drops the rest back through
+  the bank floor.
+- **Win sounds** in the set's own voice: a rising run (yours bigger, ending
+  on a chord), the pot scraping across, the hatch clunk. They had been
+  routed to the old engine, which the lab never woke.
+
+## Production integration
+
+Presentation only: `game` state, pot building, awards and Career money
+stay exactly as they are. Each step ships playable and tested.
+
+What production does today (read 26 Sep 2026): `applyAction()` flies
+chips straight from the bank (`#hud-tower`, `bankPile()`) or a seat into
+the pot pile (`#pot-stacks`, `potPile()`) via `transferChips`/`flyChip`;
+blinds post instantly (`postBlind`); `advancePhase()` just zeroes
+`betThisRound` (its comment notes the resting pile to sweep was removed).
+Payout is `runShowdownAwardSequence()` (shared by `handleShowdown` and
+`handleFoldWin`): showdown rail, AWARD POT button, then `payoutTo()` per
+winner; a human win in a reward-bearing mode runs
+`runHumanPotSmashCeremony()` instead (reward breakdown, score plate slam,
+`runPotBreakPhysics` bursting the real pot chips and attracting them
+through the hatch, then `rebuildBankPileFromState`). Piles bootstrap from
+state in `renderBank`/`renderPot` (cold load, rebuy, resume) and
+`table-intro.js` loads the bank through the hatch.
+
+1. **Coin engine as its own file** — DONE. `js/coin-world.js` +
+   `css/coin-world.css`, loaded by `index.html` and precached by `sw.js`,
+   unused by the game. The lab now runs on it (one copy of the engine).
+2. **Bets and the sweep.** A table adapter in the game builds the walls,
+   bet spots and pot tray from the live table, throws every bet (blinds
+   included) onto the player's spot from `applyAction`/`postBlind`, and
+   sweeps the spots into the tray from `advancePhase`, `handleFoldWin`
+   and `handleShowdown` (awaited, before the next street is dealt or the
+   award). The old pot pile is retired for the tray; the pot plate keeps
+   reading `game.pot`. Coin counts: MORE curves and limits. Reduced
+   Motion: coins snap to where they end. `cancelAllChipFlights` and the
+   between-hand clear empty the world.
+3. **Payouts.** `payoutTo()` for opponents: coins to the winner's spot,
+   then home to the seat. Your wins: through the hatch; inside the pot
+   smash ceremony, the coins burst and are drawn into the hatch by the
+   coin world instead of `runPotBreakPhysics`'s chip DOM, keeping the
+   ceremony's order and timing (breakdown → plate slam → burst → bank →
+   money reveal). Split and side pots share the tray's coins by amount.
+4. **Your bank.** The coin rack (bank limit 40) replaces the chip-disc
+   pile: `renderBank`, `rebuildBankPileFromState`, `postBlind`'s trim,
+   Career resume and the table intro's hatch load all go through it.
+5. **Settings.** The ten sound sets as a player option (default CLAY),
+   saved with the existing settings without disturbing any stored value;
+   the old chip sounds remain as OLD.
+
+Validation grows with each step (a coin-world suite: counts, limits,
+walls, sweep totals, no coin left on a card); `chip-motion-checks.js` is
+updated where it asserts the old pile behaviour.

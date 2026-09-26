@@ -3,23 +3,6 @@
    puffs, seat chutes, and the lab's bottom bar + drawer. Bet spots, the
    pot ring and the bank come from chip-lab.css. Not loaded by index.html.
    ============================================================ */
-.ct-air,.ct-shadows{ position:fixed; inset:0; pointer-events:none; }
-.ct-shadows{ z-index:590; }
-.ct-air{ z-index:600; }
-.ct-air .cl-chip{ position:absolute; transform-origin:50% 50%; will-change:transform; }
-.cl-chip.ct-px{ background-repeat:no-repeat; background-size:100% 100%; image-rendering:pixelated; image-rendering:crisp-edges; }
-.ct-shadow{ position:absolute; left:0; top:0; border-radius:50%; background:rgba(0,0,0,.9); will-change:transform,opacity; }
-
-/* dust puff: four pixel motes kicked out from the impact */
-.ct-puff{ position:absolute; left:0; top:0; width:2px; height:2px; z-index:99999; pointer-events:none; }
-.ct-puff::before{
-  content:''; position:absolute; left:0; top:0; width:2px; height:2px; background:transparent;
-  box-shadow:-4px 0 0 rgba(230,240,225,.55), 4px 0 0 rgba(230,240,225,.55), -2px -2px 0 rgba(230,240,225,.4), 2px -2px 0 rgba(230,240,225,.4);
-  animation:ctPuff .26s steps(3,end) forwards;
-}
-.ct-puff.is-big::before{ box-shadow:-6px 0 0 rgba(230,240,225,.6), 6px 0 0 rgba(230,240,225,.6), -3px -3px 0 rgba(230,240,225,.45), 3px -3px 0 rgba(230,240,225,.45), 0 -4px 0 rgba(230,240,225,.35); }
-@keyframes ctPuff{ from{ transform:scale(.6); opacity:1; } to{ transform:scale(2.2) translateY(-2px); opacity:0; } }
-
 /* a small slot in the felt under each seat: the machine dispenses chips */
 .ct-chute{
   position:absolute; z-index:5; width:26px; height:7px; transform:translateX(-50%);
@@ -66,13 +49,6 @@
 }
 
 /* v3: a glint at the top of a tossed coin's arc */
-.ct-glint{ position:absolute; left:0; top:0; width:1px; height:1px; z-index:99999; pointer-events:none; }
-.ct-glint::before{
-  content:''; position:absolute; left:0; top:0; width:1px; height:1px; background:#fffbe0;
-  box-shadow:0 -2px 0 #fffbe0, 0 2px 0 #fffbe0, -2px 0 0 #fffbe0, 2px 0 0 #fffbe0, 0 -3px 0 rgba(255,251,224,.5), 0 3px 0 rgba(255,251,224,.5);
-  animation:ctGlint .26s steps(3,end) forwards;
-}
-@keyframes ctGlint{ 0%{ transform:scale(.4); opacity:1; } 50%{ transform:scale(1.2); opacity:1; } 100%{ transform:scale(.6); opacity:0; } }
 
 /* ---------------- desktop: framed phone table + always-open controls ----------------
    On a wide window the page hosts itself (?embed=1) in a 390x844 frame,

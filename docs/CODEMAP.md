@@ -10,7 +10,7 @@ by the code and by `CLAUDE.md`/`AGENTS.md`, not by this file.
 ```
 01-poker-math.js        02-support-systems.js   03-opponents.js
 04-modes-and-scoring.js 05-game-engine.js       06-presentation.js
-07-ui-wiring.js         career-hub-live.js      career-motion-live.js
+coin-world.js           07-ui-wiring.js         career-hub-live.js      career-motion-live.js
 machine-wheel.js        ticket-feed.js          table-intro.js
 08-dev-mode.js          home-cast.js            home-boot.js
 crt.js                  finishes.js             press-feel.js
@@ -87,6 +87,16 @@ animation (`DealFX`), chip flight/pile animation, the coach/hint system,
 Hand Review panel, showdown presentation. If a visual bug doesn't affect
 outcomes (wrong chip count on screen, a card animating oddly, a stat
 misdisplayed), it's here, not in `05-game-engine.js`.
+
+## `js/coin-world.js` + `css/coin-world.css` — the gold-coin world
+
+The chip upgrade's physics world (docs/ui/CHIP_PLAN.md): every coin on the
+felt a body (arcs, spin, bounces, stacks, topples), pixel coins drawn by
+code, walls from the live table, bet-spot/pot zones, ten procedural sound
+sets. Exposes `window.CoinWorld`; does nothing at load. Built in
+`chip-throw-lab.html`, which runs on it. In the game from integration step
+1 (loaded, not yet called); later steps wire bets, the sweep, payouts and
+the bank to it.
 
 ## `js/07-ui-wiring.js` (~2,000 lines)
 
