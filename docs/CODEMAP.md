@@ -263,6 +263,35 @@ COPY SETTINGS gives the owner's picks as text; the settings live in the
 URL hash. Since v0.40.7 (release 2) its TODAY is the shipped layout, with a
 BEFORE preset for the table as it was. Not loaded by the game.
 
+## `css/enemy-cards.css` + `js/enemy-cards.js` — Enemy Cards V2 (live, v0.41.0)
+
+The opponents' seat cards, the owner's order from `enemy-card-lab.html`
+(recorded in `docs/ui/PATTERN_BOOK.md`, Enemy Cards V2). `EnemyCards.paint()`
+(called at the end of `render()`) dresses each opponent's seat (`.ec-seat`):
+painted cabinet in the face's colour, a two-line `.crt` readout that
+counts, the hole cards moved out of `.seat-card` and tucked under it (dealt
+below the card then slid up; out and a size up at showdown; in on a fold),
+a coin cup, and a rim light in their colour (`data-rim` on `.seat-card`:
+turn, think, flash, next, win, allin, fold, out). It draws a faint bet
+square (`.ec-square`) under each seat and above your cards.
+`js/coin-table.js` asks it `coinSource(p)` (coins leave from / go home to
+the cup), `spot(p, fr)` (the bet spot is the square) and `rowKey(p)` (spots
+re-lay when a seat moves, not its tucked cards), and calls `slot(p, ms)` to
+light the cup. Presentation only. Character names live in
+`PERSONALITIES_ALL` (`name`; the old label is `style`).
+
+## `enemy-card-lab.html` + `js/enemy-card-lab.js` + `css/enemy-card-lab.css` + candidate `css/enemy-card.css` / `js/enemy-card.js` — Enemy Cards order form (Lab)
+
+Where Enemy Cards V2 was ordered (rounds 1–3). Runs the **real game**
+sandboxed at the owner's phone (430 x 932, safe areas rewritten to 59px /
+34px as in `table-space-lab.html`, whose chrome it shares). The copy strips
+the shipped `css/enemy-cards.css` / `js/enemy-cards.js` and injects the
+candidate instead, so every option still runs on V1 cards (options are
+`data-ec-*` attributes, set by `EnemyCard.apply()`); the candidate answers
+the coin table's `EnemyCards` questions itself. Its default ("YOUR ORDER")
+is the shipped order. Shows each card's footprint against V1. Not loaded
+by the game.
+
 ## `js/finishes.js` + `css/finishes.css` — Finishes menu (live)
 
 Settings → Finishes: a page inside the Settings sheet that swaps each
@@ -320,7 +349,7 @@ there manually.
 Files matching `*-lab.html`, `*-lab.js`, `*-lab.css` (`career-lab`,
 `career-hub-v2-lab`, `ticket-lab`, `card-flight-options`, `card-turn-lab`,
 `chip-motion-lab`, `chip-lab`, `chip-throw-lab`, `design-lab`, `result-stage-lab`, `showdown-rail-lab`, `crt-lab`, `dashboard-v2-lab`, `dashboard-order-lab`,
-`wheel-v2-lab`, `intro-lab`, `boot-lab`, `slot-lab`, `table-space-lab`)
+`wheel-v2-lab`, `intro-lab`, `boot-lab`, `slot-lab`, `table-space-lab`, `enemy-card-lab`)
 are **isolated visual references and prototyping sandboxes**. Several are
 committed permanently as durable references even after their feature
 shipped. Rules:

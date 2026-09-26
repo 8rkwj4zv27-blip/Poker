@@ -223,4 +223,33 @@ check('Dashboard V2: the rest of the approved order is the lab default, and its 
   assert.ok(js.includes("humanAct('check')") && js.includes('setWagerAmount('),'behaviours must act through the real game functions');
 });
 
+check('Enemy Cards V2: live, shared, presentation only, and to the order',()=>{
+  const css=read('css/enemy-cards.css'), js=read('js/enemy-cards.js'), coin=read('js/coin-table.js'), pres=read('js/06-presentation.js'), opp=read('js/03-opponents.js');
+  // Loaded by the game (before the CRT component, which stays last) and precached.
+  const links=[...indexHtml.matchAll(/<link rel="stylesheet" href="([^"?]+)/g)].map(m=>m[1]);
+  assert.ok(links.includes('css/enemy-cards.css') && links.indexOf('css/enemy-cards.css')<links.indexOf('css/crt.css'),'index.html must load css/enemy-cards.css before css/crt.css');
+  assert.ok(/<script src="js\/enemy-cards\.js/.test(indexHtml),'index.html must load js/enemy-cards.js');
+  ["'./css/enemy-cards.css","'./js/enemy-cards.js"].forEach(f=>assert.ok(serviceWorker.includes(f),'sw.js is missing '+f));
+  // Shared parts on the real seats, not the lab's attributes; the lab never ships.
+  assert.ok(!/data-ec-/.test(css) && !/data-ec-/.test(js) && !/data-ec-/.test(indexHtml),'production must not use the lab\'s data-ec-* attributes');
+  ['enemy-card-lab','js/enemy-card.js','css/enemy-card.css'].forEach(n=>{ assert.ok(!indexHtml.includes(n),'index.html links '+n); assert.ok(!serviceWorker.includes(n),'sw.js precaches '+n); });
+  // The readout is the CRT component with its own ink.
+  assert.ok(js.includes('class="crt ec-glass" data-crt-quiet') && js.includes('glass.dataset.ink'),'the readout must be a .crt using data-ink');
+  // The rim: every state the order reacts to, lit only by their colour, lamp colours or danger red.
+  ['turn','think','flash','next','win','allin','fold','out'].forEach(st=>assert.ok(css.includes('[data-rim="'+st+'"]'),'rim state '+st+' missing'));
+  [...css.matchAll(/--ec-lamp:([^;]+);/g)].map(m=>m[1].trim()).forEach(v=>assert.ok(/--ec-own|--pc-lamp-amber-hi|--danger|#120f0c/.test(v),'the rim may only use their colour, lamp colours or danger red, found '+v));
+  assert.ok(/animation:dashRelay [^;]*steps\(/.test(css) && /animation:dashPulse [^;]*steps\(/.test(css) && /animation:dashFlickOut [^;]*steps\(/.test(css),'rim changes must switch in steps, with the dashboard\'s keyframes');
+  assert.ok(css.includes('[data-motion="off"]') && css.includes('prefers-reduced-motion') && js.includes('motionOff()'),'Enemy Cards must honour Reduced Motion');
+  // Presentation only: it reads the table and never writes it.
+  assert.ok(!/\b(game|pendingHumanPlayer)(\.[A-Za-z_]+)*\s*=[^=]/.test(js) && !/\b(applyAction|humanAct)\(/.test(js),'js/enemy-cards.js must never change game state');
+  // Wired to the game: render paints, the coin table asks where coins go.
+  assert.ok(pres.includes("if (typeof EnemyCards !== 'undefined') EnemyCards.paint();"),'render() must paint the enemy cards');
+  ['EnemyCards.coinSource(p)','EnemyCards.spot(p, fr)','EnemyCards.rowKey(p)','EnemyCards.slot(p'].forEach(c=>assert.ok(coin.includes(c),'js/coin-table.js must ask '+c));
+  // Every personality has a character name and keeps its style.
+  const people=[...opp.matchAll(/\{key:'([a-z]+)',\s*name:'([A-Za-z]+)',\s*style:'([A-Za-z]+)'/g)];
+  assert.strictEqual(people.length,8,'every personality needs a character name and a style');
+  // The book shows the real part.
+  assert.ok(book.includes('css/enemy-cards.css') && book.includes('class="seat ec-seat"'),'the Pattern Book must show the cards on the real css/enemy-cards.css');
+});
+
 process.stdout.write('\n'+passed+' Pattern Book checks passed.\n');

@@ -14,6 +14,7 @@
        sizing is undone below so the book scrolls. -->
   <link rel="stylesheet" href="css/01-foundation.css">
   <link rel="stylesheet" href="css/dashboard.css">
+  <link rel="stylesheet" href="css/enemy-cards.css">
   <link rel="stylesheet" href="css/crt.css">
   <style>
     :root{
@@ -76,6 +77,20 @@
     .dash-spec .dash-keys > div{ height:100%; border-radius:0 0 11px 11px; display:grid; grid-template-columns:repeat(3,1fr); gap:8px; padding:6px 8px 7px; box-sizing:border-box;
       background:repeating-conic-gradient(rgba(255,255,255,.035) 0 25%,transparent 0 50%) 0 0/6px 6px,var(--machine-case); border-top:2px solid #0B0D0A; }
     .dash-spec .dash-keys b{ background:#0B0D0A; border-radius:4px; opacity:.55; }
+    /* Enemy Cards V2 specimen: layout only. The painted cabinet, readout,
+       cup, rim and squares come from css/enemy-cards.css; the machine
+       tokens mirror the game's (body, in css/03-action-console.css) and the
+       box is V1's seat card, simplified. */
+    .ec-spec{ --machine-case:color-mix(in srgb,var(--panel-2) 78%,var(--theme-case-raised) 22%); --machine-case-hi:var(--theme-case-raised);
+      --machine-case-lo:color-mix(in srgb,var(--panel) 55%,black); --machine-glass:color-mix(in srgb,var(--bg-deep) 68%,black);
+      position:relative; display:flex; justify-content:center; gap:14px; padding:28px 10px 92px; background:var(--felt-2); border:3px solid #000; max-width:430px; margin:0 auto; }
+    .ec-spec .seat{ position:relative; width:78px; }
+    .ec-spec .seat-card{ position:relative; display:flex; flex-direction:column; align-items:center; gap:2px; padding:3px; border:2px solid; border-radius:var(--radius); }
+    .ec-spec .seat-name{ width:100%; box-sizing:border-box; text-align:center; font-weight:700; color:var(--ink); text-transform:uppercase; background:rgba(0,0,0,.4); border:1px solid rgba(255,255,255,.1); border-radius:2px; }
+    .ec-spec .ec-face{ width:59px; height:59px; background:var(--ec-own); border:2px solid #0b0806; border-radius:3px; }
+    .ec-spec .ec-stack{ width:100%; height:23px; box-sizing:border-box; background:var(--machine-glass); border:2px solid var(--machine-case-lo); border-radius:2px; color:var(--accent-bright); font:10px var(--hdr); display:flex; align-items:center; justify-content:center; }
+    .ec-spec .ec-out i{ width:32px; height:46px; background:repeating-conic-gradient(#2b5a3e 0 25%,#1d4430 0 50%) 0 0/6px 6px; border:2px solid #7a4a1e; border-radius:2px; box-sizing:border-box; }
+    .ec-spec .ec-square{ position:absolute; left:50%; bottom:-86px; width:54px; height:54px; margin-left:-27px; }
   </style>
 </head>
 <body>
@@ -163,6 +178,52 @@
     </div>
   </section>
 
+  <!-- ======================= ENEMY CARDS V2 ======================= -->
+  <section>
+    <h2>Enemy Cards V2: the opponents' cards</h2>
+    <p class="lead">The owner's order from the Enemy Cards order form (27 September 2026): painted cabinet, character name, a two-line CRT readout that counts, hole cards tucked under the card, a coin cup, a rim light in their own colour that reacts to the table, and a faint bet square under each seat.</p>
+    <div class="plate">
+      <span class="status live">LIVE IN THE GAME · v0.41.0</span>
+      <h3>The finish, running</h3>
+      <div class="ec-spec felt" data-theme="emerald" id="ec-spec">
+        <div class="seat ec-seat" style="--ec-own:#6EA6FF"><div class="seat-card" id="ec-demo"><span class="seat-name">LUCY</span><i class="ec-face"></i><span class="ec-stack">$0480</span>
+          <div class="ec-read"><div class="crt ec-glass" data-crt-quiet data-ink="money"><span class="crt-line ec-v">RAISE</span><span class="crt-line ec-a">120</span></div></div>
+          <div class="ec-cup"><i></i></div></div>
+          <div class="seat-cards ec-out"><i></i><i></i></div><div class="ec-square"></div></div>
+        <div class="seat ec-seat" style="--ec-own:#E92A2A"><div class="seat-card" data-rim="next"><span class="seat-name">TONY</span><i class="ec-face"></i><span class="ec-stack">$0500</span>
+          <div class="ec-read"><div class="crt ec-glass" data-crt-quiet><span class="crt-line ec-v">CHECK</span><span class="crt-line ec-a"></span></div></div>
+          <div class="ec-cup"><i></i></div></div>
+          <div class="seat-cards ec-out"><i></i><i></i></div><div class="ec-square"></div></div>
+      </div>
+      <div class="controls" id="ec-controls">
+        <button type="button" data-rim="">At rest</button>
+        <button type="button" data-rim="turn">Their turn</button>
+        <button type="button" data-rim="think">Thinking</button>
+        <button type="button" data-rim="flash">Bet</button>
+        <button type="button" data-rim="allin">All in</button>
+        <button type="button" data-rim="win">Win</button>
+        <button type="button" data-rim="fold">Fold</button>
+        <button type="button" data-rim="out">Out</button>
+        <button type="button" data-cup>Coins</button>
+      </div>
+    </div>
+    <div class="plate">
+      <h3>Anatomy</h3>
+      <div class="scroll"><table class="rules">
+        <thead><tr><th>Part</th><th>Rule</th><th>Class</th></tr></thead>
+        <tbody>
+          <tr><td>Cabinet</td><td>Painted: the case takes a wash of the face's colour, coloured rivets, a stripe of the colour under the name.</td><td><code>.seat.ec-seat .seat-card</code>, <code>--ec-own</code></td></tr>
+          <tr><td>Readout</td><td>A small CRT: the action on top, the amount under it, counting up. Ink from the component (money, danger).</td><td><code>.ec-read &gt; .crt.ec-glass</code></td></tr>
+          <tr><td>Hole cards</td><td>Tucked under the bottom edge; dealt just below the card then slid up; out and a size up at showdown; in and gone on a fold.</td><td><code>.seat-cards.ec-out</code>, <code>.ec-dealing</code>, <code>.ec-shown</code></td></tr>
+          <tr><td>Coin cup</td><td>Sunk into the base; the seat's coins leave from it and come home to it, and it glows while they do.</td><td><code>.ec-cup</code>, <code>.is-open</code></td></tr>
+          <tr><td>Rim light</td><td>A lamp in the cabinet's own border, faint in their colour at rest: turn (bright), thinking (breathes), bet (one flash), next to act (dim), all in (red pulse), win (warm), fold (dark), out (flickers out). Switch-ons step in with the dashboard's relay.</td><td><code>data-rim</code> on <code>.seat-card</code>, set by <code>js/enemy-cards.js</code></td></tr>
+          <tr><td>Bet square</td><td>Faint darker felt under each seat and above your cards; the bets land in it.</td><td><code>.ec-square</code></td></tr>
+          <tr><td>Moves</td><td>A knock on a check, a shudder on an all in.</td><td><code>.ec-knock</code>, <code>.ec-shudder</code></td></tr>
+        </tbody>
+      </table></div>
+    </div>
+  </section>
+
   <!-- ======================= APPROVED, NOT YET MIGRATED ======================= -->
   <section>
     <h2>Approved, moving over next</h2>
@@ -235,6 +296,16 @@
     demo.removeAttribute('data-rim'); void demo.offsetWidth;
     if (rim) demo.setAttribute('data-rim', rim);
     if (rim && rim !== 'bust'){ demo.classList.remove('dash-relay'); void demo.offsetWidth; demo.classList.add('dash-relay'); setTimeout(() => demo.classList.remove('dash-relay'), 340); }
+  });
+  // Book-only: the rim states the game sets from the table (js/enemy-cards.js).
+  document.getElementById('ec-controls').addEventListener('click', e => {
+    const b = e.target.closest('button'); if (!b) return;
+    const demo = document.getElementById('ec-demo');
+    if (b.hasAttribute('data-cup')){ const c = demo.querySelector('.ec-cup'); c.classList.add('is-open'); setTimeout(() => c.classList.remove('is-open'), 900); return; }
+    const rim = b.dataset.rim;
+    demo.removeAttribute('data-rim'); void demo.offsetWidth;
+    if (rim) demo.setAttribute('data-rim', rim);
+    if (rim && rim !== 'fold' && rim !== 'out'){ demo.classList.remove('ec-relay'); void demo.offsetWidth; demo.classList.add('ec-relay'); setTimeout(() => demo.classList.remove('ec-relay'), 340); }
   });
   // Book-only: the change effect comes from js/crt.js, exactly as in the game.
   const LINES = [

@@ -5,15 +5,17 @@
    ============================================================ */
 /* sizing scales every bet the archetype makes (small-ball vs sledgehammer);
    thinkSpeed scales decision time (tight players deliberate, loose players snap) */
+// `name` is the character (the table, log, banner and results use it);
+// `style` is how they play, the name they had before Enemy Cards V2.
 const PERSONALITIES_ALL = [
-  {key:'rock',      name:'Rock',      aggression:.20, tightness:.80, bluffFreq:.03, sizing:.55, thinkSpeed:1.35},
-  {key:'shark',     name:'Shark',     aggression:.55, tightness:.55, bluffFreq:.13, sizing:.75, thinkSpeed:1.00},
-  {key:'maniac',    name:'Maniac',    aggression:.88, tightness:.20, bluffFreq:.30, sizing:1.00, thinkSpeed:.70},
-  {key:'station',   name:'Station',   aggression:.15, tightness:.15, bluffFreq:.02, sizing:.60, thinkSpeed:.85},
-  {key:'grinder',   name:'Grinder',   aggression:.42, tightness:.62, bluffFreq:.09, sizing:.65, thinkSpeed:1.15},
-  {key:'wildcard',  name:'Wildcard',  aggression:.68, tightness:.35, bluffFreq:.24, sizing:.90, thinkSpeed:.75},
-  {key:'professor', name:'Prof',      aggression:.50, tightness:.58, bluffFreq:.11, sizing:.70, thinkSpeed:1.30},
-  {key:'hammer',    name:'Hammer',    aggression:.75, tightness:.45, bluffFreq:.16, sizing:.95, thinkSpeed:.90},
+  {key:'rock',      name:'Nigel', style:'Rock',     aggression:.20, tightness:.80, bluffFreq:.03, sizing:.55, thinkSpeed:1.35},
+  {key:'shark',     name:'Lucy',  style:'Shark',    aggression:.55, tightness:.55, bluffFreq:.13, sizing:.75, thinkSpeed:1.00},
+  {key:'maniac',    name:'Tony',  style:'Maniac',   aggression:.88, tightness:.20, bluffFreq:.30, sizing:1.00, thinkSpeed:.70},
+  {key:'station',   name:'Mavis', style:'Station',  aggression:.15, tightness:.15, bluffFreq:.02, sizing:.60, thinkSpeed:.85},
+  {key:'grinder',   name:'Steve', style:'Grinder',  aggression:.42, tightness:.62, bluffFreq:.09, sizing:.65, thinkSpeed:1.15},
+  {key:'wildcard',  name:'Roxy',  style:'Wildcard', aggression:.68, tightness:.35, bluffFreq:.24, sizing:.90, thinkSpeed:.75},
+  {key:'professor', name:'Harry', style:'Prof',     aggression:.50, tightness:.58, bluffFreq:.11, sizing:.70, thinkSpeed:1.30},
+  {key:'hammer',    name:'Bruno', style:'Hammer',   aggression:.75, tightness:.45, bluffFreq:.16, sizing:.95, thinkSpeed:.90},
 ];
 // Preferred roster: the four archetypes a normal table is built from
 // first. This is a gameplay choice, not an art constraint — illustrated

@@ -79,7 +79,10 @@ const CoinTable = (function(){
     // a house game), and the spots must follow their cards
     const rows = game ? game.players.map(p=>{
       const e = seatEls[p.id];
-      return e && !p.isHuman ? Math.round(e.cardsContainer.getBoundingClientRect().bottom) : '';
+      // Enemy Cards V2: the seat itself (its tucked cards move on a deal
+      // or a showdown, the spot must not)
+      const ec = !p.isHuman && typeof EnemyCards!=='undefined' && EnemyCards.rowKey(p);
+      return e && !p.isHuman ? (ec || Math.round(e.cardsContainer.getBoundingClientRect().bottom)) : '';
     }).join(',') : '';
     return [Math.round(f.left), Math.round(f.top), Math.round(f.width), Math.round(f.height),
       game ? game.players.map(p=>p.id).join(',') : '', rows].join('|');
@@ -153,6 +156,9 @@ const CoinTable = (function(){
             room = y-ay-4;
           }
         }
+        // Enemy Cards V2: the bet square under the seat (above your cards)
+        const ec = typeof EnemyCards!=='undefined' && EnemyCards.spot(p, fr);
+        if (ec){ x = ec.x; y = ec.y; room = ec.room; }
         const z = CW.zone('spot:'+p.id, fr.left+x, fr.top+y+2, 7, 5, 16);
         if (room>0) z.room = room;
       });
@@ -224,6 +230,9 @@ const CoinTable = (function(){
   }
   const within = (p,ms)=>Promise.race([p, new Promise(r=>setTimeout(r,ms))]);
   function edgeSource(p){
+    // Enemy Cards V2: out of (and home to) the seat's coin cup
+    const ec = typeof EnemyCards!=='undefined' && EnemyCards.coinSource(p);
+    if (ec) return ec;
     const e = seatEls[p.id], r = (e.cardsContainer.getBoundingClientRect().width ? e.cardsContainer : e.root).getBoundingClientRect();
     return { x:r.left+r.width/2+CW.rr(-8,8), y:r.bottom+4, z:6 };
   }
@@ -346,6 +355,7 @@ const CoinTable = (function(){
       }
       bk.apply({ slideMs:160 });
     } else {
+      if (typeof EnemyCards!=='undefined') EnemyCards.slot(p, 700);
       const n = budget(CW.betCoins(amount, allin), z);
       for (let i=0;i<n;i++){
         const s = edgeSource(p), b = CW.body(CW.makeChip('gold'), s.x, s.y, s.z, CW.D()-2); b.fresh = true;
@@ -448,6 +458,7 @@ const CoinTable = (function(){
   // an opponent's win: the pile slides a short way toward them as a group
   // (raked in), then the coins hop home to the seat, top first
   async function payOpp(p, list, gone){
+    if (typeof EnemyCards!=='undefined') EnemyCards.slot(p, 6000);
     const z = CW.zones['spot:'+p.id] || CW.zones.pot, pot = CW.zones.pot;
     CW.sfx('win', .5);
     setTimeout(()=>CW.sfx('collect', .5), 120/CW.OPT.speed);
@@ -467,6 +478,7 @@ const CoinTable = (function(){
     back.forEach(b=>{ if (b.zone) CW.removeFromZone(b); });
     const items = back.map(b=>{ const s = edgeSource(p); return { b, to:{ x:s.x, y:s.y, z:s.z, vanish:true, d:CW.D()-4 }, onLand:gone }; });
     await within(CW.throwAll(items, 'lob'), 8000/CW.OPT.speed);
+    if (typeof EnemyCards!=='undefined') EnemyCards.slot(p, 380);
   }
 
   /* ---------------- state for the rest of the game ---------------- */

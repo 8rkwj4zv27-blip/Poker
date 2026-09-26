@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#140709">
+  <link rel="icon" href="data:,">
+  <title>Enemy Cards Order Form</title>
+  <link rel="stylesheet" href="css/01-foundation.css">
+  <!-- The chrome is the Table Space Lab's (the phone frame and the form). -->
+  <link rel="stylesheet" href="css/table-space-lab.css?v=1">
+  <link rel="stylesheet" href="css/enemy-card-lab.css?v=1">
+  <script defer src="js/enemy-card-lab.js?v=3"></script>
+</head>
+<body class="sl ec-lab">
+  <!-- Phone only: the keys that bring up the form and the moments. -->
+  <div class="ec-keys" role="group" aria-label="Lab panels"><button type="button" data-sheet-key="form">ORDER</button><button type="button" data-sheet-key="play">PLAY</button></div>
+  <!-- Isolated Lab: the REAL game runs sandboxed in the frame (in-memory
+       storage, no service worker) at the iPhone 15 Pro Max's size and safe
+       areas, with css/enemy-card.css and js/enemy-card.js injected. The
+       form sets the order on the game's <html>. Never linked from the
+       game; never touches a real save. -->
+  <aside class="sl-side sl-form" aria-label="Order form">
+    <header class="sl-head">
+      <strong>ENEMY CARDS ORDER FORM · ROUND 3</strong>
+      <span>Pick a part for each job. Every opponent rebuilds as you go, on the real game at your phone's size.</span>
+    </header>
+    <div id="sl-rows"></div>
+  </aside>
+
+  <main class="sl-stage">
+    <div class="sl-phone" id="sl-phone">
+      <iframe id="sl-frame" title="The Table (sandboxed copy)"></iframe>
+      <div class="sl-status" aria-hidden="true"><span>9:41</span><i class="sl-island"></i><span class="sl-batt"><b></b></span></div>
+      <div class="sl-homebar" aria-hidden="true"></div>
+    </div>
+    <p class="sl-caption"><span id="sl-status">LOADING…</span> · iPhone 15 Pro Max · 430 × 932, installed app</p>
+  </main>
+
+  <aside class="sl-side sl-play" aria-label="Moments and order">
+    <section class="sl-group">
+      <h2>Put the real game in</h2>
+      <div class="sl-row"><span>Opponents</span><div class="sl-seg" data-view="opp"><button data-v="2">2</button><button data-v="3">3</button><button data-v="4">4</button><button data-v="5">5</button><button data-v="6">6</button></div></div>
+      <div class="sl-moments">
+        <button type="button" data-moment="deal" class="is-wide">NEW TABLE · YOUR TURN</button>
+        <button type="button" data-moment="play" class="is-wide">PLAY TO YOUR NEXT TURN</button>
+        <button type="button" data-moment="labels">EVERY ACTION</button>
+        <button type="button" data-moment="shove">OPPONENT ALL IN</button>
+        <button type="button" data-moment="showdown">SHOWDOWN</button>
+        <button type="button" data-moment="oppwin">OPPONENT WINS</button>
+        <button type="button" data-moment="ko">K.O.</button>
+        <button type="button" data-moment="nexthand" class="is-wide">NEXT HAND · WATCH THE DEAL</button>
+      </div>
+      <p class="sl-note">These play the real game to that moment. PLAY TO YOUR NEXT TURN calls for you so you can watch them act. NEXT HAND folds for you and deals the next one. You can also just play: tap the game.</p>
+      <p class="sl-note ec-size" id="ec-size"></p>
+    </section>
+
+    <section class="sl-group">
+      <h2>Quick orders</h2>
+      <div class="sl-moments">
+        <button type="button" data-preset="v1">ALL V1</button>
+        <button type="button" data-preset="suggested">YOUR ORDER</button>
+      </div>
+      <button type="button" class="sl-compare" id="sl-compare">HOLD TO SEE V1</button>
+    </section>
+
+    <section class="sl-group">
+      <h2>Your order</h2>
+      <ol class="sl-summary" id="sl-summary"></ol>
+      <button type="button" class="sl-copy" id="sl-copy">COPY ORDER</button>
+      <p class="sl-note" id="sl-copied">Paste it into the chat when you're happy.</p>
+    </section>
+
+    <section class="sl-group">
+      <h2>View</h2>
+      <div class="sl-row"><span>Theme</span><div class="sl-seg" data-view="theme"><button data-v="emerald">EMER</button><button data-v="midnight">MIDN</button><button data-v="burgundy">BURG</button><button data-v="slate">SLATE</button></div></div>
+      <div class="sl-row"><span>Sound</span><div class="sl-seg" data-view="sound"><button data-v="on">ON</button><button data-v="off">OFF</button></div></div>
+      <div class="sl-row"><span>Motion</span><div class="sl-seg" data-view="motion"><button data-v="on">FULL</button><button data-v="off">REDUCED</button></div></div>
+    </section>
+  </aside>
+</body>
+</html>

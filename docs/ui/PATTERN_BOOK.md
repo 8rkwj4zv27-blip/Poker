@@ -208,3 +208,33 @@ Before/after at 430 × 932, and each rim state:
 
 Parked for later passes: the raise animation, card tray options, the
 theatre pass (ALL IN moment, bust, win), and the chip bank and chips.
+
+## Enemy Cards V2 (live v0.41.0)
+
+The opponents' seat cards, from the owner's order on the Enemy Cards order
+form (`enemy-card-lab.html`, round 3, 27 September 2026). One release: the
+parts are added to each opponent's seat by `js/enemy-cards.js` (`.ec-seat`)
+and styled by `css/enemy-cards.css`; `render()` calls `EnemyCards.paint()`
+and the coin table (`js/coin-table.js`) asks `EnemyCards` where coins leave
+from and land. Presentation only. Universal parts inside (the CRT, the
+stack reel, cards, the face) keep their own entries and are used as they
+are; the readout is a `.crt` with `data-ink`, never styled locally.
+
+| Part | Order | The finish |
+|---|---|---|
+| Cabinet | **PAINTED** | The case takes a wash of the face's colour (`--ec-own`, 30% over the machine case), coloured rivets in the corners, a stripe of the colour under the name. A win keeps V1's warm case. |
+| Name | **CHARACTER** | The character's name (`PERSONALITIES_ALL[].name`: Nigel, Lucy, Tony, Mavis, Steve, Roxy, Harry, Bruno; their style is `.style`), a size up on the plate (12px; 11px at 5–6 opponents). The table, log, banner, results and Career tickets use the same name. |
+| Readout | **TWO LINE + COUNT** | A small `.crt` in place of the action slot: the action on top, the amount under it, counting up like a till. Ink from the component: money for chips going in, danger for all in and out. |
+| Hole cards | **TUCKED UNDER** | Out of the box, behind the cabinet, a strip showing under the bottom edge. Dealt to just below the card, in plain sight, then slid up under it; at showdown they slide right out, a size up (×1.38); on a fold they slide in and are gone. |
+| Coin cup | **CUP** | A coin-return cup sunk into the base; the seat's coins leave from it and come home to it, and it glows while they do. |
+| Rim light | **OWN COLOUR**, reacts to **EVERYTHING** | A lamp tube laid over the cabinet's own border (no extra footprint), glowing faintly in their colour at rest. Their turn: their colour, bright; thinking: it breathes; a bet, call or raise: one flash; all in: red pulse; a win: warm (1.4s); a fold: dark; out: flickers out. Switch-ons step in with the dashboard's relay (its keyframes). |
+| Next to act | **RIM PRE-LIGHT** | The next seat's rim lights dimly in their colour. |
+| Bet square | **FAINT** | A square of slightly darker felt right under each seat (centred on the card, a fixed gap below the tucked cards) and centred above your cards; the bets land in it. Measured from layout, so a knock, a deal or a showdown never moves it. |
+| Cabinet moves | **KNOCK + SHUDDER** | A check: the cabinet taps the table twice, with a knock. An all in: it shudders once. |
+| Face size, stack gauge, blinds | **TODAY**, **NONE**, **ON THE FACE** | Unchanged. |
+| Reduced Motion | | No blips, pulses, flicker, knocks, shudders or slides: states simply change. |
+
+Not taken: the player's file (every version failed to read at card size),
+the stack gauge, blind pucks on the felt. The lab still offers every
+option on V1 cards, with the shipped files stripped from its copy.
+
