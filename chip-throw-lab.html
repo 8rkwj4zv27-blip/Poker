@@ -6,7 +6,7 @@
 <meta name="theme-color" content="#16090D">
 <link rel="icon" href="data:,">
 <title>Chip Throw Lab</title>
-<!-- CHIP THROW LAB v8 — how chips travel (docs/ui/CHIP_PLAN.md). The real
+<!-- CHIP THROW LAB v9 — how chips travel (docs/ui/CHIP_PLAN.md). The real
      #table-screen and renderers on memory-only state, plus a chip physics
      world where every chip on the felt is a body. Reuses chip-lab.css for
      the drawer, bet spots and bank. Never loaded by index.html or sw.js;
@@ -45,6 +45,7 @@
       <button type="button" data-run="you-bet">YOUR<br>RAISE</button>
       <button type="button" data-run="you-allin">YOUR<br>ALL-IN</button>
       <button type="button" data-run="sweep">SWEEP</button>
+      <button type="button" class="is-primary" data-run="toss-test">TOSS<br>TEST</button>
       <button type="button" data-run="pay-you">PAY<br>YOU</button>
       <button type="button" data-run="pay-opp">PAY<br>MANIAC</button>
       <button type="button" class="is-primary" data-run="street">A<br>STREET</button>
@@ -53,7 +54,7 @@
     <div class="ct-bar-row ct-bar-foot">
       <button type="button" class="ct-replay" data-run="replay" aria-label="Replay the last move">↻ REPLAY</button>
       <button type="button" data-run="reset">RESET</button>
-      <span class="ct-status"><b id="ct-preset-name">V8</b> · <span id="ct-status">LOADING…</span></span>
+      <span class="ct-status"><b id="ct-preset-name">V9</b> · <span id="ct-status">LOADING…</span></span>
       <button type="button" class="ct-gear" id="ct-gear" aria-label="Options">⚙ OPTIONS</button>
     </div>
   </nav>
@@ -72,6 +73,20 @@
         <div class="cl-seg cl-seg-sm" data-opt="tidy"><button type="button" data-v="spread">SPREAD</button><button type="button" data-v="towers">TOWERS</button></div></div>
       <div class="cl-row"><span class="cl-label">AFTER</span>
         <div class="cl-seg cl-seg-sm" data-opt="after"><button type="button" data-v="tap">MESS·TAP</button><button type="button" data-v="auto">MESS→TIDY</button><button type="button" data-v="neat">NEAT</button></div></div>
+    </section>
+    <section class="cl-group">
+      <div class="cl-label">COIN SPIN</div>
+      <div class="cl-row"><span class="cl-label">AXIS</span>
+        <div class="cl-seg cl-seg-sm" data-opt="spin"><button type="button" data-v="side">SIDE</button><button type="button" data-v="toss">TOSS</button><button type="button" data-v="mixed">MIXED</button><button type="button" data-v="off">OFF</button></div></div>
+      <div class="cl-row"><span class="cl-label">SPEED</span>
+        <div class="cl-seg cl-seg-sm" data-opt="spinSpeed"><button type="button" data-v="slow">SLOW</button><button type="button" data-v="med">MED</button><button type="button" data-v="fast">FAST</button></div></div>
+      <div class="cl-row"><span class="cl-label">FRAMES</span>
+        <div class="cl-seg cl-seg-sm" data-opt="spinFrames"><button type="button" data-v="8">8</button><button type="button" data-v="16">16</button></div></div>
+      <div class="cl-row"><span class="cl-label">LIGHT</span>
+        <div class="cl-seg cl-seg-sm" data-opt="light"><button type="button" data-v="on">ON</button><button type="button" data-v="off">OFF</button></div></div>
+      <div class="cl-row"><span class="cl-label">LANDS</span>
+        <div class="cl-seg cl-seg-sm" data-opt="lands"><button type="button" data-v="random">HEADS/TAILS</button><button type="button" data-v="heads">HEADS</button></div></div>
+      <p class="cl-note">Coins spin over and over while they're in the air, heads to tails. SIDE turns about the upright axis (the coin narrows to its edge, the classic video-game coin); TOSS about the level axis, like a thumb-flipped coin; MIXED gives each coin one of the two. LIGHT brightens the face as it swings to the light, with a white streak at the peak. HEADS/TAILS: a coin lands on whichever face it was showing. Try the TOSS TEST button with SPEED on SLOW.</p>
     </section>
     <section class="cl-group">
       <div class="cl-label">TABLE</div>

@@ -335,3 +335,34 @@ Why no visible flip: flights last ~0.3s and did up to 3 full turns, about
 - **Quieter tidy:** one ratchet at the start, a click only when each
   stack's top coin lands, then lock + sting once.
 - **Well** is a rounded rectangle; all tray lips are rectangular.
+
+### v9 (26 Sep 2026)
+
+Owner on v8: still no visible coin toss ("spin over itself, heads to
+tails, heads to tails"); remove the tidy noise entirely; pot/pile coins
+vanished while waiting to fly ("they move from an invisible pot"); a coin
+occasionally stutters and the lab can't advance.
+
+Bugs:
+- **Invisible piles:** every coin waiting its turn was hidden, including
+  coins already in a pile. Only brand-new coins (out of a seat) hide now.
+  Measured during pay-you, sweep and pay-out: 0 pile coins hidden.
+- **Stuck coin:** the pot tray's lip overlapped the solid pot plate, so a
+  coin could be pushed out of one and back into the other every frame. The
+  lip is now fitted clear of every block, pot landings aim inside it, a
+  watchdog puts down any coin still moving after 3.5s, and every wait in a
+  move has a time limit.
+- **Tidy noise:** removed (ratchet, clicks, lock and sting).
+
+**Coin spin:** the v7/v8 flip squashed the coin vertically, which from the
+table's viewing angle reads as breathing, not spinning, and turned too
+fast. v9 draws a full spin cycle by code: SIDE (about the upright axis,
+the classic video-game coin narrowing to its edge) or TOSS (about the
+level axis); a coin-thin reeded edge (the chunky resting thickness made a
+turning coin look like a barrel); a lit heads face with slot line and a
+darker tails face with a ring; LIGHT brightens the face toward the light
+with a white streak at the peak. It spins continuously while airborne, at
+a fixed readable rate (SLOW 2.2 / MED 3.6 / FAST 5.5 turns a second, 8 or
+16 frames a turn), keeps spinning through bounces, and lands on whichever
+face it was showing (or always heads). TOSS TEST throws six coins high
+and slow into the pot for inspection.

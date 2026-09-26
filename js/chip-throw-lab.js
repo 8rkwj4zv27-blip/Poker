@@ -47,9 +47,11 @@
     flips:'many', toss:'off', source:'edge', bounces:'multi', rock:'on', roll:'on', knock:'on', juice:'on', after:'tap', sweep:'push',
     random:'fresh', sfx:'clack', rise:'on', group:'on' };
   BASE.overlap='snap'; BASE.stack='loose'; BASE.tidy='spread'; BASE.tray='well'; BASE.lip='on'; BASE.nums='pop'; BASE.sweep='jump';
-  const OPT={ preset:'v8', ...BASE, speed:1, sound:'on' };
+  // the coin spin (v9): axis, turns per second, frames per turn, lighting, landing side
+  BASE.spin='side'; BASE.spinSpeed='med'; BASE.spinFrames='16'; BASE.light='on'; BASE.lands='random';
+  const OPT={ preset:'v9', ...BASE, speed:1, sound:'on' };
   const PRESETS={
-    v8:   { ...BASE },
+    v9:   { ...BASE },
     chunky:{ ...BASE, sfx:'clackplus' },
     heavy:{ ...BASE, bounces:'dead', roll:'off', sfx:'thud' },
     v4:   { ...BASE, overlap:'snug', sfx:'coin' },
@@ -59,7 +61,7 @@
             sfx:'old', rise:'off', group:'off', eased:true }
   };
   const NOTES={
-    v8:'A slow, readable flip in every flight and a flip-pop off the first landing for a third of coins; the sweep hops coins into the pot; quieter tidy; the well is a rounded rectangle; no zoom punch.',
+    v9:'Coins now spin over and over in the air, heads to tails (see COIN SPIN). Fixed: piles stay visible while they empty; the pot tray can no longer trap a coin; a watchdog puts down any coin still moving after 3.5s, so nothing can hang. Tidying is silent.',
     chunky:'As V5 with CLACK+: the same click with a heavier thud under it.',
     heavy:'As V5, with dead landings (no bounce, no roll) and the THUD sound set.',
     v4:'The last version: snug overlap and the COIN sound set.',
@@ -180,7 +182,7 @@
       if (r>.76) return ny<-.1 ? bevHi : (ny>.25 ? bevLo : (a<0?bevHi:bevLo));
       if (!back && Math.abs(nx)<.8/s.rx && Math.abs(ny)<.5) return line;
       if (!back && nx>-.6 && nx<-.34 && Math.abs(ny)<.42) return hi;
-      if (back && Math.abs(nx)<.8/s.rx && Math.abs(ny)<.36) return line;
+      if (back && (Math.abs(r-.46)<.9/Math.max(3,Math.min(s.rx,s.ry*1.4)) || r<.14)) return line;
       return face;
     },(nx,s,x,fromBottom)=>(fromBottom<1.2?eLo:(x%2?e1:e2)),ink);
   }
@@ -190,6 +192,85 @@
     const make=(c,back)=>col==='gold'?coinFrame(d,c,back):chipFrame(col,d,c,back);
     return frameCache[k]={ front:TILTS.map(c=>make(c,false)), back:TILTS.map(c=>make(c,true)) };
   }
+  /* ============================================================
+     COIN SPIN (v9). A coin in the air spins over and over, heads to tails:
+     frames are drawn by code for the whole turn. SIDE spins about the
+     upright axis (the coin narrows to a line, the classic video-game
+     coin); TOSS about the level axis (a thumb-flipped coin); both show the
+     coin's thick reeded edge as it turns, a lit heads face (slot line,
+     highlight) and a darker tails face (a ring), and with LIGHT on the face
+     brightens as it swings toward the light, with a white streak at the
+     peak.
+     ============================================================ */
+  const spinCache={};
+  function spinFrame(d,axis,k,N){
+    const h=Math.round(d*HR()), light=OPT.light==='on';
+    const key=[d,h,axis,k,N,light,OPT.body].join('|');
+    if (spinCache[key]) return spinCache[key];
+    // a spinning coin shows a coin-thin edge (the chunky resting thickness
+    // made a turning coin read as a barrel)
+    const th=Math.max(2,Math.round(d*(OPT.body==='thick'?.26:.2))), R=d/2-.6, a=2*Math.PI*k/N, c=Math.cos(a), sn=Math.sin(a);
+    const heads=c>=0, face=Math.max(.07,Math.abs(c));
+    // face ellipse radii and the edge band's sweep vector
+    let ax, ay, bx, by;
+    if (axis==='side'){ ax=R*face; ay=R*.86; bx=(sn>=0?1:-1)*th*Math.abs(sn); by=th*.35; }
+    else { ax=R; ay=R*face; bx=0; by=(sn>=0?1:-1)*th*Math.abs(sn); }
+    const cv=document.createElement('canvas'); cv.width=d; cv.height=h;
+    const ctx=cv.getContext('2d'), img=ctx.createImageData(d,h), px=img.data;
+    // centre the swept shape horizontally; sit it on the bottom of the sprite
+    const minX=Math.min(-ax,-ax+bx), maxX=Math.max(ax,ax+bx), minY=Math.min(-ay,-ay+by), maxY=Math.max(ay,ay+by);
+    const fx=d/2-(minX+maxX)/2, fy=h-1.5-maxY;
+    const inFace=(x,y,ox,oy)=>{ const nx=(x-fx-ox)/ax, ny=(y-fy-oy)/ay; return nx*nx+ny*ny<=1; };
+    // lighting: brightest when the face swings toward the light (front-left)
+    const lit=light?Math.max(0,Math.cos(a-(heads?-.55:Math.PI-.55))):.6;
+    const mul=light?(.72+.42*lit):1;
+    const col=(hexs,m)=>hex(hexs).map(v=>Math.max(0,Math.min(255,Math.round(v*m))));
+    const H={ face:col('#f4c43e',mul), bevHi:col('#ffe88a',mul), bevLo:col('#b87a10',mul), line:col('#c68a16',mul), hi:col('#fff5c0',Math.min(1.15,mul)) };
+    const T={ face:col('#c9962a',mul*.95), bevHi:col('#e0b24a',mul*.95), bevLo:col('#8a5a0c',mul*.95), mark:col('#8f6010',mul*.95) };
+    const E1=col('#c98a1a',.95), E2=col('#e8ad32',1), ELo=hex('#7c4a06'), ink=hex('#2e1a04'), SPEC=hex('#fffbe8');
+    const fill=new Array(d*h).fill(null);
+    for (let y=0;y<h;y++) for (let x=0;x<d;x++){
+      const X=x+.5, Y=y+.5;
+      if (inFace(X,Y,0,0)){
+        const nx=(X-fx)/ax, ny=(Y-fy)/ay, r=Math.hypot(nx,ny);
+        let p;
+        if (heads){
+          if (r>.76) p=ny<-.1?H.bevHi:(ny>.25?H.bevLo:(nx<0?H.bevHi:H.bevLo));
+          else if (Math.abs(nx*ax)<.8 && Math.abs(ny)<.5) p=H.line;
+          else if (nx>-.6 && nx<-.34 && Math.abs(ny)<.42 && ax>R*.45) p=H.hi;
+          else p=H.face;
+          // the specular streak at the peak of the swing
+          if (light && lit>.9 && r<.8 && Math.abs(nx*.8-ny+.1)<.22) p=SPEC;
+        } else {
+          if (r>.76) p=ny<-.1?T.bevHi:T.bevLo;
+          else if (Math.abs(r-.46)<.9/Math.max(3,Math.min(ax,ay*1.4)) || r<.14) p=T.mark;
+          else p=T.face;
+        }
+        fill[y*d+x]=p; continue;
+      }
+      // the edge: the face swept back along the band vector
+      for (let i=1;i<=8;i++){
+        const t=i/8;
+        if (inFace(X,Y,bx*t,by*t)){
+          const alongX=axis==='side'?Y:X;
+          fill[y*d+x]=(axis==='side'? (Math.floor(alongX)%2?E1:E2) : (Math.floor(alongX)%2?E1:E2));
+          if (t>.8) fill[y*d+x]=ELo;
+          break;
+        }
+      }
+    }
+    const inkAt=[];
+    for (let y=0;y<h;y++) for (let x=0;x<d;x++){
+      if (fill[y*d+x]) continue;
+      if ([[1,0],[-1,0],[0,1],[0,-1]].some(([ox,oy])=>{ const X2=x+ox,Y2=y+oy; return X2>=0&&Y2>=0&&X2<d&&Y2<h&&fill[Y2*d+X2]; })) inkAt.push(y*d+x);
+    }
+    inkAt.forEach(i=>{ fill[i]=ink; });
+    for (let i=0;i<d*h;i++){ const p=fill[i]; if (!p) continue; px[i*4]=p[0]; px[i*4+1]=p[1]; px[i*4+2]=p[2]; px[i*4+3]=255; }
+    ctx.putImageData(img,0,0);
+    return spinCache[key]='url('+cv.toDataURL()+')';
+  }
+  const SPIN_RATE={ slow:2.2, med:3.6, fast:5.5 };             // turns per second
+  const spinOn=b=>OPT.spin!=='off' && OPT.art==='gold' && !b.edge;
   const tiltIndex=c=>{ let best=0; TILTS.forEach((t,i)=>{ if (Math.abs(t-c)<Math.abs(TILTS[best]-c)) best=i; }); return best; };
   const pixelArt=()=>OPT.art==='gold'||OPT.art==='pixel';
 
@@ -465,6 +546,7 @@
   const ease={ inOut:t=>t<.5?2*t*t:1-Math.pow(-2*t+2,2)/2, out:t=>1-Math.pow(1-t,3) };
   let air=null, shadows=null, raf=0, lastT=0, freeze=0;
   const active=new Set(), dirty=new Set(), zones={}, squashing=new Set();
+  let stuckCount=0;
   let WALLS=null;               // { felt:{L,T,R,B,rc}, blocks:[{L,T,R,B}] }
   let TRAY=null;                // the pot tray's inside edge, for its lip
 
@@ -480,7 +562,11 @@
     const reduced=motionOff();
     for (const b of Array.from(active)){
       if (reduced){ snap(b); continue; }
-      if (b.state==='wait'){ b.wait-=dt*1000; if (b.wait>0) continue; begin(b); }
+      if (b.state==='wait'){ b.moving=0; b.wait-=dt*1000; if (b.wait>0) continue; begin(b); }
+      // watchdog: a coin still moving after ~3.5s (trapped between walls,
+      // jittering) is put down where it is (or where it was going)
+      b.moving=(b.moving||0)+dt;
+      if (b.moving>3.5){ b.moving=0; snap(b); stuckCount++; continue; }
       if (dt>0){
         // two half-steps: collisions and walls stay solid at speed
         step(b,dt/2); if (b.state!=='rest' && active.has(b)) step(b,dt/2);
@@ -515,7 +601,7 @@
   function removeFromZone(b){ const i=b.zone.list.indexOf(b); if (i>=0) b.zone.list.splice(i,1); b.zone=null; }
   function toRest(b){
     const was=b.state;
-    b.state='rest'; b.t=0; b.vx=b.vy=b.vz=0;
+    b.state='rest'; b.t=0; b.vx=b.vy=b.vz=0; b.moving=0;
     // every coin that comes to rest is checked against its neighbours (a
     // pushed group is relaxed as whole stacks by relaxStacks instead)
     void was;
@@ -537,6 +623,7 @@
     document.querySelectorAll('#felt .seat-card').forEach(add);
     document.querySelectorAll('#hud-mid .seat-cards .card').forEach(add);
     WALLS={ felt:{ L:f.left+inset, T:f.top+inset, R:f.right-inset, B:f.bottom-inset, rc:40 }, blocks };
+    fitTray();
   }
   const insideFelt=(x,y)=>WALLS && x>WALLS.felt.L && x<WALLS.felt.R && y>WALLS.felt.T && y<WALLS.felt.B;
   // Keeps a chip's footprint (x±r, y-d..y) on the felt and off every block.
@@ -570,14 +657,28 @@
   }
   // The tray's lip: a coin sliding (or skimming low) in the pot bounces back
   // off the rim; a fast one hops over it.
+  // Shrink the lip's walls clear of every solid block (the plate, the deck,
+  // cards): a coin can never be pushed out of a block by one rule and back
+  // into it by the other (that was the stuck, stuttering coin).
+  function fitTray(){
+    if (!TRAY || !WALLS) return;
+    const r=D()/2, d=D(), cx=(TRAY.L+TRAY.R)/2, cy=(TRAY.T+TRAY.B)/2;
+    WALLS.blocks.forEach(k=>{
+      const L=k.L-r-1, R=k.R+r+1, T=k.T-2, B=k.B+d*.85+1;
+      if (R<=TRAY.L || L>=TRAY.R || B<=TRAY.T || T>=TRAY.B) return;
+      const cut={ left:R-TRAY.L, right:TRAY.R-L, top:B-TRAY.T, bottom:TRAY.B-T };
+      const side=Object.keys(cut).filter(k2=>(k2==='left'&&k.R<cx)||(k2==='right'&&k.L>cx)||(k2==='top'&&k.B<cy)||(k2==='bottom'&&k.T>cy)).sort((a,c)=>cut[a]-cut[c])[0]||'bottom';
+      if (side==='left') TRAY.L=R; else if (side==='right') TRAY.R=L; else if (side==='top') TRAY.T=B; else TRAY.B=T;
+    });
+  }
   function lip(b){
     if (!TRAY || OPT.lip!=='on' || !b.zone || b.zone.id!=='pot' || b.z>4) return;
-    const dx=b.x-TRAY.cx, dy=(b.y-TRAY.cy);
-    let out, nx, ny;
-    if (TRAY.oval){ const e=Math.hypot(dx/TRAY.rx,dy/TRAY.ry); out=e>1; const L=Math.max(.01,Math.hypot(dx/TRAY.rx**2,dy/TRAY.ry**2)); nx=dx/TRAY.rx**2/L; ny=dy/TRAY.ry**2/L;
-      if (out){ b.x=TRAY.cx+dx/e; b.y=TRAY.cy+dy/e; } }
-    else { out=Math.abs(dx)>TRAY.rx||Math.abs(dy)>TRAY.ry; nx=Math.abs(dx)/TRAY.rx>Math.abs(dy)/TRAY.ry?Math.sign(dx):0; ny=nx?0:Math.sign(dy);
-      if (out){ b.x=TRAY.cx+Math.max(-TRAY.rx,Math.min(TRAY.rx,dx)); b.y=TRAY.cy+Math.max(-TRAY.ry,Math.min(TRAY.ry,dy)); } }
+    const r=b.d/2, L=TRAY.L+r, Rr=TRAY.R-r, T=TRAY.T+2, B=TRAY.B;
+    if (Rr<=L || B<=T) return;
+    let nx=0, ny=0;
+    if (b.x<L){ b.x=L; nx=-1; } else if (b.x>Rr){ b.x=Rr; nx=1; }
+    if (b.y<T){ b.y=T; ny=-1; } else if (b.y>B){ b.y=B; ny=1; }
+    const out=nx||ny;
     if (!out) return;
     const vn=b.vx*nx+b.vy*ny, speed=Math.hypot(b.vx,b.vy);
     if (speed>260 && b.state==='slide'){ b.state='air'; b.vz=rr(120,170); b.t=.1; b.T=0; b.bounces=b.maxB; b.fr=Math.PI/.2; sfx('wall'); return; }
@@ -652,8 +753,8 @@
       }));
     });
     const beats=colourless?Math.max(...z.list.map(b=>slots.get(b).n))+1:groups.length;
-    void beats; if (done.length) sfx('tooth');
-    z.tidying=Promise.all(done).then(()=>{ z.tidying=null; if (done.length){ sfx('lock'); sfx('sting',1,1); glintPile(z); } });
+    void beats;                                                         // tidying is silent (owner: the noise was annoying)
+    z.tidying=Promise.all(done).then(()=>{ z.tidying=null; if (done.length) glintPile(z); });
     return z.tidying;
   }
 
@@ -667,7 +768,11 @@
     b.d0=b.d; b.d1=t.d||D();
     if (t.zone && b.zone!==t.zone){ if (b.zone) removeFromZone(b); b.zone=t.zone; t.zone.list.push(b); }
     b.wait=o.wait||0; b.state='wait'; b.next=o.mode||(eased()?'eased':'air');
-    b.el.style.visibility=b.wait>0?'hidden':''; if (b.sh) b.sh.style.visibility=b.wait>0?'hidden':'';
+    // only a brand-new coin (out of a seat) is hidden until it leaves; a
+    // coin already in a pile stays where it is, visible, until its turn
+    const hide=b.wait>0 && b.fresh;
+    b.el.style.visibility=hide?'hidden':''; if (b.sh) b.sh.style.visibility=hide?'hidden':'';
+    b.fresh=false;
     active.add(b); dirty.add(b); kick();
     return new Promise(res=>{ b.resolve=res; });
   }
@@ -708,6 +813,10 @@
     b.fr=flips*Math.PI/b.T; b.phi=0;
     b.vr=pixelArt()?0:(OPT.flips==='many'?rr(-300,300):0);
     b.glint=!!b.opts.toss; b.glinted=false;
+    // the spin: axis per coin (MIXED picks one), a random start, either way
+    b.axis=OPT.spin==='mixed'?(rnd()<.5?'side':'toss'):OPT.spin;
+    b.spinA=rnd()*Math.PI*2; b.spinDir=rnd()<.5?-1:1;
+    b.spinRate=(SPIN_RATE[OPT.spinSpeed]||3.6)*(b.opts.spinMul||1)*rr(.85,1.15);
   }
 
   /* ---------------- step ---------------- */
@@ -727,8 +836,9 @@
       }
       case 'air':{
         b.x+=b.vx*dt; b.y+=b.vy*dt; const pvz=b.vz; b.vz-=G*dt; b.z+=b.vz*dt; b.phi+=b.fr*dt; b.rot+=b.vr*dt;
+        if (b.spinRate) b.spinA+=b.spinDir*b.spinRate*2*Math.PI*dt;
         if (!b.bounces && b.T) b.d=b.d0+(b.d1-b.d0)*Math.min(1,b.t/b.T);
-        b.tilt=b.edge?0:Math.abs(Math.cos(b.phi)); b.back=!b.edge && Math.cos(b.phi)<0;
+        b.tilt=b.edge?0:(spinOn(b)&&b.spinRate?1:Math.abs(Math.cos(b.phi))); b.back=!b.edge && !spinOn(b) && Math.cos(b.phi)<0;
         if (b.glint && !b.glinted && pvz>0 && b.vz<=0){ b.glinted=true; glint(b); }
         if (t.vanish||t.mouth||t.rim){ if (b.t>=b.T) arrive(b,false); break; }
         if (!b.inFelt && insideFelt(b.x,b.y)) b.inFelt=true;
@@ -798,7 +908,7 @@
         b.tilt=k<1?.82:1; b.back=false;
         if (k>=1){
           b.x=b.tx; b.y=b.ty; b.z=b.tz; b.tilt=1; b.sq=.08;
-          if (b.snapping){ b.snapping=false; sfx('stack',.8,rise(b)); if (b.zone) b.zone.neat=false; } else if (b.tidyTop) sfx('stack',.45);
+          if (b.snapping){ b.snapping=false; sfx('stack',.8,rise(b)); if (b.zone) b.zone.neat=false; }
           toRest(b);
         }
         break;
@@ -867,6 +977,7 @@
       // flip on the bounce: a half or full turn in the hop, landing flat
       const tHop=2*b.vz/G;
       b.phi=0; b.fr=(pop?2:(tHop>.1?2:0))*Math.PI/Math.max(.05,tHop); b.flipGlint=true;
+      if (b.spinRate) b.spinRate*=pop?1.1:.8;
       if (t.slot){ b.vx=(t.x-b.x)*.72/tHop; b.vy=(t.y-b.y)*.72/tHop; }
       else if (!pop){ b.vx*=.55; b.vy*=.55; }
       sfx(ground>0?'stack':'bounce',speed/900,rise(b,true));
@@ -878,6 +989,7 @@
       return;
     }
     b.vz=0; b.fr=0; b.tilt=1; b.back=false;
+    b.tails=OPT.lands==='random' && b.spinRate ? Math.cos(b.spinA)<0 : false;
     sfx(ground>0?'stack':'land',Math.min(1,.45+speed/1400),rise(b));
     if (OPT.roll==='on' && ground<1 && (b.edge || (rnd()<.2 && speed>120))){ b.edge=false; startRoll(b); return; }
     b.edge=false;
@@ -1144,7 +1256,11 @@
     if (!b.el._base){ b.el._base=dnow; b.el.style.width=dnow+'px'; b.el.style.height=Math.round(dnow*hr)+'px'; }
     if (pixel){
       if (Math.abs(dnow-b.el._base)>1 && (b.state!=='air' || Math.abs(dnow-b.d1)<1)){ b.el._base=dnow; b.el.style.width=dnow+'px'; b.el.style.height=Math.round(dnow*hr)+'px'; }
-      setFrame(b.chip,b.el._base,ti,b.back&&b.state!=='rest');
+      if (b.state==='air' && b.spinRate && spinOn(b)){
+        const N=+OPT.spinFrames||16, turn=((b.spinA%(2*Math.PI))+2*Math.PI)%(2*Math.PI);
+        const k=Math.floor(turn/(2*Math.PI)*N)%N, key='spin|'+b.el._base+'|'+b.axis+'|'+k+'|'+N+'|'+OPT.light;
+        if (b.chip.frame!==key){ b.chip.frame=key; b.el.style.backgroundImage=spinFrame(b.el._base,b.axis,k,N); }
+      } else setFrame(b.chip,b.el._base,ti,b.state==='rest'?!!b.tails:(b.back&&b.state!=='rest'));
     } else if (b.state!=='rest'){
       sy=Math.max(.18,b.tilt);
       if (b.state==='roll'){ sx=.32; sy=1; }
@@ -1200,6 +1316,10 @@
       for (let i=0;i<n;i++){ out.push({ t, T:1, flips:1 }); t+=irr?base*(.35+rnd()*1.6):base; }
       return out;
     }
+    if (kind==='test'){
+      for (let i=0;i<n;i++) out.push({ t:i*420, T:2.4, flips:2 });
+      return out;
+    }
     if (kind==='hop'){
       // the sweep: quick hops off the top of a pile, one full turn each
       let t=0;
@@ -1249,6 +1369,7 @@
     return Promise.all(items.map((it,i)=>{
       const pl=p[i], dist=Math.hypot(it.to.x-it.b.x,it.to.y-it.b.y);
       let T=flightT(dist)*(pl.T||1), flips=pl.flips, toss=false;
+      if (kind==='test') T=Math.max(T,1.05);
       if (tossers.has(i)){ T=Math.max(.5,T*rr(1.7,2.1)); flips=rint(3,5); toss=true; }
       if (OPT.hand==='bloom'||kind!=='lob'){ it.b.x+=rr(-3,3); it.b.y+=rr(-2,2); }
       const loose=!it.to.slot&&!it.to.vanish&&!it.to.mouth;
@@ -1325,7 +1446,7 @@
     const tray=document.createElement('div'); tray.className='ct-tray'; tray.dataset.tray=OPT.tray;
     Object.assign(tray.style,{ width:TW+'px', height:TH+'px', left:Math.round(pr.left+pr.width/2-fr.left-TW/2)+'px', top:Math.round(pr.top-fr.top-16-TH/2-5)+'px' });
     felt.appendChild(tray);
-    TRAY=OPT.tray==='none'?null:{ cx:pr.left+pr.width/2, cy:pr.top-16-5, rx:TW/2-6, ry:TH/2-4, oval:false };
+    TRAY=OPT.tray==='none'?null:{ L:pr.left+pr.width/2-TW/2+6, R:pr.left+pr.width/2+TW/2-6, T:pr.top-16-5-TH/2+4, B:pr.top-16-5+TH/2-4 };
     zone('pot',pr.left+pr.width/2,pr.top-16,9,15,44);
     const bb=$('board').getBoundingClientRect();
     if (bb.height) zones.pot.room=(pr.top-16)-bb.bottom-10;
@@ -1439,7 +1560,9 @@
       return { x:s.x, y:s.y, z:s.z, zone:z, slot:true, d:D() };
     }
     z.neat=false;
-    return { x:z.cx+rr(-5,5), y:z.cy+rr(-3,3), z:0, zone:z, d:D() };
+    let x=z.cx+rr(-5,5), y=z.cy+rr(-3,3);
+    if (z.id==='pot' && TRAY){ x=Math.max(TRAY.L+10,Math.min(TRAY.R-10,x)); y=Math.max(TRAY.T+6,Math.min(TRAY.B-3,y)); }
+    return { x, y, z:0, zone:z, d:D() };
   }
   const waitMs=ms=>new Promise(r=>setTimeout(r,motionOff()?0:ms/OPT.speed));
   async function zoneSettled(z,max){
@@ -1449,6 +1572,7 @@
       await new Promise(r=>setTimeout(r,50));
     }
   }
+  const within=(p,ms)=>Promise.race([p,new Promise(r=>setTimeout(r,ms/OPT.speed))]);
   function guard(my){ if (my!==gen) throw new Error('cancelled'); }
 
   /* ---------------- moves ---------------- */
@@ -1464,10 +1588,10 @@
     const cols=coloursFor(amount), tick=ticker(p.id,z.amount-amount,amount,cols.length);
     plate(p.id,z.amount-amount);
     const items=cols.map(col=>{
-      const s=source(p), b=body(makeChip(col),s.x,s.y,s.z,D()-2);
+      const s=source(p), b=body(makeChip(col),s.x,s.y,s.z,D()-2); b.fresh=true;
       return { b, to:targetIn(z,b), onStart:()=>chuteKick(s.chute), onLand:tick };
     });
-    await throwAll(items,kind,{ big:allin });
+    await within(throwAll(items,kind,{ big:allin }),6000);
     await zoneSettled(z,2500);
   }
   async function youBet(amount,label,allin){
@@ -1488,7 +1612,7 @@
     bank.apply({ slideMs:160 });
     guard(my);
     // your chips come from the bank, off the felt: never a shove
-    await throwAll(items,kindFor(amount,allin,false),{ big:allin });
+    await within(throwAll(items,kindFor(amount,allin,false),{ big:allin }),6000);
     await zoneSettled(z,2500);
   }
   function neatFill(z,amount){
@@ -1522,7 +1646,7 @@
         delay+=160+list.length*24;
       });
       potValue+=total;
-      await Promise.all(throws); guard(my);
+      await within(Promise.all(throws),9000); guard(my);
       overshootPot(potValue);
       sfx('collect',.6);
       ids.forEach(k=>{ zones[k].amount=0; const id=k.slice(5); spotEls[id].classList.remove('is-sweeping'); plate(id); });
@@ -1554,11 +1678,24 @@
     kick();
     if (OPT.after!=='neat') pot.neat=false;
     potValue+=total;
-    await Promise.all(all); guard(my);
+    await within(Promise.all(all),6000); guard(my);
     overshootPot(potValue);
     sfx('collect',.6);
     ids.forEach(k=>{ zones[k].amount=0; const id=k.slice(5); spotEls[id].classList.remove('is-sweeping'); plate(id); });
     if (OPT.after==='auto'){ await waitMs(200); guard(my); await tidyZone(pot); }
+  }
+  // COIN TOSS test: six coins from your bank, thrown high and slow into the
+  // pot, one at a time, so the spin can be studied
+  async function tossTest(){
+    const my=gen, z=zones.pot, items=[];
+    say('TOSS TEST','WATCH THE SPIN');
+    for (let i=0;i<6;i++){
+      const t=bank.take(); if (!t) break;
+      const r=t.rect, b=body(t.c,r.left+r.width/2,r.bottom,0,r.width);
+      items.push({ b, to:targetIn(z,b) });
+    }
+    bank.apply({ slideMs:160 });
+    await within(throwAll(items,'test'),12000); guard(my);
   }
   async function ensurePot(){
     const pot=zones.pot;
@@ -1611,7 +1748,7 @@
     });
     const tallied=throwAll(items,jackpot?'heave':(kindFor(won,false,false)==='flick'?'flick':'lob'),{ big:jackpot }).then(()=>{});
     items.forEach(it=>{ const r=it.b.resolve; it.b.resolve=()=>{ landed++; paintPot(Math.round(won*(1-landed/n))); you.chips=Math.round(start+won*landed/n); updateJackpot(you.chips); if (r) r(); }; });
-    await tallied; guard(my);
+    await within(tallied,9000); guard(my);
     you.chips=start+won; updateJackpot(you.chips); potValue=0; paintPot(0);
     await waitMs(150);
     hatch.classList.remove('is-open'); sfx('hatchClose');
@@ -1630,12 +1767,12 @@
     });
     kick();
     z.amount=won; plate(p.id);
-    await Promise.all([Promise.all(all), countPot(0,520)]); guard(my);
+    await within(Promise.all([Promise.all(all), countPot(0,520)]),6000); guard(my);
     sfx('collect',.6);
     await waitMs(420); guard(my);
     const back=z.list.slice().sort((a,c)=>c.z-a.z); z.list.length=0; z.amount=0; plate(p.id);
     const items=back.map(b=>{ b.zone=null; const s=source(p); return { b, to:{ x:s.x, y:s.y, z:s.z, vanish:true, d:D()-4 } }; });
-    await throwAll(items,'lob'); guard(my);
+    await within(throwAll(items,'lob'),8000); guard(my);
     p.chips+=won; updateSeatReels(seatEls[p.id].chips,p.chips);
   }
   let tidying=false;
@@ -1648,9 +1785,9 @@
       bank.chips.forEach(c=>{ if (c.colour===col){ c.loose=false; c.clump=null; } });
       if (!bank.chips.some(c=>c.loose)) bank.clumps=[];
       bank.apply({ slideMs:210, stagger:6, easing:'cubic-bezier(.5,0,.2,1)' });
-      sfx('tooth'); await waitMs(120);
+      await waitMs(120);
     }
-    await waitMs(160); sfx('lock'); sfx('sting',1,1);
+    await waitMs(160);
     hl.classList.remove('is-tidying'); tidying=false;
   }
 
@@ -1674,6 +1811,7 @@
       else if (kind==='you-bet') await youBet(180,'Call 180');
       else if (kind==='you-allin') await youBet(P[0].chips,'All-In',true);
       else if (kind==='sweep') await sweep();
+      else if (kind==='toss-test') await tossTest();
       else if (kind==='pay-you') await payYou();
       else if (kind==='pay-opp') await payOpp(pl('maniac'));
       else if (kind==='street'){
@@ -1714,6 +1852,7 @@
     settings.sound=OPT.sound==='on';
     syncPanel();
     if (['source','preset','art','size','after','body','tray','nums'].includes(k)) setup();
+    if (k==='light' || k==='body'){ Object.keys(spinCache).forEach(x=>delete spinCache[x]); }
   }
   function wire(){
     document.querySelectorAll('.cl-seg').forEach(seg=>seg.addEventListener('click',ev=>{
@@ -1787,6 +1926,9 @@
       bodies:()=>Object.values(zones).flatMap(z=>z.list.map(b=>({ zone:z.id, x:b.x, y:b.y, z:b.z, d:b.d, state:b.state }))),
       blocked:()=>Object.values(zones).flatMap(z=>z.list).filter(b=>b.state==='rest' && b.z<1 && inBlock(b.x,b.y,b.d)).length,
       offFelt:()=>{ const F=WALLS.felt; return Object.values(zones).flatMap(z=>z.list).filter(b=>b.x<F.L||b.x>F.R||b.y<F.T||b.y>F.B+1).length; },
+      stuck:()=>stuckCount,
+      hiddenWaiting:()=>Array.from(document.querySelectorAll('.ct-air .cl-chip')).filter(el=>el.style.visibility==='hidden').length,
+      spinStrip:(axis,N,d)=>Array.from({length:N},(_,k)=>spinFrame(d||D(),axis,k,N)),
       orphans:()=>{ const inZones=new Set(Object.values(zones).flatMap(z=>z.list.map(b=>b.el))); return Array.from(document.querySelectorAll('.ct-air .cl-chip')).filter(el=>!inZones.has(el)).length; },
       overlapPairs:()=>{ const out=[]; Object.values(zones).forEach(z=>{ const L=z.list.filter(b=>b.state==='rest'); for (let i=0;i<L.length;i++) for (let j=i+1;j<L.length;j++){ const a=L[i], c=L[j]; if (Math.abs(a.z-c.z)<=STEP()*.8 && Math.hypot(a.x-c.x,(a.y-c.y)*1.4)<a.d*.88) out.push([z.id,Math.round(a.x),Math.round(a.y),Math.round(a.z),Math.round(c.x),Math.round(c.y),Math.round(c.z),a.d,c.d].join(',')); } }); return out; },
       // resting coins at the same height sitting inside each other
