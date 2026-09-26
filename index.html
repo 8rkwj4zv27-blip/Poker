@@ -21,7 +21,7 @@
 <link rel="stylesheet" href="css/02-screens.css">
 <link rel="stylesheet" href="css/03-action-console.css">
 <link rel="stylesheet" href="css/04-overlays-and-modes.css">
-<link rel="stylesheet" href="css/05-responsive-and-arcade.css">
+<link rel="stylesheet" href="css/05-responsive-and-arcade.css?v=xp-0">
 <link rel="stylesheet" href="css/06-machine-system.css">
 <link rel="stylesheet" href="css/career-hub-v2-lab.css?v=live-motion-1">
 <link rel="stylesheet" href="css/career-motion-live.css?v=4">
@@ -93,7 +93,9 @@
         <div class="home-row">
           <button class="btn-secondary" id="quick-play">Quick Deal</button>
           <button class="btn-secondary" id="open-rankings">Hand Rankings</button>
-          <button class="btn-secondary" id="open-awards">Score / Awards</button>
+          <!-- XP shelved (26 Sep 2026): the Score / Awards screen is off with
+               it; restore the button with ARCADE_XP_ON. -->
+          <button class="btn-secondary hidden" id="open-awards">Score / Awards</button>
         </div>
       </div>
     </div>
@@ -559,9 +561,9 @@
         <h3>Machine</h3>
         <div class="sheet-keys">
           <div id="finishes-entry"><button class="btn-secondary" id="open-finishes" type="button">Finishes</button></div>
-          <button class="btn-secondary" id="open-scoring-guide" type="button">Scoring Guide</button>
+          <button class="btn-secondary hidden" id="open-scoring-guide" type="button">Scoring Guide</button>
         </div>
-        <div class="hint">Finishes tries other looks for the screens and buttons, on this device only. The Scoring Guide explains every award.</div>
+        <div class="hint">Finishes tries other looks for the screens and buttons, on this device only.</div>
       </div>
 
       <!-- Shown only where it applies (see refreshSettingsContext): Leave
@@ -660,11 +662,11 @@
 </div>
 
 <script src="js/01-poker-math.js"></script>
-<script src="js/02-support-systems.js?v=coin-2"></script>
+<script src="js/02-support-systems.js?v=xp-0"></script>
 <script src="js/03-opponents.js"></script>
-<script src="js/04-modes-and-scoring.js"></script>
-<script src="js/05-game-engine.js?v=coin-1"></script>
-<script src="js/06-presentation.js?v=coin-2"></script>
+<script src="js/04-modes-and-scoring.js?v=xp-0"></script>
+<script src="js/05-game-engine.js?v=xp-0"></script>
+<script src="js/06-presentation.js?v=xp-0"></script>
 <script src="js/coin-world.js?v=2"></script>
 <script src="js/coin-table.js?v=3"></script>
 <script src="js/07-ui-wiring.js?v=career-motion-1"></script>

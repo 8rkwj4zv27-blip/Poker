@@ -4842,7 +4842,7 @@ async function runShowdownAwardSequence(potResults, contenders){
   // redraw (see amendment 1).
   // Reward PRESENTATION capability, not "is this an arcade run" — a Career
   // event earns the same ceremony (see rewardState in 04-modes-and-scoring.js).
-  const humanArcadeWin = !!rewardState(g) && totalByPlayer.has('you');
+  const humanArcadeWin = ARCADE_XP_ON && !!rewardState(g) && totalByPlayer.has('you');
   if (humanArcadeWin) humanBankDisplayFreeze = preWinHumanChips;
 
   render();

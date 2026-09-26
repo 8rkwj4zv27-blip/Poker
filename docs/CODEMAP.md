@@ -66,7 +66,9 @@ descriptors), `BLIND_LEVELS`, the Career event catalogue (`CAREER_ROOMS`,
 (`careerEventTitle`, `careerThreatOf`), and the scoring/award system (the
 objective award catalogue — `POT WINNINGS`, `BIG WIN`, `MONSTER HAND`,
 `K.O.`, `EVENT WON`/`TABLE CLEARED` — see `docs/scoring/SCORING_SPEC.md` for
-the authoritative rules on all of this).
+the authoritative rules on all of this). **The XP is shelved** since v0.40.6:
+`ARCADE_XP_ON = false` switches the whole system off in the game (see the
+note at the top of `SCORING_SPEC.md`); the engine stays for its return.
 
 ## `js/05-game-engine.js` (~3,600 lines, the largest file)
 

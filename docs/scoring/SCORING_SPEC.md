@@ -1,5 +1,15 @@
 # Scoring and Post-Hand Feedback — Specification
 
+> **SHELVED (owner, 26 Sep 2026; v0.40.6).** The XP is switched off in the
+> game: `ARCADE_XP_ON = false` in `js/04-modes-and-scoring.js`. No SCORE bar,
+> no awards or hand commentary, no pot smash, no high score, no Score /
+> Awards screen or Scoring Guide; TABLE CLEARED, RUN OVER and the Career
+> results carry score-free figures instead. The engine this file specifies
+> is kept whole and still asserted by `validation/scoring-checks.js`, and
+> the stored `felt.arcade` profile is untouched (neither shown nor
+> written). Scoring gets its own plan later; until then this file describes
+> the shelved system, not what ships.
+
 Status: **approved and IMPLEMENTED. Phase 3 (audit) complete; Phase 4A–4D
 (correction) complete 2026-08-26.** The six owner decisions in section 9 are
 settled. Sections 2–6 describe shipping behaviour, asserted by

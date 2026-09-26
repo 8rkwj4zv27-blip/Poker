@@ -2026,10 +2026,11 @@ async function finishHand(outcome){
     // — resolveArcadeHandLate() mutates the score either way — only the
     // ceremony is suppressed.
     const terminal = human.chips<=0 || aiRemaining.length===0;
-    const resolved = await resolveArcadeHandLate(g,outcome,{
+    // XP shelved (ARCADE_XP_ON): no score, awards or hand commentary.
+    const resolved = ARCADE_XP_ON ? await resolveArcadeHandLate(g,outcome,{
       koCount,
       tableClear:human.chips>0&&aiRemaining.length===0
-    },terminal);
+    },terminal) : null;
     // PRIORITY 1 (SCORING_SPEC.md 3.4). arcadeCommentaryText() owns the
     // rule; every terminal branch below also returns before the
     // "Hand complete." beat, so suppression is structural as well as stated.
@@ -2053,10 +2054,10 @@ async function finishHand(outcome){
     // points and presents nothing, so EVENT WON / EVENT LOST is never
     // preceded by a carousel.
     const terminal = human.chips<=0 || aiRemaining.length===0;
-    const resolved = await resolveArcadeHandLate(g,outcome,{
+    const resolved = ARCADE_XP_ON ? await resolveArcadeHandLate(g,outcome,{
       koCount,
       tableClear: human.chips>0 && aiRemaining.length===0
-    },terminal);
+    },terminal) : null;
     handCommentary = arcadeCommentaryText(resolved, g, { terminal, terminalBust:human.chips<=0 });
     // finishHand owns terminal settlement. endCareerEvent() is guarded and
     // is the ONLY function permitted to start result presentation. The
@@ -2325,7 +2326,8 @@ function careerResultHTML(model){
       '</span></div>' +
     '<div class="stage-results-deck pc-raised pc-material-plastic">' +
       '<div class="stage-results-instruments">' + finishCell +
-        cell('EVENT SCORE', model.eventScore.toLocaleString()) + '</div>' +
+        (ARCADE_XP_ON ? cell('EVENT SCORE', model.eventScore.toLocaleString())
+                      : cell('FIELD', model.field ? String(model.field) : '—')) + '</div>' +
       '<div class="stage-results-recap pc-display crt">' +
         '<div class="stage-recap-cell crt-cell"><span class="stage-instrument-label crt-caption">HANDS</span>' +
           v(String(model.hands)) + '</div>' +
@@ -2634,6 +2636,7 @@ function fillResultStageReels(model){
    has already finished calculating. */
 
 function tableClearedModel(g){
+  if (!ARCADE_XP_ON) return tableClearedModelNoXP(g);
   const r=g.run;
   const a=r.arcade||makeArcadeRunState();
   const human=g.players.find(p=>p.isHuman);
@@ -2664,12 +2667,46 @@ function tableClearedModel(g){
   };
 }
 
+/* XP shelved (ARCADE_XP_ON, 04-modes-and-scoring.js): the same chassis
+   with no score anywhere. The finish stack is the headline, counted up;
+   the table's best stack rides beside it. */
+function tableClearedModelNoXP(g){
+  const r=g.run;
+  const human=g.players.find(p=>p.isHuman);
+  const opponents=runOpponentCount(g);
+  const hands=Math.max(0,r.tableHands||0);
+  const perfect=r.tableKOs===opponents && r.tableShowdownsPlayed>0 && r.tableShowdownsWon===r.tableShowdownsPlayed;
+  const pages=tableReportStatPages(r);
+  const context=pages[1].filter(x=>x.label!=='High water');
+  if (context.length<3) context.push({label:'Run hands',value:String(Math.max(0,r.totalHands||0))});
+  return {
+    tone:'positive',
+    eyebrow:'TABLE '+r.tableNumber,
+    title:'CLEARED',
+    hero:{
+      label:'Finish stack',
+      reel:{ amount:human?human.chips:0, prefix:'$' },
+      carryLabel:'HIGH WATER',
+      carryValue:moneyResult(r.tableHighestStack)
+    },
+    instruments:[
+      { kind:'big', label:'Hands', value:String(hands) },
+      { kind:'lamps', label:'K.O.s', lit:r.tableKOs, total:opponents, readout:r.tableKOs+' / '+opponents }
+    ],
+    recapPages:[pages[0],context.slice(0,3)],
+    lamp: perfect ? { tone:'positive', text:'FLAWLESS SHOWDOWNS' } : null,
+    detail:{ kind:'hand', best:r.tableBestHand },
+    progress:{ label:'TABLES CLEARED', value:String(r.tablesCleared), next:'NEXT: TABLE '+(r.tableNumber+1) }
+  };
+}
+
 /* The negative sibling of TABLE CLEARED: identical chassis, coral where
    that one carries the positive rim. Every figure already exists on the
    run — finalizeArcadeRun() has completed by the time this is built, so
    arcadeProfile.highScore is either this run's new record or the standing
    personal best to report against. */
 function runOverModel(g){
+  if (!ARCADE_XP_ON) return runOverModelNoXP(g);
   const r=g.run;
   const a=r.arcade||makeArcadeRunState();
   const buster=r.bustedBy;
@@ -2698,6 +2735,41 @@ function runOverModel(g){
       [ {label:'Total hands',value:String(hands)},
         {label:'Biggest reward',value:'+'+a.biggestReward.toLocaleString()},
         {label:'Win rate',value:hands ? Math.round((won/hands)*100)+'%' : '—'} ]
+    ],
+    lamp: buster ? {
+      tone:'negative',
+      text:'BUSTED BY '+buster.names.join(' & ').toUpperCase()+(buster.hand?' · '+buster.hand.toUpperCase():'')
+    } : null,
+    detail:{ kind:'hand', best:r.bestHand },
+    progress:{ label:'TABLES CLEARED', value:String(r.tablesCleared), next:'NO REBUY' }
+  };
+}
+
+/* XP shelved: RUN OVER reports how far the run got. The table reached is
+   the headline; no score, record or reward line. */
+function runOverModelNoXP(g){
+  const r=g.run;
+  const buster=r.bustedBy;
+  const hands=Math.max(0,r.totalHands||0);
+  const won=Math.max(0,r.totalHandsWon||0);
+  return {
+    tone:'negative',
+    eyebrow:'BUSTED ON TABLE '+r.tableNumber,
+    title:'RUN OVER',
+    hero:{
+      label:'Table reached',
+      reel:{ amount:r.highestTableReached, prefix:'' },
+      carryLabel:'TOTAL HANDS',
+      carryValue:String(hands)
+    },
+    instruments:[
+      { kind:'big', label:'K.O.s', value:String(r.totalKOs) },
+      { kind:'big', label:'Hands won', value:ratioResult(won,hands) }
+    ],
+    recapPages:[
+      [ {label:'Biggest net win',value:moneyResult(r.biggestPotWon)},
+        {label:'Win rate',value:hands ? Math.round((won/hands)*100)+'%' : '—'},
+        {label:'Players per table',value:String(runOpponentCount(g)+1)} ]
     ],
     lamp: buster ? {
       tone:'negative',
@@ -2737,7 +2809,10 @@ function careerStageModel(m){
     },
     instruments:[
       { kind:'big', label:'Finish', value:m.place ? ordinal(m.place).toUpperCase() : '—' },
-      { kind:'big', label:'Event score', value:m.eventScore.toLocaleString() }
+      // XP shelved (ARCADE_XP_ON): the players you outlasted, not a score
+      ARCADE_XP_ON
+        ? { kind:'big', label:'Event score', value:m.eventScore.toLocaleString() }
+        : { kind:'big', label:'Outlasted', value:(m.field && m.place) ? String(Math.max(0, m.field - m.place)) : '—' }
     ],
     // The stake is the useful third fact after a win (what was risked for
     // the prize); after a loss the hero already reports the forfeited
@@ -3331,7 +3406,7 @@ async function showRunOver(g){
   if (g._runOverShown) return;
   g._runOverShown = true;
   g.over = true;
-  finalizeArcadeRun(g);
+  if (ARCADE_XP_ON) finalizeArcadeRun(g);
   clearTableSave();
   setBanner('<b>Run over.</b> Out of chips.');
   // A fresh run straight off RUN OVER keeps the table size the player was

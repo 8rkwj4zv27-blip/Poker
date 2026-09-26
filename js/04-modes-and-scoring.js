@@ -755,6 +755,17 @@ const ARCADE_LUCK = {
    suppression rule read hidden cards to decide whether a message appeared
    at all (defect D11) — which the hidden-information rule forbids
    outright, because the ABSENCE of a message is itself information. */
+/* XP SHELVED (owner, 26 Sep 2026). The score, its awards and messages, the
+   pot smash, the high score and the Score / Awards screen are switched
+   off in the game until scoring gets its own plan (docs/ui/CHIP_PLAN.md).
+   Off means the game behaves as a cash table does here: rewardState() is
+   never consulted by the live call sites (finishHand, the showdown payout,
+   RUN OVER, the SCORE HUD), so nothing is evaluated, shown or saved, and a
+   win pays through the coin table like any other. The engine below is
+   left whole and still asserted by validation/scoring-checks.js, and the
+   stored felt.arcade profile is neither read for display nor written.
+   true restores everything exactly. */
+const ARCADE_XP_ON = false;
 const ARCADE_PROFILE_DEFAULT = { highScore:0, discovered:{}, counts:{}, bestByEvent:{} };
 let arcadeProfile = Object.assign({}, ARCADE_PROFILE_DEFAULT, Store.get('felt.arcade', {}));
 arcadeProfile.discovered = Object.assign({}, arcadeProfile.discovered||{});
@@ -840,7 +851,7 @@ function renderArcadeDigits(el,text){
   });
 }
 function updateArcadeHUD(){
-  const a=rewardState(game);
+  const a=ARCADE_XP_ON?rewardState(game):null;
   setArcadeMode(!!a);
   if (!a) return;
   if ($('arcade-score-value')){
