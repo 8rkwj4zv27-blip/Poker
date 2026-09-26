@@ -3895,6 +3895,9 @@ function render(){
 
   updateHandInstrument();
   updateActionControls();
+  // Enemy Cards V2 (js/enemy-cards.js): the opponents' readouts, rim
+  // lights, tucked cards and bet squares follow the table
+  if (typeof EnemyCards !== 'undefined') EnemyCards.paint();
   // the seats may have changed height (hearts, labels): the coin spots
   // follow their cards (a no-op unless a card row actually moved)
   if (typeof coinTableOn === 'function' && coinTableOn()) CoinTable.layout();

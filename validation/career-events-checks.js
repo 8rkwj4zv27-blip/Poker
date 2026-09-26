@@ -1944,8 +1944,8 @@ check('Each advertised face is captioned with its own seated personality', ()=>{
   shown.forEach(name=>assert.ok(name && name !== '\u2014', 'every seat is named: ' + shown.join('|')));
   // And every one of those names is a real personality from the catalogue.
   const known = api.seatName({personalityKey:'shark'});
-  assert.strictEqual(known, 'Shark');
-  assert.strictEqual(api.seatName({personalityKey:'professor'}), 'Prof');
+  assert.strictEqual(known, 'Lucy');
+  assert.strictEqual(api.seatName({personalityKey:'professor'}), 'Harry');
   assert.strictEqual(api.seatName({personalityKey:'nobody'}), '');
   assert.strictEqual(api.seatName(null), '');
   // The captions survive the launch: same order, same personalities.
@@ -2056,7 +2056,7 @@ check('A legacy active event advertises the opponents in its table save', ()=>{
   // ...and those are the names printed on the ticket.
   const html = api.trayHTML(api.eventById('pub-freezeout'), 'active');
   const shown = Array.from(html.matchAll(/class="cdir-seat-name">([^<]*)</g)).map(m=>m[1]);
-  assert.strictEqual(shown.join('|'), 'Rock|Shark|Grinder');
+  assert.strictEqual(shown.join('|'), 'Nigel|Lucy|Steve');
 
   // A table save that does not describe this event is refused, not
   // half-used: three seats are required, so two cannot stand in.

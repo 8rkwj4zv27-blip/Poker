@@ -457,4 +457,7 @@
   }
 
   window.EnemyCard = { apply, get order(){ return Object.assign({}, order); }, get spots(){ return spots; } };
+  // The game asks EnemyCards (js/enemy-cards.js, stripped from the lab's
+  // copy) where coins leave from and land; this candidate answers instead.
+  window.EnemyCards = { paint(){}, slot(){}, coinSource:p => window.EC_SOURCE(p), spot:(p, fr) => window.EC_SPOT(p, fr), rowKey:p => window.EC_ROWKEY(p) };
 })();

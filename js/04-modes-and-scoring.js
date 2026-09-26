@@ -364,8 +364,8 @@ function generateCareerRoster(event){
   return roster;
 }
 
-/* The canonical catalogue name for a seat's personality — 'Shark', 'Prof',
-   'Maniac' and so on. Read straight from PERSONALITIES_ALL, which is the
+/* The canonical catalogue name for a seat's personality — the character
+   ('Lucy', 'Harry', 'Tony' and so on; their style is `style`). Read straight from PERSONALITIES_ALL, which is the
    same list newGame() seats the table from, so a name on a Career ticket
    and the personality that turns up are the same character. No new name is
    invented here and no second roster exists.

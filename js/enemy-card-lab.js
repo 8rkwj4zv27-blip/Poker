@@ -11,14 +11,11 @@
    order: one row per job on the opponents' seats and their places on the
    felt. Each change goes to the game with EnemyCard.apply().
 
-   The coin table places each seat's bet spot and coin source inside
-   js/coin-table.js, out of reach, so the copy loads a patched
-   coin-table.js with three seams the candidate answers:
-   window.EC_SOURCE(p) (edgeSource: coins leave from / go home to the coin
-   cup), window.EC_SPOT(p, fr) (layout: the spot is the bet square under
-   the seat) and window.EC_ROWKEY(p) (layoutKey: the spots re-lay when the
-   seat moves, not when its tucked cards do). The real file is not
-   changed; shipping these parts adds the same seams.
+   Enemy Cards V2 is live (v0.41.0: css/enemy-cards.css, js/enemy-cards.js,
+   the owner's round-3 order). The copy strips those two files and runs
+   the candidate on V1 cards instead, so every option can still be
+   compared; the candidate answers the coin table's EnemyCards questions
+   (coinSource, spot, rowKey) itself.
 
    ISOLATION: the same scheme as the other order-form Labs. The copy is
    built as srcdoc with a shim that replaces Storage in the frame with an
@@ -34,7 +31,7 @@
   // A hosted copy may publish the game under another name (index.html is
   // reserved there); it says so before this script runs.
   const GAME = window.EC_LAB_GAME || 'index.html';
-  const V = '3';
+  const V = '4';
 
   /* The form. The first option of every row is V1 (value '0'), except
      REACTS, which only matters with a rim light. */
@@ -105,9 +102,9 @@
   ];
   const JOBS = SECTIONS.flatMap(s => s.jobs);
   const V1 = Object.fromEntries(JOBS.map(j => [j.key, j.opts[0][0]]));
-  // The owner's round-2 order (27 Sep 2026), now the default.
+  // The owner's final (round-3) order, now live in the game (v0.41.0).
   const SUGGESTED = { cabinet:'painted', name:'cast', readout:'roll', cards:'under', slot:'cup', face:'0',
-    rim:'ownall', react:'full', next:'rim', gauge:'0', squares:'pressed', blinds:'0', moves:'both', fold:'in' };
+    rim:'ownall', react:'full', next:'rim', gauge:'0', squares:'faint', blinds:'0', moves:'both', fold:'in' };
   let order = Object.assign({}, SUGGESTED);
   const view = { opp:'4', theme:'emerald', sound:'on', motion:'on' };
   let comparing = false;
@@ -225,25 +222,18 @@
     setDev(on, fast){ DEV_MODE = !!on; FAST_DEV = !!(on && fast); },
     intro: typeof TableIntro === 'undefined' ? null : TableIntro
   };`;
-  let source = null, coinTable = null;
+  let source = null;
   async function buildDoc(){
     if (!source){ source = await (await fetch(GAME, { cache:'no-store' })).text(); }
-    if (!coinTable){ coinTable = await (await fetch('js/coin-table.js', { cache:'no-store' })).text(); }
     const sw = /<script id="pwa-service-worker">[\s\S]*?<\/script>/;
-    const ct = /<script src="js\/coin-table\.js[^"]*"><\/script>/;
-    const seam = 'function edgeSource(p){';
-    if (!sw.test(source) || !ct.test(source) || !/<head>/i.test(source) || !/<\/body>/i.test(source) || coinTable.indexOf(seam) === -1)
+    // the shipped Enemy Cards V2 parts come out of the copy: the candidate
+    // (V1 cards plus the order) stands in for them, answering the same
+    // EnemyCards questions the coin table asks
+    const liveJs = /<script src="js\/enemy-cards\.js[^"]*"><\/script>/, liveCss = /<link rel="stylesheet" href="css\/enemy-cards\.css[^"]*">/;
+    if (!sw.test(source) || !liveJs.test(source) || !liveCss.test(source) || !/<head>/i.test(source) || !/<\/body>/i.test(source))
       throw new Error('game page shape changed; refusing to build an unisolated copy');
-    const rowSeam = 'return e && !p.isHuman ? Math.round(e.cardsContainer.getBoundingClientRect().bottom) : \'\';';
-    const spotSeam = "const z = CW.zone('spot:'+p.id, fr.left+x, fr.top+y+2, 7, 5, 16);";
-    if (coinTable.indexOf(rowSeam) === -1 || coinTable.indexOf(spotSeam) === -1) throw new Error('coin-table.js changed; the lab seams need updating');
-    const patched = coinTable
-      .replace(seam, seam + ' { const ec = window.EC_SOURCE && window.EC_SOURCE(p); if (ec) return ec; }')
-      .replace(rowSeam, 'return e && !p.isHuman ? ((window.EC_ROWKEY && window.EC_ROWKEY(p)) || Math.round(e.cardsContainer.getBoundingClientRect().bottom)) : \'\';')
-      .replace(spotSeam, '{ const ec = window.EC_SPOT && window.EC_SPOT(p, fr); if (ec){ x = ec.x; y = ec.y; room = ec.room; } } ' + spotSeam);
     const base = new URL('.', location.href).href;
-    return source.replace(sw, '')
-      .replace(ct, () => '<script>' + patched.replace(/<\/script/gi, '<\\/script') + '<\/script>')
+    return source.replace(sw, '').replace(liveJs, '').replace(liveCss, '')
       .replace(/<head>/i, '<head><base href="' + base + '"><script>' + SHIM + '<\/script>')
       .replace(/<\/body>/i, '<link rel="stylesheet" href="css/enemy-card.css?v=' + V + '"><script src="js/enemy-card.js?v=' + V + '"><\/script><script>' + BRIDGE + '<\/script></body>');
   }
