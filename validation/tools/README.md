@@ -88,3 +88,18 @@ node validation/tools/crt-consistency.js [width] [height] [theme]   # default 39
 ```
 
 Run it after any change that touches a CRT, in a couple of themes and sizes.
+
+## `lab-bundle.js` — publish a visual lab as a link
+
+The owner receives every visual lab as a private Artifact link (see
+"Visual labs" in `CLAUDE.md`). This stages a lab for that:
+
+```
+node validation/tools/lab-bundle.js showdown-lab.html <scratchpad>/bundle-showdown
+```
+
+It writes the lab page without its document wrapper (the Artifact adds
+its own), `game.html` (a copy of `index.html`, which an Artifact reserves;
+a shim sends the lab's `fetch('index.html')` there), every css/js/asset
+the game and the lab load, and `files.json` for the Artifact tool's
+`files` (publish with `root` set to the bundle folder).

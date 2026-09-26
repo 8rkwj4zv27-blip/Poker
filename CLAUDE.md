@@ -55,6 +55,26 @@ book's shared class for a part rather than styling its finish locally. A
 genuinely new part is signed off and added to the book (and
 `validation/pattern-book-checks.js`) before it's used in the game.
 
+## Visual labs: how the owner receives them
+
+Every visual lab (any `*-lab.html` order form, prototype or comparison
+page) is delivered to the owner as a **private Artifact link** they open on
+their phone, not as a branch to merge or a local server to run. Build and
+check the lab as usual, then:
+
+1. `node validation/tools/lab-bundle.js <lab>.html <scratchpad>/bundle-<lab>`
+   stages the lab with a copy of the real game (`game.html`) and every file
+   it loads.
+2. Publish with the Artifact tool: `file_path` = the staged `<lab>.html`,
+   `root` = the bundle folder, `files` = the paths in its `files.json`
+   (give the `.PNG` faces `contentType: image/png`).
+3. Give the owner the claude.ai link in the reply. After a change,
+   re-stage and republish to the same link (same file path in the session,
+   or `url` from a later one) rather than making a new one.
+
+Still commit and push the lab to the branch as before; the link is how the
+owner looks at it.
+
 ## Codebase map
 
 Before searching the codebase cold, read `docs/CODEMAP.md` — it says which
