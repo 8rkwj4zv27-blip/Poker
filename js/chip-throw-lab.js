@@ -49,8 +49,11 @@
   BASE.overlap='snap'; BASE.stack='loose'; BASE.tidy='spread'; BASE.tray='well'; BASE.lip='on'; BASE.nums='pop'; BASE.sweep='jump';
   // the coin spin (v9): axis, turns per second, frames per turn, lighting, landing side
   BASE.spin='side'; BASE.spinSpeed='med'; BASE.spinFrames='16'; BASE.light='on'; BASE.lands='random';
-  const OPT={ preset:'v9', ...BASE, speed:1, sound:'on' };
+  // v10: the owner's settled mix is the default
+  Object.assign(BASE,{ sfx:'clay', nums:'off', spin:'toss', spinSpeed:'slow', lands:'heads', coins:'few' });
+  const OPT={ preset:'v10', ...BASE, speed:1, sound:'on' };
   const PRESETS={
+    v10:  { ...BASE },
     v9:   { ...BASE },
     chunky:{ ...BASE, sfx:'clackplus' },
     heavy:{ ...BASE, bounces:'dead', roll:'off', sfx:'thud' },
@@ -61,6 +64,7 @@
             sfx:'old', rise:'off', group:'off', eased:true }
   };
   const NOTES={
+    v10:'Your settled mix is now built in. Bets throw far fewer coins, and every pile has a limit: coins past it land and melt into the pile. Coins can no longer land in the board row (all five card places are solid). PLAY HAND deals a real hand you play from the bar.',
     v9:'Coins now spin over and over in the air, heads to tails (see COIN SPIN). Fixed: piles stay visible while they empty; the pot tray can no longer trap a coin; a watchdog puts down any coin still moving after 3.5s, so nothing can hang. Tidying is silent.',
     chunky:'As V5 with CLACK+: the same click with a heavier thud under it.',
     heavy:'As V5, with dead landings (no bounce, no roll) and the THUD sound set.',
@@ -88,8 +92,37 @@
   /* ---------------- chip language ---------------- */
   const COLOURS=['d-white','d-red','d-blue','d-green','d-black','d-purple','d-yellow'];
   const BB=20;
-  function coloursFor(amount){
-    const n=visualChipCount(amount), out=[];
+  /* COIN COUNTS (v10). FEW: a bet throws a handful that still grows with
+     the money but flattens off fast; every pile has a limit (LIM), and
+     coins thrown past it melt into the pile. LOTS is v9 (the game's own
+     visualChipCount, one coin per ~$35). */
+  const CURVES={
+    few: { bet:[[0,0],[10,1],[20,2],[40,3],[100,4],[200,5],[400,7],[800,9],[1500,11],[3000,12]],
+           bank:[[0,0],[20,2],[200,7],[1000,16],[2500,23],[5000,28]] },
+    some:{ bet:[[0,0],[10,1],[20,2],[60,4],[180,7],[400,10],[1000,14],[2000,17],[4000,20]],
+           bank:[[0,0],[20,2],[200,10],[1000,24],[3000,34],[6000,40]] }
+  };
+  const LIMITS={ few:{ bet:12, allin:8, spot:14, pot:36, bank:28 }, some:{ bet:20, allin:12, spot:22, pot:50, bank:40 }, lots:{ bet:60, allin:0, spot:999, pot:999, bank:999 } };
+  const LIM=()=>LIMITS[OPT.coins]||LIMITS.few;
+  function curve(pts,v){
+    if (v<=0) return 0;
+    for (let i=1;i<pts.length;i++){ const [a0,c0]=pts[i-1], [a1,c1]=pts[i]; if (v<=a1) return c0+(v-a0)/(a1-a0)*(c1-c0); }
+    return pts[pts.length-1][1];
+  }
+  function betCoins(amount,allin){
+    if (amount<=0) return 0;
+    if (!CURVES[OPT.coins]) return visualChipCount(amount);
+    let n=Math.max(1,Math.round(curve(CURVES[OPT.coins].bet,amount)));
+    if (allin) n=Math.max(n,LIM().allin);
+    return Math.min(LIM().bet,n);
+  }
+  function bankCoins(chips){
+    if (chips<=0) return 0;
+    if (!CURVES[OPT.coins]) return visualChipCount(chips);
+    return Math.max(1,Math.min(LIM().bank,Math.round(curve(CURVES[OPT.coins].bank,chips))));
+  }
+  function coloursFor(amount,count){
+    const n=count!=null?count:betCoins(amount), out=[];
     if (OPT.art==='gold'){ for (let i=0;i<n;i++) out.push('gold'); return out; }
     const centre=Math.max(0,Math.min(6,Math.log(Math.max(.5,amount/BB))/Math.log(3.2)));
     for (let i=0;i<n;i++){ const r=rnd(); out.push(COLOURS[Math.max(0,Math.min(6,Math.round(centre)+(r<.55?0:r<.85?-1:1)))]); }
@@ -546,7 +579,7 @@
   const ease={ inOut:t=>t<.5?2*t*t:1-Math.pow(-2*t+2,2)/2, out:t=>1-Math.pow(1-t,3) };
   let air=null, shadows=null, raf=0, lastT=0, freeze=0;
   const active=new Set(), dirty=new Set(), zones={}, squashing=new Set();
-  let stuckCount=0;
+  let stuckCount=0; const stuckLog=[];
   let WALLS=null;               // { felt:{L,T,R,B,rc}, blocks:[{L,T,R,B}] }
   let TRAY=null;                // the pot tray's inside edge, for its lip
 
@@ -566,7 +599,7 @@
       // watchdog: a coin still moving after ~3.5s (trapped between walls,
       // jittering) is put down where it is (or where it was going)
       b.moving=(b.moving||0)+dt;
-      if (b.moving>3.5){ b.moving=0; snap(b); stuckCount++; continue; }
+      if (b.moving>3.5){ b.moving=0; stuckLog.push({ state:b.state, zone:b.zone&&b.zone.id, x:Math.round(b.x), y:Math.round(b.y), z:Math.round(b.z), vx:Math.round(b.vx), vy:Math.round(b.vy), vz:Math.round(b.vz), t:b.target&&Object.keys(b.target).join('/') }); snap(b); stuckCount++; continue; }
       if (dt>0){
         // two half-steps: collisions and walls stay solid at speed
         step(b,dt/2); if (b.state!=='rest' && active.has(b)) step(b,dt/2);
@@ -617,13 +650,28 @@
     const f=$('felt').getBoundingClientRect(), inset=13;
     const blocks=[];
     const add=el=>{ if (!el) return; const r=el.getBoundingClientRect(); if (r.width>2 && r.height>2) blocks.push({ L:r.left, T:r.top, R:r.right, B:r.bottom }); };
-    document.querySelectorAll('#board .card').forEach(add);
+    const row=boardRow(); if (row) blocks.push({ ...row });
     add($('dealer-deck'));
     add(document.querySelector('#pot-area .pot-chip'));
     document.querySelectorAll('#felt .seat-card').forEach(add);
     document.querySelectorAll('#hud-mid .seat-cards .card').forEach(add);
     WALLS={ felt:{ L:f.left+inset, T:f.top+inset, R:f.right-inset, B:f.bottom-inset, rc:40 }, blocks };
     fitTray();
+  }
+  // The board's five card places, dealt or not, are one solid block, so no
+  // coin can sit in a gap between cards or where the turn and river will
+  // land. Measured from layout offsets (a card mid-deal is transformed),
+  // and remembered for streets with no cards out.
+  let ROW=null;
+  function boardRow(){
+    const bd=$('board'), cards=bd?bd.querySelectorAll('.card'):[];
+    if (cards.length){
+      const br=bd.getBoundingClientRect(), c0=cards[0], cl=cards[cards.length-1];
+      const cs=getComputedStyle(bd), gap=parseFloat(cs.columnGap)||parseFloat(cs.gap)||7;
+      const w=c0.offsetWidth, full=5*w+4*gap, cx=br.left+(c0.offsetLeft+cl.offsetLeft+cl.offsetWidth)/2;
+      ROW={ L:cx-full/2, R:cx+full/2, T:br.top+c0.offsetTop, B:br.top+c0.offsetTop+c0.offsetHeight };
+    }
+    return ROW;
   }
   const insideFelt=(x,y)=>WALLS && x>WALLS.felt.L && x<WALLS.felt.R && y>WALLS.felt.T && y<WALLS.felt.B;
   // Keeps a chip's footprint (x±r, y-d..y) on the felt and off every block.
@@ -937,7 +985,11 @@
 
   function arrive(b,isEased){
     const t=b.target;
-    if (t.vanish){ const r=b.resolve; b.resolve=null; removeBody(b); b.el.remove(); if (r) r(); return; }
+    if (t.vanish){
+      // MERGE: a coin past a pile's limit lands on it and melts in
+      if (t.merge){ sfx('stack',.55,rise(b)); if (rnd()<.3) glintAt(b.x,b.y-b.z-b.d*.7); }
+      const r=b.resolve; b.resolve=null; removeBody(b); b.el.remove(); if (r) r(); return;
+    }
     if (t.mouth){ dropIntoBank(b); return; }
     if (t.rim){
       // off the dashboard rim, a short hop into the hatch
@@ -1098,6 +1150,7 @@
     }));
     kick();
   }
+  const snapMax=z=>z.room?Math.max(1,Math.min(5,Math.floor((z.room-D()*HR()-2)/STEP()))):5;
   // SNAP: pull a settling coin onto the nearest stack top (max 6 high)
   function trySnap(b){
     if (!b.zone) return false;
@@ -1105,7 +1158,7 @@
     for (const q of b.zone.list){
       if (q===b || q.state!=='rest' || q.claimed) continue;       // another coin is already hopping onto it
       const covered=b.zone.list.some(r=>r!==q && r!==b && r.state==='rest' && r.z>q.z+.5 && Math.abs(r.x-q.x)<b.d*.5 && Math.abs(r.y-q.y)<b.d*.4);
-      if (covered || q.z/STEP()>=5) continue;
+      if (covered || q.z/STEP()>=snapMax(b.zone)) continue;
       const dist=Math.hypot(q.x-b.x,(q.y-b.y)*1.4);
       if (dist<b.d*1.05 && dist<bd){ bd=dist; best=q; }
     }
@@ -1407,6 +1460,8 @@
     Object.values(zones).forEach(z=>clearTimeout(z.timer));
     Object.keys(zones).forEach(k=>delete zones[k]);
     busy=false; oppTurn=0;
+    if (askResolve) askResolve=null;
+    if ($('ct-play')){ $('ct-play').hidden=true; $('ct-main').hidden=false; }
     settings.sound=OPT.sound==='on'; settings.haptics=false; settings.faces=true; settings.reduceMotion=false;
     const mk=(id,name,isHuman,idx)=>({ id,name,isHuman,hand:HOLE[id].map(card),chips:1000,inHand:true,folded:false,allIn:false,
       eliminated:false,betThisRound:0,totalBetHand:0,streetAction:null,faceColorIdx:idx,personality:{thinkSpeed:1} });
@@ -1428,7 +1483,7 @@
     $('actions-row').classList.add('disabled');
     buildTable();
     potValue=0; paintPot(0);
-    coloursFor(1000).forEach(col=>bank.chips.push(makeChip(col)));
+    coloursFor(0,bankCoins(P[0].chips)).forEach(col=>bank.chips.push(makeChip(col)));
     bank.apply({snap:true});
     // cards dealt with an animation: measure the solid blocks once they've landed
     buildWalls(); setTimeout(()=>{ if (!busy) buildWalls(); },700);
@@ -1455,12 +1510,24 @@
       const el=document.createElement('div'); el.className='cl-spot'+(p.isHuman?' is-you':'');
       el.innerHTML='<div class="cl-spot-ring"></div><div class="cl-spot-plate"><span>0</span></div>';
       felt.appendChild(el);
-      let x,y;
+      let x,y,room=0;
       if (p.isHuman){ x=fr.width*.80; y=fr.height*.80; }
       else {
-        const cr=seatEls[p.id].cardsContainer.getBoundingClientRect();
+        // v10: every spot sits clear of the five-card board row. A seat
+        // beside the row bets into the strip between the row and the rail;
+        // a seat above it bets into the band between its cards and the row.
+        // Each spot's towers are capped by the room above it (room), so a
+        // pile never climbs onto the seat's cards.
+        const cr=seatEls[p.id].cardsContainer.getBoundingClientRect(), row=boardRow();
         const ax=cr.left+cr.width/2-fr.left, ay=cr.bottom-fr.top, px=pr.left+pr.width/2-fr.left, py=pr.top-fr.top-40;
         x=ax+(px-ax)*.22; y=Math.max(ay+56, ay+(py-ay)*.3);
+        if (row){
+          const rl=row.L-fr.left, rR=row.R-fr.left, rt=row.T-fr.top, inset=13;
+          if (ax<rl){ x=(inset+rl)/2; y=rt+22; }
+          else if (ax>rR){ x=(fr.width-inset+rR)/2; y=rt+22; }
+          else { x=ax+(fr.width/2-ax)*.15; y=ay+(rt-ay)*.64; }
+          room=y-ay-4;
+        }
         if (OPT.source==='chute'){
           const ch=document.createElement('div'); ch.className='ct-chute';
           ch.style.left=Math.round(ax)+'px'; ch.style.top=Math.round(ay+11)+'px';
@@ -1470,6 +1537,7 @@
       el.style.left=Math.round(x)+'px'; el.style.top=Math.round(y)+'px';
       spotEls[p.id]=el;
       zone('spot:'+p.id,fr.left+x,fr.top+y+2,7,5,16);
+      if (room>0) zones['spot:'+p.id].room=room;
     });
     const hl=$('hud-left');
     hl.querySelectorAll('.cl-bank,.cl-hatch,.cl-tidy-hint').forEach(el=>el.remove());
@@ -1564,6 +1632,15 @@
     if (z.id==='pot' && TRAY){ x=Math.max(TRAY.L+10,Math.min(TRAY.R-10,x)); y=Math.max(TRAY.T+6,Math.min(TRAY.B-3,y)); }
     return { x, y, z:0, zone:z, d:D() };
   }
+  // a pile past its limit: the extra coins are thrown onto one of its
+  // stacks and melt into it (the plate/pot number still counts them)
+  function mergeTarget(z){
+    const rest=z.list.filter(q=>q.state==='rest');
+    if (!rest.length) return { x:z.cx+rr(-4,4), y:z.cy, z:0, vanish:true, merge:true, d:D() };
+    const q=rest[rint(0,rest.length-1)];
+    const top=Math.max(...rest.filter(r=>Math.abs(r.x-q.x)<q.d*.5 && Math.abs(r.y-q.y)<q.d*.4).map(r=>r.z));
+    return { x:q.x, y:q.y, z:top+STEP(), vanish:true, merge:true, d:D() };
+  }
   const waitMs=ms=>new Promise(r=>setTimeout(r,motionOff()?0:ms/OPT.speed));
   async function zoneSettled(z,max){
     const t0=performance.now(), my=gen;
@@ -1585,11 +1662,12 @@
     if (OPT.source==='chute' && chutes[p.id] && OPT.juice==='on' && !motionOff()){ chutes[p.id].classList.add('is-rattle'); await waitMs(110); chutes[p.id].classList.remove('is-rattle'); }
     guard(my);
     const kind=kindFor(amount,allin,OPT.source!=='face');
-    const cols=coloursFor(amount), tick=ticker(p.id,z.amount-amount,amount,cols.length);
+    const cols=coloursFor(amount,betCoins(amount,allin)), tick=ticker(p.id,z.amount-amount,amount,cols.length);
     plate(p.id,z.amount-amount);
-    const items=cols.map(col=>{
+    const free=Math.max(0,LIM().spot-z.list.length);
+    const items=cols.map((col,i)=>{
       const s=source(p), b=body(makeChip(col),s.x,s.y,s.z,D()-2); b.fresh=true;
-      return { b, to:targetIn(z,b), onStart:()=>chuteKick(s.chute), onLand:tick };
+      return { b, to:i<free?targetIn(z,b):mergeTarget(z), onStart:()=>chuteKick(s.chute), onLand:tick };
     });
     await within(throwAll(items,kind,{ big:allin }),6000);
     await zoneSettled(z,2500);
@@ -1600,16 +1678,19 @@
     you.totalBetHand+=amount; updateInvestedReel(you.totalBetHand);
     say('YOU',label.toUpperCase());
     const z=zones['spot:you']; z.amount+=amount;
-    const cols=coloursFor(amount), tick=ticker('you',z.amount-amount,amount,cols.length);
+    // all-in empties the bank; otherwise a handful by the bet's size
+    const n=allin?bank.chips.length:Math.max(Math.min(1,bank.chips.length),Math.min(bank.chips.length-1,betCoins(amount)));
+    const cols=coloursFor(amount,n), tick=ticker('you',z.amount-amount,amount,Math.max(1,cols.length));
     plate('you',z.amount-amount);
-    const items=[];
+    const items=[], free=Math.max(0,LIM().spot-z.list.length);
     for (const col of cols){
       const t=bank.take(); if (!t) break;
       if (t.c.colour!==col){ t.c.colour=col; t.c.frame=''; if (!pixelArt()) styleChip(t.c); }
       const r=t.rect, b=body(t.c,r.left+r.width/2,r.bottom,0,r.width);
-      items.push({ b, to:targetIn(z,b), onLand:tick });
+      items.push({ b, to:items.length<free?targetIn(z,b):mergeTarget(z), onLand:tick });
     }
     bank.apply({ slideMs:160 });
+    if (!items.length) plate('you');
     guard(my);
     // your chips come from the bank, off the felt: never a shove
     await within(throwAll(items,kindFor(amount,allin,false),{ big:allin }),6000);
@@ -1624,7 +1705,7 @@
   }
   async function sweep(){
     const my=gen;
-    let ids=Object.keys(zones).filter(k=>k.startsWith('spot:') && zones[k].list.length);
+    let ids=Object.keys(zones).filter(k=>k.startsWith('spot:') && (zones[k].list.length || zones[k].amount>0));
     if (!ids.length){
       [['maniac',180],['wild',180],['you',180]].forEach(([id,a])=>{ neatFill(zones['spot:'+id],a); plate(id); });
       ids=Object.keys(zones).filter(k=>k.startsWith('spot:') && zones[k].list.length);
@@ -1636,12 +1717,12 @@
     let shown=potValue;
     if (OPT.sweep==='jump'){
       // each pile empties into the pot top-first, coin by coin, in turn
-      let delay=0; const throws=[];
+      let delay=0, free=Math.max(0,LIM().pot-pot.list.length); const throws=[];
       ids.forEach(k=>{
         const z=zones[k], list=z.list.slice().sort((a,c)=>c.z-a.z); z.list.length=0;
         const each=z.amount/Math.max(1,list.length);
         spotEls[k.slice(5)].classList.add('is-sweeping'); spotEls[k.slice(5)].classList.remove('is-pop');
-        const items=list.map(b=>{ b.zone=null; b.inFelt=true; return { b, to:targetIn(pot,b), onLand:()=>{ shown+=each; paintPot(shown); punch(potPlate); } }; });
+        const items=list.map(b=>{ b.zone=null; b.inFelt=true; const to=free-->0?targetIn(pot,b):mergeTarget(pot); return { b, to, onLand:()=>{ shown+=each; paintPot(shown); punch(potPlate); } }; });
         throws.push(throwAll(items,'hop',{ delay }));
         delay+=160+list.length*24;
       });
@@ -1703,9 +1784,17 @@
     neatFill(pot,2000); potValue=2000; paintPot(2000);
     await waitMs(400);
   }
+  // the bank holds a limited number of coins for your stack (bankCoins);
+  // a payout coin past that melts in at the hatch
+  let bankCap=Infinity;
   function dropIntoBank(b){
     const res=b.resolve; b.resolve=null;
     removeBody(b);
+    if (bank.chips.length>=bankCap){
+      b.el.remove(); sfx('stack',.6,rise(b));
+      if (rnd()<.3){ const hr=$('hud-left').getBoundingClientRect(); glintAt(b.x,hr.top-2); }
+      if (res) setTimeout(res,0); return;
+    }
     const c=b.chip, hr=$('hud-left').getBoundingClientRect();
     c.loose=true;
     bank.chips.push(c);
@@ -1725,18 +1814,20 @@
     }
     if (res) setTimeout(res,motionOff()?0:290/OPT.speed);
   }
-  async function payYou(){
+  // pays you `amount` with the given pot coins (default: the whole pot)
+  async function payYou(amount,coins,label){
     const my=gen;
-    await ensurePot(); guard(my);
-    const pot=zones.pot, you=P[0], won=potValue, start=you.chips;
-    say('YOU WIN',won.toLocaleString());
+    if (amount==null){ await ensurePot(); guard(my); }
+    const pot=zones.pot, you=P[0], won=amount!=null?amount:potValue, start=you.chips, from=potValue;
+    say('YOU WIN',label||won.toLocaleString());
+    bankCap=bankCoins(start+won);
     const hatch=$('hud-left').querySelector('.cl-hatch');
     hatch.classList.add('is-open'); sfx('hatch');
     await waitMs(150); guard(my);
     const hr=hatch.getBoundingClientRect();
-    const list=pot.list.slice().sort((a,c)=>c.z-a.z||a.y-c.y); pot.list.length=0;
-    list.forEach(b=>{ b.zone=null; });
-    const n=list.length; let landed=0;
+    const list=(coins||pot.list.slice()).sort((a,c)=>c.z-a.z||a.y-c.y);
+    list.forEach(b=>{ if (b.zone) removeFromZone(b); });
+    const n=Math.max(1,list.length); let landed=0;
     // JACKPOT: a big win comes faster than the hatch can take it: some coins
     // hit the dashboard rim first and hop in
     const jackpot=won>=800 && OPT.juice==='on';
@@ -1747,19 +1838,21 @@
       return { b, to:mouth };
     });
     const tallied=throwAll(items,jackpot?'heave':(kindFor(won,false,false)==='flick'?'flick':'lob'),{ big:jackpot }).then(()=>{});
-    items.forEach(it=>{ const r=it.b.resolve; it.b.resolve=()=>{ landed++; paintPot(Math.round(won*(1-landed/n))); you.chips=Math.round(start+won*landed/n); updateJackpot(you.chips); if (r) r(); }; });
+    items.forEach(it=>{ const r=it.b.resolve; it.b.resolve=()=>{ landed++; paintPot(Math.round(from-won*landed/n)); you.chips=Math.round(start+won*landed/n); updateJackpot(you.chips); if (r) r(); }; });
     await within(tallied,9000); guard(my);
-    you.chips=start+won; updateJackpot(you.chips); potValue=0; paintPot(0);
+    you.chips=start+won; updateJackpot(you.chips); potValue=Math.max(0,from-won); paintPot(potValue);
+    bankCap=Infinity; topUpBank();
     await waitMs(150);
     hatch.classList.remove('is-open'); sfx('hatchClose');
   }
-  async function payOpp(p){
+  async function payOpp(p,amount,coins,label){
     const my=gen;
-    await ensurePot(); guard(my);
-    const pot=zones.pot, won=potValue, z=zones['spot:'+p.id];
-    say(p.name.toUpperCase()+' WINS',won.toLocaleString());
-    const list=pot.list.slice(); pot.list.length=0;
+    if (amount==null){ await ensurePot(); guard(my); }
+    const pot=zones.pot, won=amount!=null?amount:potValue, z=zones['spot:'+p.id], from=potValue;
+    say(p.name.toUpperCase()+' WINS',label||won.toLocaleString());
+    const list=coins||pot.list.slice();
     const all=list.map((b,i)=>{
+      if (b.zone) removeFromZone(b);
       b.zone=z; z.list.push(b);
       const probe={ x:z.cx+(b.x-pot.cx)*.5, y:z.cy+(b.y-pot.cy)*.5, d:b.d, vx:0, vy:0 }; contain(probe);
       b.tx=probe.x; b.ty=probe.y; b.tz=b.z; b.lift=4; b.T=.5; b.wait=(i%6)*6; b.state='wait'; b.next='push'; b.target={}; b.opts={}; active.add(b);
@@ -1767,13 +1860,22 @@
     });
     kick();
     z.amount=won; plate(p.id);
-    await within(Promise.all([Promise.all(all), countPot(0,520)]),6000); guard(my);
+    await within(Promise.all([Promise.all(all), countPot(Math.max(0,from-won),520)]),6000); guard(my);
     sfx('collect',.6);
     await waitMs(420); guard(my);
     const back=z.list.slice().sort((a,c)=>c.z-a.z); z.list.length=0; z.amount=0; plate(p.id);
     const items=back.map(b=>{ b.zone=null; const s=source(p); return { b, to:{ x:s.x, y:s.y, z:s.z, vanish:true, d:D()-4 } }; });
     await within(throwAll(items,'lob'),8000); guard(my);
     p.chips+=won; updateSeatReels(seatEls[p.id].chips,p.chips);
+  }
+  // after a payout or a new hand the bank shows as many coins as your stack
+  // earns (bankCoins): short coins drop in, extras slide away
+  function topUpBank(){
+    const want=bankCoins(P[0].chips);
+    if (bank.chips.length===want) return;
+    while (bank.chips.length<want) bank.chips.push(makeChip('gold'));
+    while (bank.chips.length>want){ const c=bank.chips.shift(); if (c.clump){ c.clump.n--; c.clump=null; } if (c.el) c.el.remove(); }
+    bank.apply({ slideMs:200 });
   }
   let tidying=false;
   async function tidyBank(){
@@ -1789,6 +1891,204 @@
     }
     await waitMs(160);
     hl.classList.remove('is-tidying'); tidying=false;
+  }
+
+  /* ============================================================
+     PLAY A HAND (v10): a real hand of Hold'em on the lab table, so the
+     coins can be judged in the flow of play. Blinds, four streets of
+     betting, showdown with side pots, using the game's own deck and hand
+     evaluator (01-poker-math.js). Opponents follow a simple lab rule of
+     thumb (hand strength, pot odds, a style per seat), not the game's AI.
+     Your moves come from the bar. Stacks carry over between hands; a
+     broke seat buys back in for 1,000.
+     ============================================================ */
+  let H=null, handNo=1, askResolve=null;
+  const r10=v=>Math.max(BB,Math.round(v/10)*10);
+  const nameOf=p=>p.isHuman?'YOU':p.name.toUpperCase();
+  const canAct=p=>!p.folded && p.chips>0;
+  const liveCount=()=>P.filter(p=>!p.folded).length;
+  const potTotal=()=>potValue+P.reduce((a,p)=>a+p.betThisRound,0);
+  const STYLE={ prof:{ loose:-.06, agg:.3 }, wild:{ loose:.1, agg:.5 }, shark:{ loose:0, agg:.45 }, maniac:{ loose:.14, agg:.8 } };
+  function clearFelt(){
+    Object.values(zones).forEach(z=>{ clearTimeout(z.timer); z.list.forEach(b=>{ if (b.sh) b.sh.remove(); b.el.remove(); }); z.list.length=0; z.amount=0; z.neat=true; });
+    active.clear(); dirty.clear(); squashing.clear();
+    if (air) air.innerHTML=''; if (shadows) shadows.innerHTML='';
+    P.forEach(p=>plate(p.id)); potValue=0; paintPot(0);
+  }
+  function foldLook(p){
+    const e=seatEls[p.id];
+    if (e.root) e.root.classList.add('folded');
+    e.cardsContainer.style.opacity=p.isHuman?'.45':'.35';
+  }
+  function showHandText(){
+    const you=P[0];
+    paintCRT($('hand-strength'),'<b>'+(you.folded?'Folded':describePlayerHand(you.hand,H.board))+'</b>',false);
+  }
+  function newHand(){
+    clearFelt();
+    H={ board:[], put:{}, cur:0, minRaise:BB, raises:0, dealer:H?(H.dealer+1)%P.length:0, deck:shuffle(createDeck()) };
+    P.forEach(p=>{
+      if (p.chips<=0) p.chips=1000;
+      p.folded=false; p.allIn=false; p.betThisRound=0; p.totalBetHand=0; H.put[p.id]=0;
+      p.hand=[H.deck.pop(),H.deck.pop()];
+      const e=seatEls[p.id]; if (!e) return;
+      if (e.root) e.root.classList.remove('folded');
+      e.cardsContainer.style.opacity='';
+      if (!p.isHuman) updateSeatReels(e.chips,p.chips);
+      syncCardRow(e.cardsContainer,p.hand,p.isHuman?[false,false]:[true,true],!p.isHuman,'hole');
+      if (e.actionSlot){ e.actionSlot.className='action-slot act-empty'; e.actionSlot.textContent='–'; }
+    });
+    game.board=H.board; syncCardRow($('board'),[],[],false,'board');
+    updateJackpot(P[0].chips); updateInvestedReel(0); topUpBank();
+    $('table-meta').textContent='Hand '+(handNo++)+' · 10/20 · Chip Throw Lab';
+    showHandText();
+  }
+  function strength(p){
+    if (!H.board.length){
+      const [a,c]=p.hand; let s=(a.value+c.value-4)/24*.6;
+      if (a.value===c.value) s+=.35+a.value/60;
+      if (a.suit===c.suit) s+=.06;
+      if (Math.abs(a.value-c.value)===1) s+=.04;
+      return Math.min(1,s);
+    }
+    const r=evaluate7([...p.hand,...H.board]);
+    return Math.min(1,[.15,.45,.64,.74,.82,.86,.92,.97,1,1][r.cat]+(r.tiebreak[0]||0)/200);
+  }
+  function decide(p){
+    const st=STYLE[p.id]||{ loose:0, agg:.4 }, toCall=Math.max(0,H.cur-p.betThisRound), pot=potTotal();
+    const s=strength(p)+st.loose+rr(-.1,.1);
+    const canRaise=P.some(q=>q!==p && canAct(q)) && p.chips>toCall && H.raises<4;
+    const raiseTo=()=>H.cur?H.cur+Math.max(H.minRaise,r10(pot*rr(.5,.9))):r10(pot*rr(.45,.75));
+    if (canRaise && s>.9 && rnd()<st.agg*.35) return { k:'allin' };
+    if (toCall===0) return canRaise && s>.58 && rnd()<st.agg ? { k:'raise', to:raiseTo() } : { k:'check' };
+    const odds=toCall/(pot+toCall);
+    if (s<.18+odds*.45 && rnd()>.1) return { k:'fold' };
+    if (canRaise && s>.74 && rnd()<st.agg*.7) return { k:'raise', to:raiseTo() };
+    return { k:'call' };
+  }
+  function askYou(){
+    const you=P[0], toCall=Math.max(0,H.cur-you.betThisRound), row=$('ct-play'), main=$('ct-main');
+    const most=you.chips+you.betThisRound;
+    const raiseTo=!H.board.length && H.raises===0 ? 3*BB : (H.cur?H.cur+Math.max(H.minRaise,r10(potTotal()*.6)):r10(potTotal()*.6));
+    const canRaise=P.some(q=>q!==you && canAct(q)) && you.chips>toCall && H.raises<4;
+    const btn=k=>row.querySelector('[data-act="'+k+'"]');
+    btn('fold').hidden=toCall<=0;
+    btn('call').innerHTML=toCall<=0?'CHECK':(toCall>=you.chips?'CALL<br>ALL-IN':'CALL<br>'+toCall);
+    btn('raise').hidden=!canRaise || raiseTo>=most;
+    btn('raise').innerHTML=(H.cur?'RAISE<br>TO ':'BET<br>')+raiseTo;
+    btn('raise').dataset.to=raiseTo;
+    btn('allin').hidden=!canRaise;
+    row.hidden=false; main.hidden=true; status('Your move');
+    say('YOUR MOVE',toCall>0?'TO CALL '+toCall:'CHECK OR BET');
+    return new Promise(res=>{ askResolve=k=>{ row.hidden=true; main.hidden=false; askResolve=null; status('Playing'); res(k==='raise'?{ k, to:Number(btn('raise').dataset.to) }:{ k }); }; });
+  }
+  async function putIn(p,amount,label,allin){
+    if (amount<=0) return;
+    p.betThisRound+=amount; H.put[p.id]+=amount;
+    if (p.isHuman) await youBet(amount,label,allin); else await oppBet(p,amount,label,allin);
+  }
+  // returns true if the action re-opens the betting
+  async function doAct(p,act){
+    const toCall=Math.max(0,H.cur-p.betThisRound);
+    if (act.k==='fold'){ p.folded=true; foldLook(p); say(nameOf(p),'FOLD','act-fold',p); if (p.isHuman) showHandText(); return false; }
+    if (act.k==='check' || (act.k==='call' && toCall===0)){ say(nameOf(p),'CHECK','',p); return false; }
+    let to=act.k==='call'?H.cur:(act.k==='allin'?p.betThisRound+p.chips:act.to);
+    const put=Math.max(0,Math.min(p.chips,to-p.betThisRound)); to=p.betThisRound+put;
+    const allin=put>=p.chips, raised=to>H.cur;
+    const label=allin?'All-In':(raised?(H.cur?'Raise '+to:'Bet '+to):'Call '+put);
+    if (raised){ H.minRaise=Math.max(H.minRaise,to-H.cur); H.cur=to; H.raises++; }
+    await putIn(p,put,label,allin);
+    return raised;
+  }
+  async function bettingRound(first){
+    const my=gen;
+    let need=new Set(P.filter(canAct)), i=first;
+    while (need.size && liveCount()>1){
+      const p=P[i%P.length]; i++;
+      if (!need.has(p)) continue;
+      need.delete(p);
+      const toCall=Math.max(0,H.cur-p.betThisRound);
+      if (toCall===0 && !P.some(q=>q!==p && canAct(q))) continue;       // nobody left to bet against
+      const act=p.isHuman?await askYou():decide(p);
+      guard(my);
+      if (await doAct(p,act)) need=new Set(P.filter(q=>q!==p && canAct(q)));
+      guard(my);
+      await waitMs(p.isHuman?120:300); guard(my);
+    }
+  }
+  async function endStreet(){
+    const my=gen;
+    if (Object.keys(zones).some(k=>k.startsWith('spot:') && (zones[k].list.length || zones[k].amount>0))){ await waitMs(250); guard(my); await sweep(); guard(my); }
+    P.forEach(p=>{ p.betThisRound=0; });
+    H.cur=0; H.minRaise=BB; H.raises=0;
+  }
+  function sidePots(){
+    const live=P.filter(p=>!p.folded), levels=[...new Set(live.map(p=>H.put[p.id]))].sort((a,b)=>a-b), out=[];
+    let prev=0;
+    levels.forEach(L=>{
+      let amt=0; P.forEach(p=>{ amt+=Math.max(0,Math.min(H.put[p.id],L)-prev); });
+      if (amt>0) out.push({ amt, elig:live.filter(p=>H.put[p.id]>=L) });
+      prev=L;
+    });
+    let extra=0; P.forEach(p=>{ extra+=Math.max(0,H.put[p.id]-prev); });
+    if (extra && out.length) out[out.length-1].amt+=extra;
+    return out;
+  }
+  async function showdown(){
+    const my=gen, live=P.filter(p=>!p.folded), res={}, award={};
+    if (live.length===1){ award[live[0].id]=potValue; }
+    else {
+      say('SHOWDOWN','');
+      live.forEach(p=>{ if (!p.isHuman) syncCardRow(seatEls[p.id].cardsContainer,p.hand,[false,false],true,'hole'); res[p.id]=evaluate7([...p.hand,...H.board]); });
+      await waitMs(900); guard(my);
+      sidePots().forEach(pt=>{
+        let best=[];
+        pt.elig.forEach(p=>{ const c=best.length?compareHands(res[p.id],res[best[0].id]):1; if (c>0) best=[p]; else if (c===0) best.push(p); });
+        const each=Math.floor(pt.amt/best.length/10)*10;
+        best.forEach((p,i)=>{ award[p.id]=(award[p.id]||0)+(i===0?pt.amt-each*(best.length-1):each); });
+      });
+    }
+    // winners paid one by one, opponents first, you last; each takes its
+    // share of the pot's coins from its own side of the tray
+    const order=Object.keys(award).filter(id=>award[id]>0).map(id=>P.find(p=>p.id===id)).sort((a,b)=>(a.isHuman?1:0)-(b.isHuman?1:0));
+    let coins=zones.pot.list.slice().sort((a,b)=>a.x-b.x), left=potValue;
+    for (let i=0;i<order.length;i++){
+      const w=order[i], a=award[w.id], last=i===order.length-1;
+      const k=last?coins.length:Math.round(coins.length*a/Math.max(1,left));
+      const mine=w.isHuman?coins.splice(coins.length-k,k):coins.splice(0,k); left-=a;
+      const label=res[w.id]?describeMade(res[w.id]).toUpperCase():a.toLocaleString();
+      if (w.isHuman) await payYou(a,mine,label); else await payOpp(w,a,mine,label);
+      guard(my); await waitMs(300); guard(my);
+    }
+  }
+  async function playHand(){
+    const my=gen, n=P.length;
+    newHand(); await waitMs(600); guard(my);
+    const at=k=>(H.dealer+k)%n;
+    const sb=P[at(1)], bb=P[at(2)];
+    await putIn(sb,Math.min(BB/2,sb.chips),'Small blind',sb.chips<=BB/2); guard(my); await waitMs(200); guard(my);
+    await putIn(bb,Math.min(BB,bb.chips),'Big blind',bb.chips<=BB); guard(my); await waitMs(250); guard(my);
+    H.cur=BB; H.minRaise=BB; H.raises=0;
+    await bettingRound(at(3)); guard(my);
+    for (const [name,k] of [['FLOP',3],['TURN',1],['RIVER',1]]){
+      if (liveCount()<=1) break;
+      await endStreet(); guard(my);
+      for (let j=0;j<k;j++) H.board.push(H.deck.pop());
+      syncCardRow($('board'),H.board,H.board.map(()=>false),false,'board');
+      say('DEALER',name); showHandText();
+      await waitMs(700); guard(my);
+      if (P.filter(canAct).length>=2) await bettingRound(at(1));
+      guard(my);
+    }
+    await endStreet(); guard(my);
+    await showdown();
+  }
+  const BOARD5=['Qh','Jh','3d','8c','2s'].map(card);
+  function cycleBoard(){
+    const n=[3,4,5,0][([3,4,5,0].indexOf($('board').children.length)+1)%4];
+    game.board=BOARD5.slice(0,n);
+    syncCardRow($('board'),game.board,game.board.map(()=>false),false,'board');
+    say('BOARD',n?n+' CARDS':'EMPTY');
   }
 
   const OPPS=['maniac','wild','prof','shark'];
@@ -1812,6 +2112,8 @@
       else if (kind==='you-allin') await youBet(P[0].chips,'All-In',true);
       else if (kind==='sweep') await sweep();
       else if (kind==='toss-test') await tossTest();
+      else if (kind==='play') await playHand();
+      else if (kind==='board') cycleBoard();
       else if (kind==='pay-you') await payYou();
       else if (kind==='pay-opp') await payOpp(pl('maniac'));
       else if (kind==='street'){
@@ -1828,7 +2130,7 @@
         await sweep(); await waitMs(420); guard(my);
         await payYou();
       }
-      if (my===gen) status(OPT.after==='tap'?'Done · tap the felt to tidy':'Done · ↻ to replay');
+      if (my===gen) status(kind==='play'?'Hand over · play another':(OPT.after==='tap'?'Done · tap the felt to tidy':'Done · ↻ to replay'));
     } catch(e){ if (e.message!=='cancelled'){ console.error(e); status('Error'); } }
     if (my===gen){ busy=false; markBar(null); }
   }
@@ -1851,7 +2153,7 @@
     else { OPT[k]=k==='speed'?Number(v):v; if (!['speed','sound','random'].includes(k)){ OPT.preset='custom'; OPT.eased=false; } }
     settings.sound=OPT.sound==='on';
     syncPanel();
-    if (['source','preset','art','size','after','body','tray','nums'].includes(k)) setup();
+    if (['source','preset','art','size','after','body','tray','nums','coins'].includes(k)) setup();
     if (k==='light' || k==='body'){ Object.keys(spinCache).forEach(x=>delete spinCache[x]); }
   }
   function wire(){
@@ -1860,6 +2162,7 @@
       setOpt(seg.dataset.opt,b.dataset.v);
     }));
     document.querySelectorAll('[data-run]').forEach(b=>b.addEventListener('click',()=>run(b.dataset.run)));
+    document.querySelectorAll('[data-act]').forEach(b=>b.addEventListener('click',()=>{ if (askResolve) askResolve(b.dataset.act); }));
     $('ct-gear').addEventListener('click',()=>{ const d=$('ct-drawer'); d.hidden=!d.hidden; $('ct-gear').classList.toggle('is-on',!d.hidden); });
     window.addEventListener('resize',()=>{ clearTimeout(wire.t); wire.t=setTimeout(()=>{ if (!busy) setup(); },300); });
   }
@@ -1895,6 +2198,7 @@
       const b=ev.target.closest('button'), a=api(); if (!b || !a) return;
       if (a.unlock) a.unlock();
       if (b.dataset.run){ a.run(b.dataset.run); return; }
+      if (b.dataset.act){ a.act(b.dataset.act); return; }
       const seg=b.closest('.cl-seg');
       if (seg){ a.set(seg.dataset.opt,b.dataset.v); Object.assign(OPT,a.OPT); syncPanel(); }
     });
@@ -1902,7 +2206,16 @@
     setInterval(()=>{
       const a=api(); if (!a) return;
       if (!synced){ synced=true; Object.assign(OPT,a.OPT); syncPanel(); }
-      try{ status(frame.contentDocument.getElementById('ct-status').textContent); markBar(a.busy()?a.last():null); }catch(e){}
+      try{
+        const fd=frame.contentDocument;
+        status(fd.getElementById('ct-status').textContent); markBar(a.busy()?a.last():null);
+        // the play row (your move) lives in the frame: mirror it here
+        const src=fd.getElementById('ct-play'), dst=$('ct-play');
+        if (src && dst){
+          if (dst.innerHTML!==src.innerHTML) dst.innerHTML=src.innerHTML;
+          dst.hidden=src.hidden; $('ct-main').hidden=!src.hidden;
+        }
+      }catch(e){}
     },200);
   }
 
@@ -1918,7 +2231,7 @@
     await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));
     setup();
     document.addEventListener('pointerdown',unlockAudio,{ capture:true });
-    window.__chipThrowLab={ run:(k)=>{ unlockAudio(); return run(k); }, unlock:unlockAudio, OPT, setup, set:setOpt, last:()=>lastRun, busy:()=>busy, walls:()=>WALLS,
+    window.__chipThrowLab={ run:(k)=>{ unlockAudio(); return run(k); }, unlock:unlockAudio, act:k=>{ if (askResolve) askResolve(k); }, asking:()=>!!askResolve, hand:()=>H&&{ board:H.board.length, put:{ ...H.put }, cur:H.cur, chips:P.map(p=>p.chips), folded:P.map(p=>p.folded), pot:potValue }, OPT, setup, set:setOpt, last:()=>lastRun, busy:()=>busy, walls:()=>WALLS,
       state:()=>({ bank:bank.chips.length, pot:zones.pot.list.length, potNeat:zones.pot.neat, active:active.size,
         air:air?air.querySelectorAll('.cl-chip').length:0, you:P[0].chips,
         spots:Object.keys(zones).filter(k=>k.startsWith('spot:')).map(k=>k.slice(5)+':'+zones[k].list.length).join(' ') }),
@@ -1926,7 +2239,7 @@
       bodies:()=>Object.values(zones).flatMap(z=>z.list.map(b=>({ zone:z.id, x:b.x, y:b.y, z:b.z, d:b.d, state:b.state }))),
       blocked:()=>Object.values(zones).flatMap(z=>z.list).filter(b=>b.state==='rest' && b.z<1 && inBlock(b.x,b.y,b.d)).length,
       offFelt:()=>{ const F=WALLS.felt; return Object.values(zones).flatMap(z=>z.list).filter(b=>b.x<F.L||b.x>F.R||b.y<F.T||b.y>F.B+1).length; },
-      stuck:()=>stuckCount,
+      stuck:()=>stuckCount, stuckLog:()=>stuckLog,
       hiddenWaiting:()=>Array.from(document.querySelectorAll('.ct-air .cl-chip')).filter(el=>el.style.visibility==='hidden').length,
       spinStrip:(axis,N,d)=>Array.from({length:N},(_,k)=>spinFrame(d||D(),axis,k,N)),
       orphans:()=>{ const inZones=new Set(Object.values(zones).flatMap(z=>z.list.map(b=>b.el))); return Array.from(document.querySelectorAll('.ct-air .cl-chip')).filter(el=>!inZones.has(el)).length; },

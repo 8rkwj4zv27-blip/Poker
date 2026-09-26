@@ -291,8 +291,9 @@ reuse instead of writing a new Playwright script from scratch each time.
   is its companion for how chips travel: a chip physics world (every
   chip on the felt is a body: gravity arcs, flips through code-drawn pixel
   frames, bounces, knock-offs, mess then tidy; the rail and the cards are
-  solid; throws vary by bet size; gold coin art by default) with every
-  idea as a switch and four presets.
+  solid; throws vary by bet size; gold coin art by default). Since v10
+  the owner's settled mix is built in, the drawer keeps only the sound
+  set, coins per bet and speed, and PLAY HAND plays a real hand on it.
 - `docs/scoring/SCORING_SPEC.md` — authoritative scoring/award rules for
   both Career and Single Player.
 - `docs/ui/handover/` — earlier UI handover notes; a `python3 -m http.server`

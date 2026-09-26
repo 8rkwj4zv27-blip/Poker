@@ -6,7 +6,7 @@
 <meta name="theme-color" content="#16090D">
 <link rel="icon" href="data:,">
 <title>Chip Throw Lab</title>
-<!-- CHIP THROW LAB v9 — how chips travel (docs/ui/CHIP_PLAN.md). The real
+<!-- CHIP THROW LAB v10 — how chips travel (docs/ui/CHIP_PLAN.md). The real
      #table-screen and renderers on memory-only state, plus a chip physics
      world where every chip on the felt is a body. Reuses chip-lab.css for
      the drawer, bet spots and bank. Never loaded by index.html or sw.js;
@@ -36,94 +36,53 @@
        felt stays visible while chips fly. Options are a drawer that
        closes itself when a trigger is tapped. -->
   <nav class="ct-bar" aria-label="Chip throw triggers">
-    <div class="ct-bar-row">
-      <button type="button" data-run="opp-call">OPP<br>CALL</button>
+    <div class="ct-bar-row" id="ct-main">
+      <button type="button" class="is-primary" data-run="play">PLAY<br>HAND</button>
+      <button type="button" data-run="toss-test">TOSS<br>TEST</button>
       <button type="button" data-run="opp-bet">OPP<br>RAISE</button>
-      <button type="button" data-run="opp-big">OPP BIG<br>RAISE</button>
       <button type="button" data-run="opp-allin">OPP<br>ALL-IN</button>
-      <button type="button" data-run="you-call">YOUR<br>CALL</button>
       <button type="button" data-run="you-bet">YOUR<br>RAISE</button>
       <button type="button" data-run="you-allin">YOUR<br>ALL-IN</button>
       <button type="button" data-run="sweep">SWEEP</button>
-      <button type="button" class="is-primary" data-run="toss-test">TOSS<br>TEST</button>
       <button type="button" data-run="pay-you">PAY<br>YOU</button>
       <button type="button" data-run="pay-opp">PAY<br>MANIAC</button>
-      <button type="button" class="is-primary" data-run="street">A<br>STREET</button>
-      <button type="button" class="is-primary" data-run="showdown">ALL-IN<br>+ WIN</button>
+      <button type="button" data-run="board">BOARD<br>3·4·5</button>
+    </div>
+    <!-- PLAY HAND: your move -->
+    <div class="ct-bar-row ct-play" id="ct-play" hidden>
+      <button type="button" data-act="fold">FOLD</button>
+      <button type="button" data-act="call">CALL</button>
+      <button type="button" class="is-primary" data-act="raise">RAISE</button>
+      <button type="button" data-act="allin">ALL-IN</button>
     </div>
     <div class="ct-bar-row ct-bar-foot">
       <button type="button" class="ct-replay" data-run="replay" aria-label="Replay the last move">↻ REPLAY</button>
       <button type="button" data-run="reset">RESET</button>
-      <span class="ct-status"><b id="ct-preset-name">V9</b> · <span id="ct-status">LOADING…</span></span>
+      <span class="ct-status"><b id="ct-preset-name">V10</b> · <span id="ct-status">LOADING…</span></span>
       <button type="button" class="ct-gear" id="ct-gear" aria-label="Options">⚙ OPTIONS</button>
     </div>
   </nav>
 
+  <!-- v10: the look, spin, tray and stacking are settled and built in (the
+       owner's mix). Left here: the sound set (a player option in the game
+       later), how many coins a bet throws, and speed. -->
   <aside class="cl-panel ct-drawer" id="ct-drawer" hidden aria-label="Chip throw options">
     <section class="cl-group">
       <p class="cl-note" id="ct-note"></p>
     </section>
     <section class="cl-group">
-      <div class="cl-label">STACKS</div>
-      <div class="cl-row"><span class="cl-label">OVERLAP</span>
-        <div class="cl-seg cl-seg-sm" data-opt="overlap"><button type="button" data-v="free">FREE</button><button type="button" data-v="snug">SNUG</button><button type="button" data-v="snap">SNAP</button></div></div>
-      <div class="cl-row"><span class="cl-label">STACK STYLE</span>
-        <div class="cl-seg cl-seg-sm" data-opt="stack"><button type="button" data-v="loose">LOOSE</button><button type="button" data-v="straight">STRAIGHT</button><button type="button" data-v="lean">LEAN</button></div></div>
-      <div class="cl-row"><span class="cl-label">TIDY SHAPE</span>
-        <div class="cl-seg cl-seg-sm" data-opt="tidy"><button type="button" data-v="spread">SPREAD</button><button type="button" data-v="towers">TOWERS</button></div></div>
-      <div class="cl-row"><span class="cl-label">AFTER</span>
-        <div class="cl-seg cl-seg-sm" data-opt="after"><button type="button" data-v="tap">MESS·TAP</button><button type="button" data-v="auto">MESS→TIDY</button><button type="button" data-v="neat">NEAT</button></div></div>
-    </section>
-    <section class="cl-group">
-      <div class="cl-label">COIN SPIN</div>
-      <div class="cl-row"><span class="cl-label">AXIS</span>
-        <div class="cl-seg cl-seg-sm" data-opt="spin"><button type="button" data-v="side">SIDE</button><button type="button" data-v="toss">TOSS</button><button type="button" data-v="mixed">MIXED</button><button type="button" data-v="off">OFF</button></div></div>
-      <div class="cl-row"><span class="cl-label">SPEED</span>
-        <div class="cl-seg cl-seg-sm" data-opt="spinSpeed"><button type="button" data-v="slow">SLOW</button><button type="button" data-v="med">MED</button><button type="button" data-v="fast">FAST</button></div></div>
-      <div class="cl-row"><span class="cl-label">FRAMES</span>
-        <div class="cl-seg cl-seg-sm" data-opt="spinFrames"><button type="button" data-v="8">8</button><button type="button" data-v="16">16</button></div></div>
-      <div class="cl-row"><span class="cl-label">LIGHT</span>
-        <div class="cl-seg cl-seg-sm" data-opt="light"><button type="button" data-v="on">ON</button><button type="button" data-v="off">OFF</button></div></div>
-      <div class="cl-row"><span class="cl-label">LANDS</span>
-        <div class="cl-seg cl-seg-sm" data-opt="lands"><button type="button" data-v="random">HEADS/TAILS</button><button type="button" data-v="heads">HEADS</button></div></div>
-      <p class="cl-note">Coins spin over and over while they're in the air, heads to tails. SIDE turns about the upright axis (the coin narrows to its edge, the classic video-game coin); TOSS about the level axis, like a thumb-flipped coin; MIXED gives each coin one of the two. LIGHT brightens the face as it swings to the light, with a white streak at the peak. HEADS/TAILS: a coin lands on whichever face it was showing. Try the TOSS TEST button with SPEED on SLOW.</p>
-    </section>
-    <section class="cl-group">
-      <div class="cl-label">TABLE</div>
-      <div class="cl-row"><span class="cl-label">POT TRAY</span>
-        <div class="cl-seg cl-seg-sm" data-opt="tray"><button type="button" data-v="well">WELL</button><button type="button" data-v="panel">PANEL</button><button type="button" data-v="brass">BRASS</button><button type="button" data-v="none">NONE</button></div></div>
-      <div class="cl-row"><span class="cl-label">TRAY LIP</span>
-        <div class="cl-seg cl-seg-sm" data-opt="lip"><button type="button" data-v="on">ON</button><button type="button" data-v="off">OFF</button></div></div>
-      <div class="cl-row"><span class="cl-label">SWEEP</span>
-        <div class="cl-seg cl-seg-sm" data-opt="sweep"><button type="button" data-v="jump">JUMP</button><button type="button" data-v="push">GLIDE</button></div></div>
-      <div class="cl-row"><span class="cl-label">BET NUMBERS</span>
-        <div class="cl-seg cl-seg-sm" data-opt="nums"><button type="button" data-v="off">OFF</button><button type="button" data-v="pop">POP-UP</button><button type="button" data-v="always">ALWAYS</button></div></div>
-    </section>
-    <section class="cl-group">
       <div class="cl-label">SOUND</div>
       <div class="cl-seg ct-seg-wrap" data-opt="sfx"><button type="button" data-v="clack">CLACK</button><button type="button" data-v="clackplus">CLACK+</button><button type="button" data-v="clay">CLAY</button><button type="button" data-v="thock">THOCK</button><button type="button" data-v="thud">THUD</button><button type="button" data-v="coin">COIN</button><button type="button" data-v="clink">CLINK</button><button type="button" data-v="retro">RETRO</button><button type="button" data-v="pop">POP</button><button type="button" data-v="old">OLD</button></div>
-      <div class="cl-row"><span class="cl-label">GROUP CHUNK</span>
-        <div class="cl-seg cl-seg-sm" data-opt="group"><button type="button" data-v="on">ON</button><button type="button" data-v="off">OFF</button></div></div>
-      <div class="cl-row"><span class="cl-label">RISING PITCH</span>
-        <div class="cl-seg cl-seg-sm" data-opt="rise"><button type="button" data-v="on">ON</button><button type="button" data-v="off">OFF</button></div></div>
       <div class="cl-row"><span class="cl-label">SOUND</span>
         <div class="cl-seg cl-seg-sm" data-opt="sound"><button type="button" data-v="on">ON</button><button type="button" data-v="off">OFF</button></div></div>
     </section>
     <section class="cl-group">
-      <div class="cl-label">LOOK</div>
-      <div class="cl-row"><span class="cl-label">ART</span>
-        <div class="cl-seg cl-seg-sm" data-opt="art"><button type="button" data-v="gold">GOLD</button><button type="button" data-v="pixel">COLOURS</button><button type="button" data-v="current">ORIGINAL</button></div></div>
-      <div class="cl-row"><span class="cl-label">COIN BODY</span>
-        <div class="cl-seg cl-seg-sm" data-opt="body"><button type="button" data-v="thin">THIN</button><button type="button" data-v="thick">THICK</button></div></div>
-      <div class="cl-row"><span class="cl-label">PILE DEPTH</span>
-        <div class="cl-seg cl-seg-sm" data-opt="depth"><button type="button" data-v="on">ON</button><button type="button" data-v="off">OFF</button></div></div>
-    </section>
-    <section class="cl-group">
-      <div class="cl-row"><span class="cl-label">RANDOM</span>
-        <div class="cl-seg cl-seg-sm" data-opt="random"><button type="button" data-v="fresh">FRESH</button><button type="button" data-v="same">SAME</button></div></div>
+      <div class="cl-label">COINS</div>
+      <div class="cl-row"><span class="cl-label">PER BET</span>
+        <div class="cl-seg cl-seg-sm" data-opt="coins"><button type="button" data-v="few">FEW</button><button type="button" data-v="some">SOME</button><button type="button" data-v="lots">LOTS (V9)</button></div></div>
       <div class="cl-row"><span class="cl-label">SPEED</span>
         <div class="cl-seg cl-seg-sm" data-opt="speed"><button type="button" data-v="1">1×</button><button type="button" data-v="0.35">SLOW</button></div></div>
-      <p class="cl-note">STACK STYLE (with SNAP): LOOSE is v4's slight wobble, STRAIGHT dead-centre towers, LEAN every stack leaning one way a pixel per coin. TIDY SHAPE is what a tap (or MESS→TIDY) squares the pile into: SPREAD short stacks in two rows, TOWERS a single row of tall stacks. SOUND: CLACK a hard block click, CLACK+ with a heavier thud, CLAY a real poker-chip tick, THOCK a deep soft thock, THUD heavy and low, COIN a gold ring, CLINK bright metal, RETRO an 8-bit blip, POP a cartoon pop, OLD the game's current chips. POT TRAY: WELL a shallow dish pressed into the felt, PANEL a printed box, BRASS a raised tray; with TRAY LIP on, coins sliding in the pot bounce off its rim (fast ones hop over). BET NUMBERS: POP-UP shows a seat&#39;s number only while its coins land. SWEEP: JUMP hops each pile into the pot coin by coin, GLIDE slides it. Tap a tower on the felt to topple it; tap a loose coin to flick it. RANDOM SAME makes replays identical, for comparing. Tap the bank to tidy it; with MESS·TAP, tap the felt.</p>
+      <p class="cl-note">FEW: a call is one or two coins, a raise a handful, an all-in a proper splash, and no bet throws more than 12. Every pile has a limit (a bet spot 14 coins, the pot 36, your bank 28): coins thrown past it land on the pile and melt in, and the numbers still count them. SOME is in between; LOTS is v9's count, for comparison. PLAY HAND deals a real hand: the bar turns into FOLD / CALL / RAISE / ALL-IN when it's your move. BOARD 3·4·5 lays out a flop, turn or river to test the table. Tap the felt to tidy; tap a tower to topple it.</p>
     </section>
   </aside>
 

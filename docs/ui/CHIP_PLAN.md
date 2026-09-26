@@ -366,3 +366,40 @@ a fixed readable rate (SLOW 2.2 / MED 3.6 / FAST 5.5 turns a second, 8 or
 16 frames a turn), keeps spinning through bounces, and lands on whichever
 face it was showing (or always heads). TOSS TEST throws six coins high
 and slow into the pot for inspection.
+
+### v10 (26 Sep 2026)
+
+Owner on v9: the toss is great; settled on a mix (CLAY, TOSS spin on
+SLOW, lands HEADS, WELL tray with lip, JUMP sweep, bet numbers OFF,
+SNAP/LOOSE, MESS·TAP). Big pots and a big bank look silly; coins land in
+the gaps between board cards and on opponents' cards; what about the turn
+and river? Merging coins into bigger coins, bars and diamonds is deferred
+(new sprites and animation; how it stacks is open).
+
+- **Settled mix built in.** The drawer is cut to SOUND (all ten sets: the
+  future player option), COINS per bet, and SPEED. Other options still
+  read from the URL for comparison.
+- **Fewer coins (COINS FEW, default).** A bet's coin count follows a
+  flattening curve (10→1, 20→2, 100→4, 400→7, 1500→11, capped at 12; an
+  all-in throws at least 8). The bank shows a stack-sized count (1,000→16,
+  capped 28) and is topped up or trimmed at each new hand and payout.
+  SOME is between; LOTS is v9's `visualChipCount`.
+- **Pile limits.** A bet spot holds 14 coins, the pot 36, the bank 28.
+  Coins thrown past a limit land on one of the pile's stacks and melt in
+  (a stack tick, sometimes a glint); the numbers still count them.
+- **Board row is one solid block**, all five card places whether dealt or
+  not (measured from layout offsets, remembered for an empty board).
+- **Bet spots clear of the row.** Seats beside the row bet into the strip
+  between it and the rail; seats above it bet into the band under their
+  cards. Snap towers are capped by the room above each spot, so a pile
+  never climbs onto the seat's cards.
+- **PLAY HAND:** a real hand on the lab table (game's deck, `evaluate7`,
+  `compareHands`, `describeMade`): blinds, four streets, showdown with
+  side pots and split pots, winners paid their share of the pot's coins.
+  Opponents follow a simple lab rule of thumb (strength, pot odds, a style
+  per seat), not the game's AI. The bar becomes FOLD / CHECK·CALL / RAISE
+  / ALL-IN on your move. Stacks carry over; a broke seat rebuys 1,000.
+  BOARD 3·4·5 lays out a flop, turn or river for testing.
+
+Next: production integration (plan first): the throw/sweep/payout engine
+and the sound-set setting into the game, driven by real game events.

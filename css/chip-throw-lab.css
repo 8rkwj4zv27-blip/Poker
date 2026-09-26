@@ -84,7 +84,7 @@ body.ct-desk-mode{ overflow:hidden; background:#0b0506; }
 .ct-desk-frame{ position:absolute; left:0; top:0; width:390px; height:844px; border:0; transform-origin:0 0; background:#000; }
 .ct-desk-side{ display:flex; flex-direction:column; gap:10px; width:390px; height:calc(100vh - 24px); min-height:0; }
 body.ct-desk-mode .ct-bar{ position:static; left:auto; right:auto; width:auto; padding:8px; border:3px solid #080405; box-shadow:none; }
-body.ct-desk-mode .ct-bar-row:first-child{ flex-wrap:wrap; overflow:visible; }
+body.ct-desk-mode #ct-main{ flex-wrap:wrap; overflow:visible; }
 body.ct-desk-mode .ct-bar button{ min-width:58px; }
 body.ct-desk-mode .ct-drawer,body.ct-desk-mode .ct-drawer[hidden]{
   display:block; position:static; left:auto; right:auto; top:auto; bottom:auto; width:auto; max-height:none;
@@ -129,3 +129,8 @@ body.ct-desk-mode .ct-drawer,body.ct-desk-mode .ct-drawer[hidden]{
 .felt[data-nums="off"] .cl-spot-plate{ display:none; }
 .felt[data-nums="pop"] .cl-spot .cl-spot-plate{ transform:translateX(-50%) scaleY(0); transition:transform .1s steps(2,end); }
 .felt[data-nums="pop"] .cl-spot.is-pop .cl-spot-plate{ transform:translateX(-50%) scaleY(1); }
+
+/* v10: PLAY HAND — the bar's your-move row */
+.ct-bar-row[hidden], .ct-bar button[hidden]{ display:none; }
+.ct-play button{ flex:1 1 0; min-width:0; }
+body.ct-desk-mode .ct-play{ flex-wrap:nowrap; }
