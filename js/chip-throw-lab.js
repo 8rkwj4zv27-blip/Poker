@@ -46,10 +46,10 @@
   const BASE={ art:'gold', body:'thick', depth:'on', overlap:'snug', size:'m', shadow:'on', throw:'bybet', hand:'bloom', timing:'irregular',
     flips:'many', toss:'off', source:'edge', bounces:'multi', rock:'on', roll:'on', knock:'on', juice:'on', after:'tap', sweep:'push',
     random:'fresh', sfx:'clack', rise:'on', group:'on' };
-  BASE.overlap='snap';
-  const OPT={ preset:'v5', ...BASE, speed:1, sound:'on' };
+  BASE.overlap='snap'; BASE.stack='loose'; BASE.tidy='spread';
+  const OPT={ preset:'v6', ...BASE, speed:1, sound:'on' };
   const PRESETS={
-    v5:   { ...BASE },
+    v6:   { ...BASE },
     chunky:{ ...BASE, sfx:'clackplus' },
     heavy:{ ...BASE, bounces:'dead', roll:'off', sfx:'thud' },
     v4:   { ...BASE, overlap:'snug', sfx:'coin' },
@@ -59,7 +59,7 @@
             sfx:'old', rise:'off', group:'off', eased:true }
   };
   const NOTES={
-    v5:'Your settings: chunky coins, snap-onto-stacks, 1–3 bounces, CLACK (reworked) with group chunk and rising pitch. Coins keep a solid border: they never sit inside each other at the same height, and front stacks always draw over back ones.',
+    v6:'Your settings, with the stacking back to how it was. Throw and landing are fixed at your favourites; the switches below are for stacks and sound.',
     chunky:'As V5 with CLACK+: the same click with a heavier thud under it.',
     heavy:'As V5, with dead landings (no bounce, no roll) and the THUD sound set.',
     v4:'The last version: snug overlap and the COIN sound set.',
@@ -357,6 +357,41 @@
         bounce:(p,w)=>{ tone(960*p,820*p,.025,'triangle',V(.1*w)); tone(150*p,95*p,.05,'sine',V(.18*w)); },
         chunk:(p,w)=>{ [0,.014,.03,.05].forEach((d,i)=>{ tone((860+i*110)*p,(690+i*90)*p,.035,'triangle',V(.12*w),d); noise(.016,V(.16*w),'highpass',2800,.9,d); }); tone(115*p,55*p,.15,'sine',V(.5*w)); }
       },
+      // CLAY: a real poker chip on felt, a short double tick of clay
+      clay:{
+        land:(p,w)=>{ noise(.012,V(.24*w),'bandpass',2300*p,2.2); noise(.01,V(.14*w),'bandpass',3500*p,2.5,.009); tone(320*p,240*p,.03,'sine',V(.14*w)); },
+        stack:(p,w)=>{ noise(.01,V(.26*w),'bandpass',3000*p,2.6); noise(.008,V(.16*w),'bandpass',4200*p,2.8,.008); noise(.008,V(.1*w),'bandpass',3800*p,2.8,.02); },
+        bounce:(p,w)=>{ noise(.008,V(.14*w),'bandpass',2800*p,2.4); },
+        chunk:(p,w)=>{ [0,.012,.026,.04,.058].forEach((d,i)=>noise(.012,V(.2*w),'bandpass',(2200+i*300)*p,2.2,d)); tone(260*p,180*p,.05,'sine',V(.18*w)); }
+      },
+      // RETRO: an 8-bit coin blip, two quick square notes
+      retro:{
+        land:(p,w)=>{ tone(988*p,988*p,.035,'square',V(.06*w)); tone(1319*p,1319*p,.07,'square',V(.06*w),.035); },
+        stack:(p,w)=>{ tone(1319*p,1319*p,.03,'square',V(.06*w)); tone(1760*p,1760*p,.06,'square',V(.055*w),.03); },
+        bounce:(p,w)=>{ tone(784*p,784*p,.025,'square',V(.04*w)); },
+        chunk:(p,w)=>{ [988,1175,1319,1568].forEach((f,i)=>tone(f*p,f*p,.045,'square',V(.055*w),i*.03)); }
+      },
+      // THOCK: a deep, soft keyboard-style thock
+      thock:{
+        land:(p,w)=>{ tone(430*p,290*p,.06,'triangle',V(.28*w)); noise(.03,V(.16*w),'lowpass',900*p,.8); },
+        stack:(p,w)=>{ tone(560*p,400*p,.05,'triangle',V(.26*w)); noise(.022,V(.16*w),'lowpass',1300*p,.8); },
+        bounce:(p,w)=>{ tone(500*p,380*p,.035,'triangle',V(.16*w)); },
+        chunk:(p,w)=>{ [0,.02,.045].forEach((d,i)=>tone((400+i*60)*p,(280+i*40)*p,.06,'triangle',V(.24*w),d)); noise(.06,V(.18*w),'lowpass',800,.8); }
+      },
+      // CLINK: bright metal on metal, three inharmonic partials
+      clink:{
+        land:(p,w)=>{ noise(.006,V(.12*w),'highpass',5000,.8); tone(2400*p,2390*p,.09,'sine',V(.05*w)); tone(3710*p,3700*p,.07,'sine',V(.04*w)); tone(5130*p,5120*p,.05,'sine',V(.025*w)); },
+        stack:(p,w)=>{ noise(.005,V(.12*w),'highpass',5500,.8); tone(2900*p,2890*p,.08,'sine',V(.05*w)); tone(4480*p,4470*p,.06,'sine',V(.035*w)); },
+        bounce:(p,w)=>{ tone(2600*p,2590*p,.04,'sine',V(.035*w)); },
+        chunk:(p,w)=>{ [0,.016,.034].forEach((d,i)=>{ tone((2300+i*350)*p,(2290+i*350)*p,.09,'sine',V(.045*w),d); tone((3600+i*400)*p,(3590+i*400)*p,.06,'sine',V(.03*w),d); }); }
+      },
+      // POP: a cartoon pop, a fast upward chirp with a click
+      pop:{
+        land:(p,w)=>{ tone(420*p,1300*p,.045,'sine',V(.2*w)); noise(.008,V(.12*w),'highpass',2500,.8); },
+        stack:(p,w)=>{ tone(560*p,1700*p,.04,'sine',V(.2*w)); noise(.006,V(.12*w),'highpass',3000,.8); },
+        bounce:(p,w)=>{ tone(500*p,1000*p,.03,'sine',V(.1*w)); },
+        chunk:(p,w)=>{ [0,.025,.05].forEach((d,i)=>tone((380+i*90)*p,(1200+i*200)*p,.045,'sine',V(.18*w),d)); }
+      },
       coin:{
         land:(p,w)=>{ tone(145*p,85*p,.07,'sine',V(.3*w)); noise(.014,V(.13*w),'bandpass',3400,1.4); tone(1880*p,1860*p,.11,'sine',V(.05*w),.004); tone(2830*p,2800*p,.08,'sine',V(.03*w),.004); },
         stack:(p,w)=>{ noise(.012,V(.16*w),'bandpass',4000,1.6); tone(2250*p,2230*p,.1,'sine',V(.06*w)); tone(3380*p,3350*p,.07,'sine',V(.035*w)); tone(200*p,120*p,.05,'sine',V(.2*w)); },
@@ -471,7 +506,7 @@
     b.state='rest'; b.t=0; b.vx=b.vy=b.vz=0;
     // every coin that comes to rest is checked against its neighbours (a
     // pushed group is relaxed as whole stacks by relaxStacks instead)
-    if (was!=='push' && !(b.target&&b.target.slot)) relaxCoin(b);
+    void was;
     if (b.snapOnto){ b.snapOnto.claimed=null; b.snapOnto=null; }
     active.delete(b); dirty.add(b);
     if (b.sq>0) squashing.add(b);
@@ -529,13 +564,20 @@
   /* ---------------- zones: bet spots and the pot ---------------- */
   function zone(id,cx,cy,cap,maxSlots,radius){ return zones[id]={ id, cx, cy, cap, maxSlots, radius, list:[], neat:true, timer:0, amount:0 }; }
   function neatSlots(z,list){
-    const d=D(), sp=d+1, st=STEP(), slots=[], order=[0];
+    const d=D(), towers=OPT.tidy==='towers', sp=d+(towers?2:1), st=STEP(), slots=[], order=[0];
     for (let i=1;i<9;i++) order.push(i%2?Math.ceil(i/2):-i/2);
-    order.forEach((o,i)=>{ slots.push({ x:z.cx+o*sp, y:z.cy }); if (i<8) slots.push({ x:z.cx+(o+(o<0?-.5:.5))*sp, y:z.cy-Math.round(d*.42) }); });
-    const use=slots.slice(0,z.maxSlots), stacks=[], out=new Map();
+    order.forEach((o,i)=>{ slots.push({ x:z.cx+o*sp, y:z.cy }); if (i<8 && !towers) slots.push({ x:z.cx+(o+(o<0?-.5:.5))*sp, y:z.cy-Math.round(d*.42) }); });
+    // never taller than the room above the pile (the pot sits under the board)
+    const room=z.room?Math.max(2,Math.floor((z.room-d*HR()-2)/st)+1):99;
+    const pool=towers?slots.length:z.maxSlots;
+    // SPREAD: coins shared evenly over every stack; TOWERS: one row of tall
+    // stacks (up to 8 high), as few as the coins need
+    let cap=towers?Math.min(8,room):Math.min(z.cap,room,Math.max(1,Math.ceil(list.length/Math.min(pool,slots.length))));
+    const max=towers?Math.max(1,Math.min(pool,Math.ceil(list.length/cap))):pool;
+    const use=slots.slice(0,max), stacks=[], out=new Map();
     list.forEach(b=>{
       let s=null;
-      for (let i=stacks.length-1;i>=0;i--) if (stacks[i].key===b.colour && stacks[i].n<z.cap){ s=stacks[i]; break; }
+      for (let i=stacks.length-1;i>=0;i--) if (stacks[i].key===b.colour && stacks[i].n<cap){ s=stacks[i]; break; }
       if (!s){ if (stacks.length<use.length){ s={ key:b.colour, slot:use[stacks.length], n:0 }; stacks.push(s); } else s=stacks.reduce((a,c)=>c.n<a.n?c:a); }
       out.set(b,{ x:s.slot.x, y:s.slot.y, z:s.n*st, n:s.n });
       s.n++;
@@ -813,7 +855,6 @@
       contain(b);
       if (OPT.overlap==='snap' && trySnap(b)) return;
       b.z=supportUnder(b).h;
-      relaxCoin(b);
     }
     if (OPT.rock==='on' && b.z<1 && rnd()<.22){
       b.state='rock'; b.t=0; b.T=rr(.2,.32);
@@ -895,7 +936,13 @@
     }
     if (!best) return false;
     best.claimed=b; b.snapOnto=best;
-    b.x0=b.x; b.y0=b.y; b.z0=b.z; b.tx=best.x; b.ty=best.y; b.tz=best.z+STEP();
+    // LOOSE: v4's ±1px wobble; STRAIGHT: dead-centre towers; LEAN: every
+    // stack leans one way, a pixel per coin
+    let ox=0, oy=0;
+    if (OPT.stack==='loose'){ ox=rint(-1,1); oy=rint(0,1); }
+    else if (OPT.stack==='lean'){ if (!best.leanDir) best.leanDir=rnd()<.5?-1:1; ox=best.leanDir; }
+    b.leanDir=best.leanDir;
+    b.x0=b.x; b.y0=b.y; b.z0=b.z; b.tx=best.x+ox; b.ty=best.y+oy; b.tz=best.z+STEP();
     b.T=.07+Math.min(.06,bd/600); b.arc=3; b.t=0; b.state='tidy'; b.snapping=true;
     return true;
   }
@@ -923,7 +970,7 @@
           else if (q.state==='rest'){ q.vx=q.vy=0; }
         }
       }
-      if (qMoves){ q.x-=nx*over*.5; q.y-=ny*over*.5/1.4; contain(q); if (q.state==='rest') relaxCoin(q); dirty.add(q); }
+      if (qMoves){ q.x-=nx*over*.5; q.y-=ny*over*.5/1.4; contain(q); dirty.add(q); }
     }
   }
   // A landing disturbs what's around it: shoves, or pops a chip loose.
@@ -996,7 +1043,7 @@
     const rot=pixel?Math.round(b.rot/15)*15:Math.round(b.rot);
     b.el.style.transformOrigin='50% 100%';
     b.el.style.transform='translate('+x+'px,'+y+'px)'+(rot?' rotate('+rot+'deg)':'')+' scale('+(s*sx).toFixed(3)+','+(s*sy).toFixed(3)+')';
-    b.el.style.zIndex=String(1000+Math.round(b.y)*64+Math.min(63,Math.round(b.z)));
+    b.el.style.zIndex=String(1000+Math.round(b.y*4+b.z));          // v4 order: keeps a stack's coins in order
     // depth: a hard shadow line under every coin; coins with one on top are darker
     if (OPT.depth==='on'){
       let covered=false;
@@ -1155,6 +1202,8 @@
     Object.assign(ring.style,{ width:'240px', height:'40px', left:Math.round(pr.left+pr.width/2-fr.left-120)+'px', top:Math.round(pr.top-fr.top-44)+'px' });
     felt.appendChild(ring);
     zone('pot',pr.left+pr.width/2,pr.top-16,9,15,44);
+    const bb=$('board').getBoundingClientRect();
+    if (bb.height) zones.pot.room=(pr.top-16)-bb.bottom-10;
     spotEls={}; chutes={};
     P.forEach(p=>{
       const el=document.createElement('div'); el.className='cl-spot'+(p.isHuman?' is-you':'');
@@ -1307,7 +1356,7 @@
       const aim={ x:pot.cx+rr(-26,26), y:pot.cy+rr(-5,4) };
       list.forEach((b,ci)=>{
         b.zone=pot; pot.list.push(b);
-        let tx=aim.x+(b.x-z.cx)*.85, ty=aim.y+(b.y-z.cy)*.85, tz=b.z;
+        let tx=aim.x+(b.x-z.cx)*.55, ty=aim.y+(b.y-z.cy)*.55, tz=b.z;
         if (OPT.after==='neat'){ const s=neatSlots(pot,pot.list).get(b); tx=s.x; ty=s.y; tz=s.z; }
         else {
           // never onto a card or the plate
@@ -1326,7 +1375,6 @@
     potValue+=total;
     await Promise.all(all); guard(my);
     paintPot(potValue); punch(potPlate);
-    relaxStacks(pot);
     sfx('collect',.6);
     ids.forEach(k=>{ zones[k].amount=0; const id=k.slice(5); spotEls[id].classList.remove('is-sweeping'); plate(id); });
     if (OPT.after==='auto'){ await waitMs(200); guard(my); await tidyZone(pot); }
@@ -1393,7 +1441,6 @@
     kick();
     z.amount=won; plate(p.id);
     await Promise.all([Promise.all(all), countPot(0,520)]); guard(my);
-    relaxStacks(z);
     sfx('collect',.6);
     await waitMs(420); guard(my);
     const back=z.list.slice().sort((a,c)=>c.z-a.z); z.list.length=0; z.amount=0; plate(p.id);

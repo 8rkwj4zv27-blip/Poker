@@ -53,22 +53,35 @@
     <div class="ct-bar-row ct-bar-foot">
       <button type="button" class="ct-replay" data-run="replay" aria-label="Replay the last move">↻ REPLAY</button>
       <button type="button" data-run="reset">RESET</button>
-      <span class="ct-status"><b id="ct-preset-name">V5</b> · <span id="ct-status">LOADING…</span></span>
+      <span class="ct-status"><b id="ct-preset-name">V6</b> · <span id="ct-status">LOADING…</span></span>
       <button type="button" class="ct-gear" id="ct-gear" aria-label="Options">⚙ OPTIONS</button>
     </div>
   </nav>
 
   <aside class="cl-panel ct-drawer" id="ct-drawer" hidden aria-label="Chip throw options">
     <section class="cl-group">
-      <div class="cl-label">PRESET</div>
-      <div class="cl-seg" data-opt="preset">
-        <button type="button" data-v="v5">V5</button>
-        <button type="button" data-v="chunky">CLACK+</button>
-        <button type="button" data-v="heavy">HEAVY</button>
-        <button type="button" data-v="v4">V4</button>
-        <button type="button" data-v="today">TODAY</button>
-      </div>
       <p class="cl-note" id="ct-note"></p>
+    </section>
+    <section class="cl-group">
+      <div class="cl-label">STACKS</div>
+      <div class="cl-row"><span class="cl-label">OVERLAP</span>
+        <div class="cl-seg cl-seg-sm" data-opt="overlap"><button type="button" data-v="free">FREE</button><button type="button" data-v="snug">SNUG</button><button type="button" data-v="snap">SNAP</button></div></div>
+      <div class="cl-row"><span class="cl-label">STACK STYLE</span>
+        <div class="cl-seg cl-seg-sm" data-opt="stack"><button type="button" data-v="loose">LOOSE</button><button type="button" data-v="straight">STRAIGHT</button><button type="button" data-v="lean">LEAN</button></div></div>
+      <div class="cl-row"><span class="cl-label">TIDY SHAPE</span>
+        <div class="cl-seg cl-seg-sm" data-opt="tidy"><button type="button" data-v="spread">SPREAD</button><button type="button" data-v="towers">TOWERS</button></div></div>
+      <div class="cl-row"><span class="cl-label">AFTER</span>
+        <div class="cl-seg cl-seg-sm" data-opt="after"><button type="button" data-v="tap">MESS·TAP</button><button type="button" data-v="auto">MESS→TIDY</button><button type="button" data-v="neat">NEAT</button></div></div>
+    </section>
+    <section class="cl-group">
+      <div class="cl-label">SOUND</div>
+      <div class="cl-seg ct-seg-wrap" data-opt="sfx"><button type="button" data-v="clack">CLACK</button><button type="button" data-v="clackplus">CLACK+</button><button type="button" data-v="clay">CLAY</button><button type="button" data-v="thock">THOCK</button><button type="button" data-v="thud">THUD</button><button type="button" data-v="coin">COIN</button><button type="button" data-v="clink">CLINK</button><button type="button" data-v="retro">RETRO</button><button type="button" data-v="pop">POP</button><button type="button" data-v="old">OLD</button></div>
+      <div class="cl-row"><span class="cl-label">GROUP CHUNK</span>
+        <div class="cl-seg cl-seg-sm" data-opt="group"><button type="button" data-v="on">ON</button><button type="button" data-v="off">OFF</button></div></div>
+      <div class="cl-row"><span class="cl-label">RISING PITCH</span>
+        <div class="cl-seg cl-seg-sm" data-opt="rise"><button type="button" data-v="on">ON</button><button type="button" data-v="off">OFF</button></div></div>
+      <div class="cl-row"><span class="cl-label">SOUND</span>
+        <div class="cl-seg cl-seg-sm" data-opt="sound"><button type="button" data-v="on">ON</button><button type="button" data-v="off">OFF</button></div></div>
     </section>
     <section class="cl-group">
       <div class="cl-label">LOOK</div>
@@ -78,60 +91,13 @@
         <div class="cl-seg cl-seg-sm" data-opt="body"><button type="button" data-v="thin">THIN</button><button type="button" data-v="thick">THICK</button></div></div>
       <div class="cl-row"><span class="cl-label">PILE DEPTH</span>
         <div class="cl-seg cl-seg-sm" data-opt="depth"><button type="button" data-v="on">ON</button><button type="button" data-v="off">OFF</button></div></div>
-      <div class="cl-row"><span class="cl-label">OVERLAP</span>
-        <div class="cl-seg cl-seg-sm" data-opt="overlap"><button type="button" data-v="free">FREE</button><button type="button" data-v="snug">SNUG</button><button type="button" data-v="snap">SNAP</button></div></div>
-      <div class="cl-row"><span class="cl-label">SIZE</span>
-        <div class="cl-seg cl-seg-sm" data-opt="size"><button type="button" data-v="s">S</button><button type="button" data-v="m">M</button><button type="button" data-v="l">L</button></div></div>
-      <div class="cl-row"><span class="cl-label">SHADOW</span>
-        <div class="cl-seg cl-seg-sm" data-opt="shadow"><button type="button" data-v="on">ON</button><button type="button" data-v="off">OFF</button></div></div>
-    </section>
-    <section class="cl-group">
-      <div class="cl-label">THROW</div>
-      <div class="cl-row"><span class="cl-label">THROW</span>
-        <div class="cl-seg cl-seg-sm" data-opt="throw"><button type="button" data-v="bybet">BY BET</button><button type="button" data-v="handful">HANDFULS</button><button type="button" data-v="splash">SPLASH</button></div></div>
-      <div class="cl-row"><span class="cl-label">HANDFULS</span>
-        <div class="cl-seg cl-seg-sm" data-opt="hand"><button type="button" data-v="rigid">RIGID</button><button type="button" data-v="bloom">BLOOM</button></div></div>
-      <div class="cl-row"><span class="cl-label">TIMING</span>
-        <div class="cl-seg cl-seg-sm" data-opt="timing"><button type="button" data-v="even">EVEN</button><button type="button" data-v="irregular">UNEVEN</button></div></div>
-      <div class="cl-row"><span class="cl-label">FLIPS</span>
-        <div class="cl-seg cl-seg-sm" data-opt="flips"><button type="button" data-v="one">1</button><button type="button" data-v="many">2–6</button></div></div>
-      <div class="cl-row"><span class="cl-label">SOURCE</span>
-        <div class="cl-seg cl-seg-sm" data-opt="source"><button type="button" data-v="face">FACE</button><button type="button" data-v="edge">EDGE</button><button type="button" data-v="chute">CHUTE</button></div></div>
-    </section>
-    <section class="cl-group">
-      <div class="cl-label">LANDING</div>
-      <div class="cl-row"><span class="cl-label">BOUNCES</span>
-        <div class="cl-seg cl-seg-sm" data-opt="bounces"><button type="button" data-v="dead">DEAD</button><button type="button" data-v="one">1</button><button type="button" data-v="multi">1–3</button></div></div>
-      <div class="cl-row"><span class="cl-label">ROCK</span>
-        <div class="cl-seg cl-seg-sm" data-opt="rock"><button type="button" data-v="on">ON</button><button type="button" data-v="off">OFF</button></div></div>
-      <div class="cl-row"><span class="cl-label">ROLLERS</span>
-        <div class="cl-seg cl-seg-sm" data-opt="roll"><button type="button" data-v="on">ON</button><button type="button" data-v="off">OFF</button></div></div>
-      <div class="cl-row"><span class="cl-label">KNOCK-OFFS</span>
-        <div class="cl-seg cl-seg-sm" data-opt="knock"><button type="button" data-v="on">ON</button><button type="button" data-v="off">OFF</button></div></div>
-      <div class="cl-row"><span class="cl-label">JUICE</span>
-        <div class="cl-seg cl-seg-sm" data-opt="juice"><button type="button" data-v="on">ON</button><button type="button" data-v="off">OFF</button></div></div>
-      <div class="cl-row"><span class="cl-label">AFTER</span>
-        <div class="cl-seg cl-seg-sm" data-opt="after"><button type="button" data-v="neat">NEAT</button><button type="button" data-v="auto">MESS→TIDY</button><button type="button" data-v="tap">MESS·TAP</button></div></div>
-      <div class="cl-row"><span class="cl-label">SWEEP</span>
-        <div class="cl-seg cl-seg-sm" data-opt="sweep"><button type="button" data-v="stream">STREAM</button><button type="button" data-v="push">PUSH</button></div></div>
-    </section>
-    <section class="cl-group">
-      <div class="cl-label">SOUND</div>
-      <div class="cl-row"><span class="cl-label">SOUND SET</span>
-        <div class="cl-seg cl-seg-sm" data-opt="sfx"><button type="button" data-v="old">OLD</button><button type="button" data-v="thud">THUD</button><button type="button" data-v="clack">CLACK</button><button type="button" data-v="clackplus">CLACK+</button><button type="button" data-v="coin">COIN</button></div></div>
-      <div class="cl-row"><span class="cl-label">GROUP CHUNK</span>
-        <div class="cl-seg cl-seg-sm" data-opt="group"><button type="button" data-v="on">ON</button><button type="button" data-v="off">OFF</button></div></div>
-      <div class="cl-row"><span class="cl-label">RISING PITCH</span>
-        <div class="cl-seg cl-seg-sm" data-opt="rise"><button type="button" data-v="on">ON</button><button type="button" data-v="off">OFF</button></div></div>
-      <div class="cl-row"><span class="cl-label">SOUND</span>
-        <div class="cl-seg cl-seg-sm" data-opt="sound"><button type="button" data-v="on">ON</button><button type="button" data-v="off">OFF</button></div></div>
     </section>
     <section class="cl-group">
       <div class="cl-row"><span class="cl-label">RANDOM</span>
         <div class="cl-seg cl-seg-sm" data-opt="random"><button type="button" data-v="fresh">FRESH</button><button type="button" data-v="same">SAME</button></div></div>
       <div class="cl-row"><span class="cl-label">SPEED</span>
         <div class="cl-seg cl-seg-sm" data-opt="speed"><button type="button" data-v="1">1×</button><button type="button" data-v="0.35">SLOW</button></div></div>
-      <p class="cl-note">BY BET: a call is a low flick, a raise a lob of handfuls, a big raise a shove along the felt, an all-in a heave (handfuls, then a splash). OVERLAP: FREE lets coins sit inside each other, SNUG only lets them touch, SNAP pulls a coin landing near another onto it. SOUND: THUD is heavy and low, CLACK a hard block click (reworked), CLACK+ the same click with a heavier thud under it, COIN a gold ring over a thud; GROUP folds three or more landings into one chunk; RISING PITCH lifts each landing in a throw a semitone. JUICE: dust puffs, chute rattle, and a hit-stop and shake on all-ins. RANDOM SAME makes replays identical. Tap the bank to tidy it; with MESS·TAP, tap the felt.</p>
+      <p class="cl-note">STACK STYLE (with SNAP): LOOSE is v4's slight wobble, STRAIGHT dead-centre towers, LEAN every stack leaning one way a pixel per coin. TIDY SHAPE is what a tap (or MESS→TIDY) squares the pile into: SPREAD short stacks in two rows, TOWERS a single row of tall stacks. SOUND: CLACK a hard block click, CLACK+ with a heavier thud, CLAY a real poker-chip tick, THOCK a deep soft thock, THUD heavy and low, COIN a gold ring, CLINK bright metal, RETRO an 8-bit blip, POP a cartoon pop, OLD the game's current chips. RANDOM SAME makes replays identical, for comparing. Tap the bank to tidy it; with MESS·TAP, tap the felt.</p>
     </section>
   </aside>
 

@@ -97,3 +97,7 @@ body.ct-desk-mode .ct-drawer,body.ct-desk-mode .ct-drawer[hidden]{
 .pot-chip.is-tick{ animation:ctTickPot .12s steps(2,end); }
 @keyframes ctTickSpot{ 50%{ transform:translateX(-50%) scale(1.14); } }
 @keyframes ctTickPot{ 50%{ transform:scale(1.07); } }
+
+/* v6: the ten sound sets wrap onto two rows */
+.ct-seg-wrap{ flex-wrap:wrap; }
+.ct-seg-wrap button{ flex:1 0 18%; padding:8px 4px; }

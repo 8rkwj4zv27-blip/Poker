@@ -248,3 +248,29 @@ Causes and fixes:
   body; a double clack-ck onto a stack; a four-hit cascade for the group
   chunk). CLACK+ adds a heavier thud underneath. Presets: V5 · CLACK+ ·
   HEAVY · V4 · TODAY.
+
+### v6 (26 Sep 2026)
+
+Owner on v5: the stacks went backwards (crooked, broken stacks in the
+mess and when tidied): "it was better before". Only one extra sound set
+wasn't enough. Throw and landing options aren't needed any more.
+
+The regression: v5's draw order (front-to-back first) put an upper coin of
+a leaning stack behind the coin it sits on, and the push-apart passes
+nudged coins into crooked positions. v6:
+- **Stacking is back to v4** (v4 draw order, no push-apart passes, v4's
+  sweep squeeze). Kept from v5: the stretched-coin fix, and only one coin
+  at a time can snap onto a stack top (no two coins in the same spot).
+  The bank changes stay (clumps apart; one clean row of towers).
+- **Stack options:** overlap free / snug / snap; stack style loose (v4's
+  ±1px wobble) / straight (dead centre) / lean (each stack leans one way a
+  pixel per coin); tidy shape spread (coins shared evenly over short
+  stacks) / towers (one row of tall stacks). Tidy never builds taller than
+  the room under the board.
+- **Ten sound sets:** CLACK, CLACK+, CLAY (poker-chip tick), THOCK, THUD,
+  COIN, CLINK (metal), RETRO (8-bit blip), POP, OLD; with group chunk and
+  rising pitch.
+- Throw and landing are fixed at the owner's favourites (bloom handfuls,
+  uneven, gravity, 2–6 flips, edge source, 1–3 bounces, rock, rollers,
+  knock-offs, juice, push sweep); the panel shows only stacks, sound, look,
+  random and speed.
