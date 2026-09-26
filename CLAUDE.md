@@ -75,6 +75,17 @@ check the lab as usual, then:
 Still commit and push the lab to the branch as before; the link is how the
 owner looks at it.
 
+**Build every lab phone-first** (the owner looks at labs on their phone,
+in the Claude app): the game full screen in one frame, no mock phone frame,
+and the lab's controls running *inside* the game (a small TUNE key and a
+bottom sheet, 44px+ tap targets). Declare what goes into the game copy in
+the lab page as `<script type="application/json" id="lab-inject">`
+(`{"css":[...],"js":[...]}`): the bundler then bakes `game.html` with it,
+so the published link never builds a nested srcdoc copy (that failed in the
+app on a phone). `showdown-lab.html` + `js/showdown-lab-host.js` +
+`js/showdown-lab.js` are the pattern to copy. Check it in an emulated iPhone
+with real touch (`validation/tools/touch-harness.js`) before sending.
+
 ## Codebase map
 
 Before searching the codebase cold, read `docs/CODEMAP.md` — it says which

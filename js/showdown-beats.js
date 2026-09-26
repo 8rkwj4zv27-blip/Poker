@@ -35,8 +35,8 @@ const ShowdownBeats = (function(){
   const DEF = { lock:'0', runout:'0', equity:'off', river:'0', order:'0', callout:'0', losers:'0',
     verdict:'0', kicker:'off', split:'0', pots:'0', award:'0', press:'always',
     tiers:'off', smash:'0', smashon:'monster', stamp:'0', cards:'0', opp:'0',
-    cheat:'ember', ctime:'1000', csteps:'9', ccoins:'glow', crattle:'build', csparks:'embers', csound:'sizzle', cearly:'weaker', cfull:'hold',
-    cforce:'big', cdir:'out', cceil:'bounce', cstop:'90', cjolt:'small', ccool:'flight', csettle:'450', cbank:'flip', cpace:'faster', cfinish:'clack', chop:'0', loss:'0', meters:'0', show:'off' };
+    cheat:'ember', ctime:'1000', csteps:'9', ccoins:'glow', crattle:'shiver', csparks:'embers', csound:'sizzle', cearly:'weaker', cfull:'hold',
+    cforce:'huge', cbounce:'lots', cwalls:'screen', croll:'on', cdir:'out', cstop:'90', cjolt:'small', ccool:'flight', csettle:'450', cbank:'flip', cpace:'faster', cfinish:'clack', chop:'0', loss:'0', meters:'0', show:'off' };
   const root = () => document.documentElement;
   const opt = k => root().getAttribute('data-sd-' + k) || DEF[k];
   function apply(order){ Object.keys(DEF).forEach(k => root().setAttribute('data-sd-' + k, order && order[k] != null ? order[k] : DEF[k])); }
@@ -616,15 +616,6 @@ const ShowdownBeats = (function(){
      option (data-sd-c*), chosen in the lab. */
   function trayEl(){ return document.querySelector('#felt .ct-tray'); }
   function trayCoins(){ const W = CW(); return Object.values(W.zones).filter(z => z.id === 'pot' || String(z.id).startsWith('sd:')).flatMap(z => z.list); }
-  function rattle(k, scale){
-    trayCoins().forEach(b => {
-      if (b.state !== 'rest' || Math.random() > .25 + .5 * k) return;
-      Object.assign(b, { target:{ zone:b.zone }, opts:{}, bounces:1, maxB:0, e:.2, knocked:true, inFelt:true, vx:rr(-12, 12) * k, vy:rr(-6, 6) * k,
-        vz:(40 + 160 * k) * (scale || 1) * rr(.6, 1.1), fr:0, phi:0, t:.1, T:0, state:'air', moving:0 });
-      CW().active.add(b);
-    });
-    CW().kick();
-  }
   // the heat, as the well's colour at each step of the charge
   const HEAT = {
     ember:['#2A0A06','#5E1208','#921D0B','#C42F0E','#E24A12','#F46F18','#FF9A26','#FFC447','#FFE38A'],
@@ -679,6 +670,151 @@ const ShowdownBeats = (function(){
     if (s === 'sizzle') for (let j = 0; j < 2 + Math.round(3 * k); j++) setTimeout(() => sfx('bounce', .25 + .3 * k, rr(1.8, 2.8)), rr(0, 110));
   }
 
+  /* THE SHIVER: while it cooks, the coins tremble in place (a pixel or
+     two, in steps, stronger as it heats) and, when it's really hot, the
+     odd one hops properly and lands. Replaces the jumping, which read as a
+     glitch. */
+  let shiverT = 0;
+  function shiverStart(){
+    if (shiverT || quiet() || opt('crattle') === 'none') return;
+    shiverT = setInterval(() => {
+      const k = heatNow, amp = k < .12 ? 0 : k < .55 ? 1 : 2;
+      trayCoins().forEach(b => {
+        if (b.state !== 'rest') return;
+        b.rx = amp && Math.random() < .7 ? (Math.random() < .5 ? -amp : amp) : 0;
+        CW().draw(b);
+      });
+      if (opt('crattle') === 'shiver' && k > .6 && Math.random() < .3) hopOne(k);
+    }, 70);
+  }
+  function shiverStop(){
+    clearInterval(shiverT); shiverT = 0;
+    trayCoins().forEach(b => { if (b.rx){ b.rx = 0; CW().draw(b); } });
+  }
+  function hopOne(k){
+    const list = trayCoins().filter(b => b.state === 'rest');
+    const b = list[Math.floor(Math.random() * list.length)]; if (!b) return;
+    b.rx = 0;
+    CW().launch(b, { x:b.x + rr(-4, 4), y:b.y + rr(-2, 2), z:0, zone:b.zone, d:CW().D() }, { T:rr(.2, .26) + .04 * k, flips:2 });
+  }
+
+  /* THE EXPLOSION: the coins are flown by hand in screen space (as the
+     original pot smash flew its chips): gravity pulls down the screen, the
+     screen's edges (or the table's rail) are walls, the dashboard's top
+     edge is the floor, and the cards, the cabinets and the pot plate are
+     solid. Each coin bounces, flipping, loses a little every time, rolls
+     along the floor on its edge, wobbles and lies flat. */
+  function explode(bodies, p){
+    const W = CW();
+    const ts = $('table-screen').getBoundingClientRect(), felt = $('felt').getBoundingClientRect();
+    const wrap = (document.querySelector('.felt-wrap') || $('felt')).getBoundingClientRect();
+    const onTable = opt('cwalls') === 'table';
+    const Lw = (onTable ? felt.left : ts.left) + 3, Rw = (onTable ? felt.right : ts.right) - 3;
+    const TOP = (onTable ? felt.top : Math.max(ts.top, wrap.top - 40)) + 3;
+    // the floor is the table's bottom rail: they come to rest on the felt
+    const FLOOR = felt.bottom - 8;
+    const blocks = [...document.querySelectorAll('#board .card, #felt .seat:not(.you) .seat-card, #felt .seat:not(.you) .seat-cards .card, #hud-mid .seat.you .seat-cards .card')]
+      .map(el => el.getBoundingClientRect()).filter(r => r.width && r.bottom < FLOOR + 40);
+    const f = { big:1, huge:1.25, max:1.5 }[opt('cforce')] || 1;
+    const floorE = { few:.5, lots:.7, endless:.82 }[opt('cbounce')] || .7;
+    const roll = opt('croll') !== 'off';
+    const G = 440, WALL_E = .78, CARD_E = .64;
+    const T = W.tray(), cx = T ? (T.L + T.R) / 2 : felt.left + felt.width / 2, cy = T ? (T.T + T.B) / 2 : felt.top + felt.height / 2;
+    const dir = opt('cdir'), pw = .5 + .6 * p;
+    const coins = bodies.map(b => {
+      if (b.zone) W.removeFromZone(b);
+      W.active.delete(b);
+      const r = Math.random(), cls = r < .2 ? [700, 840] : r < .82 ? [500, 660] : [300, 440];
+      const sp = rr(cls[0], cls[1]) * f * pw;
+      const dx = b.x - cx + rr(-6, 6), dy = (b.y - b.z) - cy + rr(-4, 4), L = Math.max(1, Math.hypot(dx, dy));
+      let vx, vy;
+      if (dir === 'up'){ vx = rr(-.3, .3) * sp; vy = -sp * rr(1, 1.25); }
+      else if (dir === 'you'){ vx = rr(-.55, .55) * sp; vy = sp * rr(.35, .6); }
+      else { vx = dx / L * sp * rr(.35, .6) + rr(-240, 240); vy = -sp * rr(.8, 1.1); }
+      Object.assign(b, { state:'air', axis:'toss', spinRate:rr(3, 6), spinA:rr(0, 6), spinDir:Math.random() < .5 ? -1 : 1, tilt:1, rx:0, zone:null, target:{}, opts:{} });
+      return { b, x:b.x, y:b.y - b.z, vx, vy, bounces:0, floor:FLOOR - rr(0, 26), maxB:{ few:3, lots:8, endless:14 }[opt('cbounce')] || 8, phase:'fly', t:0, sndAt:0, spin:rr(3, 7) * (Math.random() < .5 ? -1 : 1) };
+    });
+    const shadow = W.OPT.shadow; W.OPT.shadow = 'off';
+    const d = W.D();
+    const snd = (c, kind, v, pitch) => { const now = performance.now(); if (now - c.sndAt < 60) return; c.sndAt = now; sfx(kind, Math.min(1, v), pitch || rr(.92, 1.15)); };
+    return new Promise(resolve => {
+      let last = performance.now();
+      const t0 = last;
+      const frame = now => {
+        const dt = Math.min(.033, (now - last) / 1000) * W.OPT.speed; last = now;
+        let live = 0;
+        coins.forEach(c => {
+          const b = c.b;
+          if (c.phase === 'rest') return;
+          live++;
+          c.t += dt;
+          if (c.phase === 'fly'){
+            c.vy += G * dt; c.x += c.vx * dt; c.y += c.vy * dt;
+            c.vx *= (1 - .12 * dt);
+            if (c.x < Lw + d / 2){ c.x = Lw + d / 2; c.vx = Math.abs(c.vx) * WALL_E; snd(c, 'wall', Math.abs(c.vx) / 700); }
+            if (c.x > Rw - d / 2){ c.x = Rw - d / 2; c.vx = -Math.abs(c.vx) * WALL_E; snd(c, 'wall', Math.abs(c.vx) / 700); }
+            if (c.y - d < TOP && c.vy < 0){ c.y = TOP + d; c.vy = Math.abs(c.vy) * WALL_E; c.vx += rr(-80, 80); snd(c, 'wall', Math.abs(c.vy) / 700, rr(1.1, 1.3)); W.glintAt(c.x, TOP + 2); }
+            // the solid things on the table
+            const px = c.x, py = c.y - d / 2;
+            for (const r of (c.t < .06 ? [] : blocks)){
+              if (px < r.left - d / 2 || px > r.right + d / 2 || py < r.top - d / 2 || py > r.bottom + d / 2) continue;
+              const pl = px - (r.left - d / 2), pr = (r.right + d / 2) - px, pt = py - (r.top - d / 2), pb = (r.bottom + d / 2) - py, m = Math.min(pl, pr, pt, pb);
+              if (m === pl){ c.x -= pl; c.vx = -Math.abs(c.vx) * CARD_E; }
+              else if (m === pr){ c.x += pr; c.vx = Math.abs(c.vx) * CARD_E; }
+              else if (m === pt){ c.y -= pt; c.vy = -Math.abs(c.vy) * CARD_E; }
+              else { c.y += pb; c.vy = Math.abs(c.vy) * CARD_E; }
+              snd(c, 'card', Math.hypot(c.vx, c.vy) / 800);
+              break;
+            }
+            if (c.y > c.floor){
+              c.y = c.floor;
+              const v = Math.abs(c.vy);
+              if (v > 70 && c.bounces < c.maxB){
+                c.vy = -v * floorE * rr(.9, 1.08); c.vx = c.vx * .86 + rr(-40, 40); c.bounces++;
+                c.spin = -c.spin * rr(.8, 1.2); b.spinRate = Math.min(8, 2 + v / 160);
+                snd(c, c.bounces < 3 ? 'land' : 'bounce', v / 900);
+                if (c.bounces === 1 && Math.random() < .25) W.glintAt(c.x, FLOOR - d);
+              } else {
+                c.vy = 0;
+                if (roll && Math.abs(c.vx) > 30){ c.phase = 'roll'; c.rolled = true; b.axis = 'side'; b.spinRate = 0; }
+                else { c.phase = 'wobble'; c.t = 0; }
+              }
+            }
+            b.spinA += (b.spinDir || 1) * (b.spinRate || 4) * 2 * Math.PI * dt;
+          } else if (c.phase === 'roll'){
+            // on its edge along the dashboard's top, slowing
+            c.x += c.vx * dt; c.vx *= (1 - .75 * dt);
+            if (c.x < Lw + d / 2){ c.x = Lw + d / 2; c.vx = Math.abs(c.vx) * .5; snd(c, 'wall', .4); }
+            if (c.x > Rw - d / 2){ c.x = Rw - d / 2; c.vx = -Math.abs(c.vx) * .5; snd(c, 'wall', .4); }
+            b.state = 'air'; b.spinRate = 1; b.spinA += c.vx * dt * .08;
+            if (now - c.sndAt > 110){ c.sndAt = now; sfx('roll', .5); }
+            if (Math.abs(c.vx) < 28){ c.phase = 'wobble'; c.t = 0; }
+          } else if (c.phase === 'wobble'){
+            // a heavy tip or two, then it lies flat with a clunk
+            const seq = [.55, 1, .75, 1, .9], i = Math.min(seq.length - 1, Math.floor(c.t / .07));
+            b.state = 'rock'; b.spinRate = 0; b.tilt = seq[i];
+            if (c.t >= .07 * seq.length){ c.phase = 'rest'; b.state = 'rest'; b.tilt = 1; b.rx = 0; sfx('rock', .8); }
+          }
+          b.x = c.x; b.y = c.y; b.z = 0; b.vx = b.vy = b.vz = 0;
+          W.draw(b);
+        });
+        // a coin still going after the budget lies down where it is
+        if (performance.now() - t0 > 5600){
+          coins.forEach(c => { if (c.phase !== 'rest'){ c.phase = 'rest'; c.y = c.floor; c.b.x = c.x; c.b.y = c.floor; c.b.state = 'rest'; c.b.tilt = 1; W.draw(c.b); } });
+          live = 0;
+        }
+        if (live && !quiet()) requestAnimationFrame(frame);
+        else {
+          if (quiet()) coins.forEach(c => { c.b.x = Math.max(Lw + d, Math.min(Rw - d, c.x)); c.b.y = c.floor; c.b.state = 'rest'; W.draw(c.b); });
+          W.OPT.shadow = shadow;
+          window.__sdLastExplosion = { ms:Math.round(performance.now() - t0), bounces:coins.map(c => c.bounces), rolled:coins.filter(c => c.rolled).length };
+          resolve();
+        }
+      };
+      requestAnimationFrame(frame);
+    });
+  }
+
   // BANG: the well flashes and snaps cold; the coins fire off it
   async function bang(bodies, p){
     const W = CW(), T = W.tray();
@@ -694,24 +830,10 @@ const ShowdownBeats = (function(){
     if (typeof DashRim !== 'undefined') DashRim.win();
     sfx('thump', 1, .5 + .15 * p); sfx('knock', 1, .7); setTimeout(() => sfx('thump', .8, .4), 60);
     for (let j = 0; j < 6; j++) setTimeout(() => sfx('stack', .9, rr(1, 1.6)), 20 + j * 25);
-    const f = { medium:1, big:1.25, huge:1.6 }[opt('cforce')] || 1.25, dir = opt('cdir');
-    const cx = T ? (T.L + T.R) / 2 : 0, cy = T ? (T.T + T.B) / 2 : 0, pw = .45 + .75 * p;
-    bodies.forEach(b => { if (b.zone) W.removeFromZone(b); });   // off the tray's lip
-    bodies.forEach(b => {
-      let vx, vy, vz;
-      if (dir === 'up'){ vx = rr(-70, 70) * f; vy = rr(-25, 25); vz = rr(720, 1000) * f * pw; }
-      else if (dir === 'you'){ vx = rr(-130, 130) * f; vy = rr(190, 330) * f * pw; vz = rr(340, 520) * f * pw; }
-      else {
-        const dx = b.x - cx + rr(-4, 4), dy = b.y - cy + rr(-3, 3), L = Math.max(1, Math.hypot(dx, dy));
-        vx = dx / L * rr(130, 280) * f * pw + rr(-40, 40); vy = dy / L * rr(50, 130) * f + rr(-30, 40); vz = rr(430, 650) * f * pw;
-      }
-      loose(b, vx, vy, vz);
-    });
-    const stopCeil = opt('cceil') === 'bounce' ? ceiling(bodies, p) : () => {};
+    shiverStop();
     const cool = opt('ccool');
     if (cool === 'flight') coolCoins(650); else if (cool === 'instant') coolCoins(0);
-    await settled(bodies, 3200);
-    stopCeil();
+    await explode(bodies, p);
     if (cool === 'land') coolCoins(300);
     const pause = +opt('csettle') || 0;
     if (pause) await hold(pause);
@@ -764,14 +886,12 @@ const ShowdownBeats = (function(){
     consoleFace(null);
     const N = opt('csteps') === 'smooth' ? 24 : (+opt('csteps') || 9);
     const time = +opt('ctime') || 1000, every = time / N;
-    const rat = opt('crattle');
     let armed = false;
     // the rail stays up to be read until you take hold of the key
     const arm = () => { if (armed) return; armed = true; clearShowdownRailPresentation(); clearVerdict(); };
     const step = (n) => {
       const k = n / N;
       heat(k);
-      if (rat === 'build') rattle(k, 1); else if (rat === 'steady') rattle(.45, 1);
       if (n % Math.max(1, Math.round(N / 9)) === 0) ember(k);
       sizzle(k, N, n);
     };
@@ -779,7 +899,8 @@ const ShowdownBeats = (function(){
       // nobody to press it: it cooks itself, then fires
       arm();
       hideAwardConsole();
-      return new Promise(res => { let n = 0; const iv = setInterval(() => { n++; step(n); if (n >= N){ clearInterval(iv); setTimeout(() => res(.8), 300); } }, every); });
+      shiverStart();
+      return new Promise(res => { let n = 0; const iv = setInterval(() => { n++; step(n); if (n >= N){ clearInterval(iv); setTimeout(() => { shiverStop(); res(.8); }, 300); } }, every); });
     }
     return new Promise(resolve => {
       const btn = $('btn-award-pot-console');
@@ -796,14 +917,14 @@ const ShowdownBeats = (function(){
         if (n === N){
           btn.classList.add('is-full'); sfx('stack', 1, 2.1);
           // full heat: it keeps cooking in your hand
-          keep = setInterval(() => { if (rat !== 'none') rattle(1, 1.1); ember(1); sizzle(1, 9, 0); }, 170);
+          keep = setInterval(() => { ember(1); sizzle(1, 9, 0); }, 170);
           if (opt('cfull') === 'overheat') over = setTimeout(() => finish(1), 1000);
         }
       };
       const stopTimers = () => { clearTimeout(timer); clearInterval(timer); clearInterval(keep); clearTimeout(over); };
       const finish = pw => {
         if (done) return; done = true;
-        stopTimers(); hum(false); arm();
+        stopTimers(); hum(false); arm(); shiverStop();
         window.removeEventListener('pointerup', up); window.removeEventListener('pointercancel', up);
         btn.removeEventListener('pointerdown', down);
         btn.onclick = null; btn.classList.remove('sd-charge', 'is-full'); btn.style.removeProperty('--c');
@@ -813,7 +934,7 @@ const ShowdownBeats = (function(){
       };
       // let go before it's red hot (MUST BE RED HOT): it cools off again
       const coolOff = () => {
-        stopTimers(); hum(false);
+        stopTimers(); hum(false); shiverStop();
         const from = n; t0 = null; n = 0;
         btn.style.setProperty('--c', '0'); btn.classList.remove('is-full');
         sfx('roll', .5, .7);
@@ -822,7 +943,7 @@ const ShowdownBeats = (function(){
       const down = () => {
         if (done || t0 != null) return;
         lastDown = performance.now();
-        arm(); t0 = lastDown; hum(true);
+        arm(); t0 = lastDown; hum(true); shiverStart();
         timer = setTimeout(() => { tick(); timer = setInterval(tick, every); }, 160);
       };
       const up = () => {
@@ -832,6 +953,8 @@ const ShowdownBeats = (function(){
       };
       btn.addEventListener('pointerdown', down);
       window.addEventListener('pointerup', up); window.addEventListener('pointercancel', up);
+      // a long press on a phone must not become a text selection or a callout
+      btn.oncontextmenu = e => { e.preventDefault(); return false; };
       // a click with no hold behind it (a keyboard): a medium bang
       btn.onclick = () => { if (t0 == null && performance.now() - lastDown > 1500) finish(.6); };
     });
@@ -1186,7 +1309,7 @@ const ShowdownBeats = (function(){
     const felt = $('felt'); if (felt) felt.classList.remove('sd-stacked');
     hum(false);
     const t = trayEl(); if (t){ t.style.transform = ''; t.classList.remove('sd-hot'); const bed = t.querySelector('.sd-heatbed'); if (bed) bed.remove(); }
-    try{ coolCoins(0); }catch(e){}
+    try{ coolCoins(0); shiverStop(); }catch(e){}
     const dock = $('your-seat-dock'); if (dock) dock.classList.remove('sd-lost');
     document.querySelectorAll('.sd-loser').forEach(el => el.classList.remove('sd-loser'));
     document.querySelectorAll('.sd-shown,.sd-lift').forEach(el => el.classList.remove('sd-shown', 'sd-lift'));

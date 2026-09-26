@@ -292,19 +292,19 @@ the coin table's `EnemyCards` questions itself. Its default ("YOUR ORDER")
 is the shipped order. Shows each card's footprint against V1. Not loaded
 by the game.
 
-## `showdown-lab.html` + `js/showdown-lab.js` + `css/showdown-lab.css` + candidate `css/showdown-beats.css` / `js/showdown-beats.js` — Showdown order form (Lab)
+## `showdown-lab.html` + `js/showdown-lab-host.js` + `js/showdown-lab.js` + `css/showdown-lab.css` + candidate `css/showdown-beats.css` / `js/showdown-beats.js` — Showdown Lab
 
-The showdown pass (`docs/ui/SHOWDOWN_PLAN.md`): the end of a hand as beats
-(the lock, the all-in sweat, the reveal, the verdict, the pots, the payout,
-a fold-win's SHOW), each with options whose first is TODAY. Runs the
-**real game** sandboxed at the owner's phone (like `enemy-card-lab.html`)
-with the candidate injected; options are `data-sd-*` attributes on the
-game's `<html>` (`ShowdownBeats.apply()`). The candidate replaces
-`handleShowdown()`/`runShowdownAwardSequence()` with copies whose pot and
-settlement code is production's verbatim, and hands straight back to the
-shipped functions when every option is TODAY. Moments deal a fresh table
-and stack the undealt deck for the wanted winner (side pots, splits,
-suck-outs, monster pots…). Not loaded by the game.
+The showdown pass (`docs/ui/SHOWDOWN_PLAN.md`), phone-first (round 4): the
+page is the real game full screen in one frame (`js/showdown-lab-host.js`
+builds the copy locally, or loads the `game.html` the bundler baked for a
+link) and the controls run inside it (`js/showdown-lab.js`: a TUNE key and
+a bottom sheet with MOMENTS, THE COOK and SETTINGS). The owner's round-1
+order is locked in; the smash is THE COOK (hold AWARD POT to heat the pot,
+let go for a physical explosion, then the flip into the bank), every part
+of it a row. The candidate replaces `handleShowdown()`/
+`runShowdownAwardSequence()` with copies whose pot and settlement code is
+production's verbatim, and hands straight back to the shipped functions
+when every option is at its first (today's) value. Not loaded by the game.
 
 ## `js/finishes.js` + `css/finishes.css` — Finishes menu (live)
 

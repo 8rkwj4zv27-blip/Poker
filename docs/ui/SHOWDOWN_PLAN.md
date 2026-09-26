@@ -182,6 +182,25 @@ pace, finish). Player settings are now Win chance and Award pot only.
 Also fixed: the form's picks never reached the game copy (the candidate
 wasn't on the frame's window), which is why styles snapped back to Slam.
 
+## Round 4: a physical bang, a calmer cook, a phone lab (27 Sep 2026)
+
+Owner: the cooking visuals are great, but the pop was anticlimactic (the
+coins barely bounced) and the jumping while cooking looked like a bug.
+The lab didn't work on their phone.
+
+- **The bang** is now flown by hand in screen space, like the original pot
+  smash: gravity pulls down the screen, the screen's edges (or the table's
+  rail) are walls, the table's bottom rail is the floor, and the cards and
+  cabinets are solid. Each coin bounces 4–6 times, flipping, rolls out on
+  its edge, wobbles and lies flat (about 2–4 s), then flips into the bank.
+  Rows: force, bounces, walls, roll out.
+- **The cook** no longer makes the coins jump: they shiver a pixel or two
+  in place, harder as it heats, and when it's really hot one hops and
+  lands now and then.
+- **The lab is phone-first**: the game full screen with a TUNE key and a
+  bottom sheet; the bundler bakes the game copy for the link. A long press
+  on AWARD POT no longer selects text or opens a callout on iOS.
+
 ## Plan after the owner's order
 
 1. **Release 1: the reveal.** The lock, the reveal order and readouts,

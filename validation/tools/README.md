@@ -103,3 +103,8 @@ its own), `game.html` (a copy of `index.html`, which an Artifact reserves;
 a shim sends the lab's `fetch('index.html')` there), every css/js/asset
 the game and the lab load, and `files.json` for the Artifact tool's
 `files` (publish with `root` set to the bundle folder).
+
+Labs that declare `<script type="application/json" id="lab-inject">`
+(phone-first labs, see `CLAUDE.md`) are baked: `game.html` gets the
+storage shim, loses the service worker and gains the lab's parts, and the
+page loads it directly (`window.LAB_STATIC`).

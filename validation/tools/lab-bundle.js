@@ -18,6 +18,15 @@
      - files.json: the list of published paths, for the Artifact tool's
        `files` (with `root` = <outDir>)
 
+   PHONE-FIRST LABS (the owner's phone is where labs are looked at): a lab
+   page that carries <script type="application/json" id="lab-inject">
+   ({"css":[...],"js":[...]}) runs the game full screen in one frame and
+   its controls inside the game. For those, game.html is BAKED here: the
+   service worker stripped, the in-memory storage shim first in <head>,
+   and the lab's parts before </body>, so the published link needs no
+   nested srcdoc copy (which is what failed in the Claude app on a phone).
+   The page gets window.LAB_STATIC = true and loads game.html directly.
+
    Then publish (Claude): Artifact publish with file_path <outDir>/<lab>.html,
    root <outDir>, files = the list in files.json. Republishing the same
    file path in a session updates the same link.
@@ -39,6 +48,9 @@ const local = u => u && !/^(https?:|data:|#|mailto:|\/\/)/.test(u) ? u.split(/[?
 const refs = html => [...html.matchAll(/(?:src|href)="([^"]+)"/g)].map(m => local(m[1])).filter(Boolean);
 refs(game).forEach(f => files.add(f));
 refs(lab).forEach(f => files.add(f));
+const injectJson = (lab.match(/<script type="application\/json" id="lab-inject">([\s\S]*?)<\/script>/) || [])[1];
+const inject = injectJson ? JSON.parse(injectJson) : null;
+if (inject) inject.css.concat(inject.js).forEach(f => files.add(f));
 // files a lab script injects into the game copy (its candidate parts)
 refs(lab).filter(f => f.endsWith('.js')).forEach(f => {
   const src = read(f);
@@ -59,12 +71,34 @@ fs.mkdirSync(out, { recursive:true });
 const copy = (from, to) => { fs.mkdirSync(path.dirname(path.join(out, to)), { recursive:true }); fs.copyFileSync(path.join(ROOT, from), path.join(out, to)); };
 const list = [...files].filter(f => { const ok = fs.existsSync(path.join(ROOT, f)); if (!ok) console.warn('missing, skipped: ' + f); return ok; }).sort();
 list.forEach(f => copy(f, f));
-fs.writeFileSync(path.join(out, 'game.html'), game);
+const SHIM = `(function(){
+    var mem = Object.create(null);
+    mem['felt.settings'] = JSON.stringify({ sound:true, seenIntro:true });
+    var P = Storage.prototype;
+    P.getItem = function(k){ k = String(k); return k in mem ? mem[k] : null; };
+    P.setItem = function(k, v){ mem[String(k)] = String(v); };
+    P.removeItem = function(k){ delete mem[String(k)]; };
+    P.clear = function(){ mem = Object.create(null); };
+    P.key = function(i){ var k = Object.keys(mem)[i]; return k === undefined ? null : k; };
+    try{ Object.defineProperty(P, 'length', { configurable:true, get:function(){ return Object.keys(mem).length; } }); }catch(e){}
+    if (navigator.serviceWorker){ try{ navigator.serviceWorker.register = function(){ return Promise.reject(new Error('lab')); }; }catch(e){} }
+  })();`;
+let gameOut = game;
+if (inject){
+  const sw = /<script id="pwa-service-worker">[\s\S]*?<\/script>/;
+  if (!sw.test(game)) throw new Error('game page shape changed: no service-worker block to strip');
+  const v = inject.v || '1';
+  gameOut = game.replace(sw, '')
+    .replace(/<head>/i, '<head><script>' + SHIM + '<\/script>')
+    .replace(/<\/body>/i, inject.css.map(f => '<link rel="stylesheet" href="' + f + '?v=' + v + '">').join('') +
+      inject.js.map(f => '<script src="' + f + '?v=' + v + '"><\/script>').join('') + '</body>');
+}
+fs.writeFileSync(path.join(out, 'game.html'), gameOut);
 
 // the lab page without its wrapper
 const title = (lab.match(/<title>[\s\S]*?<\/title>/i) || [''])[0];
 const head = (lab.match(/<head>([\s\S]*?)<\/head>/i) || ['', ''])[1];
-const headParts = [...head.matchAll(/<link rel="stylesheet"[^>]*>|<script[\s\S]*?<\/script>/gi)].map(m => m[0]);
+const headParts = [...head.matchAll(/<style[\s\S]*?<\/style>|<link rel="stylesheet"[^>]*>|<script[\s\S]*?<\/script>/gi)].map(m => m[0]);
 const bodyTag = (lab.match(/<body([^>]*)>/i) || ['', ''])[1];
 const bodyClass = (bodyTag.match(/class="([^"]*)"/) || ['', ''])[1];
 const body = (lab.match(/<body[^>]*>([\s\S]*?)<\/body>/i) || ['', ''])[1];
@@ -72,7 +106,7 @@ const shim = '<script>(function(){' +
   (bodyClass ? 'document.body.className=' + JSON.stringify(bodyClass) + ';' : '') +
   // the game copy is game.html here (an Artifact reserves index.html)
   'var f=window.fetch;window.fetch=function(u,o){if(typeof u==="string"&&/(^|\\/)index\\.html$/.test(u.split(/[?#]/)[0]))u=u.replace(/index\\.html/,"game.html");return f.call(this,u,o);};' +
-  'window.EC_LAB_GAME=window.SD_LAB_GAME=window.LAB_GAME="game.html";' +
+  'window.EC_LAB_GAME=window.SD_LAB_GAME=window.LAB_GAME="game.html";' + (inject ? 'window.LAB_STATIC=true;' : '') +
   '})();</script>';
 const page = [title, '<meta name="theme-color" content="#140709">', shim, ...headParts, body.trim()].join('\n');
 fs.writeFileSync(path.join(out, labName), page);

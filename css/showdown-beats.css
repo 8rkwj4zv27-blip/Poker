@@ -114,7 +114,7 @@ html[data-sd-cards="clear"] .seat.ec-seat.ec-shown > .seat-cards.ec-out{ z-index
 html[data-sd-stamp="rail"] .showdown-hand-stamp{ top:-27px; z-index:6; }
 
 /* HOLD TO SMASH: a gauge fills along the key in nine notches */
-.btn-award-console.sd-charge{ position:relative; overflow:hidden; }
+.btn-award-console.sd-charge{ position:relative; overflow:hidden; -webkit-touch-callout:none; -webkit-user-select:none; user-select:none; touch-action:none; }
 .btn-award-console.sd-charge::after{
   content:''; position:absolute; left:6px; right:6px; bottom:5px; height:6px; pointer-events:none;
   background:
