@@ -196,3 +196,28 @@ v3:
   glint. Randomness is fresh each run (SAME for identical replays).
 - Eased and stepped removed; the owner's v2 settings are the new V3
   default (edge source, mess until tap). V3 + TIDY auto-tidies.
+
+### v4 (26 Sep 2026)
+
+Owner on v3: better, but coins feel like light pebbles or cut-out paper
+(heavy overlap, no thickness), the clink is fragile, piles aren't
+satisfying, and the tossed coin looks silly. It needs to pop and click.
+Coins and chips do overlap in life, so overlap stays an option; snapping
+to be shown as an option; bouncing is fine but give options; give sound
+options including rising pitch.
+
+v4 (all switches; presets V4 · SNAP · HEAVY · V3 · TODAY):
+- **Coin body:** thin / thick. Thick coins have a real reeded edge (about
+  half the diameter edge-on, ~5px at rest), a bevelled rim lit along the
+  top and shaded underneath, and a taller sprite; stacks step by the edge.
+- **Pile depth:** a hard 1px shadow line under every coin; coins with a
+  coin on top are drawn darker.
+- **Overlap:** free (v3) / snug (coins only touch) / snap (a coin that
+  lands near another hops onto it, stacks up to six).
+- **Bounces:** dead / 1 / 1–3. Landings squash for two frames.
+- **Sound set:** old (production chips) / thud / clack / coin, synthesised
+  in the lab (Web Audio, no assets). Group chunk folds 3+ landings within
+  ~70ms into one bigger sound; rising pitch lifts each landing in a throw
+  a semitone (capped at +14), including coins dropping into your bank.
+- **Plates** tick up coin by coin with a punch, pot included on the sweep.
+- **Calmer arcs:** handful arcs vary ±~10%, all-in ±~11%, no tossed coin.

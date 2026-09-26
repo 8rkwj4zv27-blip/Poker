@@ -91,3 +91,9 @@ body.ct-desk-mode .ct-drawer,body.ct-desk-mode .ct-drawer[hidden]{
   flex:1 1 auto; min-height:0; overflow:auto; border:3px solid #080405; box-shadow:none;
 }
 .ct-desk-hint{ margin:0; color:#b69a7a; font:400 10px/1.4 ui-monospace,Menlo,monospace; }
+
+/* v4: plates punch as each coin counts in */
+.cl-spot-plate.is-tick{ animation:ctTickSpot .12s steps(2,end); }
+.pot-chip.is-tick{ animation:ctTickPot .12s steps(2,end); }
+@keyframes ctTickSpot{ 50%{ transform:translateX(-50%) scale(1.14); } }
+@keyframes ctTickPot{ 50%{ transform:scale(1.07); } }
