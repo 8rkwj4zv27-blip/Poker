@@ -274,3 +274,42 @@ nudged coins into crooked positions. v6:
   uneven, gravity, 2–6 flips, edge source, 1–3 bounces, rock, rollers,
   knock-offs, juice, push sweep); the panel shows only stacks, sound, look,
   random and speed.
+
+### v7 (26 Sep 2026)
+
+Owner on v6: "proper amazing"; keep all ten sound sets as a player setting
+in the real game. Chosen next: glints, toppling towers, shunts, the
+big-moment punch, pot number overshoot, jackpot payouts, material sounds,
+a payoff sting, tapping a tower to topple it; more flipping and spinning
+(a flip on the bounce), more rolling; no rings on the felt; the pot gets a
+tray (three styles to compare), the tray lip is a soft wall; bet numbers
+to compare.
+
+v7:
+- **Flip on the bounce:** each bounce is a half or full turn, landing flat.
+- **More rolling:** 20% of hard felt landings roll (was 8%), for longer;
+  a coin landing on a tower sometimes rolls off it on its edge; a roller
+  that hits a resting coin shunts it and falls flat.
+- **Shunts:** a sliding coin hitting a resting one hands over ~85% of its
+  speed (pool-ball style), so chains happen.
+- **Toppling:** a hard landing next to a tower of 4+ (60% chance) makes it
+  lean a beat, then spill top-first away from the hit; the base slides.
+  Tapping a tower topples it away from your finger; tapping a loose coin
+  flicks it; tapping empty felt (MESS·TAP) tidies.
+- **Glints:** occasionally when a coin flips face-up and lands; along the
+  stack tops when a tidy locks; on jackpot coins at the hatch.
+- **Punch:** all-in first impacts add a 1.5% scale punch to the freeze and
+  shake. **Pot overshoot:** the pot plate rolls past its value and back.
+- **Jackpot:** wins of 800+ are thrown as a heave; ~30% of coins hit the
+  dashboard rim first and hop into the hatch.
+- **Material:** felt landings duller, coin-on-coin sharper, rail and cards
+  harder and higher. **Sting:** a small rising chord in the current sound
+  set's voice when a tidy locks (table or bank).
+- **Table:** dotted rings removed. POT TRAY well (a dish pressed into the
+  felt) / panel (printed box, gold pinstripe) / brass (raised rim) / none.
+  TRAY LIP: coins sliding in the pot bounce off the rim; fast ones hop
+  over. BET NUMBERS off / pop-up (only while a seat's coins land) /
+  always.
+- Fixed while testing: a topple timed within 70ms of a payout could take
+  over coins already flying to the bank; Reduced Motion didn't route the
+  jackpot rim hop. All coins now reach the bank in every configuration.
