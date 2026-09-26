@@ -6,7 +6,7 @@
 <meta name="theme-color" content="#16090D">
 <link rel="icon" href="data:,">
 <title>Chip Throw Lab</title>
-<!-- CHIP THROW LAB v10 — how chips travel (docs/ui/CHIP_PLAN.md). The real
+<!-- CHIP THROW LAB v11 — how chips travel (docs/ui/CHIP_PLAN.md). The real
      #table-screen and renderers on memory-only state, plus a chip physics
      world where every chip on the felt is a body. Reuses chip-lab.css for
      the drawer, bet spots and bank. Never loaded by index.html or sw.js;
@@ -58,7 +58,7 @@
     <div class="ct-bar-row ct-bar-foot">
       <button type="button" class="ct-replay" data-run="replay" aria-label="Replay the last move">↻ REPLAY</button>
       <button type="button" data-run="reset">RESET</button>
-      <span class="ct-status"><b id="ct-preset-name">V10</b> · <span id="ct-status">LOADING…</span></span>
+      <span class="ct-status"><b id="ct-preset-name">V11</b> · <span id="ct-status">LOADING…</span></span>
       <button type="button" class="ct-gear" id="ct-gear" aria-label="Options">⚙ OPTIONS</button>
     </div>
   </nav>
@@ -79,10 +79,10 @@
     <section class="cl-group">
       <div class="cl-label">COINS</div>
       <div class="cl-row"><span class="cl-label">PER BET</span>
-        <div class="cl-seg cl-seg-sm" data-opt="coins"><button type="button" data-v="few">FEW</button><button type="button" data-v="some">SOME</button><button type="button" data-v="lots">LOTS (V9)</button></div></div>
+        <div class="cl-seg cl-seg-sm" data-opt="coins"><button type="button" data-v="few">FEW</button><button type="button" data-v="some">SOME</button><button type="button" data-v="more">MORE</button><button type="button" data-v="lots">LOTS</button></div></div>
       <div class="cl-row"><span class="cl-label">SPEED</span>
         <div class="cl-seg cl-seg-sm" data-opt="speed"><button type="button" data-v="1">1×</button><button type="button" data-v="0.35">SLOW</button></div></div>
-      <p class="cl-note">FEW: a call is one or two coins, a raise a handful, an all-in a proper splash, and no bet throws more than 12. Every pile has a limit (a bet spot 14 coins, the pot 36, your bank 28): coins thrown past it land on the pile and melt in, and the numbers still count them. SOME is in between; LOTS is v9's count, for comparison. PLAY HAND deals a real hand: the bar turns into FOLD / CALL / RAISE / ALL-IN when it's your move. BOARD 3·4·5 lays out a flop, turn or river to test the table. Tap the felt to tidy; tap a tower to topple it.</p>
+      <p class="cl-note">MORE (default): a call is one or two coins, a raise of 400 about a dozen, an all-in a proper splash of 16 to 24. The pot holds about 60 coins and a bet only throws what the pot still has room for, so every pile on the felt sweeps in whole and nothing melts away; once the pot is full a bet throws a single coin and the numbers carry the rest. Your bank holds up to 40; a big win pours the extra into the hatch. FEW and SOME throw less; LOTS is v9. PLAY HAND deals a real hand: the bar turns into FOLD / CALL / RAISE / ALL-IN when it&#39;s your move. BOARD 3·4·5 lays out a flop, turn or river. Tap the felt to tidy; tap a tower to topple it.</p>
     </section>
   </aside>
 

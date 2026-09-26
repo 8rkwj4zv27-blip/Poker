@@ -50,10 +50,11 @@
   // the coin spin (v9): axis, turns per second, frames per turn, lighting, landing side
   BASE.spin='side'; BASE.spinSpeed='med'; BASE.spinFrames='16'; BASE.light='on'; BASE.lands='random';
   // v10: the owner's settled mix is the default
-  Object.assign(BASE,{ sfx:'clay', nums:'off', spin:'toss', spinSpeed:'slow', lands:'heads', coins:'few' });
-  const OPT={ preset:'v10', ...BASE, speed:1, sound:'on' };
+  Object.assign(BASE,{ sfx:'clay', nums:'off', spin:'toss', spinSpeed:'slow', lands:'heads', coins:'more' });
+  const OPT={ preset:'v11', ...BASE, speed:1, sound:'on' };
   const PRESETS={
-    v10:  { ...BASE },
+    v11:  { ...BASE },
+    v10:  { ...BASE, coins:'few' },
     v9:   { ...BASE },
     chunky:{ ...BASE, sfx:'clackplus' },
     heavy:{ ...BASE, bounces:'dead', roll:'off', sfx:'thud' },
@@ -64,6 +65,7 @@
             sfx:'old', rise:'off', group:'off', eased:true }
   };
   const NOTES={
+    v11:'MORE coins per bet (between SOME and LOTS) is the default. Coins no longer melt into piles on the felt: a bet only throws what the pot has room for, so every pile sweeps in whole. Wins now have sound: a jingle, the pot scraping across, the hatch clunking.',
     v10:'Your settled mix is now built in. Bets throw far fewer coins, and every pile has a limit: coins past it land and melt into the pile. Coins can no longer land in the board row (all five card places are solid). PLAY HAND deals a real hand you play from the bar.',
     v9:'Coins now spin over and over in the air, heads to tails (see COIN SPIN). Fixed: piles stay visible while they empty; the pot tray can no longer trap a coin; a watchdog puts down any coin still moving after 3.5s, so nothing can hang. Tidying is silent.',
     chunky:'As V5 with CLACK+: the same click with a heavier thud under it.',
@@ -100,9 +102,11 @@
     few: { bet:[[0,0],[10,1],[20,2],[40,3],[100,4],[200,5],[400,7],[800,9],[1500,11],[3000,12]],
            bank:[[0,0],[20,2],[200,7],[1000,16],[2500,23],[5000,28]] },
     some:{ bet:[[0,0],[10,1],[20,2],[60,4],[180,7],[400,10],[1000,14],[2000,17],[4000,20]],
+           bank:[[0,0],[20,2],[200,10],[1000,24],[3000,34],[6000,40]] },
+    more:{ bet:[[0,0],[10,1],[20,2],[60,3],[100,5],[200,8],[400,12],[1000,18],[2000,22],[4000,24]],
            bank:[[0,0],[20,2],[200,10],[1000,24],[3000,34],[6000,40]] }
   };
-  const LIMITS={ few:{ bet:12, allin:8, spot:14, pot:36, bank:28 }, some:{ bet:20, allin:12, spot:22, pot:50, bank:40 }, lots:{ bet:60, allin:0, spot:999, pot:999, bank:999 } };
+  const LIMITS={ few:{ bet:12, allin:8, spot:14, pot:36, bank:28 }, some:{ bet:20, allin:12, spot:22, pot:50, bank:40 }, more:{ bet:24, allin:16, spot:30, pot:60, bank:40 }, lots:{ bet:60, allin:0, spot:999, pot:999, bank:999 } };
   const LIM=()=>LIMITS[OPT.coins]||LIMITS.few;
   function curve(pts,v){
     if (v<=0) return 0;
@@ -520,7 +524,24 @@
       [1046,1318,1568].forEach((f,i)=>tone(f*p,f*p,.07,wave,v,i*.045));
       tone(2093*p,2093*p,.18,wave,v*.9,.14);
     }
-    return { set:()=>SETS[OPT.sfx], unlock:()=>{ ac(); }, sting };
+    // v11 payout sounds, in the set's own voice
+    const voice=()=>OPT.sfx==='retro'?'square':(OPT.sfx==='clink'||OPT.sfx==='coin'?'sine':'triangle');
+    // the pot pushed across the felt: a short felt scrape under a rattle
+    function scrape(w){
+      noise(.22,V(.1*w),'bandpass',900,.7); noise(.18,V(.06*w),'bandpass',2400,1.2,.03);
+      const set=SETS[OPT.sfx]; if (set) [0,.05,.11,.16].forEach(d=>setTimeout(()=>set.bounce(.9+Math.random()*.2,.5*w),d*1000));
+    }
+    // the hatch: a low mechanical clunk (open a touch higher than close)
+    function clunk(open){ tone(open?120:95,open?70:55,.1,'sine',.32); noise(.04,.16,'lowpass',900,.8); if (open) noise(.02,.08,'bandpass',2600,2,.05); }
+    // a win: a rising run in the set's voice; yours is bigger and ends on a chord
+    function win(big){
+      const wave=voice(), v=(wave==='square'?.045:.08)*(big?1:.6);
+      const run=big?[784,988,1175,1568,1976]:[988,1175,1480];
+      run.forEach((f,i)=>tone(f,f,.07,wave,v,i*.055));
+      const end=run.length*.055;
+      if (big){ [1568,1976,2349].forEach(f=>tone(f,f,.32,wave,v*.7,end)); const set=SETS[OPT.sfx]; if (set) setTimeout(()=>set.chunk(1.1,.8),end*1000); }
+    }
+    return { set:()=>SETS[OPT.sfx], unlock:()=>{ ac(); }, sting, scrape, clunk, win };
   })();
   let groupAt=[], chunkAt=0;
   function coinSfx(kind,power,pitch){
@@ -546,6 +567,11 @@
   function sfx(kind,power,pitch){
     if (OPT.sound!=='on') return;
     if (kind==='sting'){ if (OPT.sfx!=='old') Coin.sting(pitch||1); else Sound.counterLock(true); return; }
+    if (OPT.sfx!=='old'){
+      if (kind==='collect'){ Coin.scrape(power||.6); return; }
+      if (kind==='hatch' || kind==='hatchClose'){ Coin.clunk(kind==='hatch'); return; }
+      if (kind==='win'){ Coin.win(power>=1); return; }
+    } else if (kind==='win'){ if (power>=1) Sound.counterLock(true); return; }
     if (OPT.sfx!=='old' && ['land','stack','bounce','wall','card','roll','rock','knock','thump'].includes(kind)){
       const gap0={ bounce:18, roll:90, wall:50, rock:60, knock:40 }[kind]||0, now0=performance.now();
       if (gap0 && now0-(soundAt[kind]||0)<gap0) return; soundAt[kind]=now0;
@@ -988,6 +1014,7 @@
     if (t.vanish){
       // MERGE: a coin past a pile's limit lands on it and melts in
       if (t.merge){ sfx('stack',.55,rise(b)); if (rnd()<.3) glintAt(b.x,b.y-b.z-b.d*.7); }
+      else sfx('bounce',.35,rise(b));
       const r=b.resolve; b.resolve=null; removeBody(b); b.el.remove(); if (r) r(); return;
     }
     if (t.mouth){ dropIntoBank(b); return; }
@@ -1634,6 +1661,15 @@
   }
   // a pile past its limit: the extra coins are thrown onto one of its
   // stacks and melt into it (the plate/pot number still counts them)
+  // coins already heading for the pot: in it, or sitting on a bet spot
+  function potRoom(){
+    let n=zones.pot?zones.pot.list.length:0;
+    Object.keys(zones).forEach(k=>{ if (k.startsWith('spot:')) n+=zones[k].list.length; });
+    return LIM().pot-n;
+  }
+  // a bet's handful, trimmed to what its spot and the pot still have room
+  // for (always at least one coin, so every bet is seen)
+  const budget=(n,z)=>Math.max(Math.min(1,n),Math.min(n,potRoom(),LIM().spot-z.list.length));
   function mergeTarget(z){
     const rest=z.list.filter(q=>q.state==='rest');
     if (!rest.length) return { x:z.cx+rr(-4,4), y:z.cy, z:0, vanish:true, merge:true, d:D() };
@@ -1662,12 +1698,11 @@
     if (OPT.source==='chute' && chutes[p.id] && OPT.juice==='on' && !motionOff()){ chutes[p.id].classList.add('is-rattle'); await waitMs(110); chutes[p.id].classList.remove('is-rattle'); }
     guard(my);
     const kind=kindFor(amount,allin,OPT.source!=='face');
-    const cols=coloursFor(amount,betCoins(amount,allin)), tick=ticker(p.id,z.amount-amount,amount,cols.length);
+    const cols=coloursFor(amount,budget(betCoins(amount,allin),z)), tick=ticker(p.id,z.amount-amount,amount,cols.length);
     plate(p.id,z.amount-amount);
-    const free=Math.max(0,LIM().spot-z.list.length);
-    const items=cols.map((col,i)=>{
+    const items=cols.map(col=>{
       const s=source(p), b=body(makeChip(col),s.x,s.y,s.z,D()-2); b.fresh=true;
-      return { b, to:i<free?targetIn(z,b):mergeTarget(z), onStart:()=>chuteKick(s.chute), onLand:tick };
+      return { b, to:targetIn(z,b), onStart:()=>chuteKick(s.chute), onLand:tick };
     });
     await within(throwAll(items,kind,{ big:allin }),6000);
     await zoneSettled(z,2500);
@@ -1679,15 +1714,18 @@
     say('YOU',label.toUpperCase());
     const z=zones['spot:you']; z.amount+=amount;
     // all-in empties the bank; otherwise a handful by the bet's size
-    const n=allin?bank.chips.length:Math.max(Math.min(1,bank.chips.length),Math.min(bank.chips.length-1,betCoins(amount)));
+    const want=allin?bank.chips.length:Math.max(Math.min(1,bank.chips.length),Math.min(bank.chips.length-1,betCoins(amount)));
+    const n=Math.min(bank.chips.length,budget(want,z));
+    // all-in with no room left for all of the bank: the rest drop back into the machine
+    if (allin && n<bank.chips.length) sinkBank(bank.chips.length-n);
     const cols=coloursFor(amount,n), tick=ticker('you',z.amount-amount,amount,Math.max(1,cols.length));
     plate('you',z.amount-amount);
-    const items=[], free=Math.max(0,LIM().spot-z.list.length);
+    const items=[];
     for (const col of cols){
       const t=bank.take(); if (!t) break;
       if (t.c.colour!==col){ t.c.colour=col; t.c.frame=''; if (!pixelArt()) styleChip(t.c); }
       const r=t.rect, b=body(t.c,r.left+r.width/2,r.bottom,0,r.width);
-      items.push({ b, to:items.length<free?targetIn(z,b):mergeTarget(z), onLand:tick });
+      items.push({ b, to:targetIn(z,b), onLand:tick });
     }
     bank.apply({ slideMs:160 });
     if (!items.length) plate('you');
@@ -1717,12 +1755,12 @@
     let shown=potValue;
     if (OPT.sweep==='jump'){
       // each pile empties into the pot top-first, coin by coin, in turn
-      let delay=0, free=Math.max(0,LIM().pot-pot.list.length); const throws=[];
+      let delay=0; const throws=[];
       ids.forEach(k=>{
         const z=zones[k], list=z.list.slice().sort((a,c)=>c.z-a.z); z.list.length=0;
         const each=z.amount/Math.max(1,list.length);
         spotEls[k.slice(5)].classList.add('is-sweeping'); spotEls[k.slice(5)].classList.remove('is-pop');
-        const items=list.map(b=>{ b.zone=null; b.inFelt=true; const to=free-->0?targetIn(pot,b):mergeTarget(pot); return { b, to, onLand:()=>{ shown+=each; paintPot(shown); punch(potPlate); } }; });
+        const items=list.map(b=>{ b.zone=null; b.inFelt=true; const to=targetIn(pot,b); return { b, to, onLand:()=>{ shown+=each; paintPot(shown); punch(potPlate); } }; });
         throws.push(throwAll(items,'hop',{ delay }));
         delay+=160+list.length*24;
       });
@@ -1820,6 +1858,7 @@
     if (amount==null){ await ensurePot(); guard(my); }
     const pot=zones.pot, you=P[0], won=amount!=null?amount:potValue, start=you.chips, from=potValue;
     say('YOU WIN',label||won.toLocaleString());
+    sfx('win',1);
     bankCap=bankCoins(start+won);
     const hatch=$('hud-left').querySelector('.cl-hatch');
     hatch.classList.add('is-open'); sfx('hatch');
@@ -1850,6 +1889,7 @@
     if (amount==null){ await ensurePot(); guard(my); }
     const pot=zones.pot, won=amount!=null?amount:potValue, z=zones['spot:'+p.id], from=potValue;
     say(p.name.toUpperCase()+' WINS',label||won.toLocaleString());
+    sfx('win',.5); setTimeout(()=>sfx('collect',.5),120/OPT.speed);
     const list=coins||pot.list.slice();
     const all=list.map((b,i)=>{
       if (b.zone) removeFromZone(b);
@@ -1876,6 +1916,17 @@
     while (bank.chips.length<want) bank.chips.push(makeChip('gold'));
     while (bank.chips.length>want){ const c=bank.chips.shift(); if (c.clump){ c.clump.n--; c.clump=null; } if (c.el) c.el.remove(); }
     bank.apply({ slideMs:200 });
+  }
+  // coins taken back into the machine: they drop through the bank's floor
+  function sinkBank(k){
+    const out=[];
+    for (let i=0;i<k;i++){ const t=bank.take(); if (!t) break; out.push(t.c); }
+    out.forEach((c,i)=>{
+      if (c.clump){ c.clump.n--; c.clump=null; }
+      if (motionOff() || !c.el.animate){ c.el.remove(); return; }
+      c.el.animate([{ transform:'none', opacity:1 },{ transform:'translateY(26px)', opacity:0 }],{ duration:260/OPT.speed, delay:i*18/OPT.speed, easing:'cubic-bezier(.5,0,1,.6)', fill:'forwards' }).onfinish=()=>c.el.remove();
+    });
+    if (out.length){ sfx('hatch'); setTimeout(()=>sfx('hatchClose'),240/OPT.speed); }
   }
   let tidying=false;
   async function tidyBank(){
@@ -2147,7 +2198,7 @@
     $('ct-note').textContent=NOTES[OPT.preset];
     $('ct-preset-name').textContent=OPT.preset.toUpperCase();
   }
-  function unlockAudio(){ Coin.unlock(); }
+  function unlockAudio(){ Coin.unlock(); try{ if (Sound && Sound.unlock) Sound.unlock(); }catch(e){} }
   function setOpt(k,v){
     if (k==='preset'){ OPT.preset=v; OPT.eased=false; Object.assign(OPT,PRESETS[v]); }
     else { OPT[k]=k==='speed'?Number(v):v; if (!['speed','sound','random'].includes(k)){ OPT.preset='custom'; OPT.eased=false; } }
