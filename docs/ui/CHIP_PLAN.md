@@ -469,3 +469,44 @@ state in `renderBank`/`renderPot` (cold load, rebuy, resume) and
 Validation grows with each step (a coin-world suite: counts, limits,
 walls, sweep totals, no coin left on a card); `chip-motion-checks.js` is
 updated where it asserts the old pile behaviour.
+
+## Status after release (v0.40.4, 26 Sep 2026)
+
+Integration steps 1–5 are live on `main` (#18, freeze fix #19). The
+owner played it on the phone: the coin animations "look great … a big
+success". `COIN_TABLE_ON=false` in `js/coin-table.js` restores the old
+chips.
+
+Lesson from #19: every file a release changes must carry a new `?v=`
+query in `index.html` and `sw.js`. GitHub Pages lets phones cache files
+for ~10 minutes, and a mix of old and new files froze the table on entry.
+
+## Next: a table spacing pass (owner, 26 Sep 2026)
+
+The coins (bet spots, the pot tray) added objects to a table that was
+laid out without them, and things now pile up on each other. The owner
+wants a whole-screen spacing review that frees room without hurting
+player UX. They also propose **scrapping the XP / score award and the
+SCORE bar** at the top of run mode: the pot smash's XP slam no longer
+reads as the payoff now the coins do the work. That is a product
+decision to confirm and plan (it touches `04-modes-and-scoring.js`'s
+reward system, the pot smash ceremony and `SCORING_SPEC.md`) before any
+code.
+
+Seen in the owner's phone screenshots (3-handed run, Dashboard V2):
+- Opponent bet piles sit on or just under the seat's hole cards. With
+  two seats side by side, the spot ends up hard against the cards; a
+  lone blind coin can rest on a seat card.
+- The pot pile's towers climb onto the bottom of the board row (turn and
+  river especially); the tray sits close under the board.
+- The SCORE bar takes a full row at the top of the screen.
+- Your own spot (bottom right of the felt) reads as a stray coin in empty
+  felt.
+- (Fixed in v0.40.5) the bank rack drifted from the stack: bets took coins
+  by bet size and nothing topped it back up, so it could show fewer coins
+  at $320 than at $268. Your bets now throw the coins the stack no longer
+  earns, and the rack re-matches the stack at every new hand.
+
+Spot placement lives in `layout()` in `js/coin-table.js` (the same rules as
+the lab's `buildTable`). Tower heights are capped by `zone.room`; the tray
+is a fixed 200×58 well above the pot plate.

@@ -293,12 +293,12 @@ const CoinTable = (function(){
     z.amount += amount;
     const items = [];
     if (p.isHuman){
-      // coins come off the top of the rack: an all-in empties it,
-      // otherwise a handful by the bet's size (one always stays while
-      // there's money left)
+      // the coins that leave are the ones the stack no longer earns, so the
+      // rack always matches the stack (an all-in empties it; every bet
+      // throws at least one coin, and one stays while there's money left)
       const bk = ensureBank(); if (!bk) return Promise.resolve();
-      const have = bk.chips.length;
-      const want = allin ? have : Math.max(Math.min(1,have), Math.min(have-1, CW.betCoins(amount)));
+      const have = bk.chips.length, keep = p.chips>0 ? Math.max(1, CW.bankCoins(p.chips)) : 0;
+      const want = allin ? have : Math.max(Math.min(1,have), Math.min(have-(p.chips>0?1:0), have-keep));
       const n = Math.min(have, budget(want, z));
       if (allin && n<have) sinkBank(have-n);
       for (let i=0;i<n;i++){
@@ -437,6 +437,8 @@ const CoinTable = (function(){
   // a hand boundary (clearAllCardDOM) or a fresh table: empty the world
   function clear(){
     if (!CW) return;
+    // a new hand: the rack re-matches the stack (a lost hand leaves it short)
+    if (bank && on() && bankPending===0) syncBank(false);
     CW.clearWorld();
     Object.values(CW.zones).forEach(z=>{ clearTimeout(z.timer); z.list.length = 0; z.amount = 0; z.neat = true; });
     CW.hooks.mouth = null;
