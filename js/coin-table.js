@@ -74,8 +74,15 @@ const CoinTable = (function(){
   }
   function layoutKey(){
     const f = $('felt').getBoundingClientRect();
+    // the seats' card rows too: an opponent's box can change height after
+    // the spots are laid (their hearts row appears on the first render in
+    // a house game), and the spots must follow their cards
+    const rows = game ? game.players.map(p=>{
+      const e = seatEls[p.id];
+      return e && !p.isHuman ? Math.round(e.cardsContainer.getBoundingClientRect().bottom) : '';
+    }).join(',') : '';
     return [Math.round(f.left), Math.round(f.top), Math.round(f.width), Math.round(f.height),
-      game ? game.players.map(p=>p.id).join(',') : ''].join('|');
+      game ? game.players.map(p=>p.id).join(',') : '', rows].join('|');
   }
   function layout(){
     if (!on() || !game) return false;
@@ -116,7 +123,20 @@ const CoinTable = (function(){
           else { x = fr.width*.80; y = fr.height*.80; }
         }
         else {
-          const cr = e.cardsContainer.getBoundingClientRect();
+          // their cards as dealt: before the deal the row is empty, and the
+          // cards hang below its box, so measure a stand-in card
+          let cr = e.cardsContainer.getBoundingClientRect();
+          if (!e.cardsContainer.querySelector('.card')){
+            const c = document.createElement('div');
+            c.className = 'card back small ct-measure'; c.style.visibility = 'hidden';
+            e.cardsContainer.appendChild(c);
+            const k = c.getBoundingClientRect();
+            c.remove();
+            cr = { left:cr.left, width:cr.width, bottom:Math.max(cr.bottom, k.bottom) };
+          } else {
+            const b = Math.max(...[...e.cardsContainer.querySelectorAll('.card')].map(c=>c.getBoundingClientRect().bottom));
+            cr = { left:cr.left, width:cr.width, bottom:Math.max(cr.bottom, b) };
+          }
           const ax = cr.left+cr.width/2-fr.left, ay = cr.bottom-fr.top;
           const px = pr.left+pr.width/2-fr.left, py = pr.top-fr.top-40;
           x = ax+(px-ax)*.22; y = Math.max(ay+56, ay+(py-ay)*.3);
@@ -125,8 +145,11 @@ const CoinTable = (function(){
             if (ax<rl){ x = (inset+rl)/2; y = rt+22; }
             else if (ax>rR){ x = (fr.width-inset+rR)/2; y = rt+22; }
             else { x = ax+(fr.width/2-ax)*.15; y = ay+(rt-ay)*.64; }
-            // 10px nearer their cards than the first cut (owner's pick)
-            y -= 10;
+            // 10px nearer their cards than the first cut (owner's pick),
+            // but never on them: a coin is drawn ~D+4px tall above its
+            // base, so the base sits at least D+18px under their cards,
+            // leaving a clear gap (v0.40.8)
+            y = Math.max(y-10, ay+CW.D()+18);
             room = y-ay-4;
           }
         }
@@ -138,6 +161,11 @@ const CoinTable = (function(){
         old[k].list.forEach(b=>{ b.zone = z; z.list.push(b); });
         z.amount += old[k].amount||0;
       });
+    });
+    // coins already down (or still landing) move onto their spot's new
+    // place: scheduleTidy waits for any in flight
+    Object.values(CW.zones).forEach(z=>{
+      if (z.list.length){ z.neat = false; CW.scheduleTidy(z); }
     });
     wireTap();
     laid = key;
