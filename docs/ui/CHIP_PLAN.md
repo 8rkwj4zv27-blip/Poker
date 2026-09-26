@@ -550,3 +550,16 @@ styled in `css/table-intro.css`), awaited by `startNewHand()` when the
 blinds rise after a table's first hand (tournament and Career events). The
 lab's TODAY is now this layout, and a BEFORE preset shows the old one.
 
+**v0.40.8 (26 Sep 2026), from the owner's phone (a 3-handed Career table):**
+tables of 1-3 opponents now have authored seat maps (`SEAT_MAPS` in
+`js/06-presentation.js`, level with the 4-opponent map: centre 8.5%, outer
+11.5%); the generic ellipse had put the centre seat on the top rail and
+the outer seats so low that their bet spots fell on their own cards. 1-3
+opponents also take the 4-opponent seat size (faces a touch smaller). Bet
+spots can no longer overlap a seat's cards: `layout()` measures the cards
+as dealt (a stand-in card before the deal), keeps each spot's coin base
+D+18px below them, re-lays whenever a seat's card row moves (a house
+game's hearts row appears after the blinds are thrown; `render()` calls
+`CoinTable.layout()`, a no-op otherwise), and tidies coins already down
+onto the new spots.
+

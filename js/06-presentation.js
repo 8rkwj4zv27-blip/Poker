@@ -143,6 +143,15 @@ function esc(s){ return String(s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;
    stacked rows, which would have to drop seats over the board. Cards stay
    upright, nothing rotates, and the centre lane is left open. */
 const SEAT_MAPS = {
+  // 1-3 opponents (Career's small fields, heads-up): authored since the
+  // top bar went (v0.40.7 made the felt start at the status bar). The
+  // generic ellipse put the centre seat on the rail (heads-up above it)
+  // and dropped the outer seats so low their bet spots landed on their
+  // own cards. Level with the 4-opponent map: centre seats 8.5%, outer
+  // 11.5%.
+  1: [ {left:50, top:8.5} ],
+  2: [ {left:30, top:9.5}, {left:70, top:9.5} ],
+  3: [ {left:22, top:11.5}, {left:50, top:8.5}, {left:78, top:11.5} ],
   // 5 opponents: shallow horseshoe, centre seat highest, the two outer
   // seats dropped to the side perimeter and just clearing the board.
   5: [
@@ -1480,7 +1489,9 @@ function initSeats(){
   // are deliberately gentle — 0.80 and 0.77 against the 4-opponent 0.88
   // baseline — and the density problem is solved by seat placement and by
   // the box-width tightening just below, not by shrinking the portraits.
-  const scale = opponents<=3 ? 1.0 : opponents===4 ? 0.88 : opponents===5 ? 0.80 : opponents===6 ? 0.77 : opponents===7 ? 0.6 : 0.52;
+  // 1-3 opponents share the 4-opponent size (owner, v0.40.8: the full-size
+  // faces were a touch big once the table was spacious)
+  const scale = opponents<=4 ? 0.88 : opponents===5 ? 0.80 : opponents===6 ? 0.77 : opponents===7 ? 0.6 : 0.52;
   const avatarW = Math.round(78*scale);
   // Box width: at 4-max and below the box keeps its familiar generous
   // 98/78 proportion. At 5/6 it's the SPARE horizontal padding around the
@@ -3884,6 +3895,9 @@ function render(){
 
   updateHandInstrument();
   updateActionControls();
+  // the seats may have changed height (hearts, labels): the coin spots
+  // follow their cards (a no-op unless a card row actually moved)
+  if (typeof coinTableOn === 'function' && coinTableOn()) CoinTable.layout();
 }
 
 /* The raise tray is an overlay belonging to the fixed action region. It
