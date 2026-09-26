@@ -313,3 +313,25 @@ v7:
 - Fixed while testing: a topple timed within 70ms of a payout could take
   over coins already flying to the bank; Reduced Motion didn't route the
   jackpot rim hop. All coins now reach the bank in every configuration.
+
+### v8 (26 Sep 2026)
+
+Owner on v7: still not seeing coins flip like a coin toss; the all-in zoom
+punch made the table border flash; the sweep glides as a pile (wants coins
+jumping into the pot); the tidy noise is too frequent; the well should be
+a rectangle like the brass tray.
+
+Why no visible flip: flights last ~0.3s and did up to 3 full turns, about
+3 frames per half-turn, which reads as flicker. v8:
+- **Readable flips:** each flight turns an even number of half-turns
+  (usually one full turn), never faster than ~0.09s per half-turn; the
+  back of the coin is much darker so the turn-over reads.
+- **Flip-pop:** a third of coins jump up off their first felt landing
+  (~0.17s hop) and do one full, visible flip before settling.
+- **No zoom punch** (freeze and shake stay).
+- **Sweep JUMP (default):** each pile empties into the pot top-first,
+  coin by coin (20–40ms apart), a full flip each, landing with the full
+  physics. GLIDE keeps the old slide.
+- **Quieter tidy:** one ratchet at the start, a click only when each
+  stack's top coin lands, then lock + sting once.
+- **Well** is a rounded rectangle; all tray lips are rectangular.

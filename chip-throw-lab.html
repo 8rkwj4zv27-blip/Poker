@@ -6,7 +6,7 @@
 <meta name="theme-color" content="#16090D">
 <link rel="icon" href="data:,">
 <title>Chip Throw Lab</title>
-<!-- CHIP THROW LAB v7 — how chips travel (docs/ui/CHIP_PLAN.md). The real
+<!-- CHIP THROW LAB v8 — how chips travel (docs/ui/CHIP_PLAN.md). The real
      #table-screen and renderers on memory-only state, plus a chip physics
      world where every chip on the felt is a body. Reuses chip-lab.css for
      the drawer, bet spots and bank. Never loaded by index.html or sw.js;
@@ -53,7 +53,7 @@
     <div class="ct-bar-row ct-bar-foot">
       <button type="button" class="ct-replay" data-run="replay" aria-label="Replay the last move">↻ REPLAY</button>
       <button type="button" data-run="reset">RESET</button>
-      <span class="ct-status"><b id="ct-preset-name">V7</b> · <span id="ct-status">LOADING…</span></span>
+      <span class="ct-status"><b id="ct-preset-name">V8</b> · <span id="ct-status">LOADING…</span></span>
       <button type="button" class="ct-gear" id="ct-gear" aria-label="Options">⚙ OPTIONS</button>
     </div>
   </nav>
@@ -79,6 +79,8 @@
         <div class="cl-seg cl-seg-sm" data-opt="tray"><button type="button" data-v="well">WELL</button><button type="button" data-v="panel">PANEL</button><button type="button" data-v="brass">BRASS</button><button type="button" data-v="none">NONE</button></div></div>
       <div class="cl-row"><span class="cl-label">TRAY LIP</span>
         <div class="cl-seg cl-seg-sm" data-opt="lip"><button type="button" data-v="on">ON</button><button type="button" data-v="off">OFF</button></div></div>
+      <div class="cl-row"><span class="cl-label">SWEEP</span>
+        <div class="cl-seg cl-seg-sm" data-opt="sweep"><button type="button" data-v="jump">JUMP</button><button type="button" data-v="push">GLIDE</button></div></div>
       <div class="cl-row"><span class="cl-label">BET NUMBERS</span>
         <div class="cl-seg cl-seg-sm" data-opt="nums"><button type="button" data-v="off">OFF</button><button type="button" data-v="pop">POP-UP</button><button type="button" data-v="always">ALWAYS</button></div></div>
     </section>
@@ -106,7 +108,7 @@
         <div class="cl-seg cl-seg-sm" data-opt="random"><button type="button" data-v="fresh">FRESH</button><button type="button" data-v="same">SAME</button></div></div>
       <div class="cl-row"><span class="cl-label">SPEED</span>
         <div class="cl-seg cl-seg-sm" data-opt="speed"><button type="button" data-v="1">1×</button><button type="button" data-v="0.35">SLOW</button></div></div>
-      <p class="cl-note">STACK STYLE (with SNAP): LOOSE is v4's slight wobble, STRAIGHT dead-centre towers, LEAN every stack leaning one way a pixel per coin. TIDY SHAPE is what a tap (or MESS→TIDY) squares the pile into: SPREAD short stacks in two rows, TOWERS a single row of tall stacks. SOUND: CLACK a hard block click, CLACK+ with a heavier thud, CLAY a real poker-chip tick, THOCK a deep soft thock, THUD heavy and low, COIN a gold ring, CLINK bright metal, RETRO an 8-bit blip, POP a cartoon pop, OLD the game's current chips. POT TRAY: WELL a shallow dish pressed into the felt, PANEL a printed box, BRASS a raised tray; with TRAY LIP on, coins sliding in the pot bounce off its rim (fast ones hop over). BET NUMBERS: POP-UP shows a seat&#39;s number only while its coins land. Tap a tower on the felt to topple it; tap a loose coin to flick it. RANDOM SAME makes replays identical, for comparing. Tap the bank to tidy it; with MESS·TAP, tap the felt.</p>
+      <p class="cl-note">STACK STYLE (with SNAP): LOOSE is v4's slight wobble, STRAIGHT dead-centre towers, LEAN every stack leaning one way a pixel per coin. TIDY SHAPE is what a tap (or MESS→TIDY) squares the pile into: SPREAD short stacks in two rows, TOWERS a single row of tall stacks. SOUND: CLACK a hard block click, CLACK+ with a heavier thud, CLAY a real poker-chip tick, THOCK a deep soft thock, THUD heavy and low, COIN a gold ring, CLINK bright metal, RETRO an 8-bit blip, POP a cartoon pop, OLD the game's current chips. POT TRAY: WELL a shallow dish pressed into the felt, PANEL a printed box, BRASS a raised tray; with TRAY LIP on, coins sliding in the pot bounce off its rim (fast ones hop over). BET NUMBERS: POP-UP shows a seat&#39;s number only while its coins land. SWEEP: JUMP hops each pile into the pot coin by coin, GLIDE slides it. Tap a tower on the felt to topple it; tap a loose coin to flick it. RANDOM SAME makes replays identical, for comparing. Tap the bank to tidy it; with MESS·TAP, tap the felt.</p>
     </section>
   </aside>
 

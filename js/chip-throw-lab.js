@@ -46,10 +46,10 @@
   const BASE={ art:'gold', body:'thick', depth:'on', overlap:'snug', size:'m', shadow:'on', throw:'bybet', hand:'bloom', timing:'irregular',
     flips:'many', toss:'off', source:'edge', bounces:'multi', rock:'on', roll:'on', knock:'on', juice:'on', after:'tap', sweep:'push',
     random:'fresh', sfx:'clack', rise:'on', group:'on' };
-  BASE.overlap='snap'; BASE.stack='loose'; BASE.tidy='spread'; BASE.tray='well'; BASE.lip='on'; BASE.nums='pop';
-  const OPT={ preset:'v7', ...BASE, speed:1, sound:'on' };
+  BASE.overlap='snap'; BASE.stack='loose'; BASE.tidy='spread'; BASE.tray='well'; BASE.lip='on'; BASE.nums='pop'; BASE.sweep='jump';
+  const OPT={ preset:'v8', ...BASE, speed:1, sound:'on' };
   const PRESETS={
-    v7:   { ...BASE },
+    v8:   { ...BASE },
     chunky:{ ...BASE, sfx:'clackplus' },
     heavy:{ ...BASE, bounces:'dead', roll:'off', sfx:'thud' },
     v4:   { ...BASE, overlap:'snug', sfx:'coin' },
@@ -59,7 +59,7 @@
             sfx:'old', rise:'off', group:'off', eased:true }
   };
   const NOTES={
-    v7:'Coins flip on the bounce and roll more (off towers too), shunt each other, glint; towers topple when hit hard, or when you tap them; all-ins punch; the pot number overshoots; big wins overflow the hatch; material sounds and a sting when a tidy locks. Tray, lip and bet numbers are switches below.',
+    v8:'A slow, readable flip in every flight and a flip-pop off the first landing for a third of coins; the sweep hops coins into the pot; quieter tidy; the well is a rounded rectangle; no zoom punch.',
     chunky:'As V5 with CLACK+: the same click with a heavier thud under it.',
     heavy:'As V5, with dead landings (no bounce, no roll) and the THUD sound set.',
     v4:'The last version: snug overlap and the COIN sound set.',
@@ -160,7 +160,7 @@
     if (OPT.body==='thick') return thickCoinFrame(d,c,back);
     let face=hex(GOLD.face), rim=hex(GOLD.rim), hi=hex(GOLD.hi), line=hex(GOLD.line);
     const band=hex(GOLD.band), band2=hex(GOLD.band2), ink=hex(GOLD.ink);
-    if (back){ face=dark(face,.84); rim=dark(rim,.84); hi=dark(hi,.86); line=dark(line,.84); }
+    if (back){ face=dark(face,.68); rim=dark(rim,.7); hi=dark(hi,.72); line=dark(line,.66); }
     return render(d,c,(nx,ny,r,a,s)=>{
       if (r>.74) return (!back && a<-1.6 && a>-2.8) ? hi : rim;
       if (!back && Math.abs(nx)<.8/s.rx && Math.abs(ny)<.5) return line;
@@ -175,7 +175,7 @@
   function thickCoinFrame(d,c,back){
     let face=hex('#f4c43e'), bevHi=hex('#ffe88a'), bevLo=hex('#b87a10'), hi=hex('#fff5c0'), line=hex('#c68a16');
     const e1=hex('#c98a1a'), e2=hex('#e8ad32'), eLo=hex('#7c4a06'), ink=hex('#2e1a04');
-    if (back){ face=dark(face,.84); bevHi=dark(bevHi,.84); bevLo=dark(bevLo,.84); hi=dark(hi,.84); line=dark(line,.84); }
+    if (back){ face=dark(face,.66); bevHi=dark(bevHi,.7); bevLo=dark(bevLo,.7); hi=dark(hi,.7); line=dark(line,.62); }
     return render(d,c,(nx,ny,r,a,s)=>{
       if (r>.76) return ny<-.1 ? bevHi : (ny>.25 ? bevLo : (a<0?bevHi:bevLo));
       if (!back && Math.abs(nx)<.8/s.rx && Math.abs(ny)<.5) return line;
@@ -642,6 +642,7 @@
     const colourless=groups.length===1;
     z.list.forEach((b,i)=>{
       const s=slots.get(b), gi=colourless?Math.floor(s.n/3):groups.indexOf(b.colour);
+      b.tidyTop=![...slots.values()].some(o=>o!==s && o.x===s.x && o.y===s.y && o.n>s.n);
       if (Math.hypot(s.x-b.x,s.y-b.y)<.6 && Math.abs(s.z-b.z)<.6) return;
       done.push(new Promise(res=>{
         const dist=Math.hypot(s.x-b.x,s.y-b.y);
@@ -651,7 +652,7 @@
       }));
     });
     const beats=colourless?Math.max(...z.list.map(b=>slots.get(b).n))+1:groups.length;
-    for (let g=0;g<beats;g++) setTimeout(()=>sfx('tooth'),g*(colourless?55:95)/OPT.speed);
+    void beats; if (done.length) sfx('tooth');
     z.tidying=Promise.all(done).then(()=>{ z.tidying=null; if (done.length){ sfx('lock'); sfx('sting',1,1); glintPile(z); } });
     return z.tidying;
   }
@@ -701,7 +702,9 @@
     if (carry && dist>1){ ax-=(t.x-b.x)/dist*carry; ay-=(t.y-b.y)/dist*carry; }
     b.vx=(ax-b.x)/b.T; b.vy=(ay-b.y)/b.T;
     b.vz=((t.z||0)-b.z)/b.T+.5*G*b.T;
-    const flips=b.opts.flips!=null?b.opts.flips:(OPT.flips==='many'?rint(2,6):1);
+    let flips=b.opts.flips!=null?b.opts.flips:2;
+    // never faster than ~0.09s a half-turn, or the frames read as flicker
+    flips=Math.max(flips%2?1:2,Math.min(flips,2*Math.floor(b.T/.18)));
     b.fr=flips*Math.PI/b.T; b.phi=0;
     b.vr=pixelArt()?0:(OPT.flips==='many'?rr(-300,300):0);
     b.glint=!!b.opts.toss; b.glinted=false;
@@ -795,7 +798,7 @@
         b.tilt=k<1?.82:1; b.back=false;
         if (k>=1){
           b.x=b.tx; b.y=b.ty; b.z=b.tz; b.tilt=1; b.sq=.08;
-          if (b.snapping){ b.snapping=false; sfx('stack',.8,rise(b)); if (b.zone) b.zone.neat=false; } else sfx('land',.6);
+          if (b.snapping){ b.snapping=false; sfx('stack',.8,rise(b)); if (b.zone) b.zone.neat=false; } else if (b.tidyTop) sfx('stack',.45);
           toRest(b);
         }
         break;
@@ -857,13 +860,15 @@
     }
     if (hit && !t.slot && rnd()<.5){ const L=Math.max(1,Math.hypot(b.x-hit.x,b.y-hit.y)); b.vx+=(b.x-hit.x)/L*rr(50,110); b.vy+=(b.y-hit.y)/L*rr(25,55); }
     if (b.bounces<b.maxB && speed>170){
+      const pop=b.bounces===0 && ground<1 && !t.slot && rnd()<.33;
       b.bounces++;
-      b.vz=speed*b.e;
+      b.vz=pop?rr(250,310):speed*b.e;
+      if (pop){ b.vx*=.45; b.vy*=.45; }
       // flip on the bounce: a half or full turn in the hop, landing flat
       const tHop=2*b.vz/G;
-      b.phi=0; b.fr=(tHop>.05?rint(1,2):0)*Math.PI/Math.max(.05,tHop); b.flipGlint=true;
+      b.phi=0; b.fr=(pop?2:(tHop>.1?2:0))*Math.PI/Math.max(.05,tHop); b.flipGlint=true;
       if (t.slot){ b.vx=(t.x-b.x)*.72/tHop; b.vy=(t.y-b.y)*.72/tHop; }
-      else { b.vx*=.55; b.vy*=.55; }
+      else if (!pop){ b.vx*=.55; b.vy*=.55; }
       sfx(ground>0?'stack':'bounce',speed/900,rise(b,true));
       // a coin landing on a tower sometimes rolls off it on its edge
       if (ground>0 && !t.slot && OPT.roll==='on' && rnd()<.25){
@@ -1125,12 +1130,6 @@
     if (motionOff()) return;
     const k=[{transform:'translate(0,0)'},{transform:'translate(2px,1px)'},{transform:'translate(-2px,0)'},{transform:'translate(1px,-1px)'},{transform:'translate(0,0)'}];
     [$('stage-bay'),air,shadows].forEach(el=>{ if (el) el.animate(k,{ duration:170/OPT.speed, easing:'steps(4,end)' }); });
-    // the big-moment punch: the whole table jumps ~1.5% toward you and back
-    const sb=$('stage-bay'); if (!sb) return;
-    const r=sb.getBoundingClientRect(), ox=r.left+r.width/2, oy=r.top+r.height/2;
-    const pk=[{transform:'scale(1.015)'},{transform:'scale(1)'}];
-    sb.animate(pk,{ duration:90/OPT.speed, easing:'steps(2,end)', composite:'add' });
-    [air,shadows].forEach(el=>{ if (el){ el.style.transformOrigin=ox+'px '+oy+'px'; el.animate(pk,{ duration:90/OPT.speed, easing:'steps(2,end)', composite:'add' }); } });
   }
 
   /* ---------------- draw ---------------- */
@@ -1194,10 +1193,17 @@
   }
   function plan(n,kind){
     const out=[], irr=OPT.timing==='irregular', bloom=OPT.hand==='bloom';
-    const flips=()=>OPT.flips==='many'?rint(2,6):1;
+    // an even number of half-turns (lands face-up), slow enough to read
+    const flips=()=>OPT.flips==='many'?(rnd()<.7?2:4):2;
     if (kind==='stream'){
       const base=n<=3?90:n<=10?60:34; let t=0;
       for (let i=0;i<n;i++){ out.push({ t, T:1, flips:1 }); t+=irr?base*(.35+rnd()*1.6):base; }
+      return out;
+    }
+    if (kind==='hop'){
+      // the sweep: quick hops off the top of a pile, one full turn each
+      let t=0;
+      for (let i=0;i<n;i++){ out.push({ t, T:rr(.82,.98), flips:2 }); t+=rint(20,40); }
       return out;
     }
     if (kind==='flick'){
@@ -1230,6 +1236,7 @@
   }
   // items: [{ b, to, onStart }]
   function throwAll(items,kind,extra){
+    const delay=(extra&&extra.delay)||0;
     const p=plan(items.length,kind);
     const big=extra&&extra.big?{ done:false }:null;
     const combo={ n:0 };
@@ -1245,7 +1252,7 @@
       if (tossers.has(i)){ T=Math.max(.5,T*rr(1.7,2.1)); flips=rint(3,5); toss=true; }
       if (OPT.hand==='bloom'||kind!=='lob'){ it.b.x+=rr(-3,3); it.b.y+=rr(-2,2); }
       const loose=!it.to.slot&&!it.to.vanish&&!it.to.mouth;
-      return launch(it.b,it.to,{ big, combo, wait:pl.t, T:eased()?undefined:T, i, mode:pl.mode, tumble:pl.tumble, grip:pl.grip, toss,
+      return launch(it.b,it.to,{ big, combo, wait:pl.t+delay, T:eased()?undefined:T, i, mode:pl.mode, tumble:pl.tumble, grip:pl.grip, toss,
         jx:loose?rr(-6,6):0, jy:loose?rr(-3,3):0, flips, onStart:it.onStart }).then(()=>{ if (it.onLand) it.onLand(); });
     }));
   }
@@ -1314,11 +1321,11 @@
     $('pot-area').classList.remove('hidden');
     const pr=$('pot-area').querySelector('.pot-chip').getBoundingClientRect();
     // the pot's tray: centred on the pot pile, drawn under the coins
-    const TW=200, TH=OPT.tray==='well'?52:58;
+    const TW=200, TH=58;
     const tray=document.createElement('div'); tray.className='ct-tray'; tray.dataset.tray=OPT.tray;
     Object.assign(tray.style,{ width:TW+'px', height:TH+'px', left:Math.round(pr.left+pr.width/2-fr.left-TW/2)+'px', top:Math.round(pr.top-fr.top-16-TH/2-5)+'px' });
     felt.appendChild(tray);
-    TRAY=OPT.tray==='none'?null:{ cx:pr.left+pr.width/2, cy:pr.top-16-5, rx:TW/2-6, ry:TH/2-4, oval:OPT.tray==='well' };
+    TRAY=OPT.tray==='none'?null:{ cx:pr.left+pr.width/2, cy:pr.top-16-5, rx:TW/2-6, ry:TH/2-4, oval:false };
     zone('pot',pr.left+pr.width/2,pr.top-16,9,15,44);
     const bb=$('board').getBoundingClientRect();
     if (bb.height) zones.pot.room=(pr.top-16)-bb.bottom-10;
@@ -1399,6 +1406,7 @@
   function plate(id,shown){
     const z=zones['spot:'+id], el=spotEls[id], v=shown==null?z.amount:shown;
     el.classList.toggle('has-bet',v>0 || z.amount>0);
+    if (v<=0){ el.classList.remove('is-pop'); clearTimeout(popTimers[id]); }
     el.querySelector('.cl-spot-plate span').textContent=Math.round(v).toLocaleString();
   }
   const popTimers={};
@@ -1502,6 +1510,25 @@
     const pot=zones.pot, total=ids.reduce((a,k)=>a+zones[k].amount,0), all=[];
     const potPlate=document.querySelector('#pot-area .pot-chip');
     let shown=potValue;
+    if (OPT.sweep==='jump'){
+      // each pile empties into the pot top-first, coin by coin, in turn
+      let delay=0; const throws=[];
+      ids.forEach(k=>{
+        const z=zones[k], list=z.list.slice().sort((a,c)=>c.z-a.z); z.list.length=0;
+        const each=z.amount/Math.max(1,list.length);
+        spotEls[k.slice(5)].classList.add('is-sweeping'); spotEls[k.slice(5)].classList.remove('is-pop');
+        const items=list.map(b=>{ b.zone=null; b.inFelt=true; return { b, to:targetIn(pot,b), onLand:()=>{ shown+=each; paintPot(shown); punch(potPlate); } }; });
+        throws.push(throwAll(items,'hop',{ delay }));
+        delay+=160+list.length*24;
+      });
+      potValue+=total;
+      await Promise.all(throws); guard(my);
+      overshootPot(potValue);
+      sfx('collect',.6);
+      ids.forEach(k=>{ zones[k].amount=0; const id=k.slice(5); spotEls[id].classList.remove('is-sweeping'); plate(id); });
+      if (OPT.after==='auto'){ await waitMs(200); guard(my); await tidyZone(pot); }
+      return;
+    }
     ids.forEach((k,si)=>{
       const z=zones[k], list=z.list.slice(); z.list.length=0;
       const each=z.amount/Math.max(1,list.length);
