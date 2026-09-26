@@ -221,3 +221,30 @@ v4 (all switches; presets V4 · SNAP · HEAVY · V3 · TODAY):
   a semitone (capped at +14), including coins dropping into your bank.
 - **Plates** tick up coin by coin with a punch, pot included on the sweep.
 - **Calmer arcs:** handful arcs vary ±~10%, all-in ±~11%, no tossed coin.
+
+### v5 (26 Sep 2026)
+
+Owner on v4: "much much better… super satisfying". Preferred settings:
+V4 with SNAP overlap and the CLACK sound (now the V5 default). Remaining
+problems: some coins looked stretched (wider than the rest); stacked coins
+sat inside each other, "clipping" or merged, in piles, the pot and the
+bank; sound could be better, CLACK the favourite.
+
+Causes and fixes:
+- **Stretched coins:** the landing squash was drawn on a coin's final
+  frame and never redrawn once it came to rest. The squash now plays out
+  and the coin is redrawn at true size (0 stretched coins in every check).
+- **Draw order:** coins were layered by y·4 + height, so a tall back stack
+  could draw over a front stack. Now front-to-back first, then height.
+- **A solid border:** every coin that comes to rest is pushed clear of any
+  coin at the same height; a coin resting on another can hang at most ~30%
+  off it; only one coin at a time can snap onto a stack top (several used
+  to land on the same spot in the same frame). After a sweep or pay-out,
+  whole stacks are separated as columns. Checked over 27 samples per
+  preset: overlapping pairs 22 (v4: 2,166), on cards 0, off felt 0.
+- **Bank:** loose clumps are placed clear of each other; the tidy rack is
+  one clean row of towers (the half-hidden back row read as merged).
+- **Sound:** CLACK reworked (a triangle "tock", a bright click, a small
+  body; a double clack-ck onto a stack; a four-hit cascade for the group
+  chunk). CLACK+ adds a heavier thud underneath. Presets: V5 · CLACK+ ·
+  HEAVY · V4 · TODAY.

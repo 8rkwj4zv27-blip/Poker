@@ -45,21 +45,24 @@
   /* ---------------- options & presets ---------------- */
   const BASE={ art:'gold', body:'thick', depth:'on', overlap:'snug', size:'m', shadow:'on', throw:'bybet', hand:'bloom', timing:'irregular',
     flips:'many', toss:'off', source:'edge', bounces:'multi', rock:'on', roll:'on', knock:'on', juice:'on', after:'tap', sweep:'push',
-    random:'fresh', sfx:'coin', rise:'on', group:'on' };
-  const OPT={ preset:'v4', ...BASE, speed:1, sound:'on' };
+    random:'fresh', sfx:'clack', rise:'on', group:'on' };
+  BASE.overlap='snap';
+  const OPT={ preset:'v5', ...BASE, speed:1, sound:'on' };
   const PRESETS={
-    v4:   { ...BASE },
-    snap: { ...BASE, overlap:'snap' },
-    heavy:{ ...BASE, overlap:'snap', bounces:'dead', roll:'off', sfx:'thud' },
+    v5:   { ...BASE },
+    chunky:{ ...BASE, sfx:'clackplus' },
+    heavy:{ ...BASE, bounces:'dead', roll:'off', sfx:'thud' },
+    v4:   { ...BASE, overlap:'snug', sfx:'coin' },
     v3:   { ...BASE, body:'thin', depth:'off', overlap:'free', sfx:'old', rise:'off', group:'off', toss:'on' },
     today:{ art:'current', body:'thin', depth:'off', overlap:'free', size:'l', shadow:'off', throw:'stream', hand:'rigid', timing:'even', flips:'one', toss:'off',
             source:'face', bounces:'one', rock:'off', roll:'off', knock:'off', juice:'off', after:'neat', sweep:'stream', random:'same',
             sfx:'old', rise:'off', group:'off', eased:true }
   };
   const NOTES={
-    v4:'Chunky coins with a real edge, pile depth, snug overlap, 1–3 bounces, the new COIN sound set with a group chunk and rising pitch, plates that tick per coin. The mess stays until you tap the felt.',
-    snap:'As V4, but a coin that lands near another snaps onto it: the mess is stacks of different heights plus a few loose coins.',
-    heavy:'As SNAP, with dead landings (no bounce, no roll) and the THUD sound set: the heaviest version.',
+    v5:'Your settings: chunky coins, snap-onto-stacks, 1–3 bounces, CLACK (reworked) with group chunk and rising pitch. Coins keep a solid border: they never sit inside each other at the same height, and front stacks always draw over back ones.',
+    chunky:'As V5 with CLACK+: the same click with a heavier thud under it.',
+    heavy:'As V5, with dead landings (no bounce, no roll) and the THUD sound set.',
+    v4:'The last version: snug overlap and the COIN sound set.',
     v3:'The last version, for comparison: thin coins, free overlap, the old clink, a tossed coin.',
     today:'What the game does now, for reference: one chip at a time on smooth swaying arcs, out of the face.',
     custom:'Your own mix.'
@@ -219,11 +222,24 @@
       chips.forEach(c=>{
         if (!c.clump || !this.clumps.includes(c.clump)){
           let cl=this.clumps.find(k=>k.n<k.cap && k.open);
-          if (!cl){ this.clumps.forEach(k=>k.open=false); cl={ x:rint(1,Math.max(1,Math.round(w-d-1))), y:rint(2,Math.round(floor)), n:0, cap:rint(2,6), open:true }; this.clumps.push(cl); }
+          if (!cl){
+            this.clumps.forEach(k=>k.open=false);
+            // a new clump goes where it doesn't sit inside another: beside
+            // it, or far enough behind to read as further back
+            const clear=(x,y)=>this.clumps.every(k=>Math.abs(k.x-x)>=d*.95 || Math.abs(k.y-y)>=d*.62);
+            let x=0, y=0, ok=false;
+            for (let tries=0; tries<40 && !ok; tries++){ x=rint(1,Math.max(1,Math.round(w-d-1))); y=rint(2,Math.round(floor+tries*.6)); ok=clear(x,y); }
+            if (!ok){
+              // nowhere clear: grow the shortest clump instead
+              const k=this.clumps.reduce((a,c)=>c.n<a.n?c:a,this.clumps[0]);
+              if (k){ k.cap=k.n+1; k.open=true; cl=k; }
+            }
+            if (!cl){ cl={ x, y, n:0, cap:rint(2,6), open:true }; this.clumps.push(cl); }
+          }
           c.clump=cl; c.ci=cl.n; cl.n++;
         }
         const cl=c.clump;
-        pos.push({ x:cl.x+c.lean*Math.min(2,c.ci), y:cl.y+c.ci*this.step, z:Math.round((h-cl.y)*4)+c.ci });
+        pos.push({ x:cl.x+c.lean*Math.min(1,c.ci), y:cl.y+c.ci*this.step, z:Math.round((h-cl.y)*4)*64+c.ci });
       });
       return pos;
     }
@@ -233,13 +249,16 @@
       const sorted=chips.slice().sort((a,b)=>COLOURS.indexOf(b.colour)-COLOURS.indexOf(a.colour));
       const by={}; sorted.forEach(c=>{ by[c.colour]=(by[c.colour]||0)+1; });
       const need=k=>Object.values(by).reduce((a,n)=>a+Math.ceil(n/k),0);
-      const hard=Math.max(4,Math.floor((h-d-14)/this.step)+1);
-      let cap=12; while (cap<hard && need(cap)>cols*2) cap+=2;
-      const pos=new Map(); let col=-1, n=cap, last=null;
+      // one clean row of towers (a half-hidden back row read as merged
+      // stacks); towers grow as tall as they need
+      const hard=Math.max(4,Math.floor((h-d*HR()-6)/this.step)+1);
+      let cap=Math.min(hard,8); while (need(cap)>cols && cap<200) cap++;
+      const pos=new Map(), colH=new Array(cols).fill(0); let col=-1, n=cap, last=null;
       sorted.forEach(c=>{
         if (c.colour!==last || n>=cap){ col++; n=0; last=c.colour; }
-        const row=Math.floor(col/cols);
-        pos.set(c,{ x:x0+(col%cols)*sp+(row?Math.round(sp/2):0), y:4+row*9+n*this.step, z:(row?10:60)+n });
+        // more colours than towers: carry on up the same tower
+        const cc=col%cols, lv=colH[cc]++;
+        pos.set(c,{ x:x0+cc*sp, y:4+lv*this.step, z:60+lv });
         n++;
       });
       return pos;
@@ -323,11 +342,20 @@
         bounce:(p,w)=>{ tone(180*p,110*p,.05,'sine',V(.22*w)); },
         chunk:(p,w)=>{ tone(120*p,55*p,.14,'sine',V(.55*w)); noise(.08,V(.26*w),'lowpass',1100,.7); noise(.05,V(.12*w),'bandpass',2000,1.5,.03); }
       },
+      // CLACK (reworked): a hard block "tock" with a bright click on top and
+      // a small body under it; onto a stack it's a double clack-ck
       clack:{
-        land:(p,w)=>{ tone(1150*p,900*p,.03,'square',V(.07*w)); noise(.025,V(.18*w),'highpass',2600*p,.8); tone(190*p,130*p,.045,'sine',V(.18*w)); },
-        stack:(p,w)=>{ tone(1500*p,1200*p,.025,'square',V(.08*w)); noise(.02,V(.2*w),'highpass',3200*p,.8); },
-        bounce:(p,w)=>{ tone(1300*p,1100*p,.02,'square',V(.05*w)); noise(.015,V(.1*w),'highpass',3000,.8); },
-        chunk:(p,w)=>{ [0,.018,.04].forEach((d,i)=>{ tone((1000+i*140)*p,800*p,.03,'square',V(.06*w),d); noise(.02,V(.16*w),'highpass',2800,.8,d); }); tone(150*p,80*p,.08,'sine',V(.28*w)); }
+        land:(p,w)=>{ tone(860*p,640*p,.045,'triangle',V(.17*w)); noise(.02,V(.2*w),'highpass',2700*p,.9); tone(175*p,115*p,.05,'sine',V(.2*w)); },
+        stack:(p,w)=>{ tone(1180*p,960*p,.03,'triangle',V(.18*w)); noise(.016,V(.22*w),'highpass',3300*p,.9); tone(1420*p,1250*p,.02,'triangle',V(.08*w),.017); noise(.01,V(.1*w),'highpass',3600,.9,.017); },
+        bounce:(p,w)=>{ tone(1000*p,860*p,.025,'triangle',V(.1*w)); noise(.012,V(.12*w),'highpass',3000,.9); },
+        chunk:(p,w)=>{ [0,.014,.03,.05].forEach((d,i)=>{ tone((900+i*110)*p,(720+i*90)*p,.035,'triangle',V(.13*w),d); noise(.016,V(.17*w),'highpass',2900,.9,d); }); tone(140*p,70*p,.1,'sine',V(.32*w)); }
+      },
+      // CLACK+: the same click with a heavier thud under it
+      clackplus:{
+        land:(p,w)=>{ tone(820*p,610*p,.045,'triangle',V(.16*w)); noise(.02,V(.19*w),'highpass',2600*p,.9); tone(135*p,68*p,.09,'sine',V(.36*w)); },
+        stack:(p,w)=>{ tone(1120*p,920*p,.03,'triangle',V(.17*w)); noise(.016,V(.2*w),'highpass',3200*p,.9); tone(1360*p,1200*p,.02,'triangle',V(.07*w),.017); tone(165*p,90*p,.07,'sine',V(.28*w)); },
+        bounce:(p,w)=>{ tone(960*p,820*p,.025,'triangle',V(.1*w)); tone(150*p,95*p,.05,'sine',V(.18*w)); },
+        chunk:(p,w)=>{ [0,.014,.03,.05].forEach((d,i)=>{ tone((860+i*110)*p,(690+i*90)*p,.035,'triangle',V(.12*w),d); noise(.016,V(.16*w),'highpass',2800,.9,d); }); tone(115*p,55*p,.15,'sine',V(.5*w)); }
       },
       coin:{
         land:(p,w)=>{ tone(145*p,85*p,.07,'sine',V(.3*w)); noise(.014,V(.13*w),'bandpass',3400,1.4); tone(1880*p,1860*p,.11,'sine',V(.05*w),.004); tone(2830*p,2800*p,.08,'sine',V(.03*w),.004); },
@@ -390,7 +418,7 @@
   const GRIP=150;               // max horizontal px/s kept after first impact
   const ease={ inOut:t=>t<.5?2*t*t:1-Math.pow(-2*t+2,2)/2, out:t=>1-Math.pow(1-t,3) };
   let air=null, shadows=null, raf=0, lastT=0, freeze=0;
-  const active=new Set(), dirty=new Set(), zones={};
+  const active=new Set(), dirty=new Set(), zones={}, squashing=new Set();
   let WALLS=null;               // { felt:{L,T,R,B,rc}, blocks:[{L,T,R,B}] }
 
   function ensureLayers(){
@@ -412,8 +440,11 @@
       }
       dirty.add(b);
     }
+    // a landing squash plays out even after the coin is at rest, then the
+    // coin is redrawn at its true size (it used to stay stretched)
+    squashing.forEach(b=>{ b.sq-=dt; dirty.add(b); if (b.sq<=0 || reduced){ b.sq=0; squashing.delete(b); } });
     dirty.forEach(draw); dirty.clear();
-    raf=(active.size||freeze>0)?requestAnimationFrame(loop):0;
+    raf=(active.size||squashing.size||freeze>0)?requestAnimationFrame(loop):0;
   }
 
   function body(chip,x,y,z,d){
@@ -436,7 +467,14 @@
   }
   function removeFromZone(b){ const i=b.zone.list.indexOf(b); if (i>=0) b.zone.list.splice(i,1); b.zone=null; }
   function toRest(b){
-    b.state='rest'; b.t=0; b.vx=b.vy=b.vz=0; active.delete(b); dirty.add(b);
+    const was=b.state;
+    b.state='rest'; b.t=0; b.vx=b.vy=b.vz=0;
+    // every coin that comes to rest is checked against its neighbours (a
+    // pushed group is relaxed as whole stacks by relaxStacks instead)
+    if (was!=='push' && !(b.target&&b.target.slot)) relaxCoin(b);
+    if (b.snapOnto){ b.snapOnto.claimed=null; b.snapOnto=null; }
+    active.delete(b); dirty.add(b);
+    if (b.sq>0) squashing.add(b);
     if (b.zone && OPT.depth==='on') b.zone.list.forEach(q=>{ if (q!==b && Math.abs(q.x-b.x)<b.d && Math.abs(q.y-b.y)<b.d) dirty.add(q); });
     kick(); onRest(b);
   }
@@ -579,7 +617,7 @@
     if (s==='shove'){
       // pushed along the felt: exactly enough speed to arrive; front coins tumble
       const L=Math.max(1,dist), v=Math.sqrt(2*FRICTION*L)*rr(.95,1.05);
-      b.vx=(t.x-b.x)/L*v; b.vy=(t.y-b.y)/L*v; b.state='slide'; b.inFelt=true;
+      b.vx=(t.x-b.x)/L*v; b.vy=(t.y-b.y)/L*v; b.state='slide'; b.inFelt=true; b.d=b.d1;
       if (b.opts.tumble){ b.state='air'; b.vz=rr(90,170); b.T=0; b.bounces=1; b.maxB=2; b.fr=Math.PI*rr(4,8); }
       return;
     }
@@ -775,6 +813,7 @@
       contain(b);
       if (OPT.overlap==='snap' && trySnap(b)) return;
       b.z=supportUnder(b).h;
+      relaxCoin(b);
     }
     if (OPT.rock==='on' && b.z<1 && rnd()<.22){
       b.state='rock'; b.t=0; b.T=rr(.2,.32);
@@ -783,19 +822,80 @@
     }
     finishRest(b);
   }
+  // A coin is a solid disc: at the same height it can't sit inside another.
+  // Push it clear (a coin is never moved into a card or off the felt), then
+  // let it drop to whatever is now under it, and check again.
+  function relaxCoin(b){
+    if (!b.zone || OPT.overlap==='free') return;
+    const min=b.d*MIN_GAP();
+    for (let round=0; round<4; round++){
+      for (let it=0; it<8; it++){
+        let moved=false;
+        for (const q of b.zone.list){
+          if (q===b || q.state!=='rest' || Math.abs(q.z-b.z)>STEP()*.8) continue;
+          const dx=b.x-q.x, dy=(b.y-q.y)*1.4, dist=Math.hypot(dx,dy);
+          if (dist>=min) continue;
+          const nx=dist>.01?dx/dist:(rnd()<.5?-1:1), ny=dist>.01?dy/dist:0, push=min-dist+.4;
+          b.x+=nx*push; b.y+=ny*push/1.4; moved=true;
+        }
+        contain(b);
+        if (!moved) break;
+      }
+      const sup=supportUnder(b);
+      // a coin on a coin can't hang far off it: it would topple
+      if (sup.o){
+        const dx=b.x-sup.o.x, dy=b.y-sup.o.y, off=Math.hypot(dx,dy*1.4), lim=b.d*.3;
+        if (off>lim){ b.x=sup.o.x+dx*lim/off; b.y=sup.o.y+dy*lim/off; }
+      }
+      if (Math.abs(sup.h-b.z)<.5 && round>0) break;
+      b.z=sup.h;
+    }
+  }
+  // After a push (sweep, pay-out) whole stacks can land inside each other:
+  // treat each stack as one solid column and push the columns apart.
+  function relaxStacks(z){
+    if (OPT.overlap==='free' || !z.list.length) return;
+    const stacks=[];
+    z.list.slice().sort((a,c)=>a.z-c.z).forEach(b=>{
+      const s=stacks.find(k=>Math.abs(k.x-b.x)<b.d*.45 && Math.abs(k.y-b.y)<b.d*.35 && b.z>=k.top+STEP()*.5 && (k.top=b.z,true));
+      if (s) s.coins.push(b); else stacks.push({ x:b.x, y:b.y, d:b.d, top:b.z, coins:[b] });
+    });
+    // how far a stack's upper coins sit off its base
+    stacks.forEach(k=>{ k.spread=Math.min(k.d*.3,Math.max(0,...k.coins.map(b=>Math.hypot(b.x-k.coins[0].x,(b.y-k.coins[0].y)*1.4)))); });
+    for (let it=0; it<80; it++){
+      let moved=false;
+      for (let i=0;i<stacks.length;i++) for (let j=i+1;j<stacks.length;j++){
+        const a=stacks[i], c=stacks[j], min=a.d*MIN_GAP()+a.spread+c.spread;
+        const dx=c.x-a.x, dy=(c.y-a.y)*1.4, dist=Math.hypot(dx,dy);
+        if (dist>=min) continue;
+        const nx=dist>.01?dx/dist:(rnd()<.5?-1:1), ny=dist>.01?dy/dist:0, h=(min-dist)/2+.3;
+        a.x-=nx*h; a.y-=ny*h/1.4; c.x+=nx*h; c.y+=ny*h/1.4; moved=true;
+      }
+      stacks.forEach(k=>{ const probe={ x:k.x, y:k.y, d:k.d, vx:0, vy:0 }; contain(probe); k.x=probe.x; k.y=probe.y; });
+      if (!moved) break;
+    }
+    // slide each column the few px to its new place
+    stacks.forEach(k=>k.coins.forEach(b=>{
+      const dx=k.x-(k.coins[0].x), dy=k.y-(k.coins[0].y);
+      if (Math.abs(dx)<.3 && Math.abs(dy)<.3) return;
+      b.tx=b.x+dx; b.ty=b.y+dy; b.tz=b.z; b.lift=0; b.T=.09; b.wait=0; b.state='wait'; b.next='push'; b.target={}; b.opts={}; active.add(b);
+    }));
+    kick();
+  }
   // SNAP: pull a settling coin onto the nearest stack top (max 6 high)
   function trySnap(b){
     if (!b.zone) return false;
     let best=null, bd=1e9;
     for (const q of b.zone.list){
-      if (q===b || q.state!=='rest') continue;
+      if (q===b || q.state!=='rest' || q.claimed) continue;       // another coin is already hopping onto it
       const covered=b.zone.list.some(r=>r!==q && r!==b && r.state==='rest' && r.z>q.z+.5 && Math.abs(r.x-q.x)<b.d*.5 && Math.abs(r.y-q.y)<b.d*.4);
       if (covered || q.z/STEP()>=5) continue;
       const dist=Math.hypot(q.x-b.x,(q.y-b.y)*1.4);
       if (dist<b.d*1.05 && dist<bd){ bd=dist; best=q; }
     }
     if (!best) return false;
-    b.x0=b.x; b.y0=b.y; b.z0=b.z; b.tx=best.x+rint(-1,1); b.ty=best.y+rint(0,1); b.tz=best.z+STEP();
+    best.claimed=b; b.snapOnto=best;
+    b.x0=b.x; b.y0=b.y; b.z0=b.z; b.tx=best.x; b.ty=best.y; b.tz=best.z+STEP();
     b.T=.07+Math.min(.06,bd/600); b.arc=3; b.t=0; b.state='tidy'; b.snapping=true;
     return true;
   }
@@ -823,7 +923,7 @@
           else if (q.state==='rest'){ q.vx=q.vy=0; }
         }
       }
-      if (qMoves){ q.x-=nx*over*.5; q.y-=ny*over*.5/1.4; contain(q); dirty.add(q); }
+      if (qMoves){ q.x-=nx*over*.5; q.y-=ny*over*.5/1.4; contain(q); if (q.state==='rest') relaxCoin(q); dirty.add(q); }
     }
   }
   // A landing disturbs what's around it: shoves, or pops a chip loose.
@@ -896,7 +996,7 @@
     const rot=pixel?Math.round(b.rot/15)*15:Math.round(b.rot);
     b.el.style.transformOrigin='50% 100%';
     b.el.style.transform='translate('+x+'px,'+y+'px)'+(rot?' rotate('+rot+'deg)':'')+' scale('+(s*sx).toFixed(3)+','+(s*sy).toFixed(3)+')';
-    b.el.style.zIndex=String(1000+Math.round(b.y*4+b.z));
+    b.el.style.zIndex=String(1000+Math.round(b.y)*64+Math.min(63,Math.round(b.z)));
     // depth: a hard shadow line under every coin; coins with one on top are darker
     if (OPT.depth==='on'){
       let covered=false;
@@ -1207,7 +1307,7 @@
       const aim={ x:pot.cx+rr(-26,26), y:pot.cy+rr(-5,4) };
       list.forEach((b,ci)=>{
         b.zone=pot; pot.list.push(b);
-        let tx=aim.x+(b.x-z.cx)*.55, ty=aim.y+(b.y-z.cy)*.55, tz=b.z;
+        let tx=aim.x+(b.x-z.cx)*.85, ty=aim.y+(b.y-z.cy)*.85, tz=b.z;
         if (OPT.after==='neat'){ const s=neatSlots(pot,pot.list).get(b); tx=s.x; ty=s.y; tz=s.z; }
         else {
           // never onto a card or the plate
@@ -1226,6 +1326,7 @@
     potValue+=total;
     await Promise.all(all); guard(my);
     paintPot(potValue); punch(potPlate);
+    relaxStacks(pot);
     sfx('collect',.6);
     ids.forEach(k=>{ zones[k].amount=0; const id=k.slice(5); spotEls[id].classList.remove('is-sweeping'); plate(id); });
     if (OPT.after==='auto'){ await waitMs(200); guard(my); await tidyZone(pot); }
@@ -1292,6 +1393,7 @@
     kick();
     z.amount=won; plate(p.id);
     await Promise.all([Promise.all(all), countPot(0,520)]); guard(my);
+    relaxStacks(z);
     sfx('collect',.6);
     await waitMs(420); guard(my);
     const back=z.list.slice().sort((a,c)=>c.z-a.z); z.list.length=0; z.amount=0; plate(p.id);
@@ -1448,6 +1550,11 @@
       bodies:()=>Object.values(zones).flatMap(z=>z.list.map(b=>({ zone:z.id, x:b.x, y:b.y, z:b.z, d:b.d, state:b.state }))),
       blocked:()=>Object.values(zones).flatMap(z=>z.list).filter(b=>b.state==='rest' && b.z<1 && inBlock(b.x,b.y,b.d)).length,
       offFelt:()=>{ const F=WALLS.felt; return Object.values(zones).flatMap(z=>z.list).filter(b=>b.x<F.L||b.x>F.R||b.y<F.T||b.y>F.B+1).length; },
+      overlapPairs:()=>{ const out=[]; Object.values(zones).forEach(z=>{ const L=z.list.filter(b=>b.state==='rest'); for (let i=0;i<L.length;i++) for (let j=i+1;j<L.length;j++){ const a=L[i], c=L[j]; if (Math.abs(a.z-c.z)<=STEP()*.8 && Math.hypot(a.x-c.x,(a.y-c.y)*1.4)<a.d*.88) out.push([z.id,Math.round(a.x),Math.round(a.y),Math.round(a.z),Math.round(c.x),Math.round(c.y),Math.round(c.z),a.d,c.d].join(',')); } }); return out; },
+      // resting coins at the same height sitting inside each other
+      overlaps:()=>{ let n=0; Object.values(zones).forEach(z=>{ const L=z.list.filter(b=>b.state==='rest'); for (let i=0;i<L.length;i++) for (let j=i+1;j<L.length;j++){ const a=L[i], c=L[j]; if (Math.abs(a.z-c.z)<=STEP()*.8 && Math.hypot(a.x-c.x,(a.y-c.y)*1.4)<a.d*.88) n++; } }); return n; },
+      // resting coins still drawn squashed/stretched
+      stretched:()=>Object.values(zones).flatMap(z=>z.list).filter(b=>b.state==='rest' && /scale\(([\d.]+),([\d.]+)\)/.test(b.el.style.transform) && (()=>{ const m=b.el.style.transform.match(/scale\(([\d.]+),([\d.]+)\)/); return Math.abs(m[1]-m[2])>.02; })()).length,
       spotMiss:id=>{ const z=zones['spot:'+id]; return z.list.map(b=>Math.round(Math.hypot(b.x-z.cx,b.y-z.cy))); } };
   }
   init().catch(err=>{ console.error('[chip-throw-lab]',err); status('Failed to mount — serve over http'); });

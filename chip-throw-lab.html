@@ -6,7 +6,7 @@
 <meta name="theme-color" content="#16090D">
 <link rel="icon" href="data:,">
 <title>Chip Throw Lab</title>
-<!-- CHIP THROW LAB v4 — how chips travel (docs/ui/CHIP_PLAN.md). The real
+<!-- CHIP THROW LAB v5 — how chips travel (docs/ui/CHIP_PLAN.md). The real
      #table-screen and renderers on memory-only state, plus a chip physics
      world where every chip on the felt is a body. Reuses chip-lab.css for
      the drawer, bet spots and bank. Never loaded by index.html or sw.js;
@@ -53,7 +53,7 @@
     <div class="ct-bar-row ct-bar-foot">
       <button type="button" class="ct-replay" data-run="replay" aria-label="Replay the last move">↻ REPLAY</button>
       <button type="button" data-run="reset">RESET</button>
-      <span class="ct-status"><b id="ct-preset-name">V4</b> · <span id="ct-status">LOADING…</span></span>
+      <span class="ct-status"><b id="ct-preset-name">V5</b> · <span id="ct-status">LOADING…</span></span>
       <button type="button" class="ct-gear" id="ct-gear" aria-label="Options">⚙ OPTIONS</button>
     </div>
   </nav>
@@ -62,10 +62,10 @@
     <section class="cl-group">
       <div class="cl-label">PRESET</div>
       <div class="cl-seg" data-opt="preset">
-        <button type="button" data-v="v4">V4</button>
-        <button type="button" data-v="snap">SNAP</button>
+        <button type="button" data-v="v5">V5</button>
+        <button type="button" data-v="chunky">CLACK+</button>
         <button type="button" data-v="heavy">HEAVY</button>
-        <button type="button" data-v="v3">V3</button>
+        <button type="button" data-v="v4">V4</button>
         <button type="button" data-v="today">TODAY</button>
       </div>
       <p class="cl-note" id="ct-note"></p>
@@ -118,7 +118,7 @@
     <section class="cl-group">
       <div class="cl-label">SOUND</div>
       <div class="cl-row"><span class="cl-label">SOUND SET</span>
-        <div class="cl-seg cl-seg-sm" data-opt="sfx"><button type="button" data-v="old">OLD</button><button type="button" data-v="thud">THUD</button><button type="button" data-v="clack">CLACK</button><button type="button" data-v="coin">COIN</button></div></div>
+        <div class="cl-seg cl-seg-sm" data-opt="sfx"><button type="button" data-v="old">OLD</button><button type="button" data-v="thud">THUD</button><button type="button" data-v="clack">CLACK</button><button type="button" data-v="clackplus">CLACK+</button><button type="button" data-v="coin">COIN</button></div></div>
       <div class="cl-row"><span class="cl-label">GROUP CHUNK</span>
         <div class="cl-seg cl-seg-sm" data-opt="group"><button type="button" data-v="on">ON</button><button type="button" data-v="off">OFF</button></div></div>
       <div class="cl-row"><span class="cl-label">RISING PITCH</span>
@@ -131,7 +131,7 @@
         <div class="cl-seg cl-seg-sm" data-opt="random"><button type="button" data-v="fresh">FRESH</button><button type="button" data-v="same">SAME</button></div></div>
       <div class="cl-row"><span class="cl-label">SPEED</span>
         <div class="cl-seg cl-seg-sm" data-opt="speed"><button type="button" data-v="1">1×</button><button type="button" data-v="0.35">SLOW</button></div></div>
-      <p class="cl-note">BY BET: a call is a low flick, a raise a lob of handfuls, a big raise a shove along the felt, an all-in a heave (handfuls, then a splash). OVERLAP: FREE lets coins sit inside each other, SNUG only lets them touch, SNAP pulls a coin landing near another onto it. SOUND: THUD is heavy and low, CLACK a dry arcade click, COIN a gold ring over a thud; GROUP folds three or more landings into one chunk; RISING PITCH lifts each landing in a throw a semitone. JUICE: dust puffs, chute rattle, and a hit-stop and shake on all-ins. RANDOM SAME makes replays identical. Tap the bank to tidy it; with MESS·TAP, tap the felt.</p>
+      <p class="cl-note">BY BET: a call is a low flick, a raise a lob of handfuls, a big raise a shove along the felt, an all-in a heave (handfuls, then a splash). OVERLAP: FREE lets coins sit inside each other, SNUG only lets them touch, SNAP pulls a coin landing near another onto it. SOUND: THUD is heavy and low, CLACK a hard block click (reworked), CLACK+ the same click with a heavier thud under it, COIN a gold ring over a thud; GROUP folds three or more landings into one chunk; RISING PITCH lifts each landing in a throw a semitone. JUICE: dust puffs, chute rattle, and a hit-stop and shake on all-ins. RANDOM SAME makes replays identical. Tap the bank to tidy it; with MESS·TAP, tap the felt.</p>
     </section>
   </aside>
 
