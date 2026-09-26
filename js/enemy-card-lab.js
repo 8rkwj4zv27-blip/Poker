@@ -34,7 +34,7 @@
   // A hosted copy may publish the game under another name (index.html is
   // reserved there); it says so before this script runs.
   const GAME = window.EC_LAB_GAME || 'index.html';
-  const V = '1';
+  const V = '3';
 
   /* The form. The first option of every row is V1 (value '0'), except
      REACTS, which only matters with a rim light. */
