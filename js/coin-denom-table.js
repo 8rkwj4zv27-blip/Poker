@@ -1,6 +1,7 @@
 /* ============================================================
-   COIN TABLE — with DENOMINATIONS and the BANK VIEW (the coin economy
-   pass, v0.44.0; built in coin-denom-lab.html and coin-bank-lab.html).
+   COIN TABLE · DENOMINATIONS — the Coin Denominations Lab's candidate
+   (coin-denom-lab.html), standing in for js/coin-table.js in the lab's
+   game copy; the game never loads it. Runs on js/coin-denom-world.js.
 
    What changes (Lab 1): every bet, yours and theirs, is counted the same
    way. One small coin is the small blind; a bet is its size in small
@@ -40,7 +41,7 @@ const CoinTable = (function(){
   Object.assign(CW.OPT, { denom:'on', betCap:16, allinCap:24, spotCap:30, potCap:60 });
   // Lab 2 (coin-bank-lab.html): the bank's inside, js/coin-bank.js's View
   // in one of its styles; 'today' is the shipped rack (Lab 1 runs on it)
-  Object.assign(CW.OPT, { bank:'tubes', bankLabels:'off', bankChange:3 });
+  Object.assign(CW.OPT, { bank:'today', bankLabels:'values', bankChange:3 });
   const denomOn = ()=>CW.OPT.denom!=='off';
   // one small coin is the small blind this hand
   const unit = ()=>Math.max(1, (game && game.smallBlind) || 1);
@@ -60,11 +61,6 @@ const CoinTable = (function(){
     const O = CW.OPT;
     O.sound = settings.sound ? 'on' : 'off';
     O.sfx = settings.coinSound || 'clay';
-    // Settings → Bank: the inside (TUBES, SHELVES, HOPPER, CLASSIC), the
-    // tube tags, how much making change plays out
-    if (settings.bankStyle) O.bank = settings.bankStyle==='classic' ? 'today' : settings.bankStyle;
-    if (settings.bankTags) O.bankLabels = settings.bankTags;
-    if (settings.bankChange!=null) O.bankChange = +settings.bankChange;
     const m = typeof speedMult==='function' ? speedMult() : 1;
     O.speed = 1/Math.max(.15, m);
     if (!audioWired){
@@ -646,15 +642,6 @@ const CoinTable = (function(){
     [0,70,150].forEach((t,i)=>setTimeout(()=>CW.sfx(i<2?'land':'stack', .8, 1+i*.06), t));
   }
 
-  // Settings → Bank changed: rebuild the inside at once, the same money
-  function restyleBank(){
-    if (!on() || !game) return;
-    sync();
-    if (view){ view.clear(); view.el.remove(); view = null; }
-    if (bank){ bank.el.remove(); bank = null; }
-    if (viewOn()){ const v = ensureView(); if (v) v.setLabels(CW.OPT.bankLabels, unit()); settleView({ instant:true }); }
-    else syncBank(true);
-  }
-  return { on, layout, bet, sweep, payout, potCoins, shownPot, clear, reset, sync, piecesFor, unit, view:()=>view, ensureView, restyleBank,
+  return { on, layout, bet, sweep, payout, potCoins, shownPot, clear, reset, sync, piecesFor, unit, view:()=>view, ensureView,
     renderBank, rebuildBank, loadBank, tidyBank, preview };
 })();

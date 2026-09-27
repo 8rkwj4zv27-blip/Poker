@@ -61,3 +61,12 @@
 /* with coins on, the hatch seam shows (as in the lab): it slides open as
    a win pours in */
 #hud-left[data-coins="on"] .bank-hatch{ display:flex; }
+
+/* the change-up: a pixel ring bursting out where five pieces became one */
+.ct-pop{ position:absolute; left:0; top:0; width:0; height:0; z-index:99999; pointer-events:none; }
+.ct-pop::before{
+  content:''; position:absolute; left:calc(var(--d) / -2); top:calc(var(--d) / -2); width:var(--d); height:var(--d);
+  border:2px solid #fff3b4; border-radius:50%; box-shadow:0 0 0 2px rgba(232,184,58,.55);
+  animation:cdlPop .3s steps(4,end) forwards;
+}
+@keyframes cdlPop{ from{ transform:scale(.35); opacity:1; } to{ transform:scale(1.25); opacity:0; } }

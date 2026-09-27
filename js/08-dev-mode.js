@@ -1013,6 +1013,17 @@ function wireUI(){
   });
   setSegment('coin-sound-seg','coin',settings.coinSound);
 
+  // Settings → Bank (js/coin-bank.js via CoinTable)
+  [['bank-style-seg','bank','bankStyle'],['bank-tags-seg','tags','bankTags'],['bank-change-seg','change','bankChange']].forEach(([id,key,prop])=>{
+    document.querySelectorAll('#'+id+' button').forEach(b=>b.onclick=()=>{
+      settings[prop] = b.dataset[key];
+      setSegment(id,key,settings[prop]);
+      saveSettings();
+      if (typeof CoinTable!=='undefined' && CoinTable.restyleBank) CoinTable.restyleBank();
+    });
+    setSegment(id,key,settings[prop]);
+  });
+
   $('open-scoring-guide').onclick = ()=>{
     buildScoringGuide();
     $('settings-sheet').classList.remove('open');
