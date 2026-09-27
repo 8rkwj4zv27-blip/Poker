@@ -1,0 +1,85 @@
+/* ============================================================
+   COIN BANK (candidate, Coin Bank Lab): the inside of your bank in the
+   same housing (#hud-left). Three styles: TUBES (a coin changer), SHELVES
+   (a lit velvet display case), HOPPER (a glass tank of gold). The pieces
+   are drawn by the coin world (js/coin-world.js sprites); everything here
+   is the case they sit in. Lab only: the game never loads this file.
+   ============================================================ */
+#hud-left[data-coins="on"] .cw-bank.cb-bank{ background:none; box-shadow:none; overflow:hidden; }
+.cb-bank > i{ position:absolute; display:block; pointer-events:none; }
+.cb-bank .cb-piece{
+  position:absolute; background-size:100% 100%; background-repeat:no-repeat;
+  image-rendering:pixelated; image-rendering:crisp-edges;
+  filter:drop-shadow(0 1px 0 rgba(28,14,0,.8));
+}
+/* the lamp: a warm strip along the top, lighting the inside */
+.cb-bank .cb-lamp{
+  left:6px; right:6px; top:0; height:3px; border-radius:0 0 2px 2px;
+  background:color-mix(in srgb,var(--accent) 80%,#fff); opacity:.75;
+  box-shadow:0 2px 0 rgba(0,0,0,.4), 0 0 18px 6px color-mix(in srgb,var(--accent) 22%,transparent);
+}
+/* the intake slot the wins drop through */
+.cb-bank .cb-slot{ left:50%; top:5px; width:34px; height:3px; margin-left:-17px; background:#000; border-radius:1px; box-shadow:0 1px 0 rgba(255,255,255,.08); }
+.cb-bank .cb-pop{ position:absolute; width:0; height:0; z-index:400; pointer-events:none; }
+.cb-bank .cb-pop::before{
+  content:''; position:absolute; left:calc(var(--d) / -2); top:calc(var(--d) / -2); width:var(--d); height:var(--d);
+  border:2px solid #fff3b4; border-radius:50%; box-shadow:0 0 0 2px rgba(232,184,58,.5);
+  animation:cbPop .3s steps(4,end) forwards;
+}
+@keyframes cbPop{ from{ transform:scale(.3); opacity:1; } to{ transform:scale(1.2); opacity:0; } }
+.cb-bank .cb-tag{
+  bottom:0; z-index:300; transform:translateX(-50%);
+  font-family:var(--font-hdr); font-size:6px; letter-spacing:.02em; line-height:9px; color:#1a0f02;
+}
+
+/* ---- TUBES: a coin changer ---- */
+.cb-bank[data-style="tubes"]{ background:linear-gradient(180deg,rgba(0,0,0,.25),rgba(0,0,0,0) 30%); }
+.cb-bank[data-style="tubes"] .cb-tube{
+  border:1px solid rgba(255,240,200,.16); border-bottom:0; border-radius:4px 4px 0 0;
+  background:linear-gradient(90deg,rgba(0,0,0,.35),rgba(255,255,255,.05) 30%,rgba(0,0,0,0) 60%,rgba(0,0,0,.3));
+}
+.cb-bank[data-style="tubes"] .cb-tube[data-k="gold-bar"]{ border-color:rgba(255,240,200,.08); background:rgba(0,0,0,.18); border-radius:2px 2px 0 0; }
+/* the glass front, over the coins: a reflection and a cool edge */
+.cb-bank .cb-glass{
+  position:absolute; inset:0; z-index:250; border-radius:inherit;
+  background:linear-gradient(90deg,transparent 18%,rgba(255,255,255,.11) 18% 28%,transparent 28% 72%,rgba(255,255,255,.05) 72% 78%,transparent 78%);
+}
+.cb-bank[data-style="tubes"] .cb-tube[data-k="gold-bar"] .cb-glass{ display:none; }
+.cb-bank[data-style="tubes"] .cb-plinth{
+  left:0; right:0; bottom:0; height:9px; z-index:280;
+  background:linear-gradient(180deg,color-mix(in srgb,var(--accent) 85%,#fff) 0 1px,var(--accent) 1px 5px,color-mix(in srgb,var(--accent) 55%,#000) 5px);
+  box-shadow:0 -2px 0 rgba(0,0,0,.45);
+}
+
+/* ---- SHELVES: a lit velvet display case ---- */
+.cb-bank[data-style="shelves"] .cb-velvet{
+  inset:0; z-index:0;
+  background:
+    radial-gradient(ellipse at 50% 0%,rgba(255,200,120,.16),transparent 60%),
+    repeating-linear-gradient(90deg,rgba(0,0,0,.14) 0 1px,transparent 1px 3px),
+    #3a1016;
+}
+.cb-bank[data-style="shelves"] .cb-shelf{
+  left:0; right:0; height:4px; z-index:5;
+  background:linear-gradient(180deg,color-mix(in srgb,var(--accent) 85%,#fff) 0 1px,var(--accent) 1px 3px,color-mix(in srgb,var(--accent) 45%,#000) 3px);
+  box-shadow:0 2px 0 rgba(0,0,0,.5);
+}
+.cb-bank[data-style="shelves"] .cb-piece{ z-index:10; }
+
+/* ---- HOPPER: a glass tank of gold ---- */
+.cb-bank[data-style="hopper"] .cb-tank{
+  left:2px; right:2px; top:10px; bottom:0; z-index:0; border:2px solid rgba(255,240,200,.14); border-top:0; border-radius:0 0 4px 4px;
+  background:linear-gradient(180deg,rgba(0,0,0,.1),rgba(0,0,0,.35));
+}
+.cb-bank[data-style="hopper"] .cb-tank .cb-glass{ z-index:auto; }
+.cb-bank[data-style="hopper"] .cb-glass{ position:absolute; inset:0; pointer-events:none; }
+/* the fill line: a brass tick on the tank's side at the top of the heap */
+.cb-bank[data-style="hopper"] .cb-level{
+  left:-2px; width:6px; height:2px; bottom:0; position:absolute;
+  background:var(--accent); box-shadow:0 0 6px var(--accent); transition:bottom .25s steps(4,end);
+}
+.cb-bank[data-style="hopper"] .cb-chute{ right:4px; bottom:2px; width:10px; height:4px; background:#000; z-index:300; border-radius:1px; }
+@media (prefers-reduced-motion:reduce){ .cb-bank[data-style="hopper"] .cb-level{ transition:none; } }
+/* a coin roll reads darker than loose gold (each coin shows only its
+   edge): lift the tubes' coins a touch */
+.cb-bank[data-style="tubes"] .cb-piece{ filter:brightness(1.16) drop-shadow(0 1px 0 rgba(28,14,0,.8)); }

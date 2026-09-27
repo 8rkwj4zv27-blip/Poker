@@ -600,3 +600,27 @@ split and side pots still share the tray's pieces by count, not value
 (`js/showdown.js`); your wins' bigger pieces melt in at the hatch until
 the bank lab.
 
+**Lab 1 verdict (owner, 27 Sep 2026):** "looks really good". The pieces,
+the counting rule and the pot change-up stand as built (first option of
+every row). On to the bank.
+
+**Lab 2 (`coin-bank-lab.html`): the bank's inside.** Same housing
+(#hud-left, 90 x 155; the inside is 76 x 134, tall and narrow, so the wide
+vault tray first proposed became three portrait styles). Your stack is
+shown as the felt's pieces at the small blind, as many as each column
+holds (small coins until their column is full, then five change up). The
+first of each is the suggestion:
+- TUBES: a coin changer. Three glass tubes (small, big, bars) on a brass
+  plinth tagged with each piece's value; coins stack edge-on like a coin
+  roll, pay out from the bottom (the column drops), wins drop in at the
+  top of their own tube. The fill levels are the stack.
+- SHELVES: a lit velvet display case: small coins on the top shelf, big
+  coins in the middle, bars on the floor.
+- HOPPER: a glass tank of mixed gold with a brass fill line.
+- TODAY: the shipped rack, to compare.
+Making change plays out in the bank: a bet that needs small coins the bank
+hasn't got breaks a big coin into five first; after a bet or a win the
+bank settles to the stack (breaks, change-ups, then top-ups or lifts). The
+bank never holds more than it shows room for (a very deep stack fills
+every column; the STACK readout keeps the figure).
+
