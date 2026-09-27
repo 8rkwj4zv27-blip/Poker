@@ -8,10 +8,11 @@
    ============================================================ */
 
 /* ---- body-level layers (above the table, below menus) ---- */
+/* the spotlight: a canvas (a dimmed sheet with soft pools of light cut
+   out of it), faded in and out in steps */
 .kofx-spot{
-  position:fixed; inset:0; z-index:78; pointer-events:none;
-  background:rgba(10,2,5,.64); opacity:0;
-  transition:opacity .2s steps(3,end);
+  position:fixed; left:0; top:0; width:100vw; height:100vh; z-index:78; pointer-events:none;
+  opacity:0; image-rendering:pixelated; transition:opacity .38s steps(5,end);
 }
 .kofx-spot.is-on{ opacity:1; }
 .kofx-fx{ position:fixed; left:0; top:0; width:0; height:0; z-index:80; pointer-events:none; }
@@ -23,9 +24,9 @@
 @keyframes kofxGhost{ to{ opacity:0; } }
 .ko-portrait.kofx-onglass{ filter:brightness(1.12) contrast(1.05); box-shadow:0 0 0 3px rgba(0,0,0,.35); }
 
-body:has(.scrim.open) :is(.kofx-spot,.kofx-fx,.kofx-flash,.kofx-crack,.kofx-debris,.kofx-stamp),
-body:has(#confirm-dialog:not(.hidden)) :is(.kofx-spot,.kofx-fx,.kofx-flash,.kofx-crack,.kofx-debris,.kofx-stamp),
-body:has(#table-screen.hidden) :is(.kofx-spot,.kofx-fx,.kofx-flash,.kofx-crack,.kofx-debris,.kofx-stamp){ display:none !important; }
+body:has(.scrim.open) :is(.kofx-spot,.kofx-fx,.kofx-flash,.kofx-crack,.kofx-debris,.kofx-stamp,.kofx-over),
+body:has(#confirm-dialog:not(.hidden)) :is(.kofx-spot,.kofx-fx,.kofx-flash,.kofx-crack,.kofx-debris,.kofx-stamp,.kofx-over),
+body:has(#table-screen.hidden) :is(.kofx-spot,.kofx-fx,.kofx-flash,.kofx-crack,.kofx-debris,.kofx-stamp,.kofx-over){ display:none !important; }
 
 /* ---- the big stamp ---- */
 .kofx-stamp{
@@ -130,4 +131,53 @@ body:has(#table-screen.hidden) :is(.kofx-spot,.kofx-fx,.kofx-flash,.kofx-crack,.
 .kofx-crt-line{
   position:absolute; left:50%; top:50%; width:100%; height:3px; transform:translate(-50%,-50%);
   background:#FFF8EA; box-shadow:0 0 10px 3px rgba(255,240,210,.8); opacity:0;
+}
+
+/* ---- the damage chain (round 2) ---- */
+.kofx-over{ position:fixed; z-index:79; pointer-events:none; overflow:hidden; border-radius:3px; }
+.kofx-over-crack svg{ position:absolute; }
+.kofx-over-static{
+  background-color:#2A2628; background-size:40px 40px; image-rendering:pixelated;
+  animation:kofxSnow .28s steps(4,end) infinite;
+}
+.kofx-over-static::after{
+  content:''; position:absolute; left:0; right:0; height:4px; top:0;
+  background:rgba(255,255,255,.16); animation:kofxRoll 1.3s steps(10,end) infinite;
+}
+.kofx-over-black{ background:#050203; }
+.kofx-over-lit{ background:#FFF6E0; box-shadow:0 0 8px 2px rgba(255,240,210,.7); }
+.kofx-over-hole{
+  background:
+    linear-gradient(#B86A2E,#B86A2E) 30% 50%/3px 7px no-repeat,
+    linear-gradient(#8C8C8C,#8C8C8C) 68% 55%/3px 6px no-repeat,
+    #0A0304;
+  box-shadow:inset 0 3px 0 rgba(0,0,0,.8), inset 0 0 0 2px #2E1014;
+}
+/* the stack's drums, jammed */
+.reel-digit.kofx-jam{ color:#FF5140 !important; text-shadow:0 0 6px rgba(255,60,40,.6) !important; animation:kofxBlink .5s steps(2,end) 4; }
+/* a popped bulb */
+.blind-indicator.kofx-lamp-pop{ animation:kofxBulb .32s steps(4,end) forwards; }
+@keyframes kofxBulb{ 0%{ filter:brightness(3.2) saturate(.3); } 30%{ filter:brightness(1.8); } 100%{ filter:brightness(.28) grayscale(1); } }
+/* the rim light shorting, then dead */
+#app .dash-frame.kofx-rim-short::after{ animation:kofxRimShort .7s steps(1,end); }
+@keyframes kofxRimShort{ 0%,30%,60%{ opacity:1; } 15%,45%,75%{ opacity:.15; } 100%{ opacity:1; } }
+#app .dash-frame.kofx-rimdead::after{ border-color:#0C0405 !important; filter:none !important; animation:none !important; opacity:1 !important; }
+/* a snapped bracket: the console hangs crooked */
+.kofx-askew{ rotate:var(--kx-rot,1deg); translate:0 var(--kx-drop,4px); transition:rotate .18s steps(3,end), translate .18s steps(3,end); }
+/* RUBBLE: sputtering, then darker than the plain dim */
+.kofx-flicker{ animation:kofxFlicker .38s steps(1,end) infinite; }
+@keyframes kofxFlicker{ 0%{ filter:brightness(.35); } 20%{ filter:brightness(1.1); } 35%{ filter:brightness(.5); } 60%{ filter:brightness(.9) contrast(1.3); } 80%{ filter:brightness(.3); } }
+#hud-frame.kofx-dead-deep, #action-area.kofx-dead-deep{ filter:brightness(.26) saturate(.2); }
+
+/* ---- RIM FIX (round 2 test switch, for iPhone Safari) ----
+   Your cards stand in front of the rim light, but Safari can draw the
+   animated, filtered rim on its own layer above them. LAYER gives the
+   cards their own layer too; SHADOW draws the glow without a filter. */
+html[data-kofx-rimfix="layer"] #app .dash-frame .seat.you .seat-cards,
+html[data-kofx-rimfix="both"] #app .dash-frame .seat.you .seat-cards{ transform:translateZ(0); will-change:transform; }
+html[data-kofx-rimfix="shadow"] #app .dash-frame[data-rim]::after,
+html[data-kofx-rimfix="both"] #app .dash-frame[data-rim]::after{
+  filter:none;
+  box-shadow:0 0 var(--dash-glow) color-mix(in srgb,var(--dash-lamp) var(--dash-glow-a),transparent),
+    inset 0 0 var(--dash-glow) color-mix(in srgb,var(--dash-lamp) var(--dash-glow-a),transparent);
 }

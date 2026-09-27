@@ -28,7 +28,7 @@
   const frame = $('#sl-frame');
   const status = t => { $('#sl-status').textContent = t; };
   const GAME = window.KO_LAB_GAME || 'index.html';
-  const V = '1';
+  const V = '2';
 
   /* The form. The first option of every row is today's game. */
   const SECTIONS = [
@@ -44,7 +44,9 @@
         ['both','THUNKS + COUNT', 'The two thunks, then the count.']] },
       { key:'spot', name:'SPOTLIGHT', hint:'the rest of the table', opts:[
         ['0','NONE', 'Today: the table stays lit.'],
-        ['dim','DIM', 'Everything but the doomed seat dims while it builds; the light comes back once the face is gone.']] },
+        ['soft','SOFT', 'New: a round pool of light on the doomed seat with a long soft edge; the rest dims gently. Fades in and out.'],
+        ['rings','PIXEL RINGS', 'New: the same pool drawn as four stepped rings, like pixel-art lighting.'],
+        ['beam','BEAM', 'New: a soft cone of light coming down from the top of the screen onto the seat.']] },
       { key:'stamp', name:'STAMP', hint:'the K.O. itself', opts:[
         ['0','READOUT', 'Today: K.O.! on their readout.'],
         ['big','BIG K.O.!', 'Also a big pixel K.O.! slams onto the felt; the blast knocks it away. DOUBLE K.O.! / TRIPLE K.O.! for a multi. Someone else\'s knockout gets a quieter grey OUT!.']] }
@@ -62,7 +64,9 @@
     { title:'THE K.O. · THE FLIGHT', jobs:[
       { key:'trail', name:'TRAIL', hint:'behind the face', opts:[
         ['0','NONE', 'Today.'],
-        ['ghosts','GHOSTS', 'Stepped pixel afterimages, so a fast tumble is easy to follow.']] },
+        ['faint','FAINT', 'One or two faint afterimages.'],
+        ['light','LIGHT', 'About three, a little stronger.'],
+        ['ghosts','HEAVY', 'Round 1\'s: about six strong afterimages.']] },
       { key:'face', name:'FACE', hint:'while it flies', opts:[
         ['0','FIXED', 'Today: the dead face all the way.'],
         ['reacts','REACTS', 'A new face on every hit: shocked, dazed, dead, baffled…']] },
@@ -96,29 +100,58 @@
       { key:'hit', name:'THE HIT', hint:'your dashboard', opts:[
         ['0','NONE', 'Today.'],
         ['thunks','THUNKS', 'Your dashboard takes two thunks from below, like an opponent\'s socket; the screens glitch.']] },
-      { key:'fuse', name:'BLOWN FUSE', hint:'the three buttons', opts:[
-        ['0','NONE', 'Today: the buttons stay put.'],
-        ['one','ONE', 'A fuse blows: sparks, and one button is shot off and pinballs round the table. Its hole smokes.'],
+      { key:'damage', name:'DAMAGE', hint:'what breaks', opts:[
+        ['buttons','BUTTONS ONLY', 'Round 1: just the buttons (and your cards, if they pop).'],
+        ['chain','CHAIN REACTION', 'A random handful of the parts below give out one after another, crackling and popping, as well as the buttons. Different every time.'],
+        ['wreck','TOTAL WRECK', 'Every part below goes, fast.']] },
+      { key:'amount', name:'HOW MUCH', hint:'with CHAIN REACTION', opts:[
+        ['random','RANDOM', 'Anything from one part to four, at random.'],
+        ['loss','BY THE LOSS', 'The bigger the hand that busted you, the more breaks. (Replays pick a random loss.)']] },
+      { key:'fuse', name:'BUTTONS', hint:'shot off', opts:[
+        ['0','NONE', 'The buttons stay put.'],
+        ['one','ONE', 'One button is shot off and pinballs round the table. Its hole smokes.'],
         ['three','ALL THREE', 'All three go, one after another.'],
-        ['random','1 OR 3', 'A coin toss each time: one button, or all three.']] },
+        ['random','1 OR 3', 'Round 1\'s: a coin toss, one or all three.'],
+        ['any','1, 2 OR 3', 'Any number from one to three.']] },
       { key:'cards', name:'YOUR CARDS', hint:'the losing hand', opts:[
         ['0','STAY', 'Today.'],
         ['pop','POP OUT', 'Your two cards pop out of the tray and fly too.']] },
-      { key:'lights', name:'LIGHTS OUT', hint:'the machine dies', opts:[
+      { key:'lights', name:'LIGHTS OUT', hint:'the ending', opts:[
         ['0','TODAY', 'The dashboard dims and the stage rolls in.'],
         ['tilt','TILT', 'Every screen on your dashboard flashes TILT with a buzzer, then goes dark.'],
-        ['crt','CRT OFF', 'The whole screen switches off like an old TV: down to a line, a dot, black. The result stage switches back on out of the black.']] },
+        ['crt','CRT OFF', 'The whole screen switches off like an old TV: down to a line, a dot, black. The result stage switches back on out of the black.'],
+        ['rubble','RUBBLE', 'No switch-off: what\'s left flickers, sputters and dies where it stands, smoke still curling out. Then the stage rolls in.'],
+        ['mix','CRT OR RUBBLE', 'A coin toss each time.']] },
       { key:'gopace', name:'PACE', hint:'your game over', opts:[
         ['quick','QUICK', 'Tight beats.'],
         ['long','LONG', 'Every beat held longer.']] }
+    ]},
+    { title:'YOUR GAME OVER · THE PARTS', sub:'What CHAIN REACTION and TOTAL WRECK can break. Switch off any you don\'t want.', jobs:[
+      { key:'pScreens', name:'SCREENS', hint:'hand, banner, bet', opts:[['on','ON', 'A screen\'s glass cracks, it floods with static, it switches itself off, or its glass pops out and flies.'],['off','OFF', 'The screens never break.']] },
+      { key:'pNumbers', name:'NUMBERS', hint:'your stack drums', opts:[['on','ON', 'The drums spin like a fruit machine and jam on red nonsense; sometimes a digit pops out and flies.'],['off','OFF', 'Left alone.']] },
+      { key:'pLamps', name:'LAMPS', hint:'SB / BB', opts:[['on','ON', 'The bulbs pop with a flash and go dark; sometimes one shoots out.'],['off','OFF', 'Left alone.']] },
+      { key:'pRim', name:'RIM LIGHT', hint:'round the dashboard', opts:[['on','ON', 'It shorts: sparks crawl along it, it stutters red, then it dies.'],['off','OFF', 'Left alone.']] },
+      { key:'pKey', name:'SETTINGS KEY', hint:'the cog', opts:[['on','ON', 'The key pops off and flies.'],['off','OFF', 'Left alone.']] },
+      { key:'pBracket', name:'BRACKET', hint:'the whole console', opts:[['on','ON', 'A bracket snaps: the console lurches and hangs a little crooked.'],['off','OFF', 'Left alone.']] }
+    ]},
+    { title:'TEST · RIM FIX', sub:'The rim light drawing a line over your cards on iPhone. Try each one on your phone and tell me which is clean. It changes the whole game in this lab, not just the K.O.', jobs:[
+      { key:'rimfix', name:'RIM FIX', hint:'iPhone only', opts:[
+        ['0','OFF', 'The game as it is today.'],
+        ['layer','LAYER', 'Your cards get their own drawing layer, so Safari keeps them on top.'],
+        ['shadow','SHADOW', 'The rim glow is drawn with a shadow instead of a filter.'],
+        ['both','BOTH', 'Both fixes.']] }
     ]}
   ];
   const JOBS = SECTIONS.flatMap(s => s.jobs);
   const TODAY = Object.fromEntries(JOBS.map(j => [j.key, j.opts[0][0]]));
-  const PICK = { len:'long', build:'count', spot:'dim', stamp:'big', blam:'debris', react:'quip', trail:'ghosts', face:'reacts',
-    sparks:'sparks', seats:'solid', slow:'first', exit:'glass', socket:'smoke',
-    killer:'gloat', hit:'thunks', fuse:'random', cards:'0', lights:'crt', gopace:'long' };
-  const MAX = Object.assign({}, PICK, { len:'epic', build:'both', slow:'both', socket:'both', fuse:'three', cards:'pop' });
+  // YOUR ORDER: the owner's round-1 picks, with round 2's new rows set
+  // to what they asked for (a lighter trail, more breaking, 1-3 buttons).
+  const PICK = { len:'today', build:'count', spot:'0', stamp:'big', blam:'debris', react:'flinch', trail:'light', face:'reacts',
+    sparks:'sparks', seats:'solid', slow:'0', exit:'0', socket:'smoke',
+    killer:'0', hit:'thunks', damage:'chain', amount:'random', fuse:'any', cards:'0', lights:'crt', gopace:'long',
+    pScreens:'on', pNumbers:'on', pLamps:'on', pRim:'on', pKey:'on', pBracket:'on', rimfix:'0' };
+  const MAX = Object.assign({}, PICK, { len:'epic', build:'both', spot:'soft', react:'quip', slow:'both', exit:'glass', socket:'both', killer:'gloat',
+    damage:'wreck', fuse:'three', cards:'pop', trail:'ghosts' });
   let order = Object.assign({}, PICK);
   const view = { opp:'4', theme:'emerald', sound:'on', motion:'on', loop:'off' };
 
@@ -365,7 +398,7 @@
     }
   }));
   $('#sl-copy').addEventListener('click', async () => {
-    const text = 'K.O. order (round 1):\n' + SECTIONS.map(s => s.title + '\n' + s.jobs.map(j => '- ' + j.name + ': ' + j.opts.find(o => o[0] === order[j.key])[1]).join('\n')).join('\n');
+    const text = 'K.O. order (round 2):\n' + SECTIONS.map(s => s.title + '\n' + s.jobs.map(j => '- ' + j.name + ': ' + j.opts.find(o => o[0] === order[j.key])[1]).join('\n')).join('\n');
     try{ await navigator.clipboard.writeText(text); $('#sl-copied').textContent = 'Copied. Paste it into the chat.'; }
     catch(e){ $('#sl-copied').textContent = 'Copy blocked here; the list above is your order.'; }
   });

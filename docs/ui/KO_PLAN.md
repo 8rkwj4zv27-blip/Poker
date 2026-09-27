@@ -49,6 +49,43 @@ Your game over (before the result stage, which is unchanged):
 | Lights out | TODAY · TILT · CRT OFF (screen collapses to a line and a dot; the stage switches on out of the black) |
 | Pace | QUICK · LONG |
 
+## Round 1 order (owner, 27 Sep 2026)
+
+Length TODAY · build-up REF COUNT · spotlight NONE · stamp BIG K.O.! ·
+blam + DEBRIS · the others FLINCH · trail GHOSTS · face REACTS · hits SPARKS ·
+other seats SOLID · slow motion NONE · exit OFF SCREEN · socket SMOKE.
+Game over: killer NONE · hit THUNKS · fuse 1 OR 3 · cards STAY · lights
+CRT OFF · pace LONG.
+
+Notes that shaped round 2: the ghost trail was too much; the spotlight read
+as a bright box (a visual error), not a light; ejected cards changed design
+slightly; more of the dashboard should break, more randomly; and, in the
+game generally, the rim light draws a line over the player's cards on
+iPhone.
+
+## Round 2 (ko-lab.html, same URL)
+
+The round-1 order is the default. New:
+
+- **Trail** strength: NONE · FAINT · LIGHT · HEAVY (round 1's).
+- **Spotlight**: SOFT (a round pool with a long soft edge) · PIXEL RINGS ·
+  BEAM, all at about 40% dark and faded in and out. Round 1's box is gone.
+- **Exact copies**: anything that flies (cards, buttons, screen glass,
+  digits, lamps, the key) is copied with every computed style inlined, so
+  it looks exactly as it did in place.
+- **Damage**: BUTTONS ONLY (round 1) · CHAIN REACTION (a random handful of
+  parts) · TOTAL WRECK; **How much**: RANDOM or BY THE LOSS; **Buttons**
+  adds 1, 2 OR 3. **The parts**, each switchable: screens (crack, static,
+  switch off, or the glass flies), the stack's drums (spin and jam red, or a
+  digit flies), the SB/BB bulbs, the rim light (shorts, then dies), the
+  settings key, a snapped bracket (the console hangs crooked).
+- **Lights out** adds RUBBLE (it flickers, sputters and dies where it
+  stands) and CRT OR RUBBLE. With CRT OFF, the dashboard is repaired while
+  the screen is black, so it comes back on rebooted.
+- **RIM FIX** test switch (OFF · LAYER · SHADOW · BOTH) for the rim-light
+  line over the player's cards. It can't be reproduced in Chromium, where
+  the cards already draw in front; the owner checks it on iPhone.
+
 ## How the candidate sits on the game
 
 `js/ko-fx.js` (with `css/ko-fx.css`) replaces the two elimination
@@ -63,9 +100,14 @@ saves. Reduced Motion keeps the game's instant end state.
 - New sounds (bell, glass, buzzer, CRT off/on, fuse zap, ka-ching) are a
   small synth inside the candidate; shipping moves them into the `Sound`
   module (one context, the iOS unlock, the sound settings).
-- TILT writes over the dashboard CRTs and the count writes on the opponent
-  readouts: those need to go through `css/crt.css` / the Pattern Book
-  (`docs/ui/PATTERN_BOOK.md`) rather than local styling.
+- TILT writes over the dashboard CRTs, the count writes on the opponent
+  readouts, and screen damage covers the dashboard CRTs: those need to go
+  through `css/crt.css` / the Pattern Book (`docs/ui/PATTERN_BOOK.md`)
+  rather than local styling.
+- Damage overlays sit fixed over their part; if the bracket snaps first they
+  don't tilt with the console. Shipping should put them inside the part.
+- The rim-light fix, once the owner picks one, ships on its own as a small
+  game fix (it isn't part of the K.O.).
 - The big stamp, the crack and the NO SIGNAL socket are new parts: signed off
   and added to the Pattern Book before they're used in the game.
 - Ship in small releases (the K.O. first, then the game over), bumping

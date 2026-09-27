@@ -30,7 +30,8 @@ const KoFx = (function(){
     stage: window.presentResultStage
   };
   const TODAY = { len:'today', build:'today', spot:'0', stamp:'0', blam:'0', react:'0', trail:'0', face:'0',
-    sparks:'0', seats:'0', slow:'0', exit:'0', socket:'0', killer:'0', hit:'0', fuse:'0', cards:'0', lights:'0', gopace:'quick' };
+    sparks:'0', seats:'0', slow:'0', exit:'0', socket:'0', killer:'0', hit:'0', fuse:'0', cards:'0', lights:'0', gopace:'quick',
+    damage:'buttons', amount:'random', pScreens:'on', pNumbers:'on', pLamps:'on', pRim:'on', pKey:'on', pBracket:'on', rimfix:'0' };
   let O = Object.assign({}, TODAY);
 
   const LEN = {
@@ -95,12 +96,17 @@ const KoFx = (function(){
       },
       finalBell(){ [0, .16, .32].forEach(w => this.bell(1.06, w)); },
       whoosh(dur){ noise(dur, .09, { type:'bandpass', f:300, to:2600, q:1.4, attack:dur * .8 }); },
-      glass(){
-        noise(.09, .16, { type:'highpass', f:2200 });
-        noise(.35, .07, { type:'bandpass', f:5200, to:2600, q:3 });
-        for (let i = 0; i < 6; i++) tone(rand(2800, 6200), rand(.05, .14), 'sine', .03, rand(.02, .26));
-        tone(95, .22, 'square', .08, 0, 45);
+      glass(v){
+        v = v || 1;
+        noise(.09, .16 * v, { type:'highpass', f:2200 });
+        noise(.35, .07 * v, { type:'bandpass', f:5200, to:2600, q:3 });
+        for (let i = 0; i < 6; i++) tone(rand(2800, 6200), rand(.05, .14), 'sine', .03 * v, rand(.02, .26));
+        tone(95, .22, 'square', .08 * v, 0, 45);
       },
+      hiss(dur){ noise(dur, .045, { type:'highpass', f:3500, attack:.02 }); for (let i = 0; i < 4; i++) noise(.02, .08, { type:'highpass', f:rand(2000, 6000), when:rand(0, dur * .8) }); },
+      bulb(){ tone(rand(3200, 4200), .06, 'sine', .05); noise(.05, .1, { type:'highpass', f:5000 }); tone(120, .08, 'square', .04, .02, 60); },
+      clank(){ tone(210, .3, 'square', .05, 0, 150); tone(317, .22, 'square', .035, .01, 240); noise(.08, .09, { type:'bandpass', f:900, q:2 }); },
+      powerDown(){ tone(420, 1.1, 'sawtooth', .04, 0, 35); tone(60, .5, 'square', .05, .1, 30); },
       slide(dur){ noise(dur, .025, { type:'bandpass', f:1800, to:1100, q:6, attack:.05 }); },
       zap(){
         for (let i = 0; i < 5; i++) noise(.025, .09, { type:'highpass', f:rand(2500, 5000), when:i * rand(.03, .06) });
@@ -108,7 +114,7 @@ const KoFx = (function(){
       },
       pop(){ tone(900, .05, 'square', .06, 0, 300); tone(70, .12, 'square', .08, .01, 40); },
       buzzer(dur){ tone(98, dur, 'square', .06); tone(104, dur, 'square', .05); },
-      crtOff(){ tone(1400, .32, 'sine', .05, 0, 60); noise(.12, .08, { type:'lowpass', f:400, to:80 }); },
+      crtOff(v){ v = v || 1; tone(1400, .32, 'sine', .05 * v, 0, 60); noise(.12, .08 * v, { type:'lowpass', f:400, to:80 }); },
       crtOn(){ tone(70, .3, 'sine', .04, 0, 900); noise(.25, .04, { type:'highpass', f:3000, attack:.1 }); },
       kaching(){ tone(2093, .09, 'square', .035); tone(2637, .22, 'square', .035, .07); noise(.05, .05, { type:'highpass', f:4000, when:.07 }); }
     };
@@ -199,29 +205,60 @@ const KoFx = (function(){
 
   /* ---------------- spotlight ---------------- */
   let spotEl = null;
-  function spotlight(els){
+  /* A pool of light on each seat, the rest of the screen gently dimmed.
+     Drawn once on a canvas (dark sheet, light cut out of it) and faded in
+     and out in steps. SOFT: a round pool with a long soft edge. RINGS: the
+     same pool as four stepped rings, pixel-art lighting. BEAM: a cone from
+     the top of the screen down onto the seat. `mode` overrides the order
+     (the killer's gloat always uses SOFT). */
+  const SPOT_DARK = .4;
+  function spotlight(els, mode){
     spotOff(true);
+    mode = mode || O.spot;
     const rs = els.map(rectOf).filter(r => r && r.width);
-    if (!rs.length) return;
-    const W = innerWidth, H = innerHeight, pad = 7;
-    let poly = '0 0,' + W + 'px 0,' + W + 'px ' + H + 'px,0 ' + H + 'px,0 0';
+    if (!rs.length || mode === '0') return;
+    const W = innerWidth, H = innerHeight;
+    const cv = document.createElement('canvas');
+    cv.width = Math.ceil(W / 2); cv.height = Math.ceil(H / 2);   // half resolution: chunky, cheap
+    cv.className = 'kofx-spot';
+    const x = cv.getContext('2d');
+    x.scale(.5, .5);
+    x.fillStyle = 'rgba(10,2,5,' + SPOT_DARK + ')';
+    x.fillRect(0, 0, W, H);
+    x.globalCompositeOperation = 'destination-out';
     rs.forEach(r => {
-      const l = r.left - pad, t = r.top - pad, rr = r.right + pad, b = r.bottom + pad;
-      poly += ',' + l + 'px ' + t + 'px,' + l + 'px ' + b + 'px,' + rr + 'px ' + b + 'px,' + rr + 'px ' + t + 'px,' + l + 'px ' + t + 'px,0 0';
+      const cx = r.left + r.width / 2, cy = r.top + r.height / 2;
+      const R = Math.hypot(r.width, r.height) / 2 + 6;
+      if (mode === 'rings'){
+        [[R + 34, .3], [R + 22, .55], [R + 11, .8], [R, 1]].forEach(([rr, a]) => {
+          x.fillStyle = 'rgba(0,0,0,' + a + ')';
+          x.beginPath(); x.arc(cx, cy, rr, 0, Math.PI * 2); x.fill();
+        });
+      } else {
+        if (mode === 'beam'){
+          const top = Math.max(0, r.top - 260), wTop = r.width * .35, wBot = r.width / 2 + 22;
+          const grd = x.createLinearGradient(0, top, 0, cy);
+          grd.addColorStop(0, 'rgba(0,0,0,0)'); grd.addColorStop(1, 'rgba(0,0,0,.75)');
+          x.fillStyle = grd;
+          x.beginPath(); x.moveTo(cx - wTop, top); x.lineTo(cx + wTop, top); x.lineTo(cx + wBot, cy); x.lineTo(cx - wBot, cy); x.closePath(); x.fill();
+        }
+        const g = x.createRadialGradient(cx, cy, R * .55, cx, cy, R + 60);
+        g.addColorStop(0, 'rgba(0,0,0,1)'); g.addColorStop(.45, 'rgba(0,0,0,.85)'); g.addColorStop(1, 'rgba(0,0,0,0)');
+        x.fillStyle = g;
+        x.beginPath(); x.arc(cx, cy, R + 60, 0, Math.PI * 2); x.fill();
+      }
     });
-    spotEl = document.createElement('div');
-    spotEl.className = 'kofx-spot';
-    spotEl.style.clipPath = 'polygon(evenodd,' + poly.replace(/(^|,)0 0/g, '$10px 0px') + ')';
-    document.body.appendChild(spotEl);
-    void spotEl.offsetWidth;
-    spotEl.classList.add('is-on');
+    spotEl = cv;
+    document.body.appendChild(cv);
+    void cv.offsetWidth;
+    cv.classList.add('is-on');
   }
   function spotOff(now_){
     const s = spotEl; spotEl = null;
     if (!s) return;
     if (now_){ s.remove(); return; }
     s.classList.remove('is-on');
-    setTimeout(() => s.remove(), 260);
+    setTimeout(() => s.remove(), 420);
   }
 
   /* ---------------- the big stamp ---------------- */
@@ -326,17 +363,23 @@ const KoFx = (function(){
     if (first && (O.slow === 'first' || O.slow === 'both')){ slowUntil = now() + 380 * L().slow; slowScale = .22; }
     if (isExit && (O.slow === 'last' || O.slow === 'both')){ slowUntil = now() + 320 * L().slow; slowScale = .25; }
   }
+  // TRAIL strength: how often a ghost drops, how strong it starts, how
+  // long it lasts. HEAVY ('ghosts') is round 1's.
+  const TRAIL = { faint:{ gap:95, a:.2, life:130 }, light:{ gap:62, a:.28, life:160 }, ghosts:{ gap:34, a:.4, life:210 } };
   function trail(c, t){
-    if (O.trail !== 'ghosts' || !c.emerged || c.done) return;
-    if (t - (c._lastGhost || 0) < 34) return;
+    const T = TRAIL[O.trail];
+    if (!T || !c.emerged || c.done) return;
+    if (t - (c._lastGhost || 0) < T.gap) return;
     c._lastGhost = t;
     const g = document.createElement('div');
     g.className = c.el.className + ' kofx-ghost';
     g.innerHTML = c.el.innerHTML;
     g.style.cssText = c.el.style.cssText;
     g.style.clipPath = '';
+    g.style.opacity = T.a;
+    g.style.animationDuration = T.life + 'ms';
     c.el.parentNode.insertBefore(g, c.el);
-    setTimeout(() => g.remove(), 230);
+    setTimeout(() => g.remove(), T.life + 20);
   }
   function exitKind(c){ return O.exit === 'glass' ? 'glass' : O.exit === 'mix' ? (c._mix || (c._mix = Math.random() < .5 ? 'glass' : 'off')) : 'off'; }
 
@@ -393,18 +436,27 @@ const KoFx = (function(){
     });
   }
   function crack(x, y, r0){
-    const R = 170, NS = 'http://www.w3.org/2000/svg';
-    const svg = document.createElementNS(NS, 'svg');
+    const R = 170, svg = crackSvg(R, Math.max(10, r0 * .18));
     svg.setAttribute('class', 'kofx-crack');
+    svg.style.left = (x - R) + 'px'; svg.style.top = (y - R) + 'px';
+    document.body.appendChild(svg);
+    const live = 1500 * L().k;
+    setTimeout(() => svg.animate([{ opacity:1 }, { opacity:0 }], { duration:420, easing:'steps(4,end)', fill:'forwards' }), live);
+    setTimeout(() => svg.remove(), live + 450);
+  }
+  // a pixel crack: jagged spokes from the impact, chords between them
+  function crackSvg(R, core){
+    const NS = 'http://www.w3.org/2000/svg';
+    const svg = document.createElementNS(NS, 'svg');
     svg.setAttribute('width', R * 2); svg.setAttribute('height', R * 2);
     svg.setAttribute('viewBox', (-R) + ' ' + (-R) + ' ' + (R * 2) + ' ' + (R * 2));
     svg.setAttribute('shape-rendering', 'crispEdges');
-    svg.style.left = (x - R) + 'px'; svg.style.top = (y - R) + 'px';
+    svg.style.position = 'absolute';
     const q = v => Math.round(v / 2) * 2;
     const spokes = [], N = 9 + Math.floor(Math.random() * 4);
     let d = '';
     for (let i = 0; i < N; i++){
-      let a = i / N * Math.PI * 2 + rand(-.25, .25), rad = rand(6, 14);
+      let a = i / N * Math.PI * 2 + rand(-.25, .25), rad = rand(core * .5, core);
       const pts = [[q(Math.cos(a) * rad), q(Math.sin(a) * rad)]];
       const len = rand(.55, 1) * (R - 8), steps = 3 + Math.floor(Math.random() * 3);
       for (let s = 1; s <= steps; s++){
@@ -422,15 +474,12 @@ const KoFx = (function(){
     svg.innerHTML =
       '<path d="' + d + '" fill="none" stroke="rgba(0,0,0,.55)" stroke-width="4" stroke-linecap="square"/>' +
       '<path d="' + d + '" fill="none" stroke="rgba(255,255,255,.9)" stroke-width="2" stroke-linecap="square"/>' +
-      '<circle r="' + Math.round(Math.max(10, r0 * .18)) + '" fill="rgba(255,255,255,.18)" stroke="rgba(255,255,255,.7)" stroke-width="2"/>';
-    document.body.appendChild(svg);
-    const live = 1500 * L().k;
-    setTimeout(() => svg.animate([{ opacity:1 }, { opacity:0 }], { duration:420, easing:'steps(4,end)', fill:'forwards' }), live);
-    setTimeout(() => svg.remove(), live + 450);
+      '<circle r="' + Math.round(core) + '" fill="rgba(255,255,255,.18)" stroke="rgba(255,255,255,.7)" stroke-width="2"/>';
+    return svg;
   }
 
   /* One rAF loop for everything in flight: portraits, buttons, cards. */
-  function fly(cs, obsFor, seatRects){
+  function fly(cs, obsFor, seatRects, open){
     const cfg = KO_PORTRAIT_PHYSICS_CONFIG;
     const maxMs = 7000 * L().k;
     const glassJobs = [];
@@ -462,7 +511,7 @@ const KoFx = (function(){
           const off = (c.exiting || c.kind !== 'portrait') && (c.x + c.halfW < -m || c.x - c.halfW > innerWidth + m || c.y + c.halfH < -m || c.y - c.halfH > innerHeight + m);
           if (off || t - c._t0 > maxMs) c.done = true; else allDone = false;
         });
-        if (!allDone) requestAnimationFrame(frame);
+        if (!allDone || (open && open())) requestAnimationFrame(frame);
         else Promise.all(glassJobs).then(resolve);
       }
       requestAnimationFrame(frame);
@@ -501,7 +550,7 @@ const KoFx = (function(){
     };
     const clearHit = () => live.forEach(le => le.e.card.classList.remove('elim-hit'));
 
-    if (O.spot === 'dim') spotlight(live.map(le => le.e.card));
+    if (O.spot !== '0') spotlight(live.map(le => le.e.card));
     await sleepK(cfg.settleMs);
     live.forEach(le => showFace(le, Math.random() < .5 ? 'shock' : 'shocked'));
 
@@ -640,13 +689,27 @@ const KoFx = (function(){
     applyPortraitTransform(c);
     return c;
   }
-  function cloneFixed(src, r, copy){
+  /* An exact copy of a part of the machine, free of the selectors that
+     style it in place: every element's computed style is written onto the
+     copy, so a card, a button or a lamp looks exactly as it did. */
+  const SKIP = /^(animation|transition|will-change|position|inset|left|top|right|bottom|margin|transform|translate|rotate|scale|z-index|visibility|opacity|filter)/;
+  function inlineAll(src, dst, root){
+    const cs = getComputedStyle(src);
+    for (let i = 0; i < cs.length; i++){
+      const k = cs[i];
+      if (root && SKIP.test(k)) continue;
+      if (!root && /^(animation|transition|will-change)/.test(k)) continue;
+      dst.style.setProperty(k, cs.getPropertyValue(k));
+    }
+    for (let i = 0; i < src.children.length; i++) if (dst.children[i]) inlineAll(src.children[i], dst.children[i], false);
+  }
+  function exactClone(src, r){
     const cl = src.cloneNode(true);
     cl.removeAttribute('id');
+    cl.querySelectorAll('[id]').forEach(n => n.removeAttribute('id'));
+    inlineAll(src, cl, true);
     cl.classList.remove('is-pressed');
     cl.classList.add('kofx-debris');
-    const cs = getComputedStyle(src);
-    (copy || []).forEach(k => { cl.style.setProperty(k, cs.getPropertyValue(k)); });
     cl.style.width = r.width + 'px'; cl.style.height = r.height + 'px';
     return cl;
   }
@@ -654,13 +717,13 @@ const KoFx = (function(){
   async function gameOver(g, killer, opts){
     const k = PACE[O.gopace] || 1, T = ms => sleep(ms * k);
     const frame = $id('hud-frame'), area = $id('action-area'), dock = $id('your-seat-dock');
-    dashState = { blown:[], hidden:[], tilt:[], smokes:[] };
+    dashState = { blown:[], hidden:[], tilt:[], smokes:[], overlays:[], classed:[], reels:new Map() };
     await T(220);
 
     // THE KILLER GLOATS
     const ke = killer && seatEls[killer.id];
     if (O.killer === 'gloat' && ke && ke.card){
-      spotlight([ke.card]);
+      spotlight([ke.card], O.spot === '0' ? 'soft' : O.spot);
       if (ke._ec) ke._ec.win = now() + 2600 * k;
       render();
       const [a, b] = lines(GLOATS, killer);
@@ -686,67 +749,13 @@ const KoFx = (function(){
       hitDash(2.6, 9); await T(260);
     }
 
-    // THE FUSE BLOWS: buttons shot off
-    const cs = [];
-    const dashTop = (rectOf(dock) || { top:innerHeight * .7 }).top;
-    const vh = innerHeight, vw = innerWidth;
-    const n = O.fuse === 'one' ? 1 : O.fuse === 'three' ? 3 : O.fuse === 'random' ? (Math.random() < .5 ? 1 : 3) : 0;
-    if (n){
-      const btns = ['btn-fold', 'btn-checkcall', 'btn-raise'].map($id).filter(b => b && rectOf(b).width);
-      const chosen = btns.slice().sort(() => Math.random() - .5).slice(0, n);
-      const layer = document.createElement('div'); layer.className = 'ko-physics-layer'; document.body.appendChild(layer);
-      dashState.layer = layer;
-      Snd.zap();
-      chosen.forEach(b => { const r = rectOf(b); sparks(r.left + r.width / 2, r.top + r.height / 2, -Math.PI / 2, 12); });
-      restart(frame, 'kofx-glitch');
-      await T(260);
-      for (let i = 0; i < chosen.length; i++){
-        const b = chosen[i], r = rectOf(b);
-        const cl = cloneFixed(b, r, ['font-size','font-family','letter-spacing','color','background','box-shadow','border','border-radius','text-shadow','padding','line-height','display','align-items','justify-content','text-transform']);
-        layer.appendChild(cl);
-        b.classList.add('kofx-blown');
-        dashState.blown.push(b);
-        const cx = r.left + r.width / 2;
-        cs.push(makeBody(cl, r, {
-          kind:'debris', dashTop, impacts:1 + Math.floor(Math.random() * 2),
-          vx:((cx < vw / 2 ? 1 : -1) * rand(.05, .3) + rand(-.12, .12)) * vw * 1.4,
-          vy:-vh * rand(1.9, 2.5), vrot:(Math.random() < .5 ? -1 : 1) * rand(420, 900)
-        }));
-        Sound.koBlast(); Snd.pop();
-        sparks(cx, r.top + r.height / 2, -Math.PI / 2, 14);
-        haptic([34, 18, 50]);
-        shakeScreen(6, 220);
-        dashState.smokes.push(smoke(b, 2600 * k));
-        if (i < chosen.length - 1) await sleep(rand(110, 190));
-      }
-    }
-    // YOUR CARDS POP OUT
-    if (O.cards === 'pop'){
-      const cards = [...document.querySelectorAll('.seat.you .seat-cards .card')].filter(c => rectOf(c).width);
-      if (cards.length){
-        if (!dashState.layer){ const layer = document.createElement('div'); layer.className = 'ko-physics-layer'; document.body.appendChild(layer); dashState.layer = layer; }
-        if (n) await T(160);
-        for (let i = 0; i < cards.length; i++){
-          const src = cards[i], r = rectOf(src);
-          const cl = cloneFixed(src, r, ['background','box-shadow','border','border-radius']);
-          dashState.layer.appendChild(cl);
-          src.classList.add('kofx-hidden'); dashState.hidden.push(src);
-          cs.push(makeBody(cl, r, { kind:'card', dashTop, impacts:1 + Math.floor(Math.random() * 2), vx:(i ? 1 : -1) * vw * rand(.25, .5), vy:-vh * rand(2, 2.6), vrot:(i ? 1 : -1) * rand(500, 900) }));
-          Snd.pop(); Sound.koThunk(1.2);
-          if (i < cards.length - 1) await sleep(90);
-        }
-      }
-    }
-    if (cs.length){
-      const base = koObstacles().filter(o => o.tag !== 'card');
-      const noDash = base.filter(o => o.tag !== 'dashboard');
-      await fly(cs, c => c.cleared ? base : noDash, null);
-    }
-    if (dashState.layer){ dashState.layer.remove(); dashState.layer = null; }
+    // THE DAMAGE: a chain of failures, then the lights go
+    await damageChain(g, k, T, frame, area, dock);
 
     // LIGHTS OUT
     await T(160);
-    if (O.lights === 'tilt'){
+    const lights = O.lights === 'mix' ? (Math.random() < .5 ? 'crt' : 'rubble') : O.lights;
+    if (lights === 'tilt'){
       [...frame.querySelectorAll('.crt')].forEach(el => {
         const r = rectOf(el); if (!r || !r.width) return;
         if (getComputedStyle(el).position === 'static') el.style.position = 'relative';
@@ -761,19 +770,260 @@ const KoFx = (function(){
       frame.classList.add('kofx-dead'); area.classList.add('kofx-dead');
       Sound.koThunk(1.2);
       await T(500);
-    } else if (O.lights === 'crt'){
+    } else if (lights === 'crt'){
       frame.classList.add('kofx-dead'); area.classList.add('kofx-dead');
       await T(260);
       await crtOff();
       if (!opts || !opts.replay) return 'crt';   // stays black; the stage powers it back on
       await T(520);
       await crtOn();
+    } else if (lights === 'rubble'){
+      await rubble(k, T, frame, area, dock);
     } else {
       frame.classList.add('kofx-dead'); area.classList.add('kofx-dead');
       Sound.busted(true);
       await T(650);
     }
     return 'done';
+  }
+
+  /* ---------------- the damage chain ----------------
+     Every failure is one part of the machine giving out. DAMAGE picks how
+     many: BUTTONS ONLY (round 1: the fuse row and your cards), CHAIN
+     REACTION (a random handful of the parts switched on), TOTAL WRECK
+     (all of them). HOW MUCH: RANDOM, or BY THE LOSS (the bigger the hand
+     that busted you, the more breaks). */
+  function severity(g){
+    const me = g && g.players.find(p => p.isHuman);
+    const lost = me ? (me.totalBetHand || 0) : 0;
+    const base = (g && g.startingStack) || 500;
+    return lost ? Math.max(0, Math.min(1, lost / (base * 1.6))) : Math.random();
+  }
+  function buttonCount(sev){
+    if (O.fuse === 'one') return 1;
+    if (O.fuse === 'three') return 3;
+    if (O.fuse === 'random') return Math.random() < .5 ? 1 : 3;
+    if (O.fuse === 'any') return O.amount === 'loss' ? 1 + Math.round(sev * 2) : 1 + Math.floor(Math.random() * 3);
+    return 0;
+  }
+  async function damageChain(g, k, T, frame, area, dock){
+    const sev = (dashState.sev = dashState.sev != null ? dashState.sev : severity(g));
+    const dashTop = (rectOf(dock) || { top:innerHeight * .7 }).top;
+    const cs = [];
+    let adding = true;
+    const base = koObstacles().filter(o => o.tag !== 'card');
+    const noDash = base.filter(o => o.tag !== 'dashboard');
+    const layer = document.createElement('div'); layer.className = 'ko-physics-layer'; document.body.appendChild(layer);
+    dashState.layer = layer;
+    const flying = fly(cs, c => c.cleared ? base : noDash, null, () => adding);
+    const vh = innerHeight, vw = innerWidth;
+    // send a copy of `src` flying; `hide` leaves a gap where it was
+    const launch = (src, o) => {
+      const r = rectOf(src); if (!r || !r.width) return;
+      const cl = exactClone(src, r);
+      layer.appendChild(cl);
+      const cx = r.left + r.width / 2;
+      cs.push(makeBody(cl, r, Object.assign({
+        kind:'debris', dashTop, impacts:1 + Math.floor(Math.random() * 2),
+        vx:((cx < vw / 2 ? 1 : -1) * rand(.05, .3) + rand(-.12, .12)) * vw * 1.4,
+        vy:-vh * rand(1.9, 2.5), vrot:(Math.random() < .5 ? -1 : 1) * rand(420, 900)
+      }, o || {})));
+    };
+
+    const nBtn = buttonCount(sev);
+    const parts = [];
+    if (O.pScreens === 'on') parts.push('screen', 'screen', 'screen');
+    if (O.pNumbers === 'on') parts.push('numbers');
+    if (O.pLamps === 'on') parts.push('lamps');
+    if (O.pRim === 'on') parts.push('rim');
+    if (O.pKey === 'on') parts.push('key');
+    if (O.pBracket === 'on') parts.push('bracket');
+    let list = [];
+    if (O.damage === 'wreck') list = parts.slice();
+    else if (O.damage === 'chain'){
+      const n = O.amount === 'loss' ? 1 + Math.round(sev * 4) : 1 + Math.floor(Math.random() * 4);
+      list = parts.slice().sort(() => Math.random() - .5).slice(0, n);
+    }
+    const screens = ['hand-strength', 'banner', 'hud-invested'].map($id).filter(Boolean).sort(() => Math.random() - .5);
+    let jobs = list.map(kind => kind === 'screen' ? () => failScreen(screens.shift(), launch) : FAIL[kind].bind(null, launch, k));
+    if (nBtn) jobs.push(() => blowButtons(nBtn, launch, k));
+    jobs = jobs.sort(() => Math.random() - .5);
+    if (O.cards === 'pop') jobs.push(() => popCards(launch));
+
+    if (jobs.length){
+      Snd.zap();
+      restart(frame, 'kofx-glitch');
+      await T(220);
+    }
+    for (let i = 0; i < jobs.length; i++){
+      await jobs[i]();
+      if (i < jobs.length - 1) await T(rand(200, 430) * (O.damage === 'wreck' ? .6 : 1));
+    }
+    adding = false;
+    await flying;
+    layer.remove(); dashState.layer = null;
+  }
+
+  // a fixed overlay over one part (removed when the dashboard is restored)
+  function overlay(r, cls, html){
+    const o = document.createElement('div');
+    o.className = 'kofx-over ' + cls;
+    o.style.left = r.left + 'px'; o.style.top = r.top + 'px'; o.style.width = r.width + 'px'; o.style.height = r.height + 'px';
+    if (html) o.innerHTML = html;
+    document.body.appendChild(o);
+    dashState.overlays.push(o);
+    return o;
+  }
+  async function blowButtons(n, launch, k){
+    const btns = ['btn-fold', 'btn-checkcall', 'btn-raise'].map($id).filter(b => b && rectOf(b).width && !b.classList.contains('kofx-blown'));
+    const chosen = btns.sort(() => Math.random() - .5).slice(0, n);
+    chosen.forEach(b => { const r = rectOf(b); sparks(r.left + r.width / 2, r.top + r.height / 2, -Math.PI / 2, 10); });
+    await sleep(120);
+    for (let i = 0; i < chosen.length; i++){
+      const b = chosen[i], r = rectOf(b);
+      launch(b);
+      b.classList.add('kofx-blown'); dashState.blown.push(b);
+      Sound.koBlast(); Snd.pop();
+      sparks(r.left + r.width / 2, r.top + r.height / 2, -Math.PI / 2, 14);
+      haptic([34, 18, 50]);
+      shakeScreen(6, 220);
+      dashState.smokes.push(smoke(b, 2600 * k));
+      if (i < chosen.length - 1) await sleep(rand(110, 190));
+    }
+  }
+  async function popCards(launch){
+    const cards = [...document.querySelectorAll('.seat.you .seat-cards .card')].filter(c => rectOf(c).width);
+    for (let i = 0; i < cards.length; i++){
+      launch(cards[i], { kind:'card', vx:(i ? 1 : -1) * innerWidth * rand(.25, .5), vy:-innerHeight * rand(2, 2.6), vrot:(i ? 1 : -1) * rand(500, 900) });
+      cards[i].classList.add('kofx-hidden'); dashState.hidden.push(cards[i]);
+      Snd.pop(); Sound.koThunk(1.2);
+      if (i < cards.length - 1) await sleep(90);
+    }
+  }
+  /* A screen gives out one of four ways: its glass cracks, it floods with
+     static, it switches itself off, or its glass pops out and flies. */
+  async function failScreen(el, launch){
+    const r = el && rectOf(el); if (!r || !r.width) return;
+    const how = pick(['crack', 'static', 'off', 'pop']);
+    sparks(r.left + rand(.2, .8) * r.width, r.top + r.height / 2, -Math.PI / 2, 6);
+    if (how === 'crack'){
+      const o = overlay(r, 'kofx-over-crack');
+      const R = Math.max(r.width, r.height) * .75;
+      const svg = crackSvg(R, 5);
+      svg.style.left = (rand(.2, .8) * r.width - R) + 'px'; svg.style.top = (rand(.2, .8) * r.height - R) + 'px';
+      o.appendChild(svg);
+      Snd.glass(.55); haptic(30);
+    } else if (how === 'static'){
+      const o = overlay(r, 'kofx-over-static');
+      o.style.backgroundImage = 'url(' + snowTex() + ')';
+      Snd.hiss(1.1);
+    } else if (how === 'off'){
+      overlay(r, 'kofx-over-black');
+      const lit = overlay(r, 'kofx-over-lit');
+      lit.animate([
+        { clipPath:'inset(0 0 0 0)', opacity:.7 },
+        { clipPath:'inset(46% 0 46% 0)', opacity:1, offset:.45 },
+        { clipPath:'inset(47% 44% 47% 44%)', opacity:1, offset:.75 },
+        { clipPath:'inset(47% 48% 47% 48%)', opacity:0 }
+      ], { duration:420, easing:'steps(7,end)', fill:'forwards' });
+      Snd.crtOff(.5);
+    } else {
+      launch(el, { vy:-innerHeight * rand(1.6, 2.1) });
+      overlay(r, 'kofx-over-hole');
+      Snd.glass(.4); Snd.pop();
+      shakeScreen(4, 180);
+    }
+  }
+  const FAIL = {
+    // the stack's drums spin like a fruit machine and jam; or a digit pops out
+    async numbers(launch){
+      const cells = [...document.querySelectorAll('#jackpot .reel-digit')];
+      if (!cells.length) return;
+      cells.forEach(c => { if (!dashState.reels.has(c)) dashState.reels.set(c, c.dataset.value || '0'); });
+      if (Math.random() < .35){
+        const pops = cells.sort(() => Math.random() - .5).slice(0, 1 + Math.floor(Math.random() * 2));
+        pops.forEach(c => { launch(c, { vx:rand(-.4, .4) * innerWidth }); c.classList.add('kofx-hidden'); dashState.hidden.push(c); });
+        Snd.pop(); sparks(rectOf(pops[0]).left, rectOf(pops[0]).top, -Math.PI / 2, 8);
+        return;
+      }
+      let gap = 70;
+      const t0 = now();
+      while (now() - t0 < 1100){
+        cells.forEach(c => rollReelCell(c, String(Math.floor(Math.random() * 10)), 0, true, Math.random() < .5 ? 'up' : 'down'));
+        await sleep(gap); gap = Math.min(190, gap * 1.18);
+      }
+      cells.forEach(c => c.classList.add('kofx-jam'));
+      Sound.koThunk(1.1); Snd.clank();
+    },
+    // the SB/BB bulbs pop and go dark; sometimes one shoots out
+    async lamps(launch){
+      const lamps = ['hud-sb-indicator', 'hud-bb-indicator'].map($id).filter(l => l && rectOf(l).width);
+      for (const l of lamps){
+        const r = rectOf(l);
+        l.classList.add('kofx-lamp-pop'); dashState.classed.push([l, 'kofx-lamp-pop']);
+        sparks(r.left + r.width / 2, r.top + r.height / 2, -Math.PI / 2, 7);
+        Snd.bulb();
+        if (Math.random() < .4){ launch(l, { vx:rand(-.5, .5) * innerWidth }); l.classList.add('kofx-hidden'); dashState.hidden.push(l); }
+        await sleep(rand(90, 170));
+      }
+    },
+    // the rim light shorts: sparks crawl along it, it flashes, it dies
+    async rim(launch, k){
+      const dock = $id('your-seat-dock'); if (!dock) return;
+      const r = rectOf(dock);
+      dashState.rimWas = dashState.rimWas !== undefined ? dashState.rimWas : (dock.dataset.rim || null);
+      dock.dataset.rim = 'allin';
+      restart(dock, 'kofx-rim-short');
+      const t0 = now(), dir = Math.random() < .5 ? 1 : -1;
+      Snd.hiss(.8);
+      while (now() - t0 < 700){
+        const f = (now() - t0) / 700, x = dir > 0 ? r.left + 10 + f * (r.width - 20) : r.right - 10 - f * (r.width - 20);
+        sparks(x, r.top + 9, -Math.PI / 2, 3);
+        await sleep(45);
+      }
+      dock.classList.add('kofx-rimdead');
+      Sound.koThunk(.9);
+    },
+    // the settings key pops off
+    async key(launch){
+      const key = $id('open-settings'); if (!key || !rectOf(key).width) return;
+      launch(key);
+      key.classList.add('kofx-hidden'); dashState.hidden.push(key);
+      const r = rectOf(key);
+      sparks(r.left + r.width / 2, r.top + r.height / 2, -Math.PI / 2, 8);
+      Snd.pop();
+    },
+    // a bracket snaps: the console lurches askew and stays crooked
+    async bracket(){
+      const dir = Math.random() < .5 ? -1 : 1;
+      ['your-seat-dock', 'action-area'].map($id).forEach((el, i) => {
+        if (!el) return;
+        el.style.setProperty('--kx-rot', (dir * (i ? .7 : 1.3)) + 'deg');
+        el.style.setProperty('--kx-drop', (i ? 3 : 5) + 'px');
+        el.classList.add('kofx-askew');
+        dashState.classed.push([el, 'kofx-askew']);
+      });
+      Snd.clank(); Sound.koThunk(2.2);
+      shakeScreen(7, 240); haptic([40, 20, 40]);
+    }
+  };
+
+  /* RUBBLE: no switch-off. What's left flickers, sputters and dies where
+     it stands, smoke still curling out of the holes. */
+  async function rubble(k, T, frame, area, dock){
+    [frame, area].forEach(el => el.classList.add('kofx-flicker'));
+    Snd.buzzer(.35); await T(380);
+    const r = rectOf(dock);
+    for (let i = 0; i < 3; i++){
+      sparks(r.left + rand(.1, .9) * r.width, r.top + rand(.1, .6) * r.height, -Math.PI / 2, 6);
+      Snd.hiss(.25);
+      await T(rand(160, 300));
+    }
+    [frame, area].forEach(el => { el.classList.remove('kofx-flicker'); el.classList.add('kofx-dead', 'kofx-dead-deep'); });
+    dock.classList.add('kofx-rimdead');
+    Snd.powerDown(); Sound.koThunk(1.6);
+    dashState.smokes.push(smoke(dock, 3200 * k));
+    await T(1100);
   }
 
   let crtEl = null;
@@ -832,15 +1082,20 @@ const KoFx = (function(){
       s.blown.forEach(b => { b.classList.remove('kofx-blown'); if (!quiet()) b.animate([{ transform:'translateY(14px) scale(.9)' }, { transform:'translateY(-4px)' }, { transform:'none' }], { duration:220, easing:'steps(4,end)' }); });
       s.hidden.forEach(c => c.classList.remove('kofx-hidden'));
       s.tilt.forEach(m => m.remove());
+      s.overlays.forEach(o => o.remove());
+      s.classed.forEach(([el, c]) => el.classList.remove(c));
+      s.reels.forEach((v, c) => { c.classList.remove('kofx-jam'); setReelRest(c, v); });
+      const dock = $id('your-seat-dock');
+      if (dock && s.rimWas !== undefined){ if (s.rimWas) dock.dataset.rim = s.rimWas; else delete dock.dataset.rim; }
       if (s.layer) s.layer.remove();
     }
-    ['hud-frame', 'action-area'].forEach(id => { const el = $id(id); if (el) el.classList.remove('kofx-dead'); });
+    ['hud-frame', 'action-area', 'your-seat-dock'].forEach(id => { const el = $id(id); if (el) el.classList.remove('kofx-dead', 'kofx-dead-deep', 'kofx-flicker', 'kofx-rimdead', 'kofx-askew'); });
   }
 
   /* presentResultStage, wrapped: the game-over beat before a bust's
      result stage. Positive results pass straight through. */
   async function presentResultStageFx(g, model, opts){
-    const wantsBeat = ['killer','hit','fuse','cards','lights'].some(k => O[k] !== '0');
+    const wantsBeat = ['killer','hit','fuse','cards','lights'].some(k => O[k] !== '0') || O.damage !== 'buttons';
     if (!model || model.tone !== 'negative' || quiet() || !wantsBeat || g._kofxOver || !g.players.some(p => p.isHuman && p.chips <= 0))
       return ORIG.stage.apply(this, arguments);
     g._kofxOver = true;
@@ -855,6 +1110,8 @@ const KoFx = (function(){
       const done = ORIG.stage.call(this, g, model, o);
       const t0 = now();
       while (!(felt && felt.classList.contains('results-mode')) && now() - t0 < 6000) await sleep(40);
+      // repaired in the dark: the machine comes back on rebooted
+      restoreDash();
       await sleep(120);
       await crtOn();
       return done;
@@ -918,7 +1175,11 @@ const KoFx = (function(){
   install();
 
   return {
-    apply(order){ O = Object.assign({}, TODAY, order || {}); },
+    apply(order){
+      O = Object.assign({}, TODAY, order || {});
+      if (O.rimfix === '0') delete document.documentElement.dataset.kofxRimfix;
+      else document.documentElement.dataset.kofxRimfix = O.rimfix;
+    },
     get order(){ return Object.assign({}, O); },
     TODAY,
     lab:{ ko:replayKO, bust:replayBust, reset:resetSeats, get busy(){ return !!running; } }
