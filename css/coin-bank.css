@@ -3,7 +3,7 @@
    same housing (#hud-left). Three styles: TUBES (a coin changer), SHELVES
    (a lit velvet display case), HOPPER (a glass tank of gold). The pieces
    are drawn by the coin world (js/coin-world.js sprites); everything here
-   is the case they sit in. Lab only: the game never loads this file.
+   is the case they sit in. Settings → Bank picks the style.
    ============================================================ */
 #hud-left[data-coins="on"] .cw-bank.cb-bank{ background:none; box-shadow:none; overflow:hidden; }
 .cb-bank > i{ position:absolute; display:block; pointer-events:none; }

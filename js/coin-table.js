@@ -1,4 +1,18 @@
 /* ============================================================
+   COIN TABLE — with DENOMINATIONS and the BANK VIEW (the coin economy
+   pass, v0.43.0; built in coin-denom-lab.html and coin-bank-lab.html).
+
+   What changes (Lab 1): every bet, yours and theirs, is counted the same
+   way. One small coin is the small blind; a bet is its size in small
+   coins, thrown as small coins up to a limit (OPT.betCap, OPT.allinCap),
+   five small becoming a big coin (five big a bar) only as far as it takes
+   to fit. After each sweep the pot changes up the same way to stay within
+   OPT.potCap. Your bank (the rack) is unchanged for now: your pieces leave
+   from it, and it re-matches your stack. OPT.denom 'off' is today's
+   counting, for comparison.
+
+   The original notes follow.
+
    COIN TABLE — the game's side of the coin world (integration steps 2–3,
    docs/ui/CHIP_PLAN.md). Presentation only: reads `game`, never changes
    poker state or money.
@@ -23,6 +37,15 @@ const COIN_TABLE_ON = true;
 const CoinTable = (function(){
   'use strict';
   const CW = window.CoinWorld;
+  Object.assign(CW.OPT, { denom:'on', betCap:16, allinCap:24, spotCap:30, potCap:60 });
+  // Lab 2 (coin-bank-lab.html): the bank's inside, js/coin-bank.js's View
+  // in one of its styles; 'today' is the shipped rack (Lab 1 runs on it)
+  Object.assign(CW.OPT, { bank:'tubes', bankLabels:'off', bankChange:3 });
+  const denomOn = ()=>CW.OPT.denom!=='off';
+  // one small coin is the small blind this hand
+  const unit = ()=>Math.max(1, (game && game.smallBlind) || 1);
+  // the throw's kind reads the bet in big blinds, whatever the level
+  const kindOf = (amount, allin, canShove)=>CW.kindFor(amount*CW.BB/Math.max(1,(game && game.bigBlind)||CW.BB), allin, canShove);
   let laid = null;           // layout key when zones/walls/tray are current
   let shown = 0;             // the pot as the plate shows it: swept coins
   let sweeping = null;
@@ -37,6 +60,11 @@ const CoinTable = (function(){
     const O = CW.OPT;
     O.sound = settings.sound ? 'on' : 'off';
     O.sfx = settings.coinSound || 'clay';
+    // Settings → Bank: the inside (TUBES, SHELVES, HOPPER, CLASSIC), the
+    // tube tags, how much making change plays out
+    if (settings.bankStyle) O.bank = settings.bankStyle==='classic' ? 'today' : settings.bankStyle;
+    if (settings.bankTags) O.bankLabels = settings.bankTags;
+    if (settings.bankChange!=null) O.bankChange = +settings.bankChange;
     const m = typeof speedMult==='function' ? speedMult() : 1;
     O.speed = 1/Math.max(.15, m);
     if (!audioWired){
@@ -243,6 +271,31 @@ const CoinTable = (function(){
   /* ---------------- your bank ---------------- */
   let bank = null, bankCap = Infinity, tidying = false;
   const human = ()=>game && game.players.find(p=>p.isHuman);
+  /* THE BANK VIEW (Lab 2): your stack as the felt's pieces, at the small
+     blind, in the chosen style. Bets pay out of it (making change first
+     when they must), wins drop in at the top, and after either it settles
+     to what the stack is worth (changing up, or topping up). */
+  let view = null;
+  const viewOn = ()=>CW.OPT.bank && CW.OPT.bank!=='today' && !!window.CoinBank;
+  function ensureView(){
+    const hl = $('hud-left'); if (!hl) return null;
+    if (view && view.el.isConnected && view.style===CW.OPT.bank) return view;
+    hl.querySelectorAll('.cw-bank').forEach(el=>el.remove());
+    bank = null;
+    const el = document.createElement('div'); el.className = 'cw-bank';
+    hl.appendChild(el); hl.dataset.coins = 'on';
+    view = new CoinBank.View(el, CW.OPT.bank);
+    view.setLabels(CW.OPT.bankLabels, unit());
+    return view;
+  }
+  const wantFor = chips=>ensureView().want(chips/unit());
+  let settling = Promise.resolve();
+  function settleView(opts){
+    const h = human(); if (!h) return settling;
+    const v = ensureView(); if (!v) return settling;
+    settling = settling.then(()=>v.settle(wantFor(h.chips), Object.assign({ show:+CW.OPT.bankChange }, opts||{}))).catch(e=>console.error(e));
+    return settling;
+  }
   function ensureBank(){
     const hl = $('hud-left'); if (!hl) return null;
     if (bank && bank.el.isConnected) return bank;
@@ -256,6 +309,7 @@ const CoinTable = (function(){
   // the rack shows as many coins as your stack earns: short coins are
   // added racked, extras leave from the back
   function syncBank(snap){
+    if (viewOn()){ settleView({ instant:!!snap }); return; }
     const h = human(), b = ensureBank(); if (!h || !b) return;
     const want = CW.bankCoins(h.chips);
     if (b.chips.length===want) return;
@@ -267,16 +321,24 @@ const CoinTable = (function(){
   // (cold load, rebuy, resume) is filled at once
   function renderBank(){
     if (!on()) return;
+    if (viewOn()){
+      // (not while a hand is paid out: the winnings are on their way in)
+      const h = human(), v = ensureView(), paying = game && (game.phase==='showdown' || game.phase==='foldwin');
+      if (h && v && !paying && bankPending===0 && v.count()===0 && h.chips>0) settleView({ instant:true });
+      return;
+    }
     const h = human(), b = ensureBank(); if (!h || !b) return;
     if (bankPending===0 && b.chips.length===0 && h.chips>0) syncBank(true);
   }
   function rebuildBank(){ if (on()) syncBank(false); }
   function resetBank(){
+    if (view) view.clear();
     if (!bank) return;
     bank.chips.forEach(c=>c.el && c.el.remove()); bank.chips.length = 0; bank.clumps = [];
   }
   // TABLE INTRO: the rack fills through the hatch, a coin at a time
   function loadBank(){
+    if (viewOn()){ const v = ensureView(); if (!v) return 0; v.clear(); settleView({ stagger:26 }); return 900; }
     const h = human(), b = ensureBank(); if (!h || !b) return 0;
     resetBank(); syncBank(true);
     if (motionOff()) return 0;
@@ -290,7 +352,7 @@ const CoinTable = (function(){
   }
   // tap the bank: loose coins file into the rack
   async function tidyBank(){
-    if (!on() || tidying || !bank || !bank.chips.some(c=>c.loose)) return;
+    if (!on() || tidying || viewOn() || !bank || !bank.chips.some(c=>c.loose)) return;
     tidying = true;
     const hl = $('hud-left'); hl.classList.add('is-tidying');
     bank.chips.forEach(c=>{ c.loose = false; c.clump = null; });
@@ -314,7 +376,7 @@ const CoinTable = (function(){
     const res = b.resolve; b.resolve = null;
     CW.removeBody(b);
     const bk = ensureBank(), hl = $('hud-left');
-    if (!bk || bk.chips.length>=bankCap){ b.el.remove(); CW.sfx('stack', .6, CW.rise(b)); if (res) setTimeout(res,0); return; }
+    if (!bk || bk.chips.length>=bankCap || b.chip.colour!=='gold'){ b.el.remove(); CW.sfx('stack', .6, CW.rise(b)); if (res) setTimeout(res,0); return; }
     const c = b.chip, hr = hl.getBoundingClientRect();
     c.loose = true;
     bk.chips.push(c);
@@ -341,6 +403,7 @@ const CoinTable = (function(){
     sync();
     const z = CW.zones['spot:'+p.id]; if (!z) return Promise.resolve();
     z.amount += amount;
+    if (denomOn()) return betPieces(p, z, amount, allin);
     const items = [];
     if (p.isHuman){
       // the coins that leave are the ones the stack no longer earns, so the
@@ -365,7 +428,64 @@ const CoinTable = (function(){
         items.push({ b, to:targetIn(z) });
       }
     }
-    return within(CW.throwAll(items, CW.kindFor(amount, allin, !p.isHuman), { big:allin }), 6000);
+    return within(CW.throwAll(items, kindOf(amount, allin, !p.isHuman), { big:allin }), 6000);
+  }
+
+  // THE DENOMINATIONS: the bet in small coins, as many pieces as the limits
+  // allow, the same for everyone. Heavy pieces leave first, so the small
+  // coins scatter round them.
+  function piecesFor(amount, allin, z){
+    const O = CW.OPT, units = Math.max(1, Math.round(amount/unit()));
+    const cap = Math.min(allin ? O.allinCap : O.betCap, Math.max(1, O.spotCap-count(z)));
+    const c = CW.compose(units, cap), out = [];
+    for (let i=0;i<c.bar;i++) out.push('gold-bar');
+    for (let i=0;i<c.big;i++) out.push('gold-big');
+    for (let i=0;i<c.gold;i++) out.push('gold');
+    return out;
+  }
+  // your bet out of the bank view: change made first if it must be, each
+  // piece thrown from where it sat, then the bank settles to the new stack
+  async function betFromView(p, z, amount, allin, kinds){
+    const v = ensureView(); if (!v) return;
+    await settling;
+    const out = await v.payOut(kinds, +CW.OPT.bankChange);
+    const items = out.map(o=>{
+      const r = o.rect, b = CW.body(CW.makeChip(o.k), r.left+r.width/2, r.bottom, 0, r.width*CW.D()/CW.pieceD(o.k));
+      return { b, to:targetIn(z) };
+    });
+    const thrown = within(CW.throwAll(items, kindOf(amount, allin, false), { big:allin }), 6000);
+    settleView();
+    return thrown;
+  }
+  function betPieces(p, z, amount, allin){
+    const kinds = piecesFor(amount, allin, z), items = [];
+    if (p.isHuman && viewOn()) return betFromView(p, z, amount, allin, kinds);
+    if (p.isHuman){
+      // your rack gives up the coins your stack no longer earns: its small
+      // coins fly as your small coins, the bigger pieces lift off its top
+      const bk = ensureBank(); if (!bk) return Promise.resolve();
+      const keep = p.chips>0 ? Math.max(1, CW.bankCoins(p.chips)) : 0;
+      let spare = Math.max(0, bk.chips.length-keep);
+      const hr = $('hud-left').getBoundingClientRect();
+      kinds.forEach(col=>{
+        let b;
+        if (col==='gold' && spare>0){
+          const t = bk.take();
+          if (t){ spare--; const r = t.rect; b = CW.body(t.c, r.left+r.width/2, r.bottom, 0, r.width); }
+        }
+        if (!b){ b = CW.body(CW.makeChip(col), hr.left+hr.width*CW.rr(.3,.7), hr.top+6, 4, CW.D()); b.fresh = true; }
+        items.push({ b, to:targetIn(z) });
+      });
+      if (spare>0) sinkBank(spare);
+      bk.apply({ slideMs:160 });
+    } else {
+      if (typeof EnemyCards!=='undefined') EnemyCards.slot(p, 700);
+      kinds.forEach(col=>{
+        const s = edgeSource(p), b = CW.body(CW.makeChip(col), s.x, s.y, s.z, CW.D()-2); b.fresh = true;
+        items.push({ b, to:targetIn(z) });
+      });
+    }
+    return within(CW.throwAll(items, kindOf(amount, allin, !p.isHuman), { big:allin }), 6000);
   }
 
   /* ---------------- the sweep ---------------- */
@@ -396,6 +516,8 @@ const CoinTable = (function(){
       shown = Math.round(shown);
       CW.sfx('collect', .6);
       paint();
+      // the change-up: over the pot's limit, the pile gets richer, not bigger
+      if (denomOn()) await within(CW.merge(pot, CW.OPT.potCap) || Promise.resolve(), 8000/CW.OPT.speed);
     })().finally(()=>{ sweeping = null; });
     return sweeping;
   }
@@ -444,11 +566,20 @@ const CoinTable = (function(){
     const hr = hl.getBoundingClientRect();
     const big = !!opts.jackpot;
     bankCap = CW.bankCoins(human.chips);
-    CW.hooks.mouth = b=>{ const res = b.resolve; b.resolve = ()=>{ gone(); if (res) res(); }; dropIntoBank(b); };
-    const mouth = ()=>({ x:hr.left+hr.width*CW.rr(.35,.65), y:hr.top, z:0, mouth:true, d:bank ? bank.diam : CW.D()+5 });
+    const v = viewOn() ? ensureView() : null;
+    CW.hooks.mouth = v
+      // the bank view: each piece drops into its own column
+      ? b=>{ const res = b.resolve, col = b.colour; b.resolve = null; CW.removeBody(b); b.el.remove(); gone(); v.receive(col); if (res) setTimeout(res,0); }
+      : b=>{ const res = b.resolve; b.resolve = ()=>{ gone(); if (res) res(); }; dropIntoBank(b); };
+    const br = v && v.el.getBoundingClientRect();
+    const mouthX = col=>{
+      if (!v) return hr.left+hr.width*CW.rr(.35,.65);
+      const e = v.S.entry(v.g, col); return br.left+e.x+CW.rr(-2,2);
+    };
+    const mouth = col=>({ x:mouthX(col), y:hr.top, z:0, mouth:true, d:v ? CW.D() : (bank ? bank.diam : CW.D()+5) });
     const items = list.map(b=>{
-      if (big && CW.rnd()<.3) return { b, to:{ x:hr.left+CW.rr(-8,hr.width+8), y:hr.top-2, z:0, rim:true, d:CW.D()+5, then:mouth() } };
-      return { b, to:mouth() };
+      if (big && CW.rnd()<.3) return { b, to:{ x:hr.left+CW.rr(-8,hr.width+8), y:hr.top-2, z:0, rim:true, d:CW.D()+5, then:mouth(b.colour) } };
+      return { b, to:mouth(b.colour) };
     });
     await within(CW.throwAll(items, big ? 'heave' : (list.length<=3 ? 'flick' : 'lob'), { big }), 9000/CW.OPT.speed);
     CW.hooks.mouth = null;
@@ -456,6 +587,7 @@ const CoinTable = (function(){
     closeHatch(); CW.sfx('hatchClose');
     bankPending = Math.max(0, bankPending-1);
     bankCap = Infinity;
+    if (v){ await settleView(); return; }
     syncBank(false);
   }
   // an opponent's win: the pile slides a short way toward them as a group
@@ -469,7 +601,7 @@ const CoinTable = (function(){
     let ux = (z.cx-pot.cx)/L*reach, uy = (z.cy-pot.cy)/L*reach;
     // the pile moves as one, only as far as the tray lets it: it bumps the
     // wall on the winner's side instead of riding up over the lip
-    const k = CW.trayBox(CW.D());
+    const k = CW.trayBox(CW.D(), 'gold');
     if (k){
       const xs = list.map(b=>b.x), ys = list.map(b=>b.y);
       ux = Math.max(Math.min(0, k.L-Math.min(...xs)), Math.min(Math.max(0, k.R-Math.max(...xs)), ux));
@@ -499,7 +631,7 @@ const CoinTable = (function(){
   function clear(){
     if (!CW) return;
     // a new hand: the rack re-matches the stack (a lost hand leaves it short)
-    if (bank && on() && bankPending===0) syncBank(false);
+    if ((bank || view) && on() && bankPending===0) syncBank(false);
     CW.clearWorld();
     Object.values(CW.zones).forEach(z=>{ clearTimeout(z.timer); z.list.length = 0; z.amount = 0; z.neat = true; });
     CW.hooks.mouth = null;
@@ -514,6 +646,15 @@ const CoinTable = (function(){
     [0,70,150].forEach((t,i)=>setTimeout(()=>CW.sfx(i<2?'land':'stack', .8, 1+i*.06), t));
   }
 
-  return { on, layout, bet, sweep, payout, potCoins, shownPot, clear, reset, sync,
+  // Settings → Bank changed: rebuild the inside at once, the same money
+  function restyleBank(){
+    if (!on() || !game) return;
+    sync();
+    if (view){ view.clear(); view.el.remove(); view = null; }
+    if (bank){ bank.el.remove(); bank = null; }
+    if (viewOn()){ const v = ensureView(); if (v) v.setLabels(CW.OPT.bankLabels, unit()); settleView({ instant:true }); }
+    else syncBank(true);
+  }
+  return { on, layout, bet, sweep, payout, potCoins, shownPot, clear, reset, sync, piecesFor, unit, view:()=>view, ensureView, restyleBank,
     renderBank, rebuildBank, loadBank, tidyBank, preview };
 })();

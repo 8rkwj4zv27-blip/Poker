@@ -1,24 +1,19 @@
 /* ============================================================
-   COIN WORLD — the gold-coin physics world (docs/ui/CHIP_PLAN.md).
+   COIN WORLD — with DENOMINATIONS (the coin economy pass, v0.43.0; built
+   in coin-denom-lab.html, whose candidate js/coin-denom-world.js this was).
 
-   Every coin on the felt is a body: a ground point (x, y), a height z
-   and a velocity, drawn in a fixed overlay (.ct-air) with its shadow on
-   the felt (.ct-shadows). Pixel coins (face, edge, spin frames) are drawn
-   by code at their real size. Gravity arcs, bounces, rolls, rocks,
-   knock-ons, snap-onto-stacks, topples; the table rail and the solid
-   things on the felt (the five-card board row, deck, pot plate, seat and
-   hole cards) are walls. Zones (bet spots, the pot) hold resting coins.
-   Ten procedural sound sets (Web Audio), with a group "chunk", rising
-   pitch and material, plus payout sounds.
+   What it adds to the shipped world: three pieces, all gold, with a fixed
+   ratio. A SMALL coin is the small blind; a BIG coin is five small; a BAR
+   is five big (25 small). Each piece keeps its own size, thickness, sprite,
+   flight and sound; a tower only ever holds one kind of piece, so the
+   stacking, grid and push-apart rules (built for one coin size) still hold,
+   run with each piece's own width. Bars rest as boxes (bricks), coins as
+   discs. The pot tidies in bands: small coins in front, big coins behind,
+   bars at the back. merge() is the change-up: five pieces jump up out of
+   the pile, clink together and pop into the next piece up.
 
-   Built and tuned in chip-throw-lab.html (v1–v11), which runs on this
-   file. Loaded by the game (index.html / sw.js) from integration step 1;
-   nothing in the game calls it yet. It does no work at load: everything
-   starts on first use. Globals it reads, lazily: $, motionOff, settings,
-   Sound, visualChipCount, RANK_VALUES (via callers).
-
-   OPT holds the settled look/feel (the owner's v11 mix); the lab
-   overrides it for comparison.
+   Everything else is the shipped world unchanged (see js/coin-world.js
+   for the original notes).
    ============================================================ */
 (function(){
   'use strict';
@@ -35,6 +30,8 @@
   // the pot's shape when it tidies (see potSlots): MIX picks one each hand
   // from these odds (or each tidy: potEvery), a tap on the felt re-picks
   Object.assign(BASE,{ potShape:'mix', potMix:{ pyramid:3, heap:3, rows:2 }, potEvery:'hand', potTap:'on' });
+  // the denominations' look and feel (the lab's TUNE sheet sets these)
+  Object.assign(BASE,{ bigScale:1.4, barScale:1.75, bigLook:'ring', barLook:'bullion', mergeShow:'some' });
   const OPT={ preset:'v11', ...BASE, speed:1, sound:'on' };
   const SIZES={ s:13, m:15, l:17 };
   const D=()=>SIZES[OPT.size];
@@ -44,6 +41,49 @@
   // sprite height: thick coins need a taller canvas for their edge
   const HR=()=>OPT.body==='thick'?1.2:1;
   const eased=()=>!!OPT.eased;
+
+  /* ---------------- the pieces (denominations) ----------------
+     Value in small coins: SMALL 1, BIG 5, BAR 25. A piece's colour key is
+     its kind ('gold', 'gold-big', 'gold-bar'): the tidy already keeps one
+     colour per stack, so one kind per tower falls out of it. Sizes are the
+     small coin's (D) scaled; a bar is a short brick seen from the table's
+     tilt, a box on the felt (width across, DEPTH front to back). */
+  const PIECES={ gold:{ v:1, name:'small' }, 'gold-big':{ v:5, name:'big' }, 'gold-bar':{ v:25, name:'bar' } };
+  const KINDS=['gold','gold-big','gold-bar'];                // small to large
+  const isBar=col=>col==='gold-bar';
+  const isBig=col=>col==='gold-big';
+  const scaleOf=col=>isBig(col)?(+OPT.bigScale||1.4):(isBar(col)?(+OPT.barScale||1.75):1);
+  const pieceD=col=>Math.round(D()*scaleOf(col));
+  // a bar's sprite: top face + front face, height to width
+  const BAR_HR=.7, BAR_DEPTH=.46;
+  const STEPd=d=>OPT.body==='thick'?Math.max(3,Math.round(THICK(d)*.57)):Math.max(2,Math.round(d*.2));
+  const stepOf=q=>{ const col=typeof q==='string'?q:q.colour; return isBar(col)?Math.max(STEP()+1,Math.round(pieceD(col)*.24)):(isBig(col)?STEPd(pieceD(col)):STEP()); };
+  const hrOf=col=>isBar(col)?BAR_HR:HR();
+  const pieceH=col=>Math.round(pieceD(col)*hrOf(col));
+  // front-to-back size on the felt, in the same units as a coin's width
+  const depthOf=(col,d)=>isBar(col)?(d||pieceD(col))*BAR_DEPTH:(d||pieceD(col));
+  // do two pieces' footprints overlap? discs for coins, boxes for bars
+  function clash(x,y,col,d,q,qx,qy){
+    qx=qx==null?q.x:qx; qy=qy==null?q.y:qy;
+    const dx=Math.abs(qx-x), dyF=Math.abs(qy-y)*FORE;
+    if (!isBar(col) && !isBar(q.colour)) return Math.hypot(dx,dyF)<(d+q.d)/2-.5;
+    return dx<(d+q.d)/2-.5 && dyF<(depthOf(col,d)+depthOf(q.colour,q.d))/2-.5;
+  }
+  // pieces for `units` small coins, as many as `cap` allows: all small
+  // coins, then five of the commoner kind (small or big) change up into
+  // one of the next, only until the handful fits, so a big bet keeps a mix
+  // (some small coins, big coins, a bar or two). Returns { gold, big, bar, n }.
+  function upFrom(s,b){ return s>=5 && (s>=b || b<5) ? 'gold' : (b>=5 ? 'gold-big' : null); }
+  function compose(units,cap){
+    units=Math.max(0,Math.round(units)); cap=Math.max(1,cap|0);
+    let s=units, b=0, r=0;
+    while (s+b+r>cap){
+      const k=upFrom(s,b); if (!k) break;
+      if (k==='gold'){ s-=5; b++; } else { b-=5; r++; }
+    }
+    return { gold:s, big:b, bar:r, n:s+b+r };
+  }
+  const valueOf=col=>(PIECES[col]||PIECES.gold).v;
 
   /* ---------------- random (fresh every run unless "same") ---------------- */
   let seed=7;
@@ -159,8 +199,8 @@
   }
   // A plain gold video-game coin: bright face, darker rim, a slot line down
   // the middle, a highlight stripe; reeded edge; darker, plainer back.
-  function coinFrame(d,c,back){
-    if (OPT.body==='thick') return thickCoinFrame(d,c,back);
+  function coinFrame(d,c,back,big){
+    if (OPT.body==='thick') return thickCoinFrame(d,c,back,big);
     let face=hex(GOLD.face), rim=hex(GOLD.rim), hi=hex(GOLD.hi), line=hex(GOLD.line);
     const band=hex(GOLD.band), band2=hex(GOLD.band2), ink=hex(GOLD.ink);
     if (back){ face=dark(face,.68); rim=dark(rim,.7); hi=dark(hi,.72); line=dark(line,.66); }
@@ -175,22 +215,167 @@
   // The chunky coin: a bevelled rim (lit along the top, shaded along the
   // bottom), a slot line and highlight stripe, and a thick reeded edge
   // that darkens towards the felt.
-  function thickCoinFrame(d,c,back){
+  function thickCoinFrame(d,c,back,big){
     let face=hex('#f4c43e'), bevHi=hex('#ffe88a'), bevLo=hex('#b87a10'), hi=hex('#fff5c0'), line=hex('#c68a16');
+    // BIG: RING (a raised ring inside the rim), DEEP (a richer, redder gold
+    // with the ring), PLAIN (just bigger)
+    const look=big?OPT.bigLook:'';
+    if (look==='deep'){ face=hex('#eaa42c'); bevHi=hex('#ffd36a'); bevLo=hex('#a45e0a'); line=hex('#b0660c'); }
+    const ring=look==='ring'||look==='deep';
     const e1=hex('#c98a1a'), e2=hex('#e8ad32'), eLo=hex('#7c4a06'), ink=hex('#2e1a04');
     if (back){ face=dark(face,.66); bevHi=dark(bevHi,.7); bevLo=dark(bevLo,.7); hi=dark(hi,.7); line=dark(line,.62); }
     return render(d,c,(nx,ny,r,a,s)=>{
       if (r>.76) return ny<-.1 ? bevHi : (ny>.25 ? bevLo : (a<0?bevHi:bevLo));
-      if (!back && Math.abs(nx)<.8/s.rx && Math.abs(ny)<.5) return line;
+      if (ring && !back && Math.abs(r-.6)<.9/Math.max(3,Math.min(s.rx,s.ry*1.4))) return ny<0?bevLo:bevHi;
+      if (!back && Math.abs(nx)<.8/s.rx && Math.abs(ny)<(ring?.36:.5)) return line;
       if (!back && nx>-.6 && nx<-.34 && Math.abs(ny)<.42) return hi;
       if (back && (Math.abs(r-.46)<.9/Math.max(3,Math.min(s.rx,s.ry*1.4)) || r<.14)) return line;
       return face;
     },(nx,s,x,fromBottom)=>(fromBottom<1.2?eLo:(x%2?e1:e2)),ink);
   }
+  /* A GOLD BAR, drawn by code at width w: INGOT (a trapezoid: the top face
+     narrower than the base, a stamped panel on top) or BRICK (square
+     ends, three lines on its face). c is how much of the top face shows:
+     1 at rest (the table's tilt), 0 edge-on in a tumble; `back` is the
+     underside (darker, no stamp). */
+  /* THE BAR, round 2 (owner: the ingot needs to be cooler). Three
+     looks, each a small 3D solid rasterised face by face at the sprite's
+     real size, then outlined:
+     - STAMPED: a proper cast ingot. Sloped sides lit left and shaded
+       right, a lit lip along the top's front edge, a recessed stamp panel
+       with a bright mark, a diagonal glint across the top.
+     - BULLION: the three-quarter vault bar. Its right end face shows, so
+       it reads as a heavy block with depth; a rim-lit top, a small stamp.
+     - TREASURE: the arcade bar. Chunky and bright: a yellow top with a
+       star sparkle, an orange-gold face with a hot band and rivets.
+     c is how much of the top shows (the table's tilt at rest, 0 edge-on in
+     a tumble); `back` is the underside. */
+  const BAR_LOOKS=['stamped','bullion','treasure'];
+  function inPoly(pts,x,y){
+    let inside=false;
+    for (let i=0,j=pts.length-1;i<pts.length;j=i++){
+      const [xi,yi]=pts[i], [xj,yj]=pts[j];
+      if (((yi>y)!==(yj>y)) && x<(xj-xi)*(y-yi)/(yj-yi)+xi) inside=!inside;
+    }
+    return inside;
+  }
+  function bar2Frame(w,c,back,look){
+    const h=Math.round(w*BAR_HR);
+    const topMax=Math.round(w*.34), frontMin=Math.max(4,Math.round(w*.23)), k=Math.min(1,c/TILTS[REST]);
+    const tdep=Math.max(0,Math.round(topMax*k)), fh=frontMin+Math.round((1-k)*(h-2-frontMin-topMax));
+    const yB=h-1.5, yF=yB-fh, yT=yF-tdep;
+    const C=v=>{ const p=hex(v); return back?dark(p,.68):p; };
+    const fill=new Array(w*h).fill(null), faces=[];
+    if (look==='bullion'){
+      const sk=Math.max(2,Math.round(w*.13)), ins=1;
+      const Rf=w-1.5-sk;
+      faces.push({ pts:[[Rf-ins,yF],[w-1.5-ins,yT],[w-1.5,yT+fh],[Rf,yB]], paint:(x,y)=>C(y<yF+1?'#c98a1a':(x>Rf+sk*.6?'#7f4a08':'#9c600f')) });
+      faces.push({ pts:[[1.5+ins,yF],[Rf-ins,yF],[Rf,yB],[1.5,yB]], paint:(x,y)=>C(y>yB-1.2?'#7c4a06':(y<yF+1.2?'#f0bb44':(x<3.5?'#e6a83a':(y>yB-2.5?'#c4841e':'#d8962a')))) });
+      faces.push({ pts:[[1.5+ins,yF],[Rf-ins,yF],[w-1.5-ins,yT],[1.5+ins+sk,yT]], paint:(x,y)=>{
+        if (y>yF-1.2) return C('#fff0a0');
+        const sh=(yF-y)/Math.max(1,tdep)*sk, lx=1.5+ins+sh;
+        if (x<lx+1.2) return C('#ffe27a');
+        if (!back && tdep>=6){ const cx=(lx+Rf-ins+sh)/2, cy=(yT+yF)/2; if (Math.abs(x-cx)<=4 && Math.abs(y-cy)<=1.5) return C(Math.abs(y-cy)<=.5&&Math.abs(x-cx)<=2.5&&((x|0)%2===0)?'#fff3b4':'#cf9420'); }
+        return C('#f6c43c');
+      } });
+    } else if (look==='treasure'){
+      const ins=1;
+      faces.push({ pts:[[1.5+ins,yF],[w-1.5-ins,yF],[w-1.5,yF+1.5],[w-1.5,yB-1],[w-2.5,yB],[2.5,yB],[1.5,yB-1],[1.5,yF+1.5]], paint:(x,y)=>{
+        if (y>yB-1.3) return C('#8a3f08');
+        if (y>yB-2.6) return C('#b35a10');
+        if (y<yF+1.4) return C('#ffd34a');
+        if (!back && fh>=5 && Math.abs(y-(yF+(yB-yF)/2+.5))<.6 && (Math.abs(x-4.5)<.6 || Math.abs(x-(w-5.5))<.6)) return C('#8a3f08');
+        return C('#ec9e1e');
+      } });
+      faces.push({ pts:[[1.5+ins,yF],[w-1.5-ins,yF],[w-2.5-ins,yT+1],[w-3.5-ins,yT],[3.5+ins,yT],[2.5+ins,yT+1]], paint:(x,y)=>{
+        if (!back && tdep>=5){
+          const sx=Math.round(w*.3), sy=Math.round(yT+tdep*.45);
+          if ((Math.abs(x-.5-sx)<.6 && Math.abs(y-.5-sy)<1.6) || (Math.abs(y-.5-sy)<.6 && Math.abs(x-.5-sx)<1.6)) return C('#ffffff');
+          if (Math.abs(x-.5-(w-7))<.6 && Math.abs(y-.5-(yT+2))<.6) return C('#fffbe0');
+        }
+        if (y>yF-1.3) return C('#fff3b4');
+        return C(y<yT+2?'#f7cf3a':'#ffe25a');
+      } });
+    } else {
+      // STAMPED
+      const ins=Math.max(2,Math.round(w*.12));
+      faces.push({ pts:[[1.5+ins,yF],[w-1.5-ins,yF],[w-1.5,yB],[1.5,yB]], paint:(x,y)=>{
+        const t=(y-yF)/Math.max(1,yB-yF), L=1.5+ins*(1-t), R=w-1.5-ins*(1-t);
+        if (y>yB-1.2) return C('#7c4a06');
+        if (x<L+1.6) return C('#f2c24a');
+        if (x>R-2.2) return C('#9c600f');
+        if (y<yF+1.2) return C('#ffe07a');
+        return C(y>yB-2.4?'#c0801c':'#d8962a');
+      } });
+      const tin=ins+1;
+      faces.push({ pts:[[1.5+ins,yF],[w-1.5-ins,yF],[w-1.5-tin,yT],[1.5+tin,yT]], paint:(x,y)=>{
+        if (y>yF-1.2) return C('#fff0a0');
+        if (y<yT+1) return C('#e0a830');
+        const L=1.5+tin, R=w-1.5-tin;
+        if (!back){
+          // a glint across the top, front-left to back-right
+          const g=(x-L)-(yF-y)*1.1;
+          if (g>2 && g<3.4 && !(tdep>=6 && x>L+3 && x<R-3 && y>yT+1.5 && y<yF-2)) return hex('#fffbe0');
+          if (tdep>=6 && x>L+2.5 && x<R-2.5 && y>yT+1.2 && y<yF-1.8){
+            const edge=x<L+3.6 || x>R-3.6 || y<yT+2.4 || y>yF-2.9;
+            if (edge) return C('#c98e1e');
+            const cx=(L+R)/2, cy=(yT+yF)/2;
+            if (Math.abs(x-cx)+Math.abs(y-cy)*1.6<1.8) return hex('#fff3b4');
+            return C('#e8b232');
+          }
+        }
+        if (x<L+1.4) return C('#ffe070');
+        if (x>R-1.4) return C('#d49a28');
+        return C('#f6c43c');
+      } });
+    }
+    for (let y=0;y<h;y++) for (let x=0;x<w;x++){
+      for (let f=faces.length-1;f>=0;f--){ if (inPoly(faces[f].pts,x+.5,y+.5)){ fill[y*w+x]=faces[f].paint(x+.5,y+.5); break; } }
+    }
+    return paintFill(fill,w,h,hex('#2a1603'));
+  }
+  function barFrame(w,c,back){
+    if (BAR_LOOKS.includes(OPT.barLook)) return bar2Frame(w,c,back,OPT.barLook);
+    const h=Math.round(w*BAR_HR), ingot=OPT.barLook!=='brick';
+    // at rest (c = the table's tilt) the whole top face shows
+    const topMax=Math.round(w*.34), frontMin=Math.max(4,Math.round(w*.23)), k=Math.min(1,c/TILTS[REST]);
+    const tdep=Math.max(0,Math.round(topMax*k)), fh=frontMin+Math.round((1-k)*(h-2-frontMin-topMax));
+    const yB=h-2, yF0=yB-fh+1, yT0=yF0-tdep, ins=ingot?Math.max(2,Math.round(w*.11)):0;
+    let top=hex('#f6c940'), topHi=hex('#fff3b4'), stamp=hex('#d39a22'), front=hex('#d99b24'), frontHi=hex('#eab23a'), end=hex('#b27410'), foot=hex('#7c4a06');
+    if (back){ top=dark(top,.66); topHi=dark(topHi,.7); stamp=top; front=dark(front,.72); frontHi=dark(frontHi,.72); end=dark(end,.75); }
+    const ink=hex('#2e1a04'), fill=new Array(w*h).fill(null);
+    for (let y=yF0;y<=yB;y++){
+      const t=fh>1?(y-yF0)/(fh-1):1, i=Math.round(ins*(1-t)), L=1+i, R=w-2-i;
+      for (let x=L;x<=R;x++) fill[y*w+x]=y===yB?foot:(x<=L||x>=R?end:(y===yF0+1&&tdep>0?frontHi:front));
+      if (!ingot && fh>6 && !back) [.3,.5,.7].forEach(k=>{ const x=Math.round(L+(R-L)*k); if (y>yF0+1 && y<yB-1) fill[y*w+x]=end; });
+    }
+    for (let y=yT0;y<yF0;y++){
+      const t=tdep>1?(y-yT0)/(tdep-1):1, i=ins+(ingot?Math.round((1-t)*1):0), L=1+i, R=w-2-i;
+      for (let x=L;x<=R;x++){
+        let p=y===yF0-1?topHi:top;
+        if (!back && ingot && tdep>=5 && y>yT0 && y<yF0-2 && x>L+2 && x<R-2 && (y===yT0+1||y===yF0-3||x===L+3||x===R-3)) p=stamp;
+        if (!back && !ingot && tdep>=4 && y===yT0+1 && x>L+1 && x<L+Math.round((R-L)*.4)) p=topHi;
+        fill[y*w+x]=p;
+      }
+    }
+    return paintFill(fill,w,h,ink);
+  }
+  function paintFill(fill,w,h,ink){
+    const cv=document.createElement('canvas'); cv.width=w; cv.height=h;
+    const ctx=cv.getContext('2d'), img=ctx.createImageData(w,h), px=img.data, inkAt=[];
+    for (let y=0;y<h;y++) for (let x=0;x<w;x++){
+      if (fill[y*w+x]) continue;
+      if ([[1,0],[-1,0],[0,1],[0,-1]].some(([ox,oy])=>{ const X=x+ox,Y=y+oy; return X>=0&&Y>=0&&X<w&&Y<h&&fill[Y*w+X]; })) inkAt.push(y*w+x);
+    }
+    inkAt.forEach(i=>{ fill[i]=ink; });
+    for (let i=0;i<w*h;i++){ const p=fill[i]; if (!p) continue; px[i*4]=p[0]; px[i*4+1]=p[1]; px[i*4+2]=p[2]; px[i*4+3]=255; }
+    ctx.putImageData(img,0,0);
+    return 'url('+cv.toDataURL()+')';
+  }
   function frames(col,d){
-    const k=col+'|'+d+'|'+OPT.body;
+    const k=col+'|'+d+'|'+OPT.body+'|'+(isBig(col)?OPT.bigLook:'')+'|'+(isBar(col)?OPT.barLook:'');
     if (frameCache[k]) return frameCache[k];
-    const make=(c,back)=>col==='gold'?coinFrame(d,c,back):chipFrame(col,d,c,back);
+    const make=(c,back)=>col==='gold'?coinFrame(d,c,back):(isBig(col)?coinFrame(d,c,back,true):(isBar(col)?barFrame(d,c,back):chipFrame(col,d,c,back)));
     return frameCache[k]={ front:TILTS.map(c=>make(c,false)), back:TILTS.map(c=>make(c,true)) };
   }
   /* ============================================================
@@ -204,9 +389,10 @@
      peak.
      ============================================================ */
   const spinCache={};
-  function spinFrame(d,axis,k,N){
+  function spinFrame(d,axis,k,N,big){
     const h=Math.round(d*HR()), light=OPT.light==='on';
-    const key=[d,h,axis,k,N,light,OPT.body].join('|');
+    const look=big?OPT.bigLook:'', ring=look==='ring'||look==='deep';
+    const key=[d,h,axis,k,N,light,OPT.body,look].join('|');
     if (spinCache[key]) return spinCache[key];
     // a spinning coin shows a coin-thin edge (the chunky resting thickness
     // made a turning coin read as a barrel)
@@ -226,7 +412,8 @@
     const lit=light?Math.max(0,Math.cos(a-(heads?-.55:Math.PI-.55))):.6;
     const mul=light?(.72+.42*lit):1;
     const col=(hexs,m)=>hex(hexs).map(v=>Math.max(0,Math.min(255,Math.round(v*m))));
-    const H={ face:col('#f4c43e',mul), bevHi:col('#ffe88a',mul), bevLo:col('#b87a10',mul), line:col('#c68a16',mul), hi:col('#fff5c0',Math.min(1.15,mul)) };
+    const deep=look==='deep';
+    const H={ face:col(deep?'#eaa42c':'#f4c43e',mul), bevHi:col(deep?'#ffd36a':'#ffe88a',mul), bevLo:col(deep?'#a45e0a':'#b87a10',mul), line:col(deep?'#b0660c':'#c68a16',mul), hi:col('#fff5c0',Math.min(1.15,mul)) };
     const T={ face:col('#c9962a',mul*.95), bevHi:col('#e0b24a',mul*.95), bevLo:col('#8a5a0c',mul*.95), mark:col('#8f6010',mul*.95) };
     const E1=col('#c98a1a',.95), E2=col('#e8ad32',1), ELo=hex('#7c4a06'), ink=hex('#2e1a04'), SPEC=hex('#fffbe8');
     const fill=new Array(d*h).fill(null);
@@ -237,7 +424,8 @@
         let p;
         if (heads){
           if (r>.76) p=ny<-.1?H.bevHi:(ny>.25?H.bevLo:(nx<0?H.bevHi:H.bevLo));
-          else if (Math.abs(nx*ax)<.8 && Math.abs(ny)<.5) p=H.line;
+          else if (ring && Math.abs(r-.6)<.9/Math.max(3,Math.min(ax,ay*1.4))) p=ny<0?H.bevLo:H.bevHi;
+          else if (Math.abs(nx*ax)<.8 && Math.abs(ny)<(ring?.36:.5)) p=H.line;
           else if (nx>-.6 && nx<-.34 && Math.abs(ny)<.42 && ax>R*.45) p=H.hi;
           else p=H.face;
           // the specular streak at the peak of the swing
@@ -271,7 +459,7 @@
     return spinCache[key]='url('+cv.toDataURL()+')';
   }
   const SPIN_RATE={ slow:2.2, med:3.6, fast:5.5 };             // turns per second
-  const spinOn=b=>OPT.spin!=='off' && OPT.art==='gold' && !b.edge;
+  const spinOn=b=>OPT.spin!=='off' && OPT.art==='gold' && !b.edge && !isBar(b.colour);
   const tiltIndex=c=>{ let best=0; TILTS.forEach((t,i)=>{ if (Math.abs(t-c)<Math.abs(TILTS[best]-c)) best=i; }); return best; };
   const pixelArt=()=>OPT.art==='gold'||OPT.art==='pixel';
 
@@ -615,7 +803,7 @@
       // watchdog: a coin still moving after ~3.5s (trapped between walls,
       // jittering) is put down where it is (or where it was going)
       b.moving=(b.moving||0)+dt;
-      if (b.moving>3.5){ b.moving=0; stuckLog.push({ state:b.state, zone:b.zone&&b.zone.id, x:Math.round(b.x), y:Math.round(b.y), z:Math.round(b.z), vx:Math.round(b.vx), vy:Math.round(b.vy), vz:Math.round(b.vz), t:b.target&&Object.keys(b.target).join('/') }); snap(b); stuckCount++; continue; }
+      if (b.moving>3.5){ b.moving=0; stuckLog.push({ state:b.state, col:b.colour, d:Math.round(b.d), zone:b.zone&&b.zone.id, x:Math.round(b.x), y:Math.round(b.y), z:Math.round(b.z), vx:Math.round(b.vx), vy:Math.round(b.vy), vz:Math.round(b.vz), t:b.target&&Object.keys(b.target).join('/') }); snap(b); stuckCount++; continue; }
       if (dt>0){
         // two half-steps: collisions and walls stay solid at speed
         step(b,dt/2); if (b.state!=='rest' && active.has(b)) step(b,dt/2);
@@ -631,6 +819,7 @@
 
   function body(chip,x,y,z,d){
     ensureLayers();
+    d=d*scaleOf(chip.colour);
     const b={ chip, el:chip.el, colour:chip.colour, x, y, z:z||0, d, d0:d, d1:d, vx:0, vy:0, vz:0, rot:0, vr:0, phi:0, fr:0,
       tilt:1, back:false, sq:0, state:'rest', zone:null, bounces:0, maxB:1, e:.25, t:0, target:{}, opts:{}, inFelt:false };
     const bg=chip.el.style.backgroundImage;
@@ -743,22 +932,36 @@
   // where a coin of size d may rest in the tray: its sides clear of the
   // walls, and its face clear of the back wall (a coin is drawn up from its
   // ground point, so the back wall needs the depth of its face)
-  function trayBox(d){
+  function trayBox(d,col){
     if (!TRAY) return null;
-    return { L:TRAY.L+d/2, R:TRAY.R-d/2, T:TRAY.T+Math.round(d/FORE)-2, B:TRAY.B };
+    const k={ L:TRAY.L+d/2, R:TRAY.R-d/2, T:TRAY.T+Math.round(depthOf(col||'gold',d)/FORE)-2, B:TRAY.B };
+    // TRAY is cut clear of the blocks for a small coin; a bigger piece
+    // reaches further, so its box is cut again at its own size (else the
+    // plate bounces it out and the tray pulls it back in, for ever)
+    if (d>D()+.5 && WALLS){
+      const cx=(TRAY.L+TRAY.R)/2, cy=(TRAY.T+TRAY.B)/2;
+      WALLS.blocks.forEach(b=>{
+        const L=b.L-d/2-1, R=b.R+d/2+1, T=b.T-2, B=b.B+d*.85+1;
+        if (R<=k.L || L>=k.R || B<=k.T || T>=k.B) return;
+        const cut={ left:R-k.L, right:k.R-L, top:B-k.T, bottom:k.B-T };
+        const side=Object.keys(cut).filter(s=>(s==='left'&&b.R<cx)||(s==='right'&&b.L>cx)||(s==='top'&&b.B<cy)||(s==='bottom'&&b.T>cy)).sort((a,c)=>cut[a]-cut[c])[0]||'bottom';
+        if (side==='left') k.L=R; else if (side==='right') k.R=L; else if (side==='top') k.T=B; else k.B=T;
+      });
+    }
+    return k;
   }
   // contain(), and a pot coin also stays inside the tray: every place a
   // coin is put to rest (a push apart, a settle, a nudge) goes through here
   function holdIn(b,z){
     contain(b);
     z=z||b.zone;
-    const k=z && z.id==='pot' && OPT.lip==='on' ? trayBox(b.d) : null;
+    const k=z && z.id==='pot' && OPT.lip==='on' ? trayBox(b.d,b.colour) : null;
     if (!k || k.R<=k.L || k.B<=k.T) return;
     b.x=Math.max(k.L,Math.min(k.R,b.x)); b.y=Math.max(k.T,Math.min(k.B,b.y));
   }
   function lip(b){
     if (!TRAY || OPT.lip!=='on' || !b.zone || b.zone.id!=='pot' || b.z>4) return;
-    const k=trayBox(b.d), L=k.L, Rr=k.R, T=k.T, B=k.B;
+    const k=trayBox(b.d,b.colour), L=k.L, Rr=k.R, T=k.T, B=k.B;
     if (Rr<=L || B<=T) return;
     let nx=0, ny=0;
     if (b.x<L){ b.x=L; nx=-1; } else if (b.x>Rr){ b.x=Rr; nx=1; }
@@ -781,8 +984,10 @@
   // half a coin across behind another sits just far enough back that the
   // faces meet instead of sinking into each other.
   const ROW_DY=sp=>Math.ceil(Math.sqrt(Math.max(0,D()*D()-sp*sp/4))/FORE);
+  const mixed=list=>list.some(b=>b.colour!=='gold');
   function neatSlots(z,list){
-    if (z.id==='pot') return potSlots(z,list);
+    if (z.id==='pot') return mixed(list)?bandSlots(z,list):potSlots(z,list);
+    if (mixed(list)) return spotSlots(z,list);
     const d=D(), towers=OPT.tidy==='towers', sp=d+(towers?2:1), st=STEP(), slots=[], order=[0], dy=ROW_DY(sp);
     for (let i=1;i<9;i++) order.push(i%2?Math.ceil(i/2):-i/2);
     order.forEach((o,i)=>{ slots.push({ x:z.cx+o*sp, y:z.cy }); if (i<8 && !towers) slots.push({ x:z.cx+(o+(o<0?-.5:.5))*sp, y:z.cy-dy }); });
@@ -800,6 +1005,127 @@
       if (!s){ if (stacks.length<use.length){ s={ key:b.colour, slot:use[stacks.length], n:0, k:stacks.length }; stacks.push(s); } else s=stacks.reduce((a,c)=>c.n<a.n?c:a); }
       out.set(b,{ x:s.slot.x, y:s.slot.y, z:s.n*st, n:s.n, k:s.k });
       s.n++;
+    });
+    return out;
+  }
+
+  /* A BET SPOT WITH MIXED PIECES: one row of towers, one kind per tower,
+     the biggest pieces in the middle and small coins out to the sides, each
+     tower no taller than the room above the spot allows. */
+  function spotSlots(z,list){
+    const stacks=[];
+    KINDS.slice().reverse().forEach(col=>{
+      const mine=list.filter(b=>b.colour===col); if (!mine.length) return;
+      const st=stepOf(col), room=z.room?Math.max(1,Math.floor((z.room-pieceH(col)-2)/st)+1):99;
+      const cap=Math.max(1,Math.min(z.cap,room)), k=Math.ceil(mine.length/cap);
+      for (let i=0;i<k;i++) stacks.push({ col, d:pieceD(col), st, list:[] });
+      const own=stacks.filter(s=>s.col===col);
+      mine.forEach((b,i)=>own[i%own.length].list.push(b));
+    });
+    // place: first in the middle, then alternately right and left
+    let right=null, left=null;
+    stacks.forEach((s,i)=>{
+      if (!i){ s.x=z.cx; right=left=s; return; }
+      if (i%2){ s.x=right.x+(right.d+s.d)/2+1; right=s; }
+      else { s.x=left.x-(left.d+s.d)/2-1; left=s; }
+    });
+    const mid=(right.x+right.d/2+left.x-left.d/2)/2, out=new Map();
+    stacks.forEach((s,si)=>s.list.forEach((b,h)=>out.set(b,{ x:Math.round(s.x-(mid-z.cx)), y:z.cy, z:h*s.st, n:h, k:si })));
+    return out;
+  }
+
+  /* THE POT WITH MIXED PIECES, in bands front to back: small coins, big
+     coins, bars. Each band builds in the hand's shape (rows, pyramid, heap)
+     with its own piece size, step and row depth; bands a piece's depth
+     apart, so no footprint sits in another. The pile is low and wide, and
+     climbs toward the back: small coins at most ~3 high, big coins ~4,
+     bars ~6, so each band shows over the one in front (a bar tower at the
+     back reads above the big coins). A band spreads across the tray before
+     it takes a second row; when the tray is too shallow for every band's
+     rows, the deepest band gives up a row and its stacks grow instead. */
+  const BAND_H={ gold:3, 'gold-big':4, 'gold-bar':6 };
+  function bandSlots(z,list){
+    const shape=potShape||newPotShape(), heap=shape==='heap';
+    const bands=KINDS.map(col=>{
+      const d=pieceD(col), n=list.filter(b=>b.colour===col).length, sp=d+(heap?2:1);
+      const box=trayBox(d,col)||{ L:z.cx-80, R:z.cx+80, T:z.cy-30, B:z.cy+4 };
+      const dy=isBar(col)?Math.ceil((depthOf(col,d)+1)/FORE):Math.ceil(Math.sqrt(Math.max(0,d*d-sp*sp/4))/FORE);
+      const maxCols=Math.max(1,Math.floor((box.R-box.L)/sp)+1), tall=BAND_H[col]+(heap?1:0);
+      return { col, d, n, sp, dy, box, st:stepOf(col), dep:depthOf(col,d), tall, maxCols,
+        rows:Math.max(1,Math.min(3,Math.ceil(n/(maxCols*tall)))) };
+    }).filter(k=>k.n>0);
+    // bars at the back stand taller than whatever is in front of them, so a
+    // few bars make a column over the pile instead of hiding behind it
+    const front=bands.filter(k=>!isBar(k.col));
+    bands.forEach(k=>{ if (isBar(k.col) && front.length) k.tall=Math.max(k.tall,Math.max(...front.map(f=>f.tall))+(shape==='pyramid'?1:0)+3); });
+    const gap=(a,c)=>Math.ceil(((a.dep+c.dep)/2+1)/FORE);
+    const lay=yFront=>{
+      let y=yFront;
+      bands.forEach((k,i)=>{ if (i) y-=gap(bands[i-1],k); k.y0=y; y-=(k.rows-1)*k.dy; k.y1=y; });
+      return Math.min(...bands.map(k=>k.y1-k.box.T));            // slack at the back
+    };
+    const yMax=Math.min(...bands.map(k=>k.box.B));
+    let slack=lay(yMax);
+    while (slack<0 && bands.some(k=>k.rows>1)){ bands.reduce((a,c)=>c.rows>a.rows?c:a).rows--; slack=lay(yMax); }
+    // centre the pile front to back in the room left
+    lay(yMax-Math.max(0,Math.floor(slack/2)));
+    const capAt=(k,y)=>{ const room=z.room!=null?z.room+(y-z.cy):99; return Math.max(1,Math.min(12,Math.floor((room-pieceH(k.col)-2)/k.st)+1)); };
+    const clampI=(v,a,b)=>Math.max(a,Math.min(b,v));
+    const slots=[];
+    bands.forEach((k,bi)=>{
+      const r=k.rows, cx=(k.box.L+k.box.R)/2;
+      // a stack's height: the band's own, never more than the room allows
+      const capOf=y=>Math.min(capAt(k,y),k.tall+(shape==='pyramid'?1:0));
+      let c0=clampI(Math.ceil(k.n/(r*Math.max(1,k.tall-1)))+(heap?1:0),r,k.maxCols);
+      // wide enough for its pieces at that height
+      const fits=c=>{ let t=0; for (let i=0;i<r;i++) t+=Math.max(1,c-i)*capOf(k.y0-i*k.dy); return t>=k.n; };
+      while (!fits(c0) && c0<k.maxCols) c0++;
+      // still too many: let the stacks grow to what the room allows
+      const grow=!fits(c0);
+      const weight=shape==='rows'?()=>1:(heap?(row,off)=>rr(.25,1.6)*(1-.35*off):(row,off)=>Math.pow((1+row*.9)*(1-.6*off),2.2));
+      for (let row=0;row<r;row++){
+        const c=Math.max(1,c0-(shape==='rows'?(row?1:0):row)), half=Math.max(1,(c0-1)/2);
+        for (let i=0;i<c;i++){
+          const o=i-(c-1)/2, y=k.y0-row*k.dy;
+          slots.push({ col:k.col, d:k.d, st:k.st, band:bi, x:cx+o*k.sp, y, row, cap:grow?capAt(k,y):capOf(y), w:Math.max(.05,weight(row,Math.min(1,Math.abs(o)/half))), n:0 });
+        }
+      }
+    });
+    // the heap: stacks a pixel or two off the grid, where that clashes with nothing
+    const free=(s,x,y)=>slots.every(q=>q===s || !clash(x,y,s.col,s.d,{ colour:q.col, d:q.d },q.x,q.y));
+    if (heap) slots.forEach(s=>{
+      const x=s.x+rint(-2,2), y=s.y+rint(-1,1), k=bands[s.band].box;
+      if (x>=k.L && x<=k.R && y>=k.T && y<=k.B && free(s,x,y)){ s.x=x; s.y=y; }
+    });
+    const out=new Map();
+    bands.forEach((k,bi)=>{
+      const mine=slots.filter(s=>s.band===bi), cx=(k.box.L+k.box.R)/2;
+      mine.sort((a,c)=>Math.abs(a.x-cx)-Math.abs(c.x-cx) || a.row-c.row);
+      // bars fill the middle tower first, then the next out
+      const fill=isBar(k.col);
+      for (let i=0;i<k.n;i++){
+        let best=null, bv=1e9;
+        if (fill) best=mine.find(s=>s.n<s.cap)||null;
+        else mine.forEach(s=>{ if (s.n>=s.cap) return; const v=(s.n+1)/s.w; if (v<bv){ bv=v; best=s; } });
+        if (!best) best=mine.reduce((a,c)=>c.n<a.n?c:a);
+        best.n++;
+      }
+      const pieces=list.filter(b=>b.colour===k.col); let i=0;
+      mine.forEach(s=>{
+        // a heap's stacks lean, only as far as the gap to their neighbours
+        // lets the upper pieces go (half each way, so two can't meet)
+        const room=slots.reduce((m,q)=>{
+          if (q===s) return m;
+          const dx=Math.abs(q.x-s.x), dyF=Math.abs(q.y-s.y)*FORE;
+          const g=isBar(s.col)||isBar(q.col)?Math.max(dx-(s.d+q.d)/2,dyF-(depthOf(s.col,s.d)+depthOf(q.col,q.d))/2):Math.hypot(dx,dyF)-(s.d+q.d)/2;
+          return Math.min(m,g);
+        },99);
+        const lim=Math.max(0,Math.min(3,Math.floor(room/2))), lean=heap&&!isBar(k.col)?(rnd()<.5?-1:1)*rr(0,.7):0;
+        for (let h=0;h<s.n;h++){
+          const b=pieces[i++]; if (!b) return;
+          out.set(b,{ x:s.x+Math.round(clampI(h*lean,-lim,lim)), y:s.y, z:h*s.st, n:h, k:slots.indexOf(s) });
+        }
+      });
     });
     return out;
   }
@@ -897,7 +1223,7 @@
     let h=0, o=null;
     for (const q of b.zone.list){
       if (q===b || q.state!=='rest') continue;
-      if (Math.hypot(q.x-b.x,(q.y-b.y)*FORE)<b.d*SUPPORT() && q.z+STEP()>h){ h=q.z+STEP(); o=q; }
+      if (Math.hypot(q.x-b.x,(q.y-b.y)*FORE)<Math.min(b.d,q.d)*SUPPORT() && q.z+stepOf(q)>h){ h=q.z+stepOf(q); o=q; }
     }
     return { h, o };
   }
@@ -935,14 +1261,104 @@
     return z.tidying;
   }
 
+  /* ---------------- the change-up ----------------
+     When a pile holds more pieces than `limit`, five small coins become a
+     big one (five big, a bar) until it fits: the pile keeps its size and
+     gets richer. The first few (OPT.mergeShow: SOME 3, ALL, NONE) play out:
+     five pieces hop up off the pile to one point above it, clink together,
+     pop into the bigger piece, and it drops back onto the pile. The rest
+     change at once. Then the pile tidies (bigger pieces to the back). */
+  const count=(z,col)=>z.list.filter(b=>b.colour===col).length;
+  function mergePlan(z,limit){
+    const out=[]; let g=count(z,'gold'), bg=count(z,'gold-big'), n=z.list.length;
+    while (n>limit){
+      const k=upFrom(g,bg); if (!k) break;
+      if (k==='gold'){ g-=5; bg++; out.push(['gold','gold-big']); }
+      else { bg-=5; out.push(['gold-big','gold-bar']); }
+      n-=4;
+    }
+    return out;
+  }
+  // five of `from` off the pile: tops of towers first, near each other
+  function pickFive(z,from){
+    const pool=z.list.filter(b=>b.colour===from && b.state==='rest');
+    const tops=pool.filter(b=>!pool.some(q=>q!==b && q.z>b.z+.5 && Math.abs(q.x-b.x)<b.d*.45 && Math.abs(q.y-b.y)<b.d*.4));
+    const seed=tops.sort((a,c)=>c.z-a.z)[0]||pool[0]; if (!seed) return [];
+    const took=[];
+    while (took.length<5){
+      const left=z.list.filter(b=>b.colour===from && b.state==='rest' && !took.includes(b));
+      if (!left.length) break;
+      // the top of whichever tower is nearest the first pick
+      const free=left.filter(b=>!left.some(q=>q!==b && q.z>b.z+.5 && Math.abs(q.x-b.x)<b.d*.45 && Math.abs(q.y-b.y)<b.d*.4));
+      const next=(free.length?free:left).sort((a,c)=>Math.hypot(a.x-seed.x,a.y-seed.y)-Math.hypot(c.x-seed.x,c.y-seed.y) || c.z-a.z)[0];
+      took.push(next); removeFromZone(next);
+    }
+    return took;
+  }
+  const hold=ms=>new Promise(r=>setTimeout(r,motionOff()?0:ms/OPT.speed));
+  function moveBody(b,x,y,z,T,arc,wait){
+    return new Promise(res=>{
+      b.tx=x; b.ty=y; b.tz=z; b.T=T; b.arc=arc; b.wait=wait||0; b.resolve=res;
+      b.state='wait'; b.next='tidy'; b.target={}; b.opts={}; b.snapping=false; active.add(b); kick();
+    });
+  }
+  async function mergeOne(z,from,to,show){
+    const five=pickFive(z,from); if (five.length<5){ five.forEach(b=>{ b.zone=z; z.list.push(b); }); return false; }
+    const k=trayBox(pieceD(to),to);
+    let px=five.reduce((a,b)=>a+b.x,0)/5, py=five.reduce((a,b)=>a+b.y,0)/5;
+    if (k){ px=Math.max(k.L,Math.min(k.R,px)); py=Math.max(k.T,Math.min(k.B,py)); }
+    const pz=Math.max(...five.map(b=>b.z))+30;
+    if (show && !motionOff()){
+      // up off the pile, fanned out a little, then snapped together
+      await Promise.all(five.map((b,i)=>moveBody(b,px+(i-2)*4,py,pz+(i%2)*3,.2,14,i*45)));
+      sfx('stack',.7,1.25);
+      await hold(70);
+      await Promise.all(five.map(b=>moveBody(b,px,py,pz,.07,0,0)));
+      sfx('stack',1,1.6); sfx('knock',.6,1.2);
+    }
+    five.forEach(b=>{ removeBody(b); b.el.remove(); });
+    const c=makeChip(to), nb=body(c,px,py,show?pz:0,D());
+    nb.state='rest';
+    if (show && !motionOff()){
+      nb.sq=.1; squashing.add(nb); dirty.add(nb); kick();
+      popRing(px,py-pz-pieceH(to)/2,pieceD(to)); glintAt(px+pieceD(to)*.2,py-pz-pieceH(to)*.9);
+      sfx('land',1,pitchOf(nb)*.9); if (isBar(to)) sfx('thump',.8);
+      await hold(90);
+      // it drops back onto the pile
+      await launch(nb,{ x:px, y:py, z:0, zone:z, d:D() },{ T:.26, flips:0 });
+    } else { nb.zone=z; z.list.push(nb); dirty.add(nb); kick(); }
+    return true;
+  }
+  async function merge(z,limit,opts){
+    opts=opts||{};
+    if (!z || z.merging) return z&&z.merging;
+    const steps=mergePlan(z,limit); if (!steps.length) return;
+    const show=opts.show!=null?opts.show:({ all:99, some:3, none:0 }[OPT.mergeShow]??3);
+    z.merging=(async()=>{
+      for (let i=0;i<steps.length;i++) await mergeOne(z,steps[i][0],steps[i][1],i<show);
+      z.neat=false; await tidyZone(z);
+    })().finally(()=>{ z.merging=null; });
+    return z.merging;
+  }
+  // a pixel ring bursting out from a change-up
+  function popRing(x,y,d){
+    if (OPT.juice!=='on' || motionOff() || !air) return;
+    const p=document.createElement('i'); p.className='ct-pop';
+    p.style.transform='translate('+Math.round(x)+'px,'+Math.round(y)+'px)'; p.style.setProperty('--d',Math.round(d*1.6)+'px');
+    air.appendChild(p); setTimeout(()=>p.remove(),320/OPT.speed);
+  }
+
   /* ---------------- launch ---------------- */
   // Target t = { x, y, z, d, zone?, slot?, vanish?, mouth? }
   function launch(b,t,o){
     o=o||{};
-    b.target=t; b.opts=o; b.bounces=0; b.knocked=false; b.inFelt=false;
+    b.target=t; b.opts=o; b.bounces=0; b.knocked=false; b.inFelt=false; b.blockHits=0;
     b.maxB=OPT.bounces==='multi' ? rint(1,3) : (OPT.bounces==='dead' ? 0 : 1);
     b.e=rr(.18,.32);
-    b.d0=b.d; b.d1=t.d||D();
+    // heavier pieces: a big coin bounces lower, a bar lands dead
+    if (isBig(b.colour)){ b.maxB=Math.min(b.maxB,1); b.e=rr(.14,.22); }
+    if (isBar(b.colour)){ b.maxB=0; b.e=.1; }
+    b.d0=b.d; b.d1=(t.d||D())*scaleOf(b.colour);
     if (t.zone && b.zone!==t.zone){ if (b.zone) removeFromZone(b); b.zone=t.zone; t.zone.list.push(b); }
     b.wait=o.wait||0; b.state='wait'; b.next=o.mode||(eased()?'eased':'air');
     // only a brand-new coin (out of a seat) is hidden until it leaves; a
@@ -979,12 +1395,19 @@
     const vh=dist/b.T, vLand=G*b.T/2, grip=b.opts.grip||GRIP;
     // after the first impact: speed capped by grip, then x.55 per bounce
     const vHop=Math.min(vh,grip)*.55, hop=vHop*2*(vLand*.25)/G*(OPT.bounces==='multi'?1.3:1);
-    const carry=t.vanish||t.mouth||t.slot?0:Math.min(dist*.45,hop+(vHop*.55*.7)**2/(2*FRICTION));
+    // (no aiming short across a card or the plate: it would land on it and
+    // bounce between it and the tray for ever, e.g. your spot's coins
+    // hopping up over the pot plate into the tray)
+    const across=dist>1 && [.55,.7,.85].some(f=>inBlock(b.x+(t.x-b.x)*f,b.y+(t.y-b.y)*f,b.d1||b.d));
+    const carry=t.vanish||t.mouth||t.slot||across?0:Math.min(dist*.45,hop+(vHop*.55*.7)**2/(2*FRICTION));
     let ax=t.x+(b.opts.jx||0), ay=t.y+(b.opts.jy||0);
     if (carry && dist>1){ ax-=(t.x-b.x)/dist*carry; ay-=(t.y-b.y)/dist*carry; }
     b.vx=(ax-b.x)/b.T; b.vy=(ay-b.y)/b.T;
     b.vz=((t.z||0)-b.z)/b.T+.5*G*b.T;
     let flips=b.opts.flips!=null?b.opts.flips:2;
+    // a bar makes one slow end-over-end turn at most; a big coin fewer flips
+    if (isBar(b.colour)) flips=Math.min(flips,2);
+    else if (isBig(b.colour)) flips=Math.min(flips,2);
     // never faster than ~0.09s a half-turn, or the frames read as flicker
     flips=Math.max(flips%2?1:2,Math.min(flips,2*Math.floor(b.T/.18)));
     b.fr=flips*Math.PI/b.T; b.phi=0;
@@ -993,7 +1416,7 @@
     // the spin: axis per coin (MIXED picks one), a random start, either way
     b.axis=OPT.spin==='mixed'?(rnd()<.5?'side':'toss'):OPT.spin;
     b.spinA=rnd()*Math.PI*2; b.spinDir=rnd()<.5?-1:1;
-    b.spinRate=(SPIN_RATE[OPT.spinSpeed]||3.6)*(b.opts.spinMul||1)*rr(.85,1.15);
+    b.spinRate=(SPIN_RATE[OPT.spinSpeed]||3.6)*(b.opts.spinMul||1)*rr(.85,1.15)*(isBig(b.colour)?.7:1);
   }
 
   /* ---------------- step ---------------- */
@@ -1143,6 +1566,11 @@
     b.z=ground; b.sq=.09;
     // landed on a card, the deck or the plate: it bounces off and away
     if (inBlock(b.x,b.y,b.d) && !t.slot){
+      // wedged (a bigger piece squeezed between the plate and a resting
+      // piece that pushes it back): after a few hits it takes the nearest
+      // free place instead of bouncing for ever
+      b.blockHits=(b.blockHits||0)+1;
+      if (b.blockHits>3){ b.blockHits=0; b.vx=b.vy=b.vz=0; b.z=0; holdIn(b); settle(b); return; }
       b.vz=Math.max(140,speed*.35); b.bounces=Math.min(b.bounces,b.maxB-1);
       const before={ x:b.x, y:b.y }; contain(b);
       const L=Math.max(1,Math.hypot(b.x-before.x,b.y-before.y));
@@ -1170,9 +1598,9 @@
       if (b.spinRate) b.spinRate*=pop?1.1:.8;
       if (t.slot){ b.vx=(t.x-b.x)*.72/tHop; b.vy=(t.y-b.y)*.72/tHop; }
       else if (!pop){ b.vx*=.55; b.vy*=.55; }
-      sfx(ground>0?'stack':'bounce',speed/900,rise(b,true));
+      sfx(ground>0?'stack':'bounce',speed/900,rise(b,true)*pitchOf(b));
       // a coin landing on a tower sometimes rolls off it on its edge
-      if (ground>0 && !t.slot && OPT.roll==='on' && rnd()<.25){
+      if (ground>0 && !t.slot && OPT.roll==='on' && !isBar(b.colour) && rnd()<.25){
         const L=Math.max(1,Math.hypot(b.vx,b.vy)); b.edge=true; b.fr=0;
         b.vx=b.vx/L*rr(60,110)||rr(-80,80); b.vy=b.vy/L*rr(20,50)||rr(-20,20); b.vz=rr(60,110);
       }
@@ -1180,15 +1608,19 @@
     }
     b.vz=0; b.fr=0; b.tilt=1; b.back=false;
     b.tails=OPT.lands==='random' && b.spinRate ? Math.cos(b.spinA)<0 : false;
-    sfx(ground>0?'stack':'land',Math.min(1,.45+speed/1400),rise(b));
-    if (OPT.roll==='on' && ground<1 && (b.edge || (rnd()<.2 && speed>120))){ b.edge=false; startRoll(b); return; }
+    sfx(ground>0?'stack':'land',Math.min(1,.45+speed/1400)*(isBar(b.colour)?1.3:1),rise(b)*pitchOf(b));
+    if (isBar(b.colour)) sfx('knock',.55,.62);
+    if (OPT.roll==='on' && ground<1 && !isBar(b.colour) && (b.edge || (rnd()<(isBig(b.colour)?.08:.2) && speed>120))){ b.edge=false; startRoll(b); return; }
     b.edge=false;
     if (b.flipGlint && rnd()<.22) glint(b);
     if (t.slot){ b.tx=t.x; b.ty=t.y; b.tz=t.z||0; skid(b,70+Math.min(120,Math.hypot(t.x-b.x,t.y-b.y)*4)); return; }
     if (OPT.bounces==='dead'){ b.vx=0; b.vy=0; settle(b); return; }        // lands dead
-    b.vx*=.7; b.vy*=.7; b.state='slide';
+    const drag=isBar(b.colour)?.3:(isBig(b.colour)?.55:.7);
+    b.vx*=drag; b.vy*=drag; b.state='slide';
   }
   // RISE: each landing within one throw sounds a semitone higher (capped)
+  // heavier pieces sound lower
+  const pitchOf=b=>isBar(b.colour)?.6:(isBig(b.colour)?.8:1);
   function rise(b,peek){
     const c=b.opts&&b.opts.combo; if (!c || OPT.rise!=='on') return 1;
     const p=Math.pow(2,Math.min(c.n,14)/12); if (!peek) c.n++; return p;
@@ -1221,7 +1653,7 @@
       if (seat(b)) return;
       b.z=supportUnder(b).h;
     }
-    if (OPT.rock==='on' && b.z<1 && rnd()<.22){
+    if (OPT.rock==='on' && b.z<1 && !isBar(b.colour) && rnd()<.22){
       b.state='rock'; b.t=0; b.T=rr(.2,.32);
       b.rockSeq=rnd()<.5?[.6,1,.82,1]:[.6,1];
       return;
@@ -1238,7 +1670,7 @@
      OVERLAP 'free' (the lab's old look) skips it. */
   function seat(b,instant){
     const z=b.zone; if (!z || OPT.overlap==='free') return false;
-    const d=b.d, sp=D()+1, dy=ROW_DY(sp), st=STEP(), k=z.id==='pot'&&OPT.lip==='on'?trayBox(d):null;
+    const d=b.d, sp=D()+1, dy=ROW_DY(sp), k=z.id==='pot'&&OPT.lip==='on'?trayBox(d,b.colour):null;
     const rest=z.list.filter(q=>q!==b && q.state==='rest');
     const taken=z.list.filter(q=>q!==b && q.seatCell).map(q=>q.seatCell);
     const far=(x,y,q)=>Math.hypot(q.x-x,(q.y-y)*FORE);
@@ -1259,10 +1691,14 @@
     for (const c of cells.slice(0,24)){
       if (taken.some(t=>Math.abs(t.x-c.x)<1 && Math.abs(t.y-c.y)<1)) continue;
       // a stack standing in (or near) the cell: hop onto its top coin
-      const base=rest.filter(q=>q.z<.5 && far(c.x,c.y,q)<d*.6).sort((a,q)=>far(c.x,c.y,a)-far(c.x,c.y,q))[0];
+      // (only a tower of its own kind: one kind of piece per tower)
+      const base=rest.filter(q=>q.z<.5 && q.colour===b.colour && far(c.x,c.y,q)<d*.6).sort((a,q)=>far(c.x,c.y,a)-far(c.x,c.y,q))[0];
       if (base){
-        const top=rest.filter(q=>Math.abs(q.x-base.x)<d*.45 && Math.abs(q.y-base.y)<d*.4).sort((a,q)=>q.z-a.z)[0];
-        if (top.claimed || top.z/st>=snapMax(z)) continue;
+        const top=rest.filter(q=>q.colour===b.colour && Math.abs(q.x-base.x)<d*.45 && Math.abs(q.y-base.y)<d*.4).sort((a,q)=>q.z-a.z)[0];
+        const st=stepOf(top);
+        if (top.claimed || top.z/st>=snapMax(z,b.colour)) continue;
+        // nothing of another kind sits on it or leans into it
+        if (rest.some(q=>q.colour!==b.colour && q.z>.5 && clash(base.x,base.y,b.colour,d,q))) continue;
         let ox=0, oy=0;
         if (OPT.stack==='loose'){ ox=rint(-1,1); oy=rint(0,1); }
         else if (OPT.stack==='lean'){ if (!top.leanDir) top.leanDir=rnd()<.5?-1:1; ox=top.leanDir; }
@@ -1272,7 +1708,9 @@
         return moveTo(b,{ x:tx, y:ty, z:top.z+st, cell:c, onto:top },instant);
       }
       // empty floor: no face at floor level within a coin of the cell
-      if (rest.some(q=>q.z<st-.5 && far(c.x,c.y,q)<d-.5)) continue;
+      if (rest.some(q=>q.z<stepOf(q)-.5 && clash(c.x,c.y,b.colour,d,q))) continue;
+      // nor a cell under another kind's stack (a stack's top can hang a px over)
+      if (rest.some(q=>q.z>=.5 && clash(c.x,c.y,b.colour,d,q))) continue;
       return moveTo(b,{ x:c.x, y:c.y, z:0, cell:c },instant);
     }
     return false;
@@ -1328,16 +1766,25 @@
     if (OPT.overlap==='free' || !z.list.length) return;
     const stacks=[];
     z.list.slice().sort((a,c)=>a.z-c.z).forEach(b=>{
-      const s=stacks.find(k=>Math.abs(k.x-b.x)<b.d*.45 && Math.abs(k.y-b.y)<b.d*.35 && b.z>=k.top+STEP()*.5 && (k.top=b.z,true));
-      if (s) s.coins.push(b); else stacks.push({ x:b.x, y:b.y, d:b.d, top:b.z, coins:[b] });
+      const s=stacks.find(k=>k.colour===b.colour && Math.abs(k.x-b.x)<b.d*.45 && Math.abs(k.y-b.y)<b.d*.35 && b.z>=k.top+stepOf(b)*.5 && (k.top=b.z,true));
+      if (s) s.coins.push(b); else stacks.push({ x:b.x, y:b.y, d:b.d, colour:b.colour, top:b.z, coins:[b] });
     });
     // how far a stack's upper coins sit off its base
     stacks.forEach(k=>{ k.spread=Math.min(k.d*.3,Math.max(0,...k.coins.map(b=>Math.hypot(b.x-k.coins[0].x,(b.y-k.coins[0].y)*FORE)))); });
     for (let it=0; it<80; it++){
       let moved=false;
       for (let i=0;i<stacks.length;i++) for (let j=i+1;j<stacks.length;j++){
-        const a=stacks[i], c=stacks[j], min=a.d*MIN_GAP()+a.spread+c.spread;
-        const dx=c.x-a.x, dy=(c.y-a.y)*FORE, dist=Math.hypot(dx,dy);
+        const a=stacks[i], c=stacks[j];
+        const dx=c.x-a.x, dy=(c.y-a.y)*FORE;
+        if (isBar(a.colour)||isBar(c.colour)){
+          // boxes: push apart along the shallower overlap
+          const ox=(a.d+c.d)/2+a.spread+c.spread-Math.abs(dx), oy=(depthOf(a.colour,a.d)+depthOf(c.colour,c.d))/2+a.spread+c.spread-Math.abs(dy);
+          if (ox<=0 || oy<=0) continue;
+          if (ox<oy){ const h=ox/2+.3, sx=dx>=0?1:-1; a.x-=sx*h; c.x+=sx*h; }
+          else { const h=oy/2+.3, sy=dy>=0?1:-1; a.y-=sy*h/FORE; c.y+=sy*h/FORE; }
+          moved=true; continue;
+        }
+        const min=(a.d+c.d)/2*MIN_GAP()+a.spread+c.spread, dist=Math.hypot(dx,dy);
         if (dist>=min) continue;
         const nx=dist>.01?dx/dist:(rnd()<.5?-1:1), ny=dist>.01?dy/dist:0, h=(min-dist)/2+.3;
         a.x-=nx*h; a.y-=ny*h/FORE; c.x+=nx*h; c.y+=ny*h/FORE; moved=true;
@@ -1353,7 +1800,7 @@
     }));
     kick();
   }
-  const snapMax=z=>z.room?Math.max(1,Math.min(5,Math.floor((z.room-D()*HR()-2)/STEP()))):5;
+  const snapMax=(z,col)=>{ col=col||'gold'; return z.room?Math.max(1,Math.min(5,Math.floor((z.room-pieceH(col)-2)/stepOf(col)))):5; };
   // SNAP: pull a settling coin onto the nearest stack top (max 6 high)
   function trySnap(b){
     if (!b.zone) return false;
@@ -1361,7 +1808,7 @@
     for (const q of b.zone.list){
       if (q===b || q.state!=='rest' || q.claimed) continue;       // another coin is already hopping onto it
       const covered=b.zone.list.some(r=>r!==q && r!==b && r.state==='rest' && r.z>q.z+.5 && Math.abs(r.x-q.x)<b.d*.5 && Math.abs(r.y-q.y)<b.d*.4);
-      if (covered || q.z/STEP()>=snapMax(b.zone)) continue;
+      if (covered || q.z/STEP()>=snapMax(b.zone,b.colour)) continue;
       const dist=Math.hypot(q.x-b.x,(q.y-b.y)*FORE);
       if (dist<b.d*1.05 && dist<bd){ bd=dist; best=q; }
     }
@@ -1379,7 +1826,7 @@
   }
   function finishRest(b){ if (b.zone && !(b.target&&b.target.slot)) b.zone.neat=false; toRest(b); }
   // TOPPLE: a tower leans a beat away from the hit, then spills top-first
-  function stackAt(q){ return q.zone ? q.zone.list.filter(c=>c.state==='rest' && Math.abs(c.x-q.x)<c.d*.45 && Math.abs(c.y-q.y)<c.d*.4).sort((a,c)=>c.z-a.z) : [q]; }
+  function stackAt(q){ return q.zone ? q.zone.list.filter(c=>c.state==='rest' && c.colour===q.colour && Math.abs(c.x-q.x)<c.d*.45 && Math.abs(c.y-q.y)<c.d*.4).sort((a,c)=>c.z-a.z) : [q]; }
   function topple(coins,dx,dy,power){
     if (coins.length<2) return false;
     const L=Math.max(.01,Math.hypot(dx,dy)); dx/=L; dy/=L;
@@ -1411,7 +1858,7 @@
     for (const q of b.zone.list){
       if (q===b || Math.abs(q.z-b.z)>STEP()*1.5) continue;
       if (q.state!=='rest' && q.state!=='slide') continue;
-      const dx=b.x-q.x, dy=(b.y-q.y)*FORE, dist=Math.hypot(dx,dy), min=b.d*MIN_GAP();
+      const dx=b.x-q.x, dy=(b.y-q.y)*FORE, dist=Math.hypot(dx,dy), min=(b.d+q.d)/2*MIN_GAP();
       if (dist>=min || dist<.01) continue;
       const nx=dx/dist, ny=dy/dist, over=min-dist;
       // a stack (or a coin with one on it) stands firm; a lone coin can be
@@ -1511,14 +1958,14 @@
     const dnow=Math.max(6,Math.round(b.d));
     const ti=b.state==='rest'?REST:(b.tilt>=.92?0:tiltIndex(b.tilt));
     let sx=1, sy=1;
-    const hr=pixel?HR():1;
+    const hr=pixel?hrOf(b.colour):1;
     if (!b.el._base){ b.el._base=dnow; b.el.style.width=dnow+'px'; b.el.style.height=Math.round(dnow*hr)+'px'; }
     if (pixel){
       if (Math.abs(dnow-b.el._base)>1 && (b.state!=='air' || Math.abs(dnow-b.d1)<1)){ b.el._base=dnow; b.el.style.width=dnow+'px'; b.el.style.height=Math.round(dnow*hr)+'px'; }
       if (b.state==='air' && b.spinRate && spinOn(b)){
-        const N=+OPT.spinFrames||16, turn=((b.spinA%(2*Math.PI))+2*Math.PI)%(2*Math.PI);
-        const k=Math.floor(turn/(2*Math.PI)*N)%N, key='spin|'+b.el._base+'|'+b.axis+'|'+k+'|'+N+'|'+OPT.light;
-        if (b.chip.frame!==key){ b.chip.frame=key; b.el.style.backgroundImage=spinFrame(b.el._base,b.axis,k,N); }
+        const N=+OPT.spinFrames||16, turn=((b.spinA%(2*Math.PI))+2*Math.PI)%(2*Math.PI), big=isBig(b.colour);
+        const k=Math.floor(turn/(2*Math.PI)*N)%N, key='spin|'+b.el._base+'|'+b.axis+'|'+k+'|'+N+'|'+OPT.light+'|'+(big?OPT.bigLook:'');
+        if (b.chip.frame!==key){ b.chip.frame=key; b.el.style.backgroundImage=spinFrame(b.el._base,b.axis,k,N,big); }
       } else setFrame(b.chip,b.el._base,ti,b.state==='rest'?!!b.tails:(b.back&&b.state!=='rest'));
     } else if (b.state!=='rest'){
       sy=Math.max(.18,b.tilt);
@@ -1535,7 +1982,7 @@
     // depth: a hard shadow line under every coin; coins with one on top are darker
     if (OPT.depth==='on'){
       let covered=false;
-      if (b.state==='rest' && b.zone) covered=b.zone.list.some(q=>q!==b && q.state==='rest' && q.z>b.z+.5 && Math.abs(q.x-b.x)<b.d*.62 && Math.abs(q.y-b.y)<b.d*.5);
+      if (b.state==='rest' && b.zone) covered=b.zone.list.some(q=>q!==b && q.state==='rest' && q.colour===b.colour && q.z>b.z+.5 && Math.abs(q.x-b.x)<b.d*.62 && Math.abs(q.y-b.y)<b.d*.5);
       const f='drop-shadow(0 1px 0 rgba(28,14,0,.8))'+(covered?' brightness(.78)':'');
       if (b.el._f!==f){ b.el._f=f; b.el.style.filter=f; }
     } else if (b.el._f){ b.el._f=''; b.el.style.filter=''; }
@@ -1654,6 +2101,7 @@
     Coin, sfx, rise,
     active, dirty, squashing, zones, spinCache, frameCache,
     makeChip, styleChip, setFrame, frames, spinFrame, coloursFor, betCoins, bankCoins, curve,
+    PIECES, KINDS, isBar, isBig, pieceD, pieceH, stepOf, depthOf, clash, compose, valueOf, merge, mergePlan, barFrame,
     BankPile,
     body, removeBody, removeFromZone, toRest, finishRest, kick, ensureLayers, draw, snap, arrive, begin,
     buildWalls, boardRow, contain, inBlock, fitTray, lip, trayBox, holdIn,

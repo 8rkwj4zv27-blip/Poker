@@ -100,6 +100,13 @@ code, walls from the live table, bet-spot/pot zones, ten procedural sound
 sets. Exposes `window.CoinWorld`; does nothing at load. Built in
 `chip-throw-lab.html`, which runs on it.
 
+Since v0.43.0 it has denominations: small coins (the small blind), big
+coins (5) and BULLION bars (25), one kind per tower, the pot changing up
+past 60 pieces (`merge`), counts by `compose` (the same for every bet).
+`js/coin-bank.js` (`CoinBank.View`) is the inside of your bank in the
+Settings → Bank style (TUBES default, SHELVES, HOPPER; CLASSIC is the old
+rack), with making change.
+
 `js/coin-table.js` is the game's side (`CoinTable`, presentation only):
 lays the pot tray, bet spots and walls over the live table; throws every
 bet and blind onto its spot (`applyAction`/`postBlind`); sweeps spots into

@@ -1,12 +1,12 @@
 "use strict";
 
 /* ============================================================
-   COIN BANK — the Coin Bank Lab's candidate (coin-bank-lab.html, Lab 2 of
-   the coin economy pass). The inside of your bank (#hud-left, the same
+   COIN BANK — the inside of your bank (the coin economy pass, v0.43.0;
+   built in coin-bank-lab.html, Lab 2). The inside of your bank (#hud-left, the same
    90 x 155 housing) holding your stack in the felt's pieces: small coins
-   (the small blind), big coins (5 small) and gold bars (5 big). The game
-   never loads this file; js/coin-denom-table.js drives it in the lab when
-   CoinWorld.OPT.bank is a style.
+   (the small blind), big coins (5 small) and gold bars (5 big). Driven by
+   js/coin-table.js when CoinWorld.OPT.bank is a style (Settings → Bank;
+   CLASSIC keeps the old rack).
 
    Three styles, one machine underneath:
    - TUBES: a coin changer. Three glass tubes; coins stack edge-on like a
