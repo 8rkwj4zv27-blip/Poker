@@ -70,7 +70,8 @@ check the lab as usual, then:
    (give the `.PNG` faces `contentType: image/png`).
 3. Give the owner the claude.ai link in the reply. After a change,
    re-stage and republish to the same link (same file path in the session,
-   or `url` from a later one) rather than making a new one.
+   or `url` from a later one) rather than making a new one, and record the
+   link in the lab's plan doc.
 
 Still commit and push the lab to the branch as before; the link is how the
 owner looks at it.

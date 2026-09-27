@@ -311,6 +311,31 @@ the coin table's `EnemyCards` questions itself. Its default ("YOUR ORDER")
 is the shipped order. Shows each card's footprint against V1. Not loaded
 by the game.
 
+## `js/knockout.js` + `css/knockout.css` — K.O. + game over (live, v0.43.0)
+
+The owner's order from `ko-lab.html` (recorded in `docs/ui/PATTERN_BOOK.md`,
+K.O. + game over). Replaces `playElimination`/`playEliminationGroup` with
+one sequence (a referee count, the big K.O.! stamp, one-by-one blasts; the
+eject is still the game's `launchPortrait`/`stepPortrait`) and wraps
+`presentResultStage` so a bust plays the dashboard's death first (the
+killer's gloat, thunks, a random damage chain, CRT off or rubble).
+Presentation only; the order is `KNOCKOUT_ORDER` at the top. Its sounds
+are a small synth of its own, unlocked on the first tap.
+
+## `ko-lab.html` + `js/ko-lab.js` + `css/ko-lab.css` + candidate `css/ko-fx.css` / `js/ko-fx.js` — K.O. order form (Lab)
+
+Where the K.O. / game over was ordered (docs/ui/KO_PLAN.md). Runs the
+**real game** sandboxed at the owner's phone (430 x 932, safe areas as in
+`enemy-card-lab.html`, whose chrome it shares) with the candidate injected, the shipped
+`css/knockout.css` / `js/knockout.js` stripped from its copy.
+`KoFx` replaces `playElimination`/`playEliminationGroup` with one sequence
+(the eject is still the game's `launchPortrait`/`stepPortrait`) and wraps
+`presentResultStage` so a bust plays the dashboard's death first. Every row
+starts on TODAY (the shipped sequence). K.O., DOUBLE, TRIPLE, OUT and YOU
+BUST replay on the table in view (`KoFx.lab`, presentation only) and can
+be pressed over and over; REAL K.O. / REAL BUST play an actual hand. Not
+loaded by the game.
+
 ## `css/showdown.css` + `js/showdown.js` — Showdown (live, v0.42.0)
 
 The end of a hand, the owner's order from `showdown-lab.html` (recorded in
@@ -402,7 +427,7 @@ there manually.
 Files matching `*-lab.html`, `*-lab.js`, `*-lab.css` (`career-lab`,
 `career-hub-v2-lab`, `ticket-lab`, `card-flight-options`, `card-turn-lab`,
 `chip-motion-lab`, `chip-lab`, `chip-throw-lab`, `design-lab`, `result-stage-lab`, `showdown-rail-lab`, `crt-lab`, `dashboard-v2-lab`, `dashboard-order-lab`,
-`wheel-v2-lab`, `intro-lab`, `boot-lab`, `slot-lab`, `table-space-lab`, `enemy-card-lab`, `showdown-lab`, `pot-lab`)
+`wheel-v2-lab`, `intro-lab`, `boot-lab`, `slot-lab`, `table-space-lab`, `enemy-card-lab`, `showdown-lab`, `pot-lab`, `ko-lab`)
 are **isolated visual references and prototyping sandboxes**. Several are
 committed permanently as durable references even after their feature
 shipped. Rules:

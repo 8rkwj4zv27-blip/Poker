@@ -183,7 +183,7 @@ are.
 |---|---|---|
 | Frame | `.dash-frame` on `#your-seat-dock` and `.dash-frame-base` on `#action-area`. One shell on the dock's `::before` runs down behind the key bay (`--dash-drop`), so the frame is one piece. Band 8px, gap 5px, 18px corners; the key bay keeps the home-indicator clearance (`--dash-foot`). Narrow phones (under 390px) only move the frame closer to the edge and give back V1's case padding, so keys and the stack drum keep their V1 width. | `css/dashboard.css` |
 | Bay | `.dash-bay` on any dashboard bay (today the bank and the right bay). | same |
-| Rim light | `data-rim` on `.dash-frame`: `turn` (`--pc-lamp-amber`, steady), `allin` (`--danger`, stepped pulse; you all in, or facing an all-in bet), `win` (`--pc-lamp-amber-hi`, 1.7s), `bust` (flickers out, then dark until the next table). Priority bust > win > all in > turn > dark. Every switch-on steps in (`.dash-relay`) with `Sound.wheelRelay`. The cards stand in front of it (z-index 3 over 2); the win shake moves the whole machine (`.dash-shake`), never the case alone. | `js/dashboard.js` (`DashRim`); `celebrateWinnerSeat()` calls `DashRim.win()` |
+| Rim light | `data-rim` on `.dash-frame`: `turn` (`--pc-lamp-amber`, steady), `allin` (`--danger`, stepped pulse; you all in, or facing an all-in bet), `win` (`--pc-lamp-amber-hi`, 1.7s), `bust` (flickers out, then dark until the next table). Priority bust > win > all in > turn > dark. Every switch-on steps in (`.dash-relay`) with `Sound.wheelRelay`. It is drawn under the case (`z-index:-1`, over the frame shell), so the cards stay in front of it even while the case is animated; its glow onto the case is an inset glow on `#hud-frame` (v0.43.0; before, a filter, transform or fade on the case put the rim across the cards). The win shake moves the whole machine (`.dash-shake`), never the case alone. | `js/dashboard.js` (`DashRim`); `celebrateWinnerSeat()` calls `DashRim.win()` |
 | Reduced Motion | No relay flicker, pulse or shake; the win is steady warm light, bust is simply dark. | `css/dashboard.css` |
 
 Before/after at 430 × 932, and each rim state:
@@ -238,6 +238,35 @@ Not taken: the player's file (every version failed to read at card size),
 the stack gauge, blind pucks on the felt. The lab still offers every
 option on V1 cards, with the shipped files stripped from its copy.
 
+
+## K.O. + game over (live v0.43.0)
+
+The owner's order from the K.O. order form (`ko-lab.html`, round 3,
+27 September 2026; `docs/ui/KO_PLAN.md`). `js/knockout.js` replaces the
+elimination presentation (`playElimination`/`playEliminationGroup`) and
+wraps `presentResultStage` for a bust; `css/knockout.css` styles it. The
+eject is still the game's own portrait physics. Presentation only.
+Universal parts inside (faces, the Enemy Cards readout, cards, buttons, the
+stack reels) are used as they are; flying copies inline their computed
+style so they look exactly like the part they left.
+
+| Part | Order | The finish |
+|---|---|---|
+| Build-up | **REF COUNT** | 3 · 2 · 1 on the seat's readout (danger ink) with a boxing bell each, the rim red, the face more scared each count; the bell rings out three times on the K.O. |
+| Stamp | **BIG K.O.!** | A big pixel K.O.! (`.kofx-stamp`, the header font, gold with a hard ink outline) slams onto the felt; the blast knocks it away. DOUBLE / TRIPLE K.O.!; someone else's knockout is a grey OUT!. |
+| Blast | **+ DEBRIS**, **ONE BY ONE** | A one-frame flash, a stepped screen shake, bits of the socket in the face's colour. Two or three fire about half a second apart, each blast bigger; the ones waiting rattle. |
+| The others | **FLINCH** | Every other opponent flinches and pulls a scared face. |
+| Flight | **LIGHT** trail, **REACTS**, **SPARKS**, **SOLID** | About three stepped afterimages; a new face on every hit; sparks off every contact; the other cabinets are solid (a seat that's hit rattles and pulls a face). Exits off screen; no slow motion. |
+| Empty socket | **SMOKE** | Pixel smoke curls out of it for a few seconds, the odd spark. |
+| The killer | **GLOATS** | A soft round spotlight on whoever busted you, their rim lit warm, a smug face and a two-word gloat on their readout. |
+| The hit | **THUNKS** | The dashboard is hit twice from below; the screens glitch. |
+| Damage | **CHAIN REACTION**, **RANDOM**, **1, 2 OR 3** buttons, cards **POP OUT** | A random handful (one to four) of: a screen floods with static, switches itself off or loses its glass; the stack drums spin wild and jam red, some popping out; the SB/BB bulbs pop; the rim shorts and dies; the settings key pops off; a bracket snaps and the console hangs crooked. Plus one to three buttons shot off (the holes smoke) and your cards. Everything is put back for the next run. |
+| Lights out | **CRT OR RUBBLE**, pace **LONG** | A coin toss: the screen switches off like an old TV (line, dot, black; the result stage switches on out of the black, the dashboard repaired) or the machine sputters and dies where it stands. |
+| Reduced Motion | | The game's own instant end state; no game-over beat. |
+
+Not taken: spotlight on the K.O., slow motion, the glass exit, NO SIGNAL,
+quips, TILT. The lab still offers every option, with the shipped files
+stripped from its copy (`css/ko-fx.css`, `js/ko-fx.js`).
 
 ## Showdown (live v0.42.0)
 
