@@ -1,0 +1,22 @@
+/* K.O. order form, round 1: lab chrome only (on top of
+   css/table-space-lab.css and css/enemy-card-lab.css, whose phone frame,
+   form and phone sheets it shares). */
+.ko-lab .sl-moments .is-big{ padding:15px 6px; font-size:10px; letter-spacing:.12em; }
+.ko-lab .sl-moments button[data-moment="reset"]{ background:var(--sl-panel-2); color:var(--sl-cream); box-shadow:inset 0 2px 0 rgba(255,255,255,.08),0 3px 0 var(--sl-ink); }
+.ko-lab .sl-sec small{ display:block; margin-top:4px; font-family:var(--font-px); font-size:12px; letter-spacing:0; color:var(--sl-dim); }
+.ko-lab .sl-summary li.is-sec{ list-style:none; margin:8px 0 2px -14px; font-family:var(--font-hdr); font-size:7px; letter-spacing:.12em; color:var(--sl-gold); }
+
+/* Phone: the two replays stay one tap away, top right, over the game. */
+.ko-quick{ display:none; }
+@media (max-width:760px){
+  .ko-quick{
+    display:flex; gap:4px; position:fixed; z-index:30; right:8px; top:calc(env(safe-area-inset-top,0px) + 8px);
+    padding:3px; background:var(--sl-ink); border-radius:4px; box-shadow:0 3px 0 rgba(0,0,0,.5);
+  }
+  .ko-quick button{
+    min-width:64px; min-height:34px; padding:6px 8px; border:0; border-radius:2px;
+    background:var(--sl-gold); color:var(--sl-ink); font-family:var(--font-hdr); font-size:8px; letter-spacing:.06em;
+    box-shadow:inset 0 2px 0 #FFE380;
+  }
+  .ko-quick button:disabled{ opacity:.45; }
+}
