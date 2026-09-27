@@ -32,6 +32,9 @@
   BASE.spin='side'; BASE.spinSpeed='med'; BASE.spinFrames='16'; BASE.light='on'; BASE.lands='random';
   // v10: the owner's settled mix is the default
   Object.assign(BASE,{ sfx:'clay', nums:'off', spin:'toss', spinSpeed:'slow', lands:'heads', coins:'more' });
+  // the pot's shape when it tidies (see potSlots): MIX picks one each hand
+  // from these odds (or each tidy: potEvery), a tap on the felt re-picks
+  Object.assign(BASE,{ potShape:'mix', potMix:{ pyramid:3, heap:3, rows:2 }, potEvery:'hand', potTap:'on' });
   const OPT={ preset:'v11', ...BASE, speed:1, sound:'on' };
   const SIZES={ s:13, m:15, l:17 };
   const D=()=>SIZES[OPT.size];
@@ -110,6 +113,9 @@
   const GOLD={ face:'#f2c23c', rim:'#c98c16', hi:'#fff1a6', line:'#b87d10', ink:'#3a2206', band:'#a8690c', band2:'#e0a52a' };
   const TILTS=[1,.82,.6,.38,.18,0];
   const REST=1;
+  // the felt seen at the resting tilt: a pixel up the screen is FORE across
+  // (a resting coin's face is TILTS[REST] as tall as it is wide)
+  const FORE=1/TILTS[REST];
   const frameCache={};
   function hex(h){ const n=parseInt(h.slice(1),16); return [n>>16&255,n>>8&255,n&255]; }
   const dark=(p,k)=>p.map(v=>Math.round(v*k));
@@ -649,6 +655,7 @@
     // pushed group is relaxed as whole stacks by relaxStacks instead)
     void was;
     if (b.snapOnto){ b.snapOnto.claimed=null; b.snapOnto=null; }
+    b.seatCell=null;
     active.delete(b); dirty.add(b);
     if (b.sq>0) squashing.add(b);
     if (b.zone && OPT.depth==='on') b.zone.list.forEach(q=>{ if (q!==b && Math.abs(q.x-b.x)<b.d && Math.abs(q.y-b.y)<b.d) dirty.add(q); });
@@ -733,9 +740,25 @@
       if (side==='left') TRAY.L=R; else if (side==='right') TRAY.R=L; else if (side==='top') TRAY.T=B; else TRAY.B=T;
     });
   }
+  // where a coin of size d may rest in the tray: its sides clear of the
+  // walls, and its face clear of the back wall (a coin is drawn up from its
+  // ground point, so the back wall needs the depth of its face)
+  function trayBox(d){
+    if (!TRAY) return null;
+    return { L:TRAY.L+d/2, R:TRAY.R-d/2, T:TRAY.T+Math.round(d/FORE)-2, B:TRAY.B };
+  }
+  // contain(), and a pot coin also stays inside the tray: every place a
+  // coin is put to rest (a push apart, a settle, a nudge) goes through here
+  function holdIn(b,z){
+    contain(b);
+    z=z||b.zone;
+    const k=z && z.id==='pot' && OPT.lip==='on' ? trayBox(b.d) : null;
+    if (!k || k.R<=k.L || k.B<=k.T) return;
+    b.x=Math.max(k.L,Math.min(k.R,b.x)); b.y=Math.max(k.T,Math.min(k.B,b.y));
+  }
   function lip(b){
     if (!TRAY || OPT.lip!=='on' || !b.zone || b.zone.id!=='pot' || b.z>4) return;
-    const r=b.d/2, L=TRAY.L+r, Rr=TRAY.R-r, T=TRAY.T+2, B=TRAY.B;
+    const k=trayBox(b.d), L=k.L, Rr=k.R, T=k.T, B=k.B;
     if (Rr<=L || B<=T) return;
     let nx=0, ny=0;
     if (b.x<L){ b.x=L; nx=-1; } else if (b.x>Rr){ b.x=Rr; nx=1; }
@@ -753,12 +776,18 @@
 
   /* ---------------- zones: bet spots and the pot ---------------- */
   function zone(id,cx,cy,cap,maxSlots,radius){ return zones[id]={ id, cx, cy, cap, maxSlots, radius, list:[], neat:true, timer:0, amount:0 }; }
+  // Two coins at rest touch edge to edge: their centres a coin apart on the
+  // felt (foreshortened: a pixel up the screen is 1.4 across). A row set
+  // half a coin across behind another sits just far enough back that the
+  // faces meet instead of sinking into each other.
+  const ROW_DY=sp=>Math.ceil(Math.sqrt(Math.max(0,D()*D()-sp*sp/4))/FORE);
   function neatSlots(z,list){
-    const d=D(), towers=OPT.tidy==='towers', sp=d+(towers?2:1), st=STEP(), slots=[], order=[0];
+    if (z.id==='pot') return potSlots(z,list);
+    const d=D(), towers=OPT.tidy==='towers', sp=d+(towers?2:1), st=STEP(), slots=[], order=[0], dy=ROW_DY(sp);
     for (let i=1;i<9;i++) order.push(i%2?Math.ceil(i/2):-i/2);
-    order.forEach((o,i)=>{ slots.push({ x:z.cx+o*sp, y:z.cy }); if (i<8 && !towers) slots.push({ x:z.cx+(o+(o<0?-.5:.5))*sp, y:z.cy-Math.round(d*.42) }); });
+    order.forEach((o,i)=>{ slots.push({ x:z.cx+o*sp, y:z.cy }); if (i<8 && !towers) slots.push({ x:z.cx+(o+(o<0?-.5:.5))*sp, y:z.cy-dy }); });
     // never taller than the room above the pile (the pot sits under the board)
-    const room=z.room?Math.max(2,Math.floor((z.room-d*HR()-2)/st)+1):99;
+    const room=z.room?Math.max(2,Math.floor((z.room-(towers?0:dy)-d*HR()-2)/st)+1):99;
     const pool=towers?slots.length:z.maxSlots;
     // SPREAD: coins shared evenly over every stack; TOWERS: one row of tall
     // stacks (up to 8 high), as few as the coins need
@@ -768,22 +797,107 @@
     list.forEach(b=>{
       let s=null;
       for (let i=stacks.length-1;i>=0;i--) if (stacks[i].key===b.colour && stacks[i].n<cap){ s=stacks[i]; break; }
-      if (!s){ if (stacks.length<use.length){ s={ key:b.colour, slot:use[stacks.length], n:0 }; stacks.push(s); } else s=stacks.reduce((a,c)=>c.n<a.n?c:a); }
-      out.set(b,{ x:s.slot.x, y:s.slot.y, z:s.n*st, n:s.n });
+      if (!s){ if (stacks.length<use.length){ s={ key:b.colour, slot:use[stacks.length], n:0, k:stacks.length }; stacks.push(s); } else s=stacks.reduce((a,c)=>c.n<a.n?c:a); }
+      out.set(b,{ x:s.slot.x, y:s.slot.y, z:s.n*st, n:s.n, k:s.k });
       s.n++;
+    });
+    return out;
+  }
+
+  /* THE POT'S SHAPE. Each hand (and each tap on the empty felt) picks how
+     the pile builds when it tidies: NEAT rows of even stacks, a PYRAMID
+     (tallest at the back and in the middle, stepping down to the edges and
+     the front, like a real pot) or a HEAP (uneven, leaning stacks and a
+     coin or two lying loose). TOWERS went (owner: too tall). Every shape keeps
+     its coins inside the tray, a coin apart, and under the board. */
+  const POT_SHAPES=['pyramid','heap','rows'];
+  let potShape=null;
+  function newPotShape(avoid){
+    if (OPT.potShape && OPT.potShape!=='mix') return (potShape=OPT.potShape);
+    const w=OPT.potMix||{ rows:1 }, pool=POT_SHAPES.filter(k=>(w[k]||0)>0 && (k!==avoid || POT_SHAPES.filter(j=>(w[j]||0)>0).length<2));
+    const total=pool.reduce((a,k)=>a+w[k],0);
+    let r=rnd()*total; potShape=pool[pool.length-1]||'rows';
+    for (const k of pool){ r-=w[k]; if (r<0){ potShape=k; break; } }
+    return potShape;
+  }
+  function potSlots(z,list){
+    const d=D(), st=STEP(), n=list.length, shape=potShape||newPotShape();
+    const heap=shape==='heap', sp=d+(heap?2:1), dy=ROW_DY(sp);
+    const k=trayBox(d)||{ L:z.cx-80, R:z.cx+80, T:z.cy-30, B:z.cy+4 };
+    const maxCols=Math.max(1,Math.floor((k.R-k.L)/sp)+1), maxRows=Math.max(1,Math.floor((k.B-k.T)/dy)+1);
+    // how many coins a stack standing at y may hold: the board is above it
+    const capAt=y=>{ const room=z.room!=null?z.room+(y-z.cy):99; return Math.max(1,Math.min(12,Math.floor((room-d*HR()-2)/st)+1)); };
+    const clampI=(v,a,b)=>Math.max(a,Math.min(b,v));
+    // the rows, front first: how many stacks each, and each stack's weight
+    // (its share of the coins) from where it stands
+    let cols, weight;
+    if (shape==='rows'){
+      const c=clampI(Math.round(Math.sqrt(n*1.5)),1,Math.min(9,maxCols));
+      cols=n>1&&maxRows>1?[c,Math.max(1,c-1)]:[c];
+      weight=()=>1;
+    } else {
+      const r=clampI(n<4?1:n<10?2:n<22?3:4,1,maxRows);
+      const c0=clampI(Math.ceil(Math.sqrt(n)*(heap?1.15:.95))+(heap?1:0),r,maxCols);
+      cols=[]; for (let i=0;i<r;i++) cols.push(Math.max(1,c0-i));
+      weight=heap?(row,off)=>rr(.25,1.6)*(1-.35*off):(row,off)=>Math.pow((1+row*.9)*(1-.6*off),2.2);
+    }
+    const rows=cols.length, cx=(k.L+k.R)/2;
+    const yFront=clampI(Math.round((k.T+k.B)/2+(rows-1)*dy/2+2),k.T+(rows-1)*dy,k.B);
+    const slots=[];
+    cols.forEach((c,row)=>{
+      for (let i=0;i<c;i++){
+        const o=i-(c-1)/2, half=Math.max(1,(cols[0]-1)/2);
+        const x=cx+o*sp, y=yFront-row*dy;
+        if (heap && row>0 && c>2 && Math.abs(o)>=1 && rnd()<.15) continue;     // a gap in the pile
+        slots.push({ x, y, row, cap:capAt(y), w:Math.max(.05,weight(row,Math.min(1,Math.abs(o)/half))), n:0 });
+      }
+    });
+    // the heap: stacks a pixel or two off the grid, where that doesn't push
+    // them into a neighbour
+    if (heap) slots.forEach(s=>{
+      const x=s.x+rint(-2,2), y=s.y+rint(-1,1);
+      if (x>=k.L && x<=k.R && y>=k.T && y<=k.B && slots.every(q=>q===s || Math.hypot(q.x-x,(q.y-y)*FORE)>=d)){ s.x=x; s.y=y; }
+    });
+    if (heap && n>6){
+      // a coin or two lying loose on the tray floor, off the pile's sides
+      [-1,1].forEach(side=>{
+        if (rnd()<.35) return;
+        const x=cx+side*((cols[0]+1)/2+rr(.2,.7))*sp, y=clampI(yFront-rint(0,Math.min(1,rows-1))*dy+rint(-1,1),k.T,k.B);
+        if (x<k.L || x>k.R) return;
+        if (slots.every(s=>Math.hypot(s.x-x,(s.y-y)*FORE)>=d)) slots.push({ x, y, row:0, cap:1, w:3, n:0 });
+      });
+    }
+    // centre first, so an uneven share goes to the middle
+    slots.sort((a,c)=>Math.abs(a.x-cx)-Math.abs(c.x-cx) || a.row-c.row);
+    // share the coins out in proportion to each stack's weight
+    for (let i=0;i<n;i++){
+      let best=null, bv=1e9;
+      slots.forEach(s=>{ if (s.n>=s.cap) return; const v=(s.n+1)/s.w; if (v<bv){ bv=v; best=s; } });
+      if (!best) best=slots.reduce((a,c)=>c.n<a.n?c:a);
+      best.n++;
+    }
+    // hand the coins out, bottom up; a heap's stacks lean a little
+    const out=new Map(); let i=0;
+    slots.forEach((s,si)=>{
+      const lean=heap?(rnd()<.5?-1:1)*rr(0,.7):0;
+      for (let h=0;h<s.n;h++){
+        const b=list[i++]; if (!b) return;
+        const ox=heap?Math.round(clampI(h*lean,-3,3)):0;
+        out.set(b,{ x:s.x+ox, y:s.y, z:h*st, n:h, k:si });
+      }
     });
     return out;
   }
   // free: coins may sit a quarter inside each other; snug: they only touch;
   // snap: a coin landing near another is pulled onto it (stacks build)
-  const MIN_GAP=()=>OPT.overlap==='free'?.74:.94;
+  const MIN_GAP=()=>OPT.overlap==='free'?.74:1;
   const SUPPORT=()=>OPT.overlap==='snap'?.8:(OPT.overlap==='snug'?.5:.55);
   function supportUnder(b){
     if (!b.zone) return { h:0, o:null };
     let h=0, o=null;
     for (const q of b.zone.list){
       if (q===b || q.state!=='rest') continue;
-      if (Math.hypot(q.x-b.x,(q.y-b.y)*1.4)<b.d*SUPPORT() && q.z+STEP()>h){ h=q.z+STEP(); o=q; }
+      if (Math.hypot(q.x-b.x,(q.y-b.y)*FORE)<b.d*SUPPORT() && q.z+STEP()>h){ h=q.z+STEP(); o=q; }
     }
     return { h, o };
   }
@@ -801,11 +915,12 @@
     if (z.tidying) return z.tidying;
     if (z.neat || !z.list.length) return Promise.resolve();
     z.neat=true; clearTimeout(z.timer);
+    if (z.id==='pot' && OPT.potEvery==='tidy') newPotShape(potShape);
     const slots=neatSlots(z,z.list), groups=[...new Set(z.list.map(b=>b.colour))], done=[];
     const colourless=groups.length===1;
     z.list.forEach((b,i)=>{
       const s=slots.get(b), gi=colourless?Math.floor(s.n/3):groups.indexOf(b.colour);
-      b.tidyTop=![...slots.values()].some(o=>o!==s && o.x===s.x && o.y===s.y && o.n>s.n);
+      b.tidyTop=![...slots.values()].some(o=>o!==s && o.k===s.k && o.n>s.n);
       if (Math.hypot(s.x-b.x,s.y-b.y)<.6 && Math.abs(s.z-b.z)<.6) return;
       done.push(new Promise(res=>{
         const dist=Math.hypot(s.x-b.x,s.y-b.y);
@@ -917,7 +1032,7 @@
         const v=Math.hypot(b.vx,b.vy);
         // the felt grips harder the further a chip strays from its spot
         let grip=1;
-        if (b.zone){ const off=Math.hypot(b.x-b.zone.cx,(b.y-b.zone.cy)*1.4)-b.zone.radius; if (off>0) grip+=off/22; }
+        if (b.zone){ const off=Math.hypot(b.x-b.zone.cx,(b.y-b.zone.cy)*FORE)-b.zone.radius; if (off>0) grip+=off/22; }
         const dec=FRICTION*grip*dt;
         if (v<=dec || v<8){ b.vx=0; b.vy=0; settle(b); break; }
         b.vx*=(v-dec)/v; b.vy*=(v-dec)/v;
@@ -942,7 +1057,7 @@
         if (contain(b)){ b.state='flat'; b.t=0; sfx('wall'); }
         if (!b.shunted && b.zone && k<.95){
           for (const q of b.zone.list){
-            if (q===b || q.state!=='rest' || q.z>1 || Math.hypot(q.x-b.x,(q.y-b.y)*1.4)>b.d*.8) continue;
+            if (q===b || q.state!=='rest' || q.z>1 || Math.hypot(q.x-b.x,(q.y-b.y)*FORE)>b.d*.8) continue;
             const dx=b.tx-b.x0, dy=b.ty-b.y0, L=Math.max(1,Math.hypot(dx,dy)), v=L/b.T*1.6;
             shunt(q,dx/L*v,dy/L*v*.7); b.shunted=true; b.state='flat'; b.t=0; sfx('stack',.8); break;
           }
@@ -953,7 +1068,7 @@
       }
       case 'flat':{
         const k=Math.min(1,b.t/.11); b.tilt=[0,.18,.38,.6,.82][Math.min(4,Math.floor(k*5))]; b.rot*=.5; b.z=b.tz||0;
-        if (k>=1){ b.tilt=1; b.rot=0; b.sq=.05; sfx('land'); finishRest(b); }
+        if (k>=1){ b.tilt=1; b.rot=0; b.sq=.05; sfx('land'); if (!(b.target&&b.target.slot) && seat(b)) break; finishRest(b); }
         break;
       }
       case 'rock':{
@@ -970,7 +1085,12 @@
         b.tilt=k<1?.82:1; b.back=false;
         if (k>=1){
           b.x=b.tx; b.y=b.ty; b.z=b.tz; b.tilt=1; b.sq=.08;
-          if (b.snapping){ b.snapping=false; sfx('stack',.8,rise(b)); if (b.zone) b.zone.neat=false; }
+          if (b.snapping){
+            b.snapping=false;
+            // the coin it hopped onto was taken away mid-hop: find another place
+            if (b.zone && b.z>.5 && supportUnder(b).h<b.z-.5){ if (b.snapOnto){ b.snapOnto.claimed=null; b.snapOnto=null; } b.seatCell=null; settle(b); break; }
+            sfx('stack',.8,rise(b)); if (b.zone) b.zone.neat=false;
+          }
           toRest(b);
         }
         break;
@@ -994,7 +1114,9 @@
     if (t.vanish || t.mouth){ arrive(b,true); return; }
     if (t.slot){ b.x=t.x; b.y=t.y; b.z=t.z||0; toRest(b); return; }
     if (t.x!=null && s!=='slide'){ b.x=t.x; b.y=t.y; }
-    contain(b); b.z=supportUnder(b).h; finishRest(b);
+    holdIn(b);
+    if (seat(b,true)) return;
+    b.z=supportUnder(b).h; finishRest(b);
   }
 
   function arrive(b,isEased){
@@ -1095,8 +1217,8 @@
   function settle(b){
     const t=b.target||{};
     if (!t.slot){
-      contain(b);
-      if (OPT.overlap==='snap' && trySnap(b)) return;
+      holdIn(b);
+      if (seat(b)) return;
       b.z=supportUnder(b).h;
     }
     if (OPT.rock==='on' && b.z<1 && rnd()<.22){
@@ -1106,9 +1228,74 @@
     }
     finishRest(b);
   }
+  /* THE GRID. A loose coin comes to rest in a cell of an invisible grid
+     over its zone: cells a coin apart across, rows set half a coin over
+     and just far enough back that faces touch (ROW_DY), like the tidied
+     piles. The cell nearest where it landed: a stack there, it hops on top
+     (centred, with the loose wobble); empty, it slides the few px into it;
+     full or taken, the next nearest. So a face never sinks into another,
+     a coin never hangs off a stack, and nothing already down is moved.
+     OVERLAP 'free' (the lab's old look) skips it. */
+  function seat(b,instant){
+    const z=b.zone; if (!z || OPT.overlap==='free') return false;
+    const d=b.d, sp=D()+1, dy=ROW_DY(sp), st=STEP(), k=z.id==='pot'&&OPT.lip==='on'?trayBox(d):null;
+    const rest=z.list.filter(q=>q!==b && q.state==='rest');
+    const taken=z.list.filter(q=>q!==b && q.seatCell).map(q=>q.seatCell);
+    const far=(x,y,q)=>Math.hypot(q.x-x,(q.y-y)*FORE);
+    const cells=[];
+    const j0=Math.round((b.y-z.cy)/dy);
+    for (let j=j0-4;j<=j0+4;j++){
+      const y=z.cy+j*dy, off=(j&1)*.5, i0=Math.round((b.x-z.cx)/sp-off);
+      for (let i=i0-4;i<=i0+4;i++){
+        const x=z.cx+(i+off)*sp;
+        if (k && (x<k.L || x>k.R || y<k.T || y>k.B)) continue;
+        if (inBlock(x,y,d)) continue;
+        const pr={ x, y, d, vx:0, vy:0 }; contain(pr);
+        if (Math.abs(pr.x-x)>.5 || Math.abs(pr.y-y)>.5) continue;              // against the rail
+        cells.push({ x, y, dist:far(x,y,b) });
+      }
+    }
+    cells.sort((a,c)=>a.dist-c.dist);
+    for (const c of cells.slice(0,24)){
+      if (taken.some(t=>Math.abs(t.x-c.x)<1 && Math.abs(t.y-c.y)<1)) continue;
+      // a stack standing in (or near) the cell: hop onto its top coin
+      const base=rest.filter(q=>q.z<.5 && far(c.x,c.y,q)<d*.6).sort((a,q)=>far(c.x,c.y,a)-far(c.x,c.y,q))[0];
+      if (base){
+        const top=rest.filter(q=>Math.abs(q.x-base.x)<d*.45 && Math.abs(q.y-base.y)<d*.4).sort((a,q)=>q.z-a.z)[0];
+        if (top.claimed || top.z/st>=snapMax(z)) continue;
+        let ox=0, oy=0;
+        if (OPT.stack==='loose'){ ox=rint(-1,1); oy=rint(0,1); }
+        else if (OPT.stack==='lean'){ if (!top.leanDir) top.leanDir=rnd()<.5?-1:1; ox=top.leanDir; }
+        b.leanDir=top.leanDir;
+        // the wobble is around the base, so a stack never walks off itself
+        const tx=Math.max(base.x-1,Math.min(base.x+1,top.x+ox)), ty=Math.max(base.y,Math.min(base.y+1,top.y+oy));
+        return moveTo(b,{ x:tx, y:ty, z:top.z+st, cell:c, onto:top },instant);
+      }
+      // empty floor: no face at floor level within a coin of the cell
+      if (rest.some(q=>q.z<st-.5 && far(c.x,c.y,q)<d-.5)) continue;
+      return moveTo(b,{ x:c.x, y:c.y, z:0, cell:c },instant);
+    }
+    return false;
+  }
+  function moveTo(b,t,instant){
+    const z=b.zone; z.neat=false;
+    const dist=Math.hypot(t.x-b.x,t.y-b.y);
+    if (instant || (dist<.5 && Math.abs(t.z-b.z)<.5)){
+      b.x=t.x; b.y=t.y; b.z=t.z; finishRest(b); return true;
+    }
+    b.seatCell={ x:t.cell.x, y:t.cell.y };
+    if (t.onto){ t.onto.claimed=b; b.snapOnto=t.onto; }
+    b.x0=b.x; b.y0=b.y; b.z0=b.z; b.tx=t.x; b.ty=t.y; b.tz=t.z;
+    // onto a stack: the snap's little hop and clack; along the floor: a slide
+    b.T=t.onto?.07+Math.min(.06,dist/600):.05+Math.min(.1,dist/260); b.arc=t.onto?3:0;
+    b.t=0; b.state='tidy'; b.snapping=!!t.onto;
+    active.add(b); kick();
+    return true;
+  }
   // A coin is a solid disc: at the same height it can't sit inside another.
-  // Push it clear (a coin is never moved into a card or off the felt), then
-  // let it drop to whatever is now under it, and check again.
+  // Push it clear (a coin is never moved into a card, off the felt or out of
+  // the tray), then let it drop to whatever is now under it, and check
+  // again. (Unused since the grid: seat() places every loose coin.)
   function relaxCoin(b){
     if (!b.zone || OPT.overlap==='free') return;
     const min=b.d*MIN_GAP();
@@ -1117,18 +1304,18 @@
         let moved=false;
         for (const q of b.zone.list){
           if (q===b || q.state!=='rest' || Math.abs(q.z-b.z)>STEP()*.8) continue;
-          const dx=b.x-q.x, dy=(b.y-q.y)*1.4, dist=Math.hypot(dx,dy);
+          const dx=b.x-q.x, dy=(b.y-q.y)*FORE, dist=Math.hypot(dx,dy);
           if (dist>=min) continue;
           const nx=dist>.01?dx/dist:(rnd()<.5?-1:1), ny=dist>.01?dy/dist:0, push=min-dist+.4;
-          b.x+=nx*push; b.y+=ny*push/1.4; moved=true;
+          b.x+=nx*push; b.y+=ny*push/FORE; moved=true;
         }
-        contain(b);
+        holdIn(b);
         if (!moved) break;
       }
       const sup=supportUnder(b);
       // a coin on a coin can't hang far off it: it would topple
       if (sup.o){
-        const dx=b.x-sup.o.x, dy=b.y-sup.o.y, off=Math.hypot(dx,dy*1.4), lim=b.d*.3;
+        const dx=b.x-sup.o.x, dy=b.y-sup.o.y, off=Math.hypot(dx,dy*FORE), lim=b.d*.3;
         if (off>lim){ b.x=sup.o.x+dx*lim/off; b.y=sup.o.y+dy*lim/off; }
       }
       if (Math.abs(sup.h-b.z)<.5 && round>0) break;
@@ -1145,17 +1332,17 @@
       if (s) s.coins.push(b); else stacks.push({ x:b.x, y:b.y, d:b.d, top:b.z, coins:[b] });
     });
     // how far a stack's upper coins sit off its base
-    stacks.forEach(k=>{ k.spread=Math.min(k.d*.3,Math.max(0,...k.coins.map(b=>Math.hypot(b.x-k.coins[0].x,(b.y-k.coins[0].y)*1.4)))); });
+    stacks.forEach(k=>{ k.spread=Math.min(k.d*.3,Math.max(0,...k.coins.map(b=>Math.hypot(b.x-k.coins[0].x,(b.y-k.coins[0].y)*FORE)))); });
     for (let it=0; it<80; it++){
       let moved=false;
       for (let i=0;i<stacks.length;i++) for (let j=i+1;j<stacks.length;j++){
         const a=stacks[i], c=stacks[j], min=a.d*MIN_GAP()+a.spread+c.spread;
-        const dx=c.x-a.x, dy=(c.y-a.y)*1.4, dist=Math.hypot(dx,dy);
+        const dx=c.x-a.x, dy=(c.y-a.y)*FORE, dist=Math.hypot(dx,dy);
         if (dist>=min) continue;
         const nx=dist>.01?dx/dist:(rnd()<.5?-1:1), ny=dist>.01?dy/dist:0, h=(min-dist)/2+.3;
-        a.x-=nx*h; a.y-=ny*h/1.4; c.x+=nx*h; c.y+=ny*h/1.4; moved=true;
+        a.x-=nx*h; a.y-=ny*h/FORE; c.x+=nx*h; c.y+=ny*h/FORE; moved=true;
       }
-      stacks.forEach(k=>{ const probe={ x:k.x, y:k.y, d:k.d, vx:0, vy:0 }; contain(probe); k.x=probe.x; k.y=probe.y; });
+      stacks.forEach(k=>{ const probe={ x:k.x, y:k.y, d:k.d, vx:0, vy:0 }; holdIn(probe,z); k.x=probe.x; k.y=probe.y; });
       if (!moved) break;
     }
     // slide each column the few px to its new place
@@ -1175,7 +1362,7 @@
       if (q===b || q.state!=='rest' || q.claimed) continue;       // another coin is already hopping onto it
       const covered=b.zone.list.some(r=>r!==q && r!==b && r.state==='rest' && r.z>q.z+.5 && Math.abs(r.x-q.x)<b.d*.5 && Math.abs(r.y-q.y)<b.d*.4);
       if (covered || q.z/STEP()>=snapMax(b.zone)) continue;
-      const dist=Math.hypot(q.x-b.x,(q.y-b.y)*1.4);
+      const dist=Math.hypot(q.x-b.x,(q.y-b.y)*FORE);
       if (dist<b.d*1.05 && dist<bd){ bd=dist; best=q; }
     }
     if (!best) return false;
@@ -1224,36 +1411,39 @@
     for (const q of b.zone.list){
       if (q===b || Math.abs(q.z-b.z)>STEP()*1.5) continue;
       if (q.state!=='rest' && q.state!=='slide') continue;
-      const dx=b.x-q.x, dy=(b.y-q.y)*1.4, dist=Math.hypot(dx,dy), min=b.d*MIN_GAP();
+      const dx=b.x-q.x, dy=(b.y-q.y)*FORE, dist=Math.hypot(dx,dy), min=b.d*MIN_GAP();
       if (dist>=min || dist<.01) continue;
       const nx=dx/dist, ny=dy/dist, over=min-dist;
-      const qMoves=q.z<1 && OPT.knock!=='off';
-      const share=qMoves?.5:1;
-      b.x+=nx*over*share; b.y+=ny*over*share/1.4;
+      // a stack (or a coin with one on it) stands firm; a lone coin can be
+      // knocked away, and a sliding one shares the push
+      const lone=q.z<1 && !q.claimed && !b.zone.list.some(r=>r!==q && r!==b && r.state==='rest' && r.z>q.z+.5 && Math.abs(r.x-q.x)<b.d*.5 && Math.abs(r.y-q.y)<b.d*.4);
+      const qMoves=lone && OPT.knock!=='off';
+      const share=qMoves && q.state==='slide'?.5:1;
+      b.x+=nx*over*share; b.y+=ny*over*share/FORE;
       const rvx=b.vx-(q.vx||0), rvy=b.vy-(q.vy||0), vn=rvx*nx+rvy*ny;
       if (vn<0){
         if (qMoves && q.state==='rest' && -vn>30){
           // like pool balls: the hit coin takes most of the speed, the
           // hitter nearly stops, and the hit coin can go on to hit the next
           b.vx+=-vn*.9*nx; b.vy+=-vn*.9*ny;
-          shunt(q,vn*.85*nx,vn*.85*ny/1.4); sfx('stack',.6);
+          shunt(q,vn*.85*nx,vn*.85*ny/FORE); sfx('stack',.6);
         } else {
           const j=-(1.15)*vn/(qMoves?2:1);
           b.vx+=j*nx; b.vy+=j*ny;
           if (qMoves){
-            q.vx=(q.vx||0)-j*nx; q.vy=(q.vy||0)-j*ny/1.4;
+            q.vx=(q.vx||0)-j*nx; q.vy=(q.vy||0)-j*ny/FORE;
             if (q.state==='rest' && Math.hypot(q.vx,q.vy)>22){ q.target={}; q.zone.neat=false; q.state='slide'; q.t=0; active.add(q); }
             else if (q.state==='rest'){ q.vx=q.vy=0; }
           }
         }
       }
-      if (qMoves){ q.x-=nx*over*.5; q.y-=ny*over*.5/1.4; contain(q); dirty.add(q); }
+      if (qMoves && q.state==='slide'){ q.x-=nx*over*.5; q.y-=ny*over*.5/FORE; holdIn(q); dirty.add(q); }
     }
   }
   // A landing disturbs what's around it: shoves, or pops a chip loose.
   function knockAround(b,speed){
     if (!b.zone || OPT.knock==='off') return;
-    const near=b.zone.list.filter(q=>q!==b && q.state==='rest' && Math.hypot(q.x-b.x,(q.y-b.y)*1.4)<b.d*1.2);
+    const near=b.zone.list.filter(q=>q!==b && q.state==='rest' && Math.hypot(q.x-b.x,(q.y-b.y)*FORE)<b.d*1.2);
     if (b.target.slot){
       near.slice(0,5).forEach(q=>{ const tr=q.el.style.transform; q.el.animate([{transform:tr},{transform:tr+' translate('+rint(-2,2)+'px,-1px)'},{transform:tr}],{ duration:140/OPT.speed, easing:'steps(3,end)' }); });
       return;
@@ -1466,8 +1656,8 @@
     makeChip, styleChip, setFrame, frames, spinFrame, coloursFor, betCoins, bankCoins, curve,
     BankPile,
     body, removeBody, removeFromZone, toRest, finishRest, kick, ensureLayers, draw, snap, arrive, begin,
-    buildWalls, boardRow, contain, inBlock, fitTray, lip,
-    zone, zoneBusy, neatSlots, tidyZone, scheduleTidy, supportUnder, stackAt, topple,
+    buildWalls, boardRow, contain, inBlock, fitTray, lip, trayBox, holdIn,
+    zone, zoneBusy, neatSlots, seat, newPotShape, potShape:()=>potShape, POT_SHAPES, tidyZone, scheduleTidy, supportUnder, stackAt, topple,
     launch, throwAll, plan, kindFor,
     glint, glintAt, glintPile, shake, puff,
     clearWorld, setHost, alignLayers, setExtraBlocks:list=>{ extraBlocks=(list||[]).slice(); },

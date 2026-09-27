@@ -110,6 +110,25 @@ bank as a coin rack in `#hud-left` (`renderBank`,
 `settings.coinSound` set. Every hook is behind `coinTableOn()`
 (05-game-engine.js); `COIN_TABLE_ON=false` restores the old chip piles.
 
+The pot's shape (v0.42.2, `potSlots` in coin-world.js): when the pot tidies
+(a layout change, or a tap on the empty felt) it builds as NEAT rows, a
+PYRAMID or a HEAP (TOWERS was tried and dropped: too tall): `OPT.potShape`
+(`mix` picks one per hand from `OPT.potMix` odds, re-picked by
+`CoinTable.clear()`; `potEvery:'tidy'` picks per tidy; `potTap` makes a felt
+tap re-pick). Every shape keeps its coins inside the tray (`trayBox`),
+stacks a coin apart and under the board (`z.room`).
+
+Faces never sink into each other: distances on the felt use `FORE` (the
+real resting face, 1/0.82), and every loose coin comes to rest through
+`seat()`: a cell of an invisible grid over its zone (rows half a coin over,
+`ROW_DY` back, so faces touch), the nearest one to where it landed: onto the
+stack there (centred, the loose wobble) or slid into the empty cell. Stacks
+are never shoved (`collide` only knocks lone coins), a coin never hangs off
+one, and pot coins stay in the tray (`holdIn`; an opponent's rake moves the
+pile only as far as the tray allows). Checked by
+`validation/pot-shape-checks.js`; tuned in `pot-lab.html` (+ `js/pot-lab.js`,
+the Showdown Lab's host and sheet styles).
+
 ## `js/07-ui-wiring.js` (~2,000 lines)
 
 Screen navigation and all Career money/transaction logic.
@@ -383,7 +402,7 @@ there manually.
 Files matching `*-lab.html`, `*-lab.js`, `*-lab.css` (`career-lab`,
 `career-hub-v2-lab`, `ticket-lab`, `card-flight-options`, `card-turn-lab`,
 `chip-motion-lab`, `chip-lab`, `chip-throw-lab`, `design-lab`, `result-stage-lab`, `showdown-rail-lab`, `crt-lab`, `dashboard-v2-lab`, `dashboard-order-lab`,
-`wheel-v2-lab`, `intro-lab`, `boot-lab`, `slot-lab`, `table-space-lab`, `enemy-card-lab`, `showdown-lab`)
+`wheel-v2-lab`, `intro-lab`, `boot-lab`, `slot-lab`, `table-space-lab`, `enemy-card-lab`, `showdown-lab`, `pot-lab`)
 are **isolated visual references and prototyping sandboxes**. Several are
 committed permanently as durable references even after their feature
 shipped. Rules:
