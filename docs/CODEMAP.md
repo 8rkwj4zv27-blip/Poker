@@ -345,6 +345,17 @@ when every option is at its first (today's) value. The copy strips the
 shipped `css/showdown.css` / `js/showdown.js` (`strip` in `#lab-inject`) so
 the candidate runs alone. Not loaded by the game.
 
+## `coin-denom-lab.html` + `js/coin-denom-lab.js` + `css/coin-denom-lab.css` + candidate `js/coin-denom-world.js` / `js/coin-denom-table.js` — Coin Denominations Lab (Lab 1)
+
+The coin economy pass (`docs/ui/CHIP_PLAN.md`, "Denominations"): small
+coins, big coins (5 small) and gold bars (25 small) on the real table, a
+small coin worth the small blind. Phone-first, on the Showdown Lab's host
+(`js/showdown-lab-host.js`) and sheet styles (`css/showdown-lab.css`). The
+candidates are copies of `js/coin-world.js` / `js/coin-table.js` with the
+pieces added (sprites, flight, one kind per tower, banded pot tidy, the
+change-up merge, one counting rule for every bet); the copy strips the
+shipped coin files so they run alone. Not loaded by the game.
+
 ## `js/finishes.js` + `css/finishes.css` — Finishes menu (live)
 
 Settings → Finishes: a page inside the Settings sheet that swaps each
@@ -402,7 +413,7 @@ there manually.
 Files matching `*-lab.html`, `*-lab.js`, `*-lab.css` (`career-lab`,
 `career-hub-v2-lab`, `ticket-lab`, `card-flight-options`, `card-turn-lab`,
 `chip-motion-lab`, `chip-lab`, `chip-throw-lab`, `design-lab`, `result-stage-lab`, `showdown-rail-lab`, `crt-lab`, `dashboard-v2-lab`, `dashboard-order-lab`,
-`wheel-v2-lab`, `intro-lab`, `boot-lab`, `slot-lab`, `table-space-lab`, `enemy-card-lab`, `showdown-lab`, `pot-lab`)
+`wheel-v2-lab`, `intro-lab`, `boot-lab`, `slot-lab`, `table-space-lab`, `enemy-card-lab`, `showdown-lab`, `pot-lab`, `coin-denom-lab`)
 are **isolated visual references and prototyping sandboxes**. Several are
 committed permanently as durable references even after their feature
 shipped. Rules:

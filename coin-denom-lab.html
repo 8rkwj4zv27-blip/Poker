@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#140709">
+  <link rel="icon" href="data:,">
+  <title>Coin Denominations Lab</title>
+  <!-- Phone-first Lab 1 of the coin economy pass: small coins, big coins
+       and gold bars on the real table. The page is just the real game, full
+       screen; the lab's controls run inside it (js/coin-denom-lab.js: a
+       TUNE key and a bottom sheet). The host (shared with the Showdown Lab)
+       loads the game copy and remembers the picks across a re-deal. The
+       candidate coin files stand in for the shipped ones in the copy only.
+       Never linked from the game; never touches a real save. -->
+  <style>
+    html,body{ height:100%; margin:0; background:#140709; overflow:hidden; }
+    #sdl-game{
+      position:fixed; top:env(safe-area-inset-top,0px); left:50%;
+      width:min(100vw,430px); height:calc(100% - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px));
+      transform:translateX(-50%); border:0; display:block; background:#0C1510;
+    }
+    @media (min-width:600px){ #sdl-game{ box-shadow:0 0 0 3px #080405,0 20px 60px rgba(0,0,0,.6); } }
+  </style>
+</head>
+<body>
+  <iframe id="sdl-game" title="The Table (lab copy)" allow="autoplay"></iframe>
+  <!-- What goes into the game copy: the candidate coin files in place of
+       the shipped ones (strip), and the lab's controls. The bundler
+       (validation/tools/lab-bundle.js) reads this to bake the copy. -->
+  <script type="application/json" id="lab-inject">{"css":["css/showdown-lab.css","css/coin-denom-lab.css"],"js":["js/coin-denom-world.js","js/coin-denom-table.js","js/coin-denom-lab.js"],"strip":["js/coin-world.js","js/coin-table.js"],"v":"1"}</script>
+  <script src="js/showdown-lab-host.js?v=7"></script>
+</body>
+</html>

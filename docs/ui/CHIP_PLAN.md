@@ -563,3 +563,40 @@ game's hearts row appears after the blinds are thrown; `render()` calls
 `CoinTable.layout()`, a no-op otherwise), and tidies coins already down
 onto the new spots.
 
+## Denominations: the coin economy pass (27 Sep 2026)
+
+Owner, playing: coin counts don't add up. Your bets throw one coin
+whatever the size (your throw was the rack's drop in coins, and the rack
+curve flattens at big stacks: $400 from $3,000 threw 2 coins while an
+opponent's $400 threw 12); opponents fall to one coin once the table fills
+(the pot + spots limit of 60, "at least one coin"); counts were in fixed
+dollars (a $20 big blind). Wanted: consistent, sized by the bet, a proper
+pile of gold that never breaks the table.
+
+**Settled with the owner:**
+- Three pieces, a fixed ratio: SMALL coin = the small blind (it follows
+  the blinds; a rate key on the pot plate says what a small coin is
+  worth), BIG coin = 5 small, BAR = 5 big.
+- As many pieces as possible: a bet throws one small coin per small blind
+  up to a limit; past it, five of the commoner kind change up into one of
+  the next, only until it fits (so a big bet stays a mix). Same rule for
+  you and every opponent.
+- The pot keeps a full-size pile and gets richer: after each sweep, over
+  its limit, five pieces change up in the tray (the first few shown: hop
+  up, clink, pop into the bigger piece, drop back).
+- One kind of piece per tower, so the no-clipping stacking rules still
+  hold, run with each piece's own size. Bars rest as boxes.
+- Your bank is its own lab later (the owner wants more thought on it).
+
+**Lab 1 (`coin-denom-lab.html`):** the pieces and the pot. Big coin looks
+(RING, DEEP GOLD, PLAIN) and size; bar looks (INGOT, BRICK) and length;
+limits per bet (16), all-in (24) and pot (60); the change-up shown (first
+3 / every one / at once); the rate key (small coin / all three / off);
+COUNTING NEW vs TODAY. Moments deal real hands to each bet size, a 3-way
+and a 4-way all-in (change-ups), and late blinds (300/600). The pot tidies
+in bands, small coins in front, big behind, bars at the back standing
+taller than the pile in front so they show. Known gaps for production:
+split and side pots still share the tray's pieces by count, not value
+(`js/showdown.js`); your wins' bigger pieces melt in at the hatch until
+the bank lab.
+
