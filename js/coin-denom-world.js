@@ -32,7 +32,7 @@
   // from these odds (or each tidy: potEvery), a tap on the felt re-picks
   Object.assign(BASE,{ potShape:'mix', potMix:{ pyramid:3, heap:3, rows:2 }, potEvery:'hand', potTap:'on' });
   // the denominations' look and feel (the lab's TUNE sheet sets these)
-  Object.assign(BASE,{ bigScale:1.4, barScale:1.75, bigLook:'ring', barLook:'ingot', mergeShow:'some' });
+  Object.assign(BASE,{ bigScale:1.4, barScale:1.75, bigLook:'ring', barLook:'stamped', mergeShow:'some' });
   const OPT={ preset:'v11', ...BASE, speed:1, sound:'on' };
   const SIZES={ s:13, m:15, l:17 };
   const D=()=>SIZES[OPT.size];
@@ -239,7 +239,104 @@
      ends, three lines on its face). c is how much of the top face shows:
      1 at rest (the table's tilt), 0 edge-on in a tumble; `back` is the
      underside (darker, no stamp). */
+  /* THE BAR, round 2 (owner: the ingot needs to be cooler). Three
+     looks, each a small 3D solid rasterised face by face at the sprite's
+     real size, then outlined:
+     - STAMPED: a proper cast ingot. Sloped sides lit left and shaded
+       right, a lit lip along the top's front edge, a recessed stamp panel
+       with a bright mark, a diagonal glint across the top.
+     - BULLION: the three-quarter vault bar. Its right end face shows, so
+       it reads as a heavy block with depth; a rim-lit top, a small stamp.
+     - TREASURE: the arcade bar. Chunky and bright: a yellow top with a
+       star sparkle, an orange-gold face with a hot band and rivets.
+     c is how much of the top shows (the table's tilt at rest, 0 edge-on in
+     a tumble); `back` is the underside. */
+  const BAR_LOOKS=['stamped','bullion','treasure'];
+  function inPoly(pts,x,y){
+    let inside=false;
+    for (let i=0,j=pts.length-1;i<pts.length;j=i++){
+      const [xi,yi]=pts[i], [xj,yj]=pts[j];
+      if (((yi>y)!==(yj>y)) && x<(xj-xi)*(y-yi)/(yj-yi)+xi) inside=!inside;
+    }
+    return inside;
+  }
+  function bar2Frame(w,c,back,look){
+    const h=Math.round(w*BAR_HR);
+    const topMax=Math.round(w*.34), frontMin=Math.max(4,Math.round(w*.23)), k=Math.min(1,c/TILTS[REST]);
+    const tdep=Math.max(0,Math.round(topMax*k)), fh=frontMin+Math.round((1-k)*(h-2-frontMin-topMax));
+    const yB=h-1.5, yF=yB-fh, yT=yF-tdep;
+    const C=v=>{ const p=hex(v); return back?dark(p,.68):p; };
+    const fill=new Array(w*h).fill(null), faces=[];
+    if (look==='bullion'){
+      const sk=Math.max(2,Math.round(w*.13)), ins=1;
+      const Rf=w-1.5-sk;
+      faces.push({ pts:[[Rf-ins,yF],[w-1.5-ins,yT],[w-1.5,yT+fh],[Rf,yB]], paint:(x,y)=>C(y<yF+1?'#c98a1a':(x>Rf+sk*.6?'#7f4a08':'#9c600f')) });
+      faces.push({ pts:[[1.5+ins,yF],[Rf-ins,yF],[Rf,yB],[1.5,yB]], paint:(x,y)=>C(y>yB-1.2?'#7c4a06':(y<yF+1.2?'#f0bb44':(x<3.5?'#e6a83a':(y>yB-2.5?'#c4841e':'#d8962a')))) });
+      faces.push({ pts:[[1.5+ins,yF],[Rf-ins,yF],[w-1.5-ins,yT],[1.5+ins+sk,yT]], paint:(x,y)=>{
+        if (y>yF-1.2) return C('#fff0a0');
+        const sh=(yF-y)/Math.max(1,tdep)*sk, lx=1.5+ins+sh;
+        if (x<lx+1.2) return C('#ffe27a');
+        if (!back && tdep>=6){ const cx=(lx+Rf-ins+sh)/2, cy=(yT+yF)/2; if (Math.abs(x-cx)<=4 && Math.abs(y-cy)<=1.5) return C(Math.abs(y-cy)<=.5&&Math.abs(x-cx)<=2.5&&((x|0)%2===0)?'#fff3b4':'#cf9420'); }
+        return C('#f6c43c');
+      } });
+    } else if (look==='treasure'){
+      const ins=1;
+      faces.push({ pts:[[1.5+ins,yF],[w-1.5-ins,yF],[w-1.5,yF+1.5],[w-1.5,yB-1],[w-2.5,yB],[2.5,yB],[1.5,yB-1],[1.5,yF+1.5]], paint:(x,y)=>{
+        if (y>yB-1.3) return C('#8a3f08');
+        if (y>yB-2.6) return C('#b35a10');
+        if (y<yF+1.4) return C('#ffd34a');
+        if (!back && fh>=5 && Math.abs(y-(yF+(yB-yF)/2+.5))<.6 && (Math.abs(x-4.5)<.6 || Math.abs(x-(w-5.5))<.6)) return C('#8a3f08');
+        return C('#ec9e1e');
+      } });
+      faces.push({ pts:[[1.5+ins,yF],[w-1.5-ins,yF],[w-2.5-ins,yT+1],[w-3.5-ins,yT],[3.5+ins,yT],[2.5+ins,yT+1]], paint:(x,y)=>{
+        if (!back && tdep>=5){
+          const sx=Math.round(w*.3), sy=Math.round(yT+tdep*.45);
+          if ((Math.abs(x-.5-sx)<.6 && Math.abs(y-.5-sy)<1.6) || (Math.abs(y-.5-sy)<.6 && Math.abs(x-.5-sx)<1.6)) return C('#ffffff');
+          if (Math.abs(x-.5-(w-7))<.6 && Math.abs(y-.5-(yT+2))<.6) return C('#fffbe0');
+        }
+        if (y>yF-1.3) return C('#fff3b4');
+        return C(y<yT+2?'#f7cf3a':'#ffe25a');
+      } });
+    } else {
+      // STAMPED
+      const ins=Math.max(2,Math.round(w*.12));
+      faces.push({ pts:[[1.5+ins,yF],[w-1.5-ins,yF],[w-1.5,yB],[1.5,yB]], paint:(x,y)=>{
+        const t=(y-yF)/Math.max(1,yB-yF), L=1.5+ins*(1-t), R=w-1.5-ins*(1-t);
+        if (y>yB-1.2) return C('#7c4a06');
+        if (x<L+1.6) return C('#f2c24a');
+        if (x>R-2.2) return C('#9c600f');
+        if (y<yF+1.2) return C('#ffe07a');
+        return C(y>yB-2.4?'#c0801c':'#d8962a');
+      } });
+      const tin=ins+1;
+      faces.push({ pts:[[1.5+ins,yF],[w-1.5-ins,yF],[w-1.5-tin,yT],[1.5+tin,yT]], paint:(x,y)=>{
+        if (y>yF-1.2) return C('#fff0a0');
+        if (y<yT+1) return C('#e0a830');
+        const L=1.5+tin, R=w-1.5-tin;
+        if (!back){
+          // a glint across the top, front-left to back-right
+          const g=(x-L)-(yF-y)*1.1;
+          if (g>2 && g<3.4 && !(tdep>=6 && x>L+3 && x<R-3 && y>yT+1.5 && y<yF-2)) return hex('#fffbe0');
+          if (tdep>=6 && x>L+2.5 && x<R-2.5 && y>yT+1.2 && y<yF-1.8){
+            const edge=x<L+3.6 || x>R-3.6 || y<yT+2.4 || y>yF-2.9;
+            if (edge) return C('#c98e1e');
+            const cx=(L+R)/2, cy=(yT+yF)/2;
+            if (Math.abs(x-cx)+Math.abs(y-cy)*1.6<1.8) return hex('#fff3b4');
+            return C('#e8b232');
+          }
+        }
+        if (x<L+1.4) return C('#ffe070');
+        if (x>R-1.4) return C('#d49a28');
+        return C('#f6c43c');
+      } });
+    }
+    for (let y=0;y<h;y++) for (let x=0;x<w;x++){
+      for (let f=faces.length-1;f>=0;f--){ if (inPoly(faces[f].pts,x+.5,y+.5)){ fill[y*w+x]=faces[f].paint(x+.5,y+.5); break; } }
+    }
+    return paintFill(fill,w,h,hex('#2a1603'));
+  }
   function barFrame(w,c,back){
+    if (BAR_LOOKS.includes(OPT.barLook)) return bar2Frame(w,c,back,OPT.barLook);
     const h=Math.round(w*BAR_HR), ingot=OPT.barLook!=='brick';
     // at rest (c = the table's tilt) the whole top face shows
     const topMax=Math.round(w*.34), frontMin=Math.max(4,Math.round(w*.23)), k=Math.min(1,c/TILTS[REST]);

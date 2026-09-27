@@ -23,7 +23,7 @@
     { title:'THE PIECES', sub:'All gold. A small coin is the small blind; a big coin is five small; a bar is five big.', rows:[
       ['bigLook','BIG COIN', [['ring','RING'],['deep','DEEP GOLD'],['plain','PLAIN']], 'RING: a raised ring inside the rim. DEEP GOLD: the ring, in a richer, redder gold. PLAIN: just bigger.'],
       ['bigScale','BIG COIN SIZE', [['1.4','1.4×'],['1.3','1.3×'],['1.55','1.55×']]],
-      ['barLook','BAR', [['ingot','INGOT'],['brick','BRICK']], 'INGOT: sloped sides, a stamped panel on top. BRICK: square ends, lines on its face.'],
+      ['barLook','BAR', [['stamped','STAMPED'],['bullion','BULLION'],['treasure','TREASURE'],['ingot','LAB 1']], 'STAMPED: a cast ingot, sloped sides lit and shaded, a stamped panel and a glint. BULLION: the three-quarter vault bar, its end face showing, heavy. TREASURE: the arcade bar, bright with a star sparkle and rivets. LAB 1: the first ingot, to compare.'],
       ['barScale','BAR LENGTH', [['1.75','1.75×'],['1.6','1.6×'],['1.9','1.9×']]]
     ]},
     { title:'HOW MANY', sub:'A bet throws one small coin per small blind, up to its limit. Past the limit, five small coins become a big one (five big a bar) until it fits.', rows:[
