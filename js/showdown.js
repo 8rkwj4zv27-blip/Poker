@@ -1,45 +1,70 @@
 "use strict";
 
 /* ============================================================
-   SHOWDOWN BEATS — candidate for the showdown pass (Lab only)
-   docs/ui/SHOWDOWN_PLAN.md · chosen in showdown-lab.html
+   SHOWDOWN — the end of a hand (live, v0.42.0)
+   docs/ui/SHOWDOWN_PLAN.md · ordered in showdown-lab.html (rounds 1–5)
 
-   The end of a hand as beats, each with parts the owner picks from:
-     lock      betting closes: a relay, the lights dip, the console flips
-     runout    all in before the river: hands up, named, win chance, the
-               river squeezed
-     reveal    who shows first, each hand named on its seat, the lead
-               changing hands, losing hands left readable
-     verdict   the winning five (the rail), the duel with the best losing
-               five, or in place; KICKER and SPLIT plates
+   The owner's order, beat by beat:
+     lock      betting closes: a relay clunk, the lights dip, SHOWDOWN on
+               the banner, the console flips to a lit SHOWDOWN face
+     runout    all in before the river: every hand face up and named,
+               updated each street; the river squeezed (a heartbeat, the
+               faces behind going nervous); a win-chance meter under the
+               pot if the player has it on
+     reveal    casino order (the last bettor shows first), each seat
+               naming its hand, LEADS / BEATEN as the lead changes hands;
+               losing hands stay readable
+     verdict   the rail with the hand's nameplate on its top edge, the
+               best losing five under the pot (BEATS …), KICKER and SPLIT
+               plates
      pots      side pots as their own stacks and plates, paid pot by pot
                (the last side pot first, the main pot last)
-     payout    by pot size, the smash (THE COOK: hold to heat the pot),
-               their shove and gloat, the chop, your loss, the numbers
+     payout    by pot size; THE COOK on the player's big wins (hold AWARD
+               POT to heat the pot; let go and the coins go off it, bounce
+               about the table and settle, then pick themselves up into
+               the bank); their shove and gloat; the chop; your loss; the
+               stack counting up coin by coin
      fold win  a SHOW key for your cards
 
-   Every option reads a data-sd-* attribute on <html> (set by apply());
-   every row's first value is today's game, and with all of them at today
-   the game plays exactly as it ships.
+   The player's choices live in Settings → Showdown (settings.sd*): when
+   the smash plays and its force, bounces, heat and pick-up, the win-chance
+   meter, and when AWARD POT waits.
 
    Presentation only. It replaces handleShowdown() and
-   runShowdownAwardSequence() with copies whose pot, award and settlement
-   code is the production code verbatim (computePots, the share split,
-   projectedSettlement, finishHand), and wraps advancePhase(),
-   dealCommunity(), updateHandInstrument(), EnemyCards.paint() and
-   startNewHand() for the runout and the clean-up. The money every player
-   ends with is exactly what the shipped game pays; only the order and
-   the look of handing it over change. Not loaded by the game.
+   runShowdownAwardSequence() with copies whose pot, share and settlement
+   code is the production code verbatim (validation/showdown-checks.js
+   compares them), and wraps advancePhase(), dealCommunity(),
+   updateHandInstrument(), EnemyCards.paint() and startNewHand() for the
+   runout and the clean-up: the same install pattern as
+   js/machine-wheel.js. The money every player ends with is exactly what
+   the shipped sequence paid; only the order and the look of handing it
+   over changed. Styles: css/showdown.css.
    ============================================================ */
-const ShowdownBeats = (function(){
-  const DEF = { lock:'0', runout:'0', equity:'off', river:'0', order:'0', callout:'0', losers:'0',
-    verdict:'0', kicker:'off', split:'0', pots:'0', award:'0', press:'always',
-    tiers:'off', smash:'0', smashon:'monster', stamp:'0', cards:'0', opp:'0',
+const Showdown = (function(){
+  // The owner's order (showdown-lab.html, rounds 1–5).
+  const ORDER = {
+    lock:'console', runout:'called', river:'sweat', order:'casino', callout:'leader', losers:'lit', cards:'clear',
+    verdict:'duel', stamp:'rail', kicker:'plate', split:'stamp', pots:'stacks', award:'each',
+    tiers:'on', smash:'cook', smashon:'monster', opp:'gloat', chop:'chop', loss:'dim', meters:'count', show:'key',
+    equity:'off', press:'always',
     cheat:'ember', ctime:'1000', csteps:'9', ccoins:'glow', crattle:'shiver', csparks:'embers', csound:'sizzle', cfull:'hold',
-    cforce:'huge', cbounce:'lots', cwalls:'frame', croll:'on', cdir:'out', cstop:'90', cjolt:'small', ccool:'flight', csettle:'450', cbank:'flip', cpace:'faster', cfinish:'clack', chop:'0', loss:'0', meters:'0', show:'off' };
+    cforce:'huge', cbounce:'lots', cwalls:'frame', croll:'on', cdir:'out', cstop:'90', cjolt:'small', ccool:'flight',
+    csettle:'450', cbank:'flip', cpace:'faster', cfinish:'clack'
+  };
+  // The player's choices (Settings → Showdown), each checked against what
+  // it may be so an odd saved value falls back to the order.
+  const PLAYER = {
+    smash:   () => settings.sdSmash === 'off' ? '0' : 'cook',
+    smashon: () => ['monster','big','every'].includes(settings.sdSmash) ? settings.sdSmash : ORDER.smashon,
+    cforce:  () => ['big','huge','max'].includes(settings.sdForce) ? settings.sdForce : ORDER.cforce,
+    cbounce: () => ['few','lots','endless'].includes(settings.sdBounce) ? settings.sdBounce : ORDER.cbounce,
+    cheat:   () => ['ember','allin','white'].includes(settings.sdHeat) ? settings.sdHeat : ORDER.cheat,
+    cbank:   () => ['flip','ripple','all'].includes(settings.sdPickup) ? settings.sdPickup : ORDER.cbank,
+    equity:  () => settings.sdWinChance ? 'meter' : 'off',
+    press:   () => ['always','mine','auto'].includes(settings.sdAwardPot) ? settings.sdAwardPot : ORDER.press
+  };
+  const opt = k => PLAYER[k] ? PLAYER[k]() : ORDER[k];
   const root = () => document.documentElement;
-  const opt = k => root().getAttribute('data-sd-' + k) || DEF[k];
-  function apply(order){ Object.keys(DEF).forEach(k => root().setAttribute('data-sd-' + k, order && order[k] != null ? order[k] : DEF[k])); }
 
   const CW = () => window.CoinWorld;
   const coinsOn = () => typeof coinTableOn === 'function' && coinTableOn() && !!CW() && !!CW().zones.pot;
@@ -116,7 +141,7 @@ const ShowdownBeats = (function(){
     said.set(p.id, { top, sub, state });
     if (p.isHuman){
       const dock = $('your-seat-dock');
-      if (dock) dock.dataset.sdState = state || '';
+      if (dock) dock.dataset.showState = state || '';
       paintHuman();
       return;
     }
@@ -128,12 +153,12 @@ const ShowdownBeats = (function(){
     glass.dataset.ink = state === 'beaten' ? 'danger' : (state === 'lead' || state === 'win') ? 'money' : 'live';
     box.dataset.act = 'sd';
     e._ec.read = '__sd';            // repaint the action on the next hand
-    e.root.dataset.sdState = state || '';
+    e.root.dataset.showState = state || '';
   }
   function unsayAll(){
     said.clear();
-    Object.values(seatEls || {}).forEach(e => { if (e && e.root) delete e.root.dataset.sdState; });
-    const dock = $('your-seat-dock'); if (dock) delete dock.dataset.sdState;
+    Object.values(seatEls || {}).forEach(e => { if (e && e.root) delete e.root.dataset.showState; });
+    const dock = $('your-seat-dock'); if (dock) delete dock.dataset.showState;
   }
   // your hand screen: the hand, with the lead/beaten tag and the win chance
   let eqShown = null;
@@ -144,11 +169,9 @@ const ShowdownBeats = (function(){
     if (!s && eq == null) return false;
     if (!me || !me.hand || me.hand.length < 2) return false;
     let text = s ? s.top + (s.sub ? ' ' + s.sub : '') : describePlayerHand(me.hand, g.board.length >= 3 ? g.board : []).toUpperCase();
-    let tag = '';
-    if (s && s.state === 'lead') tag = '<span class="sd-tag is-lead">LEADS</span>';
-    if (s && s.state === 'beaten') tag = '<span class="sd-tag is-beaten">BEATEN</span>';
-    if (eq != null) tag += '<span class="sd-tag is-eq">' + eq + '%</span>';
-    paintCRT(el, '<b>' + esc(text) + '</b>' + tag, false);
+    if (s && s.state === 'lead') text += ' · LEADS';
+    if (eq != null) text += ' · ' + eq + '%';
+    paintCRT(el, '<b>' + esc(text) + '</b>', false);
     return true;
   }
 
@@ -196,12 +219,12 @@ const ShowdownBeats = (function(){
     const bar = m.querySelector('.sd-meter-bar'), keys = m.querySelector('.sd-meter-keys');
     if (bar.children.length !== live.length){
       bar.innerHTML = live.map(p => '<i data-id="' + p.id + '" style="--c:' + col(p) + '"></i>').join('');
-      keys.innerHTML = live.map(p => '<span data-id="' + p.id + '" style="--c:' + col(p) + '"><b>' + esc(p.isHuman ? 'YOU' : p.name).toUpperCase() + '</b> <em></em></span>').join('');
+      keys.innerHTML = live.map(p => '<span class="crt-caption" data-id="' + p.id + '" data-name="' + esc(p.isHuman ? 'YOU' : p.name).toUpperCase() + '"></span>').join('');
     }
     live.forEach(p => {
       const v = map.get(p.id);
       const seg = bar.querySelector('[data-id="' + p.id + '"]'); if (seg) seg.style.flexGrow = String(Math.max(.001, v));
-      const k = keys.querySelector('[data-id="' + p.id + '"] em'); if (k) k.textContent = v + '%';
+      const k = keys.querySelector('[data-id="' + p.id + '"]'); if (k) k.textContent = k.dataset.name + ' ' + v + '%';
     });
   }
   function showEquity(g){
@@ -610,14 +633,14 @@ const ShowdownBeats = (function(){
     return () => { run = false; };
   }
 
-  /* ---------------- THE COOK (round 3) ----------------
+  /* ---------------- THE COOK ----------------
      The one smash. Hold AWARD POT and the pot's recessed well heats up in
      steps, from ember red to hot, cooking the coins in it: they redden,
      rattle and throw off embers. Let go and they go BANG off the tray,
      spin, bounce off the cards and the table's top frame and cool back to
      gold; once they've settled they flip one by one into your bank. No
      machinery: the well glows and the coins do the rest. Every part is an
-     option (data-sd-c*), chosen in the lab. */
+     option in ORDER (the c* keys); a few are the player's (PLAYER). */
   function trayEl(){ return document.querySelector('#felt .ct-tray'); }
   function trayCoins(){ const W = CW(); return Object.values(W.zones).filter(z => z.id === 'pot' || String(z.id).startsWith('sd:')).flatMap(z => z.list); }
   // the heat, as the well's colour at each step of the charge
@@ -702,7 +725,7 @@ const ShowdownBeats = (function(){
     CW().launch(b, { x:b.x + rr(-4, 4), y:b.y + rr(-2, 2), z:0, zone:b.zone, d:CW().D() }, { T:rr(.2, .26) + .04 * k, flips:2 });
   }
 
-  /* THE EXPLOSION (round 5). The coins are flown by hand in the coin
+  /* THE EXPLOSION. The coins are flown by hand in the coin
      world's own terms, like every bet thrown onto the felt: a spot on the
      table (x, y) and a height above it (z), the shadow on the felt
      shrinking as a coin rises. They arc up and out of the tray, fly over
@@ -712,7 +735,7 @@ const ShowdownBeats = (function(){
      and lie in a big mess on the table.
 
      REAL TIME, always: the payoff never follows the game's speed setting
-     (or a lab's fast deal), so it can't play sped up.
+     (or DEV's fast mode), so it can't play sped up.
 
      SAFE HITBOXES: every solid thing is a box padded by a coin's radius,
      with a height; a coin below that height is pushed clear the short way
@@ -860,8 +883,6 @@ const ShowdownBeats = (function(){
         else {
           if (quiet()) coins.forEach(c => { c.x = rr(G_L, G_R); c.y = rr((G_T + G_B) / 2, G_B); clearSpot(c); c.b.x = c.x; c.b.y = c.y; c.b.z = 0; c.b.state = 'rest'; W.draw(c.b); });
           W.OPT.shadow = shadow;
-          window.__sdLastExplosion = { ms:Math.round(performance.now() - t0), bounces:coins.map(c => c.bounces), rolled:coins.filter(c => c.rolling).length,
-            onSolid:coins.filter(c => boxes.some(k => c.x > k.L && c.x < k.R && c.y > k.T && c.y < k.B)).length };
           resolve();
         }
       };
@@ -933,7 +954,7 @@ const ShowdownBeats = (function(){
     finale();
   }
 
-  /* AWARD POT on a monster pot (round 5). The key says AWARD POT as ever,
+  /* AWARD POT on a smash (a monster pot by default). The key says AWARD POT as ever,
      with no gauge. A tap is already the whole show: the well flares up for
      a moment and it goes BANG. Holding it is a hidden extra: the well keeps
      cooking while you hold, and the longer you held, the wilder it goes. */
@@ -1014,44 +1035,6 @@ const ShowdownBeats = (function(){
     });
   }
 
-  /* LAB ONLY: SMASH AGAIN. Refills the tray with a monster pot's coins and
-     goes straight to its AWARD POT, so the smash can be tuned and replayed
-     without playing a hand. The lab's game copy is a sandbox (in-memory
-     storage), so the replay pays your stack there for real. */
-  let staging = false;
-  async function stage(amount){
-    const g = game, h = g && g.players.find(p => p.isHuman);
-    if (staging || !h || !coinsOn()) return false;
-    staging = true;
-    try{
-      CoinTable.layout();
-      const W = CW(), pot = W.zones.pot, T = W.tray();
-      pot.list.slice().forEach(b => { W.removeFromZone(b); W.removeBody(b); b.el.remove(); });
-      const area = $('pot-area'); if (area) area.classList.remove('hidden');
-      const val = $('pot-val'); if (val) val.textContent = amount.toLocaleString();
-      const items = [];
-      for (let i = 0; i < 40; i++){
-        const b = W.body(W.makeChip('gold'), rr(T.L + 20, T.R - 20), T.T - rr(20, 60), rr(120, 220), W.D()); b.fresh = true;
-        items.push({ b, to:{ x:rr(T.L + 12, T.R - 12), y:rr(T.T + 8, T.B - 6), z:0, zone:pot, d:W.D() } });
-      }
-      await within(W.throwAll(items, 'splash'), 2600);
-      await hold(450);
-      const bodies = pot.list.slice();
-      firePower = await chargeGate('Award Pot · ' + amount.toLocaleString(), true);
-      // the lab's copy runs on in-memory storage, so the replay really pays
-      // you: the stack counts up to its new amount and the rack matches it
-      countBase = h.chips; humanBankDisplayFreeze = countBase; plateAmt = amount;
-      h.chips += amount;
-      const c = countOn(bodies, amount);
-      await smashPay(h, bodies, firePower);
-      if (c) c.done = true;
-      countEnd();
-      if (val) val.textContent = '0';
-      CoinTable.rebuildBank();
-      return true;
-    } finally { staging = false; }
-  }
-
   // THEIR WIN: shoved across to their square, a beat, then home to the cup
   async function payOpp(p, bodies){
     const mode = opt('opp'), W = CW();
@@ -1079,8 +1062,8 @@ const ShowdownBeats = (function(){
       if (o.id === me || o.isHuman || o.eliminated) return;
       const oe = seatEls[o.id]; if (!oe) return;
       setMood(o.id, pick(['suspicious1','displeased1','neutral3']));
-      oe.root.dataset.sdGlance = oe.root.getBoundingClientRect().left < x0 ? 'r' : 'l';
-      setTimeout(() => { delete oe.root.dataset.sdGlance; }, 1800);
+      oe.root.dataset.showGlance = oe.root.getBoundingClientRect().left < x0 ? 'r' : 'l';
+      setTimeout(() => { delete oe.root.dataset.showGlance; }, 1800);
     });
   }
 
@@ -1118,6 +1101,7 @@ const ShowdownBeats = (function(){
     if (opt('loss') !== 'dim') return;
     const dock = $('your-seat-dock'); if (!dock) return;
     dock.classList.add('sd-lost');
+    const hs = $('hand-strength'); if (hs && window.CRT && CRT.glitch) CRT.glitch(hs);
     sfx('thump', 1, .42); setTimeout(() => sfx('thump', .7, .36), 180);
   }
 
@@ -1422,38 +1406,18 @@ const ShowdownBeats = (function(){
   }
 
   /* ---------------- PLAYER SETTINGS ----------------
-     Three of the beats are the player's to pick, in Settings → Showdown:
-     the smash, the win chance meter and when AWARD POT waits. Built from
-     the sheet's own parts (segmented keys, a switch); in the lab they set
-     the same data-sd-* options the order form does. */
-  function settingsSection(){
-    const sheet = $('settings-sheet'); if (!sheet || $('sd-settings')) return;
-    // the shipped Showdown section (its wiring is stripped from the lab's copy)
-    const shipped = $('settings-showdown'); if (shipped) shipped.remove();
-    const first = sheet.querySelector('.sheet-section'); if (!first) return;
-    const seg = (id, key, label, opts, hint) => '<div class="field"><div class="field-label">' + label + '</div>' +
-      '<div class="segmented compact wrap" id="' + id + '" role="group" aria-label="' + label + '">' +
-      opts.map(o => '<button type="button" data-sd-set="' + key + '" data-v="' + o[0] + '">' + o[1] + '</button>').join('') +
-      '</div><div class="hint">' + hint + '</div></div>';
-    const sec = document.createElement('div');
-    sec.className = 'sheet-section'; sec.id = 'sd-settings';
-    sec.innerHTML = '<h3>Showdown</h3>' +
-      '<div class="toggle-row"><div><div class="tl">Win chance</div><div class="ts">When everyone is all in, a meter under the pot shows each hand\'s chance to win.</div></div>' +
-      '<button class="switch" id="sd-sw-equity" role="switch" aria-checked="false" aria-label="Win chance"></button></div>' +
-      seg('sd-press-seg', 'press', 'Award pot', [['always','Every hand'],['mine','Mine + big'],['auto','Never']],
-        'When the machine waits for your AWARD POT press before paying out.');
-    first.after(sec);
-    const sync = () => {
-      sec.querySelectorAll('[data-sd-set]').forEach(b => b.classList.toggle('active', opt(b.dataset.sdSet) === b.dataset.v));
-      $('sd-sw-equity').setAttribute('aria-checked', opt('equity') !== 'off' ? 'true' : 'false');
-    };
-    sec.addEventListener('click', e => {
-      const b = e.target.closest('[data-sd-set]');
-      if (b){ root().setAttribute('data-sd-' + b.dataset.sdSet, b.dataset.v); sync(); try{ Sound.buttonRelease && Sound.buttonRelease('small'); }catch(err){} return; }
-      if (e.target.closest('#sd-sw-equity')){ root().setAttribute('data-sd-equity', opt('equity') !== 'off' ? 'off' : 'meter'); sync(); }
-    });
-    sync();
-    new MutationObserver(sync).observe(root(), { attributes:true, attributeFilter:['data-sd-press','data-sd-equity'] });
+     Settings → Showdown (index.html): the sheet's own parts (segmented
+     keys, a switch), saved with the rest of settings. */
+  function wireSettings(){
+    const segs = [['sd-smash-seg','sdSmash'],['sd-force-seg','sdForce'],['sd-bounce-seg','sdBounce'],['sd-heat-seg','sdHeat'],['sd-pickup-seg','sdPickup'],['sd-award-seg','sdAwardPot']];
+    const paintSegs = () => segs.forEach(([id, key]) => document.querySelectorAll('#' + id + ' button').forEach(b => b.classList.toggle('active', b.dataset.v === String(settings[key]))));
+    segs.forEach(([id, key]) => document.querySelectorAll('#' + id + ' button').forEach(b => { b.onclick = () => { settings[key] = b.dataset.v; saveSettings(); paintSegs(); }; }));
+    paintSegs();
+    const sw = $('sw-sd-winchance');
+    if (sw){
+      sw.setAttribute('aria-checked', settings.sdWinChance ? 'true' : 'false');
+      sw.onclick = () => { settings.sdWinChance = !settings.sdWinChance; sw.setAttribute('aria-checked', settings.sdWinChance ? 'true' : 'false'); saveSettings(); };
+    }
   }
 
   /* ---------------- install ---------------- */
@@ -1467,11 +1431,10 @@ const ShowdownBeats = (function(){
     orig.dealCommunity = dealCommunity;
     orig.updateHandInstrument = updateHandInstrument;
     orig.startNewHand = startNewHand;
-    const today = () => Object.keys(DEF).every(k => opt(k) === DEF[k]);
-
-    handleShowdown = function(){ return today() ? orig.handleShowdown.apply(this, arguments) : handleShowdownSD(); };
+    handleShowdown = function(){ return handleShowdownSD(); };
+    // without the coin table (COIN_TABLE_ON=false) the shipped sequence pays
     runShowdownAwardSequence = function(potResults, contenders){
-      return today() || !coinsOn() ? orig.award.apply(this, arguments) : awardSequence(potResults, contenders);
+      return !coinsOn() ? orig.award.apply(this, arguments) : awardSequence(potResults, contenders);
     };
     advancePhase = async function(){
       const g = game;
@@ -1511,8 +1474,6 @@ const ShowdownBeats = (function(){
     }
   }
   install();
-  settingsSection();
-  return { apply, install, opt, DEF, stage };
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', wireSettings); else wireSettings();
+  return { install, opt, ORDER };
 })();
-// the lab reaches the candidate through the frame's window
-window.ShowdownBeats = ShowdownBeats;

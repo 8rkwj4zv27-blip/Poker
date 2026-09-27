@@ -88,7 +88,12 @@ if (inject){
   const sw = /<script id="pwa-service-worker">[\s\S]*?<\/script>/;
   if (!sw.test(game)) throw new Error('game page shape changed: no service-worker block to strip');
   const v = inject.v || '1';
-  gameOut = game.replace(sw, '')
+  const strip = (inject.strip || []).reduce((h, f) => {
+    const esc = f.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    return h.replace(new RegExp('<link rel="stylesheet" href="' + esc + '[^"]*">\\s*', 'g'), '')
+            .replace(new RegExp('<script src="' + esc + '[^"]*"><\\/script>\\s*', 'g'), '');
+  }, game);
+  gameOut = strip.replace(sw, '')
     .replace(/<head>/i, '<head><script>' + SHIM + '<\/script>')
     .replace(/<\/body>/i, inject.css.map(f => '<link rel="stylesheet" href="' + f + '?v=' + v + '">').join('') +
       inject.js.map(f => '<script src="' + f + '?v=' + v + '"><\/script>').join('') + '</body>');

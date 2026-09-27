@@ -38,6 +38,12 @@
     try{ Object.defineProperty(P, 'length', { configurable:true, get:function(){ return Object.keys(mem).length; } }); }catch(e){}
     if (navigator.serviceWorker){ try{ navigator.serviceWorker.register = function(){ return Promise.reject(new Error('lab')); }; }catch(e){} }
   })();`;
+  // the shipped parts the candidate stands in for come out of the copy
+  const stripTags = (html, list) => (list || []).reduce((h, f) => {
+    const esc = f.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    return h.replace(new RegExp('<link rel="stylesheet" href="' + esc + '[^"]*">\\s*', 'g'), '')
+            .replace(new RegExp('<script src="' + esc + '[^"]*"><\\/script>\\s*', 'g'), '');
+  }, html);
   let source = null;
   async function localDoc(){
     if (!source) source = await (await fetch('index.html', { cache:'no-store' })).text();
@@ -45,7 +51,7 @@
     const base = new URL('.', location.href).href;
     const tail = inject.css.map(f => '<link rel="stylesheet" href="' + f + '?v=' + inject.v + '">').join('') +
       inject.js.map(f => '<script src="' + f + '?v=' + inject.v + '"><\/script>').join('');
-    return source.replace(sw, '')
+    return stripTags(source, inject.strip).replace(sw, '')
       .replace(/<head>/i, '<head><base href="' + base + '"><script>' + SHIM + '<\/script>')
       .replace(/<\/body>/i, tail + '</body>');
   }

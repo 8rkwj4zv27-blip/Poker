@@ -265,4 +265,19 @@ check('Showdown lab: isolated, and its candidate never ships',()=>{
   assert.ok(!/data-sd-/.test(indexHtml),'production must not use the lab\'s data-sd-* attributes');
 });
 
+check('Showdown: live, on the shared parts, and to the order',()=>{
+  const css=read('css/showdown.css'), js=read('js/showdown.js'), md=read('docs/ui/PATTERN_BOOK.md');
+  const links=[...indexHtml.matchAll(/<link rel="stylesheet" href="([^"?]+)/g)].map(m=>m[1]);
+  assert.ok(links.includes('css/showdown.css') && links.indexOf('css/showdown.css')<links.indexOf('css/crt.css'),'index.html must load css/showdown.css before css/crt.css');
+  assert.ok(/<script src="js\/showdown\.js/.test(indexHtml),'index.html must load js/showdown.js');
+  ["'./css/showdown.css","'./js/showdown.js"].forEach(f=>assert.ok(serviceWorker.includes(f),'sw.js is missing '+f));
+  // No new finish: the meter is the CRT, the pot plates are the pot plate, the settings are the sheet's parts.
+  assert.ok(js.includes("'sd-meter crt'") && js.includes('class="crt-caption"') && !/\.sd-meter(-keys)?\{[^}]*(color|background|font|text-shadow)/.test(css),'the win-chance meter must be the CRT component, laid out only');
+  assert.ok(js.includes("'sd-potplate pot-chip'"),'the side-pot plates must be the pot plate');
+  assert.ok(/id="settings-showdown"[\s\S]*?class="segmented compact/.test(indexHtml) && /id="sw-sd-winchance" role="switch"/.test(indexHtml),'Settings → Showdown must use the sheet\'s segmented keys and switch');
+  // No flashing casino lights (the owner struck them): the lit face never chases.
+  assert.ok(!/sdChase|sd-chaser|jackpot/i.test(css),'no chasing or jackpot lights on the Showdown');
+  assert.ok(md.includes('## Showdown (live v0.42.0)'),'the Pattern Book must record the Showdown');
+});
+
 process.stdout.write('\n'+passed+' Pattern Book checks passed.\n');
