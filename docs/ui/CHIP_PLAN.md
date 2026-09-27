@@ -635,3 +635,19 @@ game's `js/coin-world.js` / `js/coin-table.js`, plus `js/coin-bank.js` /
 and side pots share the tray's pieces by count, not value (`js/showdown.js`
 `coinsFor`/`splitCoins`/`chop`).
 
+**The bank, rounds 2-3 (27 Sep 2026).** Owner on the shipped TUBES: works,
+but confusing (what is it? and the change-making inside adds to it). NEW
+TUBES (`coin-tubes-lab.html`) read better but didn't answer that. Settled
+direction: the bank looks like the pot. `coin-hoard-lab.html`: the HOARD,
+a coin-world zone in the bank's box (the world copy gains box zones: walls
+= the box, a 40px floor strip, piles under its top). A few pieces for a
+short stack, a heap near 100BB (HOW BIG: .3/.45/.65 pieces per BB, max
+52), then every kind at its cap (20 small, 18 big, 14 bars; past that it's
+full, the STACK readout exact). Wins wait for the bank to be back on
+screen (the award swaps the dashboard out), then land on it for real and
+the pile settles into its heap shape; bets come off the top; a tap tidies
+to a pyramid; gleams by depth (40BB, 80BB, a sparkle across it past
+100BB). No change-making on screen: value is settled quietly after a
+payout and at each hand. Measured: 0 overlaps and 0 pieces outside the box
+at every size (the loose landing heap before it settles can overlap).
+

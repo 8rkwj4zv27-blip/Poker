@@ -405,6 +405,14 @@ toward you, warm lamp light, clearer glass, bars on a low shelf under two
 tubes) to compare with the shipped one. Runs on the game's own coin files.
 Not loaded by the game.
 
+## `coin-hoard-lab.html` + `js/coin-hoard-lab.js` + `css/coin-hoard.css` + candidate `js/coin-hoard-world.js` / `js/coin-hoard-table.js` — Hoard Lab
+
+The bank, round 3: the HOARD, your stack as a pile of gold like the pot
+(a coin-world zone in the bank's own box: grows from a few pieces into a
+heap, wins land on it, bets off the top, tap to tidy, gleams when rich).
+The candidates are copies of the shipped coin files with box zones added;
+the copy strips the shipped ones. Not loaded by the game.
+
 ## `js/finishes.js` + `css/finishes.css` — Finishes menu (live)
 
 Settings → Finishes: a page inside the Settings sheet that swaps each
@@ -462,7 +470,7 @@ there manually.
 Files matching `*-lab.html`, `*-lab.js`, `*-lab.css` (`career-lab`,
 `career-hub-v2-lab`, `ticket-lab`, `card-flight-options`, `card-turn-lab`,
 `chip-motion-lab`, `chip-lab`, `chip-throw-lab`, `design-lab`, `result-stage-lab`, `showdown-rail-lab`, `crt-lab`, `dashboard-v2-lab`, `dashboard-order-lab`,
-`wheel-v2-lab`, `intro-lab`, `boot-lab`, `slot-lab`, `table-space-lab`, `enemy-card-lab`, `showdown-lab`, `pot-lab`, `ko-lab`, `coin-denom-lab`, `coin-bank-lab`, `coin-tubes-lab`)
+`wheel-v2-lab`, `intro-lab`, `boot-lab`, `slot-lab`, `table-space-lab`, `enemy-card-lab`, `showdown-lab`, `pot-lab`, `ko-lab`, `coin-denom-lab`, `coin-bank-lab`, `coin-tubes-lab`, `coin-hoard-lab`)
 are **isolated visual references and prototyping sandboxes**. Several are
 committed permanently as durable references even after their feature
 shipped. Rules:
