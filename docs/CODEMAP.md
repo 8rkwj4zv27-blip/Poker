@@ -345,13 +345,13 @@ when every option is at its first (today's) value. The copy strips the
 shipped `css/showdown.css` / `js/showdown.js` (`strip` in `#lab-inject`) so
 the candidate runs alone. Not loaded by the game.
 
-## `deck-lab.html` + `js/deck-lab.js` + candidate `css/dealer-shoe.css` / `js/dealer-shoe.js` — Deck Lab (the dealer shoe)
+## `deck-lab.html` + `js/deck-lab.js` + candidate `css/dealer-shoe.css` / `js/dealer-shoe.js` — Deck Lab (the dealer deck)
 
-The dealer's deck (`docs/ui/DEALER_PLAN.md`), round 2: the deck drawn from
-above (cream edges, sinking as it runs down) in a dealer's tray, alone, or
-in a shoe, with a CRT counter plaque, cut card and burn pile; cards slide
-off it, it shuffles (riffle or rattle), burns, spreads the flop and takes
-the muck back; plus new card backs. Phone-first like the Showdown Lab,
+The dealer's deck (`docs/ui/DEALER_PLAN.md`), round 3: just the deck, drawn
+from above with a stepped edge in the back's colours, thinner as it runs
+down, and movable (drag it anywhere on the felt). Cards slide off it, it
+shuffles (riffle or rattle), burns onto a pile beside it, spreads the flop
+and takes the muck back; plus new card backs. Phone-first like the Showdown Lab,
 and on its host (`js/showdown-lab-host.js`) and sheet styles. The candidate
 wraps the shipped deal/muck/shuffle functions and hands back to them for
 TODAY and Reduced Motion. Not loaded by the game.

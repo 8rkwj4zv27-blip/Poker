@@ -1,14 +1,14 @@
 "use strict";
 
 /* ============================================================
-   DEALER SHOE — candidate (Lab only: deck-lab.html)
+   DEALER DECK — candidate (Lab only: deck-lab.html), round 3
 
-   The dealer's deck (round 2): the deck seen from above in a tray, on its
-   own or in a shoe. Cards slide off it, a CRT plaque counts what's left
-   (and calls RIFFLE / BURN / FLOP / TURN / RIVER / READY), a lamp works
-   while it deals, it shuffles between hands, burns a card before each
-   street, spreads the flop, and the cards come back to it at the end of
-   the hand. Styled by css/dealer-shoe.css.
+   Just the deck. Drawn from above: the top card's back, the rest of the
+   deck as a stepped edge under it, thinner as the cards go out. The
+   player can pick it up and put it anywhere on the felt (remembered).
+   Cards slide off it and fly, it shuffles between hands, burns a card
+   before each street, spreads the flop, and the cards come back to it at
+   the end of the hand. Styled by css/dealer-shoe.css.
 
    Presentation only. Like js/showdown.js it wraps the shipped functions
    (dealCardFlight, dealCommunity, muckCards, playShuffle,
@@ -20,12 +20,14 @@
    taken: the engine's deck is never touched for them, so no hand, board
    or outcome can differ from the shipped game.
 
-   DealerShoe.apply(order) takes the Lab's picks (see DEFAULTS).
+   DealerShoe.apply(order) takes the Lab's picks (see DEFAULTS);
+   DealerShoe.setPos({x,y}) places the deck (fractions of the felt), and
+   DealerShoe.onMove is told whenever the player moves it.
    ============================================================ */
 const DealerShoe = (() => {
   // Every first value is my suggestion; dealer:'today' is the shipped game.
   const DEFAULTS = {
-    dealer:'new', hold:'tray', finish:'brass', size:'std', where:'left', counter:'below', says:'words', stack:'down', cut:'on', idle:'rare',
+    dealer:'new', size:'std', move:'on', stack:'down',
     back:'crest', shuffle:'riffle', when:'every', slen:'short',
     eject:'kick', recoil:'on', flight:'flick', pace:'today', land:'puff', yours:'land',
     burn:'on', flop:'spread', flopflip:'wave', beat:'off',
@@ -41,77 +43,89 @@ const DealerShoe = (() => {
   const PACE = { today:1, brisk:.78, relaxed:1.25 };
   const BASE_TIMING = Object.assign({}, DEAL_TIMING);
 
-  /* ---------------- the shoe's parts ---------------- */
+  /* ---------------- the deck ---------------- */
   let count = 52;
   const deck = () => $el('dealer-deck');
+  const station = () => document.querySelector('#felt .dealer-station');
   const layers = () => deck() ? Array.from(deck().querySelectorAll('.card:not(.ds-exit):not(.ds-riff)')) : [];
   function build(){
-    const d = deck(); if (!d || d.querySelector('.ds-plaque')) return;
-    const ls = layers();
-    // above the stack: the tray's thumb notch, the shoe's lid and lip, the counter plaque
-    const add = (cls, html) => { const e = document.createElement('div'); e.className = cls; if (html) e.innerHTML = html; d.appendChild(e); return e; };
-    add('ds-notch'); add('ds-lid'); add('ds-lip');
-    add('ds-plaque', '<i class="ds-lamp"></i><div class="crt ds-crt"><span class="crt-figure ds-fig">52</span></div>');
-    const cut = document.createElement('div');
-    cut.className = 'ds-cut';
-    d.insertBefore(cut, ls[5] || d.querySelector('.ds-notch'));
+    const d = deck(); if (!d || d.parentNode.querySelector('.ds-burn')) return;
     const burn = document.createElement('div');
     burn.className = 'ds-burn';
     d.parentNode.appendChild(burn);
+    wireMove();
   }
-  const lamp = () => deck() && deck().querySelector('.ds-lamp');
-  const crt = () => deck() && deck().querySelector('.ds-crt');
-  let wordT = null, word = null;
+  // the deck thins as it runs down: one layer of edge for about every five cards
   function paint(){
     const d = deck(); if (!d) return;
     const ls = layers();
     const n = count <= 0 ? 0 : Math.max(1, Math.ceil(count / 52 * ls.length));
-    ls.forEach((c, i) => c.classList.toggle('ds-gone', on() && O.stack === 'down' && i >= n));
-    const topN = O.stack === 'down' ? n : ls.length;
+    const down = on() && O.stack === 'down';
+    ls.forEach((c, i) => c.classList.toggle('ds-gone', down && i >= n));
+    const topN = down ? n : ls.length;
     ls.forEach((c, i) => c.classList.toggle('ds-top', i === Math.max(0, topN - 1)));
-    d.setAttribute('data-ds-layers', O.stack === 'down' ? n : ls.length);
-    if (!word) showCount();
   }
-  function showCount(){
-    const c = crt(); if (!c) return;
-    const html = '<span class="crt-figure ds-fig">' + Math.max(0, count) + '</span>';
-    if (c.innerHTML !== html) c.innerHTML = html;
-  }
-  function setWord(w, ms){
-    if (O.says !== 'words' || O.counter === 'off' || !crt()) return;
-    clearTimeout(wordT);
-    word = w;
-    crt().innerHTML = '<span class="crt-line">' + w + '</span>';
-    if (ms) wordT = setTimeout(() => { word = null; showCount(); }, ms);
-  }
-  function clearWord(){ clearTimeout(wordT); word = null; showCount(); }
   function setCount(n){ count = n; paint(); }
 
-  // the lamp works while anything is dealing
-  let busy = 0, liveT = null;
-  function working(delta){
-    busy = Math.max(0, busy + delta);
-    const d = deck(), l = lamp();
-    clearTimeout(liveT);
-    if (busy){ if (l) l.classList.add('is-on'); if (d) d.classList.add('ds-live'); }
-    else liveT = setTimeout(() => { if (l) l.classList.remove('is-on'); if (d) d.classList.remove('ds-live'); }, 260);
-  }
+  let busy = 0;
+  function working(delta){ busy = Math.max(0, busy + delta); }
   function restart(el, cls){ if (!el) return; el.classList.remove(cls); void el.offsetWidth; el.classList.add(cls); }
   function kick(){ if (O.recoil === 'on') restart(deck(), 'ds-kick'); }
   function clunk(s){ if (mech()) try{ Sound.wheelRelay(s); }catch(e){} }
 
-  // now and then, while nothing is happening, the lamp blinks
-  let idleT = null;
-  function idle(){
-    clearTimeout(idleT);
-    idleT = setTimeout(() => {
-      if (live() && O.idle === 'rare' && !busy && !document.hidden){
-        const d = deck(), l = lamp();
-        if (l) restart(l, 'is-blink');
-        if (d) restart(d, 'ds-blink');
+  /* ---------------- pick it up, put it anywhere ---------------- */
+  let pos = null;   // {x, y}: the deck's centre as fractions of the felt; null = its usual place
+  function place(){
+    const st = station(); if (!st) return;
+    if (on() && pos){ st.style.left = (pos.x * 100).toFixed(2) + '%'; st.style.top = (pos.y * 100).toFixed(2) + '%'; }
+    else { st.style.left = ''; st.style.top = ''; }
+    // the burn pile goes on the side that faces the middle of the table
+    root.setAttribute('data-ds-where', on() && pos && pos.x > .5 ? 'right' : 'left');
+  }
+  function remeasure(){
+    if ($el('pot-val')) $el('pot-val')._clearKey = null;
+    try{ keepPotClearOfDeck(); }catch(e){}
+    try{ if (typeof CoinTable !== 'undefined') CoinTable.layout(); }catch(e){}
+  }
+  function wireMove(){
+    const st = station(); if (!st || st._dsMove) return;
+    st._dsMove = true;
+    let drag = null;
+    st.addEventListener('pointerdown', e => {
+      if (!on() || O.move !== 'on' || busy) return;
+      const f = $el('felt').getBoundingClientRect(), r = st.getBoundingClientRect();
+      drag = { id:e.pointerId, sx:e.clientX, sy:e.clientY, cx:r.left + r.width / 2, cy:r.top + r.height / 2, hw:r.width / 2, hh:r.height / 2, f, lifted:false };
+      try{ st.setPointerCapture(e.pointerId); }catch(err){}
+      e.preventDefault(); e.stopPropagation();
+    });
+    st.addEventListener('pointermove', e => {
+      if (!drag || e.pointerId !== drag.id) return;
+      const dx = e.clientX - drag.sx, dy = e.clientY - drag.sy;
+      if (!drag.lifted){
+        if (Math.hypot(dx, dy) < 6) return;
+        drag.lifted = true; st.classList.add('ds-held');
+        try{ Sound.cardDeal(); }catch(err){}
       }
-      idle();
-    }, 7000 + Math.random() * 9000);
+      const f = drag.f, m = 14;
+      const x = Math.min(f.right - m - drag.hw, Math.max(f.left + m + drag.hw, drag.cx + dx));
+      const y = Math.min(f.bottom - m - drag.hh, Math.max(f.top + m + drag.hh, drag.cy + dy));
+      pos = { x:(x - f.left) / f.width, y:(y - f.top) / f.height };
+      place();
+    });
+    const end = e => {
+      if (!drag || e.pointerId !== drag.id) return;
+      const lifted = drag.lifted; drag = null;
+      st.classList.remove('ds-held');
+      if (!lifted) return;
+      restart(st, 'ds-drop');
+      try{ Sound.deckSettle(); }catch(err){}
+      remeasure();
+      if (typeof api.onMove === 'function') try{ api.onMove(pos ? Object.assign({}, pos) : null); }catch(err){}
+    };
+    st.addEventListener('pointerup', end);
+    st.addEventListener('pointercancel', end);
+    // a press on the deck is not a tap on the felt (the pot's tidy)
+    st.addEventListener('click', e => { if (on() && O.move === 'on') e.stopPropagation(); });
   }
 
   /* ---------------- flights ---------------- */
@@ -235,13 +249,13 @@ const DealerShoe = (() => {
     const ex = document.createElement('div');
     ex.className = 'card back small ds-exit';
     ex.style.setProperty('--deck-layer', top ? top.style.getPropertyValue('--deck-layer') || '9' : '9');
-    d.insertBefore(ex, d.querySelector('.ds-notch'));
+    d.appendChild(ex);
     setCount(count - 1);
     working(1);
     try{
       if (O.eject === 'kick'){
-        // off the top of the deck, over the tray's rim, or out of the shoe's mouth
-        const lift = O.hold === 'shoe' ? ex.offsetHeight - 12 : O.hold === 'tray' ? 16 : 10;
+        // it slides off the top of the deck before it flies
+        const lift = 12;
         kick(); clunk(.28);
         await ex.animate([{ transform:'translateY(0)' }, { transform:'translateY(-' + lift + 'px)' }],
           { duration:Math.round(120 * speedMult()), easing:'steps(4,end)', fill:'forwards' }).finished.catch(() => {});
@@ -308,19 +322,16 @@ const DealerShoe = (() => {
     b.style.setProperty('--br', ((Math.random() * 12 - 6) + (n - 1) * 5).toFixed(1) + 'deg');
     b.style.visibility = 'hidden';
     pile.appendChild(b);
-    setWord('BURN', 700);
     const ok = await fromShoe(b, { duration:DEAL_TIMING.dealMs * .62 });
     if (b.isConnected){ b.style.visibility = ''; if (ok) Sound.cardLanded(); }
     await wait(90 * speedMult());
   }
+  // three taps on the deck before the card comes off
   async function lampBeat(){
-    const l = lamp();
     for (let i = 0; i < 3; i++){
-      if (l) l.classList.add('is-on');
+      restart(deck(), 'ds-kick');
       try{ Sound.counterTick(false); }catch(e){}
-      await wait(90 * speedMult());
-      if (l && !busy) l.classList.remove('is-on');
-      await wait(60 * speedMult());
+      await wait(150 * speedMult());
     }
   }
   async function flipAll(els, cards, gap){
@@ -381,10 +392,8 @@ const DealerShoe = (() => {
   async function dealCommunity2(n){
     if (!live() || !deck()) return orig.dealCommunity.apply(this, arguments);
     const g = game;
-    const street = n === 3 ? 'FLOP' : g.board.length === 3 ? 'TURN' : 'RIVER';
     if (O.burn === 'on') await burnOne();
     if (game !== g) return;
-    setWord(street, 1100);
     if (n === 1 && O.beat === 'beat') await lampBeat();
     if (n === 3) return flop(g);
     return orig.dealCommunity.apply(this, arguments);
@@ -426,37 +435,27 @@ const DealerShoe = (() => {
 
   /* ---------------- the shuffle ---------------- */
   const SLEN = { short:1, long:1.8 };
+  // RATTLE: the deck shakes and jiggles in place, then squares up
   async function machineShuffle(){
-    const d = deck(), l = lamp(), c = crt();
+    const d = deck();
     const total = 720 * SLEN[O.slen] * speedMult();
     clunk(.8);
     d.classList.add('ds-shuffling'); working(1);
-    if (l) l.classList.add('is-flick');
-    if (c) c.setAttribute('data-crt-quiet', '');
-    word = 'spin';
     const end = performance.now() + total;
     let i = 0;
     while (performance.now() < end && d.isConnected){
-      if (i % 2 === 0) try{ Sound.cardReturn(); }catch(e){}
-      if (i % 2 === 1 && c && O.counter !== 'off'){
-        c.innerHTML = '<span class="crt-figure ds-fig">' + (10 + Math.floor(Math.random() * 90)) + '</span>';
-        try{ Sound.counterTick(false); }catch(e){}
-      }
+      try{ if (i % 2 === 0) Sound.cardReturn(); else Sound.counterTick(false); }catch(e){}
       i++;
       await wait(45);
     }
     d.classList.remove('ds-shuffling'); working(-1);
-    if (l) l.classList.remove('is-flick');
-    if (c) c.removeAttribute('data-crt-quiet');
-    word = null;
     setCount(52);
-    try{ Sound.counterLock(false); }catch(e){}
+    try{ Sound.deckSettle(); }catch(e){}
     clunk(.6); restart(d, 'ds-kick');
-    setWord('READY', 700);
     await wait(200 * speedMult());
   }
   async function riffle(){
-    const d = deck(), front = d.querySelector('.ds-notch');
+    const d = deck();
     const top = layers()[layers().length - 1];
     const layer = top ? top.style.getPropertyValue('--deck-layer') || '9' : '9';
     const N = 12, cards = [];
@@ -464,10 +463,10 @@ const DealerShoe = (() => {
       const c = document.createElement('div');
       c.className = 'card back small ds-riff';
       c.style.setProperty('--deck-layer', layer);
-      d.insertBefore(c, front);
+      d.appendChild(c);
       cards.push(c);
     }
-    working(1); setWord('RIFFLE');
+    working(1);
     const sp = speedMult();
     const half = (c, i) => { const left = i % 2 === 0, k = i >> 1; return 'translate(' + (left ? -17 : 17) + 'px,' + (-40 - k) + 'px) rotate(' + (left ? -7 : 7) + 'deg)'; };
     const passes = O.slen === 'long' ? 2 : 1;
@@ -489,7 +488,7 @@ const DealerShoe = (() => {
     cards.forEach(c => c.remove());
     working(-1);
     Sound.deckSettle(); clunk(.6); restart(d, 'ds-kick');
-    setCount(52); setWord('READY', 700);
+    setCount(52);
     await wait(160 * sp);
   }
   async function playShuffle2(){
@@ -497,18 +496,23 @@ const DealerShoe = (() => {
     document.querySelectorAll('.ds-burn .card').forEach(b => b.remove());
     const g = game;
     const due = O.shuffle !== 'off' && (O.when === 'every' || (g && g.handNumber <= 1));
-    if (motionOff() || !due){ clearWord(); setCount(52); return; }
+    if (motionOff() || !due){ setCount(52); return; }
     if (O.shuffle === 'riffle') await riffle(); else await machineShuffle();
   }
 
-  /* ---------------- the pot plate keeps clear of a shoe on the right ---------------- */
+  /* ---------------- the pot plate keeps clear of the deck, wherever it is ---------------- */
   function keepPotClear2(){
-    if (!on() || O.where !== 'right') return orig.keepPotClearOfDeck.apply(this, arguments);
+    if (!on()) return orig.keepPotClearOfDeck.apply(this, arguments);
     const area = $el('pot-area'), plate = area && area.querySelector('.pot-chip'), d = deck();
     if (!area || !plate || !d || area.classList.contains('hidden')){ if ($el('pot-val')) $el('pot-val')._clearKey = null; return; }
     const cur = parseFloat(area.style.marginLeft) || 0;
-    const overlap = (plate.getBoundingClientRect().right - cur) - (d.getBoundingClientRect().left - 6);
-    const nudge = overlap > 0 ? -Math.ceil(overlap) : 0;
+    const p = plate.getBoundingClientRect(), k = d.getBoundingClientRect();
+    const pl = p.left - cur, pr = p.right - cur;
+    let nudge = 0;
+    if (p.bottom > k.top - 4 && p.top < k.bottom + 4 && pr > k.left - 6 && pl < k.right + 6){
+      // slide the plate off whichever side of the deck it is mostly on
+      nudge = (pl + pr) / 2 >= (k.left + k.right) / 2 ? Math.ceil(k.right + 6 - pl) : -Math.ceil(pr - (k.left - 6));
+    }
     if (nudge !== cur) area.style.marginLeft = nudge ? nudge + 'px' : '';
   }
 
@@ -530,27 +534,32 @@ const DealerShoe = (() => {
     };
     const cancel = DealFX.cancelAll;
     DealFX.cancelAll = function(){ cancelAll(); return cancel.apply(this, arguments); };
-    build(); paint(); idle();
+    build(); paint();
   }
   function apply(order){
     O = Object.assign({}, DEFAULTS, order || {});
     install();
     const set = (k, v) => { if (v == null) root.removeAttribute(k); else root.setAttribute(k, v); };
     set('data-ds-on', on() ? '' : null);
-    set('data-ds-hold', O.hold); set('data-ds-finish', O.finish); set('data-ds-size', O.size); set('data-ds-where', O.where);
-    set('data-ds-counter', O.counter); set('data-ds-cut', O.cut); set('data-ds-back', O.back);
+    set('data-ds-size', O.size); set('data-ds-move', O.move); set('data-ds-back', O.back);
+    place();
     const k = on() ? PACE[O.pace] || 1 : 1;
     DEAL_TIMING.dealMs = Math.round(BASE_TIMING.dealMs * k);
     DEAL_TIMING.dealStaggerMs = Math.round(BASE_TIMING.dealStaggerMs * k);
     DEAL_TIMING.flopStaggerMs = Math.round(BASE_TIMING.flopStaggerMs * k);
     DEAL_TIMING.collectMs = Math.round(BASE_TIMING.collectMs * k);
-    word = null; paint();
+    paint();
     if (!on()) layers().forEach(c => c.classList.remove('ds-gone'));
     // the pot plate and the coins' walls measure the deck: re-measure
     if ($el('pot-val')) $el('pot-val')._clearKey = null;
     const area = $el('pot-area'); if (area) area.style.marginLeft = '';
-    try{ keepPotClearOfDeck(); }catch(e){}
-    try{ if (typeof CoinTable !== 'undefined') CoinTable.layout(); }catch(e){}
+    remeasure();
   }
-  return { DEFAULTS, apply, install, get order(){ return Object.assign({}, O); }, get count(){ return count; } };
+  function setPos(p){
+    pos = p && isFinite(p.x) && isFinite(p.y) ? { x:Math.min(.95, Math.max(.05, p.x)), y:Math.min(.95, Math.max(.05, p.y)) } : null;
+    place(); remeasure();
+  }
+  const api = { DEFAULTS, apply, install, setPos, onMove:null,
+    get pos(){ return pos ? Object.assign({}, pos) : null; }, get order(){ return Object.assign({}, O); }, get count(){ return count; } };
+  return api;
 })();

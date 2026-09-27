@@ -31,6 +31,21 @@ counter is a small brass plaque with a CRT, under the holder, beside it,
 or off. The riffle is now the suggested shuffle; the old machine shuffle is
 RATTLE.
 
+## Round 2 → round 3
+
+Round 2: the animations stay as they are ("the animations are great"), but
+the tray, the shoe and the card counter go ("I hate the dealer machine and
+the card count"). The deck itself looked off: the red cut card read as a
+mistake, and the cream edges at an angle didn't match the back on top.
+
+Round 3 is just the deck. The cards under the top one show as a stepped
+edge straight down, in the back's own colours (burgundy and gold for the
+house backs), thinner as the deck runs down. New: the player can press on
+the deck and drag it anywhere on the felt; it stays there (the Lab keeps it
+across re-deals, the game would keep it on the device), the burn pile moves
+to the side facing the table, and the pot plate and the coins' walls
+re-measure around it.
+
 ## The Lab: `deck-lab.html`
 
 Phone-first, like the Showdown Lab: the real game full screen, a TUNE key
@@ -45,12 +60,11 @@ shuffle, deal the next), AUTO (keep dealing hands).
 
 | Group | Rows (first option = suggestion) |
 |---|---|
-| The deck | what holds it (dealer's tray / just the deck / shoe from above), finish (brass / velvet / black + gold), size, where (left / right), the stack goes down, cut card |
-| Cards left | where it sits (under the deck / beside it / off), count + words / count only, idle life |
+| The deck | move it (pick it up + move it / fixed), size, the stack gets thinner / stays full; MOVE IT BACK returns it |
 | Card back | house crest / gold lattice / classic red / table green (today) |
 | The shuffle | riffle / rattle / none; every hand / new table only; short / long |
 | Off the deck | slides off first / flies straight; the deck knocks; flight (flick / spin / slide); pace; felt puff; your cards turn as they land / both together |
-| The board | burn cards; flop stack + spread / one by one; flop turns as they fan / all at once / one by one; turn + river straight in / lamp beat |
+| The board | burn cards; flop stack + spread / one by one; flop turns as they fan / all at once / one by one; turn + river straight in / three taps |
 | The muck | onto the deck / tucked in; all at once / round the table |
 | Sound | mechanical / cards only |
 
@@ -64,8 +78,7 @@ shuffle, deal the next), AUTO (keep dealing hands).
   deck is never touched for them.
 - The holder is `#dealer-deck` itself, so the coin walls, the pot plate's
   clearance and the showdown's boxes all measure it.
-- The counter's screen is a Pattern Book CRT (`.crt` + `.crt-figure` /
-  `.crt-line`); only its layout is styled locally. The holder is a new part: once the owner
+- The deck's look is a new part: once the owner
   orders it, it goes into `docs/ui/PATTERN_BOOK.md` (and its check) before
   it ships.
 
