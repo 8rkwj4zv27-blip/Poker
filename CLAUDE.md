@@ -55,6 +55,21 @@ book's shared class for a part rather than styling its finish locally. A
 genuinely new part is signed off and added to the book (and
 `validation/pattern-book-checks.js`) before it's used in the game.
 
+## Labs: always give the owner a URL
+
+Every time a Lab is built or updated, publish it as a private Artifact and
+give the owner the link in the same reply. A file path alone isn't enough;
+the owner tests Labs from that URL, usually on their phone. Republish to the
+same URL on later rounds of the same Lab, and record the link in the Lab's
+plan doc.
+
+How: publish the Lab page with the real game bundled beside it as
+`game.html` (`index.html` is reserved on Artifacts), plus `css/`, `js/` and
+`assets/`. The Lab reads the game's name from a hook set before its script
+runs (for example `window.KO_LAB_GAME = "game.html"`,
+`window.EC_LAB_GAME`). Before publishing, serve the bundle folder locally
+and run one moment to check it loads cleanly.
+
 ## Codebase map
 
 Before searching the codebase cold, read `docs/CODEMAP.md` — it says which

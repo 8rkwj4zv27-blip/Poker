@@ -5,6 +5,9 @@ screen stays the heart of it) and a real death for the player's own
 dashboard. Round 1 puts every idea on one order form, `ko-lab.html`, running
 on the real game. Nothing here is in the game yet.
 
+Test it here (private Artifact, republished each round):
+https://claude.ai/artifact/5aoS18A8PvohCgGhunYY1o
+
 ## Today
 
 - **Opponent K.O.** (`playElimination`/`playEliminationGroup`,
