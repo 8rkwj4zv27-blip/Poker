@@ -189,10 +189,15 @@ check('Dashboard V2 frame, bays and rim light: live, shared, and to the rules',(
   const v1Rim=consoleCss.indexOf('#your-seat-dock::after'), landscape=consoleCss.lastIndexOf('@media (orientation:landscape){',v1Rim);
   assert.ok(v1Rim===-1 || (landscape!==-1 && !consoleCss.slice(landscape,v1Rim).includes('\n}\n')),'V1\'s thin rim may only remain for landscape');
   assert.ok(/@media \(orientation:landscape\)\{\s*#app #your-seat-dock\.dash-frame::before,#app #your-seat-dock\.dash-frame::after\{ display:none; \}/.test(css),'landscape must not draw the portrait frame');
-  // The rim never sits over the cards: they stand in front of it, and nothing
-  // transforms the case alone (the win shake moves the whole machine).
-  const rimZ=+(css.match(/\.dash-frame::after\{[^}]*z-index:(\d+)/)||[])[1], cardZ=+(css.match(/\.seat\.you \.seat-cards\{[^}]*z-index:(\d+)/)||[])[1];
-  assert.ok(rimZ && cardZ && cardZ>rimZ,'the cards must stand in front of the rim');
+  // The rim never sits over the cards: it is drawn UNDER the case (a
+  // negative z-index), so the cards stay in front even while the case is
+  // animated (any filter, transform or fade on the case flattens it and the
+  // cards into one layer; a rim above the case then cut through the cards,
+  // v0.42.0). Nothing transforms the case alone either (the win shake moves
+  // the whole machine).
+  const rimZ=+(css.match(/\.dash-frame::after\{[^}]*z-index:(-?\d+)/)||[])[1], cardZ=+(css.match(/\.seat\.you \.seat-cards\{[^}]*z-index:(\d+)/)||[])[1];
+  assert.ok(rimZ<0 && cardZ>0,'the rim must be drawn under the case, the cards in front');
+  assert.ok(/\.dash-frame\[data-rim\] #hud-frame\{[^}]*box-shadow:inset/.test(css),'the lit rim\'s glow onto the case must be redrawn on the case');
   assert.ok(css.includes('#hud-frame.hud-frame-win{ animation:none; }') && css.includes('.dash-frame.dash-shake{'),'the win shake must move the whole machine, never the case alone');
   assert.ok(!/#hud-frame[^{]*\{[^}]*transform/.test(css),'dashboard.css must not transform the case on its own');
   // Motion: stepped, with a relay click, and Reduced Motion honoured.

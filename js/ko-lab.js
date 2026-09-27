@@ -137,21 +137,15 @@
       { key:'pRim', name:'RIM LIGHT', hint:'round the dashboard', opts:[['on','ON', 'It shorts: sparks crawl along it, it stutters red, then it dies.'],['off','OFF', 'Left alone.']] },
       { key:'pKey', name:'SETTINGS KEY', hint:'the cog', opts:[['on','ON', 'The key pops off and flies.'],['off','OFF', 'Left alone.']] },
       { key:'pBracket', name:'BRACKET', hint:'the whole console', opts:[['on','ON', 'A bracket snaps: the console lurches and hangs a little crooked.'],['off','OFF', 'Left alone.']] }
-    ]},
-    { title:'THE RIM-LIGHT LINE', sub:'The line through your cards. Found it: whenever the dashboard\'s case is animated (a flash, a dim, a fade), the rim light was drawn across your cards. This changes the whole game in this lab, not just the K.O.', jobs:[
-      { key:'rimfix', name:'RIM FIX', hint:'the line over your cards', opts:[
-        ['0','OFF', 'The game as it is today: the line shows whenever the case flashes or dims (BUST shows it every time).'],
-        ['under','FIXED', 'The rim is drawn under the case, so your cards always sit in front of it. Its glow onto the case is redrawn as a soft inner glow.']] }
     ]}
   ];
   const JOBS = SECTIONS.flatMap(s => s.jobs);
   const TODAY = Object.fromEntries(JOBS.map(j => [j.key, j.opts[0][0]]));
-  // YOUR ORDER: the owner's round-1 picks, with round 2's new rows set
-  // to what they asked for (a lighter trail, more breaking, 1-3 buttons).
+  // YOUR ORDER: the owner's round-3 order, live in the game since v0.42.0.
   const PICK = { len:'today', build:'count', spot:'0', stamp:'big', blam:'debris', react:'flinch', trail:'light', face:'reacts',
     sparks:'sparks', seats:'solid', slow:'0', exit:'0', socket:'smoke', multi:'stagger',
-    killer:'0', hit:'thunks', damage:'chain', amount:'random', fuse:'any', cards:'0', lights:'crt', gopace:'long',
-    pScreens:'on', pNumbers:'on', pLamps:'on', pRim:'on', pKey:'on', pBracket:'on', rimfix:'under' };
+    killer:'gloat', hit:'thunks', damage:'chain', amount:'random', fuse:'any', cards:'pop', lights:'mix', gopace:'long',
+    pScreens:'on', pNumbers:'on', pLamps:'on', pRim:'on', pKey:'on', pBracket:'on' };
   const MAX = Object.assign({}, PICK, { len:'epic', build:'both', spot:'soft', react:'quip', slow:'both', exit:'glass', socket:'both', killer:'gloat',
     damage:'wreck', fuse:'three', cards:'pop', trail:'ghosts' });
   let order = Object.assign({}, PICK);
@@ -252,10 +246,13 @@
   async function buildDoc(){
     if (!source){ source = await (await fetch(GAME, { cache:'no-store' })).text(); }
     const sw = /<script id="pwa-service-worker">[\s\S]*?<\/script>/;
-    if (!sw.test(source) || !/<head>/i.test(source) || !/<\/body>/i.test(source))
+    // the shipped K.O. (v0.42.0: css/knockout.css, js/knockout.js) comes out
+    // of the copy: the candidate, with every option, stands in for it
+    const liveJs = /<script src="js\/knockout\.js[^"]*"><\/script>/, liveCss = /<link rel="stylesheet" href="css\/knockout\.css[^"]*">/;
+    if (!sw.test(source) || !liveJs.test(source) || !liveCss.test(source) || !/<head>/i.test(source) || !/<\/body>/i.test(source))
       throw new Error('game page shape changed; refusing to build an unisolated copy');
     const base = new URL('.', location.href).href;
-    return source.replace(sw, '')
+    return source.replace(sw, '').replace(liveJs, '').replace(liveCss, '')
       .replace(/<head>/i, '<head><base href="' + base + '"><script>' + SHIM + '<\/script>')
       .replace(/<\/body>/i, '<link rel="stylesheet" href="css/ko-fx.css?v=' + V + '"><script src="js/ko-fx.js?v=' + V + '"><\/script><script>' + BRIDGE + '<\/script></body>');
   }
@@ -401,7 +398,7 @@
     }
   }));
   $('#sl-copy').addEventListener('click', async () => {
-    const text = 'K.O. order (round 3):\n' + SECTIONS.map(s => s.title + '\n' + s.jobs.map(j => '- ' + j.name + ': ' + j.opts.find(o => o[0] === order[j.key])[1]).join('\n')).join('\n');
+    const text = 'K.O. order (round 4):\n' + SECTIONS.map(s => s.title + '\n' + s.jobs.map(j => '- ' + j.name + ': ' + j.opts.find(o => o[0] === order[j.key])[1]).join('\n')).join('\n');
     try{ await navigator.clipboard.writeText(text); $('#sl-copied').textContent = 'Copied. Paste it into the chat.'; }
     catch(e){ $('#sl-copied').textContent = 'Copy blocked here; the list above is your order.'; }
   });

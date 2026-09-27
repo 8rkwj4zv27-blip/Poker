@@ -3,7 +3,8 @@
 The owner asked for a bigger opponent K.O. (the face launched round the
 screen stays the heart of it) and a real death for the player's own
 dashboard. Round 1 puts every idea on one order form, `ko-lab.html`, running
-on the real game. Nothing here is in the game yet.
+on the real game. **Shipped in v0.42.0** (`js/knockout.js`, `css/knockout.css`;
+the rim fix in `css/dashboard.css`) with the owner's round-3 order below.
 
 Test it here (private Artifact, republished each round):
 https://claude.ai/artifact/5aoS18A8PvohCgGhunYY1o
@@ -113,6 +114,15 @@ the cards still shows with LAYER and SHADOW.
   an inset glow on the top and sides. At rest it is pixel-identical to today
   at 430/390/375/320 wide; lit, only the glow's spill onto the case is
   redrawn. Ships on its own as a game fix, in `css/dashboard.css`.
+
+## Round 3 order (owner) — shipped v0.42.0
+
+Length TODAY · build-up REF COUNT · spotlight NONE · stamp BIG K.O.! ·
+blam + DEBRIS · multi K.O. ONE BY ONE · the others FLINCH · trail LIGHT ·
+face REACTS · hits SPARKS · other seats SOLID · slow motion NONE · exit OFF
+SCREEN · socket SMOKE. Game over: killer GLOATS · hit THUNKS · damage CHAIN
+REACTION · how much RANDOM · buttons 1, 2 OR 3 · cards POP OUT · lights CRT
+OR RUBBLE · pace LONG · every part on · rim fix FIXED.
 
 ## How the candidate sits on the game
 
