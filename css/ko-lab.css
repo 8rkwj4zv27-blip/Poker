@@ -16,7 +16,11 @@
     bottom:calc(var(--bar) + env(safe-area-inset-bottom,0px));
     height:auto; padding:0; border:0; display:flex; align-items:center; justify-content:center; background:#000;
   }
-  .ko-lab .sl-phone{ border-radius:0; box-shadow:none; }
+  /* Scaled with a transform, not zoom: iPhone Safari doesn't zoom a page
+     inside a frame, so the game would lay out at the wrong size (wider,
+     with its hidden sheets showing). The frame keeps its true 430 x 932. */
+  .ko-lab .sl-stage{ overflow:hidden; }
+  .ko-lab .sl-phone{ border-radius:0; box-shadow:none; zoom:1 !important; transform:scale(var(--fit)); transform-origin:50% 50%; }
   .ko-lab .sl-status, .ko-lab .sl-homebar, .ko-lab .sl-caption{ display:none; }
 
   /* the control bar */
