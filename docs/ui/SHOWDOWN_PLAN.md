@@ -249,3 +249,26 @@ straight to AWARD POT and replay.
 
 Each release bumps `BUILD_VERSION`/`CACHE_NAME` and the `?v=` of every
 changed file.
+
+## Shipped: v0.42.0 (27 Sep 2026)
+
+The owner approved round 5 and asked for it in the game with the player
+able to fine-tune it. One release rather than four: `js/showdown.js` +
+`css/showdown.css`, generated from the candidate at the owner's order.
+
+- Settings → Showdown: the smash (monster pots by default / big pots /
+  every win / off), force, bounces, heat, into your bank, win chance (off
+  by default) and when AWARD POT waits. Everything else is fixed at the
+  order.
+- `validation/showdown-checks.js`: the pot/share/mood/settlement code is
+  production's verbatim, the display merge keeps every chip, the settings
+  are wired. Pattern Book: a Showdown entry and check.
+- Played on an emulated iPhone against the real game: monster pot (tap and
+  hold), split, loss, fold win, one and three side pots, and you covering
+  every all-in; every player ended with exactly the engine's shares.
+- Fixed on the way: the runout used to lock the console when the one
+  player not all in was you (the engine still asks you to act each street,
+  so the hand stalled). The runout show now only plays when nobody left to
+  act is you.
+- The lab strips the shipped files from its copy and keeps working as the
+  place to try other options.

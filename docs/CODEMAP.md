@@ -292,6 +292,24 @@ the coin table's `EnemyCards` questions itself. Its default ("YOUR ORDER")
 is the shipped order. Shows each card's footprint against V1. Not loaded
 by the game.
 
+## `css/showdown.css` + `js/showdown.js` — Showdown (live, v0.42.0)
+
+The end of a hand, the owner's order from `showdown-lab.html` (recorded in
+`docs/ui/PATTERN_BOOK.md`, Showdown). It replaces `handleShowdown()` and
+`runShowdownAwardSequence()` with copies whose pot, share, mood and
+settlement code is production's verbatim (`validation/showdown-checks.js`
+compares them), and wraps `advancePhase()`, `dealCommunity()`,
+`updateHandInstrument()`, `startNewHand()` and `EnemyCards.paint()` for the
+runout and the clean-up (the `js/machine-wheel.js` install pattern). The
+beats: the lock, the all-in runout (only when nobody left to act is you),
+the reveal, the verdict on the rail, a plate per pot and pot-by-pot
+awards, and THE COOK (hold AWARD POT to heat the tray; on release the coins
+explode in real time off a pseudo-3D table of hitboxes, settle on the
+felt, then flip into the winner's bank). `ORDER` holds the fixed order;
+`PLAYER` maps the player's Settings → Showdown choices (`settings.sd*`,
+defaults in `DEFAULT_SETTINGS`). Without the coin table the shipped award
+runs. Presentation only.
+
 ## `showdown-lab.html` + `js/showdown-lab-host.js` + `js/showdown-lab.js` + `css/showdown-lab.css` + candidate `css/showdown-beats.css` / `js/showdown-beats.js` — Showdown Lab
 
 The showdown pass (`docs/ui/SHOWDOWN_PLAN.md`), phone-first (round 4): the
@@ -304,7 +322,9 @@ let go for a physical explosion, then the flip into the bank), every part
 of it a row. The candidate replaces `handleShowdown()`/
 `runShowdownAwardSequence()` with copies whose pot and settlement code is
 production's verbatim, and hands straight back to the shipped functions
-when every option is at its first (today's) value. Not loaded by the game.
+when every option is at its first (today's) value. The copy strips the
+shipped `css/showdown.css` / `js/showdown.js` (`strip` in `#lab-inject`) so
+the candidate runs alone. Not loaded by the game.
 
 ## `js/finishes.js` + `css/finishes.css` — Finishes menu (live)
 
