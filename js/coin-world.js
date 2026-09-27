@@ -1,5 +1,5 @@
 /* ============================================================
-   COIN WORLD — with DENOMINATIONS (the coin economy pass, v0.43.0; built
+   COIN WORLD — with DENOMINATIONS (the coin economy pass, v0.44.0; built
    in coin-denom-lab.html, whose candidate js/coin-denom-world.js this was).
 
    What it adds to the shipped world: three pieces, all gold, with a fixed

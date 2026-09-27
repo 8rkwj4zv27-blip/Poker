@@ -1,6 +1,6 @@
 /* ============================================================
    COIN TABLE — with DENOMINATIONS and the BANK VIEW (the coin economy
-   pass, v0.43.0; built in coin-denom-lab.html and coin-bank-lab.html).
+   pass, v0.44.0; built in coin-denom-lab.html and coin-bank-lab.html).
 
    What changes (Lab 1): every bet, yours and theirs, is counted the same
    way. One small coin is the small blind; a bet is its size in small

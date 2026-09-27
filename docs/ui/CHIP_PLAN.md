@@ -624,7 +624,7 @@ bank settles to the stack (breaks, change-ups, then top-ups or lifts). The
 bank never holds more than it shows room for (a very deep stack fills
 every column; the STACK readout keeps the figure).
 
-**Shipped (v0.43.0, 27 Sep 2026), the owner's picks:** big coin RING
+**Shipped (v0.44.0, 27 Sep 2026), the owner's picks:** big coin RING
 1.4x, bar BULLION 1.75x (chosen from STAMPED / BULLION / TREASURE), 16 a
 bet, 24 all in, 60 in the pot, the change-up's first 3 shown, no rate key;
 bank TUBES, tags OFF, making change SHOW 3. The lab candidates became the

@@ -1,7 +1,7 @@
 "use strict";
 
 /* ============================================================
-   COIN BANK — the inside of your bank (the coin economy pass, v0.43.0;
+   COIN BANK — the inside of your bank (the coin economy pass, v0.44.0;
    built in coin-bank-lab.html, Lab 2). The inside of your bank (#hud-left, the same
    90 x 155 housing) holding your stack in the felt's pieces: small coins
    (the small blind), big coins (5 small) and gold bars (5 big). Driven by
