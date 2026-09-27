@@ -345,6 +345,16 @@ when every option is at its first (today's) value. The copy strips the
 shipped `css/showdown.css` / `js/showdown.js` (`strip` in `#lab-inject`) so
 the candidate runs alone. Not loaded by the game.
 
+## `deck-lab.html` + `js/deck-lab.js` + candidate `css/dealer-shoe.css` / `js/dealer-shoe.js` — Deck Lab (the dealer shoe)
+
+The dealer's deck as a machine (`docs/ui/DEALER_PLAN.md`): a shoe built into
+the felt with a CRT counter, lamp, cut card and burn pile; it kicks cards
+out, shuffles itself (machine or riffle), burns, spreads the flop and takes
+the muck back in; plus new card backs. Phone-first like the Showdown Lab,
+and on its host (`js/showdown-lab-host.js`) and sheet styles. The candidate
+wraps the shipped deal/muck/shuffle functions and hands back to them for
+TODAY and Reduced Motion. Not loaded by the game.
+
 ## `js/finishes.js` + `css/finishes.css` — Finishes menu (live)
 
 Settings → Finishes: a page inside the Settings sheet that swaps each
@@ -402,7 +412,7 @@ there manually.
 Files matching `*-lab.html`, `*-lab.js`, `*-lab.css` (`career-lab`,
 `career-hub-v2-lab`, `ticket-lab`, `card-flight-options`, `card-turn-lab`,
 `chip-motion-lab`, `chip-lab`, `chip-throw-lab`, `design-lab`, `result-stage-lab`, `showdown-rail-lab`, `crt-lab`, `dashboard-v2-lab`, `dashboard-order-lab`,
-`wheel-v2-lab`, `intro-lab`, `boot-lab`, `slot-lab`, `table-space-lab`, `enemy-card-lab`, `showdown-lab`, `pot-lab`)
+`wheel-v2-lab`, `intro-lab`, `boot-lab`, `slot-lab`, `table-space-lab`, `enemy-card-lab`, `showdown-lab`, `pot-lab`, `deck-lab`)
 are **isolated visual references and prototyping sandboxes**. Several are
 committed permanently as durable references even after their feature
 shipped. Rules:
