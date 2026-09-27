@@ -10,19 +10,26 @@
   <!-- The chrome is the Table Space Lab's (the phone frame and the form),
        with the Enemy Cards form's phone sheets. -->
   <link rel="stylesheet" href="css/table-space-lab.css?v=1">
-  <link rel="stylesheet" href="css/enemy-card-lab.css?v=1">
-  <link rel="stylesheet" href="css/ko-lab.css?v=2">
-  <script defer src="js/ko-lab.js?v=2"></script>
+  <link rel="stylesheet" href="css/ko-lab.css?v=3">
+  <script defer src="js/ko-lab.js?v=3"></script>
 </head>
-<body class="sl ec-lab ko-lab">
-  <!-- Phone only: the keys that bring up the form and the moments. -->
-  <div class="ec-keys" role="group" aria-label="Lab panels"><button type="button" data-sheet-key="form">ORDER</button><button type="button" data-sheet-key="play">PLAY</button></div>
-  <div class="ko-quick" role="group" aria-label="Replay"><button type="button" data-moment="ko">K.O.</button><button type="button" data-moment="bust">YOU BUST</button></div>
+<body class="sl ko-lab">
+  <!-- Phone only: a control bar under the game. The replays are one tap;
+       ORDER and MORE bring up sheets that leave the game in view. -->
+  <nav class="ko-bar" aria-label="Lab controls">
+    <button type="button" class="ko-bar-sheet" data-sheet-key="form">ORDER</button>
+    <button type="button" class="ko-bar-go" data-moment="ko">K.O.</button>
+    <button type="button" class="ko-bar-go is-small" data-moment="ko2">×2</button>
+    <button type="button" class="ko-bar-go is-small" data-moment="ko3">×3</button>
+    <button type="button" class="ko-bar-go is-bust" data-moment="bust">BUST</button>
+    <button type="button" class="ko-bar-sheet" data-sheet-key="play">MORE</button>
+  </nav>
   <!-- Isolated Lab: the REAL game runs sandboxed in the frame (in-memory
        storage, no service worker) at the iPhone 15 Pro Max's size and safe
        areas, with css/ko-fx.css and js/ko-fx.js injected. Never linked
        from the game; never touches a real save. -->
   <aside class="sl-side sl-form" aria-label="Order form">
+    <div class="ko-sheet-top"><span>YOUR ORDER</span><button type="button" data-sheet-close>DONE</button></div>
     <header class="sl-head">
       <strong>K.O. ORDER FORM · ROUND 2</strong>
       <span>Your round-1 order is loaded. New this round: trail strength, soft spotlights, the damage chain, RUBBLE, and a rim-light test. The first option in each row is today's game.</span>
@@ -40,6 +47,7 @@
   </main>
 
   <aside class="sl-side sl-play" aria-label="Moments and order">
+    <div class="ko-sheet-top"><span>MORE</span><button type="button" data-sheet-close>DONE</button></div>
     <section class="sl-group">
       <h2>Replay (as often as you like)</h2>
       <div class="sl-moments">

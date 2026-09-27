@@ -28,7 +28,7 @@
   const frame = $('#sl-frame');
   const status = t => { $('#sl-status').textContent = t; };
   const GAME = window.KO_LAB_GAME || 'index.html';
-  const V = '2';
+  const V = '3';
 
   /* The form. The first option of every row is today's game. */
   const SECTIONS = [
@@ -243,7 +243,8 @@
     get settings(){ return typeof settings === 'undefined' ? null : settings; },
     setDev(on, fast){ DEV_MODE = !!on; FAST_DEV = !!(on && fast); },
     intro: typeof TableIntro === 'undefined' ? null : TableIntro,
-    fx: typeof KoFx === 'undefined' ? null : KoFx
+    fx: typeof KoFx === 'undefined' ? null : KoFx,
+    sound: typeof Sound === 'undefined' ? null : Sound
   };`;
   let source = null;
   async function buildDoc(){
@@ -404,7 +405,8 @@
   });
 
   /* ---- the phone frame fits the stage (and a phone's whole screen) ---- */
-  const phone = () => window.matchMedia('(max-width:760px)').matches;
+  const PHONE = '(max-width:760px), (pointer:coarse) and (max-width:1100px)';
+  const phone = () => window.matchMedia(PHONE).matches;
   function fit(){
     const st = $('.sl-stage');
     const k = phone()
@@ -420,6 +422,16 @@
     $$('[data-sheet-key]').forEach(k => k.classList.toggle('is-on', k.dataset.sheetKey === v));
   }
   $$('[data-sheet-key]').forEach(k => k.addEventListener('click', () => sheet(document.body.dataset.sheet === k.dataset.sheetKey ? '' : k.dataset.sheetKey)));
+  $$('[data-sheet-close]').forEach(k => k.addEventListener('click', () => sheet('')));
+
+  /* iPhone plays sound only after a tap, and the taps land here, not in
+     the game. Every tap wakes the game's audio (and the K.O. sounds) while
+     it's still a tap. */
+  document.addEventListener('pointerdown', () => {
+    const b = bridge();
+    try{ if (b && b.sound) b.sound.unlock(); }catch(e){}
+    try{ if (b && b.fx && b.fx.unlock) b.fx.unlock(); }catch(e){}
+  }, true);
   $$('[data-moment]').forEach(b => b.addEventListener('click', () => { if (phone()) sheet(''); }, true));
 
   window.__koForm = { MOMENTS, play, get order(){ return Object.assign({}, order); }, set(o){ Object.assign(order, o); sync(); send(); }, get busy(){ return busy; }, view };

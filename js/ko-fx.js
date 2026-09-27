@@ -88,6 +88,7 @@ const KoFx = (function(){
       s.connect(f); f.connect(g); g.connect(master); s.start(t); s.stop(t + dur + .03);
     }
     return {
+      unlock(){ ac(); },
       // a boxing bell: an inharmonic strike that rings
       bell(pitch, when){
         const b = 760 * (pitch || 1);
@@ -1182,6 +1183,7 @@ const KoFx = (function(){
     },
     get order(){ return Object.assign({}, O); },
     TODAY,
+    unlock(){ Snd.unlock(); },
     lab:{ ko:replayKO, bust:replayBust, reset:resetSeats, get busy(){ return !!running; } }
   };
 })();
