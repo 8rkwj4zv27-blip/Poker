@@ -28,7 +28,7 @@
   const frame = $('#sl-frame');
   const status = t => { $('#sl-status').textContent = t; };
   const GAME = window.KO_LAB_GAME || 'index.html';
-  const V = '3';
+  const V = '4';
 
   /* The form. The first option of every row is today's game. */
   const SECTIONS = [
@@ -56,6 +56,10 @@
         ['0','TODAY', 'The sound, a spark and the card\'s recoil.'],
         ['shake','SHAKE + FLASH', 'The whole screen jolts and flashes for a frame.'],
         ['debris','+ DEBRIS', 'And bits of the socket blow out of the bottom, in their colour.']] },
+      { key:'multi', name:'MULTI K.O.', hint:'two or three at once', opts:[
+        ['today','TODAY', 'They all fire almost together, a tenth of a second apart.'],
+        ['stagger','ONE BY ONE', 'New: they fire one after another, about half a second apart, each with its own blast, the last the biggest. The ones still waiting rattle in their sockets.'],
+        ['slow','SLOW', 'The same, nearly a second apart.']] },
       { key:'react', name:'THE OTHERS', hint:'the players still in', opts:[
         ['0','NONE', 'Today: they don\'t react.'],
         ['flinch','FLINCH', 'Every other opponent flinches and pulls a scared face at the blast.'],
@@ -85,7 +89,7 @@
     { title:'THE K.O. · THE EXIT', jobs:[
       { key:'exit', name:'EXIT', hint:'how it leaves', opts:[
         ['0','OFF SCREEN', 'Today: it ricochets out through the frame.'],
-        ['glass','THE GLASS', 'Its last bounce sends it at you: it grows, smacks into the screen, cracks it, slides down the glass and drops away.'],
+        ['glass','THE GLASS', 'Its last bounce sends it at you: it grows, smacks into the screen, slides down the glass and drops away.'],
         ['mix','EITHER', 'A coin toss each time.']] },
       { key:'socket', name:'EMPTY SOCKET', hint:'what\'s left behind', opts:[
         ['0','DARK', 'Today: a dark hole.'],
@@ -127,19 +131,17 @@
         ['long','LONG', 'Every beat held longer.']] }
     ]},
     { title:'YOUR GAME OVER · THE PARTS', sub:'What CHAIN REACTION and TOTAL WRECK can break. Switch off any you don\'t want.', jobs:[
-      { key:'pScreens', name:'SCREENS', hint:'hand, banner, bet', opts:[['on','ON', 'A screen\'s glass cracks, it floods with static, it switches itself off, or its glass pops out and flies.'],['off','OFF', 'The screens never break.']] },
-      { key:'pNumbers', name:'NUMBERS', hint:'your stack drums', opts:[['on','ON', 'The drums spin like a fruit machine and jam on red nonsense; sometimes a digit pops out and flies.'],['off','OFF', 'Left alone.']] },
+      { key:'pScreens', name:'SCREENS', hint:'hand, banner, bet', opts:[['on','ON', 'A screen floods with static, switches itself off, or its glass pops out and flies. (No more cracks.)'],['off','OFF', 'The screens never break.']] },
+      { key:'pNumbers', name:'NUMBERS', hint:'your stack drums', opts:[['on','ON', 'The drums go haywire: each spins its own way at its own speed, overshoots, lurches back and jams on red nonsense. One to three of them (the $ too) spit out and fly.'],['off','OFF', 'Left alone.']] },
       { key:'pLamps', name:'LAMPS', hint:'SB / BB', opts:[['on','ON', 'The bulbs pop with a flash and go dark; sometimes one shoots out.'],['off','OFF', 'Left alone.']] },
       { key:'pRim', name:'RIM LIGHT', hint:'round the dashboard', opts:[['on','ON', 'It shorts: sparks crawl along it, it stutters red, then it dies.'],['off','OFF', 'Left alone.']] },
       { key:'pKey', name:'SETTINGS KEY', hint:'the cog', opts:[['on','ON', 'The key pops off and flies.'],['off','OFF', 'Left alone.']] },
       { key:'pBracket', name:'BRACKET', hint:'the whole console', opts:[['on','ON', 'A bracket snaps: the console lurches and hangs a little crooked.'],['off','OFF', 'Left alone.']] }
     ]},
-    { title:'TEST · RIM FIX', sub:'The rim light drawing a line over your cards on iPhone. Try each one on your phone and tell me which is clean. It changes the whole game in this lab, not just the K.O.', jobs:[
-      { key:'rimfix', name:'RIM FIX', hint:'iPhone only', opts:[
-        ['0','OFF', 'The game as it is today.'],
-        ['layer','LAYER', 'Your cards get their own drawing layer, so Safari keeps them on top.'],
-        ['shadow','SHADOW', 'The rim glow is drawn with a shadow instead of a filter.'],
-        ['both','BOTH', 'Both fixes.']] }
+    { title:'THE RIM-LIGHT LINE', sub:'The line through your cards. Found it: whenever the dashboard\'s case is animated (a flash, a dim, a fade), the rim light was drawn across your cards. This changes the whole game in this lab, not just the K.O.', jobs:[
+      { key:'rimfix', name:'RIM FIX', hint:'the line over your cards', opts:[
+        ['0','OFF', 'The game as it is today: the line shows whenever the case flashes or dims (BUST shows it every time).'],
+        ['under','FIXED', 'The rim is drawn under the case, so your cards always sit in front of it. Its glow onto the case is redrawn as a soft inner glow.']] }
     ]}
   ];
   const JOBS = SECTIONS.flatMap(s => s.jobs);
@@ -147,9 +149,9 @@
   // YOUR ORDER: the owner's round-1 picks, with round 2's new rows set
   // to what they asked for (a lighter trail, more breaking, 1-3 buttons).
   const PICK = { len:'today', build:'count', spot:'0', stamp:'big', blam:'debris', react:'flinch', trail:'light', face:'reacts',
-    sparks:'sparks', seats:'solid', slow:'0', exit:'0', socket:'smoke',
+    sparks:'sparks', seats:'solid', slow:'0', exit:'0', socket:'smoke', multi:'stagger',
     killer:'0', hit:'thunks', damage:'chain', amount:'random', fuse:'any', cards:'0', lights:'crt', gopace:'long',
-    pScreens:'on', pNumbers:'on', pLamps:'on', pRim:'on', pKey:'on', pBracket:'on', rimfix:'0' };
+    pScreens:'on', pNumbers:'on', pLamps:'on', pRim:'on', pKey:'on', pBracket:'on', rimfix:'under' };
   const MAX = Object.assign({}, PICK, { len:'epic', build:'both', spot:'soft', react:'quip', slow:'both', exit:'glass', socket:'both', killer:'gloat',
     damage:'wreck', fuse:'three', cards:'pop', trail:'ghosts' });
   let order = Object.assign({}, PICK);
@@ -399,7 +401,7 @@
     }
   }));
   $('#sl-copy').addEventListener('click', async () => {
-    const text = 'K.O. order (round 2):\n' + SECTIONS.map(s => s.title + '\n' + s.jobs.map(j => '- ' + j.name + ': ' + j.opts.find(o => o[0] === order[j.key])[1]).join('\n')).join('\n');
+    const text = 'K.O. order (round 3):\n' + SECTIONS.map(s => s.title + '\n' + s.jobs.map(j => '- ' + j.name + ': ' + j.opts.find(o => o[0] === order[j.key])[1]).join('\n')).join('\n');
     try{ await navigator.clipboard.writeText(text); $('#sl-copied').textContent = 'Copied. Paste it into the chat.'; }
     catch(e){ $('#sl-copied').textContent = 'Copy blocked here; the list above is your order.'; }
   });

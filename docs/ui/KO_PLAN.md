@@ -86,6 +86,34 @@ The round-1 order is the default. New:
   line over the player's cards. It can't be reproduced in Chromium, where
   the cards already draw in front; the owner checks it on iPhone.
 
+## Round 3 (same URL)
+
+Owner's notes on round 2: stagger multi K.O. launches one after another;
+remove the glass crack; the stack drums should really break (spin randomly,
+different directions and speeds, overshoot, some pop off); the line through
+the cards still shows with LAYER and SHADOW.
+
+- **Multi K.O.**: TODAY (80–140ms apart) · ONE BY ONE (about 0.5s apart,
+  each with its own blast, rising) · SLOW (about 1s). Faces join a flight
+  that's already running; the ones still waiting rattle in their sockets.
+- **No cracks**: screens fail by static, switching off, or the glass flying;
+  THE GLASS exit smacks the screen without a crack.
+- **Drums**: each spins on its own (direction, drifting speed, run length),
+  lurches the other way now and then, overshoots, rolls back and jams red;
+  one to three of them (the $ plate too) pop out mid-spin.
+- **The rim-light line, found**: `#app .dash-frame::after` (the rim, z-index
+  2 in the dock) sits above `#hud-frame`, which normally doesn't matter
+  because the cards (`.seat.you`, z-index 6) sit above it. But any filter,
+  transform or opacity on `#hud-frame` or `#hud-mid` makes the panel its own
+  stacking context, so the cards are flattened into it and the rim draws
+  across them. In the game that's the table intro (`.ti-you` filter on
+  `#hud-frame`, `tiLamp` opacity on `#hud-mid`); in the lab, the dead-machine
+  dim. Reproduced in Chromium (not an iPhone quirk). RIM FIX = FIXED draws the
+  rim at `z-index:-1` (under the case) and puts its glow back on the case as
+  an inset glow on the top and sides. At rest it is pixel-identical to today
+  at 430/390/375/320 wide; lit, only the glow's spill onto the case is
+  redrawn. Ships on its own as a game fix, in `css/dashboard.css`.
+
 ## How the candidate sits on the game
 
 `js/ko-fx.js` (with `css/ko-fx.css`) replaces the two elimination
@@ -106,9 +134,9 @@ saves. Reduced Motion keeps the game's instant end state.
   rather than local styling.
 - Damage overlays sit fixed over their part; if the bracket snaps first they
   don't tilt with the console. Shipping should put them inside the part.
-- The rim-light fix, once the owner picks one, ships on its own as a small
-  game fix (it isn't part of the K.O.).
-- The big stamp, the crack and the NO SIGNAL socket are new parts: signed off
+- The rim-light fix (round 3, FIXED) ships on its own as a small game fix
+  in `css/dashboard.css` (it isn't part of the K.O.).
+- The big stamp and the NO SIGNAL socket are new parts: signed off
   and added to the Pattern Book before they're used in the game.
 - Ship in small releases (the K.O. first, then the game over), bumping
   `BUILD_VERSION` / `CACHE_NAME` each time.

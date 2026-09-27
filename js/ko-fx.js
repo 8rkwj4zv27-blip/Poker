@@ -31,7 +31,7 @@ const KoFx = (function(){
   };
   const TODAY = { len:'today', build:'today', spot:'0', stamp:'0', blam:'0', react:'0', trail:'0', face:'0',
     sparks:'0', seats:'0', slow:'0', exit:'0', socket:'0', killer:'0', hit:'0', fuse:'0', cards:'0', lights:'0', gopace:'quick',
-    damage:'buttons', amount:'random', pScreens:'on', pNumbers:'on', pLamps:'on', pRim:'on', pKey:'on', pBracket:'on', rimfix:'0' };
+    damage:'buttons', amount:'random', pScreens:'on', pNumbers:'on', pLamps:'on', pRim:'on', pKey:'on', pBracket:'on', rimfix:'0', multi:'today' };
   let O = Object.assign({}, TODAY);
 
   const LEN = {
@@ -105,6 +105,7 @@ const KoFx = (function(){
         tone(95, .22, 'square', .08 * v, 0, 45);
       },
       hiss(dur){ noise(dur, .045, { type:'highpass', f:3500, attack:.02 }); for (let i = 0; i < 4; i++) noise(.02, .08, { type:'highpass', f:rand(2000, 6000), when:rand(0, dur * .8) }); },
+      tick(v){ v = v || 1; tone(rand(1700, 2300), .018, 'square', .018 * v); },
       bulb(){ tone(rand(3200, 4200), .06, 'sine', .05); noise(.05, .1, { type:'highpass', f:5000 }); tone(120, .08, 'square', .04, .02, 60); },
       clank(){ tone(210, .3, 'square', .05, 0, 150); tone(317, .22, 'square', .035, .01, 240); noise(.08, .09, { type:'bandpass', f:900, q:2 }); },
       powerDown(){ tone(420, 1.1, 'sawtooth', .04, 0, 35); tone(60, .5, 'square', .05, .1, 30); },
@@ -411,7 +412,6 @@ const KoFx = (function(){
         // SMACK
         c.el.classList.add('kofx-onglass');
         if (O.face === 'reacts' && c.p) c.el.innerHTML = renderFace(c.p, pick(['dead1','dead2','dead3']));
-        crack(tx, ty, c.halfW * S);
         Snd.glass(); Sound.koBlast();
         haptic([50, 20, 70]);
         shakeScreen(9, 300); flash(90, .5);
@@ -615,22 +615,37 @@ const KoFx = (function(){
     layer.className = 'ko-physics-layer';
     document.body.appendChild(layer);
     const cs = [];
-    for (let i = 0; i < live.length; i++){
-      const le = live[i];
+    const seatRects = O.seats === 'solid' ? survivors.map(s => ({ ...s, r:rectOf(s.e.card) })) : null;
+    const obs = koObs(seatRects ? seatRects.map(s => ({ tag:'seat', rect:{ left:s.r.left, right:s.r.right, top:s.r.top, bottom:s.r.bottom } })) : []);
+    // MULTI K.O.: TODAY fires them 80-140ms apart; STAGGER and SLOW fire
+    // one after another, each with its own blast, the last the biggest.
+    // The flight is already running, so each face joins it as it fires.
+    const GAP = { stagger:[520, 660], slow:[860, 1020] }[O.multi];
+    let launching = true, flying = null;
+    const order = GAP ? live.slice().sort(() => Math.random() - .5) : live;
+    for (let i = 0; i < order.length; i++){
+      const le = order[i];
       const ar = rectOf(le.e.avatar);
       const c = launchPortrait(le.e, le.ko, layer);
       if (c){ c.kind = 'portrait'; c.p = le.p; cs.push(c); }
+      if (!flying && cs.length) flying = fly(cs, () => obs, seatRects, () => launching);
+      const crescendo = GAP ? 1 + i * .25 : 1;
       if (i === 0){
         stampAway();
-        if (O.blam !== '0'){ shakeScreen(anyKo ? 8 : 5, 280); flash(70, anyKo ? .8 : .5); }
-        if (O.react !== '0') survivors.forEach(s => { holdFace(s.e, s.p, pick(['shocked1','shock','terrified1']), 1100 * L().k); restart(s.e.card, 'ec-shudder'); });
+        if (O.react !== '0') survivors.forEach(s => { holdFace(s.e, s.p, pick(['shocked1','shock','terrified1']), (1100 + (GAP ? GAP[1] * (order.length - 1) : 0)) * L().k); restart(s.e.card, 'ec-shudder'); });
       }
+      if (O.blam !== '0' && (i === 0 || GAP)){ shakeScreen((anyKo ? 8 : 5) * crescendo, 280); flash(70, Math.min(.9, (anyKo ? .75 : .5) * crescendo)); }
       if (O.blam === 'debris' && ar) debris(ar.left + ar.width / 2, ar.bottom, faceColour(le.p));
-      if (i < live.length - 1) await sleep(ELIMINATION_CONFIG.multiKoPopGapMin + Math.random() * (ELIMINATION_CONFIG.multiKoPopGapMax - ELIMINATION_CONFIG.multiKoPopGapMin));
+      if (i < order.length - 1){
+        if (GAP){
+          // the ones still waiting rattle in their sockets
+          order.slice(i + 1).forEach(w => restart(w.e.card, 'ec-shudder'));
+          await sleep(rand(GAP[0], GAP[1]));
+        } else await sleep(ELIMINATION_CONFIG.multiKoPopGapMin + Math.random() * (ELIMINATION_CONFIG.multiKoPopGapMax - ELIMINATION_CONFIG.multiKoPopGapMin));
+      }
     }
-    const seatRects = O.seats === 'solid' ? survivors.map(s => ({ ...s, r:rectOf(s.e.card) })) : null;
-    const obs = koObs(seatRects ? seatRects.map(s => ({ tag:'seat', rect:{ left:s.r.left, right:s.r.right, top:s.r.top, bottom:s.r.bottom } })) : []);
-    if (cs.length) await fly(cs, () => obs, seatRects);
+    launching = false;
+    if (flying) await flying;
     layer.remove();
     spotOff();
 
@@ -905,7 +920,7 @@ const KoFx = (function(){
      static, it switches itself off, or its glass pops out and flies. */
   async function failScreen(el, launch){
     const r = el && rectOf(el); if (!r || !r.width) return;
-    const how = pick(['crack', 'static', 'off', 'pop']);
+    const how = pick(['static', 'off', 'pop']);
     sparks(r.left + rand(.2, .8) * r.width, r.top + r.height / 2, -Math.PI / 2, 6);
     if (how === 'crack'){
       const o = overlay(r, 'kofx-over-crack');
@@ -935,26 +950,77 @@ const KoFx = (function(){
       shakeScreen(4, 180);
     }
   }
+  /* One drum, spinning on its own: a direction, a speed that drifts up and
+     down, a random run length; then an overshoot past where it lands and
+     a lurch back, and it jams. Each step is a fast roll of the drum's own
+     strip, so it reads as a real reel, not text changing. */
+  function rollStep(cell, from, to, up, ms){
+    cell.innerHTML = up
+      ? '<span class="reel-strip" aria-hidden="true"><span>' + from + '</span><span>' + to + '</span></span>'
+      : '<span class="reel-strip" aria-hidden="true" style="transform:translateY(-50%)"><span>' + to + '</span><span>' + from + '</span></span>';
+    cell.dataset.value = to;
+    const strip = cell.firstChild;
+    strip.animate(up ? [{ transform:'translateY(0)' }, { transform:'translateY(-50%)' }] : [{ transform:'translateY(-50%)' }, { transform:'translateY(0)' }],
+      { duration:Math.max(30, ms * .85), easing:'steps(' + (ms > 90 ? 4 : 2) + ',end)', fill:'forwards' });
+  }
+  async function spinDrum(cell, t0, popAtMs, popIt){
+    let d = Number(cell.dataset.value) || 0;
+    let up = Math.random() < .5;
+    const run = rand(900, 2300);
+    let speed = rand(35, 110);                       // ms per digit
+    const step = async (ms, dir) => {
+      const next = (d + (dir ? 1 : 9)) % 10;
+      rollStep(cell, d, next, dir, ms);
+      d = next;
+      if (Math.random() < .35) Snd.tick();
+      await sleep(ms);
+      if (popAtMs != null && now() - t0 > popAtMs) popIt(cell);
+      return !cell._kofxPopped;
+    };
+    while (now() - t0 < run){
+      if (!await step(speed, up)) return;
+      speed = Math.max(28, Math.min(150, speed + rand(-18, 22)));
+      if (Math.random() < .06) up = !up;             // a lurch the other way
+    }
+    // slowing to a stop, overshooting, lurching back
+    for (let i = 0; i < 3 + Math.floor(Math.random() * 3); i++){ speed *= 1.35; if (!await step(Math.min(260, speed), up)) return; }
+    const over = 2 + Math.floor(Math.random() * 5);
+    for (let i = 0; i < over; i++) if (!await step(70, up)) return;
+    const back = 1 + Math.floor(Math.random() * over);
+    for (let i = 0; i < back; i++) if (!await step(110 + i * 40, !up)) return;
+    cell.classList.add('kofx-jam');
+    Snd.tick(1.6);
+  }
   const FAIL = {
-    // the stack's drums spin like a fruit machine and jam; or a digit pops out
+    /* the stack's drums go haywire: every drum spins on its own, its own
+       way and at its own speed, speeding up and slowing down, overshoots
+       where it should stop, lurches back, and jams on red nonsense. Some
+       of them (the $ plate too) spit clean out of the machine mid-spin. */
     async numbers(launch){
+      const plate = $id('jackpot');
       const cells = [...document.querySelectorAll('#jackpot .reel-digit')];
-      if (!cells.length) return;
+      if (!plate || !cells.length) return;
       cells.forEach(c => { if (!dashState.reels.has(c)) dashState.reels.set(c, c.dataset.value || '0'); });
-      if (Math.random() < .35){
-        const pops = cells.sort(() => Math.random() - .5).slice(0, 1 + Math.floor(Math.random() * 2));
-        pops.forEach(c => { launch(c, { vx:rand(-.4, .4) * innerWidth }); c.classList.add('kofx-hidden'); dashState.hidden.push(c); });
-        Snd.pop(); sparks(rectOf(pops[0]).left, rectOf(pops[0]).top, -Math.PI / 2, 8);
-        return;
-      }
-      let gap = 70;
+      restart(plate, 'kofx-plate-shake');
+      Snd.zap();
+      const sym = plate.querySelector('.jp-sym');
+      const pool = cells.concat(sym ? [sym] : []);
+      const nPop = Math.min(pool.length - 1, 1 + Math.floor(Math.random() * 3));
+      const popping = new Set(pool.slice().sort(() => Math.random() - .5).slice(0, nPop));
+      const popAt = new Map([...popping].map(c => [c, rand(350, 1500)]));
       const t0 = now();
-      while (now() - t0 < 1100){
-        cells.forEach(c => rollReelCell(c, String(Math.floor(Math.random() * 10)), 0, true, Math.random() < .5 ? 'up' : 'down'));
-        await sleep(gap); gap = Math.min(190, gap * 1.18);
-      }
-      cells.forEach(c => c.classList.add('kofx-jam'));
-      Sound.koThunk(1.1); Snd.clank();
+      const popIt = c => {
+        if (!popping.has(c) || c._kofxPopped) return;
+        c._kofxPopped = true;
+        launch(c, { vx:rand(-.55, .55) * innerWidth, vy:-innerHeight * rand(1.7, 2.4), vrot:(Math.random() < .5 ? -1 : 1) * rand(600, 1100) });
+        c.classList.add('kofx-hidden'); dashState.hidden.push(c);
+        const r = rectOf(c); sparks(r.left + r.width / 2, r.top, -Math.PI / 2, 8);
+        Snd.pop(); Sound.koThunk(.9);
+      };
+      if (sym) setTimeout(() => popIt(sym), popAt.get(sym) || 0);
+      await Promise.all(cells.map(c => spinDrum(c, t0, popAt.get(c), popIt)));
+      restart(plate, 'kofx-plate-shake');
+      Sound.koThunk(1.3); Snd.clank();
     },
     // the SB/BB bulbs pop and go dark; sometimes one shoots out
     async lamps(launch){
@@ -1081,11 +1147,11 @@ const KoFx = (function(){
     if (s){
       s.smokes.forEach(h => h.stop = true);
       s.blown.forEach(b => { b.classList.remove('kofx-blown'); if (!quiet()) b.animate([{ transform:'translateY(14px) scale(.9)' }, { transform:'translateY(-4px)' }, { transform:'none' }], { duration:220, easing:'steps(4,end)' }); });
-      s.hidden.forEach(c => c.classList.remove('kofx-hidden'));
+      s.hidden.forEach(c => { c.classList.remove('kofx-hidden'); delete c._kofxPopped; });
       s.tilt.forEach(m => m.remove());
       s.overlays.forEach(o => o.remove());
       s.classed.forEach(([el, c]) => el.classList.remove(c));
-      s.reels.forEach((v, c) => { c.classList.remove('kofx-jam'); setReelRest(c, v); });
+      s.reels.forEach((v, c) => { c.getAnimations().forEach(x => x.cancel()); c.classList.remove('kofx-jam'); delete c._kofxPopped; setReelRest(c, v); });
       const dock = $id('your-seat-dock');
       if (dock && s.rimWas !== undefined){ if (s.rimWas) dock.dataset.rim = s.rimWas; else delete dock.dataset.rim; }
       if (s.layer) s.layer.remove();
