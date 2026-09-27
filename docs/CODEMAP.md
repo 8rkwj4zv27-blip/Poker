@@ -110,6 +110,19 @@ bank as a coin rack in `#hud-left` (`renderBank`,
 `settings.coinSound` set. Every hook is behind `coinTableOn()`
 (05-game-engine.js); `COIN_TABLE_ON=false` restores the old chip piles.
 
+The pot's shape (v0.42.1, `potSlots` in coin-world.js): when the pot tidies
+(a layout change, or a tap on the empty felt) it builds as NEAT rows, a
+PYRAMID, a HEAP or TOWERS: `OPT.potShape` (`mix` picks one per hand from
+`OPT.potMix` odds, re-picked by `CoinTable.clear()`; `potEvery:'tidy'` picks
+per tidy; `potTap` makes a felt tap re-pick). Every shape keeps its coins
+inside the tray (`trayBox`), stacks a coin apart (`ROW_DY`: rows touch,
+never sink in) and under the board (`z.room`). Coins coming to rest in the
+pot go through `holdIn` (the felt and the tray), a coin that found no stack
+is pushed clear of its neighbours (`relaxCoin`), and an opponent's rake
+(`payOpp`) moves the pile only as far as the tray allows. Checked by
+`validation/pot-shape-checks.js`; tuned in `pot-lab.html` (+ `js/pot-lab.js`,
+the Showdown Lab's host and sheet styles).
+
 ## `js/07-ui-wiring.js` (~2,000 lines)
 
 Screen navigation and all Career money/transaction logic.
@@ -383,7 +396,7 @@ there manually.
 Files matching `*-lab.html`, `*-lab.js`, `*-lab.css` (`career-lab`,
 `career-hub-v2-lab`, `ticket-lab`, `card-flight-options`, `card-turn-lab`,
 `chip-motion-lab`, `chip-lab`, `chip-throw-lab`, `design-lab`, `result-stage-lab`, `showdown-rail-lab`, `crt-lab`, `dashboard-v2-lab`, `dashboard-order-lab`,
-`wheel-v2-lab`, `intro-lab`, `boot-lab`, `slot-lab`, `table-space-lab`, `enemy-card-lab`, `showdown-lab`)
+`wheel-v2-lab`, `intro-lab`, `boot-lab`, `slot-lab`, `table-space-lab`, `enemy-card-lab`, `showdown-lab`, `pot-lab`)
 are **isolated visual references and prototyping sandboxes**. Several are
 committed permanently as durable references even after their feature
 shipped. Rules:

@@ -202,6 +202,9 @@ const CoinTable = (function(){
         }
         return;
       }
+      // the pot re-picks its shape on every tap (so a tap reshapes a tidy pile)
+      const pot = CW.zones.pot;
+      if (CW.OPT.potTap==='on' && count(pot) && !CW.zoneBusy(pot) && !pot.tidying){ CW.newPotShape(CW.potShape()); pot.neat = false; }
       Object.values(CW.zones).forEach(z=>{ if (!CW.zoneBusy(z)) CW.tidyZone(z); });
     });
   }
@@ -218,8 +221,8 @@ const CoinTable = (function(){
   const budget = (n,z)=>Math.max(Math.min(1,n), Math.min(n, potRoom(), CW.LIM().spot-count(z)));
   function targetIn(z){
     let x = z.cx+CW.rr(-5,5), y = z.cy+CW.rr(-3,3);
-    const T = CW.tray();
-    if (z.id==='pot' && T){ x = Math.max(T.L+10,Math.min(T.R-10,x)); y = Math.max(T.T+6,Math.min(T.B-3,y)); }
+    const k = z.id==='pot' && CW.trayBox(CW.D());
+    if (k){ x = Math.max(k.L+3,Math.min(k.R-3,x)); y = Math.max(k.T+2,Math.min(k.B-1,y)); }
     z.neat = false;
     return { x, y, z:0, zone:z, d:CW.D() };
   }
@@ -463,10 +466,18 @@ const CoinTable = (function(){
     CW.sfx('win', .5);
     setTimeout(()=>CW.sfx('collect', .5), 120/CW.OPT.speed);
     const L = Math.max(1, Math.hypot(z.cx-pot.cx, z.cy-pot.cy)), reach = Math.min(34, L*.3);
-    const ux = (z.cx-pot.cx)/L*reach, uy = (z.cy-pot.cy)/L*reach;
+    let ux = (z.cx-pot.cx)/L*reach, uy = (z.cy-pot.cy)/L*reach;
+    // the pile moves as one, only as far as the tray lets it: it bumps the
+    // wall on the winner's side instead of riding up over the lip
+    const k = CW.trayBox(CW.D());
+    if (k){
+      const xs = list.map(b=>b.x), ys = list.map(b=>b.y);
+      ux = Math.max(Math.min(0, k.L-Math.min(...xs)), Math.min(Math.max(0, k.R-Math.max(...xs)), ux));
+      uy = Math.max(Math.min(0, k.T-Math.min(...ys)), Math.min(Math.max(0, k.B-Math.max(...ys)), uy));
+    }
     const all = list.map((b,i)=>{
       b.zone = pot; pot.list.push(b);
-      const probe = { x:b.x+ux, y:b.y+uy, d:b.d, vx:0, vy:0 }; CW.contain(probe);
+      const probe = { x:b.x+ux, y:b.y+uy, d:b.d, vx:0, vy:0 }; CW.holdIn(probe, pot);
       Object.assign(b,{ tx:probe.x, ty:probe.y, tz:b.z, lift:3, T:.34, wait:(i%6)*5, state:'wait', next:'push', target:{}, opts:{} });
       CW.active.add(b);
       return new Promise(res=>{ b.resolve = res; });
@@ -493,6 +504,7 @@ const CoinTable = (function(){
     Object.values(CW.zones).forEach(z=>{ clearTimeout(z.timer); z.list.length = 0; z.amount = 0; z.neat = true; });
     CW.hooks.mouth = null;
     shown = 0; sweeping = null; leaving = 0;
+    CW.newPotShape();                 // each hand's pot builds its own way
   }
   function reset(){ clear(); laid = null; resetBank(); }
   // Settings: a taste of the chosen set (a few coins landing and a stack)
