@@ -397,6 +397,14 @@ dropping in. Runs on Lab 1's candidates (`js/coin-denom-table.js` drives it
 when `CoinWorld.OPT.bank` is a style) and the Showdown Lab's host. Not
 loaded by the game.
 
+## `coin-tubes-lab.html` + `js/coin-tubes-lab.js` + candidate `js/coin-bank-tubes2.js` / `css/coin-bank-tubes2.css` — Bank Tubes Lab
+
+The bank's TUBES, round 2 (owner: works, but doesn't read well; keep it
+simple): NEW TUBES adds a style to the live `CoinBank` (coins tipped
+toward you, warm lamp light, clearer glass, bars on a low shelf under two
+tubes) to compare with the shipped one. Runs on the game's own coin files.
+Not loaded by the game.
+
 ## `js/finishes.js` + `css/finishes.css` — Finishes menu (live)
 
 Settings → Finishes: a page inside the Settings sheet that swaps each
@@ -454,7 +462,7 @@ there manually.
 Files matching `*-lab.html`, `*-lab.js`, `*-lab.css` (`career-lab`,
 `career-hub-v2-lab`, `ticket-lab`, `card-flight-options`, `card-turn-lab`,
 `chip-motion-lab`, `chip-lab`, `chip-throw-lab`, `design-lab`, `result-stage-lab`, `showdown-rail-lab`, `crt-lab`, `dashboard-v2-lab`, `dashboard-order-lab`,
-`wheel-v2-lab`, `intro-lab`, `boot-lab`, `slot-lab`, `table-space-lab`, `enemy-card-lab`, `showdown-lab`, `pot-lab`, `ko-lab`, `coin-denom-lab`, `coin-bank-lab`)
+`wheel-v2-lab`, `intro-lab`, `boot-lab`, `slot-lab`, `table-space-lab`, `enemy-card-lab`, `showdown-lab`, `pot-lab`, `ko-lab`, `coin-denom-lab`, `coin-bank-lab`, `coin-tubes-lab`)
 are **isolated visual references and prototyping sandboxes**. Several are
 committed permanently as durable references even after their feature
 shipped. Rules:
