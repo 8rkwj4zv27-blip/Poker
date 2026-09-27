@@ -1,7 +1,7 @@
 "use strict";
 
 /* ============================================================
-   K.O. + GAME OVER (live, v0.42.0)
+   K.O. + GAME OVER (live, v0.43.0)
    The owner's order from the K.O. order form (ko-lab.html, round 3,
    27 Sep 2026; docs/ui/KO_PLAN.md). Styles: css/knockout.css.
 

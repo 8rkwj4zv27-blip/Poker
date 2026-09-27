@@ -75,7 +75,7 @@
    UNDER the case (z-index -1, above the frame shell): the cards live in
    the case, and whenever the case is animated (a flash, a dim, a fade)
    the browser flattens the case and the cards into one layer, so a rim
-   drawn above the case cut a line straight through the cards (v0.42.0).
+   drawn above the case cut a line straight through the cards (v0.43.0).
    Its glow onto the case, which the case now hides, is redrawn below as
    an inner glow along the case's top and sides. */
 #app .dash-frame::after{

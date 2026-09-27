@@ -55,20 +55,37 @@ book's shared class for a part rather than styling its finish locally. A
 genuinely new part is signed off and added to the book (and
 `validation/pattern-book-checks.js`) before it's used in the game.
 
-## Labs: always give the owner a URL
+## Visual labs: how the owner receives them
 
-Every time a Lab is built or updated, publish it as a private Artifact and
-give the owner the link in the same reply. A file path alone isn't enough;
-the owner tests Labs from that URL, usually on their phone. Republish to the
-same URL on later rounds of the same Lab, and record the link in the Lab's
-plan doc.
+Every visual lab (any `*-lab.html` order form, prototype or comparison
+page) is delivered to the owner as a **private Artifact link** they open on
+their phone, not as a branch to merge or a local server to run. Build and
+check the lab as usual, then:
 
-How: publish the Lab page with the real game bundled beside it as
-`game.html` (`index.html` is reserved on Artifacts), plus `css/`, `js/` and
-`assets/`. The Lab reads the game's name from a hook set before its script
-runs (for example `window.KO_LAB_GAME = "game.html"`,
-`window.EC_LAB_GAME`). Before publishing, serve the bundle folder locally
-and run one moment to check it loads cleanly.
+1. `node validation/tools/lab-bundle.js <lab>.html <scratchpad>/bundle-<lab>`
+   stages the lab with a copy of the real game (`game.html`) and every file
+   it loads.
+2. Publish with the Artifact tool: `file_path` = the staged `<lab>.html`,
+   `root` = the bundle folder, `files` = the paths in its `files.json`
+   (give the `.PNG` faces `contentType: image/png`).
+3. Give the owner the claude.ai link in the reply. After a change,
+   re-stage and republish to the same link (same file path in the session,
+   or `url` from a later one) rather than making a new one, and record the
+   link in the lab's plan doc.
+
+Still commit and push the lab to the branch as before; the link is how the
+owner looks at it.
+
+**Build every lab phone-first** (the owner looks at labs on their phone,
+in the Claude app): the game full screen in one frame, no mock phone frame,
+and the lab's controls running *inside* the game (a small TUNE key and a
+bottom sheet, 44px+ tap targets). Declare what goes into the game copy in
+the lab page as `<script type="application/json" id="lab-inject">`
+(`{"css":[...],"js":[...]}`): the bundler then bakes `game.html` with it,
+so the published link never builds a nested srcdoc copy (that failed in the
+app on a phone). `showdown-lab.html` + `js/showdown-lab-host.js` +
+`js/showdown-lab.js` are the pattern to copy. Check it in an emulated iPhone
+with real touch (`validation/tools/touch-harness.js`) before sending.
 
 ## Codebase map
 

@@ -141,7 +141,7 @@
   ];
   const JOBS = SECTIONS.flatMap(s => s.jobs);
   const TODAY = Object.fromEntries(JOBS.map(j => [j.key, j.opts[0][0]]));
-  // YOUR ORDER: the owner's round-3 order, live in the game since v0.42.0.
+  // YOUR ORDER: the owner's round-3 order, live in the game since v0.43.0.
   const PICK = { len:'today', build:'count', spot:'0', stamp:'big', blam:'debris', react:'flinch', trail:'light', face:'reacts',
     sparks:'sparks', seats:'solid', slow:'0', exit:'0', socket:'smoke', multi:'stagger',
     killer:'gloat', hit:'thunks', damage:'chain', amount:'random', fuse:'any', cards:'pop', lights:'mix', gopace:'long',
@@ -246,7 +246,7 @@
   async function buildDoc(){
     if (!source){ source = await (await fetch(GAME, { cache:'no-store' })).text(); }
     const sw = /<script id="pwa-service-worker">[\s\S]*?<\/script>/;
-    // the shipped K.O. (v0.42.0: css/knockout.css, js/knockout.js) comes out
+    // the shipped K.O. (v0.43.0: css/knockout.css, js/knockout.js) comes out
     // of the copy: the candidate, with every option, stands in for it
     const liveJs = /<script src="js\/knockout\.js[^"]*"><\/script>/, liveCss = /<link rel="stylesheet" href="css\/knockout\.css[^"]*">/;
     if (!sw.test(source) || !liveJs.test(source) || !liveCss.test(source) || !/<head>/i.test(source) || !/<\/body>/i.test(source))

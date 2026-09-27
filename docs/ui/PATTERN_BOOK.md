@@ -183,7 +183,7 @@ are.
 |---|---|---|
 | Frame | `.dash-frame` on `#your-seat-dock` and `.dash-frame-base` on `#action-area`. One shell on the dock's `::before` runs down behind the key bay (`--dash-drop`), so the frame is one piece. Band 8px, gap 5px, 18px corners; the key bay keeps the home-indicator clearance (`--dash-foot`). Narrow phones (under 390px) only move the frame closer to the edge and give back V1's case padding, so keys and the stack drum keep their V1 width. | `css/dashboard.css` |
 | Bay | `.dash-bay` on any dashboard bay (today the bank and the right bay). | same |
-| Rim light | `data-rim` on `.dash-frame`: `turn` (`--pc-lamp-amber`, steady), `allin` (`--danger`, stepped pulse; you all in, or facing an all-in bet), `win` (`--pc-lamp-amber-hi`, 1.7s), `bust` (flickers out, then dark until the next table). Priority bust > win > all in > turn > dark. Every switch-on steps in (`.dash-relay`) with `Sound.wheelRelay`. It is drawn under the case (`z-index:-1`, over the frame shell), so the cards stay in front of it even while the case is animated; its glow onto the case is an inset glow on `#hud-frame` (v0.42.0; before, a filter, transform or fade on the case put the rim across the cards). The win shake moves the whole machine (`.dash-shake`), never the case alone. | `js/dashboard.js` (`DashRim`); `celebrateWinnerSeat()` calls `DashRim.win()` |
+| Rim light | `data-rim` on `.dash-frame`: `turn` (`--pc-lamp-amber`, steady), `allin` (`--danger`, stepped pulse; you all in, or facing an all-in bet), `win` (`--pc-lamp-amber-hi`, 1.7s), `bust` (flickers out, then dark until the next table). Priority bust > win > all in > turn > dark. Every switch-on steps in (`.dash-relay`) with `Sound.wheelRelay`. It is drawn under the case (`z-index:-1`, over the frame shell), so the cards stay in front of it even while the case is animated; its glow onto the case is an inset glow on `#hud-frame` (v0.43.0; before, a filter, transform or fade on the case put the rim across the cards). The win shake moves the whole machine (`.dash-shake`), never the case alone. | `js/dashboard.js` (`DashRim`); `celebrateWinnerSeat()` calls `DashRim.win()` |
 | Reduced Motion | No relay flicker, pulse or shake; the win is steady warm light, bust is simply dark. | `css/dashboard.css` |
 
 Before/after at 430 × 932, and each rim state:
@@ -239,7 +239,7 @@ the stack gauge, blind pucks on the felt. The lab still offers every
 option on V1 cards, with the shipped files stripped from its copy.
 
 
-## K.O. + game over (live v0.42.0)
+## K.O. + game over (live v0.43.0)
 
 The owner's order from the K.O. order form (`ko-lab.html`, round 3,
 27 September 2026; `docs/ui/KO_PLAN.md`). `js/knockout.js` replaces the
@@ -267,3 +267,29 @@ style so they look exactly like the part they left.
 Not taken: spotlight on the K.O., slow motion, the glass exit, NO SIGNAL,
 quips, TILT. The lab still offers every option, with the shipped files
 stripped from its copy (`css/ko-fx.css`, `js/ko-fx.js`).
+
+## Showdown (live v0.42.0)
+
+The end of a hand, from the owner's order on the Showdown order form
+(`showdown-lab.html`, rounds 1–5, 27 September 2026). The beats are
+`js/showdown.js`, styled by `css/showdown.css`; the pot, share and
+settlement code is the production code verbatim
+(`validation/showdown-checks.js`). Presentation only. It adds no new
+screen, key or plate finish: every part is a shared part used as it is.
+
+| Part | Order | The finish |
+|---|---|---|
+| The lock | **DIP + SHOWDOWN FACE** | The house lights dip for a beat (a panel over the felt, in the overlay); the console turns to the AWARD POT face, lit and locked. No chasing casino lights. |
+| Win chance | **METER** (a setting, off by default) | A `.crt` (`data-ink="live"`, quiet) under the pot plate: a bar in each player's colour and `.crt-caption` keys. Never styled locally. |
+| Reveal | **ONE BY ONE** | Their cards slide right out of the cabinet in front of its base shadow (the rim light never covers them); losing hands stay readable, beaten cards dim. |
+| The verdict | **RAIL NAMEPLATE** | The winning hand's name sits on the rail's top edge (`.showdown-hand-stamp`), never under the tray's coins. Kicker and split plates take the rail stamp's finish. |
+| Pots | **A PLATE A POT** | Side pots each get a plate: the pot plate itself (`.pot-chip`), a size down. |
+| Your loss | **DIM** | The dashboard dims with a low thunk; your hand readout takes the CRT's own `CRT.glitch()`. |
+| The smash | **THE COOK** (a setting) | Holding AWARD POT heats the tray's well (a stepped heat bed and glow, ember by default); on release the coins fire out in real time, bounce off the frame, cabinets and felt, settle as a mess on the table, then pick themselves up into your bank. The key always reads AWARD POT: a tap is the full show, a hold goes wilder. |
+
+Settings → Showdown uses the sheet's own segmented keys and switch: the
+smash (monster pots / big pots / every win / off), force, bounces, heat,
+into your bank, win chance and when AWARD POT waits.
+
+Reduced Motion: no dip, peek, lift, hum or heat flash, and the beats'
+waits are cut.

@@ -110,6 +110,25 @@ bank as a coin rack in `#hud-left` (`renderBank`,
 `settings.coinSound` set. Every hook is behind `coinTableOn()`
 (05-game-engine.js); `COIN_TABLE_ON=false` restores the old chip piles.
 
+The pot's shape (v0.42.2, `potSlots` in coin-world.js): when the pot tidies
+(a layout change, or a tap on the empty felt) it builds as NEAT rows, a
+PYRAMID or a HEAP (TOWERS was tried and dropped: too tall): `OPT.potShape`
+(`mix` picks one per hand from `OPT.potMix` odds, re-picked by
+`CoinTable.clear()`; `potEvery:'tidy'` picks per tidy; `potTap` makes a felt
+tap re-pick). Every shape keeps its coins inside the tray (`trayBox`),
+stacks a coin apart and under the board (`z.room`).
+
+Faces never sink into each other: distances on the felt use `FORE` (the
+real resting face, 1/0.82), and every loose coin comes to rest through
+`seat()`: a cell of an invisible grid over its zone (rows half a coin over,
+`ROW_DY` back, so faces touch), the nearest one to where it landed: onto the
+stack there (centred, the loose wobble) or slid into the empty cell. Stacks
+are never shoved (`collide` only knocks lone coins), a coin never hangs off
+one, and pot coins stay in the tray (`holdIn`; an opponent's rake moves the
+pile only as far as the tray allows). Checked by
+`validation/pot-shape-checks.js`; tuned in `pot-lab.html` (+ `js/pot-lab.js`,
+the Showdown Lab's host and sheet styles).
+
 ## `js/07-ui-wiring.js` (~2,000 lines)
 
 Screen navigation and all Career money/transaction logic.
@@ -292,7 +311,7 @@ the coin table's `EnemyCards` questions itself. Its default ("YOUR ORDER")
 is the shipped order. Shows each card's footprint against V1. Not loaded
 by the game.
 
-## `js/knockout.js` + `css/knockout.css` — K.O. + game over (live, v0.42.0)
+## `js/knockout.js` + `css/knockout.css` — K.O. + game over (live, v0.43.0)
 
 The owner's order from `ko-lab.html` (recorded in `docs/ui/PATTERN_BOOK.md`,
 K.O. + game over). Replaces `playElimination`/`playEliminationGroup` with
@@ -316,6 +335,40 @@ starts on TODAY (the shipped sequence). K.O., DOUBLE, TRIPLE, OUT and YOU
 BUST replay on the table in view (`KoFx.lab`, presentation only) and can
 be pressed over and over; REAL K.O. / REAL BUST play an actual hand. Not
 loaded by the game.
+
+## `css/showdown.css` + `js/showdown.js` — Showdown (live, v0.42.0)
+
+The end of a hand, the owner's order from `showdown-lab.html` (recorded in
+`docs/ui/PATTERN_BOOK.md`, Showdown). It replaces `handleShowdown()` and
+`runShowdownAwardSequence()` with copies whose pot, share, mood and
+settlement code is production's verbatim (`validation/showdown-checks.js`
+compares them), and wraps `advancePhase()`, `dealCommunity()`,
+`updateHandInstrument()`, `startNewHand()` and `EnemyCards.paint()` for the
+runout and the clean-up (the `js/machine-wheel.js` install pattern). The
+beats: the lock, the all-in runout (only when nobody left to act is you),
+the reveal, the verdict on the rail, a plate per pot and pot-by-pot
+awards, and THE COOK (hold AWARD POT to heat the tray; on release the coins
+explode in real time off a pseudo-3D table of hitboxes, settle on the
+felt, then flip into the winner's bank). `ORDER` holds the fixed order;
+`PLAYER` maps the player's Settings → Showdown choices (`settings.sd*`,
+defaults in `DEFAULT_SETTINGS`). Without the coin table the shipped award
+runs. Presentation only.
+
+## `showdown-lab.html` + `js/showdown-lab-host.js` + `js/showdown-lab.js` + `css/showdown-lab.css` + candidate `css/showdown-beats.css` / `js/showdown-beats.js` — Showdown Lab
+
+The showdown pass (`docs/ui/SHOWDOWN_PLAN.md`), phone-first (round 4): the
+page is the real game full screen in one frame (`js/showdown-lab-host.js`
+builds the copy locally, or loads the `game.html` the bundler baked for a
+link) and the controls run inside it (`js/showdown-lab.js`: a TUNE key and
+a bottom sheet with MOMENTS, THE COOK and SETTINGS). The owner's round-1
+order is locked in; the smash is THE COOK (hold AWARD POT to heat the pot,
+let go for a physical explosion, then the flip into the bank), every part
+of it a row. The candidate replaces `handleShowdown()`/
+`runShowdownAwardSequence()` with copies whose pot and settlement code is
+production's verbatim, and hands straight back to the shipped functions
+when every option is at its first (today's) value. The copy strips the
+shipped `css/showdown.css` / `js/showdown.js` (`strip` in `#lab-inject`) so
+the candidate runs alone. Not loaded by the game.
 
 ## `js/finishes.js` + `css/finishes.css` — Finishes menu (live)
 
@@ -374,7 +427,7 @@ there manually.
 Files matching `*-lab.html`, `*-lab.js`, `*-lab.css` (`career-lab`,
 `career-hub-v2-lab`, `ticket-lab`, `card-flight-options`, `card-turn-lab`,
 `chip-motion-lab`, `chip-lab`, `chip-throw-lab`, `design-lab`, `result-stage-lab`, `showdown-rail-lab`, `crt-lab`, `dashboard-v2-lab`, `dashboard-order-lab`,
-`wheel-v2-lab`, `intro-lab`, `boot-lab`, `slot-lab`, `table-space-lab`, `enemy-card-lab`, `ko-lab`)
+`wheel-v2-lab`, `intro-lab`, `boot-lab`, `slot-lab`, `table-space-lab`, `enemy-card-lab`, `showdown-lab`, `pot-lab`, `ko-lab`)
 are **isolated visual references and prototyping sandboxes**. Several are
 committed permanently as durable references even after their feature
 shipped. Rules:
@@ -417,6 +470,9 @@ reuse instead of writing a new Playwright script from scratch each time.
 - `docs/ui/VISUAL_AUDIT.md` — 2026-09-25 visual/motion/glitch audit of the
   whole game: findings F1–F21 with causes, a motion map of every screen
   change, level-up ideas and a phased plan. Proposals, not approvals.
+- `docs/ui/SHOWDOWN_PLAN.md` — the showdown pass: what the end of a hand
+  does today, the owner's answers, every beat's options in
+  `showdown-lab.html`, and the release plan after the owner's order.
 - `docs/ui/CHIP_PLAN.md` — the chip upgrade plan (bank, bet spots + sweep,
   pot, payouts, feel), the owner's answers so far, and the options built
   in `chip-lab.html` (+ `js/chip-lab.js`, `css/chip-lab.css`: the real
