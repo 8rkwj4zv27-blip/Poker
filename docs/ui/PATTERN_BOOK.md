@@ -238,3 +238,29 @@ Not taken: the player's file (every version failed to read at card size),
 the stack gauge, blind pucks on the felt. The lab still offers every
 option on V1 cards, with the shipped files stripped from its copy.
 
+
+## Showdown (live v0.42.0)
+
+The end of a hand, from the owner's order on the Showdown order form
+(`showdown-lab.html`, rounds 1–5, 27 September 2026). The beats are
+`js/showdown.js`, styled by `css/showdown.css`; the pot, share and
+settlement code is the production code verbatim
+(`validation/showdown-checks.js`). Presentation only. It adds no new
+screen, key or plate finish: every part is a shared part used as it is.
+
+| Part | Order | The finish |
+|---|---|---|
+| The lock | **DIP + SHOWDOWN FACE** | The house lights dip for a beat (a panel over the felt, in the overlay); the console turns to the AWARD POT face, lit and locked. No chasing casino lights. |
+| Win chance | **METER** (a setting, off by default) | A `.crt` (`data-ink="live"`, quiet) under the pot plate: a bar in each player's colour and `.crt-caption` keys. Never styled locally. |
+| Reveal | **ONE BY ONE** | Their cards slide right out of the cabinet in front of its base shadow (the rim light never covers them); losing hands stay readable, beaten cards dim. |
+| The verdict | **RAIL NAMEPLATE** | The winning hand's name sits on the rail's top edge (`.showdown-hand-stamp`), never under the tray's coins. Kicker and split plates take the rail stamp's finish. |
+| Pots | **A PLATE A POT** | Side pots each get a plate: the pot plate itself (`.pot-chip`), a size down. |
+| Your loss | **DIM** | The dashboard dims with a low thunk; your hand readout takes the CRT's own `CRT.glitch()`. |
+| The smash | **THE COOK** (a setting) | Holding AWARD POT heats the tray's well (a stepped heat bed and glow, ember by default); on release the coins fire out in real time, bounce off the frame, cabinets and felt, settle as a mess on the table, then pick themselves up into your bank. The key always reads AWARD POT: a tap is the full show, a hold goes wilder. |
+
+Settings → Showdown uses the sheet's own segmented keys and switch: the
+smash (monster pots / big pots / every win / off), force, bounces, heat,
+into your bank, win chance and when AWARD POT waits.
+
+Reduced Motion: no dip, peek, lift, hum or heat flash, and the beats'
+waits are cut.

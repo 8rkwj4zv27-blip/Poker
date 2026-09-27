@@ -730,12 +730,17 @@ const DEFAULT_SETTINGS = {
   gameType:'cash', runOpponents:4, tournamentPreset:null,
   seenIntro:false, devMode:false,
   // the gold coins' sound set (js/coin-world.js); 'old' is the classic chip sounds
-  coinSound:'clay'
+  coinSound:'clay',
+  // Settings → Showdown (js/showdown.js): which of your wins cook the pot
+  // and go off, how hard, how bouncy, the heat's colour, how the coins go
+  // into the bank; the all-in win-chance meter; when AWARD POT waits
+  sdSmash:'monster', sdForce:'huge', sdBounce:'lots', sdHeat:'ember', sdPickup:'flip',
+  sdWinChance:false, sdAwardPot:'always'
 };
 const DEFAULT_STATS = { hands:0, won:0, showdownsWon:0, biggestPot:0, net:0 };
 const SAVE_VERSION = 1;
 /* Bump on every release so the main-menu header shows what's actually installed. */
-const BUILD_VERSION = 'v0.41.0-dev · Enemy Cards';
+const BUILD_VERSION = 'v0.42.0-dev · Showdown';
 
 let settings = Object.assign({}, DEFAULT_SETTINGS, Store.get('felt.settings', {}));
 // The Settings menu cleanup dropped RELAXED from the Game Speed control
