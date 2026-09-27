@@ -201,6 +201,35 @@ The lab didn't work on their phone.
   bottom sheet; the bundler bakes the game copy for the link. A long press
   on AWARD POT no longer selects text or opens a callout on iOS.
 
+## Round 5: the explosion on the table, AWARD POT stays AWARD POT (27 Sep 2026)
+
+Owner: the explosion looked sped up (cook to resting in half a second) and
+the coins came to rest on the dashboard rim and on their cards. It should
+arc up out of the tray, bounce off the walls, dashboard and enemy cabinets
+and off the felt, a few arcs, and settle as a big mess on the table; only
+then do they pick themselves up into the bank. The key should just say
+AWARD POT: a tap is the full show, a hold goes wilder. The lab should cut
+straight to AWARD POT and replay.
+
+- **Why it was sped up:** the explosion ran on the coin world's clock,
+  which follows the game speed; the lab's fast deal left it at about 6×.
+  The explosion now runs on real time, always (checked with the game on
+  Fast and the coin clock forced to 6×: 3.6–4.2 s).
+- **On the table:** the coins are flown like the bets are: a spot on the
+  felt and a height, shadows on the felt. They arc out of the tray, bounce
+  3–4 times on the felt (lower each time, flipping), knock off the rails,
+  the top frame, the enemy cabinets and their cards, the board, your
+  cards, the deck and the dashboard's edge (padded hitboxes with heights:
+  high arcs fly over low things), slide or roll, wobble, and lie in a mess
+  across the felt. Nothing may rest on a solid: a coin that stops on one
+  is moved to the nearest clear felt (checked: none left on a solid).
+- **AWARD POT:** the key keeps its label and has no gauge. A tap flares the
+  pot for a moment and fires; holding keeps it cooking and fires harder the
+  longer it cooked.
+- **The lab:** SMASH AGAIN (and an AGAIN key) refills the pot and cuts
+  straight to AWARD POT, as often as wanted; the hand underneath waits.
+  The pick-up is a row (one by one, quick ripple, all at once).
+
 ## Plan after the owner's order
 
 1. **Release 1: the reveal.** The lock, the reveal order and readouts,

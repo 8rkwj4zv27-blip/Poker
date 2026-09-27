@@ -36,7 +36,7 @@
     'Their win: shove + gloat', 'Split payout: chop', 'Your loss: dim', 'The numbers: count', 'Show a bluff: show key'];
   // Every row's first option is my suggestion.
   const COOK = [
-    { title:'THE HEAT', sub:'While you hold AWARD POT on a monster pot.', rows:[
+    { title:'THE HEAT', sub:'A tap on AWARD POT flares the pot and fires. Holding it keeps cooking, and the longer you hold, the wilder the bang.', rows:[
       ['cheat','HEAT COLOUR', [['ember','EMBER TO HOT'],['allin','ALL-IN RED'],['white','RED TO WHITE']]],
       ['ctime','TIME TO FULL', [['1000','1 S'],['700','0.7 S'],['1500','1.5 S'],['2200','2.2 S']]],
       ['csteps','HEAT STEPS', [['9','NINE'],['5','FIVE'],['smooth','SMOOTH']]],
@@ -44,14 +44,13 @@
       ['crattle','WHILE COOKING', [['shiver','SHIVER + ODD HOP'],['shiveronly','SHIVER ONLY'],['none','STILL']], 'A shiver: they tremble in place, harder as it heats. Odd hop: when it\'s really hot, now and then one coin hops and lands.'],
       ['csparks','EMBERS', [['embers','EMBERS RISE'],['none','NONE']]],
       ['csound','SOUND', [['sizzle','SIZZLE + TICKS'],['ticks','TICKS'],['quiet','HUM ONLY']]],
-      ['cearly','LET GO EARLY', [['weaker','WEAKER BANG'],['full','MUST BE RED HOT']]],
-      ['cfull','AT FULL HEAT', [['hold','WAITS FOR YOU'],['overheat','OVERHEATS']]]
+      ['cfull','HELD AT FULL HEAT', [['hold','WAITS FOR YOU'],['overheat','OVERHEATS']]]
     ]},
-    { title:'THE BANG', sub:'When you let go: the coins are thrown about the screen for real.', rows:[
+    { title:'THE BANG', sub:'The coins arc up out of the tray, bounce on the felt and off the rails, cabinets, cards and dashboard, and settle in a mess on the table. Real time, always.', rows:[
       ['cforce','FORCE', [['huge','HUGE'],['big','BIG'],['max','MAX']]],
-      ['cbounce','BOUNCES', [['lots','LOTS'],['few','FEW'],['endless','ENDLESS']], 'How much each bounce keeps: LOTS is 4–6 bounces a coin, ENDLESS keeps going.'],
-      ['cwalls','WALLS', [['screen','SCREEN EDGES'],['table','TABLE RAIL']], 'What they bounce off: the edges of your screen, or the table\'s rail.'],
-      ['croll','ROLL OUT', [['on','ROLL + WOBBLE'],['off','LIE FLAT']], 'After the bounces, a coin moving along rolls on its edge, wobbles and lies flat.'],
+      ['cbounce','BOUNCES', [['lots','LOTS'],['few','FEW'],['endless','ENDLESS']], 'Bounces on the felt: LOTS is up to 5 a coin, each lower than the last.'],
+      ['cwalls','TOP FRAME', [['frame','BOUNCE OFF IT'],['rails','RAILS ONLY']], 'Coins that fly high enough hit the top of the table and come back down.'],
+      ['croll','ROLL OUT', [['on','SOME ROLL'],['off','ALL SLIDE']], 'After the bounces, some coins roll off on their edge before they wobble and lie flat.'],
       ['cdir','WHICH WAY', [['out','UP AND OUT'],['up','STRAIGHT UP'],['you','AT YOU']]],
       ['cstop','HIT-STOP', [['90','SHORT'],['170','LONG'],['0','NONE']]],
       ['cjolt','TABLE JOLT', [['small','SMALL'],['big','BIG'],['none','NONE']]],
@@ -59,7 +58,7 @@
     ]},
     { title:'INTO YOUR BANK', sub:'Once everything has stopped.', rows:[
       ['csettle','SETTLE', [['450','SHORT BEAT'],['900','LONG BEAT'],['0','NONE']]],
-      ['cbank','THE FLIP', [['flip','ONE BY ONE'],['ripple','RIPPLE'],['all','ALL AT ONCE']]],
+      ['cbank','THE PICK-UP', [['flip','ONE BY ONE'],['ripple','QUICK RIPPLE'],['all','ALL AT ONCE']], 'How the coins pick themselves up off the felt and flip into your bank, nearest the bank first.'],
       ['cpace','PACE', [['faster','SPEEDS UP'],['steady','STEADY']]],
       ['cfinish','FINISH', [['clack','THUNK + CLACK'],['run','THUNK + WIN RUN'],['none','NONE']]]
     ]}
@@ -83,7 +82,8 @@
 
   /* ---- the key and the sheet ---- */
   const MOMENTS = [
-    ['cook','COOK IT · MONSTER POT', true],
+    ['again','SMASH AGAIN', true],
+    ['cook','A MONSTER POT · FULL HAND', true],
     ['win','YOU WIN'], ['lose','YOU LOSE'], ['threeway','3-WAY'], ['kicker','ON THE KICKER'],
     ['big','BIG POT'], ['suckout','ALL IN · SUCK OUT'], ['badbeat','ALL IN · BAD BEAT'], ['multi','3-WAY ALL IN'],
     ['split','SPLIT POT'], ['side','SIDE POT'], ['threepots','THREE POTS'], ['oppsmall','THEM · SMALL'], ['oppbig','THEM · BIG'],
@@ -101,9 +101,9 @@
         '<button type="button" data-tab="moments" class="is-on">MOMENTS</button><button type="button" data-tab="cook">THE COOK</button><button type="button" data-tab="settings">SETTINGS</button>' +
         '<button type="button" class="sdl-close" aria-label="Close">✕</button></div>' +
       '<div class="sdl-body">' +
-        '<section data-pane="moments"><p class="sdl-sub">Each deals a fresh table and plays to the moment; you press AWARD POT. On a monster pot, hold it to cook, let go to fire.</p>' +
+        '<section data-pane="moments"><p class="sdl-sub">SMASH AGAIN fills the pot and cuts straight to AWARD POT, as often as you like (the AGAIN key does the same). The rest deal a fresh table and play to the moment.</p>' +
           '<div class="sdl-moments">' + MOMENTS.map(m => '<button type="button" data-moment="' + m[0] + '"' + (m[2] ? ' class="is-wide"' : '') + '>' + m[1] + '</button>').join('') + '</div>' +
-          '<button type="button" class="sdl-again" data-moment="again">PLAY IT AGAIN</button></section>' +
+          '<button type="button" class="sdl-again" data-moment="replay">PLAY THE LAST ONE AGAIN</button></section>' +
         '<section data-pane="cook" hidden>' + COOK.map(s => '<h3>' + s.title + '<small>' + s.sub + '</small></h3>' + s.rows.map(row).join('')).join('') +
           '<div class="sdl-actions"><button type="button" data-act="reset">START OVER</button><button type="button" data-act="copy">COPY MY PICKS</button></div>' +
           '<textarea class="sdl-copytext" readonly hidden></textarea></section>' +
@@ -113,7 +113,10 @@
           '<div class="sdl-row"><div class="sdl-name">SOUND</div>' + seg('sound', [['on','ON'],['off','OFF']], state.sound) + '</div>' +
           '<h3>LOCKED IN<small>Your round-1 order, with the round-2 fixes.</small></h3><ul class="sdl-locked">' + LOCKED_LIST.map(t => '<li>' + t + '</li>').join('') + '</ul></section>' +
       '</div>';
-    document.body.appendChild(key); document.body.appendChild(sheet);
+    const again = document.createElement('button');
+    again.type = 'button'; again.className = 'sdl-key sdl-again-key'; again.textContent = 'AGAIN';
+    again.addEventListener('click', () => { open(false); smashAgain(); });
+    document.body.appendChild(key); document.body.appendChild(again); document.body.appendChild(sheet);
     const open = on => { sheet.classList.toggle('is-open', on); key.classList.toggle('is-on', on); };
     key.addEventListener('click', () => open(!sheet.classList.contains('is-open')));
     sheet.querySelector('.sdl-close').addEventListener('click', () => open(false));
@@ -125,8 +128,9 @@
         return;
       }
       if (t.dataset.moment){
-        const m = t.dataset.moment === 'again' ? (state.last || 'cook') : t.dataset.moment;
+        const m = t.dataset.moment === 'replay' ? (state.last || 'again') : t.dataset.moment;
         open(false);
+        if (m === 'again'){ smashAgain(); return; }
         if (host){ host.set({ last:m }); host.play(m); } else run(m);
         return;
       }
@@ -142,7 +146,7 @@
       }
       if (t.dataset.act === 'reset'){ order = Object.assign({}, LOCKED, SUGGESTED); applyOrder(); paint(); return; }
       if (t.dataset.act === 'copy'){
-        const text = 'The cook (round 4):\n' + ROWS.map(r => '- ' + r[1] + ': ' + (r[2].find(o => o[0] === order[r[0]]) || ['', order[r[0]]])[1]).join('\n');
+        const text = 'The cook (round 5):\n' + ROWS.map(r => '- ' + r[1] + ': ' + (r[2].find(o => o[0] === order[r[0]]) || ['', order[r[0]]])[1]).join('\n');
         const ta = sheet.querySelector('.sdl-copytext');
         const done = ok => { t.textContent = ok ? 'COPIED' : 'SELECT + COPY BELOW'; setTimeout(() => { t.textContent = 'COPY MY PICKS'; }, 2200); if (!ok){ ta.hidden = false; ta.value = text; ta.focus(); ta.select(); } };
         try{ navigator.clipboard.writeText(text).then(() => done(true), () => done(false)); }catch(err){ done(false); }
@@ -261,7 +265,32 @@
     try{ await PLAYS[m](); }catch(err){ console.error(err); }
     finally{ busy = false; }
   }
-  window.__sdLab = { run, get order(){ return Object.assign({}, order); }, set(o){ Object.assign(order, o); applyOrder(); paint(); }, get busy(){ return busy; } };
+  window.__sdLab = { run, smashAgain, get order(){ return Object.assign({}, order); }, set(o){ Object.assign(order, o); applyOrder(); paint(); }, get busy(){ return busy; } };
+
+  // straight to a monster pot's AWARD POT, on whatever table is up
+  let againBusy = false;
+  async function smashAgain(){
+    if (againBusy || busy) return;
+    againBusy = true;
+    try{
+      if (!game || game.over) await deal();
+      const nh = $id('btn-next-hand'); const nhShown = nh && !nh.classList.contains('hidden');
+      if (nh) nh.classList.add('hidden');
+      // the hand underneath waits: your turn is set aside (the row dims and
+      // ignores taps), so the finger lifting off AWARD POT can't press CHECK
+      // on the row that flips back under it
+      const held = pendingHumanPlayer; pendingHumanPlayer = null;
+      try{ updateActionControls(); }catch(e){}
+      try{ await ShowdownBeats.stage(1640); }
+      finally{
+        setTimeout(() => {
+          if (held && game && !game.over){ pendingHumanPlayer = held; try{ updateActionControls(); render(); }catch(e){} }
+        }, 450);
+      }
+      if (nh && nhShown) nh.classList.remove('hidden');
+    }catch(err){ console.error(err); }
+    finally{ againBusy = false; }
+  }
 
   /* ---- start ---- */
   function start(){
@@ -271,8 +300,8 @@
     build();
     const m = state.moment;
     if (host) host.set({ moment:null });
-    if (m) run(m);
-    else deal().catch(err => console.error(err));
+    if (m === 'again' || !m) deal().then(() => smashAgain()).catch(err => console.error(err));
+    else run(m);
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start); else setTimeout(start, 0);
 })();
