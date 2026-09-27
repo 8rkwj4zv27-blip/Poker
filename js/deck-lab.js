@@ -5,7 +5,7 @@
 
    Runs in the game copy that deck-lab.html builds (with the Showdown
    Lab's host, js/showdown-lab-host.js): a TUNE key opens a bottom sheet
-   with MOMENTS, THE DECK and THE DEAL (round 3: just the deck, movable). Picks go to the candidate
+   with MOMENTS, THE DECK and THE DEAL (round 4: the plain deck, its shuffle and ten backs). Picks go to the candidate
    (DealerShoe.apply, js/dealer-shoe.js) at once and to the host, so they
    survive the reload a moment starts with. NEXT HAND plays the hand out
    and deals the next one on the same table; AUTO keeps doing that.
@@ -17,24 +17,25 @@
   const $id = id => document.getElementById(id);
 
   /* ---- the order: every row's first option is my suggestion ---- */
+  const BACKS = [['crest','HOUSE CREST'],['lattice','GOLD LATTICE'],['classic','CLASSIC RED'],['velvet','VELVET STRIPE'],['midnight','MIDNIGHT'],
+    ['emerald','EMERALD CREST'],['check','CASINO CHECK'],['sunburst','SUNBURST'],['ivory','IVORY'],['harlequin','HARLEQUIN'],['table','TABLE GREEN (TODAY)']];
   const SHOE = [
-    { title:'THE DECK', sub:'Round 3: just the deck. The cards under the top one show as a stepped edge in the same back, and it gets thinner as the cards go out.', rows:[
-      ['move','MOVE IT', [['on','PICK IT UP + MOVE IT'],['off','FIXED']], 'Press on the deck and drag it anywhere on the felt. It stays where you put it (MOVE IT BACK, below, returns it).'],
-      ['size','SIZE', [['std','STANDARD'],['compact','COMPACT'],['big','BIG']]],
-      ['stack','THE STACK', [['down','GETS THINNER'],['full','STAYS FULL']]]
+    { title:'CARD BACK', sub:'Ten backs for the player to choose from. The deck, every flying card, their cards and yours before they turn all wear it.', rows:[
+      ['back','BACK', BACKS, null, 'swatch']
     ]},
-    { title:'CARD BACK', sub:'Every face-down card in the game: the shoe, their cards, yours before they turn.', rows:[
-      ['back','BACK', [['crest','HOUSE CREST'],['diamond','GOLD LATTICE'],['classic','CLASSIC RED'],['table','TABLE GREEN (TODAY)']]]
+    { title:'THE DECK', sub:'Round 4: a plain deck made of the same card that\'s dealt off it, thinner as the cards go out.', rows:[
+      ['where','SIDE', [['left','BOTTOM LEFT'],['right','BOTTOM RIGHT']], 'In the game this would be a setting.'],
+      ['size','SIZE', [['std','STANDARD'],['big','BIG']]]
     ]},
-    { title:'THE SHUFFLE', sub:'Between hands, after the cards go back in.', rows:[
-      ['shuffle','SHUFFLE', [['riffle','RIFFLE'],['machine','RATTLE'],['off','NONE']], 'Riffle: the deck splits into two halves that riffle back together. Rattle: the deck shakes and jiggles in place, then squares up.'],
+    { title:'THE SHUFFLE', sub:'Between hands, after the cards come back.', rows:[
+      ['shuffle','SHUFFLE', [['full','FULL'],['cut','FULL + CUT'],['quick','QUICK RIFFLE'],['off','NONE']], 'Full: the deck splits into two halves, riffles together a card at a time, arches in the bridge and cascades down, then is squared up with two taps. + Cut: then the top half goes under. Quick: split, riffle, square.'],
       ['when','WHEN', [['every','EVERY HAND'],['first','NEW TABLE ONLY']]],
-      ['slen','LENGTH', [['short','SHORT'],['long','LONG']]]
+      ['burn','BURN CARDS', [['tuck','TUCK UNDER'],['off','OFF']], 'Before the flop, turn and river the top card slides off and tucks under the deck, like a dealer\'s burn. Nothing is left on the table, and the game\'s real deck is untouched.']
     ]}
   ];
   const DEAL = [
     { title:'OFF THE DECK', sub:'Every card: hole cards, burns and the board.', rows:[
-      ['eject','THE CARD COMES OFF', [['kick','SLIDES OFF FIRST'],['top','FLIES STRAIGHT']], 'Slides off first: the top card slides off the deck (out of the tray or shoe), then flies.'],
+      ['eject','THE CARD COMES OFF', [['kick','SLIDES OFF FIRST'],['top','FLIES STRAIGHT']], 'Slides off first: the top card slides off the deck with a little drag, then flies.'],
       ['recoil','THE DECK KNOCKS', [['on','ON'],['off','OFF']], 'The deck jolts a pixel as each card leaves.'],
       ['flight','FLIGHT', [['flick','FLICK (TODAY)'],['spin','SPIN'],['slide','SLIDE']], 'Flick: today\'s arc. Spin: a full turn in the air. Slide: low along the felt.'],
       ['pace','PACE', [['today','TODAY'],['brisk','BRISK'],['relaxed','RELAXED']]],
@@ -42,14 +43,12 @@
       ['yours','YOUR CARDS', [['land','TURN AS THEY LAND'],['together','BOTH TOGETHER']], 'Both together: your two cards land face down, then turn over at once.']
     ]},
     { title:'THE BOARD', rows:[
-      ['burn','BURN CARDS', [['on','ON'],['off','OFF']], 'One card face down onto a burn pile before the flop, turn and river, like a real dealer. Drawn only: the game\'s deck is untouched.'],
       ['flop','FLOP', [['spread','STACK + SPREAD'],['one','ONE BY ONE']], 'Stack + spread: all three land on one spot, then fan out into place.'],
       ['flopflip','FLOP TURNS', [['wave','AS THEY FAN'],['together','ALL AT ONCE'],['one','ONE BY ONE']]],
       ['beat','TURN + RIVER', [['off','STRAIGHT IN'],['beat','THREE TAPS']], 'Three taps: the deck is tapped three times before the card comes off.']
     ]},
     { title:'THE MUCK', sub:'The end of a hand.', rows:[
-      ['muck','CARDS GO', [['stack','ONTO THE DECK'],['slot','TUCKED IN']], 'Tucked in: each card squashes down into the deck and the deck gulps.'],
-      ['sweep','ORDER', [['scatter','ALL AT ONCE'],['round','ROUND THE TABLE']], 'Round the table: seat by seat from the dealer, then the board, then the burns.']
+      ['sweep','ORDER', [['scatter','ALL AT ONCE'],['round','ROUND THE TABLE']], 'The cards come back onto the top of the deck (it thickens as they land), then the deck is squared up. Round the table: seat by seat from the dealer, then the board.']
     ]},
     { title:'SOUND', rows:[
       ['sound','SHOE SOUNDS', [['mech','MECHANICAL'],['paper','CARDS ONLY']], 'Mechanical adds a small relay clunk to each card leaving, the shuffle and the muck.']
@@ -67,11 +66,22 @@
     ['hand','A HAND + THE NEXT'], ['table','NEW TABLE (INTRO)']
   ];
   const seg = (key, opts, cur) => '<div class="sdl-seg" data-key="' + key + '">' + opts.map(o => '<button type="button" data-v="' + o[0] + '"' + (o[0] === cur ? ' class="is-on"' : '') + '>' + o[1] + '</button>').join('') + '</div>';
-  const row = r => '<div class="sdl-row"><div class="sdl-name">' + r[1] + '</div>' + seg(r[0], r[2], order[r[0]]) + (r[3] ? '<p class="sdl-note">' + r[3] + '</p>' : '') + '</div>';
+  // the backs, drawn as real cards (each swatch wears its own back)
+  const swatches = (key, opts, cur) => '<div class="sdl-seg ds-swatches" data-key="' + key + '">' + opts.map(o =>
+    '<button type="button" class="ds-swatch' + (o[0] === cur ? ' is-on' : '') + '" data-cb="' + o[0] + '" data-v="' + o[0] + '"><span class="card back"></span><b>' + o[1] + '</b></button>').join('') + '</div>';
+  const row = r => '<div class="sdl-row"><div class="sdl-name">' + r[1] + '</div>' + (r[4] === 'swatch' ? swatches : seg)(r[0], r[2], order[r[0]]) + (r[3] ? '<p class="sdl-note">' + r[3] + '</p>' : '') + '</div>';
   const pane = secs => secs.map(s => '<h3>' + s.title + (s.sub ? '<small>' + s.sub + '</small>' : '') + '</h3>' + s.rows.map(row).join('')).join('');
-  const actions = '<div class="sdl-actions"><button type="button" data-act="home">MOVE IT BACK</button><button type="button" data-act="reset">START OVER</button><button type="button" data-act="copy" style="grid-column:1 / -1">COPY MY PICKS</button></div><textarea class="sdl-copytext" readonly hidden></textarea>';
+  const actions = '<div class="sdl-actions"><button type="button" data-act="reset">START OVER</button><button type="button" data-act="copy">COPY MY PICKS</button></div><textarea class="sdl-copytext" readonly hidden></textarea>';
   let auto = false;
+  const STYLE = '.sdl-seg.ds-swatches{display:grid;grid-template-columns:repeat(4,1fr);gap:4px}' +
+    '.sdl-seg.ds-swatches .ds-swatch{display:flex;flex-direction:column;align-items:center;gap:6px;min-height:96px;padding:8px 2px 6px}' +
+    '.ds-swatch .card{width:40px;height:56px;flex:none}' +
+    '.ds-swatch b{font-weight:400;font-size:6px;line-height:1.3;text-align:center}' +
+    // TABLE GREEN is the shipped back, whatever the table is wearing now
+    '.sdl-sheet .ds-swatch[data-cb="table"] .card.back{background:repeating-conic-gradient(rgba(255,255,255,.13) 0% 25%,transparent 0% 50%) 0 0/6px 6px,var(--felt-2);box-shadow:0 3px 0 rgba(0,0,0,.5),inset 0 0 0 2px var(--rail)}' +
+    '.sdl-sheet .ds-swatch[data-cb="table"] .card.back::before,.sdl-sheet .ds-swatch[data-cb="table"] .card.back::after{display:none}';
   function build(){
+    const st = document.createElement('style'); st.textContent = STYLE; document.head.appendChild(st);
     const key = document.createElement('button');
     key.type = 'button'; key.className = 'sdl-key'; key.textContent = 'TUNE';
     const next = document.createElement('button');
@@ -126,12 +136,10 @@
         sheet.querySelectorAll('.sdl-seg[data-key="' + k + '"] button').forEach(b => b.classList.toggle('is-on', b.dataset.v === v));
         return;
       }
-      if (t.dataset.act === 'home'){ try{ DealerShoe.setPos(null); }catch(err){} if (host) host.set({ deckPos:null }); return; }
       if (t.dataset.act === 'reset'){ order = Object.assign({ dealer:'new' }, SUGGESTED); applyOrder(); paint(sheet); return; }
       if (t.dataset.act === 'copy'){
-        const text = 'Dealer deck (round 3):\n' + ROWS.map(r => '- ' + r[1] + ': ' + (r[2].find(o => o[0] === order[r[0]]) || ['', order[r[0]]])[1]).join('\n');
-        const dp = DealerShoe.pos;
-        const textAll = text + '\n- DECK PLACE: ' + (dp ? Math.round(dp.x * 100) + '% across, ' + Math.round(dp.y * 100) + '% down' : 'USUAL (BOTTOM LEFT)');
+        const text = 'Dealer deck (round 4):\n' + ROWS.map(r => '- ' + r[1] + ': ' + (r[2].find(o => o[0] === order[r[0]]) || ['', order[r[0]]])[1]).join('\n');
+        const textAll = text;
         const ta = t.closest('section').querySelector('.sdl-copytext');
         const done = ok => { t.textContent = ok ? 'COPIED' : 'SELECT + COPY BELOW'; setTimeout(() => { t.textContent = 'COPY MY PICKS'; }, 2200); if (!ok){ ta.hidden = false; ta.value = textAll; ta.focus(); ta.select(); } };
         try{ navigator.clipboard.writeText(textAll).then(() => done(true), () => done(false)); }catch(err){ done(false); }
@@ -209,10 +217,6 @@
     try{ settings.sound = state.sound !== 'off'; settings.sdAwardPot = 'auto'; }catch(e){}
     applyOrder();
     // where the owner last put the deck survives a re-deal
-    try{
-      DealerShoe.onMove = p => { if (host) host.set({ deckPos:p }); };
-      if (state.deckPos) DealerShoe.setPos(state.deckPos);
-    }catch(e){}
     build();
     if (host) host.set({ moment:null });
     run(m);

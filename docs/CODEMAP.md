@@ -347,14 +347,14 @@ the candidate runs alone. Not loaded by the game.
 
 ## `deck-lab.html` + `js/deck-lab.js` + candidate `css/dealer-shoe.css` / `js/dealer-shoe.js` — Deck Lab (the dealer deck)
 
-The dealer's deck (`docs/ui/DEALER_PLAN.md`), round 3: just the deck, drawn
-from above with a stepped edge in the back's colours, thinner as it runs
-down, and movable (drag it anywhere on the felt). Cards slide off it, it
-shuffles (riffle or rattle), burns onto a pile beside it, spreads the flop
-and takes the muck back; plus new card backs. Phone-first like the Showdown Lab,
-and on its host (`js/showdown-lab-host.js`) and sheet styles. The candidate
-wraps the shipped deal/muck/shuffle functions and hands back to them for
-TODAY and Reduced Motion. Not loaded by the game.
+The dealer's deck (`docs/ui/DEALER_PLAN.md`), round 4: a plain deck made of
+the same card as the ones dealt off it (one card-back recipe, ten backs),
+bottom left or right, thinner as it runs down; shuffled by hand (split,
+riffle, bridge, square, optional cut), burns tucked under, the flop
+spread, the muck squared back onto it. Phone-first like the Showdown Lab,
+and on its host (`js/showdown-lab-host.js`) and sheet styles. The
+candidate wraps the shipped deal/muck/shuffle functions and hands back to
+them for TODAY and Reduced Motion. Not loaded by the game.
 
 ## `js/finishes.js` + `css/finishes.css` — Finishes menu (live)
 

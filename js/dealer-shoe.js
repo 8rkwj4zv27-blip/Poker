@@ -1,14 +1,16 @@
 "use strict";
 
 /* ============================================================
-   DEALER DECK — candidate (Lab only: deck-lab.html), round 3
+   DEALER DECK — candidate (Lab only: deck-lab.html), round 4
 
-   Just the deck. Drawn from above: the top card's back, the rest of the
-   deck as a stepped edge under it, thinner as the cards go out. The
-   player can pick it up and put it anywhere on the felt (remembered).
-   Cards slide off it and fly, it shuffles between hands, burns a card
-   before each street, spreads the flop, and the cards come back to it at
-   the end of the hand. Styled by css/dealer-shoe.css.
+   A plain deck, beautifully handled. The deck on the felt is made of the
+   same card as the ones dealt off it; it sits bottom left or bottom right
+   and gets thinner as the cards go out. Between hands it is shuffled by
+   hand: split, riffle, bridge, squared up (and cut, if chosen). Cards
+   slide off the top and fly; a burn card slides off and tucks under the
+   deck; the flop lands stacked and spreads; the cards come back to the
+   top at the end of the hand and the deck is squared up. Ten card backs.
+   Styled by css/dealer-shoe.css.
 
    Presentation only. Like js/showdown.js it wraps the shipped functions
    (dealCardFlight, dealCommunity, muckCards, playShuffle,
@@ -20,17 +22,15 @@
    taken: the engine's deck is never touched for them, so no hand, board
    or outcome can differ from the shipped game.
 
-   DealerShoe.apply(order) takes the Lab's picks (see DEFAULTS);
-   DealerShoe.setPos({x,y}) places the deck (fractions of the felt), and
-   DealerShoe.onMove is told whenever the player moves it.
+   DealerShoe.apply(order) takes the Lab's picks (see DEFAULTS).
    ============================================================ */
 const DealerShoe = (() => {
   // Every first value is my suggestion; dealer:'today' is the shipped game.
   const DEFAULTS = {
-    dealer:'new', size:'std', move:'on', stack:'down',
-    back:'crest', shuffle:'riffle', when:'every', slen:'short',
+    dealer:'new', where:'left', size:'std', back:'crest',
+    shuffle:'full', when:'every', burn:'tuck',
     eject:'kick', recoil:'on', flight:'flick', pace:'today', land:'puff', yours:'land',
-    burn:'on', flop:'spread', flopflip:'wave', beat:'off',
+    flop:'spread', flopflip:'wave', beat:'off',
     muck:'stack', sweep:'scatter', sound:'mech'
   };
   let O = Object.assign({}, DEFAULTS);
@@ -46,24 +46,22 @@ const DealerShoe = (() => {
   /* ---------------- the deck ---------------- */
   let count = 52;
   const deck = () => $el('dealer-deck');
-  const station = () => document.querySelector('#felt .dealer-station');
   const layers = () => deck() ? Array.from(deck().querySelectorAll('.card:not(.ds-exit):not(.ds-riff)')) : [];
-  function build(){
-    const d = deck(); if (!d || d.parentNode.querySelector('.ds-burn')) return;
-    const burn = document.createElement('div');
-    burn.className = 'ds-burn';
-    d.parentNode.appendChild(burn);
-    wireMove();
-  }
-  // the deck thins as it runs down: one layer of edge for about every five cards
+  // Up to seven of the ten cards show: the top one and, under it, one more
+  // for about every eight cards left, each two pixels lower.
+  const SHOW = 7;
   function paint(){
     const d = deck(); if (!d) return;
     const ls = layers();
-    const n = count <= 0 ? 0 : Math.max(1, Math.ceil(count / 52 * ls.length));
-    const down = on() && O.stack === 'down';
-    ls.forEach((c, i) => c.classList.toggle('ds-gone', down && i >= n));
-    const topN = down ? n : ls.length;
-    ls.forEach((c, i) => c.classList.toggle('ds-top', i === Math.max(0, topN - 1)));
+    if (!on()){ ls.forEach(c => { c.classList.remove('ds-gone', 'ds-under', 'ds-bottom'); c.style.removeProperty('--ds-i'); }); return; }
+    const n = count <= 0 ? 0 : Math.max(1, Math.ceil(count / 52 * SHOW));
+    ls.forEach((c, k) => {
+      const shown = k < n;
+      c.classList.toggle('ds-gone', !shown);
+      c.classList.toggle('ds-under', shown && k < n - 1);
+      c.classList.toggle('ds-bottom', shown && k === 0);
+      if (shown) c.style.setProperty('--ds-i', String(n - 1 - k));
+    });
   }
   function setCount(n){ count = n; paint(); }
 
@@ -72,60 +70,18 @@ const DealerShoe = (() => {
   function restart(el, cls){ if (!el) return; el.classList.remove(cls); void el.offsetWidth; el.classList.add(cls); }
   function kick(){ if (O.recoil === 'on') restart(deck(), 'ds-kick'); }
   function clunk(s){ if (mech()) try{ Sound.wheelRelay(s); }catch(e){} }
-
-  /* ---------------- pick it up, put it anywhere ---------------- */
-  let pos = null;   // {x, y}: the deck's centre as fractions of the felt; null = its usual place
-  function place(){
-    const st = station(); if (!st) return;
-    if (on() && pos){ st.style.left = (pos.x * 100).toFixed(2) + '%'; st.style.top = (pos.y * 100).toFixed(2) + '%'; }
-    else { st.style.left = ''; st.style.top = ''; }
-    // the burn pile goes on the side that faces the middle of the table
-    root.setAttribute('data-ds-where', on() && pos && pos.x > .5 ? 'right' : 'left');
-  }
   function remeasure(){
     if ($el('pot-val')) $el('pot-val')._clearKey = null;
     try{ keepPotClearOfDeck(); }catch(e){}
     try{ if (typeof CoinTable !== 'undefined') CoinTable.layout(); }catch(e){}
   }
-  function wireMove(){
-    const st = station(); if (!st || st._dsMove) return;
-    st._dsMove = true;
-    let drag = null;
-    st.addEventListener('pointerdown', e => {
-      if (!on() || O.move !== 'on' || busy) return;
-      const f = $el('felt').getBoundingClientRect(), r = st.getBoundingClientRect();
-      drag = { id:e.pointerId, sx:e.clientX, sy:e.clientY, cx:r.left + r.width / 2, cy:r.top + r.height / 2, hw:r.width / 2, hh:r.height / 2, f, lifted:false };
-      try{ st.setPointerCapture(e.pointerId); }catch(err){}
-      e.preventDefault(); e.stopPropagation();
-    });
-    st.addEventListener('pointermove', e => {
-      if (!drag || e.pointerId !== drag.id) return;
-      const dx = e.clientX - drag.sx, dy = e.clientY - drag.sy;
-      if (!drag.lifted){
-        if (Math.hypot(dx, dy) < 6) return;
-        drag.lifted = true; st.classList.add('ds-held');
-        try{ Sound.cardDeal(); }catch(err){}
-      }
-      const f = drag.f, m = 14;
-      const x = Math.min(f.right - m - drag.hw, Math.max(f.left + m + drag.hw, drag.cx + dx));
-      const y = Math.min(f.bottom - m - drag.hh, Math.max(f.top + m + drag.hh, drag.cy + dy));
-      pos = { x:(x - f.left) / f.width, y:(y - f.top) / f.height };
-      place();
-    });
-    const end = e => {
-      if (!drag || e.pointerId !== drag.id) return;
-      const lifted = drag.lifted; drag = null;
-      st.classList.remove('ds-held');
-      if (!lifted) return;
-      restart(st, 'ds-drop');
-      try{ Sound.deckSettle(); }catch(err){}
-      remeasure();
-      if (typeof api.onMove === 'function') try{ api.onMove(pos ? Object.assign({}, pos) : null); }catch(err){}
-    };
-    st.addEventListener('pointerup', end);
-    st.addEventListener('pointercancel', end);
-    // a press on the deck is not a tap on the felt (the pot's tidy)
-    st.addEventListener('click', e => { if (on() && O.move === 'on') e.stopPropagation(); });
+  // a new card on top of the deck, at the top card's place
+  function topCard(cls){
+    const c = document.createElement('div');
+    c.className = 'card back small ' + cls;
+    c.style.setProperty('--ds-i', '0');
+    deck().appendChild(c);
+    return c;
   }
 
   /* ---------------- flights ---------------- */
@@ -195,7 +151,7 @@ const DealerShoe = (() => {
     const ghost = document.createElement('div');
     const skin = o.ret ? toEl : fromEl;
     ghost.className = String(skin.className || 'card back small').split(/\s+/)
-      .filter(n => n && !/^(fly-card|return|ds-exit|ds-gone|ds-riff|ds-burned)$/.test(n)).join(' ') + ' fly-card' + (o.ret ? ' return' : '');
+      .filter(n => n && !/^(fly-card|return|ds-exit|ds-gone|ds-riff|ds-under|ds-bottom|ds-tuck)$/.test(n)).join(' ') + ' fly-card' + (o.ret ? ' return' : '');
     const c = felt ? felt.getBoundingClientRect() : { left:0, top:0 };
     const cl = c.left + (felt ? felt.clientLeft : 0), ct = c.top + (felt ? felt.clientTop : 0);
     ghost.style.left = (b.left - cl) + 'px'; ghost.style.top = (b.top - ct) + 'px';
@@ -240,16 +196,11 @@ const DealerShoe = (() => {
   }
 
   /* ---------------- out of the shoe ---------------- */
-  // The top card of the stack, as a card of its own, slid out past the
-  // front plate (KICK) or lifted straight off the top.
+  // The top card, as a card of its own, slid off the top of the deck with
+  // a little drag (SLIDES OFF FIRST) or flown straight off it.
   async function eject(){
     const d = deck(); if (!d) return null;
-    const ls = layers().filter(c => !c.classList.contains('ds-gone'));
-    const top = ls[ls.length - 1] || layers()[0];
-    const ex = document.createElement('div');
-    ex.className = 'card back small ds-exit';
-    ex.style.setProperty('--deck-layer', top ? top.style.getPropertyValue('--deck-layer') || '9' : '9');
-    d.appendChild(ex);
+    const ex = topCard('ds-exit');
     setCount(count - 1);
     working(1);
     try{
@@ -257,8 +208,9 @@ const DealerShoe = (() => {
         // it slides off the top of the deck before it flies
         const lift = 12;
         kick(); clunk(.28);
-        await ex.animate([{ transform:'translateY(0)' }, { transform:'translateY(-' + lift + 'px)' }],
-          { duration:Math.round(120 * speedMult()), easing:'steps(4,end)', fill:'forwards' }).finished.catch(() => {});
+        const tilt = O.where === 'right' ? 2 : -2;
+        await ex.animate([{ transform:'translate(0,0)' }, { transform:'translate(' + (-tilt) + 'px,-' + lift + 'px) rotate(' + tilt + 'deg)' }],
+          { duration:Math.round(130 * speedMult()), easing:'steps(4,end)', fill:'forwards' }).finished.catch(() => {});
       } else kick();
     } finally { working(-1); }
     return ex;
@@ -313,18 +265,25 @@ const DealerShoe = (() => {
   }
 
   /* ---------------- burn, flop, turn, river ---------------- */
+  // The burn: the top card slides off to the side and tucks back in under
+  // the bottom of the deck, the way a dealer does it. Nothing is left out.
   async function burnOne(){
-    const pile = document.querySelector('.ds-burn'); if (!pile) return;
-    const n = pile.children.length;
-    const b = document.createElement('div');
-    b.className = 'card back small ds-burned';
-    b.style.setProperty('--bx', (n * 2) + 'px'); b.style.setProperty('--by', (-n * 2) + 'px');
-    b.style.setProperty('--br', ((Math.random() * 12 - 6) + (n - 1) * 5).toFixed(1) + 'deg');
-    b.style.visibility = 'hidden';
-    pile.appendChild(b);
-    const ok = await fromShoe(b, { duration:DEAL_TIMING.dealMs * .62 });
-    if (b.isConnected){ b.style.visibility = ''; if (ok) Sound.cardLanded(); }
-    await wait(90 * speedMult());
+    const d = deck(); if (!d) return;
+    const b = topCard('ds-exit');
+    const sp = speedMult(), side = O.where === 'right' ? -1 : 1;
+    working(1);
+    try{
+      try{ Sound.cardReturn(); }catch(e){}
+      await b.animate([{ transform:'translate(0,0)' }, { transform:'translate(' + (side * 30) + 'px,-4px) rotate(' + (side * 4) + 'deg)' }],
+        { duration:140 * sp, easing:'steps(4,end)', fill:'forwards' }).finished.catch(() => {});
+      b.classList.add('ds-tuck');
+      const n = layers().filter(c => !c.classList.contains('ds-gone')).length;
+      await b.animate([{ transform:'translate(' + (side * 30) + 'px,-4px) rotate(' + (side * 4) + 'deg)' }, { transform:'translate(0,' + Math.max(0, n - 1) * 2 + 'px)' }],
+        { duration:150 * sp, easing:'steps(4,end)', fill:'forwards' }).finished.catch(() => {});
+      restart(d, 'ds-tap');
+      try{ Sound.cardLanded(); }catch(e){}
+    } finally { b.remove(); working(-1); }
+    await wait(80 * sp);
   }
   // three taps on the deck before the card comes off
   async function lampBeat(){
@@ -392,7 +351,7 @@ const DealerShoe = (() => {
   async function dealCommunity2(n){
     if (!live() || !deck()) return orig.dealCommunity.apply(this, arguments);
     const g = game;
-    if (O.burn === 'on') await burnOne();
+    if (O.burn === 'tuck') await burnOne();
     if (game !== g) return;
     if (n === 1 && O.beat === 'beat') await lampBeat();
     if (n === 3) return flop(g);
@@ -400,22 +359,33 @@ const DealerShoe = (() => {
   }
 
   /* ---------------- the muck ---------------- */
+  // Every card comes back to the top of the deck (the deck thickens as they
+  // land), then the deck is squared up with two taps.
   function collect(el, delay){
     return wait(delay).then(() => {
       if (!el.isConnected || el.style.opacity === '0') return;
-      const ls = layers().filter(c => !c.classList.contains('ds-gone'));
-      const top = ls[ls.length - 1] || layers()[0];
-      if (!top) return;
+      const top = topCard('ds-exit');
+      top.style.visibility = 'hidden';
       el.style.opacity = '0';
       Sound.cardReturn();
-      return fly(el, top, { ret:true, into:O.muck === 'slot', path:'ret', duration:DEAL_TIMING.collectMs });
+      return fly(el, top, { ret:true, path:'ret', duration:DEAL_TIMING.collectMs }).then(() => {
+        top.remove();
+        setCount(Math.min(52, count + 1));
+      });
     });
+  }
+  async function squareUp(){
+    const d = deck();
+    for (let i = 0; i < 2; i++){
+      restart(d, 'ds-tap');
+      try{ i ? Sound.deckSettle() : Sound.cardLanded(); }catch(e){}
+      await wait(130 * speedMult());
+    }
   }
   async function muckCards2(){
     if (!live() || !deck()) return orig.muckCards.apply(this, arguments);
     const g = game;
     const board = Array.from(($el('board') || { children:[] }).children);
-    const burns = Array.from(document.querySelectorAll('.ds-burn .card'));
     const seats = [];
     if (g){
       const n = g.players.length;
@@ -424,80 +394,79 @@ const DealerShoe = (() => {
         if (e) seats.push(...e.cardsContainer.children);
       }
     }
-    const all = seats.concat(board, burns);
+    const all = seats.concat(board);
     if (!all.length) return;
     const gap = 42 * speedMult();
     await Promise.all(all.map((el, i) => collect(el, O.sweep === 'round' ? i * gap : Math.random() * DEAL_TIMING.collectStaggerMaxMs * speedMult())));
-    burns.forEach(b => b.remove());
-    if (O.muck === 'slot'){ restart(deck(), 'ds-gulp'); clunk(.5); }
-    Sound.deckSettle();
+    await squareUp();
   }
 
-  /* ---------------- the shuffle ---------------- */
-  const SLEN = { short:1, long:1.8 };
-  // RATTLE: the deck shakes and jiggles in place, then squares up
-  async function machineShuffle(){
-    const d = deck();
-    const total = 720 * SLEN[O.slen] * speedMult();
-    clunk(.8);
-    d.classList.add('ds-shuffling'); working(1);
-    const end = performance.now() + total;
-    let i = 0;
-    while (performance.now() < end && d.isConnected){
-      try{ if (i % 2 === 0) Sound.cardReturn(); else Sound.counterTick(false); }catch(e){}
-      i++;
-      await wait(45);
-    }
-    d.classList.remove('ds-shuffling'); working(-1);
-    setCount(52);
-    try{ Sound.deckSettle(); }catch(e){}
-    clunk(.6); restart(d, 'ds-kick');
-    await wait(200 * speedMult());
-  }
-  async function riffle(){
-    const d = deck();
-    const top = layers()[layers().length - 1];
-    const layer = top ? top.style.getPropertyValue('--deck-layer') || '9' : '9';
-    const N = 12, cards = [];
-    for (let i = 0; i < N; i++){
-      const c = document.createElement('div');
-      c.className = 'card back small ds-riff';
-      c.style.setProperty('--deck-layer', layer);
-      d.appendChild(c);
-      cards.push(c);
-    }
-    working(1);
-    const sp = speedMult();
-    const half = (c, i) => { const left = i % 2 === 0, k = i >> 1; return 'translate(' + (left ? -17 : 17) + 'px,' + (-40 - k) + 'px) rotate(' + (left ? -7 : 7) + 'deg)'; };
-    const passes = O.slen === 'long' ? 2 : 1;
-    for (let pass = 0; pass < passes; pass++){
+  /* ---------------- the shuffle ----------------
+     By hand, with a dozen of the deck's own cards: the deck splits into two
+     halves that slide apart, riffles back together a card at a time from
+     alternate halves, arches in the bridge and cascades down, and is
+     squared up. FULL + CUT then lifts the top half off and puts it under.
+     QUICK is split, riffle and square. */
+  const N = 12;
+  async function handShuffle(kind){
+    const d = deck(), sp = speedMult();
+    const cards = [];
+    for (let i = 0; i < N; i++){ const c = topCard('ds-riff'); c.style.zIndex = String(30 + i); cards.push(c); }
+    d.classList.add('ds-in-hands'); working(1);
+    const at = (c, x, y, r, ms, ease) => c.animate([{ transform:c._t || 'translate(0,0)' }, { transform:(c._t = 'translate(' + x + 'px,' + y + 'px) rotate(' + (r || 0) + 'deg)') }],
+      { duration:Math.max(1, ms * sp), easing:ease || 'steps(3,end)', fill:'forwards' }).finished.catch(() => {});
+    try{
+      // split: two halves slide apart
       try{ Sound.cardDeal(); }catch(e){}
-      await Promise.all(cards.map((c, i) => c.animate([{ transform:pass ? 'translate(0,-38px)' : 'translate(0,0)' }, { transform:half(c, i) }],
-        { duration:170 * sp, easing:'steps(4,end)', fill:'forwards' }).finished.catch(() => {})));
-      for (let i = 0; i < N; i++){
-        cards[i].style.zIndex = String(31 + i);
-        cards[i].animate([{ transform:half(cards[i], i) }, { transform:'translate(0,' + (-34 - i * .5) + 'px)' }],
-          { duration:90 * sp, easing:'steps(2,end)', fill:'forwards' });
+      await Promise.all(cards.map((c, i) => { const left = i < N / 2, k = left ? i : i - N / 2; return at(c, left ? -27 : 27, -k, left ? -5 : 5, 150); }));
+      await wait(50 * sp);
+      // riffle: one at a time from alternate halves into the middle
+      const order = [];
+      for (let k = N / 2 - 1; k >= 0; k--){ order.push(cards[k], cards[k + N / 2]); }
+      for (let i = 0; i < order.length; i++){
+        const c = order[i]; c.style.zIndex = String(60 + i);
+        at(c, 0, -i * .5 - 2, 0, 70, 'steps(2,end)');
         try{ Sound.cardReturn(); }catch(e){}
-        await wait(38 * sp);
+        await wait(32 * sp);
       }
-      await wait(110 * sp);
+      await wait(90 * sp);
+      if (kind !== 'quick'){
+        // the bridge: the cards arch up, then cascade down one after another
+        try{ Sound.cardDeal(); }catch(e){}
+        await Promise.all(order.map((c, i) => at(c, 0, -10 - i * .6, i % 2 ? 1.5 : -1.5, 120)));
+        for (let i = order.length - 1; i >= 0; i--){
+          at(order[i], 0, 0, 0, 80, 'steps(2,end)');
+          if (i % 2 === 0) try{ Sound.cardReturn(); }catch(e){}
+          await wait(18 * sp);
+        }
+        await wait(100 * sp);
+      } else {
+        await Promise.all(order.map(c => at(c, 0, 0, 0, 90)));
+      }
+      if (kind === 'cut'){
+        // the cut: the top half lifts off, the bottom half goes on top
+        const top = order.slice(N / 2), bottom = order.slice(0, N / 2);
+        await Promise.all(top.map(c => at(c, O.where === 'right' ? -32 : 32, -4, 0, 130)));
+        bottom.forEach((c, i) => { c.style.zIndex = String(90 + i); });
+        try{ Sound.cardReturn(); }catch(e){}
+        await Promise.all(top.map(c => at(c, 0, 0, 0, 130)));
+        await wait(60 * sp);
+      }
+      setCount(52);
+      d.classList.remove('ds-in-hands');
+      await squareUp();
+    } finally {
+      cards.forEach(c => c.remove());
+      d.classList.remove('ds-in-hands');
+      working(-1);
     }
-    await Promise.all(cards.map(c => c.animate([{ transform:'translate(0,-34px)' }, { transform:'translate(0,0)' }],
-      { duration:170 * sp, easing:'steps(3,end)', fill:'forwards' }).finished.catch(() => {})));
-    cards.forEach(c => c.remove());
-    working(-1);
-    Sound.deckSettle(); clunk(.6); restart(d, 'ds-kick');
-    setCount(52);
-    await wait(160 * sp);
   }
   async function playShuffle2(){
     if (!on() || !deck()) return orig.playShuffle.apply(this, arguments);
-    document.querySelectorAll('.ds-burn .card').forEach(b => b.remove());
     const g = game;
     const due = O.shuffle !== 'off' && (O.when === 'every' || (g && g.handNumber <= 1));
     if (motionOff() || !due){ setCount(52); return; }
-    if (O.shuffle === 'riffle') await riffle(); else await machineShuffle();
+    await handShuffle(O.shuffle);
   }
 
   /* ---------------- the pot plate keeps clear of the deck, wherever it is ---------------- */
@@ -528,21 +497,20 @@ const DealerShoe = (() => {
     orig.clearAllCardDOM = clearAllCardDOM;
     clearAllCardDOM = function(){
       cancelAll();
-      document.querySelectorAll('.ds-exit,.ds-riff,.ds-puff,.ds-burn .card').forEach(e => e.remove());
-      const d = deck(); if (d) d.classList.remove('ds-shuffling');
+      document.querySelectorAll('.ds-exit,.ds-riff,.ds-puff').forEach(e => e.remove());
+      const d = deck(); if (d) d.classList.remove('ds-in-hands');
       return orig.clearAllCardDOM.apply(this, arguments);
     };
     const cancel = DealFX.cancelAll;
     DealFX.cancelAll = function(){ cancelAll(); return cancel.apply(this, arguments); };
-    build(); paint();
+    paint();
   }
   function apply(order){
     O = Object.assign({}, DEFAULTS, order || {});
     install();
     const set = (k, v) => { if (v == null) root.removeAttribute(k); else root.setAttribute(k, v); };
     set('data-ds-on', on() ? '' : null);
-    set('data-ds-size', O.size); set('data-ds-move', O.move); set('data-ds-back', O.back);
-    place();
+    set('data-ds-size', O.size); set('data-ds-where', O.where); set('data-ds-back', O.back);
     const k = on() ? PACE[O.pace] || 1 : 1;
     DEAL_TIMING.dealMs = Math.round(BASE_TIMING.dealMs * k);
     DEAL_TIMING.dealStaggerMs = Math.round(BASE_TIMING.dealStaggerMs * k);
@@ -555,11 +523,6 @@ const DealerShoe = (() => {
     const area = $el('pot-area'); if (area) area.style.marginLeft = '';
     remeasure();
   }
-  function setPos(p){
-    pos = p && isFinite(p.x) && isFinite(p.y) ? { x:Math.min(.95, Math.max(.05, p.x)), y:Math.min(.95, Math.max(.05, p.y)) } : null;
-    place(); remeasure();
-  }
-  const api = { DEFAULTS, apply, install, setPos, onMove:null,
-    get pos(){ return pos ? Object.assign({}, pos) : null; }, get order(){ return Object.assign({}, O); }, get count(){ return count; } };
+  const api = { DEFAULTS, apply, install, get order(){ return Object.assign({}, O); }, get count(){ return count; } };
   return api;
 })();

@@ -46,6 +46,27 @@ across re-deals, the game would keep it on the device), the burn pile moves
 to the side facing the table, and the pot plate and the coins' walls
 re-measure around it.
 
+## Round 3 → round 4
+
+Round 3: the owner still wasn't sure of the deck; the burn pile went off
+the table; the deck's top card was styled on its own and lost the gold
+trim the flying cards keep, so the deck and the cards off it didn't match;
+moving it by finger wasn't needed, left or right is enough. The ask: "a
+really nice, simple but superbly animated deck being shuffled and dealt
+out", and ten card backs to choose from.
+
+Round 4: the deck is made of the same card as the ones dealt off it (one
+card-back recipe for every face-down card), with a few more of the same
+card showing two pixels apart underneath, thinner as it runs down. It sits
+bottom left or bottom right. The shuffle is by hand: split, riffle, the
+bridge, squared up with two taps (FULL + CUT adds a cut; QUICK is split,
+riffle, square). Burns slide off and tuck under the deck. The muck comes
+back onto the top of the deck, which thickens as the cards land, then is
+squared up. Ten backs: house crest, gold lattice, classic red, velvet
+stripe, midnight, emerald crest, casino check, sunburst, ivory, harlequin
+(and TABLE GREEN, today's, to compare). In the game the back and the side
+would be player settings.
+
 ## The Lab: `deck-lab.html`
 
 Phone-first, like the Showdown Lab: the real game full screen, a TUNE key
@@ -60,12 +81,12 @@ shuffle, deal the next), AUTO (keep dealing hands).
 
 | Group | Rows (first option = suggestion) |
 |---|---|
-| The deck | move it (pick it up + move it / fixed), size, the stack gets thinner / stays full; MOVE IT BACK returns it |
-| Card back | house crest / gold lattice / classic red / table green (today) |
-| The shuffle | riffle / rattle / none; every hand / new table only; short / long |
+| Card back | ten backs, shown as cards in a picker, plus table green (today) |
+| The deck | side (bottom left / bottom right), size (standard / big) |
+| The shuffle | full / full + cut / quick riffle / none; every hand / new table only; burn cards tuck under / off |
 | Off the deck | slides off first / flies straight; the deck knocks; flight (flick / spin / slide); pace; felt puff; your cards turn as they land / both together |
-| The board | burn cards; flop stack + spread / one by one; flop turns as they fan / all at once / one by one; turn + river straight in / three taps |
-| The muck | onto the deck / tucked in; all at once / round the table |
+| The board | flop stack + spread / one by one; flop turns as they fan / all at once / one by one; turn + river straight in / three taps |
+| The muck | back onto the deck, then squared up; all at once / round the table |
 | Sound | mechanical / cards only |
 
 ## Rules the candidate keeps
