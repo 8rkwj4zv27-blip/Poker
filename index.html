@@ -32,9 +32,11 @@
   <link rel="stylesheet" href="css/home-boot.css?v=2">
   <link rel="stylesheet" href="css/press-feel.css?v=2">
   <link rel="stylesheet" href="css/finishes.css?v=3">
-  <link rel="stylesheet" href="css/dashboard.css?v=1">
-  <link rel="stylesheet" href="css/coin-world.css?v=2">
+  <link rel="stylesheet" href="css/dashboard.css?v=2">
+  <link rel="stylesheet" href="css/coin-world.css?v=3">
+  <link rel="stylesheet" href="css/coin-bank.css?v=1">
   <link rel="stylesheet" href="css/enemy-cards.css?v=1">
+  <link rel="stylesheet" href="css/knockout.css?v=1">
   <link rel="stylesheet" href="css/showdown.css?v=1">
   <link rel="stylesheet" href="css/crt.css?v=1">
 
@@ -599,6 +601,34 @@
           </div>
           <div class="hint">How the coins sound as they land, stack and pay out.</div>
         </div>
+        <div class="field">
+          <div class="field-label">Bank</div>
+          <div class="segmented compact wrap" id="bank-style-seg" role="group" aria-label="Bank">
+            <button data-bank="tubes" class="active">Tubes</button>
+            <button data-bank="shelves">Shelves</button>
+            <button data-bank="hopper">Hopper</button>
+            <button data-bank="classic">Classic</button>
+          </div>
+          <div class="hint">What your bank looks like inside: coin tubes, a velvet case, a tank of gold, or the classic rack.</div>
+        </div>
+        <div class="field">
+          <div class="field-label">Tube tags</div>
+          <div class="segmented compact" id="bank-tags-seg" role="group" aria-label="Tube tags">
+            <button data-tags="off" class="active">Off</button>
+            <button data-tags="values">Values</button>
+            <button data-tags="counts">Counts</button>
+          </div>
+          <div class="hint">Under each tube: what one piece is worth, or how many are in it.</div>
+        </div>
+        <div class="field">
+          <div class="field-label">Making change</div>
+          <div class="segmented compact" id="bank-change-seg" role="group" aria-label="Making change">
+            <button data-change="3" class="active">Show 3</button>
+            <button data-change="1">Show 1</button>
+            <button data-change="0">At once</button>
+          </div>
+          <div class="hint">When your bank breaks a big coin into small ones (or five small into a big one), how many of those play out.</div>
+        </div>
         <div class="toggle-row">
           <div><div class="tl">Reduced Motion</div><div class="ts">Reduces screen shake and large arcade motion effects.</div></div>
           <button class="switch" id="sw-motion" role="switch" aria-checked="false" aria-label="Reduced Motion"></button>
@@ -723,24 +753,26 @@
 </div>
 
 <script src="js/01-poker-math.js"></script>
-<script src="js/02-support-systems.js?v=showdown-1"></script>
+<script src="js/02-support-systems.js?v=econ-1"></script>
 <script src="js/03-opponents.js?v=cards-1"></script>
 <script src="js/04-modes-and-scoring.js?v=cards-1"></script>
 <script src="js/05-game-engine.js?v=space-1"></script>
 <script src="js/06-presentation.js?v=cards-1"></script>
-<script src="js/coin-world.js?v=4"></script>
-<script src="js/coin-table.js?v=pot-2"></script>
+<script src="js/coin-world.js?v=5"></script>
+<script src="js/coin-table.js?v=econ-1"></script>
+<script src="js/coin-bank.js?v=1"></script>
 <script src="js/07-ui-wiring.js?v=space-1"></script>
 <script src="js/career-hub-live.js?v=cabinet-4"></script>
 <script src="js/career-motion-live.js?v=4"></script>
 <script src="js/machine-wheel.js?v=2"></script>
 <script src="js/ticket-feed.js?v=1"></script>
 <script src="js/table-intro.js?v=space-1"></script>
-<script src="js/08-dev-mode.js?v=coin-1"></script>
+<script src="js/08-dev-mode.js?v=econ-1"></script>
 <script src="js/home-cast.js?v=1"></script>
 <script src="js/home-boot.js?v=2"></script>
 <script src="js/dashboard.js?v=1"></script>
 <script src="js/enemy-cards.js?v=1"></script>
+<script src="js/knockout.js?v=1"></script>
 <script src="js/crt.js?v=1"></script>
 <script src="js/finishes.js?v=3"></script>
 <script src="js/press-feel.js?v=2"></script>

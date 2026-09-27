@@ -100,6 +100,13 @@ code, walls from the live table, bet-spot/pot zones, ten procedural sound
 sets. Exposes `window.CoinWorld`; does nothing at load. Built in
 `chip-throw-lab.html`, which runs on it.
 
+Since v0.44.0 it has denominations: small coins (the small blind), big
+coins (5) and BULLION bars (25), one kind per tower, the pot changing up
+past 60 pieces (`merge`), counts by `compose` (the same for every bet).
+`js/coin-bank.js` (`CoinBank.View`) is the inside of your bank in the
+Settings → Bank style (TUBES default, SHELVES, HOPPER; CLASSIC is the old
+rack), with making change.
+
 `js/coin-table.js` is the game's side (`CoinTable`, presentation only):
 lays the pot tray, bet spots and walls over the live table; throws every
 bet and blind onto its spot (`applyAction`/`postBlind`); sweeps spots into
@@ -311,6 +318,31 @@ the coin table's `EnemyCards` questions itself. Its default ("YOUR ORDER")
 is the shipped order. Shows each card's footprint against V1. Not loaded
 by the game.
 
+## `js/knockout.js` + `css/knockout.css` — K.O. + game over (live, v0.44.0)
+
+The owner's order from `ko-lab.html` (recorded in `docs/ui/PATTERN_BOOK.md`,
+K.O. + game over). Replaces `playElimination`/`playEliminationGroup` with
+one sequence (a referee count, the big K.O.! stamp, one-by-one blasts; the
+eject is still the game's `launchPortrait`/`stepPortrait`) and wraps
+`presentResultStage` so a bust plays the dashboard's death first (the
+killer's gloat, thunks, a random damage chain, CRT off or rubble).
+Presentation only; the order is `KNOCKOUT_ORDER` at the top. Its sounds
+are a small synth of its own, unlocked on the first tap.
+
+## `ko-lab.html` + `js/ko-lab.js` + `css/ko-lab.css` + candidate `css/ko-fx.css` / `js/ko-fx.js` — K.O. order form (Lab)
+
+Where the K.O. / game over was ordered (docs/ui/KO_PLAN.md). Runs the
+**real game** sandboxed at the owner's phone (430 x 932, safe areas as in
+`enemy-card-lab.html`, whose chrome it shares) with the candidate injected, the shipped
+`css/knockout.css` / `js/knockout.js` stripped from its copy.
+`KoFx` replaces `playElimination`/`playEliminationGroup` with one sequence
+(the eject is still the game's `launchPortrait`/`stepPortrait`) and wraps
+`presentResultStage` so a bust plays the dashboard's death first. Every row
+starts on TODAY (the shipped sequence). K.O., DOUBLE, TRIPLE, OUT and YOU
+BUST replay on the table in view (`KoFx.lab`, presentation only) and can
+be pressed over and over; REAL K.O. / REAL BUST play an actual hand. Not
+loaded by the game.
+
 ## `css/showdown.css` + `js/showdown.js` — Showdown (live, v0.42.0)
 
 The end of a hand, the owner's order from `showdown-lab.html` (recorded in
@@ -355,6 +387,26 @@ spread, the muck squared back onto it. Phone-first like the Showdown Lab,
 and on its host (`js/showdown-lab-host.js`) and sheet styles. The
 candidate wraps the shipped deal/muck/shuffle functions and hands back to
 them for TODAY and Reduced Motion. Not loaded by the game.
+
+## `coin-denom-lab.html` + `js/coin-denom-lab.js` + `css/coin-denom-lab.css` + candidate `js/coin-denom-world.js` / `js/coin-denom-table.js` — Coin Denominations Lab (Lab 1)
+
+The coin economy pass (`docs/ui/CHIP_PLAN.md`, "Denominations"): small
+coins, big coins (5 small) and gold bars (25 small) on the real table, a
+small coin worth the small blind. Phone-first, on the Showdown Lab's host
+(`js/showdown-lab-host.js`) and sheet styles (`css/showdown-lab.css`). The
+candidates are copies of `js/coin-world.js` / `js/coin-table.js` with the
+pieces added (sprites, flight, one kind per tower, banded pot tidy, the
+change-up merge, one counting rule for every bet); the copy strips the
+shipped coin files so they run alone. Not loaded by the game.
+
+## `coin-bank-lab.html` + `js/coin-bank-lab.js` + candidate `js/coin-bank.js` / `css/coin-bank.css` — Coin Bank Lab (Lab 2)
+
+The inside of your bank for the coin economy pass (`docs/ui/CHIP_PLAN.md`):
+`CoinBank.View` shows your stack as small coins, big coins and bars in one
+of three styles (TUBES, SHELVES, HOPPER), with making change and wins
+dropping in. Runs on Lab 1's candidates (`js/coin-denom-table.js` drives it
+when `CoinWorld.OPT.bank` is a style) and the Showdown Lab's host. Not
+loaded by the game.
 
 ## `js/finishes.js` + `css/finishes.css` — Finishes menu (live)
 
@@ -413,7 +465,7 @@ there manually.
 Files matching `*-lab.html`, `*-lab.js`, `*-lab.css` (`career-lab`,
 `career-hub-v2-lab`, `ticket-lab`, `card-flight-options`, `card-turn-lab`,
 `chip-motion-lab`, `chip-lab`, `chip-throw-lab`, `design-lab`, `result-stage-lab`, `showdown-rail-lab`, `crt-lab`, `dashboard-v2-lab`, `dashboard-order-lab`,
-`wheel-v2-lab`, `intro-lab`, `boot-lab`, `slot-lab`, `table-space-lab`, `enemy-card-lab`, `showdown-lab`, `pot-lab`, `deck-lab`)
+`wheel-v2-lab`, `intro-lab`, `boot-lab`, `slot-lab`, `table-space-lab`, `enemy-card-lab`, `showdown-lab`, `pot-lab`, `ko-lab`, `coin-denom-lab`, `coin-bank-lab`, `deck-lab`)
 are **isolated visual references and prototyping sandboxes**. Several are
 committed permanently as durable references even after their feature
 shipped. Rules:

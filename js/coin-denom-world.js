@@ -1,6 +1,7 @@
 /* ============================================================
-   COIN WORLD — with DENOMINATIONS (the coin economy pass, v0.44.0; built
-   in coin-denom-lab.html, whose candidate js/coin-denom-world.js this was).
+   COIN WORLD · DENOMINATIONS — the Coin Denominations Lab's candidate
+   (coin-denom-lab.html). A copy of js/coin-world.js, which it stands in
+   for inside the lab's game copy; the game itself never loads this file.
 
    What it adds to the shipped world: three pieces, all gold, with a fixed
    ratio. A SMALL coin is the small blind; a BIG coin is five small; a BAR
@@ -31,7 +32,7 @@
   // from these odds (or each tidy: potEvery), a tap on the felt re-picks
   Object.assign(BASE,{ potShape:'mix', potMix:{ pyramid:3, heap:3, rows:2 }, potEvery:'hand', potTap:'on' });
   // the denominations' look and feel (the lab's TUNE sheet sets these)
-  Object.assign(BASE,{ bigScale:1.4, barScale:1.75, bigLook:'ring', barLook:'bullion', mergeShow:'some' });
+  Object.assign(BASE,{ bigScale:1.4, barScale:1.75, bigLook:'ring', barLook:'stamped', mergeShow:'some' });
   const OPT={ preset:'v11', ...BASE, speed:1, sound:'on' };
   const SIZES={ s:13, m:15, l:17 };
   const D=()=>SIZES[OPT.size];

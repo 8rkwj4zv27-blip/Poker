@@ -71,10 +71,15 @@
 
 /* ---- Rim light: the channel ----
    A groove running round the middle of the frame, dark at rest and lit
-   by the machine's state. It sits under the cards (they stand in front
-   of it at z-index 3) and follows the frame's corners. */
+   by the machine's state. It follows the frame's corners and is drawn
+   UNDER the case (z-index -1, above the frame shell): the cards live in
+   the case, and whenever the case is animated (a flash, a dim, a fade)
+   the browser flattens the case and the cards into one layer, so a rim
+   drawn above the case cut a line straight through the cards (v0.43.0).
+   Its glow onto the case, which the case now hides, is redrawn below as
+   an inner glow along the case's top and sides. */
 #app .dash-frame::after{
-  content:''; position:absolute; z-index:2; pointer-events:none; box-sizing:border-box;
+  content:''; position:absolute; z-index:-1; pointer-events:none; box-sizing:border-box;
   left:calc(var(--dash-side) + var(--dash-band) / 2 - 2px); right:calc(var(--dash-side) + var(--dash-band) / 2 - 2px);
   top:calc(var(--dash-gap) + var(--dash-band) / 2 - 2px);
   bottom:calc(var(--dash-drop) * -1 + var(--dash-band) / 2 - 2px);
@@ -129,6 +134,13 @@
   #app .dash-frame-base .action-console{ border-radius:0 0 11px 11px; padding:6px 8px 7px; }
   /* The win is the rim's to show now: the case keeps its finish. */
   #app .dash-frame #hud-frame.hud-frame-win-flash{ background:repeating-conic-gradient(rgba(255,255,255,.035) 0 25%,transparent 0 50%) 0 0/6px 6px,var(--machine-case); border:0; box-shadow:none; }
+  /* The lit rim's glow spilling onto the case (the rim is drawn under the
+     case, which would otherwise hide it); after the win flash, so it
+     stays lit through a win. */
+  #app .dash-frame[data-rim] #hud-frame{
+    --dash-case-glow:color-mix(in srgb,var(--dash-lamp) var(--dash-glow-a),transparent);
+    box-shadow:inset 0 9px 10px -7px var(--dash-case-glow), inset 9px 0 10px -7px var(--dash-case-glow), inset -9px 0 10px -7px var(--dash-case-glow);
+  }
   /* The seam between the instruments and the key bay: a dark, even groove. */
   #app .dash-frame-base .action-console::before{
     left:8px; right:8px; top:-1px; height:2px; border-radius:0;
