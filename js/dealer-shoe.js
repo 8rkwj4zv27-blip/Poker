@@ -3,11 +3,12 @@
 /* ============================================================
    DEALER SHOE — candidate (Lab only: deck-lab.html)
 
-   The dealer's deck as a machine: a shoe built into the felt. Cards kick
-   out of it, a CRT counts what's left (and calls SHUFFLE / BURN / FLOP /
-   TURN / RIVER), a lamp works while it deals, it shuffles itself between
-   hands, burns a card before each street, spreads the flop, and swallows
-   the cards back at the end of the hand. Styled by css/dealer-shoe.css.
+   The dealer's deck (round 2): the deck seen from above in a tray, on its
+   own or in a shoe. Cards slide off it, a CRT plaque counts what's left
+   (and calls RIFFLE / BURN / FLOP / TURN / RIVER / READY), a lamp works
+   while it deals, it shuffles between hands, burns a card before each
+   street, spreads the flop, and the cards come back to it at the end of
+   the hand. Styled by css/dealer-shoe.css.
 
    Presentation only. Like js/showdown.js it wraps the shipped functions
    (dealCardFlight, dealCommunity, muckCards, playShuffle,
@@ -24,11 +25,11 @@
 const DealerShoe = (() => {
   // Every first value is my suggestion; dealer:'today' is the shipped game.
   const DEFAULTS = {
-    dealer:'new', look:'brass', size:'std', where:'left', readout:'words', stack:'down', cut:'on', idle:'rare',
-    back:'crest', shuffle:'machine', when:'every', slen:'short',
+    dealer:'new', hold:'tray', finish:'brass', size:'std', where:'left', counter:'below', says:'words', stack:'down', cut:'on', idle:'rare',
+    back:'crest', shuffle:'riffle', when:'every', slen:'short',
     eject:'kick', recoil:'on', flight:'flick', pace:'today', land:'puff', yours:'land',
     burn:'on', flop:'spread', flopflip:'wave', beat:'off',
-    muck:'slot', sweep:'scatter', sound:'mech'
+    muck:'stack', sweep:'scatter', sound:'mech'
   };
   let O = Object.assign({}, DEFAULTS);
   const root = document.documentElement;
@@ -45,16 +46,15 @@ const DealerShoe = (() => {
   const deck = () => $el('dealer-deck');
   const layers = () => deck() ? Array.from(deck().querySelectorAll('.card:not(.ds-exit):not(.ds-riff)')) : [];
   function build(){
-    const d = deck(); if (!d || d.querySelector('.ds-front')) return;
-    const front = document.createElement('div');
-    front.className = 'ds-front';
-    front.innerHTML = '<i class="ds-stitch"></i><i class="ds-bulbs"></i><i class="ds-lamp"></i><i class="ds-rivet"></i>' +
-      '<div class="crt ds-crt"><span class="crt-figure ds-fig">52</span></div>';
-    d.appendChild(front);
+    const d = deck(); if (!d || d.querySelector('.ds-plaque')) return;
+    const ls = layers();
+    // above the stack: the tray's thumb notch, the shoe's lid and lip, the counter plaque
+    const add = (cls, html) => { const e = document.createElement('div'); e.className = cls; if (html) e.innerHTML = html; d.appendChild(e); return e; };
+    add('ds-notch'); add('ds-lid'); add('ds-lip');
+    add('ds-plaque', '<i class="ds-lamp"></i><div class="crt ds-crt"><span class="crt-figure ds-fig">52</span></div>');
     const cut = document.createElement('div');
     cut.className = 'ds-cut';
-    const ls = layers();
-    d.insertBefore(cut, ls[4] || front);
+    d.insertBefore(cut, ls[5] || d.querySelector('.ds-notch'));
     const burn = document.createElement('div');
     burn.className = 'ds-burn';
     d.parentNode.appendChild(burn);
@@ -67,6 +67,8 @@ const DealerShoe = (() => {
     const ls = layers();
     const n = count <= 0 ? 0 : Math.max(1, Math.ceil(count / 52 * ls.length));
     ls.forEach((c, i) => c.classList.toggle('ds-gone', on() && O.stack === 'down' && i >= n));
+    const topN = O.stack === 'down' ? n : ls.length;
+    ls.forEach((c, i) => c.classList.toggle('ds-top', i === Math.max(0, topN - 1)));
     d.setAttribute('data-ds-layers', O.stack === 'down' ? n : ls.length);
     if (!word) showCount();
   }
@@ -76,7 +78,7 @@ const DealerShoe = (() => {
     if (c.innerHTML !== html) c.innerHTML = html;
   }
   function setWord(w, ms){
-    if (O.readout !== 'words' || !crt()) return;
+    if (O.says !== 'words' || O.counter === 'off' || !crt()) return;
     clearTimeout(wordT);
     word = w;
     crt().innerHTML = '<span class="crt-line">' + w + '</span>';
@@ -85,7 +87,7 @@ const DealerShoe = (() => {
   function clearWord(){ clearTimeout(wordT); word = null; showCount(); }
   function setCount(n){ count = n; paint(); }
 
-  // the lamp works while anything is dealing; the marquee's bulbs chase
+  // the lamp works while anything is dealing
   let busy = 0, liveT = null;
   function working(delta){
     busy = Math.max(0, busy + delta);
@@ -233,13 +235,13 @@ const DealerShoe = (() => {
     const ex = document.createElement('div');
     ex.className = 'card back small ds-exit';
     ex.style.setProperty('--deck-layer', top ? top.style.getPropertyValue('--deck-layer') || '9' : '9');
-    d.insertBefore(ex, d.querySelector('.ds-front'));
+    d.insertBefore(ex, d.querySelector('.ds-notch'));
     setCount(count - 1);
     working(1);
     try{
       if (O.eject === 'kick'){
-        const front = d.querySelector('.ds-front');
-        const lift = Math.max(8, ex.offsetTop + ex.offsetHeight - (front ? front.offsetTop : 30) + 3);
+        // off the top of the deck, over the tray's rim, or out of the shoe's mouth
+        const lift = O.hold === 'shoe' ? ex.offsetHeight - 12 : O.hold === 'tray' ? 16 : 10;
         kick(); clunk(.28);
         await ex.animate([{ transform:'translateY(0)' }, { transform:'translateY(-' + lift + 'px)' }],
           { duration:Math.round(120 * speedMult()), easing:'steps(4,end)', fill:'forwards' }).finished.catch(() => {});
@@ -436,7 +438,7 @@ const DealerShoe = (() => {
     let i = 0;
     while (performance.now() < end && d.isConnected){
       if (i % 2 === 0) try{ Sound.cardReturn(); }catch(e){}
-      if (i % 2 === 1 && c && O.readout !== 'off'){
+      if (i % 2 === 1 && c && O.counter !== 'off'){
         c.innerHTML = '<span class="crt-figure ds-fig">' + (10 + Math.floor(Math.random() * 90)) + '</span>';
         try{ Sound.counterTick(false); }catch(e){}
       }
@@ -454,7 +456,7 @@ const DealerShoe = (() => {
     await wait(200 * speedMult());
   }
   async function riffle(){
-    const d = deck(), front = d.querySelector('.ds-front');
+    const d = deck(), front = d.querySelector('.ds-notch');
     const top = layers()[layers().length - 1];
     const layer = top ? top.style.getPropertyValue('--deck-layer') || '9' : '9';
     const N = 12, cards = [];
@@ -535,8 +537,8 @@ const DealerShoe = (() => {
     install();
     const set = (k, v) => { if (v == null) root.removeAttribute(k); else root.setAttribute(k, v); };
     set('data-ds-on', on() ? '' : null);
-    set('data-ds-look', O.look); set('data-ds-size', O.size); set('data-ds-where', O.where);
-    set('data-ds-readout', O.readout); set('data-ds-cut', O.cut); set('data-ds-back', O.back);
+    set('data-ds-hold', O.hold); set('data-ds-finish', O.finish); set('data-ds-size', O.size); set('data-ds-where', O.where);
+    set('data-ds-counter', O.counter); set('data-ds-cut', O.cut); set('data-ds-back', O.back);
     const k = on() ? PACE[O.pace] || 1 : 1;
     DEAL_TIMING.dealMs = Math.round(BASE_TIMING.dealMs * k);
     DEAL_TIMING.dealStaggerMs = Math.round(BASE_TIMING.dealStaggerMs * k);

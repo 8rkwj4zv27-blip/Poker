@@ -5,7 +5,7 @@
 
    Runs in the game copy that deck-lab.html builds (with the Showdown
    Lab's host, js/showdown-lab-host.js): a TUNE key opens a bottom sheet
-   with MOMENTS, THE SHOE and THE DEAL. Picks go to the candidate
+   with MOMENTS, THE DECK and THE DEAL (round 2: the deck from above). Picks go to the candidate
    (DealerShoe.apply, js/dealer-shoe.js) at once and to the host, so they
    survive the reload a moment starts with. NEXT HAND plays the hand out
    and deals the next one on the same table; AUTO keeps doing that.
@@ -18,28 +18,32 @@
 
   /* ---- the order: every row's first option is my suggestion ---- */
   const SHOE = [
-    { title:'THE SHOE', sub:'The deck is a machine built into the felt. The cards come out of it and go back into it.', rows:[
-      ['look','LOOK', [['brass','BRASS SHOE'],['velvet','VELVET BOX'],['marquee','MARQUEE BULBS']], 'Brass: burgundy body, brass front. Velvet: padded and stitched. Marquee: black and gold, with a row of bulbs that chase while it works.'],
+    { title:'THE DECK', sub:'Round 2: the deck seen from above, like the rest of the table. The cards under the top one show as cream edges, and the top card sinks as the deck runs down.', rows:[
+      ['hold','WHAT HOLDS IT', [['tray','DEALER\'S TRAY'],['deck','JUST THE DECK'],['shoe','SHOE FROM ABOVE']], 'Tray: a low rimmed tray with a velvet floor and a thumb notch. Just the deck: the pile on the felt. Shoe: a lid over the stack and a brass lip, with the top card showing at the front.'],
+      ['finish','FINISH', [['brass','BRASS'],['velvet','VELVET'],['black','BLACK + GOLD']], 'For the tray and the shoe.'],
       ['size','SIZE', [['std','STANDARD'],['compact','COMPACT'],['big','BIG']]],
       ['where','WHERE', [['left','LEFT'],['right','RIGHT']]],
-      ['readout','ITS SCREEN', [['words','CARDS LEFT + WORDS'],['count','CARDS LEFT'],['off','OFF']], 'Counts down from 52 as the cards go out. With words, it also calls BURN, FLOP, TURN, RIVER, RIFFLE and READY.'],
-      ['stack','THE STACK', [['down','GOES DOWN'],['full','STAYS FULL']], 'The cards showing at the top of the shoe get fewer as the deck runs down.'],
-      ['cut','CUT CARD', [['on','ON'],['off','OFF']], 'A red plastic sliver in the stack, like a casino shoe. It goes when the deck runs low.'],
-      ['idle','IDLE LIFE', [['rare','BLINKS NOW AND THEN'],['off','STILL']], 'Between hands the lamp (or the bulbs) blinks every so often.']
+      ['stack','THE STACK', [['down','GOES DOWN'],['full','STAYS FULL']]],
+      ['cut','CUT CARD', [['on','ON'],['off','OFF']], 'A red plastic edge sticking out of the stack, like a casino deck. It goes when the deck runs low.']
+    ]},
+    { title:'CARDS LEFT', sub:'A small brass plaque with a screen that counts down from 52.', rows:[
+      ['counter','WHERE IT SITS', [['below','UNDER THE DECK'],['beside','BESIDE IT'],['off','OFF']]],
+      ['says','IT SAYS', [['words','COUNT + WORDS'],['count','COUNT ONLY']], 'With words it also calls BURN, FLOP, TURN, RIVER, RIFFLE and READY.'],
+      ['idle','IDLE LIFE', [['rare','LAMP BLINKS NOW AND THEN'],['off','STILL']]]
     ]},
     { title:'CARD BACK', sub:'Every face-down card in the game: the shoe, their cards, yours before they turn.', rows:[
       ['back','BACK', [['crest','HOUSE CREST'],['diamond','GOLD LATTICE'],['classic','CLASSIC RED'],['table','TABLE GREEN (TODAY)']]]
     ]},
     { title:'THE SHUFFLE', sub:'Between hands, after the cards go back in.', rows:[
-      ['shuffle','SHUFFLE', [['machine','MACHINE'],['riffle','RIFFLE'],['off','NONE']], 'Machine: it rattles and shakes inside, the screen spins, then clunks to 52 and READY. Riffle: two halves pop up out of the shoe and riffle together.'],
+      ['shuffle','SHUFFLE', [['riffle','RIFFLE'],['machine','RATTLE'],['off','NONE']], 'Riffle: the deck splits into two halves that riffle back together. Rattle: the deck shakes and jiggles while the counter spins, then clunks to 52 and READY.'],
       ['when','WHEN', [['every','EVERY HAND'],['first','NEW TABLE ONLY']]],
       ['slen','LENGTH', [['short','SHORT'],['long','LONG']]]
     ]}
   ];
   const DEAL = [
-    { title:'OUT OF THE SHOE', sub:'Every card: hole cards, burns and the board.', rows:[
-      ['eject','THE CARD COMES OUT', [['kick','KICKED OUT'],['top','OFF THE TOP']], 'Kicked: it slides out past the front of the shoe, then flies. Off the top: it flies straight away.'],
-      ['recoil','THE SHOE KNOCKS', [['on','ON'],['off','OFF']], 'The shoe jolts a pixel as each card leaves.'],
+    { title:'OFF THE DECK', sub:'Every card: hole cards, burns and the board.', rows:[
+      ['eject','THE CARD COMES OFF', [['kick','SLIDES OFF FIRST'],['top','FLIES STRAIGHT']], 'Slides off first: the top card slides off the deck (out of the tray or shoe), then flies.'],
+      ['recoil','THE DECK KNOCKS', [['on','ON'],['off','OFF']], 'The deck jolts a pixel as each card leaves.'],
       ['flight','FLIGHT', [['flick','FLICK (TODAY)'],['spin','SPIN'],['slide','SLIDE']], 'Flick: today\'s arc. Spin: a full turn in the air. Slide: low along the felt.'],
       ['pace','PACE', [['today','TODAY'],['brisk','BRISK'],['relaxed','RELAXED']]],
       ['land','LANDING', [['puff','FELT PUFF'],['none','NONE']], 'A few specks of dust where a card lands.'],
@@ -52,11 +56,11 @@
       ['beat','TURN + RIVER', [['off','STRAIGHT IN'],['beat','LAMP BEAT']], 'Lamp beat: the lamp ticks three times before the card comes out.']
     ]},
     { title:'THE MUCK', sub:'The end of a hand.', rows:[
-      ['muck','CARDS GO', [['slot','INTO THE SHOE'],['stack','ONTO THE STACK']], 'Into the shoe: each card slides down into it and the shoe gulps.'],
+      ['muck','CARDS GO', [['stack','ONTO THE DECK'],['slot','TUCKED IN']], 'Tucked in: each card squashes down into the deck and the deck gulps.'],
       ['sweep','ORDER', [['scatter','ALL AT ONCE'],['round','ROUND THE TABLE']], 'Round the table: seat by seat from the dealer, then the board, then the burns.']
     ]},
     { title:'SOUND', rows:[
-      ['sound','SHOE SOUNDS', [['mech','MECHANICAL'],['paper','CARDS ONLY']], 'Mechanical adds relay clunks to the kick, the shuffle and the gulp.']
+      ['sound','SHOE SOUNDS', [['mech','MECHANICAL'],['paper','CARDS ONLY']], 'Mechanical adds a small relay clunk to each card leaving, the shuffle and the muck.']
     ]}
   ];
   const ROWS = SHOE.concat(DEAL).flatMap(s => s.rows);
@@ -88,11 +92,11 @@
     sheet.className = 'sdl-sheet'; sheet.setAttribute('role', 'dialog'); sheet.setAttribute('aria-label', 'Deck lab');
     sheet.innerHTML =
       '<div class="sdl-tabs" role="tablist">' +
-        '<button type="button" data-tab="moments" class="is-on">MOMENTS</button><button type="button" data-tab="shoe">THE SHOE</button><button type="button" data-tab="deal">THE DEAL</button>' +
+        '<button type="button" data-tab="moments" class="is-on">MOMENTS</button><button type="button" data-tab="shoe">THE DECK</button><button type="button" data-tab="deal">THE DEAL</button>' +
         '<button type="button" class="sdl-close" aria-label="Close">✕</button></div>' +
       '<div class="sdl-body">' +
         '<section data-pane="moments">' +
-          '<div class="sdl-row"><div class="sdl-name">THE DEALER</div>' + seg('dealer', [['new','NEW SHOE'],['today','TODAY']], order.dealer) +
+          '<div class="sdl-row"><div class="sdl-name">THE DEALER</div>' + seg('dealer', [['new','NEW DECK'],['today','TODAY']], order.dealer) +
           '<p class="sdl-note">TODAY puts the shipped deck back, to compare.</p></div>' +
           '<p class="sdl-sub">Each moment deals a fresh table and plays to it. NEXT HAND (top of the screen) plays out the hand you\'re in and deals the next one on the same table, so you see the muck and the shuffle. AUTO keeps dealing hands by itself.</p>' +
           '<div class="sdl-moments">' + MOMENTS.map(m => '<button type="button" data-moment="' + m[0] + '"' + (m[2] ? ' class="is-wide"' : '') + '>' + m[1] + '</button>').join('') + '</div>' +
@@ -132,7 +136,7 @@
       }
       if (t.dataset.act === 'reset'){ order = Object.assign({ dealer:'new' }, SUGGESTED); applyOrder(); paint(sheet); return; }
       if (t.dataset.act === 'copy'){
-        const text = 'Dealer shoe (round 1):\n' + ROWS.map(r => '- ' + r[1] + ': ' + (r[2].find(o => o[0] === order[r[0]]) || ['', order[r[0]]])[1]).join('\n');
+        const text = 'Dealer deck (round 2):\n' + ROWS.map(r => '- ' + r[1] + ': ' + (r[2].find(o => o[0] === order[r[0]]) || ['', order[r[0]]])[1]).join('\n');
         const ta = t.closest('section').querySelector('.sdl-copytext');
         const done = ok => { t.textContent = ok ? 'COPIED' : 'SELECT + COPY BELOW'; setTimeout(() => { t.textContent = 'COPY MY PICKS'; }, 2200); if (!ok){ ta.hidden = false; ta.value = text; ta.focus(); ta.select(); } };
         try{ navigator.clipboard.writeText(text).then(() => done(true), () => done(false)); }catch(err){ done(false); }

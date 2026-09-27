@@ -1,70 +1,121 @@
 /* ============================================================
    DEALER SHOE — candidate (Lab only: deck-lab.html)
 
-   The dealer's deck becomes a machine: a shoe built into the felt with a
-   CRT counter, a lamp, a cut card and a burn pile beside it. Every option
+   The dealer's deck, round 2: a deck seen from above (edges showing, the
+   top card sinking as it runs down) in a tray, on its own or in a shoe,
+   with a CRT counter plaque, a cut card and a burn pile beside it. Every option
    is an attribute on <html> set by DealerShoe.apply() (js/dealer-shoe.js):
 
      data-ds-on        present when the new dealer is on (absent = today)
-     data-ds-look      brass | velvet | marquee
+     data-ds-hold      tray | deck | shoe   (what holds the cards)
+     data-ds-finish    brass | velvet | black
      data-ds-size      std | compact | big
      data-ds-where     left | right
-     data-ds-readout   count | words | off
+     data-ds-counter   below | beside | off
      data-ds-cut       on | off
      data-ds-back      crest | diamond | classic | table
 
-   The shoe is #dealer-deck itself (its ten card backs are the stack in
+   The holder is #dealer-deck itself (its ten card backs are the stack in
    the shoe), so everything that measures the deck (the coin walls, the pot
    plate's clearance, the showdown's boxes) measures the shoe. The CRT's
    glass and text are css/crt.css's; only its layout lives here.
    ============================================================ */
 
-/* ---------------- the shoe ---------------- */
+/* ---------------- the holder ----------------
+   Everything is drawn from above, like the rest of the table. The stack is
+   the ten card backs in #dealer-deck: the top one shows its back, the ones
+   under it show as cream card edges down and to the right, and the top
+   card sinks into the stack as the deck runs down. */
 html[data-ds-on] #felt .dealer-station{
-  width:62px; height:78px;
+  width:var(--ds-w); height:var(--ds-h);
   transform:translate(-50%,-50%) scale(var(--ds-scale,1));
 }
-html[data-ds-on][data-ds-size="compact"]{ --ds-scale:.84; }
-html[data-ds-on][data-ds-size="big"]{ --ds-scale:1.18; }
+html[data-ds-on][data-ds-counter="below"] #felt .dealer-station{ top:calc(88.5% - 11px); }
+html[data-ds-on][data-ds-size="compact"]{ --ds-scale:.86; }
+html[data-ds-on][data-ds-size="big"]{ --ds-scale:1.16; }
 html[data-ds-on][data-ds-where="right"] #felt .dealer-station{ left:84%; }
+html[data-ds-hold="deck"]{ --ds-w:54px; --ds-h:70px; --ds-x:2px; --ds-y:2px; }
+html[data-ds-hold="tray"]{ --ds-w:62px; --ds-h:80px; --ds-x:5px; --ds-y:5px; }
+html[data-ds-hold="shoe"]{ --ds-w:62px; --ds-h:86px; --ds-x:9px; --ds-y:3px; }
 
 html[data-ds-on] #felt .dealer-deck{
-  width:auto; height:auto; inset:0; box-sizing:border-box;
-  border:2px solid var(--px-ink); border-radius:4px;
-  background:var(--ds-body);
-  box-shadow:inset 0 0 0 2px var(--ds-trim), inset 0 0 0 4px var(--ds-trim-lo), 0 4px 0 rgba(0,0,0,.55);
+  width:auto; height:auto; inset:0; box-sizing:border-box; background:transparent; box-shadow:none;
 }
-/* the stack: the top of each card shows above the front plate, and the
-   stack goes down as the cards go out */
 html[data-ds-on] #felt .dealer-deck .card{
-  width:36px; height:52px;
-  left:calc(9px + var(--deck-layer) * .3px);
-  top:calc(14px - var(--deck-layer) * 2.2px);
+  width:40px; height:57px;
+  left:calc(var(--ds-x) + (9 - var(--deck-layer)) * 1px);
+  top:calc(var(--ds-y) + (9 - var(--deck-layer)) * 1px);
 }
-html[data-ds-on] #felt .dealer-deck .card.back{ box-shadow:0 1px 0 rgba(0,0,0,.5), inset 0 0 0 2px var(--cb-trim,var(--rail)); }
+/* the cards under the top one are only their cream edges */
+html[data-ds-on] #felt .dealer-deck .card.back:not(.ds-top):not(.ds-exit):not(.ds-riff){
+  background:#EDE3C8; border:0; border-radius:3px; box-shadow:none;
+}
+html[data-ds-on] #felt .dealer-deck .card.back:nth-child(even):not(.ds-top):not(.ds-exit):not(.ds-riff){ background:#CFC19C; }
+html[data-ds-on] #felt .dealer-deck .card.back[style*="--deck-layer:0"]:not(.ds-top){ box-shadow:1px 1px 0 var(--px-ink); }
+html[data-ds-on] #felt .dealer-deck .card.back:not(.ds-top):not(.ds-exit):not(.ds-riff)::before,
+html[data-ds-on] #felt .dealer-deck .card.back:not(.ds-top):not(.ds-exit):not(.ds-riff)::after{ display:none; }
+html[data-ds-on] #felt .dealer-deck .card.back.ds-top{ box-shadow:inset 0 0 0 2px var(--cb-trim,var(--rail)); }
 html[data-ds-on] #felt .dealer-deck .card.ds-gone{ display:none; }
 html[data-ds-on] #felt .dealer-deck .card.ds-exit{ z-index:10; }
 html[data-ds-on] #felt .dealer-deck .card.ds-riff{ z-index:30; }
+/* the deck alone: a shadow on the felt under the stack */
+html[data-ds-hold="deck"] #felt .dealer-deck::before{
+  content:''; position:absolute; left:calc(var(--ds-x) + 3px); top:calc(var(--ds-y) + 5px); width:49px; height:66px;
+  background:rgba(0,0,0,.4); border-radius:3px;
+}
 
-.ds-front,.ds-cut,.ds-burn{ display:none; }
-html[data-ds-on] .ds-front{
-  display:block; position:absolute; z-index:20; left:-2px; right:-2px; bottom:-2px; height:46px;
-  box-sizing:border-box; border:2px solid var(--px-ink); border-radius:2px 2px 4px 4px;
-  background:var(--ds-plate);
-  box-shadow:inset 0 2px 0 var(--ds-plate-hi), inset 0 -3px 0 var(--ds-plate-lo), 0 -2px 0 rgba(0,0,0,.35);
+.ds-plaque,.ds-cut,.ds-burn,.ds-notch,.ds-lid,.ds-lip{ display:none; }
+
+/* A · the dealer's tray: a low rimmed tray, velvet floor, a thumb notch */
+html[data-ds-hold="tray"] #felt .dealer-deck{
+  border:2px solid var(--px-ink); border-radius:5px; background:var(--ds-floor);
+  box-shadow:inset 0 0 0 1px var(--ds-hi),inset 0 0 0 4px var(--ds-rim),inset 0 0 0 5px var(--ds-lo),0 4px 0 rgba(0,0,0,.5);
 }
-/* a speaker grille along the bottom */
-html[data-ds-on] .ds-front::after{
-  content:''; position:absolute; left:6px; right:6px; bottom:4px; height:2px;
-  background:repeating-linear-gradient(90deg,var(--ds-plate-lo) 0 2px,transparent 2px 4px);
+html[data-ds-hold="tray"] .ds-notch{
+  display:block; position:absolute; z-index:15; left:50%; bottom:-2px; width:20px; height:8px; margin-left:-10px;
+  background:var(--ds-floor); border:2px solid var(--px-ink); border-bottom:0; border-radius:10px 10px 0 0;
+  box-shadow:inset 0 2px 0 var(--ds-lo);
 }
+
+/* B · the shoe, from above: a wedge that narrows to the back, a brass lip
+   at the front with a thumb cut-out, the fronts of the cards showing */
+html[data-ds-hold="shoe"] .ds-lid{
+  display:block; position:absolute; z-index:20; left:-2px; right:-2px; top:17px; bottom:0;
+  clip-path:polygon(0 0,100% 0,100% 78%,88% 100%,12% 100%,0 78%); background:var(--px-ink);
+  filter:drop-shadow(0 4px 0 rgba(0,0,0,.5));
+}
+html[data-ds-hold="shoe"] .ds-lid::before{
+  content:''; position:absolute; inset:2px 2px 2px;
+  clip-path:polygon(0 0,100% 0,100% 78%,88% 100%,12% 100%,0 78%);
+  background:
+    linear-gradient(90deg,transparent 9px,var(--ds-rim) 9px 11px,transparent 11px calc(100% - 11px),var(--ds-rim) calc(100% - 11px) calc(100% - 9px),transparent calc(100% - 9px)),
+    var(--ds-body);
+}
+html[data-ds-hold="shoe"] .ds-lip{
+  display:block; position:absolute; z-index:21; left:0; right:0; top:19px; height:9px;
+  background:radial-gradient(circle at 50% -1px,transparent 8px,var(--ds-rim) 8.5px);
+  box-shadow:inset 0 2px 0 var(--ds-hi),inset 0 -2px 0 var(--ds-lo);
+}
+/* the front of the shoe: a shadow where the cards go in */
+html[data-ds-hold="shoe"] #felt .dealer-deck::before{
+  content:''; position:absolute; left:4px; right:4px; top:12px; height:8px; background:rgba(0,0,0,.35);
+}
+
+/* the counter: a small brass plaque with a CRT, under the holder or beside it */
+html[data-ds-on]:not([data-ds-counter="off"]) .ds-plaque{
+  display:block; position:absolute; z-index:25; width:62px; height:25px; box-sizing:border-box;
+  border:2px solid var(--px-ink); border-radius:2px;
+  background:#C8922E; box-shadow:inset 0 2px 0 #F2D27A,inset 0 -2px 0 #7A4E14,0 3px 0 rgba(0,0,0,.45);
+}
+html[data-ds-counter="below"] .ds-plaque{ left:50%; top:100%; margin:-3px 0 0 -31px; }
+html[data-ds-counter="beside"] .ds-plaque{ left:100%; bottom:-4px; margin-left:6px; width:50px; }
+html[data-ds-counter="beside"][data-ds-where="right"] .ds-plaque{ left:auto; right:100%; margin:0 6px 0 0; }
 .ds-crt{
-  position:absolute; left:6px; right:6px; top:11px; height:21px;
-  display:flex; align-items:center; justify-content:center; border-radius:2px; white-space:nowrap;
+  position:absolute; left:10px; right:3px; top:3px; bottom:3px;
+  display:flex; align-items:center; justify-content:center; border-radius:1px; white-space:nowrap;
 }
-html[data-ds-readout="off"] .ds-crt{ visibility:hidden; }
 .ds-lamp{
-  position:absolute; left:6px; top:3px; width:6px; height:5px;
+  position:absolute; left:3px; top:7px; width:4px; height:6px;
   background:var(--pc-lamp-off); box-shadow:0 0 0 1px var(--px-ink);
 }
 .ds-lamp.is-on{ background:var(--pc-lamp-amber); box-shadow:0 0 0 1px var(--px-ink),0 0 6px var(--pc-lamp-amber); }
@@ -72,25 +123,20 @@ html[data-ds-readout="off"] .ds-crt{ visibility:hidden; }
 .ds-lamp.is-blink{ animation:dsBlink 520ms steps(1,end); }
 @keyframes dsFlick{ 0%{ background:var(--pc-lamp-amber-hi); } 50%{ background:var(--pc-lamp-off); } }
 @keyframes dsBlink{ 0%,50%{ background:var(--pc-lamp-amber); box-shadow:0 0 0 1px var(--px-ink),0 0 6px var(--pc-lamp-amber); } 25%,75%{ background:var(--pc-lamp-off); } }
-.ds-rivet{
-  position:absolute; right:6px; top:3px; width:4px; height:4px;
-  background:var(--ds-rivet,#F2D27A); box-shadow:0 0 0 1px var(--px-ink);
-}
-.ds-stitch,.ds-bulbs{ display:none; }
 
-/* the cut card: a red plastic sliver in the stack */
+/* the cut card: a red plastic edge sticking out of the stack */
 html[data-ds-on][data-ds-cut="on"] .ds-cut{
-  display:block; position:absolute; left:3px; width:48px; height:2px;
-  top:calc(14px - 3 * 2.2px - 2px); transform:rotate(-2deg);
-  background:#E0473A; box-shadow:0 0 0 1px var(--px-ink);
+  display:block; position:absolute; width:3px; height:22px;
+  left:calc(var(--ds-x) + 4px + 40px); top:calc(var(--ds-y) + 18px);
+  background:#C8322B; box-shadow:1px 0 0 var(--px-ink);
 }
 html[data-ds-on] .dealer-deck[data-ds-layers="0"] .ds-cut,html[data-ds-on] .dealer-deck[data-ds-layers="1"] .ds-cut,
 html[data-ds-on] .dealer-deck[data-ds-layers="2"] .ds-cut,html[data-ds-on] .dealer-deck[data-ds-layers="3"] .ds-cut,
-html[data-ds-on] .dealer-deck[data-ds-layers="4"] .ds-cut{ display:none; }
+html[data-ds-on] .dealer-deck[data-ds-layers="4"] .ds-cut,html[data-ds-on] .dealer-deck[data-ds-layers="5"] .ds-cut{ display:none; }
 
-/* the burn pile, beside the shoe on the table side */
+/* the burn pile, beside the holder on the table side */
 html[data-ds-on] .ds-burn{
-  display:block; position:absolute; top:10px; left:100%; margin-left:7px; width:30px; height:42px; pointer-events:none;
+  display:block; position:absolute; top:0; left:100%; margin-left:7px; width:30px; height:42px; pointer-events:none;
 }
 html[data-ds-on][data-ds-where="right"] .ds-burn{ left:auto; right:100%; margin-left:0; margin-right:7px; }
 html[data-ds-on] .ds-burn .card{
@@ -98,40 +144,22 @@ html[data-ds-on] .ds-burn .card{
   transform:translate(var(--bx,0px),var(--by,0px)) rotate(var(--br,0deg));
 }
 
-/* ---------------- looks ---------------- */
-html[data-ds-look="brass"]{
+/* ---------------- finishes (the tray and the shoe) ---------------- */
+html[data-ds-finish="brass"]{
+  --ds-rim:#D9A93B; --ds-hi:#F2D27A; --ds-lo:#7A4A16; --ds-hi-soft:rgba(255,220,220,.14);
+  --ds-floor:repeating-conic-gradient(rgba(0,0,0,.24) 0% 25%,transparent 0% 50%) 0 0 / 2px 2px,#4A0F19;
   --ds-body:repeating-conic-gradient(rgba(0,0,0,.2) 0% 25%,transparent 0% 50%) 0 0 / 4px 4px,#6E1A26;
-  --ds-trim:#D9A93B; --ds-trim-lo:#7A4A16;
-  --ds-plate:#C8922E; --ds-plate-hi:#F2D27A; --ds-plate-lo:#7A4E14; --ds-rivet:#FFE9A8;
 }
-html[data-ds-look="velvet"]{
-  --ds-body:repeating-conic-gradient(rgba(0,0,0,.26) 0% 25%,transparent 0% 50%) 0 0 / 2px 2px,#4A0F19;
-  --ds-trim:#B8862E; --ds-trim-lo:#2A070D;
-  --ds-plate:repeating-conic-gradient(rgba(0,0,0,.14) 0% 25%,transparent 0% 50%) 0 0 / 2px 2px,#7A1D2B;
-  --ds-plate-hi:rgba(255,220,220,.18); --ds-plate-lo:#3A0A12; --ds-rivet:#D9A93B;
+html[data-ds-finish="velvet"]{
+  --ds-rim:#7A1D2B; --ds-hi:#B8862E; --ds-lo:#2A070D; --ds-hi-soft:rgba(217,169,59,.4);
+  --ds-floor:repeating-conic-gradient(rgba(0,0,0,.28) 0% 25%,transparent 0% 50%) 0 0 / 2px 2px,#2E0910;
+  --ds-body:repeating-conic-gradient(rgba(0,0,0,.26) 0% 25%,transparent 0% 50%) 0 0 / 2px 2px,#5A1420;
 }
-html[data-ds-look="velvet"] .ds-stitch{
-  display:block; position:absolute; inset:3px 3px 8px; border:1px dashed rgba(243,230,196,.5); border-radius:2px; pointer-events:none;
+html[data-ds-finish="black"]{
+  --ds-rim:#241417; --ds-hi:#D9A93B; --ds-lo:#0A0506; --ds-hi-soft:rgba(217,169,59,.35);
+  --ds-floor:repeating-conic-gradient(rgba(255,255,255,.04) 0% 25%,transparent 0% 50%) 0 0 / 2px 2px,#120A0C;
+  --ds-body:#1A0E11;
 }
-html[data-ds-look="velvet"] .ds-lamp{ left:7px; top:5px; }
-html[data-ds-look="velvet"] .ds-rivet{ right:7px; top:5px; border-radius:50%; }
-html[data-ds-look="velvet"] .ds-crt{ top:12px; }
-html[data-ds-look="marquee"]{
-  --ds-body:#140A0C; --ds-trim:#D9A93B; --ds-trim-lo:#3A2410;
-  --ds-plate:#1E0F12; --ds-plate-hi:#D9A93B; --ds-plate-lo:#5A3A12; --ds-rivet:#D9A93B;
-  --ds-bulb:#5A4420;
-}
-html[data-ds-look="marquee"] .ds-bulbs{
-  display:block; position:absolute; left:3px; right:3px; top:3px; height:4px; pointer-events:none;
-  background:radial-gradient(circle at 2px 2px,var(--ds-bulb) 1.4px,transparent 1.6px) 0 0 / 6px 4px repeat-x;
-}
-html[data-ds-look="marquee"] .ds-lamp,html[data-ds-look="marquee"] .ds-rivet{ display:none; }
-html[data-ds-look="marquee"] .ds-crt{ top:10px; }
-html[data-ds-look="marquee"] .dealer-deck.ds-live{ --ds-bulb:var(--pc-lamp-amber); }
-html[data-ds-look="marquee"] .dealer-deck.ds-live .ds-bulbs{ animation:dsChase 240ms steps(3,end) infinite; }
-html[data-ds-look="marquee"] .dealer-deck.ds-blink .ds-bulbs{ animation:dsBulbBlink 520ms steps(1,end); }
-@keyframes dsChase{ to{ background-position:6px 0; } }
-@keyframes dsBulbBlink{ 0%,50%{ --ds-bulb:var(--pc-lamp-amber); } 25%,75%{ --ds-bulb:#5A4420; } }
 
 /* ---------------- motion ---------------- */
 html[data-ds-on] #felt .dealer-deck.ds-kick{ animation:dsKick 150ms steps(3,end); }
@@ -139,7 +167,7 @@ html[data-ds-on] #felt .dealer-deck.ds-kick{ animation:dsKick 150ms steps(3,end)
 html[data-ds-on] #felt .dealer-deck.ds-gulp{ animation:dsGulp 220ms steps(4,end); }
 @keyframes dsGulp{ 0%{ transform:none; } 30%{ transform:translateY(3px) scale(1.03,.96); } 65%{ transform:translateY(-1px); } 100%{ transform:none; } }
 html[data-ds-on] #felt .dealer-deck.ds-shuffling{ animation:dsShake 90ms steps(2,end) infinite; }
-html[data-ds-on] #felt .dealer-deck.ds-shuffling .card:not(.ds-riff){ animation:dsJig 120ms steps(2,end) infinite alternate; animation-delay:calc(var(--deck-layer) * -23ms); }
+html[data-ds-on] #felt .dealer-deck.ds-shuffling .card:not(.ds-riff):not(.ds-exit){ animation:dsJig 120ms steps(2,end) infinite alternate; animation-delay:calc(var(--deck-layer) * -23ms); }
 @keyframes dsShake{ 0%{ transform:translate(-1px,0); } 50%{ transform:translate(1px,1px); } 100%{ transform:translate(0,-1px); } }
 @keyframes dsJig{ from{ translate:0 0; } to{ translate:1px -2px; } }
 
@@ -195,5 +223,5 @@ html[data-ds-on][data-ds-back="classic"] .card.back::after{
 html[data-ds-on][data-ds-back="classic"] .card.back.small::after{ inset:3px; }
 
 @media (prefers-reduced-motion:reduce){
-  html[data-ds-on] #felt .dealer-deck,html[data-ds-on] #felt .dealer-deck .card,.ds-lamp,.ds-bulbs{ animation:none !important; }
+  html[data-ds-on] #felt .dealer-deck,html[data-ds-on] #felt .dealer-deck .card,.ds-lamp{ animation:none !important; }
 }

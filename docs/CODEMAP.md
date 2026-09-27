@@ -347,10 +347,11 @@ the candidate runs alone. Not loaded by the game.
 
 ## `deck-lab.html` + `js/deck-lab.js` + candidate `css/dealer-shoe.css` / `js/dealer-shoe.js` — Deck Lab (the dealer shoe)
 
-The dealer's deck as a machine (`docs/ui/DEALER_PLAN.md`): a shoe built into
-the felt with a CRT counter, lamp, cut card and burn pile; it kicks cards
-out, shuffles itself (machine or riffle), burns, spreads the flop and takes
-the muck back in; plus new card backs. Phone-first like the Showdown Lab,
+The dealer's deck (`docs/ui/DEALER_PLAN.md`), round 2: the deck drawn from
+above (cream edges, sinking as it runs down) in a dealer's tray, alone, or
+in a shoe, with a CRT counter plaque, cut card and burn pile; cards slide
+off it, it shuffles (riffle or rattle), burns, spreads the flop and takes
+the muck back; plus new card backs. Phone-first like the Showdown Lab,
 and on its host (`js/showdown-lab-host.js`) and sheet styles. The candidate
 wraps the shipped deal/muck/shuffle functions and hands back to them for
 TODAY and Reduced Motion. Not loaded by the game.

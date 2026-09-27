@@ -14,6 +14,23 @@ later pass).
 - No shuffle (`playShuffle()` was a stub), no burn cards.
 - Cards flew from the pile (Dealer Flick) and swept back to it (House Sweep).
 
+## Round 1 → round 2
+
+Round 1 (a shoe drawn from the front: a box with a screen and a card
+poking out of the top) was turned down: "it looks like a toaster... I have
+no idea what it's supposed to be." Everything else (the flop spread, burns,
+shuffle, muck, card back, feel) was liked. The fault was the view: the
+table is drawn from above and the shoe from the front, and at 60px a real
+shoe's wedge and thumb notch don't read.
+
+Round 2 draws the deck from above like the rest of the table: the top card
+shows its back, the cards under it show as cream edges, and the top card
+sinks as the deck runs down. Three holders to inspect: the dealer's tray
+(my suggestion), the deck alone, and a shoe redrawn from above. The
+counter is a small brass plaque with a CRT, under the holder, beside it,
+or off. The riffle is now the suggested shuffle; the old machine shuffle is
+RATTLE.
+
 ## The Lab: `deck-lab.html`
 
 Phone-first, like the Showdown Lab: the real game full screen, a TUNE key
@@ -28,12 +45,13 @@ shuffle, deal the next), AUTO (keep dealing hands).
 
 | Group | Rows (first option = suggestion) |
 |---|---|
-| The shoe | look (brass / velvet / marquee bulbs), size, where (left / right), its screen (cards left + words / cards left / off), the stack goes down, cut card, idle life |
+| The deck | what holds it (dealer's tray / just the deck / shoe from above), finish (brass / velvet / black + gold), size, where (left / right), the stack goes down, cut card |
+| Cards left | where it sits (under the deck / beside it / off), count + words / count only, idle life |
 | Card back | house crest / gold lattice / classic red / table green (today) |
-| The shuffle | machine / riffle / none; every hand / new table only; short / long |
-| Out of the shoe | kicked out / off the top; the shoe knocks; flight (flick / spin / slide); pace; felt puff; your cards turn as they land / both together |
+| The shuffle | riffle / rattle / none; every hand / new table only; short / long |
+| Off the deck | slides off first / flies straight; the deck knocks; flight (flick / spin / slide); pace; felt puff; your cards turn as they land / both together |
 | The board | burn cards; flop stack + spread / one by one; flop turns as they fan / all at once / one by one; turn + river straight in / lamp beat |
-| The muck | into the shoe / onto the stack; all at once / round the table |
+| The muck | onto the deck / tucked in; all at once / round the table |
 | Sound | mechanical / cards only |
 
 ## Rules the candidate keeps
@@ -44,10 +62,10 @@ shuffle, deal the next), AUTO (keep dealing hands).
 - The flop takes the same three cards off `g.deck` in the same order as
   the shipped `dealCommunity(3)`. Burn cards are drawn only; the engine's
   deck is never touched for them.
-- The shoe is `#dealer-deck` itself, so the coin walls, the pot plate's
+- The holder is `#dealer-deck` itself, so the coin walls, the pot plate's
   clearance and the showdown's boxes all measure it.
-- Its screen is a Pattern Book CRT (`.crt` + `.crt-figure` / `.crt-line`);
-  only its layout is styled locally. The shoe is a new part: once the owner
+- The counter's screen is a Pattern Book CRT (`.crt` + `.crt-figure` /
+  `.crt-line`); only its layout is styled locally. The holder is a new part: once the owner
   orders it, it goes into `docs/ui/PATTERN_BOOK.md` (and its check) before
   it ships.
 
