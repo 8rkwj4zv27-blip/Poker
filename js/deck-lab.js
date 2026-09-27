@@ -6,7 +6,7 @@
    Runs in the game copy that deck-lab.html builds (with the Showdown
    Lab's host, js/showdown-lab-host.js): a TUNE key opens a bottom sheet
    with MOMENTS, THE DECK and THE DEAL (round 4: the plain deck, its shuffle and ten backs). Picks go to the candidate
-   (DealerShoe.apply, js/dealer-shoe.js) at once and to the host, so they
+   (DealerDeck.apply, js/dealer-deck.js, the live deck) at once and to the host, so they
    survive the reload a moment starts with. NEXT HAND plays the hand out
    and deals the next one on the same table; AUTO keeps doing that.
    The sheet borrows the Showdown Lab's styles (css/showdown-lab.css).
@@ -16,7 +16,7 @@
   const state = host ? host.state : { order:null, opp:'3', sound:'on', moment:null };
   const $id = id => document.getElementById(id);
 
-  /* ---- the order: every row's first option is my suggestion ---- */
+  /* ---- the rows (the lab opens on the live order, DealerDeck.DEFAULTS) ---- */
   const BACKS = [['crest','HOUSE CREST'],['lattice','GOLD LATTICE'],['classic','CLASSIC RED'],['velvet','VELVET STRIPE'],['midnight','MIDNIGHT'],
     ['emerald','EMERALD CREST'],['check','CASINO CHECK'],['sunburst','SUNBURST'],['ivory','IVORY'],['harlequin','HARLEQUIN'],['table','TABLE GREEN (TODAY)']];
   const SHOE = [
@@ -55,10 +55,10 @@
     ]}
   ];
   const ROWS = SHOE.concat(DEAL).flatMap(s => s.rows);
-  const SUGGESTED = Object.fromEntries(ROWS.map(r => [r[0], r[2][0][0]]));
-  let order = Object.assign({ dealer:'new' }, SUGGESTED, state.order || {});
+  // it opens on the owner's order (live since v0.45.0); every row can still be changed
+  let order = Object.assign({}, DealerDeck.DEFAULTS, state.order || {});
   function save(){ if (host) host.set({ order:Object.assign({}, order) }); }
-  function applyOrder(){ try{ DealerShoe.apply(order); }catch(e){ console.error(e); } save(); }
+  function applyOrder(){ try{ DealerDeck.apply(order); }catch(e){ console.error(e); } save(); }
 
   /* ---- the key and the sheet ---- */
   const MOMENTS = [
@@ -136,7 +136,7 @@
         sheet.querySelectorAll('.sdl-seg[data-key="' + k + '"] button').forEach(b => b.classList.toggle('is-on', b.dataset.v === v));
         return;
       }
-      if (t.dataset.act === 'reset'){ order = Object.assign({ dealer:'new' }, SUGGESTED); applyOrder(); paint(sheet); return; }
+      if (t.dataset.act === 'reset'){ order = Object.assign({}, DealerDeck.DEFAULTS); applyOrder(); paint(sheet); return; }
       if (t.dataset.act === 'copy'){
         const text = 'Dealer deck (round 4):\n' + ROWS.map(r => '- ' + r[1] + ': ' + (r[2].find(o => o[0] === order[r[0]]) || ['', order[r[0]]])[1]).join('\n');
         const textAll = text;

@@ -103,9 +103,17 @@ shuffle, deal the next), AUTO (keep dealing hands).
   orders it, it goes into `docs/ui/PATTERN_BOOK.md` (and its check) before
   it ships.
 
-## After the order
+## Shipped (v0.45.0)
 
-Ship the owner's picks into the game (a live `js/dealer-shoe.js` /
-`css/dealer-shoe.css` with the picks fixed, the card back as the new
-`cardBack` default, loaded by `index.html` and precached by `sw.js`), with
-a validation suite, and bump `BUILD_VERSION` / `CACHE_NAME`.
+The owner's round-4 order is live: `js/dealer-deck.js` + `css/dealer-deck.css`
+(the Lab's candidate, renamed, with the order as its defaults), loaded by
+`index.html` after `js/showdown.js` and precached by `sw.js`. The order:
+house crest, bottom left, standard size, full shuffle every hand, burns
+tucked under, slides off first, the deck knocks, the Dealer Flick, today's
+pace, felt puff, your cards turn as they land, stack + spread, turns as it
+fans, three taps before the turn and river, the muck all at once,
+mechanical sounds. Settings → The deck gives the player the card back (ten
+backs, plus the old table green) and the side (`settings.deckBack`,
+`settings.deckSide`). Recorded in `docs/ui/PATTERN_BOOK.md` (Dealer deck);
+checked by `validation/dealer-deck-checks.js`. The Deck Lab now runs on the
+live file and only adds its controls.

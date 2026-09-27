@@ -1,17 +1,17 @@
 /* ============================================================
-   DEALER DECK — candidate (Lab only: deck-lab.html), round 4
+   DEALER DECK (live, v0.45.0) — the owner's order from the Deck Lab
+   (deck-lab.html, round 4; docs/ui/DEALER_PLAN.md)
 
-   A plain deck, beautifully handled. The deck on the felt is made of the
-   same card as the ones dealt off it (same back, same trim, same size):
-   the top card, and under it a few more of the same card one step apart,
-   thinner as the deck runs down. It sits bottom left or bottom right.
-   Every option is an attribute on <html> set by DealerShoe.apply()
-   (js/dealer-shoe.js):
+   A plain deck: the deck on the felt is made of the same card as the ones
+   dealt off it (same back, same trim, same size): the top card and, under
+   it, a few more of the same card two pixels apart, thinner as the deck
+   runs down. It sits bottom left or bottom right. js/dealer-deck.js sets
+   the attributes on <html>:
 
-     data-ds-on        present when the new deck is on (absent = today)
-     data-ds-size      std | big
-     data-ds-where     left | right
-     data-ds-back      one of the ten backs below, or table (today)
+     data-ds-on        present when the deck is on (the Lab can take it off)
+     data-ds-size      std | big (the Lab only; the order is std)
+     data-ds-where     left | right   (Settings → The deck)
+     data-ds-back      one of the ten backs below, or table (the old green)
 
    The deck is #dealer-deck itself, so everything that measures the deck
    (the coin walls, the pot plate's clearance, the showdown's boxes)
@@ -150,6 +150,20 @@ html[data-ds-back="harlequin"],.ds-swatch[data-cb="harlequin"]{
   --cb-bg:conic-gradient(from 45deg,#7A1F2B 25%,#4A0F19 0 50%,#7A1F2B 0 75%,#4A0F19 0) 0 0 / 10px 14px;
   --cb-trim:#D9A93B; --cb-frame:rgba(217,169,59,.4); --cb-motif-show:none;
 }
+
+/* Settings → The deck: the back row shows each back as a real card; it is
+   the sheet's segmented keys, laid out as a grid */
+#settings-sheet #deck-back-seg{ display:grid; grid-template-columns:repeat(4,1fr); gap:6px; }
+#settings-sheet #deck-back-seg button{ display:flex; flex-direction:column; align-items:center; gap:6px; padding:8px 2px 7px; min-height:92px; }
+#deck-back-seg .card{ width:34px; height:48px; flex:none; margin:0; }
+#deck-back-seg b{ font-weight:inherit; font-size:10px; line-height:1.15; text-align:center; }
+/* TABLE GREEN is the old back, whichever back the table wears now */
+#deck-back-seg .ds-swatch[data-cb="table"] .card.back{
+  background:repeating-conic-gradient(rgba(255,255,255,.13) 0% 25%,transparent 0% 50%) 0 0 / 6px 6px,var(--felt-2);
+  box-shadow:0 3px 0 rgba(0,0,0,.5),inset 0 0 0 2px var(--rail);
+}
+#deck-back-seg .ds-swatch[data-cb="table"] .card.back::before,
+#deck-back-seg .ds-swatch[data-cb="table"] .card.back::after{ display:none; }
 
 @media (prefers-reduced-motion:reduce){
   html[data-ds-on] #felt .dealer-deck,html[data-ds-on] #felt .dealer-deck .card{ animation:none !important; }

@@ -1,38 +1,45 @@
 "use strict";
 
 /* ============================================================
-   DEALER DECK — candidate (Lab only: deck-lab.html), round 4
+   DEALER DECK (live, v0.45.0) — the owner's order from the Deck Lab
+   (deck-lab.html, round 4; docs/ui/DEALER_PLAN.md)
 
    A plain deck, beautifully handled. The deck on the felt is made of the
    same card as the ones dealt off it; it sits bottom left or bottom right
-   and gets thinner as the cards go out. Between hands it is shuffled by
-   hand: split, riffle, bridge, squared up (and cut, if chosen). Cards
-   slide off the top and fly; a burn card slides off and tucks under the
-   deck; the flop lands stacked and spreads; the cards come back to the
-   top at the end of the hand and the deck is squared up. Ten card backs.
-   Styled by css/dealer-shoe.css.
+   (Settings → The deck) and gets thinner as the cards go out. Between
+   hands it is shuffled by hand: split, riffle, the bridge, squared up
+   with two taps. Cards slide off the top and fly (the approved Dealer
+   Flick); a burn card slides off and tucks under the deck before the
+   flop, turn and river; the turn and river get three taps first; the flop
+   lands stacked, fans out and turns as it fans; at the end of the hand
+   the cards come back onto the deck and it is squared up. Ten card backs
+   (Settings → The deck). Styled by css/dealer-deck.css.
 
    Presentation only. Like js/showdown.js it wraps the shipped functions
    (dealCardFlight, dealCommunity, muckCards, playShuffle,
    keepPotClearOfDeck, clearAllCardDOM) and hands straight back to them
-   when the dealer is set to TODAY or motion is off. The one function it
-   stands in for with game state in reach is the flop: dealCommunity(3)
-   takes the same three cards off the same deck in the same order as the
-   shipped one (g.deck.pop() x3 onto g.board). Burn cards are drawn, not
-   taken: the engine's deck is never touched for them, so no hand, board
-   or outcome can differ from the shipped game.
+   when motion is off (or the dealer is set to TODAY, which only the Lab
+   does). The one function it stands in for with game state in reach is
+   the flop: dealCommunity(3) takes the same three cards off the same deck
+   in the same order as the shipped one (g.deck.pop() x3 onto g.board).
+   Burn cards are drawn, not taken: the engine's deck is never touched for
+   them, so no hand, board or outcome can differ from the shipped game.
+   validation/dealer-deck-checks.js holds it to that.
 
-   DealerShoe.apply(order) takes the Lab's picks (see DEFAULTS).
+   It installs itself at load from the player's settings (deckBack,
+   deckSide). DealerDeck.apply(order) takes a whole order (the Lab uses it).
    ============================================================ */
-const DealerShoe = (() => {
-  // Every first value is my suggestion; dealer:'today' is the shipped game.
+const DealerDeck = (() => {
+  // The owner's order (Deck Lab, round 4). dealer:'today' (Lab only) is
+  // the old deck; back and where come from the player's settings.
   const DEFAULTS = {
     dealer:'new', where:'left', size:'std', back:'crest',
     shuffle:'full', when:'every', burn:'tuck',
     eject:'kick', recoil:'on', flight:'flick', pace:'today', land:'puff', yours:'land',
-    flop:'spread', flopflip:'wave', beat:'off',
-    muck:'stack', sweep:'scatter', sound:'mech'
+    flop:'spread', flopflip:'wave', beat:'beat',
+    sweep:'scatter', sound:'mech'
   };
+  const BACKS = ['crest','lattice','classic','velvet','midnight','emerald','check','sunburst','ivory','harlequin','table'];
   let O = Object.assign({}, DEFAULTS);
   const root = document.documentElement;
   const $el = id => document.getElementById(id);
@@ -522,7 +529,32 @@ const DealerShoe = (() => {
     if ($el('pot-val')) $el('pot-val')._clearKey = null;
     const area = $el('pot-area'); if (area) area.style.marginLeft = '';
     remeasure();
+    paintSettings();
   }
-  const api = { DEFAULTS, apply, install, get order(){ return Object.assign({}, O); }, get count(){ return count; } };
+  /* ---------------- player settings ----------------
+     Settings → The deck (index.html): the back (a row of real cards) and
+     the side, saved with the rest of settings. */
+  function fromSettings(){
+    const back = BACKS.includes(settings.deckBack) ? settings.deckBack : DEFAULTS.back;
+    const where = settings.deckSide === 'right' ? 'right' : 'left';
+    return { back, where };
+  }
+  function paintSettings(){
+    document.querySelectorAll('#deck-back-seg button').forEach(b => b.classList.toggle('active', b.dataset.v === O.back));
+    document.querySelectorAll('#deck-side-seg button').forEach(b => b.classList.toggle('active', b.dataset.v === O.where));
+  }
+  function wireSettings(){
+    const pick = (key, v) => { settings[key] = v; saveSettings(); apply(Object.assign({}, O, fromSettings())); };
+    document.querySelectorAll('#deck-back-seg button').forEach(b => { b.onclick = () => pick('deckBack', b.dataset.v); });
+    document.querySelectorAll('#deck-side-seg button').forEach(b => { b.onclick = () => pick('deckSide', b.dataset.v); });
+    paintSettings();
+  }
+  function start(){
+    apply(Object.assign({}, DEFAULTS, fromSettings()));
+    wireSettings();
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start); else start();
+
+  const api = { DEFAULTS, BACKS, apply, install, get order(){ return Object.assign({}, O); }, get count(){ return count; } };
   return api;
 })();

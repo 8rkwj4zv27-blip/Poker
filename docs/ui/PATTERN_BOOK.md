@@ -293,3 +293,26 @@ into your bank, win chance and when AWARD POT waits.
 
 Reduced Motion: no dip, peek, lift, hum or heat flash, and the beats'
 waits are cut.
+
+## Dealer deck (live v0.45.0)
+
+The dealer's deck, from the owner's order on the Deck Lab (`deck-lab.html`,
+round 4, 27 September 2026; `docs/ui/DEALER_PLAN.md`). `js/dealer-deck.js`,
+styled by `css/dealer-deck.css`. Presentation only
+(`validation/dealer-deck-checks.js`).
+
+| Part | Order | The finish |
+|---|---|---|
+| The deck | **A PLAIN DECK**, bottom left (a setting) | Made of the same card as the ones dealt off it: the top card and, under it, a few more of the same card two pixels apart (each shows a line of its trim, then ink), thinner as the deck runs down. A shadow on the felt; no tray, counter or burn pile. |
+| Card backs | **HOUSE CREST** (a setting, ten backs) | One recipe for every face-down card (the deck, the flights, their cards, yours before they turn): a field, a trim inside the 2px ink outline, an optional frame line and centre diamond. Backs only set its tokens. House crest, gold lattice, classic red, velvet stripe, midnight, emerald crest, casino check, sunburst, ivory, harlequin; table green (the old back) stays as a choice. |
+| The shuffle | **FULL**, every hand | By hand: split into two halves, riffle a card at a time from alternate halves, the bridge (arch up, cascade down), squared up with two taps. |
+| Off the deck | **SLIDES OFF FIRST**, the deck knocks | The top card slides off with a little drag, then the approved Dealer Flick; a felt puff where it lands. |
+| Burns | **TUCK UNDER** | Before the flop, turn and river the top card slides off to the side and tucks under the deck. Nothing is left out; the game's deck is untouched. |
+| The board | **STACK + SPREAD**, turns as it fans; **THREE TAPS** | The flop lands stacked on the first spot, fans out and turns as it fans. The turn and river come after three taps on the deck. |
+| The muck | **ALL AT ONCE** | The cards fly back onto the deck, which thickens as they land, then it is squared up. |
+
+Settings → The deck: the card back (a row of real cards, the sheet's
+segmented keys laid out as a grid) and the side (bottom left / bottom
+right).
+
+Reduced Motion: the shipped deal, with no shuffle, burn or taps.

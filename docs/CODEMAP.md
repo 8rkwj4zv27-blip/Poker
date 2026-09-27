@@ -15,7 +15,7 @@ career-hub-live.js      career-motion-live.js   machine-wheel.js
 ticket-feed.js          table-intro.js
 08-dev-mode.js          home-cast.js            home-boot.js
 dashboard.js            crt.js                  finishes.js
-press-feel.js
+press-feel.js           showdown.js             dealer-deck.js
 ```
 
 Later files call into earlier ones freely; there's no module system, so
@@ -377,16 +377,29 @@ when every option is at its first (today's) value. The copy strips the
 shipped `css/showdown.css` / `js/showdown.js` (`strip` in `#lab-inject`) so
 the candidate runs alone. Not loaded by the game.
 
-## `deck-lab.html` + `js/deck-lab.js` + candidate `css/dealer-shoe.css` / `js/dealer-shoe.js` — Deck Lab (the dealer deck)
+## `js/dealer-deck.js` + `css/dealer-deck.css` — Dealer deck (live, v0.45.0)
 
-The dealer's deck (`docs/ui/DEALER_PLAN.md`), round 4: a plain deck made of
-the same card as the ones dealt off it (one card-back recipe, ten backs),
-bottom left or right, thinner as it runs down; shuffled by hand (split,
-riffle, bridge, square, optional cut), burns tucked under, the flop
-spread, the muck squared back onto it. Phone-first like the Showdown Lab,
-and on its host (`js/showdown-lab-host.js`) and sheet styles. The
-candidate wraps the shipped deal/muck/shuffle functions and hands back to
-them for TODAY and Reduced Motion. Not loaded by the game.
+The dealer's deck, the owner's order from `deck-lab.html` (recorded in
+`docs/ui/PATTERN_BOOK.md`, Dealer deck; `docs/ui/DEALER_PLAN.md`). A plain
+deck made of the same card as the ones dealt off it (one card-back recipe
+for every face-down card, ten backs), bottom left or right, thinner as it
+runs down; shuffled by hand between hands (split, riffle, bridge, squared
+up), cards slide off and fly, burns tuck under it, three taps before the
+turn and river, the flop lands stacked and spreads, the muck comes back
+onto it. Wraps `dealCardFlight`, `dealCommunity` (after `js/showdown.js`),
+`muckCards`, `playShuffle`, `keepPotClearOfDeck` and `clearAllCardDOM`,
+and hands back to them with Reduced Motion; the flop takes the same cards
+in the same order as the shipped deal, burns never touch `g.deck`.
+Settings → The deck (`settings.deckBack`, `settings.deckSide`). Checked by
+`validation/dealer-deck-checks.js`.
+
+## `deck-lab.html` + `js/deck-lab.js` — Deck Lab
+
+Where the dealer deck was ordered (rounds 1–4: a shoe, a tray, a movable
+deck, then the plain deck). Phone-first, on the Showdown Lab's host and
+sheet styles; it runs the live `js/dealer-deck.js` and adds only its
+controls (every row of the order, ten backs as cards, THE DEALER: TODAY
+for the old deck). Not loaded by the game.
 
 ## `coin-denom-lab.html` + `js/coin-denom-lab.js` + `css/coin-denom-lab.css` + candidate `js/coin-denom-world.js` / `js/coin-denom-table.js` — Coin Denominations Lab (Lab 1)
 
