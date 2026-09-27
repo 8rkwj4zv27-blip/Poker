@@ -24,18 +24,18 @@
   /* ---- the pot's picks (every row's first option is the game's default) ---- */
   const ODDS = [['3','OFTEN'],['2','SOMETIMES'],['1','RARELY'],['0','NEVER']];
   const ROWS = [
-    ['shape','SHAPE', [['mix','MIX'],['pyramid','PYRAMID'],['heap','HEAP'],['rows','NEAT'],['towers','TOWERS']], 'MIX picks one each hand from the odds below. The others force one, to look at it on its own.'],
+    ['shape','SHAPE', [['mix','MIX'],['pyramid','PYRAMID'],['heap','HEAP'],['rows','NEAT']], 'MIX picks one each hand from the odds below. The others force one, to look at it on its own.'],
     ['every','NEW SHAPE', [['hand','EACH HAND'],['tidy','EVERY TIDY']], 'EACH HAND: the pile keeps its shape while it grows, street by street. EVERY TIDY: it can change each time it tidies.'],
     ['tap','TAP THE FELT', [['on','RESHAPES'],['off','ONLY TIDIES']], 'A tap on the empty felt tidies the pot. RESHAPES: it picks a new shape as it does.'],
-    ['pyramid','PYRAMID', ODDS], ['heap','HEAP', ODDS], ['rows','NEAT', ODDS], ['towers','TOWERS', ODDS]
+    ['pyramid','PYRAMID', ODDS], ['heap','HEAP', ODDS], ['rows','NEAT', ODDS]
   ];
-  const DEFAULTS = { shape:'mix', every:'hand', tap:'on', pyramid:'3', heap:'3', rows:'2', towers:'1' };
-  const NAMES = { pyramid:'PYRAMID', heap:'HEAP', rows:'NEAT', towers:'TOWERS' };
+  const DEFAULTS = { shape:'mix', every:'hand', tap:'on', pyramid:'3', heap:'3', rows:'2' };
+  const NAMES = { pyramid:'PYRAMID', heap:'HEAP', rows:'NEAT' };
   let pot = Object.assign({}, DEFAULTS, state.pot || {});
   function apply(){
     const O = CW() && CW().OPT; if (!O) return;
     O.potShape = pot.shape; O.potEvery = pot.every; O.potTap = pot.tap;
-    O.potMix = { pyramid:+pot.pyramid, heap:+pot.heap, rows:+pot.rows, towers:+pot.towers };
+    O.potMix = { pyramid:+pot.pyramid, heap:+pot.heap, rows:+pot.rows };
     if (host) host.set({ pot:Object.assign({}, pot) });
   }
 

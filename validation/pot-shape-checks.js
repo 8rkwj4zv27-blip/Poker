@@ -2,7 +2,7 @@
 "use strict";
 
 /* Pot shape checks (js/coin-world.js: potSlots, trayBox/holdIn; the pot
-   tidy pass). Every shape (NEAT, PYRAMID, HEAP, TOWERS), for every pot size
+   tidy pass). Every shape (NEAT, PYRAMID, HEAP), for every pot size
    the game can show and many rolls, puts every coin somewhere: inside the
    tray, no two stack bases closer than a coin (faces touch, never sink into
    each other), and no stack taller than the room under the board. The bet
@@ -71,7 +71,7 @@ check('MIX picks every shape with odds, a tap never repeats the last',()=>{
   for (let i=0;i<400;i++) seen[CW.newPotShape()]=1;
   CW.POT_SHAPES.forEach(s=>assert.ok(seen[s],'MIX never picked '+s));
   for (let i=0;i<100;i++){ const last=CW.potShape(); assert.notStrictEqual(CW.newPotShape(last),last); }
-  CW.OPT.potMix={ pyramid:0, heap:0, rows:1, towers:0 };
+  CW.OPT.potMix={ pyramid:0, heap:0, rows:1 };
   assert.strictEqual(CW.newPotShape('rows'),'rows','with one shape left, a tap keeps it');
   CW.OPT.potMix=Object.assign({},CW.BASE.potMix);
 });
@@ -94,6 +94,47 @@ check('a pot coin pushed out of the tray is held inside it; a spot coin is not',
   });
   const b={ x:TRAY.L-20, y:380, z:0, d, vx:0, vy:0, zone:CW.zones['spot:1'] };
   CW.holdIn(b); assert.strictEqual(b.x,TRAY.L-20);
+});
+
+// loose coins dropped anywhere near a zone come to rest in the grid
+function drop(z,n,spread){
+  z.list.length=0;
+  for (let i=0;i<n;i++){
+    const b={ x:z.cx+CW.rr(-spread,spread), y:z.cy+CW.rr(-spread*.6,spread*.6), z:0, d, vx:0, vy:0, state:'slide', zone:z, target:{}, opts:{}, el:el() };
+    z.list.push(b);
+    CW.holdIn(b);
+    if (!CW.seat(b,true)){ b.z=CW.supportUnder(b).h; b.state='rest'; }
+  }
+  return z.list;
+}
+function faceClash(list){
+  const st=CW.STEP(), bad=[];
+  list.forEach(b=>{
+    if (b.z>.5){
+      const under=list.filter(q=>q!==b && Math.abs(q.z+st-b.z)<.5).map(q=>Math.hypot(q.x-b.x,(q.y-b.y)/.82))
+        .sort((a,c)=>a-c)[0];
+      if (!(under<=d*.3)) bad.push('hanging at z '+b.z);
+    }
+  });
+  for (let i=0;i<list.length;i++) for (let j=i+1;j<list.length;j++){
+    const a=list[i], c=list[j]; if (Math.abs(a.z-c.z)>=st-.5) continue;
+    const g=Math.hypot(a.x-c.x,(a.y-c.y)/.82);
+    // a stack's ±1px wobble may bring two outlines together, never the faces
+    if (g<d-1.5) bad.push('faces '+g.toFixed(1)+'px apart');
+  }
+  return bad;
+}
+check('loose pot coins rest in the grid: no faces overlapping, none hanging, all in the tray',()=>{
+  for (let run=0;run<60;run++){
+    const list=drop(pot,1+run,6+run%5*6), bad=faceClash(list);
+    assert.deepStrictEqual(bad,[],'pot, '+list.length+' coins: '+bad.slice(0,3).join('; '));
+    list.forEach(b=>assert.ok(b.x>=k.L-1.01 && b.x<=k.R+1.01 && b.y>=k.T-.01 && b.y<=k.B+1.01,'a loose coin outside the tray'));
+  }
+  pot.list.length=0;
+});
+check('loose bet-spot coins rest in the grid too',()=>{
+  const spot=CW.zone('spot:2',200,600,7,5,16);
+  for (let run=0;run<30;run++){ const bad=faceClash(drop(spot,1+run,8)); assert.deepStrictEqual(bad,[],'spot: '+bad.slice(0,3).join('; ')); }
 });
 
 check('the pot lab stays out of the game',()=>{
