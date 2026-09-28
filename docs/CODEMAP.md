@@ -508,7 +508,7 @@ any phone. Lab only; nothing loads in the game.
 ## `speech-lab.html` + `js/speech-lab-host.js` + `js/speech-lab.js` + `css/speech-lab.css` + `js/speech-lines.js` + `js/speech-voice.js` — Speech Lab
 
 Where opponents' table talk goes on the table (`docs/ui/SPEECH_PLAN.md`,
-round 2). Phone-first like the Showdown Lab: the real game full screen,
+round 3). Phone-first like the Showdown Lab: the real game full screen,
 a TUNE key and a SAY key either side of the board, a bottom sheet. A
 second after the chosen opponent acts they say a line and their face
 changes to match (the game's `playReactionSequence`). Round 1 picked
