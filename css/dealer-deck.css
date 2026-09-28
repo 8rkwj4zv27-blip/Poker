@@ -175,9 +175,11 @@ html[data-ds-back="harlequin"],.ds-swatch[data-cb="harlequin"]{
 .fly-card.ds-carrier{ background:transparent; border:0; box-shadow:none; overflow:visible; }
 .fly-card.ds-carrier::before,.fly-card.ds-carrier::after{ display:none; }
 .ds-skin{ position:absolute; inset:0; width:auto; height:auto; margin:0; transform-origin:50% 50%; }
-/* the skin takes the deck's `card back small` classes, whose fixed size
-   would otherwise win and leave a deck-sized card in the carrier's corner */
-.fly-card.ds-carrier > .ds-skin{ width:auto; height:auto; }
+/* the skin takes the deck's `card back small` classes: .card.back's
+   position:relative and .card.small's fixed size would otherwise win and
+   leave a deck-sized card in the carrier's corner, so the skin's own
+   placement is restated here, stronger */
+.fly-card.ds-carrier > .ds-skin{ position:absolute; inset:0; width:auto; height:auto; margin:0; }
 .ds-shadow{
   position:fixed; z-index:59; pointer-events:none; border-radius:3px;
   background:rgba(8,4,5,.9);
