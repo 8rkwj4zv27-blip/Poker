@@ -760,3 +760,9 @@ coin with an exact place now lands there when its flight time is up
 (it can't sail past a high stack top; `stats().late`), on top of the
 off-screen safety net. The owner will judge it on the phone once the
 chips are in the game.
+
+**Round 7d.** Owner: the change-up looked like chips jumping onto the
+felt, changing and falling (from the table's angle). Now the five float
+well clear of the pile (54px up) in a loose ring, hang a beat, drift
+together and pop (a bigger ring, two glints); the new chip hangs a moment
+before it drops onto its place.

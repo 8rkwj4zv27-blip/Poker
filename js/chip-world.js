@@ -1704,26 +1704,29 @@
     mergeQuiet(z,limit); await settleStacks(z);
   }
   async function mergeShown(z,g,s,wait){
-    const px=s.x, py=s.y, pz=Math.max(s.z,...g.five.map(b=>b.z))+26;
+    // float well clear of the pile (from where we sit, plainly in the air)
+    const px=s.x, py=s.y, pz=Math.max(s.z,...g.five.map(b=>b.z))+54;
     if (!motionOff()){
       await hold(wait);
-      // up off the pile, fanned out a little, then snapped together
-      await Promise.all(g.five.map((b,i)=>moveBody(b,px+(i-2)*4,py,pz+(i%2)*3,.2,14,i*40)));
-      sfx('stack',.7,1.25);
-      await hold(70);
-      await Promise.all(g.five.map(b=>moveBody(b,px,py,pz,.07,0,0)));
+      // they float up in a loose ring, hang there a beat, drift together
+      await Promise.all(g.five.map((b,i)=>moveBody(b,px+(i-2)*7,py,pz+[0,5,8,5,0][i],.36,6,i*45)));
+      sfx('stack',.6,1.25);
+      await hold(160);
+      await Promise.all(g.five.map((b,i)=>moveBody(b,px+(i-2)*2,py,pz+3,.12,0,0)));
+      await hold(60);
+      await Promise.all(g.five.map(b=>moveBody(b,px,py,pz+3,.06,0,0)));
       sfx('stack',1,1.6); sfx('knock',.6,1.2);
     }
     g.five.forEach(b=>{ removeBody(b); b.el.remove(); });
-    const nb=body(makeChip(g.to),px,py,motionOff()?s.z:pz,D());
+    const nb=body(makeChip(g.to),px,py,motionOff()?s.z:pz+3,D());
     nb.target={}; nb.opts={};
     if (motionOff()){ nb.zone=z; z.list.push(nb); nb.z=s.z; toRest(nb); dirty.add(nb); kick(); return; }
     nb.sq=.1; squashing.add(nb); dirty.add(nb); kick();
-    popRing(px,py-pz-pieceH(g.to)/2,pieceD(g.to)); glintAt(px+pieceD(g.to)*.2,py-pz-pieceH(g.to)*.9);
+    popRing(px,py-pz-3-pieceH(g.to)/2,pieceD(g.to)*1.4); glintAt(px+pieceD(g.to)*.2,py-pz-3-pieceH(g.to)*.9); setTimeout(()=>glintAt(px-pieceD(g.to)*.2,py-pz-3-pieceH(g.to)*.6),120);
     sfx('land',1,pitchOf(nb)*.9);
-    await hold(110);
-    // it drops onto the pile, onto its own place
-    await launch(nb,{ x:px, y:py, z:s.z, zone:z, slot:true, d:D() },{ T:.24, flips:0 });
+    // it hangs there, bright, then drops onto the pile, onto its own place
+    await hold(260);
+    await launch(nb,{ x:px, y:py, z:s.z, zone:z, slot:true, d:D() },{ T:.3, flips:0 });
   }
   // the change-up without a show: five pieces go, the bigger one takes the
   // nearest free place on the pile (the hoard: no arithmetic on screen)
