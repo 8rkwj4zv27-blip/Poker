@@ -53,6 +53,13 @@ and river. ▶ FLY ONE is the old quick preview. DEAL (top left) plays a
 whole hand from the mix. A bar at the bottom shows a forced style; tap it
 to go back to the mix.
 
+## Round 3: simpler
+
+Round 2's whole-hand autoplay got stuck on the owner's phone and was more
+than wanted. Now each style has one ▶ PLAY: a fresh hand dealt with every
+card in that style, stopping at your turn. Another PLAY or DEAL always
+just starts over. FLY ONE and the autoplay are gone.
+
 ## Next
 
 Owner's picks (COPY MY PICKS in the lab), then ship: the styles become a
