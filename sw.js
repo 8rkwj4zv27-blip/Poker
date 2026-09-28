@@ -36,7 +36,7 @@ const APP_SHELL = [
   './css/award-key.css?v=1',
   './css/crt.css?v=1',
   './js/01-poker-math.js',
-  './js/02-support-systems.js?v=deal-3',
+  './js/02-support-systems.js?v=deal-4',
   './js/03-opponents.js?v=cards-1',
   './js/04-modes-and-scoring.js?v=cards-1',
   './js/05-game-engine.js?v=holder-1',
