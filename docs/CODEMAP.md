@@ -303,6 +303,17 @@ COPY SETTINGS gives the owner's picks as text; the settings live in the
 URL hash. Since v0.40.7 (release 2) its TODAY is the shipped layout, with a
 BEFORE preset for the table as it was. Not loaded by the game.
 
+## `table-room-lab.html` + `js/table-room-lab-host.js` + `js/table-room-lab.js` + `css/table-room-lab.css` — Table Room Lab
+
+The crowded-table pass (docs/ui/TABLE_ROOM_PLAN.md): bets spilling over
+the board, the pot, the bet squares, the machines' size. Phone-first: the
+**real game** at the owner's iPhone 15 Pro Max (430 x 932, safe areas
+59px / 34px, scaled to fit), with the controls inside it (TUNE sheet,
+HOLD: TODAY, POT IT). It wraps `EnemyCards.spot`/`paint` and
+`CoinWorld.zone` to re-place and reshape the bet spots, and restyles the
+pot and machines; moments script `aiDecide` and hold `CoinTable.sweep`.
+Not loaded by the game.
+
 ## `felt-lab.html` + `js/felt-lab-host.js` + `js/felt-lab.js` + `css/felt-lab.css` — Felt Lab
 
 The table finish pass (docs/ui/FELT_PLAN.md): rail, stitching, cloth,
@@ -625,7 +636,7 @@ there manually.
 Files matching `*-lab.html`, `*-lab.js`, `*-lab.css` (`career-lab`,
 `career-hub-v2-lab`, `ticket-lab`, `card-flight-options`, `card-turn-lab`,
 `chip-motion-lab`, `chip-lab`, `chip-throw-lab`, `design-lab`, `result-stage-lab`, `showdown-rail-lab`, `crt-lab`, `dashboard-v2-lab`, `dashboard-order-lab`,
-`wheel-v2-lab`, `intro-lab`, `boot-lab`, `slot-lab`, `table-space-lab`, `enemy-card-lab`, `showdown-lab`, `pot-lab`, `ko-lab`, `coin-denom-lab`, `coin-bank-lab`, `coin-tubes-lab`, `coin-hoard-lab`, `chip-lab`, `deck-lab`)
+`wheel-v2-lab`, `intro-lab`, `boot-lab`, `slot-lab`, `table-space-lab`, `table-room-lab`, `enemy-card-lab`, `showdown-lab`, `pot-lab`, `ko-lab`, `coin-denom-lab`, `coin-bank-lab`, `coin-tubes-lab`, `coin-hoard-lab`, `chip-lab`, `deck-lab`)
 are **isolated visual references and prototyping sandboxes**. Several are
 committed permanently as durable references even after their feature
 shipped. Rules:

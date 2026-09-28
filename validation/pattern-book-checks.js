@@ -270,6 +270,21 @@ check('Showdown lab: isolated, and its candidate never ships',()=>{
   assert.ok(!/data-sd-/.test(indexHtml),'production must not use the lab\'s data-sd-* attributes');
 });
 
+check('Table room lab: isolated, and its TODAY is the shipped table',()=>{
+  // docs/ui/TABLE_ROOM_PLAN.md: the crowding lab restyles the live table; it never ships.
+  ['table-room-lab','js/table-room-lab.js','css/table-room-lab.css','js/table-room-lab-host.js'].forEach(n=>{ assert.ok(!indexHtml.includes(n),'index.html links '+n); assert.ok(!serviceWorker.includes(n),'sw.js precaches '+n); });
+  const lab=read('js/table-room-lab.js'), hostJs=read('js/table-room-lab-host.js');
+  assert.ok(hostJs.includes('Storage.prototype') && hostJs.includes('pwa-service-worker'),'the lab copy must run on in-memory storage with no service worker');
+  assert.ok(!/localStorage\.(setItem|removeItem|clear)/.test((lab+hostJs).replace(/`[\s\S]*?`/g,'')),'the lab itself must never write storage');
+  // HOLD: TODAY must be the game as it ships: nothing moved, nothing restyled.
+  const today=lab.match(/const TODAY = \{([^}]*)\}/);
+  assert.ok(today,'the lab needs its TODAY picks');
+  ["pot:'0'","you:'sq'","pile:'spread'","their:'57'","lift:'0'","fade:'13'","mark:'square'","pods:'100'"].forEach(k=>assert.ok(today[1].includes(k),'TODAY must keep '+k));
+  // its sizes are measured against the shipped scale and pot place
+  assert.ok(/\.felt \.seat:not\(\.you\)\{ scale:\.91;/.test(read('css/05-responsive-and-arcade.css')) && /const S0 = \.91;/.test(lab),'the lab\'s machine scale must match css/05');
+  assert.ok(/#felt \.pot-area\{ top:77\.5%; \}/.test(read('css/05-responsive-and-arcade.css')) && lab.includes('top:calc(77.5% + '),'the lab\'s pot move must start from the shipped place');
+});
+
 check('Showdown: live, on the shared parts, and to the order',()=>{
   const css=read('css/showdown.css'), js=read('js/showdown.js'), md=read('docs/ui/PATTERN_BOOK.md');
   const links=[...indexHtml.matchAll(/<link rel="stylesheet" href="([^"?]+)/g)].map(m=>m[1]);
