@@ -85,8 +85,8 @@
   ];
   const ROWS = GROUPS.flatMap(g => g.rows);
   const TODAY = { pot:'0', potroom:'air', you:'sq', pile:'spread', their:'57', lift:'0', fade:'13', mark:'square', pods:'100', coins:'15' };
-  // where the lab opens: the owner's plan, at a starting point
-  const START = { pot:'20', potroom:'air', you:'w110', pile:'pile', their:'w72', lift:'board', fade:'8', mark:'square', pods:'96', coins:'14' };
+  // where the lab opens: the owner's picks (28 Sep 2026)
+  const START = { pot:'30', potroom:'grow', you:'w130', pile:'pile', their:'w72', lift:'16', fade:'5', mark:'corners', pods:'90', coins:'13' };
   let picks = Object.assign({}, START, state.picks || {});
   let shown = picks;                 // what's on the table (TODAY while held)
   const save = () => { if (host) host.set({ picks:Object.assign({}, picks) }); };
@@ -207,7 +207,14 @@
       const k = squareRect(p); if (!k) return;
       const d = CW.D();
       // the floor: the lower part of the square; the stacks rise from it
-      z.box = { L:k.L + 1, R:k.R - 1, T:k.T + Math.max(3, Math.round(k.h * .2)), B:k.B - 3 };
+      // The footprint is only for planning the pile. The coin world treats
+      // a zone's box as walls too, but a bet must land, bounce and spill
+      // as today (and settle in time for the sweep), so the box is only
+      // there while the spot is neat: a new bet (targetIn) or a knock marks
+      // it untidy, the walls vanish, and the tidy that follows (neat again
+      // first, then the plan) builds the pile from wherever they fell.
+      const foot = { L:k.L + 1, R:k.R - 1, T:k.T + Math.max(3, Math.round(k.h * .2)), B:k.B - 3 };
+      Object.defineProperty(z, 'box', { configurable:true, enumerable:true, get(){ return this.neat ? foot : undefined; } });
       z.shape = shown.pile === 'loose' ? 'heap' : 'pyramid';
       z.cx = k.cx; z.cy = k.B - 4;
       // how tall a stack may stand: theirs up to their tucked cards, yours

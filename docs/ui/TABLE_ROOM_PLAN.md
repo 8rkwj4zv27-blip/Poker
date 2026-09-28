@@ -65,6 +65,30 @@ the pot's pyramid/heap shape after `CoinTable.layout`), and, only while a
 moment runs, `aiDecide` and `CoinTable.sweep`. The game's files are
 unchanged.
 
+## The owner's picks (28 Sep 2026)
+
+`pot=30&potroom=grow&you=w130&pile=pile&their=w72&lift=16&fade=5&mark=corners&pods=90&coins=13`:
+pot 30px down (taller pile), your spot widest, little piles, their spots
+wide and 16px up, squares faintest as corners only, machines 90%, chips
+13px. The lab now opens on these.
+
+The owner's review of that round:
+- **Your bet flew off towards the pot, and an all-in left chips on your
+  spot.** The lab's little pile borrowed the bank's box, which is also a
+  set of walls: landing chips bounced inside it for about 2.2s, longer
+  than the 1.4s the sweep waits, so the sweep caught them mid-bounce.
+  Fixed in the lab: the box only shapes the tidy (it exists only while
+  the spot is neat), so a bet lands, bounces and spills as today and then
+  gathers. It settles on today's timing. The same walls are the likely
+  cause of the chips clipping.
+- **The owner likes a few chips spilling out of the spot**, so the landing
+  spill stays; LOOSE PILE also leaves a coin or two lying off the sides.
+- **Chips spill off the bottom of the screen when the bank fills on a
+  win**, in the lab and in the installed game. Not reproduced yet in
+  emulated Chromium (a small win and a $3,600 showdown win, today's
+  settings and the picks). Possibly Safari-only; waiting on the owner for
+  when it happens.
+
 ## Next
 
 The owner tries it on the phone and sends back their picks. The build
