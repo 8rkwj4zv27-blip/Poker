@@ -1,0 +1,120 @@
+/* Card Holder Lab — candidate looks for the lip your two cards sit in
+   (.seat.you::before is the slot behind them, ::after the front lip).
+   Lab only: loaded into the game copy by card-holder-lab.html, never by
+   the game. Every rule is keyed off html[data-ch-*], set by
+   js/card-holder-lab.js, which also measures the seat and writes the
+   geometry vars below.
+
+   --ch-w     lip width (px), when WIDTH isn't CURRENT; the slot is 4px wider
+   --ch-lift  how far the holder moves to open the gap above the screen
+   --ch-bury  how much of the cards hides behind the lip (for the seat shadow)
+   --ch-hang  extra rise of the cards above the lip (OVERHANG) */
+
+/* ---- width ---- */
+html[data-ch-width]:not([data-ch-width="current"]) #hud-mid .seat.you::after{ width:var(--ch-w); }
+html[data-ch-width]:not([data-ch-width="current"]) #hud-mid .seat.you::before{ width:calc(var(--ch-w) + 4px); }
+
+/* ---- the gap above the screen ---- */
+html[data-ch-room="up"] #hud-mid .seat.you{ top:calc(-1px * var(--ch-lift, 0)); }
+html[data-ch-room="down"] #hud-mid .seat.you{ margin-bottom:calc(1px * var(--ch-lift, 0)); }
+
+/* ---- overhang: the cards alone ride up or sink ---- */
+#hud-mid .seat.you .seat-cards{ top:calc(-1px * var(--ch-hang, 0)); }
+
+/* ---- A · MOULDED RAIL: a lit top edge, a flat face, a dark underside ---- */
+html[data-ch-lip="moulded"] #hud-mid .seat.you::after{
+  box-sizing:border-box; height:12px;
+  border:2px solid var(--px-ink); border-radius:3px 3px 2px 2px;
+  background:linear-gradient(to bottom,
+    var(--theme-case-hi) 0 2px,
+    var(--theme-case-raised) 2px calc(100% - 2px),
+    var(--machine-case-lo) calc(100% - 2px));
+  box-shadow:0 3px 0 rgba(0,0,0,.55);
+}
+
+/* ---- B · BRASS RAIL: the instrument gold, a screw at each end ---- */
+html[data-ch-lip="brass"] #hud-mid .seat.you::after{
+  box-sizing:border-box; height:12px;
+  border:2px solid var(--px-ink); border-radius:3px 3px 2px 2px;
+  background:
+    /* the screws: a dark slot with a lit pixel over it */
+    linear-gradient(#FFF1C4,#FFF1C4) 5px 2px/2px 1px no-repeat,
+    linear-gradient(#FFF1C4,#FFF1C4) right 5px top 2px/2px 1px no-repeat,
+    linear-gradient(#6B430E,#6B430E) 4px 3px/4px 3px no-repeat,
+    linear-gradient(#6B430E,#6B430E) right 4px top 3px/4px 3px no-repeat,
+    linear-gradient(to bottom,
+      var(--pc-lamp-amber-hi) 0 2px,
+      var(--pc-lamp-amber) 2px 5px,
+      #D0921F 5px calc(100% - 2px),
+      #7A4B0C calc(100% - 2px));
+  box-shadow:0 3px 0 rgba(0,0,0,.55);
+}
+
+/* ---- E · STEPPED FRONT: a shallow cast trapezoid, wider at the foot.
+   Drawn as stacked rectangles (ink outline first, face bands over it)
+   so the steps stay pixel-crisp and the drop shadow follows the shape. */
+html[data-ch-lip="stepped"] #hud-mid .seat.you::after{
+  box-sizing:border-box; height:14px; border:0; border-radius:0;
+  background:
+    /* face: top band (lit), middle band, foot band (dark underside) */
+    linear-gradient(var(--theme-case-hi),var(--theme-case-hi)) 50% 2px/calc(100% - 20px) 2px no-repeat,
+    linear-gradient(var(--theme-case-raised),var(--theme-case-raised)) 50% 4px/calc(100% - 20px) 2px no-repeat,
+    linear-gradient(var(--theme-case-raised),var(--theme-case-raised)) 50% 6px/calc(100% - 12px) 4px no-repeat,
+    linear-gradient(var(--machine-case-lo),var(--machine-case-lo)) 50% 10px/calc(100% - 4px) 2px no-repeat,
+    /* outline: three 4px steps */
+    linear-gradient(var(--px-ink),var(--px-ink)) 50% 0/calc(100% - 16px) 6px no-repeat,
+    linear-gradient(var(--px-ink),var(--px-ink)) 50% 4px/calc(100% - 8px) 6px no-repeat,
+    linear-gradient(var(--px-ink),var(--px-ink)) 50% 8px/100% 6px no-repeat;
+  box-shadow:none;
+  filter:drop-shadow(0 3px 0 rgba(0,0,0,.55));
+}
+
+/* The new lips are a pixel or two shorter than today's, so the cards' own
+   drop shadow (a 3px ledge under each card) would peek out below them as
+   dark blocks. The lip hides the card feet anyway: drop that shadow.
+   Faces only: a back keeps its own trim, and a card mid-turn keeps the
+   game's box-shadow:none (the wrapper is invisible; a shadow on it drew a
+   thin white line across the turn). */
+html[data-ch-lip]:not([data-ch-lip="current"]) #hud-mid .seat.you .seat-cards{ filter:none; }
+html[data-ch-lip]:not([data-ch-lip="current"]) #hud-mid .seat.you .seat-cards .card:not(.back):not(.card-turning){ box-shadow:inset 0 2px 0 #fff; }
+
+/* ---- C · SEAT SHADOW: a soft shade rising up the card faces from the
+   groove, and a deeper slot behind. Smooth, not stepped (round 2). ---- */
+html[data-ch-seat="on"] #hud-mid .seat.you .seat-cards .card:not(.back):not(.card-turning){
+  background:
+    linear-gradient(to top,
+      rgba(40,8,12,.2) calc(var(--ch-bury, 11) * 1px),
+      rgba(40,8,12,0) calc(var(--ch-bury, 11) * 1px + 14px)),
+    var(--card-face);
+}
+html[data-ch-seat="on"] #hud-mid .seat.you::before{
+  background:#080405;
+  box-shadow:inset 0 8px 0 rgba(0,0,0,.8),inset 2px 0 0 rgba(0,0,0,.4),0 1px 0 var(--theme-case-hi);
+}
+
+/* the lab's own nudge between looks: lip + width are the ones that jump */
+@media (prefers-reduced-motion:no-preference){
+  #hud-mid .seat.you{ transition:top .16s steps(4,end), margin-bottom .16s steps(4,end); }
+  #hud-mid .seat.you .seat-cards{ transition:top .16s steps(4,end); }
+}
+
+/* the TUNE sheet borrows css/showdown-lab.css, but drops down from the
+   top over the felt instead of rising over the dashboard: the holder is
+   what you're looking at, so it stays in view while you tune. The keys
+   hide while it's open (its ✕ closes it). */
+.chl-sheet.sdl-sheet{
+  top:0; bottom:auto; height:48%; padding-top:env(safe-area-inset-top,0px);
+  border-top:0; border-bottom:3px solid #E8B83A; box-shadow:0 10px 0 rgba(0,0,0,.35);
+  transform:translateY(-105%);
+}
+.chl-sheet.sdl-sheet.is-open{ transform:none; }
+html.chl-open .sdl-key{ visibility:hidden; }
+.chl-look{ display:grid; grid-template-columns:1fr 1fr; gap:6px; }
+.chl-look button{
+  min-height:48px; padding:6px; border:2px solid #080405; border-radius:3px; background:#34171A; color:#F3E6C4;
+  font-family:var(--font-hdr); font-size:7px; letter-spacing:.04em; line-height:1.4; cursor:pointer;
+  box-shadow:inset 0 2px 0 rgba(255,255,255,.08),0 3px 0 #080405;
+}
+.chl-look button.is-mine{ background:#E8B83A; color:#080405; box-shadow:inset 0 2px 0 #FFE380,0 3px 0 #080405; }
+.chl-look button:active{ transform:translateY(2px); box-shadow:0 1px 0 #080405; }
+.chl-readout{ margin:8px 0 0; font-size:12px; line-height:1.4; color:#B69A7A; }

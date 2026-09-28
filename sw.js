@@ -1,4 +1,4 @@
-const CACHE_NAME = 'poker-v48-0';
+const CACHE_NAME = 'poker-v49-0';
 const APP_SHELL = [
   './',
   './index.html',
@@ -29,15 +29,16 @@ const APP_SHELL = [
   './css/knockout.css?v=1',
   './css/showdown.css?v=1',
   './css/dealer-deck.css?v=1',
+  './css/card-holder.css?v=1',
   './css/action-drum.css?v=1',
   './css/knock-check.css?v=1',
   './css/crt.css?v=1',
   './js/01-poker-math.js',
-  './js/02-support-systems.js?v=chips-2',
+  './js/02-support-systems.js?v=holder-1',
   './js/03-opponents.js?v=cards-1',
   './js/04-modes-and-scoring.js?v=cards-1',
-  './js/05-game-engine.js?v=econ-2',
-  './js/06-presentation.js?v=econ-2',
+  './js/05-game-engine.js?v=holder-1',
+  './js/06-presentation.js?v=holder-1',
   './js/coin-world.js?v=chips-1',
   './js/coin-table.js?v=chips-1',
   './js/coin-bank.js?v=1',
@@ -57,7 +58,8 @@ const APP_SHELL = [
   './js/finishes.js?v=3',
   './js/press-feel.js?v=2',
   './js/showdown.js?v=2',
-  './js/dealer-deck.js?v=1',
+  './js/dealer-deck.js?v=2',
+  './js/card-holder.js?v=1',
   './js/action-drum.js?v=1',
   './js/knock-check.js?v=1',
   // FACE_ART (js/02-support-systems.js) — every illustrated portrait an

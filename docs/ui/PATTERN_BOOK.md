@@ -343,3 +343,20 @@ segmented keys laid out as a grid) and the side (bottom left / bottom
 right).
 
 Reduced Motion: the shipped deal, with no shuffle, burn or taps.
+
+## Card holder (live v0.49.0)
+
+The lip your two cards sit in, from the owner's order on the Card Holder
+Lab (`card-holder-lab.html`, round 2, 28 September 2026;
+`docs/ui/CARD_HOLDER_PLAN.md`). `css/card-holder.css` +
+`js/card-holder.js`. Presentation only.
+
+| Part | Order | The finish |
+|---|---|---|
+| Position | **10PX OF AIR**, the holder rises | The lip sits 10px clear of the hand-name screen below it on every phone (measured, not guessed); the holder and cards move up the dashboard, the screens stay put. Cards hang over the dashboard edge as before; width as before. |
+| The lip | **BRASS** (a setting: brass / classic) | Brass: the instrument gold (`--pc-lamp-amber` family), a lit top edge, a dark underside, a screw at each end, 2px ink outline and a hard 3px shadow onto the case. Classic: today's case-coloured lip, in the same position. |
+| The seat | **SEAT SHADOW** | A deeper slot behind the cards, and a soft shade (20% to nothing over 14px) rising up the card faces from the lip. The cards' own drop shadow is off while they sit in it: the lip hides their feet. |
+
+Settings → The deck → Card holder: the sheet's segmented keys, a small lip
+drawn in each.
+

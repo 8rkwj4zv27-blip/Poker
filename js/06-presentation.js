@@ -499,6 +499,7 @@ async function dealCardFlight(el, card, opts){
     el.className = cardClass(true, card, small);
     el.innerHTML = '';
   }
+  el.classList.remove('deal-anim');   // its fade-in would override the hide below
   el.style.opacity = '0';
   Sound.cardDeal();   // FWIP — leaves the dealer deck, right as the flight actually begins
   const landed=await DealFX.flyGhost(deckTop, el, { duration:DEAL_TIMING.dealMs, style:'deal' });
