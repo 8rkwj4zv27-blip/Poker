@@ -1,7 +1,7 @@
 "use strict";
 
 /* ============================================================
-   AWARD KEY (live v0.49.0) — the owner's order from the Action Drum Lab,
+   AWARD KEY (live v0.50.0) — the owner's order from the Action Drum Lab,
    round 4 (docs/ui/ACTION_DRUM_PLAN.md; docs/ui/PATTERN_BOOK.md, Action
    drum). Installs itself at load; the lab tunes it through AwardKey.set().
 

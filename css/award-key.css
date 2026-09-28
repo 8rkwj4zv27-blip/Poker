@@ -1,4 +1,4 @@
-/* AWARD KEY (live v0.49.0; js/award-key.js, docs/ui/PATTERN_BOOK.md). The shared AWARD POT
+/* AWARD KEY (live v0.50.0; js/award-key.js, docs/ui/PATTERN_BOOK.md). The shared AWARD POT
    key (.btn-award-console) in its YOUR-WIN state, data-ak="mine", and a
    quieter PAY state for someone else's pot. Options are attributes on
    <html> (data-ak-*). Stepped like the rest of the machine; no chasing

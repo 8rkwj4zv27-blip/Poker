@@ -311,7 +311,7 @@ faces iPhone Safari drew behind the live keys.
 | The deal side (v0.48.1) | fixed | NEXT HAND, REBUY and NEW TABLE are a side of the drum too, not buttons floating over the bay: moved onto it (same ids and handlers), in the console's key (`.btn-award-console`; NEW TABLE beside REBUY takes `.results-secondary`). The drum rolls to it whenever the game unhides one, and holds a pressed key on the side as it rolls away. |
 | The key line | fixed | Every side's keys take the FOLD / CHECK / RAISE row's measured top and height, so no side lands higher or lower. |
 | The rim's glow | fixed | The lit rim's inner glow runs on round the bay (sides and bottom) in the same lamp, so it no longer stops at the join. |
-| The award key (v0.49.0) | **VELVET + GOLD**, **COLLECT**, **PRINTED**, **A FLASH**, **SPARKS + CLACK**, **MORE SHINE**, **QUIET · PAY HARRY** | The shared AWARD POT key (`.btn-award-console`) in a state for whose pot it is (`data-ak`). Yours (`mine`): the machine's burgundy velvet with gold letters and a gold rim, reading COLLECT · 1,500 (SPLIT when you share it); a flash as the drum lands it; gold sparks off its edges and the counter's clack when pressed; a big or monster pot adds a gold ring round it. Someone else's (`theirs`): the quiet case key, PAY HARRY · 888. The game's own words stay as its `aria-label`. No chasing lights. Learns whose pot it is by wrapping `showHudResultConsole`; presentation only. `js/award-key.js`, `css/award-key.css`. |
+| The award key (v0.50.0) | **VELVET + GOLD**, **COLLECT**, **PRINTED**, **A FLASH**, **SPARKS + CLACK**, **MORE SHINE**, **QUIET · PAY HARRY** | The shared AWARD POT key (`.btn-award-console`) in a state for whose pot it is (`data-ak`). Yours (`mine`): the machine's burgundy velvet with gold letters and a gold rim, reading COLLECT · 1,500 (SPLIT when you share it); a flash as the drum lands it; gold sparks off its edges and the counter's clack when pressed; a big or monster pot adds a gold ring round it. Someone else's (`theirs`): the quiet case key, PAY HARRY · 888. The game's own words stay as its `aria-label`. No chasing lights. Learns whose pot it is by wrapping `showHudResultConsole`; presentation only. `js/award-key.js`, `css/award-key.css`. |
 | Knock to check | **ON** (Dashboard V2 order) | Double-tap the dashboard case to check: two thuds, a ring, the whole machine jolts. Facing a bet it refuses with a buzz and CAN'T KNOCK. Not the bank, your cards or a key. `js/knock-check.js`, `css/knock-check.css`. |
 
 Rules for anyone touching it:
@@ -345,3 +345,20 @@ segmented keys laid out as a grid) and the side (bottom left / bottom
 right).
 
 Reduced Motion: the shipped deal, with no shuffle, burn or taps.
+
+## Card holder (live v0.49.0)
+
+The lip your two cards sit in, from the owner's order on the Card Holder
+Lab (`card-holder-lab.html`, round 2, 28 September 2026;
+`docs/ui/CARD_HOLDER_PLAN.md`). `css/card-holder.css` +
+`js/card-holder.js`. Presentation only.
+
+| Part | Order | The finish |
+|---|---|---|
+| Position | **10PX OF AIR**, the holder rises | The lip sits 10px clear of the hand-name screen below it on every phone (measured, not guessed); the holder and cards move up the dashboard, the screens stay put. Cards hang over the dashboard edge as before; width as before. |
+| The lip | **BRASS** (a setting: brass / classic) | Brass: the instrument gold (`--pc-lamp-amber` family), a lit top edge, a dark underside, a screw at each end, 2px ink outline and a hard 3px shadow onto the case. Classic: today's case-coloured lip, in the same position. |
+| The seat | **SEAT SHADOW** | A deeper slot behind the cards, and a soft shade (20% to nothing over 14px) rising up the card faces from the lip. The cards' own drop shadow is off while they sit in it: the lip hides their feet. |
+
+Settings → The deck → Card holder: the sheet's segmented keys, a small lip
+drawn in each.
+

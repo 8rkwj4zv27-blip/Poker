@@ -887,7 +887,10 @@ async function revealHoleCardsAnimated(){
     if (!p.inHand) return;
     const e = seatEls[p.id];
     if (!e) return;
-    Array.from(e.cardsContainer.children).forEach(el=>{ el.style.opacity = '0'; });
+    // .deal-anim's fade-in (opacity 0 -> 1) beats this inline hide while it
+    // runs, which flashed the backs in the seat before their flight left
+    // the deck. Their entrance is the flight, so the drop-in comes off.
+    Array.from(e.cardsContainer.children).forEach(el=>{ el.classList.remove('deal-anim'); el.style.opacity = '0'; });
   });
 
   const order = [];

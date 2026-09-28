@@ -17,6 +17,7 @@ ticket-feed.js          table-intro.js
 dashboard.js            crt.js                  finishes.js
 press-feel.js           showdown.js             dealer-deck.js
 action-drum.js          knock-check.js          award-key.js
+card-holder.js
 ```
 
 Later files call into earlier ones freely; there's no module system, so
@@ -361,7 +362,7 @@ it. Since v0.48.1 NEXT HAND, REBUY and NEW TABLE are moved onto a fifth
 side (`#ad-face-deal`) instead of floating over the bay. Order in `docs/ui/PATTERN_BOOK.md` (Action drum); history in
 `docs/ui/ACTION_DRUM_PLAN.md`.
 
-## `js/award-key.js` + `css/award-key.css` — the award key (live, v0.49.0)
+## `js/award-key.js` + `css/award-key.css` — the award key (live, v0.50.0)
 
 The AWARD POT key dressed for whose pot it is: yours in velvet and gold
 reading COLLECT · 1,500 (a flash as the drum lands it, sparks when
@@ -426,6 +427,18 @@ felt, then flip into the winner's bank). `ORDER` holds the fixed order;
 defaults in `DEFAULT_SETTINGS`). Without the coin table the shipped award
 runs. Presentation only.
 
+## `card-holder-lab.html` + `js/card-holder-lab.js` + `css/card-holder-lab.css` — Card Holder Lab
+
+The lip your two cards sit in (`docs/ui/CARD_HOLDER_PLAN.md`): lip style,
+seat shadow, width, the gap to the hand-name screen and the card overhang,
+all as `html[data-ch-*]` overrides of `.seat.you::before/::after`. Phone-first
+like `showdown-lab.html` (shares its host `js/showdown-lab-host.js` and its
+sheet styles `css/showdown-lab.css`); the sheet drops from the top so the
+holder stays in view. Since v0.49.0 the game has the card holder live; the
+lab strips `css/card-holder.css`/`js/card-holder.js` from its copy so TODAY
+still means the old holder. The page measures the seat so the GAP is real air on
+any phone. Lab only; nothing loads in the game.
+
 ## `showdown-lab.html` + `js/showdown-lab-host.js` + `js/showdown-lab.js` + `css/showdown-lab.css` + candidate `css/showdown-beats.css` / `js/showdown-beats.js` — Showdown Lab
 
 The showdown pass (`docs/ui/SHOWDOWN_PLAN.md`), phone-first (round 4): the
@@ -457,6 +470,18 @@ and hands back to them with Reduced Motion; the flop takes the same cards
 in the same order as the shipped deal, burns never touch `g.deck`.
 Settings → The deck (`settings.deckBack`, `settings.deckSide`). Checked by
 `validation/dealer-deck-checks.js`.
+
+## `js/card-holder.js` + `css/card-holder.css` — Card holder (live, v0.49.0)
+
+The lip your two cards sit in, the owner's order from `card-holder-lab.html`
+(recorded in `docs/ui/PATTERN_BOOK.md`, Card holder;
+`docs/ui/CARD_HOLDER_PLAN.md`). Dresses `.seat.you::before/::after` (the
+slot and the lip, whose sizes still live in `03-action-console.css` /
+`05-responsive-and-arcade.css`). The script measures the seat and writes
+`--holder-lift` / `--holder-bury` on `#hud-mid`, so the lip sits 10px clear
+of `#hand-strength` on any phone (the holder rises; the screens stay put).
+Settings → The deck → Card holder (`settings.cardHolder`: `brass`, the
+default, or `classic`), set on `<html>` as `data-holder`.
 
 ## `deck-lab.html` + `js/deck-lab.js` — Deck Lab
 

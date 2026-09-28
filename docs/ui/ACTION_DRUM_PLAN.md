@@ -130,7 +130,7 @@ shine for big and monster pots, and optionally a quiet PAY HARRY key for
 someone else's pot. No chasing lights (struck from the Showdown). The
 game's own words stay as the key's aria-label.
 
-## Shipped: v0.49.0, the award key (owner's round-4 picks)
+## Shipped: v0.50.0, the award key (owner's round-4 picks; v0.49.0 went to the Card holder)
 
 VELVET + GOLD, COLLECT, the amount PRINTED, A FLASH as it lands, SPARKS +
 CLACK, MORE SHINE for bigger wins, and their pot as QUIET · PAY HARRY.

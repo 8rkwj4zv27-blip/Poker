@@ -44,7 +44,7 @@
   function save(){ if (host) host.set({ order:Object.assign({}, order) }); }
   function applyOrder(){ try{ ActionDrum.set(order); }catch(e){ console.error(e); } save(); }
 
-  /* ---- round 4: the AWARD KEY for your wins (every first option is the owner's pick, live v0.49.0) ---- */
+  /* ---- round 4: the AWARD KEY for your wins (every first option is the owner's pick, live v0.50.0) ---- */
   const AK_ROWS = [
     ['finish','THE KEY WHEN IT\'S YOURS', [['velvet','VELVET + GOLD'],['gold','POLISHED GOLD'],['glow','LIT FROM UNDER'],['today','TODAY\'S KEY']],
       'GOLD: polished gold in hard bands, a glint crossing it now and then. VELVET: the machine\'s burgundy velvet, gold letters and rim. LIT FROM UNDER: today\'s colour, glowing and breathing.'],
