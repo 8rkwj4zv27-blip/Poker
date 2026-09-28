@@ -711,3 +711,11 @@ BIG earns a steeper curve (about 26 coins at $500, 44 at $2K, 72 at $10K,
 108 at $100K, 148 at $1M), full (all gold) near $5.5M at 10/20.
 Measured: 0 overlaps, every coin on its planned place, nothing outside
 the box from $500 to FULL.
+
+**Round 6b.** Owner: room for more rows; the pyramid is the main image,
+even nearly empty, with some depth; four rows of four only when full.
+Change: four rows straight behind each other (a coin's depth apart), the
+back row tallest, each nearer two coins shorter; a small bank is two rows
+in a pyramid (middle and back stacks tallest), rows behind joining as it
+grows; full is 4 x 4 (192 coins). Measured: 0 overlaps, nothing outside
+the box, $500 to FULL.

@@ -1071,7 +1071,7 @@
   // where a piece of size d may stand in a zone with its own box (the
   // hoard) or in the pot's tray
   function zoneBox(z,d,col){
-    if (z && z.box){ const k=z.box; return { L:k.L+d/2, R:k.R-d/2, T:k.T+Math.round(depthOf(col||'gold',d)/FORE)-2, B:k.B }; }
+    if (z && z.box){ const k=z.box, T=k.T+Math.round(depthOf(col||'gold',d)/FORE)-2; return { L:k.L+d/2, R:k.R-d/2, T:z.rack?Math.min(T,k.B-(RACK_ROWS-1)*RACK_DY()):T, B:k.B }; }
     return z && z.id==='pot' ? trayBox(d,col) : null;
   }
   function contain(b){
@@ -1184,39 +1184,34 @@
   const ROW_DY=sp=>Math.ceil(Math.sqrt(Math.max(0,D()*D()-sp*sp/4))/FORE);
   // mixed SIZES (the bars and big coins): chips are all one size
   const mixed=list=>list.some(b=>b.colour!=='gold' && !isTier(b.colour));
-  /* THE RACK (the bank): rows of stacks across the box, one behind
-     another like tiered seats: each row further back set half a coin
-     across (so it shows between the stacks in front) and standing taller,
-     so every stack's top is in view and nothing is lost behind. A small
-     bank is one row; the rows behind fill in as it grows. Each row a
-     pyramid outline (the middle stacks tallest); the coins sorted by
-     value, the richest in the back middle, each stack's coins lowest at
-     the bottom, richest on top. */
-  const RACK_ROWS=3, RACK_DROP=3;
+  /* THE RACK (the bank): rows of stacks one behind another, tiered like
+     seats: the back row stands tallest, each row nearer a couple of coins
+     shorter, so every stack's top is in view. Full, it's four rows of
+     four; before that a pyramid with depth (the middle and back stacks
+     tallest, two rows for a small bank, the rows behind filling in as it
+     grows). The coins sorted by value, the richest at the back middle,
+     each stack's coins lowest at the bottom, richest on top. */
+  const RACK_ROWS=4, RACK_DROP=2;
+  // rows sit straight behind each other: a coin's depth apart
+  const RACK_DY=()=>Math.ceil(D()/FORE);
   function rackGeom(z){
     const d=D(), st=STEP(), sp=d+1, k=zoneBox(z,d,'gold')||{ L:z.cx-30, R:z.cx+30, T:z.cy-10, B:z.cy };
     const cols=Math.max(1,Math.floor((k.R-k.L)/sp)+1), x0=(k.L+k.R)/2-(cols-1)*sp/2;
-    const room=z.room!=null?z.room:60, dy=ROW_DY(sp), top=Math.round(d*HR())+2;
-    // as many rows as the box is deep; the back row as tall as the room
-    // allows, each row nearer a few coins shorter
-    const rowsFit=Math.max(1,Math.min(RACK_ROWS,Math.floor((k.B-k.T)/dy)+1));
-    const backCap=Math.max(1,Math.floor((room-(rowsFit-1)*dy-top)/st)+1);
-    const rows=[...Array(rowsFit).keys()].map(r=>{
-      const odd=r%2===1 && cols>1, n=odd?cols-1:cols;
-      return { r, y:k.B-r*dy, x0:x0+(odd?sp/2:0), n, cap:Math.max(1,backCap-(rowsFit-1-r)*RACK_DROP) };
-    });
+    const room=z.room!=null?z.room:60, dy=RACK_DY(), top=Math.round(d*HR())+2;
+    const backCap=Math.max(1,Math.floor((room-(RACK_ROWS-1)*dy-top)/st)+1);
+    const rows=[...Array(RACK_ROWS).keys()].map(r=>({ r, y:k.B-r*dy, x0, n:cols, cap:Math.max(1,backCap-(RACK_ROWS-1-r)*RACK_DROP) }));
     return { d, st, sp, k, cols, x0, dy, rows, cap:rows[0].cap };
   }
   const rowsCap=rows=>rows.reduce((a,w)=>a+w.n*w.cap,0);
   const rackCapacity=z=>rowsCap(rackGeom(z).rows);
   function rackSlots(z,list){
     const g=rackGeom(z), n=list.length;
-    // the rows in use: one for a small bank, the next behind once the
-    // front ones are over half full
-    let used=1; while (used<g.rows.length && n>.55*rowsCap(g.rows.slice(0,used))) used++;
+    // the rows in use: two for a small bank, the next behind once those
+    // are half full
+    let used=Math.min(2,g.rows.length); while (used<g.rows.length && n>.5*rowsCap(g.rows.slice(0,used))) used++;
     const mid=(g.cols-1)/2, half=Math.max(1,mid), stacks=[];
     g.rows.slice(0,used).forEach(w=>{ for (let i=0;i<w.n;i++){ const x=w.x0+i*g.sp, off=Math.abs(x-(g.x0+mid*g.sp))/g.sp;
-      stacks.push({ x:Math.round(x), y:w.y, r:w.r, cap:w.cap, w:(1-.3*off/half)*(1+.35*w.r), off, h:0 }); } });
+      stacks.push({ x:Math.round(x), y:w.y, r:w.r, cap:w.cap, w:(1-.45*off/half)*(1+.4*w.r), off, h:0 }); } });
     // heights: coins shared by weight (taller at the back, in the middle), never past a stack's cap
     for (let i=0;i<n;i++){
       let best=null, bv=1e9;
