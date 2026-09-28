@@ -136,7 +136,7 @@
         '<button type="button" data-tab="turn" class="is-on">TURN IT</button><button type="button" data-tab="drum">THE DRUM</button><button type="button" data-tab="settings">SETTINGS</button>' +
         '<button type="button" class="sdl-close" aria-label="Close">✕</button></div>' +
       '<div class="sdl-body">' +
-        '<section data-pane="turn"><p class="sdl-sub">Each key closes this sheet and turns the console to that side. Press the side\'s own key (AWARD POT, NEXT TABLE...) to turn back. The TURN key in the corner goes AWARD POT and back. Or just play: a real showdown turns it too.</p>' +
+        '<section data-pane="turn"><p class="sdl-sub">Each key closes this sheet and turns the console to that side. Press the side\'s own key (AWARD POT, NEXT TABLE...) to turn back. The TURN key in the corner goes AWARD POT and back. Or just play: a real showdown turns it too.</p><p class="sdl-sub">KNOCK TO CHECK is back: double-tap the dashboard case on your turn. Facing a bet, it refuses with a buzz.</p>' +
           '<div class="sdl-moments">' + MOMENTS.map(m => '<button type="button" data-side="' + m[0] + '"' + (m[2] ? ' class="is-wide"' : '') + '>' + m[1] + '</button>').join('') + '</div></section>' +
         '<section data-pane="drum" hidden>' + ROWS.map(row).join('') +
           '<div class="sdl-actions"><button type="button" data-act="reset">START OVER</button><button type="button" data-act="copy">COPY MY PICKS</button></div>' +

@@ -50,6 +50,22 @@ html.ad-drum #console-flip.ad-spinning{ clip-path:inset(3px 4px round 5px); }
 }
 html:not(.ad-drum) .ad-bezel{ display:none; }
 
+/* ---- the rim's glow runs on round the key bay (round 3) ----
+   The lit rim throws a soft inner glow onto the case, but only the
+   dashboard's half drew it (css/dashboard.css, #hud-frame), so it stopped
+   dead at the join with the key bay. The bay now carries the same glow
+   down its sides and along its bottom, in the same lamp, so the case is
+   lit evenly all the way round inside the rim. */
+@media (orientation:portrait){
+  html.ad-drum #table-screen:has(#your-seat-dock[data-rim="turn"]) #action-console{ --ad-case-glow:color-mix(in srgb,var(--pc-lamp-amber) 90%,transparent); }
+  html.ad-drum #table-screen:has(#your-seat-dock[data-rim="allin"]) #action-console,
+  html.ad-drum #table-screen:has(#your-seat-dock[data-rim="bust"]) #action-console{ --ad-case-glow:color-mix(in srgb,var(--danger) 90%,transparent); }
+  html.ad-drum #table-screen:has(#your-seat-dock[data-rim="win"]) #action-console{ --ad-case-glow:color-mix(in srgb,var(--pc-lamp-amber-hi) 90%,transparent); }
+  html.ad-drum #app #table-screen:has(#your-seat-dock[data-rim]) .dash-frame-base .action-console{
+    box-shadow:inset 9px 0 10px -7px var(--ad-case-glow), inset -9px 0 10px -7px var(--ad-case-glow), inset 0 -9px 10px -7px var(--ad-case-glow);
+  }
+}
+
 /* ---- every side's keys sit where FOLD / CHECK / RAISE sit ----
    (js/action-drum.js measures the row: --ad-key-top, --ad-key-h) */
 html.ad-drum #console-face-award{ align-items:start; }

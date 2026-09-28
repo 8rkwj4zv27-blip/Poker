@@ -57,12 +57,28 @@ These are now the candidate's defaults.
   short phones), most of it as air between the instruments and the bezel.
   That 10px comes out of the felt.
 
+## Round 3 (owner: "spot on", two notes)
+
+- **The rim's glow runs on round the bay.** The lit rim's inner glow on
+  the case was drawn on the dashboard half only (`#hud-frame`,
+  `css/dashboard.css`), so it stopped dead at the key bay. The bay now
+  carries the same glow down its sides and along its bottom, in the same
+  lamp (`:has()` reads `data-rim` off `#your-seat-dock`).
+- **Knock to check is back** (`js/knock-check.js` + `css/knock-check.css`).
+  It was in the owner's signed-off Dashboard V2 order (Pattern Book,
+  Behaviours: ON) but only ever lived in the order form, never the game.
+  Ported from `js/dashboard-order.js`: double-tap the dashboard case to
+  check (`humanAct('check')`); facing a bet it refuses with a buzz and
+  CAN'T KNOCK; the whole machine (dashboard and key bay) jolts. Not the
+  bank, your cards or a key.
+
 ## After sign-off
 
-1. Wire the picked drum into the game: load `action-drum.js`/`.css` from
-   `index.html` + `sw.js`, install it at boot, and retire the two flips'
-   transform rules in `css/03-action-console.css` (the `.flipped` classes
-   stay as the game's signal).
+1. Wire the picked drum into the game: load `action-drum.js`/`.css` and
+   `knock-check.js`/`.css` from `index.html` + `sw.js`, install the drum at
+   boot, and retire the two flips' transform rules in
+   `css/03-action-console.css` (the `.flipped` classes stay as the game's
+   signal).
 2. Add the drum to `docs/ui/PATTERN_BOOK.md` and a check to
    `validation/pattern-book-checks.js` (no hidden side visible once a turn
    has settled).
