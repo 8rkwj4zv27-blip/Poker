@@ -287,6 +287,78 @@ function table(n, dealer, overrides){
     assert.ok(await freq(6, 0, 'As 9d', short, ['raise']) > 0.9);
   });
 
+  /* ---- postflop: lines, sizing, defence, timing ---- */
+  await check('Range position: the nuts tops a range; air sits at the bottom of a tight one', () => {
+    const board = 'Ah 7c 2s'.split(' ').map(C);
+    assert.ok(A.rangeRelStrength('As Ad'.split(' ').map(C), board, 0.2) < 0.02);
+    assert.ok(A.rangeRelStrength('9d 8c'.split(' ').map(C), board, 0.2) > 0.9);
+    // top pair ranks better within a wide range than within a tight one
+    const tp = 'Ad 9c'.split(' ').map(C);
+    assert.ok(A.rangeRelStrength(tp, board, 1) < A.rangeRelStrength(tp, board, 0.05));
+  });
+  // heads-up postflop spot: hero (seat 1) acts on `board`; villain (seat 0,
+  // the preflop raiser) has bet `bet` into `pot` (0 = checked to hero)
+  function postflopSpot(hand, board, opts){
+    opts = opts || {};
+    const players = [0,1].map(i => ({ id:'p'+i, personality: A.PERSONALITIES_ALL.find(p=>p.key===(opts.key||'shark')),
+      chips: 1000, hand: i === 1 ? hand.split(' ').map(C) : [], inHand:true, folded:false, allIn:false,
+      betThisRound:0, totalBetHand:60, acted:false, mayRaise:true, moodState:null, eliminated:false }));
+    const pot = opts.pot || 120, bet = opts.bet || 0;
+    const g = { players, board: board.split(' ').map(C), pot: pot + bet, currentBet: bet, minRaise: Math.max(20, bet),
+      bigBlind:20, dealerIndex:0, sbIndex:0, bbIndex:1, difficulty: opts.difficulty || 'elite', mode:'cash',
+      phase: ['','','','flop','turn','river'][board.split(' ').length], pfRaises:1, pfAggressorId:'p0',
+      prevAggressorId: 'p0', streetRaises: bet ? 1 : 0, streetAggressorId: bet ? 'p0' : null };
+    if (bet){ players[0].betThisRound = bet; players[0].acted = true; }
+    return { g, me: players[1] };
+  }
+  async function pfreq(hand, board, opts, want, trials){
+    let k = 0; const n = trials || 150;
+    for (let t=0; t<n; t++){
+      const { g, me } = postflopSpot(hand, board, opts);
+      A.setGame(g);
+      const d = await A.aiDecide(me, g);
+      if (want.includes(d.action)) k++;
+    }
+    return k / n;
+  }
+  await check('Postflop: the nuts never folds; river air folds to a pot-sized bet', async () => {
+    assert.strictEqual(await pfreq('Ks Qs', 'As Js Ts 4d 2c', { bet:120 }, ['fold']), 0);
+    assert.ok(await pfreq('5d 4c', 'As Js Ts 9d 2c', { bet:120 }, ['fold']) > 0.9);
+  });
+  await check('Postflop: bottom pair calls a pot-sized river bet in the Back Room, rarely at Elite', async () => {
+    // "I've got a pair!" vs "that's the bottom of my range"
+    const spot = difficulty => ({ bet:120, difficulty });
+    const easy = await pfreq('3s 4h', 'Kh 9s 7s 3d 2c', spot('easy'), ['call','raise'], 300);
+    const elite = await pfreq('3s 4h', 'Kh 9s 7s 3d 2c', spot('elite'), ['call','raise'], 300);
+    assert.ok(easy > elite + 0.15 && elite < 0.15, 'easy ' + easy + ' elite ' + elite);
+  });
+  await check('Postflop: a big draw semi-bluffs when checked to', async () => {
+    // checked to hero on the turn: a flush + straight draw bets some of the time
+    const draw = await pfreq('Qh Jh', '9h 8h 2c 3s', { difficulty:'elite', key:'maniac' }, ['bet'], 300);
+    assert.ok(draw > 0.05, 'draw bets ' + draw);
+  });
+  await check('Think time: the Back Room pauses before a raise; Elite takes the same time either way', () => {
+    A.setMotion(true);
+    const { g, me } = postflopSpot('7d 6c', 'Kh 9s 7s', { bet:60 });
+    A.setGame(g);
+    const avg = (difficulty, d) => { g.difficulty = difficulty; let t = 0; for (let i=0;i<400;i++) t += A.aiThinkTime(me, d, g); return t/400; };
+    const raise = { action:'raise', amount:300 }, call = { action:'call' };
+    const easyGap = avg('easy', raise) / avg('easy', call), eliteGap = avg('elite', raise) / avg('elite', call);
+    A.setMotion(false);
+    assert.ok(easyGap > 1.5, 'easy raise/call time ' + easyGap.toFixed(2));
+    assert.ok(Math.abs(eliteGap - 1) < 0.08, 'elite raise/call time ' + eliteGap.toFixed(2));
+  });
+  await check('Across a table: Elite bet sizes give nothing away and it reaches showdown less', async () => {
+    const seats = ['maniac','professor','wildcard','shark'];
+    const easy = summarize(await simulate({ seats, hands:250, difficulty:'easy', seed:8 }));
+    const elite = summarize(await simulate({ seats, hands:250, difficulty:'elite', seed:8 }));
+    const avg = (s, f) => seats.reduce((a, k) => a + s[k][f], 0) / seats.length;
+    assert.ok(avg(elite, 'sizeTell') < 0.25 && avg(easy, 'sizeTell') > 0.45,
+      'size tell easy ' + avg(easy, 'sizeTell').toFixed(2) + ' elite ' + avg(elite, 'sizeTell').toFixed(2));
+    assert.ok(avg(elite, 'wtsd') < avg(easy, 'wtsd') - 0.08,
+      'showdown easy ' + avg(easy, 'wtsd').toFixed(2) + ' elite ' + avg(elite, 'wtsd').toFixed(2));
+  });
+
   await check('Every Career event difficulty has a tier target', () => {
     const modes = fs.readFileSync(path.join(__dirname, '..', 'js/04-modes-and-scoring.js'), 'utf8');
     const used = new Set([...modes.matchAll(/difficulty:'(\w+)'/g)].map(m => m[1]));

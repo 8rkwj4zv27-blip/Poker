@@ -46,8 +46,10 @@ function loadAI(seed){
   const SandMath = Object.create(Math);
   SandMath.random = seeded(seed == null ? 1 : seed);
   const ctx = { console, Math: SandMath, setTimeout, clearTimeout,
-    settings: { tableTalk:false }, seatEls: {}, FACE_MOOD_POOLS: {},
-    DEV_MODE:false, FAST_DEV:false, motionOff: () => true };
+    settings: { tableTalk:false, speed:'normal' }, seatEls: {}, FACE_MOOD_POOLS: {},
+    DEV_MODE:false, FAST_DEV:false, quickResolveActive: () => false,
+    // presentation timing is off unless a check turns it on (aiThinkTime)
+    motionOff: () => ctx.__motion !== true };
   vm.createContext(ctx);
   const inlineEquity = math.replace(/const EquityService = \(function\(\)\{[\s\S]*?\n\}\)\(\);/,
     'const EquityService = { get: async (h,b,n,i,r) => r ? estimateEquityVsRanges(h,b,r,i) : estimateEquity(h,b,n,i) };');
@@ -55,8 +57,9 @@ function loadAI(seed){
   vm.runInContext('var game = null;\n' + inlineEquity + '\n' + elim.slice(0, elimEnd) + '\n' + opp +
     '\nglobalThis.API = { aiDecide, seatsAfter, PERSONALITIES_ALL, DIFFICULTY_PARAMS, createDeck, shuffle,' +
     ' evaluate7, evaluate5, compareHands, estimateEquity, estimateEquityVsRanges, fastScore7, cardCode,' +
-    ' holeClass, comboOrder, preflopPercentile, PREFLOP_ORDER, classifyPostflop, aiPreflop, SKILL_ANCHORS, aiSkillOf, skillBlend, aiDifficultyParams,' +
+    ' holeClass, comboOrder, preflopPercentile, PREFLOP_ORDER, classifyPostflop, aiPreflop, aiPostflop, rangeRelStrength, aiThinkTime, isScareCard, SKILL_ANCHORS, aiSkillOf, skillBlend, aiDifficultyParams,' +
     ' setGame: g => { game = g; } };', ctx);
+  ctx.API.setMotion = on => { ctx.__motion = !!on; };
   return ctx.API;
 }
 
@@ -155,8 +158,9 @@ async function simulate(opts){
 
     for (const street of ['preflop','flop','turn','river']){
       // the engine's public betting history (beginBettingRound / settleAggression)
+      g.prevAggressorId = street === 'preflop' ? null : (g.streetAggressorId || null);
       g.phase = street; g.streetRaises = 0; g.streetAggressorId = null;
-      if (street === 'preflop') g.pfAggressorId = null;
+      if (street === 'preflop'){ g.pfAggressorId = null; g.pfRaises = 0; }
       if (street === 'flop') g.board.push(deck[di++], deck[di++], deck[di++]);
       else if (street !== 'preflop') g.board.push(deck[di++]);
       if (street !== 'preflop'){
@@ -200,7 +204,7 @@ async function simulate(opts){
             const full = inc >= g.minRaise;
             g.currentBet = p.betThisRound;
             g.streetRaises++; g.streetAggressorId = p.id;
-            if (street === 'preflop') g.pfAggressorId = p.id;
+            if (street === 'preflop'){ g.pfAggressorId = p.id; g.pfRaises = g.streetRaises; }
             players.forEach(q => { if (q === p || q.folded || q.allIn) return;
               if (full){ q.acted = false; q.mayRaise = true; } else if (q.acted) q.mayRaise = false; });
             if (full) g.minRaise = inc;

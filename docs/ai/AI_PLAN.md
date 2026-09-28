@@ -163,17 +163,42 @@ roughly break even at `hard`/`expert`, and lose to `elite`.
   texture. It's built and checked; Step 3's decisions use it.
 - Postflop decisions are **unchanged** in this step.
 
-### Step 3: decisions as frequencies, plus a hand plan
-- Each spot produces fold/call/raise probabilities and samples from them
-  (the "probability triple"), replacing thresholds plus random noise.
-- On its first aggressive action the AI picks a **line**: value, barrel,
-  one-and-done, trap, semi-bluff or float. It keeps the line across
-  streets and changes it only when a card changes the story.
-- This brings c-bets as the preflop raiser, check-raises and slow-plays,
-  and barrels on scare cards.
-- Sizing is chosen from the board and the line, not from hand strength.
-  All-ins stop meaning "only the nuts".
-- Think time stops leaking the action.
+### Step 3: postflop lines, sizing and defence — DONE (v0.52.0)
+- **Judging a hand against a range:** `rangeRelStrength` in
+  `01-poker-math.js` answers "where does my made hand sit within the range
+  I'd have here?" After calling a bet, the range narrows (`aiPlan.scale`),
+  so the same hand ranks lower on the next street. Weak players judge in
+  absolutes instead (`MADE_ABS`: "I've got top pair!"). `rangeThink`
+  blends the two.
+- **Betting** (`aiPostflop`, `03-opponents.js`):
+  - value-bet the top of the range, wider as the preflop aggressor and in
+    position, narrower multiway;
+  - bluff in proportion to the bet size (size ÷ (1 + 2×size) of bets),
+    with draws first; stabs are random for weak players;
+  - check the middle; monsters sometimes check to trap.
+- **A plan per hand** (`player.aiPlan`): value, bluff, semi-bluff or trap.
+  A bluff keeps firing when a scare card lands (overcard, third suited
+  card, straightening card) and mostly gives up on blanks. A trap looks
+  for the check-raise.
+- **Sizing from the board and street, the same for value and bluffs:**
+  flop ⅓ pot on dry boards, ⅔ on wet ones; turn ⅔; river ¾; with
+  occasional polar overbets at the top of the dial. Weak players size by
+  strength (`sizeTell`), a tell worth learning.
+- **Defence:** skilled players defend about the minimum defence frequency
+  (shared among everyone facing the bet), plus draws getting the right
+  price. Weak players call with any pair and fold air ("fit or fold"),
+  and tight ones fold more to big bets. Hands that can't commit don't call
+  off the stack; how much of the range may commit depends on
+  stack-to-pot ratio.
+- **Raises:** value raises from the top of the continuing range (traps
+  become check-raises); semi-bluff raises with big draws.
+- **Think time** (`aiThinkTime`) comes from the spot: pot, bet faced and
+  street. How much the chosen action leaks into it is `timingTell`: real
+  timing tells in the Back Room, none at Elite.
+- Skill leaks are the `POSTFLOP_SKILL` per-anchor table on the dial:
+  `rangeThink`, `read`, `bluffPlan`, `trap`, `sizeTell`, `mix`, `sticky`
+  and `timingTell`.
+- **Engine:** `g.prevAggressorId` (who bet last street) and `g.pfRaises`.
 
 ### Step 4: range narrowing
 - Each AI keeps a weighted range for every opponent and re-weights it after
@@ -259,5 +284,42 @@ Seed 1, 2000 hands for each table (1200 for the test seats). AI averages:
     `hard`). That's Step 5.
   - The `abc` yardstick's win rate is noise-level with no clear tier
     trend. It'll separate once postflop play differs by skill.
+
+### After Step 3 (v0.52.0)
+
+Seed 1, 3000 hands for each table (1500 for the test seats and the sweep).
+AI averages:
+
+| Tier | VPIP | PFR | AF | WTSD | Fold to bet | Size tell | `abc` bb/100 |
+|---|---|---|---|---|---|---|---|
+| medium | 46% | 13% | 0.7 | 54% | 48% | 0.59 | +5 |
+| hard | 40% | 17% | 1.0 | 44% | 46% | 0.42 | **−92** |
+| expert | 35% | 20% | 1.4 | 36% | 41% | 0.18 | **−105** |
+| elite | 34% | 21% | 1.7 | 34% | 40% | 0.15 | **−73** |
+
+- **A real ladder.** The plain `abc` player breaks even in the Back Room
+  and loses at every tier above it. Across the skill sweep, showdowns fall
+  steadily (58% → 34%) and the size tell fades (0.57 → 0.15).
+  - WTSD is now within about 2 points of the Elite band (34% against
+    25–32%) and 3 points of Expert's (36% against 25–33%).
+  - The size tell sits inside the Back Room and Expert bands, just outside
+    Elite's (0.15 against ≤ 0.15) and above Pub's (0.42 against ≤ 0.35).
+- **In the browser:** the rebuilt AI plays real hands in the live game.
+  Bets, calls, folds and checks all occur postflop, with no AI errors. In a
+  direct in-page test, top set bets 93% of the time (the rest are trap
+  checks), and a flush + straight draw semi-bluffs.
+- **Bully (raises every hand, bets every street):**
+  - Back Room crushes it (−445 bb/100): the stations call it down.
+  - Pub loses to it (+151 for the bully): fit-or-fold amateurs, a real leak.
+  - **Elite also loses to it (+70 for the bully).** Elite assumes every
+    raiser has a normal range, so it over-folds to a player who raises
+    everything. Only reading that player's habits fixes this (Step 5). A
+    human who simply raises a lot must not be able to beat the High Roller
+    room, so **Step 5 should come before Step 4**.
+- **Station:** the AI still bluffs a player who never folds (6–13% of bets
+  at `hard`). That's also Step 5.
+- **Still short of the bands:** AF at the top (1.4–1.7 against 2.0–3.5)
+  and Elite fold-to-bet (40% against 42–55%). Back Room fold-to-bet runs
+  high (48%): fit-or-fold. Step 6 tunes these.
 
 Re-run and record here after every step.

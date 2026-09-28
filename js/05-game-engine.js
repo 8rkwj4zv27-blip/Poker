@@ -1002,8 +1002,9 @@ function beginBettingRound(phase){
     if (p.streetAction && !['fold','allin','ko','eliminated'].includes(p.streetAction.type)) p.streetAction = null;
   });
   if (phase!=='preflop'){ g.currentBet=0; g.minRaise=g.bigBlind; }
+  g.prevAggressorId = phase==='preflop' ? null : (g.streetAggressorId || null);   // who bet/raised last street
   g.streetRaises = 0; g.streetAggressorId = null;
-  if (phase==='preflop') g.pfAggressorId = null;
+  if (phase==='preflop'){ g.pfAggressorId = null; g.pfRaises = 0; }
   const n = g.players.filter(p=>p.inHand).length;
   g.turnPointer = (phase==='preflop')
     ? (n===2 ? g.dealerIndex : nextActiveIndex(g.bbIndex))
@@ -1224,7 +1225,7 @@ function applyAction(player, decision){
     // bets/raises this street, and who made the last one / the preflop one
     g.streetRaises = (g.streetRaises || 0) + 1;
     g.streetAggressorId = player.id;
-    if (g.phase === 'preflop') g.pfAggressorId = player.id;
+    if (g.phase === 'preflop'){ g.pfAggressorId = player.id; g.pfRaises = g.streetRaises; }
     g.players.forEach(p=>{
       if (p===player || !p.inHand || p.folded || p.allIn) return;
       if (isFullRaise){ p.acted = false; p.mayRaise = true; }

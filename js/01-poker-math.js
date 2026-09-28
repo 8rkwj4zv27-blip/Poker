@@ -252,6 +252,29 @@ function estimateEquityVsRanges(holeCards, board, ranges, iterations){
   return winShare/iterations;
 }
 
+/* Where a made hand sits WITHIN a range on this board: 0 = nothing in the
+   range beats it, 1 = everything does. This is how a thinking player sees
+   a hand ("top pair is near the top of what I can have here"), as opposed
+   to its raw equity. Made strength only: draws are judged separately.
+   rangePct: the range as "best X% of starting hands". */
+function rangeRelStrength(holeCards, board, rangePct){
+  const combos = comboOrder();
+  const brd = board.map(cardCode);
+  const dead = new Array(52).fill(false);
+  brd.forEach(c=>{ dead[c] = true; });
+  const mine = fastScore7(holeCards.map(cardCode).concat(brd));
+  const k = Math.max(1, Math.min(combos.length, Math.round((rangePct == null ? 1 : rangePct) * combos.length)));
+  let better = 0, equal = 0, n = 0;
+  for (let i=0;i<k;i++){
+    const c = combos[i];
+    if (dead[c[0]] || dead[c[1]]) continue;
+    const s = fastScore7([c[0], c[1]].concat(brd));
+    n++;
+    if (s > mine) better++; else if (s === mine) equal++;
+  }
+  return n ? (better + equal/2) / n : 0.5;
+}
+
 /* ============================================================
    POSTFLOP HAND CLASS  (AI, Step 3 builds decisions on it)
    ============================================================

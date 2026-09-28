@@ -751,6 +751,221 @@ async function aiPreflop(player, g, c){
   return fold();
 }
 
+/* ============================================================
+   POSTFLOP: LINES, SIZING AND DEFENCE (docs/ai/AI_PLAN.md, Step 3)
+   ============================================================
+   A thinking player judges a hand against the RANGE they'd have here
+   (rangeRelStrength: 0 = the top of it), bets the top of that range for
+   value and a matching share of bluffs (fewer for small bets, more for
+   big ones), checks the middle, and when bet into defends enough of their
+   range that bluffing them isn't free. They pick a bet size from the board
+   and the street, the same for value and bluffs, so the size tells you
+   nothing. And a bet starts a PLAN that carries across streets: a bluff
+   keeps going when a scare card lands and gives up when it doesn't.
+
+   A weak player judges the hand in absolutes ("I've got top pair!"),
+   calls with any pair, bluffs at random, and bets bigger when strong.
+
+   POSTFLOP_SKILL, on the skill dial:
+     rangeThink — range-relative (1) vs absolute (0) judgement
+     read       — how well they picture the opponents' ranges
+     bluffPlan  — bluffs chosen by a plan (draws, blockers of the story,
+                  scare cards) vs random stabs
+     trap       — how often a monster checks to spring a trap
+     sizeTell   — how much the bet size follows hand strength
+     mix        — how blurred the thresholds are
+     sticky     — how far they call past the right price
+     timingTell — how much their think time gives away (think time) */
+const POSTFLOP_SKILL = {
+  easy:   { rangeThink:0.00, read:0.00, bluffPlan:0.00, trap:0.04, sizeTell:0.90, mix:0.080, sticky:0.14, timingTell:0.8 },
+  medium: { rangeThink:0.20, read:0.20, bluffPlan:0.15, trap:0.07, sizeTell:0.70, mix:0.060, sticky:0.10, timingTell:0.6 },
+  hard:   { rangeThink:0.55, read:0.50, bluffPlan:0.50, trap:0.11, sizeTell:0.35, mix:0.045, sticky:0.05, timingTell:0.3 },
+  expert: { rangeThink:0.85, read:0.80, bluffPlan:0.85, trap:0.14, sizeTell:0.10, mix:0.030, sticky:0.01, timingTell:0.1 },
+  elite:  { rangeThink:1.00, read:0.95, bluffPlan:1.00, trap:0.17, sizeTell:0.00, mix:0.020, sticky:0.00, timingTell:0.0 },
+};
+
+/* How a player who thinks in absolutes rates a made hand (0 = unbeatable,
+   ~1 = nothing). Kicker nudges top pair. */
+const MADE_ABS = { 'straight-flush':0.003, quads:0.006, 'full-house':0.02, flush:0.04, straight:0.06,
+  set:0.07, trips:0.10, 'two-pair':0.13, overpair:0.20, 'top-pair':0.32, 'second-pair':0.50, 'weak-pair':0.62, nothing:0.90 };
+
+/* A player's likely preflop range as a fraction, from public facts only:
+   who raised, how many raises, whether they were the big blind in a limped
+   pot. `read` blends toward "could be anything" for weak readers. */
+function preflopRangeOf(g, p, read, loose){
+  const i = g.players.indexOf(p);
+  const raises = typeof g.pfRaises === 'number' ? g.pfRaises : (g.pfAggressorId ? 1 : 0);
+  let model;
+  if (g.pfAggressorId === p.id) model = raises >= 2 ? RERAISE_RANGE[Math.min(raises, RERAISE_RANGE.length-1)] : standardOpenRange(g, i);
+  else if (raises >= 2) model = 0.08;                       // called a 3-bet
+  else if (raises === 1) model = i === bbIndexOf(g) ? 0.45 : 0.20;   // defended / cold-called a raise
+  else model = i === bbIndexOf(g) ? 1 : 0.45;             // limped pot
+  model = Math.min(1, model * (loose || 1));
+  return model * read + 0.6 * (1 - read);
+}
+
+/* A card that changes the story: an overcard to the board, the third of a
+   suit, or one that makes a straight possible. Bluffs keep firing on these. */
+function isScareCard(board){
+  if (board.length < 4) return false;
+  const prev = board.slice(0, -1), card = board[board.length-1];
+  if (card.value > Math.max(...prev.map(c=>c.value))) return true;
+  if (prev.filter(c=>c.suit === card.suit).length === 2) return true;
+  return straightPossible(board) && !straightPossible(prev);
+}
+/* Three board ranks inside any five-rank window (ace plays low too). */
+function straightPossible(board){
+  const vals = new Set(board.map(c=>c.value));
+  if (vals.has(14)) vals.add(1);
+  for (let lo=1; lo<=10; lo++){
+    let n = 0;
+    for (let v=lo; v<lo+5; v++) if (vals.has(v)) n++;
+    if (n >= 3) return true;
+  }
+  return false;
+}
+
+async function aiPostflop(player, g, c){
+  const { dp, pers, mood, bluffFreq, callLoosen, toCall, stack, bb } = c;
+  let { aggression, tightness } = c;
+  const sk = skillBlend(POSTFLOP_SKILL, aiSkillOf(player, g));
+  const idx = g.players.indexOf(player);
+  const street = g.board.length;               // 3 flop, 4 turn, 5 river
+  const opps = g.players.filter(p=>p !== player && p.inHand && !p.folded);
+  const canBetInto = opps.filter(p=>!p.allIn).length;
+  const multi = Math.max(0, opps.length - 1);
+  const pot = g.pot;
+  const inPosition = seatsAfter(idx) === 0;
+  const allInTotal = player.betThisRound + stack;
+  const sizeMul = 0.85 + (pers.sizing || 0.7) * 0.30;   // archetype size fingerprint: the same for every hand
+  const loose = Math.exp((0.5 - tightness) * 1.2);
+  if (mood.kind === 'steamed') aggression = Math.min(1, aggression + 0.1*mood.intensity);
+
+  // ---- what do I have? ----
+  const hc = classifyPostflop(player.hand, g.board);
+  const myRange = preflopRangeOf(g, player, 1, loose);
+  const relFull = rangeRelStrength(player.hand, g.board, myRange);
+  // ---- the plan for this hand (carried across streets) ----
+  const handKey = player.hand.map(cardKey).join('');
+  if (!player.aiPlan || player.aiPlan.key !== handKey) player.aiPlan = { key: handKey, line: null, scale: 1 };
+  const plan = player.aiPlan;
+  // after calling a bet, my range is only the part I continue with, so a
+  // hand ranks lower within it on the next street
+  const rel = Math.min(1, relFull / Math.max(0.15, plan.scale));
+  const absPct = Math.min(0.95, MADE_ABS[hc.made] + (hc.made === 'top-pair' ? (9 - Math.max(0, hc.kicker - 3)) * 0.012 : 0));
+  // the strength this player actually acts on: range-relative for thinkers
+  const str = rel * sk.rangeThink + absPct * (1 - sk.rangeThink);
+  const strongDraw = street < 5 && (hc.draws.flush || hc.draws.oesd);
+  const weakDraw = street < 5 && !strongDraw && (hc.draws.gutshot || hc.draws.backdoorFlush || hc.draws.overcards);
+
+  // equity against the opponents' likely ranges, with a weak reader's misjudgement
+  const ranges = opps.map(o=>preflopRangeOf(g, o, sk.read, 1));
+  let eq = await EquityService.get(player.hand, g.board, ranges.length, Math.min(dp.iterations, 700), ranges);
+  eq = clamp01(eq + (Math.random() - 0.5) * dp.noise);
+
+  const iWasAggressor = g.prevAggressorId === player.id;   // I bet/raised the last street
+  const scare = isScareCard(g.board);
+
+  // ---- sizing: from the board and street for thinkers; from strength for the rest ----
+  function betFraction(){
+    const t = hc.texture;
+    let solid = street === 3 ? (t.wet < 0.35 && !multi ? 0.33 : 0.62) : street === 4 ? 0.66 : 0.75;
+    if (street === 5 && sk.rangeThink > 0.9 && (str < 0.04 || plan.line === 'bluff') && Math.random() < 0.2) solid = 1.2;  // polar overbet
+    const tell = 0.45 + (0.55 - str) * 0.9 + (Math.random() - 0.5) * 0.2;
+    const f = solid * (1 - sk.sizeTell) + tell * sk.sizeTell;
+    return Math.max(0.25, Math.min(1.3, f)) * sizeMul;
+  }
+  /* commit only strong hands: how much of the range may play for the whole
+     stack depends on stack-to-pot ratio (short stacks commit lighter) */
+  const spr = stack / Math.max(1, pot);
+  const commitLine = spr < 1.5 ? 0.45 : spr < 3 ? 0.25 : spr < 6 ? 0.12 : 0.06;
+  const canCommit = str < commitLine || eq > 0.72;
+  function betOrRaiseTo(total, isValue){
+    if (!player.mayRaise || canBetInto === 0) return toCall > 0 ? { action:'call' } : { action:'check' };
+    total = Math.round(total);
+    const minTo = toCall > 0 ? g.currentBet + g.minRaise : player.betThisRound + bb;
+    total = Math.max(total, minTo);
+    // a bet that leaves a sliver behind is an all-in
+    if (allInTotal - total < pot * 0.25) total = allInTotal;
+    if (total >= allInTotal){
+      if (!(isValue && canCommit)) return toCall > 0 ? { action:'call' } : { action:'check' };
+      total = allInTotal;
+    }
+    return { action: toCall > 0 ? 'raise' : 'bet', amount: total };
+  }
+
+  // ======== nothing to call: bet or check ========
+  if (toCall <= 0){
+    if (canBetInto === 0) return { action:'check' };
+    const frac = betFraction();
+    const betTotal = player.betThisRound + Math.max(bb, pot * frac);
+    // how much of my range bets for value here
+    let vWidth = street === 3 ? 0.34 : street === 4 ? 0.26 : 0.18;
+    if (iWasAggressor) vWidth *= 1.25;
+    if (inPosition) vWidth *= 1 + dp.positionWeight * 2;
+    vWidth *= Math.pow(0.72, multi) * (0.8 + 0.4 * aggression) * Math.sqrt(loose);
+
+    // a monster sometimes checks to trap (dry boards, not the river last to act)
+    if (str < 0.08 && !(street === 5 && inPosition) && plan.line !== 'value'
+        && Math.random() < sk.trap * (1.2 - aggression) * (hc.texture.wet < 0.4 ? 1 : 0.4)){
+      plan.line = 'trap';
+      return { action:'check' };
+    }
+    if (leanYes(vWidth - str, sk.mix)){
+      plan.line = 'value';
+      return betOrRaiseTo(betTotal, true);
+    }
+    // bluffs: planned (a share that matches the bet size, draws first,
+    // scare cards keep a story going) or, for weak players, random stabs
+    const ratio = frac / (1 + 2 * frac);
+    let planned = vWidth * ratio / (1 - ratio) / 0.45;
+    planned *= strongDraw ? 1.7 : weakDraw ? 1.1 : street === 5 ? 1.0 : 0.55;
+    if (iWasAggressor) planned *= 1.3;
+    if (plan.line === 'bluff' || plan.line === 'semibluff') planned *= scare ? 1.5 : 0.55;
+    const random = bluffFreq * 0.6;
+    let bluffRate = (planned * sk.bluffPlan + random * (1 - sk.bluffPlan)) * (0.6 + 0.8 * aggression);
+    bluffRate *= Math.pow(0.35, multi);
+    if (str > 0.5 && Math.random() < bluffRate){
+      plan.line = strongDraw || weakDraw ? 'semibluff' : 'bluff';
+      return betOrRaiseTo(betTotal, false);
+    }
+    return { action:'check' };
+  }
+
+  // ======== facing a bet ========
+  const potBefore = Math.max(1, pot - toCall);
+  const b = toCall / potBefore;                         // bet size as a share of the pot
+  const potOdds = toCall / (pot + toCall);
+  // share of range to defend so a bluff doesn't auto-profit; with other
+  // players also facing the bet the defence is shared, so each needs less
+  const alpha = b / (1 + b);
+  const defenders = Math.max(1, opps.filter(p=>p.id !== g.streetAggressorId).length + 1);
+  const mdf = 1 - Math.pow(alpha, 1 / defenders);
+  // absolute players: any pair (and draws) continue, tight ones fold more to big bets
+  const absLine = 0.55 + sk.sticky + callLoosen + (0.5 - tightness) * 0.3 - b * 0.15;
+  const contLine = mdf * sk.rangeThink + absLine * (1 - sk.rangeThink);
+  const drawOK = (strongDraw || weakDraw) && eq + (strongDraw ? 0.08 : 0.03) * (street === 3 ? 1 : 0.6) > potOdds;
+
+  // raise: for value from the top of the continuing range, or a semi-bluff with a big draw
+  const valueRaise = str < contLine * 0.22 && Math.random() < 0.35 + aggression * 0.5 + (plan.line === 'trap' ? 0.3 : 0);
+  const semiRaise = !valueRaise && strongDraw && street < 5 && multi === 0
+    && Math.random() < 0.25 * sk.bluffPlan * (0.4 + aggression) + bluffFreq * 0.2 * (1 - sk.bluffPlan);
+  if ((valueRaise || semiRaise) && player.mayRaise && stack > toCall){
+    const total = g.currentBet + (pot + toCall) * 0.8 * sizeMul;
+    const r = betOrRaiseTo(total, valueRaise);
+    if (r.action === 'raise'){ plan.line = valueRaise ? 'value' : 'semibluff'; return r; }
+  }
+  // hopeless: no pair, no draw, equity far off the price
+  if (!drawOK && eq < potOdds * 0.6 && str > 0.7) return { action:'fold' };
+  const continues = leanYes(contLine - str, sk.mix) || drawOK;
+  if (!continues) return { action:'fold' };
+  // calling off most of the stack needs a hand that can commit
+  const wouldCommit = (player.totalBetHand + toCall) / Math.max(1, player.chips + player.totalBetHand);
+  if (wouldCommit > 0.5 && !canCommit && eq < potOdds + 0.12) return { action:'fold' };
+  plan.scale *= Math.max(0.2, Math.min(1, contLine));
+  return { action:'call' };
+}
+
 async function aiDecide(player, g){
   const idx = g.players.indexOf(player);
   const numOpp = g.players.filter(p=>p.inHand && !p.folded && p.id!==player.id).length;
@@ -773,7 +988,6 @@ async function aiDecide(player, g){
   }
 
   const toCall = Math.max(0, g.currentBet - player.betThisRound);
-  const potOdds = toCall>0 ? toCall/(g.pot + toCall) : 0;
   const stack = player.chips;
   const bb = g.bigBlind;
   const bbLeft = stack / bb;
@@ -787,89 +1001,18 @@ async function aiDecide(player, g){
     return aiPreflop(player, g, { dp, pers, mood, aggression, tightness, formatAdj, toCall, stack, bb, bbLeft });
   }
 
-  const rawEquity = await EquityService.get(player.hand, g.board, Math.max(1,numOpp), dp.iterations);
-  const noise = (Math.random()-0.5) * dp.noise;
-  const tightAdj = (tightness - 0.5) * -0.10;
-  // late position (few players left to act) nudges confidence up slightly
-  const posAdj = dp.positionWeight * (1 - Math.min(1, seatsAfter(idx) / Math.max(1, numOpp)));
-  const perceived = clamp01(rawEquity + noise + tightAdj + posAdj);
-  const shortStack = bbLeft <= ELIMINATION_CONFIG.shortStackBB;   // shoving territory — caps don't apply
-  const preflop = g.board.length===0;
-  const bluffRoll = Math.random() < bluffFreq * (preflop ? 0.5 : 1);
-  const sizeMul = 0.85 + pers.sizing*0.30;       // archetype bet-size fingerprint
-
-  /* Stack discipline, measured across the WHOLE hand: total commitment may
-     not pass ~28% of the hand-start stack on a merely decent hand, ~45% on a
-     good one. Per-action caps let escalation compound street by street; a
-     hand-level budget is what actually keeps stacks alive. Only genuinely
-     strong holdings (or short stacks, where shoving is simply correct) play
-     for everything. */
-  const handStart = player.chips + player.totalBetHand;      // stack at start of hand
-  function cappedTotal(desiredTotal, strength){
-    const already = player.betThisRound;
-    const committedBefore = player.totalBetHand - already;   // spent on earlier streets
-    const capFrac = strength>0.80 ? 1 : strength>0.70 ? 0.45 : 0.28;
-    const budget = Math.max(bb*3, Math.round(handStart * capFrac)) - committedBefore;
-    let total = Math.min(desiredTotal, Math.max(already + toCall, budget));
-    if (already + stack - total < bb*1.5) total = already + stack;  // no meaningless slivers
-    return total;
-  }
-  function raiseOrSettle(total){
-    const allInTotal = player.betThisRound + stack;
-    total = Math.min(total, allInTotal);
-    const minLegal = g.currentBet + g.minRaise;
-    // a capped "raise" that no longer clears the minimum isn't worth making
-    if (total < minLegal && total < allInTotal) return toCall>0 ? {action:'call'} : {action:'check'};
-    // avoid needless all-ins on non-premium hands
-    if (total >= allInTotal && !shortStack && perceived < 0.82) return toCall>0 ? {action:'call'} : {action:'check'};
-    return {action: toCall>0 ? 'raise' : 'bet', amount: total};
-  }
-
-  // ---------------- postflop, nothing to call ----------------
-  if (toCall <= 0){
-    // probe: small information bet with a medium hand in an unopened pot
-    const probe = perceived > 0.38 && perceived <= 0.58 && Math.random() < 0.30 + aggression*0.25;
-    const valueBet = perceived > (0.58 + (1-aggression)*0.10);
-    if ((valueBet || probe || bluffRoll) && stack > bb){
-      let frac = probe && !valueBet ? (0.30 + Math.random()*0.10)
-               : (!valueBet && bluffRoll) ? (0.40 + aggression*0.15)
-               : (0.35 + aggression*0.30 + Math.max(0, perceived-0.58)*0.5);
-      let total = potSizedTotal(player, Math.min(frac*sizeMul, 0.85));
-      return raiseOrSettle(cappedTotal(total, perceived));
-    }
-    return {action:'check'};
-  }
-
-  // ---------------- facing a bet ----------------
-  const betPressure = Math.min(1, toCall / Math.max(1, g.pot));   // 1 = pot-sized or more
-  const callThreshold = potOdds - 0.03
-      + (tightness-0.5)*0.08
-      + betPressure*0.10          // big bets demand a real hand to continue
-      - callLoosen;
-  if (perceived < callThreshold && !bluffRoll){
-    const cheap = toCall <= Math.max(bb, stack*0.02) && perceived > callThreshold-0.12;
-    return cheap ? {action:'call'} : {action:'fold'};
-  }
-  const wantsRaise = player.mayRaise && stack > toCall
-    && (perceived > 0.74 || (bluffRoll && betPressure < 0.5 && Math.random()<0.35))
-    && Math.random() < (0.25 + aggression*0.45);
-  if (wantsRaise){
-    let frac = (0.45 + aggression*0.30) * sizeMul;
-    let total = potSizedTotal(player, Math.min(frac, 0.8));
-    return raiseOrSettle(cappedTotal(total, perceived));
-  }
-  // calling off a big chunk — judged against the whole hand's commitment —
-  // still needs genuine strength
-  const wouldCommit = (player.totalBetHand + toCall) / Math.max(1, player.chips + player.totalBetHand);
-  if (shortStack && toCall >= stack*0.7 && perceived < formatAdj.callOffFloor) return {action:'fold'};
-  if (!shortStack && wouldCommit > 0.5 && perceived < 0.66) return {action:'fold'};
-  if (!shortStack && toCall > stack*0.45 && perceived < 0.62) return {action:'fold'};
-  return {action:'call'};
+  // Postflop: range-aware lines, sizing and defence (docs/ai/AI_PLAN.md, Step 3)
+  return aiPostflop(player, g, { dp, pers, mood, aggression, tightness, bluffFreq, callLoosen, toCall, stack, bb });
 }
 
-/* How long an AI 'thinks'. Big decisions — big folds, raises, calling off a
-   chunk of stack, anything all-in — get visibly longer pauses. Scaled by the
-   archetype's thinkSpeed and by the player's chosen game speed. */
+/* How long an AI 'thinks'. Scaled by the archetype's thinkSpeed and the
+   player's chosen game speed.
+
+   The pause is built from the SPOT, not the choice: a big pot, a big bet
+   to face or a late street takes longer whatever they then do. How much
+   the chosen action leaks into it is the skill dial's timingTell: Back
+   Room players really do pause before a big raise (a tell worth learning);
+   Elite players take the same time to fold as to shove. */
 function speedMult(){
   // FAST DEV short-circuits the player's own speed setting entirely — see
   // the FAST_DEV declaration above. Every one of this function's existing
@@ -889,13 +1032,20 @@ function speedMult(){
 function aiThinkTime(player, decision, g){
   if (motionOff()) return 260;
   const toCall = Math.max(0, g.currentBet - player.betThisRound);
+  const stackStart = Math.max(1, player.chips + player.totalBetHand);
+  // the spot: how much is at stake for this player right now
+  const stakes = Math.min(1, (g.pot + toCall) / stackStart);
+  const facing = Math.min(1, toCall / Math.max(1, g.pot));
+  const lateStreet = g.board.length >= 4 ? 1 : 0;
+  const spotMs = 600 + stakes*900 + facing*500 + lateStreet*200 + Math.random()*650;
+  // the choice (only as loud as this player's tell)
   const allIn = decision.amount != null && decision.amount >= player.betThisRound + player.chips;
-  const big = allIn
-    || decision.action==='raise' || decision.action==='bet'
+  const big = allIn || decision.action==='raise' || decision.action==='bet'
     || (decision.action==='fold' && toCall > g.pot*0.5)
     || (decision.action==='call' && toCall > player.chips*0.3);
-  let ms = big ? 1350 + Math.random()*1050 : 550 + Math.random()*500;
-  if (allIn) ms += 500;
+  const choiceMs = (big ? 1350 + Math.random()*1050 : 550 + Math.random()*500) + (allIn ? 500 : 0);
+  const tell = skillBlend(POSTFLOP_SKILL, aiSkillOf(player, g)).timingTell;
+  const ms = spotMs * (1 - tell) + choiceMs * tell;
   return Math.round(ms * (player.personality.thinkSpeed || 1) * speedMult());
 }
 
