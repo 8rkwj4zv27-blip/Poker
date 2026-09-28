@@ -86,6 +86,7 @@
 .spl-close{ width:44px; height:44px; border:0; border-radius:2px; background:#34171A; color:#F3E6C4; font-size:14px; cursor:pointer; }
 .spl-body{ flex:1; overflow:auto; -webkit-overflow-scrolling:touch; padding:10px 14px 28px; }
 .spl-body h3{ margin:16px 0 4px; font-family:var(--font-hdr); font-size:8px; font-weight:400; letter-spacing:.12em; color:#E8B83A; }
+.spl-body h3 small{ display:block; margin-top:4px; font-family:var(--font-px); font-size:12px; letter-spacing:0; line-height:1.35; color:#B69A7A; }
 .spl-sub{ margin:4px 0 10px; font-size:13px; line-height:1.4; color:#B69A7A; }
 .spl-row{ padding:8px 0; border-bottom:1px dashed rgba(182,154,122,.18); }
 .spl-name{ margin-bottom:6px; font-family:var(--font-hdr); font-size:7px; letter-spacing:.06em; color:#F3E6C4; }

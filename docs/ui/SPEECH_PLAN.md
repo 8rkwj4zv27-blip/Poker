@@ -140,3 +140,53 @@ Checked in an emulated iPhone at 390×844 and 375×667, six opponents:
 every row renders, no console errors; the LOW close-up now sits above
 your hole cards. On a 375×667 phone it covers part of the board area;
 MIDDLE sits over the bets instead. Timing is still a placeholder.
+
+## Round 2 picks (owner, 2026-09-28)
+
+```
+FACE SIZE: MEDIUM · BUBBLE SIZE: GROWS AS IT TYPES · FACE FRAME: THEIR COLOUR
+NAME: UNDER THE FACE · HEIGHT: LOW · SIDE: THEIR SIDE · ARRIVAL: POPS
+VOICE: BLIPS · VOLUME: LOW · TALKING PACE: EVERYONE THE SAME
+WHO SPEAKS: ANYONE · LINES: LONG · TEXT: TYPES ON · OPPONENTS: 4
+```
+
+Feedback: the creature and grumble voices were "a bit scary"; blips are
+the best, and the owner wants more choices for them. The close-up
+"feels good". Next, after the sound: darker lines (below), and possibly
+new or better-animated faces later.
+
+## Round 3: blip choices (2026-09-28)
+
+Same link. The whole close-up is locked in (round 2's picks); the
+creature and grumble voices are gone. `js/speech-voice.js` is blips only:
+
+| Row | Options |
+|---|---|
+| SOUND | PIP (round 2's square beep) · SOFT (rounded triangle) · CHIRP (drops onto its note) · WOOD (a little marimba) · BELL (music box) · MACHINE (a teleprinter tick with a tiny tone) |
+| HOW OFTEN | EVERY OTHER LETTER (round 2) · EVERY LETTER · EVERY SYLLABLE |
+| MELODY | IN TUNE (a five-note scale, so a line is a little tune) · FREE (round 2) · ONE NOTE |
+| PITCH | THEIR OWN (Bruno low, Mavis high) · ALL THE SAME |
+| VOLUME / TALKING PACE | as round 2, defaulting to the owner's LOW and EVERYONE THE SAME |
+
+Levels are matched to the pip the owner picked (measured offline: every
+sound peaks 0.10-0.16 at LOW, rms within ~1.5x; square waves read
+louder than sines at the same peak, so the sine sounds sit a touch
+higher). Changing any blip row plays a sample line.
+
+## Parked for after the sound
+
+**Darker lines.** Owner's brief: comically dark now and then: sadness
+("I'm literally in my overdraft"), a bit of threat ("I'll break your
+legs"), a bit depraved, Limmy rather than Deadpool; down-to-earth
+enough to genuinely shock, and rare. That needs moments the lab doesn't
+have yet: *losing a big pot to you*, *going bust*, *a big loss in
+general*. Those are where the dark lines belong (an action line stays
+mostly ordinary). Plan: add those moments to the lab (they're public
+events: showdown result, stack change, elimination), then write a dark
+tier per character that fires only on them, with a rarity dial.
+
+**Faces.** The portraits are pixel PNGs (`assets/faces/`) recoloured per
+seat. New expressions can be drawn to match the existing art (a
+separate art task, best done in its own lab with the owner reviewing
+each face). Cheaper animation first: a mouth-open frame flapping in time
+with the blips, and blinks. Later, its own pass.

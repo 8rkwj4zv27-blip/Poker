@@ -512,9 +512,9 @@ round 2). Phone-first like the Showdown Lab: the real game full screen,
 a TUNE key and a SAY key either side of the board, a bottom sheet. A
 second after the chosen opponent acts they say a line and their face
 changes to match (the game's `playReactionSequence`). Round 1 picked
-the close-up in card stock; round 2 tunes it and adds creature voices
-(`js/speech-voice.js`: procedural Web Audio gibberish from the line's
-own vowels, one voice per character, synced to the typing).
+the close-up in card stock; round 2 tuned it; round 3 is blip voices
+(`js/speech-voice.js`: procedural Web Audio pips pitched from the line's
+letters, one voice per character, synced to the typing).
 `js/speech-lines.js` is a working pass at the cast's lines, keyed by
 personality and action. Lab only; the game's own
 `TABLE_TALK` is still silenced by `bubblesAllowed()`.

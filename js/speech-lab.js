@@ -2,19 +2,19 @@
 
 /* ============================================================
    SPEECH LAB — the controls and the candidate close-up, inside the game
-   (round 2, phone-first)
+   (round 3, phone-first)
 
    Runs in the game copy the host page (speech-lab.html,
    js/speech-lab-host.js) builds. The game plays an ordinary hand; about a
    second after the chosen opponent acts, they say a line
-   (js/speech-lines.js) in their own creature voice (js/speech-voice.js),
+   (js/speech-lines.js) in their own blip voice (js/speech-voice.js),
    their face changes to match it, and the line types on in time with the
    voice. The SAY key makes them say another one straight away.
 
-   Round 1's picks are locked in: the CLOSE-UP (the speaker's face rises
-   over the felt with the bubble beside it) in CARD STOCK (cream, like the
-   playing cards). Round 2 tunes the close-up (face size, how the bubble
-   sizes, frame, height, arrival, side, name) and adds the voices.
+   Rounds 1 and 2 are locked in: the CLOSE-UP in CARD STOCK, a medium face
+   framed in the seat's colour with the name under it, a bubble that grows
+   as it types, low, on the speaker's side, popping in. The voice is
+   BLIPS; round 3 gives the blips their choices (js/speech-voice.js).
 
    Presentation only: the lab wraps applyAction to hear who acted, and
    calls the game's own face chain (playReactionSequence). No poker,
@@ -22,39 +22,36 @@
    ============================================================ */
 (() => {
   const host = (() => { try{ return parent !== window && parent.__lab ? parent.__lab : null; }catch(e){ return null; } })();
-  const state = host ? host.state : { picks:null, opp:'6', sound:'on' };
+  const state = host ? host.state : { picks:null, opp:'4', sound:'on' };
   const $id = id => document.getElementById(id);
 
   /* ---- the picks (every row's first option is my suggestion) ---- */
-  const LOCKED_LIST = ['Where: close-up', 'Look: card stock'];
+  const LOCKED_LIST = ['Where: close-up', 'Look: card stock', 'Face: medium, in their colour', 'Name: under the face',
+    'Bubble: grows as it types', 'Height: low', 'Side: their side', 'Arrival: pops'];
+  // round 2's close-up picks, fixed
+  const CLOSE = { face:'72', fit:'grow', frame:'own', name:'plate', height:'low', side:'theirs', arrive:'pop' };
   const SECTIONS = [
-    { title:'THE CLOSE-UP', sub:'Round 1 locked it in. These tune it.', rows:[
-      ['face', 'FACE SIZE', [['72','MEDIUM'],['56','SMALL'],['96','LARGE (ROUND 1)']]],
-      ['fit', 'BUBBLE SIZE', [['fit','FITS THE LINE'],['grow','GROWS AS IT TYPES'],['full','FULL WIDTH (ROUND 1)']],
-        'Fits: sized to what they say, short line, small bubble. Grows: starts small and stretches with every word.'],
-      ['frame', 'FACE FRAME', [['own','THEIR COLOUR'],['gold','GOLD'],['none','NO FRAME']], 'Their colour matches their seat cabinet, so you know who it is.'],
-      ['name', 'NAME', [['plate','UNDER THE FACE'],['bubble','IN THE BUBBLE'],['off','NONE']]],
-      ['height', 'HEIGHT', [['low','LOW'],['mid','MIDDLE']], 'Low: just above your cards. Middle: the empty felt between the seats and the board.'],
-      ['side', 'SIDE', [['theirs','THEIR SIDE'],['left','ALWAYS LEFT']], 'Their side: a right-hand seat speaks from the right.'],
-      ['arrive', 'ARRIVAL', [['rise','RISES UP'],['slide','SLIDES IN'],['pop','POPS']], 'Slides in from their side of the table.']
-    ]},
-    { title:'THE VOICE', sub:'No words, just a creature voice built from the line\'s own vowels. Each character has their own, and the mood bends it.', rows:[
-      ['voice', 'VOICE', [['creature','CREATURE'],['blips','BLIPS'],['grumble','GRUMBLE'],['off','OFF']],
-        'Creature: vowel gibberish. Blips: a pip per letter, like an old text box. Grumble: low and muffled, a mutter.'],
-      ['vol', 'VOLUME', [['0.5','MEDIUM'],['0.3','LOW'],['0.8','HIGH']]],
-      ['pace', 'TALKING PACE', [['own','THEIR OWN'],['even','EVERYONE THE SAME']], 'Their own: Tony gabbles, Bruno takes his time.']
+    { title:'THE BLIPS', sub:'Round 2 picked blips. These are the choices for them. Changing one plays a sample.', rows:[
+      ['blip', 'SOUND', [['pip','PIP (ROUND 2)'],['soft','SOFT'],['chirp','CHIRP'],['wood','WOOD'],['bell','BELL'],['machine','MACHINE']],
+        'Soft: rounded and gentle. Chirp: drops onto its note, Nintendo-ish. Wood: a little marimba. Bell: a music box. Machine: the table printing it.'],
+      ['often', 'HOW OFTEN', [['other','EVERY OTHER LETTER'],['letter','EVERY LETTER'],['syllable','EVERY SYLLABLE']]],
+      ['melody', 'MELODY', [['key','IN TUNE'],['free','FREE (ROUND 2)'],['steady','ONE NOTE']],
+        'In tune: the notes come from a five-note scale, so a line sounds like a little tune. One note: level, only a question rises.'],
+      ['pitch', 'PITCH', [['own','THEIR OWN'],['same','ALL THE SAME']], 'Their own: Bruno low, Mavis high.'],
+      ['vol', 'VOLUME', [['0.3','LOW'],['0.5','MEDIUM'],['0.8','HIGH']]],
+      ['pace', 'TALKING PACE', [['even','EVERYONE THE SAME'],['own','THEIR OWN']], 'Their own: Tony gabbles, Bruno takes his time.']
     ]},
     { title:'THE LINE', rows:[
-      ['who', 'WHO SPEAKS', [['left','LEFT SEAT'],['top','TOP SEAT'],['right','RIGHT SEAT'],['any','ANYONE']], 'Anyone: a different opponent each hand, and SAY goes round the table.'],
-      ['len', 'LINES', [['short','SHORT'],['long','LONG']]],
+      ['who', 'WHO SPEAKS', [['any','ANYONE'],['left','LEFT SEAT'],['top','TOP SEAT'],['right','RIGHT SEAT']], 'Anyone: a different opponent each hand, and SAY goes round the table.'],
+      ['len', 'LINES', [['long','LONG'],['short','SHORT']]],
       ['text', 'TEXT', [['type','TYPES ON'],['pop','ALL AT ONCE']]]
     ]}
   ];
   const ROWS = SECTIONS.flatMap(s => s.rows);
   const DEFAULTS = Object.fromEntries(ROWS.map(r => [r[0], r[2][0][0]]));
-  const picks = Object.assign({}, DEFAULTS, state.picks || {});
+  const picks = Object.assign({}, DEFAULTS, state.picks || {}, CLOSE);
   const save = () => { if (host) host.set({ picks:Object.assign({}, picks) }); };
-  const voiceSet = () => { try{ SpeechVoice.set({ style:picks.voice, level:Number(picks.vol) }); }catch(e){} };
+  const voiceSet = () => { try{ SpeechVoice.set({ sound:picks.blip, often:picks.often, melody:picks.melody, pitch:picks.pitch, level:Number(picks.vol) }); }catch(e){} };
   voiceSet();
 
   /* ---- who is speaking ---- */
@@ -210,15 +207,15 @@
     const sheet = document.createElement('div');
     sheet.className = 'spl-sheet'; sheet.setAttribute('role', 'dialog'); sheet.setAttribute('aria-label', 'Speech lab');
     sheet.innerHTML =
-      '<div class="spl-top"><span>SPEECH LAB · ROUND 2</span><button type="button" class="spl-close" aria-label="Close">✕</button></div>' +
+      '<div class="spl-top"><span>SPEECH LAB · ROUND 3</span><button type="button" class="spl-close" aria-label="Close">✕</button></div>' +
       '<div class="spl-body">' +
         '<p class="spl-sub">Play the hand as normal. A second after the chosen opponent acts, they say something. SAY makes them say another line straight away. Tap a bubble to dismiss it. Sound needs one tap first on an iPhone.</p>' +
         '<div class="spl-actions"><button type="button" data-act="say">SAY SOMETHING</button><button type="button" data-act="deal">NEW TABLE</button></div>' +
         SECTIONS.map(s => '<h3>' + s.title + (s.sub ? '<small>' + s.sub + '</small>' : '') + '</h3>' + s.rows.map(row).join('')).join('') +
         '<h3>THE TABLE</h3>' +
-        '<div class="spl-row"><div class="spl-name">OPPONENTS</div>' + seg('opp', [['6','6'],['4','4']], state.opp) + '<p class="spl-note">Changing this deals a new table.</p></div>' +
+        '<div class="spl-row"><div class="spl-name">OPPONENTS</div>' + seg('opp', [['4','4'],['6','6']], state.opp) + '<p class="spl-note">Changing this deals a new table.</p></div>' +
         '<div class="spl-row"><div class="spl-name">SOUND</div>' + seg('sound', [['on','ON'],['off','OFF']], state.sound) + '</div>' +
-        '<h3>LOCKED IN<small>Your round-1 picks.</small></h3><ul class="spl-locked">' + LOCKED_LIST.map(t => '<li>' + t + '</li>').join('') + '</ul>' +
+        '<h3>LOCKED IN<small>Your round-1 and round-2 picks.</small></h3><ul class="spl-locked">' + LOCKED_LIST.map(t => '<li>' + t + '</li>').join('') + '</ul>' +
         '<div class="spl-actions"><button type="button" data-act="reset">START OVER</button><button type="button" data-act="copy">COPY MY PICKS</button></div>' +
         '<textarea class="spl-copytext" readonly hidden></textarea>' +
       '</div>';
@@ -244,9 +241,9 @@
       const t = ev.target.closest('button'); if (!t) return;
       if (t.dataset.act === 'say'){ open(false); setTimeout(sayNow, 250); return; }
       if (t.dataset.act === 'deal'){ open(false); clear(true); deal(); return; }
-      if (t.dataset.act === 'reset'){ Object.assign(picks, DEFAULTS); save(); voiceSet(); paint(); return; }
+      if (t.dataset.act === 'reset'){ Object.assign(picks, DEFAULTS, CLOSE); save(); voiceSet(); paint(); return; }
       if (t.dataset.act === 'copy'){
-        const text = 'Speech Lab (round 2):\n' + ROWS.map(r => '- ' + r[1] + ': ' + r[2].find(o => o[0] === picks[r[0]])[1]).join('\n') + '\n- OPPONENTS: ' + state.opp;
+        const text = 'Speech Lab (round 3):\n' + ROWS.map(r => '- ' + r[1] + ': ' + r[2].find(o => o[0] === picks[r[0]])[1]).join('\n') + '\n- OPPONENTS: ' + state.opp;
         const ta = sheet.querySelector('.spl-copytext');
         const fin = ok => { t.textContent = ok ? 'COPIED' : 'SELECT + COPY BELOW'; setTimeout(() => { t.textContent = 'COPY MY PICKS'; }, 2200); if (!ok){ ta.hidden = false; ta.value = text; ta.focus(); ta.select(); } };
         try{ navigator.clipboard.writeText(text).then(() => fin(true), () => fin(false)); }catch(err){ fin(false); }
@@ -259,10 +256,10 @@
       if (k === 'opp'){ state.opp = v; if (host) host.set({ opp:v }); open(false); clear(true); deal(); return; }
       if (k === 'sound'){ state.sound = v; if (host) host.set({ sound:v }); try{ settings.sound = v === 'on'; }catch(err){} return; }
       picks[k] = v; save();
-      if (k === 'voice' || k === 'vol'){
+      if (['blip', 'often', 'melody', 'pitch', 'vol', 'pace'].includes(k)){
         voiceSet();
         // a sample, so the voice can be heard as it's picked
-        const sp = speaker(); if (sp) try{ SpeechVoice.speak(keyOf(sp), 'Go on, then.', 'neutral1', picks.pace === 'even'); }catch(err){}
+        const sp = speaker(); if (sp) try{ SpeechVoice.speak(keyOf(sp), 'Go on, then. Show me.', 'neutral1', picks.pace === 'even'); }catch(err){}
       }
       if (k === 'len') groupTurn = 0;
     });
@@ -270,7 +267,7 @@
 
   function deal(){
     spokenHand = -1; lastGroup = null; groupTurn = 0; anyHand = -1;
-    startSinglePlayerRun({ opponentCount:Number(state.opp) || 6 });
+    startSinglePlayerRun({ opponentCount:Number(state.opp) || 4 });
   }
 
   function start(){
