@@ -34,6 +34,8 @@
     { title:'THE BLIPS', sub:'Every character has their own blip now. Changing a row plays a sample.', rows:[
       ['blip', 'SOUND', [['own','THEIR OWN'],['pip','PIP'],['soft','SOFT'],['chirp','CHIRP'],['wood','WOOD'],['bell','BELL'],['machine','MACHINE']],
         'Their own: Nigel and Harry tick like a machine, Lucy is a bell, Tony and Roxy chirp, Mavis is soft, Steve a plain pip, Bruno a wooden knock. Or pick one sound for everyone to compare.'],
+      ['family', 'HOW DIFFERENT', [['0.5','CLOSE'],['0.3','CLOSER'],['0.7','A BIT APART'],['1','ROUND 4']],
+        'How far each character\'s blip strays from one shared pip, and their pitches from each other. Lower sounds more like one family.'],
       ['often', 'HOW OFTEN', [['other','EVERY OTHER LETTER'],['letter','EVERY LETTER'],['syllable','EVERY SYLLABLE']]],
       ['melody', 'MELODY', [['key','IN TUNE'],['free','FREE (ROUND 2)'],['steady','ONE NOTE']],
         'In tune: the notes come from a five-note scale, so a line sounds like a little tune. One note: level, only a question rises.'],
@@ -51,7 +53,7 @@
   const DEFAULTS = Object.fromEntries(ROWS.map(r => [r[0], r[2][0][0]]));
   const picks = Object.assign({}, DEFAULTS, state.picks || {}, CLOSE);
   const save = () => { if (host) host.set({ picks:Object.assign({}, picks) }); };
-  const voiceSet = () => { try{ SpeechVoice.set({ sound:picks.blip, often:picks.often, melody:picks.melody, pitch:picks.pitch, level:Number(picks.vol) }); }catch(e){} };
+  const voiceSet = () => { try{ SpeechVoice.set({ family:Number(picks.family), sound:picks.blip, often:picks.often, melody:picks.melody, pitch:picks.pitch, level:Number(picks.vol) }); }catch(e){} };
   voiceSet();
 
   /* ---- who is speaking ---- */
@@ -207,7 +209,7 @@
     const sheet = document.createElement('div');
     sheet.className = 'spl-sheet'; sheet.setAttribute('role', 'dialog'); sheet.setAttribute('aria-label', 'Speech lab');
     sheet.innerHTML =
-      '<div class="spl-top"><span>SPEECH LAB · ROUND 4</span><button type="button" class="spl-close" aria-label="Close">✕</button></div>' +
+      '<div class="spl-top"><span>SPEECH LAB · ROUND 5</span><button type="button" class="spl-close" aria-label="Close">✕</button></div>' +
       '<div class="spl-body">' +
         '<p class="spl-sub">Play the hand as normal. A second after the chosen opponent acts, they say something. SAY makes them say another line straight away. Tap a bubble to dismiss it. Sound needs one tap first on an iPhone.</p>' +
         '<div class="spl-actions"><button type="button" data-act="say">SAY SOMETHING</button><button type="button" data-act="deal">NEW TABLE</button></div>' +
@@ -243,7 +245,7 @@
       if (t.dataset.act === 'deal'){ open(false); clear(true); deal(); return; }
       if (t.dataset.act === 'reset'){ Object.assign(picks, DEFAULTS, CLOSE); save(); voiceSet(); paint(); return; }
       if (t.dataset.act === 'copy'){
-        const text = 'Speech Lab (round 4):\n' + ROWS.map(r => '- ' + r[1] + ': ' + r[2].find(o => o[0] === picks[r[0]])[1]).join('\n') + '\n- OPPONENTS: ' + state.opp;
+        const text = 'Speech Lab (round 5):\n' + ROWS.map(r => '- ' + r[1] + ': ' + r[2].find(o => o[0] === picks[r[0]])[1]).join('\n') + '\n- OPPONENTS: ' + state.opp;
         const ta = sheet.querySelector('.spl-copytext');
         const fin = ok => { t.textContent = ok ? 'COPIED' : 'SELECT + COPY BELOW'; setTimeout(() => { t.textContent = 'COPY MY PICKS'; }, 2200); if (!ok){ ta.hidden = false; ta.value = text; ta.focus(); ta.select(); } };
         try{ navigator.clipboard.writeText(text).then(() => fin(true), () => fin(false)); }catch(err){ fin(false); }
@@ -256,7 +258,7 @@
       if (k === 'opp'){ state.opp = v; if (host) host.set({ opp:v }); open(false); clear(true); deal(); return; }
       if (k === 'sound'){ state.sound = v; if (host) host.set({ sound:v }); try{ settings.sound = v === 'on'; }catch(err){} return; }
       picks[k] = v; save();
-      if (['blip', 'often', 'melody', 'pitch', 'vol', 'pace'].includes(k)){
+      if (['blip', 'family', 'often', 'melody', 'pitch', 'vol', 'pace'].includes(k)){
         voiceSet();
         // a sample, so the voice can be heard as it's picked
         const sp = speaker(); if (sp) try{ SpeechVoice.speak(keyOf(sp), 'Go on, then. Show me.', 'neutral1', picks.pace === 'even'); }catch(err){}

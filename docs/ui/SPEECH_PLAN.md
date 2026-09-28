@@ -211,3 +211,21 @@ OWN (the single-sound options stay for comparison):
 Six sounds for eight people: Tony/Roxy and Nigel/Harry share, told apart
 by pitch and range. Measured offline at LOW: every character peaks
 0.09-0.16.
+
+## Round 5: one family of blips (2026-09-28)
+
+Owner: back to back, the sounds "sound a bit funny", especially Bell;
+keep each direction but bring them closer. Every blip is now a shared
+core (a warm, filtered square pip) with the character's flavour mixed
+on top, both through the same warm filter. A new row, HOW DIFFERENT
+(`family`), sets how much flavour: CLOSE 0.5 (default) · CLOSER 0.3 ·
+A BIT APART 0.7 · ROUND 4 (1, the sounds exactly as they were). The same
+dial also pulls the characters' pitches toward the middle (330 Hz) and
+narrows how far each voice wanders. Below full flavour the bell stays on
+its note (no octave jump) and rings for about a third as long.
+
+Measured offline across the eight (one long line each, LOW volume):
+loudness spread 3.0x at ROUND 4, 2.1x A BIT APART, 1.7x CLOSE, 1.5x
+CLOSER; how long each blip rings, 4.7x down to about 2x. A brightness
+figure (zero crossings) proved too noisy to judge by; the owner's ear
+is the test.

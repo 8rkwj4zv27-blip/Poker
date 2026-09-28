@@ -70,7 +70,7 @@ const SpeechVoice = (() => {
   const hash = s => { let h = 2166136261; for (let i = 0; i < s.length; i++){ h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); } return (h >>> 0) / 4294967295; };
   const SCALE = [0, 2, 4, 7, 9];     // major pentatonic: can't play a wrong note
 
-  let opts = { sound:'own', often:'other', pitch:'own', melody:'key', level:.3 };
+  let opts = { sound:'own', often:'other', pitch:'own', melody:'key', level:.3, family:.5 };
   function set(o){ Object.assign(opts, o); }
 
   /* ---- the pips: (context, output, time, frequency, level) ---- */
@@ -96,20 +96,42 @@ const SpeechVoice = (() => {
     const g = c.createGain(); g.gain.value = peak;
     s.connect(bp); bp.connect(g); g.connect(out); s.start(t); s.stop(t + len + .01);
   }
-  const SOUNDS = {
-    // round 2's pip: a plain square beep
-    pip:     (c, out, t, f, v) => tone(c, out, t, 'square', f, .30 * v, .005, .05),
+  /* Round 5 (owner: when they talk one after another it sounds a bit
+     funny, "especially Bell"; keep the directions, bring them closer):
+     every blip is now one shared core, a warm square pip, with the
+     character's flavour mixed on top. `a` is how much flavour (the lab's
+     FAMILY row): 1 is round 4's sounds as they were, lower pulls them
+     toward the shared pip. The flavours scale with it too, so a CLOSE
+     bell rings shorter and stays on its note instead of jumping an
+     octave. */
+  function core(c, out, t, f, peak){
+    const o = c.createOscillator(); o.type = 'square'; o.frequency.setValueAtTime(f, t);
+    const lp = c.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 2600;
+    const g = env(c, t, peak, .005, .055);
+    o.connect(lp); lp.connect(g); g.connect(out); o.start(t); o.stop(t + .08);
+  }
+  const FLAVOURS = {
+    // round 2's pip: the core itself
+    pip:     (c, out, t, f, v, a) => tone(c, out, t, 'square', f, .30 * v, .005, .05),
     // rounded and gentle: a triangle with a soft attack
-    soft:    (c, out, t, f, v) => { tone(c, out, t, 'triangle', f, .36 * v, .012, .075); tone(c, out, t, 'sine', f / 2, .13 * v, .012, .06); },
-    // a Nintendo-ish chirp: a thin square that drops onto its note
-    chirp:   (c, out, t, f, v) => tone(c, out, t, 'square', f, .30 * v, .003, .045, 1.5),
+    soft:    (c, out, t, f, v, a) => { tone(c, out, t, 'triangle', f, .36 * v, .012, .055 + .02 * a); tone(c, out, t, 'sine', f / 2, .13 * v * a, .012, .06); },
+    // a Nintendo-ish chirp: drops onto its note (further the more flavour)
+    chirp:   (c, out, t, f, v, a) => tone(c, out, t, 'square', f, .30 * v, .003, .045 + .02 * (1 - a), 1 + .5 * a),
     // woody and plucky, like a little marimba
-    wood:    (c, out, t, f, v) => { tone(c, out, t, 'sine', f, .42 * v, .002, .09, 1.25); click(c, out, t, f * 3, .12 * v, .012); },
-    // glassy, like a music box
-    bell:    (c, out, t, f, v) => { tone(c, out, t, 'sine', f * 2, .30 * v, .002, .16); tone(c, out, t, 'sine', f * 5.4, .06 * v, .002, .07); },
+    wood:    (c, out, t, f, v, a) => { tone(c, out, t, 'sine', f, .42 * v, .002, .06 + .03 * a, 1 + .25 * a); click(c, out, t, f * 3, .12 * v * a, .012); },
+    // glassy, like a music box: the octave jump and the long ring only at full flavour
+    bell:    (c, out, t, f, v, a) => { tone(c, out, t, 'sine', a > .8 ? f * 2 : f, .30 * v, .002, .06 + .1 * a * a); tone(c, out, t, 'sine', f * 5.4, .06 * v * a * a, .002, .05); },
     // the machine printing it: a teleprinter tick with a tiny tone under it
-    machine: (c, out, t, f, v) => { click(c, out, t, 3800, .5 * v, .009); tone(c, out, t, 'square', f, .16 * v, .002, .03); }
+    machine: (c, out, t, f, v, a) => { click(c, out, t, 3800, .5 * v * (.4 + .6 * a), .009); tone(c, out, t, 'square', f, .16 * v, .002, .03); }
   };
+  const SOUNDS = Object.fromEntries(Object.keys(FLAVOURS).map(k => [k, (c, out, t, f, v) => {
+    const a = opts.family;
+    if (a >= 1){ FLAVOURS[k](c, out, t, f, v, 1); return; }
+    core(c, out, t, f, .26 * v * (1 - a));
+    // the flavour goes through the core's warmth too, opening up with `a`
+    const lp = c.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 2600 + 5000 * a * a; lp.connect(out);
+    FLAVOURS[k](c, lp, t, f, v * (.35 + .65 * a), a);
+  }]));
 
   /* The pacing plan for a line: when each letter appears (ms from the
      start), with pauses at punctuation. Typing and blips both read it. */
@@ -146,6 +168,8 @@ const SpeechVoice = (() => {
 
   // the note for one blip, in semitones from the character's base
   function note(v, mood, text, k, idx, count){
+    // FAMILY narrows how far each voice wanders, as well as its sound
+    v = Object.assign({}, v, { range:v.range * (.5 + .5 * opts.family) });
     let semi;
     if (opts.melody === 'steady') semi = 0;
     else if (opts.melody === 'key'){
@@ -163,7 +187,8 @@ const SpeechVoice = (() => {
   function schedule(c, out, t0, key, text, face, even){
     const v = voiceOf(key), mood = moodOf(face);
     const { times } = plan(key, text, face, even);
-    const base = opts.pitch === 'same' ? 400 : v.hz;
+    // FAMILY also pulls the voices' pitches toward the middle (330 Hz)
+    const base = opts.pitch === 'same' ? 400 : 330 * Math.pow(v.hz / 330, .35 + .65 * opts.family);
     const play = SOUNDS[opts.sound === 'own' ? v.sound : opts.sound] || SOUNDS.pip;
     const list = beats(text);
     list.forEach((k, i) => play(c, out, t0 + times[k] / 1000, base * Math.pow(2, note(v, mood, text, k, i, list.length) / 12), opts.level * mood.vol));
@@ -181,9 +206,11 @@ const SpeechVoice = (() => {
     const comp = oc.createDynamicsCompressor(); comp.threshold.value = -18; comp.ratio.value = 4; comp.connect(oc.destination);
     schedule(oc, comp, .02, key, text, face, even);
     const d = (await oc.startRendering()).getChannelData(0);
-    let peak = 0, sum = 0;
-    for (let i = 0; i < d.length; i++){ const a = Math.abs(d[i]); peak = Math.max(peak, a); sum += a * a; }
-    return { peak, rms:Math.sqrt(sum / d.length), blips:beats(text).length, lineMs:Math.round(total) };
+    let peak = 0, sum = 0, zc = 0, ring = 0;
+    for (let i = 0; i < d.length; i++){ const a = Math.abs(d[i]); peak = Math.max(peak, a); sum += a * a; if (i && (d[i] > 0) !== (d[i - 1] > 0)) zc++; }
+    for (let i = 0; i < d.length; i++) if (Math.abs(d[i]) > peak * .1) ring++;
+    // brightness: zero crossings a second; ring: share of the line that's sounding
+    return { peak, rms:Math.sqrt(sum / d.length), blips:beats(text).length, lineMs:Math.round(total), bright:Math.round(zc / (d.length / rate)), ring:ring / d.length };
   }
 
   return { speak, plan, set, unlock, measure, VOICES, SOUNDS:Object.keys(SOUNDS) };
