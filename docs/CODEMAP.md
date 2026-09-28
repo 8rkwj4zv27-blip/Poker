@@ -385,6 +385,16 @@ felt, then flip into the winner's bank). `ORDER` holds the fixed order;
 defaults in `DEFAULT_SETTINGS`). Without the coin table the shipped award
 runs. Presentation only.
 
+## `card-holder-lab.html` + `js/card-holder-lab.js` + `css/card-holder-lab.css` — Card Holder Lab
+
+The lip your two cards sit in (`docs/ui/CARD_HOLDER_PLAN.md`): lip style,
+seat shadow, width, the gap to the hand-name screen and the card overhang,
+all as `html[data-ch-*]` overrides of `.seat.you::before/::after`. Phone-first
+like `showdown-lab.html` (shares its host `js/showdown-lab-host.js` and its
+sheet styles `css/showdown-lab.css`); the sheet drops from the top so the
+holder stays in view. The page measures the seat so the GAP is real air on
+any phone. Lab only; nothing loads in the game.
+
 ## `showdown-lab.html` + `js/showdown-lab-host.js` + `js/showdown-lab.js` + `css/showdown-lab.css` + candidate `css/showdown-beats.css` / `js/showdown-beats.js` — Showdown Lab
 
 The showdown pass (`docs/ui/SHOWDOWN_PLAN.md`), phone-first (round 4): the
