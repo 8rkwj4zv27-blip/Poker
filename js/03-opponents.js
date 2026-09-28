@@ -4,18 +4,21 @@
    AI
    ============================================================ */
 /* sizing scales every bet the archetype makes (small-ball vs sledgehammer);
-   thinkSpeed scales decision time (tight players deliberate, loose players snap) */
+   thinkSpeed scales decision time (tight players deliberate, loose players snap);
+   adapt is how quickly they pick up on your habits (see READS; Mavis
+   barely notices anything), and tilt is how hard a big loss knocks them
+   off their game (the Professor shrugs, Tony boils) */
 // `name` is the character (the table, log, banner and results use it);
 // `style` is how they play, the name they had before Enemy Cards V2.
 const PERSONALITIES_ALL = [
-  {key:'rock',      name:'Nigel', style:'Rock',     aggression:.20, tightness:.80, bluffFreq:.03, sizing:.55, thinkSpeed:1.35},
-  {key:'shark',     name:'Lucy',  style:'Shark',    aggression:.55, tightness:.55, bluffFreq:.13, sizing:.75, thinkSpeed:1.00},
-  {key:'maniac',    name:'Tony',  style:'Maniac',   aggression:.88, tightness:.20, bluffFreq:.30, sizing:1.00, thinkSpeed:.70},
-  {key:'station',   name:'Mavis', style:'Station',  aggression:.15, tightness:.15, bluffFreq:.02, sizing:.60, thinkSpeed:.85},
-  {key:'grinder',   name:'Steve', style:'Grinder',  aggression:.42, tightness:.62, bluffFreq:.09, sizing:.65, thinkSpeed:1.15},
-  {key:'wildcard',  name:'Roxy',  style:'Wildcard', aggression:.68, tightness:.35, bluffFreq:.24, sizing:.90, thinkSpeed:.75},
-  {key:'professor', name:'Harry', style:'Prof',     aggression:.50, tightness:.58, bluffFreq:.11, sizing:.70, thinkSpeed:1.30},
-  {key:'hammer',    name:'Bruno', style:'Hammer',   aggression:.75, tightness:.45, bluffFreq:.16, sizing:.95, thinkSpeed:.90},
+  {key:'rock',      name:'Nigel', style:'Rock',     aggression:.20, tightness:.80, bluffFreq:.03, sizing:.55, thinkSpeed:1.35, adapt:0.7, tilt:0.4},
+  {key:'shark',     name:'Lucy',  style:'Shark',    aggression:.55, tightness:.55, bluffFreq:.13, sizing:.75, thinkSpeed:1.00, adapt:1.1, tilt:0.3},
+  {key:'maniac',    name:'Tony',  style:'Maniac',   aggression:.88, tightness:.20, bluffFreq:.30, sizing:1.00, thinkSpeed:.70, adapt:0.5, tilt:0.9},
+  {key:'station',   name:'Mavis', style:'Station',  aggression:.15, tightness:.15, bluffFreq:.02, sizing:.60, thinkSpeed:.85, adapt:0.05, tilt:0.5},
+  {key:'grinder',   name:'Steve', style:'Grinder',  aggression:.42, tightness:.62, bluffFreq:.09, sizing:.65, thinkSpeed:1.15, adapt:0.9, tilt:0.3},
+  {key:'wildcard',  name:'Roxy',  style:'Wildcard', aggression:.68, tightness:.35, bluffFreq:.24, sizing:.90, thinkSpeed:.75, adapt:0.6, tilt:0.8},
+  {key:'professor', name:'Harry', style:'Prof',     aggression:.50, tightness:.58, bluffFreq:.11, sizing:.70, thinkSpeed:1.30, adapt:1.3, tilt:0.15},
+  {key:'hammer',    name:'Bruno', style:'Hammer',   aggression:.75, tightness:.45, bluffFreq:.16, sizing:.95, thinkSpeed:.90, adapt:0.6, tilt:0.7},
 ];
 // Preferred roster: the four archetypes a normal table is built from
 // first. This is a gameplay choice, not an art constraint — illustrated
@@ -199,11 +202,13 @@ function seatsAfter(playerIdx){
 
 function clamp01(x){ return Math.max(0, Math.min(1, x)); }
 
-/* Mood machinery: a lightweight state on each AI that biases decisions a
-   little and fades quickly. Kinds:
+/* Mood machinery: a state on each AI that biases decisions and fades.
+   Kinds:
      'up'      — riding a big win: plays looser and a touch more aggressive
      'down'    — stung by a loss/missed draw: calls a little wider
-     'steamed' — lost a big pot with a real hand: tightens up, but hits harder
+     'steamed' — lost a big pot with a real hand: TILT — looser, pushier and
+                 bluffier, by temperament (personality.tilt) and less so the
+                 more skilled they are (see aiDecide)
    Intensity decays ~45% per hand and evaporates below 0.15. */
 function nudgeMood(p, kind, intensity){
   if (!p || p.isHuman) return;
@@ -532,6 +537,107 @@ function aiFormatAdjustments(g, player, numOpp, bbLeft){
 }
 
 /* ============================================================
+   READS: WHAT THE TABLE HAS SEEN (docs/ai/AI_PLAN.md, Step 5)
+   ============================================================
+   One shared notebook per table, g.reads[playerId], of every player's
+   PUBLIC habits: how often they play and raise preflop, how aggressive
+   they are after the flop, how often they fold to a bet or c-bet, and what
+   they turned out to hold when cards were shown down. Nothing a player
+   hides goes in: folded cards are never seen, and hands are only read at
+   a showdown, where they are face up for everyone.
+
+   Each AI reads the notebook through its own eyes (aiReadOf): it starts
+   from what a normal player does (READ_PRIOR) and trusts the notebook more
+   as the hands pile up, as fast as its skill (POSTFLOP_SKILL.adapt) and
+   temperament (personality.adapt) allow. A Back Room regular never
+   notices you raise every hand; an Elite one has you figured in a dozen.
+
+   The notebook rides along in the table save (serializeTable), so a
+   Career event remembers you across a reload. */
+const READ_PRIOR = { vpip:0.30, pfr:0.18, agg:0.30, ftb:0.45, cbet:0.60, bluff:0.30 };
+const READ_FIELDS = ['hands','vpip','pfr','postAgg','postPassive','facedBet','foldedToBet','cbetOpp','cbet','riverBetsShown','bluffsShown'];
+
+function readsFor(g, id){
+  if (!g.reads) g.reads = {};
+  if (!g.reads[id]){ g.reads[id] = {}; READ_FIELDS.forEach(f=>{ g.reads[id][f] = 0; }); }
+  return g.reads[id];
+}
+/* A new hand: count it for everyone dealt in. */
+function aiObserveHandStart(g){
+  g._readHand = {};
+  g.players.forEach(p=>{ if (p.inHand && !p.eliminated){ readsFor(g, p.id).hands++; g._readHand[p.id] = { vpip:false, pfr:false }; } });
+}
+/* A public action. info: { toCall, raisesBefore, phase } as they were
+   BEFORE the action. `action` is the action as applied (check/call/bet/
+   raise/fold). */
+function aiObserveAction(g, p, action, info){
+  const r = readsFor(g, p.id);
+  const h = (g._readHand || (g._readHand = {}))[p.id] || (g._readHand[p.id] = { vpip:false, pfr:false });
+  const aggressive = action === 'bet' || action === 'raise' || action === 'allin';
+  if (info.phase === 'preflop'){
+    if ((action === 'call' || aggressive) && !h.vpip){ h.vpip = true; r.vpip++; }
+    if (aggressive && !h.pfr){ h.pfr = true; r.pfr++; }
+    return;
+  }
+  if (aggressive) r.postAgg++;
+  else if (action === 'call' || action === 'check') r.postPassive++;
+  if (info.toCall > 0){ r.facedBet++; if (action === 'fold') r.foldedToBet++; }
+  if (info.phase === 'flop' && g.pfAggressorId === p.id && info.raisesBefore === 0){
+    r.cbetOpp++; if (aggressive) r.cbet++;
+  }
+}
+/* Cards shown down: did the last river bettor turn out to be bluffing? */
+function aiObserveShowdown(g, shown){
+  if (g.board.length < 5 || !g.streetAggressorId) return;
+  const bettor = shown.find(p=>p.id === g.streetAggressorId);
+  if (!bettor || !bettor.hand || bettor.hand.length < 2) return;
+  const r = readsFor(g, bettor.id);
+  r.riverBetsShown++;
+  const made = classifyPostflop(bettor.hand, g.board).made;
+  if (made === 'nothing' || made === 'weak-pair') r.bluffsShown++;
+}
+
+/* What `observer` believes about `target`'s habits. Each rate is the
+   prior, pulled toward what was seen by weight w = trust × n/(n + 20),
+   where trust = the observer's skill-adapt × temperament. */
+function aiReadOf(observer, target, g){
+  const out = Object.assign({ trust:0, hands:0 }, READ_PRIOR);
+  const r = g && g.reads && target && g.reads[target.id];
+  if (!r || !observer) return out;
+  const sk = skillBlend(POSTFLOP_SKILL, aiSkillOf(observer, g));
+  const temper = observer.personality && typeof observer.personality.adapt === 'number' ? observer.personality.adapt : 1;
+  const trust = Math.max(0, Math.min(1, sk.adapt * temper));
+  const pull = (prior, hits, n, k) => n > 0 ? prior + (hits/n - prior) * trust * n / (n + (k || 20)) : prior;
+  out.trust = trust; out.hands = r.hands;
+  out.vpip = pull(READ_PRIOR.vpip, r.vpip, r.hands);
+  out.pfr = pull(READ_PRIOR.pfr, r.pfr, r.hands);
+  out.agg = pull(READ_PRIOR.agg, r.postAgg, r.postAgg + r.postPassive);
+  out.ftb = pull(READ_PRIOR.ftb, r.foldedToBet, r.facedBet, 12);
+  out.cbet = pull(READ_PRIOR.cbet, r.cbet, r.cbetOpp, 8);
+  out.bluff = pull(READ_PRIOR.bluff, r.bluffsShown, r.riverBetsShown, 4);
+  return out;
+}
+
+/* Save / restore: counts only, sanitised. */
+function aiReadsSnapshot(g){
+  if (!g || !g.reads) return null;
+  const out = {};
+  Object.keys(g.reads).forEach(id=>{ out[id] = {}; READ_FIELDS.forEach(f=>{ out[id][f] = g.reads[id][f] || 0; }); });
+  return out;
+}
+function aiReadsRestore(saved, players){
+  const reads = {};
+  if (!saved || typeof saved !== 'object') return reads;
+  const ids = new Set((players || []).map(p=>p.id));
+  Object.keys(saved).forEach(id=>{
+    if (!ids.has(id) || !saved[id] || typeof saved[id] !== 'object') return;
+    reads[id] = {};
+    READ_FIELDS.forEach(f=>{ const v = saved[id][f]; reads[id][f] = Number.isSafeInteger(v) && v >= 0 ? v : 0; });
+  });
+  return reads;
+}
+
+/* ============================================================
    PREFLOP FROM RANGES (docs/ai/AI_PLAN.md, Step 2)
    ============================================================
    Every opponent thinks in hand RANGES, the way people do: "from this
@@ -614,7 +720,14 @@ function leanYes(x, width){ return Math.random() < edge(x, width); }
 /* What the AI believes an aggressor's range to be, from public facts only:
    the aggressor's seat, how many raises there have been, whether they're
    all-in short. Low `read` skill blends toward "could be anything". */
-function estimateRaiserRange(g, raiser, level, read){
+/* How much wider (or tighter) than a normal player `target` has shown
+   themselves to be, as `observer` sees it (1 = normal). */
+function readWidth(observer, target, g, stat){
+  if (!observer || !target) return 1;
+  const rd = aiReadOf(observer, target, g);
+  return Math.max(0.35, Math.min(4, rd[stat] / READ_PRIOR[stat]));
+}
+function estimateRaiserRange(g, raiser, level, read, observer){
   const bb = g.bigBlind;
   const ri = g.players.indexOf(raiser);
   let model;
@@ -625,6 +738,8 @@ function estimateRaiserRange(g, raiser, level, read){
   // a big raise from a sound player is a stronger range
   const sizeBB = g.currentBet / bb;
   if (level <= 1 && sizeBB > 4.5 && !raiser.allIn) model *= 0.75;
+  // someone who has been raising every hand has a much wider range
+  model = Math.min(1, model * Math.pow(readWidth(observer, raiser, g, 'pfr'), level <= 1 ? 1 : 0.7));
   return model * read + 0.45 * (1 - read);
 }
 
@@ -714,7 +829,7 @@ async function aiPreflop(player, g, c){
   const aggressor = g.players.find(p=>p.id === g.pfAggressorId) ||
     others.reduce((a, p)=> p.betThisRound > (a ? a.betThisRound : -1) ? p : a, null);
   const callers = others.filter(p=>p !== aggressor && p.betThisRound >= g.currentBet && p.betThisRound > bb);
-  const R = estimateRaiserRange(g, aggressor, raises, sk.read);
+  const R = estimateRaiserRange(g, aggressor, raises, sk.read, player);
   const ranges = [R].concat(callers.map(()=>Math.min(1, R * 1.6)));
   const iters = Math.min(dp.iterations, 600);
   const eq = await EquityService.get(player.hand, [], ranges.length, iters, ranges);
@@ -775,13 +890,14 @@ async function aiPreflop(player, g, c){
      sizeTell   — how much the bet size follows hand strength
      mix        — how blurred the thresholds are
      sticky     — how far they call past the right price
-     timingTell — how much their think time gives away (think time) */
+     timingTell — how much their think time gives away (think time)
+     adapt      — how much they trust what they've seen of a player (READS) */
 const POSTFLOP_SKILL = {
-  easy:   { rangeThink:0.00, read:0.00, bluffPlan:0.00, trap:0.04, sizeTell:0.90, mix:0.080, sticky:0.14, timingTell:0.8 },
-  medium: { rangeThink:0.20, read:0.20, bluffPlan:0.15, trap:0.07, sizeTell:0.70, mix:0.060, sticky:0.10, timingTell:0.6 },
-  hard:   { rangeThink:0.55, read:0.50, bluffPlan:0.50, trap:0.11, sizeTell:0.35, mix:0.045, sticky:0.05, timingTell:0.3 },
-  expert: { rangeThink:0.85, read:0.80, bluffPlan:0.85, trap:0.14, sizeTell:0.10, mix:0.030, sticky:0.01, timingTell:0.1 },
-  elite:  { rangeThink:1.00, read:0.95, bluffPlan:1.00, trap:0.17, sizeTell:0.00, mix:0.020, sticky:0.00, timingTell:0.0 },
+  easy:   { rangeThink:0.00, read:0.00, bluffPlan:0.00, trap:0.04, sizeTell:0.90, mix:0.080, sticky:0.14, timingTell:0.8, adapt:0.00 },
+  medium: { rangeThink:0.20, read:0.20, bluffPlan:0.15, trap:0.07, sizeTell:0.70, mix:0.060, sticky:0.10, timingTell:0.6, adapt:0.00 },
+  hard:   { rangeThink:0.55, read:0.50, bluffPlan:0.50, trap:0.11, sizeTell:0.35, mix:0.045, sticky:0.05, timingTell:0.3, adapt:0.45 },
+  expert: { rangeThink:0.85, read:0.80, bluffPlan:0.85, trap:0.14, sizeTell:0.10, mix:0.030, sticky:0.01, timingTell:0.1, adapt:0.80 },
+  elite:  { rangeThink:1.00, read:0.95, bluffPlan:1.00, trap:0.17, sizeTell:0.00, mix:0.020, sticky:0.00, timingTell:0.0, adapt:1.00 },
 };
 
 /* How a player who thinks in absolutes rates a made hand (0 = unbeatable,
@@ -792,7 +908,7 @@ const MADE_ABS = { 'straight-flush':0.003, quads:0.006, 'full-house':0.02, flush
 /* A player's likely preflop range as a fraction, from public facts only:
    who raised, how many raises, whether they were the big blind in a limped
    pot. `read` blends toward "could be anything" for weak readers. */
-function preflopRangeOf(g, p, read, loose){
+function preflopRangeOf(g, p, read, loose, observer){
   const i = g.players.indexOf(p);
   const raises = typeof g.pfRaises === 'number' ? g.pfRaises : (g.pfAggressorId ? 1 : 0);
   let model;
@@ -801,6 +917,7 @@ function preflopRangeOf(g, p, read, loose){
   else if (raises === 1) model = i === bbIndexOf(g) ? 0.45 : 0.20;   // defended / cold-called a raise
   else model = i === bbIndexOf(g) ? 1 : 0.45;             // limped pot
   model = Math.min(1, model * (loose || 1));
+  if (observer) model = Math.min(1, model * readWidth(observer, p, g, g.pfAggressorId === p.id ? 'pfr' : 'vpip'));
   return model * read + 0.6 * (1 - read);
 }
 
@@ -859,7 +976,10 @@ async function aiPostflop(player, g, c){
   const weakDraw = street < 5 && !strongDraw && (hc.draws.gutshot || hc.draws.backdoorFlush || hc.draws.overcards);
 
   // equity against the opponents' likely ranges, with a weak reader's misjudgement
-  const ranges = opps.map(o=>preflopRangeOf(g, o, sk.read, 1));
+  const ranges = opps.map(o=>preflopRangeOf(g, o, sk.read, 1, player));
+  // what this player has seen of the others: do they fold? do they bluff?
+  const reads = opps.map(o=>aiReadOf(player, o, g));
+  const foldiness = reads.reduce((a, r)=>a * r.ftb, 1) / Math.pow(READ_PRIOR.ftb, reads.length);
   let eq = await EquityService.get(player.hand, g.board, ranges.length, Math.min(dp.iterations, 700), ranges);
   eq = clamp01(eq + (Math.random() - 0.5) * dp.noise);
 
@@ -904,6 +1024,9 @@ async function aiPostflop(player, g, c){
     if (iWasAggressor) vWidth *= 1.25;
     if (inPosition) vWidth *= 1 + dp.positionWeight * 2;
     vWidth *= Math.pow(0.72, multi) * (0.8 + 0.4 * aggression) * Math.sqrt(loose);
+    // thin value against people who don't fold
+    const minFtb = Math.min(...reads.map(r=>r.ftb));
+    vWidth *= Math.max(0.8, Math.min(1.45, 1 + (READ_PRIOR.ftb - minFtb) * 1.0));
 
     // a monster sometimes checks to trap (dry boards, not the river last to act)
     if (str < 0.08 && !(street === 5 && inPosition) && plan.line !== 'value'
@@ -925,6 +1048,8 @@ async function aiPostflop(player, g, c){
     const random = bluffFreq * 0.6;
     let bluffRate = (planned * sk.bluffPlan + random * (1 - sk.bluffPlan)) * (0.6 + 0.8 * aggression);
     bluffRate *= Math.pow(0.35, multi);
+    // don't bluff people who never fold; lean on people who fold too much
+    bluffRate *= Math.max(0, Math.min(2.2, Math.pow(foldiness, 1.5)));
     if (str > 0.5 && Math.random() < bluffRate){
       plan.line = strongDraw || weakDraw ? 'semibluff' : 'bluff';
       return betOrRaiseTo(betTotal, false);
@@ -943,7 +1068,13 @@ async function aiPostflop(player, g, c){
   const mdf = 1 - Math.pow(alpha, 1 / defenders);
   // absolute players: any pair (and draws) continue, tight ones fold more to big bets
   const absLine = 0.55 + sk.sticky + callLoosen + (0.5 - tightness) * 0.3 - b * 0.15;
-  const contLine = mdf * sk.rangeThink + absLine * (1 - sk.rangeThink);
+  let contLine = mdf * sk.rangeThink + absLine * (1 - sk.rangeThink);
+  const bettor = opps.find(p=>p.id === g.streetAggressorId);
+  if (bettor){
+    const r = aiReadOf(player, bettor, g);
+    const lean = Math.pow(r.agg / READ_PRIOR.agg, 0.5) * Math.pow(r.bluff / READ_PRIOR.bluff, 0.3);
+    contLine = Math.min(0.95, contLine * Math.max(0.7, Math.min(1.6, lean)));
+  }
   const drawOK = (strongDraw || weakDraw) && eq + (strongDraw ? 0.08 : 0.03) * (street === 3 ? 1 : 0.6) > potOdds;
 
   // raise: for value from the top of the continuing range, or a semi-bluff with a big draw
@@ -983,8 +1114,14 @@ async function aiDecide(player, g){
   } else if (mood.kind==='down'){
     callLoosen = 0.035*mood.intensity;
   } else if (mood.kind==='steamed'){
-    tightness  = Math.min(1, tightness  + 0.10*mood.intensity);
-    aggression = Math.min(1, aggression + 0.05*mood.intensity);
+    // real tilt: a big loss with a real hand makes them looser, pushier and
+    // bluffier for a few hands. How hard it hits is temperament (the
+    // Professor shrugs, Tony boils); skilled players hold it together better.
+    const skill01 = aiSkillOf(player, g) / 100;
+    const hit = mood.intensity * (typeof pers.tilt === 'number' ? pers.tilt : 0.5) * (1 - 0.6*skill01);
+    tightness  = Math.max(0, tightness  - 0.25*hit);
+    aggression = Math.min(1, aggression + 0.30*hit);
+    bluffFreq  = Math.min(1, bluffFreq  + 0.12*hit);
   }
 
   const toCall = Math.max(0, g.currentBet - player.betThisRound);

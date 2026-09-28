@@ -57,7 +57,8 @@ function loadAI(seed){
   vm.runInContext('var game = null;\n' + inlineEquity + '\n' + elim.slice(0, elimEnd) + '\n' + opp +
     '\nglobalThis.API = { aiDecide, seatsAfter, PERSONALITIES_ALL, DIFFICULTY_PARAMS, createDeck, shuffle,' +
     ' evaluate7, evaluate5, compareHands, estimateEquity, estimateEquityVsRanges, fastScore7, cardCode,' +
-    ' holeClass, comboOrder, preflopPercentile, PREFLOP_ORDER, classifyPostflop, aiPreflop, aiPostflop, rangeRelStrength, aiThinkTime, isScareCard, SKILL_ANCHORS, aiSkillOf, skillBlend, aiDifficultyParams,' +
+    ' holeClass, comboOrder, preflopPercentile, PREFLOP_ORDER, classifyPostflop, aiPreflop, aiPostflop, rangeRelStrength, aiThinkTime, isScareCard,' +
+    ' aiObserveHandStart, aiObserveAction, aiObserveShowdown, aiReadOf, aiReadsSnapshot, aiReadsRestore, READ_PRIOR, SKILL_ANCHORS, aiSkillOf, skillBlend, aiDifficultyParams,' +
     ' setGame: g => { game = g; } };', ctx);
   ctx.API.setMotion = on => { ctx.__motion = !!on; };
   return ctx.API;
@@ -137,11 +138,12 @@ async function simulate(opts){
   });
   const n = players.length;
   let chipsCheck = 0;
+  const reads = {};   // the table's notebook of habits persists across hands (READS)
 
   for (let h = 0; h < opts.hands; h++){
     const dealer = h % n;
     const g = { players, board:[], pot:0, currentBet:0, minRaise:bb, bigBlind:bb,
-      dealerIndex:dealer, difficulty:opts.difficulty || 'hard', mode:opts.mode || 'cash' };
+      dealerIndex:dealer, difficulty:opts.difficulty || 'hard', mode:opts.mode || 'cash', reads };
     if (typeof opts.skill === 'number') g.skill = opts.skill;
     A.setGame(g);
     const deck = A.shuffle(A.createDeck()); let di = 0;
@@ -154,6 +156,7 @@ async function simulate(opts){
       p.totalBetHand += amt; g.pot += amt; if (p.chips === 0) p.allIn = true; return amt; };
     commit(players[sbI], bb/2); commit(players[bbI], bb); g.currentBet = bb;
     g.sbIndex = sbI; g.bbIndex = bbI;
+    A.aiObserveHandStart(g);
     const live = () => players.filter(p => !p.folded);
 
     for (const street of ['preflop','flop','turn','river']){
@@ -182,6 +185,8 @@ async function simulate(opts){
 
         const st = stats[p.key];
         const toCall = g.currentBet - p.betThisRound;
+        const raisesBefore = g.streetRaises;
+        let applied;
         const potBefore = g.pot;
         let d = p.probe ? PROBES[p.probe](p, g, A) : await A.aiDecide(p, g);
         if (!p.probe && toCall > 0 && street !== 'preflop'){ st.facedBet++; if (d.action === 'fold') st.foldToBet++; }
@@ -190,9 +195,9 @@ async function simulate(opts){
         }
         if ((d.action === 'raise' || d.action === 'bet') && (!p.mayRaise || p.chips <= toCall)) d = { action:'call' };
 
-        if (d.action === 'fold'){ p.folded = true; st.folds++; }
-        else if (d.action === 'check' || (d.action === 'call' && toCall <= 0)){ st.checks++; checked.add(p); }
-        else if (d.action === 'call'){ commit(p, toCall); st.calls++; if (street === 'preflop') p._vpip = true; }
+        if (d.action === 'fold'){ p.folded = true; st.folds++; applied = 'fold'; }
+        else if (d.action === 'check' || (d.action === 'call' && toCall <= 0)){ st.checks++; checked.add(p); applied = 'check'; }
+        else if (d.action === 'call'){ commit(p, toCall); st.calls++; if (street === 'preflop') p._vpip = true; applied = 'call'; }
         else {
           const prev = g.currentBet;
           let target = prev <= 0 ? Math.max(d.amount, p.betThisRound + bb) : Math.max(d.amount, prev + g.minRaise);
@@ -210,6 +215,7 @@ async function simulate(opts){
             if (full) g.minRaise = inc;
           }
           if (prev > 0) st.raises++; else st.bets++;
+          applied = prev > 0 ? 'raise' : 'bet';
           if (street === 'preflop'){ p._vpip = true; p._pfr = true; players.forEach(q => q._pfAgg = false); p._pfAgg = true; }
           else if (!p.probe){
             st.postBets++;
@@ -224,6 +230,7 @@ async function simulate(opts){
           aggressed = true;
         }
         p.acted = true;
+        A.aiObserveAction(g, p, applied, { toCall, raisesBefore, phase: street });
       }
       if (live().length <= 1) break;
     }
@@ -233,6 +240,7 @@ async function simulate(opts){
     if (L.length > 1){
       while (g.board.length < 5) g.board.push(deck[di++]);
       L.forEach(p => stats[p.key].wtsd++);
+      A.aiObserveShowdown(g, L);
       const ev = L.map(p => [p, A.evaluate7([...p.hand, ...g.board])]);
       let best = ev[0][1];
       ev.forEach(e => { if (A.compareHands(e[1], best) > 0) best = e[1]; });

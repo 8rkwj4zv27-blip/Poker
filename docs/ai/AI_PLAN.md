@@ -200,17 +200,45 @@ roughly break even at `hard`/`expert`, and lose to `elite`.
   and `timingTell`.
 - **Engine:** `g.prevAggressorId` (who bet last street) and `g.pfRaises`.
 
-### Step 4: range narrowing
+### Step 4: range narrowing (next)
 - Each AI keeps a weighted range for every opponent and re-weights it after
   each action. Equity is computed against those ranges (sampled in the
   worker). Reading skill scales with tier.
 
-### Step 5: reading the human
-- Track the human's tendencies over an event: VPIP/PFR, fold to c-bet, fold
-  to river bet, bluffs shown down, how often they barrel. Each AI adapts at
-  its own speed: fast for the Professor, never for the Station.
-- Real tilt: a big loss changes decisions for a few hands, in the style of
-  the character.
+### Step 5: reading the players — DONE (v0.53.0, before Step 4)
+Brought forward because Step 3 showed that Elite over-folded to a player
+who raises everything. Only reading that player's habits fixes it.
+
+- **The table's notebook** `g.reads[playerId]` (`03-opponents.js`, READS)
+  holds public habits only:
+  - hands, VPIP and PFR;
+  - postflop aggressive versus passive actions;
+  - bets faced and folded to;
+  - c-bet chances and c-bets taken;
+  - river bets shown down, and how many were bluffs.
+
+  Folded cards are never seen; hands are read only when they're shown
+  down. Engine hooks: `aiObserveHandStart` (deal), `aiObserveAction`
+  (`applyAction`) and `aiObserveShowdown` (both the engine's and the live
+  `showdown.js` showdown). The notebook is saved with the table
+  (`serializeTable.aiReads`, restored and sanitised), so a Career event
+  remembers you across a reload.
+- **Each AI reads the notebook through its own eyes** (`aiReadOf`). It
+  starts from a normal player (`READ_PRIOR`) and pulls toward what it has
+  seen by `trust × n/(n+20)`, where trust = skill `adapt` × temperament
+  `personality.adapt`. The Back Room (`easy`/`medium`) has `adapt` 0 and
+  never notices. The Professor adapts fastest; Mavis the station almost
+  never does.
+- **What changes:**
+  - a habitual raiser's range is read wider, preflop and postflop
+    (`readWidth`);
+  - habitual bettors and shown-down bluffers get called down more;
+  - players who never fold get almost no bluffs and thinner value bets;
+  - players who fold too much get bluffed more.
+- **Real tilt:** a big loss with a real hand (`steamed`) now makes a
+  player looser, pushier and bluffier, scaled by `personality.tilt` (Tony
+  0.9, the Professor 0.15) and reduced by skill. Before, it only tightened
+  them slightly.
 
 ### Step 6: tier tuning
 - Tune leaks, reading and adaptation per tier until each tier sits in its
@@ -321,5 +349,39 @@ AI averages:
 - **Still short of the bands:** AF at the top (1.4–1.7 against 2.0–3.5)
   and Elite fold-to-bet (40% against 42–55%). Back Room fold-to-bet runs
   high (48%): fit-or-fold. Step 6 tunes these.
+
+### After Step 5 (v0.53.0)
+
+Seed 1, 3000 hands for each table; test seats and the sweep 1500. AI
+averages (the Back Room row is identical to Step 3: it doesn't adapt):
+
+| Tier | VPIP | PFR | AF | WTSD | Fold to bet | Size tell | `abc` bb/100 |
+|---|---|---|---|---|---|---|---|
+| medium | 46% | 13% | 0.7 | 54% | 48% | 0.59 | +5 |
+| hard | 41% | 18% | 1.0 | 44% | 45% | 0.37 | −93 |
+| expert | 36% | 20% | 1.4 | 40% | 39% | 0.19 | −125 |
+| elite | 35% | 21% | 1.6 | 37% | 37% | 0.15 | −63 |
+
+Test seats (bb/100 for the test player):
+
+| | Back Room | Pub | Elite |
+|---|---|---|---|
+| `bully`, Step 3 | −445 | +151 | +70 |
+| `bully`, now | −445 | **−414** | **−146** |
+
+- **Against `probe:station` at Elite,** the adaptive characters stop
+  bluffing it: river bluffs 0–1% for the Professor and Lucy. Tony
+  (adapt 0.5) still fires some, and that's character. The Back Room keeps
+  bluffing it (4–12% of its bets) because it never adapts.
+- **The skill sweep keeps its ladder.** The `abc` player is between −69
+  and +31 up to skill 40 (noise-level at 1500 hands), then loses at every
+  point from 50 up (−78 to −133).
+- **At Elite, AIs now read each other too,** so they call the table's
+  bluffers down more. WTSD rose 34 → 37% and fold-to-bet fell 40 → 37%.
+  Step 6 tunes this.
+- **For Step 6:** in the Back Room the plain `abc` player (never bluffs,
+  folds a lot) roughly breaks even across three seeds (+5, −39, −52). The
+  plan wants a decent player to clearly beat the Back Room, so it should
+  be a little softer.
 
 Re-run and record here after every step.

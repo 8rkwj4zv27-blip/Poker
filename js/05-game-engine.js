@@ -330,6 +330,7 @@ function serializeTable(g){
     buyIns:g.buyIns, netStart:g.netStart, livesEnabled:g.livesEnabled,
     dealerIndex:g.dealerIndex, handNumber:g.handNumber,
     sess:{ bestWin:g.sess.bestWin, worstLoss:g.sess.worstLoss },
+    aiReads: aiReadsSnapshot(g),
     players: g.players.map(p=>({
       id:p.id, name:p.name, isHuman:p.isHuman, chips:p.chips,
       lives:p.lives, eliminated:p.eliminated,
@@ -549,7 +550,8 @@ function restoreTable(save){
     cashSessionId:typeof save.cashSessionId === 'string' ? save.cashSessionId : null,
     championshipFinalTableReached:save.championshipFinalTableReached === true,
     metricsStartedAt:Number.isFinite(save.metricsStartedAt) ? save.metricsStartedAt : Date.now(),
-    sess:{ bestWin:(save.sess&&save.sess.bestWin)||0, worstLoss:(save.sess&&save.sess.worstLoss)||0 }
+    sess:{ bestWin:(save.sess&&save.sess.bestWin)||0, worstLoss:(save.sess&&save.sess.worstLoss)||0 },
+    reads: aiReadsRestore(save.aiReads, players)
   };
   if (save.mode==='elimination'){
     game.run=JSON.parse(JSON.stringify(save.run));
@@ -818,6 +820,7 @@ async function startNewHand(){
     : nextActiveIndex(g.dealerIndex);
 
   for (const p of g.players) if (p.inHand) p.hand = [g.deck.pop(), g.deck.pop()];
+  aiObserveHandStart(g);
 
   g._humanStart = g.players[0].chips;   // session best/worst tracking baseline
   g._humanAllIn = false;
@@ -1202,6 +1205,7 @@ function actionLabel(action, player, amt){
 function applyAction(player, decision){
   const g = game;
   const toCall = g.currentBet - player.betThisRound;
+  const raisesBefore = g.streetRaises || 0;   // for the AI's reads (c-bets)
   const betBefore = player.betThisRound;
   let text='', shortAmt=0, action=decision.action;
 
@@ -1278,6 +1282,8 @@ function applyAction(player, decision){
   }
 
   player.acted = true;
+  // the table's public notebook of habits (03-opponents.js, READS)
+  aiObserveAction(g, player, action, { toCall, raisesBefore, phase:g.phase });
   if (player.isHuman && player.allIn) g._humanAllIn = true;
   logMsg(text);
   // The banner no longer narrates every action ("Sasha raises to 60") —
@@ -1525,6 +1531,8 @@ async function handleShowdown(){
   // 5-of-7 winning combo is available everywhere _handRes is, for every
   // pot's highlighting/panel, not just recomputed ad hoc for the top pot.
   contenders.forEach(p=>{ p._handRes = evaluate7WithCards([...p.hand, ...g.board]); });
+  // hands shown down are public: the table notes whether the river bettor was bluffing
+  if (contenders.length>1) aiObserveShowdown(g, contenders);
 
   if (contenders.length>1){
     setBanner('Revealing hands…');

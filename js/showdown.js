@@ -1273,6 +1273,9 @@ const Showdown = (function(){
       if (p.streetAction && !['fold','allin','ko','eliminated'].includes(p.streetAction.type)) p.streetAction = null;
     });
     contenders.forEach(p => { p._handRes = evaluate7WithCards([...p.hand, ...g.board]); });
+    // hands shown down are public: the table notes whether the river bettor
+    // was bluffing (the AI's reads, 03-opponents.js)
+    if (contenders.length > 1) aiObserveShowdown(g, contenders);
     paintMeter(g, null);
     eqShown = null;
 

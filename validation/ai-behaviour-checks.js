@@ -359,6 +359,95 @@ function table(n, dealer, overrides){
       'showdown easy ' + avg(easy, 'wtsd').toFixed(2) + ' elite ' + avg(elite, 'wtsd').toFixed(2));
   });
 
+  /* ---- reads: the table's notebook, adaptation and tilt ---- */
+  // a notebook that has watched seat `id` for `hands` hands with these rates
+  function notebook(id, hands, rates){
+    const r = { hands, vpip:0, pfr:0, postAgg:0, postPassive:0, facedBet:0, foldedToBet:0, cbetOpp:0, cbet:0, riverBetsShown:0, bluffsShown:0 };
+    r.vpip = Math.round(hands * (rates.vpip ?? 0.3)); r.pfr = Math.round(hands * (rates.pfr ?? 0.18));
+    const post = Math.round(hands * 0.6);
+    r.postAgg = Math.round(post * (rates.agg ?? 0.3)); r.postPassive = post - r.postAgg;
+    r.facedBet = Math.round(hands * 0.5); r.foldedToBet = Math.round(r.facedBet * (rates.ftb ?? 0.45));
+    return { [id]: r };
+  }
+  await check('Reads: the notebook counts public actions and showdown bluffs', () => {
+    const g = { players:[{ id:'a', inHand:true }, { id:'b', inHand:true }], board:[], pfAggressorId:null };
+    A.aiObserveHandStart(g);
+    A.aiObserveAction(g, g.players[0], 'raise', { toCall:10, raisesBefore:0, phase:'preflop' });
+    A.aiObserveAction(g, g.players[0], 'raise', { toCall:40, raisesBefore:2, phase:'preflop' });   // still one VPIP, one PFR
+    A.aiObserveAction(g, g.players[1], 'fold', { toCall:30, raisesBefore:0, phase:'flop' });
+    g.pfAggressorId = 'a';
+    A.aiObserveAction(g, g.players[0], 'bet', { toCall:0, raisesBefore:0, phase:'flop' });
+    const r = g.reads;
+    assert.deepStrictEqual([r.a.hands, r.a.vpip, r.a.pfr, r.a.postAgg, r.a.cbetOpp, r.a.cbet], [1, 1, 1, 1, 1, 1]);
+    assert.deepStrictEqual([r.b.facedBet, r.b.foldedToBet], [1, 1]);
+    // a river bettor who shows down air is noted as a bluff
+    const sd = { players:[], board:'Kh 9s 7s 3d 2c'.split(' ').map(C), streetAggressorId:'a', reads:r };
+    A.aiObserveShowdown(sd, [{ id:'a', hand:'5d 4c'.split(' ').map(C) }, { id:'b', hand:'Kd Qc'.split(' ').map(C) }]);
+    assert.deepStrictEqual([r.a.riverBetsShown, r.a.bluffsShown], [1, 1]);
+  });
+  await check('Reads: saved counts restore sanitised, and only for players at the table', () => {
+    const saved = { a: { hands:12, vpip:-3, pfr:'x', postAgg:4.5 }, ghost: { hands:99 } };
+    const back = A.aiReadsRestore(saved, [{ id:'a' }]);
+    assert.deepStrictEqual(Object.keys(back), ['a']);
+    assert.deepStrictEqual([back.a.hands, back.a.vpip, back.a.pfr, back.a.postAgg], [12, 0, 0, 0]);
+    assert.deepStrictEqual(A.aiReadsRestore(A.aiReadsSnapshot({ reads:back }), [{ id:'a' }]), back);
+  });
+  await check('Reads: the Back Room never notices; Elite trusts what it has seen, the Professor most', () => {
+    const g = { difficulty:'easy', reads: notebook('bully', 60, { pfr:0.9, vpip:0.95 }) };
+    const target = { id:'bully' };
+    const who = key => ({ personality: A.PERSONALITIES_ALL.find(p=>p.key===key) });
+    assert.strictEqual(A.aiReadOf(who('professor'), target, g).pfr, A.READ_PRIOR.pfr);
+    g.difficulty = 'elite';
+    const prof = A.aiReadOf(who('professor'), target, g).pfr, mavis = A.aiReadOf(who('station'), target, g).pfr;
+    assert.ok(prof > 0.6 && mavis < 0.25, 'professor ' + prof.toFixed(2) + ' mavis ' + mavis.toFixed(2));
+  });
+  await check('Adapting: Elite defends wider against a known raise-everything player', async () => {
+    const vs = async reads => {
+      let k = 0;
+      for (let t=0; t<200; t++){
+        const { g, me } = preflopTable(6, 0, 'Kd 8c', { raiseBy:[3, 60] });
+        if (reads) g.reads = notebook('p3', 80, { pfr:0.9, vpip:0.95 });
+        A.setGame(g);
+        const d = await A.aiDecide(me, g);
+        if (d.action !== 'fold') k++;
+      }
+      return k / 200;
+    };
+    const unknown = await vs(false), known = await vs(true);
+    assert.ok(known > unknown + 0.3, 'unknown ' + unknown + ' known bully ' + known);
+  });
+  await check('Adapting: Elite stops bluffing a player who never folds', async () => {
+    const bluffs = async reads => {
+      let k = 0;
+      for (let t=0; t<400; t++){
+        const { g, me } = postflopSpot('5d 4c', 'Kh 9s 7s 3d 2c', { difficulty:'elite', key:'shark' });
+        if (reads) g.reads = notebook('p0', 80, { ftb:0.02 });
+        A.setGame(g);
+        const d = await A.aiDecide(me, g);
+        if (d.action === 'bet') k++;
+      }
+      return k / 400;
+    };
+    const unknown = await bluffs(false), station = await bluffs(true);
+    assert.ok(unknown > 0.03 && station < unknown * 0.25, 'river air bets: unknown ' + unknown + ' vs a station ' + station);
+  });
+  await check('Tilt: a steamed Tony plays looser; a steamed Elite Professor barely changes', async () => {
+    const vpip = async (key, difficulty, steamed) => {
+      let k = 0;
+      for (let t=0; t<300; t++){
+        const { g, me } = preflopTable(6, 4, 'Qd 7c', { key, difficulty });
+        if (steamed) me.moodState = { kind:'steamed', intensity:1 };
+        A.setGame(g);
+        const d = await A.aiDecide(me, g);
+        if (d.action !== 'fold') k++;
+      }
+      return k / 300;
+    };
+    const tony = (await vpip('maniac', 'medium', true)) - (await vpip('maniac', 'medium', false));
+    const prof = (await vpip('professor', 'elite', true)) - (await vpip('professor', 'elite', false));
+    assert.ok(tony > 0.15 && prof < tony / 2, 'tilt effect: tony +' + tony.toFixed(2) + ' professor +' + prof.toFixed(2));
+  });
+
   await check('Every Career event difficulty has a tier target', () => {
     const modes = fs.readFileSync(path.join(__dirname, '..', 'js/04-modes-and-scoring.js'), 'utf8');
     const used = new Set([...modes.matchAll(/difficulty:'(\w+)'/g)].map(m => m[1]));
