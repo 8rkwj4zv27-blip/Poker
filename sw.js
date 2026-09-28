@@ -1,4 +1,4 @@
-const CACHE_NAME = 'poker-v51-0';
+const CACHE_NAME = 'poker-v51-1';
 const APP_SHELL = [
   './',
   './index.html',
@@ -28,7 +28,7 @@ const APP_SHELL = [
   './css/enemy-cards.css?v=1',
   './css/knockout.css?v=1',
   './css/showdown.css?v=1',
-  './css/dealer-deck.css?v=2',
+  './css/dealer-deck.css?v=3',
   './css/deal-styles.css?v=1',
   './css/card-holder.css?v=1',
   './css/action-drum.css?v=2',
@@ -60,7 +60,7 @@ const APP_SHELL = [
   './js/finishes.js?v=3',
   './js/press-feel.js?v=2',
   './js/showdown.js?v=2',
-  './js/dealer-deck.js?v=3',
+  './js/dealer-deck.js?v=4',
   './js/deal-styles.js?v=1',
   './js/card-holder.js?v=1',
   './js/action-drum.js?v=2',

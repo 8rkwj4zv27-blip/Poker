@@ -280,7 +280,9 @@ const DealerDeck = (() => {
         skinEl.style.transform = 'rotate(' + snap(P.spin, 15) + 'deg) skewY(' + (bank * -9).toFixed(1) + 'deg) scale(' + kx.toFixed(3) + ',' + ky.toFixed(3) + ')';
         // the chips' trick: the side leaning away goes into shade in one hard
         // step, the side tipped to the lamp catches a lit band
-        shade(skinEl, bank, pitch);
+        // (turning over, the edge going away is in shade: one side, then the other)
+        const turnBank = turn && fl > 0 && fl < 1 ? (fl < .5 ? 1 : -1) * snap(Math.sin(fl * Math.PI), .25) : 0;
+        shade(skinEl, turnBank || bank, pitch);
         skinEl.style.filter = light ? 'brightness(' + (1 + light).toFixed(2) + ')' : '';
         skinEl.style.opacity = String(snap(Math.max(0, Math.min(1, P.alpha)), .25));
         const show = Math.max(0, Math.min(1, P.show));
@@ -496,24 +498,60 @@ const DealerDeck = (() => {
     }
   }
 
-  /* In SPRITE mode a card turns over like a pixel sprite: it squashes to a
-     sliver (lifting a little, catching the light), the other side is
-     swapped in, and it opens back out, in stepped frames. Board cards, the
-     showdown and your cards if they ever turn in the seat. */
+  /* In SPRITE mode a card turns over like a pixel sprite, 2.5D like the
+     chips: it narrows as it turns about its upright axis, the edge going
+     away drops into hard-stepped shade while the near edge catches the
+     lamp, and it lifts a little off the felt (its shadow left behind).
+     Edge-on, the other side is swapped in, and it comes round with the
+     shade on the other edge. Stepped frames, quick and crisp (about 25 a
+     second), never a smooth blur. Board cards, the showdown and your
+     cards if they ever turn in the seat. Only scale, translate and filter
+     are animated, so a card still sliding out of the flop spread keeps
+     its slide. */
+  const TURN_MS = { hole:340, board:400, showdown:460 };
+  const TURN_FRAMES = 5;   // per half: 18°, 36°, 54°, 72°, edge-on
+  function turnFrames(half){
+    const frames = [];
+    for (let i = 1; i <= TURN_FRAMES; i++){
+      const deg = half ? 90 - 90 * i / TURN_FRAMES : 90 * i / TURN_FRAMES;
+      const a = deg * Math.PI / 180, s = Math.sin(a);
+      const kx = Math.max(.08, Math.cos(a)), grow = 1 + .07 * s;
+      frames.push({ deg, s, scale:(kx * grow).toFixed(3) + ' ' + grow.toFixed(3),
+        translate:'0 ' + (-7 * s).toFixed(1) + 'px',
+        filter:'brightness(' + (1 + .22 * s).toFixed(2) + ') drop-shadow(0 ' + (9 * s).toFixed(1) + 'px 0 rgba(8,4,5,' + (.4 * s).toFixed(2) + '))' });
+    }
+    return frames;
+  }
+  // the far edge in shade, a lit band on the near one
+  const turnShade = (s, side) => s ? 'linear-gradient(' + (side > 0 ? 90 : 270) + 'deg,rgba(8,4,5,' + (s * .55).toFixed(2) + ') 0 44%,transparent 44%),' +
+    'linear-gradient(' + (side > 0 ? 270 : 90) + 'deg,rgba(255,240,200,' + (s * .3).toFixed(2) + ') 0 18%,transparent 18%)' : 'none';
+  function turnHalf(el, half, ms){
+    const fr = turnFrames(half), side = half ? -1 : 1;
+    // one keyframe a frame, each held (the last one again at the end)
+    const keys = fn => fr.concat([fr[fr.length - 1]]).map((f, i) => Object.assign({ offset:i / fr.length, easing:'steps(1,end)' }, fn(f)));
+    const card = keys(f => ({ scale:f.scale, translate:f.translate, filter:f.filter }));
+    const shade = keys(f => ({ backgroundImage:turnShade(f.s, side) }));
+    const sh = document.createElement('i'); sh.className = 'ds-shade'; el.appendChild(sh);
+    const opts = { duration:ms, easing:'linear', fill:'forwards' };
+    const sa = sh.animate(shade, opts), anim = el.animate(card, opts);
+    const drop = () => { try{ sa.cancel(); }catch(e){} sh.remove(); };
+    anim.finished.then(drop, drop);
+    return anim;
+  }
   function turnCard2(el, faceDown, card, small, kind){
     if (!sprites() || !el || typeof el.animate !== 'function') return orig.turnCard.apply(this, arguments);
     const tok = {}; el._dsTurn = tok;
     if (!faceDown) try{ Sound.cardFlip(kind === 'board'); }catch(e){}
-    const d = Math.max(1, Math.round((CARD_TURN_TIMING[kind] || CARD_TURN_TIMING.hole) * speedMult()));
-    const shut = [{ scale:'1 1', translate:'0 0', filter:'brightness(1)' }, { scale:'.06 1.04', translate:'0 -5px', filter:'brightness(1.3)' }];
+    const d = Math.max(1, Math.round((TURN_MS[kind] || TURN_MS.hole) * speedMult()));
     return (async () => {
-      const a1 = el.animate(shut, { duration:d * .42, easing:'steps(3,end)', fill:'forwards' });
+      const a1 = turnHalf(el, 0, d / 2);
       await a1.finished.catch(() => {});
       if (el._dsTurn !== tok){ try{ a1.cancel(); }catch(e){} return false; }
       setCardTurnFinal(el, faceDown, card, small);
-      const a2 = el.animate(shut.slice().reverse(), { duration:d * .5, easing:'steps(4,end)', fill:'forwards' });
+      const a2 = turnHalf(el, 1, d / 2);
+      try{ a1.cancel(); }catch(e){}
       await a2.finished.catch(() => {});
-      try{ a1.cancel(); a2.cancel(); }catch(e){}
+      try{ a2.cancel(); }catch(e){}
       return el._dsTurn === tok;
     })();
   }
