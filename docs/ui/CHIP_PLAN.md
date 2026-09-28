@@ -773,3 +773,15 @@ a colour (off one stack where it can) flash in turn, bottom to top, like
 a counter ticking; they go and the richer chip flips in at the highest of
 their places with a ka-chunk (ring, glint); what sat above them settles
 down. `pickPress` / `pressOne` / `mergePile` in js/chip-world.js.
+
+**In the game: v0.45.0 · Chips (28 Sep 2026).** Owner: "absolutely
+perfect, get these into the game". The candidates became the shipped
+files (`js/chip-world.js` -> `js/coin-world.js`, `js/chip-table.js` ->
+`js/coin-table.js`), `css/coin-hoard.css` loads in the game, the owner's
+picks are the defaults (TINT, CASINO, SILVER up to GOLD, through a slot,
+one by one, BIG, gleam when rich; the pot a pyramid pile, the press).
+Settings → Bank / Tube tags / Making change removed (the bank is always
+the chip pile; the saved values stay). The Chip Lab injects only its
+controls now. Checked: every validation suite passes; the real game
+(index.html) deals, bets and settles in chips, the bank worth exactly
+the stack.

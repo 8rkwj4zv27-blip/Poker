@@ -92,7 +92,19 @@ Hand Review panel, showdown presentation. If a visual bug doesn't affect
 outcomes (wrong chip count on screen, a card animating oddly, a stat
 misdisplayed), it's here, not in `05-game-engine.js`.
 
-## `js/coin-world.js` + `css/coin-world.css` — the gold-coin world
+## `js/coin-world.js` + `css/coin-world.css` + `css/coin-hoard.css` — the coin world (chips since v0.45.0)
+
+Since v0.45.0 the coins are POKER CHIPS (built in the Chip Lab, below;
+docs/ui/CHIP_PLAN.md rounds 4-7): one coin shape, its value in its colour
+on a x5 ladder (silver, red, green, black, purple, gold), design TINT,
+CASINO colours. The pot grows as one pile (`pileAdd`: bets land on it as
+it stands; tap to tidy into a pyramid; over 100 chips five of a colour
+are PRESSED into one, `mergePile`). Your bank is a rack in rows
+(`rackSlots`: a deep pyramid, four rows of four when full, 192 chips)
+in its own box (`css/coin-hoard.css`); wins stream in through a slot on
+its top edge, bets hop out of it. Settings → Bank (tubes etc.) is gone:
+the bank is always the chip pile (`bankStyle` stays saved, unused).
+
 
 The chip upgrade's physics world (docs/ui/CHIP_PLAN.md): every coin on the
 felt a body (arcs, spin, bounces, stacks, topples), pixel coins drawn by
@@ -413,15 +425,13 @@ heap, wins land on it, bets off the top, tap to tidy, gleams when rich).
 The candidates are copies of the shipped coin files with box zones added;
 the copy strips the shipped ones. Not loaded by the game.
 
-## `chip-lab.html` + `js/chip-lab.js` + `css/chip-lab.css` + candidate `js/chip-world.js` / `js/chip-table.js` — Chip Lab
+## `chip-lab.html` + `js/chip-lab.js` + `css/chip-lab.css` — Chip Lab
 
-The coin economy, round 4: chip coins (the same gold coin, its value in
-its colour on a x5 ladder, eight designs, two palettes, three ladders),
-the bank as a pot of them (the hoard's box zone, colour-sorted stacks),
-coins in and out of the bank through a slot, the raise panel hiding the
-bank's coins, taller pot stacks so a big pot can't climb. Candidates grown
-from the Hoard Lab's; the copy strips the shipped coin files. Not loaded
-by the game.
+Where the chips were built (rounds 4-7, docs/ui/CHIP_PLAN.md). Since
+v0.45.0 the chips ARE the game's coin files (`js/coin-world.js`,
+`js/coin-table.js`); the lab now injects only its controls (designs,
+palettes, ladders, the bank's options, moments, YOUR BANK presets up to
+FULL) over the real game. Not loaded by the game.
 
 ## `js/finishes.js` + `css/finishes.css` — Finishes menu (live)
 
