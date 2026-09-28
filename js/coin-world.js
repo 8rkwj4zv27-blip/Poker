@@ -1,5 +1,5 @@
 /* ============================================================
-   COIN WORLD · CHIPS (v0.45.0) — the table's coins as poker chips, built
+   COIN WORLD · CHIPS (v0.46.0) — the table's coins as poker chips, built
    in the Chip Lab (chip-lab.html, docs/ui/CHIP_PLAN.md). Grown from the
    Hoard Lab's world (js/coin-hoard-world.js: box zones).
 

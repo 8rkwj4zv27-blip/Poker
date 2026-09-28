@@ -8,7 +8,7 @@
    pot of them; coins in and out of the bank through a slot. THE CHIPS:
    eight designs from simple to detailed (a gallery to tap through), two
    palettes, three ladders. THE BANK: the slot, the pile's shapes, how big
-   it gets, the gleam. The chips are the game's own now (js/coin-world.js, js/coin-table.js, v0.45.0)
+   it gets, the gleam. The chips are the game's own now (js/coin-world.js, js/coin-table.js, v0.46.0)
    stand in for the shipped coin files in the copy; css/coin-hoard.css is
    the bank's box, css/chip-lab.css the gallery.
    ============================================================ */
@@ -107,7 +107,7 @@
         '<section data-pane="settings" hidden><h3>THE TABLE</h3>' +
           '<div class="sdl-row"><div class="sdl-name">OPPONENTS</div>' + seg('opp', [['2','2'],['3','3'],['4','4'],['5','5']], state.opp) + '</div>' +
           '<div class="sdl-row"><div class="sdl-name">SOUND</div>' + seg('sound', [['on','ON'],['off','OFF']], state.sound) + '</div>' +
-          '<p class="sdl-sub">Everything else is the game as it ships (v0.45.0).</p></section>' +
+          '<p class="sdl-sub">Everything else is the game as it ships (v0.46.0).</p></section>' +
       '</div>';
     document.body.appendChild(key); document.body.appendChild(sheet);
     const open = on => { sheet.classList.toggle('is-open', on); key.classList.toggle('is-on', on); if (on) paintGallery(); };

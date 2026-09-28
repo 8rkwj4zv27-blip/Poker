@@ -774,7 +774,7 @@ a counter ticking; they go and the richer chip flips in at the highest of
 their places with a ka-chunk (ring, glint); what sat above them settles
 down. `pickPress` / `pressOne` / `mergePile` in js/chip-world.js.
 
-**In the game: v0.45.0 · Chips (28 Sep 2026).** Owner: "absolutely
+**In the game: v0.46.0 · Chips (28 Sep 2026).** Owner: "absolutely
 perfect, get these into the game". The candidates became the shipped
 files (`js/chip-world.js` -> `js/coin-world.js`, `js/chip-table.js` ->
 `js/coin-table.js`), `css/coin-hoard.css` loads in the game, the owner's

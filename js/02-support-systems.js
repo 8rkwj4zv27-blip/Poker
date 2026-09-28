@@ -738,12 +738,15 @@ const DEFAULT_SETTINGS = {
   // and go off, how hard, how bouncy, the heat's colour, how the coins go
   // into the bank; the all-in win-chance meter; when AWARD POT waits
   sdSmash:'monster', sdForce:'huge', sdBounce:'lots', sdHeat:'ember', sdPickup:'flip',
-  sdWinChance:false, sdAwardPot:'always'
+  sdWinChance:false, sdAwardPot:'always',
+  // Settings → The deck (js/dealer-deck.js): the card back (one of ten, or
+  // 'table', the old green) and which side of the table the deck sits
+  deckBack:'crest', deckSide:'left'
 };
 const DEFAULT_STATS = { hands:0, won:0, showdownsWon:0, biggestPot:0, net:0 };
 const SAVE_VERSION = 1;
 /* Bump on every release so the main-menu header shows what's actually installed. */
-const BUILD_VERSION = 'v0.45.0-dev · Chips';
+const BUILD_VERSION = 'v0.46.0-dev · Chips';
 
 let settings = Object.assign({}, DEFAULT_SETTINGS, Store.get('felt.settings', {}));
 // The Settings menu cleanup dropped RELAXED from the Game Speed control

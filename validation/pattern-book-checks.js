@@ -285,4 +285,19 @@ check('Showdown: live, on the shared parts, and to the order',()=>{
   assert.ok(md.includes('## Showdown (live v0.42.0)'),'the Pattern Book must record the Showdown');
 });
 
+check('Dealer deck: live, on the shared parts, and to the order',()=>{
+  const css=read('css/dealer-deck.css'), md=read('docs/ui/PATTERN_BOOK.md');
+  const links=[...indexHtml.matchAll(/<link rel="stylesheet" href="([^"?]+)/g)].map(m=>m[1]);
+  assert.ok(links.includes('css/dealer-deck.css') && links.indexOf('css/dealer-deck.css')<links.indexOf('css/crt.css'),'index.html must load css/dealer-deck.css before css/crt.css');
+  assert.ok(/<script src="js\/dealer-deck\.js/.test(indexHtml),'index.html must load js/dealer-deck.js');
+  ["'./css/dealer-deck.css","'./js/dealer-deck.js"].forEach(f=>assert.ok(serviceWorker.includes(f),'sw.js is missing '+f));
+  // No new finish for the settings: the sheet's segmented keys, laid out as a grid.
+  assert.ok(/id="settings-deck"[\s\S]*?class="segmented compact" id="deck-back-seg"/.test(indexHtml),'Settings → The deck must use the sheet\'s segmented keys');
+  // One card-back recipe: every back sets tokens only, never its own box.
+  const backs=[...css.matchAll(/html\[data-ds-back="([a-z]+)"\],\.ds-swatch\[data-cb="[a-z]+"\]\{([^}]*)\}/g)];
+  assert.strictEqual(backs.length,10,'ten card backs');
+  backs.forEach(m=>assert.ok(!/(^|;|\s)(background|border|box-shadow)\s*:/.test(m[2]),'the '+m[1]+' back must set the recipe\'s tokens only'));
+  assert.ok(md.includes('## Dealer deck (live v0.45.0)'),'the Pattern Book must record the dealer deck');
+});
+
 process.stdout.write('\n'+passed+' Pattern Book checks passed.\n');
