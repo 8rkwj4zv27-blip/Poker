@@ -7,9 +7,10 @@
      --difficulty D   medium | hard | expert | elite, or "all" (default all)
      --skill N        a point on the 0-100 skill dial instead (e.g. 40 sits
                       between medium and hard); "sweep" runs 10, 20 ... 100
-     --seats a,b,c    personality keys; add probe:bully / probe:station /
+     --seats a,b,c    personality keys, each optionally '@skill' (a seat with
+                      its own skill); add probe:bully / probe:station /
                       probe:abc for a test seat (default: the four preferred
-                      archetypes + probe:abc)
+                      archetypes + grinder@80, a solid regular: the yardstick)
      --seed N         repeatable run (default 1)
      --json           machine-readable output
 
@@ -49,7 +50,7 @@ const args = process.argv.slice(2);
 const opt = (name, def) => { const i = args.indexOf('--' + name); return i >= 0 ? args[i+1] : def; };
 const hands = +opt('hands', 400);
 const seed = +opt('seed', 1);
-const seats = opt('seats', 'maniac,professor,wildcard,shark,probe:abc').split(',');
+const seats = opt('seats', 'maniac,professor,wildcard,shark,grinder@80').split(',');
 const diffArg = opt('difficulty', 'all');
 const skillArg = opt('skill', null);
 // each run is [label, difficulty, skill]

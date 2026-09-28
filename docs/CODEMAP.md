@@ -81,7 +81,9 @@ saved as `aiReads` in the table save). Each AI reads it through
 `personality.tilt` sets how hard a big loss hits. Since v0.54.0 opponents'
 ranges are also narrowed by this hand's public betting (`g.handLog`;
 `NARROW_W`, `narrowWeight` and range specs `{pct, hist, bluff, k}` in
-`01-poker-math.js`, which the worker runs too). The engine
+`01-poker-math.js`, which the worker runs too). Each tier's target
+bands, the ladder and the skill-80 yardstick are asserted by the slow
+suite `validation/ai-tier-checks.js` (about 75 s). The engine
 records public betting history for the AI: `g.streetRaises`,
 `g.streetAggressorId`, `g.pfAggressorId`, `g.pfRaises` and
 `g.prevAggressorId`. AI skill is a 0–100 dial (`SKILL_ANCHORS`,

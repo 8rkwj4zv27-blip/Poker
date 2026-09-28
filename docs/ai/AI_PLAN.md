@@ -259,10 +259,23 @@ who raises everything. Only reading that player's habits fixes it.
   0.9, the Professor 0.15) and reduced by skill. Before, it only tightened
   them slightly.
 
-### Step 6: tier tuning
-- Tune leaks, reading and adaptation per tier until each tier sits in its
-  bands. Then promote the bands to checks. `easy` stays as a Custom Game
-  choice below `medium`.
+### Step 6: tier tuning — DONE (v0.55.0)
+- **Softer Back Room:** stickier (`sticky` easy 0.26, medium 0.22), less
+  hand reading (medium `read` 0.10), and players who think in absolutes
+  now chase any draw.
+- **Upper tiers:** their sense of how narrow their own range is after
+  calling tightens less sharply, so they don't over-fold on later streets.
+- **A better yardstick.** `probe:abc` loses even to the softest room: it
+  judges equity against random hands, so it calls far too light. The tier
+  yardstick is now a solid regular: the game's own AI at skill 80 in the
+  fifth seat (`grinder@80`; any seat can take `@skill` in the harness).
+- **A measurement fix.** AF was counting preflop calls. It's now the usual
+  postflop (bets + raises) / calls. The "aggression shortfall" reported
+  after Steps 3–5 came from the old definition; on the standard one every
+  tier was already inside its band.
+- **The bands are now asserted** by `validation/ai-tier-checks.js` (the
+  slow suite, about 75 s; `AI_TIER_SEED=n` re-checks on another seed). It
+  checks each tier's bands, the ladder between tiers, and the yardstick.
 
 ## What the player should notice
 
@@ -276,8 +289,9 @@ who raises everything. Only reading that player's habits fixes it.
 ## Running it
 
 ```
-node validation/ai-behaviour-checks.js            # ~10 s
-node validation/tools/ai-sim.js                   # all tiers, 400 hands each, a few minutes
+node validation/ai-behaviour-checks.js            # ~30 s, behaviour and maths
+node validation/ai-tier-checks.js                 # ~75 s, every tier's bands, the ladder, the yardstick
+node validation/tools/ai-sim.js                   # report: all tiers, 400 hands each
 node validation/tools/ai-sim.js --difficulty hard --seats maniac,shark,probe:bully --hands 800
 ```
 
@@ -443,5 +457,44 @@ two were measured just before the smooth-override fix below). AI averages:
   (top pair against a raise-bet-bet line: 0.13 in the page, 0.11 in Node,
   against 0.81 raw). The live game's hand log records each street's
   checks, bets and calls.
+
+### After Step 6 (v0.55.0): the tuned ladder
+
+**Bands, recalibrated.** The first bands came from 6-handed stats for a
+single regular. The measuring table is the average of a 5-handed table
+that includes Tony and Roxy (two deliberately loose characters), and
+5-handed play means more big-blind defence. So:
+
+| Band | Was | Now | Why |
+|---|---|---|---|
+| VPIP | 35–55 / 25–40 / 20–32 / 20–30 | 38–58 / 32–46 / 28–40 / 26–38 | 5-handed with two loose characters |
+| PFR | 5–15 / 12–25 / 16–26 / 17–26 | 5–17 / 12–22 / 16–24 / 17–25 | narrowed around the design |
+| AF | same numbers, postflop definition | 0.8–1.6 / 1.2–2.2 / 1.7–3.0 / 1.9–3.2 | the standard postflop stat |
+| WTSD | 35–50 / 28–38 / 25–33 / 25–32 | 40–60 / 28–42 / 22–33 / 19–30 | a table of five fish shows down more; all-regular tables end more pots early |
+| Fold to bet | 25–40 / 35–50 / 40–55 / 42–55 | 30–45 / 38–52 / 40–52 / 40–52 | |
+| Size tell | ≤ 0.60 / ≤ 0.35 / ≤ 0.20 / ≤ 0.15 | **≥ 0.45** / 0.25–0.50 / ≤ 0.25 / ≤ 0.20 | the Back Room *must* have the tell |
+
+These were set after seeing the data, so they were re-checked on seeds 2
+and 3: all six tier checks pass on every seed, and the per-tier stats
+move by only 1–5 points between seeds.
+
+**Results** (seed 1, 1600 hands; the regular's bb/100 on seeds 1 / 2 / 3):
+
+| Tier | VPIP | PFR | AF | WTSD | Fold to bet | Size tell | Regular (skill 80) |
+|---|---|---|---|---|---|---|---|
+| medium (Back Room) | 48% | 13% | 1.1 | 56% | 40% | 0.55 | **+72 / +99 / +39** |
+| hard (Pub, Card Club) | 42% | 17% | 1.5 | 36% | 45% | 0.41 | +13 / +13 / +38 |
+| expert (Casino) | 38% | 20% | 1.9 | 24% | 44% | 0.16 | −38 / −30 / −31 |
+| elite (High Roller+) | 36% | 20% | 2.1 | 21% | 44% | 0.15 | −26 / −6 / −36 |
+
+- **A decent player beats the Back Room clearly,** edges the Pub, and loses
+  at the Casino and above.
+- **Casino and Elite are about equally tough for a skill-80 regular**
+  (averaging about −33 and −23, within noise). Elite isn't yet measurably
+  harder than the Casino. If the top should separate further, the skill
+  dial is the lever: for example, pitch the Invitational at skill 95–100.
+- **Elite's WTSD (about 21%)** sits at the low end of what real regulars
+  show (about 25%). Aggressive all-regular tables end many pots before
+  showdown.
 
 Re-run and record here after every step.

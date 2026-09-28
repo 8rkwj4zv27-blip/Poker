@@ -896,8 +896,8 @@ async function aiPreflop(player, g, c){
      timingTell — how much their think time gives away (think time)
      adapt      — how much they trust what they've seen of a player (READS) */
 const POSTFLOP_SKILL = {
-  easy:   { rangeThink:0.00, read:0.00, bluffPlan:0.00, trap:0.04, sizeTell:0.90, mix:0.080, sticky:0.14, timingTell:0.8, adapt:0.00 },
-  medium: { rangeThink:0.20, read:0.20, bluffPlan:0.15, trap:0.07, sizeTell:0.70, mix:0.060, sticky:0.10, timingTell:0.6, adapt:0.00 },
+  easy:   { rangeThink:0.00, read:0.00, bluffPlan:0.00, trap:0.04, sizeTell:0.90, mix:0.080, sticky:0.26, timingTell:0.8, adapt:0.00 },
+  medium: { rangeThink:0.20, read:0.10, bluffPlan:0.15, trap:0.07, sizeTell:0.70, mix:0.060, sticky:0.22, timingTell:0.6, adapt:0.00 },
   hard:   { rangeThink:0.55, read:0.50, bluffPlan:0.50, trap:0.11, sizeTell:0.35, mix:0.045, sticky:0.05, timingTell:0.3, adapt:0.45 },
   expert: { rangeThink:0.85, read:0.80, bluffPlan:0.85, trap:0.14, sizeTell:0.10, mix:0.030, sticky:0.01, timingTell:0.1, adapt:0.80 },
   elite:  { rangeThink:1.00, read:0.95, bluffPlan:1.00, trap:0.17, sizeTell:0.00, mix:0.020, sticky:0.00, timingTell:0.0, adapt:1.00 },
@@ -1104,7 +1104,9 @@ async function aiPostflop(player, g, c){
   }
   // hopeless: no pair, no draw, equity far off the price
   if (!drawOK && eq < potOdds * 0.6 && str > 0.7) return { action:'fold' };
-  let continues = leanYes(contLine - str, sk.mix) || drawOK;
+  // players who think in absolutes chase any draw ("it could come!")
+  const chase = (strongDraw || weakDraw) && Math.random() < (1 - sk.rangeThink) * 0.8;
+  let continues = leanYes(contLine - str, sk.mix) || drawOK || chase;
   // what their actions say overrides range balance, as far as this
   // player can read hands: fold when clearly beaten, call when clearly not
   // (a smooth lean, not a cut-off, so reading skill grades evenly)
@@ -1114,7 +1116,7 @@ async function aiPostflop(player, g, c){
   // calling off most of the stack needs a hand that can commit
   const wouldCommit = (player.totalBetHand + toCall) / Math.max(1, player.chips + player.totalBetHand);
   if (wouldCommit > 0.5 && !canCommit && eq < potOdds + 0.12) return { action:'fold' };
-  plan.scale *= Math.max(0.2, Math.min(1, contLine));
+  plan.scale *= Math.max(0.35, Math.pow(Math.min(1, contLine), 0.7));
   return { action:'call' };
 }
 

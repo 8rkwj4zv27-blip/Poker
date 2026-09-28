@@ -70,10 +70,15 @@ function loadAI(seed){
              fold too much.
    station — never folds, never raises. Finds AIs that bluff people who
              can't be bluffed.
-   abc     — the reference "decent player": tight preflop, bets its good
-             hands, calls with the right price, folds the rest. The tier
-             yardstick: it should beat Back Room tables clearly and lose at
-             the Invitational. */
+   abc     — a plain player: tight preflop, bets its good hands, calls
+             with the price against RANDOM hands (so it calls too light and
+             reaches showdown ~65%). A useful floor, but a weak yardstick:
+             it loses even to the softest room.
+
+   The tier yardstick is instead a solid regular: the game's own AI at
+   skill 80 sitting in the room, written 'shark@80' (any seat key can take
+   '@skill'). It should beat the Back Room clearly, win less as the rooms
+   get stronger, and lose at Elite. */
 const PROBES = {
   bully(p, g, A){
     const toCall = g.currentBet - p.betThisRound;
@@ -112,7 +117,7 @@ const PROBES = {
 function newStats(){
   return { hands:0, vpip:0, pfr:0, bets:0, raises:0, calls:0, folds:0, checks:0,
     sawFlop:0, wtsd:0, net:0, facedBet:0, foldToBet:0, cbetOpp:0, cbet:0,
-    postBets:0, bluffBets:0, riverBets:0, riverBluffs:0, checkRaises:0, allins:0,
+    postAggr:0, postCalls:0, postBets:0, bluffBets:0, riverBets:0, riverBluffs:0, checkRaises:0, allins:0,
     sizing:[] };
 }
 
@@ -128,11 +133,14 @@ async function simulate(opts){
   const stats = {};
   const players = opts.seats.map((key, i) => {
     const probe = key.startsWith('probe:') ? key.slice(6) : null;
+    // 'shark@80': an AI seat with its own skill (a regular sitting in a softer room)
+    const [base, seatSkill] = key.split('@');
     const pers = probe ? { key, aggression:.5, tightness:.5, bluffFreq:0, sizing:.7, thinkSpeed:1 }
-                       : R.find(p => p.key === key);
+                       : R.find(p => p.key === base);
     if (!pers) throw new Error('ai-harness: unknown seat ' + key);
     stats[key] = newStats();
     return { id:'s'+i, name:key, key, probe, isHuman:!!probe, personality:pers, chips:stackStart,
+      skill: seatSkill !== undefined && !probe ? +seatSkill : undefined,
       hand:[], inHand:true, folded:false, allIn:false, eliminated:false, betThisRound:0,
       totalBetHand:0, acted:false, mayRaise:true, moodState:null };
   });
@@ -197,7 +205,7 @@ async function simulate(opts){
 
         if (d.action === 'fold'){ p.folded = true; st.folds++; applied = 'fold'; }
         else if (d.action === 'check' || (d.action === 'call' && toCall <= 0)){ st.checks++; checked.add(p); applied = 'check'; }
-        else if (d.action === 'call'){ commit(p, toCall); st.calls++; if (street === 'preflop') p._vpip = true; applied = 'call'; }
+        else if (d.action === 'call'){ commit(p, toCall); st.calls++; if (street === 'preflop') p._vpip = true; else st.postCalls++; applied = 'call'; }
         else {
           const prev = g.currentBet;
           let target = prev <= 0 ? Math.max(d.amount, p.betThisRound + bb) : Math.max(d.amount, prev + g.minRaise);
@@ -215,6 +223,7 @@ async function simulate(opts){
             if (full) g.minRaise = inc;
           }
           if (prev > 0) st.raises++; else st.bets++;
+          if (street !== 'preflop') st.postAggr++;
           applied = prev > 0 ? 'raise' : 'bet';
           if (street === 'preflop'){ p._vpip = true; p._pfr = true; players.forEach(q => q._pfAgg = false); p._pfAgg = true; }
           else if (!p.probe){
@@ -275,7 +284,8 @@ function summarize(result){
     out[key] = {
       hands: s.hands,
       vpip: r(s.vpip, s.hands), pfr: r(s.pfr, s.hands),
-      af: (s.bets + s.raises) / Math.max(1, s.calls),
+      // postflop aggression factor, the usual definition: (bets + raises) / calls after the flop
+      af: s.postAggr / Math.max(1, s.postCalls),
       wtsd: r(s.wtsd, s.sawFlop), foldToBet: r(s.foldToBet, s.facedBet),
       cbet: r(s.cbet, s.cbetOpp), bluffShare: r(s.bluffBets, s.postBets),
       riverBluffShare: r(s.riverBluffs, s.riverBets), checkRaises: s.checkRaises,
@@ -286,15 +296,21 @@ function summarize(result){
   return out;
 }
 
-/* Provisional tier targets (table-average, AI seats only). The
-   difficulty key IS the tier: Career events already carry these values.
-   Step 6 of the plan tunes the AI into these bands; until then the report
-   shows them for comparison and nothing asserts them. */
+/* Tier targets (docs/ai/AI_PLAN.md, Step 6): the AVERAGE of the four AI
+   seats at the measuring table (maniac, professor, wildcard, shark: two
+   deliberately loose characters) at FIVE-handed, with a solid regular
+   (grinder@80) in the fifth seat. The difficulty key IS the tier: Career
+   events carry these values. AF is postflop (bets+raises)/calls.
+   The Back Room's size tell is a MINIMUM: that leak is part of the room.
+   Asserted by validation/ai-tier-checks.js. */
 const TIER_TARGETS = {
-  medium: { label:'Back Room: recreational',   vpip:[.35,.55], pfr:[.05,.15], af:[0.8,1.6], wtsd:[.35,.50], foldToBet:[.25,.40], sizeTell:[0,.60] },
-  hard:   { label:'Pub / Card Club: amateurs', vpip:[.25,.40], pfr:[.12,.25], af:[1.5,2.5], wtsd:[.28,.38], foldToBet:[.35,.50], sizeTell:[0,.35] },
-  expert: { label:'Casino Floor: good regs',   vpip:[.20,.32], pfr:[.16,.26], af:[2.0,3.5], wtsd:[.25,.33], foldToBet:[.40,.55], sizeTell:[0,.20] },
-  elite:  { label:'High Roller+: strong',      vpip:[.20,.30], pfr:[.17,.26], af:[2.2,3.5], wtsd:[.25,.32], foldToBet:[.42,.55], sizeTell:[0,.15] },
+  medium: { label:'Back Room: recreational',   vpip:[.38,.58], pfr:[.05,.17], af:[0.8,1.6], wtsd:[.40,.60], foldToBet:[.30,.45], sizeTell:[.45,1] },
+  hard:   { label:'Pub / Card Club: amateurs', vpip:[.32,.46], pfr:[.12,.22], af:[1.2,2.2], wtsd:[.28,.42], foldToBet:[.38,.52], sizeTell:[.25,.50] },
+  expert: { label:'Casino Floor: good regs',   vpip:[.28,.40], pfr:[.16,.24], af:[1.7,3.0], wtsd:[.22,.33], foldToBet:[.40,.52], sizeTell:[0,.25] },
+  elite:  { label:'High Roller+: strong',      vpip:[.26,.38], pfr:[.17,.25], af:[1.9,3.2], wtsd:[.19,.30], foldToBet:[.40,.52], sizeTell:[0,.20] },
 };
+/* The yardstick: the solid regular's win rate (bb/100) must fall room by
+   room: clearly winning in the Back Room, losing at Elite. */
+const YARDSTICK = { seat:'grinder@80', backRoomAtLeast:30, eliteAtMost:0 };
 
-module.exports = { simulate, summarize, loadAI, seeded, PROBES, TIER_TARGETS };
+module.exports = { simulate, summarize, loadAI, seeded, PROBES, TIER_TARGETS, YARDSTICK };
