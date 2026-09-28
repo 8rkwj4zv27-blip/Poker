@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#140709">
+  <link rel="icon" href="data:,">
+  <title>Table Room Lab</title>
+  <!-- Phone-first Lab: the table getting crowded (bets spilling over the
+       board, the pot, the bet squares, the machines' size). The page is
+       the real game at the owner's iPhone 15 Pro Max screen as an
+       installed app (430 x 932, 59px status bar, 34px home bar), scaled
+       to fit whatever holds it. The controls run inside the game
+       (js/table-room-lab.js: TUNE key, bottom sheet). Never linked from
+       the game; never touches a real save (in-memory storage). -->
+  <style>
+    html,body{ height:100%; margin:0; background:#140709; overflow:hidden; }
+    #trl-game{
+      position:fixed; left:50%; top:50%; width:430px; height:932px;
+      border:0; display:block; background:#0C1510;
+      transform:translate(-50%,-50%) scale(var(--trl-fit,1)); transform-origin:50% 50%;
+    }
+    @media (min-width:600px){ #trl-game{ box-shadow:0 0 0 3px #080405,0 20px 60px rgba(0,0,0,.6); } }
+  </style>
+</head>
+<body>
+  <iframe id="trl-game" title="The Table (lab copy)" allow="autoplay"></iframe>
+  <!-- What goes into the game copy (the bundler, validation/tools/lab-bundle.js,
+       reads this to bake it). Nothing of the game is stripped: the lab
+       only restyles and re-places the live table. -->
+  <script type="application/json" id="lab-inject">{"css":["css/table-room-lab.css"],"js":["js/table-room-lab.js"],"v":"4"}</script>
+  <script src="js/table-room-lab-host.js?v=4"></script>
+</body>
+</html>

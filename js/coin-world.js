@@ -34,7 +34,8 @@
   // the chip coins (the Chip Lab): which colours, how mixed, which design
   Object.assign(BASE,{ ladder:'silver', chipPalette:'casino', chipDesign:'tint' });
   const OPT={ preset:'v11', ...BASE, speed:1, sound:'on' };
-  const SIZES={ s:13, m:15, l:17 };
+  // xs and ms: the table's CHIP SIZE setting (js/table-room.js), 12 and 14
+  const SIZES={ xs:12, s:13, ms:14, m:15, l:17 };
   const D=()=>SIZES[OPT.size];
   // coin thickness (px, edge-on) and the stack step it gives at rest
   const THICK=d=>OPT.body==='thick'?Math.round(d*.52):Math.max(2,Math.round(d*.2));
@@ -1077,6 +1078,10 @@
   // hoard) or in the pot's tray
   function zoneBox(z,d,col){
     if (z && z.box){ const k=z.box, T=k.T+Math.round(depthOf(col||'gold',d)/FORE)-2; return { L:k.L+d/2, R:k.R-d/2, T:z.rack?Math.min(T,k.B-(RACK_ROWS-1)*RACK_DY()):T, B:k.B }; }
+    // a bet spot's pile footprint (js/table-room.js, LITTLE PILE): where
+    // the tidy builds the pile. Never walls: a bet lands and spills freely
+    // and only gathers here when it tidies (contain/holdIn/lip read z.box)
+    if (z && z.pile){ const k=z.pile; return { L:k.L+d/2, R:k.R-d/2, T:k.T+Math.round(depthOf(col||'gold',d)/FORE)-2, B:k.B }; }
     return z && z.id==='pot' ? trayBox(d,col) : null;
   }
   function contain(b){
@@ -1310,6 +1315,8 @@
   function neatSlots(z,list){
     if (z.rack) return rackSlots(z,list);
     if (z.id==='pot' || z.box) return mixed(list)?bandSlots(z,list):potSlots(z,list);
+    // a bet spot with a pile footprint: the pot's shape, small (z.shape)
+    if (z.pile && !mixed(list)) return potSlots(z,list);
     if (mixed(list)) return spotSlots(z,list);
     const d=D(), towers=OPT.tidy==='towers', sp=d+(towers?2:1), st=STEP(), slots=[], order=[0], dy=ROW_DY(sp);
     for (let i=1;i<9;i++) order.push(i%2?Math.ceil(i/2):-i/2);
