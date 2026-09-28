@@ -34,8 +34,6 @@ and how rare each is. One could be super rare and super fancy.
 | SKIP | uncommon | Skims the felt and skips twice. |
 | SPIN | uncommon | A full flat turn in the air. |
 | FLUTTER | uncommon | Floats up, rocks down like a leaf. |
-| TUMBLE | uncommon | End over end. |
-| BEAM | rare | Shrinks to a spark at the deck, streaks across, pops up. |
 | ROYAL FLOURISH | legendary | Rises in gold light, spins twice, hangs, dives in with sparks and a flash. |
 
 Rarity weights: COMMON 10, UNCOMMON 4, RARE 1, LEGENDARY 0.15. The style
@@ -59,6 +57,44 @@ Round 2's whole-hand autoplay got stuck on the owner's phone and was more
 than wanted. Now each style has one ▶ PLAY: a fresh hand dealt with every
 card in that style, stopping at your turn. Another PLAY or DEAL always
 just starts over. FLY ONE and the autoplay are gone.
+
+## Round 4: the 2.5D card, five tiers
+
+Owner: the card should feel 2.5D like the chips (a sprite, not a 3D
+object): leaning, tipping and reacting to the air like a frisbee, never
+pitching far enough to show its thickness, never over. The same on the
+deck, the shuffle, the flop and the board turning. Specials bigger; the
+railgun only a white-hot streak (no shields or crosses). Opponents' cards
+still landed on top of their machines and faded under.
+
+**The deck (`js/dealer-deck.js`)**
+- Opponents' cards (`dealUnder`, live on the branch): the card lands just
+  clear of the cabinet's bottom edge, no fade, then slides up under it.
+  The round-3 clip-path cut-off is gone (not reliable on iPhone Safari).
+- SPRITE mode (`order.sprite = 'on'`; unset in the game until signed
+  off): the flying card's look moves onto a skin that holds a POSE
+  stepped at 14 frames a second while the carrier glides: bank narrows
+  it (up to 42%), pitch shortens it a little (up to 16%), spin snaps to
+  15°, the light shifts; a pixel shadow on the felt drifts away as it
+  rises. Your card's turn in the air becomes a squash-flip. Turns on the
+  board and at the showdown (`turnCard2`) squash to a sliver and open
+  back out; the shuffle and the flop spread lean in stepped frames.
+
+**The styles (`js/deal-styles.js`), weights COMMON 10 · UNCOMMON 4 · RARE 1 · EPIC .4 · LEGENDARY .12**
+
+| Tier | Styles |
+|---|---|
+| Common | Flick, Frisbee, Lob, Slide, Whip |
+| Uncommon | Swoop, Skip, Spin, Flutter, Knuckleball |
+| Rare | Boomerang, Shuriken, Magician, Glitch |
+| Epic | Transporter, Comet |
+| Legendary | Railgun, Royal Flourish |
+
+Rare, epic and legendary only ever hit one card. Sounds for the specials
+are made with Web Audio in the candidate (no files).
+
+**The lab:** styles grouped by tier, each ▶ PLAY / on-off / rarity; THE
+CARD (2.5D sprite / flat today) and SHADOW switches; slow motion.
 
 ## Next
 

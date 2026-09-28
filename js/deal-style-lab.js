@@ -19,16 +19,23 @@
 (() => {
   const host = (() => { try{ return parent !== window && parent.__lab ? parent.__lab : null; }catch(e){ return null; } })();
   const $ = s => document.querySelector(s);
-  const RARITY = [['common','COMMON'],['uncommon','UNCOMMON'],['rare','RARE'],['legendary','LEGENDARY']];
+  const RARITY = [['common','COMMON'],['uncommon','UNCOMMON'],['rare','RARE'],['epic','EPIC'],['legendary','LEGEND']];
+  const TIER_NAME = { common:'COMMON', uncommon:'UNCOMMON', rare:'RARE', epic:'EPIC', legendary:'LEGENDARY' };
   const saved = (host && host.state.deal) || null;
   let slow = (host && host.state.dealSlow) || 'off';
+  let sprite = (host && host.state.dealSprite) || 'on';
+  let shadow = (host && host.state.dealShadow) || 'on';
+  function applyLook(){
+    try{ DealerDeck.apply(Object.assign(DealerDeck.order, { sprite })); }catch(e){}
+    document.documentElement.classList.toggle('dsl-noshadow', shadow === 'off');
+  }
 
   const baseSpeed = speedMult;
   // eslint-disable-next-line no-global-assign
   speedMult = function(){ return baseSpeed() * (slow === 'on' ? 2.5 : 1); };
 
   const order = () => DealStyles.order;
-  function save(){ if (host) host.set({ deal:order(), dealSlow:slow }); }
+  function save(){ if (host) host.set({ deal:order(), dealSlow:slow, dealSprite:sprite, dealShadow:shadow }); }
   function set(patch){ DealStyles.apply(patch); save(); paint(); }
 
   // roughly how often a style shows up, with ~10 cards a hand
@@ -36,7 +43,7 @@
     const O = order(), W = DealStyles.WEIGHT;
     if (!O.on[id]) return 'OFF';
     const on = DealStyles.STYLES.filter(s => O.on[s.id]);
-    const solo = r => r === 'rare' || r === 'legendary';
+    const solo = r => !!DealStyles.SOLO[r];
     const total = on.reduce((t, s) => t + W[O.rarity[s.id]], 0);
     let pHand;
     if (solo(O.rarity[id]) || O.scope === 'card') pHand = 1 - Math.pow(1 - W[O.rarity[id]] / total, 10);
@@ -83,7 +90,7 @@
     const O = order();
     document.querySelectorAll('.dsl-sheet .sdl-seg').forEach(g => {
       const k = g.dataset.key;
-      const cur = k === 'scope' ? O.scope : k === 'slow' ? slow : O.rarity[k.split(':')[1]];
+      const cur = k === 'scope' ? O.scope : k === 'slow' ? slow : k === 'sprite' ? sprite : k === 'shadow' ? shadow : O.rarity[k.split(':')[1]];
       g.querySelectorAll('button').forEach(b => b.classList.toggle('is-on', b.dataset.v === cur));
     });
     document.querySelectorAll('.dsl-row').forEach(r => {
@@ -110,11 +117,13 @@
     sheet.innerHTML =
       '<div class="sdl-tabs"><button type="button" class="is-on dsl-count" tabindex="-1"></button><button type="button" class="sdl-close" aria-label="Close">✕</button></div>' +
       '<div class="sdl-body">' +
-        '<p class="sdl-sub">▶ PLAY deals a fresh hand with every card in that style. The switch puts a style in the random mix; its rarity sets how often it comes up (rare and legendary ones only ever hit one card). DEAL, top left, deals from the mix.</p>' +
+        '<p class="sdl-sub">▶ PLAY deals a fresh hand with every card in that style. The switch puts a style in the random mix; its rarity sets how often it comes up (rare, epic and legendary ones only ever hit one card, as a surprise). DEAL, top left, deals from the mix.</p>' +
+        '<div class="sdl-row"><div class="sdl-name">THE CARD</div>' + seg('sprite', [['on','2.5D SPRITE'],['off','FLAT (TODAY)']], sprite) + '<p class="sdl-note">2.5D: the card leans, tips and catches the light in stepped frames like the chips, turns over with a squash, and the shuffle and flop do the same.</p></div>' +
+        '<div class="sdl-row"><div class="sdl-name">SHADOW ON THE FELT</div>' + seg('shadow', [['on','ON'],['off','OFF']], shadow) + '</div>' +
         '<div class="sdl-row"><div class="sdl-name">IN THE MIX, ROLL A STYLE</div>' + seg('scope', [['hand','ONCE PER HAND'],['card','EVERY CARD']], order().scope) + '</div>' +
         '<div class="sdl-row"><div class="sdl-name">SLOW MOTION</div>' + seg('slow', [['off','OFF'],['on','2.5× SLOWER']], slow) + '</div>' +
         '<div class="dsl-quick"><button type="button" data-act="all">ALL ON</button><button type="button" data-act="flick">FLICK ONLY</button></div>' +
-        DealStyles.STYLES.map(rowHtml).join('') +
+        DealStyles.TIERS.map(t => '<h3 class="dsl-tier dsl-tier-' + t + '">' + TIER_NAME[t] + '</h3>' + DealStyles.STYLES.filter(s => s.tier === t).map(rowHtml).join('')).join('') +
         '<div class="sdl-actions"><button type="button" data-act="reset">START OVER</button><button type="button" data-act="copy">COPY MY PICKS</button></div>' +
         '<textarea class="sdl-copytext" readonly hidden></textarea>' +
       '</div>';
@@ -125,6 +134,7 @@
     sheet.querySelector('.sdl-close').addEventListener('click', () => open(false));
     sheet.addEventListener('click', e => {
       const t = e.target.closest('button'); if (!t) return;
+      try{ DealStyles.Sfx.unlock(); }catch(err){}
       if (t.dataset.play){ open(false); deal(t.dataset.play); return; }
       if (t.dataset.on){ const O = order(); set({ on:{ [t.dataset.on]:!O.on[t.dataset.on] } }); return; }
       const g = t.closest('.sdl-seg');
@@ -132,13 +142,15 @@
         const k = g.dataset.key, v = t.dataset.v;
         if (k === 'scope') set({ scope:v });
         else if (k === 'slow'){ slow = v; save(); paint(); }
+        else if (k === 'sprite'){ sprite = v; applyLook(); save(); paint(); }
+        else if (k === 'shadow'){ shadow = v; applyLook(); save(); paint(); }
         else set({ rarity:{ [k.split(':')[1]]:v } });
         return;
       }
       const act = t.dataset.act;
       if (act === 'all') set({ on:Object.fromEntries(DealStyles.STYLES.map(s => [s.id, true])) });
       if (act === 'flick') set({ on:Object.fromEntries(DealStyles.STYLES.map(s => [s.id, s.id === 'flick'])) });
-      if (act === 'reset') set({ on:Object.fromEntries(DealStyles.STYLES.map(s => [s.id, true])), rarity:Object.fromEntries(DealStyles.STYLES.map(s => [s.id, s.rarity])), scope:'hand' });
+      if (act === 'reset') set({ on:Object.fromEntries(DealStyles.STYLES.map(s => [s.id, true])), rarity:Object.fromEntries(DealStyles.STYLES.map(s => [s.id, s.tier])), scope:'hand' });
       if (act === 'copy'){
         const text = copyText(), ta = sheet.querySelector('.sdl-copytext');
         const done = ok => { t.textContent = ok ? 'COPIED' : 'SELECT + COPY BELOW'; setTimeout(() => { t.textContent = 'COPY MY PICKS'; }, 2200); if (!ok){ ta.hidden = false; ta.value = text; ta.focus(); ta.select(); } };
@@ -152,6 +164,7 @@
     try{ if (typeof TableIntro !== 'undefined') TableIntro.uninstall(); }catch(e){}
     try{ settings.theme = 'burgundy'; document.body.setAttribute('data-theme', 'burgundy'); }catch(e){}
     if (saved) DealStyles.apply(saved);
+    applyLook();
     build();
     deal(null);
   }

@@ -469,8 +469,10 @@ onto it. Wraps `dealCardFlight`, `dealCommunity` (after `js/showdown.js`),
 and hands back to them with Reduced Motion; the flop takes the same cards
 in the same order as the shipped deal, burns never touch `g.deck`.
 Your own hole cards turn over in the air and slip into the card holder
-(`dealYours`); an opponent's cards are clipped under their cabinet as they
-arrive (`fly`). `DealerDeck.flightFor` is a hook for other flight styles
+(`dealYours`); an opponent's cards land just clear of their cabinet and
+slide up under it (`dealUnder`). SPRITE mode (`order.sprite`, unset in the
+game) is the Deal Style Lab's 2.5D card: stepped poses and a felt shadow
+on flights, squash-flip turns (`turnCard2`), leaning shuffle and spread. `DealerDeck.flightFor` is a hook for other flight styles
 (the Deal Style Lab), unset in the game.
 Settings → The deck (`settings.deckBack`, `settings.deckSide`). Checked by
 `validation/dealer-deck-checks.js`.
@@ -497,10 +499,11 @@ sheet from `css/showdown-lab.css`). Lab only; nothing loads in the game.
 
 ## `deal-style-lab.html` + `js/deal-style-lab.js` + `css/deal-style-lab.css` + candidate `js/deal-styles.js` / `css/deal-styles.css` — Deal Style Lab
 
-How cards fly off the deck (`docs/ui/DEAL_STYLES_PLAN.md`): eleven styles
-(FLICK, the shipped one, plus ten), each with a preview, an in-the-mix
-switch and a rarity; rolled once per hand or every card, with rare and
-legendary ones only ever on a single card. The candidate plugs into
+How cards fly off the deck (`docs/ui/DEAL_STYLES_PLAN.md`): eighteen styles
+in five tiers (common to legendary; FLICK is the shipped one), each with
+▶ PLAY, an in-the-mix switch and a rarity; rolled once per hand or every
+card, rare and up only ever on a single card. Runs the deck in its 2.5D
+SPRITE mode (switchable against today's flat card). The candidate plugs into
 `DealerDeck.flightFor`. Phone-first (host `js/showdown-lab-host.js`).
 Lab only; nothing loads in the game.
 

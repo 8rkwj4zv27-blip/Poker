@@ -39,3 +39,11 @@ html.dsl-open .sdl-key{ visibility:hidden; }
 .dsl-on[aria-checked="true"]::after{ content:'ON'; left:25px; background:#E8B83A; color:#080405; box-shadow:inset 0 2px 0 #FFE380,0 2px 0 #080405; }
 .dsl-row .sdl-note{ margin:6px 0 8px; }
 .dsl-rarity button{ min-width:0; font-size:6.5px; }
+
+/* tier headings */
+.dsl-tier{ margin:18px 0 0 !important; padding:6px 8px; border-radius:2px; background:#140709; }
+.dsl-tier-uncommon{ color:#9FE3A6 !important; }
+.dsl-tier-rare{ color:#8CC8FF !important; }
+.dsl-tier-epic{ color:#D59CFF !important; }
+.dsl-tier-legendary{ color:#FFB547 !important; }
+html.dsl-noshadow .ds-shadow{ display:none; }
