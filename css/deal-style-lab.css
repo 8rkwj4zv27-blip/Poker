@@ -20,8 +20,9 @@ html.dsl-open .sdl-key{ visibility:hidden; }
 .dsl-title{ flex:1; min-width:0; }
 .dsl-title b{ display:block; font-family:var(--font-hdr); font-size:9px; font-weight:400; letter-spacing:.08em; color:#E8B83A; }
 .dsl-title small{ display:block; margin-top:4px; font-size:11px; color:#B69A7A; }
+.dsl-plays{ display:grid; grid-template-columns:1fr 1.5fr; gap:6px; margin-bottom:8px; }
 .dsl-play{
-  flex:0 0 auto; min-height:44px; padding:0 10px; border:2px solid #080405; border-radius:3px; background:#E8B83A; color:#080405;
+  min-height:44px; padding:0 8px; border:2px solid #080405; border-radius:3px; background:#E8B83A; color:#080405;
   font-family:var(--font-hdr); font-size:7px; letter-spacing:.04em; cursor:pointer; box-shadow:inset 0 2px 0 #FFE380,0 3px 0 #080405;
 }
 .dsl-play:active{ transform:translateY(2px); box-shadow:inset 0 2px 0 #FFE380,0 1px 0 #080405; }
@@ -39,3 +40,13 @@ html.dsl-open .sdl-key{ visibility:hidden; }
 .dsl-on[aria-checked="true"]::after{ content:'ON'; left:25px; background:#E8B83A; color:#080405; box-shadow:inset 0 2px 0 #FFE380,0 2px 0 #080405; }
 .dsl-row .sdl-note{ margin:6px 0 8px; }
 .dsl-rarity button{ min-width:0; font-size:6.5px; }
+
+/* the style a whole-hand preview is using: tap to go back to the mix */
+.dsl-now{
+  position:fixed; z-index:9000; left:8px; right:8px; bottom:calc(8px + env(safe-area-inset-bottom,0px)); min-height:44px;
+  border:2px solid #080405; border-radius:3px; background:#E8B83A; color:#080405;
+  font-family:var(--font-hdr); font-size:7px; letter-spacing:.05em; cursor:pointer;
+  box-shadow:inset 0 2px 0 #FFE380,0 3px 0 #080405; opacity:.94;
+}
+.dsl-now[hidden]{ display:none; }
+html.dsl-open .dsl-now{ visibility:hidden; }

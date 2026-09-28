@@ -43,6 +43,16 @@ is rolled ONCE PER HAND (common/uncommon) or for EVERY CARD. Rare and
 legendary styles only ever happen to a single card, as a surprise. Only
 one style on = always that one.
 
+## Round 2: a whole hand
+
+The owner couldn't preview a full hand. Each style now has ▶ DEAL A WHOLE
+HAND: a fresh hand dealt in just that style and played to the river
+(everyone checks or calls; their thinking is cut short, the flights keep
+their real speed), so every card flies: yours, theirs, the flop, turn
+and river. ▶ FLY ONE is the old quick preview. DEAL (top left) plays a
+whole hand from the mix. A bar at the bottom shows a forced style; tap it
+to go back to the mix.
+
 ## Next
 
 Owner's picks (COPY MY PICKS in the lab), then ship: the styles become a
