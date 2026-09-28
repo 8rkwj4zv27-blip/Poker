@@ -76,7 +76,7 @@ function evaluate7WithCards(cards){
   }
   return { result:best, cards:bestCombo };
 }
-/* Equity against `numOpponents` random hands. Since v0.51 this runs on the
+/* Equity against `numOpponents` random hands. Since v0.52 this runs on the
    fast evaluator (estimateEquityVsRanges with no range = any two cards,
    which deals exactly as a shuffled deck would); the old evaluate7 loop is
    kept as the reference in validation/ai-behaviour-checks.js. */

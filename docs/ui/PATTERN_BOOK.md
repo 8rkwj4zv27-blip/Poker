@@ -308,8 +308,10 @@ faces iPhone Safari drew behind the live keys.
 | The turn | **MEDIUM**, **CLUNK**, **CHUNKY · 20 FPS** | About a third of a second, stepped like the rest of the machine; it runs a little past and knocks back. No taps while it turns. Ticks and a catch (`Sound.wheelTooth`, `Sound.wheelCatch`). |
 | Shading, panels | **ON**, **WHILE IT TURNS** | Each side darkens as it turns away; a painted panel backs every side only while it turns, so at rest the keys sit in the well as before. |
 | The housing | bezel, **WINDOW WHILE IT TURNS** | The bay is a dark well with a fixed bezel over the drum (ink edge, a thin brass ring); the drum shows only through its opening, with dark lips top and bottom while it turns. The bay is 10px taller in portrait (101px; 94px on short phones), the room going between the instruments and the bezel. |
+| The deal side (v0.48.1) | fixed | NEXT HAND, REBUY and NEW TABLE are a side of the drum too, not buttons floating over the bay: moved onto it (same ids and handlers), in the console's key (`.btn-award-console`; NEW TABLE beside REBUY takes `.results-secondary`). The drum rolls to it whenever the game unhides one, and holds a pressed key on the side as it rolls away. |
 | The key line | fixed | Every side's keys take the FOLD / CHECK / RAISE row's measured top and height, so no side lands higher or lower. |
 | The rim's glow | fixed | The lit rim's inner glow runs on round the bay (sides and bottom) in the same lamp, so it no longer stops at the join. |
+| The award key (v0.50.0) | **VELVET + GOLD**, **COLLECT**, **PRINTED**, **A FLASH**, **SPARKS + CLACK**, **MORE SHINE**, **QUIET · PAY HARRY** | The shared AWARD POT key (`.btn-award-console`) in a state for whose pot it is (`data-ak`). Yours (`mine`): the machine's burgundy velvet with gold letters and a gold rim, reading COLLECT · 1,500 (SPLIT when you share it); a flash as the drum lands it; gold sparks off its edges and the counter's clack when pressed; a big or monster pot adds a gold ring round it. Someone else's (`theirs`): the quiet case key, PAY HARRY · 888. The game's own words stay as its `aria-label`. No chasing lights. Learns whose pot it is by wrapping `showHudResultConsole`; presentation only. `js/award-key.js`, `css/award-key.css`. |
 | Knock to check | **ON** (Dashboard V2 order) | Double-tap the dashboard case to check: two thuds, a ring, the whole machine jolts. Facing a bet it refuses with a buzz and CAN'T KNOCK. Not the bank, your cards or a key. `js/knock-check.js`, `css/knock-check.css`. |
 
 Rules for anyone touching it:
@@ -359,4 +361,26 @@ Lab (`card-holder-lab.html`, round 2, 28 September 2026;
 
 Settings → The deck → Card holder: the sheet's segmented keys, a small lip
 drawn in each.
+
+## Deal styles + the 2.5D card (live v0.51.0)
+
+How cards fly off the deck, from the owner's order on the Deal Style Lab
+(`deal-style-lab.html`, round 5, 28 September 2026;
+`docs/ui/DEAL_STYLES_PLAN.md`). `js/deal-styles.js` + `css/deal-styles.css`
+on the deck's flights (`js/dealer-deck.js`). Presentation only.
+
+| Part | Order | The finish |
+|---|---|---|
+| The card in flight | **2.5D SPRITE** (the deck's `sprite:'on'`) | Like the chips: the flat pixel card holds a pose stepped at 14 frames a second while it glides. Banking narrows and slants it with its far side in hard-stepped shade; tipping shortens it a little with a lit band toward the lamp; spins snap to 15°; it grows as it rises. Never tips far enough to show its thickness, never over. A pixel shadow on the felt drifts away as it rises. |
+| Turning over | **SQUASH FLIP** (crisp since v0.51.1) | Turns about its upright axis in hard frames, quick (about 25 a second; 400ms for a board card): it narrows, lifts a little with its shadow left on the felt, the edge going away drops into stepped shade while the near edge catches the lamp; edge-on, the sides swap and it comes round with the shade on the other edge. The board, the showdown, your cards in the air. |
+| Shuffle, flop spread | **LEAN** | The same stepped lean as the cards split, riffle, bridge and fan out. |
+| Your cards | **TURN IN THE AIR** | They turn over on the way, arrive just above the holder's lip and slip in. |
+| Their cards | **UNDER THE CABINET** | They land just clear of the cabinet, no fade, and slide up under it. |
+| Styles | **FLICK** alone by default (a setting) | Eighteen in five tiers: Flick, Frisbee, Lob, Slide, Whip / Swoop, Skip, Spin, Flutter, Knuckleball / Boomerang, Shuriken, Magician, Glitch / Transporter, Comet / Railgun, Royal Flourish. Common and uncommon share the hands by weight (10/4); rare, epic and legendary are a surprise: once per hand (the default) one takes the whole hand (1/50, 1/80, 1/300 a hand, since v0.51.4), every card it's a single card's (1/500, 1/800, 1/3000 a card). |
+
+Settings → Dealing: FLICK ONLY / ALL ON, once per hand or every card, and
+one row per style (grouped by tier) with the sheet's switch and its rarity
+as the sheet's segmented keys.
+
+Reduced Motion: the deck's quiet deal, no styles.
 

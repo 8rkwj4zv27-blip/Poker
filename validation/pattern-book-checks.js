@@ -317,6 +317,10 @@ check('Action drum + knock to check: live, never ghosting, and to the order',()=
     .forEach(([k,v])=>assert.ok(new RegExp('\\b'+k+":'"+v+"'").test(def[1]),'the order sets '+k+' to '+v));
   assert.ok(/else install\(\);\s*\}\)\(\);\s*$/.test(js),'the drum must install itself at load');
   assert.ok(js.includes('motionOff()'),'Reduced Motion swaps at once');
+  // NEXT HAND, REBUY and NEW TABLE are a side of the drum, in the console's key (v0.48.1).
+  assert.ok(/const DEAL_KEYS = \['btn-rebuy', 'btn-new-table', 'btn-next-hand'\]/.test(js) && js.includes("b.classList.add('btn-award-console', 'ad-deal-key')"),'the deal keys must be moved onto the drum in the console\'s key');
+  assert.ok(/if \(dealt\(\)\) return 'deal';/.test(js),'the drum must turn to the deal side whenever a deal key shows');
+  assert.ok(css.includes('.ad-face-deal .btn-award-console{') && /position:static/.test(css),'the deal keys must sit on the drum, not float over the bay');
   // Every side's keys on the one key line.
   assert.ok(js.includes("'--ad-key-top'") && css.includes('margin-top:var(--ad-key-top'),'every side\'s keys take the row\'s measured line');
   // Presentation only: the drum never touches game state; the knock only ever checks.
@@ -330,6 +334,28 @@ check('Action drum + knock to check: live, never ghosting, and to the order',()=
   assert.ok(!/js\/action-drum\.js|js\/knock-check\.js/.test((lab.match(/id="lab-inject">([^<]*)/)||[])[1]||''),'the lab must not inject a second drum or knock into a game that already has them');
   ['action-drum-lab','js/action-drum-lab.js'].forEach(n=>{ assert.ok(!indexHtml.includes(n),'index.html links '+n); assert.ok(!serviceWorker.includes(n),'sw.js precaches '+n); });
   assert.ok(md.includes('## Action drum (live v0.48.0)'),'the Pattern Book must record the action drum');
+});
+
+check('Award key: live, to the order, presentation only',()=>{
+  const css=read('css/award-key.css'), js=read('js/award-key.js'), lab=read('action-drum-lab.html');
+  const links=[...indexHtml.matchAll(/<link rel="stylesheet" href="([^"?]+)/g)].map(m=>m[1]);
+  assert.ok(links.includes('css/award-key.css') && links.indexOf('css/award-key.css')<links.indexOf('css/crt.css'),'index.html must load css/award-key.css before css/crt.css');
+  assert.ok(indexHtml.indexOf('js/award-key.js')>indexHtml.indexOf('js/06-presentation.js') && indexHtml.indexOf('js/award-key.js')>indexHtml.indexOf('js/showdown.js'),'the award key must load after the functions it wraps');
+  ["'./css/award-key.css","'./js/award-key.js"].forEach(f=>assert.ok(serviceWorker.includes(f),'sw.js is missing '+f));
+  const def=js.match(/const DEFAULTS = \{([^}]*)\}/);
+  assert.ok(def,'the award key must define its defaults');
+  Object.entries({ finish:'velvet', words:'collect', amount:'printed', arrive:'glint', press:'sparks', theirs:'quiet', tiers:'on' })
+    .forEach(([k,v])=>assert.ok(new RegExp('\\b'+k+":'"+v+"'").test(def[1]),'the order sets '+k+' to '+v));
+  // The shared key, in a state; the game's words kept for screen readers.
+  assert.ok(css.includes('.btn-award-console[data-ak="mine"]') && css.includes('.btn-award-console[data-ak="theirs"]'),'the win is a state of the shared AWARD key');
+  assert.ok(js.includes("btn.setAttribute('aria-label', label)"),'the key keeps the game\'s own words as its label');
+  // No chasing or jackpot lights (struck from the Showdown); Reduced Motion stills it.
+  assert.ok(!/chase|jackpot/i.test(css),'no chasing or jackpot lights on the award key');
+  assert.ok(css.includes('[data-motion="off"]') && css.includes('prefers-reduced-motion') && js.includes('motionOff()'),'the award key honours Reduced Motion');
+  // Presentation only.
+  assert.ok(!/\b(game|pendingHumanPlayer)(\.[A-Za-z_]+)*\s*=[^=]/.test(js) && !/\b(applyAction|humanAct)\(/.test(js),'js/award-key.js must never change game state');
+  // The lab tunes the live part and never injects a second one.
+  assert.ok(!/award-key/.test((lab.match(/id="lab-inject">([^<]*)/)||[])[1]||''),'the lab must not inject a second award key');
 });
 
 check('Card holder: live, on the shared parts, and to the order',()=>{
@@ -348,6 +374,25 @@ check('Card holder: live, on the shared parts, and to the order',()=>{
   rules.filter(m=>/\.card\b/.test(m[1]) && /(background|box-shadow)\s*:/.test(m[2]))
     .forEach(m=>assert.ok(m[1].includes(':not(.back):not(.card-turning)'),'only faces at rest are dressed: '+m[1].trim()));
   assert.ok(md.includes('## Card holder (live v0.49.0)'),'the Pattern Book must record the card holder');
+});
+
+check('Deal styles + the 2.5D card: live, on the shared parts, and to the order',()=>{
+  const js=read('js/deal-styles.js'), deck=read('js/dealer-deck.js'), md=read('docs/ui/PATTERN_BOOK.md');
+  assert.ok(/<link rel="stylesheet" href="css\/deal-styles\.css/.test(indexHtml),'index.html must load css/deal-styles.css');
+  assert.ok(/<script src="js\/dealer-deck\.js[^"]*"><\/script>\s*<script src="js\/deal-styles\.js/.test(indexHtml),'js/deal-styles.js loads right after js/dealer-deck.js');
+  ["'./css/deal-styles.css","'./js/deal-styles.js"].forEach(f=>assert.ok(serviceWorker.includes(f),'sw.js is missing '+f));
+  // No new finish for the setting: the sheet's switches and segmented keys.
+  assert.ok(/id="settings-dealing"[\s\S]*?class="segmented compact" id="deal-quick-seg"[\s\S]*?class="segmented compact" id="deal-scope-seg"[\s\S]*?id="deal-style-list"/.test(indexHtml),'Settings → Dealing must use the sheet\'s segmented keys');
+  assert.ok(js.includes('class="switch" role="switch"') && js.includes('segmented compact dst-rarity'),'each style row uses the sheet\'s switch and segmented keys');
+  // The order: FLICK alone by default; the rarity chances; the 2.5D card on.
+  assert.ok(/O\.on\[s\.id\] = s\.id === 'flick'/.test(js),'FLICK alone is on by default');
+  assert.ok(/CHANCE = \{ rare:1 \/ 500, epic:1 \/ 800, legendary:1 \/ 3000 \}/.test(js),'rare, epic and legendary chances as ordered');
+  assert.ok(/sprite:'on'/.test(deck),'the deck deals the 2.5D card');
+  // The 2.5D card never tips far enough to show its thickness.
+  assert.ok(/Math\.abs\(pitch\) \* \.22/.test(deck) && /Math\.abs\(bank\) \* \.5\b/.test(deck),'the pose stays gentle');
+  // Presentation only.
+  assert.ok(!/\b(game|pendingHumanPlayer)(\.[A-Za-z_]+)*\s*=[^=]/.test(js) && !/\b(applyAction|humanAct)\(/.test(js),'js/deal-styles.js must never change game state');
+  assert.ok(md.includes('## Deal styles + the 2.5D card (live v0.51.0)'),'the Pattern Book must record the deal styles');
 });
 
 process.stdout.write('\n'+passed+' Pattern Book checks passed.\n');

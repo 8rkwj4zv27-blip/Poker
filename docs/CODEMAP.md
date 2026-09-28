@@ -16,8 +16,8 @@ ticket-feed.js          table-intro.js
 08-dev-mode.js          home-cast.js            home-boot.js
 dashboard.js            crt.js                  finishes.js
 press-feel.js           showdown.js             dealer-deck.js
-action-drum.js          knock-check.js
-card-holder.js
+action-drum.js          knock-check.js          award-key.js
+card-holder.js          deal-styles.js
 ```
 
 Later files call into earlier ones freely; there's no module system, so
@@ -31,7 +31,7 @@ Pure card/hand math, safe to run inside the AI worker. `createDeck`,
 hand-name/description helpers. No DOM, no game state — if you need a poker
 rule question answered precisely, it's answered here.
 
-The AI's maths (since v0.51.0) also lives here, because the worker needs it:
+The AI's maths (since the v0.52.0 AI rebuild) also lives here, because the worker needs it:
 - `fastScore7` is an integer hand score that orders hands exactly as
   `evaluate7`. The checks prove this on all 2.6M five-card hands. It's
   used only for the AI's sampling; showdowns still use `evaluate7`.
@@ -68,17 +68,17 @@ AI work.** It has the tier ladder, the step order and the measured
 baselines. Measure behaviour with `validation/tools/ai-sim.js` (the real
 `aiDecide()` on a headless table, `validation/tools/ai-harness.js`) and
 check with `validation/ai-behaviour-checks.js`. `seatsAfter()` measures
-position from the dealer button since v0.50.0; before that, position never
+position from the dealer button since v0.52.0; before that, position never
 affected a decision. Preflop is played from ranges (`aiPreflop`,
-`PREFLOP_SKILL`, the open/push range tables) since v0.51.0; postflop is
+`PREFLOP_SKILL`, the open/push range tables) and postflop is
 and postflop (`aiPostflop`, `POSTFLOP_SKILL`, the hand plan
-`player.aiPlan`) since v0.52.0. Think time (`aiThinkTime`) comes from the
+`player.aiPlan`), all since v0.52.0. Think time (`aiThinkTime`) comes from the
 spot, not the choice, except for the low-skill timing tell. Since
-v0.53.0 the table keeps a public notebook of every player's habits
+v0.52.0 the table keeps a public notebook of every player's habits
 (`g.reads`: `aiObserveHandStart`/`aiObserveAction`/`aiObserveShowdown`,
 saved as `aiReads` in the table save). Each AI reads it through
 `aiReadOf` at the speed of its skill's and personality's `adapt`, and
-`personality.tilt` sets how hard a big loss hits. Since v0.54.0 opponents'
+`personality.tilt` sets how hard a big loss hits. Since v0.52.0 opponents'
 ranges are also narrowed by this hand's public betting (`g.handLog`;
 `NARROW_W`, `narrowWeight` and range specs `{pct, hist, bluff, k}` in
 `01-poker-math.js`, which the worker runs too). Each tier's target
@@ -397,8 +397,18 @@ faces iPhone Safari drew behind the live keys: no side is hidden by
 or handlers moved. Also: every side's keys on the row's line
 (`--ad-key-top`), the bay 10px taller in portrait, and the rim's glow
 carried round the bay. Installs itself at load; `ActionDrum.set()` tunes
-it. Order in `docs/ui/PATTERN_BOOK.md` (Action drum); history in
+it. Since v0.48.1 NEXT HAND, REBUY and NEW TABLE are moved onto a fifth
+side (`#ad-face-deal`) instead of floating over the bay. Order in `docs/ui/PATTERN_BOOK.md` (Action drum); history in
 `docs/ui/ACTION_DRUM_PLAN.md`.
+
+## `js/award-key.js` + `css/award-key.css` — the award key (live, v0.50.0)
+
+The AWARD POT key dressed for whose pot it is: yours in velvet and gold
+reading COLLECT · 1,500 (a flash as the drum lands it, sparks when
+pressed, a gold ring for big pots); someone else's as the quiet PAY HARRY
+key. Learns the pot by wrapping `showHudResultConsole` (presentation
+only; the key keeps its id, handler and the game's words as its
+`aria-label`). Order in `docs/ui/PATTERN_BOOK.md` (Action drum).
 
 ## `js/knock-check.js` + `css/knock-check.css` — knock to check (live, v0.48.0)
 
@@ -497,6 +507,12 @@ onto it. Wraps `dealCardFlight`, `dealCommunity` (after `js/showdown.js`),
 `muckCards`, `playShuffle`, `keepPotClearOfDeck` and `clearAllCardDOM`,
 and hands back to them with Reduced Motion; the flop takes the same cards
 in the same order as the shipped deal, burns never touch `g.deck`.
+Your own hole cards turn over in the air and slip into the card holder
+(`dealYours`); an opponent's cards land just clear of their cabinet and
+slide up under it (`dealUnder`). SPRITE mode (`order.sprite`, unset in the
+game) is the Deal Style Lab's 2.5D card: stepped poses and a felt shadow
+on flights, squash-flip turns (`turnCard2`), leaning shuffle and spread. `DealerDeck.flightFor` is a hook for other flight styles
+(the Deal Style Lab), unset in the game.
 Settings → The deck (`settings.deckBack`, `settings.deckSide`). Checked by
 `validation/dealer-deck-checks.js`.
 
@@ -511,6 +527,33 @@ slot and the lip, whose sizes still live in `03-action-console.css` /
 of `#hand-strength` on any phone (the holder rises; the screens stay put).
 Settings → The deck → Card holder (`settings.cardHolder`: `brass`, the
 default, or `classic`), set on `<html>` as `data-holder`.
+
+## `card-holder-deal-lab.html` + `js/holder-deal-lab.js` + `css/holder-deal-lab.css` — Holder Deal Lab
+
+How your two cards arrive in the card holder (`docs/ui/CARD_HOLDER_PLAN.md`,
+round 3): A turns in the air, B turns just above the lip, both then slip
+into the groove. Wraps the live `dealCardFlight` for your own
+`revealAfter` cards only. Phone-first (host `js/showdown-lab-host.js`,
+sheet from `css/showdown-lab.css`). Lab only; nothing loads in the game.
+
+## `js/deal-styles.js` + `css/deal-styles.css` — Deal styles (live, v0.51.0)
+
+How each card flies off the deck (`docs/ui/DEAL_STYLES_PLAN.md`, recorded
+in the Pattern Book): eighteen styles in five tiers, each a path, a 2.5D
+pose and (for the specials) pixel effects and Web Audio sounds; plugs into
+`DealerDeck.flightFor`. Settings → Dealing (`settings.dealStyles`: on,
+rarity, scope), FLICK alone by default. Common/uncommon share the hands by
+weight; rare, epic and legendary are a fixed chance on a single card.
+
+## `deal-style-lab.html` + `js/deal-style-lab.js` + `css/deal-style-lab.css` + candidate `js/deal-styles.js` / `css/deal-styles.css` — Deal Style Lab
+
+How cards fly off the deck (`docs/ui/DEAL_STYLES_PLAN.md`): eighteen styles
+in five tiers (common to legendary; FLICK is the shipped one), each with
+▶ PLAY, an in-the-mix switch and a rarity; rolled once per hand or every
+card, rare and up only ever on a single card. Runs the deck in its 2.5D
+SPRITE mode (switchable against today's flat card). The candidate plugs into
+`DealerDeck.flightFor`. Phone-first (host `js/showdown-lab-host.js`).
+Since v0.51.0 the styles are the game's own; the lab adds only its sheet.
 
 ## `deck-lab.html` + `js/deck-lab.js` — Deck Lab
 

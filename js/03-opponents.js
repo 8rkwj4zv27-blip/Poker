@@ -183,7 +183,7 @@ function maybeTableTalk(player, trigger){
 /* Live opponents who act AFTER this player on the postflop streets
    (0 = on the button / last to act). Position is measured from the dealer
    button, which is what makes a seat good or bad for the whole hand.
-   Before v0.50 this counted every live opponent, so the position term in
+   Before v0.52 this counted every live opponent, so the position term in
    aiDecide() — and the difficulty positionWeight ladder — was always zero. */
 function seatsAfter(playerIdx){
   const g = game;

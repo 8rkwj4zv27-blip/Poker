@@ -84,7 +84,7 @@ These are now the candidate's defaults.
    has settled).
 3. Bump `BUILD_VERSION` / `CACHE_NAME`.
 
-## Shipped: v0.48.0 (28 September 2026)
+## Shipped: v0.48.0 (28 September 2026) — see below for v0.48.1
 
 Owner: "this all looks really good to me". The drum (the round-1 picks),
 the round-2 housing and key line, the round-3 glow and knock to check are
@@ -102,3 +102,43 @@ Recorded in `docs/ui/PATTERN_BOOK.md` (Action drum) and checked by
   landscape: the drum is on at boot, a real showdown lands AWARD POT on
   the FOLD line and turns back, the knock refuses facing a bet. Not
   checkable here: real iPhone Safari, where the old ghost showed.
+
+## v0.48.1: NEXT HAND on the drum (the owner: "NEXT HAND just appears")
+
+NEXT HAND, REBUY and NEW TABLE were never part of the console: separate
+`.wide-btn`s the game unhides between hands, NEXT HAND pinned over the
+key bay in portrait, so they popped up over the drum. They are now a
+fifth side (`#ad-face-deal`): moved onto the drum at install (same ids,
+same handlers; `uninstall()` puts them back), in the console's key
+(`.btn-award-console`, NEW TABLE beside REBUY in `.results-secondary`).
+The game still only unhides and hides them. Order of sides when several
+apply: AWARD / results, then the deal side, then QUICK RESOLVE, then the
+keys. A pressed deal key is hidden by the game at once, so the drum holds
+it (`.ad-hold`) on the side until it has rolled away.
+
+## Round 4 (lab): the AWARD KEY for your wins
+
+The owner: "design a cooler button for award pot, a bit sexy for wins".
+Candidate `js/award-key.js` + `css/award-key.css`, lab only (the AWARD
+KEY tab). It learns whose pot it is by wrapping `showHudResultConsole`
+(called just before every AWARD key) and puts the shared key in a
+`data-ak="mine"` state: a finish (POLISHED GOLD with a stepped glint /
+VELVET + GOLD / LIT FROM UNDER / today), the words (COLLECT, AWARD POT,
+YOURS, TAKE IT) with the amount on a cream plate or printed, a flash as
+the drum lands it, gold sparks and the counter's clack when pressed, more
+shine for big and monster pots, and optionally a quiet PAY HARRY key for
+someone else's pot. No chasing lights (struck from the Showdown). The
+game's own words stay as the key's aria-label.
+
+## Shipped: v0.50.0, the award key (owner's round-4 picks; v0.49.0 went to the Card holder)
+
+VELVET + GOLD, COLLECT, the amount PRINTED, A FLASH as it lands, SPARKS +
+CLACK, MORE SHINE for bigger wins, and their pot as QUIET · PAY HARRY.
+`js/award-key.js` + `css/award-key.css` are live (loaded by `index.html`,
+precached by `sw.js`) with those picks as the defaults; recorded in the
+Pattern Book (Action drum → The award key) with its own check. The lab
+now tunes the live part (its AWARD KEY tab lists the picks first).
+Checked in the real game: your pot reads COLLECT · 50 in velvet and
+sparks on the press; someone else's reads PAY ROXY · 452 in the quiet
+case key; the next key (NEXT TABLE) is plain again; Reduced Motion keeps
+the looks and drops the flash and sparks.
