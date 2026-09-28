@@ -229,3 +229,24 @@ loudness spread 3.0x at ROUND 4, 2.1x A BIT APART, 1.7x CLOSE, 1.5x
 CLOSER; how long each blip rings, 4.7x down to about 2x. A brightness
 figure (zero crossings) proved too noisy to judge by; the owner's ear
 is the test.
+
+## Round 6: one volume, the player's (2026-09-28)
+
+Owner: round 5 "all looks good"; the characters "should all be the same
+volume and that should be adjustable by the player". The whole blip
+voice is now locked in (a sound each, CLOSE family, every other letter,
+in tune, their own pitch, everyone the same pace).
+
+**Same loudness.** Level meters lie to the ear (a low knock sounds
+quieter than a bright chirp at the same level), so each character was
+measured through an ear-weighted filter (roughly the K-weighting loudness
+meters use: `SpeechVoice.measure(..., weighted)`) over five lines, and
+given a `trim` to the cast's average. Spread before: 1.7x; after:
+1.05x. The mood no longer changes the level (it still nudges pitch).
+The trims hold for the locked blip settings; re-measure if a sound or
+the family changes.
+
+**The player's volume.** TABLE TALK VOLUME: LOW (default, the owner's
+pick) · MEDIUM · HIGH · SILENT (the bubbles still talk, no blips). In
+the game this goes in Settings next to the existing Table Talk switch,
+saved with the other settings.

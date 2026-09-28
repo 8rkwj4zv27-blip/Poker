@@ -27,21 +27,15 @@
 
   /* ---- the picks (every row's first option is my suggestion) ---- */
   const LOCKED_LIST = ['Where: close-up', 'Look: card stock', 'Face: medium, in their colour', 'Name: under the face',
-    'Bubble: grows as it types', 'Height: low', 'Side: their side', 'Arrival: pops'];
+    'Bubble: grows as it types', 'Height: low', 'Side: their side', 'Arrival: pops',
+    'Voice: blips, a sound each', 'Blips: close family', 'Every other letter, in tune', 'Pitch: their own', 'Pace: everyone the same'];
+  // round 5's blip picks, fixed
+  const BLIPS = { blip:'own', family:'0.5', often:'other', melody:'key', pitch:'own', pace:'even' };
   // round 2's close-up picks, fixed
   const CLOSE = { face:'72', fit:'grow', frame:'own', name:'plate', height:'low', side:'theirs', arrive:'pop' };
   const SECTIONS = [
-    { title:'THE BLIPS', sub:'Every character has their own blip now. Changing a row plays a sample.', rows:[
-      ['blip', 'SOUND', [['own','THEIR OWN'],['pip','PIP'],['soft','SOFT'],['chirp','CHIRP'],['wood','WOOD'],['bell','BELL'],['machine','MACHINE']],
-        'Their own: Nigel and Harry tick like a machine, Lucy is a bell, Tony and Roxy chirp, Mavis is soft, Steve a plain pip, Bruno a wooden knock. Or pick one sound for everyone to compare.'],
-      ['family', 'HOW DIFFERENT', [['0.5','CLOSE'],['0.3','CLOSER'],['0.7','A BIT APART'],['1','ROUND 4']],
-        'How far each character\'s blip strays from one shared pip, and their pitches from each other. Lower sounds more like one family.'],
-      ['often', 'HOW OFTEN', [['other','EVERY OTHER LETTER'],['letter','EVERY LETTER'],['syllable','EVERY SYLLABLE']]],
-      ['melody', 'MELODY', [['key','IN TUNE'],['free','FREE (ROUND 2)'],['steady','ONE NOTE']],
-        'In tune: the notes come from a five-note scale, so a line sounds like a little tune. One note: level, only a question rises.'],
-      ['pitch', 'PITCH', [['own','THEIR OWN'],['same','ALL THE SAME']], 'Their own: Bruno low, Mavis high.'],
-      ['vol', 'VOLUME', [['0.3','LOW'],['0.5','MEDIUM'],['0.8','HIGH']]],
-      ['pace', 'TALKING PACE', [['even','EVERYONE THE SAME'],['own','THEIR OWN']], 'Their own: Tony gabbles, Bruno takes his time.']
+    { title:'TABLE TALK VOLUME', sub:'A player setting: in the game this lives in Settings, next to Table Talk. Every character is the same loudness; this turns them all up or down together.', rows:[
+      ['vol', 'VOLUME', [['0.3','LOW'],['0.5','MEDIUM'],['0.8','HIGH'],['0','SILENT']], 'Silent: they still talk, in bubbles, without the blips.']
     ]},
     { title:'THE LINE', rows:[
       ['who', 'WHO SPEAKS', [['any','ANYONE'],['left','LEFT SEAT'],['top','TOP SEAT'],['right','RIGHT SEAT']], 'Anyone: a different opponent each hand, and SAY goes round the table.'],
@@ -51,7 +45,7 @@
   ];
   const ROWS = SECTIONS.flatMap(s => s.rows);
   const DEFAULTS = Object.fromEntries(ROWS.map(r => [r[0], r[2][0][0]]));
-  const picks = Object.assign({}, DEFAULTS, state.picks || {}, CLOSE);
+  const picks = Object.assign({}, DEFAULTS, state.picks || {}, CLOSE, BLIPS);
   const save = () => { if (host) host.set({ picks:Object.assign({}, picks) }); };
   const voiceSet = () => { try{ SpeechVoice.set({ family:Number(picks.family), sound:picks.blip, often:picks.often, melody:picks.melody, pitch:picks.pitch, level:Number(picks.vol) }); }catch(e){} };
   voiceSet();
@@ -209,7 +203,7 @@
     const sheet = document.createElement('div');
     sheet.className = 'spl-sheet'; sheet.setAttribute('role', 'dialog'); sheet.setAttribute('aria-label', 'Speech lab');
     sheet.innerHTML =
-      '<div class="spl-top"><span>SPEECH LAB · ROUND 5</span><button type="button" class="spl-close" aria-label="Close">✕</button></div>' +
+      '<div class="spl-top"><span>SPEECH LAB · ROUND 6</span><button type="button" class="spl-close" aria-label="Close">✕</button></div>' +
       '<div class="spl-body">' +
         '<p class="spl-sub">Play the hand as normal. A second after the chosen opponent acts, they say something. SAY makes them say another line straight away. Tap a bubble to dismiss it. Sound needs one tap first on an iPhone.</p>' +
         '<div class="spl-actions"><button type="button" data-act="say">SAY SOMETHING</button><button type="button" data-act="deal">NEW TABLE</button></div>' +
@@ -243,9 +237,9 @@
       const t = ev.target.closest('button'); if (!t) return;
       if (t.dataset.act === 'say'){ open(false); setTimeout(sayNow, 250); return; }
       if (t.dataset.act === 'deal'){ open(false); clear(true); deal(); return; }
-      if (t.dataset.act === 'reset'){ Object.assign(picks, DEFAULTS, CLOSE); save(); voiceSet(); paint(); return; }
+      if (t.dataset.act === 'reset'){ Object.assign(picks, DEFAULTS, CLOSE, BLIPS); save(); voiceSet(); paint(); return; }
       if (t.dataset.act === 'copy'){
-        const text = 'Speech Lab (round 5):\n' + ROWS.map(r => '- ' + r[1] + ': ' + r[2].find(o => o[0] === picks[r[0]])[1]).join('\n') + '\n- OPPONENTS: ' + state.opp;
+        const text = 'Speech Lab (round 6):\n' + ROWS.map(r => '- ' + r[1] + ': ' + r[2].find(o => o[0] === picks[r[0]])[1]).join('\n') + '\n- OPPONENTS: ' + state.opp;
         const ta = sheet.querySelector('.spl-copytext');
         const fin = ok => { t.textContent = ok ? 'COPIED' : 'SELECT + COPY BELOW'; setTimeout(() => { t.textContent = 'COPY MY PICKS'; }, 2200); if (!ok){ ta.hidden = false; ta.value = text; ta.focus(); ta.select(); } };
         try{ navigator.clipboard.writeText(text).then(() => fin(true), () => fin(false)); }catch(err){ fin(false); }

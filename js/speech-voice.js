@@ -45,24 +45,29 @@ const SpeechVoice = (() => {
   /* each character's voice: base pitch (Hz), range (semitones), ms per
      letter (THEIR OWN pace), how a phrase ends, and their own blip sound
      (owner, round 3: every character gets their own; six sounds for eight
-     people, so two pairs share, told apart by pitch and pace) */
+     people, so two pairs share, told apart by pitch and pace). `trim`
+     evens out how loud each one SOUNDS (owner, round 6: "they should all
+     be the same volume"): measured through an ear-weighted filter
+     (measure(..., weighted)) at the locked blip settings, then set so
+     every character lands on the cast's average */
   const VOICES = {
-    rock:      { hz:330, range:4,  pace:44, end:'flat', sound:'machine' }, // Nigel: level, put out; clerical ticks
-    shark:     { hz:440, range:5,  pace:36, end:'down', sound:'bell' },    // Lucy: cool, glassy, every phrase closes down
-    maniac:    { hz:370, range:9,  pace:24, end:'up',   sound:'chirp' },   // Tony: fast, all over the place
-    station:   { hz:560, range:7,  pace:40, end:'up',   sound:'soft' },    // Mavis: high, gentle
-    grinder:   { hz:300, range:3,  pace:42, end:'flat', sound:'pip' },     // Steve: low, tired, plain
-    wildcard:  { hz:520, range:10, pace:28, end:'up',   sound:'chirp' },   // Roxy: bright, erratic (Tony's chirp, far higher)
-    professor: { hz:350, range:6,  pace:42, end:'down', sound:'machine' }, // Harry: lifts to make a point, then down (Nigel's ticks, livelier)
-    hammer:    { hz:196, range:3,  pace:52, end:'down', sound:'wood' }     // Bruno: very low, very slow, a knock at the door
+    rock:      { hz:330, range:4,  pace:44, end:'flat', sound:'machine', trim:1.26 }, // Nigel: level, put out; clerical ticks
+    shark:     { hz:440, range:5,  pace:36, end:'down', sound:'bell', trim:0.81 },    // Lucy: cool, glassy, every phrase closes down
+    maniac:    { hz:370, range:9,  pace:24, end:'up',   sound:'chirp', trim:1.21 },   // Tony: fast, all over the place
+    station:   { hz:560, range:7,  pace:40, end:'up',   sound:'soft', trim:0.96 },    // Mavis: high, gentle
+    grinder:   { hz:300, range:3,  pace:42, end:'flat', sound:'pip', trim:0.78 },     // Steve: low, tired, plain
+    wildcard:  { hz:520, range:10, pace:28, end:'up',   sound:'chirp', trim:1.18 },   // Roxy: bright, erratic (Tony's chirp, far higher)
+    professor: { hz:350, range:6,  pace:42, end:'down', sound:'machine', trim:1.26 }, // Harry: lifts to make a point, then down (Nigel's ticks, livelier)
+    hammer:    { hz:196, range:3,  pace:52, end:'down', sound:'wood', trim:0.73 }     // Bruno: very low, very slow, a knock at the door
   };
   const voiceOf = key => VOICES[key] || VOICES.grinder;
 
-  // mood from the face the line is said with: a pitch nudge and a level
+  // mood from the face the line is said with: a pitch nudge (the level
+  // stays put: owner, round 6, everyone the same volume)
   function moodOf(face){
     const f = String(face || '');
-    if (/angry|displeased|furious|tilted/.test(f)) return { pitch:-3, vol:1.15 };
-    if (/nervous|worried|terrified|panic/.test(f)) return { pitch:2, vol:.85 };
+    if (/angry|displeased|furious|tilted/.test(f)) return { pitch:-3, vol:1 };
+    if (/nervous|worried|terrified|panic/.test(f)) return { pitch:2, vol:1 };
     if (/happy|joyful|ecstatic|relieved/.test(f)) return { pitch:2, vol:1 };
     if (/smug|sly|scheming|cocky|gloating/.test(f)) return { pitch:-1, vol:1 };
     return { pitch:0, vol:1 };
@@ -70,7 +75,7 @@ const SpeechVoice = (() => {
   const hash = s => { let h = 2166136261; for (let i = 0; i < s.length; i++){ h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); } return (h >>> 0) / 4294967295; };
   const SCALE = [0, 2, 4, 7, 9];     // major pentatonic: can't play a wrong note
 
-  let opts = { sound:'own', often:'other', pitch:'own', melody:'key', level:.3, family:.5 };
+  let opts = { sound:'own', often:'other', pitch:'own', melody:'key', level:.3, family:.5 };   // round 5's picks
   function set(o){ Object.assign(opts, o); }
 
   /* ---- the pips: (context, output, time, frequency, level) ---- */
@@ -191,19 +196,29 @@ const SpeechVoice = (() => {
     const base = opts.pitch === 'same' ? 400 : 330 * Math.pow(v.hz / 330, .35 + .65 * opts.family);
     const play = SOUNDS[opts.sound === 'own' ? v.sound : opts.sound] || SOUNDS.pip;
     const list = beats(text);
-    list.forEach((k, i) => play(c, out, t0 + times[k] / 1000, base * Math.pow(2, note(v, mood, text, k, i, list.length) / 12), opts.level * mood.vol));
+    const level = opts.level * mood.vol * (v.trim || 1);
+    list.forEach((k, i) => play(c, out, t0 + times[k] / 1000, base * Math.pow(2, note(v, mood, text, k, i, list.length) / 12), level));
   }
   function speak(key, text, face, even){
-    const c = ac(); if (!c || opts.sound === 'off') return;
+    if (!(opts.level > 0)) return;          // SILENT: the bubble still talks, no blips
+    const c = ac(); if (!c) return;
     try{ schedule(c, bus, c.currentTime + .03, key, text, face, even); }catch(e){}
   }
 
   /* For checks only: renders a line offline and measures it, so a voice
      can be proved audible and unclipped without a speaker. */
-  async function measure(key, text, face, even){
+  async function measure(key, text, face, even, weighted){
     const { total } = plan(key, text, face, even);
-    const rate = 22050, oc = new OfflineAudioContext(1, Math.ceil(rate * (total / 1000 + .6)), rate);
-    const comp = oc.createDynamicsCompressor(); comp.threshold.value = -18; comp.ratio.value = 4; comp.connect(oc.destination);
+    const rate = 44100, oc = new OfflineAudioContext(1, Math.ceil(rate * (total / 1000 + .6)), rate);
+    const comp = oc.createDynamicsCompressor(); comp.threshold.value = -18; comp.ratio.value = 4;
+    if (weighted){
+      // roughly the K-weighting loudness meters use: the ear hears lows
+      // less and the upper mids more, so a low knock and a bright chirp
+      // at the same level don't sound the same
+      const hp = oc.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = 100; hp.Q.value = .5;
+      const sh = oc.createBiquadFilter(); sh.type = 'highshelf'; sh.frequency.value = 1500; sh.gain.value = 4;
+      comp.connect(hp); hp.connect(sh); sh.connect(oc.destination);
+    } else comp.connect(oc.destination);
     schedule(oc, comp, .02, key, text, face, even);
     const d = (await oc.startRendering()).getChannelData(0);
     let peak = 0, sum = 0, zc = 0, ring = 0;
