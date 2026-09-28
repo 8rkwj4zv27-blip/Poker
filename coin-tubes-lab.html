@@ -5,13 +5,12 @@
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="theme-color" content="#140709">
   <link rel="icon" href="data:,">
-  <title>Chip Lab</title>
-  <!-- Phone-first: the coin economy, round 4: chip coins (the same gold
-       coin, its value in its colour), the bank a pot of them, in and out
-       through a slot. The real game full screen on the Showdown Lab's host;
-       the controls run inside it (js/chip-lab.js). The candidate coin files
-       stand in for the shipped ones in the copy only. Never linked from the
-       game; never touches a save. -->
+  <title>Bank Tubes Lab</title>
+  <!-- Phone-first: the bank's TUBES, round 2 (NEW TUBES against the shipped
+       one). The real game full screen on the Showdown Lab's host; the
+       controls run inside it (js/coin-tubes-lab.js). The candidate style
+       (js/coin-bank-tubes2.js, css/coin-bank-tubes2.css) is added to the
+       game's own coin files. Never linked from the game; never touches a save. -->
   <style>
     html,body{ height:100%; margin:0; background:#140709; overflow:hidden; }
     #sdl-game{
@@ -24,10 +23,10 @@
 </head>
 <body>
   <iframe id="sdl-game" title="The Table (lab copy)" allow="autoplay"></iframe>
-  <!-- What goes into the game copy: the candidate coin files in place of
-       the shipped ones (strip), and the lab's controls. The bundler
+  <!-- What goes into the game copy: the candidate style and the lab's
+       controls. The bundler
        (validation/tools/lab-bundle.js) reads this to bake the copy. -->
-  <script type="application/json" id="lab-inject">{"css":["css/showdown-lab.css","css/coin-denom-lab.css","css/chip-lab.css"],"js":["js/chip-lab.js"],"v":"10"}</script>
+  <script type="application/json" id="lab-inject">{"css":["css/showdown-lab.css","css/coin-bank-tubes2.css"],"js":["js/coin-bank-tubes2.js","js/coin-tubes-lab.js"],"v":"1"}</script>
   <script src="js/showdown-lab-host.js?v=7"></script>
 </body>
 </html>

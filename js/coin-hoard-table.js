@@ -1,25 +1,25 @@
 /* ============================================================
-   COIN TABLE · CHIPS (v0.46.0) — the table's coins as poker chips, built
-   in the Chip Lab (chip-lab.html, docs/ui/CHIP_PLAN.md). Runs on
-   js/coin-world.js. Grown from the Hoard Lab's table.
+   COIN TABLE · HOARD — the Hoard Lab's candidate (coin-hoard-lab.html),
+   standing in for js/coin-table.js (v0.44.0) in the lab's game copy; the
+   game never loads it. Runs on js/coin-hoard-world.js.
 
-   What it adds: every bet and every pile counted in CHIP COINS (the
-   world's tiers, x5 each, a lowest coin worth the small blind), the bank
-   as a pot of them (the hoard's box zone: one colour per stack, richest
-   in the middle, tap to tidy), and the SLOT (CoinWorld.OPT.bankIn):
-   your bank's coin slot on its top edge. Wins stream to it one by one and
-   drop through onto your pile; bets hop up out of it and on to the felt.
-   Resting coins in the bank hide while something (the raise panel, a
-   sheet) covers the box.
+   What it adds: the HOARD, your bank as a pile of gold like the pot's
+   (CoinWorld.OPT.bank 'hoard', via settings.bankStyle). A coin-world zone
+   in the bank's own box: it starts as a few pieces on the floor and grows
+   into a heap as your stack does (more pieces, then richer ones: five
+   change up quietly, no show); wins fly off the pot and land on it for
+   real, bets lift off the top, a tap tidies it into the pot's pyramid,
+   and the richer you are the more often it gleams. The heap keeps your
+   stack's value: whatever a hand leaves over or short is settled after
+   the payout and at the next hand. It follows the dashboard when it moves
+   and hides while it flips. Everything else is the shipped coin table.
    ============================================================ */
 const COIN_TABLE_ON = true;
 
 const CoinTable = (function(){
   'use strict';
   const CW = window.CoinWorld;
-  Object.assign(CW.OPT, { denom:'on', betCap:16, allinCap:24, spotCap:30, potCap:100 });
-  // chips: the pot is always a pyramid, like the bank (owner)
-  Object.assign(CW.OPT, { potShape:'pyramid' });
+  Object.assign(CW.OPT, { denom:'on', betCap:16, allinCap:24, spotCap:30, potCap:60 });
   // Lab 2 (coin-bank-lab.html): the bank's inside, js/coin-bank.js's View
   // in one of its styles; 'today' is the shipped rack (Lab 1 runs on it)
   Object.assign(CW.OPT, { bank:'tubes', bankLabels:'off', bankChange:3 });
@@ -42,9 +42,11 @@ const CoinTable = (function(){
     const O = CW.OPT;
     O.sound = settings.sound ? 'on' : 'off';
     O.sfx = settings.coinSound || 'clay';
-    // (chips: your bank is always the chip pile; the old Settings → Bank
-    // choices stay saved but no longer apply)
-    O.bank = 'hoard';
+    // Settings → Bank: the inside (TUBES, SHELVES, HOPPER, CLASSIC), the
+    // tube tags, how much making change plays out
+    if (settings.bankStyle) O.bank = settings.bankStyle==='classic' ? 'today' : settings.bankStyle;
+    if (settings.bankTags) O.bankLabels = settings.bankTags;
+    if (settings.bankChange!=null) O.bankChange = +settings.bankChange;
     const m = typeof speedMult==='function' ? speedMult() : 1;
     O.speed = 1/Math.max(.15, m);
     if (!audioWired){
@@ -113,8 +115,7 @@ const CoinTable = (function(){
       // bottom edge tucks 8px under the pot plate (the owner's 210 x 62,
       // table spacing pass)
       felt.querySelectorAll('.ct-tray').forEach(el=>el.remove());
-      // (the Chip Lab: a bigger tray, 250 x 66, for the big pots)
-      const TW=250, TH=66, cx=pr.left+pr.width/2, yc=pr.top+8-TH/2;
+      const TW=210, TH=62, cx=pr.left+pr.width/2, yc=pr.top+8-TH/2;
       const tray = document.createElement('div'); tray.className = 'ct-tray'; tray.dataset.tray = 'well';
       Object.assign(tray.style,{ width:TW+'px', height:TH+'px',
         left:Math.round(cx-fr.left-TW/2)+'px', top:Math.round(yc-fr.top-TH/2)+'px' });
@@ -211,9 +212,9 @@ const CoinTable = (function(){
         }
         return;
       }
-      // a tap tidies the pot into a pyramid (for the rest of the hand)
+      // the pot re-picks its shape on every tap (so a tap reshapes a tidy pile)
       const pot = CW.zones.pot;
-      if (CW.OPT.potTap==='on' && count(pot) && !CW.zoneBusy(pot) && !pot.tidying){ pot.shape = 'pyramid'; pot.neat = false; }
+      if (CW.OPT.potTap==='on' && count(pot) && !CW.zoneBusy(pot) && !pot.tidying){ CW.newPotShape(CW.potShape()); pot.neat = false; }
       Object.values(CW.zones).forEach(z=>{ if (!z.hoard && !CW.zoneBusy(z)) CW.tidyZone(z); });
     });
   }
@@ -260,14 +261,7 @@ const CoinTable = (function(){
   const viewOn = ()=>CW.OPT.bank && CW.OPT.bank!=='today' && CW.OPT.bank!=='hoard' && !!window.CoinBank;
 
   /* ---------------- THE HOARD ---------------- */
-  // the owner's picks (Chip Lab): BIG, gleam WHEN RICH, pyramid, THROUGH A SLOT, ONE BY ONE
-  Object.assign(CW.OPT, { hoardSize:'.65', hoardGleam:'rich', hoardTidy:'pyramid', hoardRest:'pyramid', bankIn:'slot', winStyle:'stream', mergeShow:'none' });
-  const chipsOn = ()=>!!CW.TIERS;
-  // the bank's coin slot: the middle of its top edge, a little inside
-  function slotAt(){
-    const hl = $('hud-left'); if (!hl) return null;
-    const r = hl.getBoundingClientRect(); return { x:r.left+r.width/2, y:r.top+9 };
-  }
+  Object.assign(CW.OPT, { hoardSize:'.45', hoardGleam:'rich', hoardTidy:'pyramid', hoardRest:'heap' });
   const hoardOn = ()=>CW.OPT.bank==='hoard';
   const HOARD_MAX = 52;
   const HOARD_CAP = { gold:20, 'gold-big':18, 'gold-bar':14 };
@@ -296,8 +290,6 @@ const CoinTable = (function(){
       z.box = floorOf(k); z.room = k.B-k.T-4; z.hoard = true;
       // a hoard climbs: taller stacks than the pot's, the bars highest (at the back)
       z.bandH = { gold:4, 'gold-big':5, 'gold-bar':8 }; z.shape = CW.OPT.hoardRest;
-      // chips: the bank is a rack, rows of stacks stepping up to the back
-      if (chipsOn()) z.rack = true;
       if (!hl._hoardTap){ hl._hoardTap = true; hl.addEventListener('click', ()=>{ if (hoardOn()) tidyHoard(); }); }
       if (!hoardTrack) hoardTrack = requestAnimationFrame(trackHoard);
       if (!gleamTimer) gleamTimer = setInterval(gleam, 900);
@@ -311,10 +303,6 @@ const CoinTable = (function(){
     const z = CW.zones && CW.zones.bank, hl = $('hud-left');
     if (!z || !hl || !hoardBox) return;
     const k = boxOf(hl), turned = hoardTurned(hl, k);
-    // something over the box (the raise panel, a sheet): its resting coins
-    // hide under it (a coin in flight stays in the air, over everything)
-    const covered = !turned && [.3,.6,.88].some(f=>{ const e = document.elementFromPoint((k.L+k.R)/2, k.T+(k.B-k.T)*f); return e && !hl.contains(e); });
-    z.list.forEach(b=>{ if (b.state!=='rest' || b.fresh) return; const v = (covered||turned) ? 'hidden' : ''; if (b.el.style.visibility!==v){ b.el.style.visibility = v; if (b.sh) b.sh.style.visibility = v; } });
     if (turned || turned !== hoardHidden){ hoardHidden = turned; z.list.forEach(b=>{ if (b.fresh && !turned) return; b.el.style.visibility = turned ? 'hidden' : ''; if (b.sh) b.sh.style.visibility = turned ? 'hidden' : ''; }); }
     if (turned) return;
     const dx = k.L-hoardBox.L, dy = k.T-hoardBox.T;
@@ -334,13 +322,6 @@ const CoinTable = (function(){
   // how many pieces a stack earns: a few on the floor for a short stack,
   // a heap for a deep one (then it gets richer, not bigger)
   function hoardCount(chips){
-    if (chipsOn() && CW.zones.bank){
-      const bb = chips/Math.max(1, (game && game.bigBlind) || 20);
-      // a gentle curve: a few stacks at 25 BB, about half full at 1,000 BB,
-      // full only at massive numbers (HOW BIG scales it)
-      const k = { '.65':38, '.45':30, '.3':22 }[String(CW.OPT.hoardSize)] || 24;
-      return Math.max(chips>0 ? 3 : 0, Math.min(CW.rackCapacity(CW.zones.bank), Math.round(4 + k*Math.log10(1 + bb/8))));
-    }
     const bb = chips/Math.max(1, (game && game.bigBlind) || 20);
     return Math.max(chips>0 ? 3 : 0, Math.min(HOARD_MAX, Math.round(3 + bb*(+CW.OPT.hoardSize||.45))));
   }
@@ -379,43 +360,13 @@ const CoinTable = (function(){
     hoardChain = hoardChain.then(()=>syncHoardNow(instant)).catch(e=>console.error(e));
     return hoardChain;
   }
-  /* THE RACK, settled to the stack: pieces the stack no longer has lift
-     off the tops (a richer one breaking into five when it must), past the
-     count five change up, and what's missing drops in; every coin goes to
-     its exact place (planZone), the others slide over to make room. */
-  async function syncRack(instant){
-    const h = human(), z = ensureHoard(); if (!h || !z) return;
-    const T = CW.TIERS(), u = Math.max(1, (game && game.smallBlind) || 1), want = Math.round(h.chips/u);
-    // the mix of colours the stack earns (as many coins as its count allows,
-    // never more than the rack holds); each colour lifted or added to match
-    // past all-gold-and-full the bank is simply full (the readout carries on)
-    const most = CW.rackCapacity(z) * CW.valueOf(T[T.length-1]);
-    const target = CW.composeTiers(Math.min(want, most), hoardCount(h.chips)).counts, adds = [];
-    T.forEach((col,i)=>{
-      let have = z.list.filter(b=>b.colour===col).length;
-      for (; have>target[i]; have--) lift(topOf(z, col), instant);
-      for (; have<target[i]; have++) adds.push(col);
-    });
-    const plan = CW.planZone(z, adds), moves = [CW.applyLayout(z, plan.map)];
-    const order = adds.map((col,i)=>({ col, s:plan.extras[i] })).sort((a,c)=>a.s.z-c.s.z);
-    order.forEach((o,i)=>{
-      const b = CW.body(CW.makeChip(o.col), o.s.x, o.s.y, 0, CW.D());
-      b.zone = z; z.list.push(b); b.target = {}; b.opts = {};
-      if (instant || motionOff()){ b.x = o.s.x; b.y = o.s.y; b.z = o.s.z; CW.finishRest(b); return; }
-      // it drops in from above onto its own stack
-      b.z = Math.min(o.s.z + 46, (z.room||80) - 16); b.vx = b.vy = b.vz = 0; b.fresh = true;
-      moves.push(CW.launch(b, { x:o.s.x, y:o.s.y, z:o.s.z, zone:z, slot:true, d:CW.D() }, { mode:'fall', wait:i*40 }));
-    });
-    await within(Promise.all(moves), 5000/CW.OPT.speed);
-  }
   async function syncHoardNow(instant){
-    if (chipsOn()) return syncRack(instant);
     const h = human(), z = ensureHoard(); if (!h || !z) return;
     const drops = [];
     const u = Math.max(1, (game && game.smallBlind) || 1), want = Math.round(h.chips/u);
     // past what the box holds: the hoard is simply full (every kind at
     // its cap); the STACK readout keeps the figure
-    const capUnits = chipsOn() ? Infinity : HOARD_CAP.gold + HOARD_CAP['gold-big']*5 + HOARD_CAP['gold-bar']*25;
+    const capUnits = HOARD_CAP.gold + HOARD_CAP['gold-big']*5 + HOARD_CAP['gold-bar']*25;
     if (want >= capUnits){
       let n0 = 0;
       Object.keys(HOARD_CAP).forEach(col=>{
@@ -428,26 +379,18 @@ const CoinTable = (function(){
     }
     let diff = want - valueOf(z.list), n = 0;
     if (diff > 0){
-      let kinds;
-      if (chipsOn()){
-        const t = CW.TIERS(), c = CW.composeTiers(diff, Math.max(1, hoardCount(h.chips)-z.list.length)).counts; kinds = [];
-        for (let i=t.length-1;i>=0;i--) for (let k=0;k<c[i];k++) kinds.push(t[i]);
-      } else {
-        const c = CW.compose(diff, Math.max(1, hoardCount(h.chips)-z.list.length));
-        kinds = [].concat(Array(c.bar).fill('gold-bar'), Array(c.big).fill('gold-big'), Array(c.gold).fill('gold'));
-      }
+      const c = CW.compose(diff, Math.max(1, hoardCount(h.chips)-z.list.length));
+      const kinds = [].concat(Array(c.bar).fill('gold-bar'), Array(c.big).fill('gold-big'), Array(c.gold).fill('gold'));
       kinds.forEach(col=>drops.push(dropIn(z, col, (n++)*45, instant)));
     }
     for (let guard=0; diff<0 && guard<200; guard++){
       const need = -diff;
-      const ladder = chipsOn() ? CW.TIERS().slice().reverse() : ['gold-bar','gold-big','gold'];
-      const col = ladder.find(k=>CW.valueOf(k)<=need && z.list.some(b=>b.colour===k));
+      const col = ['gold-bar','gold-big','gold'].find(k=>CW.valueOf(k)<=need && z.list.some(b=>b.colour===k));
       if (col){ const b = topOf(z, col); lift(b, instant); diff += CW.valueOf(col); continue; }
       // only bigger pieces left: break the smallest into the next size down
-      const up = chipsOn() ? CW.TIERS().slice(1) : ['gold-big','gold-bar'];
-      const big = up.find(k=>z.list.some(b=>b.colour===k)); if (!big) break;
+      const big = ['gold-big','gold-bar'].find(k=>z.list.some(b=>b.colour===k)); if (!big) break;
       const b = topOf(z, big); lift(b, true);
-      const down = chipsOn() ? 't'+(+big.slice(1)-1) : (big==='gold-bar' ? 'gold-big' : 'gold');
+      const down = big==='gold-bar' ? 'gold-big' : 'gold';
       for (let i=0;i<5;i++) dropIn(z, down, 0, true);
       diff += 0;                       // same value, now in smaller pieces
     }
@@ -456,7 +399,7 @@ const CoinTable = (function(){
     // over the top)
     if (drops.length) await within(Promise.all(drops), 4000/CW.OPT.speed);
     CW.mergeQuiet(z, hoardCount(h.chips));
-    if (!chipsOn()) capKinds(z);
+    capKinds(z);
     await settleShape(z);
   }
   // what the box holds of each kind in its heap shape: past this the
@@ -656,14 +599,7 @@ const CoinTable = (function(){
   function piecesFor(amount, allin, z){
     const O = CW.OPT, units = Math.max(1, Math.round(amount/unit()));
     const cap = Math.min(allin ? O.allinCap : O.betCap, Math.max(1, O.spotCap-count(z)));
-    const out = [];
-    if (chipsOn()){
-      // richest first, so the lower coins scatter round them
-      const t = CW.TIERS(), c = CW.composeTiers(units, cap).counts;
-      for (let i=t.length-1;i>=0;i--) for (let k=0;k<c[i];k++) out.push(t[i]);
-      return out;
-    }
-    const c = CW.compose(units, cap);
+    const c = CW.compose(units, cap), out = [];
     for (let i=0;i<c.bar;i++) out.push('gold-bar');
     for (let i=0;i<c.big;i++) out.push('gold-big');
     for (let i=0;i<c.gold;i++) out.push('gold');
@@ -694,14 +630,10 @@ const CoinTable = (function(){
         let b = topOf(hz, col);
         if (b) CW.removeFromZone(b);
         else { const t = topOf(hz), k = hz.box; b = CW.body(CW.makeChip(col), t ? t.x : (k.L+k.R)/2, t ? t.y : k.B, t ? t.z+4 : 4, CW.D()); b.fresh = true; }
-        const sl = CW.OPT.bankIn==='slot' && slotAt();
-        // THE SLOT: up out of the bank through its slot, then on to the felt
-        items.push({ b, to: sl ? { via:true, x:sl.x+CW.rr(-3,3), y:sl.y, z:0, d:CW.D(), flips2:2, then:targetIn(z) } : targetIn(z) });
+        items.push({ b, to:targetIn(z) });
       });
       // all in: nothing stays behind
       if (allin) hz.list.slice().forEach(b=>lift(b));
-      // the rack closes up behind the coins that left
-      if (chipsOn()) setTimeout(()=>CW.applyLayout(hz, CW.planZone(hz, []).map), 260/CW.OPT.speed);
       return within(CW.throwAll(items, kindOf(amount, allin, false), { big:allin }), 6000);
     }
     if (p.isHuman){
@@ -746,25 +678,7 @@ const CoinTable = (function(){
       layout();
       const pot = CW.zones.pot, plateEl = document.querySelector('#pot-area .pot-chip');
       let delay = 0; const throws = [];
-      if (chipsOn()){
-        // CHIPS: every coin's place in the tray planned first (the pile
-        // shifts over to make room), then thrown in stack order, lowest
-        // places first, so each lands on something and stays
-        const all = [];
-        ids.forEach(k=>{
-          const z = CW.zones[k], list = z.list.slice(); z.list.length = 0;
-          const amount = z.amount; z.amount = 0;
-          if (!list.length){ shown += amount; return; }
-          const each = amount/list.length;
-          list.forEach(b=>{ b.zone = null; b.inFelt = true; all.push({ b, each }); });
-        });
-        // (the pile stays as it stands: they land on top of it)
-        const at = CW.pileAdd(pot, all.map(o=>o.b.colour));
-        all.forEach((o,i)=>{ o.s = at[i]; });
-        all.sort((a,c)=>a.s.z-c.s.z);
-        const items = all.map(o=>({ b:o.b, to:{ x:o.s.x, y:o.s.y, z:o.s.z, zone:pot, slot:true, d:CW.D() }, onLand:()=>{ shown += o.each; paint(); punch(plateEl); } }));
-        if (items.length) throws.push(CW.throwAll(items, 'hop', { delay:0 }));
-      } else ids.forEach(k=>{
+      ids.forEach(k=>{
         const z = CW.zones[k], list = z.list.slice().sort((a,c)=>c.z-a.z); z.list.length = 0;
         const amount = z.amount; z.amount = 0;
         const each = amount/Math.max(1,list.length);
@@ -779,11 +693,7 @@ const CoinTable = (function(){
       CW.sfx('collect', .6);
       paint();
       // the change-up: over the pot's limit, the pile gets richer, not bigger
-      if (chipsOn()){
-        // chips: the change-up is quiet, then the pile slides into shape
-        if (pot.list.length > CW.OPT.potCap) await within(CW.mergePile(pot, CW.OPT.potCap), 12000/CW.OPT.speed);
-        pot.neat = false;                 // a tap tidies it into the pyramid
-      } else if (denomOn()) await within(CW.merge(pot, CW.OPT.potCap) || Promise.resolve(), 8000/CW.OPT.speed);
+      if (denomOn()) await within(CW.merge(pot, CW.OPT.potCap) || Promise.resolve(), 8000/CW.OPT.speed);
     })().finally(()=>{ sweeping = null; });
     return sweeping;
   }
@@ -838,31 +748,9 @@ const CoinTable = (function(){
       await hoardShown(6000);
       trackOnce();
       const hz = ensureHoard();
-      let onto = col=>{ const k = CW.zoneBox(hz, CW.pieceD(col), col); return { x:CW.rr(k.L, k.R), y:k.B-CW.rr(0, Math.min(16, k.B-k.T)), z:0, zone:hz, d:CW.D() }; };
-      if (chipsOn()){
-        // more than the rack holds: five of the commoner colour change up
-        // in the tray first, quietly (the value's the same)
-        const cap = CW.rackCapacity(hz);
-        for (let guard=0; list.length + hz.list.length > cap && guard<200; guard++){
-          const T = CW.TIERS(), cnt = T.map(t=>list.filter(b=>b.colour===t).length);
-          let i = -1; for (let j=0;j<T.length-1;j++) if (cnt[j]>=5 && (i<0 || cnt[j]>cnt[i])) i = j;
-          if (i<0){ if (hz.list.length) CW.mergeQuiet(hz, Math.max(0, cap - list.length)); break; }
-          const five = list.filter(b=>b.colour===T[i]).slice(0,5), at = five[0];
-          const nb = CW.body(CW.makeChip(T[i+1]), at.x, at.y, at.z, CW.D()); nb.state = 'rest';
-          five.forEach(b=>{ list.splice(list.indexOf(b),1); CW.removeBody(b); b.el.remove(); gone(); });
-          list.push(nb); leaving++;
-        }
-        // every coin's place on the rack, planned before it's thrown
-        const plan = CW.planZone(hz, list.map(b=>b.colour)); CW.applyLayout(hz, plan.map);
-        const at = new Map(list.map((b,i)=>[b, plan.extras[i]]));
-        list.sort((a,c)=>at.get(a).z-at.get(c).z);
-        onto = (col,b)=>{ const s = at.get(b); return { x:s.x, y:s.y, z:s.z, zone:hz, slot:true, d:CW.D() }; };
-      }
-      const sl = CW.OPT.bankIn==='slot' && slotAt();
-      // THE SLOT: one by one to the slot, a click, and down onto the pile
-      const items = list.map(b=>({ b, to: sl ? { via:true, x:sl.x+CW.rr(-2,2), y:sl.y, z:0, d:CW.D(), T2:.28, flips2:0, then:onto(b.colour,b) } : onto(b.colour,b), onLand:gone }));
-      const style = CW.OPT.winStyle==='handfuls' ? (big ? 'heave' : 'lob') : 'stream';
-      await within(CW.throwAll(items, sl ? style : (big ? 'heave' : (list.length<=3 ? 'flick' : 'lob')), { big }), 14000/CW.OPT.speed);
+      const onto = col=>{ const k = CW.zoneBox(hz, CW.pieceD(col), col); return { x:CW.rr(k.L, k.R), y:k.B-CW.rr(0, Math.min(16, k.B-k.T)), z:0, zone:hz, d:CW.D() }; };
+      const items = list.map(b=>({ b, to:onto(b.colour), onLand:gone }));
+      await within(CW.throwAll(items, big ? 'heave' : (list.length<=3 ? 'flick' : 'lob'), { big }), 9000/CW.OPT.speed);
       await new Promise(r=>setTimeout(r, motionOff()?0:300/CW.OPT.speed));
       closeHatch(); CW.sfx('hatchClose');
       bankPending = Math.max(0, bankPending-1); bankCap = Infinity;
@@ -894,16 +782,37 @@ const CoinTable = (function(){
     if (v){ await settleView(); return; }
     syncBank(false);
   }
-  // an opponent's win: the coins fly straight home to the seat's cup, top
-  // first; each clicks in and the seat's stack readout spins up its share
+  // an opponent's win: the pile slides a short way toward them as a group
+  // (raked in), then the coins hop home to the seat, top first
   async function payOpp(p, list, gone){
     if (typeof EnemyCards!=='undefined') EnemyCards.slot(p, 6000);
+    const z = CW.zones['spot:'+p.id] || CW.zones.pot, pot = CW.zones.pot;
     CW.sfx('win', .5);
-    const tick = typeof seatStackTick==='function' ? seatStackTick(p, list.length) : ()=>{};
+    setTimeout(()=>CW.sfx('collect', .5), 120/CW.OPT.speed);
+    const L = Math.max(1, Math.hypot(z.cx-pot.cx, z.cy-pot.cy)), reach = Math.min(34, L*.3);
+    let ux = (z.cx-pot.cx)/L*reach, uy = (z.cy-pot.cy)/L*reach;
+    // the pile moves as one, only as far as the tray lets it: it bumps the
+    // wall on the winner's side instead of riding up over the lip
+    const k = CW.trayBox(CW.D(), 'gold');
+    if (k){
+      const xs = list.map(b=>b.x), ys = list.map(b=>b.y);
+      ux = Math.max(Math.min(0, k.L-Math.min(...xs)), Math.min(Math.max(0, k.R-Math.max(...xs)), ux));
+      uy = Math.max(Math.min(0, k.T-Math.min(...ys)), Math.min(Math.max(0, k.B-Math.max(...ys)), uy));
+    }
+    const all = list.map((b,i)=>{
+      b.zone = pot; pot.list.push(b);
+      const probe = { x:b.x+ux, y:b.y+uy, d:b.d, vx:0, vy:0 }; CW.holdIn(probe, pot);
+      Object.assign(b,{ tx:probe.x, ty:probe.y, tz:b.z, lift:3, T:.34, wait:(i%6)*5, state:'wait', next:'push', target:{}, opts:{} });
+      CW.active.add(b);
+      return new Promise(res=>{ b.resolve = res; });
+    });
+    CW.kick();
+    await within(Promise.all(all), 3000/CW.OPT.speed);
+    await new Promise(r=>setTimeout(r, motionOff()?0:220/CW.OPT.speed));
     const back = list.slice().sort((a,c)=>c.z-a.z);
-    const items = back.map(b=>{ const s = edgeSource(p); return { b, to:{ x:s.x, y:s.y, z:s.z, vanish:true, d:CW.D()-4 }, onLand:()=>{ gone(); tick(); } }; });
-    try { await within(CW.throwAll(items, 'lob'), 8000/CW.OPT.speed); }
-    finally { if (tick.end) tick.end(); }
+    back.forEach(b=>{ if (b.zone) CW.removeFromZone(b); });
+    const items = back.map(b=>{ const s = edgeSource(p); return { b, to:{ x:s.x, y:s.y, z:s.z, vanish:true, d:CW.D()-4 }, onLand:gone }; });
+    await within(CW.throwAll(items, 'lob'), 8000/CW.OPT.speed);
     if (typeof EnemyCards!=='undefined') EnemyCards.slot(p, 380);
   }
 
@@ -930,7 +839,6 @@ const CoinTable = (function(){
     CW.hooks.mouth = null;
     shown = 0; sweeping = null; leaving = 0;
     CW.newPotShape();                 // each hand's pot builds its own way
-    if (CW.zones.pot) delete CW.zones.pot.shape;
   }
   function reset(){ clear(); laid = null; resetBank(); }
   // Settings: a taste of the chosen set (a few coins landing and a stack)

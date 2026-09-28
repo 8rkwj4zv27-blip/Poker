@@ -635,3 +635,153 @@ game's `js/coin-world.js` / `js/coin-table.js`, plus `js/coin-bank.js` /
 and side pots share the tray's pieces by count, not value (`js/showdown.js`
 `coinsFor`/`splitCoins`/`chop`).
 
+**The bank, rounds 2-3 (27 Sep 2026).** Owner on the shipped TUBES: works,
+but confusing (what is it? and the change-making inside adds to it). NEW
+TUBES (`coin-tubes-lab.html`) read better but didn't answer that. Settled
+direction: the bank looks like the pot. `coin-hoard-lab.html`: the HOARD,
+a coin-world zone in the bank's box (the world copy gains box zones: walls
+= the box, a 40px floor strip, piles under its top). A few pieces for a
+short stack, a heap near 100BB (HOW BIG: .3/.45/.65 pieces per BB, max
+52), then every kind at its cap (20 small, 18 big, 14 bars; past that it's
+full, the STACK readout exact). Wins wait for the bank to be back on
+screen (the award swaps the dashboard out), then land on it for real and
+the pile settles into its heap shape; bets come off the top; a tap tidies
+to a pyramid; gleams by depth (40BB, 80BB, a sparkle across it past
+100BB). No change-making on screen: value is settled quietly after a
+payout and at each hand. Measured: 0 overlaps and 0 pieces outside the box
+at every size (the loose landing heap before it settles can overlap).
+
+
+**Lab links (owner's phone, private Artifacts):**
+- Coin Denominations Lab (`coin-denom-lab.html`): https://claude.ai/artifact/RLR5LuEj6BnSV14uLcgvSN
+- Coin Bank Lab (`coin-bank-lab.html`): https://claude.ai/artifact/QBFNjCANf2xFi9m6jsDHot
+- Bank Tubes Lab (`coin-tubes-lab.html`): https://claude.ai/artifact/5cMSBi4UEys2BoCYHnRWM2
+- Hoard Lab (`coin-hoard-lab.html`): https://claude.ai/artifact/CFtJ2Uk69961wxm1k1d4oQ
+
+**Round 4: chip coins (28 Sep 2026).** Owner on the hoard: coins drawn
+over the raise panel; a big pot overflowing into a climbing loop; bars
+lost behind big coins. Decision: poker-chip coins, one size, value by
+colour, the bank a pot of them, in and out through a slot; gold shouldn't
+be the lowest value. `chip-lab.html`: tiers x5 (1, 5, 25, 100, 500, 2500
+small blinds); LADDER ivory-red-green-black-purple-gold (suggested; gold
+is the top prize), silver-...-gold, or gold lowest; COLOURS muted/casino;
+eight DESIGNS (spots, enamel, tint, ring, gem, bimetal, casino, rim). The
+bank: colour-sorted stacks in the hoard's box (each colour a share of the
+stacks, richest in the middle), THROUGH A SLOT (wins stream in one by one
+and drop onto the pile; bets hop out and on) or over the top. Fixes: the
+bank's resting coins hide while anything covers the box; pot and box
+stacks may reach 10 on a landing, so a 4-way all-in settles instead of
+climbing. Measured: 0 overlaps / 0 outside the box at every stack size;
+the bank equals the stack exactly (no cap with chips); a 4-way all-in
+leaves 0 stuck coins.
+- Chip Lab (`chip-lab.html`): https://claude.ai/artifact/RYebkxQ3gm769G7Yq32kLV
+
+**Round 5 (28 Sep 2026).** Owner's picks: TINT, CASINO colours, SILVER up
+to GOLD, through a slot, pyramid, big, gleam when rich. Issues: coins
+jumping on the pile and floating out of the pot until a tidy; the bank's
+back stacks hidden; a pour spilling out of the bank and a heap cropped by
+its top. Changes (same link): every coin now lands in its exact place,
+planned before it's thrown (`planZone`; the pot and the bank slide over
+to make room, coins thrown lowest places first), so nothing searches for
+a spot; the bank is one row of stacks (`rackSlots`: a pyramid outline,
+richest in the middle, nothing behind anything); the pot's change-ups are
+quiet; the tray is 250 x 66. The bank's size: about 80-90 coins (the
+rack's room); how many your stack earns follows a gentle curve (a few
+stacks at 25 BB, half full near 1,000 BB, full only at massive numbers);
+the settle composes the whole bank's colour mix for the stack, so it can
+never hold more than it has room for. The money has no limit: past
+all-gold-and-full the bank simply stays full (the readout carries on).
+Eight more designs next to TINT (FLAT, DUO, HOLLOW, STAR, DASH, CANDY,
+STRIPE, TARGET). Moments: HUGE POT (5-way, 150 BB), POT STRESS; YOUR BANK
+presets ($500 to FULL); WINNINGS one by one or handfuls. Measured: 0
+overlaps and 0 outside the box from $500 to $3M; a 5-way all-in settles
+with 0 stuck.
+
+
+**Round 6 (28 Sep 2026).** Owner's settings: TINT, CASINO, SILVER up to
+GOLD, through a slot, winnings one by one, big, gleam when rich. Ask: a
+full bank read as just four towers; rows of towers behind each other
+(front ones shorter is fine), deeper stacks. Change (same link): the rack
+is up to three rows, tiered like seats: the back row stands tallest, each
+row nearer three coins shorter, the middle row set half a coin across so
+it shows between the front stacks (4 / 3 / 4 stacks). A small bank is one
+row; the rows behind fill in once the front is over half full. The
+richest coins sit in the back middle. The bank holds 176 coins (was 92);
+BIG earns a steeper curve (about 26 coins at $500, 44 at $2K, 72 at $10K,
+108 at $100K, 148 at $1M), full (all gold) near $5.5M at 10/20.
+Measured: 0 overlaps, every coin on its planned place, nothing outside
+the box from $500 to FULL.
+
+**Round 6b.** Owner: room for more rows; the pyramid is the main image,
+even nearly empty, with some depth; four rows of four only when full.
+Change: four rows straight behind each other (a coin's depth apart), the
+back row tallest, each nearer two coins shorter; a small bank is two rows
+in a pyramid (middle and back stacks tallest), rows behind joining as it
+grows; full is 4 x 4 (192 coins). Measured: 0 overlaps, nothing outside
+the box, $500 to FULL.
+
+**Round 7 (28 Sep 2026): before it goes in the game.** Owner: chips still
+fall off the screen sometimes; the pot lost height; tidy should always
+make a pyramid; an opponent's win shouldn't shove the coins over to their
+cards first; coins entering an opponent's cup should each make a sound,
+and their stack readout should spin up as they land. Changes:
+- The pot (chips) is always a pyramid: fewer, taller stacks (the middle
+  and back tallest), the coins sorted by value into the shape's heights
+  (richest in the middle, each stack richest on top). Tap to tidy: the
+  pyramid. 60 coins: stacks of up to 9-10 (they were ~3).
+- A safety net in the world: a loose coin that would leave the screen is
+  put straight back in its place (`stats().off` counts them). I couldn't
+  reproduce a coin leaving the screen in any moment at 430x932, 390x720 or
+  375x640, taps included, so this catches whatever the owner saw.
+- An opponent's win (js/showdown.js and both coin tables): the coins fly
+  straight from the pot to the seat's cup, top first; no shove to the bet
+  square. Each one clicks in (a rising `stack` tick) and the stack readout
+  counts up its share (`freezeSeatStack` / `seatStackTick` in
+  06-presentation.js, `seatDisplayFreeze` in 05-game-engine.js, cleared in
+  finishHand). These are production files: build v0.44.1.
+
+**Round 7b.** Owner: the pot shouldn't reshape when bets come in (it
+shifted into a pile, took the chips, then snapped back to a pyramid), and
+a change-up made it smaller. Change: incoming chips land on the pile as
+it stands (`pileAdd`: on top of a stack with room, the middle likelier,
+or a new stack beside the pile); nothing already there moves. Tap to
+tidy makes the pyramid. The pot holds 100 chips before any change up (was
+60), and a change-up only settles the stacks it touched (`settleStacks`).
+
+**Round 7c.** Owner (testing on a Mac window, not a phone shape): the pile
+formed then shrank with a snap or chips disappeared; colour changes
+should be more obvious; chips still sometimes carry on off the screen.
+Cause of the shrink: the change-up was quiet (five chips vanished, one
+appeared, the stacks snapped down). Now `mergePile`: five lift off the
+pile to a point over the richer chip's place, clink, pop into it (ring,
+glint) and it drops onto the pile; only the stacks they came off settle.
+Off-screen: not reproduced here (three phone sizes, 4-6x slower CPU); a
+coin with an exact place now lands there when its flight time is up
+(it can't sail past a high stack top; `stats().late`), on top of the
+off-screen safety net. The owner will judge it on the phone once the
+chips are in the game.
+
+**Round 7d.** Owner: the change-up looked like chips jumping onto the
+felt, changing and falling (from the table's angle). Now the five float
+well clear of the pile (54px up) in a loose ring, hang a beat, drift
+together and pop (a bigger ring, two glints); the new chip hangs a moment
+before it drops onto its place.
+
+**Round 7e: THE PRESS** (owner's pick of three). The float didn't read (it
+rose into the board cards). Now the change-up stays in the pile: five of
+a colour (off one stack where it can) flash in turn, bottom to top, like
+a counter ticking; they go and the richer chip flips in at the highest of
+their places with a ka-chunk (ring, glint); what sat above them settles
+down. `pickPress` / `pressOne` / `mergePile` in js/chip-world.js.
+
+**In the game: v0.46.0 · Chips (28 Sep 2026).** Owner: "absolutely
+perfect, get these into the game". The candidates became the shipped
+files (`js/chip-world.js` -> `js/coin-world.js`, `js/chip-table.js` ->
+`js/coin-table.js`), `css/coin-hoard.css` loads in the game, the owner's
+picks are the defaults (TINT, CASINO, SILVER up to GOLD, through a slot,
+one by one, BIG, gleam when rich; the pot a pyramid pile, the press).
+Settings → Bank / Tube tags / Making change removed (the bank is always
+the chip pile; the saved values stay). The Chip Lab injects only its
+controls now. Checked: every validation suite passes; the real game
+(index.html) deals, bets and settles in chips, the bank worth exactly
+the stack.

@@ -29,6 +29,10 @@ function coinTableOn(){ return typeof CoinTable!=='undefined' && CoinTable.on();
    correct) chips, so the visual bankroll only ever catches up once the
    physical chips finish being collected into the bank, never before. */
 let humanBankDisplayFreeze = null;
+/* The same for an opponent's stack: while a win's coins fly home to the
+   seat, its readout holds the pre-win figure and counts up coin by coin
+   (seatStackTick in 06-presentation.js). By player id. */
+const seatDisplayFreeze = {};
 
 /* Bounded local pacing evidence. This records only format, durations and
    public hand/session outcomes; no cards or action history are stored. */
@@ -1934,6 +1938,8 @@ function recordHandStatistics(g,outcome,netProfit){
 async function finishHand(outcome){
   const g = game;
   recordGameplayHandMetric(g);
+  // any opponent's count-up still running: the real figure now
+  Object.keys(seatDisplayFreeze).forEach(id=>{ delete seatDisplayFreeze[id]; });
   // In a Single Player run the physical controls remain in their bay and
   // visibly lose power while the payout/K.O. sequence resolves. Other
   // modes keep their existing between-hand behaviour.

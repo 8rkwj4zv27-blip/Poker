@@ -92,7 +92,19 @@ Hand Review panel, showdown presentation. If a visual bug doesn't affect
 outcomes (wrong chip count on screen, a card animating oddly, a stat
 misdisplayed), it's here, not in `05-game-engine.js`.
 
-## `js/coin-world.js` + `css/coin-world.css` — the gold-coin world
+## `js/coin-world.js` + `css/coin-world.css` + `css/coin-hoard.css` — the coin world (chips since v0.46.0)
+
+Since v0.46.0 the coins are POKER CHIPS (built in the Chip Lab, below;
+docs/ui/CHIP_PLAN.md rounds 4-7): one coin shape, its value in its colour
+on a x5 ladder (silver, red, green, black, purple, gold), design TINT,
+CASINO colours. The pot grows as one pile (`pileAdd`: bets land on it as
+it stands; tap to tidy into a pyramid; over 100 chips five of a colour
+are PRESSED into one, `mergePile`). Your bank is a rack in rows
+(`rackSlots`: a deep pyramid, four rows of four when full, 192 chips)
+in its own box (`css/coin-hoard.css`); wins stream in through a slot on
+its top edge, bets hop out of it. Settings → Bank (tubes etc.) is gone:
+the bank is always the chip pile (`bankStyle` stays saved, unused).
+
 
 The chip upgrade's physics world (docs/ui/CHIP_PLAN.md): every coin on the
 felt a body (arcs, spin, bounces, stacks, topples), pixel coins drawn by
@@ -421,6 +433,30 @@ dropping in. Runs on Lab 1's candidates (`js/coin-denom-table.js` drives it
 when `CoinWorld.OPT.bank` is a style) and the Showdown Lab's host. Not
 loaded by the game.
 
+## `coin-tubes-lab.html` + `js/coin-tubes-lab.js` + candidate `js/coin-bank-tubes2.js` / `css/coin-bank-tubes2.css` — Bank Tubes Lab
+
+The bank's TUBES, round 2 (owner: works, but doesn't read well; keep it
+simple): NEW TUBES adds a style to the live `CoinBank` (coins tipped
+toward you, warm lamp light, clearer glass, bars on a low shelf under two
+tubes) to compare with the shipped one. Runs on the game's own coin files.
+Not loaded by the game.
+
+## `coin-hoard-lab.html` + `js/coin-hoard-lab.js` + `css/coin-hoard.css` + candidate `js/coin-hoard-world.js` / `js/coin-hoard-table.js` — Hoard Lab
+
+The bank, round 3: the HOARD, your stack as a pile of gold like the pot
+(a coin-world zone in the bank's own box: grows from a few pieces into a
+heap, wins land on it, bets off the top, tap to tidy, gleams when rich).
+The candidates are copies of the shipped coin files with box zones added;
+the copy strips the shipped ones. Not loaded by the game.
+
+## `chip-lab.html` + `js/chip-lab.js` + `css/chip-lab.css` — Chip Lab
+
+Where the chips were built (rounds 4-7, docs/ui/CHIP_PLAN.md). Since
+v0.46.0 the chips ARE the game's coin files (`js/coin-world.js`,
+`js/coin-table.js`); the lab now injects only its controls (designs,
+palettes, ladders, the bank's options, moments, YOUR BANK presets up to
+FULL) over the real game. Not loaded by the game.
+
 ## `js/finishes.js` + `css/finishes.css` — Finishes menu (live)
 
 Settings → Finishes: a page inside the Settings sheet that swaps each
@@ -478,7 +514,7 @@ there manually.
 Files matching `*-lab.html`, `*-lab.js`, `*-lab.css` (`career-lab`,
 `career-hub-v2-lab`, `ticket-lab`, `card-flight-options`, `card-turn-lab`,
 `chip-motion-lab`, `chip-lab`, `chip-throw-lab`, `design-lab`, `result-stage-lab`, `showdown-rail-lab`, `crt-lab`, `dashboard-v2-lab`, `dashboard-order-lab`,
-`wheel-v2-lab`, `intro-lab`, `boot-lab`, `slot-lab`, `table-space-lab`, `enemy-card-lab`, `showdown-lab`, `pot-lab`, `ko-lab`, `coin-denom-lab`, `coin-bank-lab`, `deck-lab`)
+`wheel-v2-lab`, `intro-lab`, `boot-lab`, `slot-lab`, `table-space-lab`, `enemy-card-lab`, `showdown-lab`, `pot-lab`, `ko-lab`, `coin-denom-lab`, `coin-bank-lab`, `coin-tubes-lab`, `coin-hoard-lab`, `chip-lab`, `deck-lab`)
 are **isolated visual references and prototyping sandboxes**. Several are
 committed permanently as durable references even after their feature
 shipped. Rules:
