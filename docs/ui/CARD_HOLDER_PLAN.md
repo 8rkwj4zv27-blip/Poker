@@ -34,6 +34,37 @@ bottom 11px of the cards.
 The new lips also drop the cards' own 3px drop shadow (the lip hides the
 card feet anyway; it poked out under the shorter lips as dark blocks).
 
-## Status
+## Round 1 picks (owner, 28 Sep 2026)
 
-Round 1 sent. Waiting for the owner's picks (COPY MY PICKS in the TUNE tab).
+- Lip: **B · BRASS**
+- Seat shadow (C): **ON**
+- Width (D): **TODAY**
+- Gap to the screen: **10px**
+- Make room by: **HOLDER RISES**
+- Card overhang: **TODAY**
+- Table: burgundy
+
+Round 1 notes: the cards flashed in the holder before they were dealt; a
+thin white line showed as they turned; the seat shadow was too stepped.
+
+## Round 2
+
+- **The flash (a game bug, fixed in the game):** `syncCardRow()` builds new
+  cards with `.deal-anim`, a fade-in (opacity 0 → 1). The deal then hides
+  each card with inline `opacity:0` until its flight lands, but a running
+  CSS animation beats an inline style, so the backs faded in in the seat
+  for ~0.3s, vanished, then flew in. `revealHoleCardsAnimated()`,
+  `dealCardFlight()` and the dealer deck's `dealCardFlight2()` now take
+  `.deal-anim` off as they hide the card: its entrance is the flight.
+  Frame log confirms the cards stay hidden until they land.
+- **The white line (the lab's own bug):** the lab's card-shadow override
+  also hit the invisible wrapper of a card mid-turn (`.card-turning`,
+  which the game keeps at `box-shadow:none`) and the backs. It now only
+  touches faces at rest.
+- **Seat shadow:** a smooth, softer gradient (20% → 0 over 14px above the
+  lip) in place of the two hard steps.
+- The lab now opens on YOUR PICK.
+
+Link republished (same URL). Next: once signed off, move the picks into
+the game (`css/03-action-console.css` + the per-size overrides) and add
+the holder to the Pattern Book.

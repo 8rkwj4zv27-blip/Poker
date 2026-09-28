@@ -252,6 +252,7 @@ const DealerDeck = (() => {
     const small = el.classList.contains('small');
     const wasFaceUp = !el.classList.contains('back');
     if (wasFaceUp){ el.className = cardClass(true, card, small); el.innerHTML = ''; }
+    el.classList.remove('deal-anim');   // its fade-in would override the hide below
     el.style.opacity = '0';
     const pr = opts.revealAfter && O.yours === 'together' ? pairFor() : null;
     const landed = await fromShoe(el);

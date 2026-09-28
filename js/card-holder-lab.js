@@ -22,7 +22,7 @@
   const ROWS = [
     ['lip','THE LIP', [['moulded','A · MOULDED'],['brass','B · BRASS'],['stepped','E · STEPPED'],['current','TODAY']],
       'A: a lit top edge, a flat face, a dark underside. B: the instrument gold with a screw at each end. E: a shallow stepped front, wider at the foot.'],
-    ['seat','SEAT SHADOW (C)', [['on','ON'],['off','OFF']], 'The card feet go dark where they drop into the groove, and the slot behind gets deeper.'],
+    ['seat','SEAT SHADOW (C)', [['on','ON'],['off','OFF']], 'A soft shade rises up the card faces from the groove, and the slot behind gets deeper.'],
     ['width','WIDTH (D)', [['current','TODAY'],['snug','SNUG'],['wide','WIDE']], 'Snug hugs the two cards. Wide runs almost the full centre bay.'],
     ['gap','GAP TO THE SCREEN', [['0','0'],['4','4'],['6','6'],['8','8'],['10','10'],['12','12']], 'Pixels of air between the lip and the hand-name screen. On a big iPhone today it\'s 0: the lip sits right on the screen\'s edge. If there\'s already that much air, nothing moves.'],
     ['room','MAKE ROOM BY', [['up','HOLDER RISES'],['down','SCREENS DROP']], 'Rises: the lip and cards move up the dashboard, the screens stay put. Drop: the screens below move down instead.'],
@@ -30,8 +30,8 @@
     ['theme','TABLE', [['burgundy','BURGUNDY'],['emerald','EMERALD'],['midnight','MIDNIGHT'],['slate','SLATE']]]
   ];
   const LOOKS = [
-    ['mine','MY PICK · A + C · 8PX', { lip:'moulded', seat:'on', width:'current', gap:'8', room:'up', hang:'0' }],
-    ['brass','B · BRASS + C · 8PX', { lip:'brass', seat:'on', width:'current', gap:'8', room:'up', hang:'0' }],
+    ['yours','YOUR PICK · BRASS + C · 10PX', { lip:'brass', seat:'on', width:'current', gap:'10', room:'up', hang:'0' }],
+    ['mine','A · MOULDED + C · 8PX', { lip:'moulded', seat:'on', width:'current', gap:'8', room:'up', hang:'0' }],
     ['stepped','E · STEPPED + C', { lip:'stepped', seat:'on', width:'current', gap:'8', room:'up', hang:'0' }],
     ['snug','A · SNUG · NO SHADOW', { lip:'moulded', seat:'off', width:'snug', gap:'8', room:'up', hang:'0' }],
     ['wide','B · WIDE TRAY', { lip:'brass', seat:'on', width:'wide', gap:'8', room:'up', hang:'0' }],

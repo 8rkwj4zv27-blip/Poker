@@ -71,16 +71,21 @@ html[data-ch-lip="stepped"] #hud-mid .seat.you::after{
 
 /* The new lips are a pixel or two shorter than today's, so the cards' own
    drop shadow (a 3px ledge under each card) would peek out below them as
-   dark blocks. The lip hides the card feet anyway: drop that shadow. */
+   dark blocks. The lip hides the card feet anyway: drop that shadow.
+   Faces only: a back keeps its own trim, and a card mid-turn keeps the
+   game's box-shadow:none (the wrapper is invisible; a shadow on it drew a
+   thin white line across the turn). */
 html[data-ch-lip]:not([data-ch-lip="current"]) #hud-mid .seat.you .seat-cards{ filter:none; }
-html[data-ch-lip]:not([data-ch-lip="current"]) #hud-mid .seat.you .seat-cards .card{ box-shadow:inset 0 2px 0 #fff; }
+html[data-ch-lip]:not([data-ch-lip="current"]) #hud-mid .seat.you .seat-cards .card:not(.back):not(.card-turning){ box-shadow:inset 0 2px 0 #fff; }
 
-/* ---- C · SEAT SHADOW: the card feet go dark where they drop into the
-   groove, in two hard pixel steps; the slot behind gets deeper too. ---- */
-html[data-ch-seat="on"][data-ch-lip] #hud-mid .seat.you .seat-cards .card{
-  box-shadow:inset 0 2px 0 #fff,
-    inset 0 calc(-1px * (var(--ch-bury, 11) + 3)) 0 rgba(40,8,12,.3),
-    inset 0 calc(-1px * (var(--ch-bury, 11) + 7)) 0 rgba(40,8,12,.16);
+/* ---- C · SEAT SHADOW: a soft shade rising up the card faces from the
+   groove, and a deeper slot behind. Smooth, not stepped (round 2). ---- */
+html[data-ch-seat="on"] #hud-mid .seat.you .seat-cards .card:not(.back):not(.card-turning){
+  background:
+    linear-gradient(to top,
+      rgba(40,8,12,.2) calc(var(--ch-bury, 11) * 1px),
+      rgba(40,8,12,0) calc(var(--ch-bury, 11) * 1px + 14px)),
+    var(--card-face);
 }
 html[data-ch-seat="on"] #hud-mid .seat.you::before{
   background:#080405;
