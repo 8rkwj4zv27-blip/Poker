@@ -674,5 +674,5 @@ stacks may reach 10 on a landing, so a 4-way all-in settles instead of
 climbing. Measured: 0 overlaps / 0 outside the box at every stack size;
 the bank equals the stack exactly (no cap with chips); a 4-way all-in
 leaves 0 stuck coins.
-- Chip Lab (`chip-lab.html`): (link below once published)
+- Chip Lab (`chip-lab.html`): https://claude.ai/artifact/RYebkxQ3gm769G7Yq32kLV
 
