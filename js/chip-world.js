@@ -1241,6 +1241,50 @@
     const m=neatSlots(z,z.list.concat(ph));
     return { map:m, extras:ph.map(p=>m.get(p)) };
   }
+  /* THE PILE, added to: places for new coins on the pile as it stands
+     (nothing already there moves). Each goes on top of a stack with room,
+     or starts a new stack beside the pile; the pile only turns tidy when
+     it's tapped. Returns one place per colour, in the order given. */
+  function pileAdd(z,cols){
+    const d=D(), st=STEP(), k=zoneBox(z,d,'gold')||{ L:z.cx-80, R:z.cx+80, T:z.cy-20, B:z.cy+4 };
+    const cx=(k.L+k.R)/2, cy=Math.round((k.T+k.B)/2);
+    const capAt=y=>{ const room=z.room!=null?z.room+(y-z.cy):99; return Math.max(1,Math.min(12,Math.floor((room-d*HR()-2)/st)+1)); };
+    const stacks=new Map();
+    z.list.forEach(b=>{ if (b.state!=='rest') return; const key=Math.round(b.x)+','+Math.round(b.y); const s=stacks.get(key)||{ x:b.x, y:b.y, h:0 }; s.h=Math.max(s.h,Math.round(b.z/st)+1); stacks.set(key,s); });
+    const list=[...stacks.values()];
+    const free=(x,y)=>x>=k.L && x<=k.R && y>=k.T && y<=k.B && list.every(q=>Math.hypot(q.x-x,(q.y-y)*FORE)>=d);
+    const spot=()=>{
+      if (!list.length) return { x:Math.round(cx+rr(-4,4)), y:cy, h:0 };
+      for (let i=0;i<40;i++){
+        // beside a stack near the middle (the best of three picks)
+        const o=[0,1,2].map(()=>list[Math.floor(rnd()*list.length)]).reduce((a,q)=>Math.abs(q.x-cx)<Math.abs(a.x-cx)?q:a), a=rr(0,Math.PI*2), x=Math.round(o.x+Math.cos(a)*d*1.05), y=Math.round(o.y+Math.sin(a)*d*1.05/FORE);
+        if (free(x,y)) return { x, y, h:0 };
+      }
+      return null;
+    };
+    return cols.map(()=>{
+      const room=list.filter(s=>s.h<capAt(s.y));
+      let s=null;
+      if (!room.length || rnd()<(list.length<5?.4:.07)){ s=spot(); if (s) list.push(s); }
+      if (!s && room.length){
+        // a stack with room, the middle ones likelier
+        const w=room.map(q=>Math.pow(Math.max(.1,1-Math.abs(q.x-cx)/((k.R-k.L)/2)),2));
+        let r=rnd()*w.reduce((a,v)=>a+v,0); s=room[room.length-1];
+        for (let i=0;i<room.length;i++){ r-=w[i]; if (r<0){ s=room[i]; break; } }
+      }
+      if (!s) s=list.reduce((a,q)=>q.h<a.h?q:a,list[0]);
+      const at={ x:s.x, y:s.y, z:s.h*st, n:s.h };
+      s.h++;
+      return at;
+    });
+  }
+  // every stack settled down onto what's under it (after coins leave it)
+  function settleStacks(z){
+    const st=STEP(), groups=new Map(), map=new Map();
+    z.list.forEach(b=>{ if (b.state!=='rest') return; const key=Math.round(b.x)+','+Math.round(b.y); (groups.get(key)||groups.set(key,[]).get(key)).push(b); });
+    groups.forEach(g=>g.sort((a,c)=>a.z-c.z).forEach((b,i)=>map.set(b,{ x:b.x, y:b.y, z:i*st })));
+    return applyLayout(z,map);
+  }
   // move a zone's coins to `map`'s places (the tidy's slide), resolves when done
   function applyLayout(z,map){
     const done=[];
@@ -1645,6 +1689,7 @@
       five.forEach(b=>{ removeBody(b); b.el.remove(); });
       const nb=body(makeChip(to),at.x,at.y,0,D());
       nb.zone=z; z.list.push(nb); nb.target={}; nb.opts={};
+      if (isTier(to)){ nb.z=at.z; finishRest(nb); return; }
       if (!seat(nb,true)){ nb.z=supportUnder(nb).h; finishRest(nb); }
     });
     return steps.length;
@@ -2422,7 +2467,7 @@
     Coin, sfx, rise,
     active, dirty, squashing, zones, spinCache, frameCache,
     makeChip, styleChip, setFrame, frames, spinFrame, coloursFor, betCoins, bankCoins, curve,
-    isTier, TIERS, tierName, rackSlots, rackCapacity, planZone, applyLayout, LADDERS, PALETTES, CHIP_DESIGNS, composeTiers, chipFrameT, chipSpin,
+    isTier, TIERS, tierName, rackSlots, rackCapacity, planZone, applyLayout, pileAdd, settleStacks, LADDERS, PALETTES, CHIP_DESIGNS, composeTiers, chipFrameT, chipSpin,
     PIECES, KINDS, isBar, isBig, pieceD, pieceH, stepOf, depthOf, clash, compose, valueOf, merge, mergePlan, barFrame, zoneBox, mergeQuiet,
     BankPile,
     body, removeBody, removeFromZone, toRest, finishRest, kick, ensureLayers, draw, snap, arrive, begin,

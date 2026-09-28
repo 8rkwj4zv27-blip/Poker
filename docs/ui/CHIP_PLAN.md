@@ -739,3 +739,11 @@ and their stack readout should spin up as they land. Changes:
   counts up its share (`freezeSeatStack` / `seatStackTick` in
   06-presentation.js, `seatDisplayFreeze` in 05-game-engine.js, cleared in
   finishHand). These are production files: build v0.44.1.
+
+**Round 7b.** Owner: the pot shouldn't reshape when bets come in (it
+shifted into a pile, took the chips, then snapped back to a pyramid), and
+a change-up made it smaller. Change: incoming chips land on the pile as
+it stands (`pileAdd`: on top of a stack with room, the middle likelier,
+or a new stack beside the pile); nothing already there moves. Tap to
+tidy makes the pyramid. The pot holds 100 chips before any change up (was
+60), and a change-up only settles the stacks it touched (`settleStacks`).

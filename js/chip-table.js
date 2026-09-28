@@ -17,7 +17,7 @@ const COIN_TABLE_ON = true;
 const CoinTable = (function(){
   'use strict';
   const CW = window.CoinWorld;
-  Object.assign(CW.OPT, { denom:'on', betCap:16, allinCap:24, spotCap:30, potCap:60 });
+  Object.assign(CW.OPT, { denom:'on', betCap:16, allinCap:24, spotCap:30, potCap:100 });
   // chips: the pot is always a pyramid, like the bank (owner)
   Object.assign(CW.OPT, { potShape:'pyramid' });
   // Lab 2 (coin-bank-lab.html): the bank's inside, js/coin-bank.js's View
@@ -759,8 +759,9 @@ const CoinTable = (function(){
           const each = amount/list.length;
           list.forEach(b=>{ b.zone = null; b.inFelt = true; all.push({ b, each }); });
         });
-        const plan = CW.planZone(pot, all.map(o=>o.b.colour)); CW.applyLayout(pot, plan.map);
-        all.forEach((o,i)=>{ o.s = plan.extras[i]; });
+        // (the pile stays as it stands: they land on top of it)
+        const at = CW.pileAdd(pot, all.map(o=>o.b.colour));
+        all.forEach((o,i)=>{ o.s = at[i]; });
         all.sort((a,c)=>a.s.z-c.s.z);
         const items = all.map(o=>({ b:o.b, to:{ x:o.s.x, y:o.s.y, z:o.s.z, zone:pot, slot:true, d:CW.D() }, onLand:()=>{ shown += o.each; paint(); punch(plateEl); } }));
         if (items.length) throws.push(CW.throwAll(items, 'hop', { delay:0 }));
@@ -781,7 +782,8 @@ const CoinTable = (function(){
       // the change-up: over the pot's limit, the pile gets richer, not bigger
       if (chipsOn()){
         // chips: the change-up is quiet, then the pile slides into shape
-        if (pot.list.length > CW.OPT.potCap){ CW.mergeQuiet(pot, CW.OPT.potCap); await within(CW.applyLayout(pot, CW.planZone(pot, []).map), 3000/CW.OPT.speed); }
+        if (pot.list.length > CW.OPT.potCap){ CW.mergeQuiet(pot, CW.OPT.potCap); await within(CW.settleStacks(pot), 3000/CW.OPT.speed); }
+        pot.neat = false;                 // a tap tidies it into the pyramid
       } else if (denomOn()) await within(CW.merge(pot, CW.OPT.potCap) || Promise.resolve(), 8000/CW.OPT.speed);
     })().finally(()=>{ sweeping = null; });
     return sweeping;
