@@ -202,8 +202,10 @@ function preflopPercentile(hole){
 
 /* Equity of `hole` on `board` against opponents whose hands are drawn from
    ranges. ranges: one entry per opponent — a number in (0,1] is "their best
-   X% of hands"; null/1 is any two cards. Pure sampling; no hidden cards are
-   involved (the AI calls this with its own cards and the public board). */
+   X% of hands"; null/1 is any two cards; or a spec { pct, hist, bluff, k }
+   whose hands are also weighted by their postflop actions (narrowWeight).
+   Pure sampling; no hidden cards are involved (the AI calls this with its
+   own cards, the public board and the public betting). */
 function estimateEquityVsRanges(holeCards, board, ranges, iterations){
   const combos = comboOrder();
   const hole = holeCards.map(cardCode), brd = board.map(cardCode);
@@ -212,17 +214,32 @@ function estimateEquityVsRanges(holeCards, board, ranges, iterations){
   const used = new Array(52);
   const deck = new Array(52);
   const opp = [];
+  const specs = ranges.map(r=>{
+    const spec = (r && typeof r === 'object') ? r : { pct: r };
+    const pct = spec.pct;
+    const count = (pct == null || pct >= 1) ? combos.length : Math.max(1, Math.round(pct * combos.length));
+    const hist = spec.hist && spec.hist.length && (spec.k || 0) > 0 ? spec.hist : null;
+    return { count, hist, bluff: spec.bluff || 1, k: spec.k || 0,
+      weights: hist ? new Float32Array(count).fill(-1) : null };
+  });
   let winShare = 0;
   for (let iter=0; iter<iterations; iter++){
     for (let i=0;i<52;i++) used[i] = dead[i];
     opp.length = 0;
     for (let o=0;o<ranges.length;o++){
-      const r = ranges[o];
-      const k = (r == null || r >= 1) ? combos.length : Math.max(1, Math.round(r * combos.length));
+      const spec = specs[o];
+      const k = spec.count;
       let pick = null;
-      for (let t=0; t<60 && !pick; t++){
-        const c = combos[Math.floor(Math.random()*k)];
-        if (!used[c[0]] && !used[c[1]]) pick = c;
+      for (let t=0; t<(spec.hist ? 120 : 60) && !pick; t++){
+        const idx = Math.floor(Math.random()*k);
+        const c = combos[idx];
+        if (used[c[0]] || used[c[1]]) continue;
+        if (spec.hist){
+          let w = spec.weights[idx];
+          if (w < 0) w = spec.weights[idx] = narrowWeight([c[0], c[1]], brd, spec.hist, spec.bluff, spec.k);
+          if (Math.random() >= w) continue;
+        }
+        pick = c;
       }
       if (!pick){   // range is fully blocked by known cards: any legal hand
         for (let t=0; t<400 && !pick; t++){
@@ -291,7 +308,10 @@ function rangeRelStrength(holeCards, board, rangePct){
                 connected (a straight is possible), high (top rank index),
                 wet (0..1: how many draws the board allows) } */
 function classifyPostflop(holeCards, board){
-  const hole = holeCards.map(cardCode), brd = board.map(cardCode);
+  return classifyCodes(holeCards.map(cardCode), board.map(cardCode));
+}
+/* The same, on int card codes (the worker's range narrowing uses this). */
+function classifyCodes(hole, brd){
   const all = hole.concat(brd);
   const rk = c => c >> 2, st = c => c & 3;
   const boardRanks = brd.map(rk).sort((a,b)=>b-a);
@@ -384,6 +404,58 @@ function classifyPostflop(holeCards, board){
 }
 
 /* ============================================================
+   RANGE NARROWING  (AI, docs/ai/AI_PLAN.md Step 4)
+   ============================================================
+   How likely a normal player is to make each postflop action with each
+   kind of hand. A range is narrowed by weighting every hand in it by the
+   chance of the actions actually seen: raise the flop on a dry board and
+   sets and two pair dominate; check-call a wet board and draws and middle
+   pairs stay in. Buckets come from classifyCodes on each street's board.
+   Actions: b bet, r raise, c call, k check. */
+const NARROW_W = {
+  strong:  { b:0.75, r:0.55, c:0.40, k:0.25 },
+  top:     { b:0.55, r:0.12, c:0.60, k:0.45 },
+  mid:     { b:0.25, r:0.04, c:0.50, k:0.75 },
+  weak:    { b:0.15, r:0.02, c:0.35, k:0.85 },
+  sdraw:   { b:0.45, r:0.20, c:0.60, k:0.55 },
+  wdraw:   { b:0.20, r:0.06, c:0.35, k:0.80 },
+  nothing: { b:0.12, r:0.04, c:0.08, k:0.88 },
+};
+const NARROW_STRONG = { 'straight-flush':1, quads:1, 'full-house':1, flush:1, straight:1, set:1, trips:1, 'two-pair':1 };
+function narrowBucket(cls){
+  if (NARROW_STRONG[cls.made]) return 'strong';
+  const d = cls.draws;
+  const sdraw = d.flush || d.oesd;
+  if (cls.made === 'overpair' || cls.made === 'top-pair') return 'top';
+  if (sdraw) return 'sdraw';
+  if (cls.made === 'second-pair') return 'mid';
+  if (cls.made === 'weak-pair') return 'weak';
+  if (d.gutshot || d.backdoorFlush || d.overcards) return 'wdraw';
+  return 'nothing';
+}
+/* Weight of one two-card combo given its owner's postflop history.
+   hist: [{ n: board length when acting, a: 'b'|'r'|'c'|'k' }]; bluff: how
+   much bluffier than normal their bets are (from the table's reads);
+   k: how strongly the reader narrows (their reading skill, 0 = not at all).
+   Returns 0..1 (each step divided by that action's largest weight). */
+function narrowWeight(combo, brd, hist, bluff, k){
+  let w = 1;
+  for (let i=0;i<hist.length;i++){
+    const h = hist[i], row = NARROW_W[narrowBucket(classifyCodes(combo, brd.slice(0, h.n)))];
+    let p = row[h.a], max = 0;
+    const loose = h.a === 'b' || h.a === 'r';
+    for (const key in NARROW_W){
+      let q = NARROW_W[key][h.a];
+      if (loose && (key === 'sdraw' || key === 'wdraw' || key === 'nothing')) q = Math.min(0.95, q * bluff);
+      if (q > max) max = q;
+    }
+    if (loose && (row === NARROW_W.sdraw || row === NARROW_W.wdraw || row === NARROW_W.nothing)) p = Math.min(0.95, p * bluff);
+    w *= Math.pow(p / max, k);
+  }
+  return w;
+}
+
+/* ============================================================
    EQUITY SERVICE — off the main thread, with sync fallback
    ============================================================ */
 const EquityService = (function(){
@@ -407,6 +479,9 @@ const EquityService = (function(){
         'const RANK_CHARS=' + JSON.stringify(RANK_CHARS) + ';',
         'let _comboOrder=null, _classRank=null;',
         holeClass.toString(), comboOrder.toString(), estimateEquityVsRanges.toString(),
+        classifyCodes.toString(), narrowBucket.toString(), narrowWeight.toString(),
+        'const NARROW_W=' + JSON.stringify(NARROW_W) + ';',
+        'const NARROW_STRONG=' + JSON.stringify(NARROW_STRONG) + ';',
         'self.onmessage=function(e){',
         '  var d=e.data;',
         '  try{ var eq=d.ranges ? estimateEquityVsRanges(d.hole,d.board,d.ranges,d.iters) : estimateEquity(d.hole,d.board,d.numOpp,d.iters); self.postMessage({id:d.id,eq:eq}); }',
@@ -433,7 +508,7 @@ const EquityService = (function(){
   }
   function keyFor(hole, board, numOpp, iters, ranges){
     return hole.map(cardKey).sort().join('') + '|' + board.map(cardKey).join('') + '|' + numOpp + '|' + iters +
-      (ranges ? '|' + ranges.map(r => r == null ? '*' : (+r).toFixed(3)).join(',') : '');
+      (ranges ? '|' + ranges.map(r => r == null ? '*' : typeof r === 'object' ? JSON.stringify(r) : (+r).toFixed(3)).join(',') : '');
   }
 
   return {

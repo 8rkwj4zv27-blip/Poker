@@ -565,6 +565,7 @@ function readsFor(g, id){
 /* A new hand: count it for everyone dealt in. */
 function aiObserveHandStart(g){
   g._readHand = {};
+  g.handLog = [];   // this hand's postflop actions, for reading hands (Step 4)
   g.players.forEach(p=>{ if (p.inHand && !p.eliminated){ readsFor(g, p.id).hands++; g._readHand[p.id] = { vpip:false, pfr:false }; } });
 }
 /* A public action. info: { toCall, raisesBefore, phase } as they were
@@ -581,6 +582,8 @@ function aiObserveAction(g, p, action, info){
   }
   if (aggressive) r.postAgg++;
   else if (action === 'call' || action === 'check') r.postPassive++;
+  const code = aggressive ? (info.toCall > 0 ? 'r' : 'b') : action === 'call' ? 'c' : action === 'check' ? 'k' : null;
+  if (code) (g.handLog || (g.handLog = [])).push({ id:p.id, n:g.board.length, a:code });
   if (info.toCall > 0){ r.facedBet++; if (action === 'fold') r.foldedToBet++; }
   if (info.phase === 'flop' && g.pfAggressorId === p.id && info.raisesBefore === 0){
     r.cbetOpp++; if (aggressive) r.cbet++;
@@ -976,9 +979,17 @@ async function aiPostflop(player, g, c){
   const weakDraw = street < 5 && !strongDraw && (hc.draws.gutshot || hc.draws.backdoorFlush || hc.draws.overcards);
 
   // equity against the opponents' likely ranges, with a weak reader's misjudgement
-  const ranges = opps.map(o=>preflopRangeOf(g, o, sk.read, 1, player));
   // what this player has seen of the others: do they fold? do they bluff?
   const reads = opps.map(o=>aiReadOf(player, o, g));
+  // each opponent's range: their preflop range, narrowed by what they've
+  // done since the flop this hand, as well as this player reads hands
+  const ranges = opps.map((o, i)=>{
+    const pct = preflopRangeOf(g, o, sk.read, 1, player);
+    const hist = (g.handLog || []).filter(h=>h.id === o.id).map(h=>({ n:h.n, a:h.a }));
+    if (!hist.length || sk.read <= 0) return pct;
+    const bluff = Math.max(0.4, Math.min(3, (reads[i].agg / READ_PRIOR.agg) * Math.pow(reads[i].bluff / READ_PRIOR.bluff, 0.5)));
+    return { pct, hist, bluff: +bluff.toFixed(2), k: +sk.read.toFixed(2) };
+  });
   const foldiness = reads.reduce((a, r)=>a * r.ftb, 1) / Math.pow(READ_PRIOR.ftb, reads.length);
   let eq = await EquityService.get(player.hand, g.board, ranges.length, Math.min(dp.iterations, 700), ranges);
   eq = clamp01(eq + (Math.random() - 0.5) * dp.noise);
@@ -1034,7 +1045,10 @@ async function aiPostflop(player, g, c){
       plan.line = 'trap';
       return { action:'check' };
     }
-    if (leanYes(vWidth - str, sk.mix)){
+    // a good reader also bets when the opponents' narrowed ranges say
+    // this hand is ahead (they've shown weakness), whatever the range says
+    const aheadOfThem = eq > 0.6 + 0.05 * multi && Math.random() < sk.read * 0.8;
+    if (leanYes(vWidth - str, sk.mix) || aheadOfThem){
       plan.line = 'value';
       return betOrRaiseTo(betTotal, true);
     }
@@ -1078,7 +1092,9 @@ async function aiPostflop(player, g, c){
   const drawOK = (strongDraw || weakDraw) && eq + (strongDraw ? 0.08 : 0.03) * (street === 3 ? 1 : 0.6) > potOdds;
 
   // raise: for value from the top of the continuing range, or a semi-bluff with a big draw
-  const valueRaise = str < contLine * 0.22 && Math.random() < 0.35 + aggression * 0.5 + (plan.line === 'trap' ? 0.3 : 0);
+  // (a hand reader only value-raises when it's also ahead of what their betting says they have)
+  const valueRaise = str < contLine * 0.22 && Math.random() < 0.35 + aggression * 0.5 + (plan.line === 'trap' ? 0.3 : 0)
+    && (eq > 0.55 || Math.random() > sk.read);
   const semiRaise = !valueRaise && strongDraw && street < 5 && multi === 0
     && Math.random() < 0.25 * sk.bluffPlan * (0.4 + aggression) + bluffFreq * 0.2 * (1 - sk.bluffPlan);
   if ((valueRaise || semiRaise) && player.mayRaise && stack > toCall){
@@ -1088,7 +1104,13 @@ async function aiPostflop(player, g, c){
   }
   // hopeless: no pair, no draw, equity far off the price
   if (!drawOK && eq < potOdds * 0.6 && str > 0.7) return { action:'fold' };
-  const continues = leanYes(contLine - str, sk.mix) || drawOK;
+  let continues = leanYes(contLine - str, sk.mix) || drawOK;
+  // what their actions say overrides range balance, as far as this
+  // player can read hands: fold when clearly beaten, call when clearly not
+  if (Math.random() < sk.read){
+    if (continues && !drawOK && eq < potOdds - 0.06) continues = false;
+    else if (!continues && eq > potOdds + 0.15) continues = true;
+  }
   if (!continues) return { action:'fold' };
   // calling off most of the stack needs a hand that can commit
   const wouldCommit = (player.totalBetHand + toCall) / Math.max(1, player.chips + player.totalBetHand);

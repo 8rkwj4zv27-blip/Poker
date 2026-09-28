@@ -24,7 +24,7 @@ Later files call into earlier ones freely; there's no module system, so
 everything is a global. `08-dev-mode.js` (the DEV panel) is the only file
 gated out of the page entirely when `DEV_MODE` is off.
 
-## `js/01-poker-math.js` (~610 lines)
+## `js/01-poker-math.js` (~690 lines)
 
 Pure card/hand math, safe to run inside the AI worker. `createDeck`,
 `shuffle`, `evaluate7` / `evaluate7WithCards` (best-5-of-7 hand evaluation),
@@ -55,7 +55,7 @@ shows what's installed; keep its version number in sync with `sw.js`'s
 `CACHE_NAME` (the `card-flight`/`card-turn`/`chip-motion`/`showdown-rail`
 checks assert this).
 
-## `js/03-opponents.js` (~1,200 lines)
+## `js/03-opponents.js` (~1,220 lines)
 
 AI. `PERSONALITIES_ALL` (the 8 base archetypes: rock, shark, maniac,
 station, grinder, wildcard, professor, hammer — sizing/tightness/aggression/
@@ -78,7 +78,10 @@ v0.53.0 the table keeps a public notebook of every player's habits
 (`g.reads`: `aiObserveHandStart`/`aiObserveAction`/`aiObserveShowdown`,
 saved as `aiReads` in the table save). Each AI reads it through
 `aiReadOf` at the speed of its skill's and personality's `adapt`, and
-`personality.tilt` sets how hard a big loss hits. The engine
+`personality.tilt` sets how hard a big loss hits. Since v0.54.0 opponents'
+ranges are also narrowed by this hand's public betting (`g.handLog`;
+`NARROW_W`, `narrowWeight` and range specs `{pct, hist, bluff, k}` in
+`01-poker-math.js`, which the worker runs too). The engine
 records public betting history for the AI: `g.streetRaises`,
 `g.streetAggressorId`, `g.pfAggressorId`, `g.pfRaises` and
 `g.prevAggressorId`. AI skill is a 0–100 dial (`SKILL_ANCHORS`,

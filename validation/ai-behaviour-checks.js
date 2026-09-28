@@ -309,6 +309,8 @@ function table(n, dealer, overrides){
       phase: ['','','','flop','turn','river'][board.split(' ').length], pfRaises:1, pfAggressorId:'p0',
       prevAggressorId: 'p0', streetRaises: bet ? 1 : 0, streetAggressorId: bet ? 'p0' : null };
     if (bet){ players[0].betThisRound = bet; players[0].acted = true; }
+    // the public action log the engine keeps (aiObserveAction): the villain's bet this street
+    g.handLog = bet ? [{ id:'p0', n:g.board.length, a:'b' }] : [];
     return { g, me: players[1] };
   }
   async function pfreq(hand, board, opts, want, trials){
@@ -446,6 +448,43 @@ function table(n, dealer, overrides){
     const tony = (await vpip('maniac', 'medium', true)) - (await vpip('maniac', 'medium', false));
     const prof = (await vpip('professor', 'elite', true)) - (await vpip('professor', 'elite', false));
     assert.ok(tony > 0.15 && prof < tony / 2, 'tilt effect: tony +' + tony.toFixed(2) + ' professor +' + prof.toFixed(2));
+  });
+
+  /* ---- reading hands from the betting (Step 4) ---- */
+  const eqVs = (hand, board, spec) => A.estimateEquityVsRanges(hand.split(' ').map(C), board.split(' ').map(C), [spec], 6000);
+  await check('Hand reading: a bet-bet-raise line narrows a range toward monsters', () => {
+    const board = 'Kh 8c 3d 7s 2h';
+    const plain = eqVs('Kd Qc', board, { pct:0.3 });
+    const line = [{ n:3, a:'b' }, { n:4, a:'b' }, { n:5, a:'r' }];
+    const read = eqVs('Kd Qc', board, { pct:0.3, hist:line, bluff:1, k:1 });
+    const blind = eqVs('Kd Qc', board, { pct:0.3, hist:line, bluff:1, k:0 });
+    assert.ok(read < plain - 0.2, 'top pair vs the raw range ' + plain.toFixed(2) + ', vs the raising line ' + read.toFixed(2));
+    assert.ok(Math.abs(blind - plain) < 0.03, 'a non-reader (k=0) does not narrow: ' + blind.toFixed(2));
+  });
+  await check('Hand reading: check-check caps a range; a known bluffer\'s bets count for less', () => {
+    const board = 'Kh 8c 3d 7s';
+    const plain = eqVs('8d 6c', board, { pct:0.3 });
+    const capped = eqVs('8d 6c', board, { pct:0.3, hist:[{ n:3, a:'k' }, { n:4, a:'k' }], bluff:1, k:1 });
+    assert.ok(capped > plain + 0.05, 'middle pair vs raw ' + plain.toFixed(2) + ', vs a checking range ' + capped.toFixed(2));
+    const bets = [{ n:3, a:'b' }, { n:4, a:'b' }];
+    const honest = eqVs('Kd 9c', board, { pct:0.3, hist:bets, bluff:1, k:1 });
+    const bluffer = eqVs('Kd 9c', board, { pct:0.3, hist:bets, bluff:3, k:1 });
+    assert.ok(bluffer > honest + 0.05, 'top pair vs an honest bettor ' + honest.toFixed(2) + ', vs a bluffer ' + bluffer.toFixed(2));
+  });
+  await check('Hand reading: Elite lays down top pair to a check-raise then two barrels; the Back Room pays it off', async () => {
+    const spot = difficulty => {
+      const s = postflopSpot('Kd 6c', 'Kh 8c 3d 7s 2h', { bet:300, pot:450, difficulty });
+      s.g.handLog = [{ id:'p1', n:3, a:'b' }, { id:'p0', n:3, a:'r' }, { id:'p1', n:3, a:'c' },
+                     { id:'p0', n:4, a:'b' }, { id:'p1', n:4, a:'c' }, { id:'p0', n:5, a:'b' }];
+      return s;
+    };
+    const calls = async difficulty => {
+      let k = 0;
+      for (let t=0; t<200; t++){ const { g, me } = spot(difficulty); A.setGame(g); const d = await A.aiDecide(me, g); if (d.action !== 'fold') k++; }
+      return k / 200;
+    };
+    const easy = await calls('easy'), elite = await calls('elite');
+    assert.ok(elite < 0.35 && easy > elite + 0.25, 'calls: easy ' + easy + ' elite ' + elite);
   });
 
   await check('Every Career event difficulty has a tier target', () => {

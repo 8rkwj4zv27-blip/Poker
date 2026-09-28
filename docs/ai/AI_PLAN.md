@@ -200,10 +200,28 @@ roughly break even at `hard`/`expert`, and lose to `elite`.
   and `timingTell`.
 - **Engine:** `g.prevAggressorId` (who bet last street) and `g.pfRaises`.
 
-### Step 4: range narrowing (next)
-- Each AI keeps a weighted range for every opponent and re-weights it after
-  each action. Equity is computed against those ranges (sampled in the
-  worker). Reading skill scales with tier.
+### Step 4: reading hands from the betting — DONE (v0.54.0)
+- **The hand's public action log** `g.handLog` (`{id, n: board length,
+  a: b/r/c/k}`) is kept by `aiObserveAction`.
+- **Narrowing** (`01-poker-math.js`): each opponent's range is their
+  preflop range with every hand weighted by how likely a normal player
+  would make their actual actions with it (`NARROW_W`, by hand bucket on
+  each street's board: strong made, top pair, middle, weak, strong draw,
+  weak draw, nothing). A known bettor's bluff rate from the notebook
+  (`bluff`) lifts the weight of draws and air behind their bets.
+  - How hard a player narrows is their reading skill (`k` = `read`; the
+    Back Room barely does).
+  - `estimateEquityVsRanges` takes these range specs, and so does the
+    worker, which caches each combo's weight per call.
+- **Decisions** (`aiPostflop`):
+  - equity is now against the narrowed ranges;
+  - facing a bet, a reader folds when the betting says they're clearly
+    beaten and calls when it says they're clearly not, with probability
+    `read`, over range balance;
+  - they value-bet when the narrowed ranges say they're ahead;
+  - a reader only value-raises when also ahead of what the betting shows.
+    This fixed a real flaw: Elite was value-raising top pair into a
+    check-raise-and-barrel line.
 
 ### Step 5: reading the players — DONE (v0.53.0, before Step 4)
 Brought forward because Step 3 showed that Elite over-folded to a player
@@ -383,5 +401,36 @@ Test seats (bb/100 for the test player):
   folds a lot) roughly breaks even across three seeds (+5, −39, −52). The
   plan wants a decent player to clearly beat the Back Room, so it should
   be a little softer.
+
+### After Step 4 (v0.54.0)
+
+Seed 1, 3000 hands for each table; test seats and the sweep 1500. AI
+averages:
+
+| Tier | VPIP | PFR | AF | WTSD | Fold to bet | Size tell | `abc` bb/100 |
+|---|---|---|---|---|---|---|---|
+| medium | 46% | 14% | 0.7 | 53% | 48% | 0.54 | −55 |
+| hard | 40% | 17% | 1.1 | 38% | 50% | 0.38 | −81 |
+| expert | 36% | 20% | 1.4 | 29% | 46% | 0.18 | −114 |
+| elite | 35% | 21% | 1.7 | 24% | 45% | 0.16 | −99 |
+
+- **The sweep from skill 10 to 100:** showdowns fall 60 → 24% and the size
+  tell 0.53 → 0.15.
+- **Bands:**
+  - Expert's WTSD and fold-to-bet are now inside their bands.
+  - Elite's fold-to-bet is inside its band; its WTSD (24%) is just under
+    its band (25–32%).
+  - Pub's WTSD (38%) is at the top of its band; its fold-to-bet (50%) is at
+    the top of its band.
+- **Test seats** (bb/100 for the test player): `bully` −319 / −243 / −83
+  at Back Room / Pub / Elite; `station` −1146 / −1443 / −1599. At Elite,
+  the Professor and Lucy river-bluff the station 0–1%.
+- **Back Room got harder.** Its small reading skill (0.2) now narrows a
+  little too, and the plain `abc` player lost −55 there (+5 before).
+  Softening the Back Room is the first job of Step 6.
+- **Checked in a real browser:** the worker's narrowed equity matches Node
+  (top pair against a raise-bet-bet line: 0.13 in the page, 0.11 in Node,
+  against 0.81 raw). The live game's hand log records each street's
+  checks, bets and calls.
 
 Re-run and record here after every step.
