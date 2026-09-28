@@ -32,7 +32,7 @@
   // the denominations' look and feel (the lab's TUNE sheet sets these)
   Object.assign(BASE,{ bigScale:1.4, barScale:1.75, bigLook:'ring', barLook:'bullion', mergeShow:'some' });
   // the chip coins (the Chip Lab): which colours, how mixed, which design
-  Object.assign(BASE,{ ladder:'ivory', chipPalette:'muted', chipDesign:'spots' });
+  Object.assign(BASE,{ ladder:'silver', chipPalette:'casino', chipDesign:'tint' });
   const OPT={ preset:'v11', ...BASE, speed:1, sound:'on' };
   const SIZES={ s:13, m:15, l:17 };
   const D=()=>SIZES[OPT.size];
@@ -412,15 +412,29 @@
      GOLD (the top prize, or the lowest on the GOLD ladder) is always the
      plain gold coin. The tails side is the same, darker, without marks. */
   const CHIP_DESIGNS=['tint','enamel','spots','ring','gem','bimetal','casino','rim'];
+  /* ROUND 2 (owner: only TINT works; more like it, and some completely
+     different; same shape and motion, not overly detailed). These colour
+     the whole coin, gold included (a gold coin in the same style):
+     FLAT     flat colour, a thick dark ring, one shine: an arcade token
+     DUO      a two-tone coin, the centre lighter than the ring
+     HOLLOW   a token with a hole through the middle
+     STAR     TINT with a light four-point star
+     DASH     a classic chip: cream dashes round the rim, a cream ring
+     CANDY    glossy, lit from above with a white highlight arc
+     STRIPE   one cream band across the face, a striped edge
+     TARGET   concentric rings, a bullseye */
+  const NEW_DESIGNS=['flat','duo','hollow','star','dash','candy','stripe','target'];
+  CHIP_DESIGNS.push(...NEW_DESIGNS);
   const GOLDC={ face:'#f4c43e', hi:'#ffe88a', lo:'#b87a10', line:'#c68a16', hl:'#fff5c0' };
   const mixc=(a,b,t)=>a.map((v,i)=>Math.round(v+(b[i]-v)*t));
-  function chipColours(name){
+  function chipColours(name,design){
+    if (name==='gold' && NEW_DESIGNS.includes(design)){ const base=hex('#e8b52c'); return { c:base, lt:hex('#ffe070'), dk:hex('#9c6408'), cream:hex('#fff4d0') }; }
     if (name==='gold') return null;
     const base=hex((PALETTES[OPT.chipPalette]||PALETTES.muted)[name]||'#888888');
     return { c:base, lt:mixc(base,[255,255,255],.35), dk:mixc(base,[0,0,0],.45), cream:hex('#f4efe1') };
   }
   function chipFace(design,name,nx,ny,r,a,heads,rx){
-    const g=k=>hex(GOLDC[k]), K=chipColours(name), w=.9/Math.max(3,rx);
+    const g=k=>hex(GOLDC[k]), K=chipColours(name,design), w=.9/Math.max(3,rx);
     const bevel=(hi,lo)=>ny<-.1?hi:(ny>.25?lo:(nx<0?hi:lo));
     const slot=(lim)=>Math.abs(nx*rx)<.8 && Math.abs(ny)<lim;
     const shine=()=>nx>-.6 && nx<-.34 && Math.abs(ny)<.42;
@@ -432,6 +446,29 @@
     if (!K) return heads ? goldCoin() : dark(goldCoin(),.8);
     let p;
     switch (design){
+      case 'flat':
+        if (r>.78) p=K.dk; else if (heads && nx>-.58 && nx<-.22 && ny>-.62 && ny<-.26) p=K.cream; else p=K.c; break;
+      case 'duo':
+        if (r>.8) p=bevel(K.lt,K.dk); else if (r>.5) p=K.c; else p=(heads && nx<-.1 && ny<-.1 && r<.3) ? K.cream : K.lt; break;
+      case 'hollow':
+        if (r<.2) p=ny<0 ? hex('#140a06') : hex('#2a160a');
+        else if (r<.3) p=ny<0 ? K.dk : K.lt;
+        else if (r>.78) p=bevel(K.lt,K.dk); else p=(heads && shine()) ? K.lt : K.c; break;
+      case 'star':
+        if (r>.78) p=bevel(K.lt,K.dk);
+        else if (heads && ((Math.abs(nx)<.13 && Math.abs(ny)<.52) || (Math.abs(ny)<.17 && Math.abs(nx)<.46))) p=K.cream;
+        else p=K.c; break;
+      case 'dash':
+        if (r>.76) p=(Math.floor((a+Math.PI)/(Math.PI/4))%2) ? K.cream : K.dk;
+        else if (Math.abs(r-.56)<w*1.1) p=K.cream; else p=(heads && shine()) ? K.lt : K.c; break;
+      case 'candy':
+        if (r>.82) p=K.dk;
+        else if (heads && r>.48 && r<.7 && ny<-.3 && nx<.1) p=hex('#ffffff');
+        else p=ny<-.25 ? K.lt : (ny>.35 ? mixc(K.c,K.dk,.5) : K.c); break;
+      case 'stripe':
+        if (r>.78) p=bevel(K.lt,K.dk); else if (Math.abs(ny)<.2) p=K.cream; else p=K.c; break;
+      case 'target':
+        if (r>.8) p=bevel(K.lt,K.dk); else if (Math.abs(r-.52)<.11 || r<.2) p=K.lt; else p=K.c; break;
       case 'tint':
         if (r>.76) p=bevel(K.lt,K.dk); else if (heads && slot(.5)) p=K.dk; else if (heads && shine()) p=K.lt; else p=K.c; break;
       case 'ring':
@@ -460,7 +497,13 @@
   // the reeded edge: gold, or the colour's own (TINT), spotted (SPOTS, GEM)
   // or striped cream (CASINO)
   function chipEdge(design,name,x,fromBottom){
-    const K=chipColours(name), e1=hex('#c98a1a'), e2=hex('#e8ad32'), lo=hex('#7c4a06');
+    const K=chipColours(name,design), e1=hex('#c98a1a'), e2=hex('#e8ad32'), lo=hex('#7c4a06');
+    if (K && NEW_DESIGNS.includes(design)){
+      if (fromBottom<1.2) return K.dk;
+      if (design==='dash' || design==='stripe') return (x%6)<2 ? K.cream : (x%2?K.c:K.dk);
+      if (design==='flat') return K.c;
+      return x%2?K.c:K.lt;
+    }
     if (fromBottom<1.2) return K && (design==='tint' || design==='rim') ? K.dk : lo;
     if (!K) return x%2?e1:e2;
     if (design==='tint' || design==='rim') return x%2?K.c:K.lt;
@@ -1141,7 +1184,64 @@
   const ROW_DY=sp=>Math.ceil(Math.sqrt(Math.max(0,D()*D()-sp*sp/4))/FORE);
   // mixed SIZES (the bars and big coins): chips are all one size
   const mixed=list=>list.some(b=>b.colour!=='gold' && !isTier(b.colour));
+  /* THE RACK (the bank): one row of stacks across the box, so nothing is
+     ever tucked behind anything. A pyramid outline (the middle stacks
+     tallest), every stack no taller than the box allows; the coins sorted
+     by value, the richest in the middle stacks, each stack's coins lowest
+     at the bottom, richest on top. */
+  function rackGeom(z){
+    const d=D(), st=STEP(), sp=d+1, k=zoneBox(z,d,'gold')||{ L:z.cx-30, R:z.cx+30, T:z.cy-10, B:z.cy };
+    const cols=Math.max(1,Math.floor((k.R-k.L)/sp)+1), x0=(k.L+k.R)/2-(cols-1)*sp/2;
+    const cap=Math.max(1,Math.floor(((z.room!=null?z.room:60)-Math.round(d*HR())-2)/st)+1);
+    return { d, st, sp, k, cols, x0, cap };
+  }
+  const rackCapacity=z=>{ const g=rackGeom(z); return g.cols*g.cap; };
+  function rackSlots(z,list){
+    const g=rackGeom(z), n=list.length, mid=(g.cols-1)/2, half=Math.max(1,mid);
+    const w=[...Array(g.cols).keys()].map(i=>1-.3*Math.abs(i-mid)/half);
+    const h=new Array(g.cols).fill(0);
+    // heights: coins shared by weight, never past the cap
+    for (let i=0;i<n;i++){
+      let best=-1, bv=1e9;
+      for (let c=0;c<g.cols;c++){ if (h[c]>=g.cap) continue; const v=(h[c]+1)/w[c]; if (v<bv){ bv=v; best=c; } }
+      if (best<0) best=h.indexOf(Math.min(...h));
+      h[best]++;
+    }
+    // fill order: the middle stack first, then out to either side
+    const order=[...Array(g.cols).keys()].sort((a,c)=>Math.abs(a-mid)-Math.abs(c-mid) || a-c);
+    const sorted=list.slice().sort((a,c)=>valueOf(c.colour)-valueOf(a.colour));
+    const out=new Map(); let at=0;
+    order.forEach((c,ci)=>{
+      const mine=sorted.slice(at,at+h[c]); at+=h[c];
+      mine.reverse().forEach((b,lv)=>out.set(b,{ x:Math.round(g.x0+c*g.sp), y:g.k.B, z:lv*g.st, n:lv, k:c }));
+    });
+    return out;
+  }
+  // where every coin of `z` goes once `extra` (colour names) have joined it:
+  // { map (coin -> place), extras: [place, ...] in the order given }
+  function planZone(z,extra){
+    const ph=(extra||[]).map(col=>({ colour:col, ph:true }));
+    const m=neatSlots(z,z.list.concat(ph));
+    return { map:m, extras:ph.map(p=>m.get(p)) };
+  }
+  // move a zone's coins to `map`'s places (the tidy's slide), resolves when done
+  function applyLayout(z,map){
+    const done=[];
+    z.list.forEach((b,i)=>{
+      const s=map.get(b); if (!s) return;
+      if (b.state!=='rest' || (Math.hypot(s.x-b.x,s.y-b.y)<.6 && Math.abs(s.z-b.z)<.6)) return;
+      done.push(new Promise(res=>{
+        const dist=Math.hypot(s.x-b.x,s.y-b.y);
+        b.tx=s.x; b.ty=s.y; b.tz=s.z; b.resolve=res;
+        b.T=.14+Math.min(.14,dist/900); b.arc=3+Math.min(10,dist*.1);
+        b.wait=(i%6)*14; b.state='wait'; b.next='tidy'; b.target={}; b.opts={}; active.add(b); kick();
+      }));
+    });
+    z.neat=true;
+    return Promise.all(done);
+  }
   function neatSlots(z,list){
+    if (z.rack) return rackSlots(z,list);
     if (z.id==='pot' || z.box) return mixed(list)?bandSlots(z,list):potSlots(z,list);
     if (mixed(list)) return spotSlots(z,list);
     const d=D(), towers=OPT.tidy==='towers', sp=d+(towers?2:1), st=STEP(), slots=[], order=[0], dy=ROW_DY(sp);
@@ -2320,7 +2420,7 @@
     Coin, sfx, rise,
     active, dirty, squashing, zones, spinCache, frameCache,
     makeChip, styleChip, setFrame, frames, spinFrame, coloursFor, betCoins, bankCoins, curve,
-    isTier, TIERS, tierName, LADDERS, PALETTES, CHIP_DESIGNS, composeTiers, chipFrameT, chipSpin,
+    isTier, TIERS, tierName, rackSlots, rackCapacity, planZone, applyLayout, LADDERS, PALETTES, CHIP_DESIGNS, composeTiers, chipFrameT, chipSpin,
     PIECES, KINDS, isBar, isBig, pieceD, pieceH, stepOf, depthOf, clash, compose, valueOf, merge, mergePlan, barFrame, zoneBox, mergeQuiet,
     BankPile,
     body, removeBody, removeFromZone, toRest, finishRest, kick, ensureLayers, draw, snap, arrive, begin,

@@ -19,18 +19,18 @@
   const CW = () => window.CoinWorld;
 
   /* ---- the picks (first option of each row is my suggestion) ---- */
-  const DESIGNS = [['spots','SPOTS'],['enamel','ENAMEL'],['tint','TINT'],['ring','RING'],['gem','GEM'],['bimetal','BIMETAL'],['casino','CASINO'],['rim','RIM']];
+  // round 2: TINT (the owner's pick) and eight new ones
+  const DESIGNS = [['tint','TINT'],['flat','FLAT'],['duo','DUO'],['hollow','HOLLOW'],['star','STAR'],['dash','DASH'],['candy','CANDY'],['stripe','STRIPE'],['target','TARGET']];
   const GROUPS = [
     { title:'THE CHIPS', sub:'Every piece is the same gold coin; its colour is its value, five times the one before.', rows:[
-      ['chipDesign','DESIGN', DESIGNS, 'Or tap one in the gallery above. Simple to detailed: TINT colours the whole coin; ENAMEL fills the face inside the gold rim; SPOTS adds colour marks round the edge (a stack shows its colour from the side); RING and GEM keep a gold face with a coloured ring or centre; BIMETAL is a two-metal coin; CASINO is a real chip (cream inserts, striped edge); RIM keeps the face gold and colours the rim and edge.'],
-      ['chipPalette','COLOURS', [['muted','MUTED'],['casino','CASINO']], 'MUTED sits with the velvet and brass; CASINO is brighter.'],
-      ['ladder','LADDER', [['ivory','IVORY UP TO GOLD'],['silver','SILVER UP TO GOLD'],['gold','GOLD LOWEST']], 'Lowest to highest. IVORY: ivory, red, green, black, purple, then solid gold (the top prize). SILVER: the same with silver lowest. GOLD LOWEST: as the game is now, gold the small blind.']
+      ['chipDesign','DESIGN', DESIGNS, 'Or tap one in the gallery above. TINT: the whole coin in its colour. FLAT: an arcade token, flat colour, a thick ring and one shine. DUO: two-tone, the centre lighter. HOLLOW: a token with a hole through it. STAR: TINT with a light star. DASH: a classic chip, cream dashes round the rim. CANDY: glossy, lit from above. STRIPE: one cream band across it. TARGET: rings, a bullseye.'],
+      ['chipPalette','COLOURS', [['casino','CASINO'],['muted','MUTED']], 'CASINO is bright; MUTED sits with the velvet and brass.'],
+      ['ladder','LADDER', [['silver','SILVER UP TO GOLD'],['ivory','IVORY UP TO GOLD'],['gold','GOLD LOWEST']], 'Lowest to highest, five times each: silver, red, green, black, purple, then gold (the top prize).']
     ]},
     { title:'THE BANK', sub:'A pot of your own: one colour per stack, the richest in the middle.', rows:[
-      ['bankIn','IN AND OUT', [['slot','THROUGH A SLOT'],['arc','OVER THE TOP']], 'THROUGH A SLOT: wins stream to the slot on top of your bank one by one, click through and drop onto your pile; bets hop up out of it and on to the felt. OVER THE TOP: as the hoard does it.'],
-      ['hoardRest','ITS SHAPE', [['pyramid','PYRAMID'],['heap','HEAP'],['rows','ROWS']]],
-      ['hoardTidy','TAP TO TIDY', [['pyramid','PYRAMID'],['heap','HEAP'],['rows','ROWS']]],
-      ['hoardSize','HOW BIG IT GETS', [['.45','MEDIUM'],['.3','SMALL'],['.65','BIG']]],
+      ['bankIn','IN AND OUT', [['slot','THROUGH A SLOT'],['arc','OVER THE TOP']], 'THROUGH A SLOT: wins go to the slot on top of your bank, click through and drop onto their own stack; bets hop up out of it and on to the felt.'],
+      ['winStyle','WINNINGS', [['stream','ONE BY ONE'],['handfuls','HANDFULS']], 'ONE BY ONE: a stream through the slot, like a payout hopper. HANDFULS: in quick bursts.'],
+      ['hoardSize','HOW BIG IT GETS', [['.65','BIG'],['.45','MEDIUM'],['.3','SMALL']], 'The bank is one row of stacks, nothing behind anything. It fills up as your stack grows; when it holds all it can, the coins turn richer instead (the money has no limit, the bank\'s space does).'],
       ['hoardGleam','GLEAM', [['rich','WHEN RICH'],['always','ALWAYS'],['off','OFF']]]
     ]}
   ];
@@ -46,7 +46,8 @@
     if (O){
       const look = O.chipDesign !== order.chipDesign || O.chipPalette !== order.chipPalette || O.ladder !== order.ladder;
       O.hoardSize = order.hoardSize; O.hoardRest = order.hoardRest; O.hoardTidy = order.hoardTidy; O.hoardGleam = order.hoardGleam;
-      O.chipDesign = order.chipDesign; O.chipPalette = order.chipPalette; O.ladder = order.ladder; O.bankIn = order.bankIn;
+      O.chipDesign = order.chipDesign; O.chipPalette = order.chipPalette; O.ladder = order.ladder; O.bankIn = order.bankIn; O.winStyle = order.winStyle;
+      O.mergeShow = 'none'; O.hoardRest = 'pyramid'; O.hoardTidy = 'pyramid';
       // a new look: every coin on the table redrawn at once
       if (look){ Object.values(W.zones || {}).forEach(z => z.list.forEach(b => { b.chip.frame = ''; W.dirty.add(b); })); W.kick(); }
       paintGallery();
@@ -75,8 +76,13 @@
     ['allinwin','ALL IN · YOU WIN'], ['allinlose','ALL IN · YOU LOSE'],
     ['monster','WIN A MONSTER POT', true],
     ['deep','DEEP STACK 150 BB'], ['short','SHORT STACK 6 BB'],
-    ['blindsup','BLINDS GO UP', true]
+    ['blindsup','BLINDS GO UP', true],
+    ['huge','HUGE POT · 5-WAY ALL IN, 150 BB', true],
+    ['stress','POT STRESS · BETS UNTIL IT\'S HUGE', true]
   ];
+  // YOUR BANK: set your stack and watch the bank settle (full = every
+  // coin the rack holds, all gold)
+  const BANKS = [['500','$500'],['5000','$5K'],['50000','$50K'],['500000','$500K'],['full','FULL']];
   const seg = (key, opts, cur) => '<div class="sdl-seg" data-key="' + key + '">' + opts.map(o => '<button type="button" data-v="' + o[0] + '"' + (o[0] === cur ? ' class="is-on"' : '') + '>' + o[1] + '</button>').join('') + '</div>';
   const row = r => '<div class="sdl-row"><div class="sdl-name">' + r[1] + '</div>' + seg(r[0], r[2], order[r[0]]) + (r[3] ? '<p class="sdl-note">' + r[3] + '</p>' : '') + '</div>';
   function build(){
@@ -91,7 +97,9 @@
       '<div class="sdl-body">' +
         '<section data-pane="moments"><p class="sdl-sub">Each one deals a fresh table and plays to the moment. Watch your bank (bottom left): bets come off the top, wins land on it, and tap it to tidy.</p>' +
           '<div class="sdl-moments">' + MOMENTS.map(m => '<button type="button" data-moment="' + m[0] + '"' + (m[2] ? ' class="is-wide"' : '') + '>' + m[1] + '</button>').join('') + '</div>' +
-          '<button type="button" class="sdl-again" data-moment="replay">PLAY THE LAST ONE AGAIN</button></section>' +
+          '<button type="button" class="sdl-again" data-moment="replay">PLAY THE LAST ONE AGAIN</button>' +
+          '<h3>YOUR BANK<small>Set your stack (on whatever table is up) and watch the bank settle. FULL: every coin it holds, all gold.</small></h3>' +
+          '<div class="sdl-moments">' + BANKS.map(b => '<button type="button" data-bankset="' + b[0] + '">' + b[1] + '</button>').join('') + '</div></section>' +
         '<section data-pane="pieces" hidden><div class="chl-gallery" aria-label="The eight designs"></div>' +
           GROUPS.map(g => '<h3>' + g.title + '<small>' + g.sub + '</small></h3>' + g.rows.map(row).join('')).join('') +
           '<div class="sdl-actions"><button type="button" data-act="reset">START OVER</button><button type="button" data-act="copy">COPY MY PICKS</button></div>' +
@@ -108,6 +116,7 @@
     sheet.addEventListener('click', e => {
       const t = e.target.closest('button'); if (!t) return;
       if (t.dataset.design){ order.chipDesign = t.dataset.design; apply(); paint(); return; }
+      if (t.dataset.bankset){ open(false); setBank(t.dataset.bankset); return; }
       if (t.dataset.tab){
         sheet.querySelectorAll('[data-tab]').forEach(b => b.classList.toggle('is-on', b === t));
         sheet.querySelectorAll('[data-pane]').forEach(p => { p.hidden = p.dataset.pane !== t.dataset.tab; });
@@ -216,7 +225,27 @@
   }
   const inOrder = list => board => list.every((p, i) => i === 0 || cmp(list[i - 1], p, board) > 0);
   const quiet = () => { try{ settings.sdAwardPot = 'auto'; settings.sdSmash = 'off'; }catch(e){} };
+  function setBank(v){
+    const h = human(); if (!h) return;
+    const W = CW(), z = W.zones.bank;
+    const top = W.TIERS().length - 1, cap = z ? W.rackCapacity(z) : 60;
+    h.chips = v === 'full' ? cap * Math.pow(5, top) * game.smallBlind : +v;
+    render(); try{ CoinTable.rebuildBank(); }catch(e){ console.error(e); }
+  }
+  // presentation only: big bets thrown and swept, again and again
+  async function stressPot(){
+    await deal();
+    for (let r = 0; r < 5; r++){
+      // (the opponents only: your bank shows your real stack)
+      opps().forEach(p => CoinTable.bet(p, game.bigBlind * (20 + Math.floor(Math.random()*60)), false));
+      await sleep(1800);
+      await CoinTable.sweep();
+      await sleep(900);
+    }
+  }
   const PLAYS = {
+    async huge(){ const rs = await seat(4).catch(() => seat(3)); rs.concat([human()]).forEach(p => setStack(p, 150)); await allIn(rs); },
+    async stress(){ await stressPot(); },
     async play(){ await deal(); },
     async call(){ const [r] = await seat(1); stack(inOrder([human(), r])); await playOut([r]); },
     async lose(){ const [r] = await seat(1); stack(inOrder([r, human()])); await playOut([r]); },

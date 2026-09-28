@@ -676,3 +676,24 @@ the bank equals the stack exactly (no cap with chips); a 4-way all-in
 leaves 0 stuck coins.
 - Chip Lab (`chip-lab.html`): https://claude.ai/artifact/RYebkxQ3gm769G7Yq32kLV
 
+**Round 5 (28 Sep 2026).** Owner's picks: TINT, CASINO colours, SILVER up
+to GOLD, through a slot, pyramid, big, gleam when rich. Issues: coins
+jumping on the pile and floating out of the pot until a tidy; the bank's
+back stacks hidden; a pour spilling out of the bank and a heap cropped by
+its top. Changes (same link): every coin now lands in its exact place,
+planned before it's thrown (`planZone`; the pot and the bank slide over
+to make room, coins thrown lowest places first), so nothing searches for
+a spot; the bank is one row of stacks (`rackSlots`: a pyramid outline,
+richest in the middle, nothing behind anything); the pot's change-ups are
+quiet; the tray is 250 x 66. The bank's size: about 80-90 coins (the
+rack's room); how many your stack earns follows a gentle curve (a few
+stacks at 25 BB, half full near 1,000 BB, full only at massive numbers);
+the settle composes the whole bank's colour mix for the stack, so it can
+never hold more than it has room for. The money has no limit: past
+all-gold-and-full the bank simply stays full (the readout carries on).
+Eight more designs next to TINT (FLAT, DUO, HOLLOW, STAR, DASH, CANDY,
+STRIPE, TARGET). Moments: HUGE POT (5-way, 150 BB), POT STRESS; YOUR BANK
+presets ($500 to FULL); WINNINGS one by one or handfuls. Measured: 0
+overlaps and 0 outside the box from $500 to $3M; a 5-way all-in settles
+with 0 stuck.
+
