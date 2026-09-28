@@ -1,0 +1,41 @@
+/* Deal Style Lab — the sheet (css/showdown-lab.css's parts) and the style
+   rows. Lab only: never loaded by the game. */
+.dsl-sheet.sdl-sheet{ height:78%; }
+html.dsl-open .sdl-key{ visibility:hidden; }
+.dsl-sheet .dsl-count{ pointer-events:none; }
+
+.dsl-quick{ display:grid; grid-template-columns:1fr 1fr 1fr; gap:6px; margin:12px 0 6px; }
+.dsl-quick button{
+  min-height:44px; padding:4px; border:2px solid #080405; border-radius:3px; background:#34171A; color:#F3E6C4;
+  font-family:var(--font-hdr); font-size:7px; letter-spacing:.04em; cursor:pointer;
+  box-shadow:inset 0 2px 0 rgba(255,255,255,.08),0 3px 0 #080405;
+}
+.dsl-quick button[data-act="deal"]{ background:#E8B83A; color:#080405; box-shadow:inset 0 2px 0 #FFE380,0 3px 0 #080405; }
+.dsl-quick button:active{ transform:translateY(2px); box-shadow:0 1px 0 #080405; }
+
+.dsl-row{ margin-top:10px; padding:10px; border:2px solid #080405; border-radius:3px; background:#2C1315; }
+.dsl-row.is-off{ opacity:.55; }
+.dsl-row.is-off .dsl-rarity{ pointer-events:none; }
+.dsl-head{ display:flex; align-items:center; gap:8px; }
+.dsl-title{ flex:1; min-width:0; }
+.dsl-title b{ display:block; font-family:var(--font-hdr); font-size:9px; font-weight:400; letter-spacing:.08em; color:#E8B83A; }
+.dsl-title small{ display:block; margin-top:4px; font-size:11px; color:#B69A7A; }
+.dsl-play{
+  flex:0 0 auto; min-height:44px; padding:0 10px; border:2px solid #080405; border-radius:3px; background:#E8B83A; color:#080405;
+  font-family:var(--font-hdr); font-size:7px; letter-spacing:.04em; cursor:pointer; box-shadow:inset 0 2px 0 #FFE380,0 3px 0 #080405;
+}
+.dsl-play:active{ transform:translateY(2px); box-shadow:inset 0 2px 0 #FFE380,0 1px 0 #080405; }
+/* the in-the-mix switch: a chunky lever, lit when on */
+.dsl-on{
+  position:relative; flex:0 0 58px; height:44px; border:2px solid #080405; border-radius:3px; background:#140709; cursor:pointer;
+  box-shadow:inset 0 3px 0 rgba(0,0,0,.6);
+}
+.dsl-on::after{
+  content:'OFF'; position:absolute; top:5px; bottom:5px; left:5px; width:24px; border-radius:2px;
+  display:flex; align-items:center; justify-content:center;
+  background:#4A2A2D; color:#B69A7A; font-family:var(--font-hdr); font-size:6px; box-shadow:inset 0 2px 0 rgba(255,255,255,.1),0 2px 0 #080405;
+  transition:left .1s steps(2,end);
+}
+.dsl-on[aria-checked="true"]::after{ content:'ON'; left:25px; background:#E8B83A; color:#080405; box-shadow:inset 0 2px 0 #FFE380,0 2px 0 #080405; }
+.dsl-row .sdl-note{ margin:6px 0 8px; }
+.dsl-rarity button{ min-width:0; font-size:6.5px; }

@@ -103,5 +103,9 @@ reveal, E tip on its foot. The owner chose to compare **A** and **B**:
 Only your own hole cards change (`js/holder-deal-lab.js` wraps the live
 `dealCardFlight` for `revealAfter` cards in your seat); game state is
 never touched. The deck's landing puff is dropped for these (it would sit
-above the brass). Waiting for the owner's pick.
+above the brass).
+
+**Owner's pick: A · TURNS IN THE AIR** — built into `js/dealer-deck.js`
+(`dealYours`) on the branch, with the cabinet fix for opponents' cards;
+see `docs/ui/DEAL_STYLES_PLAN.md`.
 

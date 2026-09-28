@@ -167,15 +167,35 @@ const DealerDeck = (() => {
     const sx = a.left + a.width / 2, sy = a.top + a.height / 2, dx = b.left + b.width / 2, dy = b.top + b.height / 2;
     const rx = dx - sx, ry = dy - sy, dist = Math.hypot(rx, ry) || 1, nx = -ry / dist, ny = rx / dist;
     const ssx = a.width / b.width, ssy = a.height / b.height;
-    const pts = POINTS[o.path] || POINTS.flick;
-    const tf = p => {
+    const pts = o.points || POINTS[o.path] || POINTS.flick;
+    // a point is [offset, travel, lift, turn, pitch, extraScale, easing,
+    // lateralCurve, yaw]; yaw (a turn about the card's upright axis) is optional
+    const place = p => {
       const [, t, lift, turn, pitch, extra] = p, curve = p[7] || 0;
-      const x = sx + rx * t + nx * curve, y = sy + ry * t + ny * curve - lift;
-      return 'perspective(800px) translate3d(' + (x - dx) + 'px,' + (y - dy) + 'px,' + (lift * .55) + 'px) rotateZ(' + turn + 'deg) rotateX(' + pitch + 'deg) scale(' +
-        ((ssx + (1 - ssx) * t) * extra) + ',' + ((ssy + (1 - ssy) * t) * extra) + ')';
+      return { t, lift, turn, pitch, yaw:p[8] || 0, x:sx + rx * t + nx * curve, y:sy + ry * t + ny * curve - lift,
+        kx:(ssx + (1 - ssx) * t) * extra, ky:(ssy + (1 - ssy) * t) * extra };
+    };
+    const tf = q => 'perspective(800px) translate3d(' + (q.x - dx) + 'px,' + (q.y - dy) + 'px,' + (q.lift * .55) + 'px) rotateZ(' + q.turn + 'deg) rotateX(' + q.pitch + 'deg)' +
+      (q.yaw ? ' rotateY(' + q.yaw + 'deg)' : '') + ' scale(' + q.kx + ',' + q.ky + ')';
+    // An opponent's hole cards sit behind their cabinet (css/enemy-cards.css):
+    // as the card arrives it goes under the cabinet's bottom edge instead of
+    // landing on top of it and vanishing through it.
+    const seat = !o.ret && toEl.closest ? toEl.closest('.seat.ec-seat') : null;
+    const cab = seat && seat.querySelector('.seat-card');
+    const cabBottom = cab ? cab.getBoundingClientRect().bottom : null;
+    const clipFor = q => {
+      if (cabBottom == null || q.t < .85) return 'inset(0px 0px 0px 0px)';
+      const top = b.top + (q.y - dy) + b.height * (1 - q.ky) / 2;
+      const cut = Math.max(0, Math.min(b.height, (cabBottom - top) / (q.ky || 1)));
+      return 'inset(' + cut.toFixed(1) + 'px 0px 0px 0px)';
     };
     const squeeze = o.into ? .82 : 1;
-    const frames = pts.map(p => { const f = { transform:tf(p), offset:p[0] * squeeze }; if (p[6]) f.easing = p[6]; return f; });
+    const frames = pts.map(p => {
+      const q = place(p), f = { transform:tf(q), offset:p[0] * squeeze };
+      if (cabBottom != null) f.clipPath = clipFor(q);
+      if (p[6]) f.easing = p[6];
+      return f;
+    });
     if (o.into){
       frames[frames.length - 1].easing = 'steps(3,end)';
       frames.push({ transform:'translateY(' + (b.height * .42) + 'px) scale(.94,.08)', offset:1 });
@@ -185,12 +205,83 @@ const DealerDeck = (() => {
     const fromVis = fromEl.style.visibility || '';
     if (!o.ret) fromEl.style.visibility = 'hidden';
     const anim = ghost.animate(frames, { duration:dur, easing:'linear', fill:'both' });
+    if (o.turn) turnInFlight(ghost, o.turn, dur);
+    if (o.decorate) try{ o.decorate(ghost, anim, dur, { from:a, to:b }); }catch(e){}
     let resolve; const promise = new Promise(r => { resolve = r; });
     const run = { ghost, anim, resolve, from:o.ret ? null : fromEl, fromVis, done:false };
     flights.add(run); working(1);
     anim.finished.then(() => settle(run, true), () => settle(run, false));
     return promise;
   }
+  /* Your cards turn over in the air (Holder Deal Lab, A; the owner's pick,
+     28 Sep 2026): the ghost gets two faces (the deck's back, and the card
+     exactly as it will sit in your seat) and turns over in the second half
+     of the flight, so it arrives face up and never turns inside the
+     shallow holder. */
+  function faceLook(el, card, small){
+    const probe = document.createElement('div');
+    probe.className = cardClass(false, card, small);
+    probe.innerHTML = cardInner(card);
+    probe.style.cssText = 'position:absolute;left:0;top:0;visibility:hidden;pointer-events:none';
+    el.parentNode.appendChild(probe);
+    const cs = getComputedStyle(probe);
+    const look = { card, small, bg:cs.backgroundImage, bgc:cs.backgroundColor, shadow:cs.boxShadow, radius:cs.borderRadius, sizes:{} };
+    ['.r', '.s', '.pip'].forEach(k => { const n = probe.querySelector(k); if (n) look.sizes[k] = getComputedStyle(n).fontSize; });
+    probe.remove();
+    return look;
+  }
+  function turnInFlight(ghost, look, dur){
+    const back = document.createElement('div');
+    back.className = String(ghost.className).replace(/\bfly-card\b/, '').trim() + ' card-turn-face card-turn-current';
+    back.style.cssText = 'width:100%;height:100%';
+    const front = document.createElement('div');
+    front.className = cardClass(false, look.card, look.small) + ' card-turn-face card-turn-target';
+    front.innerHTML = cardInner(look.card);
+    front.style.cssText = 'width:100%;height:100%;background-image:' + look.bg + ';background-color:' + look.bgc + ';box-shadow:' + look.shadow + ';border-radius:' + look.radius;
+    Object.keys(look.sizes).forEach(k => { const n = front.querySelector(k); if (n) n.style.fontSize = look.sizes[k]; });
+    const flipper = document.createElement('div');
+    flipper.className = 'card-turn-flipper';
+    flipper.append(back, front);
+    ghost.className = 'card card-turning fly-card';
+    ghost.replaceChildren(flipper);
+    flipper.animate([
+      { transform:'rotateY(0deg)', offset:0 },
+      { transform:'rotateY(0deg)', offset:.36, easing:'cubic-bezier(.35,0,.65,1)' },
+      { transform:'rotateY(-92deg)', offset:.6, easing:'cubic-bezier(.2,.72,.28,1)' },
+      { transform:'rotateY(-180deg)', offset:.86 },
+      { transform:'rotateY(-180deg)', offset:1 }
+    ], { duration:dur, easing:'linear', fill:'both' });
+    setTimeout(() => { try{ Sound.cardFlip(false); }catch(e){} }, dur * .4);
+  }
+  // how far above its seat your card arrives: clear of the holder's lip
+  function holderLift(){
+    const mid = $el('hud-mid');
+    const bury = parseFloat(mid && mid.style.getPropertyValue('--holder-bury')) || 11;
+    return bury + 4;
+  }
+  // then it slides down into the groove, and the groove takes it
+  async function slipIn(el, h){
+    if (!el.isConnected){ el.style.transform = ''; return; }
+    const a = el.animate([{ transform:'translateY(' + (-h) + 'px)' }, { transform:'translateY(0)' }],
+      { duration:Math.round(150 * speedMult()), easing:'cubic-bezier(.5,0,.9,.6)', fill:'forwards' });
+    await a.finished.catch(() => {});
+    el.style.transform = '';
+    try{ a.cancel(); }catch(e){}
+    try{ Sound.cardLanded(); }catch(e){}
+  }
+  async function dealYours(el, card, small){
+    const h = holderLift();
+    el.style.transform = 'translateY(' + (-h) + 'px)';
+    const flight = fromShoe(el, { turn:faceLook(el, card, small) });
+    // the card under the flight is face up already (hidden until it lands)
+    setCardTurnFinal(el, false, card, small);
+    const landed = await flight;
+    el.style.opacity = '';
+    if (!landed || !el.isConnected){ el.style.transform = ''; return; }
+    await wait(60 * speedMult());
+    await slipIn(el, h);
+  }
+
   function puff(el){
     if (O.land !== 'puff' || !el || !el.isConnected) return;
     const r = el.getBoundingClientRect(); if (!r.width) return;
@@ -223,11 +314,22 @@ const DealerDeck = (() => {
     return ex;
   }
   const dealMs = () => DEAL_TIMING.dealMs * (O.flight === 'slide' ? 1.08 : 1);
+  // A Lab can pick how each card flies (api.flightFor(target) returns
+  // { points, pace, decorate } or null for the deck's own flight). Unset in
+  // the game: every card takes the owner's FLICK.
+  let flightFor = null;
   async function fromShoe(target, o){
+    o = o || {};
     const ex = await eject();
     if (!ex) return false;
     Sound.cardDeal();
-    const ok = await fly(ex, target, { path:O.flight, duration:(o && o.duration) || dealMs() });
+    const base = o.duration || dealMs();
+    let st = null;
+    try{ st = o.style || (flightFor ? flightFor(target) : null); }catch(e){ st = null; }
+    const ok = await fly(ex, target, {
+      path:O.flight, points:st && st.points, decorate:st && st.decorate,
+      duration:base * (st && st.pace || 1), turn:o.turn
+    });
     ex.remove();
     return ok;
   }
@@ -255,6 +357,7 @@ const DealerDeck = (() => {
     el.classList.remove('deal-anim');   // its fade-in would override the hide below
     el.style.opacity = '0';
     const pr = opts.revealAfter && O.yours === 'together' ? pairFor() : null;
+    if (opts.revealAfter && !pr && !opts.deferFlip && el.closest && el.closest('#hud-mid .seat.you')) return dealYours(el, card, small);
     const landed = await fromShoe(el);
     el.style.opacity = '';
     if (!landed || !el.isConnected){ if (pr){ pr.seen++; if (pr.seen >= pr.need) pr.release(); } return; }
@@ -556,6 +659,20 @@ const DealerDeck = (() => {
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start); else start();
 
-  const api = { DEFAULTS, BACKS, apply, install, get order(){ return Object.assign({}, O); }, get count(){ return count; } };
+  // one card off the deck to any card on the table, in a given style, and
+  // the deck made whole again (the Lab's preview; nothing is dealt)
+  async function preview(target, style){
+    if (!live() || !deck() || !target) return false;
+    const vis = target.style.visibility;
+    target.style.visibility = 'hidden';
+    try{
+      const ok = await fromShoe(target, { style });
+      if (ok){ Sound.cardLanded(); puff(target); }
+      return ok;
+    } finally { target.style.visibility = vis; setCount(Math.min(52, count + 1)); }
+  }
+  const api = { DEFAULTS, BACKS, POINTS, apply, install, preview,
+    get flightFor(){ return flightFor; }, set flightFor(fn){ flightFor = typeof fn === 'function' ? fn : null; },
+    get order(){ return Object.assign({}, O); }, get count(){ return count; } };
   return api;
 })();

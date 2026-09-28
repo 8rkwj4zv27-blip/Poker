@@ -1,0 +1,25 @@
+/* DEAL STYLES (candidate, Deal Style Lab) — the dressing for the rare
+   flights (js/deal-styles.js). Pixel sparks and flashes, stepped, in the
+   machine's lamp gold. Only the Lab loads this. */
+.fly-card.dsx-gold{ filter:drop-shadow(0 0 0 #FFE49B) drop-shadow(0 0 6px rgba(242,180,49,.85)); }
+.fly-card.dsx-beam{ filter:drop-shadow(0 0 4px rgba(160,240,255,.9)) brightness(1.25); }
+
+.dsx-spark{
+  position:fixed; z-index:61; width:3px; height:3px; margin:-1px 0 0 -1px; pointer-events:none;
+  background:#FFE49B; box-shadow:0 0 0 1px rgba(242,180,49,.6);
+  animation:dsxSpark .62s steps(6,end) forwards;
+}
+.dsx-spark.beam{ background:#CFFAFF; box-shadow:0 0 0 1px rgba(90,210,255,.6); animation-duration:.36s; }
+.dsx-spark.burst{ width:4px; height:4px; animation:dsxBurst .55s steps(6,end) forwards; }
+@keyframes dsxSpark{ to{ transform:translate(var(--dx),var(--dy)); opacity:0; } }
+@keyframes dsxBurst{ to{ transform:translate(calc(var(--dx) * 2.2),calc(var(--dy) * -1.6)); opacity:0; } }
+
+.dsx-flash{
+  position:fixed; z-index:61; width:10px; height:10px; margin:-5px 0 0 -5px; pointer-events:none; border-radius:50%;
+  border:3px solid #FFE49B; box-shadow:0 0 12px rgba(242,180,49,.9);
+  animation:dsxFlash .5s steps(5,end) forwards;
+}
+.dsx-flash.beam{ border-color:#CFFAFF; box-shadow:0 0 10px rgba(90,210,255,.9); animation-duration:.32s; }
+@keyframes dsxFlash{ from{ transform:scale(.4); opacity:1; } to{ transform:scale(6); opacity:0; } }
+
+[data-motion="off"] .dsx-spark,[data-motion="off"] .dsx-flash{ display:none; }
