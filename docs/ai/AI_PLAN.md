@@ -217,7 +217,8 @@ roughly break even at `hard`/`expert`, and lose to `elite`.
   - equity is now against the narrowed ranges;
   - facing a bet, a reader folds when the betting says they're clearly
     beaten and calls when it says they're clearly not, with probability
-    `read`, over range balance;
+    `read`, as a smooth lean over range balance (not a cut-off, so the
+    tiers grade evenly);
   - they value-bet when the narrowed ranges say they're ahead;
   - a reader only value-raises when also ahead of what the betting shows.
     This fixed a real flaw: Elite was value-raising top pair into a
@@ -404,30 +405,40 @@ Test seats (bb/100 for the test player):
 
 ### After Step 4 (v0.54.0)
 
-Seed 1, 3000 hands for each table; test seats and the sweep 1500. AI
-averages:
+Seed 1, 3000 hands for each table; test seats and the sweep 1500 (those
+two were measured just before the smooth-override fix below). AI averages:
 
 | Tier | VPIP | PFR | AF | WTSD | Fold to bet | Size tell | `abc` bb/100 |
 |---|---|---|---|---|---|---|---|
-| medium | 46% | 14% | 0.7 | 53% | 48% | 0.54 | −55 |
-| hard | 40% | 17% | 1.1 | 38% | 50% | 0.38 | −81 |
-| expert | 36% | 20% | 1.4 | 29% | 46% | 0.18 | −114 |
-| elite | 35% | 21% | 1.7 | 24% | 45% | 0.16 | −99 |
+| medium | 47% | 14% | 0.7 | 53% | 47% | 0.54 | −97 |
+| hard | 40% | 18% | 1.1 | 38% | 48% | 0.39 | −74 |
+| expert | 36% | 20% | 1.4 | 27% | 47% | 0.21 | −50 |
+| elite | 35% | 21% | 1.8 | 26% | 44% | 0.13 | −66 |
 
+- **Bands:**
+  - Elite is now inside its WTSD, fold-to-bet and size-tell bands.
+  - Expert is inside its WTSD and fold-to-bet bands (size tell 0.21
+    against ≤ 0.20).
+  - Pub sits at the top of its WTSD and fold-to-bet bands.
+- **Reading a monster line.** Top pair facing check-raise, bet, bet
+  (a pot-ish river bet), the share that pays off:
+
+  | Back Room | Pub | Casino | Elite |
+  |---|---|---|---|
+  | 94–97% | 100% | 53% | 12% |
+
+  The first version used a hard cut-off to decide when a read overrides
+  range balance, which made a cliff (Casino 90%, Elite 5%). It's now a
+  smooth lean, like the rest of the AI.
 - **The sweep from skill 10 to 100:** showdowns fall 60 → 24% and the size
   tell 0.53 → 0.15.
-- **Bands:**
-  - Expert's WTSD and fold-to-bet are now inside their bands.
-  - Elite's fold-to-bet is inside its band; its WTSD (24%) is just under
-    its band (25–32%).
-  - Pub's WTSD (38%) is at the top of its band; its fold-to-bet (50%) is at
-    the top of its band.
 - **Test seats** (bb/100 for the test player): `bully` −319 / −243 / −83
   at Back Room / Pub / Elite; `station` −1146 / −1443 / −1599. At Elite,
   the Professor and Lucy river-bluff the station 0–1%.
-- **Back Room got harder.** Its small reading skill (0.2) now narrows a
-  little too, and the plain `abc` player lost −55 there (+5 before).
-  Softening the Back Room is the first job of Step 6.
+- **The Back Room is too tough for the plain `abc` player** (−97 here; +5
+  before Step 4, when it didn't narrow at all). Win rates are noisy at
+  3000 hands, but the direction has held across runs. Softening the Back
+  Room is the first job of Step 6.
 - **Checked in a real browser:** the worker's narrowed equity matches Node
   (top pair against a raise-bet-bet line: 0.13 in the page, 0.11 in Node,
   against 0.81 raw). The live game's hand log records each street's

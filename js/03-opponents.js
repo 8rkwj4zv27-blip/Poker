@@ -1107,10 +1107,9 @@ async function aiPostflop(player, g, c){
   let continues = leanYes(contLine - str, sk.mix) || drawOK;
   // what their actions say overrides range balance, as far as this
   // player can read hands: fold when clearly beaten, call when clearly not
-  if (Math.random() < sk.read){
-    if (continues && !drawOK && eq < potOdds - 0.06) continues = false;
-    else if (!continues && eq > potOdds + 0.15) continues = true;
-  }
+  // (a smooth lean, not a cut-off, so reading skill grades evenly)
+  if (continues && !drawOK && Math.random() < sk.read * edge(potOdds - 0.02 - eq, 0.04)) continues = false;
+  else if (!continues && Math.random() < sk.read * edge(eq - potOdds - 0.12, 0.04)) continues = true;
   if (!continues) return { action:'fold' };
   // calling off most of the stack needs a hand that can commit
   const wouldCommit = (player.totalBetHand + toCall) / Math.max(1, player.chips + player.totalBetHand);
