@@ -483,6 +483,14 @@ of `#hand-strength` on any phone (the holder rises; the screens stay put).
 Settings → The deck → Card holder (`settings.cardHolder`: `brass`, the
 default, or `classic`), set on `<html>` as `data-holder`.
 
+## `card-holder-deal-lab.html` + `js/holder-deal-lab.js` + `css/holder-deal-lab.css` — Holder Deal Lab
+
+How your two cards arrive in the card holder (`docs/ui/CARD_HOLDER_PLAN.md`,
+round 3): A turns in the air, B turns just above the lip, both then slip
+into the groove. Wraps the live `dealCardFlight` for your own
+`revealAfter` cards only. Phone-first (host `js/showdown-lab-host.js`,
+sheet from `css/showdown-lab.css`). Lab only; nothing loads in the game.
+
 ## `deck-lab.html` + `js/deck-lab.js` — Deck Lab
 
 Where the dealer deck was ordered (rounds 1–4: a shoe, a tray, a movable

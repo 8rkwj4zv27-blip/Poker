@@ -82,3 +82,26 @@ both in the chosen position. Shipped as `css/card-holder.css` +
 - The deal-flash fix (round 2) ships in the same release.
 - Recorded in the Pattern Book (Card holder) and checked by
   `validation/pattern-book-checks.js`.
+
+## Round 3: the turn (Holder Deal Lab)
+
+**Lab:** `card-holder-deal-lab.html` · **Link:** https://claude.ai/artifact/HdMHpYrg2MEhBxxszyP6Fb
+
+The owner: the holder is a shallow shelf the cards slip into, so a card
+landing in it and then turning over reads as a deep box. Ideas offered:
+A turn in the air, B turn above then slip in, C lift-turn-drop, D shutter
+reveal, E tip on its foot. The owner chose to compare **A** and **B**:
+
+- **A · TURNS IN THE AIR:** the deck's own flight, but the card turns over
+  in its second half and arrives face up just above the lip, then slips
+  down into the groove.
+- **B · TURNS ABOVE, SLIPS IN:** the card lands face down just above the
+  lip (clear of the brass: the depth it sits in the groove + 4px), turns
+  there, then slips in.
+- **TODAY** for comparison, and a 3x slow-motion switch.
+
+Only your own hole cards change (`js/holder-deal-lab.js` wraps the live
+`dealCardFlight` for `revealAfter` cards in your seat); game state is
+never touched. The deck's landing puff is dropped for these (it would sit
+above the brass). Waiting for the owner's pick.
+
