@@ -1,4 +1,4 @@
-const CACHE_NAME = 'poker-v51-1';
+const CACHE_NAME = 'poker-v51-2';
 const APP_SHELL = [
   './',
   './index.html',
@@ -28,7 +28,7 @@ const APP_SHELL = [
   './css/enemy-cards.css?v=1',
   './css/knockout.css?v=1',
   './css/showdown.css?v=1',
-  './css/dealer-deck.css?v=3',
+  './css/dealer-deck.css?v=4',
   './css/deal-styles.css?v=1',
   './css/card-holder.css?v=1',
   './css/action-drum.css?v=2',
