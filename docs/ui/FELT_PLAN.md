@@ -40,14 +40,28 @@ and nothing is printed on the cloth.
 
 COPY MY PICKS (SCENE tab) gives the owner's choice as text.
 
-## Owner's answers
+## Owner's answers (28 Sep 2026)
 
-_None yet._
+"Didn't love a lot of the design choices. Really loud and noisy... I really
+don't want anything visually messy or noisy or loud." What worked is plain:
 
-## After the pick
+- Rail: as it was. Stitching: long stitch, dark thread, by the rail.
+- Cloth: fine check. Felt colour: as theme. Light: soft lamp.
+- No board marking, nothing printed on the felt, bet spots and the
+  felt/console seam as they were.
 
-Bring the chosen finish into the game as CSS on `.felt` (cloth, light,
-colour) plus a drawn rail/stitch/marking layer, following the Pattern Book
-sign-off for any new part. Check the felt still has room for six seats and
-the real iPhone safe area (the lab frame has no Dynamic Island inset; see
-`table-space-lab.html` for the 59px emulation).
+Direction for any later table work: quiet, plain, tone-on-tone. No loud
+materials, lettering or ornament on the table.
+
+## In the game: v0.47.0 · Felt
+
+`css/02-screens.css` `.felt`: the soft lamp (centred on the board at 57%)
+over a 4px check, and `.felt::after` is the stitch, an SVG stroke
+(`rgba(0,0,0,.42)`, dash 11/5) centred on a box 5px inside the felt so only
+its inner 2px shows. Landscape keeps its own corner radius
+(`css/05-responsive-and-arcade.css`).
+
+The lab keeps every other option, and BEFORE V0.47 (a look, and a choice in
+the stitching, cloth and light rows) shows the old table. They are there
+for a later customisation feature (for example a shop of table finishes);
+none of it loads in the game.

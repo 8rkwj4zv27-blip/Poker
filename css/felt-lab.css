@@ -26,8 +26,9 @@ html[data-fl-lab]:not([data-fl-stitch="asis"]) .felt::after{ display:none; }
 
 /* ---- cloth and light: two background layers on the felt ---- */
 html[data-fl-lab] .felt{
-  --fl-cloth:repeating-conic-gradient(var(--felt-1) 0% 25%, var(--felt-2) 0% 50%) 0 0 / 8px 8px;
-  --fl-light:radial-gradient(60% 46% at 50% 40%, rgba(255,255,255,.045) 0 99%, transparent 99%);
+  /* AS NOW = the game since v0.47.0 (fine check, soft lamp) */
+  --fl-cloth:repeating-conic-gradient(var(--felt-1) 0% 25%, var(--felt-2) 0% 50%) 0 0 / 4px 4px;
+  --fl-light:radial-gradient(ellipse 72% 50% at 50% var(--fl-by), rgba(255,236,190,.1), transparent 76%);
   --fl-lamp:radial-gradient(ellipse 64% 40% at 50% var(--fl-by), rgba(255,236,190,.08) 0 34%, rgba(255,236,190,.052) 34% 58%, rgba(255,236,190,.026) 58% 82%, transparent 82%);
   --fl-corners:radial-gradient(ellipse 88% 72% at 50% 50%, transparent 0 60%, rgba(0,0,0,.14) 60% 74%, rgba(0,0,0,.26) 74% 88%, rgba(0,0,0,.38) 88%);
 }
@@ -35,7 +36,8 @@ html[data-fl-lab] .felt:not(.results-mode){
   background:var(--fl-light), var(--fl-cloth);
   background-color:var(--felt-2);
 }
-html[data-fl-cloth="fine"] .felt{ --fl-cloth:repeating-conic-gradient(var(--felt-1) 0% 25%, var(--felt-2) 0% 50%) 0 0 / 4px 4px; }
+/* the table before v0.47.0 */
+html[data-fl-cloth="oldcheck"] .felt{ --fl-cloth:repeating-conic-gradient(var(--felt-1) 0% 25%, var(--felt-2) 0% 50%) 0 0 / 8px 8px; }
 html[data-fl-cloth="coarse"] .felt{ --fl-cloth:repeating-conic-gradient(var(--felt-1) 0% 25%, var(--felt-2) 0% 50%) 0 0 / 14px 14px; }
 html[data-fl-cloth="tweed"] .felt{ --fl-cloth:var(--fl-tweed) 0 0 / 48px 48px; }
 html[data-fl-cloth="nap"] .felt{ --fl-cloth:repeating-linear-gradient(90deg, var(--felt-1) 0 2px, var(--felt-2) 2px 4px); }
@@ -48,7 +50,7 @@ html[data-fl-cloth="flat"] .felt{ --fl-cloth:linear-gradient(var(--felt-2), var(
 
 html[data-fl-light="none"] .felt{ --fl-light:linear-gradient(transparent, transparent); }
 html[data-fl-light="lamp"] .felt{ --fl-light:var(--fl-lamp); }
-html[data-fl-light="soft"] .felt{ --fl-light:radial-gradient(ellipse 72% 50% at 50% var(--fl-by), rgba(255,236,190,.1), transparent 76%); }
+html[data-fl-light="oldoval"] .felt{ --fl-light:radial-gradient(60% 46% at 50% 40%, rgba(255,255,255,.045) 0 99%, transparent 99%); }
 html[data-fl-light="vignette"] .felt{ --fl-light:var(--fl-corners); }
 html[data-fl-light="both"] .felt{ --fl-light:var(--fl-lamp), var(--fl-corners); }
 html[data-fl-light="overhead"] .felt{

@@ -30,21 +30,21 @@
   const root = document.documentElement;
   const $id = id => document.getElementById(id);
 
-  /* ---- the options (first of each row is the table as it is now, where there is one) ---- */
+  /* ---- the options (first of each row is the table as it ships, v0.47.0 on) ---- */
   const TABS = {
     rail:[
       ['rail','RAIL', [['asis','AS NOW'],['oak','CHUNKY OAK'],['studs','BRASS STUDS'],['leather','PADDED LEATHER'],['velvet','VELVET + GOLD PIPING'],['inlay','MAHOGANY INLAY'],['noir','BLACK + GOLD'],['chrome','ARCADE CHROME'],['bulbs','MARQUEE BULBS']],
         'Every rail but AS NOW shows the whole rim, top included, so the table sits a few pixels further in.'],
       ['rw','RAIL WIDTH', [['auto','AS DESIGNED'],['14','SLIM'],['20','MEDIUM'],['26','CHUNKY']]],
-      ['stitch','STITCHING', [['asis','AS NOW'],['none','NONE'],['running','RUNNING'],['long','LONG STITCH'],['pick','PICK DOTS'],['double','DOUBLE'],['braid','BRAID'],['cross','CROSS-STITCH'],['welt','PRESSED SEAM']]],
+      ['stitch','STITCHING', [['asis','AS NOW (LONG, DARK, BY THE RAIL)'],['olddash','BEFORE V0.47'],['none','NONE'],['running','RUNNING'],['long','LONG STITCH'],['pick','PICK DOTS'],['double','DOUBLE'],['braid','BRAID'],['cross','CROSS-STITCH'],['welt','PRESSED SEAM']]],
       ['scol','THREAD', [['gold','GOLD'],['cream','CREAM'],['accent','THEME ACCENT'],['tone','TONE ON TONE'],['dark','DARK']], 'Thread colour is shared by the stitching, a stitched board box and stitched bet spots.'],
       ['splace','WHERE IT RUNS', [['line','BETTING LINE'],['edge','BY THE RAIL'],['both','BOTH']]]
     ],
     felt:[
-      ['cloth','CLOTH', [['asis','AS NOW'],['fine','FINE CHECK'],['coarse','BIG CHECK'],['tweed','TWEED'],['nap','VELVET NAP'],['diamond','DIAMOND WEAVE'],['flat','FLAT']]],
+      ['cloth','CLOTH', [['asis','AS NOW (FINE CHECK)'],['oldcheck','BEFORE V0.47'],['coarse','BIG CHECK'],['tweed','TWEED'],['nap','VELVET NAP'],['diamond','DIAMOND WEAVE'],['flat','FLAT']]],
       ['fcol','FELT COLOUR', [['theme','AS THEME'],['casino','CASINO GREEN'],['deep','DEEP GREEN'],['blue','BLUE BAIZE'],['red','RED VELVET'],['teal','PETROL TEAL'],['plum','PLUM'],['noir','CHARCOAL']]],
-      ['light','LIGHT', [['asis','AS NOW'],['none','NONE'],['lamp','LAMP POOL'],['soft','SOFT LAMP'],['vignette','DARK CORNERS'],['both','LAMP + CORNERS'],['overhead','BILLIARD LAMP'],['smoke','SMOKY ROOM']],
-        'Lamps centre on the board. LAMP POOL is stepped in pixel bands; SOFT LAMP is a smooth fade.'],
+      ['light','LIGHT', [['asis','AS NOW (SOFT LAMP)'],['oldoval','BEFORE V0.47'],['none','NONE'],['lamp','LAMP POOL'],['vignette','DARK CORNERS'],['both','LAMP + CORNERS'],['overhead','BILLIARD LAMP'],['smoke','SMOKY ROOM']],
+        'Lamps centre on the board. LAMP POOL is stepped in pixel bands; AS NOW is a smooth fade.'],
       ['theme','THEME', [['emerald','EMERALD'],['burgundy','BURGUNDY'],['midnight','MIDNIGHT'],['slate','SLATE']], 'The player\'s own palette setting. Rails and stitching that use the theme follow it.']
     ],
     marks:[
@@ -59,25 +59,26 @@
     board:'none', print:'none', spots:'asis', seam:'asis' };
   const L = (name, blurb, p) => ({ name, blurb, picks:Object.assign({}, ASIS, p) });
   const LOOKS = [
-    L('AS NOW', 'The table as it ships today.', {}),
+    L('AS NOW', 'The table as it ships (v0.47.0): long dark stitch by the rail, fine check, soft lamp.', {}),
+    L('BEFORE V0.47', 'The table before the felt pass: faint dashed line, big check, hard-edged oval.', { stitch:'olddash', cloth:'oldcheck', light:'oldoval' }),
     L('CASINO CLASSIC', 'Oak rail, gold betting line, lamp over the board, printed slots and arc.',
-      { rail:'oak', stitch:'running', scol:'gold', splace:'line', cloth:'fine', fcol:'casino', light:'lamp', board:'slots', print:'arc', spots:'rings', seam:'shadow' }),
+      { rail:'oak', stitch:'running', scol:'gold', splace:'line', cloth:'asis', fcol:'casino', light:'lamp', board:'slots', print:'arc', spots:'rings', seam:'shadow' }),
     L('VELVET MACHINE', 'Padded burgundy leather, double gold stitch, tweed felt, brass bar to the console.',
       { rail:'leather', stitch:'double', scol:'gold', splace:'edge', cloth:'tweed', light:'both', board:'box', print:'word', spots:'stitched', seam:'brass' }),
     L('BRASS PARLOUR', 'Walnut with brass studs, cream stitch by the rail, a soft lamp.',
-      { rail:'studs', stitch:'long', scol:'cream', splace:'edge', cloth:'asis', fcol:'deep', light:'soft', board:'frame', print:'suits', spots:'gold', seam:'shadow' }),
+      { rail:'studs', stitch:'long', scol:'cream', splace:'edge', cloth:'asis', fcol:'deep', light:'asis', board:'frame', print:'suits', spots:'gold', seam:'shadow' }),
     L('MARQUEE', 'A rail of chasing bulbs, braided thread, dark corners.',
       { rail:'bulbs', stitch:'braid', scol:'gold', splace:'line', cloth:'coarse', light:'vignette', board:'slotsbox', print:'all', spots:'rings', seam:'brass' }),
     L('BACKROOM', 'Slim mahogany, a pressed seam, one billiard lamp, flat dark cloth.',
       { rail:'inlay', rw:'14', stitch:'welt', scol:'tone', splace:'line', cloth:'flat', fcol:'deep', light:'overhead', board:'slots', spots:'pressed', seam:'lip' }),
     L('ARCADE', 'Riveted chrome, pick-dot stitching in the theme colour, printed frame.',
-      { rail:'chrome', stitch:'pick', scol:'accent', splace:'both', cloth:'fine', light:'lamp', board:'frame', print:'word', spots:'gold', seam:'lip' }),
+      { rail:'chrome', stitch:'pick', scol:'accent', splace:'both', cloth:'asis', light:'lamp', board:'frame', print:'word', spots:'gold', seam:'lip' }),
     L('HIGH ROLLER', 'Black leather with gold piping, velvet nap, a smoky room.',
       { rail:'noir', stitch:'double', scol:'gold', splace:'line', cloth:'nap', fcol:'deep', light:'smoke', board:'box', print:'arc', spots:'stitched', seam:'brass' }),
     L('RED ROOM', 'Velvet and gold on red felt, cross-stitch, burgundy theme.',
       { rail:'velvet', stitch:'cross', scol:'gold', splace:'line', cloth:'nap', fcol:'red', light:'both', theme:'burgundy', board:'slots', print:'word', spots:'stitched', seam:'brass' }),
     L('BLUE BAIZE', 'Chunky oak on blue cloth, cream thread, diamond weave.',
-      { rail:'oak', rw:'26', stitch:'running', scol:'cream', splace:'both', cloth:'diamond', fcol:'blue', light:'soft', board:'box', print:'suits', spots:'rings', seam:'shadow' })
+      { rail:'oak', rw:'26', stitch:'running', scol:'cream', splace:'both', cloth:'diamond', fcol:'blue', light:'asis', board:'box', print:'suits', spots:'rings', seam:'shadow' })
   ];
   const SCENES = [
     ['deal','THE DEAL · 4 RIVALS'], ['flop','THE FLOP · 3 IN'], ['river','THE RIVER · 3 IN'], ['showdown','SHOWDOWN · 2 IN'],
@@ -218,7 +219,7 @@
   function stitches(){
     if (shown.stitch === 'asis' || shown.stitch === 'none') return '';
     const t = THREAD[shown.scol] || THREAD.gold;
-    const at = shown.splace === 'both' ? [8, 26] : shown.splace === 'edge' ? [8] : [24];
+    const at = shown.stitch === 'olddash' ? [12] : shown.splace === 'both' ? [8, 26] : shown.splace === 'edge' ? [8] : [24];
     const one = d => {
       switch (shown.stitch){
         case 'running': return ring(-d, 2, t, { dash:'6 4' });
@@ -227,6 +228,7 @@
         case 'double':  return ring(-d, 2, t, { dash:'6 4' }) + ring(-d - 5, 2, t, { dash:'6 4' });
         case 'braid':   return ring(-d, 2, t, { dash:'5 5' }) + ring(-d - 3, 2, t, { dash:'5 5', offset:5 });
         case 'cross':   return ring(-d, 2, t, { dash:'3 3' }) + ring(-d - 2, 2, t, { dash:'3 3', offset:3 }) + ring(-d - 4, 2, t, { dash:'3 3' });
+        case 'olddash': return ring(-d, 2, 'rgba(255,255,255,.10)', { dash:'4 4' });
         case 'welt':    return ring(-d, 3, 'rgba(0,0,0,.34)') + ring(-d - 2.5, 1.5, t, { op:.8 });
       }
       return '';
