@@ -1002,6 +1002,8 @@ function beginBettingRound(phase){
     if (p.streetAction && !['fold','allin','ko','eliminated'].includes(p.streetAction.type)) p.streetAction = null;
   });
   if (phase!=='preflop'){ g.currentBet=0; g.minRaise=g.bigBlind; }
+  g.streetRaises = 0; g.streetAggressorId = null;
+  if (phase==='preflop') g.pfAggressorId = null;
   const n = g.players.filter(p=>p.inHand).length;
   g.turnPointer = (phase==='preflop')
     ? (n===2 ? g.dealerIndex : nextActiveIndex(g.bbIndex))
@@ -1218,6 +1220,11 @@ function applyAction(player, decision){
     if (increment <= 0) return;
     const isFullRaise = increment >= g.minRaise;
     g.currentBet = player.betThisRound;
+    // public betting history the AI reads (docs/ai/AI_PLAN.md): how many
+    // bets/raises this street, and who made the last one / the preflop one
+    g.streetRaises = (g.streetRaises || 0) + 1;
+    g.streetAggressorId = player.id;
+    if (g.phase === 'preflop') g.pfAggressorId = player.id;
     g.players.forEach(p=>{
       if (p===player || !p.inHand || p.folded || p.allIn) return;
       if (isFullRaise){ p.acted = false; p.mayRaise = true; }

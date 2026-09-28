@@ -531,11 +531,230 @@ function aiFormatAdjustments(g, player, numOpp, bbLeft){
   };
 }
 
+/* ============================================================
+   PREFLOP FROM RANGES (docs/ai/AI_PLAN.md, Step 2)
+   ============================================================
+   Every opponent thinks in hand RANGES, the way people do: "from this
+   seat I open my best 21%", "he raised from early position, so he has
+   a strong 15%". A hand's strength is its percentile among all 1326
+   starting hands (preflopPercentile: 0 = aces, 1 = seven-deuce).
+
+   Personality moves the ranges (looser/tighter, raise or limp). SKILL moves
+   the leaks, through PREFLOP_SKILL on the skill dial:
+     posAware  — how much the seat changes the opening range (0: the same
+                 range from every seat)
+     read      — how well they narrow a raiser's range (0: "he could have
+                 anything"), so how much a raise from a rock scares them
+     limpExtra — extra hands limped in on top of the opening range
+     limpShare — share of their raising hands they limp instead
+     sticky    — equity they'll call short of the price (calling-station leak)
+     bluff3    — how often a suited near-miss becomes a 3-bet bluff
+     sizeTell  — how much bigger they raise with big hands (a readable tell)
+     mix       — how blurred their thresholds are (low: crisp, disciplined)
+     push      — how close to correct their short-stack shoving range is
+   Nothing here sees another player's cards: only the AI's own two cards,
+   seats, stacks and the public betting. */
+const PREFLOP_SKILL = {
+  easy:   { posAware:0.00, read:0.00, limpExtra:0.55, limpShare:0.60, sticky:0.12,  bluff3:0.00, sizeTell:0.8, mix:0.060, push:0.60 },
+  medium: { posAware:0.25, read:0.20, limpExtra:0.35, limpShare:0.45, sticky:0.08,  bluff3:0.02, sizeTell:0.6, mix:0.050, push:0.70 },
+  hard:   { posAware:0.60, read:0.50, limpExtra:0.10, limpShare:0.18, sticky:0.035, bluff3:0.10, sizeTell:0.3, mix:0.035, push:0.85 },
+  expert: { posAware:0.90, read:0.80, limpExtra:0.03, limpShare:0.05, sticky:0.00,  bluff3:0.25, sizeTell:0.1, mix:0.025, push:0.95 },
+  elite:  { posAware:1.00, read:0.95, limpExtra:0.00, limpShare:0.02, sticky:-0.01, bluff3:0.35, sizeTell:0.0, mix:0.018, push:1.00 },
+};
+
+/* A sound player's opening range by how many players are still to act
+   behind them (1 = small blind vs the big blind). Heads-up has its own. */
+const OPEN_RANGE_BY_BEHIND = [0.45, 0.42, 0.44, 0.28, 0.21, 0.17, 0.14, 0.12, 0.11, 0.10];
+const OPEN_RANGE_HEADS_UP = 0.80;
+/* Ranges people typically raise with at each level of re-raising. */
+const RERAISE_RANGE = [null, null, 0.07, 0.03, 0.018];
+/* Short-stack shove range at 10 big blinds, by players behind (heads-up
+   separate); widens as the stack shrinks. */
+const PUSH_RANGE_BY_BEHIND = [0.55, 0.45, 0.32, 0.20, 0.15, 0.12, 0.10, 0.09, 0.08, 0.08];
+const PUSH_RANGE_HEADS_UP = 0.62;
+const PUSH_FOLD_BB = 10;
+
+function bbIndexOf(g){
+  if (typeof g.bbIndex === 'number' && g.bbIndex >= 0) return g.bbIndex;
+  const n = g.players.length, d = g.dealerIndex >= 0 ? g.dealerIndex : 0;
+  return n === 2 ? (d + 1) % n : (d + 2) % n;
+}
+/* 0 = first to act preflop ... the big blind acts last. */
+function preflopOrder(g, i){
+  const n = g.players.length;
+  return (i - bbIndexOf(g) - 1 + 2*n) % n;
+}
+/* Players dealt in who act after seat i preflop (folded ones excluded). */
+function playersBehindPreflop(g, i){
+  let c = 0;
+  const mine = preflopOrder(g, i);
+  g.players.forEach((p, j)=>{
+    if (j !== i && p.inHand && !p.folded && preflopOrder(g, j) > mine) c++;
+  });
+  return c;
+}
+function dealtCount(g){ return g.players.filter(p=>p.inHand).length; }
+
+function standardOpenRange(g, i){
+  if (dealtCount(g) === 2) return OPEN_RANGE_HEADS_UP;
+  const behind = playersBehindPreflop(g, i);
+  return OPEN_RANGE_BY_BEHIND[Math.min(behind, OPEN_RANGE_BY_BEHIND.length-1)];
+}
+function standardPushRange(g, i, bbLeft){
+  const base = dealtCount(g) === 2 ? PUSH_RANGE_HEADS_UP
+    : PUSH_RANGE_BY_BEHIND[Math.min(playersBehindPreflop(g, i), PUSH_RANGE_BY_BEHIND.length-1)];
+  return Math.min(1, base * Math.pow(PUSH_FOLD_BB / Math.max(1.5, bbLeft), 0.6));
+}
+
+/* Smooth yes/no around a threshold: x > 0 leans yes. `width` is how
+   blurry the edge is — this is what makes play mixed rather than robotic. */
+function edge(x, width){ return 1 / (1 + Math.exp(-x / Math.max(1e-6, width))); }
+function leanYes(x, width){ return Math.random() < edge(x, width); }
+
+/* What the AI believes an aggressor's range to be, from public facts only:
+   the aggressor's seat, how many raises there have been, whether they're
+   all-in short. Low `read` skill blends toward "could be anything". */
+function estimateRaiserRange(g, raiser, level, read){
+  const bb = g.bigBlind;
+  const ri = g.players.indexOf(raiser);
+  let model;
+  const raiserBB = (raiser.chips + raiser.betThisRound) / bb;
+  if (raiser.allIn && raiserBB <= 15) model = standardPushRange(g, ri, raiserBB);
+  else if (level <= 1) model = standardOpenRange(g, ri) * 0.9;
+  else model = RERAISE_RANGE[Math.min(level, RERAISE_RANGE.length-1)];
+  // a big raise from a sound player is a stronger range
+  const sizeBB = g.currentBet / bb;
+  if (level <= 1 && sizeBB > 4.5 && !raiser.allIn) model *= 0.75;
+  return model * read + 0.45 * (1 - read);
+}
+
+async function aiPreflop(player, g, c){
+  const { dp, pers, mood, formatAdj, toCall, stack, bb, bbLeft } = c;
+  let { aggression, tightness } = c;
+  const sk = skillBlend(PREFLOP_SKILL, aiSkillOf(player, g));
+  const idx = g.players.indexOf(player);
+  const pct = preflopPercentile(player.hand);
+  const cls = holeClass(player.hand[0], player.hand[1]);
+  const suited = cls.length === 3 && cls[2] === 's';
+  const headsUp = dealtCount(g) === 2;
+  const isBB = idx === bbIndexOf(g);
+  const inPosition = seatsAfter(idx) === 0;
+  const raises = typeof g.streetRaises === 'number' ? g.streetRaises
+    : (g.currentBet > bb ? 1 : 0);
+  const allInTotal = player.betThisRound + stack;
+  const minRaiseTo = g.currentBet + g.minRaise;
+
+  // personality: tight players shrink every range, loose ones stretch it
+  let loose = Math.exp((0.5 - tightness) * 1.2);
+  if (mood.kind === 'up') loose *= 1 + 0.25*mood.intensity;
+  if (mood.kind === 'steamed') aggression = Math.min(1, aggression + 0.1*mood.intensity);
+  const callBonus = mood.kind === 'down' ? 0.03*mood.intensity : 0;
+  if (formatAdj.bubble) loose *= 0.85;
+
+  const call = () => toCall > 0 ? { action:'call' } : { action:'check' };
+  const fold = () => toCall > 0 ? { action:'fold' } : { action:'check' };
+  const shove = () => player.mayRaise && stack > toCall ? { action:'raise', amount: allInTotal } : { action:'call' };
+  /* Raise to `total`; if that commits most of the stack, go all-in when
+     the hand is good enough to (valueOK), otherwise just call. */
+  function raiseTo(total, valueOK){
+    if (!player.mayRaise || stack <= toCall) return call();
+    total = Math.max(Math.round(total), minRaiseTo);
+    if (total >= allInTotal * 0.45) return valueOK ? shove() : call();
+    return { action:'raise', amount: Math.min(total, allInTotal) };
+  }
+  // raise-size tell: weak players raise bigger with their best hands
+  const tellBump = 1 + sk.sizeTell * Math.max(0, 0.08 - pct) * 8 * (0.5 + Math.random()*0.5);
+
+  // ---- short stack: push or fold ----
+  const others = g.players.filter(p=>p !== player && p.inHand && !p.folded);
+  const effBB = Math.min(bbLeft + player.betThisRound/bb,
+    Math.max(0, ...others.map(p=>(p.chips + p.betThisRound)/bb)));
+  if (effBB <= PUSH_FOLD_BB && raises === 0){
+    const range = standardPushRange(g, idx, effBB) * loose * sk.push;
+    if (leanYes(range - pct, sk.mix * 0.6)) return shove();
+    if (isBB) return { action:'check' };
+    // cheap small-blind complete with something playable
+    if (toCall <= bb*0.5 && leanYes(range*1.6 - pct, sk.mix)) return call();
+    return fold();
+  }
+
+  // ---- nobody has raised yet ----
+  if (raises === 0){
+    const limpers = others.filter(p=>p.betThisRound >= bb && preflopOrder(g, g.players.indexOf(p)) < preflopOrder(g, idx)
+      && g.players.indexOf(p) !== bbIndexOf(g)).length;
+    const positional = standardOpenRange(g, idx);
+    // position-blind players open about the same 22% from every seat
+    const openRange = Math.min(0.95, (positional * sk.posAware + 0.22 * (1 - sk.posAware)) * loose);
+    // sound players use one steady size; weak ones raise bigger and all over the place
+    const raiseSize = () => (headsUp ? 2.2 : 2.3) * bb
+      * (1 + (1 - sk.posAware) * (0.3 + Math.random()*0.5)) * tellBump + limpers * bb;
+    if (isBB){
+      // the big blind's option: raise the limpers with strength, else check
+      if (leanYes(openRange * 0.25 * (0.5 + aggression) - pct, sk.mix * 0.5)) return raiseTo(bb*3.5 + limpers*bb, pct < 0.05);
+      return { action:'check' };
+    }
+    const raiseLine = limpers > 0 ? openRange * 0.65 : openRange;
+    const limpLine = Math.min(0.9, openRange * (1 + sk.limpExtra) + (limpers > 0 ? 0.08 * (1 - sk.posAware) : 0));
+    // one roll decides raise / limp / fold, so a hand on the edge of the
+    // raising range doesn't get a second chance as a limp
+    const pRaise = edge(raiseLine - pct, sk.mix);
+    const pEnter = Math.max(pRaise, edge(limpLine - pct, sk.mix));
+    const u = Math.random();
+    if (u < pRaise){
+      // weak players limp some of their raising hands; aggressive ones rarely
+      const limpIt = Math.random() < sk.limpShare * (1.2 - aggression);
+      if (!limpIt) return raiseTo(raiseSize(), pct < 0.04);
+      return call();
+    }
+    if (u < pEnter) return call();
+    return fold();
+  }
+
+  // ---- facing a raise (or several) ----
+  const aggressor = g.players.find(p=>p.id === g.pfAggressorId) ||
+    others.reduce((a, p)=> p.betThisRound > (a ? a.betThisRound : -1) ? p : a, null);
+  const callers = others.filter(p=>p !== aggressor && p.betThisRound >= g.currentBet && p.betThisRound > bb);
+  const R = estimateRaiserRange(g, aggressor, raises, sk.read);
+  const ranges = [R].concat(callers.map(()=>Math.min(1, R * 1.6)));
+  const iters = Math.min(dp.iterations, 600);
+  const eq = await EquityService.get(player.hand, [], ranges.length, iters, ranges);
+
+  const potOdds = toCall / (g.pot + toCall);
+  const deep = (stack - toCall) / Math.max(1, toCall) > 12;
+  const implied = deep && (cls[0] === cls[1] || (suited && '23456789TJQKA'.indexOf(cls[0]) - '23456789TJQKA'.indexOf(cls[1]) <= 2)) ? 0.06 : 0;
+  // equity a hand actually gets to use: less out of position and for weak
+  // hands (they fold before showdown more), less still with players behind
+  // who may re-raise; skilled players account for all of it
+  const behind = playersBehindPreflop(g, idx);
+  const realize = (inPosition ? 0.95 : 0.82) - 0.12 * pct;
+  const realized = eq * (realize * sk.read + 1 * (1 - sk.read));
+  // cold-calling a raise (not from the big blind) needs a margin skilled
+  // players respect: you're often dominated and rarely close the action
+  const coldCall = !isBB && raises === 1 ? 0.03 * sk.read : 0;
+  const required = potOdds + behind * 0.02 + coldCall - implied - sk.sticky - callBonus - (loose - 1) * 0.04;
+
+  // re-raise for value, or (skilled players) as a bluff with a suited near-miss
+  const valueRaise = eq > 0.60 + (1 - aggression) * 0.06 && leanYes(eq - (0.60 + (1 - aggression) * 0.06), sk.mix);
+  const bluffRaise = !valueRaise && raises <= 2 && suited && pct < 0.40 && eq < required + 0.08 && eq > required - 0.12
+    && Math.random() < sk.bluff3 * (0.4 + aggression);
+  if ((valueRaise || bluffRaise) && player.mayRaise){
+    const mult = raises >= 2 ? 2.3 : (inPosition ? 3 : 3.8);
+    const total = g.currentBet * mult + callers.length * g.currentBet;
+    const r = raiseTo(total, valueRaise && eq > 0.55);
+    if (r.action === 'raise' || !bluffRaise) return r;
+  }
+  // short stacks don't flat big raises: they shove or fold
+  if (bbLeft <= 15 && toCall > stack * 0.3){
+    return leanYes(realized - required, sk.mix * 0.6) ? shove() : fold();
+  }
+  if (leanYes(realized - required, sk.mix * 0.8)) return call();
+  return fold();
+}
+
 async function aiDecide(player, g){
   const idx = g.players.indexOf(player);
   const numOpp = g.players.filter(p=>p.inHand && !p.folded && p.id!==player.id).length;
   const dp = aiDifficultyParams(player, g);
-  const rawEquity = await EquityService.get(player.hand, g.board, Math.max(1,numOpp), dp.iterations);
 
   const pers = player.personality;
   const mood = player.moodState || { kind:null, intensity:0 };
@@ -562,6 +781,13 @@ async function aiDecide(player, g){
   aggression = clamp01(aggression + formatAdj.aggression);
   tightness = clamp01(tightness + formatAdj.tightness);
   bluffFreq = clamp01(bluffFreq + formatAdj.bluffFreq);
+
+  // Preflop is played from ranges (docs/ai/AI_PLAN.md, Step 2)
+  if (g.board.length===0){
+    return aiPreflop(player, g, { dp, pers, mood, aggression, tightness, formatAdj, toCall, stack, bb, bbLeft });
+  }
+
+  const rawEquity = await EquityService.get(player.hand, g.board, Math.max(1,numOpp), dp.iterations);
   const noise = (Math.random()-0.5) * dp.noise;
   const tightAdj = (tightness - 0.5) * -0.10;
   // late position (few players left to act) nudges confidence up slightly
@@ -597,37 +823,6 @@ async function aiDecide(player, g){
     // avoid needless all-ins on non-premium hands
     if (total >= allInTotal && !shortStack && perceived < 0.82) return toCall>0 ? {action:'call'} : {action:'check'};
     return {action: toCall>0 ? 'raise' : 'bet', amount: total};
-  }
-
-  // ---------------- preflop: fold weak, raise strong, keep sizes honest ----------------
-  if (preflop){
-    const facingRaise = g.currentBet > bb;
-    let foldGate = 0.30 + tightness*0.14
-      + (facingRaise ? 0.10 + Math.min(0.10, (toCall/Math.max(1,stack))*0.5) : 0);
-    // Every freezeout short stack widens gradually rather than folding into
-    // the blinds. Ordinary cash remains unchanged.
-    foldGate = Math.max(0, foldGate - formatAdj.foldGateWiden);
-    if (toCall>0 && perceived < foldGate && !bluffRoll){
-      // cheap completes from the small blind still happen with playable stuff
-      if (toCall <= bb*0.5 && perceived > foldGate-0.10 && Math.random()<0.6) return {action:'call'};
-      return {action:'fold'};
-    }
-    const raiseGate = facingRaise ? 0.62 + tightness*0.06 : 0.52 + (1-aggression)*0.10;
-    const wantsRaise = player.mayRaise && stack > toCall &&
-      (perceived > raiseGate || (bluffRoll && !facingRaise && Math.random()<0.5)) &&
-      Math.random() < 0.30 + aggression*0.45;
-    if (wantsRaise){
-      // Critical freezeout stack (< ~5BB): cappedTotal()'s 28%/45%
-      // hand-start budget caps make no sense once the whole stack IS only
-      // a few BB — jam it. Push/fold framing instead of a sized raise.
-      if (formatAdj.freezeout && bbLeft < ELIMINATION_CONFIG.criticalStackBB){
-        return raiseOrSettle(player.betThisRound + stack);
-      }
-      const mult = (facingRaise ? 2.6 + aggression*0.8 : 2.2 + aggression*0.9) * sizeMul;
-      let total = Math.max(Math.round(g.currentBet * mult), g.currentBet + g.minRaise);
-      return raiseOrSettle(cappedTotal(total, perceived));
-    }
-    return toCall>0 ? {action:'call'} : {action:'check'};
   }
 
   // ---------------- postflop, nothing to call ----------------

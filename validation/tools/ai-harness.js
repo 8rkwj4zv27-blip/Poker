@@ -50,11 +50,12 @@ function loadAI(seed){
     DEV_MODE:false, FAST_DEV:false, motionOff: () => true };
   vm.createContext(ctx);
   const inlineEquity = math.replace(/const EquityService = \(function\(\)\{[\s\S]*?\n\}\)\(\);/,
-    'const EquityService = { get: async (h,b,n,i) => estimateEquity(h,b,n,i) };');
+    'const EquityService = { get: async (h,b,n,i,r) => r ? estimateEquityVsRanges(h,b,r,i) : estimateEquity(h,b,n,i) };');
   if (inlineEquity === math) throw new Error('ai-harness: EquityService block not found in 01-poker-math.js');
   vm.runInContext('var game = null;\n' + inlineEquity + '\n' + elim.slice(0, elimEnd) + '\n' + opp +
     '\nglobalThis.API = { aiDecide, seatsAfter, PERSONALITIES_ALL, DIFFICULTY_PARAMS, createDeck, shuffle,' +
-    ' evaluate7, compareHands, estimateEquity, SKILL_ANCHORS, aiSkillOf, skillBlend, aiDifficultyParams,' +
+    ' evaluate7, evaluate5, compareHands, estimateEquity, estimateEquityVsRanges, fastScore7, cardCode,' +
+    ' holeClass, comboOrder, preflopPercentile, PREFLOP_ORDER, classifyPostflop, aiPreflop, SKILL_ANCHORS, aiSkillOf, skillBlend, aiDifficultyParams,' +
     ' setGame: g => { game = g; } };', ctx);
   return ctx.API;
 }
@@ -149,9 +150,13 @@ async function simulate(opts){
     const commit = (p, amt) => { amt = Math.min(amt, p.chips); p.chips -= amt; p.betThisRound += amt;
       p.totalBetHand += amt; g.pot += amt; if (p.chips === 0) p.allIn = true; return amt; };
     commit(players[sbI], bb/2); commit(players[bbI], bb); g.currentBet = bb;
+    g.sbIndex = sbI; g.bbIndex = bbI;
     const live = () => players.filter(p => !p.folded);
 
     for (const street of ['preflop','flop','turn','river']){
+      // the engine's public betting history (beginBettingRound / settleAggression)
+      g.phase = street; g.streetRaises = 0; g.streetAggressorId = null;
+      if (street === 'preflop') g.pfAggressorId = null;
       if (street === 'flop') g.board.push(deck[di++], deck[di++], deck[di++]);
       else if (street !== 'preflop') g.board.push(deck[di++]);
       if (street !== 'preflop'){
@@ -194,6 +199,8 @@ async function simulate(opts){
           if (inc > 0){
             const full = inc >= g.minRaise;
             g.currentBet = p.betThisRound;
+            g.streetRaises++; g.streetAggressorId = p.id;
+            if (street === 'preflop') g.pfAggressorId = p.id;
             players.forEach(q => { if (q === p || q.folded || q.allIn) return;
               if (full){ q.acted = false; q.mayRaise = true; } else if (q.acted) q.mayRaise = false; });
             if (full) g.minRaise = inc;
