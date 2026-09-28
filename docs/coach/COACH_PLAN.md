@@ -71,4 +71,4 @@ covers them.
   three housings (mini cabinet suggested), three sizes. Glasses are a
   vector overlay on a fixed position, so they stay put while the
   expression changes. Awaiting the owner's picks.
-  Link: see the reply in the session; record it here once confirmed.
+  Link: https://claude.ai/artifact/J6ihf17j1uz3RatkD1fxYS
