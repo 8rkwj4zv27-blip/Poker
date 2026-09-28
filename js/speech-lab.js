@@ -33,7 +33,12 @@
   const BLIPS = { blip:'own', family:'0.5', often:'other', melody:'key', pitch:'own', pace:'even' };
   // round 2's close-up picks, fixed
   const CLOSE = { face:'72', fit:'grow', frame:'own', name:'plate', height:'low', side:'theirs', arrive:'pop' };
+  const MOMENTS = [['lost','THEY LOSE TO YOU'],['beat','THEY BEAT YOU'],['bust','YOU BUST THEM'],['streak','LOSING STREAK']];
   const SECTIONS = [
+    { title:'THE MOMENTS', sub:'Round 7. What they say when something happens to them. In play these fire by themselves: a big pot won or lost against you, a knockout, three losses in a row.', rows:[
+      ['dark', 'GOES DARK', [['3','1 IN 3'],['1','EVERY TIME'],['6','1 IN 6'],['0','NEVER']], 'How often a moment brings out one of the darker lines.'],
+      ['lang', 'LANGUAGE', [['strong','STRONG'],['clean','CLEAN']], 'Clean leaves out every line with a swear in it. A player setting in the game.']
+    ]},
     { title:'TABLE TALK VOLUME', sub:'A player setting: in the game this lives in Settings, next to Table Talk. Every character is the same loudness; this turns them all up or down together.', rows:[
       ['vol', 'VOLUME', [['0.3','LOW'],['0.5','MEDIUM'],['0.8','HIGH'],['0','SILENT']], 'Silent: they still talk, in bubbles, without the blips.']
     ]},
@@ -75,6 +80,19 @@
     if (!decks[id] || !decks[id].length) decks[id] = pool.map((_, i) => i).sort(() => Math.random() - .5);
     return pool[decks[id].pop()];
   }
+  // a moment's line: now and then (the GOES DARK dial) one of the darker
+  // ones; CLEAN leaves out anything that swears
+  function momentLine(p, moment){
+    const key = keyOf(p);
+    const all = SPEECH_MOMENTS[key][moment].filter(l => picks.lang !== 'clean' || !SPEECH_SWEARS.test(l[0]));
+    const n = Number(picks.dark);
+    const dark = n > 0 && Math.random() < 1 / n;
+    let pool = all.filter(l => !!l[2] === dark);
+    if (!pool.length) pool = all;
+    const id = 'm' + key + moment + dark + picks.lang;
+    if (!decks[id] || !decks[id].length || decks[id].some(i => i >= pool.length)) decks[id] = pool.map((_, i) => i).sort(() => Math.random() - .5);
+    return pool[decks[id].pop()];
+  }
   const groupOf = action => action === 'fold' ? 'fold' : (action === 'call' || action === 'check') ? 'call' : 'bet';
 
   /* ---- the close-up ---- */
@@ -91,10 +109,10 @@
     if (e && !l.p.eliminated){ e._mood = null; try{ setMood(l.p.id, restingMood(l.p)); }catch(err){} }
   }
 
-  function say(p, group){
+  function say(p, group, line, moment){
     if (!p) return;
     clear(true);
-    const [text, face] = lineFor(p, group);
+    const [text, face] = line || lineFor(p, group);
     const key = keyOf(p);
     const e = seatEls[p.id];
     const felt = $id('felt').getBoundingClientRect();
@@ -108,6 +126,7 @@
     el.className = ['spk', 'spk--close', 'spk--card', 'spk-fit-' + picks.fit, 'spk-frame-' + picks.frame,
       'spk-arrive-' + picks.arrive, right ? 'is-right' : ''].join(' ');
     el.setAttribute('role', 'status');
+    el.dataset.line = text; el.dataset.moment = moment || group || '';
     el.style.setProperty('--spk-face', picks.face + 'px');
     el.style.setProperty('--spk-own', own);
     el.innerHTML =
@@ -124,7 +143,7 @@
     el.style.left = (felt.left + pad) + 'px';
     el.style.width = (felt.width - pad * 2) + 'px';
     const h = el.offsetHeight;
-    const seatsBottom = Math.max(...opps().map(q => rectOf(q).bottom));
+    const seatsBottom = Math.max(0, ...opps().map(q => rectOf(q).bottom));
     let top;
     if (picks.height === 'mid'){
       const boardTop = felt.top + felt.height * 0.44;
@@ -185,6 +204,58 @@
     return out;
   };
 
+  /* ---- the moments, in play ----
+     Stacks are snapshotted as each hand starts; when the hand is paid
+     out (finishHand, before any K.O.) the change says what happened.
+     Only public facts: who won chips from whom, who went to the end,
+     who's out. One moment a hand at most, and it beats any action line. */
+  const stackAt = {}, lossRun = {};
+  const realStart = window.startNewHand;
+  window.startNewHand = function(){
+    try{ (game.players || []).forEach(p => { stackAt[p.id] = p.chips; }); }catch(err){}
+    return realStart.apply(this, arguments);
+  };
+  function readMoment(){
+    const g = game, me = g.players.find(p => p.isHuman);
+    if (!me || !(me.id in stackAt)) return null;
+    const bb = g.bigBlind || 20, big = 6 * bb;
+    const d = p => p.chips - (stackAt[p.id] || 0);
+    const mine = d(me), iWent = !me.folded;
+    const them = g.players.filter(p => !p.isHuman && (p.id in stackAt) && stackAt[p.id] > 0);
+    // losing runs, for everyone who played the hand
+    them.forEach(p => { const x = d(p); lossRun[p.id] = x < 0 ? (lossRun[p.id] || 0) + 1 : x > 0 ? 0 : (lossRun[p.id] || 0); });
+    const bust = them.filter(p => p.chips <= 0 && mine > 0 && iWent);
+    if (bust.length) return { p:bust[0], m:'bust', afterKO:true };
+    const lost = them.filter(p => !p.folded && d(p) <= -big && mine > 0 && iWent).sort((a, b) => d(a) - d(b));
+    if (lost.length) return { p:lost[0], m:'lost' };
+    const beat = them.filter(p => !p.folded && d(p) >= big && mine < 0 && iWent).sort((a, b) => d(b) - d(a));
+    if (beat.length) return { p:beat[0], m:'beat' };
+    const run = them.filter(p => p.chips > 0 && lossRun[p.id] >= 3);
+    if (run.length){ const p = run[Math.floor(Math.random() * run.length)]; lossRun[p.id] = 0; return { p, m:'streak' }; }
+    return null;
+  }
+  const realFinish = window.finishHand;
+  let finishes = 0;
+  window.finishHand = function(){
+    finishes++;
+    let hit = null;
+    try{ hit = readMoment(); }catch(err){ console.error(err); }
+    if (hit){ clearTimeout(pending); spokenHand = game.handNumber; }
+    const out = realFinish.apply(this, arguments);
+    if (hit){
+      const go = () => say(hit.p, null, momentLine(hit.p, hit.m), hit.m);
+      // a knockout speaks after the K.O. has played; the rest straight after the payout
+      if (hit.afterKO) Promise.resolve(out).then(() => setTimeout(go, 300), () => {});
+      else setTimeout(go, motionOff() ? 200 : 700);
+    }
+    return out;
+  };
+  function sayMoment(m){
+    if (picks.who === 'any'){ const list = opps(); anyTarget = list[anyTurn++ % Math.max(1, list.length)]; }
+    const p = speaker();
+    if (p) say(p, null, momentLine(p, m), m);
+  }
+
   /* ---- the keys and the sheet ---- */
   const seg = (key, opts, cur) => '<div class="spl-seg" data-key="' + key + '">' + opts.map(o => '<button type="button" data-v="' + o[0] + '"' + (o[0] === cur ? ' class="is-on"' : '') + '>' + o[1] + '</button>').join('') + '</div>';
   const row = r => '<div class="spl-row"><div class="spl-name">' + r[1] + '</div>' + seg(r[0], r[2], picks[r[0]]) + (r[3] ? '<p class="spl-note">' + r[3] + '</p>' : '') + '</div>';
@@ -203,15 +274,17 @@
     const sheet = document.createElement('div');
     sheet.className = 'spl-sheet'; sheet.setAttribute('role', 'dialog'); sheet.setAttribute('aria-label', 'Speech lab');
     sheet.innerHTML =
-      '<div class="spl-top"><span>SPEECH LAB · ROUND 6</span><button type="button" class="spl-close" aria-label="Close">✕</button></div>' +
+      '<div class="spl-top"><span>SPEECH LAB · ROUND 7</span><button type="button" class="spl-close" aria-label="Close">✕</button></div>' +
       '<div class="spl-body">' +
         '<p class="spl-sub">Play the hand as normal. A second after the chosen opponent acts, they say something. SAY makes them say another line straight away. Tap a bubble to dismiss it. Sound needs one tap first on an iPhone.</p>' +
         '<div class="spl-actions"><button type="button" data-act="say">SAY SOMETHING</button><button type="button" data-act="deal">NEW TABLE</button></div>' +
-        SECTIONS.map(s => '<h3>' + s.title + (s.sub ? '<small>' + s.sub + '</small>' : '') + '</h3>' + s.rows.map(row).join('')).join('') +
+        SECTIONS.map((s, i) => '<h3>' + s.title + (s.sub ? '<small>' + s.sub + '</small>' : '') + '</h3>' +
+          (i === 0 ? '<div class="spl-moments">' + MOMENTS.map(m => '<button type="button" data-moment="' + m[0] + '">' + m[1] + '</button>').join('') + '</div>' : '') +
+          s.rows.map(row).join('')).join('') +
         '<h3>THE TABLE</h3>' +
         '<div class="spl-row"><div class="spl-name">OPPONENTS</div>' + seg('opp', [['4','4'],['6','6']], state.opp) + '<p class="spl-note">Changing this deals a new table.</p></div>' +
         '<div class="spl-row"><div class="spl-name">SOUND</div>' + seg('sound', [['on','ON'],['off','OFF']], state.sound) + '</div>' +
-        '<h3>LOCKED IN<small>Your round-1 and round-2 picks.</small></h3><ul class="spl-locked">' + LOCKED_LIST.map(t => '<li>' + t + '</li>').join('') + '</ul>' +
+        '<h3>LOCKED IN<small>Your picks from rounds 1 to 6.</small></h3><ul class="spl-locked">' + LOCKED_LIST.map(t => '<li>' + t + '</li>').join('') + '</ul>' +
         '<div class="spl-actions"><button type="button" data-act="reset">START OVER</button><button type="button" data-act="copy">COPY MY PICKS</button></div>' +
         '<textarea class="spl-copytext" readonly hidden></textarea>' +
       '</div>';
@@ -236,10 +309,11 @@
     sheet.addEventListener('click', ev => {
       const t = ev.target.closest('button'); if (!t) return;
       if (t.dataset.act === 'say'){ open(false); setTimeout(sayNow, 250); return; }
+      if (t.dataset.moment){ const m = t.dataset.moment; open(false); setTimeout(() => sayMoment(m), 250); return; }
       if (t.dataset.act === 'deal'){ open(false); clear(true); deal(); return; }
       if (t.dataset.act === 'reset'){ Object.assign(picks, DEFAULTS, CLOSE, BLIPS); save(); voiceSet(); paint(); return; }
       if (t.dataset.act === 'copy'){
-        const text = 'Speech Lab (round 6):\n' + ROWS.map(r => '- ' + r[1] + ': ' + r[2].find(o => o[0] === picks[r[0]])[1]).join('\n') + '\n- OPPONENTS: ' + state.opp;
+        const text = 'Speech Lab (round 7):\n' + ROWS.map(r => '- ' + r[1] + ': ' + r[2].find(o => o[0] === picks[r[0]])[1]).join('\n') + '\n- OPPONENTS: ' + state.opp;
         const ta = sheet.querySelector('.spl-copytext');
         const fin = ok => { t.textContent = ok ? 'COPIED' : 'SELECT + COPY BELOW'; setTimeout(() => { t.textContent = 'COPY MY PICKS'; }, 2200); if (!ok){ ta.hidden = false; ta.value = text; ta.focus(); ta.select(); } };
         try{ navigator.clipboard.writeText(text).then(() => fin(true), () => fin(false)); }catch(err){ fin(false); }
@@ -263,6 +337,7 @@
 
   function deal(){
     spokenHand = -1; lastGroup = null; groupTurn = 0; anyHand = -1;
+    [stackAt, lossRun].forEach(o => Object.keys(o).forEach(k => { delete o[k]; }));
     startSinglePlayerRun({ opponentCount:Number(state.opp) || 4 });
   }
 
@@ -273,6 +348,6 @@
     deal();
     addEventListener('resize', () => clear(true));
   }
-  window.__splLab = { say:(g) => say(speaker(), g || 'bet'), sayNow, clear, picks, deal, get live(){ return live && live.el; } };
+  window.__splLab = { say:(g) => say(speaker(), g || 'bet'), sayNow, sayMoment, get finishes(){ return finishes; }, rebase(){ game.players.forEach(p => { stackAt[p.id] = p.chips + p.betThisRound; }); }, momentLine:(m) => { const p = speaker(); return p && momentLine(p, m); }, clear, picks, deal, get live(){ return live && live.el; } };
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start); else setTimeout(start, 0);
 })();

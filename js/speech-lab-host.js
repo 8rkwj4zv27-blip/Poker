@@ -1,7 +1,7 @@
 "use strict";
 
 /* ============================================================
-   SPEECH LAB — the host page (round 3, phone-first)
+   SPEECH LAB — the host page (round 7, phone-first)
 
    Loads the real game into one full-screen frame with the Lab's parts
    injected (listed in #lab-inject), and keeps the owner's picks across a

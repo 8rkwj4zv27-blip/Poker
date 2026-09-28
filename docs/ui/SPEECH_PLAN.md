@@ -250,3 +250,44 @@ the family changes.
 pick) · MEDIUM · HIGH · SILENT (the bubbles still talk, no blips). In
 the game this goes in Settings next to the existing Table Talk switch,
 saved with the other settings.
+
+## Round 7: the moments (2026-09-28)
+
+The owner read three drafts of lines before any were built:
+1. First draft: too many threats, jokes "overworked", "too many beats".
+   Funnier "when there isn't a punchline and the funny thing almost
+   isn't said". "Not everyone has to be mental." Keep "weapon".
+2. Second draft: one-beat lines; "too short", needs variety.
+3. Third draft: varied lengths, subtle bite, some characters kind.
+   Approved ("these sound good"), with Mavis toned down from an old
+   lady to "just an innocent person". Build it, "with loads of variety".
+
+**Language:** the owner wants swearing (and asked for slurs; agreed:
+full British swearing and insults, no slurs against groups of people).
+A LANGUAGE switch (STRONG / CLEAN) leaves out any line with a swear in
+it (`SPEECH_SWEARS`); it's meant to be a player setting in the game.
+
+**The moments** (`js/speech-moments.js`, 256 lines: 8 characters x 4
+moments x 8 lines, 79 of them tagged darker):
+- *lost*: they lose a big pot (6+ big blinds) to you, having gone to the end
+- *beat*: they win a big pot off you, you having gone to the end
+- *bust*: you knock them out (spoken after the K.O. has played)
+- *streak*: their third losing hand in a row
+
+In play these fire by themselves: the lab snapshots every stack at
+`startNewHand` and reads the change when `finishHand` is called (after
+the payout, before any K.O.), using public facts only. One moment a
+hand at most, and it replaces that hand's action line. In the sheet,
+four PLAY buttons fire each moment straight away for the chosen speaker.
+
+**GOES DARK** dial: how often a moment picks one of the darker lines:
+1 IN 3 (default) · EVERY TIME · 1 IN 6 · NEVER. Checked: EVERY TIME
+gives only dark lines, NEVER none, 1 IN 3 about a third; CLEAN lets no
+swear through, and every pool keeps clean lines.
+
+**Mavis** is now innocent rather than old (no Derek, bingo, pension or
+"love"); her action lines were rewritten to match. Bournemouth stays,
+as her dad.
+
+**Not yet:** characters talking to each other (the owner: "maybe
+later, could be fun").

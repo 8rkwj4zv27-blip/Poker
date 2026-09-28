@@ -95,25 +95,26 @@ const SPEECH_LINES = {
     }
   },
 
-  // Mavis, the station: somebody's nan, calls everything, chats through it
+  // Mavis, the station: innocent, sweet, a bit naive, pleased for everyone
+  // (round 7: no longer an old lady; the sadness leaks out without her noticing)
   station: {
     bet: {
-      short: [['Ooh. A bit more.', 'happy1'], ["Is that a raise? That's a raise.", 'confused1'], ["I'll have a flutter.", 'joyful1'],
-              ['Go on, spoil me.', 'happy2'], ["I've got a good feeling.", 'joyful1']],
-      long:  [['My Derek never raised in his life. Look where it got him. Bournemouth.', 'joyful1'],
-              ["I'll put a bit on. It's only the bingo money, and the bingo's rubbish now.", 'happy2']]
+      short: [['Ooh. A bit more?', 'happy1'], ["Is that a raise? I think that's a raise.", 'confused1'], ["I'll try a little one.", 'happy2'],
+              ['Is this allowed?', 'happyConfused1'], ["I've got a good feeling!", 'joyful1']],
+      long:  [['My dad never raised in his life. Look where it got him. Bournemouth.', 'joyful1'],
+              ["I don't really know what I'm doing, but it's exciting, isn't it?", 'happy2']]
     },
     call: {
-      short: [['Oh, go on then.', 'happy1'], ["I'll see you, love.", 'happy2'], ['Just a little one.', 'relieved1'],
-              ["I'll come along.", 'relieved1'], ['Why not, eh?', 'happyConfused1']],
-      long:  [["I'll call, love. I don't know what I've got, but I've got it.", 'happyConfused1'],
-              ["Go on then. My sister says I'm too trusting. She's a liar.", 'confused2']]
+      short: [['Oh, go on then.', 'happy1'], ["I'll see you!", 'happy2'], ['Just a little one.', 'relieved1'],
+              ["I'll come along.", 'relieved1'], ['Why not?', 'happyConfused1']],
+      long:  [["I'll call. I don't know what I've got, but I've got it.", 'happyConfused1'],
+              ["Go on then. My sister says I'm too trusting.", 'confused2']]
     },
     fold: {
-      short: [['Ooh, no.', 'worried1'], ['Not for me, love.', 'relieved1'], ["I'll keep my pension, thanks.", 'worried1'],
+      short: [['Ooh, no.', 'worried1'], ['Not for me, thank you.', 'relieved1'], ["I'll just watch.", 'happy1'],
               ["I'll sit this one out.", 'relieved1'], ['No, no, no.', 'worried1']],
-      long:  [["I'm out. I only came for a sit down and a sherry.", 'relieved1'],
-              ["Ooh, I'll leave it. Derek always said I was reckless. He's in Bournemouth.", 'confused2']]
+      long:  [["I'll leave it. I only really came for a bit of company.", 'relieved1'],
+              ["Ooh, I'll fold. I get a bit nervous when it's a lot.", 'worried1']]
     }
   },
 
