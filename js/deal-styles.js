@@ -15,11 +15,13 @@
    gentle: the card leans and tips like a thrown card reacting to the air,
    never far enough to show its thickness, never over.
 
-   Tiers: COMMON and UNCOMMON share the hands by weight (10 / 4); EACH
-   HAND: one of them for the whole hand; EVERY CARD: each card rolls.
-   RARE, EPIC and LEGENDARY are never a whole hand: any single card has a
-   fixed chance of one (1/500, 1/800, 1/3000 a card: about 1 hand in 50,
-   80 and 300 for each style), as a surprise.
+   Tiers: COMMON and UNCOMMON share the hands by weight (10 / 4).
+   ONCE PER HAND: one style deals the whole hand, every card; RARE, EPIC
+   and LEGENDARY take the whole hand when they come up (each style 1 hand
+   in 50, 80 and 300), otherwise a common or uncommon one does. EVERY
+   CARD: each card rolls, and any single card has a fixed chance of a
+   rare, epic or legendary one (1/500, 1/800, 1/3000 a card) as a
+   surprise.
 
    Presentation only: nothing in the game changes; the cards land where
    they always do. The specials' light and smoke are pixel bits (css/
@@ -30,11 +32,13 @@ const DealStyles = (() => {
   const P = (o, t, l, z, x, s, e, c) => [o, t, l, z || 0, x || 0, s || 1, e || null, c || 0];
   const IN = 'cubic-bezier(.5,0,.9,.6)', OUT = 'cubic-bezier(.2,.7,.3,1)', SOFT = 'cubic-bezier(.3,0,.7,1)';
   // COMMON and UNCOMMON share the hands between them by weight. RARE and
-  // up are a fixed chance on any one card (about 10 cards a hand), so
-  // each rare style is about 1 hand in 50, each epic 1 in 80, each
-  // legendary 1 in 300, however many common styles are switched on.
+  // up are a fixed chance, however many common styles are switched on:
+  // once per hand, each rare style takes about 1 hand in 50, each epic 1
+  // in 80, each legendary 1 in 300 (HAND_CHANCE); every card, it's a
+  // chance on any one card (CHANCE; about 10 cards a hand, so the same).
   const WEIGHT = { common:10, uncommon:4 };
   const CHANCE = { rare:1 / 500, epic:1 / 800, legendary:1 / 3000 };
+  const HAND_CHANCE = { rare:1 / 50, epic:1 / 80, legendary:1 / 300 };
   const SOLO = { rare:true, epic:true, legendary:true };
   const TIERS = ['common','uncommon','rare','epic','legendary'];
   const S = Math.sin, C = Math.cos, PI = Math.PI;
@@ -358,18 +362,23 @@ const DealStyles = (() => {
     for (const s of list){ r -= WEIGHT[O.rarity[s.id]]; if (r <= 0) return s; }
     return list[list.length - 1];
   }
-  let handKey = null, handStyle = null;
+  let handGame = null, handKey = null, handStyle = null;
   function pick(){
     const on = STYLES.filter(s => O.on[s.id]);
     if (!on.length) return null;
     const plain = on.filter(s => !SOLO[O.rarity[s.id]]);
-    // any single card can be the rare one
-    let x = Math.random();
-    for (const s of on) if (SOLO[O.rarity[s.id]]){ x -= CHANCE[O.rarity[s.id]]; if (x < 0) return s; }
-    if (!plain.length) return on[Math.floor(Math.random() * on.length)];
-    if (O.scope === 'card') return roll(plain);
-    const key = typeof game !== 'undefined' && game ? game.handNumber : 0;
-    if (key !== handKey || !handStyle || !O.on[handStyle.id]){ handKey = key; handStyle = roll(plain); }
+    // a rare, epic or legendary style comes up at its tier's chance
+    const special = chances => {
+      let x = Math.random();
+      for (const s of on) if (SOLO[O.rarity[s.id]]){ x -= chances[O.rarity[s.id]]; if (x < 0) return s; }
+      return null;
+    };
+    const any = () => plain.length ? roll(plain) : on[Math.floor(Math.random() * on.length)];
+    // every card: any single card can be the rare one
+    if (O.scope === 'card') return special(CHANCE) || any();
+    // once per hand: one style, rare or not, deals every card of the hand
+    const g = typeof game !== 'undefined' ? game : null, key = g ? g.handNumber : 0;
+    if (g !== handGame || key !== handKey || !handStyle || !O.on[handStyle.id]){ handGame = g; handKey = key; handStyle = special(HAND_CHANCE) || any(); }
     return handStyle;
   }
   function apply(order){
@@ -427,5 +436,5 @@ const DealStyles = (() => {
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', buildSettings); else buildSettings();
 
-  return { STYLES, TIERS, WEIGHT, CHANCE, SOLO, Sfx, paintSettings, apply, make:id => make(byId(id)), get order(){ return JSON.parse(JSON.stringify(O)); } };
+  return { STYLES, TIERS, WEIGHT, CHANCE, HAND_CHANCE, SOLO, Sfx, paintSettings, apply, make:id => make(byId(id)), get order(){ return JSON.parse(JSON.stringify(O)); } };
 })();

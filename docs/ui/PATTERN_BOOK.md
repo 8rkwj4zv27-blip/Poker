@@ -376,7 +376,7 @@ on the deck's flights (`js/dealer-deck.js`). Presentation only.
 | Shuffle, flop spread | **LEAN** | The same stepped lean as the cards split, riffle, bridge and fan out. |
 | Your cards | **TURN IN THE AIR** | They turn over on the way, arrive just above the holder's lip and slip in. |
 | Their cards | **UNDER THE CABINET** | They land just clear of the cabinet, no fade, and slide up under it. |
-| Styles | **FLICK** alone by default (a setting) | Eighteen in five tiers: Flick, Frisbee, Lob, Slide, Whip / Swoop, Skip, Spin, Flutter, Knuckleball / Boomerang, Shuriken, Magician, Glitch / Transporter, Comet / Railgun, Royal Flourish. Common and uncommon share the hands by weight (10/4); rare, epic and legendary are a single card's surprise (1/500, 1/800, 1/3000 a card). |
+| Styles | **FLICK** alone by default (a setting) | Eighteen in five tiers: Flick, Frisbee, Lob, Slide, Whip / Swoop, Skip, Spin, Flutter, Knuckleball / Boomerang, Shuriken, Magician, Glitch / Transporter, Comet / Railgun, Royal Flourish. Common and uncommon share the hands by weight (10/4); rare, epic and legendary are a surprise: once per hand (the default) one takes the whole hand (1/50, 1/80, 1/300 a hand, since v0.51.4), every card it's a single card's (1/500, 1/800, 1/3000 a card). |
 
 Settings → Dealing: FLICK ONLY / ALL ON, once per hand or every card, and
 one row per style (grouped by tier) with the sheet's switch and its rarity
