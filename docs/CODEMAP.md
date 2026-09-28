@@ -16,6 +16,7 @@ ticket-feed.js          table-intro.js
 08-dev-mode.js          home-cast.js            home-boot.js
 dashboard.js            crt.js                  finishes.js
 press-feel.js           showdown.js             dealer-deck.js
+action-drum.js          knock-check.js
 ```
 
 Later files call into earlier ones freely; there's no module system, so
@@ -341,6 +342,36 @@ candidate instead, so every option still runs on V1 cards (options are
 the coin table's `EnemyCards` questions itself. Its default ("YOUR ORDER")
 is the shipped order. Shows each card's footprint against V1. Not loaded
 by the game.
+
+## `js/action-drum.js` + `css/action-drum.css` — the key bay's drum (live, v0.48.0)
+
+The bottom console's sides (FOLD/CHECK/RAISE, QUICK RESOLVE, AWARD POT +
+SHOW, the results keys) are faces of one four-sided drum that rolls down a
+side at each change, inside a fixed bezel over a dark well. It replaced
+the two nested CSS flips (`#console-flip`, `#actions-flip`), whose hidden
+faces iPhone Safari drew behind the live keys: no side is hidden by
+`backface-visibility`, and at rest every side but the live one is
+`visibility:hidden`. The game still drives the console only through the
+`.flipped` classes (`showAwardConsole`, `syncQuickResolveControl`,
+`activateResultsConsole`...); the drum watches them and turns, so no ids
+or handlers moved. Also: every side's keys on the row's line
+(`--ad-key-top`), the bay 10px taller in portrait, and the rim's glow
+carried round the bay. Installs itself at load; `ActionDrum.set()` tunes
+it. Order in `docs/ui/PATTERN_BOOK.md` (Action drum); history in
+`docs/ui/ACTION_DRUM_PLAN.md`.
+
+## `js/knock-check.js` + `css/knock-check.css` — knock to check (live, v0.48.0)
+
+Double-tap the dashboard case to check (`humanAct('check')`); facing a bet
+it refuses with a buzz and CAN'T KNOCK. The Dashboard V2 order's
+behaviour, ported from `js/dashboard-order.js`.
+
+## `action-drum-lab.html` + `js/action-drum-lab.js` — Action Drum (Lab)
+
+Where the drum was ordered (rounds 1–3). Runs the real game with a TUNE
+sheet that turns the console to any side and tunes the live drum through
+`ActionDrum.set()` (the game copy carries the drum itself; the lab injects
+only its controls). Host is the Showdown Lab's; not loaded by the game.
 
 ## `js/knockout.js` + `css/knockout.css` — K.O. + game over (live, v0.44.0)
 

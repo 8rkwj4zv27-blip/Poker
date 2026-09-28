@@ -1,0 +1,16 @@
+/* KNOCK TO CHECK (live v0.48.0; js/knock-check.js). The ring where you
+   knocked, the whole machine's jolt (dashboard and key bay together) and
+   the screen's shake when a bet refuses it. From the order form's knock
+   (css/dashboard-order.css). */
+#your-seat-dock{ touch-action:manipulation; }
+.kc-ring{
+  position:absolute; z-index:20; width:14px; height:14px; margin:-7px 0 0 -7px;
+  border:3px solid var(--card-face); border-radius:50%; pointer-events:none;
+  animation:kcRing .45s steps(5,end) forwards;
+}
+@keyframes kcRing{ to{ transform:scale(4.5); opacity:0; border-width:1px; } }
+#your-seat-dock.kc-jolt,#action-area.kc-jolt{ animation:kcJolt .16s steps(2,end); }
+@keyframes kcJolt{ 50%{ transform:translateY(2px); } }
+#hud-frame.kc-deny #hud-status-normal{ animation:kcDeny .32s steps(6,end); }
+@keyframes kcDeny{ 20%{ transform:translateX(-4px); } 40%{ transform:translateX(4px); } 60%{ transform:translateX(-3px); } 80%{ transform:translateX(2px); } }
+[data-motion="off"] #your-seat-dock.kc-jolt,[data-motion="off"] #action-area.kc-jolt,[data-motion="off"] #hud-frame.kc-deny #hud-status-normal{ animation:none; }
