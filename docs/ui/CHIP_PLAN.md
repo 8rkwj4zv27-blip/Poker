@@ -657,3 +657,22 @@ at every size (the loose landing heap before it settles can overlap).
 - Coin Bank Lab (`coin-bank-lab.html`): https://claude.ai/artifact/QBFNjCANf2xFi9m6jsDHot
 - Bank Tubes Lab (`coin-tubes-lab.html`): https://claude.ai/artifact/5cMSBi4UEys2BoCYHnRWM2
 - Hoard Lab (`coin-hoard-lab.html`): https://claude.ai/artifact/CFtJ2Uk69961wxm1k1d4oQ
+
+**Round 4: chip coins (28 Sep 2026).** Owner on the hoard: coins drawn
+over the raise panel; a big pot overflowing into a climbing loop; bars
+lost behind big coins. Decision: poker-chip coins, one size, value by
+colour, the bank a pot of them, in and out through a slot; gold shouldn't
+be the lowest value. `chip-lab.html`: tiers x5 (1, 5, 25, 100, 500, 2500
+small blinds); LADDER ivory-red-green-black-purple-gold (suggested; gold
+is the top prize), silver-...-gold, or gold lowest; COLOURS muted/casino;
+eight DESIGNS (spots, enamel, tint, ring, gem, bimetal, casino, rim). The
+bank: colour-sorted stacks in the hoard's box (each colour a share of the
+stacks, richest in the middle), THROUGH A SLOT (wins stream in one by one
+and drop onto the pile; bets hop out and on) or over the top. Fixes: the
+bank's resting coins hide while anything covers the box; pot and box
+stacks may reach 10 on a landing, so a 4-way all-in settles instead of
+climbing. Measured: 0 overlaps / 0 outside the box at every stack size;
+the bank equals the stack exactly (no cap with chips); a 4-way all-in
+leaves 0 stuck coins.
+- Chip Lab (`chip-lab.html`): (link below once published)
+

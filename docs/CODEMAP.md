@@ -413,6 +413,16 @@ heap, wins land on it, bets off the top, tap to tidy, gleams when rich).
 The candidates are copies of the shipped coin files with box zones added;
 the copy strips the shipped ones. Not loaded by the game.
 
+## `chip-lab.html` + `js/chip-lab.js` + `css/chip-lab.css` + candidate `js/chip-world.js` / `js/chip-table.js` — Chip Lab
+
+The coin economy, round 4: chip coins (the same gold coin, its value in
+its colour on a x5 ladder, eight designs, two palettes, three ladders),
+the bank as a pot of them (the hoard's box zone, colour-sorted stacks),
+coins in and out of the bank through a slot, the raise panel hiding the
+bank's coins, taller pot stacks so a big pot can't climb. Candidates grown
+from the Hoard Lab's; the copy strips the shipped coin files. Not loaded
+by the game.
+
 ## `js/finishes.js` + `css/finishes.css` — Finishes menu (live)
 
 Settings → Finishes: a page inside the Settings sheet that swaps each
@@ -470,7 +480,7 @@ there manually.
 Files matching `*-lab.html`, `*-lab.js`, `*-lab.css` (`career-lab`,
 `career-hub-v2-lab`, `ticket-lab`, `card-flight-options`, `card-turn-lab`,
 `chip-motion-lab`, `chip-lab`, `chip-throw-lab`, `design-lab`, `result-stage-lab`, `showdown-rail-lab`, `crt-lab`, `dashboard-v2-lab`, `dashboard-order-lab`,
-`wheel-v2-lab`, `intro-lab`, `boot-lab`, `slot-lab`, `table-space-lab`, `enemy-card-lab`, `showdown-lab`, `pot-lab`, `ko-lab`, `coin-denom-lab`, `coin-bank-lab`, `coin-tubes-lab`, `coin-hoard-lab`)
+`wheel-v2-lab`, `intro-lab`, `boot-lab`, `slot-lab`, `table-space-lab`, `enemy-card-lab`, `showdown-lab`, `pot-lab`, `ko-lab`, `coin-denom-lab`, `coin-bank-lab`, `coin-tubes-lab`, `coin-hoard-lab`, `chip-lab`)
 are **isolated visual references and prototyping sandboxes**. Several are
 committed permanently as durable references even after their feature
 shipped. Rules:
