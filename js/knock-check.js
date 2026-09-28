@@ -1,8 +1,8 @@
 "use strict";
 
 /* ============================================================
-   KNOCK TO CHECK — candidate (lab only: loaded by action-drum-lab.html,
-   ships with the action drum)
+   KNOCK TO CHECK (live v0.48.0, shipped with the action drum; tried in
+   action-drum-lab.html round 3)
 
    The owner's Dashboard V2 order (docs/ui/PATTERN_BOOK.md, Dashboard V2 →
    Behaviours; DASHBOARD_V2_HANDOVER.md, "What the owner liked" 1): double-

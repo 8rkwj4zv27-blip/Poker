@@ -1,4 +1,4 @@
-/* ACTION DRUM — candidate (lab only; js/action-drum.js).
+/* ACTION DRUM (live v0.48.0; js/action-drum.js, docs/ui/PATTERN_BOOK.md).
    The drum takes the console's sides over from the two CSS flips: their
    transforms and transitions are stood down here and js/action-drum.js
    places every side itself. Nothing below leans on backface-visibility or

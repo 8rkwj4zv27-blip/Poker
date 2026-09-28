@@ -83,3 +83,22 @@ These are now the candidate's defaults.
    `validation/pattern-book-checks.js` (no hidden side visible once a turn
    has settled).
 3. Bump `BUILD_VERSION` / `CACHE_NAME`.
+
+## Shipped: v0.48.0 (28 September 2026)
+
+Owner: "this all looks really good to me". The drum (the round-1 picks),
+the round-2 housing and key line, the round-3 glow and knock to check are
+live: `js/action-drum.js`, `css/action-drum.css`, `js/knock-check.js`,
+`css/knock-check.css`, loaded by `index.html` and precached by `sw.js`.
+Recorded in `docs/ui/PATTERN_BOOK.md` (Action drum) and checked by
+`validation/pattern-book-checks.js`.
+
+- The two flips' old rules in `css/03-action-console.css` stay as the
+  fallback if the drum can't install; `html.ad-drum` stands them down.
+- The knock's refusal shakes the whole screen (`#hud-status-normal`, the
+  hand line and turn lines together) rather than the turn-line CRT alone:
+  only `css/crt.css` may animate a CRT (Pattern Book rule).
+- Checked in an emulated iPhone at 390 x 844, 430 x 932, 375 x 667 and
+  landscape: the drum is on at boot, a real showdown lands AWARD POT on
+  the FOLD line and turns back, the knock refuses facing a bet. Not
+  checkable here: real iPhone Safari, where the old ghost showed.

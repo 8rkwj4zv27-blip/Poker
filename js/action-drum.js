@@ -1,8 +1,10 @@
 "use strict";
 
 /* ============================================================
-   ACTION DRUM — candidate (lab only: loaded by action-drum-lab.html,
-   never by the game yet)
+   ACTION DRUM (live v0.48.0) — the owner's order from the Action Drum
+   Lab (action-drum-lab.html, rounds 1–3; docs/ui/ACTION_DRUM_PLAN.md and
+   docs/ui/PATTERN_BOOK.md, Action drum). Installs itself at load; the lab
+   tunes the same instance through ActionDrum.set().
 
    The bottom console's modes (FOLD/CHECK/RAISE, QUICK RESOLVE, AWARD POT,
    the results keys) are the sides of one drum that turns to bring the next
@@ -239,4 +241,9 @@
     get state(){ return { on, current, spinning, angle:D }; },
     DEFAULTS
   };
+
+  // The console is in the page by the time this loads (end of <body>); if
+  // it isn't, the two flips simply stay as they were.
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', () => install());
+  else install();
 })();
