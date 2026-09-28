@@ -1685,48 +1685,58 @@
     })().finally(()=>{ z.merging=null; });
     return z.merging;
   }
-  /* THE PILE'S CHANGE-UP (chips): over the limit, five of a colour lift
-     off the pile to a point over where the richer chip will go, clink
-     together, pop into it, and it drops onto the pile. The pile doesn't
-     reshape: only the stacks the five came off settle down. A few rounds
-     at most (a change can make five of the next colour); past that the
-     rest change quietly. */
+  /* THE PILE'S CHANGE-UP (chips): THE PRESS. Over the limit, five of a
+     colour (off one stack where it can, the tallest run of that colour)
+     flash in turn bottom to top like a counter ticking, go, and the
+     richer chip flips in at the highest of their places with a ka-chunk;
+     then whatever sat above them settles down. Nothing leaves the pile,
+     nothing reshapes. A few rounds at most (a change can make five of the
+     next colour); past that the rest change quietly. */
+  const keyOf=b=>Math.round(b.x)+','+Math.round(b.y);
+  function pickPress(z,from){
+    const mine=z.list.filter(b=>b.colour===from && b.state==='rest');
+    if (mine.length<5) return [];
+    const by=new Map(); mine.forEach(b=>{ (by.get(keyOf(b))||by.set(keyOf(b),[]).get(keyOf(b))).push(b); });
+    const home=[...by.values()].sort((a,c)=>c.length-a.length)[0], hx=home[0].x, hy=home[0].y;
+    // the rest from the nearest stacks, their highest first
+    const took=home.sort((a,c)=>c.z-a.z).slice(0,5);
+    mine.filter(b=>!took.includes(b)).sort((a,c)=>Math.hypot(a.x-hx,a.y-hy)-Math.hypot(c.x-hx,c.y-hy) || c.z-a.z).slice(0,5-took.length).forEach(b=>took.push(b));
+    took.forEach(b=>removeFromZone(b));
+    return took;
+  }
   async function mergePile(z,limit){
     for (let round=0;round<4;round++){
       const steps=mergePlan(z,limit); if (!steps.length) return;
       const groups=[];
-      steps.forEach(([from,to])=>{ const five=pickFive(z,from); if (five.length<5){ five.forEach(b=>{ b.zone=z; z.list.push(b); }); return; } groups.push({ to, five }); });
+      steps.forEach(([from,to])=>{ const five=pickPress(z,from); if (five.length<5){ five.forEach(b=>{ b.zone=z; z.list.push(b); }); return; } groups.push({ to, five }); });
       if (!groups.length) return;
-      const settled=settleStacks(z), at=pileAdd(z,groups.map(g=>g.to));
-      await Promise.all(groups.map((g,i)=>mergeShown(z,g,at[i],i*90)));
-      await settled;
+      await Promise.all(groups.map((g,i)=>pressOne(z,g,i*140)));
+      await settleStacks(z);
     }
     mergeQuiet(z,limit); await settleStacks(z);
   }
-  async function mergeShown(z,g,s,wait){
-    // float well clear of the pile (from where we sit, plainly in the air)
-    const px=s.x, py=s.y, pz=Math.max(s.z,...g.five.map(b=>b.z))+54;
+  async function pressOne(z,g,wait){
+    const five=g.five.slice().sort((a,c)=>a.z-c.z), at=five[4];   // in view: the highest of their places
     if (!motionOff()){
       await hold(wait);
-      // they float up in a loose ring, hang there a beat, drift together
-      await Promise.all(g.five.map((b,i)=>moveBody(b,px+(i-2)*7,py,pz+[0,5,8,5,0][i],.36,6,i*45)));
-      sfx('stack',.6,1.25);
-      await hold(160);
-      await Promise.all(g.five.map((b,i)=>moveBody(b,px+(i-2)*2,py,pz+3,.12,0,0)));
-      await hold(60);
-      await Promise.all(g.five.map(b=>moveBody(b,px,py,pz+3,.06,0,0)));
-      sfx('stack',1,1.6); sfx('knock',.6,1.2);
+      // tick, tick, tick, tick, tick: each lights up, bottom to top
+      for (let i=0;i<5;i++){
+        const b=five[i];
+        if (b.el.animate) b.el.animate([{ filter:'brightness(1)' },{ filter:'brightness(2.4)' },{ filter:'brightness(1.5)' }],{ duration:150, fill:'forwards' });
+        sfx('stack',.45,1.1+i*.12);
+        await hold(85);
+      }
+      await hold(90);
     }
-    g.five.forEach(b=>{ removeBody(b); b.el.remove(); });
-    const nb=body(makeChip(g.to),px,py,motionOff()?s.z:pz+3,D());
+    five.forEach(b=>{ removeBody(b); b.el.remove(); });
+    const nb=body(makeChip(g.to),at.x,at.y,motionOff()?at.z:at.z+10,D());
     nb.target={}; nb.opts={};
-    if (motionOff()){ nb.zone=z; z.list.push(nb); nb.z=s.z; toRest(nb); dirty.add(nb); kick(); return; }
-    nb.sq=.1; squashing.add(nb); dirty.add(nb); kick();
-    popRing(px,py-pz-3-pieceH(g.to)/2,pieceD(g.to)*1.4); glintAt(px+pieceD(g.to)*.2,py-pz-3-pieceH(g.to)*.9); setTimeout(()=>glintAt(px-pieceD(g.to)*.2,py-pz-3-pieceH(g.to)*.6),120);
-    sfx('land',1,pitchOf(nb)*.9);
-    // it hangs there, bright, then drops onto the pile, onto its own place
-    await hold(260);
-    await launch(nb,{ x:px, y:py, z:s.z, zone:z, slot:true, d:D() },{ T:.3, flips:0 });
+    if (motionOff()){ nb.zone=z; z.list.push(nb); nb.z=at.z; toRest(nb); dirty.add(nb); kick(); return; }
+    // ka-chunk: the richer chip flips in where the five were
+    sfx('knock',.7,1.1); sfx('land',1,pitchOf(nb)*.9);
+    popRing(at.x,at.y-at.z-pieceH(g.to)/2,pieceD(g.to)*1.2);
+    await launch(nb,{ x:at.x, y:at.y, z:at.z, zone:z, slot:true, d:D() },{ T:.2, flips:1 });
+    glintAt(at.x+pieceD(g.to)*.2,at.y-at.z-pieceH(g.to)*.9);
   }
   // the change-up without a show: five pieces go, the bigger one takes the
   // nearest free place on the pile (the hoard: no arithmetic on screen)

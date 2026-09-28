@@ -766,3 +766,10 @@ felt, changing and falling (from the table's angle). Now the five float
 well clear of the pile (54px up) in a loose ring, hang a beat, drift
 together and pop (a bigger ring, two glints); the new chip hangs a moment
 before it drops onto its place.
+
+**Round 7e: THE PRESS** (owner's pick of three). The float didn't read (it
+rose into the board cards). Now the change-up stays in the pile: five of
+a colour (off one stack where it can) flash in turn, bottom to top, like
+a counter ticking; they go and the richer chip flips in at the highest of
+their places with a ka-chunk (ring, glint); what sat above them settles
+down. `pickPress` / `pressOne` / `mergePile` in js/chip-world.js.
