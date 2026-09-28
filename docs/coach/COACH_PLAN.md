@@ -42,7 +42,7 @@ Target: 600–800 lines.
 
 ## Build order
 
-0. **Face lab** (this round): `coach-face-lab.html`, glasses, colour,
+0. **Face lab** (done, round 1): `coach-face-lab.html`, glasses, colour,
    visor, expressions, housing, size, on the real table. Then a voice
    lab with sample lines.
 1. Put him in the game: face, seat, dashboard switch, talk slider, saved
@@ -70,5 +70,8 @@ covers them.
   four colours (slate suggested), dealer's visor, six calm expressions,
   three housings (mini cabinet suggested), three sizes. Glasses are a
   vector overlay on a fixed position, so they stay put while the
-  expression changes. Awaiting the owner's picks.
+  expression changes.
+  **Picked by the owner:** thick frames (black), slate, no visor, just the
+  face (no cabinet), small (60px face), opposite the deck. Now the lab's
+  defaults. His expressions stay the calm six.
   Link: https://claude.ai/artifact/J6ihf17j1uz3RatkD1fxYS

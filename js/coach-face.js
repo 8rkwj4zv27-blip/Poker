@@ -75,7 +75,9 @@ const CoachFace = (() => {
 
   const HOUSINGS = [['cabinet', 'MINI CABINET'], ['monitor', 'LITTLE SCREEN'], ['bare', 'JUST THE FACE']];
   const SIZES = { s:60, m:72, l:86 };
-  const DEFAULTS = { glasses:'browline', frame:'auto', colour:'slate', visor:'off', housing:'cabinet', size:'m', mood:'calm' };
+  // The owner's picks (round 1, 28 Sep 2026): thick black frames, slate, no
+  // visor, just the face, small.
+  const DEFAULTS = { glasses:'horn', frame:'auto', colour:'slate', visor:'off', housing:'bare', size:'s', mood:'calm' };
   let O = Object.assign({}, DEFAULTS);
 
   const find = (list, id) => list.find(x => (x.id || x[0]) === id) || list[0];
