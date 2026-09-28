@@ -15,7 +15,7 @@ career-hub-live.js      career-motion-live.js   machine-wheel.js
 ticket-feed.js          table-intro.js
 08-dev-mode.js          home-cast.js            home-boot.js
 dashboard.js            crt.js                  finishes.js
-press-feel.js
+press-feel.js           showdown.js             dealer-deck.js
 ```
 
 Later files call into earlier ones freely; there's no module system, so
@@ -377,6 +377,30 @@ when every option is at its first (today's) value. The copy strips the
 shipped `css/showdown.css` / `js/showdown.js` (`strip` in `#lab-inject`) so
 the candidate runs alone. Not loaded by the game.
 
+## `js/dealer-deck.js` + `css/dealer-deck.css` — Dealer deck (live, v0.45.0)
+
+The dealer's deck, the owner's order from `deck-lab.html` (recorded in
+`docs/ui/PATTERN_BOOK.md`, Dealer deck; `docs/ui/DEALER_PLAN.md`). A plain
+deck made of the same card as the ones dealt off it (one card-back recipe
+for every face-down card, ten backs), bottom left or right, thinner as it
+runs down; shuffled by hand between hands (split, riffle, bridge, squared
+up), cards slide off and fly, burns tuck under it, three taps before the
+turn and river, the flop lands stacked and spreads, the muck comes back
+onto it. Wraps `dealCardFlight`, `dealCommunity` (after `js/showdown.js`),
+`muckCards`, `playShuffle`, `keepPotClearOfDeck` and `clearAllCardDOM`,
+and hands back to them with Reduced Motion; the flop takes the same cards
+in the same order as the shipped deal, burns never touch `g.deck`.
+Settings → The deck (`settings.deckBack`, `settings.deckSide`). Checked by
+`validation/dealer-deck-checks.js`.
+
+## `deck-lab.html` + `js/deck-lab.js` — Deck Lab
+
+Where the dealer deck was ordered (rounds 1–4: a shoe, a tray, a movable
+deck, then the plain deck). Phone-first, on the Showdown Lab's host and
+sheet styles; it runs the live `js/dealer-deck.js` and adds only its
+controls (every row of the order, ten backs as cards, THE DEALER: TODAY
+for the old deck). Not loaded by the game.
+
 ## `coin-denom-lab.html` + `js/coin-denom-lab.js` + `css/coin-denom-lab.css` + candidate `js/coin-denom-world.js` / `js/coin-denom-table.js` — Coin Denominations Lab (Lab 1)
 
 The coin economy pass (`docs/ui/CHIP_PLAN.md`, "Denominations"): small
@@ -454,7 +478,7 @@ there manually.
 Files matching `*-lab.html`, `*-lab.js`, `*-lab.css` (`career-lab`,
 `career-hub-v2-lab`, `ticket-lab`, `card-flight-options`, `card-turn-lab`,
 `chip-motion-lab`, `chip-lab`, `chip-throw-lab`, `design-lab`, `result-stage-lab`, `showdown-rail-lab`, `crt-lab`, `dashboard-v2-lab`, `dashboard-order-lab`,
-`wheel-v2-lab`, `intro-lab`, `boot-lab`, `slot-lab`, `table-space-lab`, `enemy-card-lab`, `showdown-lab`, `pot-lab`, `ko-lab`, `coin-denom-lab`, `coin-bank-lab`)
+`wheel-v2-lab`, `intro-lab`, `boot-lab`, `slot-lab`, `table-space-lab`, `enemy-card-lab`, `showdown-lab`, `pot-lab`, `ko-lab`, `coin-denom-lab`, `coin-bank-lab`, `deck-lab`)
 are **isolated visual references and prototyping sandboxes**. Several are
 committed permanently as durable references even after their feature
 shipped. Rules:

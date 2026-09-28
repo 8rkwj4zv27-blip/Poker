@@ -1,0 +1,170 @@
+/* ============================================================
+   DEALER DECK (live, v0.45.0) — the owner's order from the Deck Lab
+   (deck-lab.html, round 4; docs/ui/DEALER_PLAN.md)
+
+   A plain deck: the deck on the felt is made of the same card as the ones
+   dealt off it (same back, same trim, same size): the top card and, under
+   it, a few more of the same card two pixels apart, thinner as the deck
+   runs down. It sits bottom left or bottom right. js/dealer-deck.js sets
+   the attributes on <html>:
+
+     data-ds-on        present when the deck is on (the Lab can take it off)
+     data-ds-size      std | big (the Lab only; the order is std)
+     data-ds-where     left | right   (Settings → The deck)
+     data-ds-back      one of the ten backs below, or table (the old green)
+
+   The deck is #dealer-deck itself, so everything that measures the deck
+   (the coin walls, the pot plate's clearance, the showdown's boxes)
+   measures it on either side.
+   ============================================================ */
+
+/* ---------------- the deck ---------------- */
+html[data-ds-on] #felt .dealer-station{
+  width:48px; height:78px;
+  transform:translate(-50%,-50%) scale(var(--ds-scale,1));
+}
+html[data-ds-on][data-ds-size="big"]{ --ds-scale:1.16; }
+html[data-ds-on][data-ds-where="right"] #felt .dealer-station{ left:84%; }
+html[data-ds-on] #felt .dealer-deck{
+  width:auto; height:auto; inset:0; background:transparent; box-shadow:none;
+}
+/* --ds-i counts down from the top card (0). Each card under it sits two
+   pixels lower, so its bottom edge shows: a line of its trim, then ink. */
+html[data-ds-on] #felt .dealer-deck .card{
+  width:44px; height:62px; left:2px; top:calc(2px + var(--ds-i,0) * 2px);
+  z-index:calc(20 - var(--ds-i,0));
+}
+html[data-ds-on] #felt .dealer-deck .card.back{ box-shadow:inset 0 0 0 2px var(--cb-trim,var(--rail)); }
+html[data-ds-on] #felt .dealer-deck .card.back.ds-under{ border-bottom-width:1px; }
+html[data-ds-on] #felt .dealer-deck .card.back.ds-bottom{ border-bottom-width:2px; box-shadow:inset 0 0 0 2px var(--cb-trim,var(--rail)),0 3px 0 rgba(0,0,0,.45); }
+html[data-ds-on] #felt .dealer-deck .card.ds-gone{ display:none; }
+html[data-ds-on] #felt .dealer-deck .card.ds-exit{ z-index:25; }
+html[data-ds-on] #felt .dealer-deck .card.ds-exit.ds-tuck{ z-index:0; }
+html[data-ds-on] #felt .dealer-deck .card.ds-riff{ z-index:30; }
+/* while it shuffles, the stack is the moving cards */
+html[data-ds-on] #felt .dealer-deck.ds-in-hands .card:not(.ds-riff){ visibility:hidden; }
+
+/* ---------------- motion ---------------- */
+html[data-ds-on] #felt .dealer-deck.ds-kick{ animation:dsKick 150ms steps(3,end); }
+@keyframes dsKick{ 0%{ transform:translateY(0); } 33%{ transform:translateY(2px) rotate(-1deg); } 66%{ transform:translateY(-1px); } 100%{ transform:none; } }
+html[data-ds-on] #felt .dealer-deck.ds-tap{ animation:dsTap 110ms steps(2,end); }
+@keyframes dsTap{ 0%{ transform:none; } 50%{ transform:translateY(2px) scale(1.02,.97); } 100%{ transform:none; } }
+html[data-ds-on] #felt .dealer-deck.ds-shuffling{ animation:dsShake 90ms steps(2,end) infinite; }
+html[data-ds-on] #felt .dealer-deck.ds-shuffling .card:not(.ds-riff):not(.ds-exit){ animation:dsJig 120ms steps(2,end) infinite alternate; animation-delay:calc(var(--deck-layer) * -23ms); }
+@keyframes dsShake{ 0%{ transform:translate(-1px,0); } 50%{ transform:translate(1px,1px); } 100%{ transform:translate(0,-1px); } }
+@keyframes dsJig{ from{ translate:0 0; } to{ translate:1px -2px; } }
+
+/* the landing puff: a few specks of felt dust */
+.ds-puff{ position:fixed; z-index:59; width:0; height:0; pointer-events:none; }
+.ds-puff i{
+  position:absolute; left:-1px; top:-1px; width:3px; height:3px; background:rgba(236,226,196,.6);
+  animation:dsPuff 340ms steps(4,end) forwards;
+}
+.ds-puff i:nth-child(1){ --dx:-15px; --dy:-3px; }
+.ds-puff i:nth-child(2){ --dx:-9px; --dy:-7px; }
+.ds-puff i:nth-child(3){ --dx:-4px; --dy:2px; }
+.ds-puff i:nth-child(4){ --dx:4px; --dy:2px; }
+.ds-puff i:nth-child(5){ --dx:9px; --dy:-7px; }
+.ds-puff i:nth-child(6){ --dx:15px; --dy:-3px; }
+@keyframes dsPuff{ from{ transform:translate(0,0); opacity:1; } to{ transform:translate(var(--dx),var(--dy)); opacity:0; } }
+
+/* ---------------- card backs ----------------
+   Ten backs, one recipe: a field, a trim just inside the ink outline, an
+   optional inner frame line and an optional centre diamond. Each back only
+   sets the recipe's tokens, so every face-down card in the game (the deck,
+   the flights, their cards, yours before they turn) is drawn the same way.
+   .ds-swatch[data-cb] scopes a back to one swatch in the Lab's picker.
+   TABLE GREEN (today) sets nothing and keeps the shipped back. */
+html[data-ds-on]:not([data-ds-back="table"]) .card.back,
+.ds-swatch:not([data-cb="table"]) .card.back{
+  background:var(--cb-bg);
+  border:2px solid var(--px-ink);
+  box-shadow:0 3px 0 rgba(0,0,0,.5),inset 0 0 0 2px var(--cb-trim);
+}
+html[data-ds-on]:not([data-ds-back="table"]) .card.back::before,
+.ds-swatch:not([data-cb="table"]) .card.back::before{
+  content:''; position:absolute; inset:4px; border:1px solid var(--cb-frame,transparent); pointer-events:none;
+}
+html[data-ds-on]:not([data-ds-back="table"]) .card.back.small::before,
+.ds-swatch:not([data-cb="table"]) .card.back.small::before{ inset:3px; }
+html[data-ds-on]:not([data-ds-back="table"]) .card.back::after,
+.ds-swatch:not([data-cb="table"]) .card.back::after{
+  content:''; position:absolute; left:50%; top:50%; width:28%; aspect-ratio:1; pointer-events:none;
+  transform:translate(-50%,-50%) rotate(45deg);
+  background:var(--cb-motif,none); box-shadow:0 0 0 2px var(--cb-motif-edge,transparent);
+  display:var(--cb-motif-show,block);
+}
+
+/* 1 · House crest: burgundy, gold trim and frame, a gold diamond */
+html[data-ds-back="crest"],.ds-swatch[data-cb="crest"]{
+  --cb-bg:repeating-conic-gradient(rgba(0,0,0,.16) 0% 25%,transparent 0% 50%) 0 0 / 4px 4px,#7A1F2B;
+  --cb-trim:#D9A93B; --cb-frame:rgba(217,169,59,.5);
+  --cb-motif:radial-gradient(#7A1F2B 0 26%,transparent 28%),#D9A93B; --cb-motif-edge:#4A0F19;
+}
+/* 2 · Gold lattice: a fine gold trellis on dark wine */
+html[data-ds-back="lattice"],.ds-swatch[data-cb="lattice"]{
+  --cb-bg:repeating-linear-gradient(45deg,rgba(217,169,59,.4) 0 1px,transparent 1px 5px),repeating-linear-gradient(-45deg,rgba(217,169,59,.4) 0 1px,transparent 1px 5px),#561320;
+  --cb-trim:#D9A93B; --cb-motif-show:none;
+}
+/* 3 · Classic red: the old red back, gold trim and frame */
+html[data-ds-back="classic"],.ds-swatch[data-cb="classic"]{
+  --cb-bg:repeating-conic-gradient(rgba(0,0,0,.18) 0% 25%,transparent 0% 50%) 0 0 / 6px 6px,#8F2029;
+  --cb-trim:#D9A93B; --cb-frame:rgba(217,169,59,.6); --cb-motif-show:none;
+}
+/* 4 · Velvet pinstripe: deep velvet with thin gold stripes, a cream frame */
+html[data-ds-back="velvet"],.ds-swatch[data-cb="velvet"]{
+  --cb-bg:repeating-linear-gradient(90deg,rgba(217,169,59,.3) 0 1px,transparent 1px 4px),#4A0F19;
+  --cb-trim:#B8862E; --cb-frame:rgba(243,230,196,.4); --cb-motif-show:none;
+}
+/* 5 · Midnight: navy with gold specks and a gold diamond */
+html[data-ds-back="midnight"],.ds-swatch[data-cb="midnight"]{
+  --cb-bg:radial-gradient(circle,rgba(242,210,122,.6) 0 .8px,transparent 1.2px) 0 0 / 6px 6px,#1B2340;
+  --cb-trim:#D9A93B; --cb-frame:rgba(217,169,59,.45);
+  --cb-motif:radial-gradient(#1B2340 0 26%,transparent 28%),#D9A93B; --cb-motif-edge:#0E1428;
+}
+/* 6 · Emerald crest: the house crest in green */
+html[data-ds-back="emerald"],.ds-swatch[data-cb="emerald"]{
+  --cb-bg:repeating-conic-gradient(rgba(0,0,0,.18) 0% 25%,transparent 0% 50%) 0 0 / 4px 4px,#14432F;
+  --cb-trim:#D9A93B; --cb-frame:rgba(217,169,59,.5);
+  --cb-motif:radial-gradient(#14432F 0 26%,transparent 28%),#D9A93B; --cb-motif-edge:#0B2A1D;
+}
+/* 7 · Casino check: red and black checks, a cream trim */
+html[data-ds-back="check"],.ds-swatch[data-cb="check"]{
+  --cb-bg:repeating-conic-gradient(#1A0E11 0% 25%,#9A2330 0% 50%) 0 0 / 8px 8px;
+  --cb-trim:#EDE3C8; --cb-motif-show:none;
+}
+/* 8 · Sunburst: wine rays from the middle, a gold diamond */
+html[data-ds-back="sunburst"],.ds-swatch[data-cb="sunburst"]{
+  --cb-bg:repeating-conic-gradient(from 0deg at 50% 50%,#7A1F2B 0deg 15deg,#5A1420 15deg 30deg);
+  --cb-trim:#D9A93B;
+  --cb-motif:radial-gradient(#5A1420 0 26%,transparent 28%),#D9A93B; --cb-motif-edge:#3A0A12;
+}
+/* 9 · Ivory: cream with a burgundy frame and diamond */
+html[data-ds-back="ivory"],.ds-swatch[data-cb="ivory"]{
+  --cb-bg:repeating-conic-gradient(rgba(122,31,43,.07) 0% 25%,transparent 0% 50%) 0 0 / 4px 4px,#EDE3C8;
+  --cb-trim:#7A1F2B; --cb-frame:rgba(122,31,43,.5);
+  --cb-motif:radial-gradient(#EDE3C8 0 26%,transparent 28%),#7A1F2B; --cb-motif-edge:#D8CBA8;
+}
+/* 10 · Harlequin: wine diamonds, gold trim */
+html[data-ds-back="harlequin"],.ds-swatch[data-cb="harlequin"]{
+  --cb-bg:conic-gradient(from 45deg,#7A1F2B 25%,#4A0F19 0 50%,#7A1F2B 0 75%,#4A0F19 0) 0 0 / 10px 14px;
+  --cb-trim:#D9A93B; --cb-frame:rgba(217,169,59,.4); --cb-motif-show:none;
+}
+
+/* Settings → The deck: the back row shows each back as a real card; it is
+   the sheet's segmented keys, laid out as a grid */
+#settings-sheet #deck-back-seg{ display:grid; grid-template-columns:repeat(4,1fr); gap:6px; }
+#settings-sheet #deck-back-seg button{ display:flex; flex-direction:column; align-items:center; gap:6px; padding:8px 2px 7px; min-height:92px; }
+#deck-back-seg .card{ width:34px; height:48px; flex:none; margin:0; }
+#deck-back-seg b{ font-weight:inherit; font-size:10px; line-height:1.15; text-align:center; }
+/* TABLE GREEN is the old back, whichever back the table wears now */
+#deck-back-seg .ds-swatch[data-cb="table"] .card.back{
+  background:repeating-conic-gradient(rgba(255,255,255,.13) 0% 25%,transparent 0% 50%) 0 0 / 6px 6px,var(--felt-2);
+  box-shadow:0 3px 0 rgba(0,0,0,.5),inset 0 0 0 2px var(--rail);
+}
+#deck-back-seg .ds-swatch[data-cb="table"] .card.back::before,
+#deck-back-seg .ds-swatch[data-cb="table"] .card.back::after{ display:none; }
+
+@media (prefers-reduced-motion:reduce){
+  html[data-ds-on] #felt .dealer-deck,html[data-ds-on] #felt .dealer-deck .card{ animation:none !important; }
+}
