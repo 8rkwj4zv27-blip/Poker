@@ -505,6 +505,18 @@ lab strips `css/card-holder.css`/`js/card-holder.js` from its copy so TODAY
 still means the old holder. The page measures the seat so the GAP is real air on
 any phone. Lab only; nothing loads in the game.
 
+## `speech-lab.html` + `js/speech-lab-host.js` + `js/speech-lab.js` + `css/speech-lab.css` + `js/speech-lines.js` — Speech Lab
+
+Where opponents' table talk goes on the table (`docs/ui/SPEECH_PLAN.md`,
+round 1). Phone-first like the Showdown Lab: the real game full screen,
+a TUNE key and a SAY key either side of the board, a bottom sheet. A
+second after the chosen opponent acts they say a line and their face
+changes to match (the game's `playReactionSequence`). Three candidate
+places (off the seat, a fixed lane, a close-up) and two finishes (card
+stock, dark glass). `js/speech-lines.js` is a first pass at the cast's
+voices, keyed by personality and action. Lab only; the game's own
+`TABLE_TALK` is still silenced by `bubblesAllowed()`.
+
 ## `showdown-lab.html` + `js/showdown-lab-host.js` + `js/showdown-lab.js` + `css/showdown-lab.css` + candidate `css/showdown-beats.css` / `js/showdown-beats.js` — Showdown Lab
 
 The showdown pass (`docs/ui/SHOWDOWN_PLAN.md`), phone-first (round 4): the
