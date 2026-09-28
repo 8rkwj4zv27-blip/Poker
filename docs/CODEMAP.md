@@ -303,6 +303,20 @@ COPY SETTINGS gives the owner's picks as text; the settings live in the
 URL hash. Since v0.40.7 (release 2) its TODAY is the shipped layout, with a
 BEFORE preset for the table as it was. Not loaded by the game.
 
+## `js/table-room.js` + `css/table-room.css` — Table room (live, v0.52.0)
+
+Room on the table for the bets: the owner's picks from the Table Room Lab
+(docs/ui/TABLE_ROOM_PLAN.md) are the default, and Settings → The table
+(`#settings-table-room`, `settings.tableRoom`) offers every option, plus
+ROOMY / CLASSIC (`TableRoom.CLASSIC` is the table before v0.52). It holds
+the choice and sets CSS variables (`--tr-pot`, `--tr-pods`, `--tr-fade`,
+`data-tr-mark`) for the pot's place, the machines' size and the bet marks.
+`js/enemy-cards.js` asks it for the bet spots' sizes and heights,
+`js/coin-table.js` for the piles (`z.pile`: a footprint that shapes the
+tidy but is never walls, in `js/coin-world.js`), the pot's room and the
+chip size (`SIZES` xs/s/ms/m). A change mid-game resizes the chips where
+they lie and re-lays the spots (`CoinTable.relayout()`).
+
 ## `table-room-lab.html` + `js/table-room-lab-host.js` + `js/table-room-lab.js` + `css/table-room-lab.css` — Table Room Lab
 
 The crowded-table pass (docs/ui/TABLE_ROOM_PLAN.md): bets spilling over
@@ -312,7 +326,9 @@ the board, the pot, the bet squares, the machines' size. Phone-first: the
 HOLD: TODAY, POT IT). It wraps `EnemyCards.spot`/`paint` and
 `CoinWorld.zone` to re-place and reshape the bet spots, and restyles the
 pot and machines; moments script `aiDecide` and hold `CoinTable.sweep`.
-Not loaded by the game.
+Since v0.52 the game ships the picks, so the lab starts it on
+`TableRoom.CLASSIC` and its HOLD: CLASSIC is the old table. Not loaded by
+the game.
 
 ## `felt-lab.html` + `js/felt-lab-host.js` + `js/felt-lab.js` + `css/felt-lab.css` — Felt Lab
 

@@ -16,8 +16,10 @@
      rim       a lamp in the cabinet's border, in their colour, reacting to
                the table (turn, thinking, a bet, all in, a win, a fold, out)
                and pre-lighting whoever acts next
-     squares   a square of darker felt under each seat and above your cards
-               where the bets land (the coin table asks spot()/rowKey())
+     squares   a mark of darker felt under each seat and above your cards
+               where the bets land (the coin table asks spot()/rowKey());
+               sizes, heights and finish from Settings → The table
+               (js/table-room.js)
      moves     a knock on a check, a shudder on an all in
 
    Presentation only: it reads `game` and never changes poker state or
@@ -187,30 +189,48 @@ const EnemyCards = (function(){
      tucked cards), yours centred a clear gap above your cards. Measured
      from layout offsets, not live rects, so a knock, a deal or a showdown
      moving the cards never moves a square or the coins on it. */
+  // Sizes and heights from Settings → The table (js/table-room.js): the
+  // shipped layout is the owner's picks; CLASSIC there is the table before.
+  const TR = () => typeof TableRoom !== 'undefined' ? TableRoom : null;
+  const drawnScale = el => { const k = parseFloat(getComputedStyle(el).scale); return Number.isFinite(k) ? k : 1; };
+  function boardTop(f){
+    const c = CW(), b = c && c.boardRow ? c.boardRow() : null;
+    if (!b) return null;
+    const r = f.getBoundingClientRect();
+    return b.T - r.top - f.clientTop;
+  }
   function geom(p){
     const f = felt(), c = CW();
     if (!f || !c || typeof seatEls === 'undefined') return null;
     const e = seatEls[p.id]; if (!e) return null;
-    const fr = f.getBoundingClientRect(), ox = fr.left + f.clientLeft, oy = fr.top + f.clientTop, d = c.D();
+    const fr = f.getBoundingClientRect(), ox = fr.left + f.clientLeft, oy = fr.top + f.clientTop, d = c.D(), tr = TR();
     if (p.isHuman){
       const cards = document.querySelector('#hud-mid .seat.you .seat-cards');
       const r = cards && cards.getBoundingClientRect();
       if (!r || !r.width) return null;
-      const S = Math.round(d * 3.2 + 6), top = r.top - 10 - S;
-      return { x:r.left + r.width / 2 - ox, y:top + S / 2 - oy, s:S };
+      const S = Math.round(d * 3.2 + 6), sz = tr ? tr.yourSpot(d) : { w:S, h:S }, top = r.top - 10 - sz.h;
+      return { x:r.left + r.width / 2 - ox, y:top + sz.h / 2 - oy, w:sz.w, h:sz.h };
     }
     const card = e.card; if (!card || !card.offsetWidth || !e._ec) return null;
     const n = opps().length;
     const bottom = e.root.offsetTop + card.offsetTop + card.offsetHeight;
-    const S = Math.round(Math.min(d * 3.4 + 6, card.offsetWidth * .7)), top = bottom + (n >= 5 ? 18 : 22) + 12;
-    return { x:e.root.offsetLeft + e.root.offsetWidth / 2, y:top + S / 2, s:S };
+    let top = bottom + (n >= 5 ? 18 : 22) + 12;
+    if (!tr){ const S = Math.round(Math.min(d * 3.4 + 6, card.offsetWidth * .7)); return { x:e.root.offsetLeft + e.root.offsetWidth / 2, y:top + S / 2, w:S, h:S }; }
+    const k = drawnScale(e.root), sz = tr.theirSpot(d, card.offsetWidth, k);
+    top = tr.theirTop(top - tr.podLift(k, card.offsetTop + card.offsetHeight), sz.h, boardTop(f));
+    return { x:e.root.offsetLeft + e.root.offsetWidth / 2, y:top + sz.h / 2, w:sz.w, h:sz.h };
   }
   // where this seat's coins land, felt-relative to `fr` (the coin table's
-  // felt rect), with the room its pile may grow into
+  // felt rect), with the room its pile may grow into. With LITTLE PILE
+  // (js/table-room.js) it also gives the pile's footprint on the spot and
+  // how high its stacks may stand (`top`, viewport).
   function spot(p, fr){
-    const q = geom(p), c = CW(), f = felt(); if (!q || !c || !f) return null;
-    const r = f.getBoundingClientRect();
-    return { x:q.x + r.left + f.clientLeft - fr.left, y:q.y + c.D() * .45 + r.top + f.clientTop - fr.top - 2, room:q.s - 4 };
+    const q = geom(p), c = CW(), f = felt(), tr = TR(); if (!q || !c || !f) return null;
+    const r = f.getBoundingClientRect(), ox = r.left + f.clientLeft, oy = r.top + f.clientTop;
+    if (!tr || !tr.pileOn()) return { x:q.x + ox - fr.left, y:q.y + c.D() * .45 + oy - fr.top - 2, room:q.h - 4 };
+    const L = ox + q.x - q.w / 2, R = ox + q.x + q.w / 2, T = oy + q.y - q.h / 2, B = oy + q.y + q.h / 2;
+    return { x:q.x + ox - fr.left, y:B - 4 - fr.top - 2, room:q.h - 4, top:T - 14, shape:tr.pileShape(),
+      pile:{ L:L + 1, R:R - 1, T:T + Math.max(3, Math.round(q.h * .2)), B:B - 3 } };
   }
   // what, on a seat, should make the coin table lay the spots again
   function rowKey(p){
@@ -226,8 +246,8 @@ const EnemyCards = (function(){
       seen.add(p.id);
       let el = f.querySelector('.ec-square[data-id="' + p.id + '"]');
       if (!el){ el = document.createElement('div'); el.className = 'ec-square'; el.dataset.id = p.id; el.setAttribute('aria-hidden', 'true'); f.insertBefore(el, f.firstChild); }
-      const L = Math.round(q.x - q.s / 2) + 'px', T = Math.round(q.y - q.s / 2) + 'px', W = q.s + 'px';
-      if (el.style.left !== L || el.style.top !== T || el.style.width !== W){ el.style.left = L; el.style.top = T; el.style.width = W; el.style.height = W; }
+      const L = Math.round(q.x - q.w / 2) + 'px', T = Math.round(q.y - q.h / 2) + 'px', W = q.w + 'px', H = q.h + 'px';
+      if (el.style.left !== L || el.style.top !== T || el.style.width !== W || el.style.height !== H){ el.style.left = L; el.style.top = T; el.style.width = W; el.style.height = H; }
     });
     f.querySelectorAll('.ec-square').forEach(el => { if (!seen.has(el.dataset.id)) el.remove(); });
   }

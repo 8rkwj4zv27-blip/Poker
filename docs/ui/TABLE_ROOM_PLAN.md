@@ -89,7 +89,28 @@ The owner's review of that round:
   settings and the picks). Possibly Safari-only; waiting on the owner for
   when it happens.
 
+## Shipped: v0.52.0 (28 Sep 2026)
+
+The owner's picks are the game's default (`js/table-room.js`,
+`css/table-room.css`), and Settings → The table offers every lab option
+to the player, with ROOMY (the picks) and CLASSIC (the table before).
+
+- The little piles are built into the coin world properly: a spot's
+  `z.pile` footprint shapes the tidy (the pot's pyramid, small) and is
+  never walls, so a bet lands, bounces and spills as before and settles
+  on the old timing.
+- Chip size: `SIZES` gained xs (12) and ms (14); the default is s (13).
+  One size for the table and the bank.
+- A short phone (max-height 700px, the SE) caps the pot's drop at 10px:
+  at 30px it would sit on your bet spot. Measured on 375x667, 390x844
+  and 430x932, ROOMY leaves more room than CLASSIC at every size.
+- The lab starts the game on CLASSIC, so its HOLD: CLASSIC still shows
+  the old table.
+
 ## Next
 
-The owner tries it on the phone and sends back their picks. The build
-then follows from those picks.
+- **The player's bank:** chips spilling off the bottom of the screen on a
+  win, on the owner's phone (lab and installed game). Not reproduced in
+  emulated Chromium; a harder look on its own pass, likely Safari-only.
+- **A tidier settings menu:** the options are building up; a separate
+  pass.

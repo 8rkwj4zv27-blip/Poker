@@ -45,6 +45,8 @@ const CoinTable = (function(){
     // (chips: your bank is always the chip pile; the old Settings → Bank
     // choices stay saved but no longer apply)
     O.bank = 'hoard';
+    // the chip size (Settings → The table, js/table-room.js)
+    if (typeof TableRoom!=='undefined') O.size = TableRoom.sizeKey();
     const m = typeof speedMult==='function' ? speedMult() : 1;
     O.speed = 1/Math.max(.15, m);
     if (!audioWired){
@@ -122,7 +124,9 @@ const CoinTable = (function(){
       // keep coins already on the felt: re-home each zone's list
       const old = {}; Object.keys(CW.zones).filter(k=>k!=='bank').forEach(k=>{ old[k] = CW.zones[k]; delete CW.zones[k]; });
       CW.zone('pot', cx, yc+5, 9, 15, 44);
-      if (bb) CW.zones.pot.room = (yc+5)-bb.B-10;
+      // (the pot lower down the felt keeps its old height when the room
+      // it gained is for air: Settings → The table)
+      if (bb) CW.zones.pot.room = (yc+5)-bb.B-10-(typeof TableRoom!=='undefined' ? TableRoom.airDrop() : 0);
       CW.setTray({ L:cx-TW/2+6, R:cx+TW/2-6, T:yc-TH/2+4, B:yc+TH/2-4 });
       // your cards, dealt or not: the spot sits just above them
       const mine = document.querySelector('#hud-mid .seat.you .seat-cards');
@@ -170,6 +174,14 @@ const CoinTable = (function(){
         if (ec){ x = ec.x; y = ec.y; room = ec.room; }
         const z = CW.zone('spot:'+p.id, fr.left+x, fr.top+y+2, 7, 5, 16);
         if (room>0) z.room = room;
+        // LITTLE PILE (js/table-room.js): the pot's shape, small, on the
+        // spot's footprint; its stacks may stand up to the machine's cards
+        // (theirs) or the pot counter (yours)
+        if (ec && ec.pile){
+          z.pile = ec.pile; z.shape = ec.shape;
+          const limit = p.isHuman && pr.width ? Math.max(ec.top, pr.bottom+3) : ec.top;
+          z.room = Math.max(CW.D()+6, z.cy-limit);
+        }
       });
       Object.keys(old).forEach(k=>{
         const z = CW.zones[k] || CW.zones.pot;
@@ -955,5 +967,8 @@ const CoinTable = (function(){
   }
   return { on, layout, bet, sweep, payout, potCoins, shownPot, clear, reset, sync, piecesFor, unit, view:()=>view, ensureView, restyleBank,
     hoard:()=>CW.zones.bank, syncHoard, tidyHoard, fillHoard,
-    renderBank, rebuildBank, loadBank, tidyBank, preview };
+    renderBank, rebuildBank, loadBank, tidyBank, preview,
+    // Settings → The table changed mid-game: lay the spots out again (the
+    // coins on them move to their new places and re-tidy)
+    relayout(){ laid = null; return layout(); } };
 })();

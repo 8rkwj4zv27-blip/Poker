@@ -56,31 +56,32 @@
   }
 
   /* ---------------- the picks ---------------- */
-  // Every row: [key, label, options, note]. TODAY is the game as it ships.
+  // Every row: [key, label, options, note]. TODAY (shown as CLASSIC) is the
+  // table before v0.52; the lab starts the game on TableRoom.CLASSIC.
   const GROUPS = [
     { title:'THE POT', sub:'Same tray, same pile. Lower down the felt, the pyramid gets more room under the shared cards.', rows:[
-      ['pot','MOVE THE POT DOWN', [['0','TODAY'],['10','10 PX'],['20','20 PX'],['30','30 PX'],['40','40 PX']]],
+      ['pot','MOVE THE POT DOWN', [['0','CLASSIC'],['10','10 PX'],['20','20 PX'],['30','30 PX'],['40','40 PX']]],
       ['potroom','THE ROOM IT GAINS', [['air','SAME PILE, MORE AIR'],['grow','A TALLER PILE']], 'SAME PILE keeps the pyramid as tall as today, so there\'s a gap under the shared cards. TALLER lets the biggest pots stack up into the new room.']
     ]},
     { title:'YOUR BET', sub:'The spot above your cards. Wider and lower, so your coins sit in under the pot.', rows:[
-      ['you','YOUR SPOT', [['sq','SQUARE (TODAY)'],['w90','WIDE'],['w110','WIDER'],['w130','WIDEST']]]
+      ['you','YOUR SPOT', [['sq','SQUARE (CLASSIC)'],['w90','WIDE'],['w110','WIDER'],['w130','WIDEST']]]
     ]},
     { title:'THE BETS', sub:'How a bet sits on its spot. Every coin is still there.', rows:[
-      ['pile','BETS ON THE SPOT', [['spread','SPREAD (TODAY)'],['pile','LITTLE PILE'],['loose','LOOSE PILE']], 'LITTLE PILE is the pot\'s pyramid, small. LOOSE PILE is the same with uneven, leaning stacks.']
+      ['pile','BETS ON THE SPOT', [['spread','SPREAD (CLASSIC)'],['pile','LITTLE PILE'],['loose','LOOSE PILE']], 'LITTLE PILE is the pot\'s pyramid, small. LOOSE PILE is the same with uneven, leaning stacks.']
     ]},
     { title:'THEIR SPOTS', sub:'Under each machine. Today they reach over the top of the shared cards.', rows:[
-      ['their','SHAPE', [['57','SQUARE (TODAY)'],['48','SMALLER SQUARE'],['w72','WIDE'],['w76','WIDE + LOW']], 'WIDE is your spot\'s idea under their machines too: the pile spreads sideways in a low heap instead of reaching down.'],
-      ['lift','HEIGHT', [['0','TODAY'],['8','8 PX UP'],['16','16 PX UP'],['board','JUST ABOVE THE CARDS']], 'JUST ABOVE THE CARDS sits each spot 6px over the shared cards, wherever the machine ends. Their tucked cards stay in view either way.']
+      ['their','SHAPE', [['57','SQUARE (CLASSIC)'],['48','SMALLER SQUARE'],['w72','WIDE'],['w76','WIDE + LOW']], 'WIDE is your spot\'s idea under their machines too: the pile spreads sideways in a low heap instead of reaching down.'],
+      ['lift','HEIGHT', [['0','CLASSIC'],['8','8 PX UP'],['16','16 PX UP'],['board','JUST ABOVE THE CARDS']], 'JUST ABOVE THE CARDS sits each spot 6px over the shared cards, wherever the machine ends. Their tucked cards stay in view either way.']
     ]},
     { title:'THE SQUARES', sub:'The darker felt marking each bet spot.', rows:[
-      ['fade','HOW DARK', [['13','TODAY'],['8','FAINTER'],['5','FAINTEST'],['0','GONE']]],
+      ['fade','HOW DARK', [['13','CLASSIC'],['8','FAINTER'],['5','FAINTEST'],['0','GONE']]],
       ['mark','THE MARK', [['square','SQUARE'],['corners','CORNERS ONLY']]]
     ]},
     { title:'THE MACHINES', sub:'The opponents\' cabinets, cards and all. Shrinking them lifts their spots with them.', rows:[
-      ['pods','SIZE', [['100','TODAY'],['96','96%'],['93','93%'],['90','90%']]]
+      ['pods','SIZE', [['100','CLASSIC'],['96','96%'],['93','93%'],['90','90%']]]
     ]},
     { title:'THE CHIPS', sub:'Every chip on the table and in your bank, same artwork drawn smaller. Piles, throws and the pot pyramid all work the same; smaller chips fit more in the same room.', rows:[
-      ['coins','CHIP SIZE', [['15','TODAY'],['14','A LITTLE SMALLER'],['13','SMALLER'],['12','SMALLEST']]]
+      ['coins','CHIP SIZE', [['15','CLASSIC'],['14','A LITTLE SMALLER'],['13','SMALLER'],['12','SMALLEST']]]
     ]}
   ];
   const ROWS = GROUPS.flatMap(g => g.rows);
@@ -285,6 +286,8 @@
      the new size where they lie; the piles then re-tidy to it. */
   function sizeCoins(v){
     if (!CW) return;
+    // the game's own setting too: CoinTable's sync() sets the size from it
+    try{ settings.tableRoom = Object.assign({}, settings.tableRoom || {}, { coins:v || '15' }); }catch(e){}
     const key = v === '15' || !v ? 'm' : 'trl' + v;
     if (key !== 'm') CW.SIZES[key] = +v;
     if (CW.OPT.size === key) return;
@@ -345,7 +348,7 @@
     const key = document.createElement('button');
     key.type = 'button'; key.className = 'trl-key'; key.id = 'trl-key'; key.textContent = 'TUNE';
     const today = document.createElement('button');
-    today.type = 'button'; today.className = 'trl-key trl-today'; today.textContent = 'HOLD: TODAY';
+    today.type = 'button'; today.className = 'trl-key trl-today'; today.textContent = 'HOLD: CLASSIC';
     goKey = document.createElement('button');
     goKey.type = 'button'; goKey.className = 'trl-key trl-go'; goKey.textContent = 'POT IT'; goKey.hidden = true;
     sheet = document.createElement('div');
@@ -355,7 +358,7 @@
         '<button type="button" data-tab="moments" class="is-on">MOMENTS</button><button type="button" data-tab="tune">THE TABLE</button>' +
         '<button type="button" class="trl-close" aria-label="Close">✕</button></div>' +
       '<div class="trl-body">' +
-        '<section data-pane="moments"><p class="trl-sub">Each one deals a fresh table and plays the real game to the crowded moment. Your picks stay on. Hold HOLD: TODAY (top right) any time to see the game as it ships.</p>' +
+        '<section data-pane="moments"><p class="trl-sub">Each one deals a fresh table and plays the real game to the crowded moment. Your picks stay on. Hold HOLD: CLASSIC (top right) any time to see the table as it was before v0.52.</p>' +
           '<div class="trl-moments">' + MOMENTS.map(m => '<button type="button" data-moment="' + m[0] + '"' + (m[2] ? ' class="is-wide"' : '') + '>' + m[1] + '</button>').join('') + '</div>' +
           '<h3>THE TABLE<small>Opponents at the table.</small></h3>' +
           '<div class="trl-row">' + seg('opp', [['2','2'],['3','3'],['4','4'],['5','5']], state.opp) + '</div>' +
@@ -363,7 +366,7 @@
         '<section data-pane="tune" hidden>' +
           '<div class="trl-meters" id="trl-meters"></div>' +
           GROUPS.map(g => '<h3>' + g.title + '<small>' + g.sub + '</small></h3>' + g.rows.map(row).join('')).join('') +
-          '<div class="trl-actions"><button type="button" data-act="today">ALL TODAY</button><button type="button" data-act="start">MY STARTING POINT</button></div>' +
+          '<div class="trl-actions"><button type="button" data-act="today">ALL CLASSIC</button><button type="button" data-act="start">MY PICKS</button></div>' +
           '<button type="button" class="trl-copy" data-act="copy">COPY MY PICKS</button>' +
           '<textarea class="trl-copytext" readonly hidden></textarea></section>' +
       '</div>';
@@ -371,7 +374,7 @@
     const open = on => { sheet.classList.toggle('is-open', on); key.classList.toggle('is-on', on); if (host) host.set({ sheet:on }); if (on) meters(); };
     key.addEventListener('click', () => open(!sheet.classList.contains('is-open')));
     sheet.querySelector('.trl-close').addEventListener('click', () => open(false));
-    // HOLD: TODAY — the shipped table while a finger is down
+    // HOLD: CLASSIC — the table before v0.52 while a finger is down
     const hold = on => { today.classList.toggle('is-on', on); show(on ? TODAY : picks); };
     today.addEventListener('pointerdown', e => { e.preventDefault(); try{ today.setPointerCapture(e.pointerId); }catch(err){} hold(true); });
     ['pointerup', 'pointercancel', 'lostpointercapture'].forEach(t => today.addEventListener(t, () => { if (today.classList.contains('is-on')) hold(false); }));
@@ -548,6 +551,10 @@
     document.head.appendChild(style);
     try{ if (typeof TableIntro !== 'undefined') TableIntro.uninstall(); }catch(e){}
     try{ settings.sound = state.sound !== 'off'; }catch(e){}
+    // Since v0.52 the game ships the owner's picks (js/table-room.js):
+    // the lab starts it on CLASSIC, the table before, and re-places
+    // everything itself, so its CLASSIC is the old table
+    try{ settings.tableRoom = Object.assign({}, TableRoom.CLASSIC); TableRoom.apply(); }catch(e){}
     // the owner's table: burgundy velvet, the chequered deck
     try{ settings.theme = 'burgundy'; applyRunTheme(); }catch(e){}
     try{ const b = document.querySelector('#deck-back-seg button[data-v="check"]'); if (b) b.click(); }catch(e){}
