@@ -1,0 +1,11 @@
+/* Holder Deal Lab — the sheet (css/showdown-lab.css's parts), dropped from
+   the top over the felt so the holder stays in view while you watch the
+   deal. Lab only: never loaded by the game. */
+.hdl-sheet.sdl-sheet{
+  top:0; bottom:auto; height:auto; max-height:60%; padding-top:env(safe-area-inset-top,0px);
+  border-top:0; border-bottom:3px solid #E8B83A; box-shadow:0 10px 0 rgba(0,0,0,.35);
+  transform:translateY(-105%);
+}
+.hdl-sheet.sdl-sheet.is-open{ transform:none; }
+.hdl-sheet .sdl-tabs button:first-child{ pointer-events:none; }
+html.hdl-open .sdl-key{ visibility:hidden; }

@@ -168,3 +168,16 @@ html[data-ds-back="harlequin"],.ds-swatch[data-cb="harlequin"]{
 @media (prefers-reduced-motion:reduce){
   html[data-ds-on] #felt .dealer-deck,html[data-ds-on] #felt .dealer-deck .card{ animation:none !important; }
 }
+
+/* The 2.5D sprite card (Deal Style Lab; dealer-deck.js SPRITE, off in the
+   game): a clear carrier glides, the card's own look is a skin that holds
+   stepped poses, and a pixel shadow sits on the felt under it. */
+.fly-card.ds-carrier{ background:transparent; border:0; box-shadow:none; overflow:visible; }
+.fly-card.ds-carrier::before,.fly-card.ds-carrier::after{ display:none; }
+.ds-skin{ position:absolute; inset:0; width:auto; height:auto; margin:0; transform-origin:50% 50%; }
+.ds-shadow{
+  position:fixed; z-index:59; pointer-events:none; border-radius:3px;
+  background:rgba(8,4,5,.9);
+  box-shadow:0 0 0 2px rgba(8,4,5,.35);
+}
+.ds-skin > .ds-shade{ position:absolute; inset:0; z-index:3; border-radius:inherit; pointer-events:none; background-repeat:no-repeat; }

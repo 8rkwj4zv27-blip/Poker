@@ -1,0 +1,71 @@
+/* DEAL STYLES (live v0.51.0) — the specials' dressing (js/deal-styles.js)
+   and Settings → Dealing. Pixel bits: square, stepped, in the machine's
+   lamp colours. */
+.dsx{ position:fixed; z-index:61; pointer-events:none; width:3px; height:3px; margin:-1px 0 0 -1px; }
+
+/* sparks, stars, embers, smoke */
+.dsx-spark{ background:#FFE49B; box-shadow:0 0 0 1px rgba(242,180,49,.6); animation:dsxDrift .62s steps(6,end) forwards; }
+.dsx-spark.burst{ width:4px; height:4px; animation:dsxBurst .7s steps(7,end) forwards; }
+.dsx-star{ width:4px; height:4px; background:#F3E6C4; box-shadow:0 0 0 1px #E8B83A; animation:dsxBurst .6s steps(6,end) forwards; }
+.dsx-smoke{ width:8px; height:8px; margin:-4px 0 0 -4px; border-radius:2px; background:#CFC6C2; opacity:.8; animation:dsxSmoke .7s steps(7,end) forwards; }
+.dsx-fire{ width:5px; height:5px; background:#FF8A1C; box-shadow:0 0 0 1px #FFD24A; animation:dsxDrift .46s steps(5,end) forwards; }
+.dsx-ember{ background:#FFE04A; animation:dsxDrift .46s steps(5,end) forwards; }
+.dsx-spark-w{ background:#FFFFFF; box-shadow:0 0 0 1px #BFE8FF; animation:dsxBurst .26s steps(3,end) forwards; --dx:0px; --dy:0px; }
+.dsx-shimmer{ width:2px; height:2px; background:#E8FBFF; box-shadow:0 0 0 1px rgba(120,220,255,.7); animation:dsxRise .52s steps(6,end) forwards; }
+@keyframes dsxDrift{ to{ transform:translate(var(--dx,0),var(--dy,0)); opacity:0; } }
+@keyframes dsxBurst{ to{ transform:translate(calc(var(--dx,0px) * 2),calc(var(--dy,0px) * 2)); opacity:0; } }
+@keyframes dsxSmoke{ 0%{ transform:scale(.6); opacity:.85; } 100%{ transform:translate(var(--dx,0),var(--dy,0)) scale(2.2); opacity:0; } }
+@keyframes dsxRise{ 0%{ opacity:0; } 30%{ opacity:1; } 100%{ transform:translateY(-22px); opacity:0; } }
+
+/* shuriken: speed lines */
+.dsx-speed{ width:18px; height:2px; margin:-1px 0 0 -9px; background:rgba(243,230,196,.85); transform:rotate(var(--a)); animation:dsxFade .22s steps(3,end) forwards; }
+@keyframes dsxFade{ to{ opacity:0; } }
+
+/* glitch: colour split on the card, a torn scanline */
+.fly-card.dsx-glitching{ filter:drop-shadow(3px 0 0 rgba(255,40,80,.75)) drop-shadow(-3px 0 0 rgba(40,220,255,.75)); animation:dsxJit .12s steps(2,end) infinite; }
+@keyframes dsxJit{ 50%{ margin-left:2px; } }
+.dsx-tear{ height:3px; margin:0; background:linear-gradient(90deg,rgba(40,220,255,.9),rgba(255,255,255,.9) 50%,rgba(255,40,80,.9)); animation:dsxFade .12s steps(1,end) forwards; }
+
+/* transporter: a column of light at each end */
+.fly-card.dsx-beamed{ filter:brightness(1.1) drop-shadow(0 0 4px rgba(140,230,255,.9)); }
+.dsx-pillar{
+  transform:translate(-50%,-50%); margin:0; border-radius:3px;
+  background:linear-gradient(90deg,transparent,rgba(160,235,255,.35) 25%,rgba(230,252,255,.6) 50%,rgba(160,235,255,.35) 75%,transparent);
+  animation:dsxPillar var(--life,600ms) steps(8,end) forwards;
+}
+.dsx-pillar.gold{ background:linear-gradient(90deg,transparent,rgba(242,180,49,.35) 25%,rgba(255,228,155,.7) 50%,rgba(242,180,49,.35) 75%,transparent); }
+@keyframes dsxPillar{ 0%{ opacity:0; transform:translate(-50%,-50%) scaleX(.3); } 20%{ opacity:1; transform:translate(-50%,-50%) scaleX(1); } 80%{ opacity:1; } 100%{ opacity:0; transform:translate(-50%,-50%) scaleX(.2); } }
+
+/* comet */
+.fly-card.dsx-burning{ filter:drop-shadow(0 0 4px rgba(255,138,28,.95)) brightness(1.12); }
+
+/* railgun: the charge, the streak, the hot flash */
+.fly-card.dsx-charging{ filter:brightness(1.6) drop-shadow(0 0 5px #FFFFFF) drop-shadow(0 0 10px rgba(180,230,255,.9)); }
+.dsx-rail{
+  height:4px; margin:-2px 0 0 0; transform-origin:0 50%; transform:rotate(var(--a));
+  background:#FFFFFF; box-shadow:0 0 0 2px rgba(200,240,255,.9),0 0 14px 4px rgba(255,255,255,.8);
+  animation:dsxRail .5s steps(6,end) forwards;
+}
+@keyframes dsxRail{ 0%{ opacity:1; } 60%{ opacity:.8; height:2px; } 100%{ opacity:0; height:1px; } }
+.dsx-hot{ width:14px; height:14px; margin:-7px 0 0 -7px; border-radius:50%; background:#FFFFFF; box-shadow:0 0 16px 6px rgba(255,255,255,.9); animation:dsxHot .46s steps(5,end) forwards; }
+.dsx-hot.gold{ background:#FFE49B; box-shadow:0 0 16px 6px rgba(242,180,49,.9); }
+@keyframes dsxHot{ from{ transform:scale(.4); opacity:1; } to{ transform:scale(4); opacity:0; } }
+
+/* royal: gold glow and after-images */
+.fly-card.dsx-gold{ filter:drop-shadow(0 0 0 #FFE49B) drop-shadow(0 0 6px rgba(242,180,49,.85)); }
+.dsx-after{ position:fixed; z-index:59; pointer-events:none; opacity:.45; filter:sepia(1) saturate(3) brightness(1.2); animation:dsxFade .36s steps(4,end) forwards; }
+.dsx-after > *{ position:absolute; inset:0; }
+
+/* the jolt a hard landing gives a seat */
+.dsx-jolt{ animation:dsxJolt .4s steps(6,end); }
+@keyframes dsxJolt{ 0%,100%{ translate:0 0; } 20%{ translate:-3px 1px; } 40%{ translate:3px -1px; } 60%{ translate:-2px 0; } 80%{ translate:1px 0; } }
+
+[data-motion="off"] .dsx{ display:none; }
+
+/* Settings → Dealing: the sheet's own switch rows and segmented keys,
+   grouped by tier; a style that's off dims its rarity */
+.dst-tier{ margin:14px 0 4px; font-family:var(--font-hdr); font-size:8px; letter-spacing:.1em; color:var(--pc-lamp-amber); }
+.dst-row{ margin-bottom:8px; }
+.dst-row .dst-rarity{ margin-top:4px; }
+.dst-row .dst-rarity button{ font-size:10px; padding-left:2px; padding-right:2px; }
+.dst-row.dst-off .dst-rarity{ opacity:.45; }
