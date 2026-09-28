@@ -300,4 +300,22 @@ check('Dealer deck: live, on the shared parts, and to the order',()=>{
   assert.ok(md.includes('## Dealer deck (live v0.45.0)'),'the Pattern Book must record the dealer deck');
 });
 
+check('Card holder: live, on the shared parts, and to the order',()=>{
+  const css=read('css/card-holder.css'), js=read('js/card-holder.js'), md=read('docs/ui/PATTERN_BOOK.md');
+  assert.ok(/<link rel="stylesheet" href="css\/card-holder\.css/.test(indexHtml),'index.html must load css/card-holder.css');
+  assert.ok(/<script src="js\/card-holder\.js/.test(indexHtml),'index.html must load js/card-holder.js');
+  ["'./css/card-holder.css","'./js/card-holder.js"].forEach(f=>assert.ok(serviceWorker.includes(f),'sw.js is missing '+f));
+  // No new finish for the setting: the sheet's segmented keys.
+  assert.ok(/id="settings-deck"[\s\S]*?class="segmented compact" id="holder-seg"/.test(indexHtml),'Settings → The deck → Card holder must use the sheet\'s segmented keys');
+  // The order: 10px of air, brass by default, the brass from the instrument gold.
+  assert.ok(/const GAP = 10;/.test(js),'the holder sits 10px clear of the screen');
+  assert.ok(/cardHolder:'brass'/.test(read('js/02-support-systems.js')),'brass is the default holder');
+  assert.ok(/html\[data-holder="brass"\][^{]*::after\{[^}]*var\(--pc-lamp-amber/.test(css),'the brass lip uses the instrument gold');
+  // A card mid-turn and a back keep their own box.
+  const rules=[...css.replace(/\/\*[\s\S]*?\*\//g,'').matchAll(/([^{}]+)\{([^}]*)\}/g)];
+  rules.filter(m=>/\.card\b/.test(m[1]) && /(background|box-shadow)\s*:/.test(m[2]))
+    .forEach(m=>assert.ok(m[1].includes(':not(.back):not(.card-turning)'),'only faces at rest are dressed: '+m[1].trim()));
+  assert.ok(md.includes('## Card holder (live v0.48.0)'),'the Pattern Book must record the card holder');
+});
+
 process.stdout.write('\n'+passed+' Pattern Book checks passed.\n');

@@ -40,6 +40,7 @@
   <link rel="stylesheet" href="css/knockout.css?v=1">
   <link rel="stylesheet" href="css/showdown.css?v=1">
   <link rel="stylesheet" href="css/dealer-deck.css?v=1">
+  <link rel="stylesheet" href="css/card-holder.css?v=1">
   <link rel="stylesheet" href="css/crt.css?v=1">
 
 <meta name="format-detection" content="telephone=no">
@@ -601,6 +602,15 @@
             <button data-v="table" class="ds-swatch" data-cb="table"><span class="card back small"></span><b>Table green</b></button>
           </div>
         </div>
+        <!-- The card holder (js/card-holder.js): the lip your two cards sit in. -->
+        <div class="field">
+          <div class="field-label">Card holder</div>
+          <div class="segmented compact" id="holder-seg" role="group" aria-label="Card holder">
+            <button data-v="brass" class="holder-swatch active"><i></i><b>Brass</b></button>
+            <button data-v="classic" class="holder-swatch"><i></i><b>Classic</b></button>
+          </div>
+          <div class="hint">The lip your two cards sit in.</div>
+        </div>
         <div class="field">
           <div class="field-label">Deck</div>
           <div class="segmented compact" id="deck-side-seg" role="group" aria-label="Deck">
@@ -760,8 +770,8 @@
 <script src="js/02-support-systems.js?v=chips-2"></script>
 <script src="js/03-opponents.js?v=cards-1"></script>
 <script src="js/04-modes-and-scoring.js?v=cards-1"></script>
-<script src="js/05-game-engine.js?v=econ-2"></script>
-<script src="js/06-presentation.js?v=econ-2"></script>
+<script src="js/05-game-engine.js?v=holder-1"></script>
+<script src="js/06-presentation.js?v=holder-1"></script>
 <script src="js/coin-world.js?v=chips-1"></script>
 <script src="js/coin-table.js?v=chips-1"></script>
 <script src="js/coin-bank.js?v=1"></script>
@@ -781,7 +791,8 @@
 <script src="js/finishes.js?v=3"></script>
 <script src="js/press-feel.js?v=2"></script>
 <script src="js/showdown.js?v=2"></script>
-<script src="js/dealer-deck.js?v=1"></script>
+<script src="js/dealer-deck.js?v=2"></script>
+<script src="js/card-holder.js?v=1"></script>
 
 
 <script id="pwa-service-worker">

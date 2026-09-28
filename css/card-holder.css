@@ -1,0 +1,75 @@
+/* ============================================================
+   CARD HOLDER (live v0.48.0) — the lip your two cards sit in
+   The owner's order from the Card Holder Lab (card-holder-lab.html,
+   docs/ui/CARD_HOLDER_PLAN.md). The holder is .seat.you's two
+   pseudo-elements: ::before the dark slot behind the cards, ::after the
+   front lip (css/03-action-console.css, with per-size top/width in
+   05-responsive-and-arcade.css). This file only moves the holder up,
+   adds the seat shadow, and dresses the lip brass (a setting).
+
+   Position: js/card-holder.js measures the seat and writes
+   --holder-lift, so there are always 10px of air between the lip and the
+   hand-name screen below it, on any phone. The holder and cards rise
+   together; the screens stay put. --holder-bury is how much of the card
+   hides behind the lip (the seat shadow starts there).
+
+   Settings → The deck → Card holder: BRASS (html[data-holder="brass"],
+   the default) or CLASSIC (today's case-coloured lip), both in this
+   position with the seat shadow.
+   ============================================================ */
+
+#hud-mid .seat.you{ top:calc(-1px * var(--holder-lift, 0)); }
+
+/* The seat: a deeper slot behind the cards, and a soft shade rising up the
+   card faces from the groove. Faces at rest only: a back keeps its trim,
+   and a card mid-turn keeps its invisible wrapper (.card-turning). */
+#hud-mid .seat.you::before{
+  background:#080405;
+  box-shadow:inset 0 8px 0 rgba(0,0,0,.8),inset 2px 0 0 rgba(0,0,0,.4),0 1px 0 var(--theme-case-hi);
+}
+#hud-mid .seat.you .seat-cards .card:not(.back):not(.card-turning){
+  background:
+    linear-gradient(to top,
+      rgba(40,8,12,.2) calc(var(--holder-bury, 11) * 1px),
+      rgba(40,8,12,0) calc(var(--holder-bury, 11) * 1px + 14px)),
+    var(--card-face);
+}
+
+/* BRASS: the instrument gold, a lit top edge, a dark underside and a
+   screw at each end, with a hard shadow onto the case. */
+html[data-holder="brass"] #hud-mid .seat.you::after{
+  box-sizing:border-box; height:12px;
+  border:2px solid var(--px-ink); border-radius:3px 3px 2px 2px;
+  background:
+    /* the screws: a dark slot with a lit pixel over it */
+    linear-gradient(#FFF1C4,#FFF1C4) 5px 2px/2px 1px no-repeat,
+    linear-gradient(#FFF1C4,#FFF1C4) right 5px top 2px/2px 1px no-repeat,
+    linear-gradient(#6B430E,#6B430E) 4px 3px/4px 3px no-repeat,
+    linear-gradient(#6B430E,#6B430E) right 4px top 3px/4px 3px no-repeat,
+    linear-gradient(to bottom,
+      var(--pc-lamp-amber-hi) 0 2px,
+      var(--pc-lamp-amber) 2px 5px,
+      #D0921F 5px calc(100% - 2px),
+      #7A4B0C calc(100% - 2px));
+  box-shadow:0 3px 0 rgba(0,0,0,.55);
+}
+/* The cards' own 3px drop shadow used to hide behind the screen the lip
+   sat on. With air under the lip it would peek out below it as dark
+   blocks, and the lip hides the card feet anyway: faces at rest drop it,
+   on both holders (a shown card at the showdown keeps its glow). */
+#hud-mid .seat.you .seat-cards{ filter:none; }
+#hud-mid .seat.you .seat-cards:not(.sd-shown) .card:not(.back):not(.card-turning){ box-shadow:inset 0 2px 0 #fff; }
+
+/* Settings → The deck → Card holder: a small lip in each key */
+.holder-swatch{ display:flex; flex-direction:column; align-items:center; gap:5px; }
+.holder-swatch i{
+  display:block; width:44px; height:10px; box-sizing:border-box;
+  border:2px solid var(--px-ink); border-radius:2px;
+}
+.holder-swatch[data-v="brass"] i{
+  background:linear-gradient(to bottom,var(--pc-lamp-amber-hi) 0 1px,var(--pc-lamp-amber) 1px 3px,#D0921F 3px 5px,#7A4B0C 5px);
+}
+.holder-swatch[data-v="classic"] i{
+  border-color:var(--machine-case-lo); border-top-color:var(--theme-case-hi);
+  background:var(--theme-case-raised);
+}

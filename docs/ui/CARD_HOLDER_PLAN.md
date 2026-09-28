@@ -65,6 +65,20 @@ thin white line showed as they turned; the seat shadow was too stepped.
   lip) in place of the two hard steps.
 - The lab now opens on YOUR PICK.
 
-Link republished (same URL). Next: once signed off, move the picks into
-the game (`css/03-action-console.css` + the per-size overrides) and add
-the holder to the Pattern Book.
+Link republished (same URL).
+
+## Live (v0.48.0)
+
+The owner asked for a choice between the brass holder and the original,
+both in the chosen position. Shipped as `css/card-holder.css` +
+`js/card-holder.js`:
+
+- Settings → The deck → **Card holder: Brass** (default) **/ Classic**
+  (`settings.cardHolder`).
+- Both: 10px of air above the hand-name screen (measured; the holder
+  rises), today's width and overhang, the seat shadow.
+- The cards' drop shadow is off on both while they sit in the holder
+  (with the new air it peeked out under the classic lip too).
+- The deal-flash fix (round 2) ships in the same release.
+- Recorded in the Pattern Book (Card holder) and checked by
+  `validation/pattern-book-checks.js`.
