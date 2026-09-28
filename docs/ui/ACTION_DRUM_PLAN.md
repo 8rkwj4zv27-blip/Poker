@@ -1,0 +1,49 @@
+# Action Drum — plan
+
+**Lab link (owner's phone):** https://claude.ai/artifact/Q2qTpSN3k54rkdr3b7ZHgh
+(`action-drum-lab.html`; re-stage with `validation/tools/lab-bundle.js` and
+republish to the same link after a change.)
+
+## The problem
+
+The bottom console changes mode by two nested CSS flips: `#console-flip`
+(the keys ↔ AWARD POT / results face) and, inside its front face,
+`#actions-flip` (the keys ↔ QUICK RESOLVE). Both hide the side facing away
+with `backface-visibility:hidden` on nested `preserve-3d` elements, a
+combination iPhone Safari renders unreliably. The turned-away FOLD / CHECK /
+RAISE row is still drawn, mirrored, behind the new face, and its keys' 6px
+bases poke out above it (the owner's screenshots: AWARD POT, AWARD MAIN,
+BACK TO EVENTS). Desktop Chromium hides it correctly, so it only shows on
+the phone.
+
+## The candidate (round 1)
+
+`js/action-drum.js` + `css/action-drum.css`: the sides are faces of one
+drum that turns to bring the next one up.
+
+- **Can't ghost.** No `backface-visibility`, no `preserve-3d`: each side is
+  projected on its own (`perspective()` in its own transform), JS decides
+  which sides face you, and at rest every side but the live one is
+  `visibility:hidden` with no transform.
+- **No game code changes.** The game still drives the console through the
+  `.flipped` classes (`showAwardConsole`, `syncQuickResolveControl`,
+  `activateResultsConsole`, `endQuickResolve`...). The drum watches them
+  and turns to match; every id, button and handler stays put. Taps are off
+  while it turns (about a third of a second).
+- Reduced Motion: an instant swap.
+
+Lab choices (first option = suggestion): mechanism (DRUM / REEL past blank
+sides / FLAT FLAP / today's flip to compare), speed, landing (clunk /
+bounce / glide), motion (chunky 20 fps / 12 fps / smooth), direction,
+shading, drum panels, the window lips, sound.
+
+## After sign-off
+
+1. Wire the picked drum into the game: load `action-drum.js`/`.css` from
+   `index.html` + `sw.js`, install it at boot, and retire the two flips'
+   transform rules in `css/03-action-console.css` (the `.flipped` classes
+   stay as the game's signal).
+2. Add the drum to `docs/ui/PATTERN_BOOK.md` and a check to
+   `validation/pattern-book-checks.js` (no hidden side visible once a turn
+   has settled).
+3. Bump `BUILD_VERSION` / `CACHE_NAME`.

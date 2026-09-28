@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#140709">
+  <link rel="icon" href="data:,">
+  <title>Action Drum Lab</title>
+  <!-- Phone-first Lab: the real game full screen, with the candidate
+       action drum (js/action-drum.js) standing in for the console's two
+       CSS flips. The controls run inside the game (js/action-drum-lab.js:
+       a TUNE key and a bottom sheet). The host is the Showdown Lab's.
+       Never linked from the game; never touches a real save. -->
+  <style>
+    html,body{ height:100%; margin:0; background:#140709; overflow:hidden; }
+    #sdl-game{
+      position:fixed; top:env(safe-area-inset-top,0px); left:50%;
+      width:min(100vw,430px); height:calc(100% - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px));
+      transform:translateX(-50%); border:0; display:block; background:#0C1510;
+    }
+    @media (min-width:600px){ #sdl-game{ box-shadow:0 0 0 3px #080405,0 20px 60px rgba(0,0,0,.6); } }
+  </style>
+</head>
+<body>
+  <iframe id="sdl-game" title="The Table (lab copy)" allow="autoplay"></iframe>
+  <script type="application/json" id="lab-inject">{"css":["css/action-drum.css","css/showdown-lab.css"],"js":["js/action-drum.js","js/action-drum-lab.js"],"v":"1"}</script>
+  <script src="js/showdown-lab-host.js?v=7"></script>
+</body>
+</html>

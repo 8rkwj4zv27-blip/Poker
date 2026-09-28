@@ -330,6 +330,16 @@ the coin table's `EnemyCards` questions itself. Its default ("YOUR ORDER")
 is the shipped order. Shows each card's footprint against V1. Not loaded
 by the game.
 
+## `action-drum-lab.html` + `js/action-drum-lab.js` + candidate `js/action-drum.js` / `css/action-drum.css` — Action Drum (Lab)
+
+The bottom console's sides (FOLD/CHECK/RAISE, QUICK RESOLVE, AWARD POT,
+the results keys) as one turning drum, replacing the two nested CSS flips
+(`#console-flip`, `#actions-flip`) whose hidden faces iPhone Safari can
+still draw behind the live keys. The candidate watches the game's own
+`.flipped` classes and turns to match, so no game code changes; plan and
+link in `docs/ui/ACTION_DRUM_PLAN.md`. Host is the Showdown Lab's; not
+loaded by the game.
+
 ## `js/knockout.js` + `css/knockout.css` — K.O. + game over (live, v0.44.0)
 
 The owner's order from `ko-lab.html` (recorded in `docs/ui/PATTERN_BOOK.md`,
