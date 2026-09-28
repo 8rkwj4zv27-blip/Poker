@@ -69,6 +69,9 @@ would be player settings.
 
 ## The Lab: `deck-lab.html`
 
+The owner's link (a private Artifact; republish to the same link):
+https://claude.ai/artifact/KwFjkbtfyjbztn7dfk3Ruj
+
 Phone-first, like the Showdown Lab: the real game full screen, a TUNE key
 and a bottom sheet (`js/deck-lab.js`), on the Showdown Lab's host
 (`js/showdown-lab-host.js`) and sheet styles (`css/showdown-lab.css`). The
