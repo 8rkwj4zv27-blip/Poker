@@ -270,6 +270,52 @@ check('Showdown lab: isolated, and its candidate never ships',()=>{
   assert.ok(!/data-sd-/.test(indexHtml),'production must not use the lab\'s data-sd-* attributes');
 });
 
+check('Table room lab: isolated, and its TODAY is the shipped table',()=>{
+  // docs/ui/TABLE_ROOM_PLAN.md: the crowding lab restyles the live table; it never ships.
+  ['table-room-lab','js/table-room-lab.js','css/table-room-lab.css','js/table-room-lab-host.js'].forEach(n=>{ assert.ok(!indexHtml.includes(n),'index.html links '+n); assert.ok(!serviceWorker.includes(n),'sw.js precaches '+n); });
+  const lab=read('js/table-room-lab.js'), hostJs=read('js/table-room-lab-host.js');
+  assert.ok(hostJs.includes('Storage.prototype') && hostJs.includes('pwa-service-worker'),'the lab copy must run on in-memory storage with no service worker');
+  assert.ok(!/localStorage\.(setItem|removeItem|clear)/.test((lab+hostJs).replace(/`[\s\S]*?`/g,'')),'the lab itself must never write storage');
+  // HOLD: TODAY must be the game as it ships: nothing moved, nothing restyled.
+  const today=lab.match(/const TODAY = \{([^}]*)\}/);
+  assert.ok(today,'the lab needs its TODAY picks');
+  ["pot:'0'","you:'sq'","pile:'spread'","their:'57'","lift:'0'","fade:'13'","mark:'square'","pods:'100'","coins:'15'"].forEach(k=>assert.ok(today[1].includes(k),'TODAY must keep '+k));
+  // its sizes are measured against the shipped scale and pot place
+  assert.ok(/\.felt \.seat:not\(\.you\)\{ scale:\.91;/.test(read('css/05-responsive-and-arcade.css')) && /const S0 = \.91;/.test(lab),'the lab\'s machine scale must match css/05');
+  assert.ok(/const SIZES=\{ xs:12, s:13, ms:14, m:15, l:17 \};/.test(read('js/coin-world.js')) && /v === '15' \|\| !v \? 'm'/.test(lab),'the lab\'s CLASSIC chip size must be the old one (SIZES.m)');
+  // since v0.52 the game ships the picks: the lab starts it on CLASSIC, so its TODAY is the old table
+  assert.ok(/settings\.tableRoom = Object\.assign\(\{\}, TableRoom\.CLASSIC\)/.test(lab),'the lab must start the game on TableRoom.CLASSIC');
+  assert.ok(/#felt \.pot-area\{ top:77\.5%; \}/.test(read('css/05-responsive-and-arcade.css')) && lab.includes('top:calc(77.5% + '),'the lab\'s pot move must start from the shipped place');
+});
+
+check('Table room: live, to the owner\'s picks, CLASSIC is the old table',()=>{
+  // docs/ui/TABLE_ROOM_PLAN.md: the owner's picks (28 Sep 2026) ship as the default.
+  const js=read('js/table-room.js'), css=read('css/table-room.css'), lab=read('js/table-room-lab.js');
+  const links=[...indexHtml.matchAll(/<link rel="stylesheet" href="([^"?]+)/g)].map(m=>m[1]);
+  const scripts=[...indexHtml.matchAll(/<script src="([^"?]+)/g)].map(m=>m[1]);
+  assert.ok(links.indexOf('css/table-room.css')>links.indexOf('css/enemy-cards.css') && links.indexOf('css/enemy-cards.css')>links.indexOf('css/05-responsive-and-arcade.css'),'css/table-room.css must load after the rules it extends');
+  assert.ok(scripts.indexOf('js/table-room.js')>=0 && scripts.indexOf('js/table-room.js')<scripts.indexOf('js/enemy-cards.js'),'js/table-room.js must load before js/enemy-cards.js');
+  ['./css/table-room.css','./js/table-room.js'].forEach(f=>assert.ok(serviceWorker.includes(f),'sw.js must precache '+f));
+  const obj=name=>{ const m=js.match(new RegExp('const '+name+' = \\{([^}]*)\\}')); assert.ok(m,'missing '+name); return m[1]; };
+  const picks="pot:'30', potroom:'grow', you:'w130', pile:'pile', their:'w72', lift:'16', fade:'5', mark:'corners', pods:'90', coins:'13'";
+  assert.strictEqual(obj('DEFAULTS').trim(),picks,'the default must be the owner\'s picks');
+  assert.strictEqual(obj('CLASSIC').trim(),"pot:'0', potroom:'grow', you:'sq', pile:'spread', their:'57', lift:'0', fade:'13', mark:'square', pods:'100', coins:'15'",'CLASSIC must be the table before v0.52');
+  // the lab's copy of the picks matches what ships
+  assert.ok(lab.includes("const START = { "+picks+" };"),'the lab must open on the shipped picks');
+  // CLASSIC puts back the shipped numbers exactly
+  assert.ok(/scale:calc\(\.91 \* var\(--tr-pods, 1\)\)/.test(css) && /top:calc\(77\.5% \+ var\(--tr-pot, 0px\)\)/.test(css) && /rgba\(0,0,0,var\(--tr-fade, \.13\)\)/.test(css),'CLASSIC must restore the old scale, pot place and square');
+  // a pile footprint only shapes the tidy: never walls
+  const cw=read('js/coin-world.js');
+  assert.ok(/if \(z && z\.pile\)/.test(cw) && !/b\.zone\.pile/.test(cw),'the pile footprint must not act as walls');
+  // Settings → The table offers every option, and the setting is kept with the rest
+  Object.entries({pot:5,potroom:2,you:4,pile:3,their:4,lift:4,fade:4,mark:2,pods:4,coins:4}).forEach(([k,n])=>{
+    const seg=indexHtml.match(new RegExp('data-tr="'+k+'"[^>]*>([\\s\\S]*?)</div>'));
+    assert.ok(seg && (seg[1].match(/<button/g)||[]).length===n,'Settings must offer every '+k+' option');
+  });
+  assert.ok(/tableRoom:null/.test(read('js/02-support-systems.js')),'the setting must default to the picks');
+  assert.ok(!/localStorage/.test(js),'table room keeps its choice in the settings, never its own storage');
+});
+
 check('Showdown: live, on the shared parts, and to the order',()=>{
   const css=read('css/showdown.css'), js=read('js/showdown.js'), md=read('docs/ui/PATTERN_BOOK.md');
   const links=[...indexHtml.matchAll(/<link rel="stylesheet" href="([^"?]+)/g)].map(m=>m[1]);

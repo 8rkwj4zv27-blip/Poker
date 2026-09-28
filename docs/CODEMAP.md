@@ -31,7 +31,7 @@ Pure card/hand math, safe to run inside the AI worker. `createDeck`,
 hand-name/description helpers. No DOM, no game state — if you need a poker
 rule question answered precisely, it's answered here.
 
-The AI's maths (since the v0.52.0 AI rebuild) also lives here, because the worker needs it:
+The AI's maths (since the v0.53.0 AI rebuild) also lives here, because the worker needs it:
 - `fastScore7` is an integer hand score that orders hands exactly as
   `evaluate7`. The checks prove this on all 2.6M five-card hands. It's
   used only for the AI's sampling; showdowns still use `evaluate7`.
@@ -68,17 +68,17 @@ AI work.** It has the tier ladder, the step order and the measured
 baselines. Measure behaviour with `validation/tools/ai-sim.js` (the real
 `aiDecide()` on a headless table, `validation/tools/ai-harness.js`) and
 check with `validation/ai-behaviour-checks.js`. `seatsAfter()` measures
-position from the dealer button since v0.52.0; before that, position never
+position from the dealer button since v0.53.0; before that, position never
 affected a decision. Preflop is played from ranges (`aiPreflop`,
 `PREFLOP_SKILL`, the open/push range tables) and postflop is
 and postflop (`aiPostflop`, `POSTFLOP_SKILL`, the hand plan
-`player.aiPlan`), all since v0.52.0. Think time (`aiThinkTime`) comes from the
+`player.aiPlan`), all since v0.53.0. Think time (`aiThinkTime`) comes from the
 spot, not the choice, except for the low-skill timing tell. Since
-v0.52.0 the table keeps a public notebook of every player's habits
+v0.53.0 the table keeps a public notebook of every player's habits
 (`g.reads`: `aiObserveHandStart`/`aiObserveAction`/`aiObserveShowdown`,
 saved as `aiReads` in the table save). Each AI reads it through
 `aiReadOf` at the speed of its skill's and personality's `adapt`, and
-`personality.tilt` sets how hard a big loss hits. Since v0.52.0 opponents'
+`personality.tilt` sets how hard a big loss hits. Since v0.53.0 opponents'
 ranges are also narrowed by this hand's public betting (`g.handLog`;
 `NARROW_W`, `narrowWeight` and range specs `{pct, hist, bluff, k}` in
 `01-poker-math.js`, which the worker runs too). Each tier's target
@@ -341,6 +341,33 @@ and the open felt against today. Presets TODAY / SAFE / MODERATE / BOLD;
 COPY SETTINGS gives the owner's picks as text; the settings live in the
 URL hash. Since v0.40.7 (release 2) its TODAY is the shipped layout, with a
 BEFORE preset for the table as it was. Not loaded by the game.
+
+## `js/table-room.js` + `css/table-room.css` — Table room (live, v0.52.0)
+
+Room on the table for the bets: the owner's picks from the Table Room Lab
+(docs/ui/TABLE_ROOM_PLAN.md) are the default, and Settings → The table
+(`#settings-table-room`, `settings.tableRoom`) offers every option, plus
+ROOMY / CLASSIC (`TableRoom.CLASSIC` is the table before v0.52). It holds
+the choice and sets CSS variables (`--tr-pot`, `--tr-pods`, `--tr-fade`,
+`data-tr-mark`) for the pot's place, the machines' size and the bet marks.
+`js/enemy-cards.js` asks it for the bet spots' sizes and heights,
+`js/coin-table.js` for the piles (`z.pile`: a footprint that shapes the
+tidy but is never walls, in `js/coin-world.js`), the pot's room and the
+chip size (`SIZES` xs/s/ms/m). A change mid-game resizes the chips where
+they lie and re-lays the spots (`CoinTable.relayout()`).
+
+## `table-room-lab.html` + `js/table-room-lab-host.js` + `js/table-room-lab.js` + `css/table-room-lab.css` — Table Room Lab
+
+The crowded-table pass (docs/ui/TABLE_ROOM_PLAN.md): bets spilling over
+the board, the pot, the bet squares, the machines' size. Phone-first: the
+**real game** at the owner's iPhone 15 Pro Max (430 x 932, safe areas
+59px / 34px, scaled to fit), with the controls inside it (TUNE sheet,
+HOLD: TODAY, POT IT). It wraps `EnemyCards.spot`/`paint` and
+`CoinWorld.zone` to re-place and reshape the bet spots, and restyles the
+pot and machines; moments script `aiDecide` and hold `CoinTable.sweep`.
+Since v0.52 the game ships the picks, so the lab starts it on
+`TableRoom.CLASSIC` and its HOLD: CLASSIC is the old table. Not loaded by
+the game.
 
 ## `felt-lab.html` + `js/felt-lab-host.js` + `js/felt-lab.js` + `css/felt-lab.css` — Felt Lab
 
@@ -664,7 +691,7 @@ there manually.
 Files matching `*-lab.html`, `*-lab.js`, `*-lab.css` (`career-lab`,
 `career-hub-v2-lab`, `ticket-lab`, `card-flight-options`, `card-turn-lab`,
 `chip-motion-lab`, `chip-lab`, `chip-throw-lab`, `design-lab`, `result-stage-lab`, `showdown-rail-lab`, `crt-lab`, `dashboard-v2-lab`, `dashboard-order-lab`,
-`wheel-v2-lab`, `intro-lab`, `boot-lab`, `slot-lab`, `table-space-lab`, `enemy-card-lab`, `showdown-lab`, `pot-lab`, `ko-lab`, `coin-denom-lab`, `coin-bank-lab`, `coin-tubes-lab`, `coin-hoard-lab`, `chip-lab`, `deck-lab`)
+`wheel-v2-lab`, `intro-lab`, `boot-lab`, `slot-lab`, `table-space-lab`, `table-room-lab`, `enemy-card-lab`, `showdown-lab`, `pot-lab`, `ko-lab`, `coin-denom-lab`, `coin-bank-lab`, `coin-tubes-lab`, `coin-hoard-lab`, `chip-lab`, `deck-lab`)
 are **isolated visual references and prototyping sandboxes**. Several are
 committed permanently as durable references even after their feature
 shipped. Rules:

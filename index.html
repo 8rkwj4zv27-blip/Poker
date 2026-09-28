@@ -37,6 +37,7 @@
   <link rel="stylesheet" href="css/coin-bank.css?v=1">
   <link rel="stylesheet" href="css/coin-hoard.css?v=1">
   <link rel="stylesheet" href="css/enemy-cards.css?v=1">
+  <link rel="stylesheet" href="css/table-room.css?v=1">
   <link rel="stylesheet" href="css/knockout.css?v=1">
   <link rel="stylesheet" href="css/showdown.css?v=1">
   <link rel="stylesheet" href="css/dealer-deck.css?v=4">
@@ -648,6 +649,114 @@
         <div id="deal-style-list"></div>
       </div>
 
+      <!-- The table (js/table-room.js): room on the table for the bets.
+           The owner's picks from the Table Room Lab are the default;
+           CLASSIC is the table before v0.52. -->
+      <div class="sheet-section" id="settings-table-room">
+        <h3>The table</h3>
+        <div class="field">
+          <div class="field-label">Layout</div>
+          <div class="segmented compact" id="tr-quick-seg" role="group" aria-label="Table layout">
+            <button data-act="default">Roomy</button>
+            <button data-act="classic">Classic</button>
+          </div>
+          <div class="hint">Roomy keeps the bets clear of the shared cards. Classic is the table as it was. Tune any part below.</div>
+        </div>
+        <div class="field">
+          <div class="field-label">Pot position</div>
+          <div class="segmented compact" data-tr="pot" role="group" aria-label="Pot">
+            <button data-v="0">Classic</button>
+            <button data-v="10">10px lower</button>
+            <button data-v="20">20px lower</button>
+            <button data-v="30">30px lower</button>
+            <button data-v="40">40px lower</button>
+          </div>
+          <div class="hint">How far down the felt the pot counter and its tray sit.</div>
+        </div>
+        <div class="field">
+          <div class="field-label">Pot pile</div>
+          <div class="segmented compact" data-tr="potroom" role="group" aria-label="Pot pile">
+            <button data-v="grow">Taller pile</button>
+            <button data-v="air">More air</button>
+          </div>
+          <div class="hint">What the pot does with the room it gains: the biggest pots stack higher, or the pile stays as tall as before with a gap under the shared cards.</div>
+        </div>
+        <div class="field">
+          <div class="field-label">Your bet spot</div>
+          <div class="segmented compact" data-tr="you" role="group" aria-label="Your bet spot">
+            <button data-v="sq">Square</button>
+            <button data-v="w90">Wide</button>
+            <button data-v="w110">Wider</button>
+            <button data-v="w130">Widest</button>
+          </div>
+          <div class="hint">The spot above your cards. Wider and lower sits your bet in under the pot.</div>
+        </div>
+        <div class="field">
+          <div class="field-label">Bets</div>
+          <div class="segmented compact" data-tr="pile" role="group" aria-label="Bets">
+            <button data-v="spread">Spread</button>
+            <button data-v="pile">Little pile</button>
+            <button data-v="loose">Loose pile</button>
+          </div>
+          <div class="hint">How a bet settles on its spot once it has landed. Every chip is still there.</div>
+        </div>
+        <div class="field">
+          <div class="field-label">Their bet spots</div>
+          <div class="segmented compact" data-tr="their" role="group" aria-label="Their bet spots">
+            <button data-v="57">Square</button>
+            <button data-v="48">Smaller</button>
+            <button data-v="w72">Wide</button>
+            <button data-v="w76">Wide + low</button>
+          </div>
+        </div>
+        <div class="field">
+          <div class="field-label">Their spots sit</div>
+          <div class="segmented compact" data-tr="lift" role="group" aria-label="Their spots">
+            <button data-v="0">Classic</button>
+            <button data-v="8">8px up</button>
+            <button data-v="16">16px up</button>
+            <button data-v="board">Over the cards</button>
+          </div>
+          <div class="hint">Up towards each machine, clear of the shared cards. Their tucked cards stay in view.</div>
+        </div>
+        <div class="field">
+          <div class="field-label">Bet marks</div>
+          <div class="segmented compact" data-tr="fade" role="group" aria-label="Bet marks">
+            <button data-v="13">Dark</button>
+            <button data-v="8">Faint</button>
+            <button data-v="5">Fainter</button>
+            <button data-v="0">Off</button>
+          </div>
+        </div>
+        <div class="field">
+          <div class="field-label">Mark shape</div>
+          <div class="segmented compact" data-tr="mark" role="group" aria-label="Mark">
+            <button data-v="square">Square</button>
+            <button data-v="corners">Corners</button>
+          </div>
+        </div>
+        <div class="field">
+          <div class="field-label">Machines</div>
+          <div class="segmented compact" data-tr="pods" role="group" aria-label="Machines">
+            <button data-v="100">100%</button>
+            <button data-v="96">96%</button>
+            <button data-v="93">93%</button>
+            <button data-v="90">90%</button>
+          </div>
+          <div class="hint">The opponents' cabinets, cards and all. Smaller lifts their bet spots with them.</div>
+        </div>
+        <div class="field">
+          <div class="field-label">Chip size</div>
+          <div class="segmented compact" data-tr="coins" role="group" aria-label="Chip size">
+            <button data-v="15">Large</button>
+            <button data-v="14">Medium</button>
+            <button data-v="13">Small</button>
+            <button data-v="12">Smallest</button>
+          </div>
+          <div class="hint">Every chip, on the table and in your bank: the same chips, drawn smaller.</div>
+        </div>
+      </div>
+
       <div class="sheet-section">
         <h3>Sound &amp; display</h3>
         <div class="toggle-row">
@@ -799,8 +908,8 @@
 <script src="js/04-modes-and-scoring.js?v=cards-1"></script>
 <script src="js/05-game-engine.js?v=ai-1"></script>
 <script src="js/06-presentation.js?v=holder-1"></script>
-<script src="js/coin-world.js?v=chips-1"></script>
-<script src="js/coin-table.js?v=chips-1"></script>
+<script src="js/coin-world.js?v=room-1"></script>
+<script src="js/coin-table.js?v=room-1"></script>
 <script src="js/coin-bank.js?v=1"></script>
 <script src="js/07-ui-wiring.js?v=space-1"></script>
 <script src="js/career-hub-live.js?v=cabinet-4"></script>
@@ -812,7 +921,8 @@
 <script src="js/home-cast.js?v=1"></script>
 <script src="js/home-boot.js?v=2"></script>
 <script src="js/dashboard.js?v=1"></script>
-<script src="js/enemy-cards.js?v=1"></script>
+<script src="js/table-room.js?v=1"></script>
+<script src="js/enemy-cards.js?v=2"></script>
 <script src="js/knockout.js?v=1"></script>
 <script src="js/crt.js?v=1"></script>
 <script src="js/finishes.js?v=3"></script>

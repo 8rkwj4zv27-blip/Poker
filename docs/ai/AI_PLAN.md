@@ -6,10 +6,10 @@ beatable with fundamentals; the top rooms are strong players who spot and
 punish your leaks. What you learn at the table should carry over to real
 poker.
 
-**Shipped to `main` as v0.52.0.** The step versions below (v0.50–v0.55)
+**Shipped to `main` as v0.53.0.** The step versions below (v0.50–v0.55)
 were working labels on the development branch. `main` meanwhile released
-its own v0.51.x (Deal Styles), so the whole rebuild went out together as
-v0.52.0.
+its own v0.51.x (Deal Styles) and v0.52.0 (Table room), so the whole
+rebuild went out together as v0.53.0.
 
 This plan covers **gameplay only**. Personality, dialogue, faces and
 designed tells come later, in their own pass.
