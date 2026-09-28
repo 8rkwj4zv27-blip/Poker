@@ -1184,36 +1184,53 @@
   const ROW_DY=sp=>Math.ceil(Math.sqrt(Math.max(0,D()*D()-sp*sp/4))/FORE);
   // mixed SIZES (the bars and big coins): chips are all one size
   const mixed=list=>list.some(b=>b.colour!=='gold' && !isTier(b.colour));
-  /* THE RACK (the bank): one row of stacks across the box, so nothing is
-     ever tucked behind anything. A pyramid outline (the middle stacks
-     tallest), every stack no taller than the box allows; the coins sorted
-     by value, the richest in the middle stacks, each stack's coins lowest
-     at the bottom, richest on top. */
+  /* THE RACK (the bank): rows of stacks across the box, one behind
+     another like tiered seats: each row further back set half a coin
+     across (so it shows between the stacks in front) and standing taller,
+     so every stack's top is in view and nothing is lost behind. A small
+     bank is one row; the rows behind fill in as it grows. Each row a
+     pyramid outline (the middle stacks tallest); the coins sorted by
+     value, the richest in the back middle, each stack's coins lowest at
+     the bottom, richest on top. */
+  const RACK_ROWS=3, RACK_DROP=3;
   function rackGeom(z){
     const d=D(), st=STEP(), sp=d+1, k=zoneBox(z,d,'gold')||{ L:z.cx-30, R:z.cx+30, T:z.cy-10, B:z.cy };
     const cols=Math.max(1,Math.floor((k.R-k.L)/sp)+1), x0=(k.L+k.R)/2-(cols-1)*sp/2;
-    const cap=Math.max(1,Math.floor(((z.room!=null?z.room:60)-Math.round(d*HR())-2)/st)+1);
-    return { d, st, sp, k, cols, x0, cap };
+    const room=z.room!=null?z.room:60, dy=ROW_DY(sp), top=Math.round(d*HR())+2;
+    // as many rows as the box is deep; the back row as tall as the room
+    // allows, each row nearer a few coins shorter
+    const rowsFit=Math.max(1,Math.min(RACK_ROWS,Math.floor((k.B-k.T)/dy)+1));
+    const backCap=Math.max(1,Math.floor((room-(rowsFit-1)*dy-top)/st)+1);
+    const rows=[...Array(rowsFit).keys()].map(r=>{
+      const odd=r%2===1 && cols>1, n=odd?cols-1:cols;
+      return { r, y:k.B-r*dy, x0:x0+(odd?sp/2:0), n, cap:Math.max(1,backCap-(rowsFit-1-r)*RACK_DROP) };
+    });
+    return { d, st, sp, k, cols, x0, dy, rows, cap:rows[0].cap };
   }
-  const rackCapacity=z=>{ const g=rackGeom(z); return g.cols*g.cap; };
+  const rowsCap=rows=>rows.reduce((a,w)=>a+w.n*w.cap,0);
+  const rackCapacity=z=>rowsCap(rackGeom(z).rows);
   function rackSlots(z,list){
-    const g=rackGeom(z), n=list.length, mid=(g.cols-1)/2, half=Math.max(1,mid);
-    const w=[...Array(g.cols).keys()].map(i=>1-.3*Math.abs(i-mid)/half);
-    const h=new Array(g.cols).fill(0);
-    // heights: coins shared by weight, never past the cap
+    const g=rackGeom(z), n=list.length;
+    // the rows in use: one for a small bank, the next behind once the
+    // front ones are over half full
+    let used=1; while (used<g.rows.length && n>.55*rowsCap(g.rows.slice(0,used))) used++;
+    const mid=(g.cols-1)/2, half=Math.max(1,mid), stacks=[];
+    g.rows.slice(0,used).forEach(w=>{ for (let i=0;i<w.n;i++){ const x=w.x0+i*g.sp, off=Math.abs(x-(g.x0+mid*g.sp))/g.sp;
+      stacks.push({ x:Math.round(x), y:w.y, r:w.r, cap:w.cap, w:(1-.3*off/half)*(1+.35*w.r), off, h:0 }); } });
+    // heights: coins shared by weight (taller at the back, in the middle), never past a stack's cap
     for (let i=0;i<n;i++){
-      let best=-1, bv=1e9;
-      for (let c=0;c<g.cols;c++){ if (h[c]>=g.cap) continue; const v=(h[c]+1)/w[c]; if (v<bv){ bv=v; best=c; } }
-      if (best<0) best=h.indexOf(Math.min(...h));
-      h[best]++;
+      let best=null, bv=1e9;
+      stacks.forEach(s=>{ if (s.h>=s.cap) return; const v=(s.h+1)/s.w; if (v<bv){ bv=v; best=s; } });
+      if (!best) best=stacks.reduce((a,s)=>s.h<a.h?s:a);
+      best.h++;
     }
-    // fill order: the middle stack first, then out to either side
-    const order=[...Array(g.cols).keys()].sort((a,c)=>Math.abs(a-mid)-Math.abs(c-mid) || a-c);
+    // fill order: the back row's middle first, then out and forward
+    const order=stacks.slice().sort((a,c)=>c.r-a.r || a.off-c.off || a.x-c.x);
     const sorted=list.slice().sort((a,c)=>valueOf(c.colour)-valueOf(a.colour));
     const out=new Map(); let at=0;
-    order.forEach((c,ci)=>{
-      const mine=sorted.slice(at,at+h[c]); at+=h[c];
-      mine.reverse().forEach((b,lv)=>out.set(b,{ x:Math.round(g.x0+c*g.sp), y:g.k.B, z:lv*g.st, n:lv, k:c }));
+    order.forEach((s,ci)=>{
+      const mine=sorted.slice(at,at+s.h); at+=s.h;
+      mine.reverse().forEach((b,lv)=>out.set(b,{ x:s.x, y:s.y, z:lv*g.st, n:lv, k:ci }));
     });
     return out;
   }

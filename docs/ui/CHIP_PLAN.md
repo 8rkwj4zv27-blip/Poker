@@ -697,3 +697,17 @@ presets ($500 to FULL); WINNINGS one by one or handfuls. Measured: 0
 overlaps and 0 outside the box from $500 to $3M; a 5-way all-in settles
 with 0 stuck.
 
+
+**Round 6 (28 Sep 2026).** Owner's settings: TINT, CASINO, SILVER up to
+GOLD, through a slot, winnings one by one, big, gleam when rich. Ask: a
+full bank read as just four towers; rows of towers behind each other
+(front ones shorter is fine), deeper stacks. Change (same link): the rack
+is up to three rows, tiered like seats: the back row stands tallest, each
+row nearer three coins shorter, the middle row set half a coin across so
+it shows between the front stacks (4 / 3 / 4 stacks). A small bank is one
+row; the rows behind fill in once the front is over half full. The
+richest coins sit in the back middle. The bank holds 176 coins (was 92);
+BIG earns a steeper curve (about 26 coins at $500, 44 at $2K, 72 at $10K,
+108 at $100K, 148 at $1M), full (all gold) near $5.5M at 10/20.
+Measured: 0 overlaps, every coin on its planned place, nothing outside
+the box from $500 to FULL.

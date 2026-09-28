@@ -295,7 +295,7 @@ const CoinTable = (function(){
       z.box = floorOf(k); z.room = k.B-k.T-4; z.hoard = true;
       // a hoard climbs: taller stacks than the pot's, the bars highest (at the back)
       z.bandH = { gold:4, 'gold-big':5, 'gold-bar':8 }; z.shape = CW.OPT.hoardRest;
-      // chips: the bank is a rack, one row of stacks (nothing behind)
+      // chips: the bank is a rack, rows of stacks stepping up to the back
       if (chipsOn()) z.rack = true;
       if (!hl._hoardTap){ hl._hoardTap = true; hl.addEventListener('click', ()=>{ if (hoardOn()) tidyHoard(); }); }
       if (!hoardTrack) hoardTrack = requestAnimationFrame(trackHoard);
@@ -337,7 +337,7 @@ const CoinTable = (function(){
       const bb = chips/Math.max(1, (game && game.bigBlind) || 20);
       // a gentle curve: a few stacks at 25 BB, about half full at 1,000 BB,
       // full only at massive numbers (HOW BIG scales it)
-      const k = { '.65':30, '.45':24, '.3':18 }[String(CW.OPT.hoardSize)] || 24;
+      const k = { '.65':38, '.45':30, '.3':22 }[String(CW.OPT.hoardSize)] || 24;
       return Math.max(chips>0 ? 3 : 0, Math.min(CW.rackCapacity(CW.zones.bank), Math.round(4 + k*Math.log10(1 + bb/8))));
     }
     const bb = chips/Math.max(1, (game && game.bigBlind) || 20);
