@@ -264,8 +264,9 @@ const DealerDeck = (() => {
       if (f !== frame){
         frame = f;
         const P = Object.assign({ bank:0, pitch:0, spin:0, light:0, alpha:1, show:1, flip:0 }, pose(t, o) || {});
-        const bank = snap(Math.max(-1, Math.min(1, P.bank)), .25), pitch = snap(Math.max(-1, Math.min(1, P.pitch)), .25);
-        let kx = 1 - Math.abs(bank) * .42, ky = 1 - Math.abs(pitch) * .16;
+        const bank = snap(Math.max(-1, Math.min(1, P.bank * 1.35)), .25), pitch = snap(Math.max(-1, Math.min(1, P.pitch * 1.35)), .25);
+        const grow = 1 + Math.min(.3, lift / 240);
+        let kx = (1 - Math.abs(bank) * .5) * grow, ky = (1 - Math.abs(pitch) * .22) * grow;
         // your card turning over: squash to a sliver, swap in the face, back out
         let fl = turn ? Math.max(0, Math.min(1, (t - .36) / .42)) : 0;
         if (turn){
@@ -274,7 +275,10 @@ const DealerDeck = (() => {
           if (!swapped && fl >= .5){ swapped = true; dressFace(skinEl, turn); }
         }
         const light = snap(P.light + pitch * -.1 + bank * .06 + (turn && fl > .3 && fl < .7 ? .18 : 0), .06);
-        skinEl.style.transform = 'rotate(' + snap(P.spin, 15) + 'deg) scale(' + kx.toFixed(3) + ',' + ky.toFixed(3) + ')';
+        skinEl.style.transform = 'rotate(' + snap(P.spin, 15) + 'deg) skewY(' + (bank * -9).toFixed(1) + 'deg) scale(' + kx.toFixed(3) + ',' + ky.toFixed(3) + ')';
+        // the chips' trick: the side leaning away goes into shade in one hard
+        // step, the side tipped to the lamp catches a lit band
+        shade(skinEl, bank, pitch);
         skinEl.style.filter = light ? 'brightness(' + (1 + light).toFixed(2) + ')' : '';
         skinEl.style.opacity = String(snap(Math.max(0, Math.min(1, P.alpha)), .25));
         const show = Math.max(0, Math.min(1, P.show));
@@ -286,6 +290,14 @@ const DealerDeck = (() => {
     };
     tick();
     return rig;
+  }
+  function shade(skinEl, bank, pitch){
+    let sh = skinEl.querySelector(':scope > .ds-shade');
+    if (!sh){ sh = document.createElement('i'); sh.className = 'ds-shade'; skinEl.appendChild(sh); }
+    const layers = [];
+    if (bank) layers.push('linear-gradient(' + (bank > 0 ? 90 : 270) + 'deg,rgba(8,4,5,' + (Math.abs(bank) * .5).toFixed(2) + ') 0 46%,transparent 46%)');
+    if (pitch) layers.push('linear-gradient(' + (pitch > 0 ? 180 : 0) + 'deg,rgba(255,240,200,' + (Math.abs(pitch) * .28).toFixed(2) + ') 0 22%,transparent 22%)');
+    sh.style.backgroundImage = layers.join(',') || 'none';
   }
   // the face side, exactly as it will sit in your seat
   function dressFace(skinEl, look){

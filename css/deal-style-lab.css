@@ -47,3 +47,4 @@ html.dsl-open .sdl-key{ visibility:hidden; }
 .dsl-tier-epic{ color:#D59CFF !important; }
 .dsl-tier-legendary{ color:#FFB547 !important; }
 html.dsl-noshadow .ds-shadow{ display:none; }
+.dsl-tier small{ display:block; margin-top:4px; font-family:var(--font-px); font-size:11px; letter-spacing:0; color:#B69A7A; }

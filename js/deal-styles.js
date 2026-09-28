@@ -11,10 +11,11 @@
    gentle: the card leans and tips like a thrown card reacting to the air,
    never far enough to show its thickness, never over.
 
-   Tiers, weights in the mix: COMMON 10 · UNCOMMON 4 · RARE 1 · EPIC .4 ·
-   LEGENDARY .12. EACH HAND: one common/uncommon style for the whole
-   hand; EVERY CARD: each card rolls. Rare, epic and legendary styles are
-   never a whole hand: any single card can roll one, as a surprise.
+   Tiers: COMMON and UNCOMMON share the hands by weight (10 / 4); EACH
+   HAND: one of them for the whole hand; EVERY CARD: each card rolls.
+   RARE, EPIC and LEGENDARY are never a whole hand: any single card has a
+   fixed chance of one (1/500, 1/800, 1/3000 a card: about 1 hand in 50,
+   80 and 300 for each style), as a surprise.
 
    Presentation only: nothing in the game changes; the cards land where
    they always do. The specials' light and smoke are pixel bits (css/
@@ -24,7 +25,12 @@
 const DealStyles = (() => {
   const P = (o, t, l, z, x, s, e, c) => [o, t, l, z || 0, x || 0, s || 1, e || null, c || 0];
   const IN = 'cubic-bezier(.5,0,.9,.6)', OUT = 'cubic-bezier(.2,.7,.3,1)', SOFT = 'cubic-bezier(.3,0,.7,1)';
-  const WEIGHT = { common:10, uncommon:4, rare:1, epic:.4, legendary:.12 };
+  // COMMON and UNCOMMON share the hands between them by weight. RARE and
+  // up are a fixed chance on any one card (about 10 cards a hand), so
+  // each rare style is about 1 hand in 50, each epic 1 in 80, each
+  // legendary 1 in 300, however many common styles are switched on.
+  const WEIGHT = { common:10, uncommon:4 };
+  const CHANCE = { rare:1 / 500, epic:1 / 800, legendary:1 / 3000 };
   const SOLO = { rare:true, epic:true, legendary:true };
   const TIERS = ['common','uncommon','rare','epic','legendary'];
   const S = Math.sin, C = Math.cos, PI = Math.PI;
@@ -344,9 +350,11 @@ const DealStyles = (() => {
     const on = STYLES.filter(s => O.on[s.id]);
     if (!on.length) return null;
     const plain = on.filter(s => !SOLO[O.rarity[s.id]]);
-    const r = roll(on);
-    if (SOLO[O.rarity[r.id]] || !plain.length) return r;
-    if (O.scope === 'card') return r;
+    // any single card can be the rare one
+    let x = Math.random();
+    for (const s of on) if (SOLO[O.rarity[s.id]]){ x -= CHANCE[O.rarity[s.id]]; if (x < 0) return s; }
+    if (!plain.length) return on[Math.floor(Math.random() * on.length)];
+    if (O.scope === 'card') return roll(plain);
     const key = typeof game !== 'undefined' && game ? game.handNumber : 0;
     if (key !== handKey || !handStyle || !O.on[handStyle.id]){ handKey = key; handStyle = roll(plain); }
     return handStyle;
@@ -354,12 +362,12 @@ const DealStyles = (() => {
   function apply(order){
     if (order){
       if (order.on) Object.assign(O.on, order.on);
-      if (order.rarity) Object.keys(order.rarity).forEach(k => { if (WEIGHT[order.rarity[k]] != null) O.rarity[k] = order.rarity[k]; });
+      if (order.rarity) Object.keys(order.rarity).forEach(k => { if (TIERS.includes(order.rarity[k])) O.rarity[k] = order.rarity[k]; });
       if (order.scope) O.scope = order.scope;
     }
     handStyle = null;
     DealerDeck.flightFor = () => { const s = pick(); return s ? make(s) : null; };
   }
   apply();
-  return { STYLES, TIERS, WEIGHT, SOLO, Sfx, apply, make:id => make(byId(id)), get order(){ return JSON.parse(JSON.stringify(O)); } };
+  return { STYLES, TIERS, WEIGHT, CHANCE, SOLO, Sfx, apply, make:id => make(byId(id)), get order(){ return JSON.parse(JSON.stringify(O)); } };
 })();

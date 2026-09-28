@@ -96,6 +96,19 @@ are made with Web Audio in the candidate (no files).
 **The lab:** styles grouped by tier, each ▶ PLAY / on-off / rarity; THE
 CARD (2.5D sprite / flat today) and SHADOW switches; slow motion.
 
+## Round 5: stronger 2.5D, honest rarity
+
+Owner: the 2.5D didn't read, and rare styles said "about 1 hand in 8".
+- The pose is stronger: leans x1.35, bank narrows up to 50% and slants
+  (skewY up to 9°), the side leaning away drops into shade in one hard
+  step and a lit band shows on the side tipped to the lamp (the chips'
+  trick), and the card grows as it rises.
+- Rarity: COMMON/UNCOMMON share the hands by weight (10/4); RARE, EPIC
+  and LEGENDARY are a fixed chance on any one card (1/500, 1/800, 1/3000):
+  each rare style about 1 hand in 50, each epic 1 in 80, each legendary 1
+  in 300 (any rare 1 in 13, any epic 1 in 40, any legendary 1 in 150 with
+  all on). The lab shows the per-tier odds.
+
 ## Next
 
 Owner's picks (COPY MY PICKS in the lab), then ship: the styles become a

@@ -39,19 +39,24 @@
   function set(patch){ DealStyles.apply(patch); save(); paint(); }
 
   // roughly how often a style shows up, with ~10 cards a hand
+  const CARDS = 10;
+  const perHand = p => 1 - Math.pow(1 - p, CARDS);
+  const say = p => p >= .5 ? 'MOST HANDS' : p <= 0 ? 'NEVER' : 'ABOUT 1 HAND IN ' + Math.max(1, Math.round(1 / p));
   function odds(id){
-    const O = order(), W = DealStyles.WEIGHT;
+    const O = order(), W = DealStyles.WEIGHT, CH = DealStyles.CHANCE;
     if (!O.on[id]) return 'OFF';
-    const on = DealStyles.STYLES.filter(s => O.on[s.id]);
-    const solo = r => !!DealStyles.SOLO[r];
-    const total = on.reduce((t, s) => t + W[O.rarity[s.id]], 0);
-    let pHand;
-    if (solo(O.rarity[id]) || O.scope === 'card') pHand = 1 - Math.pow(1 - W[O.rarity[id]] / total, 10);
-    else {
-      const plain = on.filter(s => !solo(O.rarity[s.id]));
-      pHand = W[O.rarity[id]] / plain.reduce((t, s) => t + W[O.rarity[s.id]], 0);
-    }
-    return pHand >= .5 ? 'MOST HANDS' : 'ABOUT 1 HAND IN ' + Math.max(1, Math.round(1 / pHand));
+    const r = O.rarity[id];
+    if (DealStyles.SOLO[r]) return say(perHand(CH[r]));
+    const plain = DealStyles.STYLES.filter(s => O.on[s.id] && !DealStyles.SOLO[O.rarity[s.id]]);
+    const share = W[r] / plain.reduce((t, s) => t + W[O.rarity[s.id]], 0);
+    return say(O.scope === 'card' ? perHand(share) : share);
+  }
+  // any style of a rare tier, per hand
+  function tierOdds(tier){
+    const O = order(), CH = DealStyles.CHANCE;
+    if (!DealStyles.SOLO[tier]) return '';
+    const n = DealStyles.STYLES.filter(s => O.on[s.id] && O.rarity[s.id] === tier).length;
+    return n ? 'ANY ' + tier.toUpperCase() + ': ' + say(perHand(CH[tier] * n)) : '';
   }
 
   /* ---- deal a fresh hand: in one style, or from the mix ---- */
@@ -99,6 +104,7 @@
       r.querySelector('.dsl-on').setAttribute('aria-checked', String(on));
       r.querySelector('.dsl-odds').textContent = odds(id);
     });
+    document.querySelectorAll('.dsl-tier-odds').forEach(e => { e.textContent = tierOdds(e.dataset.tier); });
     const n = DealStyles.STYLES.filter(s => O.on[s.id]).length;
     const c = $('.dsl-count'); if (c) c.textContent = n ? n + ' IN THE MIX' : 'NONE ON: THE GAME USES FLICK';
   }
@@ -123,7 +129,7 @@
         '<div class="sdl-row"><div class="sdl-name">IN THE MIX, ROLL A STYLE</div>' + seg('scope', [['hand','ONCE PER HAND'],['card','EVERY CARD']], order().scope) + '</div>' +
         '<div class="sdl-row"><div class="sdl-name">SLOW MOTION</div>' + seg('slow', [['off','OFF'],['on','2.5× SLOWER']], slow) + '</div>' +
         '<div class="dsl-quick"><button type="button" data-act="all">ALL ON</button><button type="button" data-act="flick">FLICK ONLY</button></div>' +
-        DealStyles.TIERS.map(t => '<h3 class="dsl-tier dsl-tier-' + t + '">' + TIER_NAME[t] + '</h3>' + DealStyles.STYLES.filter(s => s.tier === t).map(rowHtml).join('')).join('') +
+        DealStyles.TIERS.map(t => '<h3 class="dsl-tier dsl-tier-' + t + '">' + TIER_NAME[t] + '<small class="dsl-tier-odds" data-tier="' + t + '"></small></h3>' + DealStyles.STYLES.filter(s => s.tier === t).map(rowHtml).join('')).join('') +
         '<div class="sdl-actions"><button type="button" data-act="reset">START OVER</button><button type="button" data-act="copy">COPY MY PICKS</button></div>' +
         '<textarea class="sdl-copytext" readonly hidden></textarea>' +
       '</div>';
