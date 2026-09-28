@@ -747,3 +747,16 @@ it stands (`pileAdd`: on top of a stack with room, the middle likelier,
 or a new stack beside the pile); nothing already there moves. Tap to
 tidy makes the pyramid. The pot holds 100 chips before any change up (was
 60), and a change-up only settles the stacks it touched (`settleStacks`).
+
+**Round 7c.** Owner (testing on a Mac window, not a phone shape): the pile
+formed then shrank with a snap or chips disappeared; colour changes
+should be more obvious; chips still sometimes carry on off the screen.
+Cause of the shrink: the change-up was quiet (five chips vanished, one
+appeared, the stacks snapped down). Now `mergePile`: five lift off the
+pile to a point over the richer chip's place, clink, pop into it (ring,
+glint) and it drops onto the pile; only the stacks they came off settle.
+Off-screen: not reproduced here (three phone sizes, 4-6x slower CPU); a
+coin with an exact place now lands there when its flight time is up
+(it can't sail past a high stack top; `stats().late`), on top of the
+off-screen safety net. The owner will judge it on the phone once the
+chips are in the game.

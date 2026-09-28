@@ -782,7 +782,7 @@ const CoinTable = (function(){
       // the change-up: over the pot's limit, the pile gets richer, not bigger
       if (chipsOn()){
         // chips: the change-up is quiet, then the pile slides into shape
-        if (pot.list.length > CW.OPT.potCap){ CW.mergeQuiet(pot, CW.OPT.potCap); await within(CW.settleStacks(pot), 3000/CW.OPT.speed); }
+        if (pot.list.length > CW.OPT.potCap) await within(CW.mergePile(pot, CW.OPT.potCap), 12000/CW.OPT.speed);
         pot.neat = false;                 // a tap tidies it into the pyramid
       } else if (denomOn()) await within(CW.merge(pot, CW.OPT.potCap) || Promise.resolve(), 8000/CW.OPT.speed);
     })().finally(()=>{ sweeping = null; });

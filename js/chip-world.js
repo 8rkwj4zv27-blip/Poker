@@ -944,7 +944,7 @@
   // caller hooks: mouth(b) takes a coin arriving at a { mouth:true } target
   const hooks={ mouth:null };
   let stuckCount=0; const stuckLog=[];
-  let offCount=0;
+  let offCount=0, lateCount=0;
   const offScreen=b=>{ const m=b.d*.5, W=innerWidth, H=innerHeight; return b.x<-m || b.x>W+m || b.y>H+m || b.y-b.z>H+m; };
   let WALLS=null;               // { felt:{L,T,R,B,rc}, blocks:[{L,T,R,B}] }
   let TRAY=null;                // the pot tray's inside edge, for its lip
@@ -1250,7 +1250,13 @@
     const cx=(k.L+k.R)/2, cy=Math.round((k.T+k.B)/2);
     const capAt=y=>{ const room=z.room!=null?z.room+(y-z.cy):99; return Math.max(1,Math.min(12,Math.floor((room-d*HR()-2)/st)+1)); };
     const stacks=new Map();
-    z.list.forEach(b=>{ if (b.state!=='rest') return; const key=Math.round(b.x)+','+Math.round(b.y); const s=stacks.get(key)||{ x:b.x, y:b.y, h:0 }; s.h=Math.max(s.h,Math.round(b.z/st)+1); stacks.set(key,s); });
+    z.list.forEach(b=>{
+      // resting, or sliding down to settle (count it where it's going)
+      const settling=b.state!=='rest' && (b.state==='tidy' || b.next==='tidy') && b.tz!=null;
+      if (b.state!=='rest' && !settling) return;
+      const x=settling?b.tx:b.x, y=settling?b.ty:b.y, h=settling?b.tz:b.z;
+      const key=Math.round(x)+','+Math.round(y); const s=stacks.get(key)||{ x, y, h:0 }; s.h=Math.max(s.h,Math.round(h/st)+1); stacks.set(key,s);
+    });
     const list=[...stacks.values()];
     const free=(x,y)=>x>=k.L && x<=k.R && y>=k.T && y<=k.B && list.every(q=>Math.hypot(q.x-x,(q.y-y)*FORE)>=d);
     const spot=()=>{
@@ -1679,6 +1685,46 @@
     })().finally(()=>{ z.merging=null; });
     return z.merging;
   }
+  /* THE PILE'S CHANGE-UP (chips): over the limit, five of a colour lift
+     off the pile to a point over where the richer chip will go, clink
+     together, pop into it, and it drops onto the pile. The pile doesn't
+     reshape: only the stacks the five came off settle down. A few rounds
+     at most (a change can make five of the next colour); past that the
+     rest change quietly. */
+  async function mergePile(z,limit){
+    for (let round=0;round<4;round++){
+      const steps=mergePlan(z,limit); if (!steps.length) return;
+      const groups=[];
+      steps.forEach(([from,to])=>{ const five=pickFive(z,from); if (five.length<5){ five.forEach(b=>{ b.zone=z; z.list.push(b); }); return; } groups.push({ to, five }); });
+      if (!groups.length) return;
+      const settled=settleStacks(z), at=pileAdd(z,groups.map(g=>g.to));
+      await Promise.all(groups.map((g,i)=>mergeShown(z,g,at[i],i*90)));
+      await settled;
+    }
+    mergeQuiet(z,limit); await settleStacks(z);
+  }
+  async function mergeShown(z,g,s,wait){
+    const px=s.x, py=s.y, pz=Math.max(s.z,...g.five.map(b=>b.z))+26;
+    if (!motionOff()){
+      await hold(wait);
+      // up off the pile, fanned out a little, then snapped together
+      await Promise.all(g.five.map((b,i)=>moveBody(b,px+(i-2)*4,py,pz+(i%2)*3,.2,14,i*40)));
+      sfx('stack',.7,1.25);
+      await hold(70);
+      await Promise.all(g.five.map(b=>moveBody(b,px,py,pz,.07,0,0)));
+      sfx('stack',1,1.6); sfx('knock',.6,1.2);
+    }
+    g.five.forEach(b=>{ removeBody(b); b.el.remove(); });
+    const nb=body(makeChip(g.to),px,py,motionOff()?s.z:pz,D());
+    nb.target={}; nb.opts={};
+    if (motionOff()){ nb.zone=z; z.list.push(nb); nb.z=s.z; toRest(nb); dirty.add(nb); kick(); return; }
+    nb.sq=.1; squashing.add(nb); dirty.add(nb); kick();
+    popRing(px,py-pz-pieceH(g.to)/2,pieceD(g.to)); glintAt(px+pieceD(g.to)*.2,py-pz-pieceH(g.to)*.9);
+    sfx('land',1,pitchOf(nb)*.9);
+    await hold(110);
+    // it drops onto the pile, onto its own place
+    await launch(nb,{ x:px, y:py, z:s.z, zone:z, slot:true, d:D() },{ T:.24, flips:0 });
+  }
   // the change-up without a show: five pieces go, the bigger one takes the
   // nearest free place on the pile (the hoard: no arithmetic on screen)
   function mergeQuiet(z,limit,steps){
@@ -1801,8 +1847,11 @@
         if (b.z<STEP()*1.5) collide(b);
         if (b.vz<0){
           const sup=t.slot?{ h:t.z||0, o:null }:(b.z<40?supportUnder(b):{ h:0, o:null });
-          if (b.z<=sup.h) impact(b,sup.h,sup.o);
+          if (b.z<=sup.h){ impact(b,sup.h,sup.o); break; }
         }
+        // a coin with an exact place never flies past it: time's up (it was
+        // still rising, or skipped over it), it lands there
+        if (t.slot && !b.bounces && b.T && b.t>=b.T+.06){ lateCount++; b.x=t.x; b.y=t.y; b.vz=-120; b.bounces=b.maxB; impact(b,t.z||0,null); }
         break;
       }
       case 'slide':{
@@ -2467,7 +2516,7 @@
     Coin, sfx, rise,
     active, dirty, squashing, zones, spinCache, frameCache,
     makeChip, styleChip, setFrame, frames, spinFrame, coloursFor, betCoins, bankCoins, curve,
-    isTier, TIERS, tierName, rackSlots, rackCapacity, planZone, applyLayout, pileAdd, settleStacks, LADDERS, PALETTES, CHIP_DESIGNS, composeTiers, chipFrameT, chipSpin,
+    isTier, TIERS, tierName, rackSlots, rackCapacity, planZone, applyLayout, pileAdd, settleStacks, mergePile, LADDERS, PALETTES, CHIP_DESIGNS, composeTiers, chipFrameT, chipSpin,
     PIECES, KINDS, isBar, isBig, pieceD, pieceH, stepOf, depthOf, clash, compose, valueOf, merge, mergePlan, barFrame, zoneBox, mergeQuiet,
     BankPile,
     body, removeBody, removeFromZone, toRest, finishRest, kick, ensureLayers, draw, snap, arrive, begin,
@@ -2477,6 +2526,6 @@
     glint, glintAt, glintPile, shake, puff,
     clearWorld, setHost, alignLayers, setExtraBlocks:list=>{ extraBlocks=(list||[]).slice(); },
     setTray:t=>{ TRAY=t; fitTray(); }, tray:()=>TRAY, walls:()=>WALLS, airLayer:()=>air,
-    stats:()=>({ stuck:stuckCount, off:offCount, log:stuckLog })
+    stats:()=>({ stuck:stuckCount, off:offCount, late:lateCount, log:stuckLog })
   };
 })();
