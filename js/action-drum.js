@@ -37,18 +37,61 @@
   let slots = new Map();     // side element -> its angle on the drum
   let current = 'play', shown = null, spinning = false, queued = null, raf = 0;
 
-  const elOf = k => k === 'play' ? faces.play : k === 'quick' ? faces.quick : faces.award;
+  const elOf = k => k === 'play' ? faces.play : k === 'quick' ? faces.quick : k === 'deal' ? faces.deal : faces.award;
   function target(){
     if (flip.classList.contains('flipped')){
       return awardBtn && (awardBtn.classList.contains('next-table-mode') || awardBtn.classList.contains('career-return-mode')) ? 'results' : 'award';
     }
+    if (dealt()) return 'deal';
     return aflip.classList.contains('flipped') ? 'quick' : 'play';
   }
   const reduced = () => { try{ return motionOff(); }catch(e){ return false; } };
   const sound = (name, ...a) => { try{ if (typeof Sound !== 'undefined' && Sound[name]) Sound[name](...a); }catch(e){} };
 
   /* ---- the sides ---- */
-  const every = () => [faces.play, faces.quick, faces.award].concat(plates);
+  const every = () => [faces.play, faces.quick, faces.award, faces.deal].concat(plates);
+
+  /* ---- the deal side (v0.48.1) ----
+     NEXT HAND, REBUY and NEW TABLE were separate wide buttons the game
+     unhides between hands, NEXT HAND pinned over the key bay, so they
+     just appeared on top of the drum. They now live on a side of their
+     own: moved in (same ids, same handlers), wearing the console's own
+     key (.btn-award-console; NEW TABLE takes the quiet .results-secondary
+     beside REBUY, as MAIN MENU does beside NEW RUN). The game still only
+     unhides and hides them; the drum turns to this side while any shows. */
+  const DEAL_KEYS = ['btn-rebuy', 'btn-new-table', 'btn-next-hand'];
+  let dealHome = [];
+  const dealKeys = () => DEAL_KEYS.map($).filter(Boolean);
+  const dealt = () => !!faces.deal && dealKeys().some(b => !b.classList.contains('hidden'));
+  function buildDeal(){
+    const face = document.createElement('div');
+    face.className = 'console-face ad-face-deal'; face.id = 'ad-face-deal';
+    flip.appendChild(face);
+    dealHome = dealKeys().map(b => ({ b, parent:b.parentNode, next:b.nextSibling }));
+    dealKeys().forEach(b => { b.classList.remove('wide-btn'); b.classList.add('btn-award-console', 'ad-deal-key'); face.appendChild(b); });
+    return face;
+  }
+  // The game hides a deal key the moment it's pressed, before the drum has
+  // turned: the keys last shown are held (.ad-hold) on the side as it rolls
+  // away, so it never leaves empty. rest() lets go of them.
+  let dealShown = [];
+  function paintDeal(){
+    const showing = dealKeys().filter(b => !b.classList.contains('hidden'));
+    if (!showing.length) return;
+    dealShown = showing;
+    const rb = $('btn-rebuy'), nt = $('btn-new-table');
+    const pair = rb && nt && !rb.classList.contains('hidden') && !nt.classList.contains('hidden');
+    faces.deal.classList.toggle('has-secondary', !!pair);
+    if (nt) nt.classList.toggle('results-secondary', !!pair);
+  }
+  function unbuildDeal(){
+    dealHome.forEach(({ b, parent, next }) => {
+      b.classList.remove('btn-award-console', 'ad-deal-key', 'results-secondary'); b.classList.add('wide-btn');
+      parent.insertBefore(b, next && next.parentNode === parent ? next : null);
+    });
+    dealHome = [];
+    if (faces.deal){ faces.deal.remove(); faces.deal = null; }
+  }
   function plate(i){
     const p = document.createElement('div');
     p.className = 'ad-plate'; p.setAttribute('aria-hidden', 'true');
@@ -65,6 +108,7 @@
       el.classList.toggle('ad-live', live);
     });
     plates.forEach(p => { p.style.visibility = 'hidden'; });
+    if (faces.deal) dealKeys().forEach(b => b.classList.remove('ad-hold'));
     flip.classList.remove('ad-spinning');
     if (consoleEl) consoleEl.classList.remove('ad-spinning');
   }
@@ -111,6 +155,7 @@
     if (opts.style === 'reel') plates.slice(0, steps - 1).forEach((p, i) => slots.set(p, from + up * step * (i + 1)));
     slots.set(toEl, to);
     current = key; shown = toEl;
+    if (fromEl === faces.deal) dealShown.forEach(b => b.classList.add('ad-hold'));
     if (reduced() || opts.style === 'shipped'){ D = to; rest(); return Promise.resolve(); }
 
     spinning = true;
@@ -144,7 +189,9 @@
     });
   }
   async function sync(){
-    if (!on || spinning) return;
+    if (!on) return;
+    if (faces.deal) paintDeal();
+    if (spinning) return;
     let k = target();
     while (on && elOf(k) !== shown){
       await spinTo(k);
@@ -190,6 +237,8 @@
     if (!flip || !aflip) return false;
     faces = { play:flip.querySelector('.actions-face-play'), quick:flip.querySelector('.actions-face-quick'), award:$('console-face-award') };
     if (!faces.play || !faces.quick || !faces.award) return false;
+    faces.deal = buildDeal();
+    paintDeal();
     plates = [plate(0), plate(1)];
     if (consoleEl && !lip){
       lip = document.createElement('div'); lip.className = 'ad-lip'; lip.setAttribute('aria-hidden', 'true'); consoleEl.appendChild(lip);
@@ -208,6 +257,7 @@
     mo.observe(flip, { attributes:true, attributeFilter:['class'] });
     mo.observe(aflip, { attributes:true, attributeFilter:['class'] });
     if (awardBtn) mo.observe(awardBtn, { attributes:true, attributeFilter:['class'] });
+    dealKeys().forEach(b => mo.observe(b, { attributes:true, attributeFilter:['class'] }));
     return true;
   }
   function uninstall(){
@@ -216,6 +266,7 @@
     if (mo) mo.disconnect();
     every().forEach(el => { el.style.transform = ''; el.style.visibility = ''; el.style.filter = ''; el.classList.remove('ad-live'); });
     plates.forEach(p => p.remove()); plates = [];
+    unbuildDeal();
     if (lip){ lip.remove(); lip = null; }
     if (bezel){ bezel.remove(); bezel = null; }
     if (ro){ ro.disconnect(); ro = null; }

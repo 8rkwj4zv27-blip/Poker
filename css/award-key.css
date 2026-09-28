@@ -1,0 +1,109 @@
+/* AWARD KEY — candidate (lab only; js/award-key.js). The shared AWARD POT
+   key (.btn-award-console) in its YOUR-WIN state, data-ak="mine", and a
+   quieter PAY state for someone else's pot. Options are attributes on
+   <html> (data-ak-*). Stepped like the rest of the machine; no chasing
+   lights (struck from the Showdown by the owner). */
+
+/* ---- the words: COLLECT, and the amount ---- */
+.btn-award-console[data-ak="mine"]{
+  position:relative; overflow:hidden;
+  display:flex; align-items:center; justify-content:center; gap:12px;
+}
+.btn-award-console[data-ak="mine"] .ak-word small{ font-size:.62em; opacity:.8; letter-spacing:.08em; }
+.btn-award-console[data-ak="mine"] .ak-amt{ font-variant-numeric:tabular-nums; }
+/* the words and the plate sit above the glint, so the amount stays readable */
+.btn-award-console[data-ak="mine"] .ak-word,.btn-award-console[data-ak="mine"] .ak-amt{ position:relative; z-index:1; }
+html[data-ak-amount="plate"] .btn-award-console[data-ak="mine"] .ak-amt{
+  padding:5px 8px 4px; border-radius:3px; line-height:1;
+  background:var(--card-face); color:#24170D; text-shadow:none;
+  box-shadow:0 0 0 2px var(--px-ink), inset 0 -2px 0 rgba(0,0,0,.18), inset 0 2px 0 #fff;
+}
+html[data-ak-amount="printed"] .btn-award-console[data-ak="mine"] .ak-word::after{ content:' ·'; }
+
+/* ---- GOLD: polished gold in three hard bands, a glint crossing it ---- */
+html[data-ak-finish="gold"] .btn-award-console[data-ak="mine"]{
+  color:#3A2106;
+  background:linear-gradient(180deg,#FFF0B8 0 14%,#F6CB55 14% 56%,#E2A42C 56% 84%,#C4841B 84% 100%);
+  box-shadow:
+    0 6px 0 #8C5A12, 0 6px 0 2px var(--px-ink),
+    inset 0 0 0 2px #FFE38A, inset 0 -3px 0 rgba(90,50,5,.28);
+  text-shadow:0 1px 0 rgba(255,246,210,.7);
+}
+html[data-ak-finish="gold"] .btn-award-console[data-ak="mine"].is-pressed{
+  box-shadow:0 2px 0 #8C5A12, 0 2px 0 2px var(--px-ink), inset 0 0 0 2px #FFE38A;
+}
+/* the glint: a bright diagonal band that crosses now and then, stepped */
+html[data-ak-finish="gold"] .btn-award-console[data-ak="mine"]::after{
+  content:''; position:absolute; top:-10px; bottom:-10px; left:-40%; width:26%; pointer-events:none;
+  background:linear-gradient(90deg,transparent 0 20%,rgba(255,255,240,.75) 20% 44%,rgba(255,255,255,.95) 44% 56%,rgba(255,255,240,.75) 56% 80%,transparent 80%);
+  transform:skewX(-22deg); mix-blend-mode:screen; z-index:0;
+  animation:akGlint 2.6s steps(14,end) infinite;
+}
+html[data-ak-finish="gold"] .btn-award-console[data-ak="mine"][data-ak-tier="big"]::after{ animation-duration:1.8s; }
+html[data-ak-finish="gold"] .btn-award-console[data-ak="mine"][data-ak-tier="monster"]::after{ animation-duration:1.2s; }
+@keyframes akGlint{ 0%{ left:-40%; } 55%,100%{ left:130%; } }
+
+/* ---- VELVET: the machine's burgundy velvet, gold lettering, gold rim ---- */
+html[data-ak-finish="velvet"] .btn-award-console[data-ak="mine"]{
+  color:#F6CB55;
+  background:
+    repeating-conic-gradient(rgba(255,255,255,.05) 0 25%,transparent 0 50%) 0 0/4px 4px,
+    linear-gradient(180deg,#8A2A3A 0 30%,#6C1C2B 30% 100%);
+  box-shadow:
+    0 6px 0 #3C0C16, 0 6px 0 2px var(--px-ink),
+    inset 0 0 0 2px #E2A42C, inset 0 0 0 4px #3C0C16, inset 0 3px 0 4px rgba(255,255,255,.08);
+  text-shadow:0 2px 0 #2A060E, 0 0 6px rgba(246,203,85,.35);
+}
+html[data-ak-finish="velvet"] .btn-award-console[data-ak="mine"].is-pressed{
+  box-shadow:0 2px 0 #3C0C16, 0 2px 0 2px var(--px-ink), inset 0 0 0 2px #E2A42C, inset 0 0 0 4px #3C0C16;
+}
+html[data-ak-finish="velvet"][data-ak-amount="plate"] .btn-award-console[data-ak="mine"] .ak-amt{
+  background:#F6CB55; color:#3A0C16; box-shadow:0 0 0 2px #2A060E, inset 0 2px 0 #FFF0B8, inset 0 -2px 0 #C4841B;
+}
+
+/* ---- GLOW: today's key, lit from under, breathing in steps ---- */
+html[data-ak-finish="glow"] .btn-award-console[data-ak="mine"]{
+  background:linear-gradient(180deg,#FFE9A0 0 16%,#F6C443 16% 100%); color:#3A2106;
+  animation:akBreathe 1.6s steps(6,end) infinite;
+}
+@keyframes akBreathe{
+  0%,100%{ box-shadow:0 6px 0 #8C5A12, 0 6px 0 2px var(--px-ink), inset 0 3px 0 rgba(255,255,255,.5), 0 0 12px 4px color-mix(in srgb,var(--pc-lamp-amber) 55%,transparent), 0 0 0 4px color-mix(in srgb,var(--pc-lamp-amber) 25%,transparent); }
+  50%{ box-shadow:0 6px 0 #8C5A12, 0 6px 0 2px var(--px-ink), inset 0 3px 0 rgba(255,255,255,.5), 0 0 26px 10px color-mix(in srgb,var(--pc-lamp-amber) 85%,transparent), 0 0 0 4px color-mix(in srgb,var(--pc-lamp-amber) 55%,transparent); }
+}
+html[data-ak-finish="glow"] .btn-award-console[data-ak="mine"].is-pressed{ animation:none; }
+
+/* Bigger wins, more: the rim of the well takes the win's light too. */
+html[data-ak-tiers="on"] #console-face-award.ad-live .btn-award-console[data-ak-tier="big"],
+html[data-ak-tiers="on"] #console-face-award.ad-live .btn-award-console[data-ak-tier="monster"]{
+  outline:2px solid color-mix(in srgb,var(--pc-lamp-amber-hi) 70%,transparent); outline-offset:3px;
+}
+html[data-ak-tiers="on"] #console-face-award.ad-live .btn-award-console[data-ak-tier="monster"]{ outline-color:var(--pc-lamp-amber-hi); }
+
+/* ---- the arrival: a flash across the key as the drum lands it ---- */
+.btn-award-console.ak-arrive{ animation:akArrive .6s steps(6,end); }
+@keyframes akArrive{ 0%{ filter:brightness(2.2) saturate(.6); } 35%{ filter:brightness(1.5); } 100%{ filter:none; } }
+html[data-ak-finish="glow"] .btn-award-console.ak-arrive{ animation:akArrive .6s steps(6,end), akBreathe 1.6s steps(6,end) infinite; }
+
+/* ---- the press: sparks off the key's edges ---- */
+.ak-spark{
+  position:absolute; z-index:6; width:6px; height:6px; margin:-3px 0 0 -3px; pointer-events:none;
+  background:#FFF0B8; box-shadow:0 0 0 1px #C4841B;
+  animation:akSpark .55s steps(6,end) forwards;
+}
+.ak-spark:nth-child(3n){ background:#F6CB55; width:4px; height:4px; }
+@keyframes akSpark{ to{ transform:translate(var(--dx),var(--dy)); opacity:0; } }
+
+/* ---- their pot, quietly: PAY HARRY in the case plastic ---- */
+.btn-award-console[data-ak="theirs"]{
+  color:var(--ink); background:var(--theme-case-raised);
+  box-shadow:0 6px 0 color-mix(in srgb,var(--theme-case-raised) 55%,black), 0 6px 0 2px var(--px-ink),
+    inset 0 3px 0 rgba(255,255,255,.16), inset 0 -3px 0 rgba(0,0,0,.22);
+}
+
+[data-motion="off"] .btn-award-console[data-ak="mine"]::after,
+[data-motion="off"] .btn-award-console[data-ak="mine"],
+[data-motion="off"] .btn-award-console.ak-arrive,
+[data-motion="off"] .ak-spark{ animation:none !important; }
+@media (prefers-reduced-motion:reduce){
+  .btn-award-console[data-ak="mine"]::after,.btn-award-console[data-ak="mine"],.btn-award-console.ak-arrive{ animation:none !important; }
+}

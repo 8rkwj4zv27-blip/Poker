@@ -317,6 +317,10 @@ check('Action drum + knock to check: live, never ghosting, and to the order',()=
     .forEach(([k,v])=>assert.ok(new RegExp('\\b'+k+":'"+v+"'").test(def[1]),'the order sets '+k+' to '+v));
   assert.ok(/else install\(\);\s*\}\)\(\);\s*$/.test(js),'the drum must install itself at load');
   assert.ok(js.includes('motionOff()'),'Reduced Motion swaps at once');
+  // NEXT HAND, REBUY and NEW TABLE are a side of the drum, in the console's key (v0.48.1).
+  assert.ok(/const DEAL_KEYS = \['btn-rebuy', 'btn-new-table', 'btn-next-hand'\]/.test(js) && js.includes("b.classList.add('btn-award-console', 'ad-deal-key')"),'the deal keys must be moved onto the drum in the console\'s key');
+  assert.ok(/if \(dealt\(\)\) return 'deal';/.test(js),'the drum must turn to the deal side whenever a deal key shows');
+  assert.ok(css.includes('.ad-face-deal .btn-award-console{') && /position:static/.test(css),'the deal keys must sit on the drum, not float over the bay');
   // Every side's keys on the one key line.
   assert.ok(js.includes("'--ad-key-top'") && css.includes('margin-top:var(--ad-key-top'),'every side\'s keys take the row\'s measured line');
   // Presentation only: the drum never touches game state; the knock only ever checks.
@@ -328,7 +332,7 @@ check('Action drum + knock to check: live, never ghosting, and to the order',()=
   // The lab tunes the live part; it never ships.
   const lab=read('action-drum-lab.html');
   assert.ok(!/js\/action-drum\.js|js\/knock-check\.js/.test((lab.match(/id="lab-inject">([^<]*)/)||[])[1]||''),'the lab must not inject a second drum or knock into a game that already has them');
-  ['action-drum-lab','js/action-drum-lab.js'].forEach(n=>{ assert.ok(!indexHtml.includes(n),'index.html links '+n); assert.ok(!serviceWorker.includes(n),'sw.js precaches '+n); });
+  ['action-drum-lab','js/action-drum-lab.js','js/award-key.js','css/award-key.css'].forEach(n=>{ assert.ok(!indexHtml.includes(n),'index.html links '+n); assert.ok(!serviceWorker.includes(n),'sw.js precaches '+n); });
   assert.ok(md.includes('## Action drum (live v0.48.0)'),'the Pattern Book must record the action drum');
 });
 

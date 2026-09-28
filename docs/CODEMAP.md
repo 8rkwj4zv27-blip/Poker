@@ -357,7 +357,8 @@ faces iPhone Safari drew behind the live keys: no side is hidden by
 or handlers moved. Also: every side's keys on the row's line
 (`--ad-key-top`), the bay 10px taller in portrait, and the rim's glow
 carried round the bay. Installs itself at load; `ActionDrum.set()` tunes
-it. Order in `docs/ui/PATTERN_BOOK.md` (Action drum); history in
+it. Since v0.48.1 NEXT HAND, REBUY and NEW TABLE are moved onto a fifth
+side (`#ad-face-deal`) instead of floating over the bay. Order in `docs/ui/PATTERN_BOOK.md` (Action drum); history in
 `docs/ui/ACTION_DRUM_PLAN.md`.
 
 ## `js/knock-check.js` + `css/knock-check.css` — knock to check (live, v0.48.0)

@@ -71,7 +71,26 @@ html:not(.ad-drum) .ad-bezel{ display:none; }
 html.ad-drum #console-face-award{ align-items:start; }
 /* the absolute sides sit in the well's padding like the keys row does */
 html.ad-drum #console-flip #console-face-award,
+html.ad-drum #console-flip .ad-face-deal,
 html.ad-drum #console-flip .ad-plate{ inset:4px 5px; }
+
+/* ---- the deal side: NEXT HAND, REBUY, NEW TABLE (v0.48.1) ----
+   Laid out exactly like the AWARD POT side: one full-width key, or REBUY
+   with a quieter NEW TABLE beside it. It takes taps only while it is the
+   side facing you. */
+.ad-face-deal{
+  position:absolute; inset:0; visibility:hidden; pointer-events:none;
+  display:grid; grid-template-columns:minmax(0,1fr); gap:10px; align-items:start;
+}
+.ad-face-deal.has-secondary{ grid-template-columns:1.3fr .7fr; }
+.ad-face-deal > .hidden{ display:none; }
+/* held on the side while it rolls away (js/action-drum.js, .ad-hold) */
+html.ad-drum #ad-face-deal > .ad-hold.hidden{ display:block !important; }
+.ad-face-deal.ad-live{ pointer-events:auto; }
+html.ad-drum #console-flip .ad-face-deal .btn-award-console{
+  position:static; width:100%; max-width:none; margin:0; margin-top:var(--ad-key-top,0px);
+  height:var(--ad-key-h,54px); min-height:0;
+}
 html.ad-drum #console-flip #console-face-award .btn-award-console,
 html.ad-drum #console-flip .actions-face-quick .btn-quick-resolve{
   height:var(--ad-key-h,54px); min-height:0; margin-top:var(--ad-key-top,0px);
@@ -97,9 +116,11 @@ html.ad-drum #console-flip .actions-face-quick .btn-quick-resolve{
 html.ad-drum[data-ad-slats="always"] #console-flip .actions-face-play,
 html.ad-drum[data-ad-slats="always"] #console-flip .actions-face-quick,
 html.ad-drum[data-ad-slats="always"] #console-face-award,
+html.ad-drum[data-ad-slats="always"] .ad-face-deal,
 html.ad-drum[data-ad-slats="turn"] #console-flip.ad-spinning .actions-face-play,
 html.ad-drum[data-ad-slats="turn"] #console-flip.ad-spinning .actions-face-quick,
 html.ad-drum[data-ad-slats="turn"] #console-flip.ad-spinning #console-face-award,
+html.ad-drum[data-ad-slats="turn"] #console-flip.ad-spinning .ad-face-deal,
 html.ad-drum:not([data-ad-slats="off"]) .ad-plate{
   background:
     repeating-conic-gradient(rgba(255,255,255,.03) 0 25%,transparent 0 50%) 0 0/6px 6px,
