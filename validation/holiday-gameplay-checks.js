@@ -120,8 +120,16 @@ check('Expert and Elite extend the honest AI ladder with less noise and stronger
   assert.ok(difficulty.elite.noise<difficulty.expert.noise);
 });
 check('Upper AI equity reads only its own cards, the board and public opponent count',()=>{
-  const decision=opponents.slice(opponents.indexOf('async function aiDecide'));
-  assert.ok(decision.includes('EquityService.get(player.hand, g.board, Math.max(1,numOpp), dp.iterations)'));
+  // every AI decision path (preflop ranges, postflop lines, aiDecide) since
+  // docs/ai/AI_PLAN.md Steps 2-3: equity and hand reads use the AI's own
+  // cards only; opponents are modelled as ranges from public betting
+  const decision=opponents.slice(opponents.indexOf('PREFLOP FROM RANGES'), opponents.indexOf("/* How long an AI 'thinks'."));
+  assert.ok(decision.includes('async function aiDecide') && decision.includes('async function aiPostflop'));
+  const equityCalls=decision.match(/EquityService\.get\(([^,]+),/g)||[];
+  assert.ok(equityCalls.length>=2);
+  equityCalls.forEach(c=>assert.strictEqual(c,'EquityService.get(player.hand,'));
+  const handReads=[...decision.matchAll(/([A-Za-z_$][\w$]*)\.hand\b/g)].map(m=>m[1]);
+  assert.ok(handReads.length>0 && handReads.every(who=>who==='player'), 'hand read by '+handReads.filter(w=>w!=='player'));
   assert.ok(!decision.includes('g.players.map(p=>p.hand)'));
   assert.ok(!decision.includes('g.deck'));
 });
