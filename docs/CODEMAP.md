@@ -301,6 +301,18 @@ COPY SETTINGS gives the owner's picks as text; the settings live in the
 URL hash. Since v0.40.7 (release 2) its TODAY is the shipped layout, with a
 BEFORE preset for the table as it was. Not loaded by the game.
 
+## `felt-lab.html` + `js/felt-lab-host.js` + `js/felt-lab.js` + `css/felt-lab.css` — Felt Lab
+
+The table finish pass (docs/ui/FELT_PLAN.md): rail, stitching, cloth,
+felt colour, light, printed markings, bet spots and the felt/console seam.
+Phone-first like `showdown-lab.html`: the real game in one frame with a
+TUNE drawer, look arrows (ten whole combinations) and a HOLD FOR BEFORE key
+inside it. The rail, stitching and markings are one SVG under everything on
+the felt (`.fl-art`); cloth and light are background layers keyed off
+`html[data-fl-*]`. Scenes (deal, flop, river, showdown, heads-up, full
+table, empty) are played by the real engine with DEV auto-calls and left
+standing. Lab only; nothing loads in the game.
+
 ## `css/enemy-cards.css` + `js/enemy-cards.js` — Enemy Cards V2 (live, v0.41.0)
 
 The opponents' seat cards, the owner's order from `enemy-card-lab.html`
