@@ -651,3 +651,9 @@ to a pyramid; gleams by depth (40BB, 80BB, a sparkle across it past
 payout and at each hand. Measured: 0 overlaps and 0 pieces outside the box
 at every size (the loose landing heap before it settles can overlap).
 
+
+**Lab links (owner's phone, private Artifacts):**
+- Coin Denominations Lab (`coin-denom-lab.html`): https://claude.ai/artifact/RLR5LuEj6BnSV14uLcgvSN
+- Coin Bank Lab (`coin-bank-lab.html`): https://claude.ai/artifact/QBFNjCANf2xFi9m6jsDHot
+- Bank Tubes Lab (`coin-tubes-lab.html`): https://claude.ai/artifact/5cMSBi4UEys2BoCYHnRWM2
+- Hoard Lab (`coin-hoard-lab.html`): https://claude.ai/artifact/CFtJ2Uk69961wxm1k1d4oQ
