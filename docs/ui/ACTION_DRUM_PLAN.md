@@ -37,6 +37,26 @@ sides / FLAT FLAP / today's flip to compare), speed, landing (clunk /
 bounce / glide), motion (chunky 20 fps / 12 fps / smooth), direction,
 shading, drum panels, the window lips, sound.
 
+## Round 1 picks (owner)
+
+DRUM · 4 SIDES, MEDIUM, CLUNK, CHUNKY · 20 FPS, **ALWAYS DOWN**, shading
+ON, drum panels WHILE IT TURNS, the window WHILE IT TURNS, TICKS + CLUNK.
+These are now the candidate's defaults.
+
+## Round 2 (the owner's notes on round 1)
+
+- **The keys line up.** AWARD POT, QUICK RESOLVE and the results keys were
+  drawn to the side's full height, so they sat about 9px higher than
+  FOLD / CHECK / RAISE. Every side's keys now take the row's measured top
+  and height (`--ad-key-top`, `--ad-key-h`, set by `layout()`); checked
+  equal to the pixel on a tall (844) and a short (667) phone.
+- **A housing to turn inside.** The bay is a dark well with a fixed bezel
+  drawn over the drum (ink border, a thin brass ring), and the drum is
+  clipped to the bezel's opening while it turns.
+- **More room.** The key bay is 10px taller in portrait (101px; 94px on
+  short phones), most of it as air between the instruments and the bezel.
+  That 10px comes out of the felt.
+
 ## After sign-off
 
 1. Wire the picked drum into the game: load `action-drum.js`/`.css` from

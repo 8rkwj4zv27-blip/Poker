@@ -18,7 +18,48 @@ html.ad-drum #console-flip .actions-face{
    through a window the size of the bay (the corners of a turning drum
    reach past the keys' own box). */
 html.ad-drum #console-flip.ad-spinning *{ pointer-events:none !important; }
-html.ad-drum #console-flip.ad-spinning{ clip-path:inset(-5px -4px -6px -4px round 6px); }
+
+/* ---- the housing (round 2) ----
+   The bay is a well with a fixed bezel (.ad-bezel, drawn over the drum by
+   js/action-drum.js to the well's box), so the sides turn inside the
+   case. It takes 10px more height than today's bay, most of it as air
+   between the instruments and the bezel. */
+@media (orientation:portrait){
+  html.ad-drum #table-screen{ --action-area-h:101px; }
+  html.ad-drum #app .dash-frame-base .action-console{ padding-top:11px; }
+}
+@media (orientation:portrait) and (max-height:700px){
+  html.ad-drum #table-screen{ --action-area-h:94px; }
+  html.ad-drum #app .dash-frame-base .action-console{ padding-top:8px; }
+}
+html.ad-drum #console-flip{
+  padding:4px 5px; border-radius:7px;
+  background:color-mix(in srgb,var(--machine-case) 45%,black);
+  box-shadow:inset 0 6px 0 rgba(0,0,0,.4);
+}
+/* the drum shows only inside the bezel's opening */
+html.ad-drum #console-flip.ad-spinning{ clip-path:inset(3px 4px round 5px); }
+.ad-bezel{
+  position:absolute; z-index:3; pointer-events:none; box-sizing:border-box;
+  border:3px solid var(--px-ink); border-radius:7px;
+  box-shadow:
+    0 0 0 2px color-mix(in srgb,var(--accent) 38%,black),
+    0 -1px 0 2px rgba(0,0,0,.35),
+    0 2px 0 2px color-mix(in srgb,var(--theme-case-hi) 45%,transparent),
+    inset 0 3px 0 rgba(0,0,0,.45), inset 0 -2px 0 rgba(255,255,255,.07);
+}
+html:not(.ad-drum) .ad-bezel{ display:none; }
+
+/* ---- every side's keys sit where FOLD / CHECK / RAISE sit ----
+   (js/action-drum.js measures the row: --ad-key-top, --ad-key-h) */
+html.ad-drum #console-face-award{ align-items:start; }
+/* the absolute sides sit in the well's padding like the keys row does */
+html.ad-drum #console-flip #console-face-award,
+html.ad-drum #console-flip .ad-plate{ inset:4px 5px; }
+html.ad-drum #console-flip #console-face-award .btn-award-console,
+html.ad-drum #console-flip .actions-face-quick .btn-quick-resolve{
+  height:var(--ad-key-h,54px); min-height:0; margin-top:var(--ad-key-top,0px);
+}
 
 /* ---- the blank sides the REEL spins past ---- */
 .ad-plate{

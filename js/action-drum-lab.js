@@ -19,14 +19,15 @@
   const state = host ? host.state : { order:null, opp:'3', sound:'on', moment:null };
   const $id = id => document.getElementById(id);
 
-  // every row's first option is my suggestion
+  // every row's first option is the owner's round-1 pick (they matched my
+  // suggestions except WHICH WAY: always down)
   const ROWS = [
     ['style','THE MECHANISM', [['drum','DRUM · 4 SIDES'],['reel','REEL · SPINS PAST'],['flap','FLAT FLAP'],['shipped','TODAY\'S FLIP']],
       'DRUM: a four-sided drum, the next side rolls up. REEL: it spins past two blank sides first, like a slot reel. FLAP: one flat panel turning over. TODAY\'S FLIP is the shipped one, to compare (on a phone it\'s the one that ghosts).'],
     ['speed','SPEED', [['med','MEDIUM'],['fast','FAST'],['slow','SLOW']]],
     ['settle','THE LANDING', [['clunk','CLUNK'],['bounce','BOUNCE'],['none','GLIDE IN']], 'CLUNK: it runs a little past and knocks back. BOUNCE: past, back, home. GLIDE: eases in and stops.'],
     ['motion','MOTION', [['stepped','CHUNKY · 20 FPS'],['stepped12','CHUNKIER · 12 FPS'],['smooth','SMOOTH']], 'Chunky moves in steps, like the rest of the machine\'s pixel animation.'],
-    ['dir','WHICH WAY', [['meaning','UP, THEN BACK DOWN'],['up','ALWAYS UP'],['down','ALWAYS DOWN']], 'UP, THEN BACK DOWN: new keys roll up from below, and the drum rolls back down to FOLD / CHECK / RAISE.'],
+    ['dir','WHICH WAY', [['down','ALWAYS DOWN'],['meaning','UP, THEN BACK DOWN'],['up','ALWAYS UP']], 'UP, THEN BACK DOWN: new keys roll up from below, and the drum rolls back down to FOLD / CHECK / RAISE.'],
     ['shade','SHADING', [['on','ON'],['off','OFF']], 'Each side darkens as it turns away from you.'],
     ['slats','DRUM PANELS', [['turn','WHILE IT TURNS'],['always','ALWAYS'],['off','NONE']], 'The painted panel behind each side\'s keys. WHILE IT TURNS keeps the bay exactly as it is today at rest.'],
     ['lip','THE WINDOW', [['turn','WHILE IT TURNS'],['on','ALWAYS'],['off','NONE']], 'Dark lips top and bottom, so the drum reads as turning inside the case.'],

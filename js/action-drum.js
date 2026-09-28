@@ -24,7 +24,7 @@
    id and handler stays where it is.
    ============================================================ */
 (() => {
-  const DEFAULTS = { style:'drum', speed:'med', settle:'clunk', motion:'stepped', dir:'meaning', shade:'on', lip:'turn', slats:'turn', sound:'ticks' };
+  const DEFAULTS = { style:'drum', speed:'med', settle:'clunk', motion:'stepped', dir:'down', shade:'on', lip:'turn', slats:'turn', sound:'ticks' };
   const opts = Object.assign({}, DEFAULTS);
   const SPEED = { fast:240, med:360, slow:520 };
   const $ = id => document.getElementById(id);
@@ -153,8 +153,35 @@
   let pending = false;
   const schedule = () => { if (pending) return; pending = true; Promise.resolve().then(() => { pending = false; sync(); }); };
 
+  /* ---- the housing and the key line ----
+   The bezel and the window lips sit over the well (#console-flip), and
+   every side's keys take the FOLD / CHECK / RAISE row's top and height,
+   so a side never lands higher or lower than the keys it replaced. */
+  function layout(){
+    if (!on) return;
+    const box = { top:flip.offsetTop, left:flip.offsetLeft, width:flip.offsetWidth, height:flip.offsetHeight };
+    [bezel, lip].forEach(el => {
+      if (!el) return;
+      el.style.top = box.top + 'px'; el.style.left = box.left + 'px';
+      el.style.width = box.width + 'px'; el.style.height = box.height + 'px';
+      el.style.right = 'auto'; el.style.bottom = 'auto';
+    });
+    const key = $('btn-fold'), row = faces.play;
+    if (key && row && key.offsetHeight){
+      flip.style.setProperty('--ad-key-top', Math.max(0, yIn(key) - yIn(row)) + 'px');
+      flip.style.setProperty('--ad-key-h', key.offsetHeight + 'px');
+    }
+  }
+  // top inside the well, by layout: transforms (the turn, a pressed key)
+  // don't count
+  function yIn(el){
+    let y = 0;
+    while (el && el !== flip){ y += el.offsetTop; el = el.offsetParent; }
+    return y;
+  }
+
   /* ---- install / options ---- */
-  let mo = null;
+  let mo = null, ro = null, bezel = null;
   function install(){
     if (on) return true;
     flip = $('console-flip'); aflip = $('actions-flip'); awardBtn = $('btn-award-pot-console'); consoleEl = $('action-console');
@@ -162,10 +189,17 @@
     faces = { play:flip.querySelector('.actions-face-play'), quick:flip.querySelector('.actions-face-quick'), award:$('console-face-award') };
     if (!faces.play || !faces.quick || !faces.award) return false;
     plates = [plate(0), plate(1)];
-    if (consoleEl && !lip){ lip = document.createElement('div'); lip.className = 'ad-lip'; lip.setAttribute('aria-hidden', 'true'); consoleEl.appendChild(lip); }
+    if (consoleEl && !lip){
+      lip = document.createElement('div'); lip.className = 'ad-lip'; lip.setAttribute('aria-hidden', 'true'); consoleEl.appendChild(lip);
+      bezel = document.createElement('div'); bezel.className = 'ad-bezel'; bezel.setAttribute('aria-hidden', 'true'); consoleEl.appendChild(bezel);
+    }
     on = true;
     document.documentElement.classList.add('ad-drum');
     applyOpts();
+    layout();
+    ro = new ResizeObserver(layout);
+    ro.observe(flip); ro.observe(faces.play);
+    window.addEventListener('resize', layout);
     current = target(); shown = elOf(current); D = 0; slots = new Map([[shown, 0]]);
     rest();
     mo = new MutationObserver(schedule);
@@ -181,6 +215,10 @@
     every().forEach(el => { el.style.transform = ''; el.style.visibility = ''; el.style.filter = ''; el.classList.remove('ad-live'); });
     plates.forEach(p => p.remove()); plates = [];
     if (lip){ lip.remove(); lip = null; }
+    if (bezel){ bezel.remove(); bezel = null; }
+    if (ro){ ro.disconnect(); ro = null; }
+    window.removeEventListener('resize', layout);
+    flip.style.removeProperty('--ad-key-top'); flip.style.removeProperty('--ad-key-h');
     flip.classList.remove('ad-spinning'); if (consoleEl) consoleEl.classList.remove('ad-spinning');
     document.documentElement.classList.remove('ad-drum');
   }
