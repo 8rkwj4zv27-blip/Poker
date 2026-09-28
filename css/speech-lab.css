@@ -1,71 +1,61 @@
-/* Speech Lab (round 1, phone-first): the candidate speech bubbles, and the
+/* Speech Lab (round 2, phone-first): the candidate speech bubbles, and the
    TUNE/SAY keys and bottom sheet. Lab only: never loaded by the game.
    The bubbles are a candidate new Pattern Book part, so their finishes
    live here until the owner signs one off. */
 
-/* ============ the bubble ============ */
+/* ============ the close-up (round 2) ============
+   Round 1 picked the close-up in card stock. The row spans the felt; the
+   bubble beside the face sizes itself to the line (spk-fit-*). */
 .spk{
   position:fixed; z-index:9050; box-sizing:border-box; pointer-events:auto; cursor:pointer;
-  opacity:0; transform:scale(.7); transition:opacity .12s steps(2,end), transform .16s steps(3,end);
+  display:flex; align-items:center; gap:12px;
+  opacity:0; transition:opacity .12s steps(2,end), transform .18s steps(4,end);
   -webkit-tap-highlight-color:transparent;
 }
+.spk.is-right{ flex-direction:row-reverse; }
 .spk.is-in{ opacity:1; transform:none; }
-.spk.is-out{ opacity:0; transform:scale(.9); transition-duration:.14s; }
+.spk.is-out{ opacity:0; transition-duration:.14s; }
+/* arrivals */
+.spk-arrive-rise{ transform:translateY(24px); }
+.spk-arrive-slide{ transform:translateX(var(--spk-from,-200px)); transition:opacity .08s steps(1,end), transform .22s steps(5,end); }
+.spk-arrive-pop{ transform:scale(.6); transform-origin:left center; }
+.spk-arrive-pop.is-right{ transform-origin:right center; }
 
-.spk-box{ position:relative; box-sizing:border-box; padding:9px 12px 11px; border:3px solid #080405; }
-.spk-name{ margin:0 0 5px; font-family:var(--font-hdr); font-size:7px; letter-spacing:.1em; line-height:1; }
+/* the face */
+.spk-portrait{ flex:0 0 auto; width:var(--spk-face,72px); }
+.spk-face{ width:var(--spk-face,72px); height:var(--spk-face,72px); box-sizing:border-box; overflow:hidden;
+  border:3px solid #080405; background:#24100F; image-rendering:pixelated; }
+.spk-face .face,.spk-face svg{ display:block; width:100%; height:100%; }
+.spk-frame-own .spk-face{ box-shadow:inset 0 0 0 3px var(--spk-own), 4px 5px 0 rgba(8,4,5,.55); }
+.spk-frame-gold .spk-face{ box-shadow:inset 0 0 0 2px #E8B83A, 4px 5px 0 rgba(8,4,5,.55); }
+.spk-frame-none .spk-face{ border:0; background:none; box-shadow:none; filter:drop-shadow(3px 4px 0 rgba(8,4,5,.55)); }
+.spk-plate{ margin-top:4px; padding:4px 0; text-align:center; background:#080405; color:#E8B83A;
+  font-family:var(--font-hdr); font-size:7px; letter-spacing:.08em; white-space:nowrap; overflow:hidden; }
+.spk-frame-own .spk-plate{ box-shadow:inset 0 -2px 0 var(--spk-own); }
+
+/* the bubble: card stock */
+.spk-box{ position:relative; box-sizing:border-box; min-width:0; padding:9px 12px 11px; border:3px solid #080405;
+  background:#F3E6C4; color:#1B0E0C;
+  box-shadow:inset 0 -3px 0 #D8C49A, inset 0 2px 0 #FFF6DD, 4px 5px 0 rgba(8,4,5,.55); }
+.spk-name{ margin:0 0 5px; font-family:var(--font-hdr); font-size:7px; letter-spacing:.1em; line-height:1; color:#8C2A22; }
 .spk-text{ font-family:var(--font-px); font-size:16px; line-height:1.25; letter-spacing:.01em; }
-/* the unsaid part keeps its space while the line types on, so the bubble never grows */
-.spk-rest{ visibility:hidden; }
-.spk-said + .spk-rest:empty{ display:none; }
+/* sizing: fits the finished line; grows as it types; or the whole row */
+.spk-fit-fit .spk-box,.spk-fit-grow .spk-box{ flex:0 1 auto; width:auto; }
+.spk-fit-full .spk-box{ flex:1 1 auto; }
+.spk-fit-fit .spk-rest,.spk-fit-full .spk-rest{ visibility:hidden; }
+.spk-fit-grow .spk-rest{ display:none; }
+.spk-fit-fit .spk-box,.spk-fit-grow .spk-box{ min-width:44px; }
 
-/* the tail: a stepped pixel wedge, drawn twice (the border, then the fill) */
-.spk-tail{ position:absolute; display:block; width:18px; height:14px; bottom:100%; margin-bottom:-3px; pointer-events:none; }
+/* the tail points sideways at the face: a stepped pixel wedge, drawn
+   twice (the border, then the fill) */
+.spk-tail{ position:absolute; display:block; pointer-events:none;
+  top:50%; right:100%; margin:-9px -3px 0 0; width:14px; height:18px; }
 .spk-tail::before,.spk-tail::after{ content:""; position:absolute; inset:0; }
 .spk-tail::before{ background:#080405;
-  clip-path:polygon(0 100%,0 67%,3px 67%,3px 34%,6px 34%,6px 0,12px 0,12px 34%,15px 34%,15px 67%,18px 67%,18px 100%); }
-.spk-tail::after{ inset:3px 3px 0;
-  clip-path:polygon(0 100%,0 64%,3px 64%,3px 28%,9px 28%,9px 64%,12px 64%,12px 100%); }
-/* the lane's tail is a long stalk up to the seat */
-.spk--lane .spk-tail{ width:14px; }
-.spk--lane .spk-tail::before{ clip-path:none; }
-.spk--lane .spk-tail::after{ clip-path:none; inset:0 3px; }
-
-/* ---- finish: card stock (cream, like the playing cards) ---- */
-.spk--card .spk-box{ background:#F3E6C4; color:#1B0E0C;
-  box-shadow:inset 0 -3px 0 #D8C49A, inset 0 2px 0 #FFF6DD, 4px 5px 0 rgba(8,4,5,.55); }
-.spk--card .spk-name{ color:#8C2A22; }
-.spk--card .spk-tail::after{ background:#F3E6C4; }
-
-/* ---- finish: dark glass (gold ink, like the machine's screens) ---- */
-.spk--glass .spk-box{ background:#140A08; color:#F2C84B;
-  background-image:repeating-linear-gradient(0deg, rgba(255,255,255,.035) 0 1px, transparent 1px 3px);
-  box-shadow:inset 0 0 0 2px #6E5B3E, inset 0 0 18px rgba(242,200,75,.10), 4px 5px 0 rgba(8,4,5,.55);
-  text-shadow:0 0 6px rgba(242,200,75,.35); }
-.spk--glass .spk-name{ color:#B69A7A; text-shadow:none; }
-.spk--glass .spk-tail::after{ background:#6E5B3E; }
-
-/* ---- the lane: one wide bubble, centred text ---- */
-.spk--lane .spk-box{ padding:10px 14px 12px; }
-.spk--lane .spk-text{ font-size:17px; }
-
-/* ---- the close-up: big face + bubble ---- */
-.spk--close{ display:flex; align-items:center; gap:14px; transform:translateY(24px); }
-.spk--close.is-in{ transform:none; }
-.spk--close.is-right{ flex-direction:row-reverse; }
-.spk-portrait{ flex:0 0 96px; }
-.spk-face{ width:96px; height:96px; box-sizing:border-box; border:3px solid #080405; background:#24100F; overflow:hidden;
-  box-shadow:inset 0 0 0 2px #E8B83A, 4px 5px 0 rgba(8,4,5,.55); image-rendering:pixelated; }
-.spk-face .face,.spk-face svg{ display:block; width:100%; height:100%; }
-.spk-plate{ margin-top:4px; padding:4px 0; text-align:center; background:#080405; color:#E8B83A;
-  font-family:var(--font-hdr); font-size:7px; letter-spacing:.1em; }
-.spk--close .spk-box{ flex:1; min-width:0; }
-/* the tail points sideways at the face */
-.spk--close .spk-tail{ bottom:auto; top:50%; right:100%; left:auto; margin:-9px -3px 0 0; width:14px; height:18px; }
-.spk--close .spk-tail::before{ clip-path:polygon(100% 0,67% 0,67% 3px,34% 3px,34% 6px,0 6px,0 12px,34% 12px,34% 15px,67% 15px,67% 18px,100% 18px); }
-.spk--close .spk-tail::after{ inset:3px 0 3px 3px;
+  clip-path:polygon(100% 0,67% 0,67% 3px,34% 3px,34% 6px,0 6px,0 12px,34% 12px,34% 15px,67% 15px,67% 18px,100% 18px); }
+.spk-tail::after{ inset:3px 0 3px 3px; background:#F3E6C4;
   clip-path:polygon(100% 0,64% 0,64% 3px,28% 3px,28% 9px,64% 9px,64% 12px,100% 12px); }
-.spk--close.is-right .spk-tail{ right:auto; left:100%; margin:-9px 0 0 -3px; transform:scaleX(-1); }
+.spk.is-right .spk-tail{ right:auto; left:100%; margin:-9px 0 0 -3px; transform:scaleX(-1); }
 
 /* the speaker's seat lights up while they talk */
 .seat-card.spk-speaking{ outline:3px solid #E8B83A; outline-offset:2px; }
@@ -115,6 +105,7 @@
 .spl-actions button[data-act="deal"]{ background:#34171A; color:#F3E6C4; box-shadow:inset 0 2px 0 rgba(255,255,255,.08),0 3px 0 #080405; }
 .spl-actions button:only-child{ grid-column:1 / -1; }
 .spl-actions button:active{ transform:translateY(2px); }
+.spl-locked{ margin:4px 0 0; padding-left:16px; font-size:12px; line-height:1.5; color:#B69A7A; }
 .spl-copytext{ width:100%; height:120px; margin-top:10px; box-sizing:border-box; background:#080405; color:#F3E6C4; border:1px solid #6E5B3E; font:12px/1.4 monospace; }
 .spl-sheet button:focus-visible,.spl-key:focus-visible{ outline:2px solid #F3E6C4; outline-offset:2px; }
 @media (prefers-reduced-motion:reduce){ .spl-sheet{ transition:none; } }

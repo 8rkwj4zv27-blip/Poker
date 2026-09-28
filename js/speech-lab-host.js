@@ -1,7 +1,7 @@
 "use strict";
 
 /* ============================================================
-   SPEECH LAB — the host page (round 1, phone-first)
+   SPEECH LAB — the host page (round 2, phone-first)
 
    Loads the real game into one full-screen frame with the Lab's parts
    injected (listed in #lab-inject), and keeps the owner's picks across a
@@ -20,7 +20,7 @@
   const frame = document.getElementById('spl-game');
   const inject = JSON.parse(document.getElementById('lab-inject').textContent);
   const lab = window.__lab = {
-    state:{ picks:null, opp:'4', sound:'on' },
+    state:{ picks:null, opp:'6', sound:'on' },
     set(patch){ Object.assign(lab.state, patch); },
     reload(){ load(); }
   };

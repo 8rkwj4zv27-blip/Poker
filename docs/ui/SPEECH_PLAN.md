@@ -56,6 +56,19 @@ The bubble is a candidate new Pattern Book part: once the owner picks,
 it's signed off and added to `docs/ui/PATTERN_BOOK.md` (and
 `validation/pattern-book-checks.js`) before it goes in the game.
 
+## Round 1 picks (owner, 2026-09-28)
+
+```
+WHERE: CLOSE-UP · LOOK: CARD STOCK · WHO SPEAKS: LEFT SEAT
+LINES: SHORT · TEXT: TYPES ON · OPPONENTS: 6
+```
+
+Feedback: the close-up face is too big; the bubble should size to what
+they say; they need creature speech (Hollow Knight, Nintendo, Minions),
+no words. Lines: GTA mixed with Snatch and Sexy Beast, less syrupy.
+"The numbers are delighted" and "writing it down in pen" were bad;
+Bournemouth was funny.
+
 ## The voice (round 1 lines)
 
 Owner's brief: rough, funny British table in the spirit of the early
@@ -82,8 +95,48 @@ Roxy (wildcard): bored, in it for the chaos ·
 Harry (professor): pompous, quietly wrong ·
 Bruno (hammer): very polite, very large, remembers everything.
 
-## Next
 
-Owner picks WHERE, LOOK and TEXT on the phone. Then: timing (delay, how
-long a line stays, what it may overlap), the speech budget, and the line
-bank's shape.
+## Round 2: the close-up and the voices (2026-09-28)
+
+Same link, republished. Close-up and card stock are locked in. New rows
+(first of each is my suggestion):
+
+| Row | Options |
+|---|---|
+| FACE SIZE | MEDIUM 72px · SMALL 56px · LARGE 96px (round 1) |
+| BUBBLE SIZE | FITS THE LINE · GROWS AS IT TYPES · FULL WIDTH (round 1) |
+| FACE FRAME | THEIR COLOUR (their seat cabinet's) · GOLD · NO FRAME |
+| NAME | UNDER THE FACE · IN THE BUBBLE · NONE |
+| HEIGHT | LOW (just above your hole cards) · MIDDLE (between seats and board) |
+| SIDE | THEIR SIDE · ALWAYS LEFT |
+| ARRIVAL | RISES UP · SLIDES IN · POPS |
+| VOICE | CREATURE · BLIPS · GRUMBLE · OFF |
+| VOLUME | MEDIUM · LOW · HIGH |
+| TALKING PACE | THEIR OWN · EVERYONE THE SAME |
+| WHO SPEAKS | LEFT · TOP · RIGHT · ANYONE (a different one each hand) |
+
+**The voices** (`js/speech-voice.js`, lab only): procedural Web Audio,
+no samples. A line is spoken as gibberish built from its own vowels (one
+syllable per vowel group, through two vowel filters, with a consonant
+click), so it replays the same each time and the typing and the voice
+share one letter-by-letter timing plan (pauses at commas and full
+stops). Each character has a pitch, range, pace and quirk: Bruno very
+low and slow, Mavis high with a warble, Tony fast and bouncy, Lucy and
+Bruno closing every phrase down, Harry lifting to make a point. The
+line's face bends it: angry lower and louder, nervous wobbles, smug
+slides down, a question rises. Own AudioContext (the game's `Sound`
+keeps its private), gated by the sound setting, unlocked by the first
+tap for iOS. Measured offline (`SpeechVoice.measure`): every character
+peaks at about 0.3 at MEDIUM, 0.62 at HIGH on an angry line: even
+across the cast, never clipping.
+
+**The lines, round 2:** rewritten to the new brief (see the rules at
+the top of `js/speech-lines.js`): people mean it, ordinary detail
+carries the menace or the sadness, say less, slang rare. Five short and
+two long lines per character per action, 168 in all. Bournemouth kept
+(Mavis now brings Derek up twice).
+
+Checked in an emulated iPhone at 390×844 and 375×667, six opponents:
+every row renders, no console errors; the LOW close-up now sits above
+your hole cards. On a 375×667 phone it covers part of the board area;
+MIDDLE sits over the bets instead. Timing is still a placeholder.
