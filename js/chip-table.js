@@ -18,6 +18,8 @@ const CoinTable = (function(){
   'use strict';
   const CW = window.CoinWorld;
   Object.assign(CW.OPT, { denom:'on', betCap:16, allinCap:24, spotCap:30, potCap:60 });
+  // chips: the pot is always a pyramid, like the bank (owner)
+  Object.assign(CW.OPT, { potShape:'pyramid' });
   // Lab 2 (coin-bank-lab.html): the bank's inside, js/coin-bank.js's View
   // in one of its styles; 'today' is the shipped rack (Lab 1 runs on it)
   Object.assign(CW.OPT, { bank:'tubes', bankLabels:'off', bankChange:3 });
@@ -211,9 +213,9 @@ const CoinTable = (function(){
         }
         return;
       }
-      // the pot re-picks its shape on every tap (so a tap reshapes a tidy pile)
+      // a tap tidies the pot into a pyramid (for the rest of the hand)
       const pot = CW.zones.pot;
-      if (CW.OPT.potTap==='on' && count(pot) && !CW.zoneBusy(pot) && !pot.tidying){ CW.newPotShape(CW.potShape()); pot.neat = false; }
+      if (CW.OPT.potTap==='on' && count(pot) && !CW.zoneBusy(pot) && !pot.tidying){ pot.shape = 'pyramid'; pot.neat = false; }
       Object.values(CW.zones).forEach(z=>{ if (!z.hoard && !CW.zoneBusy(z)) CW.tidyZone(z); });
     });
   }
@@ -891,37 +893,16 @@ const CoinTable = (function(){
     if (v){ await settleView(); return; }
     syncBank(false);
   }
-  // an opponent's win: the pile slides a short way toward them as a group
-  // (raked in), then the coins hop home to the seat, top first
+  // an opponent's win: the coins fly straight home to the seat's cup, top
+  // first; each clicks in and the seat's stack readout spins up its share
   async function payOpp(p, list, gone){
     if (typeof EnemyCards!=='undefined') EnemyCards.slot(p, 6000);
-    const z = CW.zones['spot:'+p.id] || CW.zones.pot, pot = CW.zones.pot;
     CW.sfx('win', .5);
-    setTimeout(()=>CW.sfx('collect', .5), 120/CW.OPT.speed);
-    const L = Math.max(1, Math.hypot(z.cx-pot.cx, z.cy-pot.cy)), reach = Math.min(34, L*.3);
-    let ux = (z.cx-pot.cx)/L*reach, uy = (z.cy-pot.cy)/L*reach;
-    // the pile moves as one, only as far as the tray lets it: it bumps the
-    // wall on the winner's side instead of riding up over the lip
-    const k = CW.trayBox(CW.D(), 'gold');
-    if (k){
-      const xs = list.map(b=>b.x), ys = list.map(b=>b.y);
-      ux = Math.max(Math.min(0, k.L-Math.min(...xs)), Math.min(Math.max(0, k.R-Math.max(...xs)), ux));
-      uy = Math.max(Math.min(0, k.T-Math.min(...ys)), Math.min(Math.max(0, k.B-Math.max(...ys)), uy));
-    }
-    const all = list.map((b,i)=>{
-      b.zone = pot; pot.list.push(b);
-      const probe = { x:b.x+ux, y:b.y+uy, d:b.d, vx:0, vy:0 }; CW.holdIn(probe, pot);
-      Object.assign(b,{ tx:probe.x, ty:probe.y, tz:b.z, lift:3, T:.34, wait:(i%6)*5, state:'wait', next:'push', target:{}, opts:{} });
-      CW.active.add(b);
-      return new Promise(res=>{ b.resolve = res; });
-    });
-    CW.kick();
-    await within(Promise.all(all), 3000/CW.OPT.speed);
-    await new Promise(r=>setTimeout(r, motionOff()?0:220/CW.OPT.speed));
+    const tick = typeof seatStackTick==='function' ? seatStackTick(p, list.length) : ()=>{};
     const back = list.slice().sort((a,c)=>c.z-a.z);
-    back.forEach(b=>{ if (b.zone) CW.removeFromZone(b); });
-    const items = back.map(b=>{ const s = edgeSource(p); return { b, to:{ x:s.x, y:s.y, z:s.z, vanish:true, d:CW.D()-4 }, onLand:gone }; });
-    await within(CW.throwAll(items, 'lob'), 8000/CW.OPT.speed);
+    const items = back.map(b=>{ const s = edgeSource(p); return { b, to:{ x:s.x, y:s.y, z:s.z, vanish:true, d:CW.D()-4 }, onLand:()=>{ gone(); tick(); } }; });
+    try { await within(CW.throwAll(items, 'lob'), 8000/CW.OPT.speed); }
+    finally { if (tick.end) tick.end(); }
     if (typeof EnemyCards!=='undefined') EnemyCards.slot(p, 380);
   }
 
@@ -948,6 +929,7 @@ const CoinTable = (function(){
     CW.hooks.mouth = null;
     shown = 0; sweeping = null; leaving = 0;
     CW.newPotShape();                 // each hand's pot builds its own way
+    if (CW.zones.pot) delete CW.zones.pot.shape;
   }
   function reset(){ clear(); laid = null; resetBank(); }
   // Settings: a taste of the chosen set (a few coins landing and a stack)

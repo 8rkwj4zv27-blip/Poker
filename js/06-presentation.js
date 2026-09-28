@@ -1265,6 +1265,30 @@ function updateSeatReels(el, value){
   updateCompactReel(el,value,{label:'Opponent stack',cascade:18});
 }
 
+/* An opponent's win, counted in: freezeSeatStack(p) before the money
+   lands in p.chips holds the readout at the old figure; seatStackTick(p, n)
+   then returns a function to call as each of the n coins reaches the seat
+   (a click, the readout spins up its share) and .end() to settle on the
+   real figure. Only while the coin table is on. */
+function freezeSeatStack(p){
+  if (!p || p.isHuman || !(typeof coinTableOn==="function" && coinTableOn())) return;
+  if (seatDisplayFreeze[p.id]==null) seatDisplayFreeze[p.id] = p.chips;
+}
+function seatStackTick(p, n){
+  const base = p ? seatDisplayFreeze[p.id] : null;
+  const paint = v=>{ const e = seatEls[p.id]; if (e && e.chips && !p.eliminated) updateSeatReels(e.chips, v); };
+  let k = 0;
+  const tick = ()=>{
+    if (base==null || seatDisplayFreeze[p.id]==null) return;
+    k = Math.min(n, k+1);
+    const v = Math.round(base + (p.chips-base)*k/Math.max(1,n));
+    seatDisplayFreeze[p.id] = v; paint(v);
+    if (window.CoinWorld && CoinWorld.sfx) CoinWorld.sfx('stack', .4, 1.05+Math.min(.45, k*.015));
+  };
+  tick.end = ()=>{ if (base==null) return; delete seatDisplayFreeze[p.id]; paint(p.chips); };
+  return tick;
+}
+
 function updateInvestedReel(value){
   const el=$('hud-invested');
   const amount=Math.max(0,Math.round(Number(value)||0));
@@ -3836,7 +3860,7 @@ function render(){
       if (e.chips) e.chips.textContent = '';
       if (e.posEl) e.posEl.classList.add('hidden');
       if (e.actionSlot && !p.streetAction){ e.actionSlot.textContent = '\u2013'; e.actionSlot.className = 'action-slot act-empty'; }
-    } else if (!p.isHuman) updateSeatReels(e.chips,p.chips);
+    } else if (!p.isHuman) updateSeatReels(e.chips,seatDisplayFreeze[p.id]!=null?seatDisplayFreeze[p.id]:p.chips);
     if (p.isHuman){
       // renderBank() only ever populates a genuinely empty pile (a
       // fresh table, a rebuy, or blinds posted while it happens to be
@@ -4816,6 +4840,7 @@ async function runShowdownAwardSequence(potResults, contenders){
   potResults.forEach(pot=>{
     pot.winnerShares.forEach(s=>{
       const w = g.players.find(p=>p.id===s.id);
+      freezeSeatStack(w);
       if (w) w.chips += s.amount;
     });
     g.pot = Math.max(0, g.pot - pot.amount);

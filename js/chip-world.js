@@ -944,6 +944,8 @@
   // caller hooks: mouth(b) takes a coin arriving at a { mouth:true } target
   const hooks={ mouth:null };
   let stuckCount=0; const stuckLog=[];
+  let offCount=0;
+  const offScreen=b=>{ const m=b.d*.5, W=innerWidth, H=innerHeight; return b.x<-m || b.x>W+m || b.y>H+m || b.y-b.z>H+m; };
   let WALLS=null;               // { felt:{L,T,R,B,rc}, blocks:[{L,T,R,B}] }
   let TRAY=null;                // the pot tray's inside edge, for its lip
 
@@ -989,6 +991,9 @@
       if (dt>0){
         // two half-steps: collisions and walls stay solid at speed
         step(b,dt/2); if (b.state!=='rest' && active.has(b)) step(b,dt/2);
+        // the safety net: a loose coin (a bounce, a knock, a spill) never
+        // leaves the screen; one that would is put straight back in its place
+        if (b.state!=='rest' && b.state!=='eased' && b.state!=='tidy' && active.has(b) && offScreen(b)){ stuckLog.push({ off:true, state:b.state, zone:b.zone&&b.zone.id, x:Math.round(b.x), y:Math.round(b.y) }); snap(b); offCount++; continue; }
       }
       dirty.add(b);
     }
@@ -1431,9 +1436,11 @@
       weight=()=>1;
     } else {
       const r=clampI(n<4?1:n<10?2:n<22?3:4,1,maxRows);
-      const c0=clampI(Math.ceil(Math.sqrt(n)*(heap?1.15:.95))+(heap?1:0),r,maxCols);
+      // chips stand taller: fewer, higher stacks (the pyramid reads)
+      const tall=!heap && list.some(b=>isTier(b.colour));
+      const c0=clampI(tall?Math.round(Math.sqrt(n)*.75)+1:Math.ceil(Math.sqrt(n)*(heap?1.15:.95))+(heap?1:0),r,maxCols);
       cols=[]; for (let i=0;i<r;i++) cols.push(Math.max(1,c0-i));
-      weight=heap?(row,off)=>rr(.25,1.6)*(1-.35*off):(row,off)=>Math.pow((1+row*.9)*(1-.6*off),2.2);
+      weight=heap?(row,off)=>rr(.25,1.6)*(1-.35*off):tall?(row,off)=>Math.pow((1+row*.8)*(1-.5*off),1.8):(row,off)=>Math.pow((1+row*.9)*(1-.6*off),2.2);
     }
     const rows=cols.length, cx=(k.L+k.R)/2;
     const yFront=clampI(Math.round((k.T+k.B)/2+(rows-1)*dy/2+2),k.T+(rows-1)*dy,k.B);
@@ -1470,34 +1477,17 @@
       if (!best) best=slots.reduce((a,c)=>c.n<a.n?c:a);
       best.n++;
     }
-    // hand the coins out, bottom up; a heap's stacks lean a little. Chips:
-    // one colour per stack, the richest in the middle (a stack ends where
-    // its colour runs out; what's left goes where there's room)
+    // hand the coins out, bottom up; a heap's stacks lean a little
     const out=new Map(); let i=0;
     if (list.some(b=>isTier(b.colour))){
-      // each colour gets a share of the stacks in proportion to its coins
-      // (at least one), the richest colours the middle stacks; its coins
-      // spread evenly over its stacks, never past a stack's height
-      const groups=[]; list.slice().sort((a,c)=>valueOf(c.colour)-valueOf(a.colour)).forEach(b=>{ const g=groups[groups.length-1]; if (g && g.col===b.colour) g.list.push(b); else groups.push({ col:b.colour, list:[b] }); });
-      const S=slots.length, N=list.length;
-      groups.forEach(g=>{ g.k=Math.max(1,Math.round(g.list.length/N*S)); });
-      let over=groups.reduce((a,g)=>a+g.k,0)-S;
-      while (over>0){ const g=groups.filter(q=>q.k>1).sort((a,c)=>c.k-a.k)[0]; if (!g) break; g.k--; over--; }
-      while (over<0){ const g=groups.slice().sort((a,c)=>c.list.length/c.k-a.list.length/a.k)[0]; g.k++; over++; }
-      const put=[]; slots.forEach(()=>put.push([]));
-      let si=0;
-      groups.forEach(g=>{
-        const mine=[]; for (let j=0;j<g.k && si<S;j++) mine.push(si++);
-        if (!mine.length) mine.push(slots.reduce((m,s,j)=>put[j].length<put[m].length?j:m,0));
-        g.list.forEach((b,i)=>{
-          let j=mine[i%mine.length];
-          if (put[j].length>=slots[j].cap){ const free=mine.find(q=>put[q].length<slots[q].cap); j=free!=null?free:slots.reduce((m,s,q)=>put[q].length<put[m].length?q:m,0); }
-          put[j].push(b);
-        });
-      });
+      // chips: the stacks keep the shape's heights (the pyramid's tall
+      // middle); the coins sorted by value, the richest to the middle
+      // stacks, each stack's coins lowest at the bottom, richest on top
+      const sorted=list.slice().sort((a,c)=>valueOf(c.colour)-valueOf(a.colour));
       slots.forEach((s,si)=>{
         const lean=heap?(rnd()<.5?-1:1)*rr(0,.7):0;
-        put[si].forEach((b,h)=>out.set(b,{ x:s.x+(heap?Math.round(clampI(h*lean,-3,3)):0), y:s.y, z:h*st, n:h, k:si }));
+        sorted.slice(i,i+s.n).reverse().forEach((b,h)=>out.set(b,{ x:s.x+(heap?Math.round(clampI(h*lean,-3,3)):0), y:s.y, z:h*st, n:h, k:si }));
+        i+=s.n;
       });
       return out;
     }
@@ -2442,6 +2432,6 @@
     glint, glintAt, glintPile, shake, puff,
     clearWorld, setHost, alignLayers, setExtraBlocks:list=>{ extraBlocks=(list||[]).slice(); },
     setTray:t=>{ TRAY=t; fitTray(); }, tray:()=>TRAY, walls:()=>WALLS, airLayer:()=>air,
-    stats:()=>({ stuck:stuckCount, log:stuckLog })
+    stats:()=>({ stuck:stuckCount, off:offCount, log:stuckLog })
   };
 })();

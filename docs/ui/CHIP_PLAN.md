@@ -719,3 +719,23 @@ back row tallest, each nearer two coins shorter; a small bank is two rows
 in a pyramid (middle and back stacks tallest), rows behind joining as it
 grows; full is 4 x 4 (192 coins). Measured: 0 overlaps, nothing outside
 the box, $500 to FULL.
+
+**Round 7 (28 Sep 2026): before it goes in the game.** Owner: chips still
+fall off the screen sometimes; the pot lost height; tidy should always
+make a pyramid; an opponent's win shouldn't shove the coins over to their
+cards first; coins entering an opponent's cup should each make a sound,
+and their stack readout should spin up as they land. Changes:
+- The pot (chips) is always a pyramid: fewer, taller stacks (the middle
+  and back tallest), the coins sorted by value into the shape's heights
+  (richest in the middle, each stack richest on top). Tap to tidy: the
+  pyramid. 60 coins: stacks of up to 9-10 (they were ~3).
+- A safety net in the world: a loose coin that would leave the screen is
+  put straight back in its place (`stats().off` counts them). I couldn't
+  reproduce a coin leaving the screen in any moment at 430x932, 390x720 or
+  375x640, taps included, so this catches whatever the owner saw.
+- An opponent's win (js/showdown.js and both coin tables): the coins fly
+  straight from the pot to the seat's cup, top first; no shove to the bet
+  square. Each one clicks in (a rising `stack` tick) and the stack readout
+  counts up its share (`freezeSeatStack` / `seatStackTick` in
+  06-presentation.js, `seatDisplayFreeze` in 05-game-engine.js, cleared in
+  finishHand). These are production files: build v0.44.1.

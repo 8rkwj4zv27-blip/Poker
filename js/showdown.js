@@ -1036,22 +1036,23 @@ const Showdown = (function(){
   }
 
   // THEIR WIN: shoved across to their square, a beat, then home to the cup
+  // AN OPPONENT'S WIN: the coins fly straight from the pot to the seat's
+  // cup, top first; each one clicks in and the stack readout spins up
   async function payOpp(p, bodies){
     const mode = opt('opp'), W = CW();
-    const z = W.zones['spot:' + p.id];
-    if (mode === '0' || !z || !bodies.length) return payWith(p, bodies);
-    if (typeof EnemyCards !== 'undefined') EnemyCards.slot(p, 8000);
+    const src = typeof EnemyCards !== 'undefined' && EnemyCards.coinSource(p);
+    if (mode === '0' || !src || !bodies.length) return payWith(p, bodies);
+    EnemyCards.slot(p, 8000);
     sfx('collect', .9);
-    const items = bodies.map(b => ({ b, to:{ x:z.cx + rr(-5, 5), y:z.cy + rr(-3, 3), z:0, zone:z, d:W.D() } }));
-    bodies.forEach(b => { if (b.zone) W.removeFromZone(b); });
-    await within(W.throwAll(items, 'shove'), 2600);
     if (mode === 'gloat') gloat(p);
-    await hold(mode === 'gloat' ? 900 : 420);
-    const src = (typeof EnemyCards !== 'undefined' && EnemyCards.coinSource(p)) || { x:z.cx, y:z.cy - 40, z:4 };
+    const tick = seatStackTick(p, bodies.length);
     const back = bodies.slice().sort((a, c) => c.z - a.z);
     back.forEach(b => { if (b.zone) W.removeFromZone(b); });
-    await within(W.throwAll(back.map(b => ({ b, to:{ x:src.x + rr(-3, 3), y:src.y, z:src.z || 2, vanish:true, d:W.D() - 4 } })), 'lob'), 7000);
-    if (typeof EnemyCards !== 'undefined') EnemyCards.slot(p, 380);
+    try{
+      await within(W.throwAll(back.map(b => { const s = EnemyCards.coinSource(p) || src;
+        return { b, to:{ x:s.x, y:s.y, z:s.z || 2, vanish:true, d:W.D() - 4 }, onLand:tick }; }), 'lob'), 7000);
+    } finally { tick.end(); }
+    EnemyCards.slot(p, 380);
   }
   function gloat(p){
     const e = seatEls[p.id];
@@ -1161,6 +1162,7 @@ const Showdown = (function(){
 
     const felt = $('felt');
     const settle = r => {
+      r.winnerShares.forEach(s => freezeSeatStack(byId(s.id)));   // an opponent's readout counts up as the coins land
       r.winnerShares.forEach(s => { const w = byId(s.id); if (w) w.chips += s.amount; });
       g.pot = Math.max(0, g.pot - r.amount);
     };

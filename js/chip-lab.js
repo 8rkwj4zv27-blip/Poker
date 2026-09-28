@@ -30,7 +30,7 @@
     { title:'THE BANK', sub:'A pot of your own: one colour per stack, the richest in the middle.', rows:[
       ['bankIn','IN AND OUT', [['slot','THROUGH A SLOT'],['arc','OVER THE TOP']], 'THROUGH A SLOT: wins go to the slot on top of your bank, click through and drop onto their own stack; bets hop up out of it and on to the felt.'],
       ['winStyle','WINNINGS', [['stream','ONE BY ONE'],['handfuls','HANDFULS']], 'ONE BY ONE: a stream through the slot, like a payout hopper. HANDFULS: in quick bursts.'],
-      ['hoardSize','HOW BIG IT GETS', [['.65','BIG'],['.45','MEDIUM'],['.3','SMALL']], 'The bank is one row of stacks, nothing behind anything. It fills up as your stack grows; when it holds all it can, the coins turn richer instead (the money has no limit, the bank\'s space does).'],
+      ['hoardSize','HOW BIG IT GETS', [['.65','BIG'],['.45','MEDIUM'],['.3','SMALL']], 'The bank is a pyramid of stacks in rows, four rows of four when full. It fills up as your stack grows; when it holds all it can, the coins turn richer instead (the money has no limit, the bank\'s space does).'],
       ['hoardGleam','GLEAM', [['rich','WHEN RICH'],['always','ALWAYS'],['off','OFF']]]
     ]}
   ];
@@ -107,7 +107,7 @@
         '<section data-pane="settings" hidden><h3>THE TABLE</h3>' +
           '<div class="sdl-row"><div class="sdl-name">OPPONENTS</div>' + seg('opp', [['2','2'],['3','3'],['4','4'],['5','5']], state.opp) + '</div>' +
           '<div class="sdl-row"><div class="sdl-name">SOUND</div>' + seg('sound', [['on','ON'],['off','OFF']], state.sound) + '</div>' +
-          '<p class="sdl-sub">Everything else is the game as it ships (v0.44.0).</p></section>' +
+          '<p class="sdl-sub">Everything else is the game as it ships (v0.44.1).</p></section>' +
       '</div>';
     document.body.appendChild(key); document.body.appendChild(sheet);
     const open = on => { sheet.classList.toggle('is-open', on); key.classList.toggle('is-on', on); if (on) paintGallery(); };
