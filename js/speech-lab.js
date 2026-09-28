@@ -31,9 +31,9 @@
   // round 2's close-up picks, fixed
   const CLOSE = { face:'72', fit:'grow', frame:'own', name:'plate', height:'low', side:'theirs', arrive:'pop' };
   const SECTIONS = [
-    { title:'THE BLIPS', sub:'Round 2 picked blips. These are the choices for them. Changing one plays a sample.', rows:[
-      ['blip', 'SOUND', [['pip','PIP (ROUND 2)'],['soft','SOFT'],['chirp','CHIRP'],['wood','WOOD'],['bell','BELL'],['machine','MACHINE']],
-        'Soft: rounded and gentle. Chirp: drops onto its note, Nintendo-ish. Wood: a little marimba. Bell: a music box. Machine: the table printing it.'],
+    { title:'THE BLIPS', sub:'Every character has their own blip now. Changing a row plays a sample.', rows:[
+      ['blip', 'SOUND', [['own','THEIR OWN'],['pip','PIP'],['soft','SOFT'],['chirp','CHIRP'],['wood','WOOD'],['bell','BELL'],['machine','MACHINE']],
+        'Their own: Nigel and Harry tick like a machine, Lucy is a bell, Tony and Roxy chirp, Mavis is soft, Steve a plain pip, Bruno a wooden knock. Or pick one sound for everyone to compare.'],
       ['often', 'HOW OFTEN', [['other','EVERY OTHER LETTER'],['letter','EVERY LETTER'],['syllable','EVERY SYLLABLE']]],
       ['melody', 'MELODY', [['key','IN TUNE'],['free','FREE (ROUND 2)'],['steady','ONE NOTE']],
         'In tune: the notes come from a five-note scale, so a line sounds like a little tune. One note: level, only a question rises.'],
@@ -207,7 +207,7 @@
     const sheet = document.createElement('div');
     sheet.className = 'spl-sheet'; sheet.setAttribute('role', 'dialog'); sheet.setAttribute('aria-label', 'Speech lab');
     sheet.innerHTML =
-      '<div class="spl-top"><span>SPEECH LAB · ROUND 3</span><button type="button" class="spl-close" aria-label="Close">✕</button></div>' +
+      '<div class="spl-top"><span>SPEECH LAB · ROUND 4</span><button type="button" class="spl-close" aria-label="Close">✕</button></div>' +
       '<div class="spl-body">' +
         '<p class="spl-sub">Play the hand as normal. A second after the chosen opponent acts, they say something. SAY makes them say another line straight away. Tap a bubble to dismiss it. Sound needs one tap first on an iPhone.</p>' +
         '<div class="spl-actions"><button type="button" data-act="say">SAY SOMETHING</button><button type="button" data-act="deal">NEW TABLE</button></div>' +
@@ -243,7 +243,7 @@
       if (t.dataset.act === 'deal'){ open(false); clear(true); deal(); return; }
       if (t.dataset.act === 'reset'){ Object.assign(picks, DEFAULTS, CLOSE); save(); voiceSet(); paint(); return; }
       if (t.dataset.act === 'copy'){
-        const text = 'Speech Lab (round 3):\n' + ROWS.map(r => '- ' + r[1] + ': ' + r[2].find(o => o[0] === picks[r[0]])[1]).join('\n') + '\n- OPPONENTS: ' + state.opp;
+        const text = 'Speech Lab (round 4):\n' + ROWS.map(r => '- ' + r[1] + ': ' + r[2].find(o => o[0] === picks[r[0]])[1]).join('\n') + '\n- OPPONENTS: ' + state.opp;
         const ta = sheet.querySelector('.spl-copytext');
         const fin = ok => { t.textContent = ok ? 'COPIED' : 'SELECT + COPY BELOW'; setTimeout(() => { t.textContent = 'COPY MY PICKS'; }, 2200); if (!ok){ ta.hidden = false; ta.value = text; ta.focus(); ta.select(); } };
         try{ navigator.clipboard.writeText(text).then(() => fin(true), () => fin(false)); }catch(err){ fin(false); }

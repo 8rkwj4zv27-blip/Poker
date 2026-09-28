@@ -7,7 +7,8 @@
    letters type on. Round 2 tried a creature voice (vowel gibberish) and
    a muffled grumble as well; the owner found them a bit scary and picked
    BLIPS, so round 3 is blips only, with more choices:
-   - SOUND: the pip itself (six kinds, below).
+   - SOUND: each character's own (round 3's pick), or one of the six for
+     everyone.
    - HOW OFTEN: every letter, every other letter, or once a syllable.
    - PITCH: each character's own (Bruno low, Mavis high) or all the same.
    - MELODY: in tune (a five-note scale, so a line sounds like a little
@@ -42,16 +43,18 @@ const SpeechVoice = (() => {
   ['touchend', 'click'].forEach(ev => addEventListener(ev, unlock, { passive:true }));
 
   /* each character's voice: base pitch (Hz), range (semitones), ms per
-     letter (THEIR OWN pace), and how a phrase ends */
+     letter (THEIR OWN pace), how a phrase ends, and their own blip sound
+     (owner, round 3: every character gets their own; six sounds for eight
+     people, so two pairs share, told apart by pitch and pace) */
   const VOICES = {
-    rock:      { hz:330, range:4,  pace:44, end:'flat' },   // Nigel: level, put out
-    shark:     { hz:440, range:5,  pace:36, end:'down' },   // Lucy: cool, every phrase closes down
-    maniac:    { hz:370, range:9,  pace:24, end:'up' },     // Tony: fast, all over the place
-    station:   { hz:560, range:7,  pace:40, end:'up' },     // Mavis: high, bright
-    grinder:   { hz:300, range:3,  pace:42, end:'flat' },   // Steve: low, tired
-    wildcard:  { hz:520, range:10, pace:28, end:'up' },     // Roxy: bright, erratic
-    professor: { hz:350, range:6,  pace:42, end:'down' },   // Harry: lifts to make a point, then down
-    hammer:    { hz:196, range:3,  pace:52, end:'down' }    // Bruno: very low, very slow
+    rock:      { hz:330, range:4,  pace:44, end:'flat', sound:'machine' }, // Nigel: level, put out; clerical ticks
+    shark:     { hz:440, range:5,  pace:36, end:'down', sound:'bell' },    // Lucy: cool, glassy, every phrase closes down
+    maniac:    { hz:370, range:9,  pace:24, end:'up',   sound:'chirp' },   // Tony: fast, all over the place
+    station:   { hz:560, range:7,  pace:40, end:'up',   sound:'soft' },    // Mavis: high, gentle
+    grinder:   { hz:300, range:3,  pace:42, end:'flat', sound:'pip' },     // Steve: low, tired, plain
+    wildcard:  { hz:520, range:10, pace:28, end:'up',   sound:'chirp' },   // Roxy: bright, erratic (Tony's chirp, far higher)
+    professor: { hz:350, range:6,  pace:42, end:'down', sound:'machine' }, // Harry: lifts to make a point, then down (Nigel's ticks, livelier)
+    hammer:    { hz:196, range:3,  pace:52, end:'down', sound:'wood' }     // Bruno: very low, very slow, a knock at the door
   };
   const voiceOf = key => VOICES[key] || VOICES.grinder;
 
@@ -67,7 +70,7 @@ const SpeechVoice = (() => {
   const hash = s => { let h = 2166136261; for (let i = 0; i < s.length; i++){ h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); } return (h >>> 0) / 4294967295; };
   const SCALE = [0, 2, 4, 7, 9];     // major pentatonic: can't play a wrong note
 
-  let opts = { sound:'pip', often:'other', pitch:'own', melody:'key', level:.3 };
+  let opts = { sound:'own', often:'other', pitch:'own', melody:'key', level:.3 };
   function set(o){ Object.assign(opts, o); }
 
   /* ---- the pips: (context, output, time, frequency, level) ---- */
@@ -161,7 +164,7 @@ const SpeechVoice = (() => {
     const v = voiceOf(key), mood = moodOf(face);
     const { times } = plan(key, text, face, even);
     const base = opts.pitch === 'same' ? 400 : v.hz;
-    const play = SOUNDS[opts.sound] || SOUNDS.pip;
+    const play = SOUNDS[opts.sound === 'own' ? v.sound : opts.sound] || SOUNDS.pip;
     const list = beats(text);
     list.forEach((k, i) => play(c, out, t0 + times[k] / 1000, base * Math.pow(2, note(v, mood, text, k, i, list.length) / 12), opts.level * mood.vol));
   }

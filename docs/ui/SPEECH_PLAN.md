@@ -190,3 +190,24 @@ seat. New expressions can be drawn to match the existing art (a
 separate art task, best done in its own lab with the owner reviewing
 each face). Cheaper animation first: a mouth-open frame flapping in time
 with the blips, and blinks. Later, its own pass.
+
+## Round 4: a blip each (2026-09-28)
+
+Owner: "each character should have their own sound"; the blips "sound
+good and work really well when they talk". SOUND now defaults to THEIR
+OWN (the single-sound options stay for comparison):
+
+| Character | Blip | Pitch |
+|---|---|---|
+| Nigel (rock) | machine (teleprinter tick) | 330 Hz, level |
+| Lucy (shark) | bell | 440 Hz, closes down |
+| Tony (maniac) | chirp | 370 Hz, fast, wide |
+| Mavis (station) | soft | 560 Hz |
+| Steve (grinder) | pip | 300 Hz, level |
+| Roxy (wildcard) | chirp | 520 Hz, fast, widest |
+| Harry (professor) | machine | 350 Hz, closes down |
+| Bruno (hammer) | wood (a knock) | 196 Hz, slow |
+
+Six sounds for eight people: Tony/Roxy and Nigel/Harry share, told apart
+by pitch and range. Measured offline at LOW: every character peaks
+0.09-0.16.
