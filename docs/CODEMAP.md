@@ -16,7 +16,7 @@ ticket-feed.js          table-intro.js
 08-dev-mode.js          home-cast.js            home-boot.js
 dashboard.js            crt.js                  finishes.js
 press-feel.js           showdown.js             dealer-deck.js
-action-drum.js          knock-check.js
+action-drum.js          knock-check.js          award-key.js
 ```
 
 Later files call into earlier ones freely; there's no module system, so
@@ -360,6 +360,15 @@ carried round the bay. Installs itself at load; `ActionDrum.set()` tunes
 it. Since v0.48.1 NEXT HAND, REBUY and NEW TABLE are moved onto a fifth
 side (`#ad-face-deal`) instead of floating over the bay. Order in `docs/ui/PATTERN_BOOK.md` (Action drum); history in
 `docs/ui/ACTION_DRUM_PLAN.md`.
+
+## `js/award-key.js` + `css/award-key.css` — the award key (live, v0.49.0)
+
+The AWARD POT key dressed for whose pot it is: yours in velvet and gold
+reading COLLECT · 1,500 (a flash as the drum lands it, sparks when
+pressed, a gold ring for big pots); someone else's as the quiet PAY HARRY
+key. Learns the pot by wrapping `showHudResultConsole` (presentation
+only; the key keeps its id, handler and the game's words as its
+`aria-label`). Order in `docs/ui/PATTERN_BOOK.md` (Action drum).
 
 ## `js/knock-check.js` + `css/knock-check.css` — knock to check (live, v0.48.0)
 

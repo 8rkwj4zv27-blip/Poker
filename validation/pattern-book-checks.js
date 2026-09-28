@@ -332,8 +332,30 @@ check('Action drum + knock to check: live, never ghosting, and to the order',()=
   // The lab tunes the live part; it never ships.
   const lab=read('action-drum-lab.html');
   assert.ok(!/js\/action-drum\.js|js\/knock-check\.js/.test((lab.match(/id="lab-inject">([^<]*)/)||[])[1]||''),'the lab must not inject a second drum or knock into a game that already has them');
-  ['action-drum-lab','js/action-drum-lab.js','js/award-key.js','css/award-key.css'].forEach(n=>{ assert.ok(!indexHtml.includes(n),'index.html links '+n); assert.ok(!serviceWorker.includes(n),'sw.js precaches '+n); });
+  ['action-drum-lab','js/action-drum-lab.js'].forEach(n=>{ assert.ok(!indexHtml.includes(n),'index.html links '+n); assert.ok(!serviceWorker.includes(n),'sw.js precaches '+n); });
   assert.ok(md.includes('## Action drum (live v0.48.0)'),'the Pattern Book must record the action drum');
+});
+
+check('Award key: live, to the order, presentation only',()=>{
+  const css=read('css/award-key.css'), js=read('js/award-key.js'), lab=read('action-drum-lab.html');
+  const links=[...indexHtml.matchAll(/<link rel="stylesheet" href="([^"?]+)/g)].map(m=>m[1]);
+  assert.ok(links.includes('css/award-key.css') && links.indexOf('css/award-key.css')<links.indexOf('css/crt.css'),'index.html must load css/award-key.css before css/crt.css');
+  assert.ok(indexHtml.indexOf('js/award-key.js')>indexHtml.indexOf('js/06-presentation.js') && indexHtml.indexOf('js/award-key.js')>indexHtml.indexOf('js/showdown.js'),'the award key must load after the functions it wraps');
+  ["'./css/award-key.css","'./js/award-key.js"].forEach(f=>assert.ok(serviceWorker.includes(f),'sw.js is missing '+f));
+  const def=js.match(/const DEFAULTS = \{([^}]*)\}/);
+  assert.ok(def,'the award key must define its defaults');
+  Object.entries({ finish:'velvet', words:'collect', amount:'printed', arrive:'glint', press:'sparks', theirs:'quiet', tiers:'on' })
+    .forEach(([k,v])=>assert.ok(new RegExp('\\b'+k+":'"+v+"'").test(def[1]),'the order sets '+k+' to '+v));
+  // The shared key, in a state; the game's words kept for screen readers.
+  assert.ok(css.includes('.btn-award-console[data-ak="mine"]') && css.includes('.btn-award-console[data-ak="theirs"]'),'the win is a state of the shared AWARD key');
+  assert.ok(js.includes("btn.setAttribute('aria-label', label)"),'the key keeps the game\'s own words as its label');
+  // No chasing or jackpot lights (struck from the Showdown); Reduced Motion stills it.
+  assert.ok(!/chase|jackpot/i.test(css),'no chasing or jackpot lights on the award key');
+  assert.ok(css.includes('[data-motion="off"]') && css.includes('prefers-reduced-motion') && js.includes('motionOff()'),'the award key honours Reduced Motion');
+  // Presentation only.
+  assert.ok(!/\b(game|pendingHumanPlayer)(\.[A-Za-z_]+)*\s*=[^=]/.test(js) && !/\b(applyAction|humanAct)\(/.test(js),'js/award-key.js must never change game state');
+  // The lab tunes the live part and never injects a second one.
+  assert.ok(!/award-key/.test((lab.match(/id="lab-inject">([^<]*)/)||[])[1]||''),'the lab must not inject a second award key');
 });
 
 process.stdout.write('\n'+passed+' Pattern Book checks passed.\n');

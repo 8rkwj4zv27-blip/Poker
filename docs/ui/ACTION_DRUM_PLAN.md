@@ -129,3 +129,16 @@ the drum lands it, gold sparks and the counter's clack when pressed, more
 shine for big and monster pots, and optionally a quiet PAY HARRY key for
 someone else's pot. No chasing lights (struck from the Showdown). The
 game's own words stay as the key's aria-label.
+
+## Shipped: v0.49.0, the award key (owner's round-4 picks)
+
+VELVET + GOLD, COLLECT, the amount PRINTED, A FLASH as it lands, SPARKS +
+CLACK, MORE SHINE for bigger wins, and their pot as QUIET · PAY HARRY.
+`js/award-key.js` + `css/award-key.css` are live (loaded by `index.html`,
+precached by `sw.js`) with those picks as the defaults; recorded in the
+Pattern Book (Action drum → The award key) with its own check. The lab
+now tunes the live part (its AWARD KEY tab lists the picks first).
+Checked in the real game: your pot reads COLLECT · 50 in velvet and
+sparks on the press; someone else's reads PAY ROXY · 452 in the quiet
+case key; the next key (NEXT TABLE) is plain again; Reduced Motion keeps
+the looks and drops the flash and sparks.

@@ -1,8 +1,9 @@
 "use strict";
 
 /* ============================================================
-   AWARD KEY — candidate (lab only: loaded by action-drum-lab.html round
-   4, never by the game yet; docs/ui/ACTION_DRUM_PLAN.md)
+   AWARD KEY (live v0.49.0) — the owner's order from the Action Drum Lab,
+   round 4 (docs/ui/ACTION_DRUM_PLAN.md; docs/ui/PATTERN_BOOK.md, Action
+   drum). Installs itself at load; the lab tunes it through AwardKey.set().
 
    The AWARD POT key dressed up when the pot is YOURS: a finish of its own
    (gold, velvet or a glow), its own words (COLLECT · 1,500), a glint as
@@ -18,7 +19,10 @@
    an aria-label with the game's own words.
    ============================================================ */
 (() => {
-  const DEFAULTS = { finish:'gold', words:'collect', amount:'plate', arrive:'glint', press:'sparks', theirs:'today', tiers:'on' };
+  // The owner's order: VELVET + GOLD, COLLECT, the amount PRINTED, a flash
+  // as it lands, sparks + clack, more shine for bigger wins, and their pot
+  // as the quiet PAY HARRY key.
+  const DEFAULTS = { finish:'velvet', words:'collect', amount:'printed', arrive:'glint', press:'sparks', theirs:'quiet', tiers:'on' };
   const opts = Object.assign({}, DEFAULTS);
   const BIG_BB = 10, MONSTER_BB = 30;        // js/showdown.js's own tiers
   const $ = id => document.getElementById(id);

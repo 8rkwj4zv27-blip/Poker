@@ -44,16 +44,16 @@
   function save(){ if (host) host.set({ order:Object.assign({}, order) }); }
   function applyOrder(){ try{ ActionDrum.set(order); }catch(e){ console.error(e); } save(); }
 
-  /* ---- round 4: the AWARD KEY for your wins (every first option is my suggestion) ---- */
+  /* ---- round 4: the AWARD KEY for your wins (every first option is the owner's pick, live v0.49.0) ---- */
   const AK_ROWS = [
-    ['finish','THE KEY WHEN IT\'S YOURS', [['gold','POLISHED GOLD'],['velvet','VELVET + GOLD'],['glow','LIT FROM UNDER'],['today','TODAY\'S KEY']],
+    ['finish','THE KEY WHEN IT\'S YOURS', [['velvet','VELVET + GOLD'],['gold','POLISHED GOLD'],['glow','LIT FROM UNDER'],['today','TODAY\'S KEY']],
       'GOLD: polished gold in hard bands, a glint crossing it now and then. VELVET: the machine\'s burgundy velvet, gold letters and rim. LIT FROM UNDER: today\'s colour, glowing and breathing.'],
     ['words','THE WORDS', [['collect','COLLECT'],['award','AWARD POT'],['yours','YOURS'],['take','TAKE IT']]],
-    ['amount','THE AMOUNT', [['plate','ON A CREAM PLATE'],['printed','PRINTED']], 'A little cream plate on the key, like a playing card, or just printed after the words.'],
+    ['amount','THE AMOUNT', [['printed','PRINTED'],['plate','ON A CREAM PLATE']], 'A little cream plate on the key, like a playing card, or just printed after the words.'],
     ['arrive','AS IT LANDS', [['glint','A FLASH'],['none','NOTHING']], 'A flash across the key as the drum brings it up, with a tick.'],
     ['press','WHEN YOU PRESS', [['sparks','SPARKS + CLACK'],['none','JUST THE PRESS']], 'Gold sparks fly off its edges, with the counter\'s clack.'],
     ['tiers','BIGGER WINS', [['on','MORE SHINE'],['off','ALL THE SAME']], 'A big pot glints faster and the key gets a gold ring; a monster, faster still.'],
-    ['theirs','THEIR POT', [['today','TODAY\'S KEY'],['quiet','QUIET · PAY HARRY']], 'Someone else\'s win: today\'s gold key, or the quiet case key saying who gets paid, so only your wins shine.']
+    ['theirs','THEIR POT', [['quiet','QUIET · PAY HARRY'],['today','TODAY\'S KEY']], 'Someone else\'s win: today\'s gold key, or the quiet case key saying who gets paid, so only your wins shine.']
   ];
   const AK_SUGGESTED = Object.fromEntries(AK_ROWS.map(r => [r[0], r[2][0][0]]));
   let akOrder = Object.assign({}, AK_SUGGESTED, state.ak || {});
