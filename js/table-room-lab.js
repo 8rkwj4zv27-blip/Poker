@@ -78,12 +78,15 @@
     ]},
     { title:'THE MACHINES', sub:'The opponents\' cabinets, cards and all. Shrinking them lifts their spots with them.', rows:[
       ['pods','SIZE', [['100','TODAY'],['96','96%'],['93','93%'],['90','90%']]]
+    ]},
+    { title:'THE CHIPS', sub:'Every chip on the table and in your bank, same artwork drawn smaller. Piles, throws and the pot pyramid all work the same; smaller chips fit more in the same room.', rows:[
+      ['coins','CHIP SIZE', [['15','TODAY'],['14','A LITTLE SMALLER'],['13','SMALLER'],['12','SMALLEST']]]
     ]}
   ];
   const ROWS = GROUPS.flatMap(g => g.rows);
-  const TODAY = { pot:'0', potroom:'air', you:'sq', pile:'spread', their:'57', lift:'0', fade:'13', mark:'square', pods:'100' };
+  const TODAY = { pot:'0', potroom:'air', you:'sq', pile:'spread', their:'57', lift:'0', fade:'13', mark:'square', pods:'100', coins:'15' };
   // where the lab opens: the owner's plan, at a starting point
-  const START = { pot:'20', potroom:'air', you:'w110', pile:'pile', their:'w72', lift:'board', fade:'8', mark:'square', pods:'96' };
+  const START = { pot:'20', potroom:'air', you:'w110', pile:'pile', their:'w72', lift:'board', fade:'8', mark:'square', pods:'96', coins:'14' };
   let picks = Object.assign({}, START, state.picks || {});
   let shown = picks;                 // what's on the table (TODAY while held)
   const save = () => { if (host) host.set({ picks:Object.assign({}, picks) }); };
@@ -260,11 +263,32 @@
   }
   function show(s){
     shown = s;
+    sizeCoins(s.coins);
     style.textContent = css(s);
     try{ if (typeof render === 'function' && typeof game !== 'undefined' && game) render(); }catch(e){}
     paintSquares();
     relayout();
     setTimeout(meters, 60);
+  }
+
+  /* ---------------- the chips' size ----------------
+     One coin size for the whole coin world (CoinWorld.D(), 15px today:
+     SIZES.m). Each chip's sprite is drawn from its artwork at the size
+     asked for, so a smaller one is the same chip. Chips already down take
+     the new size where they lie; the piles then re-tidy to it. */
+  function sizeCoins(v){
+    if (!CW) return;
+    const key = v === '15' || !v ? 'm' : 'trl' + v;
+    if (key !== 'm') CW.SIZES[key] = +v;
+    if (CW.OPT.size === key) return;
+    CW.OPT.size = key;
+    Object.values(CW.zones).forEach(z => z.list.forEach(b => {
+      const d = CW.pieceD(b.colour);
+      b.d = d; b.d0 = d; b.d1 = d;
+      CW.dirty.add(b);
+    }));
+    try{ if (typeof CoinTable !== 'undefined') CoinTable.rebuildBank(); }catch(e){}
+    CW.kick();
   }
 
   /* ---------------- measuring ---------------- */

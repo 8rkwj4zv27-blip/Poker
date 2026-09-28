@@ -47,13 +47,17 @@ Nothing in the game changes until the owner picks settings in the lab.
     8 or 16px up, or just above the cards
   - squares: how dark, square or corners only
   - machines: 100 / 96 / 93 / 90%
+  - chips: 15px (today) / 14 / 13 / 12. One size for the whole coin world
+    (table and bank), the same artwork drawn smaller; chips already down
+    resize where they lie and the piles re-tidy. Added 28 Sep at the
+    owner's ask: the chips looked big next to everything else.
 - The meters show the gap between their squares and the board, the room
   for the pot pile, and the gap between your spot and the pot counter.
 - **HOLD: TODAY** shows the game as it ships. COPY MY PICKS gives the
   settings as text.
 - **Starting point** (the lab opens on this): pot 20px down with more air,
   your spot wider, little piles, their spots wide and just above the cards,
-  squares fainter, machines 96%.
+  squares fainter, machines 96%, chips 14px.
 
 How it works: presentation only. It wraps `EnemyCards.spot`/`paint`
 (squares and spots), `CoinWorld.zone` (it gives each bet spot a box and

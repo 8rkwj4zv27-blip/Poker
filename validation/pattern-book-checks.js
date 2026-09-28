@@ -279,9 +279,10 @@ check('Table room lab: isolated, and its TODAY is the shipped table',()=>{
   // HOLD: TODAY must be the game as it ships: nothing moved, nothing restyled.
   const today=lab.match(/const TODAY = \{([^}]*)\}/);
   assert.ok(today,'the lab needs its TODAY picks');
-  ["pot:'0'","you:'sq'","pile:'spread'","their:'57'","lift:'0'","fade:'13'","mark:'square'","pods:'100'"].forEach(k=>assert.ok(today[1].includes(k),'TODAY must keep '+k));
+  ["pot:'0'","you:'sq'","pile:'spread'","their:'57'","lift:'0'","fade:'13'","mark:'square'","pods:'100'","coins:'15'"].forEach(k=>assert.ok(today[1].includes(k),'TODAY must keep '+k));
   // its sizes are measured against the shipped scale and pot place
   assert.ok(/\.felt \.seat:not\(\.you\)\{ scale:\.91;/.test(read('css/05-responsive-and-arcade.css')) && /const S0 = \.91;/.test(lab),'the lab\'s machine scale must match css/05');
+  assert.ok(/const SIZES=\{ s:13, m:15, l:17 \};/.test(read('js/coin-world.js')) && /v === '15' \|\| !v \? 'm'/.test(lab),'the lab\'s TODAY chip size must be the shipped one (SIZES.m)');
   assert.ok(/#felt \.pot-area\{ top:77\.5%; \}/.test(read('css/05-responsive-and-arcade.css')) && lab.includes('top:calc(77.5% + '),'the lab\'s pot move must start from the shipped place');
 });
 
