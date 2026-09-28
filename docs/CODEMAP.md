@@ -582,12 +582,12 @@ SPRITE mode (switchable against today's flat card). The candidate plugs into
 `DealerDeck.flightFor`. Phone-first (host `js/showdown-lab-host.js`).
 Since v0.51.0 the styles are the game's own; the lab adds only its sheet.
 
-## `coach-face-lab.html` + `js/coach-face-lab.js` + `css/coach-face-lab.css` + candidate `js/coach-face.js` / `css/coach-face.css` — Coach Face Lab
+## `coach-face-lab.html` + `js/coach-face-lab.js` + `css/coach-face-lab.css` + candidate `js/coach-tv.js` / `css/coach-tv.css` — Coach Face Lab
 
-Round 1 of the Coach (`docs/coach/COACH_PLAN.md`): the coach's portrait,
-a game face with glasses drawn over it, sitting on the felt opposite the
-dealer deck. Phone-first; the sheet reuses `css/showdown-lab.css`. Not
-loaded by the game.
+The Coach's look (`docs/coach/COACH_PLAN.md`), round 2: a little CRT set
+with a digital face, on the felt opposite the dealer deck and cabled into
+the console; the screen is the `.crt` component. Phone-first; the sheet
+reuses `css/showdown-lab.css`. Not loaded by the game.
 
 ## `deck-lab.html` + `js/deck-lab.js` — Deck Lab
 

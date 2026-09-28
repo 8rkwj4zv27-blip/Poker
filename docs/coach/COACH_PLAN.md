@@ -9,8 +9,9 @@ and wrong, and how to improve. Agreed with the owner, 28 September 2026.
 - **A character, but a flat one.** Plain, clear, informative lines with
   the occasional short reaction ("Unlucky. You were ahead until the
   river."). No catchphrases, no nicknames for the player, no mood system.
-- **One of the game's own faces, wearing glasses** to show he's the
-  smart one, in a colour none of the opponents wear.
+- **A little old CRT set plugged into the machine** (round 2): switched
+  on, it's plonked on the felt, cabled into the console, and a digital
+  face warms up on its screen. Keeps round 1's thick glasses.
 - **Sits on the felt next to your cards, opposite the dealer deck**
   (Settings → The deck moves him too).
 - **Switched on and off from a dashboard button**, with a **talk slider**:
@@ -40,9 +41,20 @@ a stretch, and timing that never talks over the opponents' table talk.
 No live AI model: works offline, costs nothing, no new dependency.
 Target: 600–800 lines.
 
+## Order against the opponents' dialogue (owner, 28 Sep 2026)
+
+The coach goes in **first**, on his own. The Speech Lab
+(`speech-lab.html`, branch `claude/tender-dijkstra-zso8dm`, not merged)
+already has the bubble (cream card stock, types on, grows to fit), blips
+and a talk budget for the opponents. The coach lifts the pieces he needs
+from it (bubble, typing, one blip) into the game as shared parts; the
+opponents' dialogue plugs into the same parts later, once the owner is
+happy with the coach. Proposed and to confirm in the voice lab: one
+speaker at a time on the lower felt; the coach speaks clean.
+
 ## Build order
 
-0. **Face lab** (done, round 1): `coach-face-lab.html`, glasses, colour,
+0. **Face lab** (round 1 done, round 2: the CRT set): `coach-face-lab.html`, glasses, colour,
    visor, expressions, housing, size, on the real table. Then a voice
    lab with sample lines.
 1. Put him in the game: face, seat, dashboard switch, talk slider, saved
@@ -75,3 +87,18 @@ covers them.
   face (no cabinet), small (60px face), opposite the deck. Now the lab's
   defaults. His expressions stay the calm six.
   Link: https://claude.ai/artifact/J6ihf17j1uz3RatkD1fxYS
+- **Round 2 — the set** (28 Sep 2026). Owner: make him more of an AI
+  bot, a little CRT TV plugged into the machine and lumped onto the
+  table, a digital face rather than a painted one. Same lab and link;
+  candidate now `js/coach-tv.js` + `css/coach-tv.css` (round 1's
+  `coach-face.*` removed). Options (first is my suggestion): set
+  PORTABLE TV (rabbit ears, knobs, speaker) · OLD TERMINAL (badge, stand)
+  · TEST SET (handle, knobs under); plastic MACHINE · CREAM · GUNMETAL;
+  size; cable INTO THE CONSOLE · COILED · NONE; face PIXEL · DOT MATRIX ·
+  VECTOR (one set of shapes, drawn three ways); screen ink from the CRT
+  component (machine green, gold, blue); glasses on/off (a dimmer layer
+  so the eyes read); eight expressions incl. thinking and talking; idle
+  blinks; POWER key (the dashboard button) with PLONKED DOWN + WARMS UP ·
+  JUST WARMS UP · INSTANT, and a CRT switch-off. The screen is the game's
+  `.crt` component; the face's glow is set locally in the lab, and would
+  need a picture role in `css/crt.css` before it ships.

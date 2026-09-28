@@ -1,4 +1,4 @@
-/* Coach Face Lab (round 1): the gallery tiles in the TUNE sheet. The key
+/* Coach Face Lab (round 2): the gallery tiles in the TUNE sheet. The key
    and the sheet are the Showdown Lab's (css/showdown-lab.css). Lab only:
    never loaded by the game. */
 .cfl-grid{ display:grid; grid-template-columns:1fr 1fr; gap:8px; margin:4px 0 8px; }
@@ -14,4 +14,6 @@
 .cfl-tile-face{ display:block; width:100%; max-width:120px; border:2px solid #080405; border-radius:2px; overflow:hidden; }
 .cfl-tile-face--house{ border:0; overflow:visible; display:flex; justify-content:center; padding:4px 0 10px; }
 .cfl-tile-name{ font-family:var(--font-hdr); font-size:7px; letter-spacing:.04em; line-height:1.4; text-align:center; }
-.cfl-mini.coach-station{ position:relative; left:auto; top:auto; transform:none; z-index:auto; pointer-events:none; }
+.cfl-tile-set.coach-station{ position:relative; left:auto; top:auto; transform:none; z-index:auto; pointer-events:none; width:74%; max-width:96px; margin:14px auto 2px; }
+.cfl-grid--4 .cfl-tile-set.coach-station{ width:92%; margin-top:4px; }
+.cfl-power{ left:74px; min-width:64px; }
