@@ -169,7 +169,8 @@
   function start(){
     try{ if (typeof TableIntro !== 'undefined') TableIntro.uninstall(); }catch(e){}
     try{ settings.theme = 'burgundy'; document.body.setAttribute('data-theme', 'burgundy'); }catch(e){}
-    if (saved) DealStyles.apply(saved);
+    // the lab starts with every style on (the game starts with FLICK alone)
+    DealStyles.apply(saved || { on:Object.fromEntries(DealStyles.STYLES.map(s => [s.id, true])) });
     applyLook();
     build();
     deal(null);

@@ -1,6 +1,6 @@
-/* DEAL STYLES (candidate, Deal Style Lab) — the specials' dressing
-   (js/deal-styles.js). Pixel bits: square, stepped, in the machine's
-   lamp colours. Only the Lab loads this. */
+/* DEAL STYLES (live v0.51.0) — the specials' dressing (js/deal-styles.js)
+   and Settings → Dealing. Pixel bits: square, stepped, in the machine's
+   lamp colours. */
 .dsx{ position:fixed; z-index:61; pointer-events:none; width:3px; height:3px; margin:-1px 0 0 -1px; }
 
 /* sparks, stars, embers, smoke */
@@ -61,3 +61,11 @@
 @keyframes dsxJolt{ 0%,100%{ translate:0 0; } 20%{ translate:-3px 1px; } 40%{ translate:3px -1px; } 60%{ translate:-2px 0; } 80%{ translate:1px 0; } }
 
 [data-motion="off"] .dsx{ display:none; }
+
+/* Settings → Dealing: the sheet's own switch rows and segmented keys,
+   grouped by tier; a style that's off dims its rarity */
+.dst-tier{ margin:14px 0 4px; font-family:var(--font-hdr); font-size:8px; letter-spacing:.1em; color:var(--pc-lamp-amber); }
+.dst-row{ margin-bottom:8px; }
+.dst-row .dst-rarity{ margin-top:4px; }
+.dst-row .dst-rarity button{ font-size:10px; padding-left:2px; padding-right:2px; }
+.dst-row.dst-off .dst-rarity{ opacity:.45; }

@@ -17,7 +17,7 @@ ticket-feed.js          table-intro.js
 dashboard.js            crt.js                  finishes.js
 press-feel.js           showdown.js             dealer-deck.js
 action-drum.js          knock-check.js          award-key.js
-card-holder.js
+card-holder.js          deal-styles.js
 ```
 
 Later files call into earlier ones freely; there's no module system, so
@@ -497,6 +497,15 @@ into the groove. Wraps the live `dealCardFlight` for your own
 `revealAfter` cards only. Phone-first (host `js/showdown-lab-host.js`,
 sheet from `css/showdown-lab.css`). Lab only; nothing loads in the game.
 
+## `js/deal-styles.js` + `css/deal-styles.css` — Deal styles (live, v0.51.0)
+
+How each card flies off the deck (`docs/ui/DEAL_STYLES_PLAN.md`, recorded
+in the Pattern Book): eighteen styles in five tiers, each a path, a 2.5D
+pose and (for the specials) pixel effects and Web Audio sounds; plugs into
+`DealerDeck.flightFor`. Settings → Dealing (`settings.dealStyles`: on,
+rarity, scope), FLICK alone by default. Common/uncommon share the hands by
+weight; rare, epic and legendary are a fixed chance on a single card.
+
 ## `deal-style-lab.html` + `js/deal-style-lab.js` + `css/deal-style-lab.css` + candidate `js/deal-styles.js` / `css/deal-styles.css` — Deal Style Lab
 
 How cards fly off the deck (`docs/ui/DEAL_STYLES_PLAN.md`): eighteen styles
@@ -505,7 +514,7 @@ in five tiers (common to legendary; FLICK is the shipped one), each with
 card, rare and up only ever on a single card. Runs the deck in its 2.5D
 SPRITE mode (switchable against today's flat card). The candidate plugs into
 `DealerDeck.flightFor`. Phone-first (host `js/showdown-lab-host.js`).
-Lab only; nothing loads in the game.
+Since v0.51.0 the styles are the game's own; the lab adds only its sheet.
 
 ## `deck-lab.html` + `js/deck-lab.js` — Deck Lab
 

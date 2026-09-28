@@ -37,7 +37,9 @@ const DealerDeck = (() => {
     shuffle:'full', when:'every', burn:'tuck',
     eject:'kick', recoil:'on', flight:'flick', pace:'today', land:'puff', yours:'land',
     flop:'spread', flopflip:'wave', beat:'beat',
-    sweep:'scatter', sound:'mech'
+    sweep:'scatter', sound:'mech',
+    // the 2.5D sprite card (Deal Style Lab round 5, v0.51.0)
+    sprite:'on'
   };
   const BACKS = ['crest','lattice','classic','velvet','midnight','emerald','check','sunburst','ivory','harlequin','table'];
   let O = Object.assign({}, DEFAULTS);
@@ -308,7 +310,7 @@ const DealerDeck = (() => {
     Object.keys(look.sizes).forEach(k => { const n = skinEl.querySelector(k); if (n) n.style.fontSize = look.sizes[k]; });
     try{ Sound.cardFlip(false); }catch(e){}
   }
-  // order.sprite (unset in the game until it is signed off; the Lab sets 'on')
+  // order.sprite: the 2.5D card, on since v0.51.0 ('off' is today's flat card)
   const sprites = () => O.sprite === 'on' && !motionOff();
 
   /* Your cards turn over in the air (Holder Deal Lab, A; the owner's pick,

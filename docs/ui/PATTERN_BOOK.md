@@ -362,3 +362,25 @@ Lab (`card-holder-lab.html`, round 2, 28 September 2026;
 Settings → The deck → Card holder: the sheet's segmented keys, a small lip
 drawn in each.
 
+## Deal styles + the 2.5D card (live v0.51.0)
+
+How cards fly off the deck, from the owner's order on the Deal Style Lab
+(`deal-style-lab.html`, round 5, 28 September 2026;
+`docs/ui/DEAL_STYLES_PLAN.md`). `js/deal-styles.js` + `css/deal-styles.css`
+on the deck's flights (`js/dealer-deck.js`). Presentation only.
+
+| Part | Order | The finish |
+|---|---|---|
+| The card in flight | **2.5D SPRITE** (the deck's `sprite:'on'`) | Like the chips: the flat pixel card holds a pose stepped at 14 frames a second while it glides. Banking narrows and slants it with its far side in hard-stepped shade; tipping shortens it a little with a lit band toward the lamp; spins snap to 15°; it grows as it rises. Never tips far enough to show its thickness, never over. A pixel shadow on the felt drifts away as it rises. |
+| Turning over | **SQUASH FLIP** | Squash to a sliver (lifting a little, catching the light), swap sides, open back out, in steps: the board, the showdown, your cards in the air. |
+| Shuffle, flop spread | **LEAN** | The same stepped lean as the cards split, riffle, bridge and fan out. |
+| Your cards | **TURN IN THE AIR** | They turn over on the way, arrive just above the holder's lip and slip in. |
+| Their cards | **UNDER THE CABINET** | They land just clear of the cabinet, no fade, and slide up under it. |
+| Styles | **FLICK** alone by default (a setting) | Eighteen in five tiers: Flick, Frisbee, Lob, Slide, Whip / Swoop, Skip, Spin, Flutter, Knuckleball / Boomerang, Shuriken, Magician, Glitch / Transporter, Comet / Railgun, Royal Flourish. Common and uncommon share the hands by weight (10/4); rare, epic and legendary are a single card's surprise (1/500, 1/800, 1/3000 a card). |
+
+Settings → Dealing: FLICK ONLY / ALL ON, once per hand or every card, and
+one row per style (grouped by tier) with the sheet's switch and its rarity
+as the sheet's segmented keys.
+
+Reduced Motion: the deck's quiet deal, no styles.
+

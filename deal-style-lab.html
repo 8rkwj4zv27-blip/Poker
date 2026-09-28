@@ -8,8 +8,8 @@
   <title>Deal Style Lab</title>
   <!-- Phone-first Lab: how cards fly off the deck (docs/ui/DEAL_STYLES_PLAN.md).
        The page is just the real game, full screen; the controls run inside
-       it (js/deal-style-lab.js: a TUNE key and a sheet), the candidate is
-       js/deal-styles.js + css/deal-styles.css. The host is the shared
+       it (js/deal-style-lab.js: a TUNE key and a sheet); the styles are the
+       game's own (js/deal-styles.js + css/deal-styles.css, live v0.51.0). The host is the shared
        js/showdown-lab-host.js. Never linked from the game; never touches a
        real save (the copy runs on in-memory storage). -->
   <style>
@@ -24,7 +24,7 @@
 </head>
 <body>
   <iframe id="sdl-game" title="The Table (lab copy)" allow="autoplay"></iframe>
-  <script type="application/json" id="lab-inject">{"css":["css/showdown-lab.css","css/deal-styles.css","css/deal-style-lab.css"],"js":["js/deal-styles.js","js/deal-style-lab.js"],"v":"5"}</script>
+  <script type="application/json" id="lab-inject">{"css":["css/showdown-lab.css","css/deal-style-lab.css"],"js":["js/deal-style-lab.js"],"v":"6"}</script>
   <script src="js/showdown-lab-host.js?v=7"></script>
 </body>
 </html>

@@ -1,9 +1,13 @@
 "use strict";
 
 /* ============================================================
-   DEAL STYLES (candidate, Deal Style Lab) — how a card flies off the deck
+   DEAL STYLES (live v0.51.0) — how a card flies off the deck
+   The owner's order from the Deal Style Lab (deal-style-lab.html;
+   docs/ui/DEAL_STYLES_PLAN.md). Settings → Dealing: every style can be
+   switched on or off and given a rarity by the player; FLICK alone is on
+   by default. Saved as settings.dealStyles { on, rarity, scope }.
 
-   Round 4. Every card the dealer deck deals (yours, theirs, the board)
+   Built in round 4. Every card the dealer deck deals (yours, theirs, the board)
    flies along a PATH (js/dealer-deck.js fly(): points [offset, travel,
    lift, turn, pitch, extraScale, easing, lateralCurve]) and, in the deck's
    SPRITE mode (2.5D, like the chips), holds a POSE that steps while it
@@ -20,7 +24,7 @@
    Presentation only: nothing in the game changes; the cards land where
    they always do. The specials' light and smoke are pixel bits (css/
    deal-styles.css); their sounds are made here with Web Audio (no files).
-   Only the Lab loads this (deal-style-lab.html).
+   Reduced Motion: the deck's own quiet deal, no styles.
    ============================================================ */
 const DealStyles = (() => {
   const P = (o, t, l, z, x, s, e, c) => [o, t, l, z || 0, x || 0, s || 1, e || null, c || 0];
@@ -265,7 +269,7 @@ const DealStyles = (() => {
       P(1, 1, 0, 0, 0, 1)],
       pose:t => { const k = bell(t, .05, .92); return { bank:(S(t * 23) * .6 + S(t * 41) * .35) * k, pitch:(C(t * 29) * .5 + S(t * 53) * .3) * k, spin:(S(t * 17) * 12) * k, light:S(t * 31) * .1 * k }; } },
     // RARE
-    { id:'boomerang', tier:'rare', name:'BOOMERANG', note:'Rare. Flies past its spot spinning, curves round and comes back in.', pace:1.55, mirror:true, points:() => [
+    { id:'boomerang', tier:'rare', name:'BOOMERANG', note:'Flies past its spot spinning, curves round and comes back in.', pace:1.55, mirror:true, points:() => [
       P(0, 0, 0, 0, 0, 1, 'cubic-bezier(.3,0,.5,.7)'),
       P(.35, .9, 22, 0, 0, 1.05, 'ease-in-out', -70),
       P(.6, 1.24, 20, 0, 0, 1.06, 'ease-in-out', -18),
@@ -273,20 +277,20 @@ const DealStyles = (() => {
       P(.94, 1, 0, 0, 0, 1, SOFT),
       P(1, 1, 0, 0, 0, 1)],
       pose:(t, m) => ({ spin:m * -720 * (1 - Math.pow(1 - t, 1.6)), bank:m * .6 * S(t * PI * 2) * bell(t, 0, .95), pitch:-.35 * bell(t, .1, .9), light:.12 * S(t * 12) }) },
-    { id:'shuriken', tier:'rare', name:'SHURIKEN', note:'Rare. Thrown flat and spinning like a throwing star, with speed lines, and lands with a thunk that jolts the seat.', pace:.85, fx:'shuriken', points:() => [
+    { id:'shuriken', tier:'rare', name:'SHURIKEN', note:'Thrown flat and spinning like a throwing star, with speed lines, and lands with a thunk that jolts the seat.', pace:.85, fx:'shuriken', points:() => [
       P(0, 0, 0, 0, 0, 1, 'cubic-bezier(.5,0,.8,.6)'),
       P(.9, 1, 4, 0, 0, 1.02, 'linear'),
       P(.96, 1, 0, 0, 0, 1, SOFT),
       P(1, 1, 0, 0, 0, 1)],
       pose:t => ({ spin:t < .9 ? -1440 * t / .9 : -1440, pitch:.55 * (1 - ramp(t, .88, .96)), light:.1 * S(t * 40) }) },
-    { id:'magician', tier:'rare', name:'MAGICIAN', note:'Rare. Vanishes from the deck in a puff of smoke and pops out of one at its seat.', pace:1.35, fx:'magician', points:() => [
+    { id:'magician', tier:'rare', name:'MAGICIAN', note:'Vanishes from the deck in a puff of smoke and pops out of one at its seat.', pace:1.35, fx:'magician', points:() => [
       P(0, 0, 0, 0, 0, 1, 'linear'),
       P(.12, 0, 6, 0, 0, 1.05, 'linear'),
       P(.7, 1, 6, 0, 0, 1.05, 'linear'),
       P(.86, 1, 10, 0, 0, 1.08, OUT),
       P(1, 1, 0, 0, 0, 1)],
       pose:t => ({ alpha:t < .12 ? 1 : t < .76 ? 0 : 1, pitch:-.4 * bell(t, .76, 1), spin:t > .76 ? -20 * (1 - ramp(t, .76, 1)) : 0, light:.2 * bell(t, .76, 1) }) },
-    { id:'glitch', tier:'rare', name:'GLITCH', note:'Rare. The machine glitches it across: it hops in torn, colour-split jumps and snaps into place.', pace:1.2, fx:'glitch', points:() => [
+    { id:'glitch', tier:'rare', name:'GLITCH', note:'The machine glitches it across: it hops in torn, colour-split jumps and snaps into place.', pace:1.2, fx:'glitch', points:() => [
       P(0, 0, 0, 0, 0, 1, 'steps(1,end)'),
       P(.22, .22, 8, 0, 0, 1.04, 'steps(1,end)', 18),
       P(.44, .46, 14, 0, 0, .96, 'steps(1,end)', -14),
@@ -295,13 +299,13 @@ const DealStyles = (() => {
       P(1, 1, 0, 0, 0, 1)],
       pose:t => { const f = Math.floor(t * 9); return { bank:[0, .5, -.25, .75, -.5, .25, 0, -.25, 0][f] || 0, pitch:[0, -.5, .25, 0, .5, -.25, 0, .25, 0][f] || 0, light:(f % 2 ? .25 : -.1) * (1 - ramp(t, .86, 1)) }; } },
     // EPIC
-    { id:'transporter', tier:'epic', name:'TRANSPORTER', note:'Epic. It dissolves into a shimmering column at the deck, and materialises in one at its seat, bottom up.', pace:1.9, fx:'transporter', points:() => [
+    { id:'transporter', tier:'epic', name:'TRANSPORTER', note:'It dissolves into a shimmering column at the deck, and materialises in one at its seat, bottom up.', pace:1.9, fx:'transporter', points:() => [
       P(0, 0, 0, 0, 0, 1, 'linear'),
       P(.36, 0, 0, 0, 0, 1, 'steps(1,end)'),
       P(.48, 1, 0, 0, 0, 1, 'linear'),
       P(1, 1, 0, 0, 0, 1)],
       pose:t => ({ show:t < .36 ? 1 - ramp(t, .06, .34) : t < .5 ? 0 : ramp(t, .54, .92), light:.35 * (bell(t, 0, .36) + bell(t, .5, .95)) }) },
-    { id:'comet', tier:'epic', name:'COMET', note:'Epic. Catches fire and arcs over the table on a trail of flame, landing in a puff of smoke.', pace:1.5, mirror:true, fx:'comet', points:() => [
+    { id:'comet', tier:'epic', name:'COMET', note:'Catches fire and arcs over the table on a trail of flame, landing in a puff of smoke.', pace:1.5, mirror:true, fx:'comet', points:() => [
       P(0, 0, 0, 0, 0, 1, 'cubic-bezier(.3,0,.6,.5)'),
       P(.3, .28, 60, 0, 0, 1.1, 'cubic-bezier(.2,.5,.4,1)', -30),
       P(.62, .7, 70, 0, 0, 1.12, IN, -26),
@@ -309,14 +313,14 @@ const DealStyles = (() => {
       P(1, 1, 0, 0, 0, 1)],
       pose:(t, m) => ({ bank:m * -.6 * bell(t, 0, .92), pitch:-.6 * bell(t, .05, .9), spin:m * -40 * bell(t, 0, .95), light:.28 * bell(t, 0, .95) }) },
     // LEGENDARY
-    { id:'railgun', tier:'legendary', name:'RAILGUN', note:'Legendary. The card charges white-hot at the deck, then fires: a white streak across the table and it is simply there.', pace:1.9, fx:'railgun', points:() => [
+    { id:'railgun', tier:'legendary', name:'RAILGUN', note:'The card charges white-hot at the deck, then fires: a white streak across the table and it is simply there.', pace:1.9, fx:'railgun', points:() => [
       P(0, 0, 0, 0, 0, 1, 'linear'),
       P(.48, 0, 4, 0, 0, 1.08, 'steps(1,end)'),
       P(.52, 1, 0, 0, 0, 1.06, 'linear'),
       P(.7, 1, 0, 0, 0, 1, OUT),
       P(1, 1, 0, 0, 0, 1)],
       pose:t => ({ light:t < .5 ? .6 * ramp(t, .05, .48) : .5 * (1 - ramp(t, .5, .8)), bank:t < .5 ? (Math.random() - .5) * .5 * ramp(t, .2, .48) : 0, pitch:t < .5 ? -.3 * ramp(t, .1, .48) : 0 }) },
-    { id:'royal', tier:'legendary', name:'ROYAL FLOURISH', note:'Legendary. Lifted out of the deck on a gold light, it spins with after-images, hangs at the top to a fanfare, and dives in with a shower of gold.', pace:2.4, fx:'royal', points:() => [
+    { id:'royal', tier:'legendary', name:'ROYAL FLOURISH', note:'Lifted out of the deck on a gold light, it spins with after-images, hangs at the top to a fanfare, and dives in with a shower of gold.', pace:2.4, fx:'royal', points:() => [
       P(0, 0, 0, 0, 0, 1, 'cubic-bezier(.2,0,.3,1)'),
       P(.22, .08, 110, 0, 0, 1.35, 'linear'),
       P(.38, .1, 118, 0, 0, 1.4, OUT),
@@ -328,8 +332,17 @@ const DealStyles = (() => {
   ];
   const byId = id => STYLES.find(s => s.id === id);
 
+  // the game's default: FLICK alone, every style at its own tier
   let O = { on:{}, rarity:{}, scope:'hand' };
-  STYLES.forEach(s => { O.on[s.id] = true; O.rarity[s.id] = s.tier; });
+  STYLES.forEach(s => { O.on[s.id] = s.id === 'flick'; O.rarity[s.id] = s.tier; });
+  try{
+    const saved = settings.dealStyles;
+    if (saved && typeof saved === 'object'){
+      if (saved.on) STYLES.forEach(s => { if (typeof saved.on[s.id] === 'boolean') O.on[s.id] = saved.on[s.id]; });
+      if (saved.rarity) STYLES.forEach(s => { if (TIERS.includes(saved.rarity[s.id])) O.rarity[s.id] = saved.rarity[s.id]; });
+      if (saved.scope === 'card' || saved.scope === 'hand') O.scope = saved.scope;
+    }
+  }catch(e){}
 
   // a style, ready to fly (mirrored at random if it can be)
   function make(s){
@@ -369,5 +382,50 @@ const DealStyles = (() => {
     DealerDeck.flightFor = () => { const s = pick(); return s ? make(s) : null; };
   }
   apply();
-  return { STYLES, TIERS, WEIGHT, CHANCE, SOLO, Sfx, apply, make:id => make(byId(id)), get order(){ return JSON.parse(JSON.stringify(O)); } };
+
+  /* ---------------- Settings → Dealing ----------------
+     One row per style (grouped by tier): the sheet's switch to put it in
+     the mix, and its rarity as segmented keys. Up top: once per hand or
+     every card, and FLICK ONLY / ALL ON. */
+  const TIER_NAME = { common:'Common', uncommon:'Uncommon', rare:'Rare', epic:'Epic', legendary:'Legendary' };
+  const $ = id => document.getElementById(id);
+  function save(){
+    try{ settings.dealStyles = JSON.parse(JSON.stringify(O)); saveSettings(); }catch(e){}
+  }
+  function set(patch){ apply(patch); save(); paintSettings(); }
+  function paintSettings(){
+    const list = $('deal-style-list'); if (!list) return;
+    list.querySelectorAll('[data-style]').forEach(row => {
+      const id = row.dataset.style, on = !!O.on[id];
+      row.classList.toggle('dst-off', !on);
+      const sw = row.querySelector('.switch'); if (sw) sw.setAttribute('aria-checked', on ? 'true' : 'false');
+      row.querySelectorAll('.dst-rarity button').forEach(b => b.classList.toggle('active', b.dataset.v === O.rarity[id]));
+    });
+    document.querySelectorAll('#deal-scope-seg button').forEach(b => b.classList.toggle('active', b.dataset.v === O.scope));
+  }
+  function buildSettings(){
+    const list = $('deal-style-list'); if (!list || list.dataset.built) return;
+    list.dataset.built = '1';
+    list.innerHTML = TIERS.map(t => '<div class="dst-tier">' + TIER_NAME[t] + '</div>' + STYLES.filter(s => s.tier === t).map(s =>
+      '<div class="dst-row" data-style="' + s.id + '">' +
+        '<div class="toggle-row"><div><div class="tl">' + s.name.charAt(0) + s.name.slice(1).toLowerCase() + '</div><div class="ts">' + s.note + '</div></div>' +
+          '<button class="switch" role="switch" aria-checked="false" aria-label="' + s.name + '"></button></div>' +
+        '<div class="segmented compact dst-rarity" role="group" aria-label="' + s.name + ' rarity">' +
+          TIERS.map(r => '<button data-v="' + r + '">' + TIER_NAME[r] + '</button>').join('') + '</div>' +
+      '</div>').join('')).join('');
+    list.addEventListener('click', e => {
+      const b = e.target.closest('button'), row = b && b.closest('[data-style]'); if (!row) return;
+      const id = row.dataset.style;
+      if (b.classList.contains('switch')) set({ on:{ [id]:!O.on[id] } });
+      else if (b.dataset.v) set({ rarity:{ [id]:b.dataset.v } });
+    });
+    document.querySelectorAll('#deal-scope-seg button').forEach(b => { b.onclick = () => set({ scope:b.dataset.v }); });
+    document.querySelectorAll('#deal-quick-seg button').forEach(b => {
+      b.onclick = () => set({ on:Object.fromEntries(STYLES.map(s => [s.id, b.dataset.act === 'all' || s.id === 'flick'])) });
+    });
+    paintSettings();
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', buildSettings); else buildSettings();
+
+  return { STYLES, TIERS, WEIGHT, CHANCE, SOLO, Sfx, paintSettings, apply, make:id => make(byId(id)), get order(){ return JSON.parse(JSON.stringify(O)); } };
 })();

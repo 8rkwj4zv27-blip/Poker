@@ -109,7 +109,17 @@ Owner: the 2.5D didn't read, and rare styles said "about 1 hand in 8".
   in 300 (any rare 1 in 13, any epic 1 in 40, any legendary 1 in 150 with
   all on). The lab shows the per-tier odds.
 
+## Live (v0.51.0)
+
+The owner: add them into the game, every style switchable by the player,
+FLICK the default, the player sets the rarity; the rare/epic/legendary
+levels as tested. Shipped: `js/deal-styles.js` + `css/deal-styles.css` in
+the game, Settings → Dealing (FLICK ONLY / ALL ON, once per hand or every
+card, a switch and a rarity per style; `settings.dealStyles`), the deck's
+2.5D card on (`sprite:'on'`), your cards turning in the air and theirs
+sliding under the cabinet. Recorded in the Pattern Book (Deal styles).
+
 ## Next
 
-Owner's picks (COPY MY PICKS in the lab), then ship: the styles become a
-setting (Settings → The deck), with the owner's mix as the default.
+Unlocks (e.g. Career) are a separate decision, weighed against the
+project's no-generic-unlock-systems principle.

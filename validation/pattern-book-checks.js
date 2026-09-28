@@ -376,4 +376,23 @@ check('Card holder: live, on the shared parts, and to the order',()=>{
   assert.ok(md.includes('## Card holder (live v0.49.0)'),'the Pattern Book must record the card holder');
 });
 
+check('Deal styles + the 2.5D card: live, on the shared parts, and to the order',()=>{
+  const js=read('js/deal-styles.js'), deck=read('js/dealer-deck.js'), md=read('docs/ui/PATTERN_BOOK.md');
+  assert.ok(/<link rel="stylesheet" href="css\/deal-styles\.css/.test(indexHtml),'index.html must load css/deal-styles.css');
+  assert.ok(/<script src="js\/dealer-deck\.js[^"]*"><\/script>\s*<script src="js\/deal-styles\.js/.test(indexHtml),'js/deal-styles.js loads right after js/dealer-deck.js');
+  ["'./css/deal-styles.css","'./js/deal-styles.js"].forEach(f=>assert.ok(serviceWorker.includes(f),'sw.js is missing '+f));
+  // No new finish for the setting: the sheet's switches and segmented keys.
+  assert.ok(/id="settings-dealing"[\s\S]*?class="segmented compact" id="deal-quick-seg"[\s\S]*?class="segmented compact" id="deal-scope-seg"[\s\S]*?id="deal-style-list"/.test(indexHtml),'Settings → Dealing must use the sheet\'s segmented keys');
+  assert.ok(js.includes('class="switch" role="switch"') && js.includes('segmented compact dst-rarity'),'each style row uses the sheet\'s switch and segmented keys');
+  // The order: FLICK alone by default; the rarity chances; the 2.5D card on.
+  assert.ok(/O\.on\[s\.id\] = s\.id === 'flick'/.test(js),'FLICK alone is on by default');
+  assert.ok(/CHANCE = \{ rare:1 \/ 500, epic:1 \/ 800, legendary:1 \/ 3000 \}/.test(js),'rare, epic and legendary chances as ordered');
+  assert.ok(/sprite:'on'/.test(deck),'the deck deals the 2.5D card');
+  // The 2.5D card never tips far enough to show its thickness.
+  assert.ok(/Math\.abs\(pitch\) \* \.22/.test(deck) && /Math\.abs\(bank\) \* \.5\b/.test(deck),'the pose stays gentle');
+  // Presentation only.
+  assert.ok(!/\b(game|pendingHumanPlayer)(\.[A-Za-z_]+)*\s*=[^=]/.test(js) && !/\b(applyAction|humanAct)\(/.test(js),'js/deal-styles.js must never change game state');
+  assert.ok(md.includes('## Deal styles + the 2.5D card (live v0.51.0)'),'the Pattern Book must record the deal styles');
+});
+
 process.stdout.write('\n'+passed+' Pattern Book checks passed.\n');
