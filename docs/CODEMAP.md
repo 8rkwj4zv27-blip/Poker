@@ -505,10 +505,10 @@ lab strips `css/card-holder.css`/`js/card-holder.js` from its copy so TODAY
 still means the old holder. The page measures the seat so the GAP is real air on
 any phone. Lab only; nothing loads in the game.
 
-## `speech-lab.html` + `js/speech-lab-host.js` + `js/speech-lab.js` + `css/speech-lab.css` + `js/speech-lines.js` + `js/speech-voice.js` — Speech Lab
+## `speech-lab.html` + `js/speech-lab-host.js` + `js/speech-lab.js` + `css/speech-lab.css` + `js/speech-lines.js` + `js/speech-moments.js` + `js/speech-voice.js` — Speech Lab
 
 Where opponents' table talk goes on the table (`docs/ui/SPEECH_PLAN.md`,
-round 6). Phone-first like the Showdown Lab: the real game full screen,
+round 7). Phone-first like the Showdown Lab: the real game full screen,
 a TUNE key and a SAY key either side of the board, a bottom sheet. A
 second after the chosen opponent acts they say a line and their face
 changes to match (the game's `playReactionSequence`). Round 1 picked
@@ -516,7 +516,9 @@ the close-up in card stock; round 2 tuned it; rounds 3-4 are blip voices
 (`js/speech-voice.js`: procedural Web Audio pips pitched from the line's
 letters, each character with their own blip from one shared family, synced to the typing).
 `js/speech-lines.js` is a working pass at the cast's lines, keyed by
-personality and action. Lab only; the game's own
+personality and action; `js/speech-moments.js` is what they say when
+something happens to them (they lose to you, beat you, get busted, lose
+three in a row), fired from stack changes at `finishHand`. Lab only; the game's own
 `TABLE_TALK` is still silenced by `bubblesAllowed()`.
 
 ## `showdown-lab.html` + `js/showdown-lab-host.js` + `js/showdown-lab.js` + `css/showdown-lab.css` + candidate `css/showdown-beats.css` / `js/showdown-beats.js` — Showdown Lab

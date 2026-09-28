@@ -291,3 +291,11 @@ as her dad.
 
 **Not yet:** characters talking to each other (the owner: "maybe
 later, could be fun").
+
+Checked in the emulated iPhone with real hands (DEV hooks forcing the
+betting, the engine settling them, AWARD POT pressed where the game asks
+for it): Tony won a big pot off the player and said a *beat* line; Lucy
+lost one and said a *lost* line; the player busted Tony, the K.O.
+played, then his *bust* line came up. The *streak* moment is the same
+stack check, counting three losing hands. The PLAY buttons fire every
+moment for the chosen speaker. No console errors.
