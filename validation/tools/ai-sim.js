@@ -5,6 +5,8 @@
    node validation/tools/ai-sim.js [options]
      --hands N        hands per table (default 400; win rates need thousands)
      --difficulty D   medium | hard | expert | elite, or "all" (default all)
+     --skill N        a point on the 0-100 skill dial instead (e.g. 40 sits
+                      between medium and hard); "sweep" runs 10, 20 ... 100
      --seats a,b,c    personality keys; add probe:bully / probe:station /
                       probe:abc for a test seat (default: the four preferred
                       archetypes + probe:abc)
@@ -49,7 +51,11 @@ const hands = +opt('hands', 400);
 const seed = +opt('seed', 1);
 const seats = opt('seats', 'maniac,professor,wildcard,shark,probe:abc').split(',');
 const diffArg = opt('difficulty', 'all');
-const diffs = diffArg === 'all' ? Object.keys(TIER_TARGETS) : [diffArg];
+const skillArg = opt('skill', null);
+// each run is [label, difficulty, skill]
+const runs = skillArg === 'sweep' ? [10,20,30,40,50,60,70,80,90,100].map(k => ['skill ' + k, 'hard', k])
+  : skillArg != null ? [['skill ' + skillArg, 'hard', +skillArg]]
+  : (diffArg === 'all' ? Object.keys(TIER_TARGETS) : [diffArg]).map(d => [d, d, undefined]);
 const json = args.includes('--json');
 
 const pct = v => v == null ? '   -' : (Math.round(v*100) + '%').padStart(4);
@@ -57,14 +63,14 @@ const num = (v, d=1) => v == null ? '-' : v.toFixed(d);
 
 (async () => {
   const all = {};
-  for (const difficulty of diffs){
-    const res = await runParallel({ seats, hands, difficulty, seed });
+  for (const [label, difficulty, skill] of runs){
+    const res = await runParallel({ seats, hands, difficulty, skill, seed });
     const sum = summarize(res);
-    all[difficulty] = sum;
+    all[label] = sum;
     if (json) continue;
-    const t = TIER_TARGETS[difficulty];
+    const t = skill === undefined ? TIER_TARGETS[difficulty] : null;
     const band = k => t && t[k] ? `${t[k][0]}-${t[k][1]}` : '';
-    console.log(`\n== ${difficulty.toUpperCase()}${t ? ' · ' + t.label : ''} · ${res.hands} hands · seed ${seed}`);
+    console.log(`\n== ${label.toUpperCase()}${t ? ' · ' + t.label : ''} · ${res.hands} hands · seed ${seed}`);
     console.log('seat              VPIP  PFR   AF  WTSD F2Bet CBet Bluff RivBl ChkR AllIn SizeTell  bb/100');
     for (const [k, s] of Object.entries(sum)){
       console.log(k.padEnd(16), pct(s.vpip), pct(s.pfr), num(s.af).padStart(4), pct(s.wtsd), ' ' + pct(s.foldToBet),

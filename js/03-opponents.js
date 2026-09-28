@@ -63,6 +63,49 @@ const DIFFICULTY_PARAMS = {
   elite:  {iterations:900, noise:.01, positionWeight:.14},
 };
 
+/* SKILL DIAL (docs/ai/AI_PLAN.md, "Skill is a dial"). Skill is one number,
+   0-100. The named difficulties are anchor points on it, and every
+   skill-dependent AI setting is defined at the anchors and blended between
+   them, so any room or custom table can sit anywhere: below easy, between
+   medium and hard, a notch under elite. A named difficulty gives exactly
+   its DIFFICULTY_PARAMS entry, so existing rooms and saves play unchanged. */
+const SKILL_ANCHORS = { easy:15, medium:30, hard:50, expert:70, elite:90 };
+
+/* Skill for this seat: a per-seat override (a regular sitting in a soft
+   room), else the table's number, else the table's named difficulty. */
+function aiSkillOf(player, g){
+  const n = v => typeof v === 'number' && isFinite(v) ? Math.max(0, Math.min(100, v)) : null;
+  const own = n(player && player.skill);
+  if (own !== null) return own;
+  const table = n(g && g.skill);
+  if (table !== null) return table;
+  return SKILL_ANCHORS[g && g.difficulty] != null ? SKILL_ANCHORS[g.difficulty] : SKILL_ANCHORS.medium;
+}
+
+/* Blend a table of per-anchor settings to any skill value. Below the lowest
+   anchor or above the highest it holds the end value. */
+function skillBlend(table, skill){
+  const pts = Object.keys(SKILL_ANCHORS).filter(k => table[k])
+    .map(k => [SKILL_ANCHORS[k], table[k]]).sort((a,b) => a[0]-b[0]);
+  if (skill <= pts[0][0]) return Object.assign({}, pts[0][1]);
+  const last = pts[pts.length-1];
+  if (skill >= last[0]) return Object.assign({}, last[1]);
+  const exact = pts.find(pt => pt[0] === skill);      // an anchor is its own values, exactly
+  if (exact) return Object.assign({}, exact[1]);
+  let i = 0; while (pts[i+1][0] < skill) i++;
+  const [s0, a] = pts[i], [s1, b] = pts[i+1];
+  const t = (skill - s0) / (s1 - s0);
+  const out = {};
+  for (const k of Object.keys(a)) out[k] = a[k] + (b[k] - a[k]) * t;
+  return out;
+}
+
+function aiDifficultyParams(player, g){
+  const p = skillBlend(DIFFICULTY_PARAMS, aiSkillOf(player, g));
+  p.iterations = Math.round(p.iterations);
+  return p;
+}
+
 /* ============================================================
    TABLE TALK — short personality-flavoured lines, occasional not constant
    ============================================================ */
@@ -491,7 +534,7 @@ function aiFormatAdjustments(g, player, numOpp, bbLeft){
 async function aiDecide(player, g){
   const idx = g.players.indexOf(player);
   const numOpp = g.players.filter(p=>p.inHand && !p.folded && p.id!==player.id).length;
-  const dp = DIFFICULTY_PARAMS[g.difficulty];
+  const dp = aiDifficultyParams(player, g);
   const rawEquity = await EquityService.get(player.hand, g.board, Math.max(1,numOpp), dp.iterations);
 
   const pers = player.personality;

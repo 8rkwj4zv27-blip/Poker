@@ -53,6 +53,41 @@ function table(n, dealer, overrides){
     Object.values(A.DIFFICULTY_PARAMS).forEach(dp => assert.ok(dp.positionWeight >= 0));
   });
 
+  await check('Skill dial: every named difficulty plays exactly as before', () => {
+    Object.keys(A.DIFFICULTY_PARAMS).forEach(d => {
+      const got = A.aiDifficultyParams({}, { difficulty:d });
+      assert.deepStrictEqual(JSON.parse(JSON.stringify(got)), JSON.parse(JSON.stringify(A.DIFFICULTY_PARAMS[d])), d);
+    });
+  });
+  await check('Skill dial: a value between two rooms blends between them', () => {
+    const mid = (A.SKILL_ANCHORS.medium + A.SKILL_ANCHORS.hard) / 2;
+    const p = A.aiDifficultyParams({}, { difficulty:'elite', skill:mid });   // the number wins over the name
+    const m = A.DIFFICULTY_PARAMS.medium, h = A.DIFFICULTY_PARAMS.hard;
+    assert.strictEqual(p.iterations, Math.round((m.iterations + h.iterations) / 2));
+    assert.ok(Math.abs(p.noise - (m.noise + h.noise) / 2) < 1e-9);
+    assert.ok(Math.abs(p.positionWeight - (m.positionWeight + h.positionWeight) / 2) < 1e-9);
+  });
+  await check('Skill dial: rising skill never gets sloppier; the ends hold', () => {
+    let prev = null;
+    for (let s = 0; s <= 100; s += 5){
+      const p = A.aiDifficultyParams({}, { skill:s });
+      if (prev){
+        assert.ok(p.iterations >= prev.iterations && p.noise <= prev.noise && p.positionWeight >= prev.positionWeight, 'at ' + s);
+      }
+      prev = p;
+    }
+    assert.deepStrictEqual(JSON.parse(JSON.stringify(A.aiDifficultyParams({}, { skill:0 }))), JSON.parse(JSON.stringify(A.DIFFICULTY_PARAMS.easy)));
+    assert.deepStrictEqual(JSON.parse(JSON.stringify(A.aiDifficultyParams({}, { skill:100 }))), JSON.parse(JSON.stringify(A.DIFFICULTY_PARAMS.elite)));
+  });
+  await check('Skill dial: a seat can out-skill its table; junk values fall back safely', () => {
+    const g = { difficulty:'medium' };
+    assert.strictEqual(A.aiSkillOf({ skill:85 }, g), 85);
+    assert.strictEqual(A.aiSkillOf({}, g), A.SKILL_ANCHORS.medium);
+    assert.strictEqual(A.aiSkillOf({ skill:'x' }, { skill:NaN, difficulty:'hard' }), A.SKILL_ANCHORS.hard);
+    assert.strictEqual(A.aiSkillOf({ skill:250 }, g), 100);
+    assert.strictEqual(A.aiSkillOf({}, { difficulty:'nonsense' }), A.SKILL_ANCHORS.medium);
+  });
+
   await check('Every Career event difficulty has a tier target', () => {
     const modes = fs.readFileSync(path.join(__dirname, '..', 'js/04-modes-and-scoring.js'), 'utf8');
     const used = new Set([...modes.matchAll(/difficulty:'(\w+)'/g)].map(m => m[1]));

@@ -54,7 +54,8 @@ function loadAI(seed){
   if (inlineEquity === math) throw new Error('ai-harness: EquityService block not found in 01-poker-math.js');
   vm.runInContext('var game = null;\n' + inlineEquity + '\n' + elim.slice(0, elimEnd) + '\n' + opp +
     '\nglobalThis.API = { aiDecide, seatsAfter, PERSONALITIES_ALL, DIFFICULTY_PARAMS, createDeck, shuffle,' +
-    ' evaluate7, compareHands, estimateEquity, setGame: g => { game = g; } };', ctx);
+    ' evaluate7, compareHands, estimateEquity, SKILL_ANCHORS, aiSkillOf, skillBlend, aiDifficultyParams,' +
+    ' setGame: g => { game = g; } };', ctx);
   return ctx.API;
 }
 
@@ -110,8 +111,9 @@ function newStats(){
     sizing:[] };
 }
 
-/* opts: { seats:[personalityKey|'probe:<name>'], hands, difficulty, seed,
-           stack, bigBlind, labelIters } */
+/* opts: { seats:[personalityKey|'probe:<name>'], hands, difficulty, skill,
+           seed, stack, bigBlind, labelIters }. `skill` (0-100) overrides the
+           named difficulty, exactly as a table's g.skill does in the game. */
 async function simulate(opts){
   const A = loadAI(opts.seed);
   const R = A.PERSONALITIES_ALL;
@@ -136,6 +138,7 @@ async function simulate(opts){
     const dealer = h % n;
     const g = { players, board:[], pot:0, currentBet:0, minRaise:bb, bigBlind:bb,
       dealerIndex:dealer, difficulty:opts.difficulty || 'hard', mode:opts.mode || 'cash' };
+    if (typeof opts.skill === 'number') g.skill = opts.skill;
     A.setGame(g);
     const deck = A.shuffle(A.createDeck()); let di = 0;
     players.forEach(p => Object.assign(p, { chips:stackStart, hand:[deck[di++], deck[di++]], inHand:true,
@@ -234,7 +237,7 @@ async function simulate(opts){
     });
     chipsCheck = Math.max(chipsCheck, Math.abs(paid - g.pot));
   }
-  return { stats, bigBlind:bb, hands:opts.hands, difficulty:opts.difficulty || 'hard', chipsError:chipsCheck };
+  return { stats, bigBlind:bb, hands:opts.hands, difficulty:opts.difficulty || 'hard', skill:opts.skill, chipsError:chipsCheck };
 }
 
 function correlation(pts){

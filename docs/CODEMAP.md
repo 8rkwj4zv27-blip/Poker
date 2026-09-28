@@ -57,7 +57,9 @@ baselines. Measure behaviour with `validation/tools/ai-sim.js` (the real
 `aiDecide()` on a headless table, `validation/tools/ai-harness.js`) and
 check with `validation/ai-behaviour-checks.js`. `seatsAfter()` measures
 position from the dealer button since v0.50.0; before that, position never
-affected a decision.
+affected a decision. AI skill is a 0–100 dial (`SKILL_ANCHORS`,
+`aiSkillOf`, `skillBlend`): named difficulties are points on it, and a
+seat's `skill` or the table's `g.skill` can set any value in between.
 
 **Note:** `HISTORY.md` documents an "Enemy / Personality Pass" (named
 residents Harry/Tony/Lucy/Nigel/Steve, `js/03-residents.js`, House Faces,

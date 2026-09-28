@@ -74,6 +74,41 @@ just a better one higher up.
 | `expert` | Casino Floor | Good regulars: positional ranges, multi-street lines, balanced sizing, begin tracking you | Hand reading, bluff selection, pot control |
 | `elite` | High Roller, Invitational | Strong: close to balanced, adapt quickly | Playing without patterns; not tilting |
 
+### Skill is a dial, not a list
+
+Owner requirement: rooms must be easy to add or retune anywhere on the
+scale (an even softer room, one between two tiers), and a Custom Game
+should be able to offer a skill slider. So:
+
+- **Skill is one number, 0–100.** The named difficulties are anchor points
+  on it: `easy` 15, `medium` 30, `hard` 50, `expert` 70, `elite` 90
+  (`SKILL_ANCHORS` in `js/03-opponents.js`).
+- **Every skill-dependent setting is defined at the anchors and blended
+  between them** (`skillBlend`). This covers leak strength, reading
+  accuracy, balance, adaptation speed, sampling precision and position
+  weight. Skill 40 really does play between Back Room and Pub. Below 15 or
+  above 90, a setting holds its end value.
+- **Where skill comes from** (`aiSkillOf`): the seat's own `skill` first,
+  then the table's `g.skill`, then the table's named `difficulty`. That
+  gives three levers:
+  - a room keeps `difficulty:'hard'`, or sets a number instead;
+  - a Custom Game slider sets `g.skill`;
+  - one seat can out-skill its table, such as a single regular sitting in
+    the Back Room.
+- **A named difficulty on its own plays exactly as before.** This is
+  checked, so existing rooms and saves don't move.
+- **Personality stays separate from skill.** A Tony at skill 20 and a Tony
+  at skill 85 are both maniacs.
+- **New AI knobs must be added as per-anchor tables, never as `if (tier
+  === 'elite')` branches.** That's the rule that keeps the dial working.
+- **Measuring:** `ai-sim.js --skill 40`, or `--skill sweep` for 10…100. The
+  sweep should show the `abc` yardstick's win rate falling steadily as
+  skill rises. Step 6 turns that into a check.
+- **Not built yet:** saving a numeric table skill with a table in progress
+  (the table save format has no field for it), and the Custom Game slider
+  itself. The slider will be a number wheel from the Pattern Book. Both
+  arrive with the UI step once there's real skill to adjust.
+
 Provisional stat bands for each tier live in `TIER_TARGETS`
 (`validation/tools/ai-harness.js`). Once the AI reaches a band, that band
 becomes a check in `validation/ai-behaviour-checks.js`. The yardstick is the
@@ -92,6 +127,9 @@ roughly break even at `hard`/`expert`, and lose to `elite`.
   checks and repeatability.
 - `seatsAfter()` now measures from the dealer button, so the
   `positionWeight` ladder finally does something.
+- The skill dial is in place: `SKILL_ANCHORS`, `aiSkillOf`, `skillBlend`
+  and `aiDifficultyParams`. `aiDecide()` reads its settings through the
+  dial. Named difficulties are unchanged; `ai-sim.js` takes `--skill`.
 
 ### Step 2: hand reading foundation
 - Preflop ranges by position for each personality and tier (a 169-hand
