@@ -134,14 +134,22 @@ function maybeTableTalk(player, trigger){
   }, motionOff() ? 0 : 1100);
 }
 
-// seats still to act after this player in the current round (0 = last to act)
+/* Live opponents who act AFTER this player on the postflop streets
+   (0 = on the button / last to act). Position is measured from the dealer
+   button, which is what makes a seat good or bad for the whole hand.
+   Before v0.50 this counted every live opponent, so the position term in
+   aiDecide() — and the difficulty positionWeight ladder — was always zero. */
 function seatsAfter(playerIdx){
   const g = game;
-  let count = 0;
   const n = g.players.length;
-  for (let c=1;c<n;c++){
-    const p = g.players[(playerIdx+c)%n];
-    if (p.inHand && !p.folded && !p.allIn && p.id !== g.players[playerIdx].id) count++;
+  const dealer = g.dealerIndex >= 0 ? g.dealerIndex : n - 1;
+  const order = i => (i - dealer - 1 + n) % n;   // 0 = first to act postflop
+  const mine = order(playerIdx);
+  let count = 0;
+  for (let i=0;i<n;i++){
+    if (i === playerIdx) continue;
+    const p = g.players[i];
+    if (p.inHand && !p.folded && !p.allIn && order(i) > mine) count++;
   }
   return count;
 }

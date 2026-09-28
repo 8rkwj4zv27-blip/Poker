@@ -51,6 +51,14 @@ bluff dials), `aiDecide()` (the actual decision function — difficulty,
 position, stack depth and paid-place pressure all weight into this, never
 hidden cards), face-colour/personality assignment for a fresh table.
 
+**The AI is being rebuilt in steps: read `docs/ai/AI_PLAN.md` before any
+AI work.** It has the tier ladder, the step order and the measured
+baselines. Measure behaviour with `validation/tools/ai-sim.js` (the real
+`aiDecide()` on a headless table, `validation/tools/ai-harness.js`) and
+check with `validation/ai-behaviour-checks.js`. `seatsAfter()` measures
+position from the dealer button since v0.50.0; before that, position never
+affected a decision.
+
 **Note:** `HISTORY.md` documents an "Enemy / Personality Pass" (named
 residents Harry/Tony/Lucy/Nigel/Steve, `js/03-residents.js`, House Faces,
 dossiers) as code-complete. Checked 2026-09-24: **it was never actually
@@ -609,9 +617,13 @@ final count. Run the relevant suite(s) before and after any change — see
 `docs/career/STATUS.md` for the current Career-specific set and
 `validation/tools/README.md` for a browser/touch-emulation harness you can
 reuse instead of writing a new Playwright script from scratch each time.
+`validation/tools/ai-harness.js` + `ai-sim.js` are the AI's measuring
+table (see `docs/ai/AI_PLAN.md`).
 
 ## `docs/`
 
+- `docs/ai/AI_PLAN.md` — the opponent AI rebuild: tier ladder, steps,
+  baselines. Read first for any AI work.
 - `docs/career/STATUS.md` — **read first** for any Career task. Current
   build, current state, immediate next task.
 - `docs/career/CAREER_DESIGN.md` — product rules and economy. Read only

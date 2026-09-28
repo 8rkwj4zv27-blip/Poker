@@ -1,0 +1,179 @@
+# AI plan: opponents who play like people
+
+Owner-approved 2026-09-28. Goal: opponents who play real, readable poker,
+with skill that rises through the Career venues. Low-stakes rooms are
+beatable with fundamentals; the top rooms are strong players who spot and
+punish your leaks. What you learn at the table should carry over to real
+poker.
+
+This plan covers **gameplay only**. Personality, dialogue, faces and
+designed tells come later, in their own pass.
+
+## Ground rules
+
+- **No cheating, ever.** The AI never sees hole cards or the deck. Every
+  read comes from public actions.
+- **Poker rules and hand evaluation don't change.** Anything that speeds up
+  hand evaluation must match `evaluate7` exactly, checked exhaustively.
+- **No dependencies, no framework.** Vanilla JS; the heavy maths stays in
+  the equity worker.
+- **Keep the `difficulty` field and its values** (`medium` / `hard` /
+  `expert` / `elite`, plus Custom Game's `easy`). The value becomes the
+  **tier**. Saves and Career events keep working unchanged.
+- **Keep gameplay mood (`moodState`) and face mood (`faceMood`) separate**,
+  as they are today.
+- **Every step ships on its own and is proven with numbers**
+  (`validation/tools/ai-sim.js`), not by feel.
+
+## Where we started (2026-09-28 audit)
+
+`aiDecide()` works out its equity against *random* hands, adds a random
+bluff roll to each decision, and caps how much of its stack it will
+commit. In the measuring table (Hard, before any change):
+
+| | VPIP | PFR | AF | WTSD | Fold to bet |
+|---|---|---|---|---|---|
+| Shark | 32% | 6% | 0.7 | 58% | 19% |
+| Maniac | 53% | 18% | 1.2 | 61% | 18% |
+| Prof | 27% | 5% | 0.6 | 65% | 18% |
+| Wildcard | 47% | 10% | 0.8 | 63% | 18% |
+
+*VPIP = hands played; PFR = preflop raises; AF = aggression factor (bets
+and raises per call); WTSD = went to showdown after seeing the flop.*
+
+Problems found:
+1. They play against random hands, never against *your* likely hands.
+2. Bluffs are independent coin flips on each street, so they tell no story
+   and follow no plan.
+3. There's no line across streets: no c-bet logic, no deliberate
+   check-raise, slow-play or barrel.
+4. Raises and all-ins are only ever strong (all-in needs about 82% equity),
+   and bet size tracks hand strength (correlation 0.4–0.5).
+5. Everyone is a passive calling station: they limp heavily, and about 60%
+   of flops go to showdown.
+6. There's no adaptation: they keep bluffing a player who never folds.
+7. Difficulty is only sampling precision plus random error. Easy and Hard
+   played almost identically.
+8. **Bug:** `seatsAfter()` counted every live opponent, so position never
+   affected any decision. Fixed in Step 1.
+9. Think time is longer for bets and raises (`aiThinkTime`), so the length
+   of the pause leaks the coming action. To address in Step 3.
+
+## The tier ladder
+
+The difficulty value is the tier. Skill is made of **leaks** (consistent
+mistakes), **reading** (narrowing down your hand), **balance** (sizing that
+doesn't give their hand away) and **adaptation** (how fast they punish your
+habits). Personality is a separate axis: Tony is a maniac at every tier,
+just a better one higher up.
+
+| Tier | Venues | Who they are | What beats them |
+|---|---|---|---|
+| `medium` | Back Room | Recreational: call too much, rarely raise, random bluffs, never adapt | Value-bet good hands; don't bluff callers |
+| `hard` | Pub Circuit, Card Club | Amateurs: some aggression, obvious bluff patterns, sizing tells | Pot odds, reading sizing, calling down bluffers |
+| `expert` | Casino Floor | Good regulars: positional ranges, multi-street lines, balanced sizing, begin tracking you | Hand reading, bluff selection, pot control |
+| `elite` | High Roller, Invitational | Strong: close to balanced, adapt quickly | Playing without patterns; not tilting |
+
+Provisional stat bands for each tier live in `TIER_TARGETS`
+(`validation/tools/ai-harness.js`). Once the AI reaches a band, that band
+becomes a check in `validation/ai-behaviour-checks.js`. The yardstick is the
+`probe:abc` seat (a plain, decent player). It should clearly beat `medium`,
+roughly break even at `hard`/`expert`, and lose to `elite`.
+
+## Steps
+
+### Step 1: measuring stick and position fix — DONE (v0.50.0)
+- `validation/tools/ai-harness.js`: the real `aiDecide()` in a small,
+  rules-correct NLHE table. It uses seeded RNG and adds three test seats:
+  `bully`, `station` and `abc`.
+- `validation/tools/ai-sim.js`: a per-seat report against the tier targets,
+  split across worker threads.
+- `validation/ai-behaviour-checks.js`: position tests, harness sanity
+  checks and repeatability.
+- `seatsAfter()` now measures from the dealer button, so the
+  `positionWeight` ladder finally does something.
+
+### Step 2: hand reading foundation
+- Preflop ranges by position for each personality and tier (a 169-hand
+  grid), replacing preflop "equity against N random hands". Opening,
+  calling and 3-betting become distinct choices, and limping becomes rare
+  except at `medium`.
+- Postflop hand classes: made hand, draws (`detectDraws`) and board texture
+  (`boardThreats`), which already exist in `01-poker-math.js`.
+- A faster evaluator for the worker, checked against `evaluate7` on every
+  7-card combination. Range-based equity needs the speed, and so does the
+  phone.
+
+### Step 3: decisions as frequencies, plus a hand plan
+- Each spot produces fold/call/raise probabilities and samples from them
+  (the "probability triple"), replacing thresholds plus random noise.
+- On its first aggressive action the AI picks a **line**: value, barrel,
+  one-and-done, trap, semi-bluff or float. It keeps the line across
+  streets and changes it only when a card changes the story.
+- This brings c-bets as the preflop raiser, check-raises and slow-plays,
+  and barrels on scare cards.
+- Sizing is chosen from the board and the line, not from hand strength.
+  All-ins stop meaning "only the nuts".
+- Think time stops leaking the action.
+
+### Step 4: range narrowing
+- Each AI keeps a weighted range for every opponent and re-weights it after
+  each action. Equity is computed against those ranges (sampled in the
+  worker). Reading skill scales with tier.
+
+### Step 5: reading the human
+- Track the human's tendencies over an event: VPIP/PFR, fold to c-bet, fold
+  to river bet, bluffs shown down, how often they barrel. Each AI adapts at
+  its own speed: fast for the Professor, never for the Station.
+- Real tilt: a big loss changes decisions for a few hands, in the style of
+  the character.
+
+### Step 6: tier tuning
+- Tune leaks, reading and adaptation per tier until each tier sits in its
+  bands. Then promote the bands to checks. `easy` stays as a Custom Game
+  choice below `medium`.
+
+## What the player should notice
+
+- Raises mean different things from different seats and different players.
+- Fewer showdowns, more folding and raising; the game feels sharper.
+- Real bluffs: two- and three-barrel stories, check-raises, river traps.
+- Over an event, the good players adjust to your habits. The Back Room
+  never does.
+- Each venue shuts down a trick that used to work below it.
+
+## Running it
+
+```
+node validation/ai-behaviour-checks.js            # ~10 s
+node validation/tools/ai-sim.js                   # all tiers, 400 hands each, a few minutes
+node validation/tools/ai-sim.js --difficulty hard --seats maniac,shark,probe:bully --hands 800
+```
+
+Win rates (bb/100) need thousands of hands to mean much. VPIP, PFR, AF,
+WTSD and fold-to-bet settle within a few hundred.
+
+## Baselines
+
+After Step 1 (position fix in), seed 1, 400 hands for each table. Seats:
+maniac, professor, wildcard, shark + one test seat. AI figures are the
+average of the four AI seats.
+
+| Tier | VPIP | PFR | AF | WTSD | Fold to bet | Size tell | `abc` bb/100 |
+|---|---|---|---|---|---|---|---|
+| medium | 36% | 8% | 0.8 | 61% | 19% | 0.45 | **+168** |
+| hard | 38% | 9% | 0.8 | 64% | 17% | 0.44 | **+86** |
+| expert | 39% | 8% | 0.8 | 63% | 18% | 0.42 | **+101** |
+| elite | 42% | 10% | 0.7 | 63% | 17% | 0.43 | **+327** |
+
+Headlines:
+- The tiers are indistinguishable, and the plain `abc` player beats every
+  one of them, Elite included.
+- Every tier misses its bands in the same direction: too passive, too
+  sticky, sizing that gives the hand away.
+- Against `probe:station` (never folds) the AI still bluffs 12–21% of its
+  postflop bets. It doesn't adapt.
+- Against `probe:bully` (raises every hand) the AI's VPIP drops and WTSD
+  falls to about 33%. The bully wins +71 bb/100 with no reads at all.
+
+Re-run and record here after every step.
