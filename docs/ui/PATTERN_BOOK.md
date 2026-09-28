@@ -294,6 +294,33 @@ into your bank, win chance and when AWARD POT waits.
 Reduced Motion: no dip, peek, lift, hum or heat flash, and the beats'
 waits are cut.
 
+## Action drum (live v0.48.0)
+
+The key bay's sides turn on one drum, from the owner's order on the Action
+Drum Lab (`action-drum-lab.html`, rounds 1–3, 28 September 2026;
+`docs/ui/ACTION_DRUM_PLAN.md`). `js/action-drum.js`, styled by
+`css/action-drum.css`. It replaces the two nested CSS flips, whose hidden
+faces iPhone Safari drew behind the live keys.
+
+| Part | Order | The finish |
+|---|---|---|
+| The drum | **DRUM · 4 SIDES**, **ALWAYS DOWN** | FOLD / CHECK / RAISE, QUICK RESOLVE, AWARD POT (with SHOW) and the results keys are sides of one four-sided drum; each change rolls it down one side. |
+| The turn | **MEDIUM**, **CLUNK**, **CHUNKY · 20 FPS** | About a third of a second, stepped like the rest of the machine; it runs a little past and knocks back. No taps while it turns. Ticks and a catch (`Sound.wheelTooth`, `Sound.wheelCatch`). |
+| Shading, panels | **ON**, **WHILE IT TURNS** | Each side darkens as it turns away; a painted panel backs every side only while it turns, so at rest the keys sit in the well as before. |
+| The housing | bezel, **WINDOW WHILE IT TURNS** | The bay is a dark well with a fixed bezel over the drum (ink edge, a thin brass ring); the drum shows only through its opening, with dark lips top and bottom while it turns. The bay is 10px taller in portrait (101px; 94px on short phones), the room going between the instruments and the bezel. |
+| The key line | fixed | Every side's keys take the FOLD / CHECK / RAISE row's measured top and height, so no side lands higher or lower. |
+| The rim's glow | fixed | The lit rim's inner glow runs on round the bay (sides and bottom) in the same lamp, so it no longer stops at the join. |
+| Knock to check | **ON** (Dashboard V2 order) | Double-tap the dashboard case to check: two thuds, a ring, the whole machine jolts. Facing a bet it refuses with a buzz and CAN'T KNOCK. Not the bank, your cards or a key. `js/knock-check.js`, `css/knock-check.css`. |
+
+Rules for anyone touching it:
+
+- Never hide a side with `backface-visibility` or `preserve-3d`: each side
+  is projected on its own and, at rest, every side but the live one is
+  `visibility:hidden` with no transform.
+- The game drives it only through the `.flipped` classes on
+  `#console-flip` and `#actions-flip`, as before; no ids or handlers move.
+- Reduced Motion: an instant swap, no jolt.
+
 ## Dealer deck (live v0.45.0)
 
 The dealer's deck, from the owner's order on the Deck Lab (`deck-lab.html`,
@@ -317,7 +344,7 @@ right).
 
 Reduced Motion: the shipped deal, with no shuffle, burn or taps.
 
-## Card holder (live v0.48.0)
+## Card holder (live v0.49.0)
 
 The lip your two cards sit in, from the owner's order on the Card Holder
 Lab (`card-holder-lab.html`, round 2, 28 September 2026;

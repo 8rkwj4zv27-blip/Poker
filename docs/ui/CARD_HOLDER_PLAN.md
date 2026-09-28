@@ -67,7 +67,7 @@ thin white line showed as they turned; the seat shadow was too stepped.
 
 Link republished (same URL).
 
-## Live (v0.48.0)
+## Live (v0.49.0)
 
 The owner asked for a choice between the brass holder and the original,
 both in the chosen position. Shipped as `css/card-holder.css` +

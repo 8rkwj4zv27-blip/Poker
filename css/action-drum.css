@@ -1,0 +1,123 @@
+/* ACTION DRUM (live v0.48.0; js/action-drum.js, docs/ui/PATTERN_BOOK.md).
+   The drum takes the console's sides over from the two CSS flips: their
+   transforms and transitions are stood down here and js/action-drum.js
+   places every side itself. Nothing below leans on backface-visibility or
+   preserve-3d, the pair iPhone Safari draws unreliably. */
+html.ad-drum #console-flip,
+html.ad-drum #console-flip.flipped,
+html.ad-drum #actions-flip,
+html.ad-drum #actions-flip.flipped{
+  transform:none !important; transition:none !important; transform-style:flat;
+}
+html.ad-drum #console-flip .console-face,
+html.ad-drum #console-flip .actions-face{
+  backface-visibility:visible; -webkit-backface-visibility:visible;
+  transform-origin:50% 50%;
+}
+/* While it turns nothing on the drum takes a tap, and the drum shows
+   through a window the size of the bay (the corners of a turning drum
+   reach past the keys' own box). */
+html.ad-drum #console-flip.ad-spinning *{ pointer-events:none !important; }
+
+/* ---- the housing (round 2) ----
+   The bay is a well with a fixed bezel (.ad-bezel, drawn over the drum by
+   js/action-drum.js to the well's box), so the sides turn inside the
+   case. It takes 10px more height than today's bay, most of it as air
+   between the instruments and the bezel. */
+@media (orientation:portrait){
+  html.ad-drum #table-screen{ --action-area-h:101px; }
+  html.ad-drum #app .dash-frame-base .action-console{ padding-top:11px; }
+}
+@media (orientation:portrait) and (max-height:700px){
+  html.ad-drum #table-screen{ --action-area-h:94px; }
+  html.ad-drum #app .dash-frame-base .action-console{ padding-top:8px; }
+}
+html.ad-drum #console-flip{
+  padding:4px 5px; border-radius:7px;
+  background:color-mix(in srgb,var(--machine-case) 45%,black);
+  box-shadow:inset 0 6px 0 rgba(0,0,0,.4);
+}
+/* the drum shows only inside the bezel's opening */
+html.ad-drum #console-flip.ad-spinning{ clip-path:inset(3px 4px round 5px); }
+.ad-bezel{
+  position:absolute; z-index:3; pointer-events:none; box-sizing:border-box;
+  border:3px solid var(--px-ink); border-radius:7px;
+  box-shadow:
+    0 0 0 2px color-mix(in srgb,var(--accent) 38%,black),
+    0 -1px 0 2px rgba(0,0,0,.35),
+    0 2px 0 2px color-mix(in srgb,var(--theme-case-hi) 45%,transparent),
+    inset 0 3px 0 rgba(0,0,0,.45), inset 0 -2px 0 rgba(255,255,255,.07);
+}
+html:not(.ad-drum) .ad-bezel{ display:none; }
+
+/* ---- the rim's glow runs on round the key bay (round 3) ----
+   The lit rim throws a soft inner glow onto the case, but only the
+   dashboard's half drew it (css/dashboard.css, #hud-frame), so it stopped
+   dead at the join with the key bay. The bay now carries the same glow
+   down its sides and along its bottom, in the same lamp, so the case is
+   lit evenly all the way round inside the rim. */
+@media (orientation:portrait){
+  html.ad-drum #table-screen:has(#your-seat-dock[data-rim="turn"]) #action-console{ --ad-case-glow:color-mix(in srgb,var(--pc-lamp-amber) 90%,transparent); }
+  html.ad-drum #table-screen:has(#your-seat-dock[data-rim="allin"]) #action-console,
+  html.ad-drum #table-screen:has(#your-seat-dock[data-rim="bust"]) #action-console{ --ad-case-glow:color-mix(in srgb,var(--danger) 90%,transparent); }
+  html.ad-drum #table-screen:has(#your-seat-dock[data-rim="win"]) #action-console{ --ad-case-glow:color-mix(in srgb,var(--pc-lamp-amber-hi) 90%,transparent); }
+  html.ad-drum #app #table-screen:has(#your-seat-dock[data-rim]) .dash-frame-base .action-console{
+    box-shadow:inset 9px 0 10px -7px var(--ad-case-glow), inset -9px 0 10px -7px var(--ad-case-glow), inset 0 -9px 10px -7px var(--ad-case-glow);
+  }
+}
+
+/* ---- every side's keys sit where FOLD / CHECK / RAISE sit ----
+   (js/action-drum.js measures the row: --ad-key-top, --ad-key-h) */
+html.ad-drum #console-face-award{ align-items:start; }
+/* the absolute sides sit in the well's padding like the keys row does */
+html.ad-drum #console-flip #console-face-award,
+html.ad-drum #console-flip .ad-plate{ inset:4px 5px; }
+html.ad-drum #console-flip #console-face-award .btn-award-console,
+html.ad-drum #console-flip .actions-face-quick .btn-quick-resolve{
+  height:var(--ad-key-h,54px); min-height:0; margin-top:var(--ad-key-top,0px);
+}
+
+/* ---- the blank sides the REEL spins past ---- */
+.ad-plate{
+  position:absolute; inset:0; visibility:hidden; pointer-events:none;
+  display:flex; align-items:center; justify-content:center; gap:14px;
+  font-family:var(--font-hdr); font-size:8px; letter-spacing:.14em;
+  color:color-mix(in srgb,var(--accent) 70%,black);
+  text-shadow:0 1px 0 rgba(255,255,255,.08),0 -1px 0 rgba(0,0,0,.5);
+}
+.ad-plate i{
+  width:6px; height:6px; border-radius:50%;
+  background:color-mix(in srgb,var(--accent) 45%,black);
+  box-shadow:inset 1px 1px 0 rgba(255,255,255,.25),0 1px 0 rgba(0,0,0,.6);
+}
+
+/* ---- slats: each side is a painted panel of the drum ----
+   TURN: only while it turns (at rest the bay looks exactly as today).
+   ALWAYS: the panel stays behind the keys at rest too. */
+html.ad-drum[data-ad-slats="always"] #console-flip .actions-face-play,
+html.ad-drum[data-ad-slats="always"] #console-flip .actions-face-quick,
+html.ad-drum[data-ad-slats="always"] #console-face-award,
+html.ad-drum[data-ad-slats="turn"] #console-flip.ad-spinning .actions-face-play,
+html.ad-drum[data-ad-slats="turn"] #console-flip.ad-spinning .actions-face-quick,
+html.ad-drum[data-ad-slats="turn"] #console-flip.ad-spinning #console-face-award,
+html.ad-drum:not([data-ad-slats="off"]) .ad-plate{
+  background:
+    repeating-conic-gradient(rgba(255,255,255,.03) 0 25%,transparent 0 50%) 0 0/6px 6px,
+    color-mix(in srgb,var(--machine-case) 78%,black);
+  border-radius:5px;
+  box-shadow:inset 0 2px 0 rgba(255,255,255,.1),inset 0 -3px 0 rgba(0,0,0,.4),
+    inset 2px 0 0 rgba(0,0,0,.18),inset -2px 0 0 rgba(0,0,0,.18);
+}
+html.ad-drum[data-ad-slats="off"] .ad-plate{ background:transparent; }
+
+/* ---- the lip: the bay as a window in the case, dark top and bottom ---- */
+.ad-lip{
+  position:absolute; inset:0; z-index:3; pointer-events:none; border-radius:inherit; opacity:0;
+  box-shadow:inset 0 5px 0 rgba(0,0,0,.38),inset 0 8px 0 rgba(0,0,0,.14),
+    inset 0 -4px 0 rgba(0,0,0,.34),inset 0 -7px 0 rgba(0,0,0,.12);
+  transition:opacity 90ms steps(2,end);
+}
+html.ad-drum[data-ad-lip="on"] .ad-lip,
+html.ad-drum[data-ad-lip="turn"] #action-console.ad-spinning .ad-lip{ opacity:1; }
+html:not(.ad-drum) .ad-lip{ display:none; }
+[data-motion="off"] .ad-lip{ transition:none; }

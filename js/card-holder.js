@@ -1,7 +1,7 @@
 "use strict";
 
 /* ============================================================
-   CARD HOLDER (live v0.48.0) — the owner's order from the Card Holder Lab
+   CARD HOLDER (live v0.49.0) — the owner's order from the Card Holder Lab
    (card-holder-lab.html; docs/ui/CARD_HOLDER_PLAN.md)
 
    The lip your two cards sit in sits 10px clear of the hand-name screen

@@ -300,6 +300,38 @@ check('Dealer deck: live, on the shared parts, and to the order',()=>{
   assert.ok(md.includes('## Dealer deck (live v0.45.0)'),'the Pattern Book must record the dealer deck');
 });
 
+check('Action drum + knock to check: live, never ghosting, and to the order',()=>{
+  const css=read('css/action-drum.css'), js=read('js/action-drum.js'), kcss=read('css/knock-check.css'), kjs=read('js/knock-check.js'), md=read('docs/ui/PATTERN_BOOK.md');
+  const links=[...indexHtml.matchAll(/<link rel="stylesheet" href="([^"?]+)/g)].map(m=>m[1]);
+  ['css/action-drum.css','css/knock-check.css'].forEach(f=>assert.ok(links.includes(f) && links.indexOf(f)<links.indexOf('css/crt.css'),'index.html must load '+f+' before css/crt.css'));
+  ['js/action-drum.js','js/knock-check.js'].forEach(f=>assert.ok(new RegExp('<script src="'+f.replace('.','\\.')).test(indexHtml),'index.html must load '+f));
+  ["'./css/action-drum.css","'./css/knock-check.css","'./js/action-drum.js","'./js/knock-check.js"].forEach(f=>assert.ok(serviceWorker.includes(f),'sw.js is missing '+f));
+  // The ghost: no side may be hidden by backface-visibility or preserve-3d.
+  const code=src=>src.replace(/\/\*[\s\S]*?\*\//g,'').replace(/^\s*\/\/.*$/gm,'');
+  assert.ok(!/backface-visibility:hidden|preserve-3d/.test(code(css)) && !/backface|preserve-3d/.test(code(js)),'the drum must never lean on backface-visibility or preserve-3d');
+  assert.ok(/el\.style\.visibility = live \? 'visible' : 'hidden'/.test(js) && /el\.style\.transform = live \? 'none'/.test(js),'at rest every side but the live one is hidden, and the live one has no transform');
+  // The owner's order is the default, and it installs itself.
+  const def=js.match(/const DEFAULTS = \{([^}]*)\}/);
+  assert.ok(def,'the drum must define its defaults');
+  Object.entries({ style:'drum', speed:'med', settle:'clunk', motion:'stepped', dir:'down', shade:'on', lip:'turn', slats:'turn', sound:'ticks' })
+    .forEach(([k,v])=>assert.ok(new RegExp('\\b'+k+":'"+v+"'").test(def[1]),'the order sets '+k+' to '+v));
+  assert.ok(/else install\(\);\s*\}\)\(\);\s*$/.test(js),'the drum must install itself at load');
+  assert.ok(js.includes('motionOff()'),'Reduced Motion swaps at once');
+  // Every side's keys on the one key line.
+  assert.ok(js.includes("'--ad-key-top'") && css.includes('margin-top:var(--ad-key-top'),'every side\'s keys take the row\'s measured line');
+  // Presentation only: the drum never touches game state; the knock only ever checks.
+  assert.ok(!/\b(game|pendingHumanPlayer)(\.[A-Za-z_]+)*\s*=[^=]/.test(js) && !/\b(applyAction|humanAct)\(/.test(js),'js/action-drum.js must never change game state');
+  assert.ok(!/\b(game|pendingHumanPlayer)(\.[A-Za-z_]+)*\s*=[^=]/.test(kjs) && [...kjs.matchAll(/humanAct\(([^)]*)\)/g)].every(m=>m[1]==="'check'"),'the knock may only ever check');
+  // Knock jolts the whole machine, never the case alone; Reduced Motion stills it.
+  assert.ok(kcss.includes('#your-seat-dock.kc-jolt,#action-area.kc-jolt') && !/#hud-frame\.kc-jolt/.test(kcss),'the knock jolts the whole machine');
+  assert.ok(kcss.includes('[data-motion="off"]'),'the knock honours Reduced Motion');
+  // The lab tunes the live part; it never ships.
+  const lab=read('action-drum-lab.html');
+  assert.ok(!/js\/action-drum\.js|js\/knock-check\.js/.test((lab.match(/id="lab-inject">([^<]*)/)||[])[1]||''),'the lab must not inject a second drum or knock into a game that already has them');
+  ['action-drum-lab','js/action-drum-lab.js'].forEach(n=>{ assert.ok(!indexHtml.includes(n),'index.html links '+n); assert.ok(!serviceWorker.includes(n),'sw.js precaches '+n); });
+  assert.ok(md.includes('## Action drum (live v0.48.0)'),'the Pattern Book must record the action drum');
+});
+
 check('Card holder: live, on the shared parts, and to the order',()=>{
   const css=read('css/card-holder.css'), js=read('js/card-holder.js'), md=read('docs/ui/PATTERN_BOOK.md');
   assert.ok(/<link rel="stylesheet" href="css\/card-holder\.css/.test(indexHtml),'index.html must load css/card-holder.css');
@@ -315,7 +347,7 @@ check('Card holder: live, on the shared parts, and to the order',()=>{
   const rules=[...css.replace(/\/\*[\s\S]*?\*\//g,'').matchAll(/([^{}]+)\{([^}]*)\}/g)];
   rules.filter(m=>/\.card\b/.test(m[1]) && /(background|box-shadow)\s*:/.test(m[2]))
     .forEach(m=>assert.ok(m[1].includes(':not(.back):not(.card-turning)'),'only faces at rest are dressed: '+m[1].trim()));
-  assert.ok(md.includes('## Card holder (live v0.48.0)'),'the Pattern Book must record the card holder');
+  assert.ok(md.includes('## Card holder (live v0.49.0)'),'the Pattern Book must record the card holder');
 });
 
 process.stdout.write('\n'+passed+' Pattern Book checks passed.\n');
