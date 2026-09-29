@@ -88,7 +88,7 @@ const CoachSet = (() => {
   function feet(c, x1, x2, y){ px(c, INK, x1, y, 6, 2); px(c, INK, x2, y, 6, 2); }
 
   const SETS = {
-    portable:{ name:'PORTABLE', w:48, h:42, box:{ x:0, y:5, w:48, h:35 }, screen:{ x:6, y:11, w:26, h:20 }, port:{ x:46, y:34 },
+    portable:{ name:'PORTABLE', w:48, h:42, box:{ x:0, y:5, w:48, h:35 }, depth:26, screen:{ x:6, y:11, w:26, h:20 }, port:{ x:46, y:34 },
       draw(c, pal, on){
         // carry handle
         px(c, INK, 13, 0, 22, 3); px(c, pal.trim, 14, 1, 20, 1); px(c, INK, 13, 0, 3, 7); px(c, INK, 32, 0, 3, 7);
@@ -103,7 +103,7 @@ const CoachSet = (() => {
         led(c, 40, 33, on);
         feet(c, 4, 38, 40);
       } },
-    cube:{ name:'CUBE', w:40, h:42, box:{ x:0, y:0, w:40, h:40 }, screen:{ x:6, y:6, w:28, h:21 }, port:{ x:38, y:34 },
+    cube:{ name:'CUBE', w:40, h:42, box:{ x:0, y:0, w:40, h:40 }, depth:34, screen:{ x:6, y:6, w:28, h:21 }, port:{ x:38, y:34 },
       draw(c, pal, on){
         box(c, pal, 0, 0, 40, 40, 3);
         screenWell(c, 4, 4, 32, 25);
@@ -113,7 +113,7 @@ const CoachSet = (() => {
         led(c, 32, 33, on);
         feet(c, 4, 30, 40);
       } },
-    monitor:{ name:'MONITOR', w:50, h:42, box:{ x:0, y:0, w:50, h:33 }, screen:{ x:5, y:5, w:40, h:22 }, port:{ x:44, y:38 },
+    monitor:{ name:'MONITOR', w:50, h:42, box:{ x:0, y:0, w:50, h:33 }, depth:36, screen:{ x:5, y:5, w:40, h:22 }, port:{ x:44, y:38 },
       draw(c, pal, on){
         box(c, pal, 0, 0, 50, 33);
         screenWell(c, 3, 3, 44, 26);
@@ -263,7 +263,7 @@ const CoachSet = (() => {
 
   /* ---------------- the order ---------------- */
   const OPTIONS = {
-    set:[['portable', 'PORTABLE'], ['cube', 'CUBE'], ['monitor', 'MONITOR']],
+    set:[['cube', 'CUBE'], ['portable', 'PORTABLE'], ['monitor', 'MONITOR']],
     finish:[['dashboard', 'DASHBOARD'], ['machine', 'BURGUNDY'], ['cream', 'CREAM'], ['gunmetal', 'GUNMETAL']],
     ink:[['machine', 'MACHINE'], ['green', 'GREEN'], ['amber', 'AMBER']],
     glasses:[['off', 'OFF'], ['on', 'ON']],
@@ -274,14 +274,14 @@ const CoachSet = (() => {
     boot:[['full', 'FULL BOOT'], ['quick', 'QUICK']],
     cable:[['rope', 'LOOSE'], ['tight', 'SHORTER']]
   };
-  const DEFAULTS = { set:'portable', finish:'dashboard', ink:'machine', glasses:'off', from:'under', weight:'heavy', jolt:'on', dust:'on', boot:'full', cable:'rope', mood:'calm' };
+  const DEFAULTS = { set:'cube', finish:'dashboard', ink:'machine', glasses:'off', from:'under', weight:'heavy', jolt:'on', dust:'on', boot:'full', cable:'rope', mood:'calm' };
   const WEIGHT = { heavy:{ g:1, squash:.16, jolt:2, thud:1 }, brick:{ g:1.35, squash:.22, jolt:3, thud:1.25 }, light:{ g:.75, squash:.1, jolt:1, thud:.7 } };
   let O = Object.assign({}, DEFAULTS);
 
   /* ---------------- DOM ---------------- */
   let layer = null, tv = null, body = null, face = null, shadow = null, cableC = null, key = null;
   let on = false, busy = false, st = { mood:'calm', gaze:null, blink:false, talk:false };
-  let pose = { x:0, y:0, lift:0, sx:1, sy:1, bank:0, lean:0 }, home = { x:0, y:0 };
+  let pose = { x:0, y:0, lift:0, sx:1, sy:1, bank:0, lean:0, yaw:0, pitch:0, roll:0 }, home = { x:0, y:0 };
   let bootFrame = null;   // while booting, the tube shows these instead of the face
   const setOf = () => SETS[O.set] || SETS.portable;
 
@@ -315,72 +315,151 @@ const CoachSet = (() => {
   }
   function build(){
     if (!ensureLayer()) return;
-    const S = setOf(), pal = palOf(O.finish);
+    const S = setOf();
     tv.style.width = S.w * P + 'px'; tv.style.height = S.h * P + 'px';
     tv.innerHTML = '';
-    body = document.createElement('canvas'); body.className = 'cs-body'; body.width = S.w + PAD * 2; body.height = S.h + PAD;
-    Object.assign(body.style, { width:(S.w + PAD * 2) * P + 'px', height:(S.h + PAD) * P + 'px', left:-PAD * P + 'px', top:-PAD * P + 'px' });
-    depthNow = -1;
+    body = document.createElement('canvas'); body.className = 'cs-body'; body.width = S.w; body.height = S.h;
+    Object.assign(body.style, { width:S.w * P + 'px', height:S.h * P + 'px' });
     face = document.createElement('canvas'); face.className = 'cs-face'; face.width = S.screen.w; face.height = S.screen.h;
     Object.assign(face.style, { left:S.screen.x * P + 'px', top:S.screen.y * P + 'px', width:S.screen.w * P + 'px', height:S.screen.h * P + 'px', color:INKS[O.ink] });
     const scan = document.createElement('i'); scan.className = 'cs-scan';
     Object.assign(scan.style, { left:S.screen.x * P + 'px', top:S.screen.y * P + 'px', width:S.screen.w * P + 'px', height:S.screen.h * P + 'px' });
-    const shade = document.createElement('i'); shade.className = 'cs-shade';
-    tv.append(body, face, scan, shade);
+    // the set in the round, for the lift: drawn fresh every step
+    c3 = document.createElement('canvas'); c3.className = 'cs-3d'; c3.width = C3; c3.height = C3;
+    const bcx = S.box.x + S.box.w / 2, bcy = S.box.y + S.box.h / 2;
+    Object.assign(c3.style, { left:Math.round(bcx - C3 / 2) * P + 'px', top:Math.round(bcy - C3 / 2) * P + 'px', width:C3 * P + 'px', height:C3 * P + 'px' });
+    tv.append(body, face, scan, c3);
+    buildSolid();
     paintBody(); paintFace();
     shadow.style.width = Math.round(S.w * P * .92) + 'px';
     measureHome(); render();
   }
-  /* 2.5D in the air: the box shows its top and one side, drawn behind the
-     front in pixels (top lit, side shaded), deeper the higher he's held;
-     flat again the moment he lands. */
-  const PAD = 8;
-  let depthNow = 0, depthDir = 1;
-  function fillQuad(c, col, q){
-    const ys = q.map(p => p[1]), y0 = Math.floor(Math.min(...ys)), y1 = Math.ceil(Math.max(...ys));
-    c.fillStyle = col;
-    for (let y = y0; y <= y1; y++){
-      const yc = y + .5; let lo = Infinity, hi = -Infinity;
-      for (let i = 0; i < q.length; i++){
-        const a = q[i], b = q[(i + 1) % q.length];
-        if ((a[1] <= yc && b[1] > yc) || (b[1] <= yc && a[1] > yc)){ const x = a[0] + (yc - a[1]) / (b[1] - a[1]) * (b[0] - a[0]); lo = Math.min(lo, x); hi = Math.max(hi, x); }
-      }
-      if (lo < hi) c.fillRect(Math.round(lo), y, Math.max(1, Math.round(hi) - Math.round(lo)), 1);
-    }
-  }
-  function line(c, col, x0, y0, x1, y1){
-    c.fillStyle = col; const n = Math.max(Math.abs(x1 - x0), Math.abs(y1 - y0), 1);
-    for (let i = 0; i <= n; i++) c.fillRect(Math.round(x0 + (x1 - x0) * i / n), Math.round(y0 + (y1 - y0) * i / n), 1, 1);
-  }
   function paintBody(){
     if (!body) return;
-    const c = body.getContext('2d'), S = setOf(), pal = palOf(O.finish);
+    const c = body.getContext('2d');
     c.clearRect(0, 0, body.width, body.height);
-    const d = depthNow > 0 ? depthNow : 0;
-    if (d){
-      const b = S.box, L = PAD + b.x, T = PAD + b.y, R = L + b.w - 1, B = T + b.h - 1, ox = depthDir * d, oy = -d;
-      const sideX = depthDir > 0 ? R : L;
-      const top = [[L, T], [R + 1, T], [R + 1 + ox, T + oy], [L + ox, T + oy]];
-      const side = [[sideX + (depthDir > 0 ? 1 : 0), T], [sideX + (depthDir > 0 ? 1 : 0), B + 1], [sideX + (depthDir > 0 ? 1 : 0) + ox, B + 1 + oy], [sideX + (depthDir > 0 ? 1 : 0) + ox, T + oy]];
-      fillQuad(c, pal.hi, top); fillQuad(c, pal.lo, side);
-      // the back edges in ink
-      line(c, INK, L + ox, T + oy, R + ox, T + oy);
-      line(c, INK, L, T, L + ox, T + oy); line(c, INK, R, T, R + ox, T + oy);
-      line(c, INK, sideX, B, sideX + ox, B + oy); line(c, INK, sideX + ox, T + oy, sideX + ox, B + oy);
-      // a glint of the lamp along the far top edge
-      line(c, 'rgba(255,240,200,.35)', L + ox + depthDir, T + oy + 1, R + ox - depthDir, T + oy + 1);
-    }
-    c.save(); c.translate(PAD, PAD);
-    S.draw(c, pal, on && !busyBooting);
-    c.restore();
+    setOf().draw(c, palOf(O.finish), on && !busyBooting);
   }
-  let busyBooting = false;
-  function paintFace(){
-    if (!face) return;
-    const c = face.getContext('2d'), S = setOf();
-    if (!on && !bootFrame){ c.clearRect(0, 0, S.screen.w, S.screen.h); return; }
-    if (bootFrame){ drawBoot(c, S.screen.w, S.screen.h, bootFrame.kind, bootFrame.t, INKS[O.ink]); return; }
-    drawFace(c, S.screen.w, S.screen.h, Object.assign({}, st, { glasses:O.glasses === 'on' }), INKS[O.ink]);
+
+  /* ---------------- the set in the round ----------------
+     For the lift on and off the table the set is a real box: its front is
+     the sprite's own front, and its top, sides, back and bottom are drawn
+     here (vents, the seam of the back cover, a panel and screws on the
+     back). Every step it's rendered afresh at art-pixel size by casting
+     one ray per pixel (orthographic, so face-on it is exactly the flat
+     sprite), each face lit in hard steps from the table lamp, then inked:
+     a one-pixel outline round the whole shape and along every crease. */
+  const C3 = 84;
+  let c3 = null, solid = null;
+  const hexRGB = h => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16));
+  const mixRGB = (a, b, t) => a.map((c, i) => Math.round(c + (b[i] - c) * t));
+  function buildSolid(){
+    const S = setOf(), b = S.box, pal = palOf(O.finish);
+    const cv = document.createElement('canvas'); cv.width = S.w; cv.height = S.h;
+    const c = cv.getContext('2d'); S.draw(c, pal, false);
+    const lo = hexRGB(pal.lo), base = hexRGB(pal.base), hi = hexRGB(pal.hi);
+    solid = {
+      w:b.w, h:b.h, d:S.depth || 30,
+      front:c.getImageData(b.x, b.y, b.w, b.h).data,
+      // ink, deep shade, shade, case, lit, lamp glint
+      ramp:[hexRGB(INK), mixRGB(lo, [0, 0, 0], .45), lo, base, hi, mixRGB(hi, [255, 244, 220], .35)],
+      trim:hexRGB(pal.trim), trimLo:hexRGB(pal.trimLo)
+    };
+  }
+  // world light: up (-y), a little left, towards the player (-z)
+  const LIGHT = (() => { const v = [-.35, -.78, -.52], n = Math.hypot(...v); return v.map(x => x / n); })();
+  function rotMatrix(yaw, pitch, roll){
+    const r = Math.PI / 180, cy = Math.cos(yaw * r), sy = Math.sin(yaw * r), cp = Math.cos(pitch * r), sp = Math.sin(pitch * r), cr = Math.cos(roll * r), sr = Math.sin(roll * r);
+    // R = Rz(roll) * Ry(yaw) * Rx(pitch): object to world
+    const Rx = [[1, 0, 0], [0, cp, -sp], [0, sp, cp]], Ry = [[cy, 0, sy], [0, 1, 0], [-sy, 0, cy]], Rz = [[cr, -sr, 0], [sr, cr, 0], [0, 0, 1]];
+    const mul = (A, B) => A.map((row, i) => [0, 1, 2].map(j => row[0] * B[0][j] + row[1] * B[1][j] + row[2] * B[2][j]));
+    return mul(Rz, mul(Ry, Rx));
+  }
+  const NORMALS = { front:[0, 0, -1], back:[0, 0, 1], top:[0, -1, 0], bottom:[0, 1, 0], left:[-1, 0, 0], right:[1, 0, 0] };
+  const FACE_ID = { front:1, back:2, top:3, bottom:4, left:5, right:6 };
+  // the case's detail on each face: a step up or down the ramp (0 = plain)
+  function detail(faceName, u, v, W, H){
+    const rv = Math.floor(v), ru = Math.floor(u);
+    if (faceName === 'top'){
+      if (rv === 0) return 1;                                          // lit front lip
+      if (rv === Math.round(H * .3)) return -1;                        // seam of the back cover
+      if (rv > H * .45 && rv < H * .85 && ru > 4 && ru < W - 5 && ru % 4 < 2) return -2;   // vents
+      return 0;
+    }
+    if (faceName === 'left' || faceName === 'right'){
+      if (ru === Math.round(W * .3)) return -1;
+      if (ru > W * .45 && ru < W * .85 && rv > 5 && rv < H - 6 && rv % 4 < 2) return -2;
+      if (rv >= H - 1) return -1;
+      return 0;
+    }
+    if (faceName === 'back'){
+      if (ru < 2 || ru >= W - 2 || rv < 2 || rv >= H - 2) return 0;
+      if (ru === 3 || ru === W - 4 || rv === 3 || rv === H - 4) return -1;   // the panel
+      if ((ru === 5 || ru === W - 6) && (rv === 5 || rv === H - 6)) return 2; // screws
+      if (ru > W - 12 && ru < W - 7 && rv > H - 11 && rv < H - 7) return -3;  // the port
+      return 0;
+    }
+    if (faceName === 'bottom') return -1;
+    return 0;
+  }
+  function level(b){ return b > .62 ? 1 : b > .2 ? 0 : b > -.25 ? -1 : -2; }
+  function render3D(){
+    if (!c3 || !solid) return;
+    const cx = c3.getContext('2d'), img = cx.createImageData(C3, C3), out = img.data;
+    const ids = new Uint8Array(C3 * C3);
+    const R = rotMatrix(pose.yaw || 0, pose.pitch || 0, pose.roll || 0);
+    const hx = solid.w / 2, hy = solid.h / 2, hz = solid.d / 2, hs = [hx, hy, hz];
+    const sc = 1 + Math.max(0, pose.lift) / 320;       // a touch bigger as he's lifted towards you
+    const d = [R[2][0], R[2][1], R[2][2]];              // the view ray (0,0,1) in the box's space
+    const lit = {};
+    Object.keys(NORMALS).forEach(k => { const n = NORMALS[k], w = [0, 1, 2].map(i => R[i][0] * n[0] + R[i][1] * n[1] + R[i][2] * n[2]); lit[k] = level(w[0] * LIGHT[0] + w[1] * LIGHT[1] + w[2] * LIGHT[2]); });
+    const frontRest = level(-LIGHT[2]);
+    for (let py = 0; py < C3; py++) for (let px = 0; px < C3; px++){
+      const wx = (px + .5 - C3 / 2) / sc, wy = (py + .5 - C3 / 2) / sc, wz = -400;
+      const o = [R[0][0] * wx + R[1][0] * wy + R[2][0] * wz, R[0][1] * wx + R[1][1] * wy + R[2][1] * wz, R[0][2] * wx + R[1][2] * wy + R[2][2] * wz];
+      let tn = -Infinity, tf = Infinity, ax = -1;
+      for (let i = 0; i < 3; i++){
+        if (Math.abs(d[i]) < 1e-9){ if (o[i] < -hs[i] || o[i] > hs[i]){ tn = Infinity; break; } continue; }
+        let t1 = (-hs[i] - o[i]) / d[i], t2 = (hs[i] - o[i]) / d[i];
+        if (t1 > t2){ const t = t1; t1 = t2; t2 = t; }
+        if (t1 > tn){ tn = t1; ax = i; }
+        if (t2 < tf) tf = t2;
+      }
+      if (!(tn < tf) || ax < 0) continue;
+      const p = [o[0] + d[0] * tn, o[1] + d[1] * tn, o[2] + d[2] * tn], neg = d[ax] > 0;
+      const name = ax === 0 ? (neg ? 'left' : 'right') : ax === 1 ? (neg ? 'top' : 'bottom') : (neg ? 'front' : 'back');
+      const k = (py * C3 + px) * 4;
+      let rgb;
+      if (name === 'front'){
+        const u = Math.min(solid.w - 1, Math.max(0, Math.floor(p[0] + hx))), v = Math.min(solid.h - 1, Math.max(0, Math.floor(p[1] + hy))), t = (v * solid.w + u) * 4;
+        rgb = [solid.front[t], solid.front[t + 1], solid.front[t + 2]];
+        const dl = lit.front - frontRest;
+        if (dl < 0) rgb = mixRGB(rgb, [0, 0, 0], Math.min(.6, -dl * .26));
+        else if (dl > 0) rgb = mixRGB(rgb, [255, 244, 220], .12);
+      } else {
+        let u, v, W, H;
+        if (name === 'top' || name === 'bottom'){ u = p[0] + hx; v = p[2] + hz; W = solid.w; H = solid.d; }
+        else if (name === 'left' || name === 'right'){ u = p[2] + hz; v = p[1] + hy; W = solid.d; H = solid.h; }
+        else { u = hx - p[0]; v = p[1] + hy; W = solid.w; H = solid.h; }
+        const idx = Math.max(0, Math.min(5, 3 + lit[name] + detail(name, u, v, W, H)));
+        rgb = solid.ramp[idx];
+      }
+      out[k] = rgb[0]; out[k + 1] = rgb[1]; out[k + 2] = rgb[2]; out[k + 3] = 255;
+      ids[py * C3 + px] = FACE_ID[name];
+    }
+    // ink: round the shape, and along every crease between two faces
+    const ink = solid.ramp[0], put = (i) => { const k = i * 4; out[k] = ink[0]; out[k + 1] = ink[1]; out[k + 2] = ink[2]; out[k + 3] = 255; };
+    const marks = [];
+    for (let y = 0; y < C3; y++) for (let x = 0; x < C3; x++){
+      const i = y * C3 + x, id = ids[i];
+      if (!id){
+        if ((x > 0 && ids[i - 1]) || (x < C3 - 1 && ids[i + 1]) || (y > 0 && ids[i - C3]) || (y < C3 - 1 && ids[i + C3])) marks.push(i);
+      } else if ((x < C3 - 1 && ids[i + 1] && ids[i + 1] !== id) || (y < C3 - 1 && ids[i + C3] && ids[i + C3] !== id)){
+        if (id !== FACE_ID.front) marks.push(i); else marks.push(x < C3 - 1 && ids[i + 1] !== id ? i + 1 : i + C3);
+      }
+    }
+    marks.forEach(put);
+    cx.putImageData(img, 0, 0);
   }
 
   /* where he sits: the deck's mirror, bottoms level */
@@ -402,16 +481,11 @@ const CoachSet = (() => {
     if (!tv) return;
     const S = setOf();
     const x = Math.round((home.x + pose.x) / P) * P, y = Math.round((home.y + pose.y - pose.lift) / P) * P;
-    const bank = Math.round(pose.bank * 4) / 4;
-    // 2.5D: in the air the box turns to show its depth (the side towards
-    // the middle of the table); squash and stretch on the landing
-    const air = pose.lift > 1 || pose.y > 1;
-    const want = air ? Math.max(2, Math.min(7, Math.round((pose.y > 1 ? 6 : 0) + pose.lift / 7))) : 0;
-    depthDir = home.left ? 1 : -1;
-    if (want !== depthNow){ depthNow = want; paintBody(); }
-    const sx = pose.sx * (1 - Math.abs(bank) * .06), sy = pose.sy;
-    tv.style.transform = 'translate(' + x + 'px,' + y + 'px) scale(' + sx.toFixed(3) + ',' + sy.toFixed(3) + ')';
-    tv.dataset.bank = ''; tv.dataset.lean = '';
+    // in the air he's the box in the round; down on the felt, the flat sprite
+    const air = pose.lift > .5 || pose.y > .5 || Math.abs(pose.yaw || 0) + Math.abs(pose.pitch || 0) + Math.abs(pose.roll || 0) > .5;
+    tv.classList.toggle('is-air', air);
+    if (air) render3D();
+    tv.style.transform = 'translate(' + x + 'px,' + y + 'px) scale(' + pose.sx.toFixed(3) + ',' + pose.sy.toFixed(3) + ')';
     // the shadow stays on the felt under him, smaller and fainter as he lifts
     const h = Math.max(0, pose.lift), k = Math.max(.35, 1 - h / 140);
     const sw = Math.round(S.w * P * .92 * k / P) * P;
@@ -421,6 +495,15 @@ const CoachSet = (() => {
     const below = home.y + pose.y - pose.lift > home.edge;
     shadow.style.visibility = (!on && !busy) || below || pose.hideShadow ? 'hidden' : 'visible';
     tv.style.visibility = (!on && !busy) ? 'hidden' : 'visible';
+  }
+
+  let busyBooting = false;
+  function paintFace(){
+    if (!face) return;
+    const c = face.getContext('2d'), S = setOf();
+    if (!on && !bootFrame){ c.clearRect(0, 0, S.screen.w, S.screen.h); return; }
+    if (bootFrame){ drawBoot(c, S.screen.w, S.screen.h, bootFrame.kind, bootFrame.t, INKS[O.ink]); return; }
+    drawFace(c, S.screen.w, S.screen.h, Object.assign({}, st, { glasses:O.glasses === 'on' }), INKS[O.ink]);
   }
 
   /* ---------------- the cable: an aux lead ----------------
@@ -559,7 +642,7 @@ const CoachSet = (() => {
           let i = 0; while (i < frames.length - 2 && frames[i + 1].t < tq) i++;
           const a = frames[i], b = frames[i + 1] || a, span = (b.t - a.t) || 1, k = Math.max(0, Math.min(1, (tq - a.t) / span));
           const e = b.ease === 'in' ? k * k : b.ease === 'out' ? 1 - (1 - k) * (1 - k) : k;
-          ['x', 'y', 'lift', 'sx', 'sy', 'bank', 'lean'].forEach(p => {
+          ['x', 'y', 'lift', 'sx', 'sy', 'bank', 'lean', 'yaw', 'pitch', 'roll'].forEach(p => {
             const va = a[p] == null ? (p === 'sx' || p === 'sy' ? 1 : 0) : a[p], vb = b[p] == null ? (p === 'sx' || p === 'sy' ? 1 : 0) : b[p];
             pose[p] = va + (vb - va) * e;
           });
@@ -601,29 +684,32 @@ const CoachSet = (() => {
     const below = home.edge - home.y + 10;               // far enough down to be under the table
     const g = W.g;
     let frames;
+    // he turns as he comes: showing his top and his inner side on the way
+    // up, squaring up to face you just before he's set down
+    const settle = land => [
+      { t:land + FRAME, sx:1 + W.squash, sy:1 - W.squash },
+      { t:land + FRAME * 2, sx:1 - W.squash * .3, sy:1 + W.squash * .3 },
+      { t:land + FRAME * 3, sx:1 + W.squash * .15, sy:1 - W.squash * .15 },
+      { t:land + FRAME * 4 }
+    ];
     if (O.from === 'side'){
-      const off = (home.left ? home.x + S.w * P + 20 : home.w - home.x + 20) * out;
+      const off = (home.left ? home.x + S.w * P + 20 : home.w - home.x + 20) * out, land = 520 / g;
       frames = [
-        { t:0, x:off, lift:26, bank:out * -1 },
-        { t:300 / g, x:out * 10, lift:30, bank:out * -.5, ease:'out' },
-        { t:430 / g, x:0, lift:0, bank:0, ease:'in' },
-        { t:430 / g + FRAME, sx:1 + W.squash, sy:1 - W.squash },
-        { t:430 / g + FRAME * 2, sx:1 + W.squash * .5, sy:1 - W.squash * .5, lean:1 },
-        { t:430 / g + FRAME * 3, lean:.5 },
-        { t:430 / g + FRAME * 4 }
-      ];
+        { t:0, x:off, lift:24, yaw:-out * 70, pitch:18, roll:0 },
+        { t:300 / g, x:out * 14, lift:32, yaw:-out * 26, pitch:14, roll:-out * 3, ease:'out' },
+        { t:430 / g, x:out * 3, lift:26, yaw:-out * 6, pitch:5, ease:'in' },
+        { t:land, x:0, lift:0, ease:'in' }
+      ].concat(settle(land));
     } else {
       // up from below the near edge, over the rail, held a moment, then down
+      const land = 660 / g;
       frames = [
-        { t:0, x:out * 26, y:below, lift:0, bank:out * .75, lean:1 },
-        { t:280 / g, x:out * 12, y:0, lift:34, bank:out * .5, lean:.5, ease:'out' },
-        { t:390 / g, x:out * 3, y:0, lift:38, bank:out * .25 },
-        { t:520 / g, x:0, y:0, lift:0, bank:0, ease:'in' },
-        { t:520 / g + FRAME, sx:1 + W.squash, sy:1 - W.squash },
-        { t:520 / g + FRAME * 2, sx:1 + W.squash * .5, sy:1 - W.squash * .5, lean:1 },
-        { t:520 / g + FRAME * 3, lean:.5 },
-        { t:520 / g + FRAME * 4 }
-      ];
+        { t:0, x:out * 8, y:below, lift:0, yaw:-out * 58, pitch:40, roll:out * 10 },
+        { t:260 / g, x:out * 6, y:0, lift:30, yaw:-out * 40, pitch:28, roll:out * 7, ease:'out' },
+        { t:420 / g, x:out * 3, y:0, lift:40, yaw:-out * 18, pitch:14, roll:out * 3 },
+        { t:540 / g, x:out * 1, y:0, lift:34, yaw:-out * 5, pitch:5, roll:0 },
+        { t:land, x:0, y:0, lift:0, ease:'in' }
+      ].concat(settle(land));
     }
     let landed = false;
     const hit = frames.find((f, i) => i > 0 && (frames[i - 1].lift || 0) > 0 && !f.lift).t;
@@ -637,9 +723,9 @@ const CoachSet = (() => {
     const out = home.left ? -1 : 1, below = home.edge - home.y + 10;
     SFX.scrape();
     const frames = O.from === 'side'
-      ? [{ t:0 }, { t:FRAME, lift:4, bank:out * .5 }, { t:260, x:out * (home.left ? home.x + S.w * P + 30 : home.w - home.x + 30), lift:10, bank:out, ease:'in' }]
-      : [{ t:0 }, { t:FRAME, lift:4, bank:out * .5 }, { t:170, x:out * 18, y:0, lift:10, bank:out * .75, ease:'out' },
-         { t:170 + 220 / W.g, x:out * 30, y:below, lift:0, bank:out, lean:1, ease:'in' }];
+      ? [{ t:0 }, { t:FRAME, lift:4, pitch:4 }, { t:280, x:out * (home.left ? home.x + S.w * P + 30 : home.w - home.x + 30), lift:16, yaw:-out * 70, pitch:18, ease:'in' }]
+      : [{ t:0 }, { t:FRAME, lift:4, yaw:-out * 4, pitch:4 }, { t:200, x:out * 5, lift:16, yaw:-out * 28, pitch:22, roll:out * 5, ease:'out' },
+         { t:200 + 280 / W.g, x:out * 8, y:below, lift:0, yaw:-out * 60, pitch:42, roll:out * 10, ease:'in' }];
     await play(frames);
   }
 
@@ -691,11 +777,11 @@ const CoachSet = (() => {
       if (want){
         build(); measureHome();
         if (motionOffSafe()){
-          on = true; Object.assign(pose, { x:0, y:0, lift:0, sx:1, sy:1, bank:0, lean:0 }); render();
+          on = true; Object.assign(pose, { x:0, y:0, lift:0, sx:1, sy:1, bank:0, lean:0, yaw:0, pitch:0, roll:0 }); render();
           ropeStart(); plugged = true; paintBody(); paintFace();
         } else {
           // start under the table, the cable already coming out of the key
-          Object.assign(pose, { x:0, y:home.edge - home.y + 10, lift:0, sx:1, sy:1, bank:0, lean:0 });
+          Object.assign(pose, { x:0, y:home.edge - home.y + 10, lift:0, sx:1, sy:1, bank:0, lean:0, yaw:0, pitch:0, roll:0 });
           render(); ropeStart();
           await arrive();
           on = true; render();

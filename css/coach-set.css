@@ -8,20 +8,18 @@
    edge until he's lifted over it */
 .cs-layer{ position:absolute; inset:0; z-index:3; overflow:hidden; border-radius:inherit; pointer-events:none; }
 .cs-tv{ position:absolute; left:0; top:0; transform-origin:50% 100%; pointer-events:auto; visibility:hidden; -webkit-tap-highlight-color:transparent; }
-.cs-body,.cs-face,.cs-still{ image-rendering:pixelated; image-rendering:crisp-edges; display:block; }
+.cs-body,.cs-face,.cs-still,.cs-3d{ image-rendering:pixelated; image-rendering:crisp-edges; display:block; }
 .cs-body{ position:absolute; left:0; top:0; }
+/* in the air: the box in the round replaces the flat sprite and its screen */
+.cs-3d{ position:absolute; display:none; }
+.cs-tv.is-air .cs-3d{ display:block; }
+.cs-tv.is-air .cs-body,.cs-tv.is-air .cs-face,.cs-tv.is-air .cs-scan{ visibility:hidden; }
 .cs-face{ position:absolute; filter:drop-shadow(0 0 1.5px currentColor); }
 .cs-scan{
   position:absolute; pointer-events:none;
   background:repeating-linear-gradient(180deg,transparent 0 1px,rgba(0,0,0,.28) 1px 2px),
     radial-gradient(ellipse at 45% 35%,rgba(255,255,255,.07),transparent 60%);
 }
-/* 2.5D shade: banking puts the far side in one hard step of shade;
-   leaning forward catches the lamp along the top */
-.cs-shade{ position:absolute; inset:0; pointer-events:none; }
-.cs-tv[data-bank="r"] .cs-shade{ background:linear-gradient(90deg,transparent 0 62%,rgba(0,0,0,.3) 62%); }
-.cs-tv[data-bank="l"] .cs-shade{ background:linear-gradient(90deg,rgba(0,0,0,.3) 0 38%,transparent 38%); }
-.cs-tv[data-lean="f"] .cs-shade{ background:linear-gradient(180deg,rgba(255,236,190,.16) 0 14%,transparent 14%); }
 .cs-shadow{
   position:absolute; left:0; top:0; height:6px; visibility:hidden;
   background:#000; border-radius:2px;

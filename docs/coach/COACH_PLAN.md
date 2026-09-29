@@ -153,3 +153,20 @@ covers them.
   slack lies on the dashboard's edge. Switching off pulls the plug out
   before he's swiped off. The COACH key shows a little two-dot TV and a
   lamp.
+  **Owner:** looking really good; the sides "don't look drawn in, just
+  panels added as a cheat". Wants real frames for the entry and exit:
+  the chunky cube monitor brought up with a bit of rotation, landing
+  face on. The cable needs work too, after this.
+- **Round 3c — the set in the round** (29 Sep 2026). Same link. The
+  pasted depth panels are gone. In the air the set is a real box: its
+  front is the sprite's own front; top, sides, back and bottom are drawn
+  in code (vents, the back cover's seam, a panel, screws and a port on
+  the back). Each 14 fps step is ray-cast afresh at art-pixel size
+  (orthographic, so face-on it is exactly the flat sprite), every face
+  lit in hard steps from the table lamp (one light, up-left-front), then
+  inked: an outline round the shape and along every crease. Coming up he
+  shows his top and inner side, turns (yaw, pitch and a little roll) and
+  squares up to face you just before the drop; on the felt he's the flat
+  sprite, with a squash-and-rebound. The exit runs it the other way.
+  CUBE is now the default set (the owner's pick in the screenshot).
+
