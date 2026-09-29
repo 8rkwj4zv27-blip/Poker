@@ -286,6 +286,7 @@ game, then his brain:
     you out. No judgement yet: only reactions and exact facts. One line at
     a time; a waiting line gives way to a more important one; stale lines
     are dropped.
+  - Link: https://claude.ai/artifact/Pv5Bcf7FtPgvpN334jZN6e
   - Hearing the game: `applyAction` and `updateCoach` are wrapped; the deal
     and the end of a hand are watched from `game.handNumber` and
     `game.phase` (other parts of the table swap `startNewHand` in and out,
