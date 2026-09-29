@@ -39,12 +39,13 @@
    two dots on it, and a lamp that lights while he's plugged in */
 .coach-key{ position:relative; }
 .coach-key .ck-icon{ display:block; width:16px; height:14px; margin:auto; }
-/* his name on the key (keyFace): P.I.P. in 3x5 pixel letters, or PIP
-   under a smaller TV */
-.coach-key .ck-letters{ display:block; width:23px; height:7px; margin:auto; }
-.coach-key[data-face="tvpip"]{ flex-direction:column; gap:2px; }
-.coach-key[data-face="tvpip"] .ck-icon{ width:12px; height:10px; margin:0 auto; }
-.coach-key[data-face="tvpip"] .ck-name{ display:block; width:11px; height:5px; margin:0 auto; }
+/* the key's face (keyFace): his face on a little dark screen (lit when
+   he's on), or PIP in the buttons' lettering */
+.coach-key .ck-face{ display:block; width:24px; height:20px; margin:auto; }
+.coach-key .ck-face .ck-ink{ fill:#3E6B4E; }
+.coach-key.is-on .ck-face .ck-ink{ fill:#8CF0A8; }
+.coach-key .ck-word{ font-family:var(--font-hdr); font-size:9px; line-height:1; letter-spacing:0; color:currentColor; }
+.coach-key[data-face="bigpip"] .ck-word{ font-size:9px; margin-top:3px; }
 .coach-key .ck-lamp{ position:absolute; right:3px; top:3px; width:4px; height:4px; background:#1D3A28; box-shadow:0 0 0 1px #080405; }
 .coach-key.is-on .ck-lamp{ background:#8CF0A8; box-shadow:0 0 0 1px #080405,0 0 5px #8CF0A8; }
 

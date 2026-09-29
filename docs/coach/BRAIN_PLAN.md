@@ -342,3 +342,18 @@ an immediate read of the game.
   was ignored, taps and a second tap, no errors.
 - The old Coach readout stays until the owner says to retire it (his tap
   now covers its numbers before the flop and the price after it).
+
+## Tidy-up (v0.55.2, 29 Sep 2026)
+
+- **The old Coach panel is gone.** It was off by default with no switch
+  left in Settings, so nobody could see it. Its markup and code are
+  removed; `updateCoach()` stays as the "your turn" signal P.I.P. listens
+  for (it refreshes the hand CRT). Its unused styles are left in place
+  because they share rules with Hand Review. `settings.coach` is left in
+  saved settings, untouched.
+- **Hand Review stays** (Settings → Hand review, off by default); P.I.P.
+  takes over its "who won and why" later, then it retires (owner to
+  confirm).
+- **His key**: the tiny P.I.P. letters couldn't be read. Now HIS FACE
+  (default suggestion), PIP IN BIG LETTERS, or the v0.54 TV, in the Brain
+  Lab's KEY tab.

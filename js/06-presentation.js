@@ -3,12 +3,8 @@
 /* ============================================================
    COACH
    ============================================================ */
-function hideCoach(){
-  $('coach').classList.add('hidden');
-  const d=$('coach-draw'), w=$('coach-watch');
-  if (d) d.classList.add('hidden');
-  if (w) w.classList.add('hidden');
-}
+// (the old Coach panel is gone; kept so its callers stay harmless)
+function hideCoach(){}
 /* Both readouts are only meaningful while it's actually the human's turn.
    They must be cleared together the moment that stops being true — hiding
    only the coach here is what left "You have Ace high" stranded on screen
@@ -20,106 +16,13 @@ function clearHumanReadouts(){
   updateHandInstrument();
 }
 
+/* Your turn has come round (the engine calls this when it's the player's
+   move). It used to drive the old Coach panel, retired in v0.55.2 (the
+   owner: P.I.P. does its job, and nobody could switch it on any more).
+   It still refreshes the hand CRT, and P.I.P. (js/coach-talk.js) listens
+   here for "your turn": keep the name and the call sites. */
 async function updateCoach(){
-  const p = pendingHumanPlayer;
   updateHandInstrument();
-  if (!p) return;
-
-  if (!settings.coach){ hideCoach(); return; }
-
-  const token = ++coachToken;
-  const g = game;
-  const coach = $('coach');
-  coach.classList.remove('hidden');
-  $('coach-note').textContent = 'Working out the numbers…';
-  $('coach-rec').textContent = '…';
-  $('coach-rec').className = 'coach-rec';
-  $('coach-equity').textContent = '—';
-  $('coach-odds').textContent = '—';
-
-  const numOpp = Math.max(1, g.players.filter(x=>x.inHand && !x.folded && x.id!=='you').length);
-  const equity = await EquityService.get(p.hand, g.board, numOpp, 600);
-  if (token !== coachToken || pendingHumanPlayer !== p) return;   // stale
-
-  const toCall = Math.max(0, g.currentBet - p.betThisRound);
-  const potOdds = toCall>0 ? toCall/(g.pot + toCall) : 0;
-
-  $('coach-equity').textContent = Math.round(equity*100) + '%';
-  $('coach-equity-bar').style.width = Math.round(equity*100) + '%';
-  if (toCall>0){
-    $('coach-odds').textContent = Math.round(potOdds*100) + '%';
-    $('coach-odds').classList.remove('dim');
-    $('coach-odds-bar').style.width = Math.round(potOdds*100) + '%';
-  } else {
-    $('coach-odds').textContent = 'No bet';
-    $('coach-odds').classList.add('dim');
-    $('coach-odds-bar').style.width = '0%';
-  }
-
-  let rec, cls, note;
-  const oppWord = numOpp === 1 ? 'one opponent' : numOpp + ' opponents';
-  if (toCall > 0){
-    const margin = equity - potOdds;
-    if (margin < -0.02){
-      rec = 'Fold'; cls = 'rec-fold';
-      note = 'Calling ' + toCall.toLocaleString() + ' needs about ' + Math.round(potOdds*100) +
-             '% to break even, and this hand is running around ' + Math.round(equity*100) +
-             '% against ' + oppWord + '.';
-    } else if (equity > 0.72 && p.mayRaise){
-      rec = 'Raise'; cls = '';
-      note = 'At roughly ' + Math.round(equity*100) + '% against ' + oppWord +
-             ', this is ahead often enough that building the pot is the higher-value line.';
-    } else {
-      rec = 'Call'; cls = 'rec-call';
-      note = 'The call needs about ' + Math.round(potOdds*100) + '% and this is running around ' +
-             Math.round(equity*100) + '%, so the price is workable' +
-             (p.mayRaise ? '' : ' (the short all-in means raising isn\u2019t available here)') + '.';
-    }
-  } else {
-    if (equity > 0.62){
-      rec = 'Bet'; cls = '';
-      note = 'Around ' + Math.round(equity*100) + '% against ' + oppWord +
-             ' — betting here charges the hands still drawing against you.';
-    } else {
-      rec = 'Check'; cls = 'rec-call';
-      note = 'Around ' + Math.round(equity*100) + '% against ' + oppWord +
-             ' — checking keeps the pot small while the hand is still marginal.';
-    }
-  }
-  $('coach-rec').textContent = rec;
-  $('coach-rec').className = 'coach-rec ' + cls;
-  $('coach-note').textContent = note;
-
-  // ---- drawing guidance ----
-  const drawEl = $('coach-draw'), watchEl = $('coach-watch');
-  const draws = detectDraws(p.hand, g.board);
-  const outsInfo = computeOuts(p.hand, g.board);
-  const cardsToCome = g.board.length === 3 ? 2 : (g.board.length === 4 ? 1 : 0);
-  const pct = n => Math.min(95, Math.round(n * (cardsToCome === 2 ? 4 : 2)));
-
-  if (cardsToCome > 0 && draws.length){
-    // the odds quote the specific draw, not every card that changes your hand
-    const lead = draws.reduce((a,b)=> b.outs > a.outs ? b : a);
-    const others = draws.filter(d=>d !== lead);
-    let txt = 'You have ' + lead.text + '.';
-    if (others.length) txt += ' You also hold ' + others.map(d=>d.text.split(' — ')[0]).join(' and ') + '.';
-    txt += ' That is ' + lead.outs + ' clean outs — roughly ' + pct(lead.outs) + '% to complete it by the river' +
-           (others.length ? ', a little more once the other draw is counted.' : '.');
-    $('coach-draw-text').textContent = txt;
-    drawEl.classList.remove('hidden');
-  } else if (cardsToCome > 0 && outsInfo.outs > 0){
-    $('coach-draw-text').textContent =
-      outsInfo.outs + ' card' + (outsInfo.outs===1?'':'s') + ' would improve your hand — about ' +
-      pct(outsInfo.outs) + '% to improve by the river.';
-    drawEl.classList.remove('hidden');
-  } else drawEl.classList.add('hidden');
-
-  // ---- board threats ----
-  const threats = boardThreats(g.board);
-  if (threats.length){
-    $('coach-watch-text').textContent = threats.slice(0, 2).join('; ') + '.';
-    watchEl.classList.remove('hidden');
-  } else watchEl.classList.add('hidden');
 }
 
 /* ============================================================
