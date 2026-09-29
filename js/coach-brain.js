@@ -182,6 +182,9 @@ const CoachBrain = (() => {
       pfAggressor: pfAgg ? { id:pfAgg.id, name:pfAgg.name, you:pfAgg === me } : null,
       youArePfAggressor: !!pfAgg && pfAgg === me,
       actions: acts,
+      // this hand's public actions after the flop, in the range-narrowing
+      // form (js/01-poker-math.js narrowWeight): n = board size, a = b/r/c/k
+      handLog: (g.handLog || []).map(h => ({ id:h.id, n:h.n, a:h.a })),
       opponents: opps.map(p => ({ id:p.id, name:p.name, stackBB:r1(p.chips / bb), bet:p.betThisRound || 0,
         allIn:!!p.allIn, seat:seatLabel(g, g.players.indexOf(p)), read:readOf(g, p.id) }))
     };
@@ -432,6 +435,127 @@ const CoachBrain = (() => {
   }
 
   /* ============================================================
+     JUDGE 2a: AFTER THE FLOP, FACING A BET  (step 3a)
+
+     Calling, folding and raising when someone has bet into you: your
+     chance of winning against the hands their betting points to, against
+     the price. Each opponent's likely hands come from public facts only,
+     as the AI reads them (js/03-opponents.js preflopRangeOf, narrowWeight):
+     what they did before the flop (raised, called a raise, limped, the big
+     blind), narrowed by every bet, raise, call and check since, and by
+     their habits in the table's notebook (how often they bet, and bluffs
+     seen at showdowns). Then:
+       - equity used: on the river all of it; before, a little less out of
+         position and with nothing (you'll often have to give up);
+       - the price: pot odds, plus a margin with players still to act;
+         draws to a strong hand earn a little back when stacks are deep
+         (implied odds: you win more when you hit).
+     Raise for value with 70%+ against one player (55%+ against more); a
+     strong draw may raise as a semi-bluff against one. Checked to you or
+     first to act (betting) is step 3b.
+     ============================================================ */
+  const BET_WORD = f => f < 0.4 ? 'a small bet' : f < 0.6 ? 'about half the pot' : f < 0.85 ? 'about three-quarters of the pot' : f < 1.15 ? 'about the size of the pot' : 'more than the pot';
+  const STRONG_MADE = { 'two-pair':1, set:1, trips:1, straight:1, flush:1, 'full-house':1, quads:1, 'straight-flush':1 };
+  const MADE_OK = { overpair:1, 'top-pair':1, 'two-pair':1, set:1, trips:1, straight:1, flush:1, 'full-house':1, quads:1, 'straight-flush':1 };
+  const clampR = (x, lo, hi) => Math.max(lo, Math.min(hi, x));
+  const EQ = new WeakMap();
+  /* An opponent's likely hands, from what they've shown (public). */
+  function oppRange(sp, o){
+    const raises = sp.preflop.raises;
+    let pct;
+    const agg = sp.pfAggressor && sp.pfAggressor.id === o.id;
+    if (agg) pct = raises >= 2 ? RERAISE[Math.min(raises, RERAISE.length - 1)] : sp.playersDealt === 2 ? OPEN_HEADS_UP : (OPEN_BY_SEAT[o.seat] || 0.2);
+    else if (raises >= 2) pct = 0.08;
+    else if (raises === 1) pct = o.seat === 'BB' ? 0.45 : 0.20;
+    else pct = o.seat === 'BB' ? 1 : 0.45;
+    pct = Math.min(1, pct * widthOf(o.read, agg ? 'pfr' : 'vpip', agg ? 0.18 : 0.30));
+    const hist = sp.handLog.filter(h => h.id === o.id).map(h => ({ n:h.n, a:h.a }));
+    if (!hist.length) return pct;
+    // how often they bet, and bluffs seen at showdowns, smoothed toward a normal player
+    const r = o.read || {};
+    const aggr = ((r.postAgg || 0) + 0.30 * 8) / ((r.postAgg || 0) + (r.postPassive || 0) + 8) / 0.30;
+    const bluffs = ((r.bluffsShown || 0) + 0.30 * 3) / ((r.riverBetsShown || 0) + 3) / 0.30;
+    return { pct, hist, bluff:+clampR(aggr * Math.sqrt(bluffs), 0.4, 3).toFixed(2), k:1 };
+  }
+  // a raise after the flop: three times the bet, plus one bet for each
+  // player who has called it (rounded to the big blind)
+  function postRaiseSize(sp){
+    const here = sp.actions.filter(x => x.street === sp.street);
+    const lastAgg = here.map(x => x.action).lastIndexOf('bet') > here.map(x => x.action).lastIndexOf('raise') ? here.map(x => x.action).lastIndexOf('bet') : here.map(x => x.action).lastIndexOf('raise');
+    const callers = lastAgg < 0 ? 0 : here.slice(lastAgg + 1).filter(x => x.action === 'call').length;
+    const to = Math.round((sp.currentBet * 3 + callers * sp.currentBet) / sp.bigBlind) * sp.bigBlind;
+    const allin = sp.stack + sp.yourBet;
+    if (to >= allin * 0.45) return allin;   // most of your stack: just go all in
+    return Math.min(allin, Math.max(to, sp.currentBet + sp.minRaise));
+  }
+  function judgePostflop(sp, ch){
+    if (!sp || !ch || sp.street === 'preflop' || !ch.action || !sp.boardFacts) return null;
+    if (sp.toCall <= 0) return null;   // betting when checked to: step 3b
+    let a = ch.action;
+    if (a === 'allin') a = sp.toCall >= sp.stack ? 'call' : 'raise';
+    if (a === 'check') a = 'call';
+    const bf = sp.boardFacts, left = 5 - sp.board.length;
+    // (one sample per decision: advice judges every move on the same spot)
+    let eq = EQ.get(sp);
+    if (eq == null){ eq = call('estimateEquityVsRanges', sp.hole, sp.board, sp.opponents.map(o => oppRange(sp, o)), 1500); EQ.set(sp, eq); }
+    if (typeof eq !== 'number') return null;
+    const strongDraw = left > 0 && (bf.draws.flush || bf.draws.oesd);
+    const anyDraw = left > 0 && (strongDraw || bf.draws.gutshot);
+    const madeWeak = !MADE_OK[bf.made];
+    const ip = sp.actingAfter === 0;
+    const realise = left === 0 ? 1 : (ip ? 0.97 : 0.9) - (madeWeak && !anyDraw ? 0.05 : 0);
+    const behind = Math.max(0, sp.stack - sp.toCall);
+    const deep = behind > 1.5 * (sp.pot + sp.toCall);
+    const implied = !deep ? 0 : strongDraw ? (left === 1 ? 0.05 : 0.03) : anyDraw ? 0.02 : 0;
+    const need = sp.potOdds + (sp.playersIn > 2 && sp.actingAfter > 0 ? 0.03 : 0) - implied;
+    const margin = eq * realise - need;
+    const multi = sp.playersIn > 2;
+    // raising for value needs a hand that's ahead of the hands that CALL a
+    // raise, not just of the betting range: two pair or better. Top pair and
+    // overpairs are ahead of a bet but behind most calls of a raise: they
+    // call (a raise is fine, to protect, but close).
+    const strongMade = STRONG_MADE[bf.made] && !bf.boardPlays;
+    const ahead = eq >= (multi ? 0.55 : 0.70);
+    const value = strongMade && ahead;
+    const bettorAct = sp.actions.filter(x => x.street === sp.street && (x.action === 'bet' || x.action === 'raise')).pop();
+    const betFrac = sp.toCall / Math.max(1, sp.pot - sp.toCall);
+    const unseen = 52 - 2 - sp.board.length;
+    const drawName = bf.draws.flush && (bf.draws.oesd || bf.draws.gutshot) ? 'a flush and straight draw' : bf.draws.flush ? 'a flush draw' : bf.draws.oesd ? 'an open-ended straight draw' : bf.draws.gutshot ? 'an inside straight draw' : '';
+    const n = { street:sp.street, eq:pct100(eq), need:pct100(Math.max(0.01, need) / realise), odds:Math.round(sp.potOdds * 100), call:sp.toCall, pot:sp.pot,
+      handName:bf.handName, made:bf.made, drawName, outs:bf.drawOuts, hitNext: bf.drawOuts ? Math.round(bf.drawOuts / unseen * 100) : 0,
+      bettor: bettorAct ? bettorAct.name : 'they', betSize:BET_WORD(betFrac), margin:Math.round(margin * 100), players:sp.playersIn - 1,
+      implied:Math.round(implied * 100), seat:sp.seat, pct:pct100(sp.holeFacts.pct) };
+    const river = left === 0;
+    const lesson = river ? 'river-bets' : anyDraw && madeWeak ? 'drawing-odds' : 'pot-odds';
+    const best = value ? 'raise' : margin >= 0 ? 'call' : 'fold';
+    const base = { kind:'post', best, lesson, n };
+    if (a === 'fold'){
+      if (value || ahead) return J(Object.assign(base, { verdict:'mistake', confidence:'clear', tag:'post.fold.strong', lesson:'hand-strength', notable:true }));
+      if (margin <= 0) return J(Object.assign(base, { verdict:'good', confidence: margin < -0.05 ? 'clear' : 'close', tag:'post.fold.good',
+        notable: margin < -0.04 && (MADE_OK[bf.made] || bf.made === 'second-pair') }));
+      if (margin <= 0.04) return J(Object.assign(base, { verdict:'fine', confidence:'close', tag:'post.fold.close' }));
+      return J(Object.assign(base, { verdict:'mistake', confidence: margin > 0.10 ? 'clear' : 'leans', tag: anyDraw && madeWeak ? 'post.fold.draw' : 'post.fold.priced', notable:true }));
+    }
+    if (a === 'call'){
+      if (value) return J(Object.assign(base, { verdict:'fine', confidence:'leans', tag:'post.call.value', lesson:'raising-for-value', notable:true }));
+      if (margin >= 0) return J(Object.assign(base, { verdict:'good', confidence: margin > 0.04 ? 'clear' : 'close',
+        tag: anyDraw && madeWeak ? 'post.call.draw.good' : 'post.call.good',
+        notable: margin > 0.04 && ((anyDraw && madeWeak) || (river && madeWeak) || (river && betFrac >= 0.6)) }));
+      if (margin >= -0.04) return J(Object.assign(base, { verdict:'fine', confidence:'close', tag:'post.call.close' }));
+      return J(Object.assign(base, { verdict:'mistake', confidence: margin < -0.10 ? 'clear' : 'leans', tag: anyDraw && madeWeak ? 'post.call.draw.bad' : 'post.call.weak', notable:true }));
+    }
+    if (a === 'raise'){
+      if (value) return J(Object.assign(base, { verdict:'good', confidence:'clear', tag:'post.raise.value', lesson:'raising-for-value', notable:true }));
+      if (ahead) return J(Object.assign(base, { verdict:'fine', confidence:'close', tag:'post.raise.protect', lesson:'hand-strength' }));
+      if (strongDraw && !multi && eq >= 0.30) return J(Object.assign(base, { verdict:'fine', confidence:'close', tag:'post.raise.semi', lesson:'semi-bluff', notable:true }));
+      if (eq >= 0.55) return J(Object.assign(base, { verdict:'fine', confidence:'close', tag:'post.raise.close', lesson:'raising-for-value' }));
+      return J(Object.assign(base, { verdict:'mistake', confidence: eq < 0.4 ? 'clear' : 'leans', tag:'post.raise.loose', lesson:'raising-for-value', notable:true }));
+    }
+    return null;
+  }
+  const judge = (sp, ch) => sp && sp.street === 'preflop' ? judgePreflop(sp, ch) : judgePostflop(sp, ch);
+
+  /* ============================================================
      ADVICE BEFORE YOU ACT (step 4, brought forward for the preflop,
      owner 29 Sep 2026): the judge run on each move you could make, before
      you make one. What he'd do, how sure he is (CLEAR: the only good move;
@@ -447,9 +571,11 @@ const CoachBrain = (() => {
     to = Math.round(to / bb * 2) / 2 * bb;   // to the half big blind
     return Math.min(sp.stack + sp.yourBet, Math.max(to, sp.currentBet + sp.minRaise));
   }
-  function advisePreflop(sp){
-    if (!sp || sp.street !== 'preflop') return null;
-    const to = raiseSize(sp), allinTo = sp.stack + sp.yourBet;
+  function advise(sp){
+    if (!sp) return null;
+    if (sp.street !== 'preflop' && sp.toCall <= 0) return null;   // (betting: step 3b)
+    const pre = sp.street === 'preflop';
+    const to = pre ? raiseSize(sp) : postRaiseSize(sp), allinTo = sp.stack + sp.yourBet;
     const moves = [];
     moves.push(sp.toCall > 0 ? 'fold' : 'check');
     if (sp.toCall > 0) moves.push('call');
@@ -460,12 +586,13 @@ const CoachBrain = (() => {
       const added = Math.max(0, amount - sp.yourBet);
       const ch = { action:m, amount, added, addedBB:r1(added / sp.bigBlind), toBB:r1(amount / sp.bigBlind),
         potFraction: sp.pot > 0 && added > 0 ? Math.round(added / sp.pot * 100) / 100 : null };
-      return { move:m, ch, j:judgePreflop(sp, ch) };
+      return { move:m, ch, j:judge(sp, ch) };
     }).filter(x => x.j);
     if (!judged.length) return null;
     const rank = x => x.j.verdict === 'good' ? 3 : x.j.verdict === 'fine' ? (x.j.confidence === 'close' ? 2 : 1.5) : 0;
     // the judge's own best move, if it's on offer; otherwise the best-judged one
-    const want = judged[0].j.best === 'allin' && !moves.includes('allin') ? 'raise' : judged[0].j.best;
+    let want = judged[0].j.best === 'allin' && !moves.includes('allin') ? 'raise' : judged[0].j.best;
+    if (want === 'raise' && !moves.includes('raise') && moves.includes('allin')) want = 'allin';
     let pick = judged.find(x => x.move === want) || judged.slice().sort((a, b) => rank(b) - rank(a))[0];
     if (want === 'check' && sp.toCall > 0) pick = judged.find(x => x.move === 'fold') || pick;
     const others = judged.filter(x => x !== pick);
@@ -510,7 +637,7 @@ const CoachBrain = (() => {
     if (!hand || hand.n !== sp.handNumber) handStart(g, null);
     if (!hand) return null;
     const d = { spot:sp, choice:choice(sp, g, me) };
-    try{ d.judgement = judgePreflop(sp, d.choice); }catch(e){ d.judgement = null; }
+    try{ d.judgement = judge(sp, d.choice); }catch(e){ d.judgement = null; }
     if (!hand.seat) hand.seat = sp.seat;
     if (!hand.hole) hand.hole = sp.hole;
     hand.decisions.push(d);
@@ -580,7 +707,7 @@ const CoachBrain = (() => {
     return finish(hand.seen || { phase:null, showdown:false, board:[], shown:[], yourHand:null, out:false }, net);
   }
 
-  return { spot, choice, judgePreflop, advisePreflop, readNow, raiseSize, openRange, pushRange, raiserRange, record, handStart, observe, handEnd, closeMissed, shownAtShowdown, seatLabel, actingAfter,
+  return { spot, choice, judge, judgePreflop, judgePostflop, advise, advisePreflop:advise, oppRange, readNow, raiseSize, openRange, pushRange, raiserRange, record, handStart, observe, handEnd, closeMissed, shownAtShowdown, seatLabel, actingAfter,
     get hand(){ return hand; }, get history(){ return history.slice(); }, reset(){ hand = null; history.length = 0; } };
 })();
 if (typeof window !== 'undefined') window.CoachBrain = CoachBrain;

@@ -55,6 +55,7 @@ function table(n, dealer, you, opts){
 /* the engine's own bookkeeping for a public action (applyAction, simplified) */
 function act(g, i, action, to){
   const p = g.players[i];
+  const toCall = g.currentBet - p.betThisRound;
   if (action === 'fold') p.folded = true;
   else if (action === 'call' && g.currentBet <= p.betThisRound) action = 'check';   // (the engine's own: a free call is a check)
   else if (action === 'call'){ const need = Math.min(p.chips, g.currentBet - p.betThisRound); p.chips -= need; p.betThisRound += need; p.totalBetHand += need; g.pot += need; if (!p.chips) p.allIn = true; }
@@ -67,6 +68,11 @@ function act(g, i, action, to){
     action = g.streetRaises > 1 || g.phase === 'preflop' ? 'raise' : 'bet';
   }
   g.handActions.push({ id:p.id, name:p.name, street:g.phase, action, amount:p.betThisRound });
+  // the engine's public log after the flop (aiObserveAction): b bet, r raise, c call, k check
+  if (g.phase !== 'preflop'){
+    const code = action === 'bet' || action === 'raise' ? (toCall > 0 ? 'r' : 'b') : action === 'call' ? 'c' : action === 'check' ? 'k' : null;
+    if (code) (g.handLog || (g.handLog = [])).push({ id:p.id, n:g.board.length, a:code });
+  }
 }
 function street(g, phase, cards){
   g.phase = phase; g.board.push(...cards); g.currentBet = 0; g.minRaise = g.bigBlind; g.streetRaises = 0;
@@ -79,7 +85,7 @@ const you = g => g.players.find(p => p.isHuman);
 function judge(g, i, action, to){
   const me = g.players[i], sp = B.spot(g, me);
   act(g, i, action, to);
-  return B.judgePreflop(sp, B.choice(sp, g, me));
+  return B.judge(sp, B.choice(sp, g, me));
 }
 const H = (a, b) => [C(a), C(b)];
 module.exports = { B, C, H, ctx, table, act, street, you, judge, LINES: () => ctx.CoachLines.lines };

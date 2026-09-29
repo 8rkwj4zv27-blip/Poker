@@ -91,7 +91,10 @@ const CoachTalk = (() => {
     lastUsed[moment] = l[2];
     return l;
   }
-  const fill = (text, ctx) => text.replace(/\{(\w+)\}/g, (m, k) => ctx[k] != null ? ctx[k] : m);
+  // blanks fill in lower case ("one player", "a flush draw"); a sentence
+  // that starts with one gets its capital back
+  const fill = (text, ctx) => text.replace(/\{(\w+)\}/g, (m, k) => ctx[k] != null ? ctx[k] : m)
+    .replace(/(^|[.?!]\s+)([a-z])/g, (m, p, c) => p + c.toUpperCase());
   /* TYPE: the numbers and the card names are what he's telling you, so by
      default they're set in the machine's screen font (Press Start 2P, the
      buttons' and CRTs' face), which reads far better at this size; the
@@ -347,7 +350,10 @@ const CoachTalk = (() => {
       SeatFrom: cap(SEAT_FROM[seat] || 'from here'), behindP: players(sp ? sp.actingAfter : 0),
       bb: n.bb != null ? n.bb : '', size: n.size != null ? n.size : '', call: fmt(n.call || 0), odds: n.odds != null ? n.odds : '',
       eq: n.eq != null ? n.eq : '', need: n.need != null ? n.need : '', raiser: n.raiser || 'they', limpersP: players(n.limpers || 0),
-      raiserFrom: SEAT_FROM[n.raiserSeat] || 'from there'
+      raiserFrom: SEAT_FROM[n.raiserSeat] || 'from there',
+      // after the flop
+      bettor: n.bettor || 'they', betSize: n.betSize || 'a bet', handName: n.handName || (sp && sp.holeFacts ? sp.holeFacts.name : ''),
+      drawName: n.drawName || 'a draw', DrawName: cap(n.drawName || 'a draw'), outs: n.outs != null ? n.outs : '', hitNext: n.hitNext != null ? n.hitNext : '', pot: fmt(n.pot != null ? n.pot : sp ? sp.pot : 0)
     };
   }
   const MOVE_WORD = { fold:'fold', check:'check', call:'call', raise:'raise', allin:'go all in' };
@@ -366,22 +372,24 @@ const CoachTalk = (() => {
   function sayAdvice(a, sp, help, notch){
     const ctx = adviceCtx(a, sp);
     if (help <= 1) return false;
-    if (help === 2) return sayAt(['hint.' + a.kind], ctx, notch);
-    const key = ['advise.' + a.kind + '.' + a.move];
+    const drawing = a.kind === 'post' && a.n && a.n.drawName && !['overpair', 'top-pair', 'two-pair', 'set', 'trips', 'straight', 'flush', 'full-house', 'quads', 'straight-flush'].includes(a.n.made);
+    if (help === 2) return sayAt(drawing ? ['hint.post.draw', 'hint.post'] : ['hint.' + a.kind], ctx, notch);
+    const key = drawing ? ['advise.post.' + a.move + '.draw', 'advise.post.' + a.move] : ['advise.' + a.kind + '.' + a.move];
     if (help === 3 && a.sure === 'close' && a.alt) return sayAt(['advise.close'], ctx, notch);
     return sayAt(key, ctx, notch, null, a.sure === 'leans' ? 'advise.tail.leans' : a.sure === 'close' ? 'advise.tail.leans' : null);
   }
   const A = { handNo:-1, advice:null, spot:null };
   function yourTurn(me){
     const g = game;
-    if (g.phase !== 'preflop' || typeof CoachBrain === 'undefined') return false;
-    const sp = CoachBrain.spot(g, me), a = CoachBrain.advisePreflop(sp);
+    if (typeof CoachBrain === 'undefined' || !['preflop', 'flop', 'turn', 'river'].includes(g.phase)) return false;
+    // (after the flop he advises when you face a bet; betting is step 3b)
+    const sp = CoachBrain.spot(g, me), a = CoachBrain.advise(sp);
     A.handNo = g.handNumber; A.advice = a; A.spot = sp;
     if (!a) return false;
     const help = +O.help, talk = +O.notch;
     if (help <= 1 || talk < 3) return false;
-    const junkFold = a.move === 'fold' && a.sure === 'clear' && sp.holeFacts.pct > 0.5;
-    const big = ['vsRaise', 'vsReraise', 'short'].includes(a.kind) || sp.holeFacts.pct < 0.06 || a.sure !== 'clear';
+    const junkFold = a.kind !== 'post' && a.move === 'fold' && a.sure === 'clear' && sp.holeFacts.pct > 0.5;
+    const big = ['vsRaise', 'vsReraise', 'short', 'post'].includes(a.kind) || sp.holeFacts.pct < 0.06 || a.sure !== 'clear';
     if (junkFold || (talk < 4 && !big)) return false;
     if (live && !live.judged) clear(true);
     return sayAdvice(a, sp, help, 3);
@@ -420,11 +428,20 @@ const CoachTalk = (() => {
     if (m) parts.push(m);
     const dn = DRAW_NAME(r.draws || {});
     if (dn && r.left){
-      const d = textOf('read.draw', Object.assign({}, ctx, { drawName:dn, outs:r.drawOuts, hitPct:r.hitPct, byWhen: r.left === 2 ? 'by the river' : 'on the river' }));
+      const d = textOf('read.draw', Object.assign({}, ctx, { drawName:dn, DrawName:cap(dn), outs:r.drawOuts, hitPct:r.hitPct, byWhen: r.left === 2 ? 'by the river' : 'on the river' }));
       if (d) parts.push(d);
     }
     let topic = dn ? 'explain.outs' : r.made === 'top-pair' ? 'explain.kicker' : 'explain.equity';
-    if (mine){
+    const adv = mine && r.toCall > 0 ? CoachBrain.advise(sp) : null;
+    if (adv){
+      // a bet in front of you: what he'd do (with the numbers) takes the price's place
+      A.advice = adv; A.spot = sp; A.handNo = g.handNumber;
+      const c = adviceCtx(adv, sp);
+      const drawing = adv.n && adv.n.drawName && dn;
+      const t = textOf(adv.sure === 'close' && adv.alt ? 'advise.close' : drawing && LINES['advise.post.' + adv.move + '.draw'] ? 'advise.post.' + adv.move + '.draw' : 'advise.post.' + adv.move, c);
+      if (t) parts.push(t);
+      topic = 'lesson.' + (adv.lesson || 'pot-odds');
+    } else if (mine){
       if (r.toCall > 0 && dn && r.left){
         const hitNext = Math.round(r.drawOuts / (52 - 2 - sp.board.length) * 100);
         const dp = textOf('read.drawprice', Object.assign({}, ctx, { hitNext })); if (dp) parts.push(dp);
@@ -472,7 +489,7 @@ const CoachTalk = (() => {
   }
   const SCORE = j => !j ? 0 : j.verdict === 'mistake' ? (j.confidence === 'clear' ? 5 : j.confidence === 'leans' ? 4 : 1)
     : j.notable ? 3 : j.confidence === 'close' ? 1 : 0;
-  const B = { handNo:-1, worded:false, praisedAt:-9, lessons:{}, told:{} };
+  const B = { handNo:-1, worded:false, praisedAt:-9, lessons:{}, told:{}, worded2:{} };
   /* right after you act: returns true if he said something */
   function wordNow(d){
     const j = d && d.judgement; if (!j) return false;
@@ -489,13 +506,17 @@ const CoachTalk = (() => {
       notch = j.verdict === 'good' ? 2 : 3;
     }
     if (!notch) return false;
+    // the same word again soon after is nagging: skip it (the reminder
+    // comes after the hand instead)
+    const last = B.worded2[j.tag];
+    if (last != null && g.handNumber - last <= (j.confidence === 'clear' ? 2 : 4)) return false;
     const keys = j.confidence === 'leans' ? [j.tag + '.now.leans', j.tag + '.now'] : [j.tag + '.now'];
     if (!keys.some(k => (LINES[k] || []).length) || notch > +O.notch) return false;
     // what you just did outranks the line about your turn: it goes
     if (live && !live.judged) clear(true);
     if (!sayAt(keys, slots(d.spot, j), notch)) return false;
     if (live) live.judged = true;
-    B.worded = true;
+    B.worded = true; B.worded2[j.tag] = g.handNumber;
     if (j.verdict !== 'mistake') B.praisedAt = g.handNumber;
     return true;
   }

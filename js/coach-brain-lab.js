@@ -49,13 +49,14 @@
       betThisRound:0, totalBetHand:0, mayRaise:true }));
     const sb = (dealer + 1) % n, bbi = (dealer + 2) % n;
     const g = { players, board:[], pot:0, currentBet:bb, minRaise:bb, bigBlind:bb, dealerIndex:dealer, sbIndex:sb, bbIndex:bbi,
-      phase:'preflop', handNumber:0, handActions:[], streetRaises:0, pfRaises:0, pfAggressorId:null, mode:'cash', reads:{} };
+      phase:'preflop', handNumber:0, handActions:[], handLog:[], streetRaises:0, pfRaises:0, pfAggressorId:null, mode:'cash', reads:{} };
     const post = (i, a) => { const p = players[i]; p.chips -= a; p.betThisRound += a; p.totalBetHand += a; g.pot += a; };
     post(sb, bb / 2); post(bbi, bb);
     return g;
   }
   function act(g, i, action, to){
     const p = g.players[i];
+    const toCall = g.currentBet - p.betThisRound;
     if (action === 'fold') p.folded = true;
     else if (action === 'call' && g.currentBet <= p.betThisRound) action = 'check';
     else if (action === 'call'){ const need = Math.min(p.chips, g.currentBet - p.betThisRound); p.chips -= need; p.betThisRound += need; p.totalBetHand += need; g.pot += need; if (!p.chips) p.allIn = true; }
@@ -63,9 +64,19 @@
       const need = to - p.betThisRound; p.chips -= need; p.betThisRound += need; p.totalBetHand += need; g.pot += need;
       if (!p.chips) p.allIn = true;
       g.minRaise = Math.max(g.minRaise, to - g.currentBet); g.currentBet = to;
-      g.streetRaises++; g.pfAggressorId = p.id; g.pfRaises = g.streetRaises;
+      g.streetRaises++; if (g.phase === 'preflop'){ g.pfAggressorId = p.id; g.pfRaises = g.streetRaises; }
     }
-    g.handActions.push({ id:p.id, name:p.name, street:'preflop', action, amount:p.betThisRound });
+    if (action === 'raise' && g.phase !== 'preflop' && g.streetRaises === 1) action = 'bet';
+    g.handActions.push({ id:p.id, name:p.name, street:g.phase, action, amount:p.betThisRound });
+    // the engine's public log after the flop
+    if (g.phase !== 'preflop'){
+      const code = action === 'bet' || action === 'raise' ? (toCall > 0 ? 'r' : 'b') : action === 'call' ? 'c' : action === 'check' ? 'k' : null;
+      if (code) g.handLog.push({ id:p.id, n:g.board.length, a:code });
+    }
+  }
+  function street(g, phase, cards){
+    g.phase = phase; g.board.push(...cards.map(card)); g.currentBet = 0; g.minRaise = g.bigBlind; g.streetRaises = 0;
+    g.players.forEach(p => { p.betThisRound = 0; });
   }
   // [label, seats, button, you, your cards, stack, before you [[seat, action, to]], you do [action, to]]
   const F = s => s.map(i => [i, 'fold']);
@@ -88,17 +99,42 @@
     ['BIG BLIND: FOLD KING-TEN', 6, 0, 2, ['Ks', 'Td'], 2000, F([3, 4, 5]).concat([[0, 'raise', 50], [1, 'fold']]), ['fold']],
     ['8 BLINDS: SHOVE ACE-NINE', 6, 0, 0, ['As', '9d'], 160, F([3, 4, 5]), ['raise', 160]],
     ['8 BLINDS: FOLD ACE-NINE', 6, 0, 0, ['As', '9d'], 160, F([3, 4, 5]), ['fold']],
-    ['8 BLINDS: LIMP ACE-NINE', 6, 0, 0, ['As', '9d'], 160, F([3, 4, 5]), ['call']]
+    ['8 BLINDS: LIMP ACE-NINE', 6, 0, 0, ['As', '9d'], 160, F([3, 4, 5]), ['call']],
+    // after the flop: the button raised, you called in the big blind; you check, they bet
+    ['FLOP: CALL A FLUSH DRAW, HALF POT', 'post', ['Ah', '5h'], ['Kh', '9h', '2c'], 0.5, ['call']],
+    ['FLOP: CHASE A GUTSHOT, POT BET', 'post', ['7s', '5d'], ['Kh', '9h', '8c'], 1.0, ['call']],
+    ['FLOP: CALL WITH NOTHING', 'post', ['Qs', '3d'], ['Kh', '9h', '2c'], 0.5, ['call']],
+    ['FLOP: FOLD TOP PAIR', 'post', ['Ks', 'Qd'], ['Kh', '9c', '2d'], 0.5, ['fold']],
+    ['FLOP: JUST CALL WITH A SET', 'post', ['9s', '9d'], ['Kh', '9c', '2d'], 0.5, ['call']],
+    ['FLOP: RAISE WITH A SET', 'post', ['9s', '9d'], ['Kh', '9c', '2d'], 0.5, ['raise', 3]],
+    ['RIVER: CALL A BIG BET, BOTTOM PAIR', 'post', ['2s', '3d'], ['Kh', '9c', '2d', 'Js', '5h'], 1.0, ['call']],
+    ['RIVER: FOLD A MISSED FLUSH', 'post', ['Ah', '5h'], ['Kh', '9h', '2c', '3s', 'Jd'], 0.7, ['fold']]
   ];
+  function playPost(spec){
+    const [, , hole, board, frac, mine] = spec;
+    const g = table(6, 0, 2, hole, 2000);
+    [3, 4, 5].forEach(i => act(g, i, 'fold')); act(g, 0, 'raise', 50); act(g, 1, 'fold'); act(g, 2, 'call');
+    street(g, 'flop', board.slice(0, 3));
+    if (board.length > 3){ act(g, 2, 'check'); act(g, 0, 'check'); street(g, 'turn', [board[3]]); }
+    if (board.length > 4){ act(g, 2, 'check'); act(g, 0, 'check'); street(g, 'river', [board[4]]); }
+    act(g, 2, 'check'); act(g, 0, 'raise', Math.round(g.pot * frac));
+    const me = g.players[2], sp = CB.spot(g, me);
+    act(g, 2, mine[0], mine[0] === 'raise' ? g.currentBet * mine[1] : 0);
+    const d = { spot:sp, choice:CB.choice(sp, g, me) };
+    d.judgement = CB.judge(sp, d.choice);
+    d.advice = CB.advise(sp);
+    return d;
+  }
   function playSpot(i){
+    if (SPOTS[i][1] === 'post') return playPost(SPOTS[i]);
     const [, n, dealer, you, hole, stack, before, mine] = SPOTS[i];
     const g = table(n, dealer, you, hole, stack);
     before.forEach(b => act(g, b[0], b[1], b[2]));
     const me = g.players[you], sp = CB.spot(g, me);
     act(g, you, mine[0], mine[1]);
     const d = { spot:sp, choice:CB.choice(sp, g, me) };
-    d.judgement = CB.judgePreflop(sp, d.choice);
-    d.advice = CB.advisePreflop(sp);
+    d.judgement = CB.judge(sp, d.choice);
+    d.advice = CB.advise(sp);
     return d;
   }
 
@@ -108,7 +144,8 @@
   function verdictCard(d, head){
     const j = d.judgement; if (!j) return '';
     const n = j.n, sp = d.spot;
-    const nums = n.eq != null ? 'You win about ' + n.eq + '% against the hands that raise usually means. You needed ' + n.need + '%.'
+    const nums = j.kind === 'post' ? (n.handName + (n.drawName ? ', ' + n.drawName + ' (' + n.outs + ' outs)' : '') + '. Facing ' + n.betSize + ': you win about ' + n.eq + '% against the hands that bet like that. You needed ' + n.need + '%.')
+      : n.eq != null ? 'You win about ' + n.eq + '% against the hands that raise usually means. You needed ' + n.need + '%.'
       : n.range != null ? 'Your hand: top ' + n.pct + '%. From ' + (sp.seat || 'there') + ', a sound player plays the top ' + n.range + '%.' : '';
     return '<div class="cbl-card is-' + j.verdict + '">' + (head ? '<div class="cbl-head">' + head + '</div>' : '') +
       '<div class="cbl-line">' + (sp.seat || '') + ' · ' + sp.holeFacts.name.toUpperCase() + ' · ' + (DID[d.choice.action] || d.choice.action) + '</div>' +
@@ -146,7 +183,7 @@
         '<button type="button" class="sdl-again" data-act="deal">DEAL AGAIN</button>';
     }
     return '<div class="sdl-row"><div class="sdl-name">HIS KEY</div>' + seg('keyFace', CS.OPTIONS.keyFace, picks.keyFace) +
-      '<p class="sdl-note">The key beside ⚙ that switches him on. P.I.P.: his name in pixel letters. TV + PIP: the little TV with his name under it. THE TV: as it is in v0.54.</p></div>' +
+      '<p class="sdl-note">The key beside ⚙ that switches him on (bottom right of the dashboard). HIS FACE: his two dots and mouth on a little dark screen, lit green when he\'s on. PIP IN BIG LETTERS: his name in the buttons\' lettering. THE TV: as it was in v0.54.</p></div>' +
       '<div class="sdl-actions"><button type="button" data-act="reset">START OVER</button><button type="button" data-act="copy">COPY MY PICKS</button></div>' +
       '<textarea class="sdl-copytext" readonly hidden></textarea>';
   }

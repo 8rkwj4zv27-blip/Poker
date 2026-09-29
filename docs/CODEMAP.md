@@ -610,6 +610,8 @@ only once shown at a showdown), never writes to the game. Tests:
 tables); the Pattern Book check guards the read-only rules.
 Step 2: `CoachBrain.judgePreflop` marks each preflop decision (good / fine
 / mistake, CLEAR / LEANS / CLOSE, a tag, a lesson, the numbers);
+Step 3a (v0.56.0): `judgePostflop` / `advise` after the flop when you face
+a bet (opponents' likely hands from public betting, `oppRange`).
 `js/coach-lines.js` (`CoachLines`) is his line library; `coach-talk.js`
 routes a word after you act, the reason after the hand, first-time
 lessons and repeat reminders. Tests share `validation/tools/coach-sandbox.js`.

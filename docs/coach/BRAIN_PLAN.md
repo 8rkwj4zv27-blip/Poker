@@ -357,3 +357,46 @@ an immediate read of the game.
 - **His key**: the tiny P.I.P. letters couldn't be read. Now HIS FACE
   (default suggestion), PIP IN BIG LETTERS, or the v0.54 TV, in the Brain
   Lab's KEY tab.
+
+## Step 3a · After the flop: calling and folding (v0.56.0, 29 Sep 2026)
+
+Facing a bet after the flop (`CoachBrain.judgePostflop`, and `advise` for
+the same spots):
+
+- **Their likely hands**, from public facts only, as the AI reads them:
+  what each opponent did before the flop (the raiser: the top X% for their
+  seat; called a raise: 20%, 45% from the big blind; called a re-raise: 8%;
+  limped: 45%; the big blind in a limped pot: anything), widened or
+  narrowed by their habits in the table's notebook, then narrowed by every
+  bet, raise, call and check since the flop (`narrowWeight`), with their
+  bluffing read from how often they bet and bluffs seen at showdowns.
+- **Your chance** against those hands (`estimateEquityVsRanges`, 1,500
+  samples, once per decision), used a little less before the river out of
+  position or with nothing, against the **price** (pot odds, plus a margin
+  with players still to act, less a little for a strong draw with deep
+  stacks: implied odds).
+- **Raising for value needs two pair or better** (and 70% against one
+  player, 55% against more): a raise gets called by better hands, so top
+  pair and overpairs call (raising them is fine, but close, as
+  protection). A strong draw may raise against one player as a
+  semi-bluff (fine, close).
+- **Verdict tags**: `post.fold.strong` / `good` / `close` / `draw` (had
+  the price to draw) / `priced`; `post.call.value` / `good` /
+  `draw.good` / `close` / `draw.bad` (chasing at the wrong price) /
+  `weak`; `post.raise.value` / `protect` / `semi` / `close` / `loose`.
+  Lessons: pot odds, drawing odds, river bets, hand strength, raising for
+  value, semi-bluffs (each with its reminders).
+- **Advice** at your turn when you face a bet (3x the bet, plus one per
+  caller, to the big blind; all in if that's most of your stack); the tap
+  read adds it in place of the price. Checked to you or first to act
+  (betting) is **step 3b**.
+- **Less nagging**: the same in-the-moment word isn't repeated within 2
+  hands (4 for a lean).
+- **Proof**: 44 checks, including known spots (a flush draw at half pot:
+  call; a gutshot against a pot bet: fold; nothing: fold; top pair: call;
+  a set: raise; bottom pair to a pot-sized river bet: fold) and 1,500
+  random spots after the flop (advice you can take and never a clear
+  mistake by the judge, the numbers agree with every verdict, folding a
+  near-certain winner is always a mistake, lines for everything). About
+  514 lines in the library.
+- **Lab**: 8 after-the-flop spots in TRY IT.

@@ -229,7 +229,7 @@ const CoachLines = (() => {
   /* ---------------- facing a raise ---------------- */
   add('vsraise.fold.good.now', 2, [['pleased', 'Good fold.'], ['calm', 'Good fold. Let it go.'], ['pleased', 'Disciplined.']]);
   add('vsraise.fold.good.why', 2, [
-    ['calm', '{hole} looks good, but {raiser} raised. Against the hands that raise usually means, you’re winning about {eq}% and needed {need}%. Fold was right.'],
+    ['calm', '{hole} against {raiser}’s raise: you were winning about {eq}% against the hands that raise usually means, and needed {need}%. Fold was right.'],
     ['pleased', 'Folding {hole} to a raise was right. Calling raises with hands that are behind is one of the most expensive habits in poker.'],
     ['calm', 'A raise tells you something. {raiser} raising means a stronger range, about the top {range}%. {hole} doesn’t do well against that.']]);
   add('vsraise.fold.close.why', 4, [
@@ -537,7 +537,7 @@ const CoachLines = (() => {
     ['impressed', '{handName}. That’s a big hand.'], ['impressed', '{handName}. Very strong.']]);
   add('read.draw', 3, [
     ['thinking', 'You’re on {drawName}: {outs} cards help you. About {hitPct}% to hit {byWhen}.'],
-    ['calm', '{drawName}, {outs} outs. That’s roughly {hitPct}% {byWhen}.']]);
+    ['calm', '{DrawName}, {outs} outs. That’s roughly {hitPct}% {byWhen}.']]);
   add('read.drawprice', 3, [
     ['thinking', 'The next card alone hits about {hitNext}%. The price needs {odds}%.'],
     ['calm', 'To call this with a draw, compare: {hitNext}% on the next card, {odds}% needed.']]);
@@ -562,6 +562,128 @@ const CoachLines = (() => {
     ['calm', 'Your kicker is your other card. With the same pair, the higher kicker wins.']]);
   add('explain.position', 3, [
     ['calm', 'Acting last is an advantage: you see what everyone does before you decide.']]);
+
+  /* ============================================================
+     AFTER THE FLOP, FACING A BET (step 3a)
+     Slots: {bettor} {betSize} (e.g. "about half the pot") {handName}
+     {drawName} {outs} {hitNext} (the next card alone) {eq} {need} {odds}
+     {call} {pot}
+     ============================================================ */
+  add('post.fold.strong.now', 1, [['surprised', 'You folded that? You were well ahead.'], ['wince', 'That was too good to fold.']]);
+  add('post.fold.strong.why', 2, [
+    ['thinking', 'You folded {handName} to {betSize}. Against the hands {bettor} bets like that, you were winning about {eq}%. That’s a call at least.'],
+    ['calm', '{handName} was strong here. One bet isn’t enough reason to let a hand like that go.']]);
+  add('post.fold.good.now', 2, [['pleased', 'Good fold.'], ['pleased', 'Good laydown.'], ['calm', 'Right. Let it go.']]);
+  add('post.fold.good.why', 2, [
+    ['calm', 'Folding {handName} to {betSize} was right. Against what that bet usually means, you win about {eq}%. You needed {need}%.'],
+    ['pleased', 'A good laydown. {handName} looks decent, but {bettor}’s bet says a better hand most of the time.'],
+    ['calm', 'The price was {odds}%, and your hand wasn’t winning often enough. Folding saves chips you’d lose.']]);
+  add('post.fold.close.why', 4, [['thinking', 'Folding there was close. About {eq}% against {need}% needed. Fine.'], ['calm', 'That fold was on the edge. No problem.']]);
+  add('post.fold.draw.now', 1, [['thinking', 'You had the price to draw.'], ['surprised', 'That draw was worth a call.']]);
+  add('post.fold.draw.now.leans', 3, [['thinking', 'I’d have called with that draw.']]);
+  add('post.fold.draw.why', 2, [
+    ['thinking', 'You folded {drawName}. The next card alone hits about {hitNext}%, and with more to come you were about {eq}%. You only needed {need}%.'],
+    ['calm', 'That draw had the price. {outs} outs, {call} to call into {pot}. When the numbers are with you, call.']]);
+  add('post.fold.draw.why.leans', 2, [['thinking', 'Folding {drawName} was a little tight. About {eq}% against {need}% needed.']]);
+  add('post.fold.priced.now', 1, [['thinking', 'That was worth a call.'], ['surprised', 'The price was good there.']]);
+  add('post.fold.priced.now.leans', 3, [['thinking', 'I’d have called that.']]);
+  add('post.fold.priced.why', 2, [
+    ['thinking', 'You folded {handName} for {call}. You needed about {need}% and had about {eq}% against {bettor}’s likely hands.'],
+    ['calm', 'That bet was {betSize}. At that price, {handName} wins often enough to call.']]);
+  add('post.fold.priced.why.leans', 2, [['thinking', 'Folding {handName} there was a bit tight. About {eq}% against {need}% needed.']]);
+  add('post.call.value.now', 3, [['thinking', 'You could raise that.'], ['thinking', 'That’s strong enough to raise.']]);
+  add('post.call.value.why', 2, [
+    ['thinking', 'Calling with {handName} is fine, but it’s strong enough to raise. You were about {eq}% against their hands. Make them pay.'],
+    ['calm', '{handName} against one bet: a raise wins more. Strong hands earn by building the pot.']]);
+  add('post.call.good.now', 4, [['calm', 'Good call.'], ['calm', 'Called. Fine.']]);
+  add('post.call.good.why', 2, [
+    ['calm', 'Calling {bettor} with {handName} was right. About {eq}% against the hands that bet like that, and you needed {need}%.'],
+    ['pleased', 'Good call. {betSize}, and {handName} wins often enough to pay for it.'],
+    ['calm', 'A bet doesn’t always mean a monster. {handName} was worth the {call}.']]);
+  add('post.call.draw.good.now', 2, [['pleased', 'Good call with the draw.'], ['calm', 'The price is right for that draw.']]);
+  add('post.call.draw.good.why', 2, [
+    ['calm', 'Calling with {drawName} was right. {outs} outs, and you needed {need}%. With the cards to come, you were about {eq}%.'],
+    ['pleased', 'Good. {DrawName} for {call} into {pot}: the price was good enough to chase it.']]);
+  add('post.call.close.why', 4, [['thinking', 'That call was close. About {eq}% against {need}% needed. Fine either way.'], ['calm', 'On the edge. Not a mistake.']]);
+  add('post.call.draw.bad.now', 1, [['wince', 'Chasing that is too expensive.'], ['thinking', 'That’s a lot to pay for a draw.']]);
+  add('post.call.draw.bad.now.leans', 3, [['thinking', 'A bit expensive for that draw.']]);
+  add('post.call.draw.bad.why', 2, [
+    ['thinking', 'You chased {drawName} for {call}. The next card hits about {hitNext}%, and the pot odds needed {odds}%. The price was wrong.'],
+    ['calm', 'Drawing costs money. {outs} outs isn’t enough when the bet is {betSize}. Fold, and chase when it’s cheap.']]);
+  add('post.call.draw.bad.why.leans', 2, [['thinking', 'Calling with {drawName} was slightly too expensive. About {eq}% against {need}% needed.']]);
+  add('post.call.weak.now', 1, [['wince', 'That’s a weak hand to call with.'], ['thinking', 'Hm. Calling that is expensive.']]);
+  add('post.call.weak.now.leans', 3, [['thinking', 'A loose call.'], ['thinking', 'I’d have folded.']]);
+  add('post.call.weak.why', 2, [
+    ['thinking', 'You called {betSize} with {handName}. Against the hands that bet like that, you win about {eq}%. You needed {need}%. That’s a fold.'],
+    ['calm', 'Calling with a weak hand because it might be good is one of the biggest leaks. {bettor}’s bet usually means better.'],
+    ['thinking', '{handName} was behind most of what {bettor} bets with there. Fold and keep the chips.']]);
+  add('post.call.weak.why.leans', 2, [['thinking', 'That call with {handName} was a little loose. About {eq}% against {need}% needed.']]);
+  add('post.raise.value.now', 2, [['pleased', 'Good raise.'], ['impressed', 'Raised. Good.'], ['pleased', 'Right. Make them pay.']]);
+  add('post.raise.value.why', 2, [
+    ['pleased', 'Raising with {handName} was right. You were about {eq}% against {bettor}’s hands. Strong hands win the most when the pot grows.'],
+    ['calm', 'A raise with {handName}: good. Worse hands pay you, and draws have to pay to chase.']]);
+  add('post.raise.protect.why', 4, [['thinking', 'Raising {handName} there is close. It protects your hand, but mostly better hands call. Calling is fine too.']]);
+  add('post.raise.semi.now', 3, [['thinking', 'A semi-bluff. Bold.'], ['calm', 'Raising the draw. Aggressive.']]);
+  add('post.raise.semi.why', 2, [
+    ['calm', 'Raising with {drawName} is a semi-bluff: they might fold now, and if not you can still hit. Fine against one player, not against several.'],
+    ['thinking', 'A raise with {drawName}. Two ways to win: they fold, or you hit your {outs} outs. It’s close, and it’s a style.']]);
+  add('post.raise.close.why', 4, [['thinking', 'That raise was close. Reasonable.']]);
+  add('post.raise.loose.now', 1, [['surprised', 'Raising with that?'], ['wince', 'That’s a lot to put in with that hand.']]);
+  add('post.raise.loose.why', 2, [
+    ['thinking', 'You raised with {handName}. Against {bettor}’s likely hands it wins about {eq}%. When they call or raise again, you’re usually behind.'],
+    ['calm', 'Raising a bet with a weak hand risks a lot to win a little. Keep raises for strong hands, or strong draws.']]);
+
+  add('advise.post.fold', 3, [
+    ['calm', 'Fold. {handName} wins about {eq}% against a bet like that, and you’d need {need}%.'],
+    ['thinking', '{bettor} bet {betSize}. {handName} isn’t good enough. Fold it.'],
+    ['calm', 'I’d fold. The price is {odds}%, and you’re not winning that often.']]);
+  add('advise.post.call', 3, [
+    ['calm', 'Call. About {eq}% against their hands, and you need {need}%.'],
+    ['calm', 'The price is right. Call with {handName}.'],
+    ['thinking', 'Call. It’s {call} into {pot}, and you win often enough to pay it.']]);
+  add('advise.post.raise', 3, [
+    ['pleased', 'Raise. {handName} is strong: about {eq}% against them. Make it {to}.'],
+    ['impressed', '{handName}. Raise it to about {to}. Make them pay to see more.']]);
+  add('advise.post.allin', 3, [
+    ['calm', 'All in. {handName} is strong enough, about {eq}%.'],
+    ['impressed', 'Put it all in. You’re well ahead.']]);
+  add('advise.post.call.draw', 3, [
+    ['calm', 'Call. {DrawName}: {outs} outs. The price needs {need}%, and you’re about {eq}% with the cards to come.'],
+    ['thinking', 'The price is right for {drawName}. Call.']]);
+  add('advise.post.fold.draw', 3, [
+    ['calm', 'Fold. {DrawName} hits about {hitNext}% on the next card, and the pot odds need {odds}%. Too expensive.'],
+    ['thinking', 'Too dear to chase {drawName}. Let it go.']]);
+  add('hint.post', 3, [
+    ['thinking', '{bettor} bet {betSize}. What does a bet like that usually mean?'],
+    ['thinking', 'It’s {call} to call into {pot}. How often does {handName} need to win?'],
+    ['calm', 'Compare the price with how often you win.']]);
+  add('hint.post.draw', 3, [
+    ['thinking', 'You’re drawing. Count your outs, and look at the price.'],
+    ['thinking', '{outs} outs, {call} to call. Is the draw worth it?']]);
+
+  add('lesson.pot-odds', 2, [
+    ['calm', 'Pot odds: what a call costs against what it can win. If it costs 25 to win 75, you need to win one time in four, 25%.'],
+    ['calm', 'After the flop, ask two things: what does their bet usually mean, and does my hand win often enough to pay the price?']]);
+  add('lesson.drawing-odds', 2, [
+    ['calm', 'Outs are the cards that make your hand. A flush draw has 9. Each card to come gives about 2% per out. Compare that with the price.'],
+    ['calm', 'Chasing a draw is only right when the price is. Small bets, call. Big bets, usually fold, unless the stacks are deep.']]);
+  add('lesson.river-bets', 2, [
+    ['calm', 'Big river bets are rarely bluffs, especially from quiet players. A hand that only beats a bluff is called a bluff catcher.'],
+    ['calm', 'On the river there are no more cards. Your hand wins or it doesn’t. Ask how often they bluff there.']]);
+  add('lesson.hand-strength', 2, [
+    ['calm', 'How strong a hand is depends on the board. Top pair is good on a quiet board, and weak when four to a flush are showing.'],
+    ['calm', 'A single bet isn’t a reason to fold a strong hand. Players bet with worse hands too, and with draws.']]);
+  add('lesson.raising-for-value', 2, [
+    ['calm', 'Raising for value: when you’re well ahead, raise so worse hands put more in. Two pair or better, usually.'],
+    ['calm', 'Top pair usually calls a bet rather than raising. A raise gets called by better hands and folds out the worse ones.']]);
+  add('lesson.semi-bluff', 2, [
+    ['calm', 'A semi-bluff is a bet or raise with a draw. You can win when they fold, or when you hit. Works best against one player.']]);
+  add('again.pot-odds', 3, [['thinking', 'Same again: check the price.'], ['calm', 'Remember the pot odds.']]);
+  add('again.drawing-odds', 3, [['thinking', 'Another expensive chase.'], ['calm', 'Same as before: draws need the right price.']]);
+  add('again.river-bets', 3, [['thinking', 'Careful with big river bets.'], ['calm', 'Again: a big river bet is rarely a bluff.']]);
+  add('again.hand-strength', 3, [['thinking', 'Another good hand folded.'], ['calm', 'Same again: that hand was strong.']]);
+  add('again.raising-for-value', 3, [['thinking', 'That’s another one to raise.'], ['calm', 'Same again: raise the strong ones.']]);
+  add('again.semi-bluff', 3, [['thinking', 'Another semi-bluff. Careful how often.']]);
 
   return { lines:L };
 })();
