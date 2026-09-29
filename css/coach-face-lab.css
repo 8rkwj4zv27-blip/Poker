@@ -21,3 +21,12 @@
 .cfl-frame{ display:flex; flex-direction:column; align-items:center; gap:3px; }
 .cfl-frame canvas{ display:block; width:100%; height:auto; image-rendering:pixelated; image-rendering:crisp-edges; border:2px solid #080405; }
 .cfl-frame span{ font-family:var(--font-hdr); font-size:7px; color:#B69A7A; letter-spacing:.04em; }
+/* Coach Rig Lab: the four keys at the top of every tab */
+.crl-acts{ display:grid; grid-template-columns:repeat(4,1fr); gap:5px; margin:4px 0 6px; }
+.crl-acts button{
+  min-height:44px; padding:4px; border:2px solid #080405; border-radius:3px; background:#E8B83A; color:#080405;
+  font-family:var(--font-hdr); font-size:6px; letter-spacing:.03em; line-height:1.4; cursor:pointer;
+  box-shadow:inset 0 2px 0 #FFE380,0 3px 0 #080405;
+}
+.crl-acts button:nth-child(2){ background:#34171A; color:#F3E6C4; box-shadow:inset 0 2px 0 rgba(255,255,255,.08),0 3px 0 #080405; }
+.crl-acts button:active{ transform:translateY(2px); box-shadow:inset 0 2px 0 #FFE380,0 1px 0 #080405; }

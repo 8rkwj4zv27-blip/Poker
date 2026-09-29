@@ -84,7 +84,13 @@ const CoachSet = (() => {
       if (d <= r * r + r * .6) px(c, d > (r - 1) * (r - 1) + (r - 1) * .6 ? INK : (xx + yy < 0 ? '#B8A988' : '#6A5D48'), cx + xx, cy + yy);
     }
   }
-  function led(c, x, y, on){ px(c, INK, x - 1, y - 1, 4, 3); px(c, on ? '#8CF0A8' : '#1D3A28', x, y, 2, 1); }
+  // the lamp: off, booting (the LED option's colour) or on (green)
+  const LED_BOOT = { amber:'#F2B431', red:'#E0503C', green:'#8CF0A8' };
+  let ledBoot = 'amber';
+  function led(c, x, y, st){
+    const col = st === 'boot' ? (LED_BOOT[ledBoot] || LED_BOOT.amber) : st ? '#8CF0A8' : '#1D3A28';
+    px(c, INK, x - 1, y - 1, 4, 3); px(c, col, x, y, 2, 1);
+  }
   function feet(c, x1, x2, y){ px(c, INK, x1, y, 6, 2); px(c, INK, x2, y, 6, 2); }
 
   const SETS = {
@@ -179,10 +185,33 @@ const CoachSet = (() => {
       c.globalAlpha = 1;
     }
   }
-  // the boot's frames on the tube: a dot, a line, static
-  function drawBoot(c, W, H, kind, t, ink){
+  /* a 3x5 pixel font for the tube's boot text */
+  const GLYPHS = {
+    A:'010101111101101', B:'110101110101110', C:'011100100100011', D:'110101101101110', E:'111100110100111', F:'111100110100100',
+    G:'011100101101011', H:'101101111101101', I:'111010010010111', K:'101110100110101', L:'100100100100111', M:'101111111101101',
+    N:'110101101101101', O:'010101101101010', P:'110101110100100', R:'110101110101101', S:'011100010001110', T:'111010010010010',
+    U:'101101101101111', V:'101101101101010', W:'101101111111101', Y:'101101010010010',
+    '0':'111101101101111', '1':'010110010010111', '2':'110001010100111', '3':'110001010001110', '4':'101101111001001',
+    '5':'111100110001110', '6':'011100111101111', '7':'111001010010010', '8':'111101111101111', '9':'111101111001110',
+    '.':'000000000000010', '-':'000000111000000', ':':'000010000010000', '?':'110001010000010', '!':'010010010000010', ' ':'000000000000000'
+  };
+  function drawText(c, str, x, y, col){
+    c.fillStyle = col;
+    String(str).toUpperCase().split('').forEach((ch, i) => {
+      const g = GLYPHS[ch] || GLYPHS['?'];
+      for (let r = 0; r < 5; r++) for (let q = 0; q < 3; q++) if (g[r * 3 + q] === '1') c.fillRect(x + i * 4 + q, y + r, 1, 1);
+    });
+  }
+  // the boot's frames on the tube: a dot, a line, static, typed text
+  function drawBoot(c, W, H, kind, t, ink, extra){
     c.clearRect(0, 0, W, H);
     const cx = Math.floor(W / 2), cy = Math.floor(H / 2);
+    if (kind === 'text'){
+      const lines = (extra && extra.lines) || [];
+      lines.forEach((l, i) => drawText(c, l, 2, 2 + i * 6, ink));
+      if (extra && extra.cursor){ const last = lines[lines.length - 1] || '', row = Math.max(0, lines.length - 1); c.fillStyle = ink; c.fillRect(2 + last.length * 4, 2 + row * 6, 3, 5); }
+      return;
+    }
     if (kind === 'dot'){ c.fillStyle = '#fff'; c.fillRect(cx - 1, cy, 2, 1); }
     else if (kind === 'line'){ const w = Math.max(2, Math.round(W * t)); c.fillStyle = '#fff'; c.fillRect(cx - (w >> 1), cy, w, 1); c.fillStyle = ink; c.fillRect(cx - (w >> 1), cy - 1, w, 1); }
     else if (kind === 'static'){
@@ -201,6 +230,12 @@ const CoachSet = (() => {
     return actx;
   }
   ['touchend', 'click'].forEach(ev => addEventListener(ev, () => ac(), { passive:true }));
+  let master = null, masterLevel = 1;
+  function out(ctx){
+    if (!master || master.context !== ctx){ master = ctx.createGain(); master.connect(out(ctx)); }
+    master.gain.value = masterLevel;
+    return master;
+  }
   function noise(ctx, dur){
     const b = ctx.createBuffer(1, Math.ceil(ctx.sampleRate * dur), ctx.sampleRate), d = b.getChannelData(0);
     for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
@@ -212,14 +247,14 @@ const CoachSet = (() => {
       const o = ctx.createOscillator(), g = ctx.createGain();
       o.type = 'sine'; o.frequency.setValueAtTime(95, t); o.frequency.exponentialRampToValueAtTime(38, t + .22);
       g.gain.setValueAtTime(.0001, t); g.gain.exponentialRampToValueAtTime(.55 * w, t + .008); g.gain.exponentialRampToValueAtTime(.0001, t + .32);
-      o.connect(g).connect(ctx.destination); o.start(t); o.stop(t + .34);
+      o.connect(g).connect(out(ctx)); o.start(t); o.stop(t + .34);
       const n = noise(ctx, .09), f = ctx.createBiquadFilter(), ng = ctx.createGain();
       f.type = 'lowpass'; f.frequency.value = 600; ng.gain.setValueAtTime(.35 * w, t); ng.gain.exponentialRampToValueAtTime(.0001, t + .09);
-      n.connect(f).connect(ng).connect(ctx.destination); n.start(t);
+      n.connect(f).connect(ng).connect(out(ctx)); n.start(t);
       // the set's own rattle, a hair later
       const r = noise(ctx, .05), rf = ctx.createBiquadFilter(), rg = ctx.createGain();
       rf.type = 'bandpass'; rf.frequency.value = 2400; rf.Q.value = 3; rg.gain.setValueAtTime(.08 * w, t + .03); rg.gain.exponentialRampToValueAtTime(.0001, t + .09);
-      r.connect(rf).connect(rg).connect(ctx.destination); r.start(t + .03);
+      r.connect(rf).connect(rg).connect(out(ctx)); r.start(t + .03);
     },
     clack(){
       const ctx = ac(); if (!ctx) return; const t = ctx.currentTime;
@@ -227,7 +262,7 @@ const CoachSet = (() => {
         const n = noise(ctx, .025), f = ctx.createBiquadFilter(), g = ctx.createGain();
         f.type = 'bandpass'; f.frequency.value = i ? 1800 : 3200; f.Q.value = 4;
         g.gain.setValueAtTime(.3, t + d); g.gain.exponentialRampToValueAtTime(.0001, t + d + .025);
-        n.connect(f).connect(g).connect(ctx.destination); n.start(t + d);
+        n.connect(f).connect(g).connect(out(ctx)); n.start(t + d);
       });
     },
     whine(){
@@ -235,13 +270,13 @@ const CoachSet = (() => {
       const o = ctx.createOscillator(), g = ctx.createGain();
       o.type = 'sine'; o.frequency.setValueAtTime(1900, t); o.frequency.exponentialRampToValueAtTime(3400, t + .5);
       g.gain.setValueAtTime(.0001, t); g.gain.exponentialRampToValueAtTime(.035, t + .08); g.gain.exponentialRampToValueAtTime(.0001, t + .6);
-      o.connect(g).connect(ctx.destination); o.start(t); o.stop(t + .62);
+      o.connect(g).connect(out(ctx)); o.start(t); o.stop(t + .62);
     },
     hiss(dur){
       const ctx = ac(); if (!ctx) return; const t = ctx.currentTime;
       const n = noise(ctx, dur), f = ctx.createBiquadFilter(), g = ctx.createGain();
       f.type = 'highpass'; f.frequency.value = 1500; g.gain.setValueAtTime(.06, t); g.gain.exponentialRampToValueAtTime(.0001, t + dur);
-      n.connect(f).connect(g).connect(ctx.destination); n.start(t);
+      n.connect(f).connect(g).connect(out(ctx)); n.start(t);
     },
     blip(up){
       const ctx = ac(); if (!ctx) return; const t = ctx.currentTime;
@@ -249,15 +284,36 @@ const CoachSet = (() => {
         const o = ctx.createOscillator(), g = ctx.createGain(), s = t + i * .07;
         o.type = 'square'; o.frequency.value = hz;
         g.gain.setValueAtTime(.0001, s); g.gain.exponentialRampToValueAtTime(.05, s + .005); g.gain.exponentialRampToValueAtTime(.0001, s + .06);
-        o.connect(g).connect(ctx.destination); o.start(s); o.stop(s + .07);
+        o.connect(g).connect(out(ctx)); o.start(s); o.stop(s + .07);
       });
+    },
+    relay(){
+      const ctx = ac(); if (!ctx) return; const t = ctx.currentTime;
+      [0, .018].forEach(d => {
+        const n = noise(ctx, .012), f = ctx.createBiquadFilter(), g = ctx.createGain();
+        f.type = 'highpass'; f.frequency.value = 2500; g.gain.setValueAtTime(.22, t + d); g.gain.exponentialRampToValueAtTime(.0001, t + d + .012);
+        n.connect(f).connect(g).connect(out(ctx)); n.start(t + d);
+      });
+    },
+    tick(){
+      const ctx = ac(); if (!ctx) return; const t = ctx.currentTime;
+      const o = ctx.createOscillator(), g = ctx.createGain();
+      o.type = 'square'; o.frequency.value = 1320 + Math.random() * 120;
+      g.gain.setValueAtTime(.0001, t); g.gain.exponentialRampToValueAtTime(.025, t + .003); g.gain.exponentialRampToValueAtTime(.0001, t + .03);
+      o.connect(g).connect(out(ctx)); o.start(t); o.stop(t + .035);
+    },
+    zap(){
+      const ctx = ac(); if (!ctx) return; const t = ctx.currentTime;
+      const n = noise(ctx, .08), f = ctx.createBiquadFilter(), g = ctx.createGain();
+      f.type = 'bandpass'; f.frequency.value = 4200; f.Q.value = 2; g.gain.setValueAtTime(.12, t); g.gain.exponentialRampToValueAtTime(.0001, t + .08);
+      n.connect(f).connect(g).connect(out(ctx)); n.start(t);
     },
     scrape(){
       const ctx = ac(); if (!ctx) return; const t = ctx.currentTime;
       const n = noise(ctx, .22), f = ctx.createBiquadFilter(), g = ctx.createGain();
       f.type = 'bandpass'; f.frequency.setValueAtTime(700, t); f.frequency.exponentialRampToValueAtTime(260, t + .2); f.Q.value = 1.4;
       g.gain.setValueAtTime(.16, t); g.gain.exponentialRampToValueAtTime(.0001, t + .22);
-      n.connect(f).connect(g).connect(ctx.destination); n.start(t);
+      n.connect(f).connect(g).connect(out(ctx)); n.start(t);
     }
   };
 
@@ -275,11 +331,33 @@ const CoachSet = (() => {
     cable:[['rope', 'LOOSE'], ['tight', 'SHORTER']],
     turn:[['random', 'A UP + B DOWN, OR REVERSED'], ['in', 'ALWAYS A'], ['out', 'ALWAYS B']],
     lines:[['clean', 'CLEAN'], ['full', 'FULL INK'], ['soft', 'SOFT']],
-    speed:[['1', 'NORMAL'], ['4', 'SLOW x4'], ['10', 'SLOW x10']]
+    speed:[['1', 'NORMAL'], ['4', 'SLOW x4'], ['10', 'SLOW x10']],
+    /* the Rig Lab (round 4): the lead and the boot. First of each is my suggestion. */
+    lead:[['thick', 'THICK'], ['thin', 'THIN (ROUND 3)'], ['coiled', 'COILED'], ['braided', 'BRAIDED']],
+    leadCol:[['black', 'BLACK'], ['grey', 'GREY'], ['cream', 'CREAM'], ['dash', 'DASHBOARD']],
+    length:[['medium', 'MEDIUM'], ['short', 'SHORT'], ['long', 'LONG']],
+    exit:[['back', 'BACK CORNER'], ['side', 'SIDE'], ['bottom', 'UNDERNEATH']],
+    plug:[['jack', 'JACK'], ['block', 'BLOCK'], ['rca', 'RED RCA']],
+    jack:[['lamp', 'PLATE + LAMP'], ['plate', 'PLATE'], ['ring', 'RING (ROUND 3)']],
+    plugIn:[['push', 'LIFTED IN'], ['slide', 'SLID ALONG'], ['snap', 'SNAPS IN']],
+    unplug:[['yank', 'YANKED'], ['pop', 'POPS (ROUND 3)'], ['slide', 'SLID OUT']],
+    spark:[['on', 'SPARK'], ['off', 'NONE']],
+    leadJolt:[['bounce', 'JUMPS ON THE THUD'], ['none', 'STAYS PUT']],
+    leadStep:[['stepped', '14 A SECOND'], ['smooth', 'SMOOTH']],
+    power:[['fill', 'LEAD LIGHTS UP'], ['pulse', 'ONE PULSE (ROUND 3)'], ['none', 'NOTHING']],
+    tube:[['crt', 'DOT, LINE, STATIC'], ['text', 'TYPES A LINE'], ['bios', 'SYSTEM CHECK'], ['scan', 'SCANS DOWN'], ['flicker', 'FLICKERS ON']],
+    says:[['coach', 'COACH / ONLINE'], ['hello', 'HELLO'], ['ready', 'READY'], ['none', 'JUST A CURSOR']],
+    wake:[['look', 'BLINKS + LOOKS ROUND'], ['blinks', 'TWO BLINKS'], ['wide', 'WIDE EYES'], ['none', 'STRAIGHT ON']],
+    led:[['amber', 'AMBER THEN GREEN'], ['red', 'RED THEN GREEN'], ['green', 'GREEN']],
+    coachSound:[['full', 'FULL'], ['soft', 'SOFT'], ['off', 'OFF']],
+    bootLen:[['full', 'FULL'], ['quick', 'QUICK (MID-GAME)']],
+    shutdown:[['crt', 'LINE TO A DOT'], ['blink', 'SHUTS HIS EYES'], ['text', 'TYPES BYE']]
   };
   // The owner's picks (round 3, 29 Sep 2026): CUBE, DASHBOARD, CLEAN lines,
   // from UNDER the table, turning A up and B down or the reverse at random.
-  const DEFAULTS = { set:'cube', finish:'dashboard', ink:'machine', glasses:'off', from:'under', weight:'heavy', jolt:'on', dust:'on', boot:'full', cable:'rope', turn:'random', lines:'clean', speed:'1', mood:'calm' };
+  const DEFAULTS = { set:'cube', finish:'dashboard', ink:'machine', glasses:'off', from:'under', weight:'heavy', jolt:'on', dust:'on', boot:'full', cable:'rope', turn:'random', lines:'clean', speed:'1', mood:'calm',
+    lead:'thick', leadCol:'black', length:'medium', exit:'back', plug:'jack', jack:'lamp', plugIn:'push', unplug:'yank', spark:'on', leadJolt:'bounce', leadStep:'stepped',
+    power:'fill', tube:'crt', says:'coach', wake:'look', led:'amber', coachSound:'full', bootLen:'full', shutdown:'crt' };
   const WEIGHT = { heavy:{ g:1, squash:.16, jolt:2, thud:1 }, brick:{ g:1.35, squash:.22, jolt:3, thud:1.25 }, light:{ g:.75, squash:.1, jolt:1, thud:.7 } };
   let O = Object.assign({}, DEFAULTS);
 
@@ -343,8 +421,9 @@ const CoachSet = (() => {
     if (!body) return;
     const c = body.getContext('2d');
     c.clearRect(0, 0, body.width, body.height);
-    setOf().draw(c, palOf(O.finish), on && !busyBooting);
+    setOf().draw(c, palOf(O.finish), ledState);
   }
+  let ledState = false;
 
   /* ---------------- the set in the round ----------------
      For the lift on and off the table the set is a real box: its front is
@@ -515,69 +594,92 @@ const CoachSet = (() => {
     tv.style.visibility = (!on && !busy) ? 'hidden' : 'visible';
   }
 
-  let busyBooting = false;
   function paintFace(){
     if (!face) return;
     const c = face.getContext('2d'), S = setOf();
     if (!on && !bootFrame){ c.clearRect(0, 0, S.screen.w, S.screen.h); return; }
-    if (bootFrame){ drawBoot(c, S.screen.w, S.screen.h, bootFrame.kind, bootFrame.t, INKS[O.ink]); return; }
+    if (bootFrame && bootFrame.kind === 'scan'){
+      // the face drawn down to the scanning bar, the bar bright
+      drawFace(c, S.screen.w, S.screen.h, Object.assign({}, st, { glasses:O.glasses === 'on' }), INKS[O.ink]);
+      c.clearRect(0, bootFrame.row + 1, S.screen.w, S.screen.h);
+      c.fillStyle = '#fff'; c.fillRect(0, bootFrame.row, S.screen.w, 1);
+      return;
+    }
+    if (bootFrame){ drawBoot(c, S.screen.w, S.screen.h, bootFrame.kind, bootFrame.t, INKS[O.ink], bootFrame.extra); return; }
     drawFace(c, S.screen.w, S.screen.h, Object.assign({}, st, { glasses:O.glasses === 'on' }), INKS[O.ink]);
   }
 
   /* ---------------- the cable: an aux lead ----------------
-     A short lead from the back of the set to a jack on the top edge of the
-     dashboard, just below him. It's a little rope (verlet): the set end is
-     fixed to the set, the plug end is free until it's pushed into the jack
-     after he lands, and pulled out before he's swiped off. Slack lies on
-     the dashboard's top edge rather than hanging over its screens. */
+     A short lead from the set to a jack on the top edge of the dashboard,
+     just below him. It's a little rope (verlet): the set end is fixed to
+     the set, the plug end is free until it's put into the jack after he
+     lands, and taken out before he's swiped off. Slack lies on the
+     dashboard's top edge rather than hanging over its screens. The Rig
+     Lab's rows choose its look (lead, colour, length, where it leaves the
+     set, the plug, the jack) and its moves (in, out, spark, the jump on
+     the landing, 14-a-second or smooth). */
   let rope = null, ropeRAF = 0, ropeLen = 0, plugged = false, plugTo = null, jack = null;
+  let spark = 0, fillAmt = 0, fillGlow = 0, pulse = -1, lastDrawStep = -1;
+  const LEADS = { black:['#3A3A40', '#6A6A74'], grey:['#7A7E86', '#A8ACB4'], cream:['#CDBF9B', '#F2E8CB'] };
+  function leadCols(){ if (O.leadCol === 'dash'){ const p = palOf('dashboard'); return [p.base, p.hi]; } return LEADS[O.leadCol] || LEADS.black; }
   function jackAt(){
     const dock = $id('your-seat-dock'), tr = tv && tv.getBoundingClientRect();
     if (!dock || !tr) return null;
     const dr = dock.getBoundingClientRect();
     // on the dashboard's top edge, a little towards the middle from the set
-    const S = setOf(), port = portAt();
-    const x = port ? port[0] + (home.left ? 16 : -16) : tr.left + tr.width / 2;
-    return [Math.round(x), Math.round(dr.top + 5)];
+    const cxTv = tr.left + tr.width / 2;
+    return [Math.round(cxTv + (home.left ? 22 : -22)), Math.round(dr.top + 5)];
   }
   function ensureJack(){
     const dock = $id('your-seat-dock'); if (!dock) return;
-    if (!jack || !jack.isConnected){ jack = document.createElement('i'); jack.className = 'cs-jack'; document.body.appendChild(jack); }
+    if (!jack || !jack.isConnected){ jack = document.createElement('i'); document.body.appendChild(jack); }
+    jack.className = 'cs-jack cs-jack--' + (O.jack || 'lamp');
     const j = jackAt(); if (!j) return;
-    jack.style.transform = 'translate(' + (j[0] - 5) + 'px,' + (j[1] - 4) + 'px)';
-    jack.classList.toggle('is-live', plugged);
+    const w = O.jack === 'ring' ? 10 : 18;
+    jack.style.transform = 'translate(' + (j[0] - w / 2) + 'px,' + (j[1] - 4) + 'px)';
+    jack.classList.toggle('is-live', plugged && ledState === true);
+    jack.classList.toggle('is-in', plugged);
+  }
+  function exitPoint(S){
+    if (O.exit === 'side') return { x:1, y:Math.round(S.box.y + S.box.h * .62) };
+    if (O.exit === 'bottom') return { x:Math.round(S.w / 2), y:S.h - 1 };
+    return S.port;
   }
   function portAt(){
     if (!tv || !tv.isConnected) return null;
-    const tr = tv.getBoundingClientRect(), felt = $id('felt').getBoundingClientRect(), S = setOf();
+    const tr = tv.getBoundingClientRect(), felt = $id('felt').getBoundingClientRect(), S = setOf(), pt = exitPoint(S);
     const sxScale = tr.width / (S.w * P) || 1;
-    const bx = home.left ? tr.left + (S.w - S.port.x) * P * sxScale : tr.left + S.port.x * P * sxScale;
-    let by = tr.top + S.port.y * P * (tr.height / (S.h * P) || 1);
+    // the port sits on the side of the set towards the jack
+    const bx = home.left ? tr.left + (S.w - pt.x) * P * sxScale : tr.left + pt.x * P * sxScale;
+    let by = tr.top + pt.y * P * (tr.height / (S.h * P) || 1);
     // while he's under the table, the lead goes over the table's edge to him
     return [bx, Math.min(by, felt.bottom - 4)];
   }
+  function leadLength(){ return ({ short:46, medium:64, long:88 })[O.length] || (O.cable === 'tight' ? 46 : 64); }
   function ropeStart(){
     const b = portAt(); if (!b) return;
-    const N = 14;
-    ropeLen = O.cable === 'tight' ? 46 : 64;
+    const N = 16;
+    ropeLen = leadLength();
     rope = [];
-    // hanging from the back of the set
+    // hanging from the set
     for (let i = 0; i <= N; i++){ const t = 1 - i / N; rope.push({ x:b[0] + (home.left ? -1 : 1) * t * 6, y:b[1] + t * ropeLen * .8, px:0, py:0 }); }
     rope.forEach(p => { p.px = p.x; p.py = p.y; });
-    plugged = false; plugTo = null;
+    plugged = false; plugTo = null; lastDrawStep = -1;
     cancelAnimationFrame(ropeRAF); let last = performance.now();
     const step = now => {
       const dt = Math.min(.033, (now - last) / 1000); last = now;
-      tickRope(dt); drawRope(); ensureJack();
+      tickRope(dt);
+      const stepN = Math.floor(now / FRAME);
+      if (O.leadStep !== 'stepped' || stepN !== lastDrawStep){ lastDrawStep = stepN; drawRope(); ensureJack(); }
       ropeRAF = requestAnimationFrame(step);
     };
     ropeRAF = requestAnimationFrame(step);
   }
   function ropeStop(){ cancelAnimationFrame(ropeRAF); ropeRAF = 0; rope = null; plugged = false; ensureJack(); if (cableC){ const c = cableC.getContext('2d'); c.clearRect(0, 0, cableC.width, cableC.height); } }
+  const floorY = () => { const dock = $id('your-seat-dock'); return dock ? dock.getBoundingClientRect().top + 7 : Infinity; };
   function tickRope(dt){
     const b = portAt(); if (!b || !rope) return;
-    const N = rope.length - 1, seg = ropeLen / N, g = 1500;
-    const dock = $id('your-seat-dock'), floor = dock ? dock.getBoundingClientRect().top + 7 : Infinity;
+    const N = rope.length - 1, seg = ropeLen / N, g = 1500, floor = floorY();
     for (let i = 0; i < N; i++){
       if (i === 0 && (plugged || plugTo)) continue;
       const p = rope[i], vx = (p.x - p.px) * .95, vy = (p.y - p.py) * .95;
@@ -599,50 +701,113 @@ const CoachSet = (() => {
       if (!plugged && !plugTo && rope[0].y > floor){ rope[0].y = floor; rope[0].py = floor; }
     }
   }
-  /* push the plug into the jack (stepped, like everything else) */
+  // the landing thud throws the lead up a little
+  function bumpRope(){
+    if (!rope || O.leadJolt !== 'bounce') return;
+    rope.forEach((p, i) => { if (i > 0 && i < rope.length - 1){ p.py = p.y + 3 + Math.random() * 4; p.px = p.x + (Math.random() - .5) * 2; } });
+    if (!plugged) { rope[0].py = rope[0].y + 5; }
+  }
+  /* the plug goes into the jack, stepped like everything else */
   async function plugIn(){
     const j = jackAt(); if (!rope || !j) return;
-    const from = [rope[0].x, rope[0].y];
-    for (let i = 1; i <= 4; i++){
-      const t = i / 4, lift = Math.sin(t * Math.PI) * 10;
-      plugTo = [from[0] + (j[0] - from[0]) * t, from[1] + (j[1] - from[1]) * t - lift];
-      await sleep(FRAME);
+    const from = [rope[0].x, rope[0].y], floor = floorY();
+    if (O.plugIn === 'slide'){
+      // dragged along the dashboard's edge to the jack, then down into it
+      const n = 5;
+      for (let i = 1; i <= n; i++){ const t = i / n; plugTo = [from[0] + (j[0] - from[0]) * t, Math.min(floor, from[1] + (floor - from[1]) * Math.min(1, t * 2)) - 2]; await sleep(FRAME); }
+      plugTo = [j[0], j[1] - 3]; await sleep(FRAME);
+    } else if (O.plugIn === 'snap'){
+      plugTo = [from[0] + (j[0] - from[0]) * .6, from[1] + (j[1] - from[1]) * .6 - 6]; await sleep(FRAME);
+    } else {
+      for (let i = 1; i <= 4; i++){
+        const t = i / 4, lift = Math.sin(t * Math.PI) * 10;
+        plugTo = [from[0] + (j[0] - from[0]) * t, from[1] + (j[1] - from[1]) * t - lift];
+        await sleep(FRAME);
+      }
     }
     plugTo = null; plugged = true; SFX.clack(); ensureJack();
+    if (O.spark === 'on'){ SFX.zap(); for (let i = 3; i >= 1; i--){ spark = i; drawRope(); await sleep(FRAME); } spark = 0; }
   }
-  function pullOut(){
+  async function pullOut(){
     if (!rope) return;
-    plugged = false; plugTo = null; ensureJack();
-    rope[0].py = rope[0].y + 5; rope[0].px = rope[0].x + (home.left ? -2 : 2);   // a little flick as it comes out
-    SFX.clack();
+    const j = jackAt();
+    if (O.unplug === 'slide' && j){
+      plugged = false;
+      for (let i = 1; i <= 3; i++){ plugTo = [j[0] + (home.left ? 1 : -1) * i * 5, j[1] - 3]; await sleep(FRAME); }
+      plugTo = null;
+    } else {
+      plugged = false; plugTo = null;
+      const kick = O.unplug === 'yank' ? 13 : 5;
+      rope[0].py = rope[0].y + kick; rope[0].px = rope[0].x + (home.left ? -2 : 2) * (O.unplug === 'yank' ? 2 : 1);
+      if (O.unplug === 'yank') rope.forEach((p, i) => { if (i > 0 && i < 5) p.py = p.y + kick * (1 - i / 5); });
+    }
+    ensureJack(); SFX.clack();
   }
-  let pulse = -1;   // power running along the lead (0 at the jack, 1 at the set)
   function drawRope(){
     if (!cableC || !rope) return;
     const W = Math.ceil(innerWidth / P), H = Math.ceil(innerHeight / P);
     if (cableC.width !== W || cableC.height !== H){ cableC.width = W; cableC.height = H; cableC.style.width = W * P + 'px'; cableC.style.height = H * P + 'px'; }
     const c = cableC.getContext('2d'); c.clearRect(0, 0, W, H);
-    const pts = []; rope.forEach(p => pts.push([p.x / P, p.y / P]));
-    const dots = [];
+    const pts = rope.map(p => [p.x / P, p.y / P]);
+    // walk the lead in half-pixel steps, keeping the distance along it
+    const dots = []; let len = 0;
     for (let i = 0; i < pts.length - 1; i++){
-      const [x1, y1] = pts[i], [x2, y2] = pts[i + 1], n = Math.max(1, Math.ceil(Math.hypot(x2 - x1, y2 - y1) * 2));
-      for (let j = 0; j < n; j++){ const t = j / n; dots.push([Math.round(x1 + (x2 - x1) * t), Math.round(y1 + (y2 - y1) * t)]); }
+      const [x1, y1] = pts[i], [x2, y2] = pts[i + 1], dist = Math.hypot(x2 - x1, y2 - y1), n = Math.max(1, Math.ceil(dist * 2));
+      for (let j = 0; j < n; j++){ const t = j / n; dots.push({ x:x1 + (x2 - x1) * t, y:y1 + (y2 - y1) * t, s:len + dist * t, tx:(x2 - x1) / (dist || 1), ty:(y2 - y1) / (dist || 1) }); }
+      len += dist;
     }
-    // a thin lead: one art pixel of rubber in an ink outline, a lit pixel on top
-    c.fillStyle = INK; dots.forEach(d => c.fillRect(d[0] - 1, d[1] - 1, 2, 3));
-    c.fillStyle = '#3A3A40'; dots.forEach(d => c.fillRect(d[0], d[1], 1, 1));
-    c.fillStyle = '#6A6A74'; dots.forEach(d => c.fillRect(d[0], d[1] - 1, 1, 1));
+    const [core, hi] = leadCols(), lit = '#FFF4C8';
+    const thick = O.lead === 'thick' || O.lead === 'braided';
+    const litUpTo = fillAmt > 0 ? fillAmt * len : -1;
+    // coiled: the lead wound in little loops, offset across its length
+    const at = d => {
+      if (O.lead !== 'coiled') return [Math.round(d.x), Math.round(d.y)];
+      const o = Math.sin(d.s * 1.35) * 1.7;
+      return [Math.round(d.x - d.ty * o), Math.round(d.y + d.tx * o)];
+    };
+    const P2 = dots.map(at);
+    c.fillStyle = INK; P2.forEach(q => c.fillRect(q[0] - 1, q[1] - 1, thick ? 4 : 3, thick ? 4 : 3));
+    dots.forEach((d, i) => {
+      const q = P2[i];
+      let col = core;
+      if (O.lead === 'braided') col = Math.floor(d.s / 1.5) % 2 ? core : hi;
+      if (litUpTo >= 0 && d.s <= litUpTo) col = lit;
+      c.fillStyle = col; c.fillRect(q[0], q[1], thick ? 2 : 1, thick ? 2 : 1);
+      if (O.lead === 'coiled' && Math.sin(d.s * 1.35) > .8){ c.fillStyle = hi; c.fillRect(q[0], q[1] - 1, 1, 1); }
+    });
+    if (O.lead !== 'coiled'){ c.fillStyle = litUpTo >= 0 ? lit : hi; P2.forEach((q, i) => { if (litUpTo < 0 || dots[i].s <= litUpTo) c.fillRect(q[0], q[1] - 1, 1, 1); }); }
+    if (fillGlow > 0 && litUpTo < 0){ c.globalAlpha = fillGlow; c.fillStyle = lit; P2.forEach(q => c.fillRect(q[0], q[1], thick ? 2 : 1, thick ? 2 : 1)); c.globalAlpha = 1; }
     if (pulse >= 0 && pulse <= 1){
-      const i = Math.floor(pulse * (dots.length - 1)), d = dots[i];
-      if (d){ c.fillStyle = '#FFF4C8'; c.fillRect(d[0] - 1, d[1] - 1, 3, 3); }
+      const q = P2[Math.floor(pulse * (P2.length - 1))];
+      if (q){ c.fillStyle = lit; c.fillRect(q[0] - 1, q[1] - 1, 3, 3); }
     }
-    // the plug: a gold barrel on a black grip
-    const a = dots[0], nx = dots[Math.min(4, dots.length - 1)];
-    if (a && nx){
-      const up = !plugged && !plugTo;
-      c.fillStyle = INK; c.fillRect(a[0] - 2, a[1] - (plugged ? 5 : 3), 5, plugged ? 5 : 6);
-      c.fillStyle = '#2A2A30'; c.fillRect(a[0] - 1, a[1] - (plugged ? 4 : 2), 3, plugged ? 3 : 4);
-      if (up){ c.fillStyle = '#E8B83A'; c.fillRect(a[0], a[1] + 3, 1, 2); }
+    // the plug, upright at the free end
+    const a = P2[0]; if (!a) return;
+    const loose = !plugged && !plugTo, sunk = plugged ? 2 : 0;
+    if (O.plug === 'block'){
+      c.fillStyle = INK; c.fillRect(a[0] - 3, a[1] - 5 + sunk, 7, 6 - sunk);
+      c.fillStyle = '#2A2A30'; c.fillRect(a[0] - 2, a[1] - 4 + sunk, 5, 4 - sunk);
+      c.fillStyle = '#55555E'; c.fillRect(a[0] - 2, a[1] - 4 + sunk, 5, 1);
+      if (loose){ c.fillStyle = '#E8B83A'; c.fillRect(a[0] - 2, a[1] + 1, 1, 2); c.fillRect(a[0] + 2, a[1] + 1, 1, 2); }
+    } else if (O.plug === 'rca'){
+      c.fillStyle = INK; c.fillRect(a[0] - 2, a[1] - 6 + sunk, 5, 7 - sunk);
+      c.fillStyle = '#B8322A'; c.fillRect(a[0] - 1, a[1] - 5 + sunk, 3, 4 - sunk);
+      c.fillStyle = '#E06050'; c.fillRect(a[0] - 1, a[1] - 5 + sunk, 1, 3 - sunk);
+      c.fillStyle = '#C8C8D0'; c.fillRect(a[0] - 1, a[1] - 1, 3, 1);
+      if (loose){ c.fillStyle = '#E8B83A'; c.fillRect(a[0], a[1] + 1, 1, 2); }
+    } else {
+      c.fillStyle = INK; c.fillRect(a[0] - 2, a[1] - 5 + sunk, 5, 6 - sunk);
+      c.fillStyle = '#2A2A30'; c.fillRect(a[0] - 1, a[1] - 4 + sunk, 3, 4 - sunk);
+      c.fillStyle = '#55555E'; c.fillRect(a[0] - 1, a[1] - 4 + sunk, 1, 3 - sunk);
+      if (loose){ c.fillStyle = '#E8B83A'; c.fillRect(a[0], a[1] + 1, 1, 3); }
+    }
+    // a spark as it goes in
+    if (spark > 0){
+      const j = jackAt(); if (j){
+        const x = Math.round(j[0] / P), y = Math.round(j[1] / P), r = 4 - spark;
+        c.fillStyle = spark === 3 ? '#FFFFFF' : '#FFE380';
+        [[-1, -1], [1, -1], [-1, 0], [1, 0], [0, -1]].forEach(([dx, dy]) => c.fillRect(x + dx * (r + 1), y - 2 + dy * r, 1, 1));
+      }
     }
   }
 
@@ -754,7 +919,7 @@ const CoachSet = (() => {
     let landed = false;
     const hit = frames.find((f, i) => i > 0 && (frames[i - 1].lift || 0) > 0 && !f.lift).t;
     await play(frames, t => {
-      if (!landed && t >= hit){ landed = true; SFX.thud(W.thud); if (O.jolt === 'on') jolt(W.jolt); dust(); }
+      if (!landed && t >= hit){ landed = true; SFX.thud(W.thud); if (O.jolt === 'on') jolt(W.jolt); dust(); bumpRope(); }
     });
   }
   /* off: swiped back off the way he came */
@@ -814,44 +979,104 @@ const CoachSet = (() => {
     c.fillStyle = '#080405'; c.fillRect(0, TILE.edge, TILE.w, 2);
   }
 
-  /* the boot on the tube */
-  async function boot(){
-    busyBooting = true; paintBody();
-    const quick = O.boot === 'quick';
-    // power up the cable
-    for (let i = 0; i <= 8; i++){ pulse = i / 8; await sleep(quick ? 22 : 40); }
-    pulse = -1;
-    SFX.clack(); busyBooting = false; paintBody();
-    await sleep(quick ? 60 : 160);
-    SFX.whine();
-    bootFrame = { kind:'dot' }; paintFace(); await sleep(quick ? 60 : 140);
-    for (let i = 1; i <= 4; i++){ bootFrame = { kind:'line', t:i / 4 }; paintFace(); await sleep(FRAME); }
-    SFX.hiss(quick ? .12 : .26);
-    for (let i = 0; i < (quick ? 2 : 4); i++){ bootFrame = { kind:'static' }; paintFace(); await sleep(FRAME); }
-    bootFrame = { kind:'dark' }; paintFace(); await sleep(quick ? 60 : 180);
-    bootFrame = null;
-    // the blink boot: eyes open, two blinks, a look round, settle
-    st.blink = true; st.noMouth = true; paintFace(); await sleep(quick ? 80 : 220);
-    st.blink = false; paintFace(); await sleep(quick ? 70 : 160);
-    if (!quick){
-      st.blink = true; paintFace(); await sleep(90); st.blink = false; paintFace(); await sleep(120);
-      st.blink = true; paintFace(); await sleep(90); st.blink = false; paintFace(); await sleep(200);
-      st.gaze = [-2, 0]; paintFace(); await sleep(260);
-      st.gaze = [2, 0]; paintFace(); await sleep(260);
-      st.gaze = [0, 1]; paintFace(); await sleep(200);
+  /* ---------------- the boot on the tube ----------------
+     POWER up the lead (it lights along its length, or one pulse runs up
+     it), the relay clicks, then the TUBE: dot, line, static (round 3) · a
+     line typed · a system check · a bar scanning down · flickering on.
+     Then he WAKES: blinks and looks round · two blinks · wide eyes ·
+     straight on. The lamp shows the LED colour while it boots, then
+     green. QUICK is the same at about half the time, for mid-game. */
+  const sayLines = () => ({ coach:['COACH', 'ONLINE'], hello:['HELLO'], ready:['READY'], none:[] })[O.says] || ['COACH', 'ONLINE'];
+  async function powerLead(up){
+    const T = ms => sleep(O.bootLen === 'quick' ? ms * .5 : ms);
+    if (O.power === 'fill'){
+      if (up){ for (let i = 1; i <= 8; i++){ fillAmt = i / 8; drawRope(); await T(34); } fillAmt = 0; for (const g of [1, .6, .3, 0]){ fillGlow = g; drawRope(); await T(FRAME); } }
+      else { for (const g of [.8, .4, 0]){ fillGlow = g; drawRope(); await T(FRAME); } }
+    } else if (O.power === 'pulse'){
+      for (let i = 0; i <= 8; i++){ pulse = up ? i / 8 : 1 - i / 8; drawRope(); await T(40); }
+      pulse = -1; drawRope();
     }
-    st.gaze = null; st.noMouth = false; paintFace();
+  }
+  async function boot(){
+    const quick = O.bootLen === 'quick', T = ms => sleep(quick ? ms * .5 : ms);
+    ledState = 'boot'; paintBody(); ensureJack();
+    await powerLead(true);
+    SFX.relay(); await T(160);
+    const ink = INKS[O.ink];
+    if (O.tube === 'text' || O.tube === 'bios'){
+      SFX.whine();
+      bootFrame = { kind:'dark' }; paintFace(); await T(120);
+      const lines = O.tube === 'bios' ? ['SYS OK', 'MEM OK', 'CAM OK'].concat(sayLines()) : sayLines();
+      const shown = [];
+      for (const line of lines){
+        if (O.tube === 'bios'){
+          shown.push(line); while (shown.length > 3) shown.shift();
+          bootFrame = { kind:'text', extra:{ lines:shown.slice(), cursor:false } }; paintFace(); SFX.tick(); await T(FRAME * 1.4);
+        } else {
+          shown.push('');
+          for (const ch of line){ shown[shown.length - 1] += ch; bootFrame = { kind:'text', extra:{ lines:shown.slice(), cursor:true } }; paintFace(); SFX.tick(); await T(55); }
+          await T(90);
+        }
+      }
+      for (let i = 0; i < (quick ? 2 : 4); i++){ bootFrame = { kind:'text', extra:{ lines:shown.slice(), cursor:i % 2 === 0 } }; paintFace(); await T(130); }
+      bootFrame = { kind:'dark' }; paintFace(); await T(120);
+    } else if (O.tube === 'scan'){
+      SFX.whine();
+      const S = setOf();
+      for (let r = 0; r <= S.screen.h; r += 2){ bootFrame = { kind:'scan', row:r }; paintFace(); await T(FRAME * .8); }
+      bootFrame = null;
+    } else if (O.tube === 'flicker'){
+      SFX.whine();
+      const seq = [1, 0, 1, 0, 0, 1, 0, 1];
+      for (const f of seq){ bootFrame = f ? null : { kind:'dark' }; st.noMouth = false; paintFace(); if (f) SFX.tick(); await T(FRAME); }
+      bootFrame = null;
+    } else {
+      SFX.whine();
+      bootFrame = { kind:'dot' }; paintFace(); await T(140);
+      for (let i = 1; i <= 4; i++){ bootFrame = { kind:'line', t:i / 4 }; paintFace(); await T(FRAME); }
+      SFX.hiss(quick ? .12 : .26);
+      for (let i = 0; i < (quick ? 2 : 4); i++){ bootFrame = { kind:'static' }; paintFace(); await T(FRAME); }
+      bootFrame = { kind:'dark' }; paintFace(); await T(180);
+    }
+    bootFrame = null;
+    // he wakes
+    if (O.wake === 'look' || O.wake === 'blinks'){
+      st.blink = true; st.noMouth = true; paintFace(); await T(220);
+      st.blink = false; paintFace(); await T(160);
+      st.blink = true; paintFace(); await T(90); st.blink = false; paintFace(); await T(120);
+      if (!quick){ st.blink = true; paintFace(); await T(90); st.blink = false; paintFace(); await T(200); }
+      if (O.wake === 'look' && !quick){
+        st.gaze = [-2, 0]; paintFace(); await T(260);
+        st.gaze = [2, 0]; paintFace(); await T(260);
+        st.gaze = [0, 1]; paintFace(); await T(200);
+      }
+    } else if (O.wake === 'wide'){
+      const was = st.mood; st.mood = 'surprised'; st.noMouth = true; paintFace(); await T(300);
+      st.blink = true; paintFace(); await T(100); st.blink = false; st.mood = was; paintFace(); await T(160);
+    }
+    st.gaze = null; st.noMouth = false; st.blink = false; paintFace();
+    ledState = true; paintBody(); ensureJack();
     SFX.blip(true);
   }
   async function unboot(){
+    const T = ms => sleep(O.bootLen === 'quick' ? ms * .5 : ms);
     SFX.blip(false);
-    st.blink = true; paintFace(); await sleep(120);
-    for (let i = 4; i >= 1; i--){ bootFrame = { kind:'line', t:i / 4 }; paintFace(); await sleep(FRAME); }
-    bootFrame = { kind:'dot' }; paintFace(); await sleep(160);
-    bootFrame = null; st.blink = false;
-    on = false; paintFace(); paintBody();
-    for (let i = 8; i >= 0; i--){ pulse = i / 8; await sleep(30); }
-    pulse = -1;
+    if (O.shutdown === 'blink'){
+      st.blink = true; paintFace(); await T(240);
+      st.noMouth = true; paintFace(); await T(140);
+    } else if (O.shutdown === 'text'){
+      let t = ''; for (const ch of 'BYE'){ t += ch; bootFrame = { kind:'text', extra:{ lines:[t], cursor:true } }; paintFace(); SFX.tick(); await T(90); }
+      await T(300);
+      for (let i = 4; i >= 1; i--){ bootFrame = { kind:'line', t:i / 4 }; paintFace(); await T(FRAME); }
+      bootFrame = { kind:'dot' }; paintFace(); await T(140);
+    } else {
+      st.blink = true; paintFace(); await T(120);
+      for (let i = 4; i >= 1; i--){ bootFrame = { kind:'line', t:i / 4 }; paintFace(); await T(FRAME); }
+      bootFrame = { kind:'dot' }; paintFace(); await T(160);
+    }
+    bootFrame = null; st.blink = false; st.noMouth = false;
+    on = false; ledState = false; paintFace(); paintBody(); ensureJack();
+    await powerLead(false);
   }
 
   async function power(want){
@@ -864,7 +1089,7 @@ const CoachSet = (() => {
         build(); measureHome();
         if (motionOffSafe()){
           on = true; Object.assign(pose, { x:0, y:0, lift:0, sx:1, sy:1, bank:0, lean:0, yaw:0, pitch:0, roll:0 }); render();
-          ropeStart(); plugged = true; paintBody(); paintFace();
+          ropeStart(); plugged = true; ledState = true; paintBody(); paintFace();
         } else {
           // start under the table, the cable already coming out of the key
           Object.assign(pose, { x:0, y:home.edge - home.y + 10, lift:0, sx:1, sy:1, bank:0, lean:0, yaw:0, pitch:0, roll:0 });
@@ -882,7 +1107,7 @@ const CoachSet = (() => {
         if (!motionOffSafe()){
           await unboot();
           key.classList.remove('is-on');
-          pullOut(); await sleep(FRAME * 3);
+          await pullOut(); await sleep(FRAME * 3);
           await leave();
           await sleep(120);
         } else { on = false; }
@@ -890,6 +1115,16 @@ const CoachSet = (() => {
         key.classList.remove('is-on'); key.setAttribute('aria-pressed', 'false');
       }
     } finally { busy = false; render(); }
+  }
+
+  /* the lab's REPLUG and REBOOT: the lead out and back in; the tube off and booted again */
+  async function replug(){
+    if (!on || busy) return; busy = true;
+    try{ await unboot(); await pullOut(); await sleep(700); await plugIn(); on = true; await boot(); } finally { busy = false; }
+  }
+  async function reboot(){
+    if (!on || busy) return; busy = true;
+    try{ await unboot(); await sleep(400); on = true; await boot(); } finally { busy = false; }
   }
 
   /* ---------------- life ---------------- */
@@ -939,6 +1174,8 @@ const CoachSet = (() => {
   function apply(order){
     const was = O;
     O = Object.assign({}, DEFAULTS, order || {});
+    ledBoot = O.led; masterLevel = O.coachSound === 'off' ? 0 : O.coachSound === 'soft' ? .45 : 1;
+    if (body) paintBody();
     st.mood = O.mood;
     if (!layer) return;
     const rebuild = ['set', 'finish', 'ink', 'glasses'].some(k => was[k] !== O[k]);
@@ -964,6 +1201,6 @@ const CoachSet = (() => {
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start); else setTimeout(start, 0);
 
-  return { apply, power, setMood, look, talk, still, sheetFrames, drawTile, MOODS, OPTIONS, DEFAULTS, SETS,
+  return { apply, power, replug, reboot, setMood, look, talk, still, sheetFrames, drawTile, MOODS, OPTIONS, DEFAULTS, SETS,
     get on(){ return on; }, get busy(){ return busy; }, get order(){ return Object.assign({}, O); } };
 })();

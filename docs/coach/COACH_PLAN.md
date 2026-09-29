@@ -211,3 +211,29 @@ game, then his brain:
 5. **His brain**: game events feed him; judge 1 (which hands to play),
    judge 2 (after the flop); advice before you act; teaching moments;
    memory; the dialogue library growing alongside.
+
+## Rig Lab (the lead and the boot)
+
+- **Round 1** (29 Sep 2026). A fresh lab, `coach-rig-lab.html` (+
+  `js/coach-rig-lab-host.js`, `js/coach-rig-lab.js`), on the locked look;
+  the options are added to the same candidate, `js/coach-set.js`. Tabs
+  THE LEAD, THE PLUG, THE BOOT, SWITCH-OFF, each opening with SWITCH ON,
+  SWITCH OFF, REPLUG (lead out and back in, with the boot) and REBOOT (the
+  tube only). COPY MY PICKS copies every row. First of each is my
+  suggestion:
+  - Lead: THICK · THIN (round 3) · COILED · BRAIDED; colour BLACK · GREY ·
+    CREAM · DASHBOARD; length MEDIUM · SHORT · LONG; leaves the set at the
+    BACK CORNER · SIDE · UNDERNEATH; JUMPS ON THE THUD · STAYS PUT; drawn
+    14 A SECOND · SMOOTH.
+  - Plug: JACK · BLOCK · RED RCA; jack PLATE + LAMP · PLATE · RING (round
+    3); in LIFTED IN · SLID ALONG · SNAPS IN; out YANKED · POPS · SLID OUT;
+    SPARK on/off.
+  - Boot: power LEAD LIGHTS UP · ONE PULSE · NOTHING; tube DOT, LINE,
+    STATIC · TYPES A LINE · SYSTEM CHECK (SYS OK, MEM OK, CAM OK) · SCANS
+    DOWN · FLICKERS ON; says COACH / ONLINE · HELLO · READY · JUST A
+    CURSOR (a 3x5 pixel font); wakes BLINKS + LOOKS ROUND · TWO BLINKS ·
+    WIDE EYES · STRAIGHT ON; lamp while booting AMBER · RED · GREEN; FULL
+    or QUICK (mid-game); his sounds FULL · SOFT · OFF.
+  - Switch-off: LINE TO A DOT · SHUTS HIS EYES · TYPES BYE.
+  Checked in an emulated iPhone: every boot and switch-off filmed frame by
+  frame, every lead, plug and jack drawn; no console errors.

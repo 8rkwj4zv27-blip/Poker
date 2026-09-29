@@ -590,6 +590,15 @@ opposite the dealer deck in 2.5D steps, cabled (a verlet rope) into a
 COACH key beside ⚙. Phone-first; the sheet reuses `css/showdown-lab.css`.
 Not loaded by the game.
 
+## `coach-rig-lab.html` + `js/coach-rig-lab.js` (+ `js/coach-rig-lab-host.js`) — Coach Rig Lab
+
+The Coach's lead and boot (`docs/coach/COACH_PLAN.md`, Rig Lab round 1),
+on the look locked in the Coach Face Lab. Drives the same candidate,
+`js/coach-set.js` / `css/coach-set.css`: lead style, colour, length and
+exit; plug and jack; plugging in and out; the power up the lead, five
+tube boots (a 3x5 pixel font for typed lines), wake-ups, lamp, sounds,
+switch-offs. Phone-first; not loaded by the game.
+
 ## `deck-lab.html` + `js/deck-lab.js` — Deck Lab
 
 Where the dealer deck was ordered (rounds 1–4: a shoe, a tray, a movable

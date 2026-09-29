@@ -40,11 +40,24 @@
 .coach-key .ck-lamp{ position:absolute; right:3px; top:3px; width:4px; height:4px; background:#1D3A28; box-shadow:0 0 0 1px #080405; }
 .coach-key.is-on .ck-lamp{ background:#8CF0A8; box-shadow:0 0 0 1px #080405,0 0 5px #8CF0A8; }
 
-/* the aux jack on the dashboard's top edge, under the set */
-.cs-jack{
-  position:fixed; left:0; top:0; z-index:59; width:10px; height:8px; pointer-events:none;
-  background:#080405; border-radius:1px;
+/* the aux jack on the dashboard's top edge, under the set.
+   RING (round 3): a gold ring. PLATE: a little brass plate with two
+   screws and the socket. PLATE + LAMP: the same with a lamp that lights
+   once he's booted. */
+.cs-jack{ position:fixed; left:0; top:0; z-index:59; pointer-events:none; }
+.cs-jack--ring{
+  width:10px; height:8px; background:#080405; border-radius:1px;
   box-shadow:inset 0 0 0 2px #9C7420,inset 0 0 0 3px #080405;
 }
-.cs-jack::after{ content:""; position:absolute; left:4px; top:3px; width:2px; height:2px; background:#1D1D22; }
-.cs-jack.is-live{ box-shadow:inset 0 0 0 2px #E8B83A,inset 0 0 0 3px #080405,0 0 4px rgba(232,184,58,.55); }
+.cs-jack--ring::after{ content:""; position:absolute; left:4px; top:3px; width:2px; height:2px; background:#1D1D22; }
+.cs-jack--ring.is-live{ box-shadow:inset 0 0 0 2px #E8B83A,inset 0 0 0 3px #080405,0 0 4px rgba(232,184,58,.55); }
+.cs-jack--plate,.cs-jack--lamp{
+  width:18px; height:8px; background:#9C7420; border:2px solid #080405; box-sizing:border-box;
+  box-shadow:inset 0 2px 0 #E8B83A;
+}
+/* the socket in the middle, the screws either side */
+.cs-jack--plate::before,.cs-jack--lamp::before{ content:""; position:absolute; left:5px; top:0; width:4px; height:4px; background:#080405; box-shadow:inset 0 0 0 1px #1D1D22; }
+.cs-jack--plate::after{ content:""; position:absolute; left:1px; top:1px; width:2px; height:2px; background:#5A4214; box-shadow:10px 0 0 #5A4214; }
+.cs-jack--lamp::after{ content:""; position:absolute; right:1px; top:1px; width:2px; height:2px; background:#3A1A14; box-shadow:-12px 0 0 #5A4214; }
+.cs-jack--lamp.is-live::after{ background:#8CF0A8; box-shadow:-12px 0 0 #5A4214,0 0 4px #8CF0A8; }
+.cs-jack--plate.is-live{ box-shadow:inset 0 2px 0 #FFE380,0 0 4px rgba(232,184,58,.45); }
