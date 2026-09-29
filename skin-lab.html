@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#140709">
+  <link rel="icon" href="data:,">
+  <title>Skin Lab</title>
+  <!-- Phone-first Lab: the card pilot of the owner's own art
+       (docs/ui/SKIN_PLAN.md). The page is the real game, full screen; the
+       lab runs inside it (js/skin-lab.js: a SKIN key and a bottom sheet
+       to save the card templates, load your drawings onto the cards, and
+       hand them in). This host loads the game copy, keeps your drawings
+       across visits (this browser only), and does the saving and handing
+       in. Never linked from the game; never touches a real save (the copy
+       runs on in-memory storage). -->
+  <style>
+    html,body{ height:100%; margin:0; background:#140709; overflow:hidden; }
+    #skl-game{
+      position:fixed; top:env(safe-area-inset-top,0px); left:50%;
+      width:min(100vw,430px); height:calc(100% - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px));
+      transform:translateX(-50%); border:0; display:block; background:#0C1510;
+    }
+    @media (min-width:600px){ #skl-game{ box-shadow:0 0 0 3px #080405,0 20px 60px rgba(0,0,0,.6); } }
+  </style>
+</head>
+<body>
+  <iframe id="skl-game" title="The Table (lab copy)" allow="autoplay"></iframe>
+  <!-- What goes into the game copy: the card skin candidate and the lab's
+       controls. The bundler (validation/tools/lab-bundle.js) reads this to
+       bake the copy. -->
+  <script type="application/json" id="lab-inject">{"css":["css/card-skin.css","css/skin-lab.css"],"js":["js/card-skin.js","js/skin-lab.js"],"v":"1"}</script>
+  <script src="js/skin-lab-host.js?v=1"></script>
+</body>
+</html>

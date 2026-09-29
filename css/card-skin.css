@@ -1,0 +1,35 @@
+/* ============================================================
+   CARD SKIN (candidate, the card pilot: docs/ui/SKIN_PLAN.md)
+   The owner's art laid over a card (js/card-skin.js sets --skin-card and
+   the card's own border widths). The picture is the card's ::after, so it
+   covers the card's edge, paper and inset highlights but not the outer
+   shadows and glows (a win's ring, the showdown's lamp) or any filter
+   (a beaten hand's dimming): those keep working over the art.
+   Not loaded by the game: skin-lab.html injects it into its copy.
+   ============================================================ */
+.card.skin-on > *{ visibility:hidden; }
+.card.skin-on::before{ display:none !important; }
+.card.skin-on::after{
+  content:'' !important; display:block !important; position:absolute !important; z-index:2 !important;
+  top:calc(var(--skin-bt, 2px) * -1) !important; right:calc(var(--skin-br, 2px) * -1) !important;
+  bottom:calc(var(--skin-bb, 2px) * -1) !important; left:calc(var(--skin-bl, 2px) * -1) !important;
+  width:auto !important; height:auto !important; margin:0 !important; border:0 !important; border-radius:0 !important;
+  box-shadow:none !important; transform:none !important; opacity:1 !important;
+  /* a back's own ::after is its centre motif, a small square: none of its
+     shape may reach the picture */
+  aspect-ratio:auto !important; min-width:0 !important; min-height:0 !important; max-width:none !important; max-height:none !important;
+  translate:none !important; rotate:none !important; scale:none !important; clip-path:none !important; filter:none !important;
+  -webkit-mask:none !important; mask:none !important; outline:0 !important;
+  background:var(--skin-card) 0 0 / 100% 100% no-repeat !important;
+  image-rendering:pixelated; image-rendering:crisp-edges;
+  pointer-events:none;
+}
+.card.skin-on.skin-shrunk::after{ image-rendering:auto; }
+/* your hand: the holder's shade still rises from the groove, over the art */
+#hud-mid .seat.you .seat-cards .card.skin-on:not(.back)::after{
+  background:
+    linear-gradient(to top,
+      rgba(40,8,12,.2) calc(var(--holder-bury, 11) * 1px),
+      rgba(40,8,12,0) calc(var(--holder-bury, 11) * 1px + 14px)),
+    var(--skin-card) 0 0 / 100% 100% no-repeat !important;
+}

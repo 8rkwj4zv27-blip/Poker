@@ -28,6 +28,8 @@ A small library, not a script to run directly. Exposes `withPage(opts, fn)`
 touch support and collects console/page errors) and a `touch` helper with
 `start`/`move`/`end`/`drag`/`flick`. See the doc comment at the top of the
 file for a minimal example, and `career-hub-scenario.js` for a full one.
+`opts.deviceScaleFactor` defaults to 2 (pass 1 for one screen pixel per
+CSS pixel, 3 for an iPhone's screen).
 
 Use this instead of writing raw CDP calls — it already handles the
 mobile-viewport/touch-context setup and error collection correctly.
@@ -108,3 +110,17 @@ Labs that declare `<script type="application/json" id="lab-inject">`
 (phone-first labs, see `CLAUDE.md`) are baked: `game.html` gets the
 storage shim, loses the service worker and gains the lab's parts, and the
 page loads it directly (`window.LAB_STATIC`).
+
+## `skin-cards-export.js` + `skin-lab-scenario.js` — the owner's own art (card pilot)
+
+```
+NODE_PATH=$(npm root -g) node validation/tools/skin-cards-export.js
+NODE_PATH=$(npm root -g) node validation/tools/skin-lab-scenario.js [outDir]
+```
+
+The first renders the card drawing templates into
+`assets/skin/templates/cards/` from the real game and proves that every
+card rebuilds from its parts (rerun it whenever the cards' look changes).
+The second plays `skin-lab.html` with real touch in an emulated iPhone
+(`SKIN_LAB_URL` points it at a staged bundle instead). See
+`docs/ui/SKIN_PLAN.md`.
