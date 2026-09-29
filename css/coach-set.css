@@ -4,9 +4,10 @@
    COACH key next to the table's ⚙. js/coach-set.js draws the pixel
    sprites and moves them in 2.5D steps; this file only lays them out.
    ============================================================ */
-/* the layer the set lives in: the felt, so he's hidden under its near
+/* the layer the set lives in (at the dealer deck's level, 5: on top of the
+   felt and its furniture, the pot tray included; under the seats): the felt, so he's hidden under its near
    edge until he's lifted over it */
-.cs-layer{ position:absolute; inset:0; z-index:3; overflow:hidden; border-radius:inherit; pointer-events:none; }
+.cs-layer{ position:absolute; inset:0; z-index:5; overflow:hidden; border-radius:inherit; pointer-events:none; }
 .cs-tv{ position:absolute; left:0; top:0; transform-origin:50% 100%; pointer-events:auto; visibility:hidden; -webkit-tap-highlight-color:transparent; }
 .cs-body,.cs-face,.cs-still,.cs-3d{ image-rendering:pixelated; image-rendering:crisp-edges; display:block; }
 .cs-body{ position:absolute; left:0; top:0; }

@@ -252,3 +252,7 @@ game, then his brain:
   worked out from his place on the table, not from the set (it used to
   follow the set, so it shifted with the landing). Checked: he sits clear
   of your bet spot, about 20px to its right.
+- **Fix** (29 Sep 2026): on some screen sizes the pot tray (`.ct-tray`,
+  z 4) drew over him (his layer was z 3). His layer is now z 5, the dealer
+  deck's level: on top of the felt and everything on it, under the seats.
+  Checked by forcing the tray over him: he's on top.
