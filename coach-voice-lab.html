@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#140709">
+  <link rel="icon" href="data:,">
+  <title>Coach Voice Lab</title>
+  <!-- Phone-first Lab (round 1): the coach talks. His bubble, his mouth,
+       his blip and the talk slider, on real hands, on the look and rig
+       locked in the Face and Rig Labs. The page is just the real game, full
+       screen; the lab's controls run inside it (js/coach-voice-lab.js: a
+       TUNE key, a SAY key and a bottom sheet). Never linked from the game;
+       never touches a real save. Plan: docs/coach/COACH_PLAN.md. -->
+  <style>
+    html,body{ height:100%; margin:0; background:#140709; overflow:hidden; }
+    #cvl-game{
+      position:fixed; top:env(safe-area-inset-top,0px); left:50%;
+      width:min(100vw,430px); height:calc(100% - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px));
+      transform:translateX(-50%); border:0; display:block; background:#0C1510;
+    }
+    @media (min-width:600px){ #cvl-game{ box-shadow:0 0 0 3px #080405,0 20px 60px rgba(0,0,0,.6); } }
+  </style>
+</head>
+<body>
+  <iframe id="cvl-game" title="The Table (lab copy)" allow="autoplay"></iframe>
+  <!-- What goes into the game copy: the candidate and the lab's controls.
+       The bundler (validation/tools/lab-bundle.js) reads this to bake it. -->
+  <script type="application/json" id="lab-inject">{"css":["css/coach-set.css","css/coach-talk.css","css/showdown-lab.css","css/coach-face-lab.css"],"js":["js/coach-set.js","js/coach-talk.js","js/coach-voice-lab.js"],"v":"1"}</script>
+  <script src="js/coach-voice-lab-host.js?v=1"></script>
+</body>
+</html>

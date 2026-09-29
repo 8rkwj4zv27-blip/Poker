@@ -1180,6 +1180,8 @@ const CoachSet = (() => {
     setTimeout(() => { clearInterval(talking); talking = null; st.talk = false; paintFace(); }, ms || 1600);
   }
   function setMood(m){ st.mood = m; O.mood = m; paintFace(); }
+  // his mouth, for speech: open or shut, one frame at a time
+  function mouth(open){ if (!on) return; st.talk = !!open; paintFace(); }
 
   function apply(order){
     const was = O;
@@ -1211,6 +1213,6 @@ const CoachSet = (() => {
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start); else setTimeout(start, 0);
 
-  return { apply, power, replug, reboot, setMood, look, talk, still, sheetFrames, drawTile, MOODS, OPTIONS, DEFAULTS, SETS,
+  return { apply, power, replug, reboot, setMood, mouth, look, talk, still, sheetFrames, drawTile, MOODS, OPTIONS, DEFAULTS, SETS,
     get on(){ return on; }, get busy(){ return busy; }, get order(){ return Object.assign({}, O); } };
 })();

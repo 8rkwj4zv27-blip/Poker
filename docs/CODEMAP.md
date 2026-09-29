@@ -599,6 +599,16 @@ exit; plug and jack; plugging in and out; the power up the lead, five
 tube boots (a 3x5 pixel font for typed lines), wake-ups, lamp, sounds,
 switch-offs. Phone-first; not loaded by the game.
 
+## `coach-voice-lab.html` + `js/coach-voice-lab.js` (+ host) + candidate `js/coach-talk.js` / `css/coach-talk.css` — Coach Voice Lab
+
+The Coach talks (`docs/coach/COACH_PLAN.md`, Voice Lab round 1): a bubble
+from his set (the Speech Lab's card stock, or dark glass in his ink), his
+mouth on the tube, his own low steady blip, the four-notch talk slider,
+and ~40 flat lines on real moments. Hears the game through `applyAction`
+and `updateCoach` (wrapped) and by watching `game.handNumber` / `game.phase`
+(the deal and the end of a hand; `startNewHand` is swapped by other parts
+of the table, so it isn't wrapped). Not loaded by the game.
+
 ## `deck-lab.html` + `js/deck-lab.js` — Deck Lab
 
 Where the dealer deck was ordered (rounds 1–4: a shoe, a tray, a movable

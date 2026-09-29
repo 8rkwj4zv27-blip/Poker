@@ -1,0 +1,54 @@
+/* ============================================================
+   COACH TALK (Coach Voice Lab, round 1: candidate, lab only)
+   The coach's bubble. CARD STOCK is the Speech Lab's bubble (its finish
+   copied here until the bubble is signed off as one Pattern Book part for
+   him and the opponents); HIS SCREEN is dark glass in his own ink.
+   js/coach-talk.js places it (above him, beside him, across the felt) and
+   types the line into it, so it grows as it types.
+     --ctk-tail-x  where the tail sits along the bottom edge
+   ============================================================ */
+.ctk{
+  position:fixed; z-index:9050; box-sizing:border-box; pointer-events:auto; cursor:pointer;
+  padding:9px 12px 11px; border:3px solid #080405; min-width:44px;
+  opacity:0; transition:opacity .12s steps(2,end), transform .18s steps(4,end);
+  -webkit-tap-highlight-color:transparent;
+}
+.ctk.is-in{ opacity:1; transform:none; }
+.ctk.is-out{ opacity:0; transition-duration:.14s; }
+.ctk-arrive-pop{ transform:scale(.6); transform-origin:85% 100%; }
+.ctk-arrive-pop.is-left{ transform-origin:15% 100%; }
+.ctk-arrive-rise{ transform:translateY(16px); }
+.ctk[data-tail="right"].ctk-arrive-pop{ transform-origin:100% 50%; }
+.ctk[data-tail="left"].ctk-arrive-pop{ transform-origin:0 50%; }
+.ctk-text{ font-family:var(--font-px); font-size:16px; line-height:1.25; letter-spacing:.01em; }
+/* it grows as it types: the untyped rest takes no room */
+.ctk.is-typing .ctk-rest{ display:none; }
+
+/* CARD STOCK: the Speech Lab's bubble */
+.ctk--card{ background:#F3E6C4; color:#1B0E0C; box-shadow:inset 0 -3px 0 #D8C49A, inset 0 2px 0 #FFF6DD, 4px 5px 0 rgba(8,4,5,.55); }
+/* HIS SCREEN: dark glass, his ink, scanlines */
+.ctk--screen{
+  background:repeating-linear-gradient(180deg,transparent 0 2px,rgba(0,0,0,.28) 2px 3px),#0A120F;
+  color:#C3C8AD; text-shadow:0 0 4px rgba(195,200,173,.45);
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.06), 4px 5px 0 rgba(8,4,5,.55);
+}
+
+/* the tail: a stepped pixel wedge, drawn twice (the border, then the fill) */
+.ctk-tail{ position:absolute; display:block; pointer-events:none; width:18px; height:14px; }
+.ctk-tail::before,.ctk-tail::after{ content:""; position:absolute; inset:0; }
+.ctk[data-tail="down"] .ctk-tail{ top:100%; left:var(--ctk-tail-x,70%); margin:-3px 0 0 -9px; }
+.ctk[data-tail="down"] .ctk-tail::before{ background:#080405;
+  clip-path:polygon(0 0,100% 0,100% 33%,83% 33%,83% 66%,67% 66%,67% 100%,33% 100%,33% 66%,17% 66%,17% 33%,0 33%); }
+.ctk[data-tail="down"] .ctk-tail::after{ inset:0 3px 3px 3px;
+  clip-path:polygon(0 0,100% 0,100% 40%,80% 40%,80% 80%,20% 80%,20% 40%,0 40%); }
+.ctk[data-tail="right"] .ctk-tail,.ctk[data-tail="left"] .ctk-tail{ top:50%; width:14px; height:18px; margin-top:-9px; }
+.ctk[data-tail="right"] .ctk-tail{ left:100%; margin-left:-3px; transform:scaleX(-1); }
+.ctk[data-tail="left"] .ctk-tail{ right:100%; margin-right:-3px; }
+.ctk[data-tail="right"] .ctk-tail::before,.ctk[data-tail="left"] .ctk-tail::before{ background:#080405;
+  clip-path:polygon(100% 0,67% 0,67% 3px,34% 3px,34% 6px,0 6px,0 12px,34% 12px,34% 15px,67% 15px,67% 18px,100% 18px); }
+.ctk[data-tail="right"] .ctk-tail::after,.ctk[data-tail="left"] .ctk-tail::after{ inset:3px 0 3px 3px;
+  clip-path:polygon(100% 0,64% 0,64% 3px,28% 3px,28% 9px,64% 9px,64% 12px,100% 12px); }
+.ctk--card .ctk-tail::after{ background:#F3E6C4; }
+.ctk--screen .ctk-tail::after{ background:#0A120F; }
+
+@media (prefers-reduced-motion:reduce){ .ctk,.ctk.is-in,.ctk.is-out{ transition:none; transform:none; } }

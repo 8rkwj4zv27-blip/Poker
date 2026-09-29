@@ -256,3 +256,38 @@ game, then his brain:
   z 4) drew over him (his layer was z 3). His layer is now z 5, the dealer
   deck's level: on top of the felt and everything on it, under the seats.
   Checked by forcing the tray over him: he's on top.
+
+## Voice Lab (his bubble, voice and the talk slider)
+
+- **Round 1** (29 Sep 2026). A fresh lab, `coach-voice-lab.html` (+
+  `js/coach-voice-lab-host.js`, `js/coach-voice-lab.js`), candidate
+  `js/coach-talk.js` + `css/coach-talk.css` on the locked set and rig (the
+  set gains `CoachSet.mouth(open)`). Keys on the table: TUNE, SAY (a line
+  that fits the table now), the COACH key. Tabs (first of each is my
+  suggestion):
+  - TRY IT: every moment as a key, said now with the table's real cards
+    and names.
+  - TALK: the slider 4 IN YOUR EAR · 3 TIPS · 2 DEBRIEF · 1 COMMENTS (each
+    line has the lowest notch it plays at); how long a line stays up.
+  - BUBBLE: ABOVE HIM (tail down at his screen) · BESIDE HIM · ACROSS THE
+    FELT; CARD STOCK (the Speech Lab's finish, copied until the bubble is
+    signed off as one part for him and the opponents) · HIS SCREEN (dark
+    glass, his ink); TYPES ON (grows as it types) · ALL AT ONCE; POPS ·
+    RISES UP.
+  - VOICE: STEADY PIP · TELEPRINTER · TWO NOTES · LOW HUM; pitch LOW ·
+    MIDDLE · DEEPER; every other letter · every letter · every syllable;
+    pace; volume LOW · MEDIUM · HIGH · SILENT; mouth OPENS ON EACH BLIP ·
+    OPEN WHILE HE TALKS · STAYS STILL. The timing is the Speech Lab's plan
+    (pauses at commas and full stops), shared by typing, blips and mouth.
+  - About 40 flat lines on 20 moments: dealt (by exact starting-hand
+    rank, "top N%"), they raise / bet big / go all in, your turn (the
+    exact price and pot odds, or a free check), what you did, a big or
+    small win, everyone folding, losing at showdown or big, someone out,
+    you out. No judgement yet: only reactions and exact facts. One line at
+    a time; a waiting line gives way to a more important one; stale lines
+    are dropped.
+  - Hearing the game: `applyAction` and `updateCoach` are wrapped; the deal
+    and the end of a hand are watched from `game.handNumber` and
+    `game.phase` (other parts of the table swap `startNewHand` in and out,
+    so wrapping it lost the hook). Checked over several fast hands in an
+    emulated iPhone: every kind of moment fires; no console errors.
