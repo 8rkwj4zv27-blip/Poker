@@ -1,6 +1,8 @@
 # P.I.P., the Coach: handover for a fresh session
 
-Written 29 Sep 2026, at **v0.57.2** (`main`, PR #47). This replaces the
+Written 29 Sep 2026. `main` is **v0.57.3** (PR #48, from another
+session: you can pick P.I.P. up and throw him round the screen, a joke the
+owner asked for; see below). The brain is as at v0.57.2 (PR #47). This replaces the
 first handover (the brain has since been built). Read this, then
 `CLAUDE.md` for the house rules. Open `docs/coach/BRAIN_PLAN.md` only for
 the full history of how each part was decided (it's long; sections are
@@ -55,7 +57,7 @@ job is whatever the owner reports, refined in small steps.**
 
 | File | What it is |
 | --- | --- |
-| `js/coach-set.js` + `css/coach-set.css` | His pixel TV, the lift on/off, the lead and plug, the boot, his face and mouth, the key beside ⚙ (`keyFace:'face'`). **Signed-off look (Pattern Book: Coach); don't redesign.** |
+| `js/coach-set.js` + `css/coach-set.css` | His pixel TV, the lift on/off, the lead and plug, the boot, his face and mouth, the key beside ⚙ (`keyFace:'face'`). Since v0.57.3: drag him off the felt and let go, he tumbles, bounces off the screen's edges and flies back (a tap without a drag still gets his read; off with Reduced Motion). **Signed-off look (Pattern Book: Coach); don't redesign.** |
 | `js/coach-brain.js` (`CoachBrain`) | The brain. Pure functions over the game state, no DOM: runs in Node for tests. |
 | `js/coach-lines.js` (`CoachLines`) | The line library (~510 lines, ~355 keys) and `TERMS` (poker words). |
 | `js/coach-talk.js` (`CoachTalk`) | His voice and bubble, and all the routing: when he speaks, what, taps, the HELP and TALK dials, the terms memory. Also ~80 base lines (`LINES`: results, "your turn", reactions). |
@@ -168,7 +170,7 @@ words and a lesson.
 ## Testing
 
 - `node validation/coach-brain-checks.js` (51 checks, ~2 min; all green at
-  v0.57.2), plus `pattern-book-checks.js` (guards: the Coach never changes
+  v0.57.3), plus `pattern-book-checks.js` (guards: the Coach never changes
   game state, never reads the deck, reads an opponent's cards only in
   `shownAtShowdown`: **name variables `handNo`, never `x.hand`, or it
   trips**), `ai-behaviour-checks.js`, `showdown-checks.js`,
@@ -202,7 +204,7 @@ words and a lesson.
 
 ## Parked, and what's next
 
-- **Now**: the owner is playing v0.57.2 and will send notes. Fix what they
+- **Now**: the owner is playing v0.57.3 and will send notes. Fix what they
   report: small, tested, into the lab, into the game when they say.
 - **Parked by the owner** (don't start unasked):
   - "Ask P.I.P." question keys in his bubble ("Should I have just called?"
