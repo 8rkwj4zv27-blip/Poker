@@ -1,6 +1,6 @@
 # The Coach — plan
 
-**Status (29 Sep 2026): LIVE as v0.57.2, with his brain.** Start with
+**Status (29 Sep 2026): LIVE as v0.57.3, with his brain.** Start with
 **`docs/coach/BRAIN_HANDOVER.md`** (where things stand, how he works, how
 to work with the owner); the brain's history is `docs/coach/BRAIN_PLAN.md`.
 This file is the history of his look, rig and voice.
