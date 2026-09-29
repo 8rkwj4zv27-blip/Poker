@@ -235,5 +235,6 @@ game, then his brain:
     WIDE EYES · STRAIGHT ON; lamp while booting AMBER · RED · GREEN; FULL
     or QUICK (mid-game); his sounds FULL · SOFT · OFF.
   - Switch-off: LINE TO A DOT · SHUTS HIS EYES · TYPES BYE.
+  Link: https://claude.ai/artifact/3VL9UDPksQDYkVTW4eK4cn
   Checked in an emulated iPhone: every boot and switch-off filmed frame by
   frame, every lead, plug and jack drawn; no console errors.
