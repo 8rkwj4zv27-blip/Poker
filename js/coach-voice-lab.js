@@ -27,6 +27,7 @@
     where:{ tab:'bubble', name:'WHERE IT SITS', note:'ABOVE HIM: over his set, the tail pointing down at his screen. BESIDE HIM: on the table side of him. ACROSS THE FELT: the full width, above him.' },
     look:{ tab:'bubble', name:'THE LOOK', note:'CARD STOCK: the opponents\' bubble from the Speech Lab. HIS SCREEN: dark glass in his own ink.' },
     textIn:{ tab:'bubble', name:'THE WORDS' },
+    type:{ tab:'bubble', name:'TYPE', note:'The screen font is Press Start 2P, the buttons\' and CRT screens\' face. NUMBERS + CARDS: the words stay in the pixel face; every number and card name is in the screen font.' },
     arrive:{ tab:'bubble', name:'HOW IT ARRIVES' },
     voice:{ tab:'voice', name:'HIS BLIP', note:'All low and steady, a notch under the opponents. STEADY PIP: one warm note. TELEPRINTER: a tick with a tiny tone. TWO NOTES: a little up-down. LOW HUM: a soft sine.' },
     pitch:{ tab:'voice', name:'PITCH' },
@@ -129,7 +130,7 @@
       order[holder.dataset.key] = t.dataset.v;
       applyOrder();
       // hear the change straight away
-      if (['voice', 'pitch', 'often', 'pace', 'volume', 'mouth', 'where', 'look', 'textIn', 'arrive'].includes(holder.dataset.key) && CS.on){ open(false); setTimeout(sayNow, 250); }
+      if (['voice', 'pitch', 'often', 'pace', 'volume', 'mouth', 'where', 'look', 'textIn', 'arrive', 'type'].includes(holder.dataset.key) && CS.on){ open(false); setTimeout(sayNow, 250); }
     });
     paint();
   }

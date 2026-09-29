@@ -292,3 +292,17 @@ game, then his brain:
     `game.phase` (other parts of the table swap `startNewHand` in and out,
     so wrapping it lost the hook). Checked over several fast hands in an
     emulated iPhone: every kind of moment fires; no console errors.
+- **Round 1 picks, LOCKED** (owner, 29 Sep 2026), now the defaults in
+  `js/coach-talk.js`:
+  ```
+  talk slider 4 · IN YOUR EAR · stays up NORMAL · ACROSS THE FELT ·
+  HIS SCREEN · TYPES ON · POPS · blip TELEPRINTER · pitch LOW ·
+  EVERY OTHER LETTER · pace FASTER · volume MEDIUM · mouth OPENS ON EACH BLIP
+  ```
+  Owner: the pixel face is hard to read for numbers. New TYPE row:
+  NUMBERS + CARDS IN THE SCREEN FONT (default: every number, percentage
+  and card name, e.g. "Jack-Ten suited", "Pocket Eights", in Press Start
+  2P, the buttons' and CRTs' face; the words stay in the pixel face) · ALL
+  IN THE SCREEN FONT (capitals, like the CRTs) · SCREEN FONT, UPPER + LOWER
+  CASE · ROUND 1. The line is split into runs and typed a character at a
+  time across them.

@@ -21,6 +21,12 @@
 .ctk[data-tail="right"].ctk-arrive-pop{ transform-origin:100% 50%; }
 .ctk[data-tail="left"].ctk-arrive-pop{ transform-origin:0 50%; }
 .ctk-text{ font-family:var(--font-px); font-size:16px; line-height:1.25; letter-spacing:.01em; }
+/* TYPE: the machine's screen font (Press Start 2P) for what matters */
+.ctk-key{ font-weight:400; }
+.ctk-type-mixed .ctk-key{ font-family:var(--font-hdr); font-size:11px; letter-spacing:.02em; line-height:1; vertical-align:1px; }
+.ctk-type-screen .ctk-text{ font-family:var(--font-hdr); font-size:10px; line-height:1.7; letter-spacing:.03em; text-transform:uppercase; }
+.ctk-type-screenlc .ctk-text{ font-family:var(--font-hdr); font-size:10px; line-height:1.7; letter-spacing:.02em; }
+.ctk-type-screen .ctk-key,.ctk-type-screenlc .ctk-key{ font-family:inherit; }
 /* it grows as it types: the untyped rest takes no room */
 .ctk.is-typing .ctk-rest{ display:none; }
 

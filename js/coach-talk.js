@@ -44,10 +44,12 @@ const CoachTalk = (() => {
     often:[['other', 'EVERY OTHER LETTER'], ['letter', 'EVERY LETTER'], ['syllable', 'EVERY SYLLABLE']],
     pace:[['normal', 'NORMAL'], ['slow', 'SLOWER'], ['fast', 'FASTER']],
     volume:[['low', 'LOW'], ['medium', 'MEDIUM'], ['high', 'HIGH'], ['silent', 'SILENT']],
-    mouth:[['blip', 'OPENS ON EACH BLIP'], ['open', 'OPEN WHILE HE TALKS'], ['still', 'STAYS STILL']]
+    mouth:[['blip', 'OPENS ON EACH BLIP'], ['open', 'OPEN WHILE HE TALKS'], ['still', 'STAYS STILL']],
+    type:[['mixed', 'NUMBERS + CARDS IN THE SCREEN FONT'], ['screen', 'ALL IN THE SCREEN FONT'], ['screenlc', 'SCREEN FONT, UPPER + LOWER CASE'], ['pixel', 'ROUND 1']]
   };
-  const DEFAULTS = { notch:'4', where:'above', look:'card', textIn:'type', arrive:'pop', hold:'normal',
-    voice:'steady', pitch:'low', often:'other', pace:'normal', volume:'low', mouth:'blip' };
+  // The owner's picks (Voice Lab round 1, 29 Sep 2026)
+  const DEFAULTS = { notch:'4', where:'across', look:'screen', textIn:'type', arrive:'pop', hold:'normal',
+    voice:'tick', pitch:'low', often:'other', pace:'fast', volume:'medium', mouth:'blip', type:'mixed' };
   let O = Object.assign({}, DEFAULTS);
   function apply(order){ O = Object.assign({}, DEFAULTS, order || {}); }
 
@@ -88,6 +90,34 @@ const CoachTalk = (() => {
     return l;
   }
   const fill = (text, ctx) => text.replace(/\{(\w+)\}/g, (m, k) => ctx[k] != null ? ctx[k] : m);
+  /* TYPE: the numbers and the card names are what he's telling you, so by
+     default they're set in the machine's screen font (Press Start 2P, the
+     buttons' and CRTs' face), which reads far better at this size; the
+     words stay in the pixel face. The line is split into runs; typing
+     reveals it a character at a time across the runs. */
+  const CARDWORDS = /\b(?:Pocket (?:Twos|Threes|Fours|Fives|Sixes|Sevens|Eights|Nines|Tens|Jacks|Queens|Kings|Aces)|(?:Two|Three|Four|Five|Six|Seven|Eight|Nine|Ten|Jack|Queen|King|Ace)-(?:Two|Three|Four|Five|Six|Seven|Eight|Nine|Ten|Jack|Queen|King|Ace) (?:suited|offsuit))\b/g;
+  function runs(text){
+    const out = [];
+    const re = new RegExp(CARDWORDS.source + '|\\d[\\d,]*(?:\\.\\d+)?%?', 'g');
+    let last = 0, m;
+    while ((m = re.exec(text))){
+      if (m.index > last) out.push({ t:text.slice(last, m.index), key:false });
+      out.push({ t:m[0], key:true });
+      last = m.index + m[0].length;
+    }
+    if (last < text.length) out.push({ t:text.slice(last), key:false });
+    return out;
+  }
+  const esc = t => t.replace(/[&<>"]/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;' })[c]);
+  function htmlUpTo(rs, n){
+    let left = n, html = '';
+    for (const r of rs){
+      if (left <= 0) break;
+      const part = r.t.slice(0, left); left -= part.length;
+      html += r.key ? '<b class="ctk-key">' + esc(part) + '</b>' : esc(part);
+    }
+    return html;
+  }
 
   /* ---------------- his voice ----------------
      A warm square pip through a low filter, like the opponents' shared
@@ -203,16 +233,17 @@ const CoachTalk = (() => {
     }
     const text = fill(line[2], ctx || {});
     const el = document.createElement('div');
-    el.className = 'ctk ctk--' + O.look + ' ctk-arrive-' + O.arrive;
+    el.className = 'ctk ctk--' + O.look + ' ctk-arrive-' + O.arrive + ' ctk-type-' + O.type;
+    const rs = runs(text);
     el.setAttribute('role', 'status');
     el.dataset.moment = moment || '';
     el.innerHTML = '<div class="ctk-text"><span class="ctk-said"></span><span class="ctk-rest"></span></div><i class="ctk-tail" aria-hidden="true"></i>';
     const typed = O.textIn === 'type' && !motionOffSafe();
     // lay out on the finished line, then type into it (it grows as it types)
-    el.querySelector('.ctk-said').textContent = text;
+    el.querySelector('.ctk-said').innerHTML = htmlUpTo(rs, text.length);
     document.body.appendChild(el);
     place(el);
-    if (typed){ el.querySelector('.ctk-said').textContent = ''; el.querySelector('.ctk-rest').textContent = text; el.classList.add('is-typing'); }
+    if (typed){ el.querySelector('.ctk-said').innerHTML = ''; el.querySelector('.ctk-rest').textContent = text; el.classList.add('is-typing'); }
     try{ CoachSet.setMood(line[1]); }catch(e){}
     const p = plan(text);
     const hold = ({ short:.6, normal:1, long:1.6 })[O.hold] * Math.min(6000, 1800 + text.length * 45);
@@ -221,7 +252,7 @@ const CoachTalk = (() => {
     l.timers.push(setTimeout(() => speakSound(text), lead));
     if (typed){
       const said = el.querySelector('.ctk-said'), rest = el.querySelector('.ctk-rest');
-      p.times.forEach((ms, i) => l.timers.push(setTimeout(() => { said.textContent = text.slice(0, i + 1); rest.textContent = text.slice(i + 1); }, lead + ms)));
+      p.times.forEach((ms, i) => l.timers.push(setTimeout(() => { said.innerHTML = htmlUpTo(rs, i + 1); rest.textContent = text.slice(i + 1); }, lead + ms)));
     }
     // his mouth
     if (O.mouth === 'blip'){
