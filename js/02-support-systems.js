@@ -751,12 +751,12 @@ const DEFAULT_SETTINGS = {
   deckBack:'crest', deckSide:'left',
   // The Coach (js/coach-set.js, js/coach-talk.js): whether he's switched on
   // (the COACH key next to ⚙) and how much he says (Settings → Coach talk)
-  coachBot:false, coachTalk:'4'
+  coachBot:false, coachTalk:'4', coachHelp:'3'
 };
 const DEFAULT_STATS = { hands:0, won:0, showdownsWon:0, biggestPot:0, net:0 };
 const SAVE_VERSION = 1;
 /* Bump on every release so the main-menu header shows what's actually installed. */
-const BUILD_VERSION = 'v0.55.0-dev · P.I.P. judges your starting hands';
+const BUILD_VERSION = 'v0.55.1-dev · P.I.P. advises before you act';
 
 let settings = Object.assign({}, DEFAULT_SETTINGS, Store.get('felt.settings', {}));
 // The Settings menu cleanup dropped RELAXED from the Game Speed control

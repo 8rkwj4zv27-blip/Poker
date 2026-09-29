@@ -371,6 +371,8 @@ const CoachBrain = (() => {
 
     /* ---- facing a raise, or a re-raise ---- */
     const Rr = raiserRange(sp);
+    const agg = sp.pfAggressor && sp.opponents.find(o => o.id === sp.pfAggressor.id);
+    n.raiserSeat = agg ? agg.seat : null;
     const ranges = [Rr].concat(Array.from({ length:sp.preflop.callers }, () => Math.min(1, Rr * 1.6)));
     const eq = equityVs(sp, ranges);
     if (eq == null) return null;
@@ -427,6 +429,68 @@ const CoachBrain = (() => {
       return J(Object.assign(base, { verdict:'mistake', confidence: pct > 0.5 ? 'clear' : 'leans', tag:pre + '.raise.loose', lesson:'three-bet', notable:true }));
     }
     return null;
+  }
+
+  /* ============================================================
+     ADVICE BEFORE YOU ACT (step 4, brought forward for the preflop,
+     owner 29 Sep 2026): the judge run on each move you could make, before
+     you make one. What he'd do, how sure he is (CLEAR: the only good move;
+     LEANS: another move is defensible; CLOSE: another is just as good), the
+     size he'd pick, and the same numbers the judge quotes.
+     ============================================================ */
+  function raiseSize(sp){
+    const bb = sp.bigBlind, raises = sp.preflop.raises;
+    if (sp.effectiveBB <= PUSH_FOLD_BB + 5 && raises >= 1 || sp.effectiveBB <= PUSH_FOLD_BB) return sp.stack + sp.yourBet;   // all in
+    let to;
+    if (raises === 0) to = (sp.playersDealt === 2 ? 2.5 : 2.5) * bb + sp.preflop.limpers * bb + (sp.seat === 'BB' && sp.preflop.limpers ? bb : 0);
+    else to = sp.currentBet * (raises >= 2 ? 2.3 : sp.seatGroup === 'blinds' ? 3.8 : 3) + sp.preflop.callers * sp.currentBet;
+    to = Math.round(to / bb * 2) / 2 * bb;   // to the half big blind
+    return Math.min(sp.stack + sp.yourBet, Math.max(to, sp.currentBet + sp.minRaise));
+  }
+  function advisePreflop(sp){
+    if (!sp || sp.street !== 'preflop') return null;
+    const to = raiseSize(sp), allinTo = sp.stack + sp.yourBet;
+    const moves = [];
+    moves.push(sp.toCall > 0 ? 'fold' : 'check');
+    if (sp.toCall > 0) moves.push('call');
+    if (sp.mayRaise) moves.push(to >= allinTo ? 'allin' : 'raise');
+    // what each move would be recorded as, judged
+    const judged = moves.map(m => {
+      const amount = m === 'raise' ? to : m === 'allin' ? allinTo : m === 'call' ? sp.yourBet + sp.toCall : sp.yourBet;
+      const added = Math.max(0, amount - sp.yourBet);
+      const ch = { action:m, amount, added, addedBB:r1(added / sp.bigBlind), toBB:r1(amount / sp.bigBlind),
+        potFraction: sp.pot > 0 && added > 0 ? Math.round(added / sp.pot * 100) / 100 : null };
+      return { move:m, ch, j:judgePreflop(sp, ch) };
+    }).filter(x => x.j);
+    if (!judged.length) return null;
+    const rank = x => x.j.verdict === 'good' ? 3 : x.j.verdict === 'fine' ? (x.j.confidence === 'close' ? 2 : 1.5) : 0;
+    // the judge's own best move, if it's on offer; otherwise the best-judged one
+    const want = judged[0].j.best === 'allin' && !moves.includes('allin') ? 'raise' : judged[0].j.best;
+    let pick = judged.find(x => x.move === want) || judged.slice().sort((a, b) => rank(b) - rank(a))[0];
+    if (want === 'check' && sp.toCall > 0) pick = judged.find(x => x.move === 'fold') || pick;
+    const others = judged.filter(x => x !== pick);
+    const alt = others.slice().sort((a, b) => rank(b) - rank(a))[0] || null;
+    const altRank = alt ? rank(alt) : 0;
+    const sure = altRank >= 2 ? 'close' : altRank >= 1.5 ? 'leans' : 'clear';
+    const j = pick.j;
+    return { move:pick.move, to: pick.move === 'raise' || pick.move === 'allin' ? pick.ch.amount : null, toBB: pick.ch.toBB,
+      sure, alt: alt && altRank >= 1.5 ? alt.move : null, kind:j.kind, lesson:j.lesson, n:j.n, tag:j.tag, judgement:j };
+  }
+
+  /* ---------------- a read of the hand as it stands (tap him) ----------------
+     Facts only after the flop until the judge learns it (step 3): what you
+     have, what you're drawing to and your chance of hitting it, the price. */
+  function readNow(sp){
+    if (!sp) return null;
+    const out = { street:sp.street, toCall:sp.toCall, pot:sp.pot, odds:Math.round(sp.potOdds * 100), hole:sp.holeFacts.name, seat:sp.seat };
+    if (sp.street === 'preflop' || !sp.boardFacts) return out;
+    const bf = sp.boardFacts, left = sp.board.length === 3 ? 2 : sp.board.length === 4 ? 1 : 0;
+    const unseen = 52 - 2 - sp.board.length;
+    const hit = o => left === 2 ? 1 - (1 - o / unseen) * (1 - o / (unseen - 1)) : left === 1 ? o / unseen : 0;
+    const drawOuts = bf.drawOuts >= 8 && bf.draws.flush && (bf.draws.oesd || bf.draws.gutshot) ? Math.min(15, bf.drawOuts + (bf.draws.oesd ? 6 : 3)) : bf.drawOuts;
+    Object.assign(out, { made:bf.made, handName:bf.handName, boardPlays:bf.boardPlays, draws:bf.draws, drawOuts, left,
+      hitPct: drawOuts && left ? Math.round(hit(drawOuts) * 100) : 0, threats:bf.threats, texture:bf.texture });
+    return out;
   }
 
   /* ---------------- the hand record ---------------- */
@@ -516,7 +580,7 @@ const CoachBrain = (() => {
     return finish(hand.seen || { phase:null, showdown:false, board:[], shown:[], yourHand:null, out:false }, net);
   }
 
-  return { spot, choice, judgePreflop, openRange, pushRange, raiserRange, record, handStart, observe, handEnd, closeMissed, shownAtShowdown, seatLabel, actingAfter,
+  return { spot, choice, judgePreflop, advisePreflop, readNow, raiseSize, openRange, pushRange, raiserRange, record, handStart, observe, handEnd, closeMissed, shownAtShowdown, seatLabel, actingAfter,
     get hand(){ return hand; }, get history(){ return history.slice(); }, reset(){ hand = null; history.length = 0; } };
 })();
 if (typeof window !== 'undefined') window.CoachBrain = CoachBrain;

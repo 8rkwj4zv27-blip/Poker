@@ -224,7 +224,7 @@ const CoachLines = (() => {
   add('bb.defend.good.why', 2, [
     ['calm', 'You called {call} with {hole} in the big blind. The price was good: you needed about {need}% and had about {eq}%.'],
     ['pleased', 'Good defence of the big blind. You’d already put a big blind in, so the call was cheap for what you could win.'],
-    ['calm', 'Big blind, getting a good price. {hole} was worth the call against a raise {seatFrom}.']]);
+    ['calm', 'Big blind, getting a good price. {hole} was worth the call against a raise {raiserFrom}.']]);
 
   /* ---------------- facing a raise ---------------- */
   add('vsraise.fold.good.now', 2, [['pleased', 'Good fold.'], ['calm', 'Good fold. Let it go.'], ['pleased', 'Disciplined.']]);
@@ -258,7 +258,7 @@ const CoachLines = (() => {
   add('vsraise.call.weak.why', 2, [
     ['thinking', 'You called {raiser}’s raise with {hole}. Against the hands that raise usually means, it wins about {eq}%. You needed {need}%. That’s a fold.'],
     ['calm', 'Calling raises with weak hands is the most common leak there is. {hole} is often dominated: when you hit, they’ve hit better.'],
-    ['thinking', 'A raise {seatFrom} means about the top {range}%. {hole} is behind most of that. Fold, and wait for a better spot.']]);
+    ['thinking', 'A raise {raiserFrom} means about the top {range}%. {hole} is behind most of that. Fold, and wait for a better spot.']]);
   add('vsraise.call.weak.why.leans', 2, [
     ['thinking', 'Calling with {hole} was a bit loose. About {eq}%, and you needed {need}%. Not a disaster, but it adds up.'],
     ['calm', 'That call with {hole} was slightly too loose. Tighten up against raises.']]);
@@ -404,6 +404,164 @@ const CoachLines = (() => {
     ['thinking', 'You won it, but that’s not the point.'], ['calm', 'You got lucky there.'], ['thinking', 'It worked this time.']]);
   add('lead.lostAnyway', 2, [
     ['unlucky', 'You lost, but the decision was right.'], ['calm', 'Lost the pot, not the argument.'], ['unlucky', 'Unlucky. You played it right.']]);
+
+  /* ============================================================
+     ADVICE BEFORE YOU ACT (the HELP dial, and tapping him)
+       advise.<kind>.<move>   what he'd do, and the short reason
+       advise.close           two moves are about as good
+       advise.tail.leans      after a lean ("not by much")
+       hint.<kind>            HINTS: what to think about, not the move
+     Slots as above, plus {to} (a raise to that many chips), {toBB},
+     {lean} and {alt} (moves: fold, call, raise, check, go all in).
+     ============================================================ */
+  add('advise.open.raise', 3, [
+    ['calm', 'Raise this. {hole} is top {pct}%, and a sound player raises the top {range}% {seatFrom}. Make it {to}.'],
+    ['pleased', 'Nobody’s in. {hole} is good enough {seatFrom}: raise to {to}.'],
+    ['calm', 'First in with {hole}. Raise it, about {to}. Don’t just call.']]);
+  add('advise.open.fold', 3, [
+    ['calm', 'Fold this. {hole} is top {pct}%. {SeatFrom}, you want the top {range}%.'],
+    ['calm', '{hole} {seatOn}. Fold it. Too many players still to act behind you.'],
+    ['thinking', 'I’d fold. {hole} isn’t good enough {seatFrom}.']]);
+  add('advise.open.allin', 3, [
+    ['calm', 'You’re short. {hole} is good enough: go all in.']]);
+  add('advise.limped.raise', 3, [
+    ['calm', '{limpersP} limped. Raise them with {hole}. Make it {to}.'],
+    ['pleased', 'Limpers usually have weak hands. {hole} is a raise: about {to}.']]);
+  add('advise.limped.call', 3, [
+    ['calm', 'You can call along here. {hole} wants a cheap flop to hit.'],
+    ['thinking', 'Limp behind with {hole}. It’s a hand that wins big or not at all.']]);
+  add('advise.limped.fold', 3, [
+    ['calm', 'Fold. {hole} isn’t worth playing, even after a limp.'],
+    ['calm', 'Let {hole} go. Calling along with weak hands costs chips.']]);
+  add('advise.bbOption.check', 3, [
+    ['calm', 'Check. It’s free.'], ['calm', 'Just check and see the flop for nothing.']]);
+  add('advise.bbOption.raise', 3, [
+    ['pleased', 'Raise the limpers. {hole} is strong. Make it {to}.'],
+    ['calm', '{hole} in the big blind with limpers in: raise to {to}.']]);
+  add('advise.bbOption.allin', 3, [
+    ['calm', 'You’re short and {hole} is strong. Go all in over the limpers.']]);
+  add('advise.limped.allin', 3, [
+    ['calm', 'Short, with limpers in. {hole} is good enough: all in.']]);
+  add('advise.vsRaise.fold', 3, [
+    ['calm', 'Fold. Against a raise {raiser} makes, {hole} wins about {eq}%. You’d need {need}%.'],
+    ['thinking', '{raiser} raised. {hole} is behind most of the hands that means. Fold it.'],
+    ['calm', 'I’d fold. A raise means about the top {range}%, and {hole} does badly against that.']]);
+  add('advise.vsRaise.call', 3, [
+    ['calm', 'Call. {hole} wins about {eq}% against that raise, and you need {need}%.'],
+    ['calm', 'The price is right. Call with {hole}.']]);
+  add('advise.vsRaise.raise', 3, [
+    ['pleased', 'Re-raise. {hole} wins about {eq}% against that. Make it {to}.'],
+    ['impressed', '{hole} against one raise: raise again, to about {to}. You’re ahead.']]);
+  add('advise.vsRaise.allin', 3, [
+    ['calm', 'You’re short. {hole} wins about {eq}% here: go all in.'],
+    ['calm', 'All in. With {bb} big blinds, calling leaves too little. Shove {hole}.']]);
+  add('advise.vsReraise.fold', 3, [
+    ['calm', 'Fold. A re-raise means a very strong hand, and {hole} wins about {eq}% against it.'],
+    ['thinking', 'Two raises is a lot of strength. Let {hole} go.']]);
+  add('advise.vsReraise.call', 3, [
+    ['calm', 'Call. {hole} holds up well enough: about {eq}%, needing {need}%.']]);
+  add('advise.vsReraise.raise', 3, [
+    ['pleased', 'Raise again. {hole} wins about {eq}% even against a re-raise.']]);
+  add('advise.vsReraise.allin', 3, [
+    ['calm', 'All in. {hole} is strong enough, about {eq}%, and you’re short.']]);
+  add('advise.short.allin', 3, [
+    ['calm', 'You have {bb} big blinds. Shove {hole}. It’s inside the top {range}% from here.'],
+    ['calm', 'Short stack, first in: all in with {hole}.']]);
+  add('advise.short.fold', 3, [
+    ['calm', 'Fold. With {bb} big blinds you shove or fold, and {hole} is a fold from here.'],
+    ['calm', 'Too weak to shove {seatFrom}. Fold {hole} and wait.']]);
+  add('advise.close', 3, [
+    ['thinking', 'It’s close. I’d {lean}, but {alt} is fine too.'],
+    ['thinking', 'Close one. {Lean} is my pick. {Alt} isn’t wrong.'],
+    ['calm', 'Either works. I lean to {lean}.']]);
+  add('advise.tail.leans', 3, [
+    ['thinking', 'Not by a lot, though.'], ['thinking', 'It’s not a big edge.'], ['calm', 'Just about.']]);
+
+  add('hint.open', 3, [
+    ['thinking', 'Nobody’s in yet. How many players are still to act after you?'],
+    ['thinking', 'First in. Is {hole} good enough {seatFrom}?'],
+    ['calm', 'Think about your seat before you play this.']]);
+  add('hint.limped', 3, [
+    ['thinking', '{limpersP} just called. What does a limp usually mean?'],
+    ['thinking', 'Limpers in front. Raise, call along, or let it go?']]);
+  add('hint.bbOption', 3, [
+    ['thinking', 'Nobody raised. What does it cost you to see the flop?']]);
+  add('hint.vsRaise', 3, [
+    ['thinking', '{raiser} raised. What hands does a raise usually mean?'],
+    ['thinking', 'It’s {call} to call. Does {hole} win often enough to pay that?'],
+    ['calm', 'Look at the price, and at who raised.']]);
+  add('hint.vsReraise', 3, [
+    ['thinking', 'That’s a re-raise. How strong does that make them?']]);
+  add('hint.short', 3, [
+    ['thinking', 'You have {bb} big blinds. Is this a shove, or a fold?'],
+    ['calm', 'Short stack. Remember: all in or fold.']]);
+
+  /* ============================================================
+     TAP HIM: his read of the hand as it stands
+       read.pre.*          before the flop, not your turn
+       read.made.<made>    after the flop: what you have
+       read.draw           what you're drawing to, and your chance
+       read.drawprice      a draw facing a bet: the next card against the price
+       read.price.bet / read.price.free
+       read.threat         the board's danger
+       read.between        between hands, nothing to go on
+       explain.<term>      tap again: a term explained
+     Slots: {handName} {drawName} {outs} {hitPct} {byWhen} {hitNext}
+     {threat} {call} {pot} {odds} {hole} {seatOn} {pct}
+     ============================================================ */
+  add('read.pre.wait', 3, [
+    ['calm', '{hole} {seatOn}. Top {pct}% of starting hands. Let’s see what they do.'],
+    ['thinking', '{hole}, {seatOn}. Top {pct}%. Wait for your turn.']]);
+  add('read.pre.out', 3, [
+    ['calm', 'You’re out of this one. Watch how they bet. It tells you about them.'],
+    ['calm', 'Folded. Good time to watch the others: who raises, who calls.']]);
+  add('read.made.nothing', 3, [
+    ['calm', 'No pair yet. {hole} hasn’t hit.'], ['thinking', 'Nothing yet. Just {hole}.']]);
+  add('read.made.boardPlays', 3, [
+    ['calm', 'Your best hand is the board itself. Everyone still in has at least that.']]);
+  add('read.made.weak-pair', 3, [
+    ['calm', '{handName}. A small pair. It beats very little.'], ['thinking', '{handName}, and bigger cards on the board. Careful.']]);
+  add('read.made.second-pair', 3, [
+    ['calm', '{handName}: second pair. Decent, not strong.'], ['thinking', '{handName}. Middle strength.']]);
+  add('read.made.top-pair', 3, [
+    ['pleased', '{handName}. That’s top pair, the highest card on the board.'], ['calm', '{handName}: top pair. Good, most of the time.']]);
+  add('read.made.overpair', 3, [
+    ['pleased', '{handName}. An overpair: bigger than any card on the board.'], ['pleased', '{handName}, above everything on the board. Strong.']]);
+  add('read.made.two-pair', 3, [
+    ['pleased', '{handName}. Two pair is strong.'], ['impressed', '{handName}. A good hand.']]);
+  add('read.made.set', 3, [
+    ['impressed', '{handName}. A set: your pair and one on the board. Very strong, and hard to see.']]);
+  add('read.made.trips', 3, [
+    ['pleased', '{handName}. Strong, but someone could have the same card with a better kicker.']]);
+  add('read.made.big', 3, [
+    ['impressed', '{handName}. That’s a big hand.'], ['impressed', '{handName}. Very strong.']]);
+  add('read.draw', 3, [
+    ['thinking', 'You’re on {drawName}: {outs} cards help you. About {hitPct}% to hit {byWhen}.'],
+    ['calm', '{drawName}, {outs} outs. That’s roughly {hitPct}% {byWhen}.']]);
+  add('read.drawprice', 3, [
+    ['thinking', 'The next card alone hits about {hitNext}%. The price needs {odds}%.'],
+    ['calm', 'To call this with a draw, compare: {hitNext}% on the next card, {odds}% needed.']]);
+  add('read.price.bet', 3, [
+    ['calm', '{call} to call into {pot}. You need to win {odds}% of the time for that to pay.'],
+    ['calm', 'It costs {call}. With {pot} in the pot, you need {odds}%.']]);
+  add('read.price.free', 3, [
+    ['calm', 'Nobody’s bet. You can check.'], ['calm', 'It’s free to check.']]);
+  add('read.threat', 3, [
+    ['thinking', 'Watch out: {threat}.'], ['thinking', 'Careful: {threat}.']]);
+  add('read.between', 3, [
+    ['calm', 'Nothing on. Deal the next one.'], ['calm', 'Between hands. Next one’s coming.']]);
+  add('explain.outs', 3, [
+    ['calm', 'Outs are the cards left that would make your hand. The rule of 2 and 4: outs times 4 with two cards to come, times 2 with one.'],
+    ['calm', 'Count your outs, the cards that help you. Multiply by 2 for each card to come. That’s your rough chance.']]);
+  add('explain.potodds', 3, [
+    ['calm', 'Pot odds: the call divided by the pot after you call. If you win more often than that, the call pays.'],
+    ['calm', 'If it costs 25 to win 75, you need to win one time in four: 25%. That’s pot odds.']]);
+  add('explain.equity', 3, [
+    ['calm', 'Equity is how often your hand would win if all the cards were dealt out. Compare it with the price.']]);
+  add('explain.kicker', 3, [
+    ['calm', 'Your kicker is your other card. With the same pair, the higher kicker wins.']]);
+  add('explain.position', 3, [
+    ['calm', 'Acting last is an advantage: you see what everyone does before you decide.']]);
 
   return { lines:L };
 })();

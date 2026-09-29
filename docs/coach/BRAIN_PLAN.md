@@ -304,3 +304,41 @@ confidence, the better move and the numbers; tap to hear it), TALK, KEY
 Link: https://claude.ai/artifact/93fSUyPJJemnRhGkq7yXyJ
 
 **Next: step 3, after the flop.**
+
+## Step 4, brought forward: advice before you act, and tapping him (v0.55.1)
+
+Owner (29 Sep 2026): step 2 only spoke after a move, "so it's not really
+helping me out". Option A: advice before you act, for the preflop now
+(after-the-flop advice comes with step 3's judge); and tap his screen for
+an immediate read of the game.
+
+- **`CoachBrain.advisePreflop(spot)`**: the judge run on every move you
+  could make (fold or check, call, raise to his size, all in). His move is
+  the judge's best; how sure he is comes from the next-best move (CLEAR:
+  the only good one; LEANS: another is defensible; CLOSE: another is as
+  good). Sizes: 2.5 big blinds to open, plus one per limper; a three-bet 3x
+  in position, 3.8x from the blinds; all in when short.
+- **The HELP dial** (Settings → P.I.P. help, `settings.coachHelp`, default
+  **ADVICE**): WATCH (nothing before you act) · HINTS (what to think about:
+  "It's 60 to call. Does King-Nine offsuit win often enough to pay that?") ·
+  ADVICE (the move and why; "It's close. I'd fold, but call is fine too.") ·
+  TELL ME (always the move, with numbers and size). Unprompted at TIPS on
+  the big decisions (a raise to face, short, a premium hand, anything not
+  clear-cut) and at IN YOUR EAR on every decision bar folding junk. It
+  replaces the "your turn" price line; if you follow his advice he doesn't
+  then praise you for it.
+- **Tap his screen** (`#coach-station`): on your turn before the flop, his
+  advice in full whatever the dial; after the flop, what you have, your
+  draw and your chance of hitting it (exact, by the river or on it), the
+  price or the next card against the price, and the board's danger; not
+  your turn, the same without the price; folded, "watch how they bet";
+  between hands, the last hand's lesson. Tap again within 12 seconds: a
+  layer deeper (the lesson, or pot odds, outs, equity, kicker, position
+  explained). Facts only after the flop until step 3's judge.
+- **Tests**: 38 checks (advice on familiar spots with sizes; the read's
+  outs and chance; 5,000 random decisions: advice is always a move you
+  have, never one the judge calls a clear mistake, always has lines).
+  Played in the real game in an emulated iPhone: advice, a word when it
+  was ignored, taps and a second tap, no errors.
+- The old Coach readout stays until the owner says to retire it (his tap
+  now covers its numbers before the flop and the price after it).

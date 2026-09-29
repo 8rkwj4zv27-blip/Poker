@@ -312,6 +312,7 @@ check('Facing a raise: King-Nine offsuit calling an early raise is a clear mista
   let g = table(6, 0, 5, { hole:H('Ks','9h') }); act(g, 3, 'raise', 60); act(g, 4, 'fold');
   const j = judge(g, 5, 'call');
   is(j, 'mistake', 'clear', 'vsraise.call.weak');
+  assert.strictEqual(j.n.raiserSeat, 'UTG', 'the raiser\'s seat, for "a raise from under the gun"');
   assert.ok(j.n.eq < j.n.need, 'the numbers say why: ' + j.n.eq + '% against ' + j.n.need + '% needed');
   g = table(6, 0, 5, { hole:H('Qs','Qh') }); act(g, 3, 'raise', 60); act(g, 4, 'fold');
   is(judge(g, 5, 'raise', 180), 'good', 'clear', 'vsraise.raise.value');
@@ -348,7 +349,8 @@ check('A recorded decision carries its judgement', () => {
 });
 
 /* ---------------- his lines ---------------- */
-const SLOTS = new Set(['hole','pct','range','seatOn','seatFrom','SeatFrom','behindP','bb','size','call','odds','eq','need','raiser','limpersP']);
+const SLOTS = new Set(['hole','pct','range','seatOn','seatFrom','SeatFrom','behindP','bb','size','call','odds','eq','need','raiser','limpersP',
+  'raiserFrom','to','toBB','lean','alt','Lean','Alt','handName','drawName','outs','hitPct','byWhen','hitNext','threat','pot']);
 const BANNED = /\b(kid|buddy|pal|mate|champ|sport|chief|boss|friend|damn|hell|shit|crap)\b/i;
 check('His lines: flat, clean, fit his bubble, and only use blanks the game fills', () => {
   const L = LINES();
@@ -416,6 +418,65 @@ check('5,000 random decisions before the flop: every judgement is sane and has s
     if (j.lesson) assert.ok(L['lesson.' + j.lesson] && L['again.' + j.lesson], 'no lesson or reminder lines for ' + j.lesson);
   }
   assert.ok(tags.size >= 30, 'the fuzz reached most kinds of spot: ' + tags.size);
+});
+
+/* ================= advice before you act (step 4, preflop) ================= */
+const advise = (g, i) => B.advisePreflop(B.spot(g, g.players[i]));
+check('His advice on familiar spots', () => {
+  let a = advise(table(6, 0, 3, { hole:H('As','Ah') }), 3);
+  assert.strictEqual(a.move, 'raise'); assert.strictEqual(a.sure, 'clear'); assert.strictEqual(a.to, 50, 'a standard open: 2.5 big blinds');
+  a = advise(table(6, 0, 3, { hole:H('7s','2h') }), 3);
+  assert.strictEqual(a.move, 'fold'); assert.strictEqual(a.sure, 'clear');
+  let g = table(6, 0, 5, { hole:H('Ks','9h') }); act(g, 3, 'raise', 60); act(g, 4, 'fold');
+  assert.strictEqual(advise(g, 5).move, 'fold');
+  g = table(6, 0, 5, { hole:H('Qs','Qh') }); act(g, 3, 'raise', 60); act(g, 4, 'fold');
+  a = advise(g, 5); assert.strictEqual(a.move, 'raise'); assert.strictEqual(a.to, 180, 'a three-bet in position: three times');
+  g = table(6, 0, 2, { hole:H('9s','7s') }); [3, 4, 5].forEach(i => act(g, i, 'fold')); act(g, 0, 'raise', 50); act(g, 1, 'fold');
+  assert.strictEqual(advise(g, 2).move, 'call');
+  g = table(6, 0, 2, { hole:H('8s','3d') }); act(g, 3, 'call'); [4, 5, 0].forEach(i => act(g, i, 'fold')); act(g, 1, 'call');
+  assert.strictEqual(advise(g, 2).move, 'check', 'free in the big blind: check');
+  g = table(6, 0, 0, { hole:H('As','9d'), stack:160 }); [3, 4, 5].forEach(i => act(g, i, 'fold'));
+  a = advise(g, 0); assert.strictEqual(a.move, 'allin'); assert.strictEqual(a.to, 160);
+  g = table(6, 0, 5, { hole:H('As','Qd') }); act(g, 3, 'call'); act(g, 4, 'fold');
+  a = advise(g, 5); assert.strictEqual(a.move, 'raise'); assert.strictEqual(a.to, 70, 'raise a limper: 2.5 big blinds plus one per limper');
+});
+check('After the flop: his read has your hand, your draw and your chance of hitting it', () => {
+  const g = table(3, 0, 1, { hole:H('Ah','5h') }); act(g, 0, 'call'); act(g, 1, 'call'); act(g, 2, 'check');
+  street(g, 'flop', [C('Kh'), C('9h'), C('2c')]);
+  const r = B.readNow(B.spot(g, you(g)));
+  assert.strictEqual(r.made, 'nothing'); assert.strictEqual(r.draws.flush, true);
+  assert.strictEqual(r.drawOuts, 9); assert.strictEqual(r.hitPct, 35, 'nine outs, two cards: 35%');
+});
+check('5,000 random decisions: his advice is always a move you have, never one his judge calls a clear mistake, and always has lines', () => {
+  let seed = 4242;
+  const rnd = () => { seed = (seed * 1103515245 + 12345) & 0x7fffffff; return seed / 0x7fffffff; };
+  const ri = k => Math.floor(rnd() * k);
+  const L = LINES();
+  for (let t = 0; t < 5000; t++){
+    const n = 2 + ri(6), dealer = ri(n), me = ri(n);
+    const deck = ctx.shuffle(ctx.createDeck());
+    const stack = rnd() < .25 ? 60 + ri(300) : 400 + ri(4000);
+    const g = table(n, dealer, me, { stack, hole:[deck.pop(), deck.pop()] });
+    const order = []; for (let k = 1; k <= n; k++) order.push((g.bbIndex + k) % n);
+    for (const i of order){
+      if (i === me) break;
+      const p = g.players[i], x = rnd();
+      if (x < .5) act(g, i, 'fold');
+      else if (x < .8 || p.chips <= g.currentBet * 3) act(g, i, 'call');
+      else act(g, i, 'raise', Math.min(p.betThisRound + p.chips, g.currentBet * (2 + ri(3))));
+    }
+    const mine = g.players[me];
+    if (mine.folded || mine.allIn || mine.chips <= 0) continue;
+    const sp = B.spot(g, mine), a = B.advisePreflop(sp);
+    if (!a) continue;
+    const moves = [sp.toCall > 0 ? 'fold' : 'check'].concat(sp.toCall > 0 ? ['call'] : [], sp.mayRaise ? ['raise', 'allin'] : []);
+    assert.ok(moves.includes(a.move), 'advice you can take: ' + a.move + ' of ' + moves);
+    assert.ok(!(a.judgement.verdict === 'mistake' && a.judgement.confidence === 'clear'), 'advice his own judge calls a clear mistake: ' + JSON.stringify(a));
+    assert.ok(['clear','leans','close'].includes(a.sure));
+    if (a.to) assert.ok(a.to > sp.currentBet && a.to <= sp.stack + sp.yourBet, 'a raise size you can make: ' + a.to);
+    assert.ok(L['advise.' + a.kind + '.' + a.move], 'no advice lines for ' + a.kind + '.' + a.move);
+    assert.ok(L['hint.' + a.kind], 'no hint lines for ' + a.kind);
+  }
 });
 
 process.stdout.write('\n' + passed + ' coach brain checks passed.\n');

@@ -15,7 +15,7 @@
      HIS VERDICTS  every decision you've made here, with his verdict, how
                    sure he is, the better move and the numbers; tap one to
                    hear it again
-     TALK          the talk slider
+     TALK          the talk slider and the HELP dial
      KEY           his key's face
    COPY MY PICKS (on KEY) copies the rows as one line.
    ============================================================ */
@@ -23,14 +23,14 @@
   const host = (() => { try{ return parent !== window && parent.__lab ? parent.__lab : null; }catch(e){ return null; } })();
   const state = host ? host.state : {};
   const CS = CoachSet, CT = CoachTalk, CB = CoachBrain;
-  let picks = Object.assign({ keyFace:CS.DEFAULTS.keyFace || 'pip', notch:'4' }, state.picks || {});
+  let picks = Object.assign({ keyFace:CS.DEFAULTS.keyFace || 'pip', notch:'4', help:'3' }, state.picks || {});
   const wasOn = state.on;
 
   function save(){ if (host) host.set({ picks:Object.assign({}, picks), on:CS.on }); }
   function applyPicks(){
     CS.apply(Object.assign({}, CS.DEFAULTS, { bootLen:'quick', keyFace:picks.keyFace }));
-    CT.apply(Object.assign({}, CT.order, { notch:picks.notch }));
-    try{ settings.coachTalk = picks.notch; }catch(e){}
+    CT.apply(Object.assign({}, CT.order, { notch:picks.notch, help:picks.help }));
+    try{ settings.coachTalk = picks.notch; settings.coachHelp = picks.help; }catch(e){}
     save();
   }
 
@@ -98,6 +98,7 @@
     act(g, you, mine[0], mine[1]);
     const d = { spot:sp, choice:CB.choice(sp, g, me) };
     d.judgement = CB.judgePreflop(sp, d.choice);
+    d.advice = CB.advisePreflop(sp);
     return d;
   }
 
@@ -127,7 +128,7 @@
   let lastTry = null;
   function pane(tab){
     if (tab === 'try'){
-      return '<h3>TRY IT<small>Each key plays one decision on a pretend table, and P.I.P. explains it in full: the word he\'d say straight away, the reason after the hand, and the lesson the first time it comes up. Or just play: he judges your real hands the same way.</small></h3>' +
+      return '<h3>TRY IT<small>Each key plays one decision on a pretend table. P.I.P. says what he\'d have told you before you acted (at your HELP setting), then the word he\'d say straight away, the reason after the hand, and the lesson. Or just play: on your turn he advises, and you can TAP HIS SCREEN any time for his read (tap again for the why).</small></h3>' +
         (lastTry ? verdictCard(lastTry, 'LAST SPOT') : '') +
         '<div class="sdl-moments">' + SPOTS.map((s, i) => '<button type="button" data-spot="' + i + '">' + s[0] + '</button>').join('') + '</div>';
     }
@@ -139,7 +140,9 @@
     }
     if (tab === 'talk'){
       return '<div class="sdl-row"><div class="sdl-name">THE TALK SLIDER</div>' + seg('notch', CT.OPTIONS.notch, picks.notch) +
-        '<p class="sdl-note">1 COMMENTS: only a clear mistake gets a word. 2 DEBRIEF: + good plays, and the reasons after the hand. 3 TIPS: + the smaller mistakes. 4 IN YOUR EAR: everything, with your seat when you\'re dealt in, and close calls called close.</p></div>' +
+        '<p class="sdl-note">1 COMMENTS: only a clear mistake gets a word. 2 DEBRIEF: + good plays, and the reasons after the hand. 3 TIPS: + his advice on the big decisions, and the smaller mistakes. 4 IN YOUR EAR: everything: advice on every decision, your seat when you\'re dealt in, close calls called close.</p></div>' +
+        '<div class="sdl-row"><div class="sdl-name">HELP: HOW DIRECT HE IS</div>' + seg('help', CT.OPTIONS.help, picks.help) +
+        '<p class="sdl-note">Before you act, before the flop (after the flop comes next). ADVICE: what he\'d do and why; says so when it\'s close. TELL ME: always the move, with the numbers and the size. HINTS: what to think about, not the move. WATCH: nothing before you act; he teaches afterwards. Tapping his screen always gets his full read.</p></div>' +
         '<button type="button" class="sdl-again" data-act="deal">DEAL AGAIN</button>';
     }
     return '<div class="sdl-row"><div class="sdl-name">HIS KEY</div>' + seg('keyFace', CS.OPTIONS.keyFace, picks.keyFace) +
@@ -186,7 +189,7 @@
       if (t.dataset.spot){
         const d = playSpot(+t.dataset.spot);
         lastTry = d; open(false);
-        withHim(() => CT.explain(d));
+        withHim(() => CT.explain(d, d.advice));
         return;
       }
       if (t.dataset.log){
@@ -196,7 +199,7 @@
       }
       const act = t.dataset.act;
       if (act === 'deal'){ save(); if (host) host.play(); else location.reload(); return; }
-      if (act === 'reset'){ picks = { keyFace:CS.DEFAULTS.keyFace || 'pip', notch:'4' }; applyPicks(); paint(); return; }
+      if (act === 'reset'){ picks = { keyFace:CS.DEFAULTS.keyFace || 'pip', notch:'4', help:'3' }; applyPicks(); paint(); return; }
       if (act === 'copy'){ copyPicks(t); return; }
       const holder = t.closest('[data-key]');
       if (!holder) return;
@@ -207,7 +210,7 @@
   }
   function copyPicks(t){
     const name = (opts, v) => { const r = (opts || []).find(x => x[0] === v); return r ? r[1] : v; };
-    const text = 'P.I.P. BRAIN LAB: key ' + name(CS.OPTIONS.keyFace, picks.keyFace) + ' · talk ' + name(CT.OPTIONS.notch, picks.notch);
+    const text = 'P.I.P. BRAIN LAB: key ' + name(CS.OPTIONS.keyFace, picks.keyFace) + ' · talk ' + name(CT.OPTIONS.notch, picks.notch) + ' · help ' + name(CT.OPTIONS.help, picks.help);
     const ta = sheet.querySelector('.sdl-copytext');
     const done = ok => { t.textContent = ok ? 'COPIED' : 'SELECT + COPY BELOW'; setTimeout(() => { t.textContent = 'COPY MY PICKS'; }, 2200); if (!ok){ ta.hidden = false; ta.value = text; ta.focus(); ta.select(); } };
     try{ navigator.clipboard.writeText(text).then(() => done(true), () => done(false)); }catch(e){ done(false); }
