@@ -34,6 +34,7 @@ const CoachTalk = (() => {
   /* ---------------- the order ---------------- */
   const OPTIONS = {
     notch:[['4', '4 · IN YOUR EAR'], ['3', '3 · TIPS'], ['2', '2 · DEBRIEF'], ['1', '1 · COMMENTS']],
+    help:[['3', '3 · ADVICE'], ['4', '4 · TELL ME'], ['2', '2 · HINTS'], ['1', '1 · WATCH']],
     where:[['above', 'ABOVE HIM'], ['beside', 'BESIDE HIM'], ['across', 'ACROSS THE FELT']],
     look:[['card', 'CARD STOCK'], ['screen', 'HIS SCREEN']],
     textIn:[['type', 'TYPES ON'], ['all', 'ALL AT ONCE']],
@@ -48,7 +49,7 @@ const CoachTalk = (() => {
     type:[['mixed', 'NUMBERS + CARDS IN THE SCREEN FONT'], ['numbers', 'NUMBERS ONLY'], ['screen', 'ALL IN THE SCREEN FONT'], ['screenlc', 'SCREEN FONT, UPPER + LOWER CASE'], ['pixel', 'ROUND 1']]
   };
   // The owner's picks (Voice Lab round 1, 29 Sep 2026)
-  const DEFAULTS = { notch:'4', where:'across', look:'screen', textIn:'type', arrive:'pop', hold:'normal',
+  const DEFAULTS = { notch:'4', help:'3', where:'across', look:'screen', textIn:'type', arrive:'pop', hold:'normal',
     voice:'tick', pitch:'low', often:'other', pace:'fast', volume:'medium', mouth:'blip', type:'mixed' };
   let O = Object.assign({}, DEFAULTS);
   function apply(order){ O = Object.assign({}, DEFAULTS, order || {}); }
@@ -90,7 +91,15 @@ const CoachTalk = (() => {
     lastUsed[moment] = l[2];
     return l;
   }
-  const fill = (text, ctx) => text.replace(/\{(\w+)\}/g, (m, k) => ctx[k] != null ? ctx[k] : m);
+  // blanks fill in lower case ("one player", "a flush draw"); a sentence
+  // that starts with one gets its capital back
+  // {t:name}: a poker word, in plain words until its lesson has been said;
+  // {Name}: a blank with a capital, when the line needs one
+  const fill = (text, ctx) => text
+    .replace(/\{t:(\w+)\}/g, (m, k) => termText(k))
+    .replace(/\{(\w+)\}/g, (m, k) => ctx[k] != null ? ctx[k]
+      : /^[A-Z]/.test(k) && ctx[k[0].toLowerCase() + k.slice(1)] != null ? cap(String(ctx[k[0].toLowerCase() + k.slice(1)])) : m)
+    .replace(/(^|[.?!]\s+)([a-z])/g, (m, p, c) => p + c.toUpperCase());
   /* TYPE: the numbers and the card names are what he's telling you, so by
      default they're set in the machine's screen font (Press Start 2P, the
      buttons' and CRTs' face), which reads far better at this size; the
@@ -183,6 +192,22 @@ const CoachTalk = (() => {
     list.forEach((k, i) => { const up = i >= list.length - 2 && /\?\s*$/.test(text) ? 1.12 : 1; try{ blip(c, t0 + times[k] / 1000, f * up, v, i); }catch(e){} });
   }
 
+  /* ---------------- poker words he's taught you ----------------
+     A lesson teaches its words (CoachLines.terms: via); from then on his
+     lines use them. Kept under his own storage key, 'pip.coach' (nothing
+     else is touched). */
+  const MEM_KEY = 'pip.coach';
+  let MEM = { terms:{} };
+  try{ const raw = localStorage.getItem(MEM_KEY); if (raw) MEM = Object.assign({ terms:{} }, JSON.parse(raw)); }catch(e){}
+  const saveMem = () => { try{ localStorage.setItem(MEM_KEY, JSON.stringify(MEM)); }catch(e){} };
+  const TERMS = () => (typeof CoachLines !== 'undefined' && CoachLines.terms) || {};
+  const knows = lesson => !!MEM.terms[lesson];
+  function termText(k){ const t = TERMS()[k]; if (!t) return k; return knows(t.via) ? t.term : t.plain; }
+  function learnFrom(key){
+    const m = /^lesson\.(.+)$/.exec(key || ''); if (!m || MEM.terms[m[1]]) return;
+    MEM.terms[m[1]] = Date.now(); saveMem();
+  }
+
   /* ---------------- the bubble ---------------- */
   let live = null, queue = null;
   function clear(now){
@@ -224,8 +249,11 @@ const CoachTalk = (() => {
       el.style.setProperty('--ctk-tail-x', Math.round(Math.min(w - 22, Math.max(10, t.left + t.width * .42 - x))) + 'px');
     }
   }
+  // a lab's explanation holds the floor: the live table's lines wait
+  let holdUntil = 0, holding = false;
   function show(line, ctx, moment){
     if (!line) return;
+    if (!holding && performance.now() < holdUntil) return;
     try{ if (!CoachSet.on || CoachSet.busy) return; }catch(e){ return; }
     if (live){
       // one at a time: keep the most important waiting line (lower notch wins)
@@ -233,6 +261,7 @@ const CoachTalk = (() => {
       return;
     }
     const text = fill(line[2], ctx || {});
+    learnFrom(moment);
     const el = document.createElement('div');
     el.className = 'ctk ctk--' + O.look + ' ctk-arrive-' + O.arrive + ' ctk-type-' + O.type;
     const rs = runs(text);
@@ -270,6 +299,29 @@ const CoachTalk = (() => {
     el.addEventListener('click', () => clear(false));
     requestAnimationFrame(() => el.classList.add('is-in'));
   }
+  /* A judged line: its notch comes from the verdict's confidence, not the
+     line. First key that has lines wins (e.g. 'x.now.leans', then 'x.now'). */
+  function lineFor(keys){
+    for (const k of keys){
+      const pool = LINES[k] || [];
+      if (!pool.length) continue;
+      const fresh = pool.filter(l => l[2] !== lastUsed[k]);
+      const l = (fresh.length ? fresh : pool)[Math.floor(Math.random() * (fresh.length ? fresh : pool).length)];
+      lastUsed[k] = l[2];
+      return l;
+    }
+    return null;
+  }
+  function sayAt(keys, ctx, notch, lead, tail){
+    if (notch > +O.notch) return false;
+    const l = lineFor(keys); if (!l) return false;
+    let text = l[2];
+    if (lead){ const ll = lineFor([lead]); if (ll) text = ll[2] + ' ' + text; }
+    if (tail){ const tl = lineFor([tail]); if (tl) text = text + ' ' + tl[2]; }
+    try{ document.dispatchEvent(new CustomEvent('coachtalk', { detail:{ moment:keys[0], notch:+O.notch } })); }catch(e){}
+    show([notch, l[1], text], ctx || {}, keys[0]);
+    return true;
+  }
   function say(moment, ctx){
     // (the lab listens for this to show what he tried to say and why not)
     try{ document.dispatchEvent(new CustomEvent('coachtalk', { detail:{ moment, notch:+O.notch } })); }catch(e){}
@@ -297,6 +349,317 @@ const CoachTalk = (() => {
     const call = Math.max(0, (g.currentBet || 0) - (me.betThisRound || 0));
     return Object.assign({ call:fmt(call), pot:fmt(g.pot || 0), odds:call ? Math.round(call / ((g.pot || 0) + call) * 100) : 0 }, extra || {});
   }
+  /* ---------------- his brain speaking (docs/coach/BRAIN_PLAN.md) ----------------
+     A word right after you act (only when it's worth one), and the reason
+     after the hand. Judged lines take their notch from the verdict:
+       a clear mistake      1 COMMENTS    ("Too loose from there.")
+       a notable good play  2 DEBRIEF     ("Good fold.")
+       a lean either way    3 TIPS
+       the reasons          2 DEBRIEF, and close calls at 4 IN YOUR EAR
+     One word a hand at most; praise is rationed so it stays worth hearing. */
+  const SEAT_ON = { BTN:'on the button', CO:'in the cutoff', HJ:'in the hijack', LJ:'in the lojack', UTG:'under the gun',
+    'UTG+1':'in early position', 'UTG+2':'in early position', SB:'in the small blind', BB:'in the big blind' };
+  const SEAT_FROM = { BTN:'from the button', CO:'from the cutoff', HJ:'from the hijack', LJ:'from the lojack', UTG:'from under the gun',
+    'UTG+1':'from early position', 'UTG+2':'from early position', SB:'from the small blind', BB:'from the big blind' };
+  const NUMW = ['no', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine'];
+  const players = n => (NUMW[n] || n) + (n === 1 ? ' player' : ' players');
+  const cap = t => t ? t[0].toUpperCase() + t.slice(1) : t;
+  // seats in plain words until the position lesson
+  const PLAIN_ON = { BTN:'on the dealer button', CO:'one seat before the dealer button', HJ:'two seats before the dealer button', LJ:'three seats before the dealer button',
+    UTG:'in the first seat to act', 'UTG+1':'in an early seat', 'UTG+2':'in an early seat', SB:'in the small blind', BB:'in the big blind' };
+  const PLAIN_FROM = { BTN:'from the dealer button', CO:'from one seat before the dealer button', HJ:'from two seats before the dealer button', LJ:'from three seats before the dealer button',
+    UTG:'from the first seat to act', 'UTG+1':'from an early seat', 'UTG+2':'from an early seat', SB:'from the small blind', BB:'from the big blind' };
+  const seatOn = s => (knows('position') ? SEAT_ON : PLAIN_ON)[s] || 'here';
+  const seatFrom = s => (knows('position') ? SEAT_FROM : PLAIN_FROM)[s] || 'from there';
+  const handWords = p => p == null ? 'a hand' : p <= 0.03 ? 'one of the very best starting hands' : p <= 0.08 ? 'a very strong starting hand'
+    : p <= 0.18 ? 'a strong starting hand' : p <= 0.35 ? 'a decent starting hand' : p <= 0.55 ? 'an average starting hand' : 'a weak starting hand';
+  // (lines say "about {rangeWords}")
+  const rangeWords = r => !r ? 'their best hands' : r >= 70 ? 'most hands' : '1 hand in ' + Math.max(2, Math.round(100 / r));
+  function slots(sp, j){
+    const n = (j && j.n) || {}, seat = (sp && sp.seat) || n.seat;
+    return {
+      hole: sp ? sp.holeFacts.name : '', pct: n.pct != null ? n.pct : sp ? Math.max(1, Math.round(sp.holeFacts.pct * 100)) : '',
+      handWords: handWords(sp ? sp.holeFacts.pct : null), rangeWords: rangeWords(n.range),
+      range: n.range != null ? n.range : '', seatOn: seatOn(seat), seatFrom: seatFrom(seat),
+      SeatFrom: cap(seatFrom(seat)), behindP: players(sp ? sp.actingAfter : 0),
+      bb: n.bb != null ? n.bb : '', size: n.size != null ? n.size : '', call: fmt(n.call || 0), odds: n.odds != null ? n.odds : '',
+      eq: n.eq != null ? n.eq : '', need: n.need != null ? n.need : '', raiser: n.raiser || 'they', limpersP: players(n.limpers || 0),
+      raiserFrom: seatFrom(n.raiserSeat),
+      // checked to you
+      opp: n.opp || 'they', sizeWords: n.sizeWords || 'half the pot', fold: n.fold != null ? n.fold : '', foldNeed: n.foldNeed != null ? n.foldNeed : '',
+      players: n.players || '', won: '',
+      // after the flop
+      bettor: n.bettor || 'they', betSize: n.betSize || 'a bet', handName: n.handName || (sp && sp.holeFacts ? sp.holeFacts.name : ''),
+      drawName: n.drawName || 'a draw', DrawName: cap(n.drawName || 'a draw'), outs: n.outs != null ? n.outs : '', hitNext: n.hitNext != null ? n.hitNext : '', pot: fmt(n.pot != null ? n.pot : sp ? sp.pot : 0)
+    };
+  }
+  const MOVE_WORD = { fold:'fold', check:'check', call:'call', raise:'raise', bet:'bet', allin:'go all in' };
+
+  /* ---------------- advice before you act (the HELP dial) ----------------
+     HELP 1 WATCH: none. 2 HINTS: what to think about, not the move.
+     3 ADVICE: the move and why; a lean says so; a close one says it's close.
+     4 TELL ME: always the move, with the numbers and the size.
+     Unprompted, it plays at TIPS (3) on the big decisions (a raise to face,
+     a short stack, a premium hand, anything not clear-cut) and at IN YOUR
+     EAR (4) on every decision bar folding junk. Tapping him always gets it. */
+  function adviceCtx(a, sp){
+    return Object.assign(slots(sp, a.judgement), { to: a.to ? fmt(a.to) : a.n && a.n.to ? fmt(a.n.to) : '', toBB: a.toBB,
+      // the one player the story is about
+      opp: a.stories && a.stories.one ? a.stories.one.name : (a.n && a.n.opp) || 'they',
+      lean: MOVE_WORD[a.move], alt: MOVE_WORD[a.alt] || '', Lean: cap(MOVE_WORD[a.move]), Alt: cap(MOVE_WORD[a.alt] || '') });
+  }
+  /* what their betting says, as the lead-in to his advice after the flop */
+  function storyKey(a){
+    const st = a && a.stories; if (!st || !st.list.length) return null;
+    if (st.one){ const k = 'story.' + st.one.kind + '.one'; return LINES[k] ? k : null; }
+    if (st.all === 'mixed') return 'story.mixed';
+    const k = 'story.' + st.all + '.all'; return LINES[k] ? k : null;
+  }
+  // (one opponent with a habit worth knowing, when it changes the advice)
+  function habitKey(a){
+    const h = a && a.stories && a.stories.one && a.stories.one.habit;
+    return h && LINES['habit.' + h] ? 'habit.' + h : null;
+  }
+  function adviceKeys(a){
+    const drawing = a.kind === 'post' && a.n && a.n.drawName && !['overpair', 'top-pair', 'two-pair', 'set', 'trips', 'straight', 'flush', 'full-house', 'quads', 'straight-flush'].includes(a.n.made);
+    if (a.kind === 'post') return drawing ? ['advise.post.' + a.move + '.draw', 'advise.post.' + a.move] : ['advise.post.' + a.move];
+    if (a.kind === 'bet'){
+      const t = a.tag || '';
+      if (a.move === 'check') return t === 'bet.check.medium' || t === 'bet.check.draw' ? ['advise.bet.check']
+        : (a.n && a.n.players > 1) ? ['advise.bet.check.multi', 'advise.bet.check.weak'] : ['advise.bet.check.weak'];
+      return t.indexOf('bet.semi') === 0 ? ['advise.bet.bet.draw', 'advise.bet.bet'] : t.indexOf('bet.bluff') === 0 ? ['advise.bet.bet.bluff'] : ['advise.bet.bet'];
+    }
+    return ['advise.' + a.kind + '.' + a.move];
+  }
+  function sayAdvice(a, sp, help, notch){
+    const ctx = adviceCtx(a, sp);
+    if (help <= 1) return false;
+    const drawing = a.kind === 'post' && a.n && a.n.drawName && !['overpair', 'top-pair', 'two-pair', 'set', 'trips', 'straight', 'flush', 'full-house', 'quads', 'straight-flush'].includes(a.n.made);
+    const lead = storyKey(a);
+    if (help === 2) return sayAt(drawing ? ['hint.post.draw', 'hint.post'] : ['hint.' + a.kind], ctx, notch, lead);
+    if (help === 3 && a.sure === 'close' && a.alt) return sayAt(['advise.close'], ctx, notch, lead);
+    return sayAt(adviceKeys(a), ctx, notch, lead, a.sure === 'leans' || a.sure === 'close' ? 'advise.tail.leans' : habitKey(a));
+  }
+  const A = { handNo:-1, advice:null, spot:null };
+  function yourTurn(me){
+    const g = game;
+    if (typeof CoachBrain === 'undefined' || !['preflop', 'flop', 'turn', 'river'].includes(g.phase)) return false;
+    // (every street: facing a bet, or checked to you: bet or check)
+    const sp = CoachBrain.spot(g, me), a = CoachBrain.advise(sp);
+    A.handNo = g.handNumber; A.advice = a; A.spot = sp;
+    if (!a) return false;
+    const help = +O.help, talk = +O.notch;
+    if (help <= 1 || talk < 3) return false;
+    const junkFold = a.kind !== 'post' && a.move === 'fold' && a.sure === 'clear' && sp.holeFacts.pct > 0.5;
+    const big = ['vsRaise', 'vsReraise', 'short', 'post'].includes(a.kind) || (a.kind === 'bet' && a.move !== 'check') || sp.holeFacts.pct < 0.06 || a.sure !== 'clear';
+    if (junkFold || (talk < 4 && !big)) return false;
+    if (live && !live.judged) clear(true);
+    return sayAdvice(a, sp, help, 3);
+  }
+
+  /* ---------------- tap him: his read, now ----------------
+     Your turn before the flop: his advice in full (whatever the dial).
+     Your turn after the flop: what you have, what you're drawing to and
+     your chance, the price. Not your turn: the read without the price.
+     Between hands: the last hand's lesson. Tap again soon after: a layer
+     deeper (the lesson, or the term explained). */
+  const T = { at:0, step:0, topic:null };
+  const DRAW_NAME = d => d.flush && (d.oesd || d.gutshot) ? 'a flush and straight draw' : d.flush ? 'a flush draw' : d.oesd ? 'an open-ended straight draw' : d.gutshot ? 'an inside straight draw' : null;
+  function sayText(text, mood, ctx, moment){
+    clear(true); queue = null;
+    try{ document.dispatchEvent(new CustomEvent('coachtalk', { detail:{ moment, notch:+O.notch } })); }catch(e){}
+    show([1, mood || 'calm', text], ctx || {}, moment);
+  }
+  const textOf = (key, ctx) => { const l = lineFor([key]); return l ? { text:fill(l[2], ctx), mood:l[1] } : null; };
+  function tapRead(me){
+    const g = game;
+    const sp = CoachBrain.spot(g, me);
+    if (!sp) return null;
+    const r = CoachBrain.readNow(sp), mine = pendingHumanPlayer === me;
+    const ctx = Object.assign(slots(sp, null), { call:fmt(r.toCall), pot:fmt(r.pot), odds:r.odds });
+    const parts = [];
+    if (r.street === 'preflop'){
+      if (mine){ const a = CoachBrain.advisePreflop(sp); if (a){ A.advice = a; A.spot = sp; A.handNo = g.handNumber;
+        const c = adviceCtx(a, sp); const t = textOf(a.sure === 'close' && a.alt ? 'advise.close' : 'advise.' + a.kind + '.' + a.move, c);
+        if (t) parts.push(t); return { parts, topic:a.lesson ? 'lesson.' + a.lesson : null }; } }
+      const t = textOf('read.pre.wait', ctx); if (t) parts.push(t);
+      return { parts, topic:'explain.position' };
+    }
+    /* after the flop: what you have, what their betting says, and (your
+       turn) what to do about it. A fact only if it helps you decide. */
+    const made = r.boardPlays ? 'boardPlays' : ['straight', 'flush', 'full-house', 'quads', 'straight-flush'].includes(r.made) ? 'big' : r.made;
+    const m = textOf('read.made.' + made, Object.assign({}, ctx, { handName:r.handName }));
+    if (m) parts.push(m);
+    const dn = DRAW_NAME(r.draws || {});
+    const adv = mine ? CoachBrain.advise(sp) : null;
+    const st = CoachBrain.stories(sp);
+    const sk = storyKey({ stories:st });
+    if (sk){ const t = textOf(sk, Object.assign({}, ctx, { opp: st.one ? st.one.name : 'they' })); if (t) parts.push(t); }
+    let topic = dn ? 'explain.outs' : r.made === 'top-pair' ? 'explain.kicker' : 'explain.equity';
+    if (adv){
+      A.advice = adv; A.spot = sp; A.handNo = g.handNumber;
+      const c = adviceCtx(adv, sp);
+      const t = textOf(adv.sure === 'close' && adv.alt ? 'advise.close' : adviceKeys(adv).find(k => LINES[k]), c);
+      if (t) parts.push(t);
+      topic = adv.lesson ? 'lesson.' + adv.lesson : topic;
+    } else {
+      if (dn && r.left){
+        const d = textOf('read.draw', Object.assign({}, ctx, { drawName:dn, outs:r.drawOuts, hitPct:r.hitPct, byWhen: r.left === 2 ? 'by the last card' : 'on the last card' }));
+        if (d) parts.push(d);
+      }
+      if (r.threats && r.threats.length && parts.length < 3){ const t = textOf('read.threat', Object.assign({}, ctx, { threat:r.threats[0] })); if (t) parts.push(t); }
+    }
+    return { parts, topic };
+  }
+  function onTap(){
+    try{ if (!CoachSet.on || CoachSet.busy) return; }catch(e){ return; }
+    const g = game, me = human();
+    const now = performance.now();
+    const again = now - T.at < 12000 && T.topic;
+    T.at = now;
+    try{ CoachSet.look('you'); }catch(e){}
+    if (again && T.step === 0){
+      T.step = 1;
+      const t = textOf(T.topic, {}); if (t){ sayText(t.text, t.mood, {}, T.topic); return; }
+    }
+    T.step = 0;
+    const inHand = g && me && me.inHand && !me.folded && me.hand && me.hand.length === 2 && ['preflop', 'flop', 'turn', 'river'].includes(g.phase);
+    if (inHand){
+      const r = tapRead(me);
+      if (r && r.parts.length){ T.topic = r.topic; sayText(r.parts.map(p => p.text).join(' '), r.parts[0].mood, {}, 'tap.read'); return; }
+    }
+    if (g && me && me.folded && ['preflop', 'flop', 'turn', 'river'].includes(g.phase)){
+      const t = textOf('read.pre.out', {}); T.topic = null; if (t) sayText(t.text, t.mood, {}, 'tap.out'); return;
+    }
+    // between hands: the last hand's most useful lesson
+    try{
+      const h = CoachBrain.history[CoachBrain.history.length - 1];
+      const judged = h ? h.decisions.filter(d => d.judgement) : [];
+      const top = judged.length ? judged.reduce((a, d) => SCORE(d.judgement) > SCORE(a.judgement) ? d : a) : null;
+      if (top && SCORE(top.judgement) >= 1){
+        const j = top.judgement, lv = j.confidence === 'leans';
+        const t = textOf(lv && LINES[j.tag + '.why.leans'] ? j.tag + '.why.leans' : j.tag + '.why', slots(top.spot, j));
+        if (t){ T.topic = j.lesson ? 'lesson.' + j.lesson : null; sayText(t.text, t.mood, {}, 'tap.last'); return; }
+      }
+    }catch(e){}
+    const t = textOf('read.between', {}); T.topic = null; if (t) sayText(t.text, t.mood, {}, 'tap.between');
+  }
+  const SCORE = j => !j ? 0 : j.verdict === 'mistake' ? (j.confidence === 'clear' ? 5 : j.confidence === 'leans' ? 4 : 1)
+    : j.notable ? 3 : j.confidence === 'close' ? 1 : 0;
+  const B = { handNo:-1, worded:false, praisedAt:-9, lessons:{}, told:{}, worded2:{} };
+  /* right after you act: returns true if he said something */
+  function wordNow(d){
+    const j = d && d.judgement; if (!j) return false;
+    const g = game || {};
+    if (B.handNo !== g.handNumber){ B.handNo = g.handNumber; B.worded = false; }
+    if (B.worded) return false;
+    let notch = 0;
+    if (j.verdict === 'mistake') notch = j.confidence === 'clear' ? 1 : j.confidence === 'leans' ? 3 : 0;
+    else if (j.notable && j.confidence !== 'close'){
+      // he told you to; no need to praise you for listening
+      if (A.advice && A.handNo === g.handNumber && A.advice.move === (d.choice && d.choice.action)) return false;
+      // praise: not every hand (rarer at the quieter notches)
+      if (g.handNumber - B.praisedAt < (+O.notch >= 4 ? 2 : 4)) return false;
+      notch = j.verdict === 'good' ? 2 : 3;
+    }
+    if (!notch) return false;
+    // the same word again soon after is nagging: skip it (the reminder
+    // comes after the hand instead)
+    const last = B.worded2[j.tag];
+    if (last != null && g.handNumber - last <= (j.confidence === 'clear' ? 2 : 4)) return false;
+    const keys = j.confidence === 'leans' ? [j.tag + '.now.leans', j.tag + '.now'] : [j.tag + '.now'];
+    if (!keys.some(k => (LINES[k] || []).length) || notch > +O.notch) return false;
+    // what you just did outranks the line about your turn: it goes
+    if (live && !live.judged) clear(true);
+    if (!sayAt(keys, slots(d.spot, j), notch)) return false;
+    if (live) live.judged = true;
+    B.worded = true; B.worded2[j.tag] = g.handNumber;
+    if (j.verdict !== 'mistake') B.praisedAt = g.handNumber;
+    return true;
+  }
+  /* after the hand: the decision that most needs talking about, and the
+     first time a lesson comes up, the lesson */
+  function debrief(h){
+    if (!h || !h.decisions || !h.end) return;
+    const judged = h.decisions.filter(d => d.judgement);
+    if (!judged.length) return;
+    // the decision that matters most: how wrong or right it was, then later
+    // streets and bigger pots over a close call before the flop
+    const STREET = { preflop:0, flop:0.2, turn:0.35, river:0.5 };
+    const weight = d => SCORE(d.judgement) + (SCORE(d.judgement) >= 3 ? (STREET[d.spot.street] || 0) + Math.min(0.5, (d.spot.potBB || 0) / 60) : 0);
+    const top = judged.reduce((a, d) => weight(d) > weight(a) ? d : a);
+    const j = top.judgement, sc = SCORE(j);
+    if (!sc) return;
+    const notch = sc === 1 ? 4 : 2;
+    const net = h.end.net || 0;
+    const lead = j.tag === 'bet.missed' && net > 0 ? 'lead.wonButMore'
+      : j.verdict === 'mistake' && sc >= 4 && net > 0 ? 'lead.wonAnyway'
+      : j.verdict !== 'mistake' && sc >= 3 && net < 0 && h.end.showdown ? 'lead.lostAnyway' : null;
+    // the same mistake again soon after: a short reminder, not the speech
+    const hn = h.n, seen = B.told[j.tag];
+    B.told[j.tag] = hn;
+    if (seen != null && hn - seen <= (sc >= 5 ? 3 : 6)){
+      if (j.verdict === 'mistake' && j.lesson && sc >= 4) afterTalk(() => sayAt(['again.' + j.lesson], {}, 3));
+      return;
+    }
+    const keys = j.confidence === 'leans' ? [j.tag + '.why.leans', j.tag + '.why'] : [j.tag + '.why'];
+    const ctx = Object.assign(slots(top.spot, j), { won:fmt(Math.max(0, net)) });
+    // a lesson the first time it comes up (ever: he remembers what he's taught)
+    const lesson = sc >= 3 && j.lesson && !B.lessons[j.lesson] && !knows(j.lesson) && (LINES['lesson.' + j.lesson] || []).length ? j.lesson : null;
+    afterTalk(() => {
+      if (!sayAt(keys, ctx, notch, lead)) return;
+      if (lesson){ B.lessons[lesson] = true; afterTalk(() => sayAt(['lesson.' + lesson], {}, 2)); }
+    });
+  }
+  /* wait for him to finish what he's saying (up to 12s), then go */
+  function afterTalk(fn){
+    const t0 = performance.now();
+    B.pending = (B.pending || 0) + 1;
+    const go = () => { B.pending = Math.max(0, B.pending - 1); try{ fn(); }catch(e){} };
+    // quiet, and still quiet a beat later (a line can start in between)
+    let quietSince = 0;
+    const tick = () => {
+      const now = performance.now();
+      // (and never while your new cards are still face down: the reveal is yours)
+      const dealing = typeof game !== 'undefined' && game && game._humanCardsVisible === false;
+      if (!live && !queue && !dealing){ if (!quietSince) quietSince = now; if (now - quietSince >= 300) return go(); }
+      else quietSince = 0;
+      if (now - t0 < 15000) setTimeout(tick, 100);
+      else B.pending = Math.max(0, B.pending - 1);
+    };
+    setTimeout(tick, 0);
+  }
+  /* for a lab: the whole explanation of a decision now, whatever the
+     notch: the word, the reason, and the lesson (as if the first time) */
+  function explain(d, advice){
+    const j = d && d.judgement; if (!j) return false;
+    const ctx = slots(d.spot, j), lv = j.confidence === 'leans';
+    clear(true); queue = null;
+    holdUntil = performance.now() + 40000;
+    const own = fn => { holding = true; try{ return fn(); } finally{ holding = false; } };
+    const done = () => { holdUntil = performance.now() + 6000; };   // (until the last line has been read)
+    const why = () => {
+      own(() => sayAt(lv ? [j.tag + '.why.leans', j.tag + '.why'] : [j.tag + '.why'], ctx, 1));
+      if (j.lesson && (LINES['lesson.' + j.lesson] || []).length) afterTalk(() => { own(() => sayAt(['lesson.' + j.lesson], {}, 1)); done(); });
+      else done();
+    };
+    const word = () => { if (own(() => sayAt(lv ? [j.tag + '.now.leans', j.tag + '.now'] : [j.tag + '.now'], ctx, 1))) afterTalk(why); else why(); };
+    // (a lab: what he'd have told you first, at the HELP setting)
+    if (advice && own(() => sayAdvice(advice, d.spot, Math.max(2, +O.help), 1))) afterTalk(word); else word();
+    return true;
+  }
+  /* your cards, with where you sit (a fact, IN YOUR EAR) */
+  function dealtLine(g, me, h){
+    let seat = null, behind = 0;
+    try{ const i = g.players.indexOf(me); seat = CoachBrain.seatLabel(g, i); behind = CoachBrain.actingAfter(g, i); }catch(e){}
+    const band = h.p < .06 ? 'premium' : h.p < .2 ? 'strong' : h.p < .5 ? 'middle' : 'weak';
+    const group = { UTG:'early', 'UTG+1':'early', 'UTG+2':'early', LJ:'middle', HJ:'middle', CO:'late', BTN:'late', SB:'blinds', BB:'blinds' }[seat];
+    if (group && +O.notch >= 4 && LINES['dealt.' + band + '.' + group]){
+      return sayAt(['dealt.' + band + '.' + group], Object.assign({}, h, { seatOn:SEAT_ON[seat], behindP:players(behind) }), 4);
+    }
+    return say(band === 'premium' ? 'dealtPremium' : band === 'strong' ? 'dealtStrong' : band === 'middle' ? 'dealtMiddle' : 'dealtWeak', h);
+  }
+
   let hooked = false;
   function hook(){
     if (hooked || typeof applyAction !== 'function') return;
@@ -304,11 +667,17 @@ const CoachTalk = (() => {
     const realApply = window.applyAction;
     window.applyAction = function(player, decision){
       const g = game, before = g ? g.currentBet : 0, pot = g ? g.pot : 0;
+      // his brain reads your decision before it's applied (the price you faced)
+      let sp = null;
+      try{ if (player && player.isHuman && typeof CoachBrain !== 'undefined') sp = CoachBrain.spot(g, player); }catch(e){}
       const r = realApply.apply(this, arguments);
+      let rec = null;
+      try{ if (sp) rec = CoachBrain.record(sp, g, player); }catch(e){}
       try{
         if (!player || !decision) return r;
         const a = decision.action, amt = g.currentBet;
         if (player.isHuman){
+          if (wordNow(rec)) return r;
           if (player.allIn) say('youAllIn');
           else if (a === 'fold') say('youFold');
           else if (a === 'call' || a === 'check') { if (a === 'call') say('youCall'); }
@@ -331,7 +700,13 @@ const CoachTalk = (() => {
         if (me && pendingHumanPlayer === me){
           const call = Math.max(0, game.currentBet - me.betThisRound);
           // let the deal line finish first
-          setTimeout(() => { if (pendingHumanPlayer === me) say(call > 0 ? 'yourPrice' : 'yourFree', ctxNow()); }, live ? 900 : 250);
+          setTimeout(() => {
+            if (pendingHumanPlayer !== me) return;
+            // before the flop his advice (the HELP dial) takes the place of the price
+            let advised = false;
+            try{ advised = yourTurn(me); }catch(e){}
+            if (!advised) say(call > 0 ? 'yourPrice' : 'yourFree', ctxNow());
+          }, live ? 900 : 250);
         }
       }catch(e){}
       return r;
@@ -348,37 +723,75 @@ const CoachTalk = (() => {
     setInterval(() => {
       const g = game; if (!g || !g.players) return;
       if (g.handNumber !== W.n){
-        W = { n:g.handNumber, start:{}, dealt:false, ended:false, endAt:0, seen:performance.now() };
+        const last = W;
+        W = { n:g.handNumber, start:{}, dealt:false, ended:false, endAt:0, seen:performance.now(), visAt:0 };
         g.players.forEach(p => { W.start[p.id] = p.chips + (p.totalBetHand || 0); });
+        try{
+          if (typeof CoachBrain !== 'undefined'){
+            // the last hand finished between two looks (a fold fast-forwards it)
+            const you = human();
+            if (!last.ended && you && last.start[you.id] != null){
+              const done = CoachBrain.closeMissed(W.start[you.id] - last.start[you.id]);
+              if (done) debrief(done);
+            }
+            CoachBrain.handStart(g, W.start);
+            // someone went out last hand (known for sure once the next is dealt)
+            g.players.forEach(p => { if (!p.isHuman && last.start && last.start[p.id] > 0 && (p.eliminated || p.chips <= 0 && !p.inHand)) say('oppOut', { name:p.name }); });
+          }
+        }catch(e){}
       }
       const me = human();
-      // your cards: once they've landed
-      if (!W.dealt && me && me.hand && me.hand.length === 2 && performance.now() - W.seen > 1300){
+      try{ if (me && typeof CoachBrain !== 'undefined') CoachBrain.observe(g, me); }catch(e){}
+      // your cards: only once they've been turned over for you (the reveal is
+      // yours), a beat after; a table that never says so, after a moment
+      const vis = g._humanCardsVisible === true || (g._humanCardsVisible === undefined && performance.now() - W.seen > 2500);
+      if (vis && !W.visAt) W.visAt = performance.now();
+      if (!W.dealt && me && me.hand && me.hand.length === 2 && W.visAt && performance.now() - W.visAt > 350){
         W.dealt = true;
         const h = holeCtx();
-        if (h) say(h.p < .06 ? 'dealtPremium' : h.p < .2 ? 'dealtStrong' : h.p < .5 ? 'dealtMiddle' : 'dealtWeak', h);
+        // (not over the last hand's debrief)
+        if (h && !B.pending && !live) dealtLine(g, me, h);
       }
-      // the end of the hand, once the pot's been paid
+      /* the end of the hand: the moment the winner is shown and the COLLECT
+         key comes up (#console-flip), before the pot is paid: he works the
+         result out from the pots and the hands shown. Otherwise when the
+         pot's been paid, or after 20 seconds. */
       if (!W.ended && (g.phase === 'showdown' || g.phase === 'foldwin')){
         if (!W.endAt) W.endAt = performance.now();
-        if ((g.pot || 0) === 0 || performance.now() - W.endAt > 5000){
+        const flip = $id('console-flip');
+        const shownNow = !!(flip && flip.classList.contains('flipped'));
+        let net = null;
+        if (shownNow && me){ try{ net = CoachBrain.settle(g, me); }catch(e){ net = null; } }
+        const paid = (g.pot || 0) === 0;
+        if (net == null && (paid || performance.now() - W.endAt > 20000) && me) net = me.chips - (W.start[me.id] != null ? W.start[me.id] : me.chips);
+        if (net != null){
           W.ended = true;
           if (!me) return;
           const bb = g.bigBlind || g.bb || 20;
-          const delta = me.chips - (W.start[me.id] != null ? W.start[me.id] : me.chips);
           const showdown = g.phase === 'showdown' && me.inHand && !me.folded;
+          // your stack once this pot's paid
+          const after = paid ? me.chips : me.chips + net + (me.totalBetHand || 0);
+          let done = null;
+          try{ if (typeof CoachBrain !== 'undefined') done = CoachBrain.handEnd(g, me, net); }catch(e){}
           setTimeout(() => {
-            if (me.chips <= 0) say('youOut');
-            else if (delta > 0) say(delta >= bb * 10 ? 'winBig' : !showdown ? 'allFolded' : 'winSmall', { won:fmt(delta) });
-            else if (delta < 0 && showdown) say(-delta >= bb * 10 ? 'loseBig' : 'loseShowdown');
-            g.players.forEach(p => { if (!p.isHuman && p.chips <= 0 && W.start[p.id] > 0) say('oppOut', { name:p.name }); });
-          }, 400);
+            if (after <= 0) say('youOut');
+            else if (net > 0) say(net >= bb * 10 ? 'winBig' : !showdown ? 'allFolded' : 'winSmall', { won:fmt(net) });
+            else if (net < 0 && showdown) say(-net >= bb * 10 ? 'loseBig' : 'loseShowdown');
+          }, 250);
+          if (done) setTimeout(() => debrief(done), 300);
         }
       }
     }, 200);
   }
 
   /* Settings → Coach talk (coachTalk, '1'-'4'): the talk slider */
+  function wireHelp(){
+    const seg = $id('coach-help-seg');
+    const paint = () => { if (seg) seg.querySelectorAll('button').forEach(b => b.classList.toggle('active', b.dataset.v === O.help)); };
+    try{ if (settings.coachHelp) O.help = String(settings.coachHelp); }catch(e){}
+    if (seg) seg.querySelectorAll('button').forEach(b => { b.onclick = () => { O.help = b.dataset.v; try{ settings.coachHelp = O.help; saveSettings(); }catch(e){} paint(); }; });
+    paint();
+  }
   function wireSetting(){
     const seg = $id('coach-talk-seg');
     const paint = () => { if (seg) seg.querySelectorAll('button').forEach(b => b.classList.toggle('active', b.dataset.v === O.notch)); };
@@ -386,8 +799,14 @@ const CoachTalk = (() => {
     if (seg) seg.querySelectorAll('button').forEach(b => { b.onclick = () => { O.notch = b.dataset.v; try{ settings.coachTalk = O.notch; saveSettings(); }catch(e){} paint(); }; });
     paint();
   }
-  function start(){ hook(); wireSetting(); }
+  function start(){
+    // his brain's library (js/coach-lines.js)
+    try{ if (typeof CoachLines !== 'undefined') Object.keys(CoachLines.lines).forEach(k => { if (!LINES[k]) LINES[k] = CoachLines.lines[k]; }); }catch(e){}
+    hook(); wireSetting(); wireHelp();
+    // tap his screen: his read of the hand, now
+    document.addEventListener('click', e => { if (e.target.closest && e.target.closest('#coach-station')) onTap(); });
+  }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start); else setTimeout(start, 0);
 
-  return { apply, say, sayAny, clear:() => clear(true), OPTIONS, DEFAULTS, LINES, get order(){ return Object.assign({}, O); } };
+  return { apply, say, sayAt, sayAny, slots, debrief, explain, sayAdvice, onTap, clear:() => clear(true), OPTIONS, DEFAULTS, LINES, get order(){ return Object.assign({}, O); } };
 })();

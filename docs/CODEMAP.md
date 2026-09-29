@@ -595,6 +595,34 @@ and `updateCoach` and by watching `game.handNumber` / `game.phase`.
 Presentation only; the lines are placeholders until his brain. The labs
 below drive the same two files.
 
+## `js/coach-brain.js` + `js/coach-lines.js` — P.I.P.'s brain (live from v0.54.1; step 2, judging before the flop, v0.55.0)
+
+The Coach's brain (`docs/coach/BRAIN_PLAN.md`, the plan and build order;
+`docs/coach/BRAIN_HANDOVER.md`, what was agreed). Step 1 records every
+decision the player makes (`CoachBrain.spot`: seat, situation, price, pot
+odds, stacks in big blinds, starting-hand rank, made hand, draws, outs; and
+`record`: what they chose) and how each hand ended (`handEnd`: net, showdown,
+the cards opponents showed), in `CoachBrain.history` (last 50 hands, this
+session only). Fed by `coach-talk.js`; says nothing yet. Pure functions over
+the game state: reads only your cards and public facts (an opponent's cards
+only once shown at a showdown), never writes to the game. Tests:
+`validation/coach-brain-checks.js` (hand-built spots plus 5,000 random
+tables); the Pattern Book check guards the read-only rules.
+Step 2: `CoachBrain.judgePreflop` marks each preflop decision (good / fine
+/ mistake, CLEAR / LEANS / CLOSE, a tag, a lesson, the numbers);
+Step 3a (v0.56.0): `judgePostflop` / `advise` after the flop when you face
+a bet (opponents' likely hands from public betting, `oppRange`).
+v0.57.0: `judgeBet` (checked to you: value bets, checking, semi-bluffs,
+bluffs), `stories` (what each opponent's betting says), `settle` (your
+result at the showdown, before COLLECT pays it). Lines are plain English;
+poker words (`CoachLines.terms`, `{t:term}`) are learned from lessons and
+remembered under the `pip.coach` storage key.
+`js/coach-lines.js` (`CoachLines`) is his line library; `coach-talk.js`
+routes a word after you act, the reason after the hand, first-time
+lessons and repeat reminders. Tests share `validation/tools/coach-sandbox.js`.
+Lab: `coach-brain-lab.html` (+ `js/coach-brain-lab.js`, host
+`js/coach-brain-lab-host.js`).
+
 ## `coach-face-lab.html` + `js/coach-face-lab.js` + `css/coach-face-lab.css` + candidate `js/coach-set.js` / `css/coach-set.css` — Coach Face Lab
 
 The Coach's look (`docs/coach/COACH_PLAN.md`), round 3: the machine's
