@@ -454,7 +454,8 @@ const CoachBrain = (() => {
      strong draw may raise as a semi-bluff against one. Checked to you or
      first to act (betting) is step 3b.
      ============================================================ */
-  const BET_WORD = f => f < 0.4 ? 'a small bet' : f < 0.6 ? 'about half the pot' : f < 0.85 ? 'about three-quarters of the pot' : f < 1.15 ? 'about the size of the pot' : 'more than the pot';
+  // a bet, as a thing you can make, call or face ("a half-pot bet")
+  const BET_WORD = f => f < 0.4 ? 'a small bet' : f < 0.6 ? 'a half-pot bet' : f < 0.85 ? 'a bet of three-quarters of the pot' : f < 1.15 ? 'a pot-sized bet' : 'a bet bigger than the pot';
   const STRONG_MADE = { 'two-pair':1, set:1, trips:1, straight:1, flush:1, 'full-house':1, quads:1, 'straight-flush':1 };
   const MADE_OK = { overpair:1, 'top-pair':1, 'two-pair':1, set:1, trips:1, straight:1, flush:1, 'full-house':1, quads:1, 'straight-flush':1 };
   const clampR = (x, lo, hi) => Math.max(lo, Math.min(hi, x));
