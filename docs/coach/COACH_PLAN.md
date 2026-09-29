@@ -136,3 +136,20 @@ covers them.
     and right, and settle; a blip. Switching off runs it back down.
   - Lab only: the COACH key is added next to ⚙ in the copy; it isn't in
     `index.html` yet.
+  **Owner:** "now we're getting there". Asked for: the dashboard's colours
+  as an option; perspective in the box while he's lifted up (flat 2D once
+  he lands); the cable on top of the dashboard like an aux lead rather
+  than across the screen (keep the physics); the key next to ⚙ as a
+  proper COACH button.
+- **Round 3b** (29 Sep 2026). Same link. Plastic DASHBOARD (now the
+  default) reads the live theme's case colours (`--theme-case-raised`,
+  `--theme-case-hi`), so it follows the theme. In the air the box shows
+  its top (lit) and the side towards the middle of the table (shaded),
+  drawn in pixels behind the front, up to 7 art pixels deep the higher
+  he's held; flat the moment he lands. The lead is now a short aux lead
+  to a jack on the dashboard's top edge just below him: it hangs from
+  the set while he's lifted, the plug is pushed into the jack after he
+  lands (a clack, the jack lights), power runs up it for the boot; its
+  slack lies on the dashboard's edge. Switching off pulls the plug out
+  before he's swiped off. The COACH key shows a little two-dot TV and a
+  lamp.

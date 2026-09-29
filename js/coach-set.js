@@ -41,6 +41,18 @@ const CoachSet = (() => {
     cream:    { base:'#D6C7A0', hi:'#F2E8CB', lo:'#9A8A64', trim:'#7A3A2A', trimLo:'#4A2016' },
     gunmetal: { base:'#40454C', hi:'#6B727B', lo:'#24272C', trim:'#E8B83A', trimLo:'#9C7420' }
   };
+  // DASHBOARD: the console's own case, read from the live theme (so it
+  // follows Settings → theme), with the gold of its trim
+  function palOf(id){
+    if (id === 'dashboard'){
+      const cs = getComputedStyle(document.body);
+      const v = (n, f) => (cs.getPropertyValue(n) || '').trim() || f;
+      const mix = (a, b, t) => { const h = x => [1, 3, 5].map(i => parseInt(x.slice(i, i + 2), 16)); const A = h(a), B = h(b); return '#' + A.map((c, i) => Math.round(c + (B[i] - c) * t).toString(16).padStart(2, '0')).join(''); };
+      const base = v('--theme-case-raised', '#3E7457'), hi = v('--theme-case-hi', '#69A880');
+      return { base:mix(base, '#000000', .18), hi:mix(base, hi, .6), lo:mix(base, '#000000', .54), trim:'#E8B83A', trimLo:'#9C7420' };
+    }
+    return FINISHES[id] || FINISHES.machine;
+  }
   const INKS = { machine:'#C3C8AD', green:'#7CF29A', amber:'#F6C257' };
   const GLASS = '#0A120F', GLASS_RIM = '#050807';
 
@@ -76,7 +88,7 @@ const CoachSet = (() => {
   function feet(c, x1, x2, y){ px(c, INK, x1, y, 6, 2); px(c, INK, x2, y, 6, 2); }
 
   const SETS = {
-    portable:{ name:'PORTABLE', w:48, h:42, screen:{ x:6, y:11, w:26, h:20 }, port:{ x:46, y:34 },
+    portable:{ name:'PORTABLE', w:48, h:42, box:{ x:0, y:5, w:48, h:35 }, screen:{ x:6, y:11, w:26, h:20 }, port:{ x:46, y:34 },
       draw(c, pal, on){
         // carry handle
         px(c, INK, 13, 0, 22, 3); px(c, pal.trim, 14, 1, 20, 1); px(c, INK, 13, 0, 3, 7); px(c, INK, 32, 0, 3, 7);
@@ -91,7 +103,7 @@ const CoachSet = (() => {
         led(c, 40, 33, on);
         feet(c, 4, 38, 40);
       } },
-    cube:{ name:'CUBE', w:40, h:42, screen:{ x:6, y:6, w:28, h:21 }, port:{ x:38, y:34 },
+    cube:{ name:'CUBE', w:40, h:42, box:{ x:0, y:0, w:40, h:40 }, screen:{ x:6, y:6, w:28, h:21 }, port:{ x:38, y:34 },
       draw(c, pal, on){
         box(c, pal, 0, 0, 40, 40, 3);
         screenWell(c, 4, 4, 32, 25);
@@ -101,7 +113,7 @@ const CoachSet = (() => {
         led(c, 32, 33, on);
         feet(c, 4, 30, 40);
       } },
-    monitor:{ name:'MONITOR', w:50, h:42, screen:{ x:5, y:5, w:40, h:22 }, port:{ x:44, y:38 },
+    monitor:{ name:'MONITOR', w:50, h:42, box:{ x:0, y:0, w:50, h:33 }, screen:{ x:5, y:5, w:40, h:22 }, port:{ x:44, y:38 },
       draw(c, pal, on){
         box(c, pal, 0, 0, 50, 33);
         screenWell(c, 3, 3, 44, 26);
@@ -252,7 +264,7 @@ const CoachSet = (() => {
   /* ---------------- the order ---------------- */
   const OPTIONS = {
     set:[['portable', 'PORTABLE'], ['cube', 'CUBE'], ['monitor', 'MONITOR']],
-    finish:[['machine', 'MACHINE'], ['cream', 'CREAM'], ['gunmetal', 'GUNMETAL']],
+    finish:[['dashboard', 'DASHBOARD'], ['machine', 'BURGUNDY'], ['cream', 'CREAM'], ['gunmetal', 'GUNMETAL']],
     ink:[['machine', 'MACHINE'], ['green', 'GREEN'], ['amber', 'AMBER']],
     glasses:[['off', 'OFF'], ['on', 'ON']],
     from:[['under', 'FROM UNDER THE TABLE'], ['side', 'SLID IN FROM THE SIDE']],
@@ -260,9 +272,9 @@ const CoachSet = (() => {
     jolt:[['on', 'TABLE JOLTS'], ['off', 'NO JOLT']],
     dust:[['on', 'DUST'], ['off', 'NONE']],
     boot:[['full', 'FULL BOOT'], ['quick', 'QUICK']],
-    cable:[['rope', 'HANGS + SWINGS'], ['tight', 'TIGHTER']]
+    cable:[['rope', 'LOOSE'], ['tight', 'SHORTER']]
   };
-  const DEFAULTS = { set:'portable', finish:'machine', ink:'machine', glasses:'off', from:'under', weight:'heavy', jolt:'on', dust:'on', boot:'full', cable:'rope', mood:'calm' };
+  const DEFAULTS = { set:'portable', finish:'dashboard', ink:'machine', glasses:'off', from:'under', weight:'heavy', jolt:'on', dust:'on', boot:'full', cable:'rope', mood:'calm' };
   const WEIGHT = { heavy:{ g:1, squash:.16, jolt:2, thud:1 }, brick:{ g:1.35, squash:.22, jolt:3, thud:1.25 }, light:{ g:.75, squash:.1, jolt:1, thud:.7 } };
   let O = Object.assign({}, DEFAULTS);
 
@@ -291,7 +303,10 @@ const CoachSet = (() => {
     key = document.createElement('button');
     key.type = 'button'; key.id = 'coach-key'; key.className = 'icon-btn table-settings coach-key';
     key.setAttribute('aria-label', 'Coach'); key.setAttribute('aria-pressed', 'false');
-    key.innerHTML = '<span class="ck-socket"><i></i><i></i></span><span class="ck-lamp"></span>';
+    // a little TV with two dots: the coach
+    key.innerHTML = '<svg class="ck-icon" viewBox="0 0 12 10" shape-rendering="crispEdges" aria-hidden="true">' +
+      '<path d="M1 1h10v7H1z" fill="none" stroke="currentColor" stroke-width="1"/><rect x="4" y="4" width="1" height="1" fill="currentColor"/><rect x="7" y="4" width="1" height="1" fill="currentColor"/>' +
+      '<rect x="3" y="9" width="2" height="1" fill="currentColor"/><rect x="7" y="9" width="2" height="1" fill="currentColor"/></svg><span class="ck-lamp"></span>';
     // the two small keys side by side where ⚙ sat alone
     const row = document.createElement('div'); row.className = 'ck-row';
     gear.parentNode.insertBefore(row, gear); row.append(gear, key);
@@ -300,11 +315,12 @@ const CoachSet = (() => {
   }
   function build(){
     if (!ensureLayer()) return;
-    const S = setOf(), pal = FINISHES[O.finish] || FINISHES.machine;
+    const S = setOf(), pal = palOf(O.finish);
     tv.style.width = S.w * P + 'px'; tv.style.height = S.h * P + 'px';
     tv.innerHTML = '';
-    body = document.createElement('canvas'); body.className = 'cs-body'; body.width = S.w; body.height = S.h;
-    body.style.width = S.w * P + 'px'; body.style.height = S.h * P + 'px';
+    body = document.createElement('canvas'); body.className = 'cs-body'; body.width = S.w + PAD * 2; body.height = S.h + PAD;
+    Object.assign(body.style, { width:(S.w + PAD * 2) * P + 'px', height:(S.h + PAD) * P + 'px', left:-PAD * P + 'px', top:-PAD * P + 'px' });
+    depthNow = -1;
     face = document.createElement('canvas'); face.className = 'cs-face'; face.width = S.screen.w; face.height = S.screen.h;
     Object.assign(face.style, { left:S.screen.x * P + 'px', top:S.screen.y * P + 'px', width:S.screen.w * P + 'px', height:S.screen.h * P + 'px', color:INKS[O.ink] });
     const scan = document.createElement('i'); scan.className = 'cs-scan';
@@ -315,10 +331,48 @@ const CoachSet = (() => {
     shadow.style.width = Math.round(S.w * P * .92) + 'px';
     measureHome(); render();
   }
+  /* 2.5D in the air: the box shows its top and one side, drawn behind the
+     front in pixels (top lit, side shaded), deeper the higher he's held;
+     flat again the moment he lands. */
+  const PAD = 8;
+  let depthNow = 0, depthDir = 1;
+  function fillQuad(c, col, q){
+    const ys = q.map(p => p[1]), y0 = Math.floor(Math.min(...ys)), y1 = Math.ceil(Math.max(...ys));
+    c.fillStyle = col;
+    for (let y = y0; y <= y1; y++){
+      const yc = y + .5; let lo = Infinity, hi = -Infinity;
+      for (let i = 0; i < q.length; i++){
+        const a = q[i], b = q[(i + 1) % q.length];
+        if ((a[1] <= yc && b[1] > yc) || (b[1] <= yc && a[1] > yc)){ const x = a[0] + (yc - a[1]) / (b[1] - a[1]) * (b[0] - a[0]); lo = Math.min(lo, x); hi = Math.max(hi, x); }
+      }
+      if (lo < hi) c.fillRect(Math.round(lo), y, Math.max(1, Math.round(hi) - Math.round(lo)), 1);
+    }
+  }
+  function line(c, col, x0, y0, x1, y1){
+    c.fillStyle = col; const n = Math.max(Math.abs(x1 - x0), Math.abs(y1 - y0), 1);
+    for (let i = 0; i <= n; i++) c.fillRect(Math.round(x0 + (x1 - x0) * i / n), Math.round(y0 + (y1 - y0) * i / n), 1, 1);
+  }
   function paintBody(){
     if (!body) return;
-    const c = body.getContext('2d'); c.clearRect(0, 0, body.width, body.height);
-    setOf().draw(c, FINISHES[O.finish] || FINISHES.machine, on && !busyBooting);
+    const c = body.getContext('2d'), S = setOf(), pal = palOf(O.finish);
+    c.clearRect(0, 0, body.width, body.height);
+    const d = depthNow > 0 ? depthNow : 0;
+    if (d){
+      const b = S.box, L = PAD + b.x, T = PAD + b.y, R = L + b.w - 1, B = T + b.h - 1, ox = depthDir * d, oy = -d;
+      const sideX = depthDir > 0 ? R : L;
+      const top = [[L, T], [R + 1, T], [R + 1 + ox, T + oy], [L + ox, T + oy]];
+      const side = [[sideX + (depthDir > 0 ? 1 : 0), T], [sideX + (depthDir > 0 ? 1 : 0), B + 1], [sideX + (depthDir > 0 ? 1 : 0) + ox, B + 1 + oy], [sideX + (depthDir > 0 ? 1 : 0) + ox, T + oy]];
+      fillQuad(c, pal.hi, top); fillQuad(c, pal.lo, side);
+      // the back edges in ink
+      line(c, INK, L + ox, T + oy, R + ox, T + oy);
+      line(c, INK, L, T, L + ox, T + oy); line(c, INK, R, T, R + ox, T + oy);
+      line(c, INK, sideX, B, sideX + ox, B + oy); line(c, INK, sideX + ox, T + oy, sideX + ox, B + oy);
+      // a glint of the lamp along the far top edge
+      line(c, 'rgba(255,240,200,.35)', L + ox + depthDir, T + oy + 1, R + ox - depthDir, T + oy + 1);
+    }
+    c.save(); c.translate(PAD, PAD);
+    S.draw(c, pal, on && !busyBooting);
+    c.restore();
   }
   let busyBooting = false;
   function paintFace(){
@@ -348,12 +402,16 @@ const CoachSet = (() => {
     if (!tv) return;
     const S = setOf();
     const x = Math.round((home.x + pose.x) / P) * P, y = Math.round((home.y + pose.y - pose.lift) / P) * P;
-    const bank = Math.round(pose.bank * 4) / 4, lean = Math.round(pose.lean * 4) / 4;
-    // 2.5D: banking narrows and slants the flat sprite; leaning shortens it
-    const sx = pose.sx * (1 - Math.abs(bank) * .12), sy = pose.sy * (1 - Math.abs(lean) * .1);
-    tv.style.transform = 'translate(' + x + 'px,' + y + 'px) skewY(' + (bank * 7) + 'deg) scale(' + sx.toFixed(3) + ',' + sy.toFixed(3) + ')';
-    tv.dataset.bank = bank > 0 ? 'r' : bank < 0 ? 'l' : '';
-    tv.dataset.lean = lean > 0 ? 'f' : '';
+    const bank = Math.round(pose.bank * 4) / 4;
+    // 2.5D: in the air the box turns to show its depth (the side towards
+    // the middle of the table); squash and stretch on the landing
+    const air = pose.lift > 1 || pose.y > 1;
+    const want = air ? Math.max(2, Math.min(7, Math.round((pose.y > 1 ? 6 : 0) + pose.lift / 7))) : 0;
+    depthDir = home.left ? 1 : -1;
+    if (want !== depthNow){ depthNow = want; paintBody(); }
+    const sx = pose.sx * (1 - Math.abs(bank) * .06), sy = pose.sy;
+    tv.style.transform = 'translate(' + x + 'px,' + y + 'px) scale(' + sx.toFixed(3) + ',' + sy.toFixed(3) + ')';
+    tv.dataset.bank = ''; tv.dataset.lean = '';
     // the shadow stays on the felt under him, smaller and fainter as he lifts
     const h = Math.max(0, pose.lift), k = Math.max(.35, 1 - h / 140);
     const sw = Math.round(S.w * P * .92 * k / P) * P;
@@ -365,80 +423,126 @@ const CoachSet = (() => {
     tv.style.visibility = (!on && !busy) ? 'hidden' : 'visible';
   }
 
-  /* ---------------- the cable: a little rope ---------------- */
-  let rope = null, ropeRAF = 0, ropeLen = 0;
-  function ends(){
-    if (!key || !tv || !tv.isConnected) return null;
-    const kr = key.getBoundingClientRect(), tr = tv.getBoundingClientRect(), felt = $id('felt').getBoundingClientRect();
-    const S = setOf();
+  /* ---------------- the cable: an aux lead ----------------
+     A short lead from the back of the set to a jack on the top edge of the
+     dashboard, just below him. It's a little rope (verlet): the set end is
+     fixed to the set, the plug end is free until it's pushed into the jack
+     after he lands, and pulled out before he's swiped off. Slack lies on
+     the dashboard's top edge rather than hanging over its screens. */
+  let rope = null, ropeRAF = 0, ropeLen = 0, plugged = false, plugTo = null, jack = null;
+  function jackAt(){
+    const dock = $id('your-seat-dock'), tr = tv && tv.getBoundingClientRect();
+    if (!dock || !tr) return null;
+    const dr = dock.getBoundingClientRect();
+    // on the dashboard's top edge, a little towards the middle from the set
+    const S = setOf(), port = portAt();
+    const x = port ? port[0] + (home.left ? 16 : -16) : tr.left + tr.width / 2;
+    return [Math.round(x), Math.round(dr.top + 5)];
+  }
+  function ensureJack(){
+    const dock = $id('your-seat-dock'); if (!dock) return;
+    if (!jack || !jack.isConnected){ jack = document.createElement('i'); jack.className = 'cs-jack'; document.body.appendChild(jack); }
+    const j = jackAt(); if (!j) return;
+    jack.style.transform = 'translate(' + (j[0] - 5) + 'px,' + (j[1] - 4) + 'px)';
+    jack.classList.toggle('is-live', plugged);
+  }
+  function portAt(){
+    if (!tv || !tv.isConnected) return null;
+    const tr = tv.getBoundingClientRect(), felt = $id('felt').getBoundingClientRect(), S = setOf();
     const sxScale = tr.width / (S.w * P) || 1;
-    let bx = home.left ? tr.left + (S.w - S.port.x) * P * sxScale : tr.left + S.port.x * P * sxScale;
+    const bx = home.left ? tr.left + (S.w - S.port.x) * P * sxScale : tr.left + S.port.x * P * sxScale;
     let by = tr.top + S.port.y * P * (tr.height / (S.h * P) || 1);
-    // while he's under the table, the cable goes over the table's edge to him
-    by = Math.min(by, felt.bottom - 4);
-    return { a:[kr.left + kr.width / 2, kr.top + kr.height / 2], b:[bx, by] };
+    // while he's under the table, the lead goes over the table's edge to him
+    return [bx, Math.min(by, felt.bottom - 4)];
   }
   function ropeStart(){
-    const e = ends(); if (!e) return;
-    const N = 16;
+    const b = portAt(); if (!b) return;
+    const N = 14;
+    ropeLen = O.cable === 'tight' ? 46 : 64;
     rope = [];
-    for (let i = 0; i <= N; i++){ const t = i / N; rope.push({ x:e.a[0] + (e.b[0] - e.a[0]) * t, y:e.a[1] + (e.b[1] - e.a[1]) * t, px:0, py:0 }); }
+    // hanging from the back of the set
+    for (let i = 0; i <= N; i++){ const t = 1 - i / N; rope.push({ x:b[0] + (home.left ? -1 : 1) * t * 6, y:b[1] + t * ropeLen * .8, px:0, py:0 }); }
     rope.forEach(p => { p.px = p.x; p.py = p.y; });
-    ropeLen = 0;
+    plugged = false; plugTo = null;
     cancelAnimationFrame(ropeRAF); let last = performance.now();
     const step = now => {
       const dt = Math.min(.033, (now - last) / 1000); last = now;
-      tickRope(dt); drawRope();
+      tickRope(dt); drawRope(); ensureJack();
       ropeRAF = requestAnimationFrame(step);
     };
     ropeRAF = requestAnimationFrame(step);
   }
-  function ropeStop(){ cancelAnimationFrame(ropeRAF); ropeRAF = 0; rope = null; if (cableC){ const c = cableC.getContext('2d'); c.clearRect(0, 0, cableC.width, cableC.height); } }
-  let ropeReel = 1;   // 1 = all the cable out; 0 = reeled into the key
+  function ropeStop(){ cancelAnimationFrame(ropeRAF); ropeRAF = 0; rope = null; plugged = false; ensureJack(); if (cableC){ const c = cableC.getContext('2d'); c.clearRect(0, 0, cableC.width, cableC.height); } }
   function tickRope(dt){
-    const e = ends(); if (!e || !rope) return;
-    const N = rope.length - 1;
-    const d = Math.hypot(e.b[0] - e.a[0], e.b[1] - e.a[1]);
-    const slack = O.cable === 'tight' ? 1.03 : 1.1;
-    const want = Math.max(d * slack, d + (O.cable === 'tight' ? 4 : 14)) * ropeReel;
-    ropeLen = ropeLen ? ropeLen + (want - ropeLen) * Math.min(1, dt * 6) : want;
-    const seg = ropeLen / N, g = 1500;
-    for (let i = 1; i < N; i++){
-      const p = rope[i], vx = (p.x - p.px) * .96, vy = (p.y - p.py) * .96;
+    const b = portAt(); if (!b || !rope) return;
+    const N = rope.length - 1, seg = ropeLen / N, g = 1500;
+    const dock = $id('your-seat-dock'), floor = dock ? dock.getBoundingClientRect().top + 7 : Infinity;
+    for (let i = 0; i < N; i++){
+      if (i === 0 && (plugged || plugTo)) continue;
+      const p = rope[i], vx = (p.x - p.px) * .95, vy = (p.y - p.py) * .95;
       p.px = p.x; p.py = p.y; p.x += vx; p.y += vy + g * dt * dt;
     }
-    rope[0].x = e.a[0]; rope[0].y = e.a[1];
-    const tail = ropeReel < 1 ? [e.a[0] + (e.b[0] - e.a[0]) * ropeReel, e.a[1] + (e.b[1] - e.a[1]) * ropeReel] : e.b;
-    rope[N].x = tail[0]; rope[N].y = tail[1];
+    const j = jackAt();
+    if (plugTo){ rope[0].x = plugTo[0]; rope[0].y = plugTo[1]; }
+    else if (plugged && j){ rope[0].x = j[0]; rope[0].y = j[1]; }
+    rope[N].x = b[0]; rope[N].y = b[1];
     for (let k = 0; k < 14; k++){
       for (let i = 0; i < N; i++){
-        const a = rope[i], b = rope[i + 1], dx = b.x - a.x, dy = b.y - a.y, dd = Math.hypot(dx, dy) || .001, diff = (dd - seg) / dd * .5;
-        if (i > 0){ a.x += dx * diff; a.y += dy * diff; }
-        if (i + 1 < N){ b.x -= dx * diff; b.y -= dy * diff; }
+        const a = rope[i], c = rope[i + 1], dx = c.x - a.x, dy = c.y - a.y, dd = Math.hypot(dx, dy) || .001, diff = (dd - seg) / dd * .5;
+        const aFixed = i === 0 && (plugged || plugTo), cFixed = i + 1 === N;
+        if (!aFixed){ a.x += dx * diff * (cFixed ? 2 : 1); a.y += dy * diff * (cFixed ? 2 : 1); }
+        if (!cFixed){ c.x -= dx * diff * (aFixed ? 2 : 1); c.y -= dy * diff * (aFixed ? 2 : 1); }
       }
+      // the slack lies on the dashboard's top edge
+      for (let i = 1; i < N; i++) if (rope[i].y > floor){ rope[i].y = floor; rope[i].py = floor + (rope[i].py - floor) * .3; rope[i].px = rope[i].x - (rope[i].x - rope[i].px) * .6; }
+      if (!plugged && !plugTo && rope[0].y > floor){ rope[0].y = floor; rope[0].py = floor; }
     }
   }
-  let pulse = -1;   // power running along the cable (0 at the key, 1 at the set)
+  /* push the plug into the jack (stepped, like everything else) */
+  async function plugIn(){
+    const j = jackAt(); if (!rope || !j) return;
+    const from = [rope[0].x, rope[0].y];
+    for (let i = 1; i <= 4; i++){
+      const t = i / 4, lift = Math.sin(t * Math.PI) * 10;
+      plugTo = [from[0] + (j[0] - from[0]) * t, from[1] + (j[1] - from[1]) * t - lift];
+      await sleep(FRAME);
+    }
+    plugTo = null; plugged = true; SFX.clack(); ensureJack();
+  }
+  function pullOut(){
+    if (!rope) return;
+    plugged = false; plugTo = null; ensureJack();
+    rope[0].py = rope[0].y + 5; rope[0].px = rope[0].x + (home.left ? -2 : 2);   // a little flick as it comes out
+    SFX.clack();
+  }
+  let pulse = -1;   // power running along the lead (0 at the jack, 1 at the set)
   function drawRope(){
     if (!cableC || !rope) return;
     const W = Math.ceil(innerWidth / P), H = Math.ceil(innerHeight / P);
     if (cableC.width !== W || cableC.height !== H){ cableC.width = W; cableC.height = H; cableC.style.width = W * P + 'px'; cableC.style.height = H * P + 'px'; }
     const c = cableC.getContext('2d'); c.clearRect(0, 0, W, H);
     const pts = []; rope.forEach(p => pts.push([p.x / P, p.y / P]));
-    // pixel line, two art pixels thick, a lit pixel along its top
     const dots = [];
     for (let i = 0; i < pts.length - 1; i++){
       const [x1, y1] = pts[i], [x2, y2] = pts[i + 1], n = Math.max(1, Math.ceil(Math.hypot(x2 - x1, y2 - y1) * 2));
       for (let j = 0; j < n; j++){ const t = j / n; dots.push([Math.round(x1 + (x2 - x1) * t), Math.round(y1 + (y2 - y1) * t)]); }
     }
-    c.fillStyle = INK; dots.forEach(d => c.fillRect(d[0] - 1, d[1] - 1, 3, 3));
-    c.fillStyle = '#4A2A2E'; dots.forEach(d => c.fillRect(d[0], d[1] - 1, 1, 1));
+    // a thin lead: one art pixel of rubber in an ink outline, a lit pixel on top
+    c.fillStyle = INK; dots.forEach(d => c.fillRect(d[0] - 1, d[1] - 1, 2, 3));
+    c.fillStyle = '#3A3A40'; dots.forEach(d => c.fillRect(d[0], d[1], 1, 1));
+    c.fillStyle = '#6A6A74'; dots.forEach(d => c.fillRect(d[0], d[1] - 1, 1, 1));
     if (pulse >= 0 && pulse <= 1){
       const i = Math.floor(pulse * (dots.length - 1)), d = dots[i];
-      if (d){ c.fillStyle = '#FFF4C8'; c.fillRect(d[0] - 1, d[1] - 1, 3, 3); c.fillStyle = INKS[O.ink]; c.fillRect(d[0] - 2, d[1], 5, 1); }
+      if (d){ c.fillStyle = '#FFF4C8'; c.fillRect(d[0] - 1, d[1] - 1, 3, 3); }
     }
-    // the plug in the key
-    const a = dots[0]; if (a){ c.fillStyle = INK; c.fillRect(a[0] - 3, a[1] - 3, 6, 6); c.fillStyle = '#E8B83A'; c.fillRect(a[0] - 2, a[1] - 2, 4, 3); c.fillStyle = '#9C7420'; c.fillRect(a[0] - 2, a[1] + 1, 4, 1); }
+    // the plug: a gold barrel on a black grip
+    const a = dots[0], nx = dots[Math.min(4, dots.length - 1)];
+    if (a && nx){
+      const up = !plugged && !plugTo;
+      c.fillStyle = INK; c.fillRect(a[0] - 2, a[1] - (plugged ? 5 : 3), 5, plugged ? 5 : 6);
+      c.fillStyle = '#2A2A30'; c.fillRect(a[0] - 1, a[1] - (plugged ? 4 : 2), 3, plugged ? 3 : 4);
+      if (up){ c.fillStyle = '#E8B83A'; c.fillRect(a[0], a[1] + 3, 1, 2); }
+    }
   }
 
   /* ---------------- motion ---------------- */
@@ -588,13 +692,15 @@ const CoachSet = (() => {
         build(); measureHome();
         if (motionOffSafe()){
           on = true; Object.assign(pose, { x:0, y:0, lift:0, sx:1, sy:1, bank:0, lean:0 }); render();
-          ropeReel = 1; ropeStart(); paintBody(); paintFace();
+          ropeStart(); plugged = true; paintBody(); paintFace();
         } else {
           // start under the table, the cable already coming out of the key
           Object.assign(pose, { x:0, y:home.edge - home.y + 10, lift:0, sx:1, sy:1, bank:0, lean:0 });
-          render(); ropeReel = 1; ropeStart();
+          render(); ropeStart();
           await arrive();
           on = true; render();
+          await sleep(FRAME * 2);
+          await plugIn();
           await boot();
         }
         key.classList.add('is-on'); key.setAttribute('aria-pressed', 'true');
@@ -604,10 +710,11 @@ const CoachSet = (() => {
         if (!motionOffSafe()){
           await unboot();
           key.classList.remove('is-on');
+          pullOut(); await sleep(FRAME * 3);
           await leave();
-          for (let i = 10; i >= 0; i--){ ropeReel = i / 10; await sleep(22); }
+          await sleep(120);
         } else { on = false; }
-        on = false; render(); ropeStop(); ropeReel = 1;
+        on = false; render(); ropeStop();
         key.classList.remove('is-on'); key.setAttribute('aria-pressed', 'false');
       }
     } finally { busy = false; render(); }
@@ -667,7 +774,7 @@ const CoachSet = (() => {
   }
   // tiles in the lab's sheet: a still of any set/face
   function still(o, canvasHolder){
-    const S = SETS[o.set] || SETS.portable, pal = FINISHES[o.finish] || FINISHES.machine;
+    const S = SETS[o.set] || SETS.portable, pal = palOf(o.finish);
     const c = document.createElement('canvas'); c.width = S.w; c.height = S.h; c.className = 'cs-still';
     const x = c.getContext('2d'); S.draw(x, pal, true);
     const f = document.createElement('canvas'); f.width = S.screen.w; f.height = S.screen.h;

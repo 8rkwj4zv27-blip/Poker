@@ -35,11 +35,18 @@
 /* ⚙ and COACH side by side */
 .ck-row{ display:flex; gap:6px; justify-content:center; align-items:center; margin:0 auto; }
 #hud-right .ck-row .table-settings{ margin:0; }
-/* the COACH key: the table's small key (same as ⚙), with a socket in it
-   and a lamp that lights while he's plugged in */
+/* the COACH key: the table's small key (same as ⚙), a little TV with
+   two dots on it, and a lamp that lights while he's plugged in */
 .coach-key{ position:relative; }
-.coach-key .ck-socket{ display:flex; gap:3px; align-items:center; justify-content:center; width:14px; height:10px; margin:auto; border:2px solid currentColor; border-radius:2px; box-sizing:border-box; opacity:.75; }
-.coach-key .ck-socket i{ display:block; width:2px; height:4px; background:currentColor; }
+.coach-key .ck-icon{ display:block; width:16px; height:14px; margin:auto; }
 .coach-key .ck-lamp{ position:absolute; right:3px; top:3px; width:4px; height:4px; background:#1D3A28; box-shadow:0 0 0 1px #080405; }
 .coach-key.is-on .ck-lamp{ background:#8CF0A8; box-shadow:0 0 0 1px #080405,0 0 5px #8CF0A8; }
-.coach-key.is-on .ck-socket{ opacity:1; }
+
+/* the aux jack on the dashboard's top edge, under the set */
+.cs-jack{
+  position:fixed; left:0; top:0; z-index:59; width:10px; height:8px; pointer-events:none;
+  background:#080405; border-radius:1px;
+  box-shadow:inset 0 0 0 2px #9C7420,inset 0 0 0 3px #080405;
+}
+.cs-jack::after{ content:""; position:absolute; left:4px; top:3px; width:2px; height:2px; background:#1D1D22; }
+.cs-jack.is-live{ box-shadow:inset 0 0 0 2px #E8B83A,inset 0 0 0 3px #080405,0 0 4px rgba(232,184,58,.55); }
