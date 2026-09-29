@@ -595,7 +595,7 @@ and `updateCoach` and by watching `game.handNumber` / `game.phase`.
 Presentation only; the lines are placeholders until his brain. The labs
 below drive the same two files.
 
-## `js/coach-brain.js` — P.I.P.'s brain (live from v0.54.1, step 1: watching)
+## `js/coach-brain.js` + `js/coach-lines.js` — P.I.P.'s brain (live from v0.54.1; step 2, judging before the flop, v0.55.0)
 
 The Coach's brain (`docs/coach/BRAIN_PLAN.md`, the plan and build order;
 `docs/coach/BRAIN_HANDOVER.md`, what was agreed). Step 1 records every
@@ -608,6 +608,13 @@ the game state: reads only your cards and public facts (an opponent's cards
 only once shown at a showdown), never writes to the game. Tests:
 `validation/coach-brain-checks.js` (hand-built spots plus 5,000 random
 tables); the Pattern Book check guards the read-only rules.
+Step 2: `CoachBrain.judgePreflop` marks each preflop decision (good / fine
+/ mistake, CLEAR / LEANS / CLOSE, a tag, a lesson, the numbers);
+`js/coach-lines.js` (`CoachLines`) is his line library; `coach-talk.js`
+routes a word after you act, the reason after the hand, first-time
+lessons and repeat reminders. Tests share `validation/tools/coach-sandbox.js`.
+Lab: `coach-brain-lab.html` (+ `js/coach-brain-lab.js`, host
+`js/coach-brain-lab-host.js`).
 
 ## `coach-face-lab.html` + `js/coach-face-lab.js` + `css/coach-face-lab.css` + candidate `js/coach-set.js` / `css/coach-set.css` — Coach Face Lab
 

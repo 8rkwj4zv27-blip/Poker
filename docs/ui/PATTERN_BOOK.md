@@ -392,17 +392,19 @@ has every round). `js/coach-set.js` + `css/coach-set.css` (the set, his
 lead, the boot), `js/coach-talk.js` + `css/coach-talk.css` (his bubble,
 voice and the talk slider). Presentation only: he reads public facts and
 your own cards, never an opponent's hidden cards, and never changes the
-game. His lines are placeholders until the Coach's brain.
+game. His name is P.I.P. (Poker Intelligence Personality); his brain is
+`js/coach-brain.js` with its lines in `js/coach-lines.js`
+(`docs/coach/BRAIN_PLAN.md`).
 
 | Part | Order | The finish |
 |---|---|---|
 | The set | **CUBE**, **DASHBOARD** plastic | The Poker Machine's soul in a little pixel TV, drawn in code at two screen pixels per art pixel, in the live theme's case colours. Two small dots and a mouth on the tube. On the felt opposite the dealer deck, at the deck's layer (on top of the felt and the pot tray, under the seats). |
-| Switch | **COACH** key beside ⚙ | The table's own small key (`icon-btn table-settings`) with a two-dot TV and a lamp. Remembered in settings (`coachBot`, off by default). |
+| Switch | **P.I.P.** key beside ⚙ | The table's own small key (`icon-btn table-settings`) with his name, P.I.P., in 3x5 pixel letters (`keyFace`; the owner said yes to his name on the key, 29 Sep 2026; the Brain Lab offers TV + PIP and the v0.54 TV to compare) and a lamp. Remembered in settings (`coachBot`, off by default). |
 | Coming on / off | **FROM UNDER THE TABLE**, turn **RANDOM**, lines **CLEAN** | Lifted up over the near edge and put down: a real box ray-cast in pixels each 14 fps step (the sprite's own front, drawn top, sides and back), turning and squaring up to face you, flat on landing with a squash, a thud, the table jolting, the chips shaking and dust. Up turning one way and down the other, drawn afresh each switch-on. Swiped back off the same way. No fades. |
 | The lead | **COILED**, **BLACK**, **MEDIUM**, **BACK CORNER**, **BLOCK** plug, **STRAIGHT INTO THE DASHBOARD** | A verlet rope in pixels, stepped at 14 fps, jumping on the thud; the plug lifted into a fixed point on the dashboard's top edge (with a spark), yanked out before he goes. Never drawn over his sprite. |
 | The boot | **LEAD LIGHTS UP**, **DOT, LINE, STATIC**, **JUST A CURSOR**, **BLINKS + LOOKS ROUND**, lamp **AMBER THEN GREEN**, **FULL** | Off: **LINE TO A DOT**. |
 | His bubble | **ACROSS THE FELT**, **HIS SCREEN**, **TYPES ON**, **POPS** | Dark glass in his ink, the full width above him, typed on and growing. Numbers and card names in the screen font (Press Start 2P, card names in capitals, dropped 1px to share the words' baseline); the words in the pixel face. Inside `#app` at z 43, under the menus. |
 | His voice | **TELEPRINTER**, **LOW**, **EVERY OTHER LETTER**, **FASTER**, **MEDIUM**, mouth **OPENS ON EACH BLIP** | Typing, blips and his mouth share one letter-by-letter clock. |
-| Talk slider | Settings → **Coach talk**: COMMENTS · DEBRIEF · TIPS · **IN YOUR EAR** | The sheet's segmented keys (`coachTalk`). One line at a time. |
+| Talk slider | Settings → **P.I.P. talk**: COMMENTS · DEBRIEF · TIPS · **IN YOUR EAR** | The sheet's segmented keys (`coachTalk`). One line at a time. |
 | Reduced Motion | | He's simply there: no lift, no boot. |
 

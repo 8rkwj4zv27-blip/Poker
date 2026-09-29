@@ -351,7 +351,8 @@ const CoachSet = (() => {
     led:[['amber', 'AMBER THEN GREEN'], ['red', 'RED THEN GREEN'], ['green', 'GREEN']],
     coachSound:[['full', 'FULL'], ['soft', 'SOFT'], ['off', 'OFF']],
     bootLen:[['full', 'FULL'], ['quick', 'QUICK (MID-GAME)']],
-    shutdown:[['crt', 'LINE TO A DOT'], ['blink', 'SHUTS HIS EYES'], ['text', 'TYPES BYE']]
+    shutdown:[['crt', 'LINE TO A DOT'], ['blink', 'SHUTS HIS EYES'], ['text', 'TYPES BYE']],
+    keyFace:[['pip', 'P.I.P.'], ['tvpip', 'TV + PIP'], ['tv', 'THE TV (v0.54)']]
   };
   // The owner's picks (round 3, 29 Sep 2026): CUBE, DASHBOARD, CLEAN lines,
   // from UNDER the table, turning A up and B down or the reverse at random.
@@ -362,7 +363,7 @@ const CoachSet = (() => {
   // then green, FULL, sounds FULL, off LINE TO A DOT.
   const DEFAULTS = { set:'cube', finish:'dashboard', ink:'machine', glasses:'off', from:'under', weight:'heavy', jolt:'on', dust:'on', boot:'full', cable:'rope', turn:'random', lines:'clean', speed:'1', mood:'calm',
     lead:'coiled', leadCol:'black', length:'medium', exit:'back', plug:'block', jack:'none', plugIn:'push', unplug:'yank', spark:'on', leadJolt:'bounce', leadStep:'stepped',
-    power:'fill', tube:'crt', says:'none', wake:'look', led:'amber', coachSound:'full', bootLen:'full', shutdown:'crt' };
+    power:'fill', tube:'crt', says:'none', wake:'look', led:'amber', coachSound:'full', bootLen:'full', shutdown:'crt', keyFace:'pip' };
   const WEIGHT = { heavy:{ g:1, squash:.16, jolt:2, thud:1 }, brick:{ g:1.35, squash:.22, jolt:3, thud:1.25 }, light:{ g:.75, squash:.1, jolt:1, thud:.7 } };
   let O = Object.assign({}, DEFAULTS);
 
@@ -385,16 +386,35 @@ const CoachSet = (() => {
     }
     return true;
   }
+  /* The key's face (owner, 29 Sep 2026: his key reads P.I.P.): his name in
+     3x5 pixel letters, the little TV with PIP under it, or the TV alone. */
+  const TV_ICON = '<svg class="ck-icon" viewBox="0 0 12 10" shape-rendering="crispEdges" aria-hidden="true">' +
+    '<path d="M1 1h10v7H1z" fill="none" stroke="currentColor" stroke-width="1"/><rect x="4" y="4" width="1" height="1" fill="currentColor"/><rect x="7" y="4" width="1" height="1" fill="currentColor"/>' +
+    '<rect x="3" y="9" width="2" height="1" fill="currentColor"/><rect x="7" y="9" width="2" height="1" fill="currentColor"/></svg>';
+  const GLYPH = { P:['111', '101', '111', '100', '100'], I:['111', '010', '010', '010', '111'], '.':['0', '0', '0', '0', '1'] };
+  function pixelText(text, cls){
+    let x = 0, rects = '';
+    for (const ch of text){
+      const g = GLYPH[ch]; if (!g) continue;
+      g.forEach((row, y) => [...row].forEach((b, i) => { if (b === '1') rects += '<rect x="' + (x + i) + '" y="' + y + '" width="1" height="1"/>'; }));
+      x += g[0].length + 1;
+    }
+    return '<svg class="' + cls + '" viewBox="0 0 ' + (x - 1) + ' 5" shape-rendering="crispEdges" fill="currentColor" aria-hidden="true">' + rects + '</svg>';
+  }
+  function paintKey(){
+    if (!key) return;
+    const face = O.keyFace || 'pip';
+    key.dataset.face = face;
+    key.innerHTML = (face === 'tv' ? TV_ICON : face === 'tvpip' ? TV_ICON + pixelText('PIP', 'ck-name') : pixelText('P.I.P.', 'ck-letters')) + '<span class="ck-lamp"></span>';
+  }
   function ensureKey(){
     if (key && key.isConnected) return key;
     const gear = $id('open-settings'); if (!gear) return null;
     key = document.createElement('button');
     key.type = 'button'; key.id = 'coach-key'; key.className = 'icon-btn table-settings coach-key';
-    key.setAttribute('aria-label', 'Coach'); key.setAttribute('aria-pressed', 'false');
+    key.setAttribute('aria-label', 'P.I.P., your coach'); key.setAttribute('aria-pressed', 'false');
     // a little TV with two dots: the coach
-    key.innerHTML = '<svg class="ck-icon" viewBox="0 0 12 10" shape-rendering="crispEdges" aria-hidden="true">' +
-      '<path d="M1 1h10v7H1z" fill="none" stroke="currentColor" stroke-width="1"/><rect x="4" y="4" width="1" height="1" fill="currentColor"/><rect x="7" y="4" width="1" height="1" fill="currentColor"/>' +
-      '<rect x="3" y="9" width="2" height="1" fill="currentColor"/><rect x="7" y="9" width="2" height="1" fill="currentColor"/></svg><span class="ck-lamp"></span>';
+    paintKey();
     // the two small keys side by side where ⚙ sat alone
     const row = document.createElement('div'); row.className = 'ck-row';
     gear.parentNode.insertBefore(row, gear); row.append(gear, key);
@@ -1199,6 +1219,7 @@ const CoachSet = (() => {
   function apply(order){
     const was = O;
     O = Object.assign({}, DEFAULTS, order || {});
+    if (was.keyFace !== O.keyFace) paintKey();
     ledBoot = O.led; masterLevel = O.coachSound === 'off' ? 0 : O.coachSound === 'soft' ? .45 : 1;
     if (body) paintBody();
     st.mood = O.mood;

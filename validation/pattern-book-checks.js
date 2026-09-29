@@ -475,6 +475,7 @@ check('Coach: live, to the owner\'s order, presentation only',()=>{
   const brain=read('js/coach-brain.js');
   assert.ok(scripts.indexOf('js/coach-brain.js')===scripts.indexOf('js/coach-talk.js')+1,'his brain loads right after his talk');
   assert.ok(serviceWorker.includes("'./js/coach-brain.js"),'sw.js is missing js/coach-brain.js');
+  assert.ok(scripts.indexOf('js/coach-lines.js')===scripts.indexOf('js/coach-brain.js')+1 && serviceWorker.includes("'./js/coach-lines.js"),'his lines load after his brain, and are cached');
   assert.ok(!/\b(game|pendingHumanPlayer|g|me|p)(\.[A-Za-z_]+)+\s*(=[^=]|\+\+|--|\+=|-=)/.test(brain) && !/\b(applyAction|humanAct)\(/.test(brain),'his brain must never change game state');
   assert.ok(!/\.deck\b/.test(brain),'his brain never reads the deck');
   const outsideShowdown=brain.replace(/function shownAtShowdown[\s\S]*?\n  \}\n/,'');

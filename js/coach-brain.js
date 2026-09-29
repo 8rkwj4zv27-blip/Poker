@@ -208,6 +208,227 @@ const CoachBrain = (() => {
     };
   }
 
+  /* ============================================================
+     JUDGE 1: BEFORE THE FLOP  (docs/coach/BRAIN_PLAN.md, step 2)
+
+     Marks a preflop decision the way a coach teaching tight-aggressive
+     basics would: which hands to play from which seat, raise or fold (not
+     limp), don't call raises with weak hands, shove or fold when short.
+
+     The yardstick is the game's own sound-player ranges (js/03-opponents.js:
+     OPEN_RANGE_BY_BEHIND, PUSH_RANGE_BY_BEHIND, RERAISE_RANGE, copied here
+     so the brain stands on its own), measured in the game's starting-hand
+     ranking (preflopPercentile: 0 = aces). Facing a raise, it's your
+     chance of winning against the hands that raise usually means (the
+     raiser's seat, the size, and their habits from the table's public
+     notebook) against the price, as a thinking player would realise it.
+
+     A judgement: { kind, best, verdict: good | fine | mistake,
+       confidence: clear | leans | close, tag (its lines), lesson, notable,
+       n: the numbers the lines quote }.
+     Confidence is honest: CLEAR only well outside the range; the edges are
+     LEANS, and the edge itself is CLOSE (said as close).
+     ============================================================ */
+  const OPEN_BY_BEHIND = [0.45, 0.42, 0.44, 0.28, 0.21, 0.17, 0.14, 0.12, 0.11, 0.10];
+  const OPEN_HEADS_UP = 0.80;
+  const PUSH_BY_BEHIND = [0.55, 0.45, 0.32, 0.20, 0.15, 0.12, 0.10, 0.09, 0.08, 0.08];
+  const PUSH_HEADS_UP = 0.62;
+  const PUSH_FOLD_BB = 10;
+  const RERAISE = [null, null, 0.07, 0.03, 0.018];
+  // a raiser's opening range by where they sat (the same table, read by seat)
+  const OPEN_BY_SEAT = { UTG:0.14, 'UTG+1':0.14, 'UTG+2':0.15, LJ:0.17, HJ:0.21, CO:0.28, BTN:0.44, SB:0.42, BB:0.15 };
+  const pct100 = x => Math.max(1, Math.min(99, Math.round(x * 100)));
+
+  function openRange(sp){ return sp.playersDealt === 2 ? OPEN_HEADS_UP : OPEN_BY_BEHIND[Math.min(sp.actingAfter, OPEN_BY_BEHIND.length - 1)]; }
+  function pushRange(sp){
+    const base = sp.playersDealt === 2 ? PUSH_HEADS_UP : PUSH_BY_BEHIND[Math.min(sp.actingAfter, PUSH_BY_BEHIND.length - 1)];
+    return Math.min(1, base * Math.pow(PUSH_FOLD_BB / Math.max(1.5, sp.effectiveBB), 0.6));
+  }
+  // how much wider than a normal player someone has shown themselves to be
+  function widthOf(read, stat, prior){
+    if (!read || read.hands < 12) return 1;
+    return Math.max(0.35, Math.min(4, (read[stat] / read.hands) / prior));
+  }
+  /* The hands a raise usually means, from public facts only. */
+  function raiserRange(sp){
+    const agg = sp.pfAggressor && sp.opponents.find(o => o.id === sp.pfAggressor.id);
+    const raises = sp.preflop.raises;
+    let r;
+    if (agg && agg.allIn && agg.stackBB + agg.bet / sp.bigBlind <= 15) r = 0.30;
+    else if (raises >= 2) r = RERAISE[Math.min(raises, RERAISE.length - 1)];
+    else r = sp.playersDealt === 2 ? OPEN_HEADS_UP * 0.9 : (OPEN_BY_SEAT[agg && agg.seat] || 0.2) * 0.9;
+    if (raises <= 1 && sp.currentBet / sp.bigBlind > 4.5 && !(agg && agg.allIn)) r *= 0.75;
+    r *= Math.pow(widthOf(agg && agg.read, 'pfr', 0.18), raises <= 1 ? 1 : 0.7);
+    return Math.max(0.01, Math.min(1, r));
+  }
+  function equityVs(sp, ranges){
+    const eq = call('estimateEquityVsRanges', sp.hole, [], ranges, 1200);
+    return typeof eq === 'number' ? eq : null;
+  }
+  const J = (o) => Object.assign({ notable:false }, o);
+
+  /* The starting-hand ranking blends equity against one and three random
+     hands, which undervalues small pairs: they rarely win unimproved, but
+     make a set one flop in eight and win big when they do. Opening charts
+     play them from the middle and late seats, so the judge does too. */
+  function playablePct(sp){
+    const f = sp.holeFacts, pct = f.pct;
+    if (!f.pair) return pct;
+    const v = sp.hole[0].value;
+    return Math.min(pct, v <= 4 ? 0.20 : v <= 6 ? 0.15 : pct);
+  }
+  function judgePreflop(sp, ch){
+    if (!sp || !ch || sp.street !== 'preflop' || !ch.action || sp.holeFacts.pct == null) return null;
+    const pct = playablePct(sp), a = ch.action, f = sp.holeFacts;
+    const raises = sp.preflop.raises, limpers = sp.preflop.limpers;
+    const deepShove = a === 'allin' && sp.effectiveBB > 25;
+    const n = { pct:pct100(sp.holeFacts.pct), bb:Math.round(sp.effectiveBB), size:ch.toBB, call:sp.toCall, odds:Math.round(sp.potOdds * 100),
+      behind:sp.actingAfter, seat:sp.seat, raiser:sp.pfAggressor ? sp.pfAggressor.name : null, limpers };
+
+    /* ---- short: shove or fold ---- */
+    if (raises === 0 && sp.effectiveBB <= PUSH_FOLD_BB && !(sp.seat === 'BB' && sp.toCall === 0)){
+      const P = pushRange(sp); n.range = pct100(P);
+      const base = { kind:'short', best: pct <= P ? 'allin' : 'fold', lesson:'short-stack', n };
+      if (a === 'allin'){
+        // (the table's shove ranges are a sound player's, a shade tight of the
+        // push/fold charts, so the edge is wide before it's a mistake)
+        if (pct <= P) return J(Object.assign(base, { verdict:'good', confidence:'clear', tag:'short.push.good', notable: pct > 0.08 }));
+        if (pct <= P * 1.8) return J(Object.assign(base, { verdict:'fine', confidence:'close', tag:'short.push.close' }));
+        return J(Object.assign(base, { verdict:'mistake', confidence: pct > P * 2.8 + 0.1 ? 'clear' : 'leans', tag:'short.push.loose', notable:true }));
+      }
+      if (a === 'fold'){
+        if (pct <= P * 0.5) return J(Object.assign(base, { verdict:'mistake', confidence:'clear', tag:'short.fold.missed', notable:true }));
+        if (pct <= P * 0.8) return J(Object.assign(base, { verdict:'mistake', confidence:'leans', tag:'short.fold.missed', notable:true }));
+        if (pct <= P) return J(Object.assign(base, { verdict:'fine', confidence:'close', tag:'short.fold.close' }));
+        return J(Object.assign(base, { verdict:'good', confidence:'clear', tag:'short.fold.good' }));
+      }
+      if (a === 'raise') return J(Object.assign(base, { verdict: pct <= P ? 'fine' : 'mistake', confidence:'leans', tag: pct <= P ? 'short.raise.small' : 'short.push.loose', notable:true }));
+      if (a === 'call') return J(Object.assign(base, { verdict:'mistake', confidence: pct <= P * 0.6 ? 'clear' : 'leans', tag:'short.limp', notable:true }));
+      return null;
+    }
+
+    /* ---- the big blind's free option: nobody raised ---- */
+    if (raises === 0 && sp.seat === 'BB' && sp.toCall === 0){
+      const base = { kind:'bbOption', best: pct <= 0.12 && limpers ? 'raise' : 'check', lesson:'position', n };
+      if (a === 'fold') return J(Object.assign(base, { verdict:'mistake', confidence:'clear', tag:'bb.fold.free', lesson:'the-basics', notable:true }));
+      if (a === 'check') return J(Object.assign(base, pct <= 0.05 && limpers ? { verdict:'fine', confidence:'leans', tag:'bb.check.strong', notable:true } : { verdict:'good', confidence:'clear', tag:'bb.check' }));
+      if (deepShove) return J(Object.assign(base, { verdict: pct <= 0.02 ? 'fine' : 'mistake', confidence: pct <= 0.02 ? 'leans' : 'clear', tag:'open.shove', lesson:'raise-or-fold', notable:true }));
+      if (pct <= 0.15) return J(Object.assign(base, { verdict:'good', confidence:'clear', tag:'bb.raise.good', notable:true }));
+      return J(Object.assign(base, { verdict: pct <= 0.35 ? 'fine' : 'mistake', confidence: pct <= 0.35 ? 'close' : 'leans', tag:'bb.raise.loose' }));
+    }
+
+    /* ---- nobody has raised: open, or raise the limpers ---- */
+    if (raises === 0){
+      const R = openRange(sp); n.range = pct100(R);
+      if (deepShove) return J({ kind:'open', best: pct <= R ? 'raise' : 'fold', verdict: pct <= 0.02 ? 'fine' : 'mistake', confidence: pct <= 0.02 ? 'leans' : 'clear', tag:'open.shove', lesson:'raise-or-fold', notable:true, n });
+      if (limpers === 0){
+        const sbLimp = sp.seat === 'SB' && sp.playersDealt > 2;
+        const base = { kind:'open', best: pct <= R ? 'raise' : 'fold', lesson:'position', n };
+        if (a === 'raise' || a === 'allin'){
+          const big = a === 'raise' && ch.toBB > 5;
+          if (pct <= R) return J(Object.assign(base, big ? { verdict:'fine', confidence:'leans', tag:'open.big', lesson:'raise-or-fold', notable:true }
+            : { verdict:'good', confidence:'clear', tag: pct <= 0.06 ? 'open.good.premium' : sp.seatGroup === 'late' && pct > R * 0.5 ? 'open.good.steal' : 'open.good', notable: pct <= 0.06 || (sp.seatGroup === 'late' && pct > R * 0.5) }));
+          if (pct <= R * 1.35) return J(Object.assign(base, { verdict:'fine', confidence:'close', tag:'open.loose.close' }));
+          return J(Object.assign(base, { verdict:'mistake', confidence: pct > R * 2 ? 'clear' : 'leans', tag:'open.loose', notable:true }));
+        }
+        if (a === 'call'){
+          // the small blind topping up is a real choice (raise-or-fold and
+          // limping strategies both hold up there), so only junk is a mistake
+          if (sbLimp) return J(Object.assign(base, pct < 0.65 ? { verdict:'fine', confidence:'close', tag:'sb.complete' } : { verdict:'mistake', confidence:'leans', tag:'limp.weak', lesson:'raise-or-fold', notable:true }));
+          if (pct <= R) return J(Object.assign(base, { verdict:'mistake', confidence: pct <= 0.08 ? 'clear' : 'leans', tag:'limp.strong', lesson:'raise-or-fold', notable:true }));
+          return J(Object.assign(base, { verdict:'mistake', confidence: pct > R * 1.6 ? 'clear' : 'leans', tag:'limp.weak', lesson:'raise-or-fold', notable:true }));
+        }
+        if (a === 'fold'){
+          if (pct <= R * 0.5) return J(Object.assign(base, { verdict:'mistake', confidence:'clear', tag:'open.fold.strong', lesson:'starting-hands', notable:true }));
+          if (pct <= R * 0.85) return J(Object.assign(base, { verdict:'mistake', confidence:'leans', tag:'open.fold.strong', lesson:'starting-hands', notable:true }));
+          if (pct <= R) return J(Object.assign(base, { verdict:'fine', confidence:'close', tag:'open.fold.close' }));
+          return J(Object.assign(base, { verdict:'good', confidence:'clear', tag: sp.seatGroup === 'early' && pct <= R * 1.8 ? 'open.fold.disciplined' : 'open.fold.good',
+            notable: sp.seatGroup === 'early' && pct <= R * 1.8 }));
+        }
+        return null;
+      }
+      // limpers in front: raise them (isolate), sometimes limp along, else fold
+      const I = Math.max(0.04, R * 0.7); n.range = pct100(I);
+      const overlimp = pct <= R * 1.3 && (f.pair || (f.suited && f.gap <= 2) || sp.seatGroup === 'late');
+      const base = { kind:'limped', best: pct <= I ? 'raise' : overlimp ? 'call' : 'fold', lesson:'raise-or-fold', n };
+      if (a === 'raise' || a === 'allin'){
+        if (pct <= I) return J(Object.assign(base, { verdict:'good', confidence:'clear', tag:'iso.good', notable: pct <= 0.1 || sp.seatGroup === 'late' }));
+        if (pct <= R) return J(Object.assign(base, { verdict:'fine', confidence:'close', tag:'iso.loose.close' }));
+        return J(Object.assign(base, { verdict:'mistake', confidence: pct > R * 2 ? 'clear' : 'leans', tag:'iso.loose', notable:true }));
+      }
+      if (a === 'call'){
+        if (pct <= I * 0.5) return J(Object.assign(base, { verdict:'mistake', confidence:'leans', tag:'iso.limp.strong', notable:true }));
+        if (overlimp || pct <= R) return J(Object.assign(base, { verdict:'fine', confidence:'close', tag:'iso.overlimp' }));
+        return J(Object.assign(base, { verdict:'mistake', confidence: pct > 0.7 ? 'clear' : 'leans', tag:'limp.weak', notable:true }));
+      }
+      if (a === 'fold'){
+        if (pct <= I * 0.6) return J(Object.assign(base, { verdict:'mistake', confidence:'clear', tag:'iso.fold.strong', lesson:'starting-hands', notable:true }));
+        if (pct <= I) return J(Object.assign(base, { verdict:'mistake', confidence:'leans', tag:'iso.fold.strong', lesson:'starting-hands', notable:true }));
+        return J(Object.assign(base, { verdict:'good', confidence: overlimp ? 'close' : 'clear', tag:'open.fold.good' }));
+      }
+      return null;
+    }
+
+    /* ---- facing a raise, or a re-raise ---- */
+    const Rr = raiserRange(sp);
+    const ranges = [Rr].concat(Array.from({ length:sp.preflop.callers }, () => Math.min(1, Rr * 1.6)));
+    const eq = equityVs(sp, ranges);
+    if (eq == null) return null;
+    const isBB = sp.seat === 'BB';
+    const ip = sp.seatGroup !== 'blinds';
+    const deep = sp.effectiveBB >= 40;
+    const implied = deep && (f.pair || (f.suited && f.gap <= 2)) ? 0.06 : 0;
+    const need = sp.potOdds + sp.actingAfter * 0.02 + (!isBB && raises === 1 ? 0.03 : 0) - implied;
+    // equity you actually get to use: less out of position, less with weak
+    // hands (they give up before the showdown more often)
+    const realise = (ip ? 0.95 : 0.82) - 0.12 * pct;
+    const realised = eq * realise;
+    const margin = realised - need;
+    const value = eq >= 0.60;
+    const short = sp.effectiveBB <= 15;
+    // (the lines quote your raw chance of winning against what you needed of
+    // it, so the discount is folded into the need: the two compare straight)
+    Object.assign(n, { eq:pct100(eq), need:pct100(Math.max(0.01, need) / Math.max(0.3, realise)), range:pct100(Rr), margin:Math.round(margin * 100) });
+    const kind = raises >= 2 ? 'vsReraise' : 'vsRaise';
+    const lesson = isBB && raises === 1 ? 'bb-defence' : 'calling-raises';
+    const best = value || (short && eq >= 0.48) ? (short ? 'allin' : 'raise') : margin >= 0 ? 'call' : 'fold';
+    const base = { kind, best, lesson, n };
+    const pre = raises >= 2 ? 'vs3bet' : 'vsraise';
+
+    if (a === 'fold'){
+      if (value) return J(Object.assign(base, { verdict:'mistake', confidence:'clear', tag:pre + '.fold.strong', notable:true }));
+      if (short && eq >= 0.52) return J(Object.assign(base, { verdict:'mistake', confidence:'leans', tag:'short.fold.missed', lesson:'short-stack', notable:true }));
+      if (margin <= 0) return J(Object.assign(base, { verdict:'good', confidence: margin < -0.05 ? 'clear' : 'close', tag:pre + '.fold.good', notable: pct <= 0.3 && margin < -0.03 }));
+      if (margin <= 0.04) return J(Object.assign(base, { verdict:'fine', confidence:'close', tag:pre + '.fold.close' }));
+      return J(Object.assign(base, { verdict:'mistake', confidence: margin > 0.10 ? 'clear' : 'leans', tag:pre + '.fold.priced', notable:true }));
+    }
+    if (a === 'call'){
+      if (short && sp.toCall < sp.stack) {
+        // short stacks don't flat: shove or fold
+        if (eq >= 0.48) return J(Object.assign(base, { verdict:'fine', confidence:'leans', tag:'short.flat', lesson:'short-stack', notable:true }));
+      }
+      if (margin >= 0) return J(Object.assign(base, value ? { verdict:'fine', confidence:'leans', tag:pre + '.call.value', lesson:'three-bet', notable:true }
+        : { verdict:'good', confidence: margin > 0.04 ? 'clear' : 'close', tag: isBB && raises === 1 ? 'bb.defend.good' : pre + '.call.good', notable: margin > 0.04 && (isBB || pct > 0.2) }));
+      if (margin >= -0.04) return J(Object.assign(base, { verdict:'fine', confidence:'close', tag:pre + '.call.close' }));
+      return J(Object.assign(base, { verdict:'mistake', confidence: margin < -0.10 ? 'clear' : 'leans', tag:pre + '.call.weak', notable:true }));
+    }
+    if (a === 'raise' || a === 'allin'){
+      if (a === 'allin' && !short){
+        if (eq >= 0.65) return J(Object.assign(base, { verdict:'fine', confidence:'leans', tag:'reraise.shove.big', lesson:'three-bet', notable:true }));
+        return J(Object.assign(base, { verdict:'mistake', confidence: eq < 0.5 ? 'clear' : 'leans', tag:'reraise.shove.loose', lesson:'three-bet', notable:true }));
+      }
+      if (short){
+        if (eq >= 0.48) return J(Object.assign(base, { verdict:'good', confidence:'clear', tag:'short.reshove.good', lesson:'short-stack', notable:true }));
+        if (eq >= 0.42) return J(Object.assign(base, { verdict:'fine', confidence:'close', tag:'short.push.close', lesson:'short-stack' }));
+        return J(Object.assign(base, { verdict:'mistake', confidence: eq < 0.35 ? 'clear' : 'leans', tag:'short.push.loose', lesson:'short-stack', notable:true }));
+      }
+      if (value) return J(Object.assign(base, { verdict:'good', confidence:'clear', tag:pre + '.raise.value', lesson:'three-bet', notable:true }));
+      if (eq >= 0.52 || (f.suited && pct <= 0.35 && margin > -0.06)) return J(Object.assign(base, { verdict:'fine', confidence:'close', tag:pre + '.raise.close', lesson:'three-bet' }));
+      return J(Object.assign(base, { verdict:'mistake', confidence: pct > 0.5 ? 'clear' : 'leans', tag:pre + '.raise.loose', lesson:'three-bet', notable:true }));
+    }
+    return null;
+  }
+
   /* ---------------- the hand record ---------------- */
   let hand = null;
   const history = [];
@@ -225,6 +446,7 @@ const CoachBrain = (() => {
     if (!hand || hand.n !== sp.handNumber) handStart(g, null);
     if (!hand) return null;
     const d = { spot:sp, choice:choice(sp, g, me) };
+    try{ d.judgement = judgePreflop(sp, d.choice); }catch(e){ d.judgement = null; }
     if (!hand.seat) hand.seat = sp.seat;
     if (!hand.hole) hand.hole = sp.hole;
     hand.decisions.push(d);
@@ -294,7 +516,7 @@ const CoachBrain = (() => {
     return finish(hand.seen || { phase:null, showdown:false, board:[], shown:[], yourHand:null, out:false }, net);
   }
 
-  return { spot, choice, record, handStart, observe, handEnd, closeMissed, shownAtShowdown, seatLabel, actingAfter,
+  return { spot, choice, judgePreflop, openRange, pushRange, raiserRange, record, handStart, observe, handEnd, closeMissed, shownAtShowdown, seatLabel, actingAfter,
     get hand(){ return hand; }, get history(){ return history.slice(); }, reset(){ hand = null; history.length = 0; } };
 })();
 if (typeof window !== 'undefined') window.CoachBrain = CoachBrain;

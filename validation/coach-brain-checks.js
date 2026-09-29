@@ -11,63 +11,11 @@
      node validation/coach-brain-checks.js */
 
 const assert = require('assert');
-const fs = require('fs');
-const path = require('path');
-const vm = require('vm');
 
-const ROOT = path.resolve(__dirname, '..');
-const ctx = { console };
-vm.createContext(ctx);
-vm.runInContext(fs.readFileSync(path.join(ROOT, 'js/01-poker-math.js'), 'utf8') + '\n' +
-  fs.readFileSync(path.join(ROOT, 'js/coach-brain.js'), 'utf8') +
-  '\nglobalThis.CoachBrain = CoachBrain; globalThis.makeCard = (r, s) => ({ rank:r, suit:s, value:RANK_VALUES[r] });', ctx);
-const B = ctx.CoachBrain;
-const C = (code) => {   // 'As', 'Td', '9h' -> a game card
-  const r = code[0] === 'T' ? '10' : code[0], s = { s:'♠', h:'♥', d:'♦', c:'♣' }[code[1]];
-  return ctx.makeCard(r, s);
-};
+const { B, C, H, ctx, table, act, street, you, judge, LINES } = require('./tools/coach-sandbox');
 
 let passed = 0;
 function check(name, fn){ fn(); passed++; process.stdout.write('PASS  ' + name + '\n'); }
-
-/* A table: n seats, you at seat `you`, the dealer button at `dealer`,
-   blinds posted, preflop, nothing else done yet. */
-function table(n, dealer, you, opts){
-  opts = opts || {};
-  const bb = opts.bb || 20, stack = opts.stack || 2000;
-  const players = Array.from({ length:n }, (_, i) => ({
-    id: i === you ? 'you' : 'p' + i, name: i === you ? 'You' : 'Opp' + i, isHuman: i === you,
-    chips: stack, hand: i === you ? (opts.hole || [C('As'), C('Kd')]) : [C('2c'), C('7h')],
-    inHand: true, folded: false, allIn: false, eliminated: false, betThisRound: 0, totalBetHand: 0, mayRaise: true
-  }));
-  const sb = n === 2 ? dealer : (dealer + 1) % n, bbi = n === 2 ? (dealer + 1) % n : (dealer + 2) % n;
-  const g = { players, board:[], pot:0, currentBet:bb, minRaise:bb, bigBlind:bb, smallBlind:bb / 2,
-    dealerIndex:dealer, sbIndex:sb, bbIndex:bbi, phase:'preflop', handNumber:opts.handNumber || 1,
-    handActions:[], streetRaises:0, pfRaises:0, pfAggressorId:null, mode:'cash', reads:{} };
-  const post = (i, amt) => { const p = players[i]; p.chips -= amt; p.betThisRound += amt; p.totalBetHand += amt; g.pot += amt; };
-  post(sb, bb / 2); post(bbi, bb);
-  return g;
-}
-/* the engine's own bookkeeping for a public action (applyAction, simplified) */
-function act(g, i, action, to){
-  const p = g.players[i];
-  if (action === 'fold') p.folded = true;
-  else if (action === 'call'){ const need = Math.min(p.chips, g.currentBet - p.betThisRound); p.chips -= need; p.betThisRound += need; p.totalBetHand += need; g.pot += need; if (!p.chips) p.allIn = true; }
-  else if (action === 'raise' || action === 'bet'){
-    const need = to - p.betThisRound; p.chips -= need; p.betThisRound += need; p.totalBetHand += need; g.pot += need;
-    if (!p.chips) p.allIn = true;
-    g.minRaise = Math.max(g.minRaise, to - g.currentBet); g.currentBet = to;
-    g.streetRaises++; g.streetAggressorId = p.id;
-    if (g.phase === 'preflop'){ g.pfAggressorId = p.id; g.pfRaises = g.streetRaises; }
-    action = g.streetRaises > 1 || g.phase === 'preflop' ? 'raise' : 'bet';
-  }
-  g.handActions.push({ id:p.id, name:p.name, street:g.phase, action, amount:p.betThisRound });
-}
-function street(g, phase, cards){
-  g.phase = phase; g.board.push(...cards); g.currentBet = 0; g.minRaise = g.bigBlind; g.streetRaises = 0;
-  g.players.forEach(p => { p.betThisRound = 0; });
-}
-const you = g => g.players.find(p => p.isHuman);
 
 /* ---------------- seats ---------------- */
 check('Six-handed seats: UTG, HJ, CO, BTN, SB, BB from the button', () => {
@@ -312,6 +260,162 @@ check('5,000 random spots: sane numbers, every seat named once, never an opponen
       assert.ok(!text.includes('"rank":"' + c.rank + '","suit":"' + c.suit + '"'), 'an opponent\'s card leaked into the spot');
     }); });
   }
+});
+
+/* ================= step 2: judge 1, before the flop ================= */
+const is = (j, verdict, confidence, tag) => {
+  assert.ok(j, 'a judgement');
+  assert.strictEqual(j.verdict, verdict, 'verdict ' + JSON.stringify(j));
+  if (confidence) assert.strictEqual(j.confidence, confidence, 'confidence ' + JSON.stringify(j));
+  if (tag) assert.strictEqual(j.tag, tag, 'tag ' + JSON.stringify(j));
+};
+const folds = (seats, g) => seats.forEach(i => act(g, i, 'fold'));
+
+check('Opening: aces raised is good; seven-deuce raised under the gun is a clear mistake', () => {
+  is(judge(table(6, 0, 3, { hole:H('As','Ah') }), 3, 'raise', 60), 'good', 'clear', 'open.good.premium');
+  is(judge(table(6, 0, 3, { hole:H('7s','2h') }), 3, 'raise', 60), 'mistake', 'clear', 'open.loose');
+});
+check('Position: the same hand is a fold early and a raise on the button', () => {
+  // King-Eight offsuit: top ~30%
+  is(judge(table(6, 0, 3, { hole:H('Ks','8h') }), 3, 'raise', 60), 'mistake', null, 'open.loose');
+  const g = table(6, 0, 0, { hole:H('Ks','8h') }); folds([3, 4, 5], g);
+  is(judge(g, 0, 'raise', 60), 'good', 'clear', 'open.good.steal');
+});
+check('Folding: Ace-King folded first in is a clear mistake; Ace-Five offsuit folded under the gun is disciplined', () => {
+  is(judge(table(6, 0, 3, { hole:H('As','Kh') }), 3, 'fold'), 'mistake', 'clear', 'open.fold.strong');
+  is(judge(table(6, 0, 3, { hole:H('As','5h') }), 3, 'fold'), 'good', 'clear', 'open.fold.disciplined');
+  is(judge(table(6, 0, 3, { hole:H('9d','4c') }), 3, 'fold'), 'good', 'clear', 'open.fold.good');
+});
+check('Limping: queens limped is a clear mistake; a weak limp is a mistake', () => {
+  is(judge(table(6, 0, 3, { hole:H('Qs','Qh') }), 3, 'call'), 'mistake', 'clear', 'limp.strong');
+  is(judge(table(6, 0, 3, { hole:H('Js','4h') }), 3, 'call'), 'mistake', 'clear', 'limp.weak');
+});
+check('A raise too big is noted, not condemned', () => {
+  is(judge(table(6, 0, 3, { hole:H('As','Ah') }), 3, 'raise', 160), 'fine', 'leans', 'open.big');
+});
+check('All in for 100 big blinds, first in, is a clear mistake (bar aces or kings)', () => {
+  is(judge(table(6, 0, 5, { hole:H('As','Kd') }), 5, 'raise', 2000), 'mistake', 'clear', 'open.shove');
+});
+check('Limpers in front: Ace-Queen raises them (good); Nine-Four offsuit raises them (mistake)', () => {
+  let g = table(6, 0, 5, { hole:H('As','Qd') }); act(g, 3, 'call'); act(g, 4, 'fold');
+  is(judge(g, 5, 'raise', 80), 'good', 'clear', 'iso.good');
+  g = table(6, 0, 5, { hole:H('9s','4d') }); act(g, 3, 'call'); act(g, 4, 'fold');
+  is(judge(g, 5, 'raise', 80), 'mistake', null, 'iso.loose');
+});
+check('The big blind: a free check is good, folding it is a clear mistake', () => {
+  let g = table(6, 0, 2, { hole:H('8s','3d') }); act(g, 3, 'call'); folds([4, 5, 0], g); act(g, 1, 'call');
+  is(judge(g, 2, 'check'), 'good', 'clear', 'bb.check');
+  g = table(6, 0, 2, { hole:H('8s','3d') }); act(g, 3, 'call'); folds([4, 5, 0], g); act(g, 1, 'call');
+  is(judge(g, 2, 'fold'), 'mistake', 'clear', 'bb.fold.free');
+});
+check('Facing a raise: King-Nine offsuit calling an early raise is a clear mistake; queens re-raising is good', () => {
+  let g = table(6, 0, 5, { hole:H('Ks','9h') }); act(g, 3, 'raise', 60); act(g, 4, 'fold');
+  const j = judge(g, 5, 'call');
+  is(j, 'mistake', 'clear', 'vsraise.call.weak');
+  assert.ok(j.n.eq < j.n.need, 'the numbers say why: ' + j.n.eq + '% against ' + j.n.need + '% needed');
+  g = table(6, 0, 5, { hole:H('Qs','Qh') }); act(g, 3, 'raise', 60); act(g, 4, 'fold');
+  is(judge(g, 5, 'raise', 180), 'good', 'clear', 'vsraise.raise.value');
+  g = table(6, 0, 5, { hole:H('Qs','Qh') }); act(g, 3, 'raise', 60); act(g, 4, 'fold');
+  is(judge(g, 5, 'call'), 'fine', 'leans', 'vsraise.call.value');
+});
+check('The big blind defends a button raise with a suited connector, and folds seven-deuce', () => {
+  let g = table(6, 0, 2, { hole:H('9s','7s') }); folds([3, 4, 5], g); act(g, 0, 'raise', 50); act(g, 1, 'fold');
+  is(judge(g, 2, 'call'), 'good', null, 'bb.defend.good');
+  g = table(6, 0, 2, { hole:H('7s','2d') }); folds([3, 4, 5], g); act(g, 0, 'raise', 50); act(g, 1, 'fold');
+  is(judge(g, 2, 'fold'), 'good', null, 'vsraise.fold.good');
+  g = table(6, 0, 2, { hole:H('Ks','Td') }); folds([3, 4, 5], g); act(g, 0, 'raise', 50); act(g, 1, 'fold');
+  is(judge(g, 2, 'fold'), 'mistake', null, 'vsraise.fold.priced');
+});
+check('Short stacks: Ace-Nine on the button with 8 big blinds is a shove; folding it is a clear mistake', () => {
+  let g = table(6, 0, 0, { hole:H('As','9d'), stack:160 }); folds([3, 4, 5], g);
+  is(judge(g, 0, 'raise', 160), 'good', 'clear', 'short.push.good');
+  g = table(6, 0, 0, { hole:H('As','9d'), stack:160 }); folds([3, 4, 5], g);
+  is(judge(g, 0, 'fold'), 'mistake', 'clear', 'short.fold.missed');
+  g = table(6, 0, 0, { hole:H('As','9d'), stack:160 }); folds([3, 4, 5], g);
+  is(judge(g, 0, 'call'), 'mistake', null, 'short.limp');
+});
+check('After the flop he doesn\'t judge yet (that\'s step 3)', () => {
+  const g = table(3, 0, 1, { hole:H('Ks','Qd') }); act(g, 0, 'call'); act(g, 1, 'call'); act(g, 2, 'check');
+  street(g, 'flop', [C('Kh'), C('7c'), C('2d')]);
+  assert.strictEqual(judge(g, 1, 'check'), null);
+});
+check('A recorded decision carries its judgement', () => {
+  B.reset();
+  const g = table(6, 0, 3, { hole:H('7s','2h') }); B.handStart(g, {});
+  const s = B.spot(g, you(g)); act(g, 3, 'raise', 60);
+  const d = B.record(s, g, you(g));
+  assert.strictEqual(d.judgement.tag, 'open.loose');
+});
+
+/* ---------------- his lines ---------------- */
+const SLOTS = new Set(['hole','pct','range','seatOn','seatFrom','SeatFrom','behindP','bb','size','call','odds','eq','need','raiser','limpersP']);
+const BANNED = /\b(kid|buddy|pal|mate|champ|sport|chief|boss|friend|damn|hell|shit|crap)\b/i;
+check('His lines: flat, clean, fit his bubble, and only use blanks the game fills', () => {
+  const L = LINES();
+  let n = 0;
+  Object.entries(L).forEach(([k, pool]) => {
+    assert.ok(pool.length >= 1, k + ' has lines');
+    pool.forEach(([notch, mood, text]) => {
+      n++;
+      assert.ok([1, 2, 3, 4].includes(notch), k + ': notch');
+      assert.ok(['calm','pleased','impressed','surprised','wince','unlucky','thinking'].includes(mood), k + ': mood ' + mood);
+      assert.ok(!BANNED.test(text), k + ': not his voice: ' + text);
+      assert.ok(!/!{2,}|\?\?|:\)|;\)/.test(text), k + ': flat, no fuss: ' + text);
+      assert.ok(text.length <= 200, k + ': too long for his bubble (' + text.length + '): ' + text);
+      (text.match(/\{(\w+)\}/g) || []).forEach(m => assert.ok(SLOTS.has(m.slice(1, -1)), k + ': unknown blank ' + m));
+    });
+  });
+  assert.ok(n >= 250, 'the library has grown: ' + n + ' lines');
+});
+check('5,000 random decisions before the flop: every judgement is sane and has something to say', () => {
+  let seed = 777;
+  const rnd = () => { seed = (seed * 1103515245 + 12345) & 0x7fffffff; return seed / 0x7fffffff; };
+  const ri = k => Math.floor(rnd() * k);
+  const L = LINES();
+  const tags = new Set();
+  for (let t = 0; t < 5000; t++){
+    const n = 2 + ri(6), dealer = ri(n), me = ri(n);
+    const deck = ctx.shuffle(ctx.createDeck());
+    const stack = rnd() < .25 ? 60 + ri(300) : 400 + ri(4000);
+    const g = table(n, dealer, me, { stack, hole:[deck.pop(), deck.pop()] });
+    const order = []; for (let k = 1; k <= n; k++) order.push((g.bbIndex + k) % n);
+    for (const i of order){
+      if (i === me) break;
+      const p = g.players[i], x = rnd();
+      if (x < .5) act(g, i, 'fold');
+      else if (x < .8 || p.chips <= g.currentBet * 3) act(g, i, 'call');
+      else act(g, i, 'raise', Math.min(p.betThisRound + p.chips, g.currentBet * (2 + ri(3))));
+    }
+    const mine = g.players[me];
+    if (mine.folded || mine.allIn || mine.chips <= 0) continue;
+    const toCall = g.currentBet - mine.betThisRound;
+    const opts = toCall > 0 ? ['fold', 'call', 'raise'] : ['check', 'raise', 'fold'];
+    const a = opts[ri(3)];
+    const to = a === 'raise' ? Math.min(mine.betThisRound + mine.chips, g.currentBet * 3 + (rnd() < .2 ? mine.chips : 0)) : 0;
+    const pct = B.spot(g, mine).holeFacts.pct;
+    const j = judge(g, me, a, to);
+    if (!j) continue;
+    tags.add(j.tag);
+    assert.ok(['good','fine','mistake'].includes(j.verdict) && ['clear','leans','close'].includes(j.confidence), JSON.stringify(j));
+    // nonsense he must never say
+    if (pct < 0.012 && (a === 'raise')) assert.ok(j.verdict !== 'mistake' || j.tag === 'open.shove' || j.tag === 'reraise.shove.loose' || j.confidence !== 'clear',
+      'a clear mistake for raising aces/kings? ' + JSON.stringify(j));
+    // folding junk is never a mistake, unless it's free, or the price makes the call right (a short big blind)
+    if (pct > 0.8 && a === 'fold' && j.tag !== 'bb.fold.free') assert.ok(j.verdict !== 'mistake' || j.kind === 'short' || (/fold\.priced$/.test(j.tag) && j.n.eq >= j.n.need - 1),
+      'a mistake for folding junk? ' + JSON.stringify(j));
+    const did = mine.allIn ? 'allin' : a;
+    if (j.verdict === 'mistake' && j.confidence === 'clear') assert.ok(j.best !== did || j.tag === 'bb.fold.free', 'a clear mistake that was the best move? ' + JSON.stringify(j));
+    // something to say about it after the hand, whenever it's worth talking about
+    if (j.verdict === 'mistake' || j.notable || j.confidence === 'close')
+      assert.ok(L[j.tag + '.why'] || L[j.tag + '.why.leans'], 'no reason lines for ' + j.tag);
+    if ((j.verdict === 'mistake' && j.confidence !== 'close') || j.notable)
+      assert.ok(L[j.tag + '.now'] || L[j.tag + '.now.leans'] || j.confidence === 'close', 'no word for ' + j.tag);
+    // the numbers he quotes agree with what he says (to rounding)
+    if (/call\.weak$/.test(j.tag)) assert.ok(j.n.eq <= j.n.need + 1, 'a weak call, but the numbers say call: ' + JSON.stringify(j.n));
+    if (/fold\.priced$/.test(j.tag)) assert.ok(j.n.eq + 1 >= j.n.need, 'a priced fold, but the numbers say fold: ' + JSON.stringify(j.n));
+    if (j.lesson) assert.ok(L['lesson.' + j.lesson] && L['again.' + j.lesson], 'no lesson or reminder lines for ' + j.lesson);
+  }
+  assert.ok(tags.size >= 30, 'the fuzz reached most kinds of spot: ' + tags.size);
 });
 
 process.stdout.write('\n' + passed + ' coach brain checks passed.\n');

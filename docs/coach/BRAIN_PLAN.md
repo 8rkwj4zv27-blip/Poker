@@ -95,6 +95,7 @@ raise charges them."
 ## The two dials
 
 **TALK** (as signed off): 1 COMMENTS · 2 DEBRIEF · 3 TIPS · 4 IN YOUR EAR.
+(Owner, 29 Sep 2026: HELP defaults to **ADVICE**; the key reads **P.I.P.**)
 How often he speaks.
 
 **HELP** (new; the owner's answer 1): how directly he advises before you
@@ -230,3 +231,76 @@ changes. Pure functions over a game state, so they run in Node for tests.
 - Guard rails: it never reads an opponent's cards except at a showdown
   they reached, never reads the deck, and never writes to the game
   (`validation/pattern-book-checks.js` covers it with his other files).
+
+## Step 2 · Judge 1: before the flop (built 29 Sep 2026, v0.55.0)
+
+**The judge** (`CoachBrain.judgePreflop`, run on every recorded decision):
+the yardstick is the game's own sound-player ranges, measured in its
+starting-hand ranking (`preflopPercentile`), copied into the brain:
+
+- **Nobody in**: raise the top X% for your seat, by how many are left to
+  act (`OPEN_RANGE_BY_BEHIND`: about 17% under the gun six-handed, 28% in
+  the cutoff, 44% on the button, 80% heads-up), fold the rest. Limping is
+  a mistake (raise or fold); the small blind topping up is fine unless
+  it's junk. A raise over 5 big blinds is noted; all in for 25+ big
+  blinds, first in, is a clear mistake bar aces and kings.
+- **Limpers in front**: raise them with about 70% of the opening range;
+  limping along is fine with small pairs, suited connectors or a late
+  seat.
+- **The big blind, nobody raised**: check is right; folding when it's
+  free is always a clear mistake; raise the limpers with the top 12-15%.
+- **Facing a raise or re-raise**: your chance of winning against the
+  hands that raise usually means (the raiser's seat, a big size, their
+  raising habit from the table's public notebook; re-raises by
+  `RERAISE_RANGE`), discounted for playing out of position and for weak
+  hands, against the price (pot odds, plus a margin for players still to
+  act and for cold-calling). Re-raise with 60%+.
+- **Short (10 big blinds or less, nobody raised)**: shove or fold, by
+  `PUSH_RANGE_BY_BEHIND`, with a wide close band (those ranges are a
+  shade tight of the push/fold charts). Short and facing a raise: shove
+  or fold, not call.
+- **Small pairs** are rated like the charts rate them (top 15-20%), not
+  by the equity ranking, which undervalues set-mining hands.
+- **Confidence**: CLEAR only well outside a range; LEANS at the edges;
+  CLOSE at the edge itself, called close. The quoted numbers always agree
+  with the verdict (the position discount is folded into the "needed").
+
+**What he says** (`coach-talk.js` routing, lines in `js/coach-lines.js`,
+310 lines):
+
+- **A word right after you act**: a clear mistake at notch 1 ("Too loose
+  from there."), a notable good play at 2 ("Good fold.") no more than
+  once every 4 hands (2 at IN YOUR EAR), a lean at 3. One a hand; it
+  replaces the "your turn" line.
+- **The reason after the hand** (notch 2; close calls at 4), for the
+  decision that most needs it, with the numbers. Led by "You won it, but
+  that's not the point." or "You lost, but the decision was right." when
+  the result would mislead.
+- **The lesson** (starting hands, position, raise or fold, calling
+  raises, big-blind defence, short stacks, three-bets, the basics) the
+  first time it comes up this session.
+- **The same mistake again soon after** (within 3 hands if clear, 6 if a
+  lean): a short reminder by lesson ("Another limp. Raise or fold."), not
+  the whole speech.
+- **Your cards with your seat** at IN YOUR EAR ("Jack-Ten suited on the
+  button. Plenty good enough from this seat.").
+
+**Proof**: `validation/coach-brain-checks.js`, now 35 checks: known spots
+(seven-deuce raised under the gun, Ace-King folded, queens limped, King-
+Nine calling an early raise, the big blind defending nine-seven suited,
+Ace-Nine shoved with 8 big blinds...), the library (flat, clean, fits the
+bubble, only real blanks, 250+ lines), and 5,000 random decisions (never
+a clear mistake for the best move, never a mistake for folding junk or
+for raising aces, the numbers agree with the verdict, every verdict has
+its lines, every lesson has its lesson and reminder lines). In the real
+game in an emulated iPhone over 12+ hands: words, reasons, leads,
+lessons and reminders, no errors.
+
+**P.I.P. Brain Lab** (`coach-brain-lab.html`, `js/coach-brain-lab.js`,
+host `js/coach-brain-lab-host.js`): TRY IT (19 set spots, each explained
+in full), HIS VERDICTS (every decision you've played, with his verdict,
+confidence, the better move and the numbers; tap to hear it), TALK, KEY
+(P.I.P. · TV + PIP · the v0.54 TV).
+Link: https://claude.ai/artifact/93fSUyPJJemnRhGkq7yXyJ
+
+**Next: step 3, after the flop.**
