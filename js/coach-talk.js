@@ -45,7 +45,7 @@ const CoachTalk = (() => {
     pace:[['normal', 'NORMAL'], ['slow', 'SLOWER'], ['fast', 'FASTER']],
     volume:[['low', 'LOW'], ['medium', 'MEDIUM'], ['high', 'HIGH'], ['silent', 'SILENT']],
     mouth:[['blip', 'OPENS ON EACH BLIP'], ['open', 'OPEN WHILE HE TALKS'], ['still', 'STAYS STILL']],
-    type:[['mixed', 'NUMBERS + CARDS IN THE SCREEN FONT'], ['screen', 'ALL IN THE SCREEN FONT'], ['screenlc', 'SCREEN FONT, UPPER + LOWER CASE'], ['pixel', 'ROUND 1']]
+    type:[['mixed', 'NUMBERS + CARDS IN THE SCREEN FONT'], ['numbers', 'NUMBERS ONLY'], ['screen', 'ALL IN THE SCREEN FONT'], ['screenlc', 'SCREEN FONT, UPPER + LOWER CASE'], ['pixel', 'ROUND 1']]
   };
   // The owner's picks (Voice Lab round 1, 29 Sep 2026)
   const DEFAULTS = { notch:'4', where:'across', look:'screen', textIn:'type', arrive:'pop', hold:'normal',
@@ -102,7 +102,7 @@ const CoachTalk = (() => {
     let last = 0, m;
     while ((m = re.exec(text))){
       if (m.index > last) out.push({ t:text.slice(last, m.index), key:false });
-      out.push({ t:m[0], key:true });
+      out.push({ t:m[0], key:/\d/.test(m[0][0]) ? 'num' : 'card' });
       last = m.index + m[0].length;
     }
     if (last < text.length) out.push({ t:text.slice(last), key:false });
@@ -114,7 +114,7 @@ const CoachTalk = (() => {
     for (const r of rs){
       if (left <= 0) break;
       const part = r.t.slice(0, left); left -= part.length;
-      html += r.key ? '<b class="ctk-key">' + esc(part) + '</b>' : esc(part);
+      html += r.key ? '<b class="ctk-key ctk-' + r.key + '">' + esc(part) + '</b>' : esc(part);
     }
     return html;
   }

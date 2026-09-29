@@ -313,3 +313,12 @@ game, then his brain:
   line up top and bottom. The lead no longer crosses his artwork: while
   he's on the felt, nothing of it is drawn over his sprite, so it comes
   out from behind the set.
+- **Card names** (owner, 29 Sep 2026: the screen font on card names looked
+  wrong, a wide gap between "Four" and "offsuit"): card names are now in
+  capitals, like the hand readout, with the screen font's full-width space
+  closed up (`word-spacing:-5px`); numbers as before. New TYPE option
+  NUMBERS ONLY keeps card names in the pixel face. Also fixed: TRY IT's
+  deal keys said their line about whatever you held ("Ace-Four offsuit.
+  You won't see many better than that."); they now use an example hand of
+  that kind with its true rank (Pocket Aces, Jack-Ten suited, Nine-Eight
+  offsuit, Seven-Two offsuit). In play he always used the real ranking.

@@ -26,7 +26,10 @@
    Press Start ink rows -11..-2, 16px Pixelify -10..-1), so it drops 1px:
    tops and bottoms then line up exactly. */
 .ctk-key{ font-weight:400; }
-.ctk-type-mixed .ctk-key{ font-family:var(--font-hdr); font-size:11px; letter-spacing:.02em; line-height:1; vertical-align:-1px; }
+.ctk-type-mixed .ctk-key,.ctk-type-numbers .ctk-num{ font-family:var(--font-hdr); font-size:11px; letter-spacing:.02em; line-height:1; vertical-align:-1px; }
+/* card names read as a label, like the hand readout: capitals, and the
+   screen font's full-width space closed up so the words hold together */
+.ctk-type-mixed .ctk-card{ text-transform:uppercase; word-spacing:-5px; }
 .ctk-type-screen .ctk-text{ font-family:var(--font-hdr); font-size:10px; line-height:1.7; letter-spacing:.03em; text-transform:uppercase; }
 .ctk-type-screenlc .ctk-text{ font-family:var(--font-hdr); font-size:10px; line-height:1.7; letter-spacing:.02em; }
 .ctk-type-screen .ctk-key,.ctk-type-screenlc .ctk-key{ font-family:inherit; }

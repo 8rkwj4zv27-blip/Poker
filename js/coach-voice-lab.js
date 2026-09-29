@@ -27,7 +27,7 @@
     where:{ tab:'bubble', name:'WHERE IT SITS', note:'ABOVE HIM: over his set, the tail pointing down at his screen. BESIDE HIM: on the table side of him. ACROSS THE FELT: the full width, above him.' },
     look:{ tab:'bubble', name:'THE LOOK', note:'CARD STOCK: the opponents\' bubble from the Speech Lab. HIS SCREEN: dark glass in his own ink.' },
     textIn:{ tab:'bubble', name:'THE WORDS' },
-    type:{ tab:'bubble', name:'TYPE', note:'The screen font is Press Start 2P, the buttons\' and CRT screens\' face. NUMBERS + CARDS: the words stay in the pixel face; every number and card name is in the screen font.' },
+    type:{ tab:'bubble', name:'TYPE', note:'The screen font is Press Start 2P, the buttons\' and CRT screens\' face. NUMBERS + CARDS: the words stay in the pixel face; numbers and card names (in capitals, like the hand readout) in the screen font. NUMBERS ONLY: card names stay in the pixel face.' },
     arrive:{ tab:'bubble', name:'HOW IT ARRIVES' },
     voice:{ tab:'voice', name:'HIS BLIP', note:'All low and steady, a notch under the opponents. STEADY PIP: one warm note. TELEPRINTER: a tick with a tiny tone. TWO NOTES: a little up-down. LOW HUM: a soft sine.' },
     pitch:{ tab:'voice', name:'PITCH' },
@@ -63,6 +63,21 @@
     return { hole, pct, name:opp.name, amt:(call * 3).toLocaleString(), call:call.toLocaleString(), pot:pot.toLocaleString(), odds:Math.round(call / (pot + call) * 100), won:(pot * 2).toLocaleString() };
   }
 
+  /* TRY IT's deal keys say their line about an example hand of that kind,
+     with its true rank (not whatever you happen to hold) */
+  const exampleOf = (a, b, suited) => {
+    try{
+      const cards = [{ value:a, suit:'♠' }, { value:b, suit:suited ? '♠' : '♥' }];
+      return { hole:describeHole(cards), pct:Math.max(1, Math.round(preflopPercentile(cards) * 100)) };
+    }catch(e){ return {}; }
+  };
+  const EXAMPLE = {};
+  try{
+    EXAMPLE.dealtPremium = exampleOf(14, 14);
+    EXAMPLE.dealtStrong = exampleOf(11, 10, true);
+    EXAMPLE.dealtMiddle = exampleOf(9, 8);
+    EXAMPLE.dealtWeak = exampleOf(7, 2);
+  }catch(e){}
   const TABS = [
     ['try', 'TRY IT'], ['talk', 'TALK'], ['bubble', 'BUBBLE'], ['voice', 'VOICE']
   ];
@@ -120,7 +135,12 @@
         sheet.querySelector('.sdl-body').scrollTop = 0;
         return;
       }
-      if (t.dataset.say){ open(false); if (!CS.on){ CS.power(true).then(() => CT.sayAny(t.dataset.say, sampleCtx())); } else CT.sayAny(t.dataset.say, sampleCtx()); return; }
+      if (t.dataset.say){
+        open(false);
+        const m = t.dataset.say, ctx = Object.assign(sampleCtx(), EXAMPLE[m] || {});
+        if (!CS.on){ CS.power(true).then(() => CT.sayAny(m, ctx)); } else CT.sayAny(m, ctx);
+        return;
+      }
       const act = t.dataset.act;
       if (act === 'deal'){ save(); if (host) host.play(); else location.reload(); return; }
       if (act === 'reset'){ order = Object.assign({}, CT.DEFAULTS); applyOrder(); return; }
