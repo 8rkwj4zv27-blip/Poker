@@ -17,3 +17,7 @@
 .cfl-still{ display:block; width:78%; max-width:104px; margin:4px auto 0; }
 .cfl-grid--4 .cfl-still{ width:92%; }
 .cfl-still canvas{ display:block; width:100%; height:auto; image-rendering:pixelated; image-rendering:crisp-edges; }
+.cfl-frames{ display:grid; grid-template-columns:repeat(3,1fr); gap:6px; margin-top:10px; }
+.cfl-frame{ display:flex; flex-direction:column; align-items:center; gap:3px; }
+.cfl-frame canvas{ display:block; width:100%; height:auto; image-rendering:pixelated; image-rendering:crisp-edges; border:2px solid #080405; }
+.cfl-frame span{ font-family:var(--font-hdr); font-size:7px; color:#B69A7A; letter-spacing:.04em; }

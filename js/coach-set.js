@@ -272,9 +272,12 @@ const CoachSet = (() => {
     jolt:[['on', 'TABLE JOLTS'], ['off', 'NO JOLT']],
     dust:[['on', 'DUST'], ['off', 'NONE']],
     boot:[['full', 'FULL BOOT'], ['quick', 'QUICK']],
-    cable:[['rope', 'LOOSE'], ['tight', 'SHORTER']]
+    cable:[['rope', 'LOOSE'], ['tight', 'SHORTER']],
+    turn:[['in', 'TURNS ONE WAY'], ['out', 'TURNS THE OTHER WAY']],
+    lines:[['clean', 'CLEAN'], ['full', 'FULL INK'], ['soft', 'SOFT']],
+    speed:[['1', 'NORMAL'], ['4', 'SLOW x4'], ['10', 'SLOW x10']]
   };
-  const DEFAULTS = { set:'cube', finish:'dashboard', ink:'machine', glasses:'off', from:'under', weight:'heavy', jolt:'on', dust:'on', boot:'full', cable:'rope', mood:'calm' };
+  const DEFAULTS = { set:'cube', finish:'dashboard', ink:'machine', glasses:'off', from:'under', weight:'heavy', jolt:'on', dust:'on', boot:'full', cable:'rope', turn:'in', lines:'clean', speed:'1', mood:'calm' };
   const WEIGHT = { heavy:{ g:1, squash:.16, jolt:2, thud:1 }, brick:{ g:1.35, squash:.22, jolt:3, thud:1.25 }, light:{ g:.75, squash:.1, jolt:1, thud:.7 } };
   let O = Object.assign({}, DEFAULTS);
 
@@ -403,13 +406,14 @@ const CoachSet = (() => {
     return 0;
   }
   function level(b){ return b > .62 ? 1 : b > .2 ? 0 : b > -.25 ? -1 : -2; }
-  function render3D(){
-    if (!c3 || !solid) return;
-    const cx = c3.getContext('2d'), img = cx.createImageData(C3, C3), out = img.data;
+  function render3D(target, pz){
+    target = target || c3; pz = pz || pose;
+    if (!target || !solid) return;
+    const cx = target.getContext('2d'), img = cx.createImageData(C3, C3), out = img.data;
     const ids = new Uint8Array(C3 * C3);
-    const R = rotMatrix(pose.yaw || 0, pose.pitch || 0, pose.roll || 0);
+    const R = rotMatrix(pz.yaw || 0, pz.pitch || 0, pz.roll || 0);
     const hx = solid.w / 2, hy = solid.h / 2, hz = solid.d / 2, hs = [hx, hy, hz];
-    const sc = 1 + Math.max(0, pose.lift) / 320;       // a touch bigger as he's lifted towards you
+    const sc = 1 + Math.max(0, pz.lift) / 320;       // a touch bigger as he's lifted towards you
     const d = [R[2][0], R[2][1], R[2][2]];              // the view ray (0,0,1) in the box's space
     const lit = {};
     Object.keys(NORMALS).forEach(k => { const n = NORMALS[k], w = [0, 1, 2].map(i => R[i][0] * n[0] + R[i][1] * n[1] + R[i][2] * n[2]); lit[k] = level(w[0] * LIGHT[0] + w[1] * LIGHT[1] + w[2] * LIGHT[2]); });
@@ -447,15 +451,27 @@ const CoachSet = (() => {
       out[k] = rgb[0]; out[k + 1] = rgb[1]; out[k + 2] = rgb[2]; out[k + 3] = 255;
       ids[py * C3 + px] = FACE_ID[name];
     }
-    // ink: round the shape, and along every crease between two faces
-    const ink = solid.ramp[0], put = (i) => { const k = i * 4; out[k] = ink[0]; out[k + 1] = ink[1]; out[k + 2] = ink[2]; out[k + 3] = 255; };
+    /* lines. FULL: ink round the shape and along every crease (round 3c).
+       CLEAN: ink round the shape except where the front's own drawn border
+       already is, creases only between two case faces (so no doubled black
+       next to the front). SOFT: the outline in deep shade, no creases. */
+    const mode = O.lines || 'clean', F = FACE_ID.front;
+    const ink = mode === 'soft' ? solid.ramp[1] : solid.ramp[0];
+    const put = (i) => { const k = i * 4; out[k] = ink[0]; out[k + 1] = ink[1]; out[k + 2] = ink[2]; out[k + 3] = 255; };
     const marks = [];
     for (let y = 0; y < C3; y++) for (let x = 0; x < C3; x++){
       const i = y * C3 + x, id = ids[i];
       if (!id){
-        if ((x > 0 && ids[i - 1]) || (x < C3 - 1 && ids[i + 1]) || (y > 0 && ids[i - C3]) || (y < C3 - 1 && ids[i + C3])) marks.push(i);
-      } else if ((x < C3 - 1 && ids[i + 1] && ids[i + 1] !== id) || (y < C3 - 1 && ids[i + C3] && ids[i + C3] !== id)){
-        if (id !== FACE_ID.front) marks.push(i); else marks.push(x < C3 - 1 && ids[i + 1] !== id ? i + 1 : i + C3);
+        const nb = [x > 0 ? ids[i - 1] : 0, x < C3 - 1 ? ids[i + 1] : 0, y > 0 ? ids[i - C3] : 0, y < C3 - 1 ? ids[i + C3] : 0].filter(Boolean);
+        if (!nb.length) continue;
+        if (mode !== 'full' && nb.every(n => n === F)) continue;
+        marks.push(i);
+      } else if (mode !== 'soft'){
+        const r = x < C3 - 1 ? ids[i + 1] : 0, d2 = y < C3 - 1 ? ids[i + C3] : 0;
+        const crease = (r && r !== id) || (d2 && d2 !== id);
+        if (!crease) continue;
+        if (mode === 'full'){ if (id !== F) marks.push(i); else marks.push(r && r !== id ? i + 1 : i + C3); }
+        else if (id !== F && (!r || r === id || r !== F) && (!d2 || d2 === id || d2 !== F)) marks.push(i);
       }
     }
     marks.forEach(put);
@@ -630,22 +646,29 @@ const CoachSet = (() => {
 
   /* ---------------- motion ---------------- */
   // plays a list of keyframes { t (ms), x, y, lift, sx, sy, bank, lean } in 14fps steps
+  const PROPS = ['x', 'y', 'lift', 'sx', 'sy', 'bank', 'lean', 'yaw', 'pitch', 'roll'];
+  function poseAt(frames, tq){
+    let i = 0; while (i < frames.length - 2 && frames[i + 1].t < tq) i++;
+    const a = frames[i], b = frames[i + 1] || a, span = (b.t - a.t) || 1, k = Math.max(0, Math.min(1, (tq - a.t) / span));
+    const e = b.ease === 'in' ? k * k : b.ease === 'out' ? 1 - (1 - k) * (1 - k) : k;
+    const out = {};
+    PROPS.forEach(p => {
+      const va = a[p] == null ? (p === 'sx' || p === 'sy' ? 1 : 0) : a[p], vb = b[p] == null ? (p === 'sx' || p === 'sy' ? 1 : 0) : b[p];
+      out[p] = va + (vb - va) * e;
+    });
+    return out;
+  }
   function play(frames, onFrame){
+    const slow = Math.max(1, +O.speed || 1);   // the lab's slow motion
     return new Promise(res => {
       const total = frames[frames.length - 1].t, t0 = performance.now();
       let lastStep = -1;
       const tick = now => {
-        const t = Math.min(total, now - t0), stepN = Math.floor(t / FRAME);
+        const t = Math.min(total, (now - t0) / slow), stepN = Math.floor(t / FRAME);
         if (stepN !== lastStep || t >= total){
           lastStep = stepN;
           const tq = t >= total ? total : stepN * FRAME;
-          let i = 0; while (i < frames.length - 2 && frames[i + 1].t < tq) i++;
-          const a = frames[i], b = frames[i + 1] || a, span = (b.t - a.t) || 1, k = Math.max(0, Math.min(1, (tq - a.t) / span));
-          const e = b.ease === 'in' ? k * k : b.ease === 'out' ? 1 - (1 - k) * (1 - k) : k;
-          ['x', 'y', 'lift', 'sx', 'sy', 'bank', 'lean', 'yaw', 'pitch', 'roll'].forEach(p => {
-            const va = a[p] == null ? (p === 'sx' || p === 'sy' ? 1 : 0) : a[p], vb = b[p] == null ? (p === 'sx' || p === 'sy' ? 1 : 0) : b[p];
-            pose[p] = va + (vb - va) * e;
-          });
+          Object.assign(pose, poseAt(frames, tq));
           render();
           if (onFrame) onFrame(tq);
         }
@@ -678,9 +701,10 @@ const CoachSet = (() => {
   }
 
   /* on: pulled out from under the table by the dashboard and put down */
-  async function arrive(){
+  function arriveKeys(){
     const W = WEIGHT[O.weight] || WEIGHT.heavy, S = setOf();
     const out = home.left ? -1 : 1;                      // the side nearest the dashboard corner
+    const tw = O.turn === 'out' ? -1 : 1;                // which way he turns
     const below = home.edge - home.y + 10;               // far enough down to be under the table
     const g = W.g;
     let frames;
@@ -711,6 +735,11 @@ const CoachSet = (() => {
         { t:land, x:0, y:0, lift:0, ease:'in' }
       ].concat(settle(land));
     }
+    frames.forEach(f => { if (f.yaw) f.yaw *= tw; if (f.roll) f.roll *= tw; });
+    return frames;
+  }
+  async function arrive(){
+    const W = WEIGHT[O.weight] || WEIGHT.heavy, frames = arriveKeys();
     let landed = false;
     const hit = frames.find((f, i) => i > 0 && (frames[i - 1].lift || 0) > 0 && !f.lift).t;
     await play(frames, t => {
@@ -718,15 +747,60 @@ const CoachSet = (() => {
     });
   }
   /* off: swiped back off the way he came */
-  async function leave(){
+  function leaveKeys(){
     const W = WEIGHT[O.weight] || WEIGHT.heavy, S = setOf();
-    const out = home.left ? -1 : 1, below = home.edge - home.y + 10;
-    SFX.scrape();
+    const out = home.left ? -1 : 1, below = home.edge - home.y + 10, tw = O.turn === 'out' ? -1 : 1;
     const frames = O.from === 'side'
       ? [{ t:0 }, { t:FRAME, lift:4, pitch:4 }, { t:280, x:out * (home.left ? home.x + S.w * P + 30 : home.w - home.x + 30), lift:16, yaw:-out * 70, pitch:18, ease:'in' }]
       : [{ t:0 }, { t:FRAME, lift:4, yaw:-out * 4, pitch:4 }, { t:200, x:out * 5, lift:16, yaw:-out * 28, pitch:22, roll:out * 5, ease:'out' },
          { t:200 + 280 / W.g, x:out * 8, y:below, lift:0, yaw:-out * 60, pitch:42, roll:out * 10, ease:'in' }];
-    await play(frames);
+    frames.forEach(f => { if (f.yaw) f.yaw *= tw; if (f.roll) f.roll *= tw; });
+    return frames;
+  }
+  async function leave(){
+    SFX.scrape();
+    await play(leaveKeys());
+  }
+
+  /* ---------------- the frame sheet (lab) ----------------
+     Every 14fps step of the entry or exit, as the tile it would be on the
+     table: the felt, the table's near edge (the dashboard in front of it),
+     his shadow, and him, flat or in the round. Art pixels; the lab scales
+     them up. */
+  function sheetFrames(kind){
+    if (!solid) buildSolid();
+    measureHome();
+    const keys = kind === 'exit' ? leaveKeys() : arriveKeys();
+    const total = keys[keys.length - 1].t, out = [];
+    for (let t = 0; ; t += FRAME){ const tq = Math.min(t, total); out.push(Object.assign(poseAt(keys, tq), { t:Math.round(tq) })); if (tq >= total) break; }
+    return out;
+  }
+  const TILE = { w:76, h:118, edge:92 };
+  function drawTile(canvas, pz){
+    if (!solid) buildSolid();
+    const S = setOf(), pal = palOf(O.finish), c = canvas.getContext('2d');
+    canvas.width = TILE.w; canvas.height = TILE.h;
+    c.imageSmoothingEnabled = false;
+    c.fillStyle = '#1E4431'; c.fillRect(0, 0, TILE.w, TILE.edge);
+    const restBottom = TILE.edge - 6, left = Math.round(TILE.w / 2 - S.w / 2 + pz.x / P), top = Math.round(restBottom - S.h + (pz.y - pz.lift) / P);
+    const air = pz.lift > .5 || pz.y > .5 || Math.abs(pz.yaw) + Math.abs(pz.pitch) + Math.abs(pz.roll) > .5;
+    if (top + S.h <= TILE.edge + 1){
+      const k = Math.max(.35, 1 - Math.max(0, pz.lift) / 140), sw = Math.round(S.w * .92 * k);
+      c.fillStyle = 'rgba(0,0,0,' + (.5 * k).toFixed(2) + ')'; c.fillRect(Math.round(TILE.w / 2 + pz.x / P - sw / 2), restBottom - 2, sw, 3);
+    }
+    if (air){
+      const t = document.createElement('canvas'); t.width = C3; t.height = C3; render3D(t, pz);
+      const bcx = S.box.x + S.box.w / 2, bcy = S.box.y + S.box.h / 2;
+      c.drawImage(t, Math.round(left + bcx - C3 / 2), Math.round(top + bcy - C3 / 2));
+    } else {
+      const f = document.createElement('canvas'); f.width = S.w; f.height = S.h; S.draw(f.getContext('2d'), pal, false);
+      const w = Math.round(S.w * pz.sx), h = Math.round(S.h * pz.sy);
+      c.drawImage(f, Math.round(left + S.w / 2 - w / 2), top + S.h - h, w, h);
+    }
+    // the dashboard in front: he's hidden under the table's edge
+    c.fillStyle = '#12261C'; c.fillRect(0, TILE.edge, TILE.w, TILE.h - TILE.edge);
+    c.fillStyle = '#E8B83A'; c.fillRect(0, TILE.edge + 2, TILE.w, 1);
+    c.fillStyle = '#080405'; c.fillRect(0, TILE.edge, TILE.w, 2);
   }
 
   /* the boot on the tube */
@@ -878,6 +952,6 @@ const CoachSet = (() => {
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start); else setTimeout(start, 0);
 
-  return { apply, power, setMood, look, talk, still, MOODS, OPTIONS, DEFAULTS, SETS,
+  return { apply, power, setMood, look, talk, still, sheetFrames, drawTile, MOODS, OPTIONS, DEFAULTS, SETS,
     get on(){ return on; }, get busy(){ return busy; }, get order(){ return Object.assign({}, O); } };
 })();

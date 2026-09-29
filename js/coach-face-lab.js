@@ -47,10 +47,32 @@
         [['you', 'AT YOU'], ['pot', 'THE POT'], ['player', 'A PLAYER'], ['ahead', 'AHEAD']].map(o => '<button type="button" data-v="' + o[0] + '">' + o[1] + '</button>').join('') +
         '</div><p class="sdl-note">On his own he blinks and now and then glances round the table.</p></div>';
   }
+  let sheetKind = 'entry';
+  function framesPane(){
+    return '<h3>FRAME BY FRAME<small>Every step of the lift at 14 a second, as it sits on the table: the felt, the table\'s near edge, his shadow. Numbered, so you can point at one.</small></h3>' +
+      '<div class="sdl-row">' + seg('sheet', [['entry', 'COMING ON'], ['exit', 'GOING OFF']], sheetKind) + '</div>' +
+      '<div class="sdl-actions"><button type="button" data-act="slowplay">PLAY IT SLOW (x10)</button><button type="button" data-act="replay">PLAY IT</button></div>' +
+      '<div class="cfl-frames"></div>';
+  }
+  function fillFrames(){
+    const box = sheet.querySelector('.cfl-frames'); if (!box) return;
+    box.innerHTML = '';
+    let list = [];
+    try{ list = CS.sheetFrames(sheetKind === 'exit' ? 'exit' : 'entry'); }catch(e){ console.error(e); }
+    list.forEach((pz, i) => {
+      const cell = document.createElement('div'); cell.className = 'cfl-frame';
+      const c = document.createElement('canvas'); CS.drawTile(c, pz);
+      const cap = document.createElement('span'); cap.textContent = (i + 1) + ' · ' + pz.t + 'ms';
+      cell.append(c, cap); box.appendChild(cell);
+    });
+  }
   function arrivalPane(){
     return '<h3>ON AND OFF<small>The COACH key next to ⚙ is the real switch. Or use these.</small></h3>' +
       '<div class="sdl-actions"><button type="button" data-act="on">SWITCH ON</button><button type="button" data-act="off">SWITCH OFF</button></div>' +
+      row('SPEED', 'speed', 'Slow motion for the lift on and off (the boot keeps its own pace).') +
       row('HOW HE ARRIVES', 'from', 'Under the table: pulled up from beside the dashboard and put down. Swiped back off the same way.') +
+      row('WHICH WAY HE TURNS', 'turn') +
+      row('LINES', 'lines', 'While he\'s in the air. CLEAN: no doubled black next to his front. FULL INK: round 3c. SOFT: a dark outline, no creases.') +
       row('WEIGHT', 'weight') +
       row('WHEN HE LANDS', 'jolt', 'The table and the chips jump.') +
       row('DUST', 'dust') +
@@ -73,8 +95,9 @@
     sheet.querySelector('[data-pane="set"]').innerHTML = setPane();
     sheet.querySelector('[data-pane="face"]').innerHTML = facePane();
     sheet.querySelector('[data-pane="arrival"]').innerHTML = arrivalPane();
+    sheet.querySelector('[data-pane="frames"]').innerHTML = framesPane();
     body.scrollTop = top;
-    fillTiles();
+    fillTiles(); fillFrames();
   }
   const open = on => { sheet.classList.toggle('is-open', on); key.classList.toggle('is-on', on); };
   function build(){
@@ -84,9 +107,9 @@
     sheet.className = 'sdl-sheet cfl-sheet'; sheet.setAttribute('role', 'dialog'); sheet.setAttribute('aria-label', 'Coach face lab');
     sheet.innerHTML =
       '<div class="sdl-tabs" role="tablist">' +
-        '<button type="button" data-tab="set" class="is-on">THE SET</button><button type="button" data-tab="face">THE FACE</button><button type="button" data-tab="arrival">ARRIVAL</button>' +
+        '<button type="button" data-tab="set" class="is-on">THE SET</button><button type="button" data-tab="face">THE FACE</button><button type="button" data-tab="arrival">ARRIVAL</button><button type="button" data-tab="frames">FRAMES</button>' +
         '<button type="button" class="sdl-close" aria-label="Close">✕</button></div>' +
-      '<div class="sdl-body"><section data-pane="set"></section><section data-pane="face" hidden></section><section data-pane="arrival" hidden></section></div>';
+      '<div class="sdl-body"><section data-pane="set"></section><section data-pane="face" hidden></section><section data-pane="arrival" hidden></section><section data-pane="frames" hidden></section></div>';
     document.body.appendChild(key); document.body.appendChild(sheet);
     key.addEventListener('click', () => open(!sheet.classList.contains('is-open')));
     sheet.querySelector('.sdl-close').addEventListener('click', () => open(false));
@@ -100,12 +123,21 @@
       }
       const act = t.dataset.act;
       if (act === 'on' || act === 'off'){ open(false); await CS.power(act === 'on'); save(); return; }
+      if (act === 'slowplay' || act === 'replay'){
+        open(false);
+        const was = order.speed; if (act === 'slowplay'){ order.speed = '10'; CS.apply(order); }
+        if (sheetKind === 'exit'){ if (!CS.on) await CS.power(true); await CS.power(false); }
+        else { if (CS.on) await CS.power(false); await CS.power(true); }
+        order.speed = was; CS.apply(order); save();
+        return;
+      }
       if (act === 'deal'){ save(); if (host) host.play(); else location.reload(); return; }
       if (act === 'reset'){ order = Object.assign({}, CS.DEFAULTS); applyOrder(); return; }
       if (act === 'copy'){ copyPicks(t); return; }
       const holder = t.closest('[data-key]');
       if (!holder) return;
       const k = holder.dataset.key, v = t.dataset.v;
+      if (k === 'sheet'){ sheetKind = v; paint(); return; }
       if (k === 'look'){ open(false); CS.look(v, v === 'ahead' ? 0 : 2200); return; }
       if (k === 'deckside'){
         const b = document.querySelector('#deck-side-seg button[data-v="' + v + '"]');
@@ -121,7 +153,7 @@
   }
   function copyPicks(t){
     const name = (k, v) => { const r = (CS.OPTIONS[k] || []).find(x => x[0] === v); return r ? r[1] : v; };
-    const text = 'COACH SET: ' + ['set', 'finish', 'glasses', 'ink', 'from', 'weight', 'jolt', 'dust', 'boot', 'cable'].map(k => k + ' ' + name(k, order[k])).join(' · ');
+    const text = 'COACH SET: ' + ['set', 'finish', 'glasses', 'ink', 'from', 'turn', 'lines', 'weight', 'jolt', 'dust', 'boot', 'cable'].map(k => k + ' ' + name(k, order[k])).join(' · ');
     const ta = sheet.querySelector('.sdl-copytext');
     const done = ok => { t.textContent = ok ? 'COPIED' : 'SELECT + COPY BELOW'; setTimeout(() => { t.textContent = 'COPY MY PICKS'; }, 2200); if (!ok){ ta.hidden = false; ta.value = text; ta.focus(); ta.select(); } };
     try{ navigator.clipboard.writeText(text).then(() => done(true), () => done(false)); }catch(e){ done(false); }

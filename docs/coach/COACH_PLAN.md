@@ -170,3 +170,16 @@ covers them.
   sprite, with a squash-and-rebound. The exit runs it the other way.
   CUBE is now the default set (the owner's pick in the screenshot).
 
+  **Owner:** looks really good; wants slow motion or a sheet of every
+  frame to give frame-by-frame feedback; unsure about the thick black
+  lines; wants the option to see him rotate the other way.
+- **Round 3d — frames, slow motion, turn, lines** (29 Sep 2026). Same
+  link. ARRIVAL gains SPEED (NORMAL · SLOW x4 · SLOW x10, the lift only),
+  WHICH WAY HE TURNS (one way · the other way: yaw and roll mirrored) and
+  LINES for the in-the-air render: CLEAN (default: the outline skips the
+  front's own drawn border and creases only run between case faces, so
+  no doubled black), FULL INK (round 3c) and SOFT (a deep-shade outline,
+  no creases). A FRAMES tab shows every 14 fps step of COMING ON or
+  GOING OFF as it sits on the table (felt, near edge, shadow), numbered
+  with its time, plus PLAY IT and PLAY IT SLOW. The same sheets were
+  sent to the owner as images (15 frames on, 9 off).
