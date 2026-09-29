@@ -1,0 +1,32 @@
+/* Coach Face Lab (round 3): the gallery tiles in the TUNE sheet. The key
+   and the sheet are the Showdown Lab's (css/showdown-lab.css). Lab only:
+   never loaded by the game. */
+.cfl-grid{ display:grid; grid-template-columns:1fr 1fr; gap:8px; margin:4px 0 8px; }
+.cfl-grid--3{ grid-template-columns:repeat(3,1fr); }
+.cfl-grid--4{ grid-template-columns:repeat(4,1fr); gap:6px; }
+.cfl-tile{
+  display:flex; flex-direction:column; align-items:center; gap:6px; min-height:44px; padding:8px 6px 7px;
+  border:2px solid #080405; border-radius:3px; background:#34171A; color:#B69A7A; cursor:pointer;
+  box-shadow:inset 0 2px 0 rgba(255,255,255,.08),0 3px 0 #080405; -webkit-tap-highlight-color:transparent;
+}
+.cfl-tile.is-on{ background:#E8B83A; color:#080405; box-shadow:inset 0 2px 0 #FFE380,0 3px 0 #080405; }
+.cfl-tile:active{ transform:translateY(2px); box-shadow:inset 0 2px 0 rgba(255,255,255,.08),0 1px 0 #080405; }
+.cfl-tile-face{ display:block; width:100%; max-width:120px; border:2px solid #080405; border-radius:2px; overflow:hidden; }
+.cfl-tile-face--house{ border:0; overflow:visible; display:flex; justify-content:center; padding:4px 0 10px; }
+.cfl-tile-name{ font-family:var(--font-hdr); font-size:7px; letter-spacing:.04em; line-height:1.4; text-align:center; }
+.cfl-still{ display:block; width:78%; max-width:104px; margin:4px auto 0; }
+.cfl-grid--4 .cfl-still{ width:92%; }
+.cfl-still canvas{ display:block; width:100%; height:auto; image-rendering:pixelated; image-rendering:crisp-edges; }
+.cfl-frames{ display:grid; grid-template-columns:repeat(3,1fr); gap:6px; margin-top:10px; }
+.cfl-frame{ display:flex; flex-direction:column; align-items:center; gap:3px; }
+.cfl-frame canvas{ display:block; width:100%; height:auto; image-rendering:pixelated; image-rendering:crisp-edges; border:2px solid #080405; }
+.cfl-frame span{ font-family:var(--font-hdr); font-size:7px; color:#B69A7A; letter-spacing:.04em; }
+/* Coach Rig Lab: the four keys at the top of every tab */
+.crl-acts{ display:grid; grid-template-columns:repeat(4,1fr); gap:5px; margin:4px 0 6px; }
+.crl-acts button{
+  min-height:44px; padding:4px; border:2px solid #080405; border-radius:3px; background:#E8B83A; color:#080405;
+  font-family:var(--font-hdr); font-size:6px; letter-spacing:.03em; line-height:1.4; cursor:pointer;
+  box-shadow:inset 0 2px 0 #FFE380,0 3px 0 #080405;
+}
+.crl-acts button:nth-child(2){ background:#34171A; color:#F3E6C4; box-shadow:inset 0 2px 0 rgba(255,255,255,.08),0 3px 0 #080405; }
+.crl-acts button:active{ transform:translateY(2px); box-shadow:inset 0 2px 0 #FFE380,0 1px 0 #080405; }

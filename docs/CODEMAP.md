@@ -17,7 +17,8 @@ ticket-feed.js          table-intro.js
 dashboard.js            crt.js                  finishes.js
 press-feel.js           showdown.js             dealer-deck.js
 action-drum.js          knock-check.js          award-key.js
-card-holder.js          deal-styles.js
+card-holder.js          deal-styles.js          coach-set.js
+coach-talk.js
 ```
 
 Later files call into earlier ones freely; there's no module system, so
@@ -581,6 +582,45 @@ card, rare and up only ever on a single card. Runs the deck in its 2.5D
 SPRITE mode (switchable against today's flat card). The candidate plugs into
 `DealerDeck.flightFor`. Phone-first (host `js/showdown-lab-host.js`).
 Since v0.51.0 the styles are the game's own; the lab adds only its sheet.
+
+## `js/coach-set.js` + `js/coach-talk.js` (+ `css/coach-set.css`, `css/coach-talk.css`) — the Coach (live, v0.54.0)
+
+The Coach on the table (`docs/coach/COACH_PLAN.md`; Pattern Book: Coach).
+`coach-set.js`: his pixel TV, the COACH key beside ⚙ (`settings.coachBot`),
+the lift on and off in 2.5D, his aux lead, the boot; he follows the table
+(there whenever it's showing and he's switched on, gone when it isn't).
+`coach-talk.js`: his bubble, voice and lines, the talk slider (Settings →
+Coach talk, `settings.coachTalk`); hears the game through `applyAction`
+and `updateCoach` and by watching `game.handNumber` / `game.phase`.
+Presentation only; the lines are placeholders until his brain. The labs
+below drive the same two files.
+
+## `coach-face-lab.html` + `js/coach-face-lab.js` + `css/coach-face-lab.css` + candidate `js/coach-set.js` / `css/coach-set.css` — Coach Face Lab
+
+The Coach's look (`docs/coach/COACH_PLAN.md`), round 3: the machine's
+soul in a little pixel TV (sprites drawn in code), lifted onto the felt
+opposite the dealer deck in 2.5D steps, cabled (a verlet rope) into a
+COACH key beside ⚙. Phone-first; the sheet reuses `css/showdown-lab.css`.
+Not loaded by the game.
+
+## `coach-rig-lab.html` + `js/coach-rig-lab.js` (+ `js/coach-rig-lab-host.js`) — Coach Rig Lab
+
+The Coach's lead and boot (`docs/coach/COACH_PLAN.md`, Rig Lab round 1),
+on the look locked in the Coach Face Lab. Drives the same candidate,
+`js/coach-set.js` / `css/coach-set.css`: lead style, colour, length and
+exit; plug and jack; plugging in and out; the power up the lead, five
+tube boots (a 3x5 pixel font for typed lines), wake-ups, lamp, sounds,
+switch-offs. Phone-first; not loaded by the game.
+
+## `coach-voice-lab.html` + `js/coach-voice-lab.js` (+ host) + candidate `js/coach-talk.js` / `css/coach-talk.css` — Coach Voice Lab
+
+The Coach talks (`docs/coach/COACH_PLAN.md`, Voice Lab round 1): a bubble
+from his set (the Speech Lab's card stock, or dark glass in his ink), his
+mouth on the tube, his own low steady blip, the four-notch talk slider,
+and ~40 flat lines on real moments. Hears the game through `applyAction`
+and `updateCoach` (wrapped) and by watching `game.handNumber` / `game.phase`
+(the deal and the end of a hand; `startNewHand` is swapped by other parts
+of the table, so it isn't wrapped). Not loaded by the game.
 
 ## `deck-lab.html` + `js/deck-lab.js` — Deck Lab
 

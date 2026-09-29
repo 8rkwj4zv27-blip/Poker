@@ -1,0 +1,66 @@
+/* ============================================================
+   COACH SET (Coach Face Lab, round 3: candidate, lab only)
+   The coach's little TV on the felt, its shadow, its cable, and the
+   COACH key next to the table's ⚙. js/coach-set.js draws the pixel
+   sprites and moves them in 2.5D steps; this file only lays them out.
+   ============================================================ */
+/* the layer the set lives in (at the dealer deck's level, 5: on top of the
+   felt and its furniture, the pot tray included; under the seats): the felt, so he's hidden under its near
+   edge until he's lifted over it */
+.cs-layer{ position:absolute; inset:0; z-index:5; overflow:hidden; border-radius:inherit; pointer-events:none; }
+.cs-tv{ position:absolute; left:0; top:0; transform-origin:50% 100%; pointer-events:auto; visibility:hidden; -webkit-tap-highlight-color:transparent; }
+.cs-body,.cs-face,.cs-still,.cs-3d{ image-rendering:pixelated; image-rendering:crisp-edges; display:block; }
+.cs-body{ position:absolute; left:0; top:0; }
+/* in the air: the box in the round replaces the flat sprite and its screen */
+.cs-3d{ position:absolute; display:none; }
+.cs-tv.is-air .cs-3d{ display:block; }
+.cs-tv.is-air .cs-body,.cs-tv.is-air .cs-face,.cs-tv.is-air .cs-scan{ visibility:hidden; }
+.cs-face{ position:absolute; filter:drop-shadow(0 0 1.5px currentColor); }
+.cs-scan{
+  position:absolute; pointer-events:none;
+  background:repeating-linear-gradient(180deg,transparent 0 1px,rgba(0,0,0,.28) 1px 2px),
+    radial-gradient(ellipse at 45% 35%,rgba(255,255,255,.07),transparent 60%);
+}
+.cs-shadow{
+  position:absolute; left:0; top:0; height:6px; visibility:hidden;
+  background:#000; border-radius:2px;
+  box-shadow:2px 0 0 #000,-2px 0 0 #000;
+  clip-path:polygon(4px 0,calc(100% - 4px) 0,100% 50%,calc(100% - 4px) 100%,4px 100%,0 50%);
+}
+.cs-dust{ position:absolute; left:0; top:0; width:2px; height:2px; background:color-mix(in srgb,var(--felt,#2E5A3F) 55%,#E8E2C8); pointer-events:none; }
+/* the cable: a canvas over the whole screen, inside #app just under its
+   menus (the scrim is 44, the sheets 45-46) */
+.cs-cable{ position:fixed; left:0; top:0; z-index:43; pointer-events:none; image-rendering:pixelated; image-rendering:crisp-edges; }
+
+/* ⚙ and COACH side by side */
+.ck-row{ display:flex; gap:6px; justify-content:center; align-items:center; margin:0 auto; }
+#hud-right .ck-row .table-settings{ margin:0; }
+/* the COACH key: the table's small key (same as ⚙), a little TV with
+   two dots on it, and a lamp that lights while he's plugged in */
+.coach-key{ position:relative; }
+.coach-key .ck-icon{ display:block; width:16px; height:14px; margin:auto; }
+.coach-key .ck-lamp{ position:absolute; right:3px; top:3px; width:4px; height:4px; background:#1D3A28; box-shadow:0 0 0 1px #080405; }
+.coach-key.is-on .ck-lamp{ background:#8CF0A8; box-shadow:0 0 0 1px #080405,0 0 5px #8CF0A8; }
+
+/* the aux jack on the dashboard's top edge, under the set.
+   RING (round 3): a gold ring. PLATE: a little brass plate with two
+   screws and the socket. PLATE + LAMP: the same with a lamp that lights
+   once he's booted. */
+.cs-jack{ position:fixed; left:0; top:0; z-index:43; pointer-events:none; }
+.cs-jack--none{ display:none; }
+.cs-jack--ring{
+  width:10px; height:8px; background:#080405; border-radius:1px;
+  box-shadow:inset 0 0 0 2px #9C7420,inset 0 0 0 3px #080405;
+}
+.cs-jack--ring::after{ content:""; position:absolute; left:4px; top:3px; width:2px; height:2px; background:#1D1D22; }
+.cs-jack--ring.is-live{ box-shadow:inset 0 0 0 2px #E8B83A,inset 0 0 0 3px #080405,0 0 4px rgba(232,184,58,.55); }
+.cs-jack--plate,.cs-jack--lamp{
+  width:18px; height:8px; background:#9C7420; border:2px solid #080405; box-sizing:border-box;
+  box-shadow:inset 0 2px 0 #E8B83A;
+}
+/* the socket in the middle, the screws either side */
+.cs-jack--plate::before,.cs-jack--lamp::before{ content:""; position:absolute; left:5px; top:0; width:4px; height:4px; background:#080405; box-shadow:inset 0 0 0 1px #1D1D22; }
+.cs-jack--plate::after{ content:""; position:absolute; left:1px; top:1px; width:2px; height:2px; background:#5A4214; box-shadow:10px 0 0 #5A4214; }
+.cs-jack--lamp::after{ content:""; position:absolute; right:1px; top:1px; width:2px; height:2px; background:#3A1A14; box-shadow:-12px 0 0 #5A4214; }
+.cs-jack--lamp.is-live::after{ background:#8CF0A8; box-shadow:-12px 0 0 #5A4214,0 0 4px #8CF0A8; }
+.cs-jack--plate.is-live{ box-shadow:inset 0 2px 0 #FFE380,0 0 4px rgba(232,184,58,.45); }

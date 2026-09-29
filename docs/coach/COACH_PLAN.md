@@ -1,0 +1,345 @@
+# The Coach — plan
+
+**Status (29 Sep 2026): LIVE in the game as v0.54.0, with placeholder
+lines.** Look, rig and voice signed off (Pattern Book: Coach). Next: his
+brain (build order step 6 onwards), in a fresh session.
+
+A coach who sits next to you at the table, watches you play and teaches
+you poker as you go: what the terms mean, when to push, what went right
+and wrong, and how to improve. Agreed with the owner, 28 September 2026.
+
+## What he is
+
+- **A character, but a flat one.** Plain, clear, informative lines with
+  the occasional short reaction ("Unlucky. You were ahead until the
+  river."). No catchphrases, no nicknames for the player, no mood system.
+- **The Poker Machine's soul, plugged into a little TV** (round 3): two
+  small dots for eyes and a mouth on the screen, pixel art like the chips
+  and cards. Switched on from a COACH key next to the table's ⚙, he's
+  pulled out from under the table by the dashboard and put down with a
+  heavy thud, cabled visibly into that key, and boots with a blink.
+  Switched off, he's swiped back off the same way.
+- **Sits on the felt next to your cards, opposite the dealer deck**
+  (Settings → The deck moves him too).
+- **Switched on and off from a dashboard button**, with a **talk slider**:
+  1. Commentary: reactions only (unlucky, great bluff, bad move)
+  2. Debrief: what went right or wrong after a hand, and why
+  3. Tips: advice before the big decisions
+  4. In your ear: everything, including the deal, opponents' bets and
+     every decision
+- **Only knows what you know.** Never sees opponents' cards until they're
+  shown.
+
+## Accuracy
+
+1. Facts are exact (hand names, odds, pot odds), from the game's own maths
+   in `js/01-poker-math.js`.
+2. Verdicts carry a confidence level. "Bad move" only when it clearly
+   was; close spots are called close.
+3. A test suite of hand-built spots with known answers, plus a silent run
+   over thousands of simulated hands (`validation/tools/ai-harness.js`) to
+   catch nonsense.
+
+## Dialogue engine
+
+Hand-written lines per situation, with blanks the game fills (cards,
+opponent name, pot, odds), two or three wordings each, no repeats within
+a stretch, and timing that never talks over the opponents' table talk.
+No live AI model: works offline, costs nothing, no new dependency.
+Target: 600–800 lines.
+
+## Order against the opponents' dialogue (owner, 28 Sep 2026)
+
+The coach goes in **first**, on his own. The Speech Lab
+(`speech-lab.html`, branch `claude/tender-dijkstra-zso8dm`, not merged)
+already has the bubble (cream card stock, types on, grows to fit), blips
+and a talk budget for the opponents. The coach lifts the pieces he needs
+from it (bubble, typing, one blip) into the game as shared parts; the
+opponents' dialogue plugs into the same parts later, once the owner is
+happy with the coach. Proposed and to confirm in the voice lab: one
+speaker at a time on the lower felt; the coach speaks clean.
+
+## Build order
+
+0. **Face lab** (round 1 done, round 2: the CRT set): `coach-face-lab.html`, glasses, colour,
+   visor, expressions, housing, size, on the real table. Then a voice
+   lab with sample lines.
+1. Put him in the game: face, seat, dashboard switch, talk slider, saved
+   in settings (placeholder lines).
+2. Let him watch: game events (deal, bets, your actions, showdown, K.O.).
+3. Dialogue engine + notch 1 (~150 reaction lines). First playable.
+4. Judge 1: which hands to play, from which seat. Notch 2 for those.
+5. Judge 2: after the flop (price of a call, draws, value bets, big river
+   bets).
+6. Advice before you act (notches 3–4); takes over the old Coach readout.
+7. Teaching moments: first-time explanations of each term.
+8. Memory: habits across sessions, progress, a session report (new
+   storage key; existing settings and lifetime stats untouched).
+9. Dialogue expansion.
+
+Open: his name; retire the old Coach and Hand Review switches once he
+covers them.
+
+## Round log
+
+- **Round 1 — face** (28 Sep 2026). `coach-face-lab.html` (+
+  `js/coach-face-lab-host.js`, `js/coach-face-lab.js`,
+  `css/coach-face-lab.css`), candidate `js/coach-face.js` +
+  `css/coach-face.css`. Six glasses (browline suggested), frame colour,
+  four colours (slate suggested), dealer's visor, six calm expressions,
+  three housings (mini cabinet suggested), three sizes. Glasses are a
+  vector overlay on a fixed position, so they stay put while the
+  expression changes.
+  **Picked by the owner:** thick frames (black), slate, no visor, just the
+  face (no cabinet), small (60px face), opposite the deck. Now the lab's
+  defaults. His expressions stay the calm six.
+  Link: https://claude.ai/artifact/J6ihf17j1uz3RatkD1fxYS
+- **Round 2 — the set** (28 Sep 2026). Owner: make him more of an AI
+  bot, a little CRT TV plugged into the machine and lumped onto the
+  table, a digital face rather than a painted one. Same lab and link;
+  candidate now `js/coach-tv.js` + `css/coach-tv.css` (round 1's
+  `coach-face.*` removed). Options (first is my suggestion): set
+  PORTABLE TV (rabbit ears, knobs, speaker) · OLD TERMINAL (badge, stand)
+  · TEST SET (handle, knobs under); plastic MACHINE · CREAM · GUNMETAL;
+  size; cable INTO THE CONSOLE · COILED · NONE; face PIXEL · DOT MATRIX ·
+  VECTOR (one set of shapes, drawn three ways); screen ink from the CRT
+  component (machine green, gold, blue); glasses on/off (a dimmer layer
+  so the eyes read); eight expressions incl. thinking and talking; idle
+  blinks; POWER key (the dashboard button) with PLONKED DOWN + WARMS UP ·
+  JUST WARMS UP · INSTANT, and a CRT switch-off. The screen is the game's
+  `.crt` component; the face's glow is set locally in the lab, and would
+  need a picture role in `css/crt.css` before it ships.
+  **Owner's verdict:** needs a lot of work. Design and face not liked;
+  the plonk "rubbish": he shouldn't fade, he should have weight, be
+  visibly plugged in, be 2.5D like the coins, heavy thud, a proper blink
+  boot. Two small dots and a mouth: the Poker Machine's soul in a TV.
+- **Round 3 — the machine's soul** (29 Sep 2026). Same lab and link;
+  candidate `js/coach-set.js` + `css/coach-set.css` (round 2's
+  `coach-tv.*` removed). Owner's answers: glasses as an option (off by
+  default); swiped off the way he came; a COACH key next to ⚙; pixel art
+  drawn in code for now; he comes from beside the dashboard, as if pulled
+  out from under the table, not from the top of the screen.
+  - The set: three pixel sprites drawn in code (PORTABLE with a carry
+    handle, knobs and a speaker; CUBE with a brass plate; MONITOR on a
+    foot), in MACHINE / CREAM / GUNMETAL plastic, two art pixels per
+    screen pixel, a lit top edge and shaded bottom-right like the rest.
+  - The face: two 2x2 dots and a mouth on the tube, seven expressions,
+    idle blinks and glances (at the pot, a player, you), talking mouth;
+    screen ink MACHINE / GREEN / AMBER.
+  - The motion, stepped at 14 fps like the 2.5D card, never a fade: up
+    from under the near edge (the felt hides him until he's over it),
+    held with his shadow on the felt, then dropped: squash, a rock onto
+    his front edge, the table jolts, the chips shake (`CoinWorld.shake`),
+    pixel dust, a synthesised thud. Or SLID IN FROM THE SIDE. Weight
+    HEAVY / VERY HEAVY / LIGHTER.
+  - The cable: a verlet rope in pixels from the back of the set to the
+    COACH key, swinging as he moves; it goes over the table's edge while
+    he's under it, and reels back into the key when he's gone.
+  - The boot: power runs up the cable, a clack, the tube's whine, a dot,
+    a line, static, dark, then his eyes blink on, blink twice, look left
+    and right, and settle; a blip. Switching off runs it back down.
+  - Lab only: the COACH key is added next to ⚙ in the copy; it isn't in
+    `index.html` yet.
+  **Owner:** "now we're getting there". Asked for: the dashboard's colours
+  as an option; perspective in the box while he's lifted up (flat 2D once
+  he lands); the cable on top of the dashboard like an aux lead rather
+  than across the screen (keep the physics); the key next to ⚙ as a
+  proper COACH button.
+- **Round 3b** (29 Sep 2026). Same link. Plastic DASHBOARD (now the
+  default) reads the live theme's case colours (`--theme-case-raised`,
+  `--theme-case-hi`), so it follows the theme. In the air the box shows
+  its top (lit) and the side towards the middle of the table (shaded),
+  drawn in pixels behind the front, up to 7 art pixels deep the higher
+  he's held; flat the moment he lands. The lead is now a short aux lead
+  to a jack on the dashboard's top edge just below him: it hangs from
+  the set while he's lifted, the plug is pushed into the jack after he
+  lands (a clack, the jack lights), power runs up it for the boot; its
+  slack lies on the dashboard's edge. Switching off pulls the plug out
+  before he's swiped off. The COACH key shows a little two-dot TV and a
+  lamp.
+  **Owner:** looking really good; the sides "don't look drawn in, just
+  panels added as a cheat". Wants real frames for the entry and exit:
+  the chunky cube monitor brought up with a bit of rotation, landing
+  face on. The cable needs work too, after this.
+- **Round 3c — the set in the round** (29 Sep 2026). Same link. The
+  pasted depth panels are gone. In the air the set is a real box: its
+  front is the sprite's own front; top, sides, back and bottom are drawn
+  in code (vents, the back cover's seam, a panel, screws and a port on
+  the back). Each 14 fps step is ray-cast afresh at art-pixel size
+  (orthographic, so face-on it is exactly the flat sprite), every face
+  lit in hard steps from the table lamp (one light, up-left-front), then
+  inked: an outline round the shape and along every crease. Coming up he
+  shows his top and inner side, turns (yaw, pitch and a little roll) and
+  squares up to face you just before the drop; on the felt he's the flat
+  sprite, with a squash-and-rebound. The exit runs it the other way.
+  CUBE is now the default set (the owner's pick in the screenshot).
+
+  **Owner:** looks really good; wants slow motion or a sheet of every
+  frame to give frame-by-frame feedback; unsure about the thick black
+  lines; wants the option to see him rotate the other way.
+- **Round 3d — frames, slow motion, turn, lines** (29 Sep 2026). Same
+  link. ARRIVAL gains SPEED (NORMAL · SLOW x4 · SLOW x10, the lift only),
+  WHICH WAY HE TURNS (one way · the other way: yaw and roll mirrored) and
+  LINES for the in-the-air render: CLEAN (default: the outline skips the
+  front's own drawn border and creases only run between case faces, so
+  no doubled black), FULL INK (round 3c) and SOFT (a deep-shade outline,
+  no creases). A FRAMES tab shows every 14 fps step of COMING ON or
+  GOING OFF as it sits on the table (felt, near edge, shadow), numbered
+  with its time, plus PLAY IT and PLAY IT SLOW. The same sheets were
+  sent to the owner as images (15 frames on, 9 off).
+- **Round 3 LOCKED** (29 Sep 2026). The owner's picks, now the defaults
+  in `js/coach-set.js`: **CUBE**, **DASHBOARD** plastic, **CLEAN** lines,
+  **FROM UNDER THE TABLE**; the turn is **RANDOM**: each time he's
+  switched on, he comes up turning A and goes down turning B, or the
+  other way round (checked: the two always oppose, and the pairing is
+  drawn afresh each switch-on). Everything else as round 3d.
+
+## Next (agreed with the owner, 29 Sep 2026)
+
+The rest of his design goes into a **fresh lab**, then speech, then the
+game, then his brain:
+
+1. **Cable** (fresh lab): thickness, coiled or straight lead, the plug and
+   jack as proper sprites, how the plug goes in and pops out, how the
+   slack settles, its reaction to the landing jolt, stepped to the 2.5D
+   rhythm.
+2. **Boot**: the power up the cable, the click, the tube's warm-up, the
+   blink-on and look-round; perhaps a boot line typed on the tube; a
+   quick boot for switching on mid-game.
+3. **Speech bubbles and voice**: the Speech Lab's bubble from his TV, his
+   mouth in time, his own blip, the talk slider, ~30 sample lines on
+   real moments.
+4. **Into the game**: the COACH key on the real dashboard, saved in
+   settings; the set, cable, boot and bubble signed off as a Pattern
+   Book part; checks and a release.
+5. **His brain**: game events feed him; judge 1 (which hands to play),
+   judge 2 (after the flop); advice before you act; teaching moments;
+   memory; the dialogue library growing alongside.
+
+## Rig Lab (the lead and the boot)
+
+- **Round 1** (29 Sep 2026). A fresh lab, `coach-rig-lab.html` (+
+  `js/coach-rig-lab-host.js`, `js/coach-rig-lab.js`), on the locked look;
+  the options are added to the same candidate, `js/coach-set.js`. Tabs
+  THE LEAD, THE PLUG, THE BOOT, SWITCH-OFF, each opening with SWITCH ON,
+  SWITCH OFF, REPLUG (lead out and back in, with the boot) and REBOOT (the
+  tube only). COPY MY PICKS copies every row. First of each is my
+  suggestion:
+  - Lead: THICK · THIN (round 3) · COILED · BRAIDED; colour BLACK · GREY ·
+    CREAM · DASHBOARD; length MEDIUM · SHORT · LONG; leaves the set at the
+    BACK CORNER · SIDE · UNDERNEATH; JUMPS ON THE THUD · STAYS PUT; drawn
+    14 A SECOND · SMOOTH.
+  - Plug: JACK · BLOCK · RED RCA; jack PLATE + LAMP · PLATE · RING (round
+    3); in LIFTED IN · SLID ALONG · SNAPS IN; out YANKED · POPS · SLID OUT;
+    SPARK on/off.
+  - Boot: power LEAD LIGHTS UP · ONE PULSE · NOTHING; tube DOT, LINE,
+    STATIC · TYPES A LINE · SYSTEM CHECK (SYS OK, MEM OK, CAM OK) · SCANS
+    DOWN · FLICKERS ON; says COACH / ONLINE · HELLO · READY · JUST A
+    CURSOR (a 3x5 pixel font); wakes BLINKS + LOOKS ROUND · TWO BLINKS ·
+    WIDE EYES · STRAIGHT ON; lamp while booting AMBER · RED · GREEN; FULL
+    or QUICK (mid-game); his sounds FULL · SOFT · OFF.
+  - Switch-off: LINE TO A DOT · SHUTS HIS EYES · TYPES BYE.
+  Link: https://claude.ai/artifact/3VL9UDPksQDYkVTW4eK4cn
+  Checked in an emulated iPhone: every boot and switch-off filmed frame by
+  frame, every lead, plug and jack drawn; no console errors.
+- **Round 1 picks, LOCKED** (owner, 29 Sep 2026: "really good"):
+  ```
+  lead COILED · colour BLACK · length MEDIUM · leaves at the BACK CORNER ·
+  JUMPS ON THE THUD · 14 A SECOND · plug BLOCK · going in LIFTED IN ·
+  coming out YANKED · SPARK · LEAD LIGHTS UP · tube DOT, LINE, STATIC ·
+  says JUST A CURSOR · wakes BLINKS + LOOKS ROUND · lamp AMBER THEN GREEN ·
+  length FULL · sounds FULL · switch-off LINE TO A DOT
+  ```
+  Changed on his notes: **no socket** (new jack option STRAIGHT INTO THE
+  DASHBOARD, now the default: the plug sits down into a slot in the
+  dashboard's top edge), and the point it goes into **never moves**: it's
+  worked out from his place on the table, not from the set (it used to
+  follow the set, so it shifted with the landing). Checked: he sits clear
+  of your bet spot, about 20px to its right.
+- **Fix** (29 Sep 2026): on some screen sizes the pot tray (`.ct-tray`,
+  z 4) drew over him (his layer was z 3). His layer is now z 5, the dealer
+  deck's level: on top of the felt and everything on it, under the seats.
+  Checked by forcing the tray over him: he's on top.
+
+## Voice Lab (his bubble, voice and the talk slider)
+
+- **Round 1** (29 Sep 2026). A fresh lab, `coach-voice-lab.html` (+
+  `js/coach-voice-lab-host.js`, `js/coach-voice-lab.js`), candidate
+  `js/coach-talk.js` + `css/coach-talk.css` on the locked set and rig (the
+  set gains `CoachSet.mouth(open)`). Keys on the table: TUNE, SAY (a line
+  that fits the table now), the COACH key. Tabs (first of each is my
+  suggestion):
+  - TRY IT: every moment as a key, said now with the table's real cards
+    and names.
+  - TALK: the slider 4 IN YOUR EAR · 3 TIPS · 2 DEBRIEF · 1 COMMENTS (each
+    line has the lowest notch it plays at); how long a line stays up.
+  - BUBBLE: ABOVE HIM (tail down at his screen) · BESIDE HIM · ACROSS THE
+    FELT; CARD STOCK (the Speech Lab's finish, copied until the bubble is
+    signed off as one part for him and the opponents) · HIS SCREEN (dark
+    glass, his ink); TYPES ON (grows as it types) · ALL AT ONCE; POPS ·
+    RISES UP.
+  - VOICE: STEADY PIP · TELEPRINTER · TWO NOTES · LOW HUM; pitch LOW ·
+    MIDDLE · DEEPER; every other letter · every letter · every syllable;
+    pace; volume LOW · MEDIUM · HIGH · SILENT; mouth OPENS ON EACH BLIP ·
+    OPEN WHILE HE TALKS · STAYS STILL. The timing is the Speech Lab's plan
+    (pauses at commas and full stops), shared by typing, blips and mouth.
+  - About 40 flat lines on 20 moments: dealt (by exact starting-hand
+    rank, "top N%"), they raise / bet big / go all in, your turn (the
+    exact price and pot odds, or a free check), what you did, a big or
+    small win, everyone folding, losing at showdown or big, someone out,
+    you out. No judgement yet: only reactions and exact facts. One line at
+    a time; a waiting line gives way to a more important one; stale lines
+    are dropped.
+  - Link: https://claude.ai/artifact/Pv5Bcf7FtPgvpN334jZN6e
+  - Hearing the game: `applyAction` and `updateCoach` are wrapped; the deal
+    and the end of a hand are watched from `game.handNumber` and
+    `game.phase` (other parts of the table swap `startNewHand` in and out,
+    so wrapping it lost the hook). Checked over several fast hands in an
+    emulated iPhone: every kind of moment fires; no console errors.
+- **Round 1 picks, LOCKED** (owner, 29 Sep 2026), now the defaults in
+  `js/coach-talk.js`:
+  ```
+  talk slider 4 · IN YOUR EAR · stays up NORMAL · ACROSS THE FELT ·
+  HIS SCREEN · TYPES ON · POPS · blip TELEPRINTER · pitch LOW ·
+  EVERY OTHER LETTER · pace FASTER · volume MEDIUM · mouth OPENS ON EACH BLIP
+  ```
+  Owner: the pixel face is hard to read for numbers. New TYPE row:
+  NUMBERS + CARDS IN THE SCREEN FONT (default: every number, percentage
+  and card name, e.g. "Jack-Ten suited", "Pocket Eights", in Press Start
+  2P, the buttons' and CRTs' face; the words stay in the pixel face) · ALL
+  IN THE SCREEN FONT (capitals, like the CRTs) · SCREEN FONT, UPPER + LOWER
+  CASE · ROUND 1. The line is split into runs and typed a character at a
+  time across them.
+- **Fixes** (owner, 29 Sep 2026): the screen-font numbers rose off the
+  line. Measured: 11px Press Start ink sits 1px higher off the baseline
+  than 16px Pixelify (rows -11..-2 against -10..-1), and the runs had been
+  nudged up another 1px; they now drop 1px (`vertical-align:-1px`) and
+  line up top and bottom. The lead no longer crosses his artwork: while
+  he's on the felt, nothing of it is drawn over his sprite, so it comes
+  out from behind the set.
+- **Card names** (owner, 29 Sep 2026: the screen font on card names looked
+  wrong, a wide gap between "Four" and "offsuit"): card names are now in
+  capitals, like the hand readout, with the screen font's full-width space
+  closed up (`word-spacing:-5px`); numbers as before. New TYPE option
+  NUMBERS ONLY keeps card names in the pixel face. Also fixed: TRY IT's
+  deal keys said their line about whatever you held ("Ace-Four offsuit.
+  You won't see many better than that."); they now use an example hand of
+  that kind with its true rank (Pocket Aces, Jack-Ten suited, Nine-Eight
+  offsuit, Seven-Two offsuit). In play he always used the real ranking.
+
+## Into the game (v0.54.0, 29 Sep 2026)
+
+Owner: put him in as he is, placeholder lines and all, to see him on the
+phone before the brain. `index.html` loads `css/coach-set.css`,
+`css/coach-talk.css` (before `css/crt.css`) and `js/coach-set.js`,
+`js/coach-talk.js` (last); `sw.js` precaches them (`poker-v54-0`);
+`BUILD_VERSION` v0.54.0. Settings: `coachBot:false` (the COACH key beside
+⚙ switches him and is remembered), `coachTalk:'4'` (Settings → Coach talk,
+on the sheet's segmented keys). He follows the table: there whenever it's
+showing and he's on, gone the moment it isn't. His lead, jack and bubble
+live inside `#app` at z 43, under the menus (the scrim is 44). Pattern
+Book section and a check (`validation/pattern-book-checks.js`: loaded,
+cached, to the owner's orders, under the menus, Reduced Motion,
+presentation only). Checked in the real game in an emulated iPhone:
+switch on (saved), a line across the felt, Settings over him, the talk
+row saved, leaving the table (gone), reload and deal (back by himself).

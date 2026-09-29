@@ -441,4 +441,34 @@ check('Deal styles + the 2.5D card: live, on the shared parts, and to the order'
   assert.ok(md.includes('## Deal styles + the 2.5D card (live v0.51.0)'),'the Pattern Book must record the deal styles');
 });
 
+check('Coach: live, to the owner\'s order, presentation only',()=>{
+  const set=read('js/coach-set.js'), talk=read('js/coach-talk.js'), md=read('docs/ui/PATTERN_BOOK.md'), support=read('js/02-support-systems.js');
+  const links=[...indexHtml.matchAll(/<link rel="stylesheet" href="([^"?]+)/g)].map(m=>m[1]);
+  ['css/coach-set.css','css/coach-talk.css'].forEach(f=>assert.ok(links.includes(f) && links.indexOf(f)<links.indexOf('css/crt.css'),'index.html must load '+f+' before css/crt.css'));
+  const scripts=[...indexHtml.matchAll(/<script src="([^"?]+)/g)].map(m=>m[1]);
+  assert.ok(scripts.indexOf('js/coach-set.js')>scripts.indexOf('js/award-key.js') && scripts.indexOf('js/coach-talk.js')===scripts.indexOf('js/coach-set.js')+1,'the coach loads last, the set just before his talk');
+  ["'./css/coach-set.css","'./css/coach-talk.css","'./js/coach-set.js","'./js/coach-talk.js"].forEach(f=>assert.ok(serviceWorker.includes(f),'sw.js is missing '+f));
+  // The owner's orders: the Face, Rig and Voice Labs (docs/coach/COACH_PLAN.md).
+  const setDef=(set.match(/const DEFAULTS = \{([^}]*)\}/)||[])[1]||'';
+  Object.entries({ set:'cube', finish:'dashboard', from:'under', turn:'random', lines:'clean', lead:'coiled', leadCol:'black', plug:'block', jack:'none',
+    plugIn:'push', unplug:'yank', spark:'on', power:'fill', tube:'crt', says:'none', wake:'look', led:'amber', bootLen:'full', shutdown:'crt' })
+    .forEach(([k,v])=>assert.ok(new RegExp('\\b'+k+":'"+v+"'").test(setDef),'the set\'s order sets '+k+' to '+v));
+  const talkDef=(talk.match(/const DEFAULTS = \{([^}]*)\}/)||[])[1]||'';
+  Object.entries({ where:'across', look:'screen', textIn:'type', arrive:'pop', voice:'tick', pitch:'low', pace:'fast', volume:'medium', mouth:'blip', type:'mixed' })
+    .forEach(([k,v])=>assert.ok(new RegExp('\\b'+k+":'"+v+"'").test(talkDef),'his talk\'s order sets '+k+' to '+v));
+  // Off until the player switches him on; the talk slider in Settings on the sheet's segmented keys.
+  assert.ok(/coachBot:false, coachTalk:'4'/.test(support),'the Coach starts off, at IN YOUR EAR');
+  assert.ok(/class="segmented compact" id="coach-talk-seg"/.test(indexHtml),'Settings → Coach talk must use the sheet\'s segmented keys');
+  // His key is the table's own small key, beside ⚙.
+  assert.ok(set.includes("key.className = 'icon-btn table-settings coach-key'"),'the COACH key is the table\'s small key');
+  // Under the game's menus (inside #app, below the scrim's 44).
+  assert.ok(/\.cs-cable\{[^}]*z-index:43/.test(read('css/coach-set.css')) && /\.ctk\{[^}]*z-index:43/.test(read('css/coach-talk.css')),'his lead and bubble sit under the menus');
+  // Reduced Motion: no lift, no boot.
+  assert.ok(set.includes('motionOffSafe()') && talk.includes('motionOffSafe()'),'the Coach honours Reduced Motion');
+  // Presentation only: he reads the table, never changes it, never sees an opponent's cards.
+  [set,talk].forEach(js=>assert.ok(!/\b(game|pendingHumanPlayer)(\.[A-Za-z_]+)*\s*=[^=]/.test(js) && !/\bhumanAct\(/.test(js),'the Coach must never change game state'));
+  assert.ok(!/\.hand\b/.test(talk.replace(/me\.hand|me && me\.hand/g,'')),'his talk only reads your own cards');
+  assert.ok(md.includes('## Coach (live v0.54.0)'),'the Pattern Book must record the Coach');
+});
+
 process.stdout.write('\n'+passed+' Pattern Book checks passed.\n');
