@@ -1,212 +1,228 @@
-# The Coach's brain — handover
+# P.I.P., the Coach: handover for a fresh session
 
-For a fresh session building the Coach's brain. Written 29 Sep 2026, the
-day the Coach went live without one (v0.54.0, PR #44). Read this first,
-then `docs/coach/COACH_PLAN.md` for the full history, `docs/CODEMAP.md`
-for where things live, and `CLAUDE.md` for the house rules.
+Written 29 Sep 2026, at **v0.57.2** (`main`, PR #47). This replaces the
+first handover (the brain has since been built). Read this, then
+`CLAUDE.md` for the house rules. Open `docs/coach/BRAIN_PLAN.md` only for
+the full history of how each part was decided (it's long; sections are
+dated), and `docs/CODEMAP.md` for the rest of the game.
 
-## Where things stand
+## The one-paragraph version
 
-The Coach is **in the game** with his look, rig and voice signed off, and
-**placeholder lines**. The owner switches him on with the little-TV
-**COACH key** beside ⚙ on the dashboard (`settings.coachBot`, off by
-default). Settings → **Coach talk** is the talk slider (`settings.coachTalk`,
-'1'-'4', default '4').
+P.I.P. (Poker Intelligence Personality) is a little pixel TV on the felt
+that coaches the player at Texas Hold'em. He's live on the owner's phone.
+He watches every decision; judges it (good / fine / mistake, with how sure
+he is); advises **before** you act (the HELP dial); says a word **after**
+you act; gives a verdict and a lesson **when the result is shown**; reads
+what the other players' betting means; and answers taps on his screen. He
+speaks plain English and teaches poker words as you go. What's **not**
+built: memory of your habits across sessions, and the "stages" that grow
+with the player (parked by the owner), and "Ask P.I.P." question keys
+(parked). The owner is currently playing him and sending notes: **the next
+job is whatever the owner reports, refined in small steps.**
 
-- `js/coach-set.js` + `css/coach-set.css`: his pixel TV, the lift on and
-  off, the aux lead, the boot, his face. Public API: `CoachSet.power(on)`,
-  `CoachSet.setMood(m)` (calm, pleased, impressed, surprised, wince,
-  unlucky, thinking), `CoachSet.mouth(open)`, `CoachSet.look(target)`
-  ('you', 'pot', 'player', 'ahead'), `CoachSet.on`, `CoachSet.busy`.
-  **Don't redesign any of this**; it's the owner's signed-off order
-  (Pattern Book: Coach).
-- `js/coach-talk.js` + `css/coach-talk.css`: his bubble, voice, typing,
-  and today's placeholder brain. This is where the brain plugs in.
-  - `LINES`: `{ moment: [[notch, mood, text], ...] }`. `{slots}` are filled
-    from a context object. `notch` is the lowest talk-slider setting a line
-    plays at.
-  - `say(moment, ctx)`: picks a line (never the same twice in a row),
-    shows it. One line at a time; a waiting line gives way to a more
-    important one (lower notch); lines older than 4.5s are dropped.
-  - Hears the game by wrapping `applyAction` and `updateCoach`, and by
-    watching `game.handNumber` / `game.phase` (the deal; the end of a hand
-    once the pot's paid). **Don't wrap `startNewHand`**: other parts of
-    the table swap it in and out and a wrapper is lost. `finishHand`
-    wrapping also proved unreliable; the state watcher is what works.
-  - Numbers and card names are rendered in the screen font automatically
-    (`runs()`), so write them plainly in lines.
-- Today's moments: dealt (by exact starting-hand rank), opponent raise /
-  big bet / all in, your turn (the price and pot odds, or a free check),
-  you fold / call / raise / all in, win big / small, everyone folds, lose
-  at showdown / big, someone out, you out. He has **no judgement yet**:
-  only reactions and exact facts.
-- `coach-voice-lab.html` drives the same files: its TRY IT tab fires any
-  moment, SAY says something for the table now. Use it (or a new lab) to
-  let the owner hear new lines on their phone.
+## Working with the owner (read this first)
 
-## What the owner wants from the brain
+- **Ask before building anything substantial, and stop when told.** The
+  owner has twice said "stop, don't go ahead yet" when a session jumped
+  from a question to building. If a message ends in a question ("where do
+  we go from here?", "is that possible?"), answer and propose; build only
+  on a clear "go ahead".
+- **They judge by playing on their phone.** Every change goes into the
+  **P.I.P. Brain Lab** (a private Artifact link) and, when they say so,
+  into the game through a PR that **they have asked you to merge** ("pushed
+  and merged so I can play on my phone"). Don't merge unasked.
+- **They send screenshots and exact lines.** Treat a quoted line as a bug
+  report: find out *why* he said it before changing words.
+- **Plain English to the owner too.** They're learning poker; explain
+  poker terms when you use them in chat.
+- Things they've been clear about:
+  - **Advice, not facts.** Every line says what's happening, what it means
+    for you, and what to do. "Tony limped and has checked every street" was
+    rejected as pointless.
+  - **Timing is key.** Never say anything about the player's cards before
+    they're turned over; the verdict comes when the winner is shown, before
+    COLLECT; never carry a verdict into the next hand.
+  - **No jargon unless taught.** Poker words appear only after a lesson has
+    taught them (the terms system, below). "Keep it simple and plain
+    English for now; learn the terms as you play longer."
+  - **Don't repeat himself.** They notice repeated lines quickly.
+  - **Flat voice**: plain, clear, the odd short reaction; no nicknames, no
+    catchphrases, no puns; clean.
+  - **Bluffing matters** to them: when to, when not to.
+  - His key shows **his face** (they said "P.I.P." letters couldn't be read).
 
-In the owner's words: a coach who "actually watches me play and advises
-me", "explaining poker to me like I don't really know what the terms for
-playing really mean", teaching "when to push, what went right and what
-went wrong, how I can improve", "properly in depth with hundreds of lines
-of dialogue". The owner says they don't really know poker yet; the Coach
-should make them see themselves improve.
+## Where everything lives
 
-### His voice (agreed, firm)
+| File | What it is |
+| --- | --- |
+| `js/coach-set.js` + `css/coach-set.css` | His pixel TV, the lift on/off, the lead and plug, the boot, his face and mouth, the key beside ⚙ (`keyFace:'face'`). **Signed-off look (Pattern Book: Coach); don't redesign.** |
+| `js/coach-brain.js` (`CoachBrain`) | The brain. Pure functions over the game state, no DOM: runs in Node for tests. |
+| `js/coach-lines.js` (`CoachLines`) | The line library (~510 lines, ~355 keys) and `TERMS` (poker words). |
+| `js/coach-talk.js` (`CoachTalk`) | His voice and bubble, and all the routing: when he speaks, what, taps, the HELP and TALK dials, the terms memory. Also ~80 base lines (`LINES`: results, "your turn", reactions). |
+| `coach-brain-lab.html` + `js/coach-brain-lab.js` (+ host) | The lab: TRY IT (35 set spots), HIS VERDICTS, TALK/HELP dials, KEY. Link: https://claude.ai/artifact/93fSUyPJJemnRhGkq7yXyJ |
+| `validation/coach-brain-checks.js` | 51 checks (about 2 minutes). |
+| `validation/tools/coach-sandbox.js` | The sandbox the checks share: real math + brain + lines + the engine's `computePots`, a seeded `Math.random` (`PIP_SEED=n` for another run), a hand-built table and the engine's bookkeeping for actions. |
+| `docs/coach/BRAIN_PLAN.md` | Every decision, dated. Append a section per round. |
 
-- **Flat.** Plain, clear, informative, with the occasional short
-  reaction. Not a big personality. The owner rejected a gravelly mentor
-  voice outright.
-- **Never a nickname for the player** ("kid" etc. were rejected), no
-  catchphrases, no winking, no poker puns.
-- Explains terms as he uses them, as if to someone who doesn't know them
-  (pot odds, position, outs, equity, bluff catcher, value bet, draw...).
-- He speaks **clean** (the opponents may swear later; he doesn't).
-- Examples of the right tone:
-  - "Pocket eights. Decent, but the player to your left raised, so you're
-    likely behind a bigger pair or two high cards."
-  - "Good call. You needed about 25% to make that pay and your flush draw
-    was around 35%."
-  - "Unlucky. You were ahead until the river."
-  - "That bet was too small. With top pair, a bigger bet gets more from
-    the hands that call you."
+Settings (in `felt.settings`): `coachBot` (on/off, default off),
+`coachTalk` '1'-'4' (default '4'), `coachHelp` '1'-'4' (default '3').
+His own storage: **`pip.coach`** (`{ terms: { <lesson>: timestamp } }`,
+the lessons he's taught). Existing settings and lifetime stats must never
+be touched (CLAUDE.md).
 
-### The talk slider (the four notches)
+## How the brain works (`js/coach-brain.js`)
 
-1. **Comments**: reactions only ("Unlucky.", "Great bluff.", "Bad move.").
-2. **Debrief**: plus what went right or wrong after a hand, and why.
-3. **Tips**: plus advice before the big decisions.
-4. **In your ear**: everything: reactions to the deal, reading opponents'
-   bets, advice on every decision.
+- **`spot(g, me)`**: the decision in front of you, read *before* the
+  action is applied: seat (BTN, CO, HJ, LJ, UTG...), players acting after
+  you, stacks in big blinds, pot, price, pot odds, the situation (unopened
+  / limped / raised / reraised; facing-bet / checked-to / first), your
+  hand's rank (`preflopPercentile`), after the flop your made hand, draws,
+  outs, board dangers, the public action log, and each opponent's public
+  habits (`g.reads`). **Only your cards and public facts.**
+- **`judge(sp, choice)`** routes to:
+  - `judgePreflop`: open ranges by seat (`OPEN_RANGE_BY_BEHIND`, copied
+    from the AI), raise or fold (limping is a mistake; the small blind
+    completing is fine), raising limpers, the big blind, facing a raise or
+    re-raise (your equity against what the raise usually means, discounted
+    for position, against the price), short stacks (all in or fold,
+    `PUSH_RANGE_BY_BEHIND`). Small pairs are rated like the charts.
+  - `judgePostflop` (facing a bet): equity against each opponent's range
+    (`oppRange`: their preflop action, habits, then every action since,
+    narrowed by the AI's own `narrowWeight`) vs pot odds (plus implied odds
+    for strong draws). **Raising for value needs two pair or better**; top
+    pair calls.
+  - `judgeBet` (checked to you): value-bet strong hands (checking them is
+    `bet.missed`), check middling ones, semi-bluff a strong draw against
+    one player, bluff only one player who's shown weakness and isn't a
+    caller, when they fold often enough (`foldChance` vs bet/(pot+bet)).
+    **A bluff is never judged clear-cut.**
+  - A judgement: `{ kind, best, verdict: good|fine|mistake, confidence:
+    clear|leans|close, tag, lesson, notable, n: numbers }`. The quoted
+    numbers always agree with the verdict (tested).
+- **`advise(sp)`**: judges every move you could make; his move, how sure
+  (from the next-best move), the size (2.5bb opens + 1 per limper; 3x a
+  raise in position, 3.8x from the blinds; bets ½ pot, ⅔ on wet boards
+  and the river; to the half big blind), and `stories`.
+- **`stories(sp)`**: what each opponent's betting says (weak / strong /
+  calling / quiet) plus habits (caller, bluffer, loose, tight).
+- **`settle(g, me)`**: your result at the showdown **before COLLECT pays
+  it**, from the game's own `computePots` and the hands shown.
+- **Hand record**: `handStart`, `record` (spot + choice + judgement),
+  `observe`, `handEnd`, `closeMissed` (a hand that ended between looks),
+  `history` (last 50, this session). Equity is sampled once per spot
+  (a WeakMap), 1,500 samples.
 
-Every line carries the lowest notch it plays at. Table talk stays
-sparse at the low notches.
+## How he talks (`js/coach-talk.js`)
 
-### Accuracy (the owner's main requirement)
+- **Hears the game** by wrapping `applyAction` (spot before, record
+  after) and `updateCoach` (the engine's "your turn" signal; the old
+  Coach panel it drove is retired, keep the function), and a 200ms
+  watcher on `game.handNumber` / phase. **Don't wrap `startNewHand`**
+  (other code swaps it).
+- **Timing**:
+  - your cards: only once `game._humanCardsVisible === true`;
+  - the end of a hand: when `#console-flip` has class `flipped` (the award
+    screen with the COLLECT key), **whatever the phase**. When everyone
+    folds straight away the phase stays 'preflop': that was a bug;
+  - the verdict is spoken at that moment, in place of the plain result
+    line, never carried into the next hand (`debrief(h, onScreen)`);
+  - leftover talk waits while new cards are face down (`afterTalk`).
+- **The dials**: TALK (1 COMMENTS · 2 DEBRIEF · 3 TIPS · 4 IN YOUR EAR) is
+  how often; HELP (1 WATCH · 2 HINTS · 3 ADVICE · 4 TELL ME) is how
+  directly he advises before you act. A judged line's notch comes from its
+  confidence (clear mistake 1, notable good 2, lean 3, close 4).
+- **Advice** on your turn (`yourTurn`): at TIPS on big decisions, at IN
+  YOUR EAR on all but junk folds; a story line leads it after the flop.
+- **A word after you act** (`wordNow`): one per hand, praise rationed, the
+  same word not repeated within 2-4 hands, no praise for following his
+  advice.
+- **The verdict** (`verdictOf` / `debrief`): the decision that mattered
+  most (later streets and bigger pots weigh more), with a lead ("You won
+  it, but...", "You lost, but you played it right", "You won 108, but you
+  could have won more"), `.why.foldwin` lines when everyone folded, a
+  lesson the first time, a short `again.<lesson>` reminder on repeats.
+- **Taps** (`onTap`): a list of things for the moment (your turn: read →
+  lesson → tip; result: verdict → lesson → tip → big-hands tip; folded:
+  watch tip), stepping forward, skipping anything already said this hand,
+  then `tap.done`. Never loops.
+- **Terms**: lines write `{t:limp}` etc.; plain words until the lesson
+  that teaches it has been shown (`learnFrom`), then the term. Seats
+  likewise (`seatFrom`: "one seat before the dealer button" → "the
+  cutoff" after `lesson.position`).
+- **No repeats**: `choose()` uses every wording of a key before reusing
+  one (session).
+- **Fill**: `{slot}`, `{Slot}` (capitalised), `{t:term}`; a sentence that
+  starts with a lower-case blank gets its capital.
 
-1. **Facts are exact**: hand names, the price of a call, pot odds, outs
-   and the chance of hitting, from the game's own maths.
-2. **Verdicts carry confidence.** "Bad move" only when it clearly was;
-   close spots are called close ("Coin flip, that one. I'd have folded,
-   but it's close.").
-3. **Judge the decision, not the result.** A good play that loses is
-   still a good play, and he says so.
-4. **He only knows what you know.** Never an opponent's hidden cards
-   until they're shown at showdown.
-5. **Proved, not hoped**: a test suite of hand-built spots with known
-   answers, plus a silent run over thousands of simulated hands
-   (`validation/tools/ai-harness.js`, `validation/tools/ai-sim.js`) to catch
-   nonsense. Poker rules and evaluation must stay correct (CLAUDE.md).
+## Lines (`js/coach-lines.js`) key scheme
 
-### The dialogue engine (agreed design)
+`dealt.<band>.<seatgroup>`, `<tag>.now[.leans]`, `<tag>.why[.leans|.foldwin]`,
+`lesson.<l>`, `again.<l>`, `tip.<l>`, `lead.*`, `advise.<kind>.<move>[.draw|.bluff]`,
+`hint.<kind>`, `story.<kind>.one|all`, `habit.*`, `read.*`, `explain.*`,
+`sum.*`, `tap.done`. The checks enforce: every judge tag that can be
+spoken has lines, every lesson has `again.` and `tip.`, only known blanks,
+≤200 characters, no nicknames/swearing, **no poker jargon outside
+`lesson.*` / `explain.*`** (the `JARGON` regex), every term has plain
+words and a lesson.
 
-- Hand-written lines per situation, **not** sentences glued from loose
-  words. Blanks the game fills (cards, opponent name, pot, price, odds,
-  outs, percentages). Two or three wordings per situation (the flat voice
-  needs fewer than a big personality would). No repeats within a stretch.
-- One speaker at a time. He must not talk over the opponents once their
-  table talk arrives (see "Later" below).
-- No live AI model: offline, free, no new dependency. (An "ask the
-  coach" button with a model was mentioned only as a far-future idea.)
-- Target: roughly **600-800 lines** in the end, grown over the steps.
+## Testing
 
-## Build order for the brain (from the plan, steps 6-9)
+- `node validation/coach-brain-checks.js` (51 checks, ~2 min; all green at
+  v0.57.2), plus `pattern-book-checks.js` (guards: the Coach never changes
+  game state, never reads the deck, reads an opponent's cards only in
+  `shownAtShowdown`: **name variables `handNo`, never `x.hand`, or it
+  trips**), `ai-behaviour-checks.js`, `showdown-checks.js`,
+  `quick-bet-checks.js`, `scoring-checks.js`.
+- Real game: `python3 -m http.server 8765`, then Playwright via
+  `validation/tools/touch-harness.js` (iPhone emulation). Useful:
+  `index.html?dev`, `settings.coachBot=true`, `startGame()`, a
+  `MutationObserver` on `.ctk` bubbles to log what he says, `humanAct()` to
+  play. **`FAST_DEV=true` auto-presses COLLECT**, so test timing at normal
+  speed and click `#btn-award-pot-console` yourself. A headless hand takes
+  ~20-30s at normal speed.
+- Known, not the Coach's: a `TypeError ... reading 'build'` from
+  `js/coin-bank.js` on the first Quick Deal.
 
-Build each step so the owner can play it; plan substantial changes
-before implementing (CLAUDE.md).
+## Releasing (every time)
 
-1. **Watching**: a decision record for every human action: cards,
-   board, position (`seatsAfter`), stack depth in big blinds, the price,
-   the pot, players left, what the opponents did this hand (public:
-   `g.handLog`, `g.streetRaises`, `g.pfAggressorId`), what the player
-   chose, and later how the hand ended.
-2. **Judge 1: which hands to play, from which seat** (preflop). The most
-   important thing for a beginner and the easiest to get exactly right.
-   Unlocks notch 2 (debrief) for those decisions. Typical leaks: playing
-   too many hands early in position, limping, calling raises with weak
-   hands, not raising strong hands.
-3. **Judge 2: after the flop.** Calling at the right price (pot odds
-   against equity), chasing draws at a bad price, betting strong hands
-   (value) rather than checking, bet sizing, big river bets and bluff
-   catchers, bluffing into several players.
-4. **Advice before you act** (notches 3-4). This takes over the old Coach
-   readout (see "Retire" below).
-5. **Teaching moments**: the first time a term comes up, he explains it
-   in plain English; a glossary he can come back to.
-6. **Memory**: habits across sessions ("that's the fourth time you've
-   chased a draw at a bad price"; "you've stopped doing X, I noticed"), a
-   session report, and a sense of improvement. **A new localStorage key**;
-   existing settings and lifetime statistics must not be touched
-   (CLAUDE.md).
-7. **Dialogue expansion** to the full library, with a teaching order:
-   starting hands, then position, then the price of a call, then bet
-   sizing, then reading opponents.
+1. Bump `BUILD_VERSION` (`js/02-support-systems.js`) and `CACHE_NAME`
+   (`sw.js`).
+2. **Give every changed file a new `?v=` in both `index.html` and
+   `sw.js`** (missing one lets a phone mix cached old files with new
+   ones: a freeze once; v0.57.2 fixed one I missed).
+3. Run the suites; play a few hands in the harness.
+4. Lab: `node validation/tools/lab-bundle.js coach-brain-lab.html
+   <scratchpad>/bundle-brain`, publish with the Artifact tool (`root` =
+   the bundle, `files` = the changed paths; PNG faces need
+   `contentType: image/png` on a full publish), **same link** (the URL
+   above; pass it as `url` from a new session after reading it).
+5. Commit, push, PR; merge only when the owner asks. After a merge,
+   restart the branch from `main`.
+6. The owner checks Settings → bottom: "Build v0.57.x-dev · ...".
 
-## Maths already in the game (reuse it)
+## Parked, and what's next
 
-All in `js/01-poker-math.js` unless noted; the AI rebuild (v0.53.0)
-already uses these.
+- **Now**: the owner is playing v0.57.2 and will send notes. Fix what they
+  report: small, tested, into the lab, into the game when they say.
+- **Parked by the owner** (don't start unasked):
+  - "Ask P.I.P." question keys in his bubble ("Should I have just called?"
+    etc.), hand-written answers.
+  - Memory across sessions (habits: hands played, limping, calling raises
+    light, chasing draws, missing value, bluffs), progress remarks, the
+    five **stages** that grow with the player, a session report, a
+    glossary. Two open questions for them: stages visible or behind the
+    scenes? Report in his bubble or a printout card?
+- **Ideas noted, not agreed**: Hand Review (Settings) could be folded
+  into P.I.P.'s verdict and retired (ask first); the opponents' own table
+  talk (`speech-lab.html`, unmerged) would share his bubble.
+- Honest limits today: fold chance for bluffs is an estimate from habits
+  and checks; equity is sampled (±1-2%), so edge verdicts are "close"; bet
+  sizing is only judged for value bets that are tiny.
 
-- `preflopPercentile(hole)`: 0 = AA, ~1 = the worst; "top X%".
-- `describeHole`, `describeMade`, `describePlayerHand`: hand names.
-- `estimateEquityVsRanges(hole, board, ranges, iters)`,
-  `rangeRelStrength`, `EquityService.get(...)` (runs in the worker):
-  equity against ranges.
-- `classifyPostflop(hole, board)`: made hand, draws, board texture.
-- `detectDraws`, `computeOuts`, `boardThreats`: outs and board dangers.
-- `js/03-opponents.js`: `seatsAfter` (position from the button), the
-  public notebook of habits (`g.reads`, `aiReadOf`), range narrowing from
-  public betting (`narrowWeight`, `g.handLog`), `PREFLOP_SKILL` / open and
-  push ranges (a good yardstick for "should this hand be played from
-  here"). Read `docs/ai/AI_PLAN.md` before leaning on the AI's internals.
-- `js/06-presentation.js` `updateCoach()` (the old Coach readout) and
-  `js/07-ui-wiring.js` `buildReview()` (the old Hand Review lessons):
-  prior art for equity-vs-price advice and board lessons.
+## Environment notes (Claude Code on the web)
 
-## Retire (once he covers them)
-
-The old **Coach** switch (the equity/pot-odds readout, `settings.coach`)
-and **Hand Review** (`settings.review`) should be retired once the new
-Coach covers what they do. Ask the owner before removing them.
-
-## Later, not now
-
-- **The opponents' dialogue** (the Speech Lab, `speech-lab.html` on
-  branch `claude/tender-dijkstra-zso8dm`, unmerged): the owner wants the
-  Coach finished first. When it comes, it shares the Coach's bubble and
-  blip system; one speaker at a time on the lower felt; the Coach can
-  follow an opponent's line with a lesson ("He's lost three in a row.
-  He'll start calling with worse hands now.").
-- **A name** for the Coach: never decided.
-
-## Working with the owner (how every round has gone)
-
-- Visual or dialogue changes go through a **phone-first lab** delivered as
-  a **private Artifact link** (CLAUDE.md, "Visual labs"): stage with
-  `node validation/tools/lab-bundle.js <lab>.html <scratchpad>/bundle-<lab>`,
-  publish, give the link, republish to the same link after changes. Every
-  row's first option is the suggestion; COPY MY PICKS lets the owner paste
-  their choices back.
-- For dialogue, the owner reads drafts and reacts to tone; show real
-  lines in the voice lab rather than lists in chat.
-- The owner answers quickly and specifically; when they give picks, lock
-  them in as the defaults and record them in `docs/coach/COACH_PLAN.md`.
-- Keep him presentation-only: `validation/pattern-book-checks.js` (the
-  Coach check) fails if his files change game state or read an
-  opponent's cards; update that check when his files grow.
-- Release: bump `BUILD_VERSION` (`js/02-support-systems.js`) and
-  `CACHE_NAME` (`sw.js`) together, add new files to both `index.html` and
-  `sw.js`, run the fast suites, open a PR; the owner's phone updates from
-  `main`.
-- Testing tips: `validation/tools/touch-harness.js` (Playwright, emulated
-  iPhone, real touch); `DEV_MODE=true; FAST_DEV=true` in the page speeds
-  the AI up for playing many hands; `window.__said`-style listeners on
-  the `coachtalk` event (dispatched by `say()`) show what he tried to
-  say.
-
-## Known issue (not the Coach's)
-
-A fresh install's first Quick Deal logs `TypeError ... reading 'build'`
-from `js/coin-bank.js` (`View`, via `js/coin-table.js ensureView`). It
-predates the Coach; suggested as its own task.
+- Commands can be refused for a while by the permission check ("no
+  verdict"); after 10 in a row the turn stops. **Commit and push early**;
+  when it happens, do read-only work and try again later.
+- Branch for this work so far: `claude/hopeful-cori-uvxcvv` (a new
+  session will likely be given its own).
