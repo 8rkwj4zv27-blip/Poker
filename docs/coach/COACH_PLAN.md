@@ -238,3 +238,17 @@ game, then his brain:
   Link: https://claude.ai/artifact/3VL9UDPksQDYkVTW4eK4cn
   Checked in an emulated iPhone: every boot and switch-off filmed frame by
   frame, every lead, plug and jack drawn; no console errors.
+- **Round 1 picks, LOCKED** (owner, 29 Sep 2026: "really good"):
+  ```
+  lead COILED · colour BLACK · length MEDIUM · leaves at the BACK CORNER ·
+  JUMPS ON THE THUD · 14 A SECOND · plug BLOCK · going in LIFTED IN ·
+  coming out YANKED · SPARK · LEAD LIGHTS UP · tube DOT, LINE, STATIC ·
+  says JUST A CURSOR · wakes BLINKS + LOOKS ROUND · lamp AMBER THEN GREEN ·
+  length FULL · sounds FULL · switch-off LINE TO A DOT
+  ```
+  Changed on his notes: **no socket** (new jack option STRAIGHT INTO THE
+  DASHBOARD, now the default: the plug sits down into a slot in the
+  dashboard's top edge), and the point it goes into **never moves**: it's
+  worked out from his place on the table, not from the set (it used to
+  follow the set, so it shifted with the landing). Checked: he sits clear
+  of your bet spot, about 20px to its right.

@@ -338,7 +338,7 @@ const CoachSet = (() => {
     length:[['medium', 'MEDIUM'], ['short', 'SHORT'], ['long', 'LONG']],
     exit:[['back', 'BACK CORNER'], ['side', 'SIDE'], ['bottom', 'UNDERNEATH']],
     plug:[['jack', 'JACK'], ['block', 'BLOCK'], ['rca', 'RED RCA']],
-    jack:[['lamp', 'PLATE + LAMP'], ['plate', 'PLATE'], ['ring', 'RING (ROUND 3)']],
+    jack:[['none', 'STRAIGHT INTO THE DASHBOARD'], ['lamp', 'PLATE + LAMP'], ['plate', 'PLATE'], ['ring', 'RING (ROUND 3)']],
     plugIn:[['push', 'LIFTED IN'], ['slide', 'SLID ALONG'], ['snap', 'SNAPS IN']],
     unplug:[['yank', 'YANKED'], ['pop', 'POPS (ROUND 3)'], ['slide', 'SLID OUT']],
     spark:[['on', 'SPARK'], ['off', 'NONE']],
@@ -355,9 +355,14 @@ const CoachSet = (() => {
   };
   // The owner's picks (round 3, 29 Sep 2026): CUBE, DASHBOARD, CLEAN lines,
   // from UNDER the table, turning A up and B down or the reverse at random.
+  // Rig Lab round 1 (29 Sep 2026): a COILED BLACK lead, MEDIUM, from the
+  // BACK CORNER, jumping on the thud, stepped; a BLOCK plug straight into
+  // the dashboard (no socket), LIFTED IN, YANKED out, a SPARK; the lead
+  // LIGHTS UP, DOT-LINE-STATIC, JUST A CURSOR, BLINKS + LOOKS ROUND, AMBER
+  // then green, FULL, sounds FULL, off LINE TO A DOT.
   const DEFAULTS = { set:'cube', finish:'dashboard', ink:'machine', glasses:'off', from:'under', weight:'heavy', jolt:'on', dust:'on', boot:'full', cable:'rope', turn:'random', lines:'clean', speed:'1', mood:'calm',
-    lead:'thick', leadCol:'black', length:'medium', exit:'back', plug:'jack', jack:'lamp', plugIn:'push', unplug:'yank', spark:'on', leadJolt:'bounce', leadStep:'stepped',
-    power:'fill', tube:'crt', says:'coach', wake:'look', led:'amber', coachSound:'full', bootLen:'full', shutdown:'crt' };
+    lead:'coiled', leadCol:'black', length:'medium', exit:'back', plug:'block', jack:'none', plugIn:'push', unplug:'yank', spark:'on', leadJolt:'bounce', leadStep:'stepped',
+    power:'fill', tube:'crt', says:'none', wake:'look', led:'amber', coachSound:'full', bootLen:'full', shutdown:'crt' };
   const WEIGHT = { heavy:{ g:1, squash:.16, jolt:2, thud:1 }, brick:{ g:1.35, squash:.22, jolt:3, thud:1.25 }, light:{ g:.75, squash:.1, jolt:1, thud:.7 } };
   let O = Object.assign({}, DEFAULTS);
 
@@ -625,15 +630,18 @@ const CoachSet = (() => {
   function jackAt(){
     const dock = $id('your-seat-dock'), tr = tv && tv.getBoundingClientRect();
     if (!dock || !tr) return null;
-    const dr = dock.getBoundingClientRect();
-    // on the dashboard's top edge, a little towards the middle from the set
-    const cxTv = tr.left + tr.width / 2;
-    return [Math.round(cxTv + (home.left ? 22 : -22)), Math.round(dr.top + 5)];
+    const dr = dock.getBoundingClientRect(), felt = $id('felt'), fr = felt && felt.getBoundingClientRect();
+    if (!fr) return null;
+    // a fixed point on the dashboard's top edge, a little towards the middle
+    // from where he sits: worked out from his place on the table, never from
+    // the set itself, so it doesn't move while he's lifted or lands
+    const cxHome = fr.left + felt.clientLeft + home.x + setOf().w * P / 2;
+    return [Math.round(cxHome + (home.left ? 22 : -22)), Math.round(dr.top + 5)];
   }
   function ensureJack(){
     const dock = $id('your-seat-dock'); if (!dock) return;
     if (!jack || !jack.isConnected){ jack = document.createElement('i'); document.body.appendChild(jack); }
-    jack.className = 'cs-jack cs-jack--' + (O.jack || 'lamp');
+    jack.className = 'cs-jack cs-jack--' + (O.jack || 'none');
     const j = jackAt(); if (!j) return;
     const w = O.jack === 'ring' ? 10 : 18;
     jack.style.transform = 'translate(' + (j[0] - w / 2) + 'px,' + (j[1] - 4) + 'px)';
@@ -784,6 +792,8 @@ const CoachSet = (() => {
     // the plug, upright at the free end
     const a = P2[0]; if (!a) return;
     const loose = !plugged && !plugTo, sunk = plugged ? 2 : 0;
+    // straight into the dashboard: a dark slot the plug sits down into
+    if (plugged && (O.jack || 'none') === 'none'){ c.fillStyle = INK; c.fillRect(a[0] - 4, a[1] - 1, 9, 2); }
     if (O.plug === 'block'){
       c.fillStyle = INK; c.fillRect(a[0] - 3, a[1] - 5 + sunk, 7, 6 - sunk);
       c.fillStyle = '#2A2A30'; c.fillRect(a[0] - 2, a[1] - 4 + sunk, 5, 4 - sunk);

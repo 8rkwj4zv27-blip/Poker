@@ -33,7 +33,7 @@
     leadJolt:{ tab:'lead', name:'ON THE THUD', note:'The lead jumps when he lands and settles back.' },
     leadStep:{ tab:'lead', name:'HOW IT MOVES', note:'14 A SECOND: stepped like the chips and cards. SMOOTH: every frame.' },
     plug:{ tab:'plug', name:'THE PLUG' },
-    jack:{ tab:'plug', name:'THE JACK', note:'On the dashboard\'s top edge. The lamp lights once he\'s booted.' },
+    jack:{ tab:'plug', name:'THE JACK', note:'STRAIGHT INTO THE DASHBOARD: no socket, the plug goes into the dashboard\'s top edge at a fixed point. The plates\' lamp lights once he\'s booted.' },
     plugIn:{ tab:'plug', name:'GOING IN', note:'LIFTED IN: arcs over. SLID ALONG: dragged along the dashboard\'s edge and dropped in. SNAPS IN: one quick step.' },
     unplug:{ tab:'plug', name:'COMING OUT', note:'YANKED: flicks up and falls back. SLID OUT: drawn out along the edge.' },
     spark:{ tab:'plug', name:'SPARK', note:'A little crackle of pixels as it goes in.' },
