@@ -459,3 +459,42 @@ keep the terms: learn them as you play longer.
   speed, pressing COLLECT by hand: cards first, then his line; the
   debrief with COLLECT waiting; results right every hand.
 - **Lab**: 8 checked-to spots in TRY IT (the owner's river hand among them).
+
+## Refinements after the owner played v0.57.0 (v0.57.1, 29 Sep 2026)
+
+Owner: with pocket aces, P.I.P. said raise; everyone folded; no follow-up.
+Tapping him on the award screen repeated "Pocket Aces... one of the very
+best starting hands", then "going last is an advantage", then the aces
+again. His verdict often came at the start of the next hand. Lines
+repeat. ("Ask P.I.P." question keys: parked for now.)
+
+- **The bug**: when everyone folds straight away, the game goes to the
+  award screen with the phase still 'preflop'. He waited for 'showdown' or
+  'foldwin', so thought the hand was still on: no verdict, and taps read
+  your cards back to you. The end of a hand is now the award screen
+  itself (`#console-flip`), whatever the phase.
+- **On time**: his verdict is said the moment the result is shown (in
+  place of the plain result line, which is only said when he has nothing
+  better), and never carried into the next hand: if you press COLLECT
+  first, a tap between hands brings it back.
+- **When everyone folds to you**: its own words
+  (`<tag>.why.foldwin`): "Everyone folded. That happens with a great
+  hand, and raising Pocket Aces was still right." And with a great hand,
+  a tip on winning more (`tip.bigHands`): raise the same amount as usual
+  so they can't tell; against players who fold a lot, a slightly smaller
+  raise keeps them in; don't just call to trick them.
+- **Taps step forward, never loop**: each tap says the next thing for the
+  moment (your turn: his read, the lesson, a tip; the result: the
+  verdict, the lesson, a tip, a tip on big hands), skipping anything he's
+  already said this hand, then "That's all I've got on this one" until
+  the moment changes. An all in still running out: "Let's see how the
+  cards land."
+- **Less repetition**: every wording for a moment is used before any
+  comes round again (this session); more wordings for the things he says
+  most; the plain "Called." / "Folded." only now and then.
+- A tip for every lesson (`tip.<lesson>`), hand summaries for taps when
+  there's no verdict (`sum.*`). "Roxy bet a small bet" → "Roxy made a
+  small bet".
+- Checked in the real game: an all in everyone folded to before the flop
+  (phase still 'preflop') gets its verdict on the award screen; four taps
+  step verdict → lesson → tip → "that's everything".

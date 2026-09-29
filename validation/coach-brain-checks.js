@@ -631,6 +631,9 @@ check('Every poker term has plain words and a lesson that teaches it', () => {
     assert.ok(t.plain && t.term && L['lesson.' + t.via], k + ': plain words, the term, and its lesson');
     assert.ok(!JARGON.test(t.plain), k + ': its plain words are plain');
   });
+  // every lesson has a tip (the third tap), and there's a "that's all"
+  Object.keys(L).filter(k => /^lesson\./.test(k)).forEach(k => assert.ok(L['tip.' + k.slice(7)], 'no tip for ' + k));
+  assert.ok(L['tap.done'] && L['tip.bigHands'], 'tap.done and tip.bigHands');
 });
 
 check('800 random checked-to spots: sane verdicts, advice you can take, and lines for all of it', () => {
