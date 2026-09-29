@@ -273,11 +273,13 @@ const CoachSet = (() => {
     dust:[['on', 'DUST'], ['off', 'NONE']],
     boot:[['full', 'FULL BOOT'], ['quick', 'QUICK']],
     cable:[['rope', 'LOOSE'], ['tight', 'SHORTER']],
-    turn:[['in', 'TURNS ONE WAY'], ['out', 'TURNS THE OTHER WAY']],
+    turn:[['random', 'A UP + B DOWN, OR REVERSED'], ['in', 'ALWAYS A'], ['out', 'ALWAYS B']],
     lines:[['clean', 'CLEAN'], ['full', 'FULL INK'], ['soft', 'SOFT']],
     speed:[['1', 'NORMAL'], ['4', 'SLOW x4'], ['10', 'SLOW x10']]
   };
-  const DEFAULTS = { set:'cube', finish:'dashboard', ink:'machine', glasses:'off', from:'under', weight:'heavy', jolt:'on', dust:'on', boot:'full', cable:'rope', turn:'in', lines:'clean', speed:'1', mood:'calm' };
+  // The owner's picks (round 3, 29 Sep 2026): CUBE, DASHBOARD, CLEAN lines,
+  // from UNDER the table, turning A up and B down or the reverse at random.
+  const DEFAULTS = { set:'cube', finish:'dashboard', ink:'machine', glasses:'off', from:'under', weight:'heavy', jolt:'on', dust:'on', boot:'full', cable:'rope', turn:'random', lines:'clean', speed:'1', mood:'calm' };
   const WEIGHT = { heavy:{ g:1, squash:.16, jolt:2, thud:1 }, brick:{ g:1.35, squash:.22, jolt:3, thud:1.25 }, light:{ g:.75, squash:.1, jolt:1, thud:.7 } };
   let O = Object.assign({}, DEFAULTS);
 
@@ -701,10 +703,19 @@ const CoachSet = (() => {
   }
 
   /* on: pulled out from under the table by the dashboard and put down */
+  /* which way he turns: A (1) or B (-1). RANDOM (the owner's pick): each
+     time he's switched on it's decided afresh whether he comes up turning
+     A and goes down turning B, or the other way round. */
+  let cycleTurn = Math.random() < .5 ? 1 : -1;
+  function turnFor(way){
+    if (O.turn === 'in') return 1;
+    if (O.turn === 'out') return -1;
+    return way === 'up' ? cycleTurn : -cycleTurn;
+  }
   function arriveKeys(){
     const W = WEIGHT[O.weight] || WEIGHT.heavy, S = setOf();
     const out = home.left ? -1 : 1;                      // the side nearest the dashboard corner
-    const tw = O.turn === 'out' ? -1 : 1;                // which way he turns
+    const tw = turnFor('up');                           // which way he turns
     const below = home.edge - home.y + 10;               // far enough down to be under the table
     const g = W.g;
     let frames;
@@ -749,7 +760,7 @@ const CoachSet = (() => {
   /* off: swiped back off the way he came */
   function leaveKeys(){
     const W = WEIGHT[O.weight] || WEIGHT.heavy, S = setOf();
-    const out = home.left ? -1 : 1, below = home.edge - home.y + 10, tw = O.turn === 'out' ? -1 : 1;
+    const out = home.left ? -1 : 1, below = home.edge - home.y + 10, tw = turnFor('down');
     const frames = O.from === 'side'
       ? [{ t:0 }, { t:FRAME, lift:4, pitch:4 }, { t:280, x:out * (home.left ? home.x + S.w * P + 30 : home.w - home.x + 30), lift:16, yaw:-out * 70, pitch:18, ease:'in' }]
       : [{ t:0 }, { t:FRAME, lift:4, yaw:-out * 4, pitch:4 }, { t:200, x:out * 5, lift:16, yaw:-out * 28, pitch:22, roll:out * 5, ease:'out' },
@@ -849,6 +860,7 @@ const CoachSet = (() => {
     ensureKey(); if (!ensureLayer()) { busy = false; return; }
     try{
       if (want){
+        cycleTurn = Math.random() < .5 ? 1 : -1;
         build(); measureHome();
         if (motionOffSafe()){
           on = true; Object.assign(pose, { x:0, y:0, lift:0, sx:1, sy:1, bank:0, lean:0, yaw:0, pitch:0, roll:0 }); render();

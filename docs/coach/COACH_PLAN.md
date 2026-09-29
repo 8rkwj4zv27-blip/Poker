@@ -183,3 +183,31 @@ covers them.
   GOING OFF as it sits on the table (felt, near edge, shadow), numbered
   with its time, plus PLAY IT and PLAY IT SLOW. The same sheets were
   sent to the owner as images (15 frames on, 9 off).
+- **Round 3 LOCKED** (29 Sep 2026). The owner's picks, now the defaults
+  in `js/coach-set.js`: **CUBE**, **DASHBOARD** plastic, **CLEAN** lines,
+  **FROM UNDER THE TABLE**; the turn is **RANDOM**: each time he's
+  switched on, he comes up turning A and goes down turning B, or the
+  other way round (checked: the two always oppose, and the pairing is
+  drawn afresh each switch-on). Everything else as round 3d.
+
+## Next (agreed with the owner, 29 Sep 2026)
+
+The rest of his design goes into a **fresh lab**, then speech, then the
+game, then his brain:
+
+1. **Cable** (fresh lab): thickness, coiled or straight lead, the plug and
+   jack as proper sprites, how the plug goes in and pops out, how the
+   slack settles, its reaction to the landing jolt, stepped to the 2.5D
+   rhythm.
+2. **Boot**: the power up the cable, the click, the tube's warm-up, the
+   blink-on and look-round; perhaps a boot line typed on the tube; a
+   quick boot for switching on mid-game.
+3. **Speech bubbles and voice**: the Speech Lab's bubble from his TV, his
+   mouth in time, his own blip, the talk slider, ~30 sample lines on
+   real moments.
+4. **Into the game**: the COACH key on the real dashboard, saved in
+   settings; the set, cable, boot and bubble signed off as a Pattern
+   Book part; checks and a release.
+5. **His brain**: game events feed him; judge 1 (which hands to play),
+   judge 2 (after the flop); advice before you act; teaching moments;
+   memory; the dialogue library growing alongside.
