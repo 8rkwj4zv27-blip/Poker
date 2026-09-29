@@ -595,6 +595,20 @@ and `updateCoach` and by watching `game.handNumber` / `game.phase`.
 Presentation only; the lines are placeholders until his brain. The labs
 below drive the same two files.
 
+## `js/coach-brain.js` — P.I.P.'s brain (live from v0.54.1, step 1: watching)
+
+The Coach's brain (`docs/coach/BRAIN_PLAN.md`, the plan and build order;
+`docs/coach/BRAIN_HANDOVER.md`, what was agreed). Step 1 records every
+decision the player makes (`CoachBrain.spot`: seat, situation, price, pot
+odds, stacks in big blinds, starting-hand rank, made hand, draws, outs; and
+`record`: what they chose) and how each hand ended (`handEnd`: net, showdown,
+the cards opponents showed), in `CoachBrain.history` (last 50 hands, this
+session only). Fed by `coach-talk.js`; says nothing yet. Pure functions over
+the game state: reads only your cards and public facts (an opponent's cards
+only once shown at a showdown), never writes to the game. Tests:
+`validation/coach-brain-checks.js` (hand-built spots plus 5,000 random
+tables); the Pattern Book check guards the read-only rules.
+
 ## `coach-face-lab.html` + `js/coach-face-lab.js` + `css/coach-face-lab.css` + candidate `js/coach-set.js` / `css/coach-set.css` — Coach Face Lab
 
 The Coach's look (`docs/coach/COACH_PLAN.md`), round 3: the machine's

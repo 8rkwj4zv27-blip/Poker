@@ -304,7 +304,11 @@ const CoachTalk = (() => {
     const realApply = window.applyAction;
     window.applyAction = function(player, decision){
       const g = game, before = g ? g.currentBet : 0, pot = g ? g.pot : 0;
+      // his brain reads your decision before it's applied (the price you faced)
+      let sp = null;
+      try{ if (player && player.isHuman && typeof CoachBrain !== 'undefined') sp = CoachBrain.spot(g, player); }catch(e){}
       const r = realApply.apply(this, arguments);
+      try{ if (sp) CoachBrain.record(sp, g, player); }catch(e){}
       try{
         if (!player || !decision) return r;
         const a = decision.action, amt = g.currentBet;
@@ -348,10 +352,20 @@ const CoachTalk = (() => {
     setInterval(() => {
       const g = game; if (!g || !g.players) return;
       if (g.handNumber !== W.n){
+        const last = W;
         W = { n:g.handNumber, start:{}, dealt:false, ended:false, endAt:0, seen:performance.now() };
         g.players.forEach(p => { W.start[p.id] = p.chips + (p.totalBetHand || 0); });
+        try{
+          if (typeof CoachBrain !== 'undefined'){
+            // the last hand finished between two looks (a fold fast-forwards it)
+            const you = human();
+            if (!last.ended && you && last.start[you.id] != null) CoachBrain.closeMissed(W.start[you.id] - last.start[you.id]);
+            CoachBrain.handStart(g, W.start);
+          }
+        }catch(e){}
       }
       const me = human();
+      try{ if (me && typeof CoachBrain !== 'undefined') CoachBrain.observe(g, me); }catch(e){}
       // your cards: once they've landed
       if (!W.dealt && me && me.hand && me.hand.length === 2 && performance.now() - W.seen > 1300){
         W.dealt = true;
@@ -367,6 +381,7 @@ const CoachTalk = (() => {
           const bb = g.bigBlind || g.bb || 20;
           const delta = me.chips - (W.start[me.id] != null ? W.start[me.id] : me.chips);
           const showdown = g.phase === 'showdown' && me.inHand && !me.folded;
+          try{ if (typeof CoachBrain !== 'undefined') CoachBrain.handEnd(g, me, delta); }catch(e){}
           setTimeout(() => {
             if (me.chips <= 0) say('youOut');
             else if (delta > 0) say(delta >= bb * 10 ? 'winBig' : !showdown ? 'allFolded' : 'winSmall', { won:fmt(delta) });

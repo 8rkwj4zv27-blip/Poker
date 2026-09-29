@@ -1,8 +1,11 @@
 # The Coach — plan
 
 **Status (29 Sep 2026): LIVE in the game as v0.54.0, with placeholder
-lines.** Look, rig and voice signed off (Pattern Book: Coach). Next: his
-brain (build order step 6 onwards), in a fresh session.
+lines.** Look, rig and voice signed off (Pattern Book: Coach). His brain
+is now planned and under way in **`docs/coach/BRAIN_PLAN.md`** (name:
+**P.I.P.**, Poker Intelligence Personality; a HELP dial beside the talk
+slider; tapping him; stages that grow with the player). Step 1, watching,
+is in v0.54.1.
 
 A coach who sits next to you at the table, watches you play and teaches
 you poker as you go: what the terms mean, when to push, what went right
@@ -77,8 +80,9 @@ speaker at a time on the lower felt; the coach speaks clean.
    storage key; existing settings and lifetime stats untouched).
 9. Dialogue expansion.
 
-Open: his name; retire the old Coach and Hand Review switches once he
-covers them.
+His name: **P.I.P.** (owner, 29 Sep 2026). The old Coach readout retires
+once he covers it (owner: retire it, or fold its numbers into him); Hand
+Review, to ask.
 
 ## Round log
 

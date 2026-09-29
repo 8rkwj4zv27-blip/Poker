@@ -469,6 +469,16 @@ check('Coach: live, to the owner\'s order, presentation only',()=>{
   [set,talk].forEach(js=>assert.ok(!/\b(game|pendingHumanPlayer)(\.[A-Za-z_]+)*\s*=[^=]/.test(js) && !/\bhumanAct\(/.test(js),'the Coach must never change game state'));
   assert.ok(!/\.hand\b/.test(talk.replace(/me\.hand|me && me\.hand/g,'')),'his talk only reads your own cards');
   assert.ok(md.includes('## Coach (live v0.54.0)'),'the Pattern Book must record the Coach');
+  // His brain (docs/coach/BRAIN_PLAN.md): loaded after his talk, cached, and
+  // reads the table without touching it. An opponent's cards are read in one
+  // place only (shownAtShowdown), and the deck never.
+  const brain=read('js/coach-brain.js');
+  assert.ok(scripts.indexOf('js/coach-brain.js')===scripts.indexOf('js/coach-talk.js')+1,'his brain loads right after his talk');
+  assert.ok(serviceWorker.includes("'./js/coach-brain.js"),'sw.js is missing js/coach-brain.js');
+  assert.ok(!/\b(game|pendingHumanPlayer|g|me|p)(\.[A-Za-z_]+)+\s*(=[^=]|\+\+|--|\+=|-=)/.test(brain) && !/\b(applyAction|humanAct)\(/.test(brain),'his brain must never change game state');
+  assert.ok(!/\.deck\b/.test(brain),'his brain never reads the deck');
+  const outsideShowdown=brain.replace(/function shownAtShowdown[\s\S]*?\n  \}\n/,'');
+  assert.ok(!/\.hand\b/.test(outsideShowdown.replace(/\bme\.hand\b/g,'')),'his brain reads only your cards, bar hands shown at a showdown');
 });
 
 process.stdout.write('\n'+passed+' Pattern Book checks passed.\n');
