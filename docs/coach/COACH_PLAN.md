@@ -9,9 +9,12 @@ and wrong, and how to improve. Agreed with the owner, 28 September 2026.
 - **A character, but a flat one.** Plain, clear, informative lines with
   the occasional short reaction ("Unlucky. You were ahead until the
   river."). No catchphrases, no nicknames for the player, no mood system.
-- **A little old CRT set plugged into the machine** (round 2): switched
-  on, it's plonked on the felt, cabled into the console, and a digital
-  face warms up on its screen. Keeps round 1's thick glasses.
+- **The Poker Machine's soul, plugged into a little TV** (round 3): two
+  small dots for eyes and a mouth on the screen, pixel art like the chips
+  and cards. Switched on from a COACH key next to the table's ⚙, he's
+  pulled out from under the table by the dashboard and put down with a
+  heavy thud, cabled visibly into that key, and boots with a blink.
+  Switched off, he's swiped back off the same way.
 - **Sits on the felt next to your cards, opposite the dealer deck**
   (Settings → The deck moves him too).
 - **Switched on and off from a dashboard button**, with a **talk slider**:
@@ -102,3 +105,34 @@ covers them.
   JUST WARMS UP · INSTANT, and a CRT switch-off. The screen is the game's
   `.crt` component; the face's glow is set locally in the lab, and would
   need a picture role in `css/crt.css` before it ships.
+  **Owner's verdict:** needs a lot of work. Design and face not liked;
+  the plonk "rubbish": he shouldn't fade, he should have weight, be
+  visibly plugged in, be 2.5D like the coins, heavy thud, a proper blink
+  boot. Two small dots and a mouth: the Poker Machine's soul in a TV.
+- **Round 3 — the machine's soul** (29 Sep 2026). Same lab and link;
+  candidate `js/coach-set.js` + `css/coach-set.css` (round 2's
+  `coach-tv.*` removed). Owner's answers: glasses as an option (off by
+  default); swiped off the way he came; a COACH key next to ⚙; pixel art
+  drawn in code for now; he comes from beside the dashboard, as if pulled
+  out from under the table, not from the top of the screen.
+  - The set: three pixel sprites drawn in code (PORTABLE with a carry
+    handle, knobs and a speaker; CUBE with a brass plate; MONITOR on a
+    foot), in MACHINE / CREAM / GUNMETAL plastic, two art pixels per
+    screen pixel, a lit top edge and shaded bottom-right like the rest.
+  - The face: two 2x2 dots and a mouth on the tube, seven expressions,
+    idle blinks and glances (at the pot, a player, you), talking mouth;
+    screen ink MACHINE / GREEN / AMBER.
+  - The motion, stepped at 14 fps like the 2.5D card, never a fade: up
+    from under the near edge (the felt hides him until he's over it),
+    held with his shadow on the felt, then dropped: squash, a rock onto
+    his front edge, the table jolts, the chips shake (`CoinWorld.shake`),
+    pixel dust, a synthesised thud. Or SLID IN FROM THE SIDE. Weight
+    HEAVY / VERY HEAVY / LIGHTER.
+  - The cable: a verlet rope in pixels from the back of the set to the
+    COACH key, swinging as he moves; it goes over the table's edge while
+    he's under it, and reels back into the key when he's gone.
+  - The boot: power runs up the cable, a clack, the tube's whine, a dot,
+    a line, static, dark, then his eyes blink on, blink twice, look left
+    and right, and settle; a blip. Switching off runs it back down.
+  - Lab only: the COACH key is added next to ⚙ in the copy; it isn't in
+    `index.html` yet.

@@ -1,0 +1,45 @@
+/* ============================================================
+   COACH SET (Coach Face Lab, round 3: candidate, lab only)
+   The coach's little TV on the felt, its shadow, its cable, and the
+   COACH key next to the table's ⚙. js/coach-set.js draws the pixel
+   sprites and moves them in 2.5D steps; this file only lays them out.
+   ============================================================ */
+/* the layer the set lives in: the felt, so he's hidden under its near
+   edge until he's lifted over it */
+.cs-layer{ position:absolute; inset:0; z-index:3; overflow:hidden; border-radius:inherit; pointer-events:none; }
+.cs-tv{ position:absolute; left:0; top:0; transform-origin:50% 100%; pointer-events:auto; visibility:hidden; -webkit-tap-highlight-color:transparent; }
+.cs-body,.cs-face,.cs-still{ image-rendering:pixelated; image-rendering:crisp-edges; display:block; }
+.cs-body{ position:absolute; left:0; top:0; }
+.cs-face{ position:absolute; filter:drop-shadow(0 0 1.5px currentColor); }
+.cs-scan{
+  position:absolute; pointer-events:none;
+  background:repeating-linear-gradient(180deg,transparent 0 1px,rgba(0,0,0,.28) 1px 2px),
+    radial-gradient(ellipse at 45% 35%,rgba(255,255,255,.07),transparent 60%);
+}
+/* 2.5D shade: banking puts the far side in one hard step of shade;
+   leaning forward catches the lamp along the top */
+.cs-shade{ position:absolute; inset:0; pointer-events:none; }
+.cs-tv[data-bank="r"] .cs-shade{ background:linear-gradient(90deg,transparent 0 62%,rgba(0,0,0,.3) 62%); }
+.cs-tv[data-bank="l"] .cs-shade{ background:linear-gradient(90deg,rgba(0,0,0,.3) 0 38%,transparent 38%); }
+.cs-tv[data-lean="f"] .cs-shade{ background:linear-gradient(180deg,rgba(255,236,190,.16) 0 14%,transparent 14%); }
+.cs-shadow{
+  position:absolute; left:0; top:0; height:6px; visibility:hidden;
+  background:#000; border-radius:2px;
+  box-shadow:2px 0 0 #000,-2px 0 0 #000;
+  clip-path:polygon(4px 0,calc(100% - 4px) 0,100% 50%,calc(100% - 4px) 100%,4px 100%,0 50%);
+}
+.cs-dust{ position:absolute; left:0; top:0; width:2px; height:2px; background:color-mix(in srgb,var(--felt,#2E5A3F) 55%,#E8E2C8); pointer-events:none; }
+/* the cable: a canvas over the whole screen, below the lab's controls */
+.cs-cable{ position:fixed; left:0; top:0; z-index:60; pointer-events:none; image-rendering:pixelated; image-rendering:crisp-edges; }
+
+/* ⚙ and COACH side by side */
+.ck-row{ display:flex; gap:6px; justify-content:center; align-items:center; margin:0 auto; }
+#hud-right .ck-row .table-settings{ margin:0; }
+/* the COACH key: the table's small key (same as ⚙), with a socket in it
+   and a lamp that lights while he's plugged in */
+.coach-key{ position:relative; }
+.coach-key .ck-socket{ display:flex; gap:3px; align-items:center; justify-content:center; width:14px; height:10px; margin:auto; border:2px solid currentColor; border-radius:2px; box-sizing:border-box; opacity:.75; }
+.coach-key .ck-socket i{ display:block; width:2px; height:4px; background:currentColor; }
+.coach-key .ck-lamp{ position:absolute; right:3px; top:3px; width:4px; height:4px; background:#1D3A28; box-shadow:0 0 0 1px #080405; }
+.coach-key.is-on .ck-lamp{ background:#8CF0A8; box-shadow:0 0 0 1px #080405,0 0 5px #8CF0A8; }
+.coach-key.is-on .ck-socket{ opacity:1; }

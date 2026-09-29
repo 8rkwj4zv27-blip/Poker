@@ -6,7 +6,8 @@
   <meta name="theme-color" content="#140709">
   <link rel="icon" href="data:,">
   <title>Coach Face Lab</title>
-  <!-- Phone-first Lab (round 2): the coach, a little CRT set with a digital face. The page is just the
+  <!-- Phone-first Lab (round 3): the coach, the machine's soul in a little pixel TV,
+       pulled out from under the table and plugged into the COACH key. The page is just the
        real game, full screen; the lab's controls run inside it
        (js/coach-face-lab.js: a TUNE key and a bottom sheet). This host
        only loads the game copy and remembers the picks across DEAL AGAIN.
@@ -26,7 +27,7 @@
   <iframe id="cfl-game" title="The Table (lab copy)" allow="autoplay"></iframe>
   <!-- What goes into the game copy: the candidate and the lab's controls.
        The bundler (validation/tools/lab-bundle.js) reads this to bake it. -->
-  <script type="application/json" id="lab-inject">{"css":["css/coach-tv.css","css/showdown-lab.css","css/coach-face-lab.css"],"js":["js/coach-tv.js","js/coach-face-lab.js"],"v":"2"}</script>
-  <script src="js/coach-face-lab-host.js?v=2"></script>
+  <script type="application/json" id="lab-inject">{"css":["css/coach-set.css","css/showdown-lab.css","css/coach-face-lab.css"],"js":["js/coach-set.js","js/coach-face-lab.js"],"v":"3"}</script>
+  <script src="js/coach-face-lab-host.js?v=3"></script>
 </body>
 </html>
