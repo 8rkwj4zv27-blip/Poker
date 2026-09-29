@@ -108,8 +108,36 @@
     ['FLOP: JUST CALL WITH A SET', 'post', ['9s', '9d'], ['Kh', '9c', '2d'], 0.5, ['call']],
     ['FLOP: RAISE WITH A SET', 'post', ['9s', '9d'], ['Kh', '9c', '2d'], 0.5, ['raise', 3]],
     ['RIVER: CALL A BIG BET, BOTTOM PAIR', 'post', ['2s', '3d'], ['Kh', '9c', '2d', 'Js', '5h'], 1.0, ['call']],
-    ['RIVER: FOLD A MISSED FLUSH', 'post', ['Ah', '5h'], ['Kh', '9h', '2c', '3s', 'Jd'], 0.7, ['fold']]
+    ['RIVER: FOLD A MISSED FLUSH', 'post', ['Ah', '5h'], ['Kh', '9h', '2c', '3s', 'Jd'], 0.7, ['fold']],
+    // checked to you: you raised on the button, the big blind called and checks to you
+    ['RIVER: CHECK TWO PAIR', 'bet', ['As', '2c'], ['Ah', '5d', '2s', '6d', '3d'], 'check'],
+    ['RIVER: BET TWO PAIR', 'bet', ['As', '2c'], ['Ah', '5d', '2s', '6d', '3d'], 'bet'],
+    ['FLOP: BET TOP PAIR', 'bet', ['Ks', 'Qd'], ['Kh', '7c', '2d'], 'bet'],
+    ['FLOP: CHECK A MIDDLE PAIR', 'bet', ['7s', '8d'], ['Kh', '7c', '2d'], 'check'],
+    ['FLOP: BET A FLUSH DRAW', 'bet', ['Ah', '5h'], ['Kh', '9h', '2c'], 'bet'],
+    ['FLOP: BLUFF ONE PLAYER', 'bet', ['Qs', 'Jd'], ['8h', '4c', '2d'], 'bet'],
+    ['FLOP: BLUFF TWO PLAYERS', 'bet', ['Qs', 'Jd'], ['8h', '4c', '2d'], 'bet', { two:true }],
+    ['RIVER: CHECK WITH NOTHING', 'bet', ['Qs', 'Jd'], ['8h', '4c', '2d', '3s', '7h'], 'check']
   ];
+  function playBet(spec){
+    const [, , hole, board, mine, opts] = spec;
+    const two = opts && opts.two;
+    const g = table(6, 0, 0, hole, 2000);
+    [3, 4, 5].forEach(i => act(g, i, 'fold'));
+    act(g, 0, 'raise', 50); act(g, 1, two ? 'call' : 'fold'); act(g, 2, 'call');
+    street(g, 'flop', board.slice(0, 3));
+    const round = () => { if (two) act(g, 1, 'check'); act(g, 2, 'check'); act(g, 0, 'check'); };
+    if (board.length > 3){ round(); street(g, 'turn', [board[3]]); }
+    if (board.length > 4){ round(); street(g, 'river', [board[4]]); }
+    if (two) act(g, 1, 'check');
+    act(g, 2, 'check');
+    const me = g.players[0], sp = CB.spot(g, me);
+    act(g, 0, mine === 'bet' ? 'raise' : 'check', mine === 'bet' ? Math.round(g.pot * 0.6 / 10) * 10 : 0);
+    const d = { spot:sp, choice:CB.choice(sp, g, me) };
+    d.judgement = CB.judge(sp, d.choice);
+    d.advice = CB.advise(sp);
+    return d;
+  }
   function playPost(spec){
     const [, , hole, board, frac, mine] = spec;
     const g = table(6, 0, 2, hole, 2000);
@@ -127,6 +155,7 @@
   }
   function playSpot(i){
     if (SPOTS[i][1] === 'post') return playPost(SPOTS[i]);
+    if (SPOTS[i][1] === 'bet') return playBet(SPOTS[i]);
     const [, n, dealer, you, hole, stack, before, mine] = SPOTS[i];
     const g = table(n, dealer, you, hole, stack);
     before.forEach(b => act(g, b[0], b[1], b[2]));
@@ -144,7 +173,9 @@
   function verdictCard(d, head){
     const j = d.judgement; if (!j) return '';
     const n = j.n, sp = d.spot;
-    const nums = j.kind === 'post' ? (n.handName + (n.drawName ? ', ' + n.drawName + ' (' + n.outs + ' outs)' : '') + '. Facing ' + n.betSize + ': you win about ' + n.eq + '% against the hands that bet like that. You needed ' + n.need + '%.')
+    const nums = j.kind === 'bet' ? (n.handName + (n.drawName ? ', ' + n.drawName : '') + '. Checked to you, against ' + n.players + (n.players === 1 ? ' player' : ' players') +
+        ': you win about ' + n.eq + '% of the time. A bluff of ' + n.sizeWords + ' needs them to fold ' + n.foldNeed + '%; they fold about ' + n.fold + '% here. Their betting says: ' + n.story + '.')
+      : j.kind === 'post' ? (n.handName + (n.drawName ? ', ' + n.drawName + ' (' + n.outs + ' outs)' : '') + '. Facing ' + n.betSize + ': you win about ' + n.eq + '% against the hands that bet like that. You needed ' + n.need + '%.')
       : n.eq != null ? 'You win about ' + n.eq + '% against the hands that raise usually means. You needed ' + n.need + '%.'
       : n.range != null ? 'Your hand: top ' + n.pct + '%. From ' + (sp.seat || 'there') + ', a sound player plays the top ' + n.range + '%.' : '';
     return '<div class="cbl-card is-' + j.verdict + '">' + (head ? '<div class="cbl-head">' + head + '</div>' : '') +

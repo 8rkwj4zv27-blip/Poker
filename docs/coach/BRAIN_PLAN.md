@@ -400,3 +400,62 @@ the same spots):
   near-certain winner is always a mistake, lines for everything). About
   514 lines in the library.
 - **Lab**: 8 after-the-flop spots in TRY IT.
+
+## Round after the owner played (v0.57.0, 29 Sep 2026)
+
+The owner played Ace-Two on A-5-2-6-3, checked to on the river: P.I.P.
+only said "Nobody's bet. You can check." After winning, he said "They had
+it that time", then talked about a close raise before the flop. The
+owner: timing is key (never before the cards are shown, the debrief
+after the winner's revealed but before COLLECT); facts aren't advice
+("Tony limped and has checked every street" tells you nothing); nothing
+on bluffing; too much poker jargon ("on the edge from the cutoff"). But
+keep the terms: learn them as you play longer.
+
+- **Timing.** His line about your cards waits until they're turned over
+  for you (`game._humanCardsVisible`). The result and debrief come the
+  moment the winner is shown and the COLLECT key is up (`#console-flip`),
+  before the pot is paid: `CoachBrain.settle` works your result out from
+  the game's own pot split (`computePots`, side pots included) and the
+  hands that were shown. (The bug: he read your stack 5 seconds after the
+  showdown, before COLLECT paid it, and thought you'd lost.) Talk left
+  over from the last hand waits while new cards are face down. Someone
+  going out is said at the next deal, when it's certain.
+- **Step 3b: checked to you, bet or check** (`judgeBet`, and `advise`).
+  Strong hands bet for value (checking one on the river is a clear
+  mistake: "You won 108, but you could have won more"); middling hands
+  check (keep the pot small); a strong draw bets against one player (a
+  semi-bluff); nothing checks, or **bluffs** when it makes sense: one
+  player (never several), not someone who calls everything, and when
+  they're likely to fold often enough to pay for it (a bet B into a pot
+  P needs them to fold B/(P+B) of the time; how often they fold comes
+  from their notebook habit and checking this hand). A bluff is never
+  called clear-cut: the fold chance is an estimate. Sizes: half the pot on
+  quiet boards, two-thirds on wet ones and the river; a bluff the same.
+- **What their betting says** (`stories`): only checked = usually weak;
+  betting = usually a real hand; calling = a middling hand or a draw;
+  plus habits from the notebook (calls everything, has bluffed, plays
+  lots, plays few). It leads his advice and his tap read: "They've all
+  checked. Nobody's shown any strength. You're well ahead. Bet about 50.
+  Worse hands will call."
+- **Plain English, with terms learned as you go.** Every line was
+  rewritten: what's happening, what it means, what to do. A poker word is
+  written `{t:term}` and reads in plain words ("just calling the big
+  blind") until the lesson that teaches it has been said ("That's called
+  limping."), then as the word. Seats likewise ("one seat before the
+  dealer button" → "the cutoff" after the position lesson). Hands read as
+  "a strong starting hand"; ranges as "about 1 hand in 4". What he's
+  taught is remembered under a new storage key, `pip.coach` (settings and
+  lifetime stats untouched): the start of step 6's memory. A check fails
+  on any poker jargon outside a lesson.
+- **Debrief**: the decision that mattered most, weighted to later streets
+  and bigger pots; close calls read "Fine. ...".
+- **Tap him**: what you have, what their betting says, and (your turn)
+  what to do, including when to bluff.
+- **Proof**: 51 checks, adding step 3b's spots, the stories, the terms
+  (every term has plain words and a lesson), no jargon outside lessons,
+  800 random checked-to spots (bluffs never clear-cut), and settling a
+  showdown before the pot's paid. Played in the real game at normal
+  speed, pressing COLLECT by hand: cards first, then his line; the
+  debrief with COLLECT waiting; results right every hand.
+- **Lab**: 8 checked-to spots in TRY IT (the owner's river hand among them).

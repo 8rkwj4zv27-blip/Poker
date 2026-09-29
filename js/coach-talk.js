@@ -93,7 +93,12 @@ const CoachTalk = (() => {
   }
   // blanks fill in lower case ("one player", "a flush draw"); a sentence
   // that starts with one gets its capital back
-  const fill = (text, ctx) => text.replace(/\{(\w+)\}/g, (m, k) => ctx[k] != null ? ctx[k] : m)
+  // {t:name}: a poker word, in plain words until its lesson has been said;
+  // {Name}: a blank with a capital, when the line needs one
+  const fill = (text, ctx) => text
+    .replace(/\{t:(\w+)\}/g, (m, k) => termText(k))
+    .replace(/\{(\w+)\}/g, (m, k) => ctx[k] != null ? ctx[k]
+      : /^[A-Z]/.test(k) && ctx[k[0].toLowerCase() + k.slice(1)] != null ? cap(String(ctx[k[0].toLowerCase() + k.slice(1)])) : m)
     .replace(/(^|[.?!]\s+)([a-z])/g, (m, p, c) => p + c.toUpperCase());
   /* TYPE: the numbers and the card names are what he's telling you, so by
      default they're set in the machine's screen font (Press Start 2P, the
@@ -187,6 +192,22 @@ const CoachTalk = (() => {
     list.forEach((k, i) => { const up = i >= list.length - 2 && /\?\s*$/.test(text) ? 1.12 : 1; try{ blip(c, t0 + times[k] / 1000, f * up, v, i); }catch(e){} });
   }
 
+  /* ---------------- poker words he's taught you ----------------
+     A lesson teaches its words (CoachLines.terms: via); from then on his
+     lines use them. Kept under his own storage key, 'pip.coach' (nothing
+     else is touched). */
+  const MEM_KEY = 'pip.coach';
+  let MEM = { terms:{} };
+  try{ const raw = localStorage.getItem(MEM_KEY); if (raw) MEM = Object.assign({ terms:{} }, JSON.parse(raw)); }catch(e){}
+  const saveMem = () => { try{ localStorage.setItem(MEM_KEY, JSON.stringify(MEM)); }catch(e){} };
+  const TERMS = () => (typeof CoachLines !== 'undefined' && CoachLines.terms) || {};
+  const knows = lesson => !!MEM.terms[lesson];
+  function termText(k){ const t = TERMS()[k]; if (!t) return k; return knows(t.via) ? t.term : t.plain; }
+  function learnFrom(key){
+    const m = /^lesson\.(.+)$/.exec(key || ''); if (!m || MEM.terms[m[1]]) return;
+    MEM.terms[m[1]] = Date.now(); saveMem();
+  }
+
   /* ---------------- the bubble ---------------- */
   let live = null, queue = null;
   function clear(now){
@@ -240,6 +261,7 @@ const CoachTalk = (() => {
       return;
     }
     const text = fill(line[2], ctx || {});
+    learnFrom(moment);
     const el = document.createElement('div');
     el.className = 'ctk ctk--' + O.look + ' ctk-arrive-' + O.arrive + ' ctk-type-' + O.type;
     const rs = runs(text);
@@ -342,21 +364,36 @@ const CoachTalk = (() => {
   const NUMW = ['no', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine'];
   const players = n => (NUMW[n] || n) + (n === 1 ? ' player' : ' players');
   const cap = t => t ? t[0].toUpperCase() + t.slice(1) : t;
+  // seats in plain words until the position lesson
+  const PLAIN_ON = { BTN:'on the dealer button', CO:'one seat before the dealer button', HJ:'two seats before the dealer button', LJ:'three seats before the dealer button',
+    UTG:'in the first seat to act', 'UTG+1':'in an early seat', 'UTG+2':'in an early seat', SB:'in the small blind', BB:'in the big blind' };
+  const PLAIN_FROM = { BTN:'from the dealer button', CO:'from one seat before the dealer button', HJ:'from two seats before the dealer button', LJ:'from three seats before the dealer button',
+    UTG:'from the first seat to act', 'UTG+1':'from an early seat', 'UTG+2':'from an early seat', SB:'from the small blind', BB:'from the big blind' };
+  const seatOn = s => (knows('position') ? SEAT_ON : PLAIN_ON)[s] || 'here';
+  const seatFrom = s => (knows('position') ? SEAT_FROM : PLAIN_FROM)[s] || 'from there';
+  const handWords = p => p == null ? 'a hand' : p <= 0.03 ? 'one of the very best starting hands' : p <= 0.08 ? 'a very strong starting hand'
+    : p <= 0.18 ? 'a strong starting hand' : p <= 0.35 ? 'a decent starting hand' : p <= 0.55 ? 'an average starting hand' : 'a weak starting hand';
+  // (lines say "about {rangeWords}")
+  const rangeWords = r => !r ? 'their best hands' : r >= 70 ? 'most hands' : '1 hand in ' + Math.max(2, Math.round(100 / r));
   function slots(sp, j){
     const n = (j && j.n) || {}, seat = (sp && sp.seat) || n.seat;
     return {
       hole: sp ? sp.holeFacts.name : '', pct: n.pct != null ? n.pct : sp ? Math.max(1, Math.round(sp.holeFacts.pct * 100)) : '',
-      range: n.range != null ? n.range : '', seatOn: SEAT_ON[seat] || 'here', seatFrom: SEAT_FROM[seat] || 'from here',
-      SeatFrom: cap(SEAT_FROM[seat] || 'from here'), behindP: players(sp ? sp.actingAfter : 0),
+      handWords: handWords(sp ? sp.holeFacts.pct : null), rangeWords: rangeWords(n.range),
+      range: n.range != null ? n.range : '', seatOn: seatOn(seat), seatFrom: seatFrom(seat),
+      SeatFrom: cap(seatFrom(seat)), behindP: players(sp ? sp.actingAfter : 0),
       bb: n.bb != null ? n.bb : '', size: n.size != null ? n.size : '', call: fmt(n.call || 0), odds: n.odds != null ? n.odds : '',
       eq: n.eq != null ? n.eq : '', need: n.need != null ? n.need : '', raiser: n.raiser || 'they', limpersP: players(n.limpers || 0),
-      raiserFrom: SEAT_FROM[n.raiserSeat] || 'from there',
+      raiserFrom: seatFrom(n.raiserSeat),
+      // checked to you
+      opp: n.opp || 'they', sizeWords: n.sizeWords || 'half the pot', fold: n.fold != null ? n.fold : '', foldNeed: n.foldNeed != null ? n.foldNeed : '',
+      players: n.players || '', won: '',
       // after the flop
       bettor: n.bettor || 'they', betSize: n.betSize || 'a bet', handName: n.handName || (sp && sp.holeFacts ? sp.holeFacts.name : ''),
       drawName: n.drawName || 'a draw', DrawName: cap(n.drawName || 'a draw'), outs: n.outs != null ? n.outs : '', hitNext: n.hitNext != null ? n.hitNext : '', pot: fmt(n.pot != null ? n.pot : sp ? sp.pot : 0)
     };
   }
-  const MOVE_WORD = { fold:'fold', check:'check', call:'call', raise:'raise', allin:'go all in' };
+  const MOVE_WORD = { fold:'fold', check:'check', call:'call', raise:'raise', bet:'bet', allin:'go all in' };
 
   /* ---------------- advice before you act (the HELP dial) ----------------
      HELP 1 WATCH: none. 2 HINTS: what to think about, not the move.
@@ -366,30 +403,55 @@ const CoachTalk = (() => {
      a short stack, a premium hand, anything not clear-cut) and at IN YOUR
      EAR (4) on every decision bar folding junk. Tapping him always gets it. */
   function adviceCtx(a, sp){
-    return Object.assign(slots(sp, a.judgement), { to: a.to ? fmt(a.to) : '', toBB: a.toBB,
+    return Object.assign(slots(sp, a.judgement), { to: a.to ? fmt(a.to) : a.n && a.n.to ? fmt(a.n.to) : '', toBB: a.toBB,
+      // the one player the story is about
+      opp: a.stories && a.stories.one ? a.stories.one.name : (a.n && a.n.opp) || 'they',
       lean: MOVE_WORD[a.move], alt: MOVE_WORD[a.alt] || '', Lean: cap(MOVE_WORD[a.move]), Alt: cap(MOVE_WORD[a.alt] || '') });
+  }
+  /* what their betting says, as the lead-in to his advice after the flop */
+  function storyKey(a){
+    const st = a && a.stories; if (!st || !st.list.length) return null;
+    if (st.one){ const k = 'story.' + st.one.kind + '.one'; return LINES[k] ? k : null; }
+    if (st.all === 'mixed') return 'story.mixed';
+    const k = 'story.' + st.all + '.all'; return LINES[k] ? k : null;
+  }
+  // (one opponent with a habit worth knowing, when it changes the advice)
+  function habitKey(a){
+    const h = a && a.stories && a.stories.one && a.stories.one.habit;
+    return h && LINES['habit.' + h] ? 'habit.' + h : null;
+  }
+  function adviceKeys(a){
+    const drawing = a.kind === 'post' && a.n && a.n.drawName && !['overpair', 'top-pair', 'two-pair', 'set', 'trips', 'straight', 'flush', 'full-house', 'quads', 'straight-flush'].includes(a.n.made);
+    if (a.kind === 'post') return drawing ? ['advise.post.' + a.move + '.draw', 'advise.post.' + a.move] : ['advise.post.' + a.move];
+    if (a.kind === 'bet'){
+      const t = a.tag || '';
+      if (a.move === 'check') return t === 'bet.check.medium' || t === 'bet.check.draw' ? ['advise.bet.check']
+        : (a.n && a.n.players > 1) ? ['advise.bet.check.multi', 'advise.bet.check.weak'] : ['advise.bet.check.weak'];
+      return t.indexOf('bet.semi') === 0 ? ['advise.bet.bet.draw', 'advise.bet.bet'] : t.indexOf('bet.bluff') === 0 ? ['advise.bet.bet.bluff'] : ['advise.bet.bet'];
+    }
+    return ['advise.' + a.kind + '.' + a.move];
   }
   function sayAdvice(a, sp, help, notch){
     const ctx = adviceCtx(a, sp);
     if (help <= 1) return false;
     const drawing = a.kind === 'post' && a.n && a.n.drawName && !['overpair', 'top-pair', 'two-pair', 'set', 'trips', 'straight', 'flush', 'full-house', 'quads', 'straight-flush'].includes(a.n.made);
-    if (help === 2) return sayAt(drawing ? ['hint.post.draw', 'hint.post'] : ['hint.' + a.kind], ctx, notch);
-    const key = drawing ? ['advise.post.' + a.move + '.draw', 'advise.post.' + a.move] : ['advise.' + a.kind + '.' + a.move];
-    if (help === 3 && a.sure === 'close' && a.alt) return sayAt(['advise.close'], ctx, notch);
-    return sayAt(key, ctx, notch, null, a.sure === 'leans' ? 'advise.tail.leans' : a.sure === 'close' ? 'advise.tail.leans' : null);
+    const lead = storyKey(a);
+    if (help === 2) return sayAt(drawing ? ['hint.post.draw', 'hint.post'] : ['hint.' + a.kind], ctx, notch, lead);
+    if (help === 3 && a.sure === 'close' && a.alt) return sayAt(['advise.close'], ctx, notch, lead);
+    return sayAt(adviceKeys(a), ctx, notch, lead, a.sure === 'leans' || a.sure === 'close' ? 'advise.tail.leans' : habitKey(a));
   }
   const A = { handNo:-1, advice:null, spot:null };
   function yourTurn(me){
     const g = game;
     if (typeof CoachBrain === 'undefined' || !['preflop', 'flop', 'turn', 'river'].includes(g.phase)) return false;
-    // (after the flop he advises when you face a bet; betting is step 3b)
+    // (every street: facing a bet, or checked to you: bet or check)
     const sp = CoachBrain.spot(g, me), a = CoachBrain.advise(sp);
     A.handNo = g.handNumber; A.advice = a; A.spot = sp;
     if (!a) return false;
     const help = +O.help, talk = +O.notch;
     if (help <= 1 || talk < 3) return false;
     const junkFold = a.kind !== 'post' && a.move === 'fold' && a.sure === 'clear' && sp.holeFacts.pct > 0.5;
-    const big = ['vsRaise', 'vsReraise', 'short', 'post'].includes(a.kind) || sp.holeFacts.pct < 0.06 || a.sure !== 'clear';
+    const big = ['vsRaise', 'vsReraise', 'short', 'post'].includes(a.kind) || (a.kind === 'bet' && a.move !== 'check') || sp.holeFacts.pct < 0.06 || a.sure !== 'clear';
     if (junkFold || (talk < 4 && !big)) return false;
     if (live && !live.judged) clear(true);
     return sayAdvice(a, sp, help, 3);
@@ -423,35 +485,30 @@ const CoachTalk = (() => {
       const t = textOf('read.pre.wait', ctx); if (t) parts.push(t);
       return { parts, topic:'explain.position' };
     }
+    /* after the flop: what you have, what their betting says, and (your
+       turn) what to do about it. A fact only if it helps you decide. */
     const made = r.boardPlays ? 'boardPlays' : ['straight', 'flush', 'full-house', 'quads', 'straight-flush'].includes(r.made) ? 'big' : r.made;
     const m = textOf('read.made.' + made, Object.assign({}, ctx, { handName:r.handName }));
     if (m) parts.push(m);
     const dn = DRAW_NAME(r.draws || {});
-    if (dn && r.left){
-      const d = textOf('read.draw', Object.assign({}, ctx, { drawName:dn, DrawName:cap(dn), outs:r.drawOuts, hitPct:r.hitPct, byWhen: r.left === 2 ? 'by the river' : 'on the river' }));
-      if (d) parts.push(d);
-    }
+    const adv = mine ? CoachBrain.advise(sp) : null;
+    const st = CoachBrain.stories(sp);
+    const sk = storyKey({ stories:st });
+    if (sk){ const t = textOf(sk, Object.assign({}, ctx, { opp: st.one ? st.one.name : 'they' })); if (t) parts.push(t); }
     let topic = dn ? 'explain.outs' : r.made === 'top-pair' ? 'explain.kicker' : 'explain.equity';
-    const adv = mine && r.toCall > 0 ? CoachBrain.advise(sp) : null;
     if (adv){
-      // a bet in front of you: what he'd do (with the numbers) takes the price's place
       A.advice = adv; A.spot = sp; A.handNo = g.handNumber;
       const c = adviceCtx(adv, sp);
-      const drawing = adv.n && adv.n.drawName && dn;
-      const t = textOf(adv.sure === 'close' && adv.alt ? 'advise.close' : drawing && LINES['advise.post.' + adv.move + '.draw'] ? 'advise.post.' + adv.move + '.draw' : 'advise.post.' + adv.move, c);
+      const t = textOf(adv.sure === 'close' && adv.alt ? 'advise.close' : adviceKeys(adv).find(k => LINES[k]), c);
       if (t) parts.push(t);
-      topic = 'lesson.' + (adv.lesson || 'pot-odds');
-    } else if (mine){
-      if (r.toCall > 0 && dn && r.left){
-        const hitNext = Math.round(r.drawOuts / (52 - 2 - sp.board.length) * 100);
-        const dp = textOf('read.drawprice', Object.assign({}, ctx, { hitNext })); if (dp) parts.push(dp);
-        topic = 'explain.potodds';
-      } else {
-        const p = textOf(r.toCall > 0 ? 'read.price.bet' : 'read.price.free', ctx); if (p) parts.push(p);
-        if (r.toCall > 0) topic = 'explain.potodds';
+      topic = adv.lesson ? 'lesson.' + adv.lesson : topic;
+    } else {
+      if (dn && r.left){
+        const d = textOf('read.draw', Object.assign({}, ctx, { drawName:dn, outs:r.drawOuts, hitPct:r.hitPct, byWhen: r.left === 2 ? 'by the last card' : 'on the last card' }));
+        if (d) parts.push(d);
       }
+      if (r.threats && r.threats.length && parts.length < 3){ const t = textOf('read.threat', Object.assign({}, ctx, { threat:r.threats[0] })); if (t) parts.push(t); }
     }
-    if (r.threats && r.threats.length && parts.length < 3){ const t = textOf('read.threat', Object.assign({}, ctx, { threat:r.threats[0] })); if (t) parts.push(t); }
     return { parts, topic };
   }
   function onTap(){
@@ -526,12 +583,17 @@ const CoachTalk = (() => {
     if (!h || !h.decisions || !h.end) return;
     const judged = h.decisions.filter(d => d.judgement);
     if (!judged.length) return;
-    const top = judged.reduce((a, d) => SCORE(d.judgement) > SCORE(a.judgement) ? d : a);
+    // the decision that matters most: how wrong or right it was, then later
+    // streets and bigger pots over a close call before the flop
+    const STREET = { preflop:0, flop:0.2, turn:0.35, river:0.5 };
+    const weight = d => SCORE(d.judgement) + (SCORE(d.judgement) >= 3 ? (STREET[d.spot.street] || 0) + Math.min(0.5, (d.spot.potBB || 0) / 60) : 0);
+    const top = judged.reduce((a, d) => weight(d) > weight(a) ? d : a);
     const j = top.judgement, sc = SCORE(j);
     if (!sc) return;
     const notch = sc === 1 ? 4 : 2;
     const net = h.end.net || 0;
-    const lead = j.verdict === 'mistake' && sc >= 4 && net > 0 ? 'lead.wonAnyway'
+    const lead = j.tag === 'bet.missed' && net > 0 ? 'lead.wonButMore'
+      : j.verdict === 'mistake' && sc >= 4 && net > 0 ? 'lead.wonAnyway'
       : j.verdict !== 'mistake' && sc >= 3 && net < 0 && h.end.showdown ? 'lead.lostAnyway' : null;
     // the same mistake again soon after: a short reminder, not the speech
     const hn = h.n, seen = B.told[j.tag];
@@ -541,8 +603,9 @@ const CoachTalk = (() => {
       return;
     }
     const keys = j.confidence === 'leans' ? [j.tag + '.why.leans', j.tag + '.why'] : [j.tag + '.why'];
-    const ctx = slots(top.spot, j);
-    const lesson = sc >= 3 && j.lesson && !B.lessons[j.lesson] && (LINES['lesson.' + j.lesson] || []).length ? j.lesson : null;
+    const ctx = Object.assign(slots(top.spot, j), { won:fmt(Math.max(0, net)) });
+    // a lesson the first time it comes up (ever: he remembers what he's taught)
+    const lesson = sc >= 3 && j.lesson && !B.lessons[j.lesson] && !knows(j.lesson) && (LINES['lesson.' + j.lesson] || []).length ? j.lesson : null;
     afterTalk(() => {
       if (!sayAt(keys, ctx, notch, lead)) return;
       if (lesson){ B.lessons[lesson] = true; afterTalk(() => sayAt(['lesson.' + lesson], {}, 2)); }
@@ -557,7 +620,9 @@ const CoachTalk = (() => {
     let quietSince = 0;
     const tick = () => {
       const now = performance.now();
-      if (!live && !queue){ if (!quietSince) quietSince = now; if (now - quietSince >= 300) return go(); }
+      // (and never while your new cards are still face down: the reveal is yours)
+      const dealing = typeof game !== 'undefined' && game && game._humanCardsVisible === false;
+      if (!live && !queue && !dealing){ if (!quietSince) quietSince = now; if (now - quietSince >= 300) return go(); }
       else quietSince = 0;
       if (now - t0 < 15000) setTimeout(tick, 100);
       else B.pending = Math.max(0, B.pending - 1);
@@ -659,7 +724,7 @@ const CoachTalk = (() => {
       const g = game; if (!g || !g.players) return;
       if (g.handNumber !== W.n){
         const last = W;
-        W = { n:g.handNumber, start:{}, dealt:false, ended:false, endAt:0, seen:performance.now() };
+        W = { n:g.handNumber, start:{}, dealt:false, ended:false, endAt:0, seen:performance.now(), visAt:0 };
         g.players.forEach(p => { W.start[p.id] = p.chips + (p.totalBetHand || 0); });
         try{
           if (typeof CoachBrain !== 'undefined'){
@@ -670,36 +735,50 @@ const CoachTalk = (() => {
               if (done) debrief(done);
             }
             CoachBrain.handStart(g, W.start);
+            // someone went out last hand (known for sure once the next is dealt)
+            g.players.forEach(p => { if (!p.isHuman && last.start && last.start[p.id] > 0 && (p.eliminated || p.chips <= 0 && !p.inHand)) say('oppOut', { name:p.name }); });
           }
         }catch(e){}
       }
       const me = human();
       try{ if (me && typeof CoachBrain !== 'undefined') CoachBrain.observe(g, me); }catch(e){}
-      // your cards: once they've landed
-      if (!W.dealt && me && me.hand && me.hand.length === 2 && performance.now() - W.seen > 1300){
+      // your cards: only once they've been turned over for you (the reveal is
+      // yours), a beat after; a table that never says so, after a moment
+      const vis = g._humanCardsVisible === true || (g._humanCardsVisible === undefined && performance.now() - W.seen > 2500);
+      if (vis && !W.visAt) W.visAt = performance.now();
+      if (!W.dealt && me && me.hand && me.hand.length === 2 && W.visAt && performance.now() - W.visAt > 350){
         W.dealt = true;
         const h = holeCtx();
         // (not over the last hand's debrief)
         if (h && !B.pending && !live) dealtLine(g, me, h);
       }
-      // the end of the hand, once the pot's been paid
+      /* the end of the hand: the moment the winner is shown and the COLLECT
+         key comes up (#console-flip), before the pot is paid: he works the
+         result out from the pots and the hands shown. Otherwise when the
+         pot's been paid, or after 20 seconds. */
       if (!W.ended && (g.phase === 'showdown' || g.phase === 'foldwin')){
         if (!W.endAt) W.endAt = performance.now();
-        if ((g.pot || 0) === 0 || performance.now() - W.endAt > 5000){
+        const flip = $id('console-flip');
+        const shownNow = !!(flip && flip.classList.contains('flipped'));
+        let net = null;
+        if (shownNow && me){ try{ net = CoachBrain.settle(g, me); }catch(e){ net = null; } }
+        const paid = (g.pot || 0) === 0;
+        if (net == null && (paid || performance.now() - W.endAt > 20000) && me) net = me.chips - (W.start[me.id] != null ? W.start[me.id] : me.chips);
+        if (net != null){
           W.ended = true;
           if (!me) return;
           const bb = g.bigBlind || g.bb || 20;
-          const delta = me.chips - (W.start[me.id] != null ? W.start[me.id] : me.chips);
           const showdown = g.phase === 'showdown' && me.inHand && !me.folded;
+          // your stack once this pot's paid
+          const after = paid ? me.chips : me.chips + net + (me.totalBetHand || 0);
           let done = null;
-          try{ if (typeof CoachBrain !== 'undefined') done = CoachBrain.handEnd(g, me, delta); }catch(e){}
-          if (done) setTimeout(() => debrief(done), 450);
+          try{ if (typeof CoachBrain !== 'undefined') done = CoachBrain.handEnd(g, me, net); }catch(e){}
           setTimeout(() => {
-            if (me.chips <= 0) say('youOut');
-            else if (delta > 0) say(delta >= bb * 10 ? 'winBig' : !showdown ? 'allFolded' : 'winSmall', { won:fmt(delta) });
-            else if (delta < 0 && showdown) say(-delta >= bb * 10 ? 'loseBig' : 'loseShowdown');
-            g.players.forEach(p => { if (!p.isHuman && p.chips <= 0 && W.start[p.id] > 0) say('oppOut', { name:p.name }); });
-          }, 400);
+            if (after <= 0) say('youOut');
+            else if (net > 0) say(net >= bb * 10 ? 'winBig' : !showdown ? 'allFolded' : 'winSmall', { won:fmt(net) });
+            else if (net < 0 && showdown) say(-net >= bb * 10 ? 'loseBig' : 'loseShowdown');
+          }, 250);
+          if (done) setTimeout(() => debrief(done), 300);
         }
       }
     }, 200);

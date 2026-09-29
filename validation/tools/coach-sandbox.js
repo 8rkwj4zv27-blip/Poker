@@ -26,6 +26,8 @@ vm.createContext(ctx);
 vm.runInContext(fs.readFileSync(path.join(ROOT, 'js/01-poker-math.js'), 'utf8') + '\n' +
   fs.readFileSync(path.join(ROOT, 'js/coach-brain.js'), 'utf8') + '\n' +
   fs.readFileSync(path.join(ROOT, 'js/coach-lines.js'), 'utf8') +
+  // the game's own pot split (js/05-game-engine.js), for settling a showdown
+  '\n' + (() => { const e = fs.readFileSync(path.join(ROOT, 'js/05-game-engine.js'), 'utf8'); const i = e.indexOf('function computePots('); return e.slice(i, e.indexOf('\n}\n', i) + 3); })() +
   '\nglobalThis.CoachLines = CoachLines; globalThis.CoachBrain = CoachBrain; globalThis.makeCard = (r, s) => ({ rank:r, suit:s, value:RANK_VALUES[r] });', ctx);
 const B = ctx.CoachBrain;
 const C = (code) => {   // 'As', 'Td', '9h' -> a game card

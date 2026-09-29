@@ -612,6 +612,11 @@ Step 2: `CoachBrain.judgePreflop` marks each preflop decision (good / fine
 / mistake, CLEAR / LEANS / CLOSE, a tag, a lesson, the numbers);
 Step 3a (v0.56.0): `judgePostflop` / `advise` after the flop when you face
 a bet (opponents' likely hands from public betting, `oppRange`).
+v0.57.0: `judgeBet` (checked to you: value bets, checking, semi-bluffs,
+bluffs), `stories` (what each opponent's betting says), `settle` (your
+result at the showdown, before COLLECT pays it). Lines are plain English;
+poker words (`CoachLines.terms`, `{t:term}`) are learned from lessons and
+remembered under the `pip.coach` storage key.
 `js/coach-lines.js` (`CoachLines`) is his line library; `coach-talk.js`
 routes a word after you act, the reason after the hand, first-time
 lessons and repeat reminders. Tests share `validation/tools/coach-sandbox.js`.

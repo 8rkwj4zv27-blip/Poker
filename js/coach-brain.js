@@ -553,7 +553,134 @@ const CoachBrain = (() => {
     }
     return null;
   }
-  const judge = (sp, ch) => sp && sp.street === 'preflop' ? judgePreflop(sp, ch) : judgePostflop(sp, ch);
+  /* ============================================================
+     WHAT THEIR BETTING SAYS (a story per opponent, from public actions)
+       'strong'   bet or raised after the flop: usually a real hand
+       'calling'  called a bet after the flop: a medium hand or a draw
+       'weak'     only checked since the flop: usually not much
+       'quiet'    nothing to go on yet (before the flop, or first to act)
+     plus their habits from the notebook when there's enough of it:
+       'loose' plays lots of hands, 'tight' very few, 'caller' rarely folds
+       to a bet, 'bluffer' has been caught bluffing.
+     ============================================================ */
+  function storyOf(sp, o){
+    const post = sp.handLog.filter(h => h.id === o.id);
+    let kind = 'quiet';
+    if (post.some(h => h.a === 'b' || h.a === 'r')) kind = 'strong';
+    else if (post.some(h => h.a === 'c')) kind = 'calling';
+    else if (post.some(h => h.a === 'k')) kind = 'weak';
+    const r = o.read || {};
+    let habit = null;
+    if ((r.bluffsShown || 0) >= 2) habit = 'bluffer';
+    else if ((r.facedBet || 0) >= 6 && (r.foldedToBet || 0) / r.facedBet < 0.2) habit = 'caller';
+    else if ((r.hands || 0) >= 15 && (r.vpip || 0) / r.hands > 0.5) habit = 'loose';
+    else if ((r.hands || 0) >= 15 && (r.vpip || 0) / r.hands < 0.15) habit = 'tight';
+    const pfAgg = sp.pfAggressor && sp.pfAggressor.id === o.id;
+    return { id:o.id, name:o.name, kind, habit, pfAgg };
+  }
+  function stories(sp){
+    const list = sp.opponents.map(o => storyOf(sp, o));
+    const kinds = new Set(list.map(x => x.kind));
+    const all = kinds.size === 1 ? list[0] && list[0].kind : 'mixed';
+    return { list, all, one: list.length === 1 ? list[0] : null };
+  }
+
+  /* ============================================================
+     JUDGE 2b: CHECKED TO YOU, OR FIRST TO ACT (step 3b): bet or check
+
+     - Strong hands BET for value: worse hands pay you. Two pair or
+       better, or top pair / an overpair when you're ahead (55%+ against
+       one player, 60%+ against more). Checking one on the river is money
+       left on the table; earlier it can be a trap, so it's a lean.
+     - Medium hands (a pair that isn't clearly best) CHECK: a bet mostly
+       gets called by better hands. Betting one is thin, and close.
+     - Strong draws may BET as a semi-bluff against one player (two ways to
+       win); against several, it's close.
+     - Nothing: CHECK, or BLUFF when it makes sense: against one player
+       only, not a player who calls everything, and when they're likely
+       to fold often enough to pay for it: a bet of B into a pot of P needs
+       them to fold B / (P + B) of the time. How often they fold comes from
+       what they've done this hand (checking says weak) and their habit of
+       folding to bets in the table's notebook.
+     Sizes: half the pot on quiet boards, two-thirds on boards full of
+     draws and on the river; a bluff the same size as a value bet, so the
+     size gives nothing away.
+     ============================================================ */
+  function betSize(sp){
+    const bf = sp.boardFacts || {};
+    const frac = sp.board.length === 5 || (bf.texture && bf.texture.wet >= 0.45) ? 0.66 : 0.5;
+    const half = sp.bigBlind / 2;   // (to the half big blind: a whole one is too coarse on small pots)
+    const to = Math.max(sp.bigBlind, Math.round(sp.pot * frac / half) * half);
+    return { to: to >= (sp.stack + sp.yourBet) * 0.45 ? sp.stack + sp.yourBet : to, frac };
+  }
+  function foldChance(sp){
+    // each opponent: their habit of folding to bets (smoothed toward 45%),
+    // more likely after checking this hand; everyone has to fold
+    return sp.opponents.reduce((acc, o) => {
+      const r = o.read || {};
+      const base = ((r.foldedToBet || 0) + 0.45 * 6) / ((r.facedBet || 0) + 6);
+      const checked = sp.handLog.some(h => h.id === o.id && h.a === 'k') && !sp.handLog.some(h => h.id === o.id && (h.a === 'b' || h.a === 'r' || h.a === 'c'));
+      return acc * clampR(base * (checked ? 1.15 : 1), 0.05, 0.85);
+    }, 1);
+  }
+  function judgeBet(sp, ch){
+    if (!sp || !ch || sp.street === 'preflop' || !sp.boardFacts || sp.toCall > 0) return null;
+    let a = ch.action;
+    if (a === 'allin' || a === 'raise') a = 'bet';
+    if (a === 'call' || a === 'fold') a = 'check';   // (folding for free is never right, but it's a check's mistake)
+    const bf = sp.boardFacts, left = 5 - sp.board.length;
+    let eq = EQ.get(sp);
+    if (eq == null){ eq = call('estimateEquityVsRanges', sp.hole, sp.board, sp.opponents.map(o => oppRange(sp, o)), 1500); EQ.set(sp, eq); }
+    if (typeof eq !== 'number') return null;
+    const opps = sp.opponents.length, multi = opps > 1;
+    const strongMade = STRONG_MADE[bf.made] && !bf.boardPlays;
+    const goodMade = MADE_OK[bf.made] && !bf.boardPlays;
+    const valueHand = (strongMade && eq >= 0.55) || (goodMade && eq >= (multi ? 0.60 : 0.55));
+    const strongDraw = left > 0 && (bf.draws.flush || bf.draws.oesd) && !goodMade;
+    const medium = !valueHand && !strongDraw && (goodMade || bf.made === 'second-pair' || bf.made === 'weak-pair' || eq >= 0.45);
+    const size = betSize(sp);
+    const fe = foldChance(sp);
+    const bluffNeed = size.to / (sp.pot + size.to);
+    const st = stories(sp);
+    const station = sp.opponents.some(o => storyOf(sp, o).habit === 'caller');
+    const river = left === 0;
+    const drawName = bf.draws.flush && (bf.draws.oesd || bf.draws.gutshot) ? 'a flush and straight draw' : bf.draws.flush ? 'a flush draw' : bf.draws.oesd ? 'an open-ended straight draw' : bf.draws.gutshot ? 'an inside straight draw' : '';
+    const n = { street:sp.street, eq:pct100(eq), handName:bf.handName, made:bf.made, drawName, outs:bf.drawOuts,
+      players:opps, opp: st.one ? st.one.name : null, story:st.all, habit: st.one ? st.one.habit : null,
+      fold:Math.round(fe * 100), foldNeed:Math.round(bluffNeed * 100), to:size.to, sizeWords: size.frac >= 0.6 ? 'two-thirds of the pot' : 'half the pot',
+      betSize: ch.potFraction == null ? '' : BET_WORD(ch.potFraction), pot:sp.pot, seat:sp.seat, pct:pct100(sp.holeFacts.pct) };
+    // (how often they fold is an estimate, so a bluff is never clear-cut:
+    // it needs a real margin to be good, and even then it leans)
+    const bluffGood = !multi && !station && fe >= bluffNeed + 0.08;
+    const bluffClose = !multi && !station && fe >= bluffNeed - 0.04;
+    const best = valueHand || (strongDraw && !multi) || (!medium && !strongDraw && bluffGood) ? 'bet' : 'check';
+    const base = { kind:'bet', best, n };
+    if (a === 'check'){
+      if (valueHand){
+        const clear = river && (strongMade || eq >= 0.8);
+        return J(Object.assign(base, { verdict:'mistake', confidence: clear ? 'clear' : 'leans', tag:'bet.missed', lesson:'value-betting', notable:true }));
+      }
+      if (medium) return J(Object.assign(base, { verdict:'good', confidence:'clear', tag:'bet.check.medium', lesson:'pot-control' }));
+      if (strongDraw) return J(Object.assign(base, { verdict:'fine', confidence:'close', tag:'bet.check.draw', lesson:'semi-bluff', notable:!multi }));
+      if (bluffGood) return J(Object.assign(base, { verdict:'fine', confidence:'leans', tag:'bet.bluff.chance', lesson:'bluffing', notable:true }));
+      return J(Object.assign(base, { verdict:'good', confidence:'clear', tag:'bet.check.weak', lesson:'bluffing' }));
+    }
+    // a bet
+    if (valueHand){
+      if (ch.potFraction != null && ch.potFraction < 0.3) return J(Object.assign(base, { verdict:'fine', confidence:'leans', tag:'bet.value.small', lesson:'value-betting', notable:true }));
+      return J(Object.assign(base, { verdict:'good', confidence:'clear', tag:'bet.value', lesson:'value-betting', notable:true }));
+    }
+    if (medium) return J(Object.assign(base, { verdict:'fine', confidence:'close', tag:'bet.thin', lesson:'pot-control' }));
+    if (strongDraw) return J(Object.assign(base, !multi ? { verdict:'good', confidence:'clear', tag:'bet.semi', lesson:'semi-bluff', notable:true }
+      : { verdict:'fine', confidence:'close', tag:'bet.semi.multi', lesson:'semi-bluff' }));
+    // a bluff
+    if (multi) return J(Object.assign(base, { verdict:'mistake', confidence: opps >= 3 ? 'clear' : 'leans', tag:'bet.bluff.multi', lesson:'bluffing', notable:true }));
+    if (station) return J(Object.assign(base, { verdict:'mistake', confidence:'leans', tag:'bet.bluff.station', lesson:'bluffing', notable:true }));
+    if (bluffGood) return J(Object.assign(base, { verdict:'good', confidence:'leans', tag:'bet.bluff.good', lesson:'bluffing', notable:true }));
+    if (bluffClose) return J(Object.assign(base, { verdict:'fine', confidence:'close', tag:'bet.bluff.close', lesson:'bluffing' }));
+    return J(Object.assign(base, { verdict:'mistake', confidence:'leans', tag:'bet.bluff.bad', lesson:'bluffing', notable:true }));
+  }
+  const judge = (sp, ch) => !sp ? null : sp.street === 'preflop' ? judgePreflop(sp, ch) : sp.toCall > 0 ? judgePostflop(sp, ch) : judgeBet(sp, ch);
 
   /* ============================================================
      ADVICE BEFORE YOU ACT (step 4, brought forward for the preflop,
@@ -573,9 +700,9 @@ const CoachBrain = (() => {
   }
   function advise(sp){
     if (!sp) return null;
-    if (sp.street !== 'preflop' && sp.toCall <= 0) return null;   // (betting: step 3b)
     const pre = sp.street === 'preflop';
-    const to = pre ? raiseSize(sp) : postRaiseSize(sp), allinTo = sp.stack + sp.yourBet;
+    const betting = !pre && sp.toCall <= 0;
+    const to = pre ? raiseSize(sp) : betting ? betSize(sp).to : postRaiseSize(sp), allinTo = sp.stack + sp.yourBet;
     const moves = [];
     moves.push(sp.toCall > 0 ? 'fold' : 'check');
     if (sp.toCall > 0) moves.push('call');
@@ -592,6 +719,7 @@ const CoachBrain = (() => {
     const rank = x => x.j.verdict === 'good' ? 3 : x.j.verdict === 'fine' ? (x.j.confidence === 'close' ? 2 : 1.5) : 0;
     // the judge's own best move, if it's on offer; otherwise the best-judged one
     let want = judged[0].j.best === 'allin' && !moves.includes('allin') ? 'raise' : judged[0].j.best;
+    if (want === 'bet') want = moves.includes('raise') ? 'raise' : 'allin';
     if (want === 'raise' && !moves.includes('raise') && moves.includes('allin')) want = 'allin';
     let pick = judged.find(x => x.move === want) || judged.slice().sort((a, b) => rank(b) - rank(a))[0];
     if (want === 'check' && sp.toCall > 0) pick = judged.find(x => x.move === 'fold') || pick;
@@ -600,8 +728,11 @@ const CoachBrain = (() => {
     const altRank = alt ? rank(alt) : 0;
     const sure = altRank >= 2 ? 'close' : altRank >= 1.5 ? 'leans' : 'clear';
     const j = pick.j;
-    return { move:pick.move, to: pick.move === 'raise' || pick.move === 'allin' ? pick.ch.amount : null, toBB: pick.ch.toBB,
-      sure, alt: alt && altRank >= 1.5 ? alt.move : null, kind:j.kind, lesson:j.lesson, n:j.n, tag:j.tag, judgement:j };
+    // (checked to you, a raise is a bet)
+    const word = m => betting && m === 'raise' ? 'bet' : m;
+    return { move:word(pick.move), to: pick.move === 'raise' || pick.move === 'allin' ? pick.ch.amount : null, toBB: pick.ch.toBB,
+      sure, alt: alt && altRank >= 1.5 ? word(alt.move) : null, kind:j.kind, lesson:j.lesson, n:j.n, tag:j.tag, judgement:j,
+      stories: pre ? null : stories(sp) };
   }
 
   /* ---------------- a read of the hand as it stands (tap him) ----------------
@@ -657,6 +788,36 @@ const CoachBrain = (() => {
       handName: call('describePlayerHand', p.hand, g.board || []) || ''
     }));
   }
+  /* Your result the moment the winner is shown, before the pot is paid
+     (the pot is only paid when you press COLLECT): the game's own pot split
+     (computePots, every side pot) and the hands that were shown, compared
+     by the game's evaluator. Everyone folded: the one left takes it all. */
+  function settle(g, me){
+    if (!g || !me) return null;
+    const pots = call('computePots', g.players);
+    if (!Array.isArray(pots)) return null;
+    const board = g.board || [];
+    const shown = shownAtShowdown(g, me);
+    const strength = {};
+    if (me.inHand && !me.folded && board.length === 5) strength[me.id] = call('evaluate7', me.hand.concat(board));
+    shown.forEach(s => { if (board.length === 5) strength[s.id] = call('evaluate7', s.hole.concat(board)); });
+    let won = 0;
+    for (const pot of pots){
+      const elig = pot.eligible || [];
+      if (!elig.includes(me.id)) continue;
+      let winners;
+      if (elig.length === 1) winners = elig;
+      else {
+        if (elig.some(id => !strength[id])) return null;   // not everything shown yet
+        let best = null;
+        elig.forEach(id => { if (!best || call('compareHands', strength[id], strength[best]) > 0) best = id; });
+        winners = elig.filter(id => call('compareHands', strength[id], strength[best]) === 0);
+      }
+      if (winners.includes(me.id)) won += Math.floor(pot.amount / winners.length);
+    }
+    return won - (me.totalBetHand || 0);
+  }
+
   /* How the hand looks now, for its ending. Watched every beat (observe) as
      well as read at the end, because a hand can finish between two looks:
      after you fold, the game fast-forwards the rest. */
@@ -707,7 +868,7 @@ const CoachBrain = (() => {
     return finish(hand.seen || { phase:null, showdown:false, board:[], shown:[], yourHand:null, out:false }, net);
   }
 
-  return { spot, choice, judge, judgePreflop, judgePostflop, advise, advisePreflop:advise, oppRange, readNow, raiseSize, openRange, pushRange, raiserRange, record, handStart, observe, handEnd, closeMissed, shownAtShowdown, seatLabel, actingAfter,
+  return { spot, choice, settle, judge, judgeBet, stories, foldChance, betSize, judgePreflop, judgePostflop, advise, advisePreflop:advise, oppRange, readNow, raiseSize, openRange, pushRange, raiserRange, record, handStart, observe, handEnd, closeMissed, shownAtShowdown, seatLabel, actingAfter,
     get hand(){ return hand; }, get history(){ return history.slice(); }, reset(){ hand = null; history.length = 0; } };
 })();
 if (typeof window !== 'undefined') window.CoachBrain = CoachBrain;
