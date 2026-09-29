@@ -21,6 +21,8 @@
      back of the set, drawn in pixels.
    - Booting: power runs up the cable, a relay clicks, a dot, a line,
      static, then his eyes blink on and look round before settling.
+   - Pick him up and throw him (a joke): he tumbles round the screen,
+     knocks off its edges, lead still plugged in, and flies home.
 
    Presentation only: nothing here reads a hand or game state. Not loaded
    by the game; coach-face-lab.html injects it into its copy.
@@ -379,7 +381,7 @@ const CoachSet = (() => {
     if (!layer || !layer.isConnected){
       layer = document.createElement('div'); layer.className = 'cs-layer'; felt.appendChild(layer);
       shadow = document.createElement('i'); shadow.className = 'cs-shadow'; layer.appendChild(shadow);
-      tv = document.createElement('div'); tv.className = 'cs-tv'; tv.id = 'coach-station'; tv.setAttribute('aria-label', 'Coach'); layer.appendChild(tv);
+      tv = document.createElement('div'); tv.className = 'cs-tv'; tv.id = 'coach-station'; tv.setAttribute('aria-label', 'Coach'); layer.appendChild(tv); wireThrow();
     }
     if (!cableC || !cableC.isConnected){
       cableC = document.createElement('canvas'); cableC.className = 'cs-cable'; ($id('app') || document.body).appendChild(cableC);
@@ -603,7 +605,7 @@ const CoachSet = (() => {
     home.w = w;
   }
   function render(){
-    if (!tv) return;
+    if (!tv || thrown) return;
     const S = setOf();
     const x = Math.round((home.x + pose.x) / P) * P, y = Math.round((home.y + pose.y - pose.lift) / P) * P;
     // in the air he's the box in the round; down on the felt, the flat sprite
@@ -684,7 +686,7 @@ const CoachSet = (() => {
     const bx = home.left ? tr.left + (S.w - pt.x) * P * sxScale : tr.left + pt.x * P * sxScale;
     let by = tr.top + pt.y * P * (tr.height / (S.h * P) || 1);
     // while he's under the table, the lead goes over the table's edge to him
-    return [bx, Math.min(by, felt.bottom - 4)];
+    return [bx, thrown ? by : Math.min(by, felt.bottom - 4)];
   }
   function leadLength(){ return ({ short:46, medium:64, long:88 })[O.length] || (O.cable === 'tight' ? 46 : 64); }
   function ropeStart(){
@@ -728,7 +730,7 @@ const CoachSet = (() => {
         if (!cFixed){ c.x -= dx * diff * (aFixed ? 2 : 1); c.y -= dy * diff * (aFixed ? 2 : 1); }
       }
       // the slack lies on the dashboard's top edge
-      for (let i = 1; i < N; i++) if (rope[i].y > floor){ rope[i].y = floor; rope[i].py = floor + (rope[i].py - floor) * .3; rope[i].px = rope[i].x - (rope[i].x - rope[i].px) * .6; }
+      if (b[1] <= floor) for (let i = 1; i < N; i++) if (rope[i].y > floor){ rope[i].y = floor; rope[i].py = floor + (rope[i].py - floor) * .3; rope[i].px = rope[i].x - (rope[i].x - rope[i].px) * .6; }
       if (!plugged && !plugTo && rope[0].y > floor){ rope[0].y = floor; rope[0].py = floor; }
     }
   }
@@ -1167,6 +1169,145 @@ const CoachSet = (() => {
     try{ await unboot(); await sleep(400); on = true; await boot(); } finally { busy = false; }
   }
 
+  /* ---------------- the throw (a joke) ----------------
+     The owner, 29 Sep 2026: pick him up and throw him round the screen.
+     Drag him off the felt and let go: he tumbles in the round, knocks off
+     the screen's edges (a thud and a jolt each time), his lead stretched
+     after him and still plugged in, then flies home to his spot and lands
+     with his thud. Tap him mid-air to catch him. Presentation only. */
+  const THROW = { g:900, keep:.55, bounce:.72, spin:.55, flightMs:1600, minSpeed:260, maxSpeed:4200 };
+  let fly = null, flyLayer = null, thrown = false, noClickUntil = 0, grab = null;
+  function homeScreen(){
+    const felt = $id('felt'), fr = felt.getBoundingClientRect();
+    return [fr.left + felt.clientLeft + home.x, fr.top + felt.clientTop + home.y];
+  }
+  // his face on the box's front while he's in the air (it's normally blank there)
+  function faceIntoSolid(){
+    if (!solid || !face) return;
+    const S = setOf(), cv = document.createElement('canvas'); cv.width = S.w; cv.height = S.h;
+    const c = cv.getContext('2d'); S.draw(c, palOf(O.finish), ledState); c.drawImage(face, S.screen.x, S.screen.y);
+    solid.front = c.getImageData(S.box.x, S.box.y, S.box.w, S.box.h).data;
+  }
+  function flyRender(force){
+    const stepN = Math.floor(performance.now() / FRAME);
+    tv.style.transform = 'translate(' + Math.round(fly.x / P) * P + 'px,' + Math.round(fly.y / P) * P + 'px)';
+    if (force || stepN !== fly.step){ fly.step = stepN; Object.assign(pose, { lift:fly.lift, yaw:fly.yaw, pitch:fly.pitch, roll:fly.roll }); render3D(); }
+  }
+  function pickUp(px, py){
+    const S = setOf();
+    let x, y;
+    if (fly){ x = fly.x; y = fly.y; }
+    else {
+      [x, y] = homeScreen();
+      busy = true; thrown = true; clearTimeout(idleT);
+      try{ if (typeof CoachTalk !== 'undefined') CoachTalk.clear(); }catch(e){}
+      if (!flyLayer || !flyLayer.isConnected){ flyLayer = document.createElement('div'); flyLayer.className = 'cs-fly'; }
+      ($id('app') || document.body).appendChild(flyLayer);
+      flyLayer.appendChild(tv); tv.classList.add('is-air');
+      shadow.style.visibility = 'hidden';
+      grab = { mood:st.mood };
+      st.mood = 'surprised'; st.gaze = null; paintFace(); faceIntoSolid();
+      SFX.relay();
+    }
+    fly = { phase:'hold', x, y, vx:0, vy:0, w:S.w * P, h:S.h * P, dx:px - x, dy:py - y, lift:24, yaw:0, pitch:10, roll:0, vyaw:0, vpitch:0, vroll:0, samples:[{ t:performance.now(), x:px, y:py }], step:-1, last:performance.now() };
+    flyRender(true);
+    cancelAnimationFrame(fly.raf); fly.raf = requestAnimationFrame(flyTick);
+  }
+  function letGo(){
+    if (!fly || fly.phase !== 'hold') return;
+    const now = performance.now(), s = fly.samples.filter(p => now - p.t < 100);
+    let vx = 0, vy = 0;
+    if (s.length > 1){ const a = s[0], b = s[s.length - 1], dt = Math.max(.016, (b.t - a.t) / 1000); vx = (b.x - a.x) / dt; vy = (b.y - a.y) / dt; }
+    const sp = Math.hypot(vx, vy);
+    if (sp > THROW.maxSpeed){ vx *= THROW.maxSpeed / sp; vy *= THROW.maxSpeed / sp; }
+    if (sp < THROW.minSpeed){ goHome(); return; }
+    Object.assign(fly, { phase:'flight', vx, vy, t0:now, vyaw:vx * THROW.spin, vpitch:-vy * THROW.spin, vroll:vx * THROW.spin * .6 });
+    SFX.scrape();
+  }
+  function goHome(){
+    const [hx, hy] = homeScreen(), d = Math.hypot(hx - fly.x, hy - fly.y);
+    const wrap = a => ((a % 360) + 540) % 360 - 180;
+    Object.assign(fly, { phase:'home', t0:performance.now(), dur:Math.min(760, 360 + d * .45), from:[fly.x, fly.y], to:[hx, hy],
+      ctrl:[(fly.x + hx) / 2, Math.min(fly.y, hy) - 90], ang:[wrap(fly.yaw), wrap(fly.pitch), wrap(fly.roll)] });
+  }
+  function flyTick(now){
+    if (!fly) return;
+    const dt = Math.min(.033, (now - fly.last) / 1000); fly.last = now;
+    if (fly.phase === 'hold'){
+      const p = fly.samples[fly.samples.length - 1], tx = p.x - fly.dx, ty = p.y - fly.dy;
+      const vx = (tx - fly.x) / Math.max(dt, .001);
+      fly.x = tx; fly.y = ty;
+      // he dangles from your finger, swinging as you move him
+      fly.roll += (Math.max(-28, Math.min(28, -vx * .02)) - fly.roll) * .25;
+      fly.yaw += (Math.max(-20, Math.min(20, vx * .012)) - fly.yaw) * .2;
+      fly.pitch += (10 - fly.pitch) * .2;
+    } else if (fly.phase === 'flight'){
+      const k = Math.pow(THROW.keep, dt);
+      fly.vy += THROW.g * dt; fly.vx *= k; fly.vy *= k;
+      fly.x += fly.vx * dt; fly.y += fly.vy * dt;
+      fly.yaw += fly.vyaw * dt; fly.pitch += fly.vpitch * dt; fly.roll += fly.vroll * dt;
+      // the screen's edges: he knocks off them
+      const W = innerWidth, H = innerHeight;
+      const knock = v => { const s = Math.abs(v); if (s > 140){ SFX.thud(Math.min(.8, .2 + s / 3000)); jolt(s > 1200 ? 2 : 1); } };
+      if (fly.x < 0){ fly.x = 0; knock(fly.vx); fly.vx = -fly.vx * THROW.bounce; fly.vyaw = -fly.vyaw * .8; fly.vroll = -fly.vroll * .8; }
+      else if (fly.x > W - fly.w){ fly.x = W - fly.w; knock(fly.vx); fly.vx = -fly.vx * THROW.bounce; fly.vyaw = -fly.vyaw * .8; fly.vroll = -fly.vroll * .8; }
+      if (fly.y < 0){ fly.y = 0; knock(fly.vy); fly.vy = -fly.vy * THROW.bounce; fly.vpitch = -fly.vpitch * .8; }
+      else if (fly.y > H - fly.h){ fly.y = H - fly.h; knock(fly.vy); fly.vy = -fly.vy * THROW.bounce; fly.vpitch = -fly.vpitch * .8; fly.vx *= .85; }
+      const age = now - fly.t0;
+      if (age > THROW.flightMs || (age > 500 && Math.hypot(fly.vx, fly.vy) < 120)) goHome();
+    } else if (fly.phase === 'home'){
+      const t = Math.min(1, (now - fly.t0) / fly.dur), e = t * t * (3 - 2 * t), a = Math.min(1, t / .8), ea = 1 - (1 - a) * (1 - a);
+      const [x0, y0] = fly.from, [cx, cy] = fly.ctrl, [x1, y1] = fly.to;
+      fly.x = (1 - e) * (1 - e) * x0 + 2 * (1 - e) * e * cx + e * e * x1;
+      fly.y = (1 - e) * (1 - e) * y0 + 2 * (1 - e) * e * cy + e * e * y1;
+      fly.yaw = fly.ang[0] * (1 - ea); fly.pitch = fly.ang[1] * (1 - ea); fly.roll = fly.ang[2] * (1 - ea);
+      fly.lift = 24 * (1 - ea);
+      if (t >= 1){ land(); return; }
+    }
+    flyRender();
+    fly.raf = requestAnimationFrame(flyTick);
+  }
+  async function land(){
+    const W = WEIGHT[O.weight] || WEIGHT.heavy;
+    fly = null; thrown = false;
+    (layer || ensureLayer() && layer).appendChild(tv);
+    tv.classList.remove('is-air');
+    Object.assign(pose, { x:0, y:0, lift:0, sx:1, sy:1, bank:0, lean:0, yaw:0, pitch:0, roll:0, hideShadow:false });
+    buildSolid(); render();
+    SFX.thud(W.thud); if (O.jolt === 'on') jolt(W.jolt); dust(); bumpRope();
+    await play([{ t:0, sx:1 + W.squash, sy:1 - W.squash }, { t:FRAME, sx:1 - W.squash * .3, sy:1 + W.squash * .3 }, { t:FRAME * 2, sx:1 + W.squash * .15, sy:1 - W.squash * .15 }, { t:FRAME * 3 }]);
+    // a bit dazed, then himself again
+    st.mood = 'wince'; paintFace(); await sleep(500);
+    st.blink = true; paintFace(); await sleep(110); st.blink = false;
+    st.mood = grab ? grab.mood : 'calm'; grab = null; paintFace();
+    noClickUntil = performance.now() + 350;
+    busy = false; idle();
+  }
+  let down = null;
+  function wireThrow(){
+    tv.addEventListener('pointerdown', e => {
+      if (motionOffSafe()) return;
+      if (fly && fly.phase === 'flight'){ e.preventDefault(); pickUp(e.clientX, e.clientY); return; }   // caught
+      if (!on || busy) return;
+      down = { x:e.clientX, y:e.clientY, id:e.pointerId };
+    });
+  }
+  function startThrow(){
+    addEventListener('pointermove', e => {
+      if (fly && fly.phase === 'hold'){ fly.samples.push({ t:performance.now(), x:e.clientX, y:e.clientY }); if (fly.samples.length > 12) fly.samples.shift(); return; }
+      if (down && e.pointerId === down.id && Math.hypot(e.clientX - down.x, e.clientY - down.y) > 8){
+        const d = down; down = null;
+        if (on && !busy){ pickUp(d.x, d.y); fly.samples.push({ t:performance.now(), x:e.clientX, y:e.clientY }); }
+      }
+    }, { passive:true });
+    const up = () => { down = null; if (fly && fly.phase === 'hold') letGo(); };
+    addEventListener('pointerup', up); addEventListener('pointercancel', up);
+    // no tap on him (his read of the hand) from a throw's release
+    addEventListener('click', e => {
+      if ((thrown || performance.now() < noClickUntil) && e.target.closest && e.target.closest('#coach-station')){ e.stopPropagation(); e.preventDefault(); }
+    }, true);
+  }
+
   /* ---------------- life ---------------- */
   let idleT = null;
   function idle(){
@@ -1257,7 +1398,7 @@ const CoachSet = (() => {
     if (wantOn && !on && !busy && home.edge !== undefined) power(true);
   }
   function start(){
-    ensureKey(); ensureLayer();
+    ensureKey(); ensureLayer(); startThrow();
     setInterval(follow, 500);
     window.addEventListener('resize', () => { measureHome(); render(); });
     new MutationObserver(() => setTimeout(() => { measureHome(); render(); }, 40)).observe(document.documentElement, { attributes:true, attributeFilter:['data-ds-where', 'data-ds-size'] });
