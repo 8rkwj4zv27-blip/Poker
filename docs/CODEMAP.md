@@ -17,7 +17,8 @@ ticket-feed.js          table-intro.js
 dashboard.js            crt.js                  finishes.js
 press-feel.js           showdown.js             dealer-deck.js
 action-drum.js          knock-check.js          award-key.js
-card-holder.js          deal-styles.js
+card-holder.js          deal-styles.js          coach-set.js
+coach-talk.js
 ```
 
 Later files call into earlier ones freely; there's no module system, so
@@ -581,6 +582,18 @@ card, rare and up only ever on a single card. Runs the deck in its 2.5D
 SPRITE mode (switchable against today's flat card). The candidate plugs into
 `DealerDeck.flightFor`. Phone-first (host `js/showdown-lab-host.js`).
 Since v0.51.0 the styles are the game's own; the lab adds only its sheet.
+
+## `js/coach-set.js` + `js/coach-talk.js` (+ `css/coach-set.css`, `css/coach-talk.css`) — the Coach (live, v0.54.0)
+
+The Coach on the table (`docs/coach/COACH_PLAN.md`; Pattern Book: Coach).
+`coach-set.js`: his pixel TV, the COACH key beside ⚙ (`settings.coachBot`),
+the lift on and off in 2.5D, his aux lead, the boot; he follows the table
+(there whenever it's showing and he's switched on, gone when it isn't).
+`coach-talk.js`: his bubble, voice and lines, the talk slider (Settings →
+Coach talk, `settings.coachTalk`); hears the game through `applyAction`
+and `updateCoach` and by watching `game.handNumber` / `game.phase`.
+Presentation only; the lines are placeholders until his brain. The labs
+below drive the same two files.
 
 ## `coach-face-lab.html` + `js/coach-face-lab.js` + `css/coach-face-lab.css` + candidate `js/coach-set.js` / `css/coach-set.css` — Coach Face Lab
 

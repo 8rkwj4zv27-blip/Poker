@@ -381,7 +381,7 @@ const CoachSet = (() => {
       tv = document.createElement('div'); tv.className = 'cs-tv'; tv.id = 'coach-station'; tv.setAttribute('aria-label', 'Coach'); layer.appendChild(tv);
     }
     if (!cableC || !cableC.isConnected){
-      cableC = document.createElement('canvas'); cableC.className = 'cs-cable'; document.body.appendChild(cableC);
+      cableC = document.createElement('canvas'); cableC.className = 'cs-cable'; ($id('app') || document.body).appendChild(cableC);
     }
     return true;
   }
@@ -398,7 +398,13 @@ const CoachSet = (() => {
     // the two small keys side by side where ⚙ sat alone
     const row = document.createElement('div'); row.className = 'ck-row';
     gear.parentNode.insertBefore(row, gear); row.append(gear, key);
-    key.addEventListener('click', () => power(!on));
+    // the player's switch: remembered in their settings (coachBot)
+    key.addEventListener('click', async () => {
+      if (busy) return;
+      const want = !on;
+      try{ settings.coachBot = want; saveSettings(); }catch(e){}
+      await power(want);
+    });
     return key;
   }
   function build(){
@@ -640,7 +646,7 @@ const CoachSet = (() => {
   }
   function ensureJack(){
     const dock = $id('your-seat-dock'); if (!dock) return;
-    if (!jack || !jack.isConnected){ jack = document.createElement('i'); document.body.appendChild(jack); }
+    if (!jack || !jack.isConnected){ jack = document.createElement('i'); ($id('app') || document.body).appendChild(jack); }
     jack.className = 'cs-jack cs-jack--' + (O.jack || 'none');
     const j = jackAt(); if (!j) return;
     const w = O.jack === 'ring' ? 10 : 18;
@@ -1212,8 +1218,29 @@ const CoachSet = (() => {
     canvasHolder.appendChild(c);
   }
 
+  /* in the game: he's there whenever you're at a table with him switched
+     on (Settings keep it), and gone the moment the table isn't showing */
+  function tableShowing(){
+    const ts = $id('table-screen');
+    return !!(ts && !ts.classList.contains('hidden') && ts.offsetParent !== null && typeof game !== 'undefined' && game && game.players && game.players.length);
+  }
+  function offNow(){
+    clearTimeout(idleT);
+    try{ if (typeof CoachTalk !== 'undefined') CoachTalk.clear(); }catch(e){}
+    on = false; ledState = false; bootFrame = null;
+    ropeStop(); render();
+    if (key){ key.classList.remove('is-on'); key.setAttribute('aria-pressed', 'false'); }
+  }
+  function follow(){
+    let wantOn = false;
+    try{ wantOn = !!settings.coachBot; }catch(e){}
+    if (!tableShowing()){ if ((on || rope) && !busy) offNow(); return; }
+    if (key){ key.classList.toggle('is-on', on); key.setAttribute('aria-pressed', on ? 'true' : 'false'); }
+    if (wantOn && !on && !busy && home.edge !== undefined) power(true);
+  }
   function start(){
     ensureKey(); ensureLayer();
+    setInterval(follow, 500);
     window.addEventListener('resize', () => { measureHome(); render(); });
     new MutationObserver(() => setTimeout(() => { measureHome(); render(); }, 40)).observe(document.documentElement, { attributes:true, attributeFilter:['data-ds-where', 'data-ds-size'] });
     setInterval(() => { ensureKey(); if (!layer || !layer.isConnected){ layer = null; ensureLayer(); if (on) build(); } else if (!busy){ measureHome(); render(); } }, 1000);

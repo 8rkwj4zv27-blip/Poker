@@ -28,8 +28,9 @@
   clip-path:polygon(4px 0,calc(100% - 4px) 0,100% 50%,calc(100% - 4px) 100%,4px 100%,0 50%);
 }
 .cs-dust{ position:absolute; left:0; top:0; width:2px; height:2px; background:color-mix(in srgb,var(--felt,#2E5A3F) 55%,#E8E2C8); pointer-events:none; }
-/* the cable: a canvas over the whole screen, below the lab's controls */
-.cs-cable{ position:fixed; left:0; top:0; z-index:60; pointer-events:none; image-rendering:pixelated; image-rendering:crisp-edges; }
+/* the cable: a canvas over the whole screen, inside #app just under its
+   menus (the scrim is 44, the sheets 45-46) */
+.cs-cable{ position:fixed; left:0; top:0; z-index:43; pointer-events:none; image-rendering:pixelated; image-rendering:crisp-edges; }
 
 /* ⚙ and COACH side by side */
 .ck-row{ display:flex; gap:6px; justify-content:center; align-items:center; margin:0 auto; }
@@ -45,7 +46,7 @@
    RING (round 3): a gold ring. PLATE: a little brass plate with two
    screws and the socket. PLATE + LAMP: the same with a lamp that lights
    once he's booted. */
-.cs-jack{ position:fixed; left:0; top:0; z-index:59; pointer-events:none; }
+.cs-jack{ position:fixed; left:0; top:0; z-index:43; pointer-events:none; }
 .cs-jack--none{ display:none; }
 .cs-jack--ring{
   width:10px; height:8px; background:#080405; border-radius:1px;

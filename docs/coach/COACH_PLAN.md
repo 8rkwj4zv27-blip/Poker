@@ -1,5 +1,9 @@
 # The Coach — plan
 
+**Status (29 Sep 2026): LIVE in the game as v0.54.0, with placeholder
+lines.** Look, rig and voice signed off (Pattern Book: Coach). Next: his
+brain (build order step 6 onwards), in a fresh session.
+
 A coach who sits next to you at the table, watches you play and teaches
 you poker as you go: what the terms mean, when to push, what went right
 and wrong, and how to improve. Agreed with the owner, 28 September 2026.
@@ -322,3 +326,20 @@ game, then his brain:
   You won't see many better than that."); they now use an example hand of
   that kind with its true rank (Pocket Aces, Jack-Ten suited, Nine-Eight
   offsuit, Seven-Two offsuit). In play he always used the real ranking.
+
+## Into the game (v0.54.0, 29 Sep 2026)
+
+Owner: put him in as he is, placeholder lines and all, to see him on the
+phone before the brain. `index.html` loads `css/coach-set.css`,
+`css/coach-talk.css` (before `css/crt.css`) and `js/coach-set.js`,
+`js/coach-talk.js` (last); `sw.js` precaches them (`poker-v54-0`);
+`BUILD_VERSION` v0.54.0. Settings: `coachBot:false` (the COACH key beside
+⚙ switches him and is remembered), `coachTalk:'4'` (Settings → Coach talk,
+on the sheet's segmented keys). He follows the table: there whenever it's
+showing and he's on, gone the moment it isn't. His lead, jack and bubble
+live inside `#app` at z 43, under the menus (the scrim is 44). Pattern
+Book section and a check (`validation/pattern-book-checks.js`: loaded,
+cached, to the owner's orders, under the menus, Reduced Motion,
+presentation only). Checked in the real game in an emulated iPhone:
+switch on (saved), a line across the felt, Settings over him, the talk
+row saved, leaving the table (gone), reload and deal (back by himself).

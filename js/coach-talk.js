@@ -52,6 +52,7 @@ const CoachTalk = (() => {
     voice:'tick', pitch:'low', often:'other', pace:'fast', volume:'medium', mouth:'blip', type:'mixed' };
   let O = Object.assign({}, DEFAULTS);
   function apply(order){ O = Object.assign({}, DEFAULTS, order || {}); }
+  // (the game keeps the notch in settings; apply() from a lab overrides it)
 
   /* ---------------- the lines ----------------
      Flat and plain (the owner's brief): clear, informative, the odd short
@@ -241,7 +242,7 @@ const CoachTalk = (() => {
     const typed = O.textIn === 'type' && !motionOffSafe();
     // lay out on the finished line, then type into it (it grows as it types)
     el.querySelector('.ctk-said').innerHTML = htmlUpTo(rs, text.length);
-    document.body.appendChild(el);
+    ($id('app') || document.body).appendChild(el);
     place(el);
     if (typed){ el.querySelector('.ctk-said').innerHTML = ''; el.querySelector('.ctk-rest').textContent = text; el.classList.add('is-typing'); }
     try{ CoachSet.setMood(line[1]); }catch(e){}
@@ -377,7 +378,15 @@ const CoachTalk = (() => {
     }, 200);
   }
 
-  function start(){ hook(); }
+  /* Settings → Coach talk (coachTalk, '1'-'4'): the talk slider */
+  function wireSetting(){
+    const seg = $id('coach-talk-seg');
+    const paint = () => { if (seg) seg.querySelectorAll('button').forEach(b => b.classList.toggle('active', b.dataset.v === O.notch)); };
+    try{ if (settings.coachTalk) O.notch = String(settings.coachTalk); }catch(e){}
+    if (seg) seg.querySelectorAll('button').forEach(b => { b.onclick = () => { O.notch = b.dataset.v; try{ settings.coachTalk = O.notch; saveSettings(); }catch(e){} paint(); }; });
+    paint();
+  }
+  function start(){ hook(); wireSetting(); }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start); else setTimeout(start, 0);
 
   return { apply, say, sayAny, clear:() => clear(true), OPTIONS, DEFAULTS, LINES, get order(){ return Object.assign({}, O); } };

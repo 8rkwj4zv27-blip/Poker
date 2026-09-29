@@ -8,7 +8,7 @@
      --ctk-tail-x  where the tail sits along the bottom edge
    ============================================================ */
 .ctk{
-  position:fixed; z-index:9050; box-sizing:border-box; pointer-events:auto; cursor:pointer;
+  position:fixed; z-index:43; box-sizing:border-box; pointer-events:auto; cursor:pointer;
   padding:9px 12px 11px; border:3px solid #080405; min-width:44px;
   opacity:0; transition:opacity .12s steps(2,end), transform .18s steps(4,end);
   -webkit-tap-highlight-color:transparent;
