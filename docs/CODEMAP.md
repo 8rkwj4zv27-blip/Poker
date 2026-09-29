@@ -587,7 +587,8 @@ Since v0.51.0 the styles are the game's own; the lab adds only its sheet.
 
 The Coach on the table (`docs/coach/COACH_PLAN.md`; Pattern Book: Coach).
 `coach-set.js`: his pixel TV, the COACH key beside ⚙ (`settings.coachBot`),
-the lift on and off in 2.5D, his aux lead, the boot; he follows the table
+the lift on and off in 2.5D, his aux lead, the boot, picking him up and
+throwing him round the screen (a joke, v0.57.3); he follows the table
 (there whenever it's showing and he's switched on, gone when it isn't).
 `coach-talk.js`: his bubble, voice and lines, the talk slider (Settings →
 Coach talk, `settings.coachTalk`); hears the game through `applyAction`

@@ -1,4 +1,4 @@
-const CACHE_NAME = 'poker-v57-2';
+const CACHE_NAME = 'poker-v57-3';
 const APP_SHELL = [
   './',
   './index.html',
@@ -35,11 +35,11 @@ const APP_SHELL = [
   './css/action-drum.css?v=2',
   './css/knock-check.css?v=1',
   './css/award-key.css?v=1',
-  './css/coach-set.css?v=3',
+  './css/coach-set.css?v=4',
   './css/coach-talk.css?v=1',
   './css/crt.css?v=1',
   './js/01-poker-math.js?v=ai-1',
-  './js/02-support-systems.js?v=pip-2',
+  './js/02-support-systems.js?v=pip-3',
   './js/03-opponents.js?v=ai-1',
   './js/04-modes-and-scoring.js?v=cards-1',
   './js/05-game-engine.js?v=ai-1',
@@ -70,7 +70,7 @@ const APP_SHELL = [
   './js/action-drum.js?v=2',
   './js/knock-check.js?v=1',
   './js/award-key.js?v=1',
-  './js/coach-set.js?v=3',
+  './js/coach-set.js?v=4',
   './js/coach-talk.js?v=6',
   './js/coach-brain.js?v=6',
   './js/coach-lines.js?v=5',

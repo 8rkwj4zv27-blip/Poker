@@ -8,7 +8,11 @@
    felt and its furniture, the pot tray included; under the seats): the felt, so he's hidden under its near
    edge until he's lifted over it */
 .cs-layer{ position:absolute; inset:0; z-index:5; overflow:hidden; border-radius:inherit; pointer-events:none; }
-.cs-tv{ position:absolute; left:0; top:0; transform-origin:50% 100%; pointer-events:auto; visibility:hidden; -webkit-tap-highlight-color:transparent; }
+.cs-tv{ position:absolute; left:0; top:0; transform-origin:50% 100%; pointer-events:auto; visibility:hidden; -webkit-tap-highlight-color:transparent; touch-action:none; }
+/* picked up and thrown (a joke): he leaves the felt for the whole screen,
+   over his lead (it goes into his back), under the menus */
+.cs-fly{ position:fixed; inset:0; z-index:43; pointer-events:none; overflow:visible; }
+.cs-fly .cs-tv{ visibility:visible; }
 .cs-body,.cs-face,.cs-still,.cs-3d{ image-rendering:pixelated; image-rendering:crisp-edges; display:block; }
 .cs-body{ position:absolute; left:0; top:0; }
 /* in the air: the box in the round replaces the flat sprite and its screen */
