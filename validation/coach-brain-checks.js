@@ -351,7 +351,7 @@ check('A recorded decision carries its judgement', () => {
 
 /* ---------------- his lines ---------------- */
 const SLOTS = new Set(['hole','pct','range','seatOn','seatFrom','SeatFrom','behindP','bb','size','call','odds','eq','need','raiser','limpersP',
-  'raiserFrom','bettor','betSize','DrawName','handWords','rangeWords','opp','Opp','won','sizeWords','fold','foldNeed','players','Bettor','Raiser','BehindP','LimpersP','to','toBB','lean','alt','Lean','Alt','handName','drawName','outs','hitPct','byWhen','hitNext','threat','pot']);
+  'raiserFrom','bettor','betSize','DrawName','handWords','rangeWords','opp','Opp','won','sizeWords','fold','foldNeed','players','Bettor','Raiser','BehindP','LimpersP','to','toBB','lean','alt','Lean','Alt','handName','drawName','outs','hitPct','byWhen','hitNext','threat','pot','shortOpp','ShortOpp']);
 const JARGON = /\b(limp(s|ed|ing|ers?)?|cutoff|hijack|lojack|under the gun|pot odds|outs|three-bet|3-bet|semi-bluff|value bet|kicker|shove[ds]?|bluff catcher|pot control|equity|range|overpair|c-bet|in position|out of position|isolate|dominated)\b/i;
 const BANNED = /\b(kid|buddy|pal|mate|champ|sport|chief|boss|friend|damn|hell|shit|crap)\b/i;
 check('His lines: flat, clean, fit his bubble, and only use blanks the game fills', () => {
@@ -690,6 +690,84 @@ check('He works out your result from the showdown before the pot is paid (the CO
   // you folded
   const g2 = table(3, 0, 1); act(g2, 0, 'raise', 60); act(g2, 1, 'fold'); act(g2, 2, 'fold'); g2.phase = 'foldwin';
   assert.strictEqual(B.settle(g2, you(g2)), -10, 'the small blind you posted');
+});
+
+/* ================= the owner's notes, 29 Sep 2026 (tidy-ups) ================= */
+check('Short because of them: you cover Lucy\'s 70 chips; his lines name her, not you', () => {
+  // heads-up, you on the button (small blind) with 1,400; the big blind has 70 behind
+  let g = table(2, 0, 0, { hole:H('6d','2d'), stack:1400, bb:20 });
+  g.players[1].chips = 70; g.players[1].name = 'Lucy';
+  const s = B.spot(g, you(g));
+  assert.ok(s.stackBB > 60 && s.effectiveBB <= 5, 'deep for you, short for the hand: ' + s.stackBB + ' / ' + s.effectiveBB);
+  assert.strictEqual(s.shortBy, 'Lucy');
+  const j = judge(g, 0, 'fold');
+  assert.strictEqual(j.kind, 'short'); assert.strictEqual(j.n.shortOpp, 'Lucy');
+  const L = LINES();
+  ['lesson.short-stack', 'tip.short-stack', 'again.short-stack', 'advise.short.fold', 'advise.short.allin', 'hint.short', j.tag + '.why']
+    .forEach(k => assert.ok(L[k + '.opp'], 'her wording for ' + k));
+  // your own short stack: no "her"
+  g = table(6, 0, 0, { hole:H('As','9d'), stack:160 }); folds([3, 4, 5], g);
+  assert.strictEqual(judge(g, 0, 'raise', 160).n.shortOpp, null);
+});
+// a turn, checked to you, heads-up, with an open-ended straight draw; your stack set to `stack`
+function drawSpot(stack, turnBet){
+  const g = table(6, 0, 0, { hole:H('9s','8s') });
+  [3, 4, 5].forEach(i => act(g, i, 'fold'));
+  act(g, 0, 'raise', 50); act(g, 1, 'fold'); act(g, 2, 'call');
+  street(g, 'flop', ['7h','6c','2d'].map(C)); act(g, 2, 'check'); act(g, 0, 'check');
+  street(g, 'turn', [C('Kd')]); if (turnBet) act(g, 2, 'bet', turnBet); else act(g, 2, 'check');
+  g.players[0].chips = stack;
+  return g;
+}
+check('A draw, all in: all your chips on a draw is a mistake (never clear-cut); his advice checks instead of betting it all', () => {
+  let g = drawSpot(400);   // a proper bet would be most of your chips
+  let j = judge(g, 0, 'raise', 400);
+  assert.ok(j.verdict !== 'good' && /^bet\.semi\.shove/.test(j.tag) && j.confidence !== 'clear', 'all in on the draw: ' + j.tag + ' ' + j.verdict + ' ' + j.confidence);
+  // his own bet: half the pot is most of your chips, against a player who
+  // hardly ever folds: all in doesn't pay, so he checks
+  g = drawSpot(120); g.reads = { p2:{ hands:30, facedBet:12, foldedToBet:1 } };
+  const a = B.advise(B.spot(g, you(g)));
+  assert.strictEqual(a.move, 'check', 'he checks it: ' + JSON.stringify({ move:a.move, tag:a.tag }));
+  assert.strictEqual(a.tag, 'bet.check.draw.deep');
+  // a normal-sized bet with the same draw, deep: still good
+  g = drawSpot(2000);
+  j = judge(g, 0, 'raise', Math.round(g.pot * 0.5));
+  assert.strictEqual(j.tag, 'bet.semi'); assert.strictEqual(j.verdict, 'good');
+  // all in for less than the pot: that's just a bet, and fine
+  g = drawSpot(60);
+  j = judge(g, 0, 'raise', 60);
+  assert.ok(j.verdict !== 'mistake', 'a small all in with a draw: ' + j.tag + ' ' + j.verdict);
+});
+check('A draw, all in over a bet: a mistake; calling at the right price is still fine', () => {
+  // the turn: they bet half the pot into you, and you have 400 behind
+  let j = judge(drawSpot(400, 55), 0, 'raise', 400);
+  is(j, 'mistake', 'leans', 'post.raise.semi.shove');
+  j = judge(drawSpot(400, 30), 0, 'call');
+  assert.notStrictEqual(j.verdict, 'mistake', 'calling a small bet with the draw: ' + j.tag);
+});
+check('What their betting says follows the hand: a check then a bet has turned; "keeps" only after two', () => {
+  // they checked the flop, and bet the turn
+  let g = drawSpot(2000); act(g, 0, 'check'); street(g, 'river', [C('3s')]); act(g, 2, 'bet', 100);
+  let st = B.stories(B.spot(g, you(g))).one;
+  assert.strictEqual(st.kind, 'turned'); assert.strictEqual(st.again, false);
+  // bet the flop and bet again: a pattern
+  g = table(6, 0, 0, { hole:H('9s','8s') }); [3, 4, 5].forEach(i => act(g, i, 'fold'));
+  act(g, 0, 'raise', 50); act(g, 1, 'fold'); act(g, 2, 'call');
+  street(g, 'flop', ['7h','6c','2d'].map(C)); act(g, 2, 'bet', 50); act(g, 0, 'call');
+  st = B.stories(B.spot(g, you(g))).one; assert.strictEqual(st.kind, 'strong'); assert.strictEqual(st.again, false);
+  street(g, 'turn', [C('Kd')]); act(g, 2, 'bet', 100);
+  st = B.stories(B.spot(g, you(g))).one; assert.strictEqual(st.kind, 'strong'); assert.strictEqual(st.again, true);
+  // one bet never says "keeps"; two do
+  const L = LINES();
+  L['story.strong.one'].concat(L['story.calling.one'], L['story.turned.one']).forEach(l => assert.ok(!/\bkeeps?\b/i.test(l[2]), 'one action, not a pattern: ' + l[2]));
+  assert.ok(L['story.strong.again.one'] && L['story.calling.again.one'] && L['story.turned.one'], 'lines for a pattern and a turn');
+});
+check('A hand that hurt: short comfort lines, no lesson in them', () => {
+  const L = LINES();
+  ['comfort.out', 'comfort.out.fine', 'comfort.hurt', 'comfort.fine'].forEach(k => {
+    assert.ok(L[k] && L[k].length >= 2, k);
+    L[k].forEach(l => { assert.strictEqual(l[0], 1, k + ' plays at every notch'); assert.ok(l[2].length <= 90, k + ' is short: ' + l[2]); });
+  });
 });
 
 process.stdout.write('\n' + passed + ' coach brain checks passed.\n');
