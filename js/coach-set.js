@@ -789,6 +789,13 @@ const CoachSet = (() => {
       const q = P2[Math.floor(pulse * (P2.length - 1))];
       if (q){ c.fillStyle = lit; c.fillRect(q[0] - 1, q[1] - 1, 3, 3); }
     }
+    // the lead goes in behind the set: nothing of it is drawn over his
+    // sprite while he's on the felt (the port is on his back)
+    if (tv && tv.isConnected && !tv.classList.contains('is-air')){
+      const S = setOf(), tr = tv.getBoundingClientRect(), k = tr.width / (S.w * P) || 1;
+      const bx = Math.floor((tr.left + S.box.x * P * k) / P), by = Math.floor((tr.top + S.box.y * P * k) / P);
+      c.clearRect(bx, by, Math.ceil(S.box.w * k) + 1, Math.ceil(S.box.h * k));
+    }
     // the plug, upright at the free end
     const a = P2[0]; if (!a) return;
     const loose = !plugged && !plugTo, sunk = plugged ? 2 : 0;

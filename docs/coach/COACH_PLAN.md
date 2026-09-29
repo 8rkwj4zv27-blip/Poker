@@ -306,3 +306,10 @@ game, then his brain:
   IN THE SCREEN FONT (capitals, like the CRTs) · SCREEN FONT, UPPER + LOWER
   CASE · ROUND 1. The line is split into runs and typed a character at a
   time across them.
+- **Fixes** (owner, 29 Sep 2026): the screen-font numbers rose off the
+  line. Measured: 11px Press Start ink sits 1px higher off the baseline
+  than 16px Pixelify (rows -11..-2 against -10..-1), and the runs had been
+  nudged up another 1px; they now drop 1px (`vertical-align:-1px`) and
+  line up top and bottom. The lead no longer crosses his artwork: while
+  he's on the felt, nothing of it is drawn over his sprite, so it comes
+  out from behind the set.
