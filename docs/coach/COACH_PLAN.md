@@ -2,7 +2,8 @@
 
 **Status (29 Sep 2026): LIVE in the game as v0.54.0, with placeholder
 lines.** Look, rig and voice signed off (Pattern Book: Coach). Next: his
-brain (build order step 6 onwards), in a fresh session.
+brain (build order step 6 onwards), in a fresh session: start with
+`docs/coach/BRAIN_HANDOVER.md`.
 
 A coach who sits next to you at the table, watches you play and teaches
 you poker as you go: what the terms mean, when to push, what went right
