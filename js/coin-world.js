@@ -1863,7 +1863,10 @@
         if (t.vanish||t.mouth||t.rim||t.via){ if (b.t>=b.T) arrive(b,false); break; }
         if (!b.inFelt && (insideFelt(b.x,b.y) || (b.zone && b.zone.box && b.x>b.zone.box.L && b.x<b.zone.box.R && b.y>b.zone.box.T && b.y<b.zone.box.B))) b.inFelt=true;
         if (b.inFelt && b.z<b.d*.8 && b.t>.08 && contain(b)) sfx('wall');
-        if (b.z<4) lip(b);
+        // (not a coin flying to its exact place: coming through the bank's
+        // slot at floor height, the lip threw it into the rack's floor strip
+        // and it sailed on past its place, out under the bank)
+        if (b.z<4 && !t.slot) lip(b);
         if (b.z<STEP()*1.5) collide(b);
         if (b.vz<0){
           const sup=t.slot?{ h:t.z||0, o:null }:(b.z<40?supportUnder(b):{ h:0, o:null });

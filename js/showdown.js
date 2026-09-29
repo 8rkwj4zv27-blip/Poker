@@ -663,19 +663,29 @@ const Showdown = (function(){
   }
   // the coins take the heat (their layer is tinted; nothing else is on it
   // at this moment)
+  const tintOf = k => 'sepia(' + (.8 * k).toFixed(2) + ') saturate(' + (1 + 2.6 * k).toFixed(2) + ') hue-rotate(' + (-28 * k).toFixed(0) + 'deg) brightness(' + (1 + .12 * k).toFixed(2) + ')';
+  let coolT = 0;
   function coinsHeat(k){
     const air = CW().airLayer && CW().airLayer(); if (!air) return;
+    clearInterval(coolT); coolT = 0;
     const mode = opt('ccoins');
     if (mode === 'none' || k <= 0){ air.style.filter = ''; return; }
     air.style.transition = 'none';
-    air.style.filter = 'sepia(' + (.8 * k).toFixed(2) + ') saturate(' + (1 + 2.6 * k).toFixed(2) + ') hue-rotate(' + (-28 * k).toFixed(0) + 'deg) brightness(' + (1 + .12 * k).toFixed(2) + ')' +
-      (mode === 'glow' ? ' drop-shadow(0 0 ' + (1 + 4 * k).toFixed(1) + 'px ' + heatColour(k) + ')' : '');
+    air.style.filter = tintOf(k) + (mode === 'glow' ? ' drop-shadow(0 0 ' + (1 + 4 * k).toFixed(1) + 'px ' + heatColour(k) + ')' : '');
   }
+  // the coins cool back to gold in a few hard steps, set here: a CSS filter
+  // transition on the whole coin layer (every coin its own layer) stalled
+  // iPhone Safari for seconds at the BANG
   function coolCoins(ms){
     const air = CW().airLayer && CW().airLayer(); if (!air) return;
-    air.style.transition = ms && !quiet() ? 'filter ' + ms + 'ms steps(6,end)' : 'none';
-    air.style.filter = '';
-    setTimeout(() => { air.style.transition = ''; }, (ms || 0) + 60);
+    clearInterval(coolT); coolT = 0;
+    air.style.transition = 'none';
+    if (!ms || quiet()){ air.style.filter = ''; return; }
+    const N = 4; let n = 0;
+    coolT = setInterval(() => {
+      n++; air.style.filter = n < N ? tintOf(1 - n / N) : '';
+      if (n >= N){ clearInterval(coolT); coolT = 0; }
+    }, ms / N);
   }
   function ember(k){
     const T = CW().tray(); if (!T || quiet() || opt('csparks') !== 'embers') return;
@@ -897,10 +907,12 @@ const Showdown = (function(){
     if (bed && !quiet()){ bed.classList.remove('sd-flash'); void bed.offsetWidth; bed.classList.add('sd-flash'); }
     heat(0);
     const air = W.airLayer && W.airLayer();
-    // the coins keep their heat until the cooling option lets it go
-    if (air && opt('ccoins') !== 'none') air.style.filter = 'sepia(.8) saturate(3.6) hue-rotate(-28deg) brightness(1.12)' + (opt('ccoins') === 'glow' ? ' drop-shadow(0 0 5px ' + heatColour(p) + ')' : '');
+    // the coins keep their heat until the cooling option lets it go (the
+    // tint only: no glow, and the coin layer itself isn't shaken, which with
+    // the filter on it froze iPhone Safari's drawing for seconds here)
+    if (air && opt('ccoins') !== 'none'){ air.style.transition = 'none'; air.style.filter = tintOf(1); }
     const jolt = opt('cjolt');
-    if (jolt !== 'none'){ bump(jolt === 'big' ? 1 : .35); W.shake(); if (jolt === 'big') setTimeout(() => W.shake(), 90); }
+    if (jolt !== 'none'){ bump(jolt === 'big' ? 1 : .35); if (jolt === 'big') setTimeout(() => bump(.6), 90); }
     if (typeof DashRim !== 'undefined') DashRim.win();
     sfx('thump', 1, .5 + .15 * p); sfx('knock', 1, .7); setTimeout(() => sfx('thump', .8, .4), 60);
     for (let j = 0; j < 6; j++) setTimeout(() => sfx('stack', .9, rr(1, 1.6)), 20 + j * 25);
