@@ -1198,6 +1198,22 @@ function snapWager(value,bounds,mode){
   return Math.max(bounds.min,Math.min(bounds.max,snapped));
 }
 
+/* An opponent never bets past what anyone can call: over an all-in that
+   extra only comes back as a pointless side pot. A raise nobody can call
+   becomes a call (or check); a bigger one stops at the most anyone left
+   can put in, never under a legal full raise. */
+function fitDecisionToTable(g,player,decision){
+  if (!decision || !['bet','raise','allin'].includes(decision.action)) return decision;
+  const b=wagerBounds(g,player);
+  if (!b || !b.matched) return decision;
+  if (b.max<=b.currentBet){
+    return {action:b.currentBet>b.playerBet ? 'call' : 'check', amount:0};
+  }
+  const want=decision.action==='allin' ? b.playerBet+b.stack : Math.round(Number(decision.amount)||0);
+  if (want<=b.max) return decision;
+  return {action:b.currentBet>0 ? 'raise' : 'bet', amount:b.max};
+}
+
 function quickBetContext(g){
   if (!g || !['preflop','flop','turn','river'].includes(g.phase)) return null;
   const preflop=g.phase==='preflop';
@@ -1241,6 +1257,7 @@ function actionLabel(action, player, amt){
   if (player.allIn) return 'All-In';
   if (action==='fold') return 'Fold';
   if (action==='check') return 'Check';
+  if (action==='match') return 'Match ' + fmtActionAmount(amt);
   if (action==='call') return amt>0 ? 'Call ' + fmtActionAmount(amt) : 'Check';
   if (action==='bet') return 'Bet ' + fmtActionAmount(amt);
   if (action==='raise') return 'Raise to ' + fmtActionAmount(amt);
@@ -1354,7 +1371,11 @@ function applyAction(player, decision){
     if (player.allIn) maybeTableTalk(player, 'allin');
     else if (action==='raise' || action==='bet') maybeTableTalk(player, 'raise');
   }
-  const streetLabel = actionLabel(action, player, shortAmt);
+  // Calling an all-in reads MATCH, with the amount matched.
+  const matchesAllIn = action==='call' && shortAmt>0 && g.players.some(o=>
+    o!==player && o.inHand && !o.folded && o.allIn && o.betThisRound===player.betThisRound);
+  const streetLabel = matchesAllIn ? actionLabel('match', player, player.betThisRound)
+    : actionLabel(action, player, shortAmt);
   player.streetAction = { type: player.allIn ? 'allin' : action, label: streetLabel, amount: shortAmt };
   setActionRows(player.name,streetLabel,false);
   flashAction(player.id, streetLabel);
@@ -3752,7 +3773,7 @@ async function continueAction(){
     if (seatEl) seatEl.root.classList.add('thinking');
     setMood(player.id, pickThinkMood(player));
     setActionRows(player.name,'IS THINKING…',true);
-    const decision = await aiDecide(player, game);   // off the main thread
+    const decision = fitDecisionToTable(game, player, await aiDecide(player, game));   // off the main thread
     await aiWait(aiThinkTime(player, decision, game));   // QUICK RESOLVE can cut this short
     if (seatEl) seatEl.root.classList.remove('thinking');
     if (game.over) return;

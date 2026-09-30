@@ -21,10 +21,10 @@ function slice(source,start,end){
 let passed=0;
 function check(name,fn){ fn(); passed++; process.stdout.write('PASS  '+name+'\n'); }
 
-const logic=slice(engine,'const QUICK_BET_PRESET_DEFINITIONS','function actionLabel');
+const logic=slice(engine,'const QUICK_BET_PRESET_DEFINITIONS','function applyAction')+'\nfunction fmtActionAmount(n){ return String(Math.round(n)); }';
 const context={};
 vm.createContext(context);
-vm.runInContext(logic+'\nglobalThis.api={definitions:QUICK_BET_PRESET_DEFINITIONS,bounds:wagerBounds,presets:quickBetPresets,snap:snapWager,step:wagerStep};',context);
+vm.runInContext(logic+'\nglobalThis.api={definitions:QUICK_BET_PRESET_DEFINITIONS,bounds:wagerBounds,presets:quickBetPresets,snap:snapWager,step:wagerStep,fit:fitDecisionToTable,label:actionLabel};',context);
 const api=context.api;
 const plain=value=>JSON.parse(JSON.stringify(value));
 const player=(chips=1000,bet=0,extra={})=>Object.assign({chips,betThisRound:bet,mayRaise:true,allIn:false},extra);
@@ -184,6 +184,30 @@ check('The compact row is accessible, four-up and reduced-motion safe',()=>{
   assert.ok(css.includes('grid-template-columns:repeat(4,minmax(0,1fr))'));
   assert.ok(css.includes('[data-motion="off"] .quick-bet{ transition:none; }'));
   assert.ok(presentation.includes("button.setAttribute('aria-pressed','false')"));
+});
+
+check('Opponents call your all-in instead of raising a few chips over it',()=>{
+  const you=seat(0,500,{allIn:true}), ai=player(510,0,{inHand:true,folded:false});
+  const g=table('turn',500,500,20,1200,ai,[you]);
+  assert.deepStrictEqual(plain(api.fit(g,ai,{action:'allin'})),{action:'call',amount:0});
+  assert.deepStrictEqual(plain(api.fit(g,ai,{action:'raise',amount:1000})),{action:'call',amount:0});
+  assert.deepStrictEqual(plain(api.fit(g,ai,{action:'fold'})),{action:'fold'});
+});
+
+check('Opponents never bet past the most anyone can call',()=>{
+  const you=seat(300,0), ai=player(2000,0,{inHand:true,folded:false});
+  const g=table('flop',0,20,20,200,ai,[you]);
+  assert.deepStrictEqual(plain(api.fit(g,ai,{action:'allin'})),{action:'bet',amount:300});
+  assert.deepStrictEqual(plain(api.fit(g,ai,{action:'bet',amount:150})),{action:'bet',amount:150});
+  const big=table('flop',0,20,20,200,ai,[seat(5000,0)]);
+  assert.deepStrictEqual(plain(api.fit(big,ai,{action:'allin'})),{action:'allin'});
+});
+
+check('Calling an all-in reads Match with the amount matched',()=>{
+  assert.strictEqual(api.label('match',{allIn:false},500),'Match 500');
+  assert.strictEqual(api.label('call',{allIn:false},60),'Call 60');
+  assert.ok(engine.includes("matchesAllIn ? actionLabel('match', player, player.betThisRound)"));
+  assert.ok(engine.includes('fitDecisionToTable(game, player, await aiDecide(player, game))'));
 });
 
 process.stdout.write('\n'+passed+' contextual quick-bet checks passed.\n');
