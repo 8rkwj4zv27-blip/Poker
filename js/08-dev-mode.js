@@ -394,6 +394,17 @@ function devCareerResultModel(g, won){
     bankroll: 0
   });
   model.bankroll = won ? 600 : 500;   // fixture only; nothing was credited
+  // A made-up chip tape (js/event-tape.js) so the well shows its story.
+  if (!model.tape && typeof EventTape !== 'undefined'){
+    model.tape = EventTape.fixture(g, won, { place:model.place });
+    model.hands = model.tape.pts[model.tape.pts.length - 1][0];
+    if (!won){
+      const killer = g.players.find(p=>!p.isHuman && model.tape.out.every(o=>o.id!==p.id));
+      model.alive = g.players.filter(p=>!p.isHuman && model.tape.out.every(o=>o.id!==p.id))
+        .map(p=>({ name:p.name, fc:Number.isInteger(p.faceColorIdx) ? p.faceColorIdx : null }));
+      if (killer) model.tape.out.forEach(o=>{ if (o.you) o.by=[killer.name]; });
+    }
+  }
   return model;
 }
 

@@ -1492,5 +1492,5 @@ const Showdown = (function(){
   }
   install();
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', wireSettings); else wireSettings();
-  return { install, opt, ORDER };
+  return { install, opt, ORDER, equities };
 })();

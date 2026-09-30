@@ -1,0 +1,96 @@
+/* ============================================================
+   EVENT TAPE (v0.58.0) — layout only (js/event-tape.js)
+   The RESULT well of EVENT WON / EVENT LOST: the chip tape on top, then
+   BUST-OUT ORDER, then BEST HAND beside the LUCK METER. Every screen is
+   the shared CRT (css/crt.css owns glass, ink and type); this file only
+   places things. The small face frames in the bust-out order are the one
+   new part (docs/ui/END_SCREENS_PLAN.md, for sign-off in the lab).
+   ============================================================ */
+
+/* The well fills the stage's flexible row. */
+.et-well{
+  min-height:0; height:100%;
+  display:grid; grid-template-rows:minmax(64px,1fr) max-content max-content; gap:4px;
+}
+.et-chart{ min-height:0; display:grid; grid-template-rows:auto 1fr auto; padding:4px 7px 5px; }
+.et-head{ display:flex; align-items:baseline; justify-content:space-between; gap:6px; white-space:nowrap; }
+.et-plot{ position:relative; min-height:44px; margin:3px 0 2px; }
+.et-canvas{ position:absolute; inset:0; width:100%; height:100%; image-rendering:pixelated; image-rendering:crisp-edges; }
+.et-ceil{ position:absolute; left:2px; top:-1px; }
+.et-verdict{ display:flex; flex-direction:column; align-items:center; gap:2px; text-align:center; }
+.et-verdict .crt-caption{ white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:100%; }
+
+/* bust-out order: a row of small faces, first out on the left */
+.et-out{ padding:4px 7px 5px; }
+.et-seats{
+  list-style:none; margin:4px 0 0; padding:0;
+  display:grid; grid-template-columns:repeat(var(--n,4),minmax(0,1fr)); gap:4px; justify-items:center;
+}
+.et-seat{ min-width:0; max-width:96px; width:100%; display:flex; flex-direction:column; align-items:center; gap:2px; }
+.et-face{
+  position:relative; width:30px; height:30px; display:flex; align-items:center; justify-content:center;
+  border:2px solid #080405; border-radius:3px; background:#0B1410; overflow:visible;
+  box-shadow:0 2px 0 rgba(0,0,0,.5);
+}
+.et-face img, .et-face svg{ width:100%; height:100%; object-fit:cover; border-radius:1px; display:block; }
+.et-seat.is-out .et-face img{ opacity:.8; }
+.et-seat.is-alive .et-face{ opacity:.7; }
+.et-seat.is-killer .et-face{ border-color:#FF8A7A; box-shadow:0 2px 0 rgba(0,0,0,.5),0 0 6px rgba(255,138,122,.55); }
+.et-seat.is-won .et-face{ border-color:#F6D06B; box-shadow:0 2px 0 rgba(0,0,0,.5),0 0 6px rgba(246,208,107,.5); }
+.et-x{ position:absolute; inset:3px; pointer-events:none; }
+.et-x::before, .et-x::after{ content:""; position:absolute; left:50%; top:50%; width:130%; height:3px; background:#FF5A48; box-shadow:0 0 0 1px #080405; }
+.et-x::before{ transform:translate(-50%,-50%) rotate(45deg); }
+.et-x::after{ transform:translate(-50%,-50%) rotate(-45deg); }
+.et-ko, .et-ko-key{
+  /* a 7-pixel burst, the same mark the tape puts on the hand */
+  position:absolute; right:-5px; top:-6px; width:2px; height:2px; background:#FFF6E0;
+  box-shadow:0 -4px 0 #F6D06B,0 -2px 0 #F6D06B,-4px 0 0 #F6D06B,-2px 0 0 #F6D06B,2px 0 0 #F6D06B,4px 0 0 #F6D06B,0 2px 0 #F6D06B,0 4px 0 #F6D06B,0 0 0 1px #080405;
+}
+.et-ko-key{ position:relative; display:inline-block; right:auto; top:-2px; margin:0 6px 0 4px; vertical-align:middle; }
+.et-name, .et-tag{ max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; text-align:center; }
+
+/* best hand beside the luck meter */
+.et-pair{ display:grid; grid-template-columns:1.25fr 1fr; gap:4px; }
+.et-best, .et-luck{ min-width:0; padding:4px 6px 5px; display:flex; flex-direction:column; align-items:center; gap:3px; text-align:center; }
+.et-best > .crt-caption:first-child, .et-luck > .crt-caption:first-child{ align-self:flex-start; }
+.et-cards{ gap:2px; }
+.et-cards .card.small{ width:24px; height:34px; border-width:2px; border-radius:2px; box-shadow:0 2px 0 rgba(0,0,0,.45); }
+.et-cards .card.small .r{ font-size:9px; top:2px; left:2px; }
+.et-cards .card.small .s{ display:none; }
+.et-cards .card.small .pip{ font-size:12px; }
+.et-best-name, .et-luck-word{ white-space:nowrap; }
+.et-best-desc{ max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.et-none{ margin-top:6px; }
+.et-gauge{ width:74px; height:30px; image-rendering:pixelated; image-rendering:crisp-edges; }
+
+/* The tape needs the room: the stage above it tightens a little when the
+   well is a tape (layout only). */
+.stage-results-machine:has(.et-well){ gap:4px; }
+.stage-results-machine:has(.et-well) .stage-results-head{ min-height:44px; padding-top:4px; padding-bottom:4px; }
+.stage-results-machine:has(.et-well) .stage-score-hero{ min-height:48px; padding-top:5px; padding-bottom:5px; }
+.stage-results-machine:has(.et-well) .stage-results-deck{ gap:5px; padding:6px; }
+.stage-results-machine:has(.et-well) .stage-instrument{ padding-top:5px; padding-bottom:6px; }
+.stage-results-machine:has(.et-well) .stage-recap-cell{ min-height:36px; padding-top:4px; padding-bottom:5px; }
+/* The small HANDS / FIELD / PRIZE row repeats what the tape (its hand
+   count) and the bust-out order (the field) already show: it steps out. */
+.stage-results-machine:has(.et-well) .stage-results-recap{ display:none; }
+.stage-results-machine:has(.et-well) .stage-run-progress{ min-height:28px; padding-top:4px; padding-bottom:4px; }
+
+@media (orientation:portrait) and (max-height:760px){
+  .et-well{ gap:3px; }
+  .et-chart{ padding:3px 6px 4px; }
+  .et-face{ width:24px; height:24px; }
+  .et-seats{ margin-top:2px; }
+  .et-cards .card.small{ width:19px; height:27px; }
+  .et-cards .card.small .r{ font-size:7px; }
+  .et-cards .card.small .pip{ font-size:9px; }
+  .et-gauge{ width:60px; height:24px; }
+  .et-best, .et-luck{ gap:2px; padding:3px 5px 4px; }
+}
+
+/* SE-height phones: FINISH / OUTLASTED step out too (your place is on the
+   bust-out order), so the tape keeps a readable height. */
+@media (orientation:portrait) and (max-height:700px){
+  .stage-results-machine:has(.et-well) .stage-results-deck{ display:none; }
+  .stage-results-machine:has(.et-well){ grid-template-rows:auto auto minmax(0,1fr) auto; }
+}
