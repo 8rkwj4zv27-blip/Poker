@@ -71,7 +71,7 @@ const EventTape = (() => {
       if (shown && me._handRes && typeof updateTrackedBest === 'function') updateTrackedBest(t, 'best', me._handRes);
       // an all-in that ran out: what the odds said against what happened
       if (t.pend && t.pend.h === h){
-        const won = netProfit > 0 ? 1 : netProfit === 0 && humanShare(outcome, me.id) > 0 ? .5 : 0;
+        const won = allInResult(outcome, me.id, netProfit);
         t.allins.push({ h, eq:t.pend.eq, won });
       }
       delete t.pend;
@@ -83,7 +83,9 @@ const EventTape = (() => {
       if (busted.length){
         const left = g.players.filter(p => !p.eliminated && p.chips > 0).length;
         const startOf = p => Number.isFinite(p._handStartChips) ? p._handStartChips : 0;
-        busted.sort((a, b) => startOf(b) - startOf(a)).forEach((p, i) => {
+        // bigger stack at the start of the hand places higher; a tie goes
+        // your way, as careerFinishPlace() settles it
+        busted.sort((a, b) => (startOf(b) - startOf(a)) || (a.isHuman ? -1 : b.isHuman ? 1 : 0)).forEach((p, i) => {
           const by = beatenBy(g, outcome, p.id);
           const byYou = !!(by && by.ids.includes(me.id));
           const names = by ? by.ids.map(id => (g.players.find(x => x.id === id) || {}).name).filter(Boolean) : [];
@@ -99,10 +101,22 @@ const EventTape = (() => {
       if (t.pts.length > MAX_POINTS) t.pts.splice(1, t.pts.length - MAX_POINTS);
     }catch(e){ /* the tape is a record: it never stops a hand */ }
   }
-  function humanShare(outcome, id){
-    if (!outcome || !Array.isArray(outcome.potResults)) return 0;
-    return outcome.potResults.reduce((s, r) => s + (r.winnerShares || []).filter(x => x.id === id).reduce((n, x) => n + x.amount, 0), 0);
+  // How much of what you were playing for you took: your share of every
+  // contested pot you were in (a K.O. on the main pot while a side pot
+  // goes elsewhere is still a win against the odds that called it).
+  function allInResult(outcome, id, netProfit){
+    if (outcome && outcome.type === 'showdown' && Array.isArray(outcome.potResults)){
+      let stake = 0, got = 0;
+      outcome.potResults.forEach(r => {
+        if (!r.eligible || !r.eligible.includes(id) || (r.contested != null && r.contested < 2)) return;
+        stake += r.amount || 0;
+        got += (r.winnerShares || []).filter(x => x.id === id).reduce((n, x) => n + x.amount, 0);
+      });
+      if (stake > 0) return Math.max(0, Math.min(1, got / stake));
+    }
+    return netProfit > 0 ? 1 : 0;
   }
+
   // a runout: everyone left is all in (or one player isn't, and it's not you)
   const liveOf = g => g.players.filter(p => p.inHand && !p.folded && !p.eliminated);
   function isRunout(g){
@@ -182,8 +196,15 @@ const EventTape = (() => {
     if (!won) out.push({ id:'you', you:true, name:'YOU', fc:null, h:hands, place:youPlace, ko:false, by:killer ? [killer.name] : [], hand:'Full House' });
     const best = { result:{ cat:6, tiebreak:[6, 8] }, name:'Full House, Sixes over Eights',
       cards:[{ rank:'6', suit:'♠', value:6 }, { rank:'6', suit:'♥', value:6 }, { rank:'6', suit:'♦', value:6 }, { rank:'8', suit:'♣', value:8 }, { rank:'8', suit:'♠', value:8 }] };
-    const allins = won ? [{ h:5, eq:.38, won:1 }, { h:12, eq:.71, won:1 }, { h:20, eq:.55, won:0 }]
-                       : [{ h:7, eq:.66, won:0 }, { h:13, eq:.81, won:0 }, { h:hands, eq:.58, won:0 }];
+    // luck: 'bad' | 'fair' | 'hot' (default: bad on a loss, a bit lucky on a win)
+    const at = f => Math.max(1, Math.min(hands, Math.round(hands * f)));
+    const LUCK = {
+      bad:[{ h:at(.35), eq:.66, won:0 }, { h:at(.65), eq:.81, won:0 }, { h:hands, eq:.58, won:0 }],
+      fair:[{ h:at(.3), eq:.5, won:1 }, { h:at(.6), eq:.55, won:0 }, { h:at(.9), eq:.45, won:.5 }],
+      hot:[{ h:at(.2), eq:.22, won:1 }, { h:at(.5), eq:.31, won:1 }, { h:at(.8), eq:.4, won:1 }],
+      bitlucky:[{ h:at(.2), eq:.38, won:1 }, { h:at(.45), eq:.71, won:1 }, { h:at(.75), eq:.55, won:0 }]
+    };
+    const allins = LUCK[o.luck] || (won ? LUCK.bitlucky : LUCK.bad);
     return clean({ v:1, start, total, field, pts, out, best:o.noBest ? null : best, allins:o.noAllins ? [] : allins });
   }
 
@@ -223,7 +244,7 @@ const EventTape = (() => {
     // when you went, then you (a win), or you in your place (a loss)
     const outs = t.out.filter(o => !o.you).slice().sort((a, b) => b.place - a.place);
     const cells = [];
-    outs.filter(o => o.place > youPlace).forEach(o => cells.push(seat(o, 'out')));
+    outs.forEach(o => cells.push(seat(o, 'out')));      // every one of them went out before (or with) you
     cells.push(youSeat(youPlace, won, me));
     // a loss: the ones still sitting when you went, the one who got you lit
     if (!won){

@@ -7,8 +7,8 @@ something specific was built or decided, never by default.
 
 ## Current build
 
-- Build marker: `v0.40.2-dev · Dash Frame` (main-menu footer / DEV panel).
-- Service-worker cache: `poker-v40-2`.
+- Build marker: `v0.58.0-dev · End screens: chip tape, wreck stays, P.I.P. to the moon` (main-menu footer / DEV panel).
+- Service-worker cache: `poker-v58-0`.
 - Career save schema: **version 6**.
 - Production Career Hub: ticket-reader presentation (six-venue rack,
   spring-driven touch physics, printed-ticket detail flip), integrated
@@ -71,6 +71,15 @@ presentation-only passes over the Career Hub and its transitions:
    Machine Wheel the other way. The player dashboard was deliberately left
    alone. What's left is the **V2 design pass** list in the audit.
 
+7. **End screens** (2026-09-30, v0.58.0, `docs/ui/END_SCREENS_PLAN.md`,
+   in `end-screens-lab.html` for the owner). EVENT WON / EVENT LOST's
+   RESULT well is the event's story: chip tape, bust-out order, best hand,
+   luck meter. **New Career table-save field** `tape` (display data only,
+   owner-approved; old saves start a fresh tape). After a bust the wreck
+   stays under the result, the drum limps round to BACK TO EVENTS, and
+   P.I.P. is blown to the moon. No settlement, bankroll, poker or AI code
+   changed.
+
 Full detail for the first two is in `HISTORY.md` under the 2026-09-24 entries. No
 Career transaction, save field, catalogue, roster, poker or AI code changed
 in any of these passes; the DETAILS card flip is untouched.
@@ -105,7 +114,8 @@ venue work is scheduled until the owner asks for it — see the scope note.
 
 ```
 node validation/career-events-checks.js     # 112 checks
-node validation/career-result-checks.js     # 41 checks
+node validation/career-result-checks.js     # 44 checks
+node validation/event-tape-checks.js        # 14 checks
 node validation/scoring-checks.js           # 170 checks
 node validation/holiday-gameplay-checks.js  # 20 checks
 node validation/quick-bet-checks.js         # 14 checks

@@ -102,7 +102,10 @@ check('Career result model captures the settled display values once', ()=>{
   assert.deepStrictEqual(JSON.parse(JSON.stringify(winModel)), {
     outcome:'win', won:true, cashed:false, championship:false, firstChampionship:false,
     place:1, eventName:'BACK ROOM FREEZEOUT', prize:300,
-    buyIn:100, bankroll:600, eventScore:5575, hands:7, field:3
+    buyIn:100, bankroll:600, eventScore:5575, hands:7, field:3,
+    // the event's chip tape (js/event-tape.js; not loaded here) and who
+    // was still sitting, both display data for the result well
+    tape:null, alive:[]
   });
 });
 
@@ -110,7 +113,8 @@ check('A non-winning cash models the credited prize, not the headline first priz
   assert.deepStrictEqual(JSON.parse(JSON.stringify(cashModel)), {
     outcome:'cash', won:false, cashed:true, championship:false, firstChampionship:false,
     place:2, eventName:'PUB CIRCUIT OPEN', prize:450,
-    buyIn:300, bankroll:600, eventScore:4120, hands:23, field:5
+    buyIn:300, bankroll:600, eventScore:4120, hands:23, field:5,
+    tape:null, alive:[]
   });
   // The event's own first-place figure must never leak into a second place.
   assert.ok(!cashHTML.includes('1,050'));

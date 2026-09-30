@@ -1,0 +1,68 @@
+# End screens — plan (EVENT WON / EVENT LOST)
+
+**Lab link (owner's phone):** https://claude.ai/artifact/6K6poGQZ1d8yNFzfbdAiUZ
+(`end-screens-lab.html`; re-stage with `validation/tools/lab-bundle.js` and
+republish to the same link after a change.)
+
+## The owner's brief (29 Sep 2026)
+
+EVENT LOST went from a destroyed dashboard to a fixed one, and the big
+RESULT well said one line. Wanted: more interesting, easy-to-read stats in
+the same visual language. Picked from the proposal: a chip-stack chart
+with K.O.s marked, **bust-out order**, **best hand**, **luck meter**. The
+button drum should slowly spin round to BACK TO EVENTS. P.I.P., if he's on
+the table when you bust, starts to blink and is blown off the screen,
+violently, to the moon, and his cable snaps.
+
+## What's built (round 1, v0.58.0, on branch `claude/event-end-screens`)
+
+- **The recorder** (`js/event-tape.js`). `finishHand()` calls
+  `EventTape.afterHand()` once per settled Career hand, after the
+  eliminations: your stack and the blind level (the tape), who went out,
+  their place and who beat them (the engine's own decisive-pot rule), your
+  best showdown hand (`updateTrackedBest`). A wrapper on `advancePhase`
+  notes your odds when an all-in has nothing left to bet (a runout;
+  `Showdown.equities`). The all-in's result is your share of the contested
+  pots you were in. Read-only: no chip, pot, K.O. or settlement changes.
+- **The save.** `g.tape` rides in the Career table save (`snapshot.tape`,
+  sanitised by `EventTape.clean` on both write and restore). Approved by
+  the owner. An old save simply starts a fresh tape at the next hand.
+- **The well.** With a tape, `careerStageModel()` gives
+  `detail.kind:'tape'` (same line and sub as before) and
+  `stageDetailHTML()` asks `EventTape.html()`:
+  - CHIP TAPE: a stepped pixel trace drawn in by a pen (20 fps, a tick a
+    hand, a thunk on a K.O.). Dashed start line, blind-level ticks, peak
+    flag, K.O. bursts. A bust flatlines to the edge with a tone; a win
+    reaches the ALL CHIPS line. Drawn on canvas in the CRT's own ink.
+  - BUST-OUT ORDER: faces, first out on the left, place and hand; your
+    K.O.s carry a burst; after a bust, who got you is lit, the rest STILL IN.
+  - BEST HAND (mini cards) beside the LUCK METER (a needle gauge: all-ins
+    won against what the odds said; RAN BAD … RAN HOT).
+  - Room: the HANDS/FIELD/PRIZE recap row steps out on tape stages; on
+    ≤700px-tall phones FINISH/OUTLASTED too. Checked at 430×932, 390×844,
+    375×667.
+- **The wreck stays** (`js/knockout.js`). After a bust the dashboard is left
+  broken and smouldering under RUN OVER / EVENT LOST; only the key bay gets
+  power back. It's repaired once the result stage (or the table) is gone.
+- **The limp** (`js/action-drum.js`, `ActionDrum.limp(onLand)`): that turn
+  goes the long way past the blank sides, catching, slipping back and
+  grinding at 12 fps (2.6 s), a heavy clunk, then the BACK TO EVENTS bay
+  stutters on.
+- **P.I.P. to the moon** (`js/coach-set.js`: `panic()`, `blast()`, `stow()`).
+  He blinks and beeps as the dashboard takes its hits; the first blast
+  launches him spinning off the top of the screen; his lead goes taut and
+  snaps (the frayed end stays on the dashboard, sparking) and he twinkles
+  out. He comes back the usual way at the next table. On a win (or any end
+  he isn't blown up in) he hops twice and ducks under the table.
+
+## For sign-off
+
+New parts that go into the Pattern Book once approved: the chip tape, the
+bust-out face frame, the luck gauge. The glass, ink and type are the shared
+CRT; `css/event-tape.css` is layout only.
+
+## Checks
+
+`node validation/event-tape-checks.js` (14), and the existing
+`career-result-checks.js` (its model-shape check now includes `tape` and
+`alive`).
