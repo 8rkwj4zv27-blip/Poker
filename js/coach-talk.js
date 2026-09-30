@@ -212,7 +212,7 @@ const CoachTalk = (() => {
   const knows = lesson => !!MEM.terms[lesson];
   function termText(k){ const t = TERMS()[k]; if (!t) return k; return knows(t.via) ? t.term : t.plain; }
   function learnFrom(key){
-    const m = /^lesson\.(.+)$/.exec(key || ''); if (!m || MEM.terms[m[1]]) return;
+    const m = /^lesson\.(.+?)(?:\.opp)?$/.exec(key || ''); if (!m || MEM.terms[m[1]]) return;
     MEM.terms[m[1]] = Date.now(); saveMem();
   }
 
@@ -252,7 +252,21 @@ const CoachTalk = (() => {
       const w = el.offsetWidth, h = el.offsetHeight;
       const x = O.where === 'across' ? left : onRight ? Math.max(left, t.right - w) : Math.min(right - w, t.left);
       el.style.left = Math.round(x) + 'px';
-      el.style.top = Math.round(t.top - gap - h) + 'px';
+      let top = t.top - gap - h;
+      // clear of the pot readout (owner 29 Sep 2026): lifted above it, but
+      // never onto the cards on the table; where there isn't room, as high
+      // as the cards allow, so it covers as little of the pot as it can
+      const pot = $id('pot-area');
+      if (pot && !pot.classList.contains('hidden')){
+        const p = pot.getBoundingClientRect();
+        if (p.height && p.right > x && p.left < x + w && top + h > p.top - 4 && top < p.bottom){
+          const board = felt.querySelector('.board');
+          const b = board ? board.getBoundingClientRect() : null;
+          const floor = b && b.height ? b.bottom + 6 : f.top + pad;
+          top = Math.min(top, Math.max(floor, p.top - 6 - h));
+        }
+      }
+      el.style.top = Math.round(top) + 'px';
       // the tail sits over his screen
       el.style.setProperty('--ctk-tail-x', Math.round(Math.min(w - 22, Math.max(10, t.left + t.width * .42 - x))) + 'px');
     }
@@ -381,9 +395,14 @@ const CoachTalk = (() => {
     : p <= 0.18 ? 'a strong starting hand' : p <= 0.35 ? 'a decent starting hand' : p <= 0.55 ? 'an average starting hand' : 'a weak starting hand';
   // (lines say "about {rangeWords}")
   const rangeWords = r => !r ? 'their best hands' : r >= 70 ? 'most hands' : '1 hand in ' + Math.max(2, Math.round(100 / r));
+  /* Short because of THEM: when you cover a short opponent, a line's
+     '.opp' wording goes first ("Lucy only has 7 big blinds", not "you're
+     short"). */
+  const shortKeys = (keys, n) => n && n.shortOpp ? keys.reduce((o, k) => o.concat([k + '.opp', k]), []) : keys;
   function slots(sp, j){
     const n = (j && j.n) || {}, seat = (sp && sp.seat) || n.seat;
     return {
+      shortOpp: n.shortOpp || 'they',
       hole: sp ? sp.holeFacts.name : '', pct: n.pct != null ? n.pct : sp ? Math.max(1, Math.round(sp.holeFacts.pct * 100)) : '',
       handWords: handWords(sp ? sp.holeFacts.pct : null), rangeWords: rangeWords(n.range),
       range: n.range != null ? n.range : '', seatOn: seatOn(seat), seatFrom: seatFrom(seat),
@@ -417,7 +436,11 @@ const CoachTalk = (() => {
   /* what their betting says, as the lead-in to his advice after the flop */
   function storyKey(a){
     const st = a && a.stories; if (!st || !st.list.length) return null;
-    if (st.one){ const k = 'story.' + st.one.kind + '.one'; return LINES[k] ? k : null; }
+    if (st.one){
+      // (a pattern, "keeps betting", only once there is one)
+      const k = 'story.' + st.one.kind + (st.one.again && LINES['story.' + st.one.kind + '.again.one'] ? '.again' : '') + '.one';
+      return LINES[k] ? k : null;
+    }
     if (st.all === 'mixed') return 'story.mixed';
     const k = 'story.' + st.all + '.all'; return LINES[k] ? k : null;
   }
@@ -431,18 +454,19 @@ const CoachTalk = (() => {
     if (a.kind === 'post') return drawing ? ['advise.post.' + a.move + '.draw', 'advise.post.' + a.move] : ['advise.post.' + a.move];
     if (a.kind === 'bet'){
       const t = a.tag || '';
-      if (a.move === 'check') return t === 'bet.check.medium' || t === 'bet.check.draw' ? ['advise.bet.check']
+      if (a.move === 'check') return t === 'bet.check.draw.deep' ? ['advise.bet.check.draw', 'advise.bet.check']
+        : t === 'bet.check.medium' || t === 'bet.check.draw' ? ['advise.bet.check']
         : (a.n && a.n.players > 1) ? ['advise.bet.check.multi', 'advise.bet.check.weak'] : ['advise.bet.check.weak'];
       return t.indexOf('bet.semi') === 0 ? ['advise.bet.bet.draw', 'advise.bet.bet'] : t.indexOf('bet.bluff') === 0 ? ['advise.bet.bet.bluff'] : ['advise.bet.bet'];
     }
-    return ['advise.' + a.kind + '.' + a.move];
+    return shortKeys(['advise.' + a.kind + '.' + a.move], a.n);
   }
   function sayAdvice(a, sp, help, notch){
     const ctx = adviceCtx(a, sp);
     if (help <= 1) return false;
     const drawing = a.kind === 'post' && a.n && a.n.drawName && !['overpair', 'top-pair', 'two-pair', 'set', 'trips', 'straight', 'flush', 'full-house', 'quads', 'straight-flush'].includes(a.n.made);
     const lead = storyKey(a);
-    if (help === 2) return sayAt(drawing ? ['hint.post.draw', 'hint.post'] : ['hint.' + a.kind], ctx, notch, lead);
+    if (help === 2) return sayAt(drawing ? ['hint.post.draw', 'hint.post'] : shortKeys(['hint.' + a.kind], a.n), ctx, notch, lead);
     if (help === 3 && a.sure === 'close' && a.alt) return sayAt(['advise.close'], ctx, notch, lead);
     return sayAt(adviceKeys(a), ctx, notch, lead, a.sure === 'leans' || a.sure === 'close' ? 'advise.tail.leans' : habitKey(a));
   }
@@ -476,7 +500,7 @@ const CoachTalk = (() => {
     try{ document.dispatchEvent(new CustomEvent('coachtalk', { detail:{ moment, notch:+O.notch } })); }catch(e){}
     show([1, mood || 'calm', text], ctx || {}, moment);
   }
-  const textOf = (key, ctx) => { const l = lineFor([key]); return l ? { text:fill(l[2], ctx), mood:l[1] } : null; };
+  const textOf = (key, ctx) => { const l = lineFor([].concat(key)); return l ? { text:fill(l[2], ctx), mood:l[1] } : null; };
   function tapRead(me){
     const g = game;
     const sp = CoachBrain.spot(g, me);
@@ -486,8 +510,8 @@ const CoachTalk = (() => {
     const parts = [];
     if (r.street === 'preflop'){
       if (mine){ const a = CoachBrain.advisePreflop(sp); if (a){ A.advice = a; A.spot = sp; A.handNo = g.handNumber;
-        const c = adviceCtx(a, sp); const t = textOf(a.sure === 'close' && a.alt ? 'advise.close' : 'advise.' + a.kind + '.' + a.move, c);
-        if (t) parts.push(t); return { parts, topic:a.lesson ? 'lesson.' + a.lesson : null }; } }
+        const c = adviceCtx(a, sp); const t = textOf(a.sure === 'close' && a.alt ? 'advise.close' : adviceKeys(a), c);
+        if (t) parts.push(t); return { parts, topic:a.lesson ? 'lesson.' + a.lesson : null, n:a.n, ctx:c }; } }
       const t = textOf('read.pre.wait', ctx); if (t) parts.push(t);
       return { parts, topic:'explain.position' };
     }
@@ -505,9 +529,10 @@ const CoachTalk = (() => {
     if (adv){
       A.advice = adv; A.spot = sp; A.handNo = g.handNumber;
       const c = adviceCtx(adv, sp);
-      const t = textOf(adv.sure === 'close' && adv.alt ? 'advise.close' : adviceKeys(adv).find(k => LINES[k]), c);
+      const t = textOf(adv.sure === 'close' && adv.alt ? 'advise.close' : adviceKeys(adv), c);
       if (t) parts.push(t);
       topic = adv.lesson ? 'lesson.' + adv.lesson : topic;
+      return { parts, topic, n:adv.n, ctx:c };
     } else {
       if (dn && r.left){
         const d = textOf('read.draw', Object.assign({}, ctx, { drawName:dn, outs:r.drawOuts, hitPct:r.hitPct, byWhen: r.left === 2 ? 'by the last card' : 'on the last card' }));
@@ -528,16 +553,16 @@ const CoachTalk = (() => {
   }
   function tapItems(g, me){
     const items = [];
-    const push = (key, ctx, moment) => { const t = textOf(key, ctx || {}); if (t) items.push({ text:t.text, mood:t.mood, moment:moment || key }); };
+    const push = (key, ctx, moment) => { const t = textOf(key, ctx || {}); if (t) items.push({ text:t.text, mood:t.mood, moment:moment || [].concat(key)[0] }); };
     const flip = $id('console-flip');
     const result = !!(flip && flip.classList.contains('flipped'));
     const inHand = !result && g && me && me.inHand && !me.folded && me.hand && me.hand.length === 2 && ['preflop', 'flop', 'turn', 'river'].includes(g.phase);
     if (inHand){
       const r = tapRead(me);
       if (r && r.parts.length) items.push({ text:r.parts.map(p => p.text).join(' '), mood:r.parts[0].mood, moment:'tap.read' });
-      if (r && r.topic) push(r.topic);
+      if (r && r.topic) push(shortKeys([r.topic], r.n), r.ctx);
       const lesson = r && r.topic && r.topic.indexOf('lesson.') === 0 ? r.topic.slice(7) : null;
-      if (lesson) push('tip.' + lesson);
+      if (lesson) push(shortKeys(['tip.' + lesson], r.n), r.ctx);
       return items;
     }
     if (!result && g && me && me.folded && ['preflop', 'flop', 'turn', 'river'].includes(g.phase)){
@@ -551,7 +576,7 @@ const CoachTalk = (() => {
     const v = B.last;
     if (v && v.v && v.v.whyText){
       items.push({ text:fill(v.v.whyText, v.v.ctx), mood:v.v.mood || 'calm', moment:'tap.verdict' });
-      if (v.v.lesson){ push('lesson.' + v.v.lesson); push('tip.' + v.v.lesson); }
+      if (v.v.lesson){ push(shortKeys(['lesson.' + v.v.lesson], v.v.j.n), v.v.ctx); push(shortKeys(['tip.' + v.v.lesson], v.v.j.n), v.v.ctx); }
       if (v.v.extraTip) push(v.v.extraTip);
     } else if (v && v.summary) {
       push(v.summary, v.ctx);
@@ -595,7 +620,7 @@ const CoachTalk = (() => {
     // comes after the hand instead)
     const last = B.worded2[j.tag];
     if (last != null && g.handNumber - last <= (j.confidence === 'clear' ? 2 : 4)) return false;
-    const keys = j.confidence === 'leans' ? [j.tag + '.now.leans', j.tag + '.now'] : [j.tag + '.now'];
+    const keys = shortKeys(j.confidence === 'leans' ? [j.tag + '.now.leans', j.tag + '.now'] : [j.tag + '.now'], j.n);
     if (!keys.some(k => (LINES[k] || []).length) || notch > +O.notch) return false;
     // what you just did outranks the line about your turn: it goes
     if (live && !live.judged) clear(true);
@@ -627,7 +652,7 @@ const CoachTalk = (() => {
       : j.verdict === 'mistake' && sc >= 4 && net > 0 ? 'lead.wonAnyway'
       : j.verdict !== 'mistake' && sc >= 3 && net < 0 && h.end.showdown ? 'lead.lostAnyway' : null;
     const lv = j.confidence === 'leans';
-    const keys = (foldWin ? [j.tag + '.why.foldwin'] : []).concat(lv ? [j.tag + '.why.leans', j.tag + '.why'] : [j.tag + '.why']);
+    const keys = shortKeys((foldWin ? [j.tag + '.why.foldwin'] : []).concat(lv ? [j.tag + '.why.leans', j.tag + '.why'] : [j.tag + '.why']), j.n);
     const ctx = Object.assign(slots(top.spot, j), { won:fmt(Math.max(0, net)) });
     const extraTip = foldWin && top.spot.holeFacts && top.spot.holeFacts.pct <= 0.06 ? 'tip.bigHands' : null;
     return { top, j, sc, notch: sc === 1 ? 4 : 2, keys, lead, ctx, lesson:j.lesson, extraTip, foldWin };
@@ -643,11 +668,21 @@ const CoachTalk = (() => {
     if (!l) return false;
     v.whyText = (ll ? ll[2] + ' ' : '') + l[2]; v.mood = l[1];
     if (!onScreen) return false;
-    // the same mistake again soon after: a short reminder, not the speech
     const hn = h.n, seen = B.told[v.j.tag];
     B.told[v.j.tag] = hn;
+    /* a hand that hurt (owner 29 Sep 2026): you're out, or you lost half
+       your chips or more. No lesson over it: a short word, and the verdict
+       and lesson wait for a tap. */
+    const net = h.end.net || 0, start = h.startStack;
+    const out = start != null && start + net <= 0;
+    if (net < 0 && (out || (start > 0 && -net >= start * 0.5))){
+      const fine = v.j.verdict !== 'mistake';
+      clear(true); queue = null;
+      return sayAt([out ? (fine ? 'comfort.out.fine' : 'comfort.out') : (fine ? 'comfort.fine' : 'comfort.hurt')], {}, 1);
+    }
+    // the same mistake again soon after: a short reminder, not the speech
     if (seen != null && hn - seen <= (v.sc >= 5 ? 3 : 6)){
-      if (v.j.verdict === 'mistake' && v.j.lesson && v.sc >= 4) return sayAt(['again.' + v.j.lesson], {}, 3);
+      if (v.j.verdict === 'mistake' && v.j.lesson && v.sc >= 4) return sayAt(shortKeys(['again.' + v.j.lesson], v.j.n), v.ctx, 3);
       return false;
     }
     if (v.notch > +O.notch) return false;
@@ -655,7 +690,7 @@ const CoachTalk = (() => {
     show([v.notch, v.mood, v.whyText], v.ctx, v.keys[0]);
     const lesson = v.sc >= 3 && v.lesson && !B.lessons[v.lesson] && !knows(v.lesson) && (LINES['lesson.' + v.lesson] || []).length ? v.lesson : null;
     // (checked again when it's due: a tap may have taught it meanwhile)
-    if (lesson){ B.lessons[lesson] = true; afterTalk(() => { if (game && game.handNumber === hn && !knows(lesson)) sayAt(['lesson.' + lesson], {}, 2); }); }
+    if (lesson){ B.lessons[lesson] = true; afterTalk(() => { if (game && game.handNumber === hn && !knows(lesson)) sayAt(shortKeys(['lesson.' + lesson], v.j.n), v.ctx, 2); }); }
     return true;
   }
   /* wait for him to finish what he's saying (up to 12s), then go */
@@ -678,21 +713,24 @@ const CoachTalk = (() => {
   }
   /* for a lab: the whole explanation of a decision now, whatever the
      notch: the word, the reason, and the lesson (as if the first time) */
+  let explainGen = 0;
   function explain(d, advice){
     const j = d && d.judgement; if (!j) return false;
-    const ctx = slots(d.spot, j), lv = j.confidence === 'leans';
+    const ctx = slots(d.spot, j), lv = j.confidence === 'leans', sk = ks => shortKeys(ks, j.n);
+    // (a newer explanation cancels what's still waiting from this one)
+    const gen = ++explainGen, own0 = fn => () => { if (gen === explainGen) fn(); };
     clear(true); queue = null;
     holdUntil = performance.now() + 40000;
     const own = fn => { holding = true; try{ return fn(); } finally{ holding = false; } };
     const done = () => { holdUntil = performance.now() + 6000; };   // (until the last line has been read)
     const why = () => {
-      own(() => sayAt(lv ? [j.tag + '.why.leans', j.tag + '.why'] : [j.tag + '.why'], ctx, 1));
-      if (j.lesson && (LINES['lesson.' + j.lesson] || []).length) afterTalk(() => { own(() => sayAt(['lesson.' + j.lesson], {}, 1)); done(); });
+      own(() => sayAt(sk(lv ? [j.tag + '.why.leans', j.tag + '.why'] : [j.tag + '.why']), ctx, 1));
+      if (j.lesson && (LINES['lesson.' + j.lesson] || []).length) afterTalk(own0(() => { own(() => sayAt(sk(['lesson.' + j.lesson]), ctx, 1)); done(); }));
       else done();
     };
-    const word = () => { if (own(() => sayAt(lv ? [j.tag + '.now.leans', j.tag + '.now'] : [j.tag + '.now'], ctx, 1))) afterTalk(why); else why(); };
+    const word = () => { if (own(() => sayAt(sk(lv ? [j.tag + '.now.leans', j.tag + '.now'] : [j.tag + '.now']), ctx, 1))) afterTalk(own0(why)); else why(); };
     // (a lab: what he'd have told you first, at the HELP setting)
-    if (advice && own(() => sayAdvice(advice, d.spot, Math.max(2, +O.help), 1))) afterTalk(word); else word();
+    if (advice && own(() => sayAdvice(advice, d.spot, Math.max(2, +O.help), 1))) afterTalk(own0(word)); else word();
     return true;
   }
   /* your cards, with where you sit (a fact, IN YOUR EAR) */
@@ -864,5 +902,7 @@ const CoachTalk = (() => {
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start); else setTimeout(start, 0);
 
-  return { apply, say, sayAt, sayAny, slots, debrief, verdictOf, explain, sayAdvice, onTap, clear:() => clear(true), OPTIONS, DEFAULTS, LINES, get order(){ return Object.assign({}, O); } };
+  // for a lab: the end-of-hand word for a made-up hand, now
+  const labDebrief = h => { explainGen++; holdUntil = 0; clear(true); queue = null; return debrief(h, true); };
+  return { apply, say, sayAt, sayAny, slots, debrief, labDebrief, verdictOf, explain, sayAdvice, onTap, clear:() => clear(true), OPTIONS, DEFAULTS, LINES, get order(){ return Object.assign({}, O); } };
 })();

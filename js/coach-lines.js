@@ -390,10 +390,18 @@ const CoachLines = (() => {
   /* ================= what their betting says ================= */
   add('story.weak.one', 3, [['thinking', '{Opp} has only checked. That usually means a weak hand.'], ['calm', '{Opp} hasn’t bet at all. They’re probably not strong.']]);
   add('story.weak.all', 3, [['thinking', 'They’ve all checked. Nobody’s shown any strength.'], ['calm', 'Nobody has bet. That usually means nobody has much.']]);
-  add('story.strong.one', 3, [['thinking', '{Opp} has been betting. That usually means a real hand.'], ['calm', '{Opp} keeps betting. Take that seriously.']]);
+  // (the story follows the hand: one bet is a bet, "keeps" only after two,
+  // and a quiet player who suddenly bets gets its own line)
+  add('story.strong.one', 3, [['thinking', '{Opp} bet. That often means a real hand, so be careful with a weak one.']]);
+  add('story.strong.again.one', 3, [['thinking', '{Opp} has bet more than once now. That usually means a real hand.'], ['calm', '{Opp} keeps betting. Take that seriously.']]);
+  add('story.turned.one', 3, [
+    ['thinking', '{Opp} was quiet before, and bets now. They may have just hit something, or they may be trying to take the pot. A good hand can still call.'],
+    ['calm', '{Opp} has only just started betting. Either that card helped them, or they think you’re weak. Don’t fold a good hand to one bet.']]);
+  add('story.turned.all', 3, [['thinking', 'Someone quiet has just started betting. They may have hit that card. Be careful, but don’t panic.']]);
   add('story.strong.all', 3, [['thinking', 'They’ve been betting. Someone likes their hand.']]);
-  add('story.calling.one', 3, [['thinking', '{Opp} keeps calling. That usually means a middling hand or a draw.']]);
-  add('story.calling.all', 3, [['thinking', 'They keep calling. Middling hands and draws, mostly.']]);
+  add('story.calling.one', 3, [['thinking', '{Opp} called. That usually means a middling hand or a draw.']]);
+  add('story.calling.again.one', 3, [['thinking', '{Opp} keeps calling. That usually means a middling hand or a draw.']]);
+  add('story.calling.all', 3, [['thinking', 'They’re calling, not raising. Middling hands and draws, mostly.']]);
   add('story.mixed', 3, [['thinking', 'One of them is betting and the others are just following. The bettor is the one to worry about.']]);
   add('habit.caller', 3, [['calm', '{Opp} hardly ever folds, so don’t bluff them. Bet your good hands bigger.']]);
   add('habit.bluffer', 3, [['thinking', '{Opp} has been caught bluffing before. Their bets aren’t always real.']]);
@@ -645,10 +653,71 @@ const CoachLines = (() => {
   add('story.weak.one', 3, [['thinking', '{Opp} checked. Not much strength there.']]);
   add('story.weak.all', 3, [['calm', 'Checks all round. Nobody likes their hand much.']]);
   add('story.strong.one', 3, [['thinking', '{Opp} is betting. Usually that’s a real hand.']]);
-  add('story.calling.one', 3, [['calm', '{Opp} is just calling. Something middling, most likely.']]);
+  add('story.calling.one', 3, [['calm', '{Opp} just called. Something middling, most likely.']]);
+  add('story.calling.again.one', 3, [['calm', '{Opp} is just calling, card after card. Something middling, most likely.']]);
   add('open.good.premium.now', 2, [['pleased', 'Good. Raise the big ones.']]);
   add('post.fold.good.now', 2, [['pleased', 'Good. Save your chips.']]);
   add('vsraise.fold.good.now', 2, [['pleased', 'Right. Not against a raise.']]);
+
+  /* ================= short because of THEM (owner 29 Sep 2026) =================
+     You cover a short opponent: the hand is only worth their stack, so it
+     plays like a short stack, but it's theirs. <key>.opp is said in place
+     of <key> then ("Lucy only has 7 big blinds", not "you're short"). */
+  add('short.push.good.now.opp', 2, [['pleased', 'Good. All in.'], ['pleased', 'Right. Against a stack that small, all in is the play.']]);
+  add('short.push.good.why.opp', 2, [['calm', '{ShortOpp} only had {bb} big blinds, and that’s all you could win or lose. All in with {hole} was right: it makes them decide now, for everything.']]);
+  add('short.push.close.why.opp', 4, [['calm', 'Fine. All in with {hole} against {shortOpp}’s {bb} big blinds was a close call.']]);
+  add('short.push.loose.why.opp', 2, [['thinking', '{ShortOpp} only has {bb} big blinds, but they can still have a good hand. {hole} {seatFrom} was too weak to put them all in.']]);
+  add('short.fold.missed.now.opp', 1, [['thinking', '{ShortOpp} is short. That was an all in.']]);
+  add('short.fold.missed.why.opp', 2, [['thinking', '{ShortOpp} only had {bb} big blinds. Against a stack that small you can go all in with lots of hands: they can’t hurt you much. {hole} {seatFrom} was an all in.']]);
+  add('short.fold.missed.why.leans.opp', 2, [['thinking', 'Folding {hole} against {shortOpp}’s {bb} big blinds was a bit too careful. That’s an all in.']]);
+  add('short.fold.close.why.opp', 4, [['calm', 'Fine. Folding {hole} against a short stack was a close call.']]);
+  add('short.fold.good.why.opp', 4, [['calm', 'Folding {hole} was right. {ShortOpp} is short, but that hand is too weak even so.']]);
+  add('short.raise.small.now.opp', 3, [['thinking', 'Against a stack that short, just put them all in.']]);
+  add('short.raise.small.why.opp', 2, [['calm', '{ShortOpp} only had {bb} big blinds. A normal raise puts most of their chips in anyway, so go all in: they have to decide now, for everything.']]);
+  add('short.limp.now.opp', 1, [['wince', 'Against a stack that short, all in or fold.']]);
+  add('short.limp.why.opp', 2, [['calm', '{ShortOpp} only had {bb} big blinds. Just calling lets them see cards cheaply. All in with good hands, fold the rest.']]);
+  add('short.flat.now.opp', 3, [['thinking', 'They’re short. Put them all in instead.']]);
+  add('short.flat.why.opp', 2, [['calm', '{ShortOpp} only had {bb} big blinds. Calling leaves them room to play. {hole} wins about {eq}% here: all in instead.']]);
+  add('short.reshove.good.why.opp', 2, [['calm', 'All in over the raise with {hole} was right. {ShortOpp} only had {bb} big blinds. You win about {eq}% if they call, and sometimes they fold.']]);
+  add('short.push.good.why.foldwin.opp', 2, [['pleased', 'Everyone folded to your all in. Against a short stack, the blinds are a fine win.']]);
+  add('advise.open.allin.opp', 3, [['calm', '{ShortOpp} only has {bb} big blinds. {hole} is good enough: go all in.']]);
+  add('advise.limped.allin.opp', 3, [['calm', '{ShortOpp} only has {bb} big blinds, and {hole} is good enough: all in.']]);
+  add('advise.bbOption.allin.opp', 3, [['calm', '{ShortOpp} only has {bb} big blinds, and {hole} is strong. All in.']]);
+  add('advise.vsRaise.allin.opp', 3, [['calm', '{ShortOpp} only has {bb} big blinds. {hole} wins about {eq}% here: all in.']]);
+  add('advise.vsReraise.allin.opp', 3, [['calm', 'All in. {hole} is strong enough, about {eq}%, and {shortOpp} only has {bb} big blinds.']]);
+  add('advise.short.allin.opp', 3, [['calm', '{ShortOpp} only has {bb} big blinds, so that’s all this hand is worth. All in with {hole}.']]);
+  add('advise.short.fold.opp', 3, [['calm', 'Fold. {ShortOpp} only has {bb} big blinds, so it’s all in or fold, and {hole} is a fold from here.']]);
+  add('hint.short.opp', 3, [['thinking', '{ShortOpp} only has {bb} big blinds. All in, or fold?']]);
+  add('lesson.short-stack.opp', 2, [
+    ['calm', 'You can only win or lose what the smaller stack has. When that’s about ten big blinds or fewer, stop making small raises: go all in or fold. That’s called a shove.']]);
+  add('tip.short-stack.opp', 3, [['calm', 'Tip: look at the smaller stack. When it’s under about ten big blinds, it’s all in or fold, even for you.']]);
+  add('again.short-stack.opp', 3, [['thinking', 'A short stack again. All in or fold.']]);
+
+  /* ================= a draw, all in (owner 29 Sep 2026) =================
+     Betting a draw is good; betting ALL your chips on one usually isn't. */
+  add('bet.semi.shove.now', 3, [['thinking', 'All your chips on a draw? That’s a lot to risk.'], ['wince', 'All in on a draw. Risky.']]);
+  add('bet.semi.shove.why', 2, [
+    ['thinking', 'Betting {drawName} is good, but not with all your chips. They won’t fold often enough, and when they call you usually miss. A smaller bet, or a check, keeps you in the game.'],
+    ['calm', 'All in with {drawName} risked everything on a card that mostly doesn’t come. Bet draws small, or check and see the next card.']]);
+  add('bet.semi.shove.close.why', 4, [['calm', 'All in with {drawName} was close. A smaller bet, or a check, risks much less for nearly the same.']]);
+  add('bet.check.draw.deep.why', 4, [['calm', 'Checking {drawName} was right. A proper bet would have been nearly all your chips, and that’s too much to risk on a card that may not come.']]);
+  add('post.raise.semi.shove.now', 3, [['thinking', 'All in on a draw? Risky.']]);
+  add('post.raise.semi.shove.why', 2, [
+    ['thinking', 'All in with {drawName} risked everything on a card that usually doesn’t come, and after betting, they rarely fold. Calling at the right price is the safer way to chase it.']]);
+  add('advise.bet.check.draw', 3, [
+    ['calm', 'Check. {DrawName} is worth a bet, but here a proper bet is nearly all your chips. See the next card for free instead.']]);
+  add('lesson.draw-shove', 2, [
+    ['calm', 'A draw is worth a bet, but not all your chips. If they call, you need the card to come, and most of the time it won’t. Save all in for hands that are already strong.']]);
+  add('tip.draw-shove', 3, [['calm', 'Tip: with a draw, bet about half the pot. If that would be most of your chips, check instead.']]);
+  add('again.draw-shove', 3, [['thinking', 'All in on a draw again. That risks too much.']]);
+
+  /* ================= a hand that hurt (owner 29 Sep 2026) =================
+     You're out, or you lost a big pot: a short word, no lesson. The
+     verdict and the lesson are still there if you tap him. */
+  add('comfort.out', 1, [['unlucky', 'Out. That one hurt. Tap me when you want to go over it.'], ['unlucky', 'That’s the run over. We’ll go again. Tap me if you want to look back at that hand.']]);
+  add('comfort.out.fine', 1, [['unlucky', 'Out, but you played that one fine. It just didn’t go your way.'], ['unlucky', 'Unlucky. The play was fine; the cards weren’t. We’ll go again.']]);
+  add('comfort.hurt', 1, [['wince', 'That one hurt. Tap me if you want to go over it.'], ['unlucky', 'A big one to lose. We can look at it later. Tap me.']]);
+  add('comfort.fine', 1, [['unlucky', 'Unlucky. You played that fine; it just didn’t go your way.'], ['unlucky', 'That hurts, but the play was fine. Shake it off.']]);
 
   return { lines:L, terms:TERMS };
 })();

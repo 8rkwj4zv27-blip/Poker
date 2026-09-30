@@ -498,3 +498,57 @@ repeat. ("Ask P.I.P." question keys: parked for now.)
 - Checked in the real game: an all in everyone folded to before the flop
   (phase still 'preflop') gets its verdict on the award screen; four taps
   step verdict → lesson → tip → "that's everything".
+
+## Tidy-ups from play, v0.57.4 (29 Sep 2026)
+
+The owner's notes and screenshots from playing v0.57.3, and what each
+turned out to be. They picked: all five fixes, and a **short comfort**
+(not silence) after a hand that knocks you out.
+
+1. **"When you have about ten big blinds…" with $1,400.** Lucy in the big
+   blind had 70 behind. The brain rightly plays the *effective* stack
+   (the smaller one: you can't win or lose more than she has), saw 4-7 big
+   blinds, and judged the spot as short: all in or fold. But every
+   short-stack line was written for *your* short stack. Now `spot` knows
+   `shortBy` (the opponent whose stack makes the hand short, when you
+   cover them), judgements carry `n.shortOpp`, and every short-stack line,
+   advice, hint, lesson, tip and reminder has a `<key>.opp` wording said in
+   its place ("Lucy only has 4 big blinds, so that's all this hand is
+   worth"). `{shortOpp}` is a new blank. The lesson `.opp` teaches the same
+   term (`shove`).
+2. **A draw all in (the bust).** The judge treated "bet your draw" the
+   same at any size, and his own bet size rounds up to all in once it's
+   45% of your stack. Now `drawShove` weighs going all in with a draw
+   (fold chance × the pot, plus your share of the whole pot when called,
+   less what you risk) against checking (or, facing a bet, the better of
+   calling and folding), with a margin when it's all your chips. Too
+   costly: `bet.semi.shove` / `post.raise.semi.shove` (a mistake, never
+   clear-cut, since how often they fold is an estimate), close:
+   `bet.semi.shove.close`. His advice checks instead when his bet would be
+   all in and that doesn't pay (`bet.check.draw.deep`, "See the next card
+   for free instead"). A new lesson, `draw-shove` (with its tip and
+   reminder), so a repeat never says "Bet it against one player".
+   A small all in (less than the pot) with a draw is still fine.
+3. **A lesson over a bust.** The semi-bluff lesson came after the
+   elimination and read as "that was right". Now a hand that knocks you
+   out, or loses half your chips or more, gets one short word and no
+   lesson: `comfort.out` / `comfort.hurt` when it was a mistake ("Tap me
+   when you want to go over it"), `comfort.out.fine` / `comfort.fine` when
+   the play was fine. The verdict and lesson wait for a tap.
+4. **Reads that flip.** One bet made an opponent "strong", one call
+   "keeps calling". The story now follows the hand: a player who checked
+   or called before and bets now has `turned` ("Roxy was quiet before,
+   and bets now. They may have just hit something, or they may be trying
+   to take the pot. A good hand can still call."); "keeps betting" /
+   "keeps calling" only after two (`again`, `story.<kind>.again.one`).
+5. **The bubble over the pot.** Across the felt, a long line reached down
+   over the pot readout. It now lifts above the pot, never onto the cards
+   on the table; where there isn't room it sits as high as the cards
+   allow.
+
+Also: "Going…" cut off in a screenshot was him mid-sentence (the bubble
+grows as he types), not a bug.
+
+Lab: new TRY IT keys (Lucy is short ×2, the draw all ins, "they wake up",
+and two OUT keys that play the hand-that-hurt word). Tests: 5 new checks
+for exactly these spots.
