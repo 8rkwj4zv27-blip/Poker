@@ -1142,18 +1142,60 @@ const QUICK_BET_PRESET_DEFINITIONS = Object.freeze({
   ])
 });
 
+/* Round steps for the raise controls: 5s at the early blinds, 25s in the
+   middle, 50s at the top. Only the display snaps to these; the legal
+   minimum and the maximum stay exact (see snapWager). */
+function wagerStep(g){
+  const bb=Math.max(0,Math.round(Number(g && g.bigBlind)||0));
+  if (bb<=100) return 5;
+  if (bb<=500) return 25;
+  return 50;
+}
+
+/* The most anyone still in the hand can put in this street. Betting past
+   it can't be called (the extra only comes back), so the controls stop
+   there. Null when the table isn't known. */
+function wagerCallableCap(g,player){
+  if (!g || !Array.isArray(g.players)) return null;
+  let cap=0;
+  g.players.forEach(o=>{
+    if (o===player || !o.inHand || o.folded) return;
+    cap=Math.max(cap,Math.round(Number(o.betThisRound)||0)+Math.max(0,Math.round(Number(o.chips)||0)));
+  });
+  return cap;
+}
+
 function wagerBounds(g,player){
   if (!g || !player) return null;
   const currentBet=Math.max(0,Math.round(Number(g.currentBet)||0));
   const playerBet=Math.max(0,Math.round(Number(player.betThisRound)||0));
   const stack=Math.max(0,Math.round(Number(player.chips)||0));
-  const maxTotal=playerBet+stack;
+  const stackTotal=playerBet+stack;
   const fullRaise=Math.max(
     currentBet+Math.max(0,Math.round(Number(g.minRaise)||0)),
     playerBet+Math.max(0,Math.round(Number(g.bigBlind)||0))
   );
+  // If nobody left can put in more than the current bet, a raise is
+  // pointless: the top is the call. Otherwise never below a legal full
+  // raise: if the cap sits under it, the minimum raise covers everyone.
+  const cap=wagerCallableCap(g,player);
+  const maxTotal=cap===null ? stackTotal
+    : cap<=currentBet ? Math.min(stackTotal,currentBet)
+    : Math.min(stackTotal,Math.max(cap,fullRaise));
   const minTotal=Math.min(maxTotal,fullRaise);
-  return {min:minTotal,max:maxTotal,currentBet,playerBet,stack};
+  return {min:minTotal,max:maxTotal,currentBet,playerBet,stack,
+    matched:maxTotal<stackTotal,step:wagerStep(g)};
+}
+
+/* Snap a requested total to the round step, keeping the exact legal
+   minimum and maximum reachable at the ends. */
+function snapWager(value,bounds,mode){
+  const v=Number(value);
+  if (!Number.isFinite(v) || v<=bounds.min) return bounds.min;
+  if (v>=bounds.max) return bounds.max;
+  const step=bounds.step||1;
+  const snapped=(mode==='up' ? Math.ceil(v/step) : Math.round(v/step))*step;
+  return Math.max(bounds.min,Math.min(bounds.max,snapped));
 }
 
 function quickBetContext(g){
@@ -1171,8 +1213,7 @@ function quickBetPresetAmount(def,g,bounds){
   else if (def.kind==='wager-multiple') raw=bounds.currentBet*def.value;
   else if (def.kind==='pot-open') raw=bounds.playerBet+pot*def.value;
   else if (def.kind==='pot-after-call') raw=bounds.playerBet+toCall+(pot+toCall)*def.value;
-  const rounded=Math.round(raw);
-  return Math.max(bounds.min,Math.min(bounds.max,rounded));
+  return snapWager(Math.round(raw),bounds,'up');
 }
 
 function quickBetPresets(g,player){
@@ -1182,13 +1223,17 @@ function quickBetPresets(g,player){
   const unique=[];
   QUICK_BET_PRESET_DEFINITIONS[context].forEach(def=>{
     const amount=quickBetPresetAmount(def,g,bounds);
+    // All-in past what anyone can call becomes MATCH: exactly their stack.
+    if (def.kind==='all-in' && bounds.matched) def={id:'match',label:'Match',kind:'all-in',priority:30};
     const existing=unique.findIndex(p=>p.amount===amount);
     const item={id:def.id,label:def.label,amount,context,_priority:def.priority||10};
     if (existing<0) unique.push(item);
     else if (item._priority>unique[existing]._priority) unique[existing]=item;
   });
   if (unique.length===1 && unique[0].amount===bounds.max && bounds.min===bounds.max){
-    unique[0]={id:'all-in',label:'All-in',amount:bounds.max,context,_priority:30};
+    unique[0]=bounds.matched
+      ? {id:'match',label:'Match',amount:bounds.max,context,_priority:30}
+      : {id:'all-in',label:'All-in',amount:bounds.max,context,_priority:30};
   }
   return unique.map(({id,label,amount,context})=>({id,label,amount,context}));
 }

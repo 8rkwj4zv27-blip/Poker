@@ -24,7 +24,7 @@ function check(name,fn){ fn(); passed++; process.stdout.write('PASS  '+name+'\n'
 const logic=slice(engine,'const QUICK_BET_PRESET_DEFINITIONS','function actionLabel');
 const context={};
 vm.createContext(context);
-vm.runInContext(logic+'\nglobalThis.api={definitions:QUICK_BET_PRESET_DEFINITIONS,bounds:wagerBounds,presets:quickBetPresets};',context);
+vm.runInContext(logic+'\nglobalThis.api={definitions:QUICK_BET_PRESET_DEFINITIONS,bounds:wagerBounds,presets:quickBetPresets,snap:snapWager,step:wagerStep};',context);
 const api=context.api;
 const plain=value=>JSON.parse(JSON.stringify(value));
 const player=(chips=1000,bet=0,extra={})=>Object.assign({chips,betThisRound:bet,mayRaise:true,allIn:false},extra);
@@ -67,8 +67,70 @@ check('Pot-after-call sizing includes an existing player street wager',()=>{
   assert.deepStrictEqual(amounts(g,p),[100,170,280,1000]);
 });
 
-check('Odd pot sizes use whole-chip rounding',()=>{
-  assert.deepStrictEqual(amounts(game('flop',0,1,1,101),player()),[34,51,76,101]);
+check('Odd pot sizes round up to the table\'s step',()=>{
+  assert.deepStrictEqual(amounts(game('flop',0,1,1,101),player()),[35,55,80,105]);
+  assert.deepStrictEqual(amounts(game('flop',0,20,20,141),player()),[50,75,110,145]);
+});
+
+check('The step grows with the blinds: 5s, then 25s, then 50s',()=>{
+  const step=bb=>api.step({bigBlind:bb});
+  assert.deepStrictEqual([20,30,50,100].map(step),[5,5,5,5]);
+  assert.deepStrictEqual([150,200,300,500].map(step),[25,25,25,25]);
+  assert.deepStrictEqual([800,1200].map(step),[50,50]);
+  assert.deepStrictEqual(amounts(game('flop',0,200,200,1130),player(20000)),[400,575,850,1150]);
+});
+
+check('Slider values snap to the step but keep the exact minimum and maximum',()=>{
+  const b={min:137,max:1983,step:5};
+  assert.strictEqual(api.snap(137,b),137);
+  assert.strictEqual(api.snap(138,b),140);
+  assert.strictEqual(api.snap(212,b),210);
+  assert.strictEqual(api.snap(1982,b),1980);
+  assert.strictEqual(api.snap(1983,b),1983);
+  assert.strictEqual(api.snap(1983,b),1983);
+  assert.strictEqual(api.snap(5000,b),1983);
+  assert.strictEqual(api.snap(0,b),137);
+  assert.strictEqual(api.snap(NaN,b),137);
+});
+
+const seat=(chips,bet,extra={})=>Object.assign({chips,betThisRound:bet,inHand:true,folded:false,allIn:chips===0},extra);
+const table=(phase,currentBet,minRaise,bigBlind,pot,you,others)=>
+  Object.assign(game(phase,currentBet,minRaise,bigBlind,pot),{players:[you].concat(others)});
+
+check('Wagers stop at the most anyone can call, and All-in becomes MATCH',()=>{
+  const you=player(2000);
+  const g=table('flop',0,20,20,200,you,[seat(300,0),seat(0,0,{folded:true,chips:5000})]);
+  const b=plain(api.bounds(g,you));
+  assert.strictEqual(b.max,300);
+  assert.strictEqual(b.matched,true);
+  const pre=table('preflop',20,20,20,30,you,[seat(300,0),seat(980,20)]);
+  assert.deepStrictEqual(labels(pre,you),['2 BB','2.5 BB','3 BB','Match']);
+  assert.deepStrictEqual(amounts(pre,you),[40,50,60,1000]);
+  const turn=table('turn',100,100,20,300,you,[seat(237,100)]);
+  assert.deepStrictEqual(plain(api.presets(turn,you)).slice(-1)[0],{id:'match',label:'Match',amount:337,context:'postflopFacing'});
+});
+
+check('A bigger stack across the table keeps All-in as All-in',()=>{
+  const you=player(1000);
+  const g=table('preflop',20,20,20,30,you,[seat(300,0),seat(4000,20)]);
+  assert.strictEqual(plain(api.bounds(g,you)).matched,false);
+  assert.deepStrictEqual(labels(g,you).slice(-1),['All-in']);
+});
+
+check('A cap under a full raise still allows the minimum raise, as MATCH',()=>{
+  const you=player(2000);
+  const g=table('flop',100,100,20,300,you,[seat(50,100)]);
+  const b=plain(api.bounds(g,you));
+  assert.strictEqual(b.min,200); assert.strictEqual(b.max,200);
+  assert.deepStrictEqual(labels(g,you),['Match']);
+});
+
+check('Nobody left who can call a raise: no raise offered',()=>{
+  const you=player(2000);
+  const g=table('turn',300,300,20,700,you,[seat(0,300),seat(0,0,{folded:true,chips:900})]);
+  const b=plain(api.bounds(g,you));
+  assert.strictEqual(b.max,300);
+  assert.deepStrictEqual(amounts(g,you),[]);
 });
 
 check('Minimum legal bets and raises clamp every calculated amount',()=>{
@@ -79,7 +141,7 @@ check('Minimum legal bets and raises clamp every calculated amount',()=>{
 
 check('A short-stack legal under-raise collapses to one all-in choice',()=>{
   const g=game('preflop',100,100,20,170), p=player(150);
-  assert.deepStrictEqual(plain(api.bounds(g,p)),{min:150,max:150,currentBet:100,playerBet:0,stack:150});
+  assert.deepStrictEqual(plain(api.bounds(g,p)),{min:150,max:150,currentBet:100,playerBet:0,stack:150,matched:false,step:5});
   assert.deepStrictEqual(amounts(g,p),[150]);
   assert.deepStrictEqual(labels(g,p),['All-in']);
   assert.deepStrictEqual(labels(game('flop',0,20,20,80),player(15)),['All-in']);

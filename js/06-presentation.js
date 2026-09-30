@@ -3860,8 +3860,8 @@ function setWagerAmount(value,options){
   const slider=$('raise-slider'), p=pendingHumanPlayer;
   const bounds=wagerBounds(game,p);
   if (!slider || !bounds) return null;
-  const requested=Math.round(Number(value));
-  const amount=Math.max(bounds.min,Math.min(bounds.max,Number.isFinite(requested)?requested:bounds.min));
+  // Round steps between the exact legal minimum and maximum (snapWager).
+  const amount=snapWager(Math.round(Number(value)),bounds);
   slider.value=amount;
   queueRaiseReel(amount,!!(options&&options.immediate));
   syncSliderFill();
