@@ -625,3 +625,14 @@ Next after the tactical pass: a compact **P.I.P. HAND BREAKDOWN** after the pot
 is resolved and before the next deal. It will use the structured purpose,
 preferred amount, alternative and next-street plan recorded here. It is not
 the later persistent **P.I.P. NOTICED** observation format.
+
+### Audit and proposed reprioritisation (2 Oct 2026)
+
+The owner requested an assessment before the next tactical expansion.
+[PIP_AUDIT_2026-10-02.md](PIP_AUDIT_2026-10-02.md) records the architecture,
+reproduced correctness gaps, strategic limits, teaching/lifecycle risks and
+a proposed five-phase plan. The existing 59 checks pass, but extra probes
+reproduced contradictory feedback, an illegal recommended raise amount,
+actual-size blind spots and changing preflop advice without new information.
+The recommendation is a reliability/language pass before more tactical
+features. This is a proposed plan; this audit did not change runtime behaviour.
