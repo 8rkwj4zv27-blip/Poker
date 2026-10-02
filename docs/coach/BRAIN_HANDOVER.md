@@ -1,9 +1,8 @@
 # P.I.P., the Coach: handover for a fresh session
 
-Written 29 Sep 2026. `main` is **v0.57.3** (PR #48, from another
-session: you can pick P.I.P. up and throw him round the screen, a joke the
-owner asked for; see below). The brain is as at v0.57.2 (PR #47). This replaces the
-first handover (the brain has since been built). Read this, then
+Written 29 Sep 2026; updated 2 Oct 2026 for the unmerged
+`codex/pip-brain-v2` worktree (**v0.58.2-dev**). This replaces the first
+handover (the brain has since been built). Read this, then
 `CLAUDE.md` for the house rules. Open `docs/coach/BRAIN_PLAN.md` only for
 the full history of how each part was decided (it's long; sections are
 dated), and `docs/CODEMAP.md` for the rest of the game.
@@ -97,14 +96,19 @@ be touched (CLAUDE.md).
     `bet.missed`), check middling ones, semi-bluff a strong draw against
     one player, bluff only one player who's shown weakness and isn't a
     caller, when they fold often enough (`foldChance` vs bet/(pot+bet)).
-    **A bluff is never judged clear-cut.**
+    It now judges the amount too: too small, unnecessarily heavy and an
+    unnecessary all in are distinct. **A bluff is never judged clear-cut.**
   - A judgement: `{ kind, best, verdict: good|fine|mistake, confidence:
     clear|leans|close, tag, lesson, notable, n: numbers }`. The quoted
     numbers always agree with the verdict (tested).
 - **`advise(sp)`**: judges every move you could make; his move, how sure
-  (from the next-best move), the size (2.5bb opens + 1 per limper; 3x a
-  raise in position, 3.8x from the blinds; bets ½ pot, ⅔ on wet boards
-  and the river; to the half big blind), and `stories`.
+  (from the next-best move), the size, and `stories`. Checked-to value
+  hands carry a structured `plan`: several candidate amounts, purpose and
+  what to reassess if called. Quiet monsters bet smaller to keep worse
+  hands in; wet boards charge draws; known callers pay more; all in is
+  reserved for a strong hand when the effective chips left are already
+  small beside the pot. Every amount is capped at what a live opponent can
+  actually match, so covering a short stack never risks imaginary chips.
 - **`stories(sp)`**: what each opponent's betting says (weak / strong /
   calling / quiet) plus habits (caller, bluffer, loose, tight).
 - **`settle(g, me)`**: your result at the showdown **before COLLECT pays
@@ -169,8 +173,8 @@ words and a lesson.
 
 ## Testing
 
-- `node validation/coach-brain-checks.js` (51 checks, ~2 min; all green at
-  v0.57.3), plus `pattern-book-checks.js` (guards: the Coach never changes
+- `node validation/coach-brain-checks.js` (59 checks, ~2 min; all green at
+  v0.58.2-dev), plus `pattern-book-checks.js` (guards: the Coach never changes
   game state, never reads the deck, reads an opponent's cards only in
   `shownAtShowdown`: **name variables `handNo`, never `x.hand`, or it
   trips**), `ai-behaviour-checks.js`, `showdown-checks.js`,

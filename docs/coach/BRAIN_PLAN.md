@@ -552,3 +552,128 @@ grows as he types), not a bug.
 Lab: new TRY IT keys (Lucy is short ×2, the draw all ins, "they wake up",
 and two OUT keys that play the hand-that-hurt word). Tests: 5 new checks
 for exactly these spots.
+
+## Brain V2: tactical depth before memory (2 Oct 2026)
+
+Owner decision: deepen the live poker judgement before persistent habits,
+stages or reports. Memory must not preserve and repeat advice that is still
+too coarse. The motivating example is Pocket Queens receiving an all-in
+recommendation where a smaller bet might keep worse hands in and win more.
+
+The current limitation is concrete: the judge chooses an action, then a
+single stock sizing function supplies the amount. A postflop bet becomes all
+in whenever that stock amount reaches 45% of the player's stack. It does not
+compare small, medium, large and all-in alternatives, and it cannot explain a
+plan for the next street.
+
+Build in six testable slices:
+
+1. **Effective commitment.** Never tell a covering player to risk their whole
+   stack merely because an opponent is short. Recommend the exact amount that
+   puts the short player all in; say whose stack sets the limit.
+2. **Several sizes.** Consider small, medium, large and all-in amounts rather
+   than turning one stock bet into a shove.
+3. **Value extraction.** Size for calls from worse hands. Safe, very strong
+   hands can bet smaller to keep weak hands in; habitual callers can be asked
+   for more.
+4. **Board-sensitive plans.** Charge draws on wet boards; use smaller bets on
+   quiet boards; treat one-pair hands differently from monsters.
+5. **A next-street plan.** Advice carries a plain purpose and what to reassess
+   if called. This is recorded data for the later hand breakdown, not a new
+   visual surface in this pass.
+6. **Judge the amount.** Distinguish a good betting idea from a bet that is
+   too small, too heavy, or an unnecessary all in.
+
+The first Brain V2 release covers checked-to value betting and the short-stack
+preflop sizing boundary. Facing-bet raise sizing uses the same effective cap.
+Bluff and draw strategy keep their existing conservative rules until their own
+focused pass. Every new recommendation is deterministic, public-information
+only and available to the Node sandbox.
+
+### First value slice built (v0.58.1-dev)
+
+- `spot.effectiveTo` is the most any live opponent can match. Preflop and
+  postflop raise advice caps itself there. Covering Lucy's 70 behind now says
+  "raise to 90 and put her all in", not "put your 1,400 all in".
+- `valueBetPlan` produces a preferred amount, four practical alternatives,
+  purpose, effective cap and next-street plan. Quiet monster hands keep weaker
+  hands in at roughly one-third pot; wet boards use roughly two-thirds to
+  charge draws; known callers pay more; an all in is reserved for a strong
+  hand when the effective chips left are no more than roughly the pot.
+- `judgeBet` compares the player's actual amount with the plan. Too small,
+  unnecessarily heavy and unnecessary all-in value bets now get different
+  verdicts and explanations. A good idea with the wrong amount is no longer
+  automatically praised as a good bet.
+- The old draw safety survives independently: a draw bet using a large part of
+  the effective chips is still checked against the shove calculation, so the
+  sizing upgrade cannot revive the reported draw-bust advice.
+- Brain Lab: three Queens spots — quiet-board small value, a wet-board charge,
+  and an unnecessary deep all in.
+- Proof: 59 brain checks, including the new value matrix; Pattern Book, AI,
+  Showdown, quick-bet and scoring suites remain green.
+
+### Advice/verdict consistency fix (v0.58.2-dev)
+
+Follow-up from play: a planned shallow all in was correctly recommended and
+judged as a good value bet, but after everyone folded the generic value line
+could say a smaller bet might have kept them in. Planned commitments now carry
+their own `bet.value.commit` verdict and fold-result wording: P.I.P. explains
+that the pot was already large beside the chips left and does not contradict
+the advice he just gave.
+
+Next after the tactical pass: a compact **P.I.P. HAND BREAKDOWN** after the pot
+is resolved and before the next deal. It will use the structured purpose,
+preferred amount, alternative and next-street plan recorded here. It is not
+the later persistent **P.I.P. NOTICED** observation format.
+
+### Audit and proposed reprioritisation (2 Oct 2026)
+
+The owner requested an assessment before the next tactical expansion.
+[PIP_AUDIT_2026-10-02.md](PIP_AUDIT_2026-10-02.md) records the architecture,
+reproduced correctness gaps, strategic limits, teaching/lifecycle risks and
+a proposed five-phase plan. The existing 59 checks pass, but extra probes
+reproduced contradictory feedback, an illegal recommended raise amount,
+actual-size blind spots and changing preflop advice without new information.
+The recommendation is a reliability/language pass before more tactical
+features. This is a proposed plan; this audit did not change runtime behaviour.
+
+### Phase 1 built — reliable decisions and honest language (v0.58.3-dev)
+
+Owner approved Phase 1 of the audit on 2 Oct 2026. This pass implements the
+reliability foundation, not the next tactical expansion or coaching memory.
+
+- A public-state decision snapshot has a stable identity and is immutable.
+  Repeated advice, tap reads and action assessment reuse its equity samples;
+  new cards, public actions, prices, stacks or reads create a new snapshot.
+- Advice is immutable and stored on the action record with its exact amount,
+  purpose and next-street plan. The record distinguishes matching that amount
+  from merely taking the same kind of action, and whether advice was shown.
+- Sizing uses the game's actual wager bounds and rounding. Legal minimum
+  raises, exact short-stack endpoints and closed raise rights are preserved.
+- Matched short-stack commitments, tiny planned shoves and legally capped
+  ordinary value bets no longer attract contradictory size corrections.
+- Bluff break-even folds use the player's actual added chips. Large partial
+  draw bets/raises receive the existing conservative commitment safety check;
+  oversized value raises receive a size-specific explanation. Free folds are
+  mistakes rather than being silently assessed as checks.
+- Fold-result wording only belongs to the terminal aggressive player
+  decision. A correct value bet is not criticised simply because it got no
+  call, and commitments do not append a generic smaller-raise tip.
+- Teaching language is conditional rather than blanket advice to check for
+  free, raise every two-pair hand or never commit a draw. Unknown opponent
+  cards remain estimates, not facts; wins/losses do not prove decision quality.
+- Turn advice, queued speech and follow-up lessons are bound to their public
+  scene. Tapping after a re-raise rebuilds the read. Interrupted lessons do
+  not unlock vocabulary in the existing `pip.coach` store.
+
+Verification: 59 brain checks (with stricter legal-size/no-mistake advice
+assertions), 26 dedicated reliability/lifecycle checks, 24 Pattern Book,
+15 skin, 41 AI behaviour, 23 quick-bet, 8 showdown and 170 scoring checks.
+The real browser lab also exercises the explanation sequence. No dependencies,
+game-rule changes, layout changes or saved-game/statistics migrations.
+
+Limits remain explicit: equity is sampled, not exact; the first analysis is
+still synchronous; bluff/draw estimates are heuristic and do not model full
+continuation ranges or side-pot incentives. Phase 2 should deepen those
+tactics before Phase 3 adds the hand-breakdown surface. Persistent observations
+remain Phase 5, after tactical work and teaching rooms.

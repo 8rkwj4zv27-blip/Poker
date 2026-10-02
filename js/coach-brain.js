@@ -30,6 +30,24 @@ const CoachBrain = (() => {
   const call = (name, ...a) => { try{ return typeof globalThis[name] === 'function' ? globalThis[name](...a) : null; }catch(e){ return null; } };
   const r1 = x => Math.round(x * 10) / 10;
   const card = c => c ? { rank:c.rank, suit:c.suit, value:c.value } : null;
+  const SPOTS = new WeakMap(), ADVICE = new WeakMap(), PRE_EQ = new WeakMap();
+  let decisionSerial = 0;
+  const freeze = o => {
+    if (o && typeof o === 'object' && !Object.isFrozen(o)){
+      Object.values(o).forEach(freeze); Object.freeze(o);
+    }
+    return o;
+  };
+  // Use the controls' rules, including an exact short-stack endpoint. The
+  // fallback lets the isolated brain run without loading the UI/engine.
+  function legalTo(sp, amount){
+    const b = sp.wager;
+    const snapped = call('snapWager', amount, b);
+    if (snapped != null) return snapped;
+    if (amount <= b.min) return b.min;
+    if (amount >= b.max) return b.max;
+    return Math.max(b.min, Math.min(b.max, Math.round(amount / b.step) * b.step));
+  }
 
   /* ---------------- where you sit ----------------
      Named the way coaches name seats, counted back from the button among
@@ -153,7 +171,10 @@ const CoachBrain = (() => {
     const pfAgg = g.pfAggressorId ? g.players.find(p => p.id === g.pfAggressorId) : null;
     const board = (g.board || []).map(card);
     const hole = me.hand.map(card);
-    return {
+    const fullRaise = Math.max((g.currentBet || 0) + (g.minRaise || bb), (me.betThisRound || 0) + bb);
+    const maxTo = Math.min(myTotal, biggestOpp <= (g.currentBet || 0) ? (g.currentBet || 0) : Math.max(biggestOpp, fullRaise));
+    const wager = call('wagerBounds', g, me) || { min:Math.min(maxTo, fullRaise), max:maxTo, step:bb <= 100 ? 5 : bb <= 500 ? 25 : 50 };
+    const snapshot = {
       handNumber: g.handNumber,
       street: g.phase,
       mode: g.mode || null,
@@ -169,6 +190,10 @@ const CoachBrain = (() => {
       yourBet: me.betThisRound || 0,
       stackBB: r1(me.chips / bb),
       effectiveBB: r1(effective / bb),
+      // The largest total amount any live opponent can match on this
+      // street. Advice uses this as its action cap: covering a short player
+      // must never turn "put them all in" into "risk every chip you own".
+      effectiveTo: effective,
       // when the stack that makes this hand short is theirs, not yours
       // (you cover them): who, so he says "Lucy only has 7 big blinds"
       // rather than "you're short" to a player with 140
@@ -180,7 +205,8 @@ const CoachBrain = (() => {
       spr: pot > 0 ? r1(Math.max(0, effective - (me.betThisRound || 0)) / pot) : null,
       currentBet: g.currentBet || 0,
       minRaise: g.minRaise || bb,
-      mayRaise: me.mayRaise !== false && me.chips > toCall,
+      mayRaise: me.mayRaise !== false && me.chips > toCall && wager.max > (g.currentBet || 0),
+      wager,
       preflop: pf,
       situation: preflop ? pf.kind : streetSituation(g, me, acts, toCall).kind,
       streetRaises: g.streetRaises || 0,
@@ -193,6 +219,12 @@ const CoachBrain = (() => {
       opponents: opps.map(p => ({ id:p.id, name:p.name, chips:p.chips, stackBB:r1(p.chips / bb), bet:p.betThisRound || 0,
         allIn:!!p.allIn, seat:seatLabel(g, g.players.indexOf(p)), read:readOf(g, p.id) }))
     };
+    const key = JSON.stringify(snapshot), previous = SPOTS.get(g);
+    if (previous && previous.key === key) return previous.sp;
+    snapshot.decisionId = ++decisionSerial;
+    const sp = freeze(snapshot);
+    SPOTS.set(g, { key, sp });
+    return sp;
   }
 
   /* ---------------- what you chose ----------------
@@ -270,8 +302,14 @@ const CoachBrain = (() => {
     return Math.max(0.01, Math.min(1, r));
   }
   function equityVs(sp, ranges){
+    let memo = PRE_EQ.get(sp);
+    if (!memo){ memo = new Map(); PRE_EQ.set(sp, memo); }
+    const key = JSON.stringify(ranges);
+    if (memo.has(key)) return memo.get(key);
     const eq = call('estimateEquityVsRanges', sp.hole, [], ranges, 1200);
-    return typeof eq === 'number' ? eq : null;
+    const result = typeof eq === 'number' ? eq : null;
+    memo.set(key, result);
+    return result;
   }
   const J = (o) => Object.assign({ notable:false }, o);
 
@@ -287,7 +325,11 @@ const CoachBrain = (() => {
   }
   function judgePreflop(sp, ch){
     if (!sp || !ch || sp.street !== 'preflop' || !ch.action || sp.holeFacts.pct == null) return null;
-    const pct = playablePct(sp), a = ch.action, f = sp.holeFacts;
+    const pct = playablePct(sp), f = sp.holeFacts;
+    // Covering their entire stack is the same effective commitment as a
+    // shove, even though the player's own chips are not all at risk.
+    const a = ['raise', 'bet'].includes(ch.action) && ch.amount >= sp.effectiveTo && sp.effectiveTo > sp.currentBet
+      ? 'allin' : ch.action;
     const raises = sp.preflop.raises, limpers = sp.preflop.limpers;
     const deepShove = a === 'allin' && sp.effectiveBB > 25;
     const n = { pct:pct100(sp.holeFacts.pct), bb:Math.round(sp.effectiveBB), size:ch.toBB, call:sp.toCall, odds:Math.round(sp.potOdds * 100),
@@ -493,8 +535,15 @@ const CoachBrain = (() => {
     const callers = lastAgg < 0 ? 0 : here.slice(lastAgg + 1).filter(x => x.action === 'call').length;
     const to = Math.round((sp.currentBet * 3 + callers * sp.currentBet) / sp.bigBlind) * sp.bigBlind;
     const allin = sp.stack + sp.yourBet;
-    if (to >= allin * 0.45) return allin;   // most of your stack: just go all in
-    return Math.min(allin, Math.max(to, sp.currentBet + sp.minRaise));
+    const cap = Math.min(allin, sp.effectiveTo || allin);
+    const legal = Math.max(to, sp.currentBet + sp.minRaise);
+    // Commit only when the amount that can actually be matched is already
+    // small beside the pot after calling. The old 45%-of-stack shortcut
+    // produced theatrical shoves without asking whether a smaller raise
+    // could be paid by worse hands.
+    const potAfterCall = sp.pot + sp.toCall;
+    if (cap > sp.currentBet && cap - sp.yourBet <= potAfterCall * 0.85) return legalTo(sp, cap);
+    return legalTo(sp, Math.min(cap, legal));
   }
   function judgePostflop(sp, ch){
     if (!sp || !ch || sp.street === 'preflop' || !ch.action || !sp.boardFacts) return null;
@@ -504,8 +553,7 @@ const CoachBrain = (() => {
     if (a === 'check') a = 'call';
     const bf = sp.boardFacts, left = 5 - sp.board.length;
     // (one sample per decision: advice judges every move on the same spot)
-    let eq = EQ.get(sp);
-    if (eq == null){ eq = call('estimateEquityVsRanges', sp.hole, sp.board, sp.opponents.map(o => oppRange(sp, o)), 1500); EQ.set(sp, eq); }
+    let eq = postEquity(sp);
     if (typeof eq !== 'number') return null;
     const strongDraw = left > 0 && (bf.draws.flush || bf.draws.oesd);
     const anyDraw = left > 0 && (strongDraw || bf.draws.gutshot);
@@ -553,14 +601,21 @@ const CoachBrain = (() => {
       return J(Object.assign(base, { verdict:'mistake', confidence: margin < -0.10 ? 'clear' : 'leans', tag: anyDraw && madeWeak ? 'post.call.draw.bad' : 'post.call.weak', notable:true }));
     }
     if (a === 'raise'){
-      if (value) return J(Object.assign(base, { verdict:'good', confidence:'clear', tag:'post.raise.value', lesson:'raising-for-value', notable:true }));
+      if (value){
+        const target = postRaiseSize(sp), invested = Math.max(0, ch.amount - sp.yourBet);
+        Object.assign(n, { to:target, sizeWords:sizeWords(Math.max(0, target - sp.yourBet) / Math.max(1, sp.pot)) });
+        if (ch.amount > target && invested > Math.max(1, target - sp.yourBet) * 1.6)
+          return J(Object.assign(base, { verdict:'fine', confidence:'leans', tag:'post.raise.value.large', lesson:'raising-for-value', notable:true }));
+        return J(Object.assign(base, { verdict:'good', confidence:'clear', tag:'post.raise.value', lesson:'raising-for-value', notable:true }));
+      }
       if (ahead) return J(Object.assign(base, { verdict:'fine', confidence:'close', tag:'post.raise.protect', lesson:'hand-strength' }));
       // (a raise that's all your chips, with a draw: only when it pays)
       const allIn = ch.action === 'allin' || (ch.amount != null && ch.amount >= sp.stack + sp.yourBet);
-      if (strongDraw && allIn){
+      const heavy = Math.max(0, ch.amount - sp.yourBet) >= Math.max(1, effectiveActionCap(sp) - sp.yourBet) * 0.4;
+      if (strongDraw && (allIn || heavy)){
         const sh = multi ? { ok:false, close:false } : drawShove(sp, eq, clampR(foldChance(sp) * 0.6, 0.03, 0.6));
         Object.assign(n, { whole:sh.whole, risk:sh.risk });
-        if (!sh.ok && !sh.close) return J(Object.assign(base, { verdict:'mistake', confidence:'leans', tag:'post.raise.semi.shove', lesson:'draw-shove', notable:true }));
+        if (!sh.ok && !sh.close) return J(Object.assign(base, { verdict:'mistake', confidence:'leans', tag:allIn ? 'post.raise.semi.shove' : 'post.raise.semi.heavy', lesson:'draw-shove', notable:true }));
       }
       if (strongDraw && !multi && eq >= 0.30) return J(Object.assign(base, { verdict:'fine', confidence:'close', tag:'post.raise.semi', lesson:'semi-bluff', notable:true }));
       if (eq >= 0.55) return J(Object.assign(base, { verdict:'fine', confidence:'close', tag:'post.raise.close', lesson:'raising-for-value' }));
@@ -635,17 +690,93 @@ const CoachBrain = (() => {
      draws and on the river; a bluff the same size as a value bet, so the
      size gives nothing away.
      ============================================================ */
+  const sizeWords = f => f < 0.12 ? 'a small part of the pot' : f < 0.27 ? 'about a quarter of the pot'
+    : f < 0.43 ? 'about a third of the pot' : f < 0.58 ? 'about half the pot'
+    : f < 0.78 ? 'about two-thirds of the pot' : f < 1.08 ? 'about the size of the pot' : 'more than the pot';
+  const roundBet = (sp, amount) => {
+    const step = Math.max(1, sp.bigBlind / 2);
+    return Math.max(sp.bigBlind, Math.round(amount / step) * step);
+  };
+  function effectiveActionCap(sp){
+    return Math.max(sp.yourBet, Math.min(sp.stack + sp.yourBet, sp.effectiveTo || (sp.stack + sp.yourBet)));
+  }
+  function postEquity(sp){
+    let eq = EQ.get(sp);
+    if (eq == null){ eq = call('estimateEquityVsRanges', sp.hole, sp.board, sp.opponents.map(o => oppRange(sp, o)), 1500); EQ.set(sp, eq); }
+    return eq;
+  }
+
+  /* A value plan, rather than one stock amount. It distinguishes quiet
+     boards (keep weaker hands in), draw-heavy boards (charge the next card),
+     habitual callers (ask for more), and shallow pots (there may only be one
+     meaningful bet left). The alternatives are kept on the advice record for
+     the coming hand breakdown; no extra UI is introduced here. */
+  function valueBetPlan(sp, eq){
+    const bf = sp.boardFacts || {}, tex = bf.texture || {}, river = sp.board.length === 5;
+    const multi = sp.opponents.length > 1, made = bf.made;
+    const monster = !!STRONG_MADE[made] && !bf.boardPlays;
+    const onePair = (made === 'overpair' || made === 'top-pair') && !bf.boardPlays;
+    const caller = sp.opponents.some(o => storyOf(sp, o).habit === 'caller');
+    const tight = sp.opponents.length === 1 && storyOf(sp, sp.opponents[0]).habit === 'tight';
+    const wet = (tex.wet || 0) >= 0.45;
+    let frac = 0.5, purpose = 'get-paid', next = 'If they call, reassess their range on the next card.';
+
+    if (!river && monster && !wet && !multi){
+      frac = 0.38; purpose = 'keep-worse-in';
+      next = 'If they call, keep building unless the next card completes an obvious draw.';
+    } else if (!river && wet){
+      frac = caller ? 0.75 : 0.66; purpose = 'charge-draws';
+      next = 'If a likely draw completes, slow down; otherwise keep betting for value.';
+    } else if (river){
+      frac = caller ? 0.8 : tight ? 0.45 : monster ? 0.66 : 0.6;
+      purpose = caller ? 'ask-caller-more' : 'get-paid';
+      next = 'This is the last card: choose the largest amount worse hands will still call.';
+    } else if (onePair){
+      frac = caller ? 0.66 : 0.5; purpose = caller ? 'ask-caller-more' : 'get-paid';
+      next = 'If they call, keep weaker pairs and draws in mind before betting again.';
+    } else if (monster){
+      frac = caller ? 0.72 : 0.55;
+    }
+    if (multi) frac = Math.min(0.75, frac + (wet ? 0.08 : 0.05));
+
+    const cap = effectiveActionCap(sp);
+    const risk = Math.max(0, cap - sp.yourBet);
+    const shallow = risk <= sp.pot * 0.9;
+    const strongEnough = monster || (onePair && eq >= (multi ? 0.72 : 0.68));
+    const shove = shallow && strongEnough;
+    // A capped ordinary bet must not silently become a commitment which
+    // this very plan considers too large. Leave a genuine smaller option
+    // where the legal minimum allows it.
+    let target = shove ? cap : Math.min(cap, roundBet(sp, sp.pot * frac));
+    if (!shove && target >= cap && sp.wager.min < cap) target = Math.max(sp.wager.min, roundBet(sp, risk * 0.5) + sp.yourBet);
+    const to = legalTo(sp, target);
+    const actualFrac = sp.pot > 0 ? Math.max(0, to - sp.yourBet) / sp.pot : 0;
+    if (shove){
+      purpose = 'commit-shallow';
+      next = 'The pot is already large beside the chips left, so there is no useful smaller street plan.';
+    }
+    const alternatives = [0.33, 0.5, 0.66, 0.85].map(f => ({ frac:f, to:legalTo(sp, Math.min(cap, roundBet(sp, sp.pot * f))) }))
+      .filter((x, i, a) => x.to > sp.yourBet && a.findIndex(y => y.to === x.to) === i);
+    if (!alternatives.some(x => x.to === legalTo(sp, cap))) alternatives.push({ frac:sp.pot ? risk / sp.pot : 0, to:legalTo(sp, cap), allin:true });
+    return { to, frac:actualFrac, targetFrac:frac, cap, shove, purpose, next, alternatives, words:sizeWords(actualFrac) };
+  }
   function betSize(sp){
-    const bf = sp.boardFacts || {};
+    const bf = sp.boardFacts || {}, eq = postEquity(sp);
+    const strongMade = STRONG_MADE[bf.made] && !bf.boardPlays;
+    const goodMade = MADE_OK[bf.made] && !bf.boardPlays;
+    const multi = sp.opponents.length > 1;
+    const valueHand = typeof eq === 'number' && ((strongMade && eq >= 0.55) || (goodMade && eq >= (multi ? 0.60 : 0.55)));
+    if (valueHand){ const plan = valueBetPlan(sp, eq); return { to:plan.to, frac:plan.frac, plan }; }
     const frac = sp.board.length === 5 || (bf.texture && bf.texture.wet >= 0.45) ? 0.66 : 0.5;
-    const half = sp.bigBlind / 2;   // (to the half big blind: a whole one is too coarse on small pots)
-    const to = Math.max(sp.bigBlind, Math.round(sp.pot * frac / half) * half);
-    return { to: to >= (sp.stack + sp.yourBet) * 0.45 ? sp.stack + sp.yourBet : to, frac };
+    const cap = effectiveActionCap(sp);
+    const to = legalTo(sp, Math.min(cap, roundBet(sp, sp.pot * frac)));
+    return { to, frac:sp.pot ? Math.max(0, to - sp.yourBet) / sp.pot : frac, plan:null };
   }
   function foldChance(sp){
     // each opponent: their habit of folding to bets (smoothed toward 45%),
     // more likely after checking this hand; everyone has to fold
     return sp.opponents.reduce((acc, o) => {
+      if (o.allIn || o.chips <= 0) return 0; // committed chips cannot fold
       const r = o.read || {};
       const base = ((r.foldedToBet || 0) + 0.45 * 6) / ((r.facedBet || 0) + 6);
       const checked = sp.handLog.some(h => h.id === o.id && h.a === 'k') && !sp.handLog.some(h => h.id === o.id && (h.a === 'b' || h.a === 'r' || h.a === 'c'));
@@ -676,10 +807,9 @@ const CoachBrain = (() => {
     if (!sp || !ch || sp.street === 'preflop' || !sp.boardFacts || sp.toCall > 0) return null;
     let a = ch.action;
     if (a === 'allin' || a === 'raise') a = 'bet';
-    if (a === 'call' || a === 'fold') a = 'check';   // (folding for free is never right, but it's a check's mistake)
+    if (a === 'call') a = 'check';
     const bf = sp.boardFacts, left = 5 - sp.board.length;
-    let eq = EQ.get(sp);
-    if (eq == null){ eq = call('estimateEquityVsRanges', sp.hole, sp.board, sp.opponents.map(o => oppRange(sp, o)), 1500); EQ.set(sp, eq); }
+    let eq = postEquity(sp);
     if (typeof eq !== 'number') return null;
     const opps = sp.opponents.length, multi = opps > 1;
     const strongMade = STRONG_MADE[bf.made] && !bf.boardPlays;
@@ -689,15 +819,17 @@ const CoachBrain = (() => {
     const medium = !valueHand && !strongDraw && (goodMade || bf.made === 'second-pair' || bf.made === 'weak-pair' || eq >= 0.45);
     const size = betSize(sp);
     const fe = foldChance(sp);
-    const bluffNeed = size.to / (sp.pot + size.to);
+    const investment = Math.max(0, (a === 'bet' ? ch.amount : size.to) - sp.yourBet);
+    const bluffNeed = investment / Math.max(1, sp.pot + investment);
     const st = stories(sp);
     const station = sp.opponents.some(o => storyOf(sp, o).habit === 'caller');
     const river = left === 0;
     const drawName = bf.draws.flush && (bf.draws.oesd || bf.draws.gutshot) ? 'a flush and straight draw' : bf.draws.flush ? 'a flush draw' : bf.draws.oesd ? 'an open-ended straight draw' : bf.draws.gutshot ? 'an inside straight draw' : '';
     const n = { street:sp.street, eq:pct100(eq), handName:bf.handName, made:bf.made, drawName, outs:bf.drawOuts,
       players:opps, opp: st.one ? st.one.name : null, story:st.all, habit: st.one ? st.one.habit : null,
-      fold:Math.round(fe * 100), foldNeed:Math.round(bluffNeed * 100), to:size.to, sizeWords: size.frac >= 0.6 ? 'two-thirds of the pot' : 'half the pot',
+      fold:Math.round(fe * 100), foldNeed:Math.round(bluffNeed * 100), to:size.to, sizeWords:sizeWords(size.frac),
       betSize: ch.potFraction == null ? '' : BET_WORD(ch.potFraction), pot:sp.pot, seat:sp.seat, pct:pct100(sp.holeFacts.pct) };
+    if (size.plan) Object.assign(n, { purpose:size.plan.purpose, planTo:size.plan.to, next:size.plan.next, targetFrac:Math.round(size.plan.targetFrac * 100) });
     // (how often they fold is an estimate, so a bluff is never clear-cut:
     // it needs a real margin to be good, and even then it leans)
     const bluffGood = !multi && !station && fe >= bluffNeed + 0.08;
@@ -706,10 +838,17 @@ const CoachBrain = (() => {
     const allinTo = sp.stack + sp.yourBet;
     const allIn = ch.action === 'allin' || (ch.amount != null && ch.amount >= allinTo);
     const shove = strongDraw ? drawShove(sp, eq, fe) : null;
-    const drawBet = strongDraw && !multi && (size.to < allinTo || shove.ok);
+    // A nominally "smaller" draw bet can still consume most of what is
+    // left and leave an automatic river call. Keep the conservative shove
+    // check when the suggested bet uses 40%+ of the effective chips.
+    const capLeft = Math.max(1, effectiveActionCap(sp) - sp.yourBet);
+    const heavyDrawBet = Math.max(0, size.to - sp.yourBet) >= capLeft * 0.4;
+    const drawBet = strongDraw && !multi && (!heavyDrawBet || shove.ok);
     if (shove) Object.assign(n, { whole:shove.whole, risk:shove.risk });
-    const best = valueHand || drawBet || (!medium && !strongDraw && bluffGood) ? 'bet' : 'check';
+    const best = valueHand && size.plan && size.plan.shove ? 'allin'
+      : valueHand || drawBet || (!medium && !strongDraw && bluffGood) ? 'bet' : 'check';
     const base = { kind:'bet', best, n };
+    if (a === 'fold') return J(Object.assign(base, { verdict:'mistake', confidence:'clear', tag:'bet.fold.free', lesson:'the-basics', notable:true }));
     if (a === 'check'){
       if (valueHand){
         const clear = river && (strongMade || eq >= 0.8);
@@ -724,14 +863,31 @@ const CoachBrain = (() => {
     }
     // a bet
     if (valueHand){
-      if (ch.potFraction != null && ch.potFraction < 0.3) return J(Object.assign(base, { verdict:'fine', confidence:'leans', tag:'bet.value.small', lesson:'value-betting', notable:true }));
-      return J(Object.assign(base, { verdict:'good', confidence:'clear', tag:'bet.value', lesson:'value-betting', notable:true }));
+      const plan = size.plan || valueBetPlan(sp, eq);
+      const actual = ch.potFraction == null ? 0 : ch.potFraction;
+      const effectiveShove = ch.amount != null && ch.amount >= plan.cap - 0.001;
+      const forcedMinimum = sp.wager.min >= plan.cap && ch.amount <= sp.wager.min;
+      if (effectiveShove && (plan.shove || forcedMinimum)) return J(Object.assign(base, { verdict:'good', confidence:'clear', tag:'bet.value.commit', lesson:'value-betting', notable:true }));
+      if (effectiveShove && !plan.shove){
+        // With one pair an unnecessary shove is usually losing calls from
+        // exactly the hands value wants. Monsters retain enough equity that
+        // the idea is fine, but the amount is still worth correcting.
+        return J(Object.assign(base, { verdict:goodMade && !strongMade ? 'mistake' : 'fine', confidence:'leans', tag:'bet.value.shove', lesson:'value-betting', notable:true }));
+      }
+      if (ch.amount !== plan.to && actual < Math.max(0.18, plan.frac - 0.2)) return J(Object.assign(base, { verdict:'fine', confidence:'leans', tag:'bet.value.small', lesson:'value-betting', notable:true }));
+      if (!plan.shove && actual > plan.frac + 0.28) return J(Object.assign(base, { verdict:'fine', confidence:'leans', tag:'bet.value.large', lesson:'value-betting', notable:true }));
+      // Keep a planned shallow commitment distinct from an ordinary value
+      // bet. Its result line must not suggest a smaller bet after the brain
+      // deliberately decided the pot was already large beside the chips left.
+      const tag = plan.shove && effectiveShove ? 'bet.value.commit' : 'bet.value';
+      return J(Object.assign(base, { verdict:'good', confidence:'clear', tag, lesson:'value-betting', notable:true }));
     }
     if (medium) return J(Object.assign(base, { verdict:'fine', confidence:'close', tag:'bet.thin', lesson:'pot-control' }));
     // all in with a draw: only when it pays (never clear-cut: how often they
     // fold is an estimate)
-    if (strongDraw && allIn && !multi && !shove.ok && shove.close) return J(Object.assign(base, { verdict:'fine', confidence:'close', tag:'bet.semi.shove.close', lesson:'draw-shove' }));
-    if (strongDraw && allIn && (multi || !shove.ok)) return J(Object.assign(base, { verdict:'mistake', confidence:'leans', tag:'bet.semi.shove', lesson:'draw-shove', notable:true }));
+    const actualHeavy = investment >= capLeft * 0.4;
+    if (strongDraw && (allIn || actualHeavy) && !multi && !shove.ok && shove.close) return J(Object.assign(base, { verdict:'fine', confidence:'close', tag:allIn ? 'bet.semi.shove.close' : 'bet.semi.heavy.close', lesson:'draw-shove' }));
+    if (strongDraw && (allIn || actualHeavy) && (multi || !shove.ok)) return J(Object.assign(base, { verdict:'mistake', confidence:'leans', tag:allIn ? 'bet.semi.shove' : 'bet.semi.heavy', lesson:'draw-shove', notable:true }));
     if (strongDraw && allIn) return J(Object.assign(base, { verdict:'good', confidence: shove.close ? 'close' : 'leans', tag:'bet.semi', lesson:'semi-bluff', notable:true }));
     if (strongDraw) return J(Object.assign(base, !multi ? { verdict:'good', confidence:'clear', tag:'bet.semi', lesson:'semi-bluff', notable:true }
       : { verdict:'fine', confidence:'close', tag:'bet.semi.multi', lesson:'semi-bluff' }));
@@ -753,22 +909,37 @@ const CoachBrain = (() => {
      ============================================================ */
   function raiseSize(sp){
     const bb = sp.bigBlind, raises = sp.preflop.raises;
-    if (sp.effectiveBB <= PUSH_FOLD_BB + 5 && raises >= 1 || sp.effectiveBB <= PUSH_FOLD_BB) return sp.stack + sp.yourBet;   // all in
+    if (sp.effectiveBB <= PUSH_FOLD_BB + 5 && raises >= 1 || sp.effectiveBB <= PUSH_FOLD_BB){
+      // If they are the short stack, raise only to the amount they can
+      // match. The engine would return unmatched chips from a full shove,
+      // but the advice should state the real commitment in the first place.
+      return legalTo(sp, sp.effectiveTo);
+    }
     let to;
     if (raises === 0) to = (sp.playersDealt === 2 ? 2.5 : 2.5) * bb + sp.preflop.limpers * bb + (sp.seat === 'BB' && sp.preflop.limpers ? bb : 0);
     else to = sp.currentBet * (raises >= 2 ? 2.3 : sp.seatGroup === 'blinds' ? 3.8 : 3) + sp.preflop.callers * sp.currentBet;
     to = Math.round(to / bb * 2) / 2 * bb;   // to the half big blind
-    return Math.min(sp.stack + sp.yourBet, Math.max(to, sp.currentBet + sp.minRaise));
+    return legalTo(sp, to);
   }
   function advise(sp){
     if (!sp) return null;
+    if (ADVICE.has(sp)) return ADVICE.get(sp);
+    const advice = freeze(buildAdvice(sp));
+    ADVICE.set(sp, advice);
+    return advice;
+  }
+  function buildAdvice(sp){
     const pre = sp.street === 'preflop';
     const betting = !pre && sp.toCall <= 0;
-    const to = pre ? raiseSize(sp) : betting ? betSize(sp).to : postRaiseSize(sp), allinTo = sp.stack + sp.yourBet;
+    const sizing = betting ? betSize(sp) : null;
+    const to = pre ? raiseSize(sp) : betting ? sizing.to : postRaiseSize(sp), allinTo = sp.stack + sp.yourBet;
     const moves = [];
     moves.push(sp.toCall > 0 ? 'fold' : 'check');
     if (sp.toCall > 0) moves.push('call');
-    if (sp.mayRaise) moves.push(to >= allinTo ? 'allin' : 'raise');
+    // A nominal raise is not a real option when every opponent is already
+    // all in at the current wager. The table normally closes mayRaise too,
+    // but the brain keeps its own public-state guard.
+    if (sp.mayRaise && to > sp.currentBet) moves.push(to >= allinTo ? 'allin' : 'raise');
     // what each move would be recorded as, judged
     const judged = moves.map(m => {
       const amount = m === 'raise' ? to : m === 'allin' ? allinTo : m === 'call' ? sp.yourBet + sp.toCall : sp.yourBet;
@@ -784,6 +955,7 @@ const CoachBrain = (() => {
     if (want === 'bet') want = moves.includes('raise') ? 'raise' : 'allin';
     if (want === 'raise' && !moves.includes('raise') && moves.includes('allin')) want = 'allin';
     let pick = judged.find(x => x.move === want) || judged.slice().sort((a, b) => rank(b) - rank(a))[0];
+    if (pick.j.verdict === 'mistake') pick = judged.slice().sort((a, b) => rank(b) - rank(a))[0];
     if (want === 'check' && sp.toCall > 0) pick = judged.find(x => x.move === 'fold') || pick;
     const others = judged.filter(x => x !== pick);
     const alt = others.slice().sort((a, b) => rank(b) - rank(a))[0] || null;
@@ -792,9 +964,9 @@ const CoachBrain = (() => {
     const j = pick.j;
     // (checked to you, a raise is a bet)
     const word = m => betting && m === 'raise' ? 'bet' : m;
-    return { move:word(pick.move), to: pick.move === 'raise' || pick.move === 'allin' ? pick.ch.amount : null, toBB: pick.ch.toBB,
+    return { decisionId:sp.decisionId, move:word(pick.move), to: pick.move === 'raise' || pick.move === 'allin' ? pick.ch.amount : null, toBB: pick.ch.toBB,
       sure, alt: alt && altRank >= 1.5 ? word(alt.move) : null, kind:j.kind, lesson:j.lesson, n:j.n, tag:j.tag, judgement:j,
-      stories: pre ? null : stories(sp) };
+      stories: pre ? null : stories(sp), plan:betting && sizing ? sizing.plan : null };
   }
 
   /* ---------------- a read of the hand as it stands (tap him) ----------------
@@ -825,11 +997,17 @@ const CoachBrain = (() => {
       seat:null, hole:null, decisions:[], end:null };
     return hand;
   }
-  function record(sp, g, me){
+  function record(sp, g, me, context){
     if (!sp) return null;
     if (!hand || hand.n !== sp.handNumber) handStart(g, null);
     if (!hand) return null;
     const d = { spot:sp, choice:choice(sp, g, me) };
+    d.adviceShown = !!(context && context.adviceShown);
+    d.recommendation = advise(sp);
+    const rec = d.recommendation, actual = d.choice;
+    const canonical = a => a === 'allin' && sp.toCall >= sp.stack ? 'call' : ['bet', 'raise', 'allin'].includes(a) ? 'aggressive' : a;
+    d.followedAdvice = !!rec && canonical(rec.move) === canonical(actual.action)
+      && (rec.to == null || actual.amount === rec.to);
     try{ d.judgement = judge(sp, d.choice); }catch(e){ d.judgement = null; }
     if (!hand.seat) hand.seat = sp.seat;
     if (!hand.hole) hand.hole = sp.hole;
@@ -930,7 +1108,7 @@ const CoachBrain = (() => {
     return finish(hand.seen || { phase:null, showdown:false, board:[], shown:[], yourHand:null, out:false }, net);
   }
 
-  return { spot, choice, settle, judge, judgeBet, stories, foldChance, betSize, judgePreflop, judgePostflop, advise, advisePreflop:advise, oppRange, readNow, raiseSize, openRange, pushRange, raiserRange, record, handStart, observe, handEnd, closeMissed, shownAtShowdown, seatLabel, actingAfter,
+  return { spot, choice, settle, judge, judgeBet, stories, foldChance, betSize, valueBetPlan, judgePreflop, judgePostflop, advise, advisePreflop:advise, oppRange, readNow, raiseSize, openRange, pushRange, raiserRange, record, handStart, observe, handEnd, closeMissed, shownAtShowdown, seatLabel, actingAfter,
     get hand(){ return hand; }, get history(){ return history.slice(); }, reset(){ hand = null; history.length = 0; } };
 })();
 if (typeof window !== 'undefined') window.CoachBrain = CoachBrain;
