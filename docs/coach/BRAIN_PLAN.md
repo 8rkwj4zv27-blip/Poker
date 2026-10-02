@@ -677,3 +677,49 @@ still synchronous; bluff/draw estimates are heuristic and do not model full
 continuation ranges or side-pot incentives. Phase 2 should deepen those
 tactics before Phase 3 adds the hand-breakdown surface. Persistent observations
 remain Phase 5, after tactical work and teaching rooms.
+
+### Phase 2 implementation sequence (owner approved, 2 Oct 2026)
+
+Phase 1 merged to shared `main` through PR #53. The dirty primary checkout
+remains untouched. Phase 2 develops separately on `codex/pip-phase2`.
+
+First slice built locally as **v0.58.4-dev · P.I.P. Value Targets**:
+blocker-aware public combinations and explicit size-sensitive calling priors
+now attach possible weaker calling targets to value plans and explanations.
+Heads-up, last-to-act river plans compare ordinary legal sizes; deep jams
+remain diagnostic alternatives, not automatically selected recommendations.
+Earlier streets expose current made-hand targets only, not a false runout EV.
+Multiway/all-in opponents retain the previous fallback; shallow strong-value
+commitments remain intact. River-model advice cannot claim clear certainty.
+This is a teaching heuristic, not calibrated solver output. It does not yet
+solve thin-value checks, responses to raises, cross-street strategies or draws.
+Validation: 10 dedicated value-target checks, 59 brain checks, 26 reliability
+checks, 24 Pattern Book checks, 23 quick-bet checks and 8 focused showdown
+checks pass. The wider showdown-rail suite has an existing direct-file
+fallback template mismatch; reproduced with merged-main markup, unchanged
+by this slice. The real lab explanation sequence runs after reload. No phone
+performance or solver-calibration claim has been made. This slice is not
+the whole phase.
+
+1. **Value targets and river sizing (first slice).** Enumerate possible
+   opponent combinations from public ranges, removing our cards and the
+   board. Distinguish worse hands that might call from better hands. Compare
+   legal small/medium/large bets for heads-up, last-to-act river value using
+   an explicitly heuristic calling model. Preserve shallow commitments and
+   conservative fallback sizing elsewhere. Explain the target, not just
+   “you have a strong hand”. No claims of solver accuracy.
+2. **Board-relative strength and draw quality.** Add strong/weak kickers,
+   vulnerable versus near-nut hands, clean versus uncertain outs and explicit
+   next-card versus all-in runout prices. Extend continuation evaluation to
+   earlier streets only with future betting risk accounted for.
+3. **Bluff and facing-bet decisions.** Evaluate actual sizes, likely folds,
+   blockers and the betting story; distinguish a bet from a raise; explain
+   why a draw sometimes calls or checks instead of betting.
+4. **Complex pots and cross-street plans.** Separate committed/main-pot and
+   foldable/side-pot opponents, add public position/initiative context and
+   explain changes to an earlier plan. Assess format-specific incentives
+   without changing game rules or Career scope.
+
+Each slice needs independently reasoned scenarios for action, amount,
+targets, uncertainty and language; Phase 1 continuity/legality regressions
+remain mandatory. No new memory, coaching rooms or review UI in this phase.

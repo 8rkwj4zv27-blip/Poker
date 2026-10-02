@@ -536,13 +536,13 @@ const CoachLines = (() => {
     ['pleased', 'Bet. {handName} is strong and they’re not. Bet about {to} and make them pay.'],
     ['calm', 'You’re well ahead. Bet about {to}. Worse hands will call.']]);
   add('advise.bet.bet.keep', 3, [
-    ['calm', 'Bet about {to}. Your hand is very strong and the board is quiet; keep the weaker hands in.'],
-    ['pleased', 'Ask for about {to}. You want the smaller pairs to call, not run away.']]);
+    ['calm', 'Bet about {to}. On this quiet board, you’re trying to keep {valueTargets} interested rather than force them out.'],
+    ['pleased', 'Ask for about {to}. {ValueTargets} are the hands you hope will pay you; a smaller bet gives them room to call.']]);
   add('advise.bet.bet.charge', 3, [
     ['calm', 'Bet about {to}. There are several cards that could catch you, so make the draws pay now.'],
     ['thinking', 'This board has draws. Bet about {to}. Charge them to see the next card.']]);
   add('advise.bet.bet.caller', 3, [
-    ['calm', '{Opp} calls a lot. Bet about {to} with {handName}; ask the weaker hands for more.']]);
+    ['calm', '{Opp} calls a lot. Bet about {to} with {handName}; ask {valueTargets} for more.']]);
   add('advise.bet.bet.commit', 3, [
     ['calm', 'All in. The pot is already large beside the chips left, and {handName} is strong enough to commit.']]);
   add('advise.bet.bet.commit.match', 3, [['calm', 'Bet {to} to commit the chips they can match. The pot is already large beside their stack; you need not put your whole stack in.']]);
@@ -674,7 +674,7 @@ const CoachLines = (() => {
   add('advise.post.call', 3, [['calm', 'Call. {handName} is good enough for the price.']]);
   add('advise.bet.check', 3, [['calm', 'Check. Middling hands want small pots.']]);
   add('advise.bet.check.weak', 3, [['calm', 'Check. Nothing to bet with, and no reason to bluff.']]);
-  add('advise.bet.bet', 3, [['pleased', 'Bet about {to}. You’re ahead, so get paid.']]);
+  add('advise.bet.bet', 3, [['pleased', 'Bet about {to}. You’re aiming for calls from {valueTargets}, not just putting chips in because your hand looks strong.']]);
   add('story.weak.one', 3, [['thinking', '{Opp} checked. That can suggest weakness, but strong hands sometimes check too.']]);
   add('story.weak.all', 3, [['calm', 'Checks all round. They haven’t shown strength; that doesn’t rule out a strong hand.']]);
   add('story.strong.one', 3, [['thinking', '{Opp} is betting. Usually that’s a real hand.']]);

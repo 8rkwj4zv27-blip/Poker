@@ -351,7 +351,7 @@ check('A recorded decision carries its judgement', () => {
 
 /* ---------------- his lines ---------------- */
 const SLOTS = new Set(['hole','pct','range','seatOn','seatFrom','SeatFrom','behindP','bb','size','call','odds','eq','need','raiser','limpersP',
-  'raiserFrom','bettor','betSize','DrawName','handWords','rangeWords','opp','Opp','won','sizeWords','fold','foldNeed','players','Bettor','Raiser','BehindP','LimpersP','to','toBB','lean','alt','Lean','Alt','handName','drawName','outs','hitPct','byWhen','hitNext','threat','pot','shortOpp','ShortOpp']);
+  'raiserFrom','bettor','betSize','DrawName','handWords','rangeWords','opp','Opp','won','sizeWords','fold','foldNeed','players','Bettor','Raiser','BehindP','LimpersP','to','toBB','lean','alt','Lean','Alt','handName','drawName','outs','hitPct','byWhen','hitNext','threat','pot','shortOpp','ShortOpp','valueTargets','ValueTargets']);
 const JARGON = /\b(limp(s|ed|ing|ers?)?|cutoff|hijack|lojack|under the gun|pot odds|outs|three-bet|3-bet|semi-bluff|value bet|kicker|shove[ds]?|bluff catcher|pot control|equity|range|overpair|c-bet|in position|out of position|isolate|dominated)\b/i;
 const BANNED = /\b(kid|buddy|pal|mate|champ|sport|chief|boss|friend|damn|hell|shit|crap)\b/i;
 check('His lines: flat, clean, fit his bubble, and only use blanks the game fills', () => {
@@ -615,10 +615,11 @@ check('Checked to you: a draw bets against one player; bluffing two players is a
   const j = bet(['Qs','Jd'], ['8h','4c','2d','3s','7h'], 'raise');
   assert.ok(/^bet\.bluff/.test(j.tag) && j.confidence !== 'clear', 'a bluff, and not clear-cut: ' + j.tag + ' ' + j.confidence);
 });
-check('Checked to you: his advice bets two pair (about two-thirds of the pot on the river) and checks a middling pair', () => {
+check('Checked to you: river value targets worse calls; a middling pair checks', () => {
   let g = betSpot(['As','2c'], ['Ah','5d','2s','6d','3d']);
   let a = B.advise(B.spot(g, you(g)));
-  assert.strictEqual(a.move, 'bet'); assert.ok(a.to >= g.pot * 0.58 && a.to <= g.pot * 0.72, 'about two-thirds of the pot: ' + a.to + ' into ' + g.pot);
+  assert.strictEqual(a.move, 'bet'); assert.ok(a.to >= g.pot * 0.30 && a.to <= g.pot * 0.85, 'an ordinary legal value size: ' + a.to + ' into ' + g.pot);
+  assert.ok(a.plan.continuation.worseCallShare > 0.5, 'more worse than better hands in the estimated calls');
   g = betSpot(['7s','8d'], ['Kh','7c','2d']);
   assert.strictEqual(B.advise(B.spot(g, you(g))).move, 'check');
 });

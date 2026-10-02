@@ -425,7 +425,7 @@ const CoachTalk = (() => {
       eq: n.eq != null ? n.eq : '', need: n.need != null ? n.need : '', raiser: n.raiser || 'they', limpersP: players(n.limpers || 0),
       raiserFrom: seatFrom(n.raiserSeat),
       // checked to you
-      opp: n.opp || 'they', to: n.to != null ? fmt(n.to) : '', sizeWords: n.sizeWords || 'half the pot', fold: n.fold != null ? n.fold : '', foldNeed: n.foldNeed != null ? n.foldNeed : '',
+      opp: n.opp || 'they', valueTargets:n.valueTargets || 'weaker hands', to: n.to != null ? fmt(n.to) : '', sizeWords: n.sizeWords || 'half the pot', fold: n.fold != null ? n.fold : '', foldNeed: n.foldNeed != null ? n.foldNeed : '',
       players: n.players || '', won: '',
       // after the flop
       bettor: n.bettor || 'they', betSize: n.betSize || 'a bet', handName: n.handName || (sp && sp.holeFacts ? sp.holeFacts.name : ''),
