@@ -1,7 +1,7 @@
 # P.I.P., the Coach: handover for a fresh session
 
 Written 29 Sep 2026; updated 2 Oct 2026 for the unmerged
-`codex/pip-brain-v2` worktree (**v0.58.1-dev**). This replaces the first
+`codex/pip-brain-v2` worktree (**v0.58.2-dev**). This replaces the first
 handover (the brain has since been built). Read this, then
 `CLAUDE.md` for the house rules. Open `docs/coach/BRAIN_PLAN.md` only for
 the full history of how each part was decided (it's long; sections are
@@ -174,7 +174,7 @@ words and a lesson.
 ## Testing
 
 - `node validation/coach-brain-checks.js` (59 checks, ~2 min; all green at
-  v0.58.1-dev), plus `pattern-book-checks.js` (guards: the Coach never changes
+  v0.58.2-dev), plus `pattern-book-checks.js` (guards: the Coach never changes
   game state, never reads the deck, reads an opponent's cards only in
   `shownAtShowdown`: **name variables `handNo`, never `x.hand`, or it
   trips**), `ai-behaviour-checks.js`, `showdown-checks.js`,

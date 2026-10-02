@@ -612,6 +612,15 @@ only and available to the Node sandbox.
 - Proof: 59 brain checks, including the new value matrix; Pattern Book, AI,
   Showdown, quick-bet and scoring suites remain green.
 
+### Advice/verdict consistency fix (v0.58.2-dev)
+
+Follow-up from play: a planned shallow all in was correctly recommended and
+judged as a good value bet, but after everyone folded the generic value line
+could say a smaller bet might have kept them in. Planned commitments now carry
+their own `bet.value.commit` verdict and fold-result wording: P.I.P. explains
+that the pot was already large beside the chips left and does not contradict
+the advice he just gave.
+
 Next after the tactical pass: a compact **P.I.P. HAND BREAKDOWN** after the pot
 is resolved and before the next deal. It will use the structured purpose,
 preferred amount, alternative and next-street plan recorded here. It is not

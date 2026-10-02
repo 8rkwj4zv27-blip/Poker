@@ -792,7 +792,8 @@ const CoachBrain = (() => {
     const heavyDrawBet = Math.max(0, size.to - sp.yourBet) >= capLeft * 0.4;
     const drawBet = strongDraw && !multi && (!heavyDrawBet || shove.ok);
     if (shove) Object.assign(n, { whole:shove.whole, risk:shove.risk });
-    const best = valueHand || drawBet || (!medium && !strongDraw && bluffGood) ? 'bet' : 'check';
+    const best = valueHand && size.plan && size.plan.shove ? 'allin'
+      : valueHand || drawBet || (!medium && !strongDraw && bluffGood) ? 'bet' : 'check';
     const base = { kind:'bet', best, n };
     if (a === 'check'){
       if (valueHand){
@@ -819,7 +820,11 @@ const CoachBrain = (() => {
       }
       if (actual < Math.max(0.18, plan.targetFrac - 0.2)) return J(Object.assign(base, { verdict:'fine', confidence:'leans', tag:'bet.value.small', lesson:'value-betting', notable:true }));
       if (!plan.shove && actual > plan.targetFrac + 0.28) return J(Object.assign(base, { verdict:'fine', confidence:'leans', tag:'bet.value.large', lesson:'value-betting', notable:true }));
-      return J(Object.assign(base, { verdict:'good', confidence:'clear', tag:'bet.value', lesson:'value-betting', notable:true }));
+      // Keep a planned shallow commitment distinct from an ordinary value
+      // bet. Its result line must not suggest a smaller bet after the brain
+      // deliberately decided the pot was already large beside the chips left.
+      const tag = plan.shove && effectiveShove ? 'bet.value.commit' : 'bet.value';
+      return J(Object.assign(base, { verdict:'good', confidence:'clear', tag, lesson:'value-betting', notable:true }));
     }
     if (medium) return J(Object.assign(base, { verdict:'fine', confidence:'close', tag:'bet.thin', lesson:'pot-control' }));
     // all in with a draw: only when it pays (never clear-cut: how often they

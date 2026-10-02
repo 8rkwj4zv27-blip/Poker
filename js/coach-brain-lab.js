@@ -121,6 +121,7 @@
     ['FLOP: BET TOP PAIR', 'bet', ['Ks', 'Qd'], ['Kh', '7c', '2d'], 'bet'],
     ['FLOP: SMALL VALUE BET, SET OF QUEENS, QUIET BOARD', 'bet', ['Qs', 'Qd'], ['Qh', '7c', '2d'], 'bet', { fraction:0.38 }],
     ['FLOP: CHARGE DRAWS, QUEENS ON JACK-TEN-NINE', 'bet', ['Qs', 'Qd'], ['Jh', 'Th', '9c'], 'bet', { fraction:0.66 }],
+    ['FLOP: P.I.P. RECOMMENDS ALL IN (70 LEFT)', 'bet', ['Qs', 'Qd'], ['Jh', '7c', '2d'], 'allin', { stack:70 }],
     ['FLOP: ALL IN WITH QUEENS, QUIET BOARD', 'bet', ['Qs', 'Qd'], ['Jh', '7c', '2d'], 'allin'],
     ['FLOP: CHECK A MIDDLE PAIR', 'bet', ['7s', '8d'], ['Kh', '7c', '2d'], 'check'],
     ['FLOP: BET A FLUSH DRAW', 'bet', ['Ah', '5h'], ['Kh', '9h', '2c'], 'bet'],

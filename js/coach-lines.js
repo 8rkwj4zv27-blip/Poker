@@ -359,6 +359,9 @@ const CoachLines = (() => {
   add('bet.value.why', 2, [
     ['pleased', 'Betting {handName} was right. You were well ahead, so a bet gets money from the weaker hands. That’s called {t:valueBet}.'],
     ['calm', 'Good bet with {handName}. Strong hands should bet, not wait.']]);
+  add('bet.value.commit.now', 3, [['pleased', 'Good. The pot was ready for it.']]);
+  add('bet.value.commit.why', 2, [[
+    'calm', 'All in with {handName} was right. The pot was already large beside the chips left, so there was little value in holding some back.']]);
   add('bet.value.small.now', 3, [['thinking', 'Good, but you could bet more.']]);
   add('bet.value.small.why', 2, [['calm', 'Betting {handName} was right, but the bet was small. About {sizeWords} gets more from the hands that call.']]);
   add('bet.value.large.now', 3, [['thinking', 'Good hand. Heavy bet.'], ['thinking', 'That may chase the weaker hands away.']]);
@@ -610,6 +613,9 @@ const CoachLines = (() => {
   add('bet.value.why.foldwin', 2, [
     ['calm', 'They folded to your bet. With {handName} you’d have liked a call. A slightly smaller bet might keep them in next time.'],
     ['calm', 'Everyone folded. Betting {handName} was still right: you can’t get paid if you don’t bet.']]);
+  add('bet.value.commit.why.foldwin', 2, [
+    ['calm', 'They folded, but all in was still right. The pot was already large beside the chips left; taking it down now is a good result.'],
+    ['calm', 'No call this time. With the pot already large beside the chips left, committing them was still the right bet.']]);
   add('bet.semi.why.foldwin', 2, [['pleased', 'They folded to your bet with {drawName}. That’s the first way a bluff with a draw wins.']]);
   add('bet.bluff.good.why.foldwin', 2, [
     ['pleased', 'They folded. The bluff worked: one player, who’d only checked.'],

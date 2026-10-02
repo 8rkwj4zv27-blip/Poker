@@ -637,6 +637,12 @@ check('Brain V2 value plans: commit only when the pot is already large beside th
   const a = B.advise(B.spot(g, you(g)));
   assert.strictEqual(a.move, 'allin'); assert.strictEqual(a.plan.purpose, 'commit-shallow');
   assert.strictEqual(a.to, 70, 'only the chips that can be matched');
+  const j = judge(g, 0, 'raise', 70);
+  is(j, 'good', 'clear', 'bet.value.commit');
+  assert.strictEqual(j.best, 'allin', 'the judgement agrees with the all-in advice');
+  const foldLine = LINES()['bet.value.commit.why.foldwin'];
+  assert.ok(foldLine && foldLine.length, 'a dedicated fold result for the recommended commitment');
+  assert.ok(foldLine.every(line => !/smaller|lower/i.test(line[2])), 'never contradict the recommended all in afterwards');
 });
 check('Brain V2 judges the amount as well as the idea of value betting', () => {
   let g = betSpot(['Qs','Qd'], ['Qh','7c','2d']);
