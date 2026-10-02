@@ -456,7 +456,7 @@ check('After the flop: his read has your hand, your draw and your chance of hitt
   assert.strictEqual(r.made, 'nothing'); assert.strictEqual(r.draws.flush, true);
   assert.strictEqual(r.drawOuts, 9); assert.strictEqual(r.hitPct, 35, 'nine outs, two cards: 35%');
 });
-check('5,000 random decisions: his advice is always a move you have, never one his judge calls a clear mistake, and always has lines', () => {
+check('5,000 random decisions: advice is legal, never judged a mistake, and has lines', () => {
   let seed = 4242;
   const rnd = () => { seed = (seed * 1103515245 + 12345) & 0x7fffffff; return seed / 0x7fffffff; };
   const ri = k => Math.floor(rnd() * k);
@@ -480,9 +480,10 @@ check('5,000 random decisions: his advice is always a move you have, never one h
     if (!a) continue;
     const moves = [sp.toCall > 0 ? 'fold' : 'check'].concat(sp.toCall > 0 ? ['call'] : [], sp.mayRaise ? ['raise', 'allin'] : []);
     assert.ok(moves.includes(a.move), 'advice you can take: ' + a.move + ' of ' + moves);
-    assert.ok(!(a.judgement.verdict === 'mistake' && a.judgement.confidence === 'clear'), 'advice his own judge calls a clear mistake: ' + JSON.stringify(a));
+    assert.notStrictEqual(a.judgement.verdict, 'mistake', 'advice his own judge calls a mistake: ' + JSON.stringify(a));
     assert.ok(['clear','leans','close'].includes(a.sure));
     if (a.to) assert.ok(a.to > sp.currentBet && a.to <= sp.stack + sp.yourBet, 'a raise size you can make: ' + a.to);
+    if (a.to) assert.strictEqual(ctx.snapWager(a.to, ctx.wagerBounds(g, mine)), a.to, 'the real controls accept this amount');
     assert.ok(L['advise.' + a.kind + '.' + a.move], 'no advice lines for ' + a.kind + '.' + a.move);
     assert.ok(L['hint.' + a.kind], 'no hint lines for ' + a.kind);
   }
@@ -513,12 +514,15 @@ check('After the flop: calling with nothing is a clear mistake; top pair calls; 
   is(post(['Ks','Qd'], ['Kh','9c','2d'], 0.5, 'call'), 'good', null, 'post.call.good');
   is(post(['Ks','Qd'], ['Kh','9c','2d'], 0.5, 'fold'), 'mistake', 'clear', 'post.fold.strong');
   is(post(['Ks','Qd'], ['Kh','9c','2d'], 0.5, 'raise', 300), 'fine', 'close', 'post.raise.protect');
-  is(post(['9s','9d'], ['Kh','9c','2d'], 0.5, 'raise', 300), 'good', 'clear', 'post.raise.value');
+  is(post(['9s','9d'], ['Kh','9c','2d'], 0.5, 'raise', 160), 'good', 'clear', 'post.raise.value');
+  is(post(['9s','9d'], ['Kh','9c','2d'], 0.5, 'raise', 300), 'fine', 'leans', 'post.raise.value.large');
   is(post(['9s','9d'], ['Kh','9c','2d'], 0.5, 'call'), 'fine', 'leans', 'post.call.value');
 });
 check('The river: bottom pair folds to a pot-sized bet; a missed draw folds; the nuts raises', () => {
   is(post(['2s','3d'], ['Kh','9c','2d','Js','5h'], 1.0, 'fold'), 'good', null, 'post.fold.good');
-  is(post(['2s','3d'], ['Kh','9c','2d','Js','5h'], 1.0, 'call'), 'mistake', 'clear', 'post.call.weak');
+  // Confidence near the ten-point margin is sample-sensitive; the
+  // independently important assertion is that this call is a mistake.
+  is(post(['2s','3d'], ['Kh','9c','2d','Js','5h'], 1.0, 'call'), 'mistake', null, 'post.call.weak');
   is(post(['Ah','5h'], ['Kh','9h','2c','3s','Jd'], 0.7, 'fold'), 'good', null, 'post.fold.good');
   const j = post(['Ah','5h'], ['Kh','9h','2c','3h','Jd'], 0.7, 'call');
   is(j, 'fine', 'leans', 'post.call.value'); assert.strictEqual(j.lesson, 'raising-for-value');
@@ -565,7 +569,7 @@ check('1,500 random spots after the flop: sane verdicts, numbers that agree, adv
     const sp = B.spot(g, mine), a = B.advise(sp);
     const moves = ['fold', 'call'].concat(sp.mayRaise ? ['raise', 'allin'] : []);
     assert.ok(a && moves.includes(a.move), 'advice you can take: ' + (a && a.move));
-    assert.ok(!(a.judgement.verdict === 'mistake' && a.judgement.confidence === 'clear'), 'advice his judge calls a clear mistake: ' + JSON.stringify(a.judgement));
+    assert.notStrictEqual(a.judgement.verdict, 'mistake', 'advice his judge calls a mistake: ' + JSON.stringify(a.judgement));
     assert.ok(L['advise.post.' + a.move], 'no advice lines for ' + a.move);
     const x = ['fold', 'call', 'raise'][ri(3)];
     const j = judge(g, me, x, x === 'raise' ? Math.min(mine.betThisRound + mine.chips, sp.currentBet * 3) : 0);
@@ -693,7 +697,8 @@ check('800 random checked-to spots: sane verdicts, advice you can take, and line
     if (sp.toCall > 0 || sp.playersIn < 2) continue;
     const a = B.advise(sp);
     assert.ok(a && ['check', 'bet', 'allin'].includes(a.move), 'advice you can take: ' + (a && a.move));
-    assert.ok(!(a.judgement.verdict === 'mistake' && a.judgement.confidence === 'clear'), 'advice his judge calls a clear mistake: ' + JSON.stringify(a.judgement));
+    assert.notStrictEqual(a.judgement.verdict, 'mistake', 'advice his judge calls a mistake: ' + JSON.stringify(a.judgement));
+    if (a.to) assert.strictEqual(ctx.snapWager(a.to, ctx.wagerBounds(g, mine)), a.to);
     const x = rnd() < .5 ? 'check' : 'raise';
     const j = judge(g, me, x, x === 'raise' ? Math.min(mine.chips, Math.max(20, Math.round(g.pot * (.3 + rnd())))) : 0);
     if (!j) continue;

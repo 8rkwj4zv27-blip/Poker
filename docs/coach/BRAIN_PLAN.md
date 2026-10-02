@@ -636,3 +636,44 @@ reproduced contradictory feedback, an illegal recommended raise amount,
 actual-size blind spots and changing preflop advice without new information.
 The recommendation is a reliability/language pass before more tactical
 features. This is a proposed plan; this audit did not change runtime behaviour.
+
+### Phase 1 built — reliable decisions and honest language (v0.58.3-dev)
+
+Owner approved Phase 1 of the audit on 2 Oct 2026. This pass implements the
+reliability foundation, not the next tactical expansion or coaching memory.
+
+- A public-state decision snapshot has a stable identity and is immutable.
+  Repeated advice, tap reads and action assessment reuse its equity samples;
+  new cards, public actions, prices, stacks or reads create a new snapshot.
+- Advice is immutable and stored on the action record with its exact amount,
+  purpose and next-street plan. The record distinguishes matching that amount
+  from merely taking the same kind of action, and whether advice was shown.
+- Sizing uses the game's actual wager bounds and rounding. Legal minimum
+  raises, exact short-stack endpoints and closed raise rights are preserved.
+- Matched short-stack commitments, tiny planned shoves and legally capped
+  ordinary value bets no longer attract contradictory size corrections.
+- Bluff break-even folds use the player's actual added chips. Large partial
+  draw bets/raises receive the existing conservative commitment safety check;
+  oversized value raises receive a size-specific explanation. Free folds are
+  mistakes rather than being silently assessed as checks.
+- Fold-result wording only belongs to the terminal aggressive player
+  decision. A correct value bet is not criticised simply because it got no
+  call, and commitments do not append a generic smaller-raise tip.
+- Teaching language is conditional rather than blanket advice to check for
+  free, raise every two-pair hand or never commit a draw. Unknown opponent
+  cards remain estimates, not facts; wins/losses do not prove decision quality.
+- Turn advice, queued speech and follow-up lessons are bound to their public
+  scene. Tapping after a re-raise rebuilds the read. Interrupted lessons do
+  not unlock vocabulary in the existing `pip.coach` store.
+
+Verification: 59 brain checks (with stricter legal-size/no-mistake advice
+assertions), 26 dedicated reliability/lifecycle checks, 24 Pattern Book,
+15 skin, 41 AI behaviour, 23 quick-bet, 8 showdown and 170 scoring checks.
+The real browser lab also exercises the explanation sequence. No dependencies,
+game-rule changes, layout changes or saved-game/statistics migrations.
+
+Limits remain explicit: equity is sampled, not exact; the first analysis is
+still synchronous; bluff/draw estimates are heuristic and do not model full
+continuation ranges or side-pot incentives. Phase 2 should deepen those
+tactics before Phase 3 adds the hand-breakdown surface. Persistent observations
+remain Phase 5, after tactical work and teaching rooms.

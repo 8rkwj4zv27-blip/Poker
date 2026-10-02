@@ -137,7 +137,7 @@ const CoachLines = (() => {
   add('open.shove.now', 1, [['surprised', 'All in? That’s a lot to risk.'], ['wince', 'That’s far too much.']]);
   add('open.shove.why', 2, [
     ['thinking', 'Going all in there risked {bb} big blinds just to win the blinds. A normal raise does the same job and risks far less.'],
-    ['calm', 'When you go all in first, only better hands call you. Raise normally instead.']]);
+    ['calm', 'A huge opening bet can chase out weaker hands and mostly attract strong calls. A normal raise risks less and keeps more hands interested.']]);
   add('open.fold.strong.now', 1, [['surprised', 'You folded that?'], ['wince', 'That’s too good to fold.']]);
   add('open.fold.strong.now.leans', 3, [['thinking', 'I’d have raised that.'], ['thinking', 'That one was worth playing.']]);
   add('open.fold.strong.why', 2, [
@@ -354,14 +354,14 @@ const CoachLines = (() => {
   add('bet.missed.now', 3, [['thinking', 'You could have bet that.'], ['thinking', 'That hand was worth a bet.']]);
   add('bet.missed.why', 2, [
     ['thinking', 'You checked {handName}. That was strong: you’d win about {eq}% of the time. When nobody bets and you’re that far ahead, bet so the weaker hands pay you.'],
-    ['calm', 'With {handName}, a bet of about {sizeWords} would have won more. Worse hands often call.']]);
+    ['calm', 'With {handName}, a bet of {sizeWords} could get paid by worse hands. Checking missed that chance, though a call was never guaranteed.']]);
   add('bet.value.now', 2, [['pleased', 'Good bet.'], ['pleased', 'Right. Make them pay.']]);
   add('bet.value.why', 2, [
     ['pleased', 'Betting {handName} was right. You were well ahead, so a bet gets money from the weaker hands. That’s called {t:valueBet}.'],
     ['calm', 'Good bet with {handName}. Strong hands should bet, not wait.']]);
   add('bet.value.commit.now', 3, [['pleased', 'Good. The pot was ready for it.']]);
   add('bet.value.commit.why', 2, [[
-    'calm', 'All in with {handName} was right. The pot was already large beside the chips left, so there was little value in holding some back.']]);
+    'calm', 'Committing with {handName} made sense. The pot was already large beside the chips that could be matched, so there was little value in holding some back.']]);
   add('bet.value.small.now', 3, [['thinking', 'Good, but you could bet more.']]);
   add('bet.value.small.why', 2, [['calm', 'Betting {handName} was right, but the bet was small. About {sizeWords} gets more from the hands that call.']]);
   add('bet.value.large.now', 3, [['thinking', 'Good hand. Heavy bet.'], ['thinking', 'That may chase the weaker hands away.']]);
@@ -427,13 +427,13 @@ const CoachLines = (() => {
     ['calm', 'Where you sit matters. The later you act, the more you’ve seen before you decide. The seat just before the dealer button is called the cutoff; the first to act is called under the gun.'],
     ['calm', 'Acting last is an advantage: you see what everyone else does first. That’s called position. Play more hands when you act late, fewer when you act early.']]);
   add('lesson.raise-or-fold', 2, [
-    ['calm', 'When nobody has raised yet, raise or fold. Just calling the big blind is called limping. A raise can win the pot straight away; a call never can.']]);
+    ['calm', 'First in, usually raise or fold. Just calling the big blind is called limping. Raising can win immediately; calling cannot. Completing the small blind can sometimes make sense.']]);
   add('lesson.calling-raises', 2, [
     ['calm', 'A raise usually means a good hand. Before you call one, ask: does my hand beat the hands this player raises with? Usually, the answer is no.']]);
   add('lesson.bb-defence', 2, [
     ['calm', 'In the big blind, you’ve already put chips in, so calling a raise costs less. You can play more hands there than anywhere else, but not everything.']]);
   add('lesson.short-stack', 2, [
-    ['calm', 'When you have about ten big blinds or fewer, stop making small raises. Go all in or fold. Going all in like that is called a shove.']]);
+    ['calm', 'Around ten big blinds, all in or fold is a useful starting plan, not a law for every seat and price. Going all in is called a shove. Check for free when that option makes sense.']]);
   add('lesson.three-bet', 2, [
     ['calm', 'Raising after someone else has raised is called a three-bet. With a strong hand, it builds the pot while you’re ahead.']]);
   add('lesson.the-basics', 2, [
@@ -443,18 +443,18 @@ const CoachLines = (() => {
     ['calm', 'When someone bets, ask two things: what does a bet like that usually mean, and does my hand win often enough to pay for it?']]);
   add('lesson.drawing-odds', 2, [
     ['calm', 'When you’re waiting for a card, count the cards that would make your hand. Those are called outs. A flush draw has 9. Each card to come gives you about 2% per out.'],
-    ['calm', 'Chasing a draw is only worth it when the bet is small. Big bets, usually fold.']]);
+    ['calm', 'Compare the price with the chance your draw wins. Some draws can pay for a bigger bet; others miss too often. Remember you may have to pay again on the next card.']]);
   add('lesson.river-bets', 2, [
     ['calm', 'Big bets on the last card are rarely bluffs, especially from quiet players. A hand that can only beat a bluff is called a bluff catcher. Careful calling with one.']]);
   add('lesson.hand-strength', 2, [
     ['calm', 'How strong a hand is depends on the board. A pair of kings is great on a quiet board, and weak when four cards of one suit are showing.'],
     ['calm', 'With a pair, your other card matters too. It’s called your kicker: if you both have the same pair, the higher kicker wins.']]);
   add('lesson.raising-for-value', 2, [
-    ['calm', 'When someone bets and you’re well ahead, raise. Two pair or better, usually. With one pair, calling is usually better: a raise mostly gets called by better hands.']]);
+    ['calm', 'Raising for value means building the pot against worse hands that can call. Judge the board and their betting, not just your hand’s name. Being ahead of their bet is not enough.']]);
   add('lesson.value-betting', 2, [
     ['calm', 'When your hand is strong and nobody bets, you bet. The point is to get paid by weaker hands. That’s called a value bet. Checking a strong hand lets them off for free.']]);
   add('lesson.pot-control', 2, [
-    ['calm', 'With a middling hand, keep the pot small. Check, and call small bets. Big pots are for big hands. That’s called pot control.']]);
+    ['calm', 'Pot control means avoiding a big pot with a middling hand. Checking can help; calling still needs the right price against their likely hands. Small bets are not automatic calls.']]);
   add('lesson.bluffing', 2, [
     ['calm', 'A bluff is a bet with a weak hand, to make a better hand fold. Bluff one player who has shown weakness by checking. Never bluff someone who calls everything.'],
     ['calm', 'Bluff the same size you’d bet a good hand, so your bet doesn’t give you away. And don’t bluff often: a few well-chosen ones are enough.']]);
@@ -545,6 +545,7 @@ const CoachLines = (() => {
     ['calm', '{Opp} calls a lot. Bet about {to} with {handName}; ask the weaker hands for more.']]);
   add('advise.bet.bet.commit', 3, [
     ['calm', 'All in. The pot is already large beside the chips left, and {handName} is strong enough to commit.']]);
+  add('advise.bet.bet.commit.match', 3, [['calm', 'Bet {to} to commit the chips they can match. The pot is already large beside their stack; you need not put your whole stack in.']]);
   add('advise.bet.bet.draw', 3, [['calm', 'Bet {drawName}. Against one player, you win if they fold now, or if you make your hand later. About {to}.']]);
   add('advise.bet.bet.bluff', 3, [
     ['thinking', 'You’ve got nothing, but they look weak too. A bet of about {to} will often win this straight away.'],
@@ -580,8 +581,8 @@ const CoachLines = (() => {
   add('read.made.second-pair', 3, [['calm', '{handName}. A middling hand.']]);
   add('read.made.top-pair', 3, [['pleased', '{handName}, the highest pair you can make here. Good, most of the time.']]);
   add('read.made.overpair', 3, [['pleased', '{handName}, bigger than any card on the table. Strong.']]);
-  add('read.made.two-pair', 3, [['pleased', '{handName}. That’s strong.']]);
-  add('read.made.set', 3, [['impressed', '{handName}. Very strong, and hard for them to see coming.']]);
+  add('read.made.two-pair', 3, [['pleased', '{handName}. Often strong, but check what the board lets them have.']]);
+  add('read.made.set', 3, [['impressed', '{handName}. A strong made hand; still watch for possible straights and flushes.']]);
   add('read.made.trips', 3, [['pleased', '{handName}. Strong, but someone could share it with a better other card.']]);
   add('read.made.big', 3, [['impressed', '{handName}. A big hand.']]);
   add('read.draw', 3, [['thinking', '{DrawName}: {outs} cards make your hand. About {hitPct}% {byWhen}.']]);
@@ -600,7 +601,7 @@ const CoachLines = (() => {
   add('open.good.premium.why.foldwin', 2, [
     ['calm', 'Everyone folded. That happens with a great hand, and raising {hole} was still right.'],
     ['pleased', 'They all folded to your {hole}. It’s a small win, but the raise was right. Just calling would have let weaker hands in cheaply.'],
-    ['calm', 'No callers for your {hole}. That’s fine. With a hand this good, a raise is always right, even when it only wins the blinds.']]);
+    ['calm', 'No callers for your {hole}. Raising made sense here, even though this time it only won the blinds.']]);
   add('open.good.steal.why.foldwin', 2, [
     ['pleased', 'Everyone folded. That’s the point of raising from a late seat: you win the blinds without a fight.'],
     ['calm', 'They folded. Raising {hole} {seatFrom} won the pot straight away. That’s how late seats make money.']]);
@@ -611,7 +612,7 @@ const CoachLines = (() => {
   add('short.push.good.why.foldwin', 2, [['pleased', 'Everyone folded to your all in. When you’re short, winning the blinds keeps you alive.']]);
   add('short.reshove.good.why.foldwin', 2, [['pleased', 'They folded to your all in. You win their raise as well as the blinds.']]);
   add('bet.value.why.foldwin', 2, [
-    ['calm', 'They folded to your bet. With {handName} you’d have liked a call. A slightly smaller bet might keep them in next time.'],
+    ['calm', 'They folded to your bet. With {handName} you wanted a call, but a fold alone doesn’t mean the amount was wrong. You still won the pot.'],
     ['calm', 'Everyone folded. Betting {handName} was still right: you can’t get paid if you don’t bet.']]);
   add('bet.value.commit.why.foldwin', 2, [
     ['calm', 'They folded, but all in was still right. The pot was already large beside the chips left; taking it down now is a good result.'],
@@ -619,7 +620,7 @@ const CoachLines = (() => {
   add('bet.semi.why.foldwin', 2, [['pleased', 'They folded to your bet with {drawName}. That’s the first way a bluff with a draw wins.']]);
   add('bet.bluff.good.why.foldwin', 2, [
     ['pleased', 'They folded. The bluff worked: one player, who’d only checked.'],
-    ['impressed', 'Nicely done. You had nothing, they had nothing much, and your bet took it.']]);
+    ['impressed', 'The bluff took the pot. Their checks suggested weakness, though we never saw their cards.']]);
   add('bet.bluff.close.why.foldwin', 4, [['calm', 'They folded. That bluff was a close call, and it worked this time.']]);
   add('post.raise.value.why.foldwin', 2, [['calm', 'They folded to your raise. With {handName} a call would have been nice, but the pot’s yours.']]);
   add('post.raise.semi.why.foldwin', 2, [['pleased', 'They folded to your raise with {drawName}. The bluff with a draw worked straight away.']]);
@@ -633,26 +634,26 @@ const CoachLines = (() => {
   add('tip.raise-or-fold', 3, [['calm', 'Tip: when you’re first in, your choices are raise or fold. Just calling is almost never best.']]);
   add('tip.calling-raises', 3, [['calm', 'Tip: when someone raises, fold most hands. Keep playing with pairs and your best high cards.']]);
   add('tip.bb-defence', 3, [['calm', 'Tip: in the big blind, call raises more often, because it’s cheaper for you. But not with junk.']]);
-  add('tip.short-stack', 3, [['calm', 'Tip: watch your stack. Under about ten big blinds, it’s all in or fold.']]);
+  add('tip.short-stack', 3, [['calm', 'Tip: around ten big blinds, think commitment or fold rather than small raises by default. The seat, price and a free check still matter.']]);
   add('tip.three-bet', 3, [['calm', 'Tip: re-raise with your very best hands. With good-but-not-great ones, just call or fold.']]);
-  add('tip.the-basics', 3, [['calm', 'Tip: when it’s free, always check. You can only lose chips by betting or calling.']]);
+  add('tip.the-basics', 3, [['calm', 'Tip: don’t fold when checking is free. Check to keep playing without paying, or bet when you have a reason.']]);
   add('tip.pot-odds', 3, [['calm', 'Tip: small bets are cheap to call; big bets need strong hands. The size of the bet matters as much as your cards.']]);
   add('tip.drawing-odds', 3, [['calm', 'Tip: a flush draw with two cards to come hits about 1 time in 3. With one card to come, about 1 in 5.']]);
   add('tip.river-bets', 3, [['calm', 'Tip: when a quiet player suddenly bets big on the last card, believe them.']]);
   add('tip.hand-strength', 3, [['calm', 'Tip: look at the board. If three cards of one suit are showing, a flush is possible. If four are in a row, a straight is.']]);
-  add('tip.raising-for-value', 3, [['calm', 'Tip: when someone bets and you have two pair or better, raise. Worse hands will often call.']]);
+  add('tip.raising-for-value', 3, [['calm', 'Tip: raise for value when enough worse hands can call. Two pair can be strong, but the board and their betting still matter.']]);
   add('tip.value-betting', 3, [['calm', 'Tip: when your hand is strong and they check to you, bet. They can’t pay you if you don’t.']]);
-  add('tip.pot-control', 3, [['calm', 'Tip: with one pair, you usually want a small pot. Check, and call small bets.']]);
+  add('tip.pot-control', 3, [['calm', 'Tip: one pair is not always a big-pot hand. Before adding chips, consider what worse hands call and what their bet could mean.']]);
   add('tip.bluffing', 3, [['calm', 'Tip: bluff one player, when they’ve checked. Never bluff someone who calls everything.']]);
-  add('tip.semi-bluff', 3, [['calm', 'Tip: bet your draws against one player. You can win if they fold, or if you make your hand.']]);
+  add('tip.semi-bluff', 3, [['calm', 'Tip: a draw can justify a bet when they might fold. Check the amount and chips left too; sometimes seeing a free card is better.']]);
   add('tip.watching', 3, [['calm', 'Tip: while you’re out, watch who bets and who calls. It tells you how each of them plays.']]);
   add('tip.general', 3, [['calm', 'Tip: most hands are folds. The money comes from the few you play well.'], ['calm', 'Tip: play fewer hands, and play them with a raise.']]);
 
   /* ================= the hand, summed up (a tap, when there's no verdict) ================= */
-  add('sum.won', 3, [['pleased', 'You won that one. Nothing to fix.'], ['calm', 'A win, and you played it fine.']]);
-  add('sum.allFolded', 3, [['calm', 'Everyone folded to you. Nothing to fix.']]);
-  add('sum.lost', 3, [['calm', 'You lost that one, but you didn’t do anything wrong.'], ['unlucky', 'A loss, but not a mistake.']]);
-  add('sum.folded', 3, [['calm', 'You folded, and that was fine.']]);
+  add('sum.won', 3, [['pleased', 'You won that one. The result alone doesn’t tell us how well each decision went.']]);
+  add('sum.allFolded', 3, [['calm', 'Everyone folded to you. The pot’s yours; we didn’t see their hands.']]);
+  add('sum.lost', 3, [['unlucky', 'You lost that one. A loss alone doesn’t make a decision a mistake.']]);
+  add('sum.folded', 3, [['calm', 'You folded that hand. We can judge the decision by the cards and price you faced, not by what came afterwards.']]);
   add('sum.even', 3, [['calm', 'Nothing much happened in that one.']]);
   add('read.wait', 3, [['thinking', 'Let’s see how the cards land.'], ['calm', 'All in. Nothing to do now but watch.']]);
   add('tap.done', 3, [['calm', 'That’s all I’ve got on this one.'], ['calm', 'Nothing more to add here.'], ['calm', 'That’s everything. Play on.']]);
@@ -674,8 +675,8 @@ const CoachLines = (() => {
   add('advise.bet.check', 3, [['calm', 'Check. Middling hands want small pots.']]);
   add('advise.bet.check.weak', 3, [['calm', 'Check. Nothing to bet with, and no reason to bluff.']]);
   add('advise.bet.bet', 3, [['pleased', 'Bet about {to}. You’re ahead, so get paid.']]);
-  add('story.weak.one', 3, [['thinking', '{Opp} checked. Not much strength there.']]);
-  add('story.weak.all', 3, [['calm', 'Checks all round. Nobody likes their hand much.']]);
+  add('story.weak.one', 3, [['thinking', '{Opp} checked. That can suggest weakness, but strong hands sometimes check too.']]);
+  add('story.weak.all', 3, [['calm', 'Checks all round. They haven’t shown strength; that doesn’t rule out a strong hand.']]);
   add('story.strong.one', 3, [['thinking', '{Opp} is betting. Usually that’s a real hand.']]);
   add('story.calling.one', 3, [['calm', '{Opp} just called. Something middling, most likely.']]);
   add('story.calling.again.one', 3, [['calm', '{Opp} is just calling, card after card. Something middling, most likely.']]);
@@ -687,7 +688,7 @@ const CoachLines = (() => {
      You cover a short opponent: the hand is only worth their stack, so it
      plays like a short stack, but it's theirs. <key>.opp is said in place
      of <key> then ("Lucy only has 7 big blinds", not "you're short"). */
-  add('short.push.good.now.opp', 2, [['pleased', 'Good. All in.'], ['pleased', 'Right. Against a stack that small, all in is the play.']]);
+  add('short.push.good.now.opp', 2, [['pleased', 'Good. You put them to the decision for their stack.'], ['pleased', 'Right. Committing that short stack makes sense here.']]);
   add('short.push.good.why.opp', 2, [['calm', '{ShortOpp} only had {bb} big blinds, and that’s all you could win or lose. All in with {hole} was right: it makes them decide now, for everything.']]);
   add('short.push.close.why.opp', 4, [['calm', 'Fine. All in with {hole} against {shortOpp}’s {bb} big blinds was a close call.']]);
   add('short.push.loose.why.opp', 2, [['thinking', '{ShortOpp} only has {bb} big blinds, but they can still have a good hand. {hole} {seatFrom} was too weak to put them all in.']]);
@@ -703,7 +704,7 @@ const CoachLines = (() => {
   add('short.flat.now.opp', 3, [['thinking', 'They’re short. Put them all in instead.']]);
   add('short.flat.why.opp', 2, [['calm', '{ShortOpp} only had {bb} big blinds. Calling leaves them room to play. {hole} wins about {eq}% here: all in instead.']]);
   add('short.reshove.good.why.opp', 2, [['calm', 'All in over the raise with {hole} was right. {ShortOpp} only had {bb} big blinds. You win about {eq}% if they call, and sometimes they fold.']]);
-  add('short.push.good.why.foldwin.opp', 2, [['pleased', 'Everyone folded to your all in. Against a short stack, the blinds are a fine win.']]);
+  add('short.push.good.why.foldwin.opp', 2, [['pleased', 'They folded rather than commit their short stack. Taking the blinds is a fine result.']]);
   add('advise.open.allin.opp', 3, [['calm', '{ShortOpp} only has {bb} big blinds. {hole} is good enough: go all in.']]);
   add('advise.limped.allin.opp', 3, [['calm', '{ShortOpp} only has {bb} big blinds, and {hole} is good enough: all in.']]);
   add('advise.bbOption.allin.opp', 3, [['calm', '{ShortOpp} only has {bb} big blinds, and {hole} is strong. All in.']]);
@@ -714,8 +715,8 @@ const CoachLines = (() => {
   add('advise.short.fold.opp', 3, [['calm', 'Fold. {ShortOpp} only has {bb} big blinds, so it’s all in or fold, and {hole} is a fold from here.']]);
   add('hint.short.opp', 3, [['thinking', '{ShortOpp} only has {bb} big blinds. All in, or fold?']]);
   add('lesson.short-stack.opp', 2, [
-    ['calm', 'You can only win or lose what the smaller stack has. When that’s about ten big blinds or fewer, stop making small raises: go all in or fold. That’s called a shove.']]);
-  add('tip.short-stack.opp', 3, [['calm', 'Tip: look at the smaller stack. When it’s under about ten big blinds, it’s all in or fold, even for you.']]);
+    ['calm', 'Against one opponent, only the smaller stack can be matched. A short stack may justify committing them; you need not risk your whole stack. An all-in bet is called a shove.']]);
+  add('tip.short-stack.opp', 3, [['calm', 'Tip: look at the chips they can match. Putting a short opponent all in is different from risking your entire stack.']]);
   add('again.short-stack.opp', 3, [['thinking', 'A short stack again. All in or fold.']]);
 
   /* ================= a draw, all in (owner 29 Sep 2026) =================
@@ -732,9 +733,18 @@ const CoachLines = (() => {
   add('advise.bet.check.draw', 3, [
     ['calm', 'Check. {DrawName} is worth a bet, but here it would use too much of what is left. See the next card for free instead.']]);
   add('lesson.draw-shove', 2, [
-    ['calm', 'A draw is worth a bet, but not all your chips. If they call, you need the card to come, and most of the time it won’t. Save all in for hands that are already strong.']]);
+    ['calm', 'A big bet on a draw needs enough folds or a good chance when called. It can work, but don’t risk your stack just because you have a draw. Compare the price and a smaller bet or call.']]);
+  add('bet.fold.free.now', 1, [['thinking', 'You could have checked for free.']]);
+  add('bet.fold.free.why', 2, [['calm', 'Nobody was asking you to pay. Checking would keep your hand alive for free; folding gives up that chance.']]);
+  add('bet.semi.heavy.now', 3, [['thinking', 'That draw bet used a lot of the chips left.']]);
+  add('bet.semi.heavy.why', 2, [['calm', 'That amount commits too much to {drawName} without enough likely folds. A smaller bet, or a free check, leaves you more room.']]);
+  add('bet.semi.heavy.close.why', 4, [['calm', 'That big draw bet was close. Compare a smaller bet or a free check before committing so much.']]);
+  add('post.raise.semi.heavy.now', 3, [['thinking', 'That raise commits a lot to a draw.']]);
+  add('post.raise.semi.heavy.why', 2, [['calm', 'That raise puts too many chips behind {drawName} against someone who has already bet. Consider calling at the right price instead.']]);
   add('tip.draw-shove', 3, [['calm', 'Tip: with a draw, bet about half the pot. If that would be most of your chips, check instead.']]);
-  add('again.draw-shove', 3, [['thinking', 'All in on a draw again. That risks too much.']]);
+  add('again.draw-shove', 3, [['thinking', 'Too much committed to a draw again. Compare the price and how often they might fold.']]);
+  add('post.raise.value.large.now', 3, [['thinking', 'Good reason to raise, but that amount is heavy.']]);
+  add('post.raise.value.large.why', 2, [['calm', 'Raising {handName} can get paid by worse hands, but that amount may drive them out. A raise to {to} leaves more of those hands room to call.']]);
 
   /* ================= a hand that hurt (owner 29 Sep 2026) =================
      You're out, or you lost a big pot: a short word, no lesson. The
