@@ -677,3 +677,127 @@ still synchronous; bluff/draw estimates are heuristic and do not model full
 continuation ranges or side-pot incentives. Phase 2 should deepen those
 tactics before Phase 3 adds the hand-breakdown surface. Persistent observations
 remain Phase 5, after tactical work and teaching rooms.
+
+### Phase 2 implementation sequence (owner approved, 2 Oct 2026)
+
+Phase 1 merged to shared `main` through PR #53. The dirty primary checkout
+remains untouched. Phase 2 develops separately on `codex/pip-phase2`.
+
+First slice built locally as **v0.58.4-dev · P.I.P. Value Targets**:
+blocker-aware public combinations and explicit size-sensitive calling priors
+now attach possible weaker calling targets to value plans and explanations.
+Heads-up, last-to-act river plans compare ordinary legal sizes; deep jams
+remain diagnostic alternatives, not automatically selected recommendations.
+Earlier streets expose current made-hand targets only, not a false runout EV.
+Multiway/all-in opponents retain the previous fallback; shallow strong-value
+commitments remain intact. River-model advice cannot claim clear certainty.
+This is a teaching heuristic, not calibrated solver output. It does not yet
+solve thin-value checks, responses to raises, cross-street strategies or draws.
+Validation: 10 dedicated value-target checks, 59 brain checks, 26 reliability
+checks, 24 Pattern Book checks, 23 quick-bet checks and 8 focused showdown
+checks pass. The wider showdown-rail suite has an existing direct-file
+fallback template mismatch; reproduced with merged-main markup, unchanged
+by this slice. The real lab explanation sequence runs after reload. No phone
+performance or solver-calibration claim has been made. This slice is not
+the whole phase.
+
+1. **Value targets and river sizing (first slice).** Enumerate possible
+   opponent combinations from public ranges, removing our cards and the
+   board. Distinguish worse hands that might call from better hands. Compare
+   legal small/medium/large bets for heads-up, last-to-act river value using
+   an explicitly heuristic calling model. Preserve shallow commitments and
+   conservative fallback sizing elsewhere. Explain the target, not just
+   “you have a strong hand”. No claims of solver accuracy.
+2. **Board-relative strength and draw quality.** Add strong/weak kickers,
+   vulnerable versus near-nut hands, clean versus uncertain outs and explicit
+   next-card versus all-in runout prices. Extend continuation evaluation to
+   earlier streets only with future betting risk accounted for.
+3. **Bluff and facing-bet decisions.** Evaluate actual sizes, likely folds,
+   blockers and the betting story; distinguish a bet from a raise; explain
+   why a draw sometimes calls or checks instead of betting.
+4. **Complex pots and cross-street plans.** Separate committed/main-pot and
+   foldable/side-pot opponents, add public position/initiative context and
+   explain changes to an earlier plan. Assess format-specific incentives
+   without changing game rules or Career scope.
+
+Each slice needs independently reasoned scenarios for action, amount,
+targets, uncertainty and language; Phase 1 continuity/legality regressions
+remain mandatory. No new memory, coaching rooms or review UI in this phase.
+
+### Phase 2 continued — draws and bluff evidence (v0.58.5-dev, local)
+
+- Straight/flush completion cards are enumerated from visible cards, with
+  overlapping cards counted once. Backdoor draws are not next-card outs.
+  Low flushes, paired boards, possible flushes over straights and low-end
+  straights carry structural risk warnings, not claims of exact clean outs.
+- Facing a bet with a weak made hand and draw, a normal call is assessed
+  against next-card completions with a conservative overcard allowance.
+  A matched all-in call uses sampled runout equity instead. Implied-payment
+  allowances are capped (2–5 percentage points), zero when shallow/all-in,
+  and explicitly described as an assumption, not guaranteed extra chips.
+- The explanation and numerical judgement use the same pricing horizon;
+  both retain the original runout estimate separately. A borderline nut
+  flush draw call may be reasonable without condemning a cautious fold.
+- Bluff fold estimates now account for actual size, public range strength,
+  a bettor's story and whether the action is a raise. River ace-flush
+  removal and missed-draw removal provide modest opposing adjustments.
+  These remain conservative heuristics, never proof of a fold or a solver.
+  An all-in opponent still has zero fold probability. Draw betting no
+  longer automatically recommends a semi-bluff against a habitual caller.
+- Small-kicker reads and six deterministic lab scenarios expose these
+  changes without changing table layout, rules, statistics or persistence.
+
+At the v0.58.5 slice, remaining Phase 2 work was: main/side-pot eligibility and per-pot equity,
+range-conditioned value raises, earlier-street continuation/redraw equity,
+cross-street plan changes, and format-specific risk context. The current
+slice is local on `codex/pip-phase2`; it is not merged/released to the phone.
+That slice was not Phase 2 complete; these priors are not calibrated strategy.
+
+Verification for this continuation: 23 tactical scenario checks, 59 brain
+checks (including randomized legality/judgement/language checks), 26
+reliability/lifecycle checks, 24 Pattern Book, 23 quick-bet and 8 focused
+showdown checks pass. The browser lab loads the new scenario keys and runs
+the expensive low-draw sequence without console errors. Phone performance
+and strategic calibration remain unmeasured. The pre-existing wider
+showdown-lab fallback mismatch remains outside this coach-only change.
+
+### Phase 2 implemented — v0.58.6-dev · P.I.P. Tactical Brain
+
+Owner requested completion of Phase 2. All four implementation slices are
+now represented in the coach, without memory or a new review surface:
+
+- Value targets and bounded river size comparison: implemented in v0.58.4.
+- Exact completion-card unions, vulnerable draw warnings and one-card versus
+  all-in price horizons: implemented in v0.58.5.
+- Actual-size/public-story bluff estimates, blockers and conditional draw
+  aggression: implemented in v0.58.5, with conservative multiway fallback.
+- Main/side-pot calls: the engine's own contribution layers are projected
+  after our call; inaccessible money is excluded. Each eligible layer uses
+  equity against only its eligible public opponent ranges, then weighted
+  value and price are combined. Folded money remains; hidden cards are never
+  read. Incomplete synthetic accounting falls back rather than inventing pots.
+- Value raises condition continuation on the stricter raise-calling model.
+  A heads-up raise must retain sufficient sampled equity against callers,
+  not merely beat the betting range. Multiway analysis remains conservative.
+- Earlier-street value plans retain 400-sample runout equity against likely
+  callers, including redraws, separate from current made strength. This is
+  not treated as a complete multi-street EV: future betting cost is explicit.
+- Every recommendation has a position/initiative/next-card risk plan.
+  Same-hand records allow changed cards, new bets or re-raises to explain a
+  changed plan. This is existing hand context, not persistent player memory.
+- Large elimination-format commitments flag survival risk; draw commitment
+  uses a higher survival allowance than cash. No payout/ICM calculation is
+  claimed, and no Career rules, catalogue or save data are changed.
+
+Release boundary: completed locally on `codex/pip-phase2`, not yet merged
+or deployed to the phone. Next product phase is the after-hand breakdown.
+Solver calibration, optimal multiway bluffing and full multi-street search
+remain future research, not silent claims made by this implementation.
+Phone performance remains a release check; no measured iPhone claim is made.
+
+Verification: 32 dedicated tactical checks, 59 brain checks, 26 reliability
+checks, 24 Pattern Book, 23 quick-bet and 8 focused showdown checks pass.
+Two side-pot lab examples show eligible and excluded chip totals explicitly.
+The previously recorded wider showdown-lab template mismatch is unrelated
+and remains outside this phase. Production poker math/engine, visual styling,
+dependencies and persistent statistics/settings are unchanged.

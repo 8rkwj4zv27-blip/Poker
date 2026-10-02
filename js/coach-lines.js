@@ -310,8 +310,7 @@ const CoachLines = (() => {
   add('post.fold.draw.now', 1, [['thinking', 'That draw was cheap enough to chase.']]);
   add('post.fold.draw.now.leans', 3, [['thinking', 'I’d have called with that draw.']]);
   add('post.fold.draw.why', 2, [
-    ['thinking', 'You folded {drawName}. The bet was cheap enough: counting the cards to come, you’d win about {eq}% of the time, and you only needed {need}%.'],
-    ['calm', 'That draw was worth chasing. {outs} cards would have made your hand, and the bet was small for the pot.']]);
+    ['thinking', 'That price made {drawName} worth considering. {drawPriceText} {drawWarning}']]);
   add('post.fold.draw.why.leans', 2, [['thinking', 'Folding {drawName} was a little too careful.']]);
   add('post.fold.priced.now', 1, [['thinking', 'That was worth a call.']]);
   add('post.fold.priced.now.leans', 3, [['thinking', 'I’d have called that.']]);
@@ -320,20 +319,19 @@ const CoachLines = (() => {
   add('post.fold.priced.why.leans', 2, [['thinking', 'Folding {handName} there was a bit too careful.']]);
   add('post.call.value.now', 3, [['thinking', 'You could raise that.']]);
   add('post.call.value.why', 2, [
-    ['thinking', 'Calling with {handName} is fine, but it’s strong enough to raise. You were winning about {eq}% of the time. Make them pay.']]);
+    ['thinking', 'Calling with {handName} is fine. A raise can ask more from {valueTargets}; the hands that call a raise matter more than the hands that bet.']]);
   add('post.call.good.now', 4, [['calm', 'Good call.']]);
   add('post.call.good.why', 2, [
     ['calm', 'Calling with {handName} was right. A bet doesn’t always mean a monster, and you win about {eq}% against {bettor}’s likely hands.'],
     ['pleased', 'Good call. It was {betSize}, and {handName} wins often enough to pay for it.']]);
   add('post.call.draw.good.now', 2, [['pleased', 'Good call with the draw.']]);
   add('post.call.draw.good.why', 2, [
-    ['calm', 'Calling with {drawName} was right. {outs} cards make your hand, and the bet was cheap enough to chase it.']]);
+    ['calm', 'Calling with {drawName} was reasonable at this price. {drawPriceText} {drawWarning}']]);
   add('post.call.close.why', 4, [['calm', 'Fine. That call was a close one.']]);
   add('post.call.draw.bad.now', 1, [['wince', 'That’s too expensive to chase.']]);
   add('post.call.draw.bad.now.leans', 3, [['thinking', 'A bit expensive for that draw.']]);
   add('post.call.draw.bad.why', 2, [
-    ['thinking', 'You chased {drawName} for {call}. The next card only makes your hand about {hitNext}% of the time, and the bet needed you to win {odds}%. Too expensive.'],
-    ['calm', 'Chasing a draw only pays when the bet is small. {betSize} is too big for {drawName}.']]);
+    ['thinking', 'You paid {call} to chase {drawName}. {drawPriceText} The cost is too high under this estimate; hitting does not guarantee winning.']]);
   add('post.call.draw.bad.why.leans', 2, [['thinking', 'Calling with {drawName} was slightly too expensive.']]);
   add('post.call.weak.now', 1, [['wince', 'That’s a weak hand to call with.']]);
   add('post.call.weak.now.leans', 3, [['thinking', 'A loose call.']]);
@@ -342,7 +340,7 @@ const CoachLines = (() => {
     ['calm', 'Calling because your hand “might be good” is one of the biggest leaks there is. When someone bets, fold the weak ones.']]);
   add('post.call.weak.why.leans', 2, [['thinking', 'That call with {handName} was a little loose.']]);
   add('post.raise.value.now', 2, [['pleased', 'Good raise.'], ['pleased', 'Right. Make them pay.']]);
-  add('post.raise.value.why', 2, [['pleased', 'Raising with {handName} was right. You were winning about {eq}% of the time, so you want more chips in.']]);
+  add('post.raise.value.why', 2, [['pleased', 'Raising with {handName} was reasonable: you’re targeting calls from {valueTargets}, not just trying to beat their bet.']]);
   add('post.raise.protect.why', 4, [['calm', 'Fine. Raising {handName} is OK, but calling is usually better: mostly better hands call a raise.']]);
   add('post.raise.semi.now', 3, [['thinking', 'Raising with a draw. Bold.']]);
   add('post.raise.semi.why', 2, [['calm', 'Raising with {drawName} is {t:semiBluff}: they might fold now, and if not, you can still make your hand. Fine against one player.']]);
@@ -529,20 +527,20 @@ const CoachLines = (() => {
   add('advise.post.raise', 3, [['pleased', 'Raise. {handName} is strong: you win about {eq}% of the time. Make it {to}.']]);
   add('advise.post.allin', 3, [['calm', 'All in. {handName} is strong enough, about {eq}%.']]);
   add('advise.post.call.draw', 3, [
-    ['calm', 'Call. {DrawName}: {outs} cards make your hand, and the bet is cheap enough to chase it.']]);
+    ['calm', 'Call is reasonable with {drawName}. {drawPriceText} {drawWarning}']]);
   add('advise.post.fold.draw', 3, [
-    ['calm', 'Fold. {DrawName} only comes in about {hitNext}% of the time on the next card, and the bet needs {odds}%. Too expensive.']]);
+    ['calm', 'Fold. The price is too high for {drawName} under this estimate. {drawPriceText}']]);
   add('advise.bet.bet', 3, [
     ['pleased', 'Bet. {handName} is strong and they’re not. Bet about {to} and make them pay.'],
     ['calm', 'You’re well ahead. Bet about {to}. Worse hands will call.']]);
   add('advise.bet.bet.keep', 3, [
-    ['calm', 'Bet about {to}. Your hand is very strong and the board is quiet; keep the weaker hands in.'],
-    ['pleased', 'Ask for about {to}. You want the smaller pairs to call, not run away.']]);
+    ['calm', 'Bet about {to}. On this quiet board, you’re trying to keep {valueTargets} interested rather than force them out.'],
+    ['pleased', 'Ask for about {to}. {ValueTargets} are the hands you hope will pay you; a smaller bet gives them room to call.']]);
   add('advise.bet.bet.charge', 3, [
     ['calm', 'Bet about {to}. There are several cards that could catch you, so make the draws pay now.'],
     ['thinking', 'This board has draws. Bet about {to}. Charge them to see the next card.']]);
   add('advise.bet.bet.caller', 3, [
-    ['calm', '{Opp} calls a lot. Bet about {to} with {handName}; ask the weaker hands for more.']]);
+    ['calm', '{Opp} calls a lot. Bet about {to} with {handName}; ask {valueTargets} for more.']]);
   add('advise.bet.bet.commit', 3, [
     ['calm', 'All in. The pot is already large beside the chips left, and {handName} is strong enough to commit.']]);
   add('advise.bet.bet.commit.match', 3, [['calm', 'Bet {to} to commit the chips they can match. The pot is already large beside their stack; you need not put your whole stack in.']]);
@@ -585,7 +583,9 @@ const CoachLines = (() => {
   add('read.made.set', 3, [['impressed', '{handName}. A strong made hand; still watch for possible straights and flushes.']]);
   add('read.made.trips', 3, [['pleased', '{handName}. Strong, but someone could share it with a better other card.']]);
   add('read.made.big', 3, [['impressed', '{handName}. A big hand.']]);
-  add('read.draw', 3, [['thinking', '{DrawName}: {outs} cards make your hand. About {hitPct}% {byWhen}.']]);
+  add('read.draw', 3, [['thinking', '{DrawName}: {outs} completion cards. About {hitPct}% {byWhen}. {drawWarning}']]);
+  add('post.fold.draw.good.now', 2, [['pleased', 'Good fold at that price.']]);
+  add('post.fold.draw.good.why', 2, [['calm', 'Folding {drawName} was reasonable. {drawPriceText} {drawWarning}']]);
   add('read.drawprice', 3, [['thinking', 'The next card makes your hand about {hitNext}% of the time. The bet needs {odds}%.']]);
   add('read.price.bet', 3, [['calm', 'It’s {call} to call into {pot}. You need to win {odds}% of the time for that to pay.']]);
   add('read.price.free', 3, [['calm', 'Nobody’s bet.']]);
@@ -674,7 +674,7 @@ const CoachLines = (() => {
   add('advise.post.call', 3, [['calm', 'Call. {handName} is good enough for the price.']]);
   add('advise.bet.check', 3, [['calm', 'Check. Middling hands want small pots.']]);
   add('advise.bet.check.weak', 3, [['calm', 'Check. Nothing to bet with, and no reason to bluff.']]);
-  add('advise.bet.bet', 3, [['pleased', 'Bet about {to}. You’re ahead, so get paid.']]);
+  add('advise.bet.bet', 3, [['pleased', 'Bet about {to}. You’re aiming for calls from {valueTargets}, not just putting chips in because your hand looks strong.']]);
   add('story.weak.one', 3, [['thinking', '{Opp} checked. That can suggest weakness, but strong hands sometimes check too.']]);
   add('story.weak.all', 3, [['calm', 'Checks all round. They haven’t shown strength; that doesn’t rule out a strong hand.']]);
   add('story.strong.one', 3, [['thinking', '{Opp} is betting. Usually that’s a real hand.']]);
