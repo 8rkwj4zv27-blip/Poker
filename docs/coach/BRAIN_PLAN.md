@@ -801,3 +801,23 @@ Two side-pot lab examples show eligible and excluded chip totals explicitly.
 The previously recorded wider showdown-lab template mismatch is unrelated
 and remains outside this phase. Production poker math/engine, visual styling,
 dependencies and persistent statistics/settings are unchanged.
+
+### Phase 3 checkpoint 1 plan — quieter automatic coaching
+
+Owner approved a small independently releasable checkpoint, then phone play.
+Change speech selection only, not strategic judgements or UI. Routine turns
+should be silent, including the generic price/free-check fallback. Intervene
+for meaningful commitment, repeat raises, expensive draw prices or a changed
+same-hand plan. Deduplicate by decision; limit non-critical automatic advice
+to one per street and two per hand. Critical commitment/re-raise changes may
+bypass the soft budget. Existing HELP “Tell me” remains explicit full guidance;
+tap reads remain unrestricted at every setting. Preserve saved settings,
+terms and statistics. Test policy and real deferred speech routing, bump the
+offline build, merge/push this checkpoint, then stop before review UI work.
+
+Checkpoint 1 implemented as v0.58.7-dev · P.I.P. Quieter Coaching.
+32 reliability/speech checks pass, including six new quiet-policy cases.
+Strategic brain and game rules are unchanged. The phone trial should check
+whether interventions feel timely, whether taps provide enough help, and
+whether the player prefers the existing Tell me setting for fuller guidance.
+Next task: checkpoint 2 hand breakdown; do not begin it in this release.

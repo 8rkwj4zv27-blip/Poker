@@ -493,6 +493,19 @@ const CoachTalk = (() => {
     return said;
   }
   const A = { handNo:-1, advice:null, spot:null, shownId:null };
+  const AUTO = new WeakMap();
+  function automaticReason(a, sp){
+    if (!a || !sp) return null;
+    const invested = a.to == null ? sp.toCall : Math.max(0, a.to - sp.yourBet);
+    if ((sp.stack > 0 && invested >= sp.stack * 0.35) || (a.plan && a.plan.shove)) return { key:'commitment', critical:true };
+    if (sp.streetRaises >= 2 || (sp.preflop && sp.preflop.raises >= 2)) return { key:'re-raise', critical:true };
+    if (a.actionPlan && a.actionPlan.change) return { key:'changed-plan', critical:false };
+    const bf = sp.boardFacts;
+    if (sp.toCall > 0 && bf && bf.drawOuts > 0 && ['nothing','weak-pair','second-pair'].includes(bf.made)
+      && sp.toCall / Math.max(1, sp.pot - sp.toCall) >= 0.6) return { key:'expensive-draw', critical:false };
+    if (sp.toCall >= sp.bigBlind * 8 && sp.toCall >= sp.pot * 0.3) return { key:'large-price', critical:false };
+    return null;
+  }
   function yourTurn(me){
     const g = game;
     if ((live && live.lab) || performance.now() < holdUntil) return false;
@@ -503,11 +516,15 @@ const CoachTalk = (() => {
     if (!a) return false;
     const help = +O.help, talk = +O.notch;
     if (help <= 1 || talk < 3) return false;
-    const junkFold = a.kind !== 'post' && a.move === 'fold' && a.sure === 'clear' && sp.holeFacts.pct > 0.5;
-    const big = ['vsRaise', 'vsReraise', 'short', 'post'].includes(a.kind) || (a.kind === 'bet' && a.move !== 'check') || sp.holeFacts.pct < 0.06 || a.sure !== 'clear';
-    if (junkFold || (talk < 4 && !big)) return false;
+    let auto = AUTO.get(g);
+    if (!auto || auto.handNo !== sp.handNumber){ auto = { handNo:sp.handNumber, seen:new Set(), streets:new Set(), count:0 }; AUTO.set(g, auto); }
+    if (auto.seen.has(sp.decisionId)) return false;
+    const full = help === 4, reason = automaticReason(a, sp);
+    if (!full && (!reason || (!reason.critical && (auto.count >= 2 || auto.streets.has(sp.street))))) return false;
     if (live && !live.judged) clear(true);
-    return sayAdvice(a, sp, help, 3);
+    const said = sayAdvice(a, sp, help, 3);
+    if (said){ auto.seen.add(sp.decisionId); if (!full && !reason.critical){ auto.count++; auto.streets.add(sp.street); } }
+    return said;
   }
 
   /* ---------------- tap him: his read, now ----------------
@@ -826,15 +843,14 @@ const CoachTalk = (() => {
       try{
         const me = human();
         if (me && pendingHumanPlayer === me){
-          const call = Math.max(0, game.currentBet - me.betThisRound);
           const stamp = sceneStamp();
           // let the deal line finish first
           setTimeout(() => {
             if (pendingHumanPlayer !== me || stamp !== sceneStamp() || game._humanCardsVisible === false) return;
             // before the flop his advice (the HELP dial) takes the place of the price
-            let advised = false;
-            try{ advised = yourTurn(me); }catch(e){}
-            if (!advised) say(call > 0 ? 'yourPrice' : 'yourFree', ctxNow());
+            try{ yourTurn(me); }catch(e){}
+            // Routine turns are deliberately quiet. Do not replace a
+            // suppressed intervention with the old price announcement.
           }, live ? 900 : 250);
         }
       }catch(e){}
@@ -949,5 +965,5 @@ const CoachTalk = (() => {
 
   // for a lab: the end-of-hand word for a made-up hand, now
   const labDebrief = h => { explainGen++; holdUntil = 0; clear(true); queue = null; return debrief(h, true); };
-  return { apply, say, sayAt, sayAny, slots, debrief, labDebrief, verdictOf, explain, sayAdvice, onTap, clear:() => clear(true), OPTIONS, DEFAULTS, LINES, get order(){ return Object.assign({}, O); } };
+  return { apply, say, sayAt, sayAny, slots, debrief, labDebrief, verdictOf, explain, sayAdvice, automaticReason, yourTurn, onTap, clear:() => clear(true), OPTIONS, DEFAULTS, LINES, get order(){ return Object.assign({}, O); } };
 })();
