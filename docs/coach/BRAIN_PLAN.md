@@ -723,3 +723,40 @@ the whole phase.
 Each slice needs independently reasoned scenarios for action, amount,
 targets, uncertainty and language; Phase 1 continuity/legality regressions
 remain mandatory. No new memory, coaching rooms or review UI in this phase.
+
+### Phase 2 continued — draws and bluff evidence (v0.58.5-dev, local)
+
+- Straight/flush completion cards are enumerated from visible cards, with
+  overlapping cards counted once. Backdoor draws are not next-card outs.
+  Low flushes, paired boards, possible flushes over straights and low-end
+  straights carry structural risk warnings, not claims of exact clean outs.
+- Facing a bet with a weak made hand and draw, a normal call is assessed
+  against next-card completions with a conservative overcard allowance.
+  A matched all-in call uses sampled runout equity instead. Implied-payment
+  allowances are capped (2–5 percentage points), zero when shallow/all-in,
+  and explicitly described as an assumption, not guaranteed extra chips.
+- The explanation and numerical judgement use the same pricing horizon;
+  both retain the original runout estimate separately. A borderline nut
+  flush draw call may be reasonable without condemning a cautious fold.
+- Bluff fold estimates now account for actual size, public range strength,
+  a bettor's story and whether the action is a raise. River ace-flush
+  removal and missed-draw removal provide modest opposing adjustments.
+  These remain conservative heuristics, never proof of a fold or a solver.
+  An all-in opponent still has zero fold probability. Draw betting no
+  longer automatically recommends a semi-bluff against a habitual caller.
+- Small-kicker reads and six deterministic lab scenarios expose these
+  changes without changing table layout, rules, statistics or persistence.
+
+Remaining Phase 2 work: full main/side-pot eligibility and per-pot equity,
+range-conditioned value raises, earlier-street continuation/redraw equity,
+cross-street plan changes, and format-specific risk context. The current
+slice is local on `codex/pip-phase2`; it is not merged/released to the phone.
+Do not call Phase 2 complete or treat these priors as calibrated strategy.
+
+Verification for this continuation: 23 tactical scenario checks, 59 brain
+checks (including randomized legality/judgement/language checks), 26
+reliability/lifecycle checks, 24 Pattern Book, 23 quick-bet and 8 focused
+showdown checks pass. The browser lab loads the new scenario keys and runs
+the expensive low-draw sequence without console errors. Phone performance
+and strategic calibration remain unmeasured. The pre-existing wider
+showdown-lab fallback mismatch remains outside this coach-only change.

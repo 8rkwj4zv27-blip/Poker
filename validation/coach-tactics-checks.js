@@ -1,7 +1,7 @@
 "use strict";
 // Phase 2, slice 1: public value targets, not a claim of solver accuracy.
 const assert = require('assert');
-const { B, H, C, table, street, you } = require('./tools/coach-sandbox');
+const { B, H, C, table, street, you, act } = require('./tools/coach-sandbox');
 let passed = 0;
 function check(name, fn){ fn(); passed++; console.log('PASS  ' + name); }
 function spot(hole, board, opts = {}){
@@ -76,4 +76,84 @@ check('Advice supplies plain value targets and does not claim a certain river mo
   const r = B.advise(river().sp);
   if (r.plan && !r.plan.shove) assert.notStrictEqual(r.sure, 'clear');
 });
-console.log('\n' + passed + ' Phase 2 value-target checks passed.');
+check('Flush plus open-ended draw has 15 unique completion cards, not 17', () => {
+  const { sp } = spot(['Jh','Th'], ['Qh','9h','2c']);
+  const q = sp.boardFacts.drawQuality;
+  assert.strictEqual(q.outs, 15); assert.strictEqual(new Set(q.cards).size, 15);
+  assert.ok(Math.abs(q.next - 15 / 47) < 1e-10);
+  assert.strictEqual(B.readNow(sp).drawOuts, 15);
+});
+check('Low flush, paired-board flush and low straight completions carry warnings', () => {
+  for (const [h, b] of [[['5h','4h'],['Kh','9h','2c']], [['Ah','5h'],['Kh','9h','9c']], [['6s','7d'],['8h','9c','2d']]]){
+    const q = spot(h, b).sp.boardFacts.drawQuality;
+    assert.ok(q.uncertain > 0); assert.match(q.warning, /still.*beaten/);
+  }
+});
+check('Nut flush completions on an unpaired board are not falsely guaranteed wins', () => {
+  const q = spot(['Ah','5h'], ['Kh','9h','2c']).sp.boardFacts.drawQuality;
+  assert.strictEqual(q.uncertain, 0); assert.strictEqual(q.outs, 9);
+  assert.match(q.warning, /not a guaranteed win/);
+});
+check('Backdoor draws are not counted as next-card completion outs', () => {
+  const q = spot(['Ah','5h'], ['Kh','9d','2c']).sp.boardFacts.drawQuality;
+  assert.strictEqual(q.outs, 0); assert.strictEqual(q.next, 0);
+});
+check('Draw call with chips behind uses one-card price; all-in uses runout equity', () => {
+  const { g } = spot(['5h','4h'], ['Kh','9h','2c']);
+  act(g, 1, 'bet', 55);
+  let sp = B.spot(g, you(g)), p = B.drawPrice(sp, 0.35);
+  assert.strictEqual(p.runout, false); assert.ok(p.usable < p.runoutHit);
+  assert.match(p.text, /next card/);
+  g.players[0].chips = 55;
+  sp = B.spot(g, you(g)); p = B.drawPrice(sp, 0.35);
+  assert.strictEqual(p.runout, true); assert.strictEqual(p.usable, 0.35);
+  assert.strictEqual(p.implied, 0);
+});
+check('A covered opponent all-in also closes further betting', () => {
+  const { g } = spot(['Ah','5h'], ['Kh','9h','2c']);
+  g.players[1].chips = 55; act(g, 1, 'bet', 55);
+  assert.strictEqual(B.drawPrice(B.spot(g, you(g)), 0.4).runout, true);
+});
+check('A vulnerable flush draw cannot justify an expensive flop chase with two-card odds', () => {
+  const { g } = spot(['5h','4h'], ['Kh','9h','2c']); act(g, 1, 'bet', 110);
+  const sp = B.spot(g, you(g)), a = B.advise(sp);
+  assert.strictEqual(a.move, 'fold');
+  const j = B.judge(sp, { action:'call', amount:110 });
+  assert.strictEqual(j.verdict, 'mistake'); assert.ok(j.n.eq < j.n.need);
+});
+check('Draw implied-payment allowance is capped, absent when shallow, lower when vulnerable', () => {
+  const nut = spot(['Ah','5h'], ['Kh','9h','2c']).sp;
+  const weak = spot(['5h','4h'], ['Kh','9h','2c']).sp;
+  const shallow = spot(['Ah','5h'], ['Kh','9h','2c'], { stack:100 }).sp;
+  assert.ok(B.drawPrice(nut, 0.4).implied <= 0.05);
+  assert.ok(B.drawPrice(nut, 0.4).implied > B.drawPrice(weak, 0.4).implied);
+  assert.strictEqual(B.drawPrice(shallow, 0.4).implied, 0);
+});
+check('Bluff break-even uses actual chips; a raise has less fold credit than a bet', () => {
+  const { sp } = dry(), b = B.bluffAssessment(sp, 90, false), r = B.bluffAssessment(sp, 90, true);
+  assert.strictEqual(b.breakEven, 90 / 200); assert.ok(r.folds < b.folds);
+  assert.ok(B.bluffAssessment(sp, 550, false).breakEven > b.breakEven);
+});
+check('Bluff plan reads the public betting story and never folds an all-in opponent', () => {
+  const { g, sp } = dry(), quiet = B.bluffAssessment(sp, 40, false);
+  act(g, 1, 'bet', 40);
+  const strong = B.bluffAssessment(B.spot(g, you(g)), 40, false);
+  assert.ok(strong.folds < quiet.folds);
+  g.players[1].allIn = true; g.players[1].chips = 0;
+  assert.strictEqual(B.bluffAssessment(B.spot(g, you(g)), 40, false).folds, 0);
+});
+check('River blocker explanations distinguish an ace from a missed draw', () => {
+  const ace = spot(['Ah','4c'], ['Kh','Jh','2h','8s','9d']).sp;
+  const missed = spot(['Ah','4h'], ['Kh','Jh','2c','8s','9d']).sp;
+  assert.match(B.bluffAssessment(ace, 70, false).blocker, /strongest flushes/);
+  assert.match(B.bluffAssessment(missed, 70, false).blocker, /missed draws/);
+});
+check('Drawing against a known caller can check rather than automatically semi-bluff', () => {
+  const { sp } = spot(['5h','4h'], ['Kh','9h','2c'], { read:{ hands:30, facedBet:30, foldedToBet:0 } });
+  assert.strictEqual(B.advise(sp).move, 'check');
+});
+check('Small kicker warning is board-relative and only used when applicable', () => {
+  assert.match(spot(['Kh','4c'], ['Ks','9h','2c']).sp.boardFacts.strengthNote, /side card is small/);
+  assert.strictEqual(spot(['Kh','Ac'], ['Ks','9h','2c']).sp.boardFacts.strengthNote, '');
+});
+console.log('\n' + passed + ' Phase 2 tactical checks passed.');

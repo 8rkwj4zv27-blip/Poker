@@ -429,7 +429,8 @@ const CoachTalk = (() => {
       players: n.players || '', won: '',
       // after the flop
       bettor: n.bettor || 'they', betSize: n.betSize || 'a bet', handName: n.handName || (sp && sp.holeFacts ? sp.holeFacts.name : ''),
-      drawName: n.drawName || 'a draw', DrawName: cap(n.drawName || 'a draw'), outs: n.outs != null ? n.outs : '', hitNext: n.hitNext != null ? n.hitNext : '', pot: fmt(n.pot != null ? n.pot : sp ? sp.pot : 0)
+      drawName: n.drawName || 'a draw', DrawName: cap(n.drawName || 'a draw'), outs: n.outs != null ? n.outs : '', hitNext: n.hitNext != null ? n.hitNext : '', pot: fmt(n.pot != null ? n.pot : sp ? sp.pot : 0),
+      drawPriceText:n.drawPriceText || '', drawWarning:n.drawWarning || '', strengthNote:n.strengthNote || ''
     };
   }
   const MOVE_WORD = { fold:'fold', check:'check', call:'call', raise:'raise', bet:'bet', allin:'go all in' };
@@ -542,6 +543,7 @@ const CoachTalk = (() => {
     const made = r.boardPlays ? 'boardPlays' : ['straight', 'flush', 'full-house', 'quads', 'straight-flush'].includes(r.made) ? 'big' : r.made;
     const m = textOf('read.made.' + made, Object.assign({}, ctx, { handName:r.handName }));
     if (m) parts.push(m);
+    if (r.strengthNote) parts.push(r.strengthNote);
     const dn = DRAW_NAME(r.draws || {});
     const adv = mine ? CoachBrain.advise(sp) : null;
     const st = CoachBrain.stories(sp);
@@ -553,11 +555,12 @@ const CoachTalk = (() => {
       const c = adviceCtx(adv, sp);
       const t = textOf(adv.sure === 'close' && adv.alt ? 'advise.close' : adviceKeys(adv), c);
       if (t) parts.push(t);
+      if (adv.n && adv.n.blockerNote && !adv.plan) parts.push(adv.n.blockerNote);
       topic = adv.lesson ? 'lesson.' + adv.lesson : topic;
       return { parts, topic, n:adv.n, ctx:c };
     } else {
       if (dn && r.left){
-        const d = textOf('read.draw', Object.assign({}, ctx, { drawName:dn, outs:r.drawOuts, hitPct:r.hitPct, byWhen: r.left === 2 ? 'by the last card' : 'on the last card' }));
+        const d = textOf('read.draw', Object.assign({}, ctx, { drawName:dn, outs:r.drawOuts, hitPct:r.hitPct, drawWarning:r.drawWarning, byWhen: r.left === 2 ? 'by the last card if you see both cards' : 'on the last card' }));
         if (d) parts.push(d);
       }
       if (r.threats && r.threats.length && parts.length < 3){ const t = textOf('read.threat', Object.assign({}, ctx, { threat:r.threats[0] })); if (t) parts.push(t); }

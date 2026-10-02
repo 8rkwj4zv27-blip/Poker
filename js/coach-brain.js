@@ -122,11 +122,61 @@ const CoachBrain = (() => {
       gap: Math.abs(hole[0].value - hole[1].value)
     };
   }
+  // Completion cards are not winning outs. Count each visible-card-safe
+  // flush/straight completion once, and explicitly flag domination risks.
+  function drawQuality(hole, board, cls){
+    const out = { cards:[], outs:0, uncertain:0, next:0, runout:0, warning:'' };
+    if (!cls || board.length < 3 || board.length >= 5) return out;
+    const d = cls.draws;
+    if (!d.flush && !d.oesd && !d.gutshot) return out;
+    const h = hole.map(c => call('cardCode', c)), b = board.map(c => call('cardCode', c));
+    const used = new Set(h.concat(b));
+    const cat = codes => Math.floor(call('fastScore7', codes) / Math.pow(16, 5));
+    for (let c = 0; c < 52; c++){
+      if (used.has(c)) continue;
+      const nextBoard = b.concat(c), all = h.concat(nextBoard), category = cat(all);
+      const flush = d.flush && (category === 5 || category >= 8);
+      const straight = (d.oesd || d.gutshot) && (category === 4 || category >= 8);
+      if (!flush && !straight) continue;
+      // A river straight/flush belonging wholly to the board is no help.
+      if (nextBoard.length === 5 && call('fastScore7', nextBoard) === call('fastScore7', all)) continue;
+      let uncertain = !!cls.texture.paired;
+      if (flush && category < 8){
+        const suit = c & 3, mine = h.filter(x => (x & 3) === suit).map(x => x >> 2);
+        const high = Math.max(...mine);
+        uncertain = uncertain || Array.from({ length:12 - high }, (_, i) => (high + 1 + i) * 4 + suit).some(x => !used.has(x) && x !== c);
+      }
+      if (straight && !flush){
+        const suits = [0,0,0,0]; nextBoard.forEach(x => suits[x & 3]++);
+        // A flush can beat a straight; the low end of a run can also lose
+        // to a higher straight. These are cautions, not exact dirty-outs.
+        let mask = 0; all.forEach(x => { mask |= 1 << (x >> 2); });
+        const high = call('straightHighOf', mask);
+        const boardRanks = new Set(nextBoard.map(x => x >> 2));
+        let higher = false;
+        for (let top = high + 1; top <= 12; top++){
+          let missing = 0; for (let r = top - 4; r <= top; r++) if (!boardRanks.has(r)) missing++;
+          if (missing <= 2) higher = true;
+        }
+        uncertain = uncertain || Math.max(...suits) >= 3 || higher;
+      }
+      out.cards.push(c); if (uncertain) out.uncertain++;
+    }
+    out.outs = out.cards.length;
+    const unseen = 52 - used.size;
+    out.next = out.outs / unseen;
+    // Chance of seeing one of today's completion cards, not final equity:
+    // runner-runner improvements and redraws are separate.
+    out.runout = board.length === 3 ? 1 - (1 - out.next) * (1 - out.outs / (unseen - 1)) : out.next;
+    out.warning = out.uncertain ? 'Some completion cards can still leave you beaten.' : 'Completing the draw is not a guaranteed win.';
+    return out;
+  }
   function boardFacts(hole, board){
     if (board.length < 3) return null;
     const cls = call('classifyPostflop', hole, board);
     const draws = call('detectDraws', hole, board) || [];
     const outs = call('computeOuts', hole, board);
+    const quality = drawQuality(hole, board, cls);
     return {
       handName: call('describePlayerHand', hole, board) || '',
       made: cls ? cls.made : null,
@@ -134,7 +184,10 @@ const CoachBrain = (() => {
       boardPlays: cls ? !!cls.boardPlays : false,
       draws: cls ? Object.assign({}, cls.draws) : {},
       drawList: draws.map(d => ({ kind:d.kind, outs:d.outs })),
-      drawOuts: draws.filter(d => d.kind !== 'overcards').reduce((m, d) => Math.max(m, d.outs), 0),
+      drawOuts: quality.outs,
+      drawQuality:quality,
+      strengthNote: cls && cls.made === 'top-pair' && cls.kicker >= 0 && cls.kicker <= 7 ? 'Your side card is small: the same pair with a bigger side card beats you.'
+        : cls && cls.boardPlays ? 'The shared cards make your best hand too; holding a big-looking hand does not mean you are ahead.' : '',
       outs: outs ? outs.outs : 0,
       texture: cls ? Object.assign({}, cls.texture) : null,
       threats: call('boardThreats', board) || []
@@ -546,6 +599,22 @@ const CoachBrain = (() => {
     if (cap > sp.currentBet && cap - sp.yourBet <= potAfterCall * 0.85) return legalTo(sp, cap);
     return legalTo(sp, Math.min(cap, legal));
   }
+  function drawPrice(sp, eq){
+    const bf = sp.boardFacts, q = bf && bf.drawQuality;
+    const runout = sp.toCall >= sp.stack || sp.opponents.every(o => o.allIn || o.chips <= 0);
+    const deep = sp.stack - sp.toCall > 1.5 * (sp.pot + sp.toCall);
+    const nut = bf && bf.draws.nutFlush && q && !q.uncertain;
+    // Potential future payment is a capped assumption, never free equity.
+    // Discount vulnerable completions; an overcard is only half an out
+    // because pairing it need not beat the bettor.
+    const implied = !runout && deep && q && q.outs >= 8 ? (nut ? 0.05 : 0.02) : 0;
+    const over = bf && bf.made === 'nothing' ? sp.hole.filter(c => c.value > Math.max(...sp.board.map(b => b.value))).length : 0;
+    const oneCard = q ? Math.max(0, q.next - q.uncertain / (52 - 2 - sp.board.length) * 0.25) + over * 1.5 / (52 - 2 - sp.board.length) : 0;
+    const usable = runout ? eq : Math.min(eq * (sp.actingAfter === 0 ? 0.97 : 0.9), oneCard);
+    return { runout, implied, usable, next:q ? q.next : 0, runoutHit:q ? q.runout : 0,
+      text:runout ? 'This call commits the matched chips, so the remaining cards are included in the price.'
+        : 'This call buys the next card, not a free ride to the river.' + (implied ? ' Some later payment is assumed, not promised.' : '') };
+  }
   function judgePostflop(sp, ch){
     if (!sp || !ch || sp.street === 'preflop' || !ch.action || !sp.boardFacts) return null;
     if (sp.toCall <= 0) return null;   // betting when checked to: step 3b
@@ -563,23 +632,27 @@ const CoachBrain = (() => {
     const realise = left === 0 ? 1 : (ip ? 0.97 : 0.9) - (madeWeak && !anyDraw ? 0.05 : 0);
     const behind = Math.max(0, sp.stack - sp.toCall);
     const deep = behind > 1.5 * (sp.pot + sp.toCall);
-    const implied = !deep ? 0 : strongDraw ? (left === 1 ? 0.05 : 0.03) : anyDraw ? 0.02 : 0;
+    const price = drawPrice(sp, eq);
+    const implied = anyDraw && madeWeak ? price.implied : !deep ? 0 : strongDraw ? (left === 1 ? 0.05 : 0.03) : anyDraw ? 0.02 : 0;
     const need = sp.potOdds + (sp.playersIn > 2 && sp.actingAfter > 0 ? 0.03 : 0) - implied;
-    const margin = eq * realise - need;
+    const usable = anyDraw && madeWeak ? price.usable : eq * realise;
+    const margin = usable - need;
     const multi = sp.playersIn > 2;
     // raising for value needs a hand that's ahead of the hands that CALL a
     // raise, not just of the betting range: two pair or better. Top pair and
     // overpairs are ahead of a bet but behind most calls of a raise: they
     // call (a raise is fine, to protect, but close).
     const strongMade = STRONG_MADE[bf.made] && !bf.boardPlays;
-    const ahead = eq >= (multi ? 0.55 : 0.70);
+    const ahead = eq >= (multi ? 0.55 : 0.70) && !(anyDraw && madeWeak);
     const value = strongMade && ahead;
     const bettorAct = sp.actions.filter(x => x.street === sp.street && (x.action === 'bet' || x.action === 'raise')).pop();
     const betFrac = sp.toCall / Math.max(1, sp.pot - sp.toCall);
     const unseen = 52 - 2 - sp.board.length;
     const drawName = bf.draws.flush && (bf.draws.oesd || bf.draws.gutshot) ? 'a flush and straight draw' : bf.draws.flush ? 'a flush draw' : bf.draws.oesd ? 'an open-ended straight draw' : bf.draws.gutshot ? 'an inside straight draw' : '';
-    const n = { street:sp.street, eq:pct100(eq), need:pct100(Math.max(0.01, need) / realise), odds:Math.round(sp.potOdds * 100), call:sp.toCall, pot:sp.pot,
+    const n = { street:sp.street, eq:pct100(anyDraw && madeWeak ? usable : eq), runoutEq:pct100(eq),
+      need:pct100(Math.max(0.01, need) / (anyDraw && madeWeak ? 1 : realise)), odds:Math.round(sp.potOdds * 100), call:sp.toCall, pot:sp.pot,
       handName:bf.handName, made:bf.made, drawName, outs:bf.drawOuts, hitNext: bf.drawOuts ? Math.round(bf.drawOuts / unseen * 100) : 0,
+      drawPriceText:price.text, drawWarning:bf.drawQuality.warning, drawPrice:price,
       bettor: bettorAct ? bettorAct.name : 'they', betSize:BET_WORD(betFrac), margin:Math.round(margin * 100), players:sp.playersIn - 1,
       implied:Math.round(implied * 100), seat:sp.seat, pct:pct100(sp.holeFacts.pct) };
     const river = left === 0;
@@ -588,7 +661,7 @@ const CoachBrain = (() => {
     const base = { kind:'post', best, lesson, n };
     if (a === 'fold'){
       if (value || ahead) return J(Object.assign(base, { verdict:'mistake', confidence:'clear', tag:'post.fold.strong', lesson:'hand-strength', notable:true }));
-      if (margin <= 0) return J(Object.assign(base, { verdict:'good', confidence: margin < -0.05 ? 'clear' : 'close', tag:'post.fold.good',
+      if (margin <= 0) return J(Object.assign(base, { verdict:'good', confidence: margin < -0.05 ? 'clear' : 'close', tag:anyDraw && madeWeak ? 'post.fold.draw.good' : 'post.fold.good',
         notable: margin < -0.04 && (MADE_OK[bf.made] || bf.made === 'second-pair') }));
       if (margin <= 0.04) return J(Object.assign(base, { verdict:'fine', confidence:'close', tag:'post.fold.close' }));
       return J(Object.assign(base, { verdict:'mistake', confidence: margin > 0.10 ? 'clear' : 'leans', tag: anyDraw && madeWeak ? 'post.fold.draw' : 'post.fold.priced', notable:true }));
@@ -614,7 +687,9 @@ const CoachBrain = (() => {
       const allIn = ch.action === 'allin' || (ch.amount != null && ch.amount >= sp.stack + sp.yourBet);
       const heavy = Math.max(0, ch.amount - sp.yourBet) >= Math.max(1, effectiveActionCap(sp) - sp.yourBet) * 0.4;
       if (strongDraw && (allIn || heavy)){
-        const sh = multi ? { ok:false, close:false } : drawShove(sp, eq, clampR(foldChance(sp) * 0.6, 0.03, 0.6));
+        const bluff = bluffAssessment(sp, ch.amount, true);
+        const sh = multi ? { ok:false, close:false } : drawShove(sp, eq, bluff.folds);
+        n.bluffPlan = bluff;
         Object.assign(n, { whole:sh.whole, risk:sh.risk });
         if (!sh.ok && !sh.close) return J(Object.assign(base, { verdict:'mistake', confidence:'leans', tag:allIn ? 'post.raise.semi.shove' : 'post.raise.semi.heavy', lesson:'draw-shove', notable:true }));
       }
@@ -859,6 +934,29 @@ const CoachBrain = (() => {
       return acc * clampR(base * (checked ? 1.15 : 1), 0.05, 0.85);
     }, 1);
   }
+  function bluffAssessment(sp, to, raising){
+    const risk = Math.max(0, to - sp.yourBet), frac = risk / Math.max(1, sp.pot);
+    const st = stories(sp), range = valueContinuation(sp, to);
+    let folds = foldChance(sp);
+    // A larger amount does not earn unlimited credibility. Range evidence
+    // can lower the behavioural estimate, but never turn it into certainty.
+    folds *= clampR(1 + (frac - 0.5) * 0.25, 0.85, 1.15);
+    if (range) folds = Math.min(folds, 1 - range.estimatedCallRate);
+    if (raising) folds *= 0.6;
+    if (st.list.some(o => o.kind === 'strong' || o.kind === 'turned')) folds *= 0.8;
+    let blocker = '';
+    if (sp.board.length === 5){
+      const suits = {}; sp.board.forEach(c => { suits[c.suit] = (suits[c.suit] || 0) + 1; });
+      const nutSuit = Object.keys(suits).find(s => suits[s] >= 3 && sp.hole.some(c => c.suit === s && c.value === 14));
+      const missedSuit = Object.keys(suits).find(s => suits[s] === 2 && sp.hole.every(c => c.suit === s));
+      if (nutSuit){ folds += 0.04; blocker = 'Your ace removes some of their strongest flushes, but does not prove they will fold.'; }
+      else if (missedSuit){ folds -= 0.04; blocker = 'Your missed draw removes some missed draws they might otherwise fold.'; }
+    }
+    if (sp.opponents.some(o => o.allIn || o.chips <= 0)) folds = 0;
+    folds = clampR(folds, 0, 0.85);
+    return { risk, breakEven:risk / Math.max(1, sp.pot + risk), folds, blocker,
+      model:'public-story/size-sensitive-heuristic', raising:!!raising };
+  }
   /* A draw, all in (owner 29 Sep 2026, "bad advice which made me go
      bust"): betting a draw is fine, but "bet your draw" must never quietly
      turn into your whole stack. All in pays when they fold often enough,
@@ -894,9 +992,9 @@ const CoachBrain = (() => {
     const strongDraw = left > 0 && (bf.draws.flush || bf.draws.oesd) && !goodMade;
     const medium = !valueHand && !strongDraw && (goodMade || bf.made === 'second-pair' || bf.made === 'weak-pair' || eq >= 0.45);
     const size = betSize(sp);
-    const fe = foldChance(sp);
     const investment = Math.max(0, (a === 'bet' ? ch.amount : size.to) - sp.yourBet);
     const bluffNeed = investment / Math.max(1, sp.pot + investment);
+    const bluff = bluffAssessment(sp, a === 'bet' ? ch.amount : size.to, false), fe = bluff.folds;
     const st = stories(sp);
     const station = sp.opponents.some(o => storyOf(sp, o).habit === 'caller');
     const river = left === 0;
@@ -904,6 +1002,7 @@ const CoachBrain = (() => {
     const n = { street:sp.street, eq:pct100(eq), handName:bf.handName, made:bf.made, drawName, outs:bf.drawOuts,
       players:opps, opp: st.one ? st.one.name : null, story:st.all, habit: st.one ? st.one.habit : null,
       fold:Math.round(fe * 100), foldNeed:Math.round(bluffNeed * 100), to:size.to, sizeWords:sizeWords(size.frac),
+      bluffPlan:bluff, blockerNote:bluff.blocker,
       betSize: ch.potFraction == null ? '' : BET_WORD(ch.potFraction), pot:sp.pot, seat:sp.seat, pct:pct100(sp.holeFacts.pct) };
     if (size.plan) Object.assign(n, { purpose:size.plan.purpose, planTo:size.plan.to, next:size.plan.next, targetFrac:Math.round(size.plan.targetFrac * 100),
       valueTargets:size.plan.continuation ? size.plan.continuation.targetText : 'weaker hands' });
@@ -920,7 +1019,7 @@ const CoachBrain = (() => {
     // check when the suggested bet uses 40%+ of the effective chips.
     const capLeft = Math.max(1, effectiveActionCap(sp) - sp.yourBet);
     const heavyDrawBet = Math.max(0, size.to - sp.yourBet) >= capLeft * 0.4;
-    const drawBet = strongDraw && !multi && (!heavyDrawBet || shove.ok);
+    const drawBet = strongDraw && !multi && !station && (fe >= bluffNeed || eq >= 0.5) && (!heavyDrawBet || shove.ok);
     if (shove) Object.assign(n, { whole:shove.whole, risk:shove.risk });
     const best = valueHand && size.plan && size.plan.shove ? 'allin'
       : valueHand || drawBet || (!medium && !strongDraw && bluffGood) ? 'bet' : 'check';
@@ -933,7 +1032,7 @@ const CoachBrain = (() => {
       }
       if (medium) return J(Object.assign(base, { verdict:'good', confidence:'clear', tag:'bet.check.medium', lesson:'pot-control' }));
       // (his bet would have been all your chips, and that doesn't pay: checking's right)
-      if (strongDraw && !multi && !drawBet) return J(Object.assign(base, { verdict:'good', confidence: shove.close ? 'close' : 'leans', tag:'bet.check.draw.deep' }));
+    if (strongDraw && !multi && !drawBet) return J(Object.assign(base, { verdict:'good', confidence: shove.close ? 'close' : 'leans', tag:heavyDrawBet ? 'bet.check.draw.deep' : 'bet.check.draw', lesson:'semi-bluff' }));
       if (strongDraw) return J(Object.assign(base, { verdict:'fine', confidence:'close', tag:'bet.check.draw', lesson:'semi-bluff', notable:!multi }));
       if (bluffGood) return J(Object.assign(base, { verdict:'fine', confidence:'leans', tag:'bet.bluff.chance', lesson:'bluffing', notable:true }));
       return J(Object.assign(base, { verdict:'good', confidence:'clear', tag:'bet.check.weak', lesson:'bluffing' }));
@@ -966,7 +1065,7 @@ const CoachBrain = (() => {
     if (strongDraw && (allIn || actualHeavy) && !multi && !shove.ok && shove.close) return J(Object.assign(base, { verdict:'fine', confidence:'close', tag:allIn ? 'bet.semi.shove.close' : 'bet.semi.heavy.close', lesson:'draw-shove' }));
     if (strongDraw && (allIn || actualHeavy) && (multi || !shove.ok)) return J(Object.assign(base, { verdict:'mistake', confidence:'leans', tag:allIn ? 'bet.semi.shove' : 'bet.semi.heavy', lesson:'draw-shove', notable:true }));
     if (strongDraw && allIn) return J(Object.assign(base, { verdict:'good', confidence: shove.close ? 'close' : 'leans', tag:'bet.semi', lesson:'semi-bluff', notable:true }));
-    if (strongDraw) return J(Object.assign(base, !multi ? { verdict:'good', confidence:'clear', tag:'bet.semi', lesson:'semi-bluff', notable:true }
+    if (strongDraw) return J(Object.assign(base, !multi ? { verdict:drawBet ? 'good' : 'fine', confidence:'leans', tag:'bet.semi', lesson:'semi-bluff', notable:true }
       : { verdict:'fine', confidence:'close', tag:'bet.semi.multi', lesson:'semi-bluff' }));
     // a bluff
     if (multi) return J(Object.assign(base, { verdict:'mistake', confidence: opps >= 3 ? 'clear' : 'leans', tag:'bet.bluff.multi', lesson:'bluffing', notable:true }));
@@ -1055,11 +1154,10 @@ const CoachBrain = (() => {
     const out = { street:sp.street, toCall:sp.toCall, pot:sp.pot, odds:Math.round(sp.potOdds * 100), hole:sp.holeFacts.name, seat:sp.seat };
     if (sp.street === 'preflop' || !sp.boardFacts) return out;
     const bf = sp.boardFacts, left = sp.board.length === 3 ? 2 : sp.board.length === 4 ? 1 : 0;
-    const unseen = 52 - 2 - sp.board.length;
-    const hit = o => left === 2 ? 1 - (1 - o / unseen) * (1 - o / (unseen - 1)) : left === 1 ? o / unseen : 0;
-    const drawOuts = bf.drawOuts >= 8 && bf.draws.flush && (bf.draws.oesd || bf.draws.gutshot) ? Math.min(15, bf.drawOuts + (bf.draws.oesd ? 6 : 3)) : bf.drawOuts;
+    const drawOuts = bf.drawOuts, q = bf.drawQuality;
     Object.assign(out, { made:bf.made, handName:bf.handName, boardPlays:bf.boardPlays, draws:bf.draws, drawOuts, left,
-      hitPct: drawOuts && left ? Math.round(hit(drawOuts) * 100) : 0, threats:bf.threats, texture:bf.texture });
+      hitPct: drawOuts && left ? Math.round(q.runout * 100) : 0, drawWarning:q.warning, strengthNote:bf.strengthNote,
+      hitNext:Math.round(q.next * 100), threats:bf.threats, texture:bf.texture });
     return out;
   }
 
@@ -1186,7 +1284,7 @@ const CoachBrain = (() => {
     return finish(hand.seen || { phase:null, showdown:false, board:[], shown:[], yourHand:null, out:false }, net);
   }
 
-  return { spot, choice, settle, judge, judgeBet, stories, foldChance, betSize, valueBetPlan, valueContinuation, judgePreflop, judgePostflop, advise, advisePreflop:advise, oppRange, readNow, raiseSize, openRange, pushRange, raiserRange, record, handStart, observe, handEnd, closeMissed, shownAtShowdown, seatLabel, actingAfter,
+  return { spot, choice, settle, judge, judgeBet, stories, foldChance, bluffAssessment, drawPrice, betSize, valueBetPlan, valueContinuation, judgePreflop, judgePostflop, advise, advisePreflop:advise, oppRange, readNow, raiseSize, openRange, pushRange, raiserRange, record, handStart, observe, handEnd, closeMissed, shownAtShowdown, seatLabel, actingAfter,
     get hand(){ return hand; }, get history(){ return history.slice(); }, reset(){ hand = null; history.length = 0; } };
 })();
 if (typeof window !== 'undefined') window.CoachBrain = CoachBrain;

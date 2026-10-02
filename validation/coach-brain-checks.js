@@ -351,7 +351,7 @@ check('A recorded decision carries its judgement', () => {
 
 /* ---------------- his lines ---------------- */
 const SLOTS = new Set(['hole','pct','range','seatOn','seatFrom','SeatFrom','behindP','bb','size','call','odds','eq','need','raiser','limpersP',
-  'raiserFrom','bettor','betSize','DrawName','handWords','rangeWords','opp','Opp','won','sizeWords','fold','foldNeed','players','Bettor','Raiser','BehindP','LimpersP','to','toBB','lean','alt','Lean','Alt','handName','drawName','outs','hitPct','byWhen','hitNext','threat','pot','shortOpp','ShortOpp','valueTargets','ValueTargets']);
+  'raiserFrom','bettor','betSize','DrawName','handWords','rangeWords','opp','Opp','won','sizeWords','fold','foldNeed','players','Bettor','Raiser','BehindP','LimpersP','to','toBB','lean','alt','Lean','Alt','handName','drawName','outs','hitPct','byWhen','hitNext','threat','pot','shortOpp','ShortOpp','valueTargets','ValueTargets','drawPriceText','drawWarning','strengthNote']);
 const JARGON = /\b(limp(s|ed|ing|ers?)?|cutoff|hijack|lojack|under the gun|pot odds|outs|three-bet|3-bet|semi-bluff|value bet|kicker|shove[ds]?|bluff catcher|pot control|equity|range|overpair|c-bet|in position|out of position|isolate|dominated)\b/i;
 const BANNED = /\b(kid|buddy|pal|mate|champ|sport|chief|boss|friend|damn|hell|shit|crap)\b/i;
 check('His lines: flat, clean, fit his bubble, and only use blanks the game fills', () => {
@@ -506,7 +506,7 @@ check('After the flop: draws at the right price and the wrong one', () => {
   is(post(['Ah','5h'], ['Kh','9h','2c'], 0.5, 'call'), 'good', null, 'post.call.draw.good');
   is(post(['7s','5d'], ['Kh','9h','8c'], 1.0, 'call'), 'mistake', 'clear', 'post.call.draw.bad');
   const j = post(['Ah','5h'], ['Kh','9h','2c'], 0.5, 'fold');
-  is(j, 'mistake', null, 'post.fold.draw');
+  is(j, 'fine', 'close', 'post.fold.close'); // One-card price: a cautious fold is defensible.
   assert.strictEqual(j.n.outs, 9); assert.strictEqual(j.n.drawName, 'a flush draw');
 });
 check('After the flop: calling with nothing is a clear mistake; top pair calls; a set raises', () => {
