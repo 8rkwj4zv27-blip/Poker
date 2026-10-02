@@ -747,11 +747,11 @@ remain mandatory. No new memory, coaching rooms or review UI in this phase.
 - Small-kicker reads and six deterministic lab scenarios expose these
   changes without changing table layout, rules, statistics or persistence.
 
-Remaining Phase 2 work: full main/side-pot eligibility and per-pot equity,
+At the v0.58.5 slice, remaining Phase 2 work was: main/side-pot eligibility and per-pot equity,
 range-conditioned value raises, earlier-street continuation/redraw equity,
 cross-street plan changes, and format-specific risk context. The current
 slice is local on `codex/pip-phase2`; it is not merged/released to the phone.
-Do not call Phase 2 complete or treat these priors as calibrated strategy.
+That slice was not Phase 2 complete; these priors are not calibrated strategy.
 
 Verification for this continuation: 23 tactical scenario checks, 59 brain
 checks (including randomized legality/judgement/language checks), 26
@@ -760,3 +760,44 @@ showdown checks pass. The browser lab loads the new scenario keys and runs
 the expensive low-draw sequence without console errors. Phone performance
 and strategic calibration remain unmeasured. The pre-existing wider
 showdown-lab fallback mismatch remains outside this coach-only change.
+
+### Phase 2 implemented — v0.58.6-dev · P.I.P. Tactical Brain
+
+Owner requested completion of Phase 2. All four implementation slices are
+now represented in the coach, without memory or a new review surface:
+
+- Value targets and bounded river size comparison: implemented in v0.58.4.
+- Exact completion-card unions, vulnerable draw warnings and one-card versus
+  all-in price horizons: implemented in v0.58.5.
+- Actual-size/public-story bluff estimates, blockers and conditional draw
+  aggression: implemented in v0.58.5, with conservative multiway fallback.
+- Main/side-pot calls: the engine's own contribution layers are projected
+  after our call; inaccessible money is excluded. Each eligible layer uses
+  equity against only its eligible public opponent ranges, then weighted
+  value and price are combined. Folded money remains; hidden cards are never
+  read. Incomplete synthetic accounting falls back rather than inventing pots.
+- Value raises condition continuation on the stricter raise-calling model.
+  A heads-up raise must retain sufficient sampled equity against callers,
+  not merely beat the betting range. Multiway analysis remains conservative.
+- Earlier-street value plans retain 400-sample runout equity against likely
+  callers, including redraws, separate from current made strength. This is
+  not treated as a complete multi-street EV: future betting cost is explicit.
+- Every recommendation has a position/initiative/next-card risk plan.
+  Same-hand records allow changed cards, new bets or re-raises to explain a
+  changed plan. This is existing hand context, not persistent player memory.
+- Large elimination-format commitments flag survival risk; draw commitment
+  uses a higher survival allowance than cash. No payout/ICM calculation is
+  claimed, and no Career rules, catalogue or save data are changed.
+
+Release boundary: completed locally on `codex/pip-phase2`, not yet merged
+or deployed to the phone. Next product phase is the after-hand breakdown.
+Solver calibration, optimal multiway bluffing and full multi-street search
+remain future research, not silent claims made by this implementation.
+Phone performance remains a release check; no measured iPhone claim is made.
+
+Verification: 32 dedicated tactical checks, 59 brain checks, 26 reliability
+checks, 24 Pattern Book, 23 quick-bet and 8 focused showdown checks pass.
+Two side-pot lab examples show eligible and excluded chip totals explicitly.
+The previously recorded wider showdown-lab template mismatch is unrelated
+and remains outside this phase. Production poker math/engine, visual styling,
+dependencies and persistent statistics/settings are unchanged.

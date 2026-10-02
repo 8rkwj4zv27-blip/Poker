@@ -227,10 +227,15 @@ const CoachBrain = (() => {
     const fullRaise = Math.max((g.currentBet || 0) + (g.minRaise || bb), (me.betThisRound || 0) + bb);
     const maxTo = Math.min(myTotal, biggestOpp <= (g.currentBet || 0) ? (g.currentBet || 0) : Math.max(biggestOpp, fullRaise));
     const wager = call('wagerBounds', g, me) || { min:Math.min(maxTo, fullRaise), max:maxTo, step:bb <= 100 ? 5 : bb <= 500 ? 25 : 50 };
+    const prior = handGame === g && hand && hand.n === g.handNumber && hand.decisions.length ? hand.decisions[hand.decisions.length - 1] : null;
     const snapshot = {
       handNumber: g.handNumber,
       street: g.phase,
       mode: g.mode || null,
+      heroId:me.id,
+      contributions:g.players.map(p => ({ id:p.id, totalBetHand:p.totalBetHand || 0, folded:!!p.folded })),
+      previousPlan:prior && prior.recommendation ? { street:prior.spot.street, board:prior.spot.board,
+        move:prior.recommendation.move, purpose:prior.recommendation.plan && prior.recommendation.plan.purpose } : null,
       hole, board,
       holeFacts: holeFacts(hole),
       boardFacts: boardFacts(hole, board),
@@ -562,7 +567,33 @@ const CoachBrain = (() => {
   const MADE_OK = { overpair:1, 'top-pair':1, 'two-pair':1, set:1, trips:1, straight:1, flush:1, 'full-house':1, quads:1, 'straight-flush':1 };
   const clampR = (x, lo, hi) => Math.max(lo, Math.min(hi, x));
   const EQ = new WeakMap();
-  const VALUE_RANGES = new WeakMap(), VALUE_CALLS = new WeakMap();
+  const VALUE_RANGES = new WeakMap(), VALUE_CALLS = new WeakMap(), POT_READS = new WeakMap(), CONTINUATIONS = new WeakMap();
+  function potAssessment(sp){
+    if (POT_READS.has(sp)) return POT_READS.get(sp);
+    // Use the engine's own contribution layers, including folded money.
+    // A short caller cannot win unmatched chips or other players' side pots.
+    const accounted = sp.contributions.reduce((s, p) => s + p.totalBetHand, 0);
+    if (Math.abs(accounted - sp.pot) > 0.01) return null; // synthetic/incomplete state
+    const projected = sp.contributions.map(p => Object.assign({}, p, { totalBetHand:p.totalBetHand + (p.id === sp.heroId ? sp.toCall : 0) }));
+    const layers = call('computePots', projected);
+    if (!layers) return null;
+    const eligible = layers.filter(p => p.eligible.includes(sp.heroId));
+    let total = 0, value = 0;
+    const cache = new Map();
+    const reads = eligible.map(p => {
+      const rivals = sp.opponents.filter(o => p.eligible.includes(o.id));
+      const key = rivals.map(o => o.id).sort().join('|');
+      let eq = cache.get(key);
+      if (eq == null){ eq = rivals.length ? call('estimateEquityVsRanges', sp.hole, sp.board, rivals.map(o => oppRange(sp, o)), 1500) : 1; cache.set(key, eq); }
+      total += p.amount; value += p.amount * eq;
+      return { amount:p.amount, opponentIds:rivals.map(o => o.id), equity:eq, committed:rivals.filter(o => o.allIn).map(o => o.id) };
+    });
+    const out = { layers:reads, available:total, excluded:sp.pot + sp.toCall - total, equity:total ? value / total : 0,
+      odds:total ? sp.toCall / total : 1, callValue:value - sp.toCall,
+      complex:eligible.length > 1 || sp.pot + sp.toCall - total > 0,
+      note:eligible.length > 1 || sp.pot + sp.toCall - total > 0 ? 'Only pots you can win count toward the price; each has its own opponents.' : '' };
+    POT_READS.set(sp, out); return out;
+  }
   /* An opponent's likely hands, from what they've shown (public). */
   function oppRange(sp, o){
     const raises = sp.preflop.raises;
@@ -634,7 +665,8 @@ const CoachBrain = (() => {
     const deep = behind > 1.5 * (sp.pot + sp.toCall);
     const price = drawPrice(sp, eq);
     const implied = anyDraw && madeWeak ? price.implied : !deep ? 0 : strongDraw ? (left === 1 ? 0.05 : 0.03) : anyDraw ? 0.02 : 0;
-    const need = sp.potOdds + (sp.playersIn > 2 && sp.actingAfter > 0 ? 0.03 : 0) - implied;
+    const pots = potAssessment(sp), odds = pots ? pots.odds : sp.potOdds;
+    const need = odds + (sp.playersIn > 2 && sp.actingAfter > 0 ? 0.03 : 0) - implied;
     const usable = anyDraw && madeWeak ? price.usable : eq * realise;
     const margin = usable - need;
     const multi = sp.playersIn > 2;
@@ -644,13 +676,16 @@ const CoachBrain = (() => {
     // call (a raise is fine, to protect, but close).
     const strongMade = STRONG_MADE[bf.made] && !bf.boardPlays;
     const ahead = eq >= (multi ? 0.55 : 0.70) && !(anyDraw && madeWeak);
-    const value = strongMade && ahead;
+    const raisePlan = strongMade && ahead ? valueRaiseAssessment(sp) : null;
+    const value = strongMade && ahead && (!raisePlan.supported || raisePlan.value);
     const bettorAct = sp.actions.filter(x => x.street === sp.street && (x.action === 'bet' || x.action === 'raise')).pop();
     const betFrac = sp.toCall / Math.max(1, sp.pot - sp.toCall);
     const unseen = 52 - 2 - sp.board.length;
     const drawName = bf.draws.flush && (bf.draws.oesd || bf.draws.gutshot) ? 'a flush and straight draw' : bf.draws.flush ? 'a flush draw' : bf.draws.oesd ? 'an open-ended straight draw' : bf.draws.gutshot ? 'an inside straight draw' : '';
     const n = { street:sp.street, eq:pct100(anyDraw && madeWeak ? usable : eq), runoutEq:pct100(eq),
-      need:pct100(Math.max(0.01, need) / (anyDraw && madeWeak ? 1 : realise)), odds:Math.round(sp.potOdds * 100), call:sp.toCall, pot:sp.pot,
+      need:pct100(Math.max(0.01, need) / (anyDraw && madeWeak ? 1 : realise)), odds:Math.round(odds * 100), call:sp.toCall, pot:sp.pot,
+      pots, potNote:pots ? pots.note : '', raisePlan,
+      valueTargets:raisePlan && raisePlan.continuation ? raisePlan.continuation.targetText : 'weaker made hands',
       handName:bf.handName, made:bf.made, drawName, outs:bf.drawOuts, hitNext: bf.drawOuts ? Math.round(bf.drawOuts / unseen * 100) : 0,
       drawPriceText:price.text, drawWarning:bf.drawQuality.warning, drawPrice:price,
       bettor: bettorAct ? bettorAct.name : 'they', betSize:BET_WORD(betFrac), margin:Math.round(margin * 100), players:sp.playersIn - 1,
@@ -778,7 +813,7 @@ const CoachBrain = (() => {
   }
   function postEquity(sp){
     let eq = EQ.get(sp);
-    if (eq == null){ eq = call('estimateEquityVsRanges', sp.hole, sp.board, sp.opponents.map(o => oppRange(sp, o)), 1500); EQ.set(sp, eq); }
+    if (eq == null){ const pots = potAssessment(sp); eq = pots ? pots.equity : call('estimateEquityVsRanges', sp.hole, sp.board, sp.opponents.map(o => oppRange(sp, o)), 1500); EQ.set(sp, eq); }
     return eq;
   }
 
@@ -806,29 +841,34 @@ const CoachBrain = (() => {
         : cls.made === 'second-pair' ? 'middle' : cls.made === 'weak-pair' ? 'weak' : draw ? 'draw' : 'air';
       const target = draw ? (cls.made !== 'nothing' ? 'pairs with draws' : cls.draws.flush ? 'flush draws' : 'straight draws') : bucket === 'strong' ? 'weaker made hands'
         : bucket === 'top' ? 'weaker top pairs' : bucket === 'middle' || bucket === 'weak' ? 'smaller pairs' : 'unpaired hands';
-      rows.push({ weight, share:score < mine ? 1 : score === mine ? 0.5 : 0, bucket, draw:!!draw, target });
+      rows.push({ codes, weight, share:score < mine ? 1 : score === mine ? 0.5 : 0, bucket, draw:!!draw, target });
     }
     const result = { rows, opponent:o, habit:storyOf(sp, o).habit, total:rows.reduce((s, row) => s + row.weight, 0) };
     VALUE_RANGES.set(sp, result);
     return result;
   }
-  function valueContinuation(sp, to){
+  function continuationRate(row, frac, habit, raising){
+    const base = { strong:.94, top:.8, middle:.6, weak:.4, draw:.6, air:.1 }, sensitivity = { strong:.12, top:.55, middle:1.35, weak:1.8, draw:.95, air:2.8 };
+    const caller = habit === 'caller', tight = habit === 'tight';
+    const start = Math.min(.98, base[row.bucket] + (caller && row.bucket !== 'strong' ? .18 : 0));
+    return clampR(start * Math.exp(-sensitivity[row.bucket] * Math.max(0, frac - .25) * (caller ? .45 : tight ? 1.35 : 1))
+      * (raising && row.bucket !== 'strong' ? (row.bucket === 'top' || row.draw ? .65 : .4) : 1), 0, .98);
+  }
+  function valueContinuation(sp, to, raising){
     let memo = VALUE_CALLS.get(sp);
     if (!memo){ memo = new Map(); VALUE_CALLS.set(sp, memo); }
-    if (memo.has(to)) return memo.get(to);
+    const key = to + (raising ? ':raise' : ':bet');
+    if (memo.has(key)) return memo.get(key);
     const range = valueRange(sp); if (!range || !range.total) return null;
     const risk = Math.max(0, Math.min(to, effectiveActionCap(sp)) - sp.yourBet);
-    const frac = risk / Math.max(1, sp.pot), caller = range.habit === 'caller', tight = range.habit === 'tight';
+    const frac = risk / Math.max(1, sp.pot);
     // Explicit teaching heuristic, not fitted solver probabilities. Larger
     // bets retain stronger hands and lose more marginal calls. Observed
     // callers are less size-sensitive; sparse reads use the neutral prior.
-    const base = { strong:0.94, top:0.80, middle:0.60, weak:0.40, draw:0.60, air:0.10 };
-    const sensitivity = { strong:0.12, top:0.55, middle:1.35, weak:1.8, draw:0.95, air:2.8 };
     let calls = 0, shares = 0, worse = 0, checkShare = 0, result = 0;
     const targets = {};
     range.rows.forEach(row => {
-      const start = Math.min(0.98, base[row.bucket] + (caller && row.bucket !== 'strong' ? 0.18 : 0));
-      const rate = clampR(start * Math.exp(-sensitivity[row.bucket] * Math.max(0, frac - 0.25) * (caller ? 0.45 : tight ? 1.35 : 1)), 0, 0.98);
+      const rate = continuationRate(row, frac, range.habit, raising);
       const paid = row.weight * rate;
       calls += paid; shares += paid * row.share; checkShare += row.weight * row.share;
       if (row.share === 1){ worse += paid; targets[row.target] = (targets[row.target] || 0) + paid; }
@@ -844,7 +884,38 @@ const CoachBrain = (() => {
       estimatedRiverValue:river ? result / range.total : null,
       checkToShowdownValue:river ? checkShare / range.total * sp.pot : null,
       confidence:'leans', model:'public-range/heuristic-calls', combos:range.rows.length };
-    memo.set(to, out); return out;
+    memo.set(key, out); return out;
+  }
+  // Sample future cards against the hands estimated to continue. This is
+  // runout equity, NOT a promise that today's bet buys those cards for free.
+  function continuationEquity(sp, to, raising){
+    let memo = CONTINUATIONS.get(sp); if (!memo){ memo = new Map(); CONTINUATIONS.set(sp, memo); }
+    const key = to + (raising ? ':raise' : ':bet'); if (memo.has(key)) return memo.get(key);
+    const range = valueRange(sp), current = valueContinuation(sp, to, raising);
+    if (!range || !current) return null;
+    if (sp.board.length === 5) return { equity:current.calledMadeShare, samples:0, horizon:'showdown' };
+    const h = sp.hole.map(c => call('cardCode', c)), b = sp.board.map(c => call('cardCode', c));
+    const frac = current.risk / Math.max(1, sp.pot);
+    let total = 0;
+    const rows = range.rows.map(r => {
+      total += r.weight * continuationRate(r, frac, range.habit, raising);
+      return { codes:r.codes, ceiling:total }; });
+    let wins = 0;
+    for (let n = 0; n < 400; n++){
+      const target = Math.random() * total; let lo = 0, hi = rows.length - 1;
+      while (lo < hi){ const mid = (lo + hi) >> 1; if (rows[mid].ceiling < target) lo = mid + 1; else hi = mid; }
+      const rival = rows[lo].codes, used = new Set(h.concat(b, rival)), run = b.slice();
+      while (run.length < 5){ const c = Math.floor(Math.random() * 52); if (!used.has(c)){ used.add(c); run.push(c); } }
+      const mine = call('fastScore7', h.concat(run)), theirs = call('fastScore7', rival.concat(run));
+      wins += mine > theirs ? 1 : mine === theirs ? .5 : 0;
+    }
+    const out = { equity:wins / 400, samples:400, horizon:'runout', futurePrice:'Further bets and redraws can change the value of continuing.' };
+    memo.set(key, out); return out;
+  }
+  function valueRaiseAssessment(sp){
+    const to = postRaiseSize(sp), continuation = valueContinuation(sp, to, true), runout = continuationEquity(sp, to, true);
+    return { to, continuation, runout, supported:!!runout, value:!!runout && runout.equity >= 0.55,
+      note:'A value raise needs to beat the hands that call the raise, not just the hands that bet.' };
   }
 
   /* A value plan, rather than one stock amount. It distinguishes quiet
@@ -908,8 +979,9 @@ const CoachBrain = (() => {
       if (best && current && (current.calledMadeShare <= 0.5 || best.continuation.estimatedRiverValue > current.estimatedRiverValue + sp.pot * 0.03)) to = best.to;
     }
     const continuation = valueContinuation(sp, to);
+    const runout = continuationEquity(sp, to, false);
     const actualFrac = sp.pot > 0 ? Math.max(0, to - sp.yourBet) / sp.pot : 0;
-    return { to, frac:actualFrac, targetFrac:frac, cap, shove, purpose, next, alternatives, continuation, words:sizeWords(actualFrac) };
+    return { to, frac:actualFrac, targetFrac:frac, cap, shove, purpose, next, alternatives, continuation, runout, words:sizeWords(actualFrac) };
   }
   function betSize(sp){
     const bf = sp.boardFacts || {}, eq = postEquity(sp);
@@ -954,7 +1026,10 @@ const CoachBrain = (() => {
     }
     if (sp.opponents.some(o => o.allIn || o.chips <= 0)) folds = 0;
     folds = clampR(folds, 0, 0.85);
-    return { risk, breakEven:risk / Math.max(1, sp.pot + risk), folds, blocker,
+    const pots = potAssessment(sp);
+    const stealablePot = pots && sp.toCall === 0 ? pots.layers.filter(p => !p.committed.length && p.opponentIds.length).reduce((s, p) => s + p.amount, 0)
+      : sp.opponents.some(o => o.allIn) ? 0 : sp.pot;
+    return { risk, breakEven:risk / Math.max(1, sp.pot + risk), folds, blocker, stealablePot,
       model:'public-story/size-sensitive-heuristic', raising:!!raising };
   }
   /* A draw, all in (owner 29 Sep 2026, "bad advice which made me go
@@ -974,7 +1049,7 @@ const CoachBrain = (() => {
     const shove = fe * sp.pot + (1 - fe) * (eq * final - risk);
     const other = sp.toCall > 0 ? Math.max(0, eq * 0.9 * (sp.pot + sp.toCall) - sp.toCall) : eq * 0.9 * sp.pot;
     const whole = risk >= sp.stack;
-    const edge = shove - other - (whole ? 0.1 * sp.pot : 0);
+    const edge = shove - other - (whole ? (sp.mode === 'cash' ? 0.1 : 0.15) * sp.pot : 0);
     return { ok: edge >= 0, close: Math.abs(edge) < 0.1 * sp.pot, whole, risk };
   }
   function judgeBet(sp, ch){
@@ -1004,6 +1079,9 @@ const CoachBrain = (() => {
       fold:Math.round(fe * 100), foldNeed:Math.round(bluffNeed * 100), to:size.to, sizeWords:sizeWords(size.frac),
       bluffPlan:bluff, blockerNote:bluff.blocker,
       betSize: ch.potFraction == null ? '' : BET_WORD(ch.potFraction), pot:sp.pot, seat:sp.seat, pct:pct100(sp.holeFacts.pct) };
+    const pots = potAssessment(sp);
+    n.pots = pots; n.potNote = pots ? pots.note : '';
+    if (sp.opponents.some(o => o.allIn)) n.potNote += ' A committed player cannot fold; a bet cannot steal their pot.';
     if (size.plan) Object.assign(n, { purpose:size.plan.purpose, planTo:size.plan.to, next:size.plan.next, targetFrac:Math.round(size.plan.targetFrac * 100),
       valueTargets:size.plan.continuation ? size.plan.continuation.targetText : 'weaker hands' });
     // (how often they fold is an estimate, so a bluff is never clear-cut:
@@ -1032,7 +1110,7 @@ const CoachBrain = (() => {
       }
       if (medium) return J(Object.assign(base, { verdict:'good', confidence:'clear', tag:'bet.check.medium', lesson:'pot-control' }));
       // (his bet would have been all your chips, and that doesn't pay: checking's right)
-    if (strongDraw && !multi && !drawBet) return J(Object.assign(base, { verdict:'good', confidence: shove.close ? 'close' : 'leans', tag:heavyDrawBet ? 'bet.check.draw.deep' : 'bet.check.draw', lesson:'semi-bluff' }));
+      if (strongDraw && !multi && !drawBet) return J(Object.assign(base, { verdict:'good', confidence: shove.close ? 'close' : 'leans', tag:heavyDrawBet ? 'bet.check.draw.deep' : 'bet.check.draw', lesson:'semi-bluff' }));
       if (strongDraw) return J(Object.assign(base, { verdict:'fine', confidence:'close', tag:'bet.check.draw', lesson:'semi-bluff', notable:!multi }));
       if (bluffGood) return J(Object.assign(base, { verdict:'fine', confidence:'leans', tag:'bet.bluff.chance', lesson:'bluffing', notable:true }));
       return J(Object.assign(base, { verdict:'good', confidence:'clear', tag:'bet.check.weak', lesson:'bluffing' }));
@@ -1139,11 +1217,30 @@ const CoachBrain = (() => {
     let sure = altRank >= 2 ? 'close' : altRank >= 1.5 ? 'leans' : 'clear';
     if (sure === 'clear' && betting && sp.board.length === 5 && sizing.plan && sizing.plan.continuation && !sizing.plan.shove) sure = 'leans';
     const j = pick.j;
+    const actionPlan = tacticalPlan(sp, pick.ch, sizing && sizing.plan);
     // (checked to you, a raise is a bet)
     const word = m => betting && m === 'raise' ? 'bet' : m;
     return { decisionId:sp.decisionId, move:word(pick.move), to: pick.move === 'raise' || pick.move === 'allin' ? pick.ch.amount : null, toBB: pick.ch.toBB,
       sure, alt: alt && altRank >= 1.5 ? word(alt.move) : null, kind:j.kind, lesson:j.lesson, n:j.n, tag:j.tag, judgement:j,
-      stories: pre ? null : stories(sp), plan:betting && sizing ? sizing.plan : null };
+      stories: pre ? null : stories(sp), plan:betting && sizing ? sizing.plan : null, actionPlan };
+  }
+  function tacticalPlan(sp, ch, valuePlan){
+    const previous = sp.previousPlan, bf = sp.boardFacts;
+    let change = '';
+    if (previous && previous.street !== sp.street && bf){
+      const before = call('classifyPostflop', sp.hole, previous.board);
+      if (before && before.made !== bf.made) change = 'The new card changed your made hand; reassess rather than repeat the last bet.';
+      else if (before && bf.texture.wet > before.texture.wet + 0.15) change = 'The new card added threats. The earlier value plan needs a fresh check.';
+      else if (sp.toCall > 0) change = 'They are betting now. The earlier plan assumed a different response.';
+    } else if (previous && sp.streetRaises > 1) change = 'The re-raise changes the price and likely hands; the earlier advice no longer applies.';
+    const aggressive = ['raise','bet','allin'].includes(ch.action);
+    const commitment = Math.max(0, ch.amount - sp.yourBet) >= sp.stack * 0.4;
+    return { position:sp.actingAfter === 0 ? 'last-to-act' : 'players-behind', initiative:sp.youArePfAggressor ? 'you-raised-preflop' : 'opponent-or-unclaimed',
+      change, next:valuePlan ? valuePlan.next : sp.board.length === 5 ? 'There is no next card; weigh the hands that pay or beat you.'
+        : aggressive ? 'If called, reassess the new card and their response; do not commit automatically.' : 'Seeing one more card does not promise a cheap showdown.',
+      futureRisk:sp.board.length < 5 ? 'Further bets and redraws remain possible.' : '',
+      format:sp.mode === 'cash' ? 'cash' : 'elimination',
+      formatNote:sp.mode !== 'cash' && commitment ? 'This risks a large part of your tournament stack. Survival matters; payout pressure is not calculated here.' : '' };
   }
 
   /* ---------------- a read of the hand as it stands (tap him) ----------------
@@ -1162,11 +1259,12 @@ const CoachBrain = (() => {
   }
 
   /* ---------------- the hand record ---------------- */
-  let hand = null;
+  let hand = null, handGame = null;
   const history = [];
   const emit = (type, detail) => { try{ if (typeof document !== 'undefined') document.dispatchEvent(new CustomEvent(type, { detail })); }catch(e){} };
 
   function handStart(g, start){
+    handGame = g;
     if (!(g.handNumber >= 1)){ hand = null; return null; }   // the table before its first deal
     const me = g.players.find(p => p.isHuman);
     hand = { n:g.handNumber, mode:g.mode || null, bigBlind:g.bigBlind || null, startStack:me && start ? start[me.id] : null,
@@ -1284,7 +1382,7 @@ const CoachBrain = (() => {
     return finish(hand.seen || { phase:null, showdown:false, board:[], shown:[], yourHand:null, out:false }, net);
   }
 
-  return { spot, choice, settle, judge, judgeBet, stories, foldChance, bluffAssessment, drawPrice, betSize, valueBetPlan, valueContinuation, judgePreflop, judgePostflop, advise, advisePreflop:advise, oppRange, readNow, raiseSize, openRange, pushRange, raiserRange, record, handStart, observe, handEnd, closeMissed, shownAtShowdown, seatLabel, actingAfter,
+  return { spot, choice, settle, judge, judgeBet, stories, foldChance, bluffAssessment, drawPrice, potAssessment, continuationEquity, valueRaiseAssessment, tacticalPlan, betSize, valueBetPlan, valueContinuation, judgePreflop, judgePostflop, advise, advisePreflop:advise, oppRange, readNow, raiseSize, openRange, pushRange, raiserRange, record, handStart, observe, handEnd, closeMissed, shownAtShowdown, seatLabel, actingAfter,
     get hand(){ return hand; }, get history(){ return history.slice(); }, reset(){ hand = null; history.length = 0; } };
 })();
 if (typeof window !== 'undefined') window.CoachBrain = CoachBrain;

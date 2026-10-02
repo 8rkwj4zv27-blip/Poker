@@ -556,6 +556,9 @@ const CoachTalk = (() => {
       const t = textOf(adv.sure === 'close' && adv.alt ? 'advise.close' : adviceKeys(adv), c);
       if (t) parts.push(t);
       if (adv.n && adv.n.blockerNote && !adv.plan) parts.push(adv.n.blockerNote);
+      if (adv.n && adv.n.potNote) parts.push(adv.n.potNote);
+      if (adv.actionPlan && adv.actionPlan.change) parts.push(adv.actionPlan.change);
+      else if (adv.actionPlan && adv.actionPlan.formatNote) parts.push(adv.actionPlan.formatNote);
       topic = adv.lesson ? 'lesson.' + adv.lesson : topic;
       return { parts, topic, n:adv.n, ctx:c };
     } else {

@@ -319,7 +319,7 @@ const CoachLines = (() => {
   add('post.fold.priced.why.leans', 2, [['thinking', 'Folding {handName} there was a bit too careful.']]);
   add('post.call.value.now', 3, [['thinking', 'You could raise that.']]);
   add('post.call.value.why', 2, [
-    ['thinking', 'Calling with {handName} is fine, but it’s strong enough to raise. You were winning about {eq}% of the time. Make them pay.']]);
+    ['thinking', 'Calling with {handName} is fine. A raise can ask more from {valueTargets}; the hands that call a raise matter more than the hands that bet.']]);
   add('post.call.good.now', 4, [['calm', 'Good call.']]);
   add('post.call.good.why', 2, [
     ['calm', 'Calling with {handName} was right. A bet doesn’t always mean a monster, and you win about {eq}% against {bettor}’s likely hands.'],
@@ -340,7 +340,7 @@ const CoachLines = (() => {
     ['calm', 'Calling because your hand “might be good” is one of the biggest leaks there is. When someone bets, fold the weak ones.']]);
   add('post.call.weak.why.leans', 2, [['thinking', 'That call with {handName} was a little loose.']]);
   add('post.raise.value.now', 2, [['pleased', 'Good raise.'], ['pleased', 'Right. Make them pay.']]);
-  add('post.raise.value.why', 2, [['pleased', 'Raising with {handName} was right. You were winning about {eq}% of the time, so you want more chips in.']]);
+  add('post.raise.value.why', 2, [['pleased', 'Raising with {handName} was reasonable: you’re targeting calls from {valueTargets}, not just trying to beat their bet.']]);
   add('post.raise.protect.why', 4, [['calm', 'Fine. Raising {handName} is OK, but calling is usually better: mostly better hands call a raise.']]);
   add('post.raise.semi.now', 3, [['thinking', 'Raising with a draw. Bold.']]);
   add('post.raise.semi.why', 2, [['calm', 'Raising with {drawName} is {t:semiBluff}: they might fold now, and if not, you can still make your hand. Fine against one player.']]);

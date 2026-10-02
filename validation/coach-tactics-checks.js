@@ -156,4 +156,71 @@ check('Small kicker warning is board-relative and only used when applicable', ()
   assert.match(spot(['Kh','4c'], ['Ks','9h','2c']).sp.boardFacts.strengthNote, /side card is small/);
   assert.strictEqual(spot(['Kh','Ac'], ['Ks','9h','2c']).sp.boardFacts.strengthNote, '');
 });
+function layered(stack = 50){
+  const g = table(3, 0, 0, { hole:H('Ah','9d'), stack:1000 });
+  street(g, 'river', ['Kh','Qh','Jh','Th','2c'].map(C));
+  g.players.forEach((p, i) => { p.totalBetHand = [100,100,300][i]; p.betThisRound = [0,0,200][i]; });
+  g.players[0].chips = stack; g.players[1].chips = 0; g.players[1].allIn = true;
+  g.currentBet = 200; g.pot = 500;
+  return g;
+}
+check('Short caller excludes inaccessible side-pot and unmatched money', () => {
+  const g = layered(), sp = B.spot(g, you(g)), p = B.potAssessment(sp);
+  assert.strictEqual(p.available, 400); assert.strictEqual(p.excluded, 150);
+  assert.strictEqual(p.odds, 50 / 400);
+  assert.deepStrictEqual(Array.from(p.layers, x => x.amount), [300,100]);
+  assert.deepStrictEqual(Array.from(p.layers, x => x.opponentIds.length), [2,1]);
+  assert.strictEqual(p.equity, 1); assert.strictEqual(p.callValue, 350);
+  assert.strictEqual(B.advise(sp).n.odds, 13);
+});
+check('Covering caller assesses each pot against its own eligible opponents', () => {
+  const g = layered(500), p = B.potAssessment(B.spot(g, you(g)));
+  assert.strictEqual(p.available, 700); assert.strictEqual(p.excluded, 0);
+  assert.deepStrictEqual(Array.from(p.layers, x => x.amount), [300,400]);
+  assert.deepStrictEqual(Array.from(p.layers, x => x.opponentIds.length), [2,1]);
+  assert.strictEqual(p.odds, 200 / 700);
+});
+check('Folded money remains in the pot but a folded player is not an equity opponent', () => {
+  const g = layered(); g.players[1].folded = true;
+  const p = B.potAssessment(B.spot(g, you(g)));
+  assert.strictEqual(p.available, 400);
+  assert.ok(p.layers.every(x => x.opponentIds.length === 1));
+});
+check('Side-pot equity is cached and never inspects hidden cards', () => {
+  const g = layered();
+  g.players.slice(1).forEach(p => Object.defineProperty(p, 'hand', { get(){ throw Error('hidden cards'); } }));
+  const sp = B.spot(g, you(g)); assert.strictEqual(B.potAssessment(sp), B.potAssessment(sp));
+});
+check('Raise continuations are stronger than ordinary bet continuations', () => {
+  const { sp } = river();
+  assert.ok(B.valueContinuation(sp, 70, true).calledMadeShare < B.valueContinuation(sp, 70).calledMadeShare);
+});
+check('Future continuation equity is sampled and carries an explicit future-price caveat', () => {
+  const { sp } = dry(), p = B.continuationEquity(sp, 40);
+  assert.ok(p.equity >= 0 && p.equity <= 1); assert.strictEqual(p.samples, 400);
+  assert.strictEqual(p.horizon, 'runout'); assert.match(p.futurePrice, /Further bets/);
+  assert.strictEqual(p, B.continuationEquity(sp, 40));
+  assert.strictEqual(B.valueBetPlan(sp, .95).runout, p);
+});
+check('River continuation uses current showdown strength without invented future cards', () => {
+  const { sp } = river(), p = B.continuationEquity(sp, 40);
+  assert.strictEqual(p.samples, 0); assert.strictEqual(p.horizon, 'showdown');
+  assert.strictEqual(p.equity, B.valueContinuation(sp, 40).calledMadeShare);
+});
+check('A new threatening card revises the same-hand plan, not persistent player memory', () => {
+  const { g, sp } = dry(); B.handStart(g); act(g, 0, 'bet', 40); B.record(sp, g, you(g));
+  street(g, 'turn', [C('Tc')]); act(g, 1, 'bet', 60);
+  const a = B.advise(B.spot(g, you(g)));
+  assert.match(a.actionPlan.change, /new card|betting now/);
+  assert.strictEqual(a.actionPlan.position, 'last-to-act');
+  assert.match(a.actionPlan.futureRisk, /Further bets/);
+  const other = dry().sp; assert.strictEqual(other.previousPlan, null);
+});
+check('Tournament commitment carries survival context without claiming payout maths', () => {
+  const { g } = dry(); g.mode = 'tournament';
+  let sp = B.spot(g, you(g)), p = B.tacticalPlan(sp, { action:'raise', amount:sp.stack }, null);
+  assert.strictEqual(p.format, 'elimination'); assert.match(p.formatNote, /payout pressure is not calculated/);
+  g.mode = 'cash'; sp = B.spot(g, you(g)); p = B.tacticalPlan(sp, { action:'raise', amount:sp.stack }, null);
+  assert.strictEqual(p.formatNote, '');
+});
 console.log('\n' + passed + ' Phase 2 tactical checks passed.');
