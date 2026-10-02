@@ -238,4 +238,50 @@ check('Lab explanations retain their floor when the live game updates', () => {
   assert.ok(moments(start).includes('bet.value.why'));
   assert.ok(!moments(start).some(m => /^advise\.post|yourPrice/.test(m)));
 });
+check('Routine value turns are quiet, without a generic price fallback', () => {
+  const g = flop(); resetSpeech(g); CT.clear(); const start = presented.length;
+  ctx.updateCoach(); advance(1100);
+  assert.ok(!moments(start).some(m => /^advise\.|yourPrice|yourFree/.test(m)));
+});
+check('Quieter turns still allow a full read by tapping PIP', () => {
+  const g = flop(); resetSpeech(g); CT.clear(); const start = presented.length;
+  CT.onTap();
+  assert.ok(presented.length > start);
+  assert.ok(presented.at(-1).querySelector('.ctk-said').innerHTML);
+});
+check('Tell me remains explicit full guidance, deduplicated per decision', () => {
+  const g = flop(); resetSpeech(g); CT.clear();
+  CT.apply({ help:'4', volume:'silent', textIn:'all', mouth:'still' });
+  assert.strictEqual(CT.yourTurn(you(g)), true);
+  const start = presented.length;
+  assert.strictEqual(CT.yourTurn(you(g)), false); assert.strictEqual(presented.length, start);
+  CT.apply({ volume:'silent', textIn:'all', mouth:'still' });
+});
+check('Commitments still prompt automatically in the quieter default', () => {
+  const g = flop(); you(g).chips = 70; resetSpeech(g); CT.clear();
+  assert.strictEqual(CT.yourTurn(you(g)), true);
+  assert.match(presented.at(-1).dataset.moment, /^advise\./);
+});
+check('Automatic policy distinguishes routine, expensive draws and re-raises', () => {
+  const g = flop(), sp = spOf(g), a = B.advise(sp);
+  assert.strictEqual(CT.automaticReason(a, sp), null);
+  const draw = flop(H('5h','4h'), ['Kh','9h','2c']); act(draw, 1, 'bet', 110);
+  const ds = spOf(draw); assert.strictEqual(CT.automaticReason(B.advise(ds), ds).key, 'expensive-draw');
+  assert.strictEqual(CT.automaticReason(a, Object.assign({}, sp, { streetRaises:2 })).critical, true);
+});
+check('Soft intervention budget resets per hand; critical changes can bypass it', () => {
+  const g = flop(); resetSpeech(g); CT.clear();
+  const originalSpot = B.spot, originalAdvice = B.advise, base = spOf(g), advice = B.advise(base);
+  let serial = 900000, phase = 'flop', raises = 0, handNo = g.handNumber;
+  B.spot = () => Object.assign({}, base, { decisionId:serial, street:phase, streetRaises:raises, handNumber:handNo });
+  B.advise = () => Object.assign({}, advice, { actionPlan:{ change:'New betting pressure.' } });
+  try{
+    assert.strictEqual(CT.yourTurn(you(g)), true); CT.clear(); serial++;
+    assert.strictEqual(CT.yourTurn(you(g)), false); // same street
+    phase = 'turn'; serial++; assert.strictEqual(CT.yourTurn(you(g)), true); CT.clear();
+    phase = 'river'; serial++; assert.strictEqual(CT.yourTurn(you(g)), false); // two per hand
+    raises = 2; serial++; assert.strictEqual(CT.yourTurn(you(g)), true); CT.clear();
+    raises = 0; handNo++; serial++; assert.strictEqual(CT.yourTurn(you(g)), true);
+  } finally { B.spot = originalSpot; B.advise = originalAdvice; CT.clear(); }
+});
 console.log('\n' + passed + ' P.I.P. reliability checks passed.');

@@ -1,11 +1,31 @@
 # P.I.P., the Coach: handover for a fresh session
 
-Written 29 Sep 2026; updated 2 Oct 2026 for the unmerged
-`codex/pip-brain-v2` worktree (**v0.58.2-dev**). This replaces the first
+Written 29 Sep 2026; latest checkpoint 2 Oct 2026:
+**v0.58.7-dev · P.I.P. Quieter Coaching**, branch `codex/pip-quiet-coaching`.
+Phase 1 and Phase 2 merged through PRs #53 and #54. This replaces the first
 handover (the brain has since been built). Read this, then
 `CLAUDE.md` for the house rules. Open `docs/coach/BRAIN_PLAN.md` only for
 the full history of how each part was decided (it's long; sections are
 dated), and `docs/CODEMAP.md` for the rest of the game.
+
+## Current checkpoint / next task
+
+Checkpoint 1 of Phase 3 is implemented and release-approved: routine turns
+are quiet; commitments, re-raises, expensive draws and changed plans can
+intervene. Non-critical automatic advice is capped at one per street/two
+per hand. HELP “Tell me” retains full guidance; taps remain unrestricted.
+No settings/statistics migration, new UI, hand review or player memory.
+32 speech/reliability checks cover quiet turns, taps, deduplication, budgets,
+critical overrides and existing stale-message/lesson protections.
+The release is merged/pushed as part of this checkpoint; verify the deployed
+build marker before claiming it is available on the owner's phone.
+
+Stop after this checkpoint for phone play. Next approved direction is
+Checkpoint 2: a short post-hand breakdown with one decision/one takeaway
+and Continue/Skip. Plan the surface and timing before implementing; keep
+result versus decision quality and advice-following attribution explicit.
+Checkpoint 3 (deeper Why?/alternatives) and persistent observations remain
+later work. Older sections below describe prior builds and are historical.
 
 ## The one-paragraph version
 
