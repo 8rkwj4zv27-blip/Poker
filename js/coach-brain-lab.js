@@ -119,6 +119,9 @@
     ['RIVER: CHECK TWO PAIR', 'bet', ['As', '2c'], ['Ah', '5d', '2s', '6d', '3d'], 'check'],
     ['RIVER: BET TWO PAIR', 'bet', ['As', '2c'], ['Ah', '5d', '2s', '6d', '3d'], 'bet'],
     ['FLOP: BET TOP PAIR', 'bet', ['Ks', 'Qd'], ['Kh', '7c', '2d'], 'bet'],
+    ['FLOP: SMALL VALUE BET, SET OF QUEENS, QUIET BOARD', 'bet', ['Qs', 'Qd'], ['Qh', '7c', '2d'], 'bet', { fraction:0.38 }],
+    ['FLOP: CHARGE DRAWS, QUEENS ON JACK-TEN-NINE', 'bet', ['Qs', 'Qd'], ['Jh', 'Th', '9c'], 'bet', { fraction:0.66 }],
+    ['FLOP: ALL IN WITH QUEENS, QUIET BOARD', 'bet', ['Qs', 'Qd'], ['Jh', '7c', '2d'], 'allin'],
     ['FLOP: CHECK A MIDDLE PAIR', 'bet', ['7s', '8d'], ['Kh', '7c', '2d'], 'check'],
     ['FLOP: BET A FLUSH DRAW', 'bet', ['Ah', '5h'], ['Kh', '9h', '2c'], 'bet'],
     ['TURN: ALL IN ON A STRAIGHT DRAW (400 LEFT)', 'bet', ['9s', '8s'], ['7h', '6c', '2d', 'Kd'], 'allin', { stack:400 }],
@@ -146,7 +149,8 @@
     if (opts && opts.stack) me.chips = opts.stack;
     if (opts && opts.caller) g.reads = { p2:{ hands:30, facedBet:12, foldedToBet:1 } };
     const sp = CB.spot(g, me);
-    act(g, 0, mine === 'check' ? 'check' : 'raise', mine === 'allin' ? me.chips : mine === 'bet' ? Math.round(g.pot * 0.6 / 10) * 10 : 0);
+    const fraction = opts && opts.fraction != null ? opts.fraction : 0.6;
+    act(g, 0, mine === 'check' ? 'check' : 'raise', mine === 'allin' ? me.chips : mine === 'bet' ? Math.round(g.pot * fraction / 10) * 10 : 0);
     const d = { spot:sp, choice:CB.choice(sp, g, me) };
     d.judgement = CB.judge(sp, d.choice);
     d.advice = CB.advise(sp);

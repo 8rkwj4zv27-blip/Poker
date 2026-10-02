@@ -552,3 +552,67 @@ grows as he types), not a bug.
 Lab: new TRY IT keys (Lucy is short ×2, the draw all ins, "they wake up",
 and two OUT keys that play the hand-that-hurt word). Tests: 5 new checks
 for exactly these spots.
+
+## Brain V2: tactical depth before memory (2 Oct 2026)
+
+Owner decision: deepen the live poker judgement before persistent habits,
+stages or reports. Memory must not preserve and repeat advice that is still
+too coarse. The motivating example is Pocket Queens receiving an all-in
+recommendation where a smaller bet might keep worse hands in and win more.
+
+The current limitation is concrete: the judge chooses an action, then a
+single stock sizing function supplies the amount. A postflop bet becomes all
+in whenever that stock amount reaches 45% of the player's stack. It does not
+compare small, medium, large and all-in alternatives, and it cannot explain a
+plan for the next street.
+
+Build in six testable slices:
+
+1. **Effective commitment.** Never tell a covering player to risk their whole
+   stack merely because an opponent is short. Recommend the exact amount that
+   puts the short player all in; say whose stack sets the limit.
+2. **Several sizes.** Consider small, medium, large and all-in amounts rather
+   than turning one stock bet into a shove.
+3. **Value extraction.** Size for calls from worse hands. Safe, very strong
+   hands can bet smaller to keep weak hands in; habitual callers can be asked
+   for more.
+4. **Board-sensitive plans.** Charge draws on wet boards; use smaller bets on
+   quiet boards; treat one-pair hands differently from monsters.
+5. **A next-street plan.** Advice carries a plain purpose and what to reassess
+   if called. This is recorded data for the later hand breakdown, not a new
+   visual surface in this pass.
+6. **Judge the amount.** Distinguish a good betting idea from a bet that is
+   too small, too heavy, or an unnecessary all in.
+
+The first Brain V2 release covers checked-to value betting and the short-stack
+preflop sizing boundary. Facing-bet raise sizing uses the same effective cap.
+Bluff and draw strategy keep their existing conservative rules until their own
+focused pass. Every new recommendation is deterministic, public-information
+only and available to the Node sandbox.
+
+### First value slice built (v0.58.1-dev)
+
+- `spot.effectiveTo` is the most any live opponent can match. Preflop and
+  postflop raise advice caps itself there. Covering Lucy's 70 behind now says
+  "raise to 90 and put her all in", not "put your 1,400 all in".
+- `valueBetPlan` produces a preferred amount, four practical alternatives,
+  purpose, effective cap and next-street plan. Quiet monster hands keep weaker
+  hands in at roughly one-third pot; wet boards use roughly two-thirds to
+  charge draws; known callers pay more; an all in is reserved for a strong
+  hand when the effective chips left are no more than roughly the pot.
+- `judgeBet` compares the player's actual amount with the plan. Too small,
+  unnecessarily heavy and unnecessary all-in value bets now get different
+  verdicts and explanations. A good idea with the wrong amount is no longer
+  automatically praised as a good bet.
+- The old draw safety survives independently: a draw bet using a large part of
+  the effective chips is still checked against the shove calculation, so the
+  sizing upgrade cannot revive the reported draw-bust advice.
+- Brain Lab: three Queens spots — quiet-board small value, a wet-board charge,
+  and an unnecessary deep all in.
+- Proof: 59 brain checks, including the new value matrix; Pattern Book, AI,
+  Showdown, quick-bet and scoring suites remain green.
+
+Next after the tactical pass: a compact **P.I.P. HAND BREAKDOWN** after the pot
+is resolved and before the next deal. It will use the structured purpose,
+preferred amount, alternative and next-street plan recorded here. It is not
+the later persistent **P.I.P. NOTICED** observation format.

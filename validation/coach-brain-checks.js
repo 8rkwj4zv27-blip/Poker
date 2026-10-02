@@ -618,6 +618,34 @@ check('Checked to you: his advice bets two pair (about two-thirds of the pot on 
   g = betSpot(['7s','8d'], ['Kh','7c','2d']);
   assert.strictEqual(B.advise(B.spot(g, you(g))).move, 'check');
 });
+check('Brain V2 value plans: keep monsters in on quiet boards, charge draws on wet ones', () => {
+  let g = betSpot(['Qs','Qd'], ['Qh','7c','2d']);
+  let a = B.advise(B.spot(g, you(g)));
+  assert.strictEqual(a.move, 'bet'); assert.ok(a.plan, 'a structured value plan');
+  assert.strictEqual(a.plan.purpose, 'keep-worse-in');
+  assert.ok(a.to >= g.pot * 0.30 && a.to <= g.pot * 0.45, 'small enough to keep weaker hands in: ' + a.to + ' into ' + g.pot);
+  assert.ok(a.plan.alternatives.length >= 4 && a.plan.next, 'several sizes and a next-street plan');
+
+  g = betSpot(['Qs','Qd'], ['Jh','Th','9c']);
+  a = B.advise(B.spot(g, you(g)));
+  assert.strictEqual(a.move, 'bet'); assert.strictEqual(a.plan.purpose, 'charge-draws');
+  assert.ok(a.to >= g.pot * 0.60, 'the wet board gets a larger bet: ' + a.to + ' into ' + g.pot);
+});
+check('Brain V2 value plans: commit only when the pot is already large beside the effective stack', () => {
+  const g = betSpot(['Qs','Qd'], ['Jh','7c','2d']);
+  g.players[0].chips = 70;
+  const a = B.advise(B.spot(g, you(g)));
+  assert.strictEqual(a.move, 'allin'); assert.strictEqual(a.plan.purpose, 'commit-shallow');
+  assert.strictEqual(a.to, 70, 'only the chips that can be matched');
+});
+check('Brain V2 judges the amount as well as the idea of value betting', () => {
+  let g = betSpot(['Qs','Qd'], ['Qh','7c','2d']);
+  let j = judge(g, 0, 'raise', Math.round(g.pot * 1.1));
+  is(j, 'fine', 'leans', 'bet.value.large');
+  g = betSpot(['Qs','Qd'], ['Jh','7c','2d']);
+  j = judge(g, 0, 'raise', g.players[0].chips);
+  is(j, 'mistake', 'leans', 'bet.value.shove');
+});
 check('What their betting says: checks read weak, bets read strong', () => {
   const g = betSpot(['As','2c'], ['Ah','5d','2s','6d','3d']);
   const st = B.stories(B.spot(g, you(g)));
@@ -700,10 +728,14 @@ check('Short because of them: you cover Lucy\'s 70 chips; his lines name her, no
   const s = B.spot(g, you(g));
   assert.ok(s.stackBB > 60 && s.effectiveBB <= 5, 'deep for you, short for the hand: ' + s.stackBB + ' / ' + s.effectiveBB);
   assert.strictEqual(s.shortBy, 'Lucy');
+  const a = B.advise(s);
+  assert.strictEqual(a.move, 'raise', 'put Lucy all in without calling your whole stack all in');
+  assert.strictEqual(a.to, 90, 'her 70 behind plus the 20 already posted');
+  assert.ok(a.to < s.stack, 'the unmatched 1,310 is never presented as at risk');
   const j = judge(g, 0, 'fold');
   assert.strictEqual(j.kind, 'short'); assert.strictEqual(j.n.shortOpp, 'Lucy');
   const L = LINES();
-  ['lesson.short-stack', 'tip.short-stack', 'again.short-stack', 'advise.short.fold', 'advise.short.allin', 'hint.short', j.tag + '.why']
+  ['lesson.short-stack', 'tip.short-stack', 'again.short-stack', 'advise.short.fold', 'advise.short.allin', 'advise.short.raise', 'hint.short', j.tag + '.why']
     .forEach(k => assert.ok(L[k + '.opp'], 'her wording for ' + k));
   // your own short stack: no "her"
   g = table(6, 0, 0, { hole:H('As','9d'), stack:160 }); folds([3, 4, 5], g);

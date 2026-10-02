@@ -457,6 +457,12 @@ const CoachTalk = (() => {
       if (a.move === 'check') return t === 'bet.check.draw.deep' ? ['advise.bet.check.draw', 'advise.bet.check']
         : t === 'bet.check.medium' || t === 'bet.check.draw' ? ['advise.bet.check']
         : (a.n && a.n.players > 1) ? ['advise.bet.check.multi', 'advise.bet.check.weak'] : ['advise.bet.check.weak'];
+      if (a.plan && t.indexOf('bet.value') === 0){
+        if (a.plan.purpose === 'keep-worse-in') return ['advise.bet.bet.keep', 'advise.bet.bet'];
+        if (a.plan.purpose === 'charge-draws') return ['advise.bet.bet.charge', 'advise.bet.bet'];
+        if (a.plan.purpose === 'ask-caller-more') return ['advise.bet.bet.caller', 'advise.bet.bet'];
+        if (a.plan.purpose === 'commit-shallow') return ['advise.bet.bet.commit', 'advise.bet.bet'];
+      }
       return t.indexOf('bet.semi') === 0 ? ['advise.bet.bet.draw', 'advise.bet.bet'] : t.indexOf('bet.bluff') === 0 ? ['advise.bet.bet.bluff'] : ['advise.bet.bet'];
     }
     return shortKeys(['advise.' + a.kind + '.' + a.move], a.n);
