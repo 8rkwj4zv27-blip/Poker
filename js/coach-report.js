@@ -29,14 +29,15 @@ const CoachReport = (() => {
   const BOARD_AT = { preflop:0, flop:3, turn:4, river:5 };
 
   const OPTIONS = {
-    arrive:[['switch', 'SWITCHES ON'], ['rise', 'RISES UP'], ['flicker', 'FLICKERS ON']],
+    arrive:[['flicker', 'FLICKERS ON'], ['switch', 'SWITCHES ON'], ['rise', 'RISES UP']],
     pace:[['play', 'PLAYS THROUGH'], ['step', 'A STREET A TAP'], ['still', 'ALL AT ONCE']],
-    chance:[['tick', 'BAR + TRUTH TICK'], ['bar', 'ONE BAR'], ['line', 'TWO LINES']],
+    chance:[['bar', 'ONE BAR'], ['tick', 'BAR + TRUTH TICK'], ['line', 'TWO LINES']],
     grade:[['stamp', 'STAMPED LETTER'], ['dial', 'NEEDLE DIAL'], ['readout', 'PRINTED LINE']],
     face:[['on', 'HIS FACE'], ['off', 'TEXT ONLY']],
     ink:[['marks', 'MARKS IN COLOUR'], ['mono', 'ALL HIS INK']],
     numbers:[['words', 'WORDS (NOT TAUGHT YET)'], ['numbers', 'NUMBERS (TAUGHT)']]
   };
+  // the owner's picks (round 1, 4 Oct 2026) are the first of each
   const DEFAULTS = Object.fromEntries(Object.entries(OPTIONS).map(([k, v]) => [k, v[0][0]]));
   let O = Object.assign({}, DEFAULTS);
   function apply(o){ Object.assign(O, o || {}); if (cur) render(cur.model, true); }
@@ -75,8 +76,10 @@ const CoachReport = (() => {
     const letter = atRisk || total > 5.5 ? 'F' : total > 3 ? 'D' : total > 1 ? 'C' : total > 0.1 || !mattered ? 'B' : 'A';
     // the decision that weighed most (for the reason line)
     const worst = ds.reduce((a, d) => fault(d) > fault(a) ? d : a, ds[0]);
-    return { letter, total:Math.round(total * 100) / 100, worst:fault(worst) > 0 ? worst : null, mistakes:ds.filter(d => d.verdict === 'mistake').length, count:ds.length };
+    return { letter, total:Math.round(total * 100) / 100, worst:fault(worst) > 0 ? worst : null, atRisk, mistakes:ds.filter(d => d.verdict === 'mistake').length, count:ds.length };
   }
+  const NUMW = ['', 'one', 'two', 'three', 'four', 'five', 'six'];
+  const cap = t => t ? t[0].toUpperCase() + t.slice(1) : t;
   function gradeReason(g, net){
     if (!g) return '';
     const w = g.worst, where = w ? NAME[w.street] : '';
@@ -84,8 +87,9 @@ const CoachReport = (() => {
       case 'A': return net < 0 ? 'Every decision right. The cards did the rest.' : 'Every decision right.';
       case 'B': return w ? 'Solid. One close call ' + where + '.' : 'Solid. Nothing hard asked of you.';
       case 'C': return w && w.verdict === 'mistake' && w.confidence === 'clear' ? 'A small mistake ' + where + ', in a small pot.' : 'A mistake ' + where + '.';
-      case 'D': return 'A clear mistake ' + where + ', with real chips at stake.';
-      default: return g.mistakes > 1 ? 'Several clear mistakes. The worst ' + where + '.' : 'A clear mistake ' + where + ' that put your chips at risk.';
+      case 'D': return (g.mistakes > 1 ? cap(NUMW[g.mistakes] || 'several') + ' mistakes, the worst ' : 'A clear mistake ') + where + ', with real chips at stake.';
+      default: return g.atRisk ? 'A clear mistake ' + where + ' that put half your chips or more at risk.'
+        : g.mistakes > 1 ? cap(NUMW[g.mistakes] || 'several') + ' mistakes. The worst ' + where + '.' : 'A costly mistake ' + where + '.';
     }
   }
 
@@ -173,7 +177,7 @@ const CoachReport = (() => {
       const reached = !!src;
       const board = (h.board || []).slice(0, BOARD_AT[s]);
       const dealt = s === 'preflop' || (h.board || []).length >= BOARD_AT[s];
-      const st = Object.assign({ street:s, reached, dealt, cards: s === 'preflop' ? h.hole : (h.board || []).slice(BOARD_AT[s] - (s === 'flop' ? 3 : 1), BOARD_AT[s]) }, src || {});
+      const st = Object.assign({ street:s, reached, dealt, gone: !reached && dealt && h.ended === 'folded', cards: s === 'preflop' ? h.hole : (h.board || []).slice(BOARD_AT[s] - (s === 'flop' ? 3 : 1), BOARD_AT[s]) }, src || {});
       st.truth = h.shown && h.shown.length && dealt ? truthEquity(h.hole, h.shown, board) : null;
       m.streets[s] = st;
     });
@@ -185,8 +189,8 @@ const CoachReport = (() => {
     return m;
   }
   // a hand worth a report: something past a fold before the flop, or a mistake
-  const worthIt = h => !!h && (Object.keys(h.streets || {}).some(s => s !== 'preflop')
-    || ((h.streets.preflop && h.streets.preflop.you) || []).some(d => d.verdict === 'mistake' || d.act !== 'folded'));
+  const worthIt = h => !!h && !!h.streets && (Object.keys(h.streets).some(s => s !== 'preflop')
+    || ((h.streets.preflop && h.streets.preflop.you) || []).some(d => d.verdict === 'mistake' || d.notable || (d.risk || 0) >= 0.25));
 
   /* ---------------- drawing ---------------- */
   const $el = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; return e; };
@@ -202,7 +206,7 @@ const CoachReport = (() => {
   };
   const markSVG = rows => '<svg class="prp-mark-i" viewBox="0 0 5 5" aria-hidden="true">' +
     rows.flatMap((r, y) => [...r].map((ch, x) => ch === '#' ? '<rect x="' + x + '" y="' + y + '" width="1" height="1" fill="currentColor"/>' : '')).join('') + '</svg>';
-  const markOf = d => d.verdict === 'mistake' ? 'mistake' : d.verdict === 'fine' && d.confidence === 'close' ? 'close' : d.verdict === 'fine' ? 'fine' : 'good';
+  const markOf = d => !d.verdict ? 'none' : d.verdict === 'mistake' ? 'mistake' : d.verdict === 'fine' && d.confidence === 'close' ? 'close' : d.verdict === 'fine' ? 'fine' : 'good';
   // his face, 13x9 art pixels: two dots and a mouth
   const MOUTHS = {
     calm:[[6, 4, 8]], smile:[[5, 3, 3], [5, 9, 9], [6, 4, 8]], flat:[[6, 4, 8]], frown:[[5, 4, 8], [6, 3, 3], [6, 9, 9]],
@@ -294,9 +298,9 @@ const CoachReport = (() => {
     const s = st.street, piv = m.pivot && m.pivot.street === s;
     const cards = s === 'preflop' ? (m.hole || []).map(mini).join('') : (st.dealt ? st.cards.map(mini).join('') : '<span class="prp-notdealt">NOT DEALT</span>');
     const you = (st.you || []).length
-      ? st.you.map(d => '<span class="prp-act prp-mk--' + markOf(d) + '">' + markSVG(MARK[markOf(d)]) + '<span>' + esc(d.act) + '</span></span>').join('')
+      ? st.you.map(d => '<span class="prp-act prp-mk--' + markOf(d) + '">' + (MARK[markOf(d)] ? markSVG(MARK[markOf(d)]) : '') + '<span>' + esc(d.act) + '</span></span>').join('')
       : st.reached ? '<span class="prp-act prp-dim"><span>' + esc(st.youNote || (st.dealt ? 'all in' : '')) + '</span></span>' : '';
-    return '<div class="prp-col' + (piv ? ' is-pivot' : '') + (st.dealt ? '' : ' is-off') + '" data-street="' + s + '" role="button" tabindex="0" aria-label="' + LABEL[s] + ': P.I.P.\'s note">' +
+    return '<div class="prp-col' + (piv ? ' is-pivot' : '') + (st.dealt && !st.gone ? '' : ' is-off') + '" data-street="' + s + '" role="button" tabindex="0" aria-label="' + LABEL[s] + ': P.I.P.\'s note">' +
       '<div class="prp-sh"><span>' + LABEL[s] + '</span>' + (piv ? '<em>' + m.pivot.word + '</em>' : '') + '</div>' +
       '<div class="prp-cards">' + cards + '</div>' +
       '<div class="prp-chance">' + chanceCell(st, m) + '</div>' +
@@ -404,7 +408,7 @@ const CoachReport = (() => {
     root.querySelector('.prp-back').hidden = false;
     root.querySelector('.prp-take').textContent = '';
     root.querySelector('.prp-figs').textContent = figsLine(st);
-    type(root.querySelector('.prp-text'), st.note || (st.dealt ? '' : 'The hand was over before this card.'), instant);
+    type(root.querySelector('.prp-text'), st.note || (st.gone ? 'You had folded by then.' : st.dealt ? '' : 'The hand was over before this card.'), instant);
   }
 
   /* PLAYS THROUGH: the columns light up one street at a time, the bars
@@ -465,7 +469,8 @@ const CoachReport = (() => {
       root.addEventListener('keydown', e => { if ((e.key === 'Enter' || e.key === ' ') && e.target.closest('.prp-col')){ e.preventDefault(); onClick(e); } });
       window.addEventListener('resize', place);
     }
-    if (!root.isConnected) app.appendChild(root);
+    // just under the menus' scrim (same layer, earlier), so Settings covers it
+    if (!root.isConnected){ const scrim = document.getElementById('scrim'); if (scrim && scrim.parentNode === app) app.insertBefore(root, scrim); else app.appendChild(root); }
     const m = build(h);
     render(m);
     place();
@@ -511,7 +516,221 @@ const CoachReport = (() => {
   }
   const isOpen = () => !!(root && !root.hidden && root.isConnected);
 
-  return { open, close, isOpen, apply, build, grade, gradeReason, chanceWord, truthEquity, pivot, worthIt, OPTIONS, DEFAULTS, get options(){ return Object.assign({}, O); } };
+  /* ============================================================
+     IN THE GAME (owner, 4 Oct 2026)
+     Settings → P.I.P. report (settings.review, the old Hand review's
+     switch). With it on the next hand already waits (scheduleAutoDeal
+     skips it): when the game puts up its Next Hand button, the console
+     shows REPORT and DEAL instead. DEAL presses Next Hand. REPORT, or a
+     tap on P.I.P., opens the report for the hand just played, built from
+     his brain's record of it (CoachBrain) and his own words (CoachTalk).
+     Reads the table, never changes it; an opponent's cards only as the
+     brain gives them (shown at a showdown).
+     ============================================================ */
+  const ACT_WORD = { fold:'folded', check:'checked' };
+  const n0 = x => Math.round(x || 0).toLocaleString();
+  function actWord(d){
+    const c = d.choice || {}, a = c.action;
+    if (ACT_WORD[a]) return ACT_WORD[a];
+    if (a === 'call') return 'called ' + n0(c.added);
+    if (a === 'bet') return 'bet ' + n0(c.amount);
+    if (a === 'raise') return 'raised to ' + n0(c.amount);
+    if (a === 'allin') return 'all in ' + n0(c.amount);
+    return a || '';
+  }
+  const STREET_OF = n => n >= 5 ? 'river' : n === 4 ? 'turn' : n === 3 ? 'flop' : 'preflop';
+  /* The pot and your chips at the end of each street, and what the others
+     did on it, from the table's public record of actions (each action
+     carries the player's total bet on that street). Blinds posted without
+     an action, and anything else, are squared up against the real total. */
+  function streetsFromTable(g, me){
+    const acts = g.handActions || [];
+    const put = {}, pot = {}, mine = {};
+    STREETS.forEach(s => { put[s] = {}; });
+    const blind = (i, amt) => { const p = g.players[i]; if (p) put.preflop[p.id] = amt; };
+    if (g.sbIndex != null) blind(g.sbIndex, g.smallBlind);
+    if (g.bbIndex != null) blind(g.bbIndex, g.bigBlind);
+    const them = {};
+    let running = 0;
+    const sumUpTo = s => STREETS.slice(0, STREETS.indexOf(s) + 1).reduce((t, x) => t + Object.values(put[x]).reduce((a, b) => a + b, 0), 0);
+    acts.forEach(a => {
+      if (!put[a.street]) return;
+      const before = sumUpTo(a.street);
+      const prev = put[a.street][a.id] || 0;
+      put[a.street][a.id] = Math.max(prev, a.amount || 0);
+      if (a.id === me.id) return;
+      (them[a.street] = them[a.street] || []).push({ id:a.id, name:a.name, action:a.action, amount:a.amount || 0, added:Math.max(0, (a.amount || 0) - prev), potBefore:before });
+    });
+    STREETS.forEach(s => { running = sumUpTo(s); pot[s] = running; mine[s] = STREETS.slice(0, STREETS.indexOf(s) + 1).reduce((t, x) => t + (put[x][me.id] || 0), 0); });
+    const real = g.players.reduce((t, p) => t + (p.totalBetHand || 0), 0);
+    const off = Math.max(0, real - pot.river);
+    STREETS.forEach(s => { pot[s] += off; });
+    return { pot, mine, them, realYours:me.totalBetHand || 0 };
+  }
+  const WORD = { fold:'folded', check:'checked', call:'called' };
+  function theirLine(list, endIds, preflop){
+    if (!list || !list.length) return { them:'', read:'' };
+    // the player(s) you were up against at the end, or everyone who acted
+    const main = list.filter(a => endIds.includes(a.id));
+    const use = main.length ? main : list;
+    const ids = [...new Set(use.map(a => a.id))];
+    const say = a => WORD[a.action] || (a.action === 'bet' ? 'bet ' + n0(a.amount) : a.action === 'raise' ? 'raised to ' + n0(a.amount) : a.action === 'allin' ? 'all in' : a.action);
+    let them;
+    if (ids.length === 1) them = use.slice(-2).map(say).join(', ');
+    else {
+      const agg = use.filter(a => ['bet', 'raise', 'allin'].includes(a.action)).pop();
+      them = agg ? agg.name + ' ' + say(agg) : use.every(a => a.action === 'check') ? 'all checked' : 'called';
+    }
+    const aggr = use.filter(a => ['bet', 'raise', 'allin'].includes(a.action));
+    let read = '';
+    if (preflop) return { them, read: aggr.length ? (aggr[aggr.length - 1].action === 'allin' ? 'ALL IN' : 'RAISED') : '' };
+    if (aggr.length){
+      const a = aggr[aggr.length - 1];
+      read = a.action === 'allin' ? 'ALL IN' : a.added >= Math.max(1, a.potBefore) * 0.6 ? 'STRONG' : 'BETTING';
+    } else if (use.some(a => a.action === 'call')) read = 'CALLING';
+    else if (use.every(a => a.action === 'fold')) read = 'GAVE UP';
+    else if (use.some(a => a.action === 'check')) read = 'WEAK';
+    return { them, read };
+  }
+  // your chance as P.I.P. saw it when you decided: his own number where he
+  // worked one out, otherwise against the hands their betting suggested
+  function knowOf(d){
+    const j = d.judgement, sp = d.spot;
+    if (j && j.n && typeof j.n.eq === 'number') return j.n.eq / 100;
+    try{
+      const ranges = sp.opponents.map(o => CoachBrain.oppRange(sp, o));
+      const eq = estimateEquityVsRanges(sp.hole, sp.board, ranges, 700);
+      if (typeof eq === 'number') return eq;
+    }catch(e){}
+    try{ return estimateEquity(sp.hole, sp.board, Math.max(1, sp.opponents.length), 500); }catch(e){ return null; }
+  }
+  function fromGame(){
+    if (typeof game === 'undefined' || !game || typeof CoachBrain === 'undefined') return null;
+    const g = game, me = g.players.find(p => p.isHuman);
+    if (!me) return null;
+    const hist = CoachBrain.history.filter(x => x.n === g.handNumber);
+    const h = hist[hist.length - 1] || (CoachBrain.hand && CoachBrain.hand.n === g.handNumber ? CoachBrain.hand : null);
+    if (!h) return null;
+    // the pot's been paid: your result is your stack against the start
+    const net = h.startStack != null ? me.chips - h.startStack : (h.end && h.end.net) || 0;
+    const showdown = g.phase === 'showdown' && me.inHand && !me.folded;
+    const foldD = h.decisions.find(d => d.choice && d.choice.action === 'fold');
+    const ended = me.folded || foldD ? 'folded' : showdown ? 'showdown' : 'foldwin';
+    const board = (g.board || []).map(c => ({ rank:c.rank, suit:c.suit, value:c.value }));
+    const lastStreet = ended === 'folded' ? foldD.spot.street : showdown ? 'river' : STREET_OF(board.length);
+    const shown = showdown ? CoachBrain.shownAtShowdown(g, me).map(s => s.hole) : null;
+    const T = streetsFromTable(g, me);
+    const endIds = g.players.filter(p => !p.isHuman && p.inHand && !p.folded).map(p => p.id);
+    const streets = {};
+    const upTo = STREETS.indexOf(lastStreet);
+    STREETS.forEach((s, i) => {
+      if (i > upTo) return;
+      const ds = h.decisions.filter(d => d.spot && d.spot.street === s);
+      const you = ds.map(d => {
+        const j = d.judgement || {};
+        return { act:actWord(d), verdict:j.verdict, confidence:j.confidence, notable:!!j.notable,
+          potBB:d.spot.potBB || 0, risk:d.spot.stack > 0 ? (d.choice && d.choice.added || 0) / d.spot.stack : 0 };
+      });
+      const tl = theirLine(T.them[s], endIds.length ? endIds : g.players.filter(p => !p.isHuman).map(p => p.id), s === 'preflop');
+      const first = ds[0];
+      let note = '';
+      try{ note = ds.map(d => CoachTalk.reasonText(d)).filter(Boolean).join(' '); }catch(e){}
+      if (!note && !ds.length && me.allIn) note = 'You were all in. The cards ran out.';
+      const bf = first && first.spot.boardFacts;
+      streets[s] = { pot:T.pot[s], yourIn:i === upTo ? T.realYours : T.mine[s], you, them:tl.them, read:tl.read,
+        know:first ? knowOf(first) : null, draw:!!(bf && bf.draws && bf.draws.length), note };
+    });
+    // his words for the whole hand
+    const rec = Object.assign({}, h, { end:Object.assign({ tookAll:false }, h.end || {}, { net, showdown, folded:ended === 'folded' }) });
+    let words = { summary:'', takeaway:'' };
+    try{ words = CoachTalk.reportWords(rec); }catch(e){}
+    if (words.takeaway) words.takeaway = words.takeaway[0].toUpperCase() + words.takeaway.slice(1);
+    return { n:h.n, net, ended, endStreet:lastStreet, hole:me.hand.map(c => ({ rank:c.rank, suit:c.suit, value:c.value })), board, shown,
+      streets, summary:words.summary, takeaway:words.takeaway };
+  }
+  // percentages only once he's taught them (his pot-odds lesson)
+  function syncNumbers(){ try{ O.numbers = CoachTalk.knows('pot-odds') ? 'numbers' : 'words'; }catch(e){} }
+
+  const Live = { keys:null, active:false, rec:null, seen:false };
+  const reportOn = () => { try{ return !!settings.review; }catch(e){ return false; } };
+  function liveTick(){
+    if (window.__prLab) return;
+    const nh = document.getElementById('btn-next-hand');
+    if (!nh) return;
+    const want = reportOn() && !nh.classList.contains('hidden') && typeof game !== 'undefined' && game && !game.over;
+    if (want && !Live.active) activate();
+    else if (!want && Live.active) deactivate();
+  }
+  /* Where the keys go: the console drum's NEXT HAND side (js/action-drum.js
+     moves Next Hand onto a side of its own, and turns to it between hands),
+     in Next Hand's place; without the drum, over the FOLD/CHECK/RAISE row. */
+  function keyHome(){
+    const deal = document.getElementById('ad-face-deal');
+    if (deal) return { face:deal, row:null };
+    return { face:document.querySelector('.actions-face-play'), row:document.getElementById('actions-row') };
+  }
+  function activate(){
+    const home = keyHome();
+    if (!home.face) return;
+    Live.active = true; Live.seen = false; Live.row = home.row;
+    try{ Live.rec = fromGame(); }catch(e){ Live.rec = null; }
+    document.documentElement.setAttribute('data-pip-report', '');
+    if (home.row) home.row.style.display = 'none';
+    if (!Live.keys){
+      Live.keys = $el('div', 'actions-row prp-keys');
+      Live.keys.innerHTML = '<button type="button" class="btn-check prp-key-report">Report<span class="prp-lamp"></span></button><button type="button" class="btn-raise prp-key-deal">Deal</button>';
+      Live.keys.querySelector('.prp-key-report').addEventListener('click', openLive);
+      Live.keys.querySelector('.prp-key-deal').addEventListener('click', async () => {
+        if (isOpen()) await close();
+        const nh = document.getElementById('btn-next-hand');
+        if (nh && !nh.classList.contains('hidden')) nh.click();
+      });
+    }
+    home.face.appendChild(Live.keys);
+    paintLive();
+  }
+  function deactivate(){
+    Live.active = false;
+    if (isOpen()) close();
+    if (Live.keys) Live.keys.remove();
+    if (Live.row) Live.row.style.display = '';
+    Live.row = null;
+    document.documentElement.removeAttribute('data-pip-report');
+    Live.rec = null;
+  }
+  const liveWorth = () => !!Live.rec && worthIt(Live.rec);
+  function paintLive(){
+    if (!Live.keys) return;
+    const has = liveWorth(), rep = Live.keys.querySelector('.prp-key-report');
+    rep.classList.toggle('is-dark', !has);
+    rep.classList.toggle('has-word', has && !Live.seen);
+    rep.setAttribute('aria-label', has ? 'P.I.P. report' : 'No report for this hand');
+    try{ if (has && !Live.seen) CoachSet.notice(true); }catch(e){}
+  }
+  function openLive(){
+    if (!Live.active || !liveWorth() || isOpen()) return;
+    Live.seen = true; paintLive();
+    try{ CoachTalk.clear(); }catch(e){}
+    syncNumbers();
+    open(Live.rec);
+  }
+  function startLive(){
+    setInterval(liveTick, 250);
+    const nh = document.getElementById('btn-next-hand');
+    if (nh) new MutationObserver(liveTick).observe(nh, { attributes:true, attributeFilter:['class'] });
+    // a tap on P.I.P. opens it while it's waiting (otherwise he answers as usual)
+    document.addEventListener('click', e => {
+      if (!Live.active || !liveWorth() || !(e.target.closest && e.target.closest('#coach-station'))) return;
+      e.stopPropagation();
+      openLive();
+    }, true);
+  }
+  if (typeof document !== 'undefined' && typeof window !== 'undefined'){
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', startLive); else setTimeout(startLive, 0);
+  }
+
+  return { open, close, isOpen, apply, build, grade, gradeReason, chanceWord, truthEquity, pivot, worthIt, fromGame, OPTIONS, DEFAULTS,
+    get options(){ return Object.assign({}, O); }, get live(){ return { active:Live.active, rec:Live.rec, worth:liveWorth() }; } };
 })();
 if (typeof window !== 'undefined') window.CoachReport = CoachReport;
 if (typeof module !== 'undefined') module.exports = CoachReport;

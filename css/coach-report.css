@@ -216,3 +216,8 @@
 .prp-lamp{ position:absolute; top:7px; right:8px; width:6px; height:6px; background:#3A2A10; box-shadow:0 0 0 2px #080405; }
 .prp-keys .prp-key-report.has-word .prp-lamp{ background:#FFB43A; box-shadow:0 0 0 2px #080405, 0 0 8px #FFB43A; animation:prp-blink 1.04s steps(1,end) infinite; }
 @media (prefers-reduced-motion:reduce){ .prp-keys .prp-key-report.has-word .prp-lamp{ animation:none; } }
+/* while REPORT and DEAL are up, the game's own Next Hand button stands aside (DEAL presses it) */
+html[data-pip-report] #btn-next-hand{ display:none !important; }
+/* on the console drum's NEXT HAND side, the size of the key it replaces */
+html.ad-drum #ad-face-deal .prp-keys{ display:flex; gap:10px; padding:0; margin-top:var(--ad-key-top,0px); height:var(--ad-key-h,54px); }
+html.ad-drum #ad-face-deal .prp-keys button{ flex:1; height:100%; min-height:0; }

@@ -1,9 +1,9 @@
 # P.I.P. report — plan
 
-**Status (4 Oct 2026): round 1 lab built, waiting on the owner's picks.**
-Lab: https://claude.ai/artifact/GnJ4KYZdMpaYSfqhco4wXk
-(`pip-report-lab.html`; candidate `js/coach-report.js` + `css/coach-report.css`).
-Nothing in the game has changed yet.
+**Status (4 Oct 2026): LIVE as v0.59.0** with the owner's round 1 picks
+(FLICKERS ON · PLAYS THROUGH · ONE BAR · STAMPED LETTER · HIS FACE · MARKS
+IN COLOUR · WORDS until taught). Lab:
+https://claude.ai/artifact/GnJ4KYZdMpaYSfqhco4wXk (`pip-report-lab.html`).
 
 ## What was agreed with the owner (4 Oct 2026)
 
@@ -78,3 +78,31 @@ no console errors. On a 667px-tall phone the glass scrolls about 50px.
 2. The glass becomes a Pattern Book part (`css/crt.css`) and a check in
    `validation/pattern-book-checks.js`.
 3. Checks: the grade table, worthIt, pivot, no shown-card leaks.
+
+## In the game (v0.59.0, 4 Oct 2026)
+
+- Settings → **P.I.P. report** (`settings.review`, off by default; the old
+  Hand review's key, so saved settings carry over). The old panel is
+  retired: `#review` is gone from `index.html`, `showReview` returns early,
+  `buildReview` and its helpers stay for the scoring checks.
+- With it on, the game already skips Auto-Continue. When it puts up Next
+  Hand, the report swaps it (hidden by `html[data-pip-report]`) for REPORT
+  and DEAL on the console drum's deal side (`#ad-face-deal`); DEAL presses
+  Next Hand. REPORT is dark when the hand has no report; its lamp blinks
+  until read, and P.I.P.'s lamp too.
+- `fromGame()` builds the report from `CoachBrain`'s record of the hand
+  (each decision's judgement, `potBB`, the share of your stack put in),
+  the table's `handActions` (pot and your chips per street, squared up
+  against the real totals; what the others did, and a read word), his
+  chance per street (`judgement.n.eq`, else his ranges), the cards shown
+  at a showdown (`shownAtShowdown`), and his words: `CoachTalk.reasonText`
+  per decision, `CoachTalk.reportWords` for the summary (the same verdict a
+  tap gives) and the takeaway (`tip.<lesson>`).
+- Numbers switch on once he's taught the pot-odds lesson.
+- Checked: real hands on an emulated iPhone with touch (REPORT, a tap on
+  P.I.P., DEAL deals the next hand, a fold before the flop has no report),
+  the report off (Auto-Continue as before), Pattern Book check added,
+  coach brain/reliability/tactics, scoring, showdown, card and chip checks.
+  `showdown-rail-checks.js` fails on main too (unrelated).
+
+Next: whatever the owner reports from playing it.

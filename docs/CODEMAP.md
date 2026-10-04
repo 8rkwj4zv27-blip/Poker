@@ -18,7 +18,8 @@ dashboard.js            crt.js                  finishes.js
 press-feel.js           showdown.js             dealer-deck.js
 action-drum.js          knock-check.js          award-key.js
 card-holder.js          deal-styles.js          coach-set.js
-coach-talk.js
+coach-talk.js           coach-brain.js          coach-lines.js
+coach-report.js
 ```
 
 Later files call into earlier ones freely; there's no module system, so
@@ -624,12 +625,16 @@ lessons and repeat reminders. Tests share `validation/tools/coach-sandbox.js`.
 Lab: `coach-brain-lab.html` (+ `js/coach-brain-lab.js`, host
 `js/coach-brain-lab-host.js`).
 
-## `pip-report-lab.html` + `js/pip-report-lab.js` (+ host, `js/pip-report-hands.js`, `css/pip-report-lab.css`) + candidate `js/coach-report.js` / `css/coach-report.css` — P.I.P. Report Lab
+## `pip-report-lab.html` + `js/pip-report-lab.js` (+ host, `js/pip-report-hands.js`, `css/pip-report-lab.css`) + `js/coach-report.js` / `css/coach-report.css` — the P.I.P. report (live v0.59.0) and its lab
 
-The end-of-hand P.I.P. report (`docs/coach/REPORT_PLAN.md`): a big CRT
-readout above the dashboard, opened by a REPORT key or a tap on P.I.P.
-after the pot is paid, with a DEAL key for the next hand. `CoachReport`
-(lab only, not in `index.html`) holds the pure parts the game will use
+The end-of-hand P.I.P. report (`docs/coach/REPORT_PLAN.md`; Pattern Book:
+P.I.P. report): a big CRT readout above the dashboard. With Settings →
+P.I.P. report on (`settings.review`, the old Hand review's switch), REPORT
+and DEAL replace Next Hand on the console drum's deal side; REPORT or a tap
+on P.I.P. opens it, built by `fromGame()` from `CoachBrain`'s hand record,
+the table's public actions and `CoachTalk.reportWords`/`reasonText`. The
+old Hand review panel is retired (`showReview` no-ops; `buildReview` stays
+for the scoring checks). `CoachReport` holds the pure parts the game will use
 (`grade` A-F from P.I.P.'s decision marks, `truthEquity` from shown cards
 with the game's evaluator, `pivot`, `chanceWord`, `worthIt`) and draws the
 screen. The lab freezes one real table and stages seven hand-built example
