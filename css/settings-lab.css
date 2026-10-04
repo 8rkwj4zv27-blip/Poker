@@ -200,99 +200,16 @@ html[data-st-volume="steps"] .st-steps{ display:flex; }
 #workshop .sheet-keys{ display:flex; gap:10px; }
 #workshop .sheet-keys > *{ flex:1 1 0; }
 
-/* ---- the home key: shared ---- */
-.wk-key-btn{
-  position:relative; display:block; width:100%; margin:14px 0 2px; padding:0; border:0; background:none;
-  font:inherit; color:inherit; cursor:pointer; -webkit-tap-highlight-color:transparent;
+/* ---- the home key (round 3): Custom Game's slab, a gold line set
+   inside its edge and a small gold stud either side of the word ---- */
+body #home .pc-control-bay > .pc-button-secondary.wk-trim{
+  display:flex; align-items:center; justify-content:center; gap:14px; margin:12px 0 0;
+  box-shadow:0 4px 0 color-mix(in srgb,var(--theme-case-raised) 55%,black),0 6px 0 var(--pc-edge-lo),
+    inset 2px 2px 0 var(--theme-case-hi),inset -2px -2px 0 rgba(0,0,0,.24),
+    inset 0 0 0 5px var(--theme-case-raised),inset 0 0 0 7px color-mix(in srgb,var(--accent) 75%,transparent);
 }
-.wk-key-btn:focus-visible{ outline:2px solid var(--accent-bright); outline-offset:3px; }
-.wk-key-btn b{ font-family:var(--font-hdr); font-weight:400; letter-spacing:.12em; }
-
-/* DRAWER: a drawer in the cabinet's base, in the rail's wood */
-.wk-key-btn[data-wk="drawer"]{ height:66px; }
-.wk-drawer-inside{
-  position:absolute; inset:0; border:3px solid var(--px-ink); border-radius:4px; background:#050303;
-  box-shadow:inset 0 10px 0 rgba(0,0,0,.8),inset 0 -2px 0 color-mix(in srgb,var(--accent) 30%,transparent);
+body #home .pc-control-bay > .pc-button-secondary.wk-trim:active{
+  box-shadow:0 1px 0 color-mix(in srgb,var(--theme-case-raised) 55%,black),0 3px 0 var(--pc-edge-lo),
+    inset 0 0 0 5px var(--theme-case-raised),inset 0 0 0 7px color-mix(in srgb,var(--accent) 75%,transparent);
 }
-.wk-drawer-face{
-  position:absolute; inset:0; z-index:1; display:flex; align-items:center; justify-content:space-between; gap:12px; padding:0 16px;
-  border:3px solid var(--px-ink); border-radius:4px;
-  background:repeating-linear-gradient(90deg,var(--rail) 0 22px,color-mix(in srgb,var(--rail-lo) 70%,var(--rail)) 22px 24px,var(--rail) 24px 50px,color-mix(in srgb,var(--rail-hi) 35%,var(--rail)) 50px 52px);
-  box-shadow:inset 0 3px 0 var(--rail-hi),inset 0 -4px 0 var(--rail-lo),inset 3px 0 0 color-mix(in srgb,var(--rail-hi) 60%,transparent),0 4px 0 var(--px-ink);
-  transition:transform .26s steps(4,end),box-shadow .26s steps(4,end);
-}
-.wk-label{
-  padding:3px; border:2px solid var(--px-ink); background:var(--accent);
-  box-shadow:inset 0 2px 0 var(--accent-bright),inset 0 -2px 0 color-mix(in srgb,var(--accent) 55%,black),0 2px 0 rgba(0,0,0,.4);
-}
-.wk-label b{ display:block; padding:6px 9px 5px; background:#F3E6C4; color:#2A1A10; font-size:9px; box-shadow:inset 0 2px 0 rgba(0,0,0,.12); }
-.wk-pull{ position:relative; width:74px; height:22px; flex-shrink:0; }
-.wk-pull::before,.wk-pull::after{ content:""; position:absolute; top:3px; width:8px; height:14px; background:color-mix(in srgb,var(--accent) 60%,black); border:2px solid var(--px-ink); }
-.wk-pull::before{ left:6px; } .wk-pull::after{ right:6px; }
-.wk-pull i{ position:absolute; left:0; right:0; top:0; height:12px; z-index:1; border:2px solid var(--px-ink); border-radius:2px; background:var(--accent);
-  box-shadow:inset 0 3px 0 var(--accent-bright),inset 0 -2px 0 color-mix(in srgb,var(--accent) 55%,black),0 3px 0 rgba(0,0,0,.45); }
-.wk-key-btn[data-wk="drawer"]:active .wk-drawer-face{ transform:translateY(2px); }
-.wk-key-btn[data-wk="drawer"].is-open .wk-drawer-face{
-  transform:translateY(14px) scale(1.05);
-  box-shadow:inset 0 3px 0 var(--rail-hi),inset 0 -4px 0 var(--rail-lo),0 4px 0 var(--px-ink),0 12px 0 rgba(0,0,0,.45);
-}
-
-/* HATCH: a screwed-on service panel in the case plastic, hazard edges */
-.wk-key-btn[data-wk="hatch"]{ height:72px; perspective:420px; }
-.wk-hatch-hole{
-  position:absolute; inset:0; border:3px solid var(--px-ink); border-radius:3px;
-  background:linear-gradient(90deg,transparent 0 18%,color-mix(in srgb,var(--accent) 40%,transparent) 18% 19%,transparent 19% 62%,color-mix(in srgb,var(--accent) 40%,transparent) 62% 63%,transparent 63%) 0 50%/100% 3px no-repeat,#050404;
-  box-shadow:inset 0 8px 0 rgba(0,0,0,.7);
-}
-.wk-hatch-panel{
-  position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:5px;
-  border:3px solid var(--px-ink); border-radius:3px; background:var(--theme-case-raised); color:#F3E6C4;
-  box-shadow:inset 3px 3px 0 var(--theme-case-hi),inset -3px -3px 0 color-mix(in srgb,var(--theme-case-raised) 55%,black),0 4px 0 var(--px-ink);
-  transform-origin:50% 0; transition:transform .3s steps(5,end);
-}
-.wk-hatch-panel::before,.wk-hatch-panel::after{
-  content:""; position:absolute; left:14px; right:14px; height:5px;
-  background:repeating-linear-gradient(45deg,var(--accent) 0 5px,#0B0B0B 5px 10px); border:1px solid var(--px-ink);
-}
-.wk-hatch-panel::before{ top:5px; } .wk-hatch-panel::after{ bottom:5px; }
-.wk-hatch-panel b{ font-size:11px; text-shadow:0 2px 0 rgba(0,0,0,.45); }
-.wk-hatch-panel small{ font-family:var(--font-hdr); font-size:6px; letter-spacing:.2em; color:color-mix(in srgb,#F3E6C4 60%,transparent); }
-.wk-screw{
-  position:absolute; width:10px; height:10px; border-radius:50%; border:2px solid var(--px-ink);
-  background:color-mix(in srgb,var(--accent) 55%,#9C9C9C);
-}
-.wk-screw::after{ content:""; position:absolute; left:1px; right:1px; top:50%; height:2px; margin-top:-1px; background:var(--px-ink); }
-.wk-screw:nth-child(1){ left:5px; top:16px; } .wk-screw:nth-child(2){ right:5px; top:16px; transform:rotate(60deg); }
-.wk-screw:nth-child(3){ left:5px; bottom:16px; transform:rotate(-30deg); } .wk-screw:nth-child(4){ right:5px; bottom:16px; transform:rotate(100deg); }
-.wk-wrench{ position:absolute; left:34px; top:50%; width:26px; height:6px; margin-top:-3px; background:#E9DDAE; border:2px solid var(--px-ink); transform:rotate(-30deg); }
-.wk-wrench::before{ content:""; position:absolute; right:-9px; top:-6px; width:12px; height:14px; background:#E9DDAE; border:2px solid var(--px-ink); border-radius:2px;
-  clip-path:polygon(0 0,40% 0,40% 40%,70% 40%,70% 0,100% 0,100% 100%,0 100%); }
-.wk-key-btn[data-wk="hatch"]:active .wk-hatch-panel{ transform:translateY(2px); }
-.wk-key-btn[data-wk="hatch"].is-open .wk-screw{ animation:wkSpin .18s steps(4,end) 2; }
-.wk-key-btn[data-wk="hatch"].is-open .wk-hatch-panel{ transform:rotateX(-78deg); transition-delay:.2s; }
-@keyframes wkSpin{ to{ transform:rotate(360deg); } }
-
-/* KEYPLATE: a brass lock plate with the key in it */
-.wk-key-btn[data-wk="keyplate"]{ height:64px; }
-.wk-plate{
-  position:absolute; inset:0; display:flex; align-items:center; justify-content:center; gap:14px; padding:0 14px;
-  border:3px solid var(--px-ink); border-radius:5px;
-  background:linear-gradient(180deg,var(--accent-bright) 0 3px,var(--accent) 3px calc(100% - 4px),color-mix(in srgb,var(--accent) 55%,black) calc(100% - 4px));
-  box-shadow:0 4px 0 var(--px-ink),inset 3px 0 0 color-mix(in srgb,var(--accent-bright) 70%,transparent);
-}
-.wk-plate b{ flex:1; font-size:12px; color:color-mix(in srgb,var(--accent) 35%,black); text-shadow:0 1px 0 var(--accent-bright),0 -1px 0 rgba(0,0,0,.25); }
-.wk-lamp{ width:12px; height:12px; flex-shrink:0; border:2px solid var(--px-ink); background:#2A1A10; box-shadow:inset 1px 1px 0 rgba(255,255,255,.2); }
-.wk-lock{ position:relative; width:40px; height:40px; flex-shrink:0; border-radius:50%; border:3px solid var(--px-ink);
-  background:color-mix(in srgb,var(--accent) 50%,black); box-shadow:inset 0 3px 0 rgba(0,0,0,.45),0 2px 0 var(--accent-bright); }
-.wk-lock::before{ content:""; position:absolute; left:50%; top:50%; width:6px; height:14px; margin:-7px 0 0 -3px; background:#050303; }
-.wk-key{ position:absolute; inset:0; transition:transform .32s steps(4,end); }
-.wk-key::before{ content:""; position:absolute; left:50%; top:-4px; width:6px; height:24px; margin-left:-3px; background:#CFC6B0; border:2px solid var(--px-ink); }
-.wk-key i{ position:absolute; left:50%; top:-16px; width:18px; height:14px; margin-left:-9px; border:3px solid var(--px-ink); border-radius:50%; background:#CFC6B0; box-shadow:inset 0 0 0 3px #CFC6B0,inset 0 0 0 9px #050303; }
-.wk-key-btn[data-wk="keyplate"]:active .wk-plate{ transform:translateY(2px); box-shadow:0 2px 0 var(--px-ink); }
-.wk-key-btn[data-wk="keyplate"].is-open .wk-key{ transform:rotate(90deg); }
-.wk-key-btn[data-wk="keyplate"].is-open .wk-lamp{ background:#7CF29A; box-shadow:0 0 8px #7CF29A,inset 1px 1px 0 rgba(255,255,255,.5); transition:background 0s .3s,box-shadow 0s .3s; }
-
-@media (prefers-reduced-motion:reduce){
-  .wk-drawer-face,.wk-hatch-panel,.wk-key{ transition:none; }
-  .wk-key-btn.is-open .wk-screw{ animation:none; }
-}
+.wk-stud{ width:6px; height:6px; flex-shrink:0; transform:rotate(45deg); background:color-mix(in srgb,var(--accent) 80%,#6B4A10); box-shadow:0 1px 0 rgba(0,0,0,.35); }

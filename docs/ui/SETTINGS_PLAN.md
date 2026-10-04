@@ -108,3 +108,12 @@ turns and the lamp lights). Finishes still opens in the Settings sheet in
 the lab; in the game it moves into the Cabinet drawer. Note: the key makes
 the home screen ~65px taller than an 852px phone, so it sits at the
 bottom of a short scroll.
+
+**Round 2 verdict (owner):** the three keys are too different; the
+Workshop key is a button like Custom Game with a subtle trim. The inside
+needs to work as a proper menu with every option and previews (Phase 3,
+not built yet).
+
+**Round 3 (same link):** the Workshop key is the Custom Game slab
+(`pc-button-secondary`) with a gold line set inside its edge and a gold
+stud either side of the word, under Quick Deal / Hand Rankings.

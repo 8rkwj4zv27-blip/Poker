@@ -282,45 +282,12 @@
     try{ reconstructMainMenu(); }catch(e){}
   }
 
-  /* ---- THE HOME KEY: three candidates (TUNE picks) ----
-     DRAWER   a pull-out drawer in the cabinet's base: brass pull, a cream
-              label card in a brass holder. Tap: it slides out.
-     HATCH    a screwed-on service panel with a hazard edge and a wrench.
-              Tap: the screws spin out and it swings open on its hinge.
-     KEYPLATE a brass lock plate with a key in it. Tap: the key turns and
-              the lamp lights. */
-  const KEYS = {
-    drawer: '<span class="wk-drawer-face"><span class="wk-label"><b>WORKSHOP</b></span><span class="wk-pull" aria-hidden="true"><i></i></span></span><span class="wk-drawer-inside" aria-hidden="true"></span>',
-    hatch: '<span class="wk-hatch-hole" aria-hidden="true"></span><span class="wk-hatch-panel"><i class="wk-screw"></i><i class="wk-screw"></i><i class="wk-screw"></i><i class="wk-screw"></i>' +
-      '<span class="wk-wrench" aria-hidden="true"></span><b>WORKSHOP</b><small>SERVICE PANEL</small></span>',
-    keyplate: '<span class="wk-plate"><span class="wk-lamp" aria-hidden="true"></span><b>WORKSHOP</b><span class="wk-lock" aria-hidden="true"><span class="wk-key"><i></i></span></span></span>'
-  };
-  const homeKey = el('button', 'wk-key-btn');
-  homeKey.type = 'button'; homeKey.id = 'open-workshop'; homeKey.setAttribute('aria-label', 'Workshop');
-  const bay = document.querySelector('#menu-contraption .pc-control-bay');
-  bay.parentNode.insertBefore(homeKey, bay.nextSibling);
-  function paintKey(){
-    homeKey.dataset.wk = state.wkey || 'drawer';
-    homeKey.innerHTML = KEYS[homeKey.dataset.wk];
-    homeKey.classList.remove('is-open');
-  }
-  function resetKey(){ homeKey.classList.remove('is-open'); }
-  let opening = false;
-  homeKey.addEventListener('click', () => {
-    if (opening) return;
-    opening = true;
-    const kind = homeKey.dataset.wk;
-    try{
-      Sound.unlock();
-      if (kind === 'hatch') Sound.hatchOpen();
-      else if (kind === 'keyplate') Sound.stageUnlock();
-      else Sound.buttonPress();
-    }catch(e){}
-    homeKey.classList.add('is-open');
-    const wait = motionOff() ? 0 : (kind === 'keyplate' ? 620 : 520);
-    setTimeout(() => { opening = false; openWorkshop(); }, wait);
-  });
-  paintKey();
+  /* ---- THE HOME KEY (round 3): the Custom Game slab with a gold trim ---- */
+  const homeKey = el('button', 'pc-button pc-button-secondary wk-trim', '<span class="wk-stud" aria-hidden="true"></span>Workshop<span class="wk-stud" aria-hidden="true"></span>');
+  homeKey.type = 'button'; homeKey.id = 'open-workshop';
+  document.querySelector('#menu-contraption .pc-control-bay').appendChild(homeKey);
+  homeKey.addEventListener('click', openWorkshop);
+  function resetKey(){}
 
   /* ---- the volume control: FADER or STEPS (TUNE picks) ---- */
   function volumeControl(){
@@ -386,7 +353,6 @@
     html.dataset.stLayout = 'panel';
     html.dataset.stVolume = 'fader';
     html.dataset.stHints = 'on';
-    if (typeof paintKey === 'function') paintKey();
   }
   applyLook();
   html.dataset.stLab = 'after';
@@ -396,7 +362,6 @@
   /* ---- TUNE: the lab's own sheet ---- */
   function buildTune(){
     const ROWS = [
-      ['wkey', 'WORKSHOP KEY', [['drawer','DRAWER'],['hatch','HATCH'],['keyplate','KEYPLATE']], 'On the home screen, under the table buttons. Tap it to open the Workshop. DRAWER slides out of the cabinet; HATCH swings open; KEYPLATE turns its key.'],
       ['view', 'SETTINGS', [['after','NEW'],['before','TODAY\'S']], 'Today\'s is the sheet as it is in the game now, for comparison.']
     ];
     const seg = (k, opts) => '<div class="sdl-seg" data-key="' + k + '">' + opts.map(o => '<button type="button" data-v="' + o[0] + '"' + ((state[k] || (k === 'wkey' ? 'drawer' : '')) === o[0] ? ' class="is-on"' : '') + '>' + o[1] + '</button>').join('') + '</div>';
@@ -404,14 +369,14 @@
     const tune = el('div', 'sdl-sheet stl-sheet');
     tune.setAttribute('role', 'dialog'); tune.setAttribute('aria-label', 'Settings lab');
     tune.innerHTML =
-      '<div class="sdl-tabs"><button type="button" class="is-on" tabindex="-1">SETTINGS + WORKSHOP · ROUND 2</button><button type="button" class="sdl-close" aria-label="Close">✕</button></div>' +
+      '<div class="sdl-tabs"><button type="button" class="is-on" tabindex="-1">SETTINGS + WORKSHOP · ROUND 3</button><button type="button" class="sdl-close" aria-label="Close">✕</button></div>' +
       '<div class="sdl-body">' +
         '<h3>JUMP TO<small>The keys in the game work too.</small></h3>' +
         '<div class="sdl-moments"><button type="button" data-open="workshop" class="is-wide">THE WORKSHOP</button><button type="button" data-open="home">SETTINGS AT HOME</button><button type="button" data-open="table">SETTINGS AT A TABLE</button></div>' +
         ROWS.map(r => '<div class="sdl-row"><div class="sdl-name">' + r[1] + '</div>' + seg(r[0], r[2]) + '<p class="sdl-note">' + r[3] + '</p></div>').join('') +
         '<h3>WHAT MOVED<small>Nothing is lost: every saved pick keeps its value.</small></h3>' +
         '<ul class="stl-list">' +
-          '<li>Round 2: the Workshop is its own screen, opened from the home screen only. Settings no longer links to it.</li>' +
+          '<li>The Workshop is opened from the home screen only, from a key like Custom Game with a gold trim. Settings no longer links to it.</li>' +
           '<li>Settings keeps your round-1 picks: one panel, the fader, hints shown.</li>' +
           '<li>Award Pot moved to Play: it changes when you get paid, not how it looks.</li>' +
           '<li>Card backs, dealing, the smash, chips, coin sound, colours and Finishes moved to the Workshop.</li>' +
@@ -431,7 +396,6 @@
       const k = s.dataset.key, v = t.dataset.v;
       s.querySelectorAll('button').forEach(b => b.classList.toggle('is-on', b === t));
       state[k] = v; if (host) host.set({ [k]:v });
-      if (k === 'wkey'){ try{ paintKey(); }catch(err){} open(false); openAt('homescreen'); return; }
       if (k === 'view'){ if (host){ host.set({ open:'home' }); host.reload(); } return; }
       applyLook();
     });
