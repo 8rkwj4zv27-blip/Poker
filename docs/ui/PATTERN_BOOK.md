@@ -101,10 +101,15 @@ layout.
 | Lamp, meter, cards | An indicator lamp, a progress meter, playing cards (keep their own inks). | `.crt-lamp`, `.crt-meter`, `.crt-cards` |
 | Ink | By meaning on the screen: none (info), `live`, `money`, `danger`; `.crt-danger` on a single element. Strong hands and money reels read as money; the negative results tone inks the score and statement as danger. The recipe's ink scheme can fold these together (the game uses mono). | `data-ink` |
 
-**Look.** Twelve dials, set once on `<html>` in `index.html` (the recipe
+**Look.** Thirteen dials, set once on `<html>` in `index.html` (the recipe
 above): tint, glow (always in em), scanlines, RGB split, grain, curve,
-flicker, rolling bar, VHS tears, ghosting, change effect, ink scheme. The
-component turns them into tokens; no screen sets any of them.
+flicker, rolling bar, VHS tears, ghosting, change effect, ink scheme, mesh.
+The component turns them into tokens; no screen sets any of them. Since
+v0.61.0 the Workshop's other kinds of glass are presets too: Terminal
+(`phosphor` tint, `green` ink), LCD (`lcd` tint and ink, a light glass
+with a lighter tube shadow, `--crt-inset-a`), VFD (`vfd`) and Dot LED
+(`led` ink); the mesh dial (`grid` | `dots`) is a fixed pattern on the
+glass behind the picture, never animated.
 
 **Changes.** `js/crt.js` watches every `.crt`. Whoever rewrites a screen
 (the table's `paintCRT`, the Home Boot, Career's record pages, the results

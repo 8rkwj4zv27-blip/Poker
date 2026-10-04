@@ -738,6 +738,8 @@ const DEFAULT_SETTINGS = {
   seenIntro:false, devMode:false,
   // the gold coins' sound set (js/coin-world.js); 'old' is the classic chip sounds
   coinSound:'clay',
+  // Workshop → Chips → Skin (js/coin-world.js chip designs)
+  chipSkin:'tint',
   // Settings → Bank (js/coin-bank.js): the inside of your bank, the tags
   // under its tubes, how much making change plays out
   bankStyle:'tubes', bankTags:'off', bankChange:'3',
@@ -756,7 +758,7 @@ const DEFAULT_SETTINGS = {
 const DEFAULT_STATS = { hands:0, won:0, showdownsWon:0, biggestPot:0, net:0 };
 const SAVE_VERSION = 1;
 /* Bump on every release so the main-menu header shows what's actually installed. */
-const BUILD_VERSION = 'v0.60.1-dev · Workshop';
+const BUILD_VERSION = 'v0.61.0-dev · Workshop skins';
 
 let settings = Object.assign({}, DEFAULT_SETTINGS, Store.get('felt.settings', {}));
 // The Settings menu cleanup dropped RELAXED from the Game Speed control

@@ -30,8 +30,15 @@ const CRT = (() => {
     { id:'warm',     name:'Warm',     dials:{ tint:'dark',  glow:1, scan:1, rgb:0, grain:1, curve:2, flicker:1, roll:1, tear:0, ghost:0, change:'burst',   ink:'meaning' } },
     { id:'pulp',     name:'Pulp',     dials:{ tint:'amber', glow:2, scan:2, rgb:1, grain:1, curve:2, flicker:2, roll:2, tear:0, ghost:1, change:'roll',    ink:'meaning' } },
     { id:'vhs',      name:'VHS',      dials:{ tint:'dark',  glow:2, scan:3, rgb:3, grain:3, curve:2, flicker:2, roll:2, tear:2, ghost:2, change:'channel', ink:'meaning' } },
-    { id:'meltdown', name:'Meltdown', dials:{ tint:'green', glow:4, scan:4, rgb:4, grain:4, curve:4, flicker:4, roll:4, tear:4, ghost:4, change:'channel', ink:'meaning' } }
+    { id:'meltdown', name:'Meltdown', dials:{ tint:'green', glow:4, scan:4, rgb:4, grain:4, curve:4, flicker:4, roll:4, tear:4, ghost:4, change:'channel', ink:'meaning' } },
+    // the Workshop's phosphors (Workshop → Screens): other kinds of glass
+    { id:'terminal', name:'Terminal', dials:{ tint:'phosphor', glow:2, scan:2, rgb:0, grain:1, curve:2, flicker:1, roll:1, tear:0, ghost:1, change:'type',  ink:'green', mesh:0 } },
+    { id:'lcd',      name:'LCD',      dials:{ tint:'lcd',      glow:0, scan:0, rgb:0, grain:1, curve:0, flicker:0, roll:0, tear:0, ghost:2, change:'wipe',  ink:'lcd',   mesh:'grid' } },
+    { id:'vfd',      name:'VFD',      dials:{ tint:'vfd',      glow:3, scan:0, rgb:0, grain:0, curve:1, flicker:1, roll:0, tear:0, ghost:0, change:'burst', ink:'vfd',   mesh:'grid' } },
+    { id:'led',      name:'Dot LED',  dials:{ tint:'black',    glow:2, scan:0, rgb:0, grain:0, curve:0, flicker:0, roll:0, tear:0, ghost:0, change:'wipe',  ink:'led',   mesh:'dots' } }
   ];
+  // every preset sets every dial (an older one leaves the mesh off)
+  PRESETS.forEach(p => { if (p.dials.mesh == null) p.dials.mesh = 0; });
   const SETTLE_MS = 120;
   const GHOST = { 1:[.25,380], 2:[.4,560], 3:[.55,800], 4:[.7,1100] };   // opacity, ms
   const DUR = { burst:260, roll:340, channel:440, wipe:320 };

@@ -248,6 +248,7 @@
   }
   const keyRow = (label) => { const w = el('div', 'ws-use'); const b = el('button', 'btn-secondary ws-use-key', label); b.type = 'button'; const n = el('div', 'ws-use-note'); w.appendChild(b); w.appendChild(n); return { w, b, n }; };
   const optField = (title, node, hint) => { const f = el('div', 'field ws-opt'); f.innerHTML = '<div class="field-label">' + title + '</div>'; f.appendChild(node); if (hint) f.appendChild(el('div', 'hint', hint)); return f; };
+  const keysPlate = (title, seg, hint) => { const box = el('div', 'sheet-section st-plate ws-opts'); box.appendChild(optField(title, seg, hint)); return box; };
 
   /* ---- CARDS: flick through the backs themselves ---- */
   const BACKS = [...document.querySelectorAll('#deck-back-seg button')].map(b => ({ id:b.dataset.v, name:(b.querySelector('b') || b).textContent.trim() }));
@@ -357,7 +358,6 @@
      The owner (round 8): the rack suits CARDS; these four are settings,
      so they are choice keys (the Settings look), and a tap uses the pick
      at once. Each tab's preview is the real part doing its job. */
-  const keysPlate = (title, seg, hint) => { const box = el('div', 'sheet-section st-plate ws-opts'); box.appendChild(optField(title, seg, hint)); return box; };
   const noteOf = (seg) => (seg.querySelector('.active') || {}).textContent || '';
 
   /* CHIPS: the game's own throw. While this tab is open the stage's felt
@@ -375,6 +375,35 @@
   const sizeSeg = $id('tr-coins'), soundSeg = $id('coin-sound-seg');
   if (trSec){ const cf = fieldOf('tr-coins'); if (cf) cf.remove(); attic.appendChild(trSec); }
   const sf = fieldOf('coin-sound-seg');
+  /* the skin (js/coin-world.js chip designs): paint on the same coin, so
+     a tap repaints every chip where it lies and throws a fresh handful */
+  const SKINS = [
+    { id:'tint',  name:'Classic',    note:'The machine\u2019s own coloured coins.' },
+    { id:'neon',  name:'Neon',       note:'Black coins with a lit tube: a stack glows in bands.' },
+    { id:'mint',  name:'Peppermint', note:'Candy swirls on cream, a striped edge.' },
+    { id:'dice',  name:'Dice',       note:'Die spots on every coin: one for the cheapest, six for the top.' },
+    { id:'grin',  name:'Poker Face', note:'A face on every coin, happier the more it\u2019s worth.' }
+  ];
+  const skinNow = () => SKINS.some(x => x.id === settings.chipSkin) ? settings.chipSkin : 'tint';
+  if (CW) CW.OPT.chipDesign = skinNow();
+  const skinSeg = el('div', 'segmented compact ws-finish-seg'); skinSeg.setAttribute('role', 'group');
+  SKINS.forEach(k0 => { const k = el('button', '', k0.name); k.type = 'button'; k.dataset.v = k0.id; skinSeg.appendChild(k); });
+  const skinBox = keysPlate('Skin', skinSeg, null);
+  const skinNote = el('div', 'hint ws-finish-note'); skinBox.querySelector('.field').appendChild(skinNote);
+  pages.chips.appendChild(skinBox);
+  function paintSkin(){
+    const now = skinNow();
+    skinSeg.querySelectorAll('button').forEach(k => k.classList.toggle('active', k.dataset.v === now));
+    skinNote.textContent = (SKINS.find(x => x.id === now) || SKINS[0]).note;
+  }
+  skinSeg.addEventListener('click', e => {
+    const k = e.target.closest('button'); if (!k) return;
+    settings.chipSkin = k.dataset.v; saveSettings();
+    if (CW){ CW.OPT.chipDesign = skinNow(); try{ CW.repaint(); }catch(err){} }
+    paintSkin();
+    setTimeout(() => { sayOn(chipStage, 'Skin: ' + k.textContent.trim()); throwChips(8); }, 0);
+  });
+  paintSkin();
   pages.chips.appendChild(keysPlate('Chip size', sizeSeg, 'Every chip, on the table and in your bank.'));
   pages.chips.appendChild(keysPlate('Coin sound', soundSeg, 'How the chips sound as they land, stack and pay out.'));
   if (sf) sf.remove();
@@ -869,7 +898,8 @@
   hold(mixUse.n, () => [STY.length + ' of ' + STY.length + ' styles in the mix. Tap to take it out.', STY.length + ' of ' + STY.length + ' styles in the mix. Tap to deal with it in your games.']);
   const SIZES = [...sizeSeg.querySelectorAll('button')].map(x => x.textContent.trim());
   const SOUNDS = [...soundSeg.querySelectorAll('button')].map(x => x.textContent.trim());
-  hold(chipStage.querySelector('.wss-caption'), () => SIZES.flatMap(z => SOUNDS.map(o => 'Chip size: ' + z + dot + 'coin sound: ' + o)).concat(SIZES.map(z => 'Chip size: ' + z), SOUNDS.map(o => 'Coin sound: ' + o)), writeSay);
+  hold(chipStage.querySelector('.wss-caption'), () => SKINS.flatMap(k => SIZES.flatMap(z => SOUNDS.map(o => 'Skin: ' + k.name + dot + z + dot + o))).concat(SIZES.map(z => 'Chip size: ' + z), SOUNDS.map(o => 'Coin sound: ' + o), SKINS.map(k => 'Skin: ' + k.name)), writeSay);
+  hold(skinNote, () => SKINS.map(k => k.note));
   hold(cabCap.querySelector('.wss-caption'), () => [...themeSeg.querySelectorAll('button')].map(x => x.textContent.trim() + dot + 'in use'), writeSay);
   hold(keyStage.querySelector('.wss-caption'), () => (pressSet ? pressSet.options.map(o => o.name + ': press any key to feel it.') : []).concat('Press any key to feel it.'), writeSay);
   pages.screens.querySelectorAll('.ws-finish-note').forEach(n => hold(n, () => crtSet ? crtSet.options.map(o => o.note) : []));
@@ -893,7 +923,7 @@
     leaving();
     if (k === 'cards') showBack(backRack.index);
     else if (k === 'dealing'){ borrowDeck(dealStage); setTimeout(() => showStyle(styleRack.index, true), 250); }
-    else if (k === 'chips'){ borrowFelt(true); holdPreview(true); sayOn(chipStage, 'Chip size: ' + noteOf(sizeSeg).trim() + '  ·  coin sound: ' + noteOf(soundSeg).trim()); setTimeout(() => throwChips(8), 200); }
+    else if (k === 'chips'){ borrowFelt(true); holdPreview(true); sayOn(chipStage, 'Skin: ' + noteOf(skinSeg).trim() + '  ·  ' + noteOf(sizeSeg).trim() + '  ·  ' + noteOf(soundSeg).trim()); setTimeout(() => throwChips(8), 200); }
     else if (k === 'showdown'){ borrowFelt(true, sdFelt); holdPreview(true); paintStyle(); paintKey(); setTimeout(potReady, 250); }
     else if (k === 'cabinet') sayOn(cabCap, noteOf(themeSeg).trim() + '  ·  in use');
     else if (k === 'screens') cycleLines(true);

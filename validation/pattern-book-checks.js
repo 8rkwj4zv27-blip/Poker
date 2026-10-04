@@ -106,7 +106,7 @@ check('Opening a Lab page never replaces the offline copy of the game',()=>{
 
 check('The signed-off CRT recipe sets every dial on <html>, with values the component knows',()=>{
   const html=indexHtml.match(/<html[^>]*>/)[0];
-  const dials={tint:['blue','dark','green','amber','black'],glow:'01234',scan:'01234',rgb:'01234',grain:'01234',curve:'01234',flicker:'01234',roll:'01234',tear:'01234',ghost:'01234',change:['burst','roll','channel','wipe','type'],ink:['meaning','one','mono']};
+  const dials={tint:['blue','dark','green','amber','black','phosphor','lcd','vfd'],glow:'01234',scan:'01234',rgb:'01234',grain:'01234',curve:'01234',flicker:'01234',roll:'01234',tear:'01234',ghost:'01234',change:['burst','roll','channel','wipe','type'],ink:['meaning','one','mono','green','lcd','vfd','led'],mesh:['0','grid','dots']};
   Object.entries(dials).forEach(([k,allowed])=>{
     const m=html.match(new RegExp('data-crt-'+k+'="([^"]+)"'));
     assert.ok(m,'<html> is missing data-crt-'+k);

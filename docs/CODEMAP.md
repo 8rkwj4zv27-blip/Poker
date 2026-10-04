@@ -741,6 +741,15 @@ Buttons, and each previews the real part:
 flick through. The Finishes entry is gone from Settings: Screens and
 Buttons choose through `Finishes.choose`.
 
+Since v0.61.0 (Workshop skins):
+- Chips has a SKIN row: `settings.chipSkin` sets `CoinWorld.OPT.chipDesign`
+  (`tint` Classic, `neon`, `mint`, `dice`, `grin`; drawn by `chipFace` /
+  `chipEdge` in `js/coin-world.js`), and `CoinWorld.repaint()` repaints
+  every chip where it lies. Paint only: same coin, same stacking.
+- Screens offers four more CRT presets (Terminal, LCD, VFD, Dot LED) in
+  `CRT.PRESETS` and `FINISH_SETS`.
+
+
 ## `js/finishes.js` + `css/finishes.css` — Finishes menu (live)
 
 Settings → Finishes: a page inside the Settings sheet that swaps each

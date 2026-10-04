@@ -473,3 +473,4 @@ html[data-holder="brass"] .wss-lip{
    height the key takes, down to its compact 292px. A phone too short even
    for that scrolls the home screen rather than cutting the cabinet off. */
 #home{ overflow-y:auto; -webkit-overflow-scrolling:touch; }
+
