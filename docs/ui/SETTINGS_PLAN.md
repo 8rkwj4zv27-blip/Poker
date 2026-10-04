@@ -153,3 +153,18 @@ Workshop in it and is put back on leaving unless you tap Use. Each deal
 style deals both your cards when the rack lands on it (AGAIN replays).
 SCREENS holds Finishes' list as it was. SHOWDOWN, CHIPS and CABINET keep
 their plain controls until their rounds.
+
+**Round 5 verdict (owner):** the floating card over your hand is wrong;
+the backs must be flicked through as cards (no panels, no names) with
+exactly the event cards' movement; the dealing preview is one card from
+the deck on the left to the right, not your hand.
+
+**Round 6 (same link):** `js/workshop-rack.js` is now the event rack's
+own code (`js/career-hub-live.js`), ported number for number (geometry,
+springs, grab lean and tilt, lift and drop shadow, the arriving card's
+rise, throw, notches, end jolt), and its CSS is the live rack's
+(`css/career-motion-live.css`). CARDS: the stage is the deck and your hand
+in the holder; the rack is the card backs themselves, full size; the name
+is on the CRT and the Use key. DEALING: the stage is felt only, the deck
+at one side and a card's place at the other; landing on a style deals
+one card across in it.

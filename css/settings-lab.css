@@ -238,12 +238,11 @@ body:has(#workshop:not(.hidden)):not(:has(.scrim.open)) .fly-card{ display:block
    with your hand in its holder, as at the table */
 .ws-stage{ margin:0 0 4px; }
 .wss-felt{
-  position:relative; height:150px; overflow:hidden;
+  position:relative; height:118px; overflow:hidden;
   border:4px solid var(--rail-lo); border-bottom:0; border-radius:10px 10px 0 0;
   background:radial-gradient(ellipse at 50% 40%,var(--felt-1),var(--felt-2) 75%);
   box-shadow:inset 0 0 0 3px var(--rail),inset 0 0 0 5px var(--rail-hi),inset 0 8px 18px rgba(0,0,0,.45);
 }
-.ws-stage--dealing .wss-felt{ height:190px; }
 .wss-station{ position:absolute; left:18px; bottom:14px; width:48px; height:78px; }
 html[data-ds-where="right"] .wss-station{ left:auto; right:18px; }
 .ws-stage .dealer-deck{ position:absolute; inset:0; }
@@ -254,9 +253,15 @@ html[data-ds-where="right"] .wss-station{ left:auto; right:18px; }
 .ws-stage .dealer-deck .card.ds-gone{ display:none; }
 .ws-stage .dealer-deck .card.ds-exit{ z-index:25; }
 .ws-stage .dealer-deck.ds-kick{ animation:dsKick 150ms steps(3,end); }
-/* CARDS: one card face down in the middle of the felt, big */
-.wss-spot{ position:absolute; left:50%; top:22px; transform:translateX(-50%) rotate(-4deg); }
-.wss-spot .card{ position:relative; width:62px; height:88px; }
+/* DEALING: felt only; the deck at one side, a card's place at the other */
+.ws-stage--dealing .wss-felt{ height:160px; border-bottom:4px solid var(--rail-lo); border-radius:10px; }
+.ws-stage--dealing .wss-station{ top:50%; bottom:auto; margin-top:-39px; }
+.wss-spot{ position:absolute; right:34px; top:50%; width:44px; height:62px; margin-top:-31px; }
+html[data-ds-where="right"] .wss-spot{ right:auto; left:34px; }
+.wss-spot::before{ content:""; position:absolute; inset:-5px; border:2px dashed color-mix(in srgb,var(--accent) 45%,transparent); border-radius:5px; }
+.wss-spot .card{ position:absolute; inset:0; width:44px; height:62px; margin:0; }
+.wss-spot .card:not(.is-dealt){ opacity:0; }
+.ws-stage .dealer-deck.ds-tap{ animation:dsTap 110ms steps(2,end); }
 /* the dashboard strip, in the case colour, with the holder set into it */
 .wss-dash{
   position:relative; height:74px; overflow:hidden;
@@ -282,37 +287,59 @@ html[data-holder="brass"] .wss-lip{
 @keyframes wssFlash{ 0%,50%{ filter:brightness(1.6); } 100%{ filter:none; } }
 .wss-caption{ margin-top:6px; min-height:30px; padding:6px 10px; display:flex; align-items:center; }
 
-/* the rack (js/workshop-rack.js) */
-.wr-rack{ position:relative; height:170px; margin:10px -11px 4px; overflow:hidden; touch-action:pan-y; cursor:grab; outline:none; }
+/* the rack (js/workshop-rack.js): the event rack's reader and cards,
+   css/career-hub-v2-lab.css + css/career-motion-live.css, for the Workshop */
+.wr-reader{
+  position:relative; margin:12px 0 4px; overflow:hidden;
+  background:radial-gradient(ellipse at 50% 35%,color-mix(in srgb,var(--theme-rim) 12%,transparent),transparent 62%),
+    repeating-conic-gradient(var(--felt-1) 0 25%,var(--felt-2) 0 50%) 0 0/8px 8px;
+  border:4px solid var(--ms-edge); border-radius:5px;
+  box-shadow:inset 0 9px 0 rgba(0,0,0,.42),inset 4px 0 0 rgba(0,0,0,.28),inset -4px 0 0 rgba(0,0,0,.28),0 4px 0 #17090d;
+}
+.wr-reader.is-stop-left{ animation:wrStopL 220ms steps(3,end); }
+.wr-reader.is-stop-right{ animation:wrStopR 220ms steps(3,end); }
+@keyframes wrStopL{ 33%{ transform:translateX(4px); } 66%{ transform:translateX(-2px); } }
+@keyframes wrStopR{ 33%{ transform:translateX(-4px); } 66%{ transform:translateX(2px); } }
+.wr-rack{ position:relative; height:226px; overflow:hidden; overflow:clip; touch-action:pan-y; cursor:grab; outline:none; }
+.wr-rack:active{ cursor:grabbing; }
 .wr-rack:focus-visible{ box-shadow:inset 0 0 0 2px var(--accent-bright); }
 .wr-track{ position:absolute; inset:0; }
-.wr-item{ position:absolute; left:50%; top:12px; width:112px; transform-origin:50% 100%; will-change:transform; }
-.wr-item::after{ content:""; position:absolute; inset:0; pointer-events:none; background:#000; opacity:var(--wr-shade,0); border-radius:4px; }
-.wr-rack.is-stop{ animation:wrStop .22s steps(3,end); }
-@keyframes wrStop{ 33%{ transform:translateX(-3px); } 66%{ transform:translateX(2px); } }
-.wr-pick{
-  display:flex; flex-direction:column; align-items:center; gap:8px; padding:10px 6px 9px;
-  border:3px solid var(--ms-edge); border-radius:5px; background:var(--ms-plate); color:var(--ink);
-  box-shadow:0 4px 0 var(--ms-plate-lo),0 6px 0 var(--ms-edge),inset 2px 2px 0 var(--ms-plate-hi);
+.wr-card{
+  position:absolute; left:50%; top:4px; width:136px; height:190px; margin-left:-68px;
+  transform:perspective(900px)
+    translate3d(var(--card-x,0%),calc(var(--card-y,10px) + var(--hold-y,0px)),0)
+    rotate(var(--lean,0deg)) rotateX(var(--tilt-x,0deg)) rotateY(var(--tilt-y,0deg))
+    scale(var(--card-scale,1));
+  transform-origin:50% 42%; opacity:var(--card-o,0); will-change:transform;
   user-select:none; -webkit-user-select:none;
 }
-.wr-item.is-here .wr-pick{ background:var(--accent); color:var(--accent-ink); box-shadow:0 4px 0 color-mix(in srgb,var(--accent) 55%,black),0 6px 0 var(--ms-edge),inset 0 3px 0 rgba(255,255,255,.34); }
-.wr-pick b{ font-family:var(--font-hdr); font-weight:400; font-size:8px; letter-spacing:.04em; line-height:1.35; text-align:center; text-transform:uppercase; }
-.wr-back .card{ position:relative; width:52px; height:74px; margin:0; }
-.wr-back .ds-swatch{ display:block; }
-.wr-back .ds-swatch .card{ display:block; }
-/* deal styles: a ticket with its rarity, its note and whether it's in the mix */
-.wr-rack:has(.wr-style){ height:186px; }
-.wr-rack:has(.wr-style) .wr-item{ width:150px; }
-.wr-style{ align-items:stretch; gap:6px; min-height:156px; padding:9px 9px 8px; text-align:left; }
-.wr-style b{ text-align:left; font-size:9px; }
-.wr-tier{ align-self:flex-start; padding:3px 5px 2px; font-family:var(--font-hdr); font-size:6px; letter-spacing:.08em; text-transform:uppercase; border:2px solid var(--ms-edge); background:#2A2F2B; color:#E9DDAE; }
+.wr-card-inner{ position:relative; width:100%; height:100%; }
+/* a lifted card casts a hard, chunky shadow that grows with height */
+.wr-card::before{
+  content:""; position:absolute; z-index:-1; inset:2px; pointer-events:none; border-radius:6px; background:#060403;
+  opacity:calc(var(--lift,0) * .5); transform:translate(calc(var(--lift,0) * 7px),calc(var(--lift,0) * 20px));
+}
+/* cards away from the middle sit in shadow (opacity only) */
+.wr-card::after{ content:""; position:absolute; z-index:45; inset:0; pointer-events:none; border-radius:6px; background:#0b0c09; opacity:var(--shade,0); }
+/* CARDS: the item is the card back itself, a full-size playing card */
+.wr-back{ display:block; width:100%; height:100%; }
+.wr-back .card{ position:relative; display:block; width:100%; height:100%; margin:0; border-radius:6px; }
+.wr-back .card.back{ box-shadow:0 4px 0 rgba(0,0,0,.5),inset 0 0 0 3px var(--cb-trim); }
+/* DEALING: a style is a ticket */
+.wr-rack:has(.wr-style) .wr-card{ width:176px; height:200px; margin-left:-88px; }
+.wr-style{
+  display:flex; flex-direction:column; gap:7px; height:100%; padding:11px 11px 10px; box-sizing:border-box;
+  border:3px solid var(--ms-edge); border-radius:5px; background:#E9DDAE; color:#22201C;
+  box-shadow:inset 0 0 0 2px #F6EBC4,inset 0 0 0 4px rgba(79,64,31,.25),0 5px 0 #786b49,0 8px 0 #0b0805;
+}
+.wr-style b{ font-family:var(--font-hdr); font-weight:400; font-size:11px; letter-spacing:.04em; line-height:1.3; text-transform:uppercase; }
+.wr-tier{ align-self:flex-start; padding:3px 6px 2px; font-family:var(--font-hdr); font-size:6px; letter-spacing:.1em; text-transform:uppercase; border:2px solid #22201C; background:#4A4A44; color:#F3E6C4; }
 .wr-style[data-tier="uncommon"] .wr-tier{ background:#2F6B45; }
 .wr-style[data-tier="rare"] .wr-tier{ background:#2F5D9E; }
 .wr-style[data-tier="epic"] .wr-tier{ background:#6E3C9A; }
 .wr-style[data-tier="legendary"] .wr-tier{ background:#B07A12; color:#1C1204; }
-.wr-note{ font-family:var(--font-px); font-size:11px; line-height:1.3; opacity:.85; display:-webkit-box; -webkit-line-clamp:4; -webkit-box-orient:vertical; overflow:hidden; }
-.wr-mix{ margin-top:auto; font-family:var(--font-hdr); font-size:6px; letter-spacing:.08em; text-transform:uppercase; opacity:.8; }
+.wr-note{ font-family:var(--font-px); font-size:12px; line-height:1.3; color:#3D3A30; }
+.wr-mix{ margin-top:auto; font-family:var(--font-hdr); font-size:6px; letter-spacing:.08em; text-transform:uppercase; color:#5F5B4B; }
 
 /* USE THIS, and a line on what it does */
 .ws-use{ display:flex; flex-wrap:wrap; align-items:center; gap:8px 10px; margin:6px 0 14px; }
