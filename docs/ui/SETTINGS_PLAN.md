@@ -251,3 +251,21 @@ preview of the real part.
 - BUTTONS: real FOLD/CHECK/RAISE keys plus a small and a standard key;
   four press keys via `Finishes.choose`; choosing presses the console
   keys once so the feel shows at once.
+
+**Held in place (owner, 4 Oct 2026):** the frame must never move. The
+Workshop's cabinet was as tall as its content and centred, so a tab
+change or a note wrapping to a second line moved both its edges.
+- The cabinet now fills the phone (flex:1 0 auto in the screen): its
+  edges, header and tab keys sit at the same place on every tab. Only a
+  tab with more than fits grows past the screen and scrolls (the owner's
+  one exception): DEALING on every phone, CHIPS on an SE.
+- Every line whose text changes (the name and notes screens, the notes
+  under the looks and presses, the Use notes, the SCREENS readouts) holds
+  the height of the longest thing it can say, measured on the phone at
+  its width when its tab opens (and on resize), rounded up from the exact
+  height.
+- Settings: the sheet is one height (88%) wherever it opens.
+- Checked at 375x667, 393x852 and 430x932 by stepping every option on
+  every tab: one layout per tab, the same cabinet edges across tabs.
+- Hand Rankings and Custom Game have the same centring; left for later
+  (owner).

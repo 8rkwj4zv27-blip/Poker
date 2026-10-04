@@ -543,6 +543,43 @@
   if (pressSet) pages.buttons.appendChild(finishKeys(pressSet, 'Press', null, k => { sayOn(keyStage, k.textContent.trim() + ': press any key to feel it.'); demoPress(); }));
   const fe = $id('finishes-entry'); if (fe) attic.appendChild(fe);
 
+  /* ---- held space (owner, round 9): nothing moves when text changes ----
+     Every line whose text changes while a tab is in use is given the
+     height of the longest thing it can ever say, measured on this phone at
+     its real width, so swapping options never pushes anything else. */
+  const slots = [];
+  const hold = (box, texts, write) => slots.push({ box, texts, write:write || ((n, t) => { n.textContent = t; }) });
+  const writeSay = (n, t) => { const c = n.querySelector('[data-wss-say]'); if (c) c.textContent = t; };
+  function reserve(scope){
+    slots.forEach(sl => {
+      if (!scope.contains(sl.box)) return;
+      const w = sl.box.getBoundingClientRect().width; if (!w) return;
+      const probe = sl.box.cloneNode(true);
+      probe.removeAttribute('id');
+      probe.style.cssText += ';position:absolute;left:-9999px;top:0;visibility:hidden;min-height:0;height:auto;box-sizing:border-box;width:' + w + 'px';
+      sl.box.parentNode.appendChild(probe);
+      let max = 0;
+      (typeof sl.texts === 'function' ? sl.texts() : sl.texts).forEach(t => { sl.write(probe, t); max = Math.max(max, probe.getBoundingClientRect().height); });
+      probe.remove();
+      sl.box.style.boxSizing = 'border-box';
+      sl.box.style.minHeight = Math.ceil(max) + 'px';   // exact, rounded up: a fraction over still pushed
+    });
+  }
+  const dot = '  ·  ';
+  hold(cardsStage.querySelector('.wss-caption'), () => BACKS.flatMap(b => [b.name, b.name + dot + 'in use']), writeSay);
+  hold(backUse.n, ['This back is on every face-down card.', 'Flick through them. Nothing changes until you tap Use.']);
+  hold(dealStage.querySelector('.wss-caption'), () => STY.map(x => x.note), writeSay);
+  hold(mixUse.n, () => [STY.length + ' of ' + STY.length + ' styles in the mix. Tap to take it out.', STY.length + ' of ' + STY.length + ' styles in the mix. Tap to deal with it in your games.']);
+  const SIZES = [...sizeSeg.querySelectorAll('button')].map(x => x.textContent.trim());
+  const SOUNDS = [...soundSeg.querySelectorAll('button')].map(x => x.textContent.trim());
+  hold(chipStage.querySelector('.wss-caption'), () => SIZES.flatMap(z => SOUNDS.map(o => 'Chip size: ' + z + dot + 'coin sound: ' + o)).concat(SIZES.map(z => 'Chip size: ' + z), SOUNDS.map(o => 'Coin sound: ' + o)), writeSay);
+  hold(cabCap.querySelector('.wss-caption'), () => [...themeSeg.querySelectorAll('button')].map(x => x.textContent.trim() + dot + 'in use'), writeSay);
+  hold(keyStage.querySelector('.wss-caption'), () => (pressSet ? pressSet.options.map(o => o.name + ': press any key to feel it.') : []).concat('Press any key to feel it.'), writeSay);
+  pages.screens.querySelectorAll('.ws-finish-note').forEach(n => hold(n, () => crtSet ? crtSet.options.map(o => o.note) : []));
+  pages.buttons.querySelectorAll('.ws-finish-note').forEach(n => hold(n, () => pressSet ? pressSet.options.map(o => o.note) : []));
+  ['wss-ro-banner', 'wss-ro-hand'].forEach((c, i) => hold(scrStage.querySelector('.' + c), LINES.map(L => L[i])));
+  addEventListener('resize', () => { if (!wsScreen.classList.contains('hidden')) reserve(pages[tab]); });
+
   /* ---- tabs, opening, closing ---- */
   let tab = 'cards';
   function leaving(){
@@ -553,6 +590,7 @@
     tab = k;
     tabRow.querySelectorAll('button').forEach(b => b.classList.toggle('active', b.dataset.wsTab === k));
     Object.keys(pages).forEach(p => pages[p].classList.toggle('is-on', p === k));
+    reserve(pages[k]);
     leaving();
     if (k === 'cards') showBack(backRack.index);
     else if (k === 'dealing'){ borrowDeck(dealStage); setTimeout(() => showStyle(styleRack.index, true), 250); }

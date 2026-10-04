@@ -367,7 +367,7 @@ html[data-holder="brass"] .wss-lip{
 .wr-mixlamp.is-on{ background:#7CF29A; box-shadow:0 0 7px #7CF29A,inset 1px 1px 0 rgba(255,255,255,.55); }
 
 /* USE THIS, and a line on what it does */
-.ws-use{ display:flex; flex-wrap:wrap; align-items:center; gap:8px 10px; margin:6px 0 14px; }
+.ws-use{ display:flex; flex-wrap:wrap; align-items:center; gap:8px 10px; margin:6px 0 12px; }
 #workshop .ws-use-key{ width:auto; flex:1 1 60%; min-height:48px; font-family:var(--font-hdr); font-size:9px; letter-spacing:.06em; }
 #workshop .ws-use-key.is-on{ background:var(--accent); color:var(--accent-ink); box-shadow:0 4px 0 color-mix(in srgb,var(--accent) 55%,black),0 6px 0 var(--ms-edge),inset 0 3px 0 rgba(255,255,255,.34); }
 #workshop .ws-replay{ width:auto; flex:0 0 auto; min-height:48px; padding:0 14px; font-family:var(--font-hdr); font-size:8px; }
@@ -466,7 +466,7 @@ html[data-holder="brass"] .wss-lip{
    ============================================================ */
 /* CHIPS: the felt is the coin world's while the tab is open; a pot tray
    in the middle catches the throw */
-.ws-stage--chips .wss-felt{ height:190px; border-bottom:4px solid var(--rail-lo); border-radius:10px; }
+.ws-stage--chips .wss-felt{ height:150px; border-bottom:4px solid var(--rail-lo); border-radius:10px; }
 .wss-tray{ position:absolute; left:50%; top:46%; width:120px; height:58px; transform:translate(-50%,-50%); border-radius:30px;
   background:rgba(0,0,0,.22); box-shadow:inset 0 4px 0 rgba(0,0,0,.35),0 1px 0 rgba(255,255,255,.06); }
 /* CABINET: each key wears its own theme (the button carries data-theme,
@@ -492,3 +492,20 @@ html[data-holder="brass"] .wss-lip{
 .wss-console .wss-keys{ padding:0; border:0; background:none; box-shadow:none; }
 .ws-finish-seg{ flex-wrap:wrap; row-gap:9px; }
 #workshop .ws-finish-seg button{ flex:1 1 28%; min-width:0; }
+
+/* ============================================================
+   HELD IN PLACE (owner, round 9): the frame never moves
+   ============================================================ */
+/* The Workshop's cabinet fits the phone: it fills the screen from under
+   the status bar to above the home bar on every tab, so switching tabs
+   never moves its edges or its header and tab keys. Only a tab with more
+   than fits grows past the screen, and you scroll down to its bottom. */
+#workshop{ align-items:center; }
+#workshop .lobby-card{ flex:1 0 auto; margin:0 auto; box-sizing:border-box; }
+/* the CRT readouts on SCREENS keep their size whatever line they show */
+.wss-readouts .crt{ white-space:normal; }
+
+/* Settings: the sheet is one height wherever it opens (home or a table);
+   what doesn't fit scrolls inside it */
+#settings-sheet{ height:88%; }
+#settings-sheet > .sheet-body{ flex:1 1 auto; min-height:0; }
