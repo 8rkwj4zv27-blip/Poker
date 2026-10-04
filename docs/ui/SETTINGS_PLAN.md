@@ -93,3 +93,18 @@ switches layout, volume control, hints, and BEFORE/AFTER, and jumps to
 Settings at home or at a table.
 
 - Round 1 link: https://claude.ai/artifact/LzMcL9V3kMTZ7GT1MTXW57 (4 Oct 2026)
+
+**Round 1 verdict (owner, 4 Oct 2026):** "much better". Picks: ONE
+PANEL, FADER, hints shown. The Workshop key comes out of Settings: the
+Workshop lives only on the main menu.
+
+**Round 2 (same link):** the Workshop as its own screen (Hand Rankings'
+cabinet), opened from a home-screen key under the table buttons, in three
+candidates for sign-off: DRAWER (a wooden drawer in the cabinet base with
+a brass pull and a label card; slides out), HATCH (a screwed-on service
+panel with hazard edges and a wrench; the screws spin and it swings open,
+with the game's hatch sound) and KEYPLATE (a brass lock plate; the key
+turns and the lamp lights). Finishes still opens in the Settings sheet in
+the lab; in the game it moves into the Cabinet drawer. Note: the key makes
+the home screen ~65px taller than an 852px phone, so it sits at the
+bottom of a short scroll.

@@ -170,33 +170,28 @@
     newSwitch('sw-fourcolour', 'Four-colour deck', 'fourColour', applyTheme)));
   display.appendChild(row('Reduced motion', 'Less shake, fewer big arcade effects.', take('sw-motion')));
 
-  // the WORKSHOP key
-  const wsWrap = el('div', 'st-workshop-wrap');
-  wsWrap.appendChild(drawerKey('workshop', 'Workshop', 'Cards · dealing · showdown · chips · colours', 'st-dk--workshop'));
-  wsWrap.appendChild(el('div', 'st-note st-note--center', 'How the machine looks and sounds. Soon on the home screen too.'));
-
   // the service plate: build + Developer Mode, quiet
   if (service){ service.classList.add('st-service'); const ts = service.querySelector('.tl'); if (ts) ts.textContent = 'Developer mode'; }
 
-  // assemble MAIN
+  // assemble MAIN (round 2: no Workshop key here; it lives on the home screen)
   oldSections.forEach(s => { if (s !== tableSec && s !== service && s !== done) attic.appendChild(s); });
   mainBody.innerHTML = '';
   mainBody.appendChild(head);
   mainBody.appendChild(tabs);
   mainBody.appendChild(tableSec);
   [play, help, sound, display].forEach(p => mainBody.appendChild(p));
-  mainBody.appendChild(wsWrap);
   if (service) mainBody.appendChild(service);
   if (done) mainBody.appendChild(done);
   mainBody.appendChild(attic);
+  sheet.dataset.stPage = 'main';
 
-  /* ---- WORKSHOP and its drawers ---- */
+  /* ---- THE WORKSHOP: its own screen, opened from the home screen ---- */
   const DRAWERS = [
-    ['cards', 'Cards', ['deck-back-seg', 'holder-seg', 'deck-side-seg']],
-    ['dealing', 'Dealing', null],
-    ['showdown', 'Showdown', ['sd-smash-seg', 'sd-force-seg', 'sd-bounce-seg', 'sd-heat-seg', 'sd-pickup-seg']],
-    ['chips', 'Chips & sound', ['tr-coins', 'coin-sound-seg']],
-    ['cabinet', 'Cabinet', ['theme-seg']]
+    ['cards', 'Cards', 'Card backs, the holder, the deck', ['deck-back-seg', 'holder-seg', 'deck-side-seg']],
+    ['dealing', 'Dealing', 'How the cards fly', null],
+    ['showdown', 'Showdown', 'The smash and the payout', ['sd-smash-seg', 'sd-force-seg', 'sd-bounce-seg', 'sd-heat-seg', 'sd-pickup-seg']],
+    ['chips', 'Chips & sound', 'Chip size, coin sounds', ['tr-coins', 'coin-sound-seg']],
+    ['cabinet', 'Cabinet', 'Colours and finishes', ['theme-seg']]
   ];
   // the chip-size row lives inside #settings-table-room (table-room.js
   // paints it from there), so that section moves whole and shows only it
@@ -204,16 +199,24 @@
   const coins = trSec && trSec.querySelector('[data-tr="coins"]');
   if (coins) coins.id = 'tr-coins';
 
-  const ws = page('workshop');
-  ws.appendChild(pageHead('Workshop', 'main'));
-  ws.appendChild(el('div', 'st-note st-intro', 'How the machine looks and sounds. Every change shows at once, on this device.'));
+  const wsScreen = el('div', 'screen hidden');
+  wsScreen.id = 'workshop';
+  const wsCard = el('div', 'lobby-card');
+  wsScreen.appendChild(wsCard);
+  const rankings = $id('rankings');
+  rankings.parentNode.insertBefore(wsScreen, rankings.nextSibling);
+  const wsPage = key => { const d = el('div', 'ws-page'); d.dataset.wsPage = key; wsCard.appendChild(d); return d; };
+
+  const idx = wsPage('index');
+  idx.appendChild(pageHead('Workshop', 'home'));
+  idx.appendChild(el('div', 'ws-intro', 'How the machine looks and sounds. Every change shows at once, on this device.'));
   const wsList = el('div', 'st-drawers');
   DRAWERS.forEach(([k, t]) => wsList.appendChild(drawerKey(k, t, '')));
-  ws.appendChild(wsList);
+  idx.appendChild(wsList);
 
-  DRAWERS.forEach(([k, t, ids]) => {
-    const p = page(k);
-    p.appendChild(pageHead(t, 'workshop'));
+  DRAWERS.forEach(([k, t, sub, ids]) => {
+    const p = wsPage(k);
+    p.appendChild(pageHead(t, 'index'));
     const box = el('div', 'sheet-section st-plate st-drawer');
     if (k === 'dealing'){
       const d = $id('settings-dealing');
@@ -230,17 +233,16 @@
       ids.forEach(id => { const f = fieldOf(id); if (f) box.appendChild(f); });
     }
     if (k === 'cabinet'){
-      const fe = $id('finishes-entry');
+      // Finishes still lives in the Settings sheet (it's styled there): this
+      // key opens the sheet straight onto it. In the game it moves here.
       const f = el('div', 'field');
-      f.innerHTML = '<div class="field-label">Finishes</div>';
-      if (fe) f.appendChild(fe);
-      f.appendChild(el('div', 'hint', 'Other looks for the screens and buttons.'));
+      f.innerHTML = '<div class="field-label">Finishes</div><div class="sheet-keys"><button class="btn-secondary" type="button" data-ws-finishes>Finishes</button></div>' +
+        '<div class="hint">Other looks for the screens and buttons.</div>';
       box.appendChild(f);
     }
     p.appendChild(box);
   });
 
-  /* ---- navigation ---- */
   function summary(k){
     const act = id => { const b = document.querySelector('#' + id + ' button.active'); return b ? b.textContent.trim() : ''; };
     if (k === 'cards') return act('deck-back-seg') + ' · ' + act('holder-seg') + ' holder';
@@ -253,26 +255,72 @@
     if (k === 'cabinet') return act('theme-seg');
     return '';
   }
-  function go(to){
-    sheet.dataset.stPage = to;
-    if (to === 'workshop') DRAWERS.forEach(([k]) => { const s = sheet.querySelector('[data-sub="' + k + '"]'); if (s) s.textContent = summary(k); });
-    const b = sheet.querySelector('.st-page[data-st-page="' + to + '"]');
-    if (b) b.scrollTop = 0;
+  function wsGo(to){
+    if (to === 'home'){ closeWorkshop(); return; }
+    wsScreen.dataset.wsPage = to;
+    if (to === 'index') DRAWERS.forEach(([k]) => { const s = wsScreen.querySelector('[data-sub="' + k + '"]'); if (s) s.textContent = summary(k); });
+    wsScreen.scrollTop = 0;
   }
-  sheet.addEventListener('click', e => {
+  wsScreen.addEventListener('click', e => {
+    if (e.target.closest('[data-ws-finishes]')){
+      openOverlay('settings');
+      const f = $id('open-finishes'); if (f) f.click();
+      return;
+    }
     const t = e.target.closest('[data-go]');
-    if (t && sheet.contains(t)){ go(t.dataset.go); return; }
-    const tab = e.target.closest('.st-tabs [data-tab]');
-    if (tab){ setTab(tab.dataset.tab); }
+    if (t){ try{ Sound.buttonRelease('check'); }catch(err){} wsGo(t.dataset.go); }
   });
-  function setTab(k){
-    tabs.querySelectorAll('[data-tab]').forEach(b => b.classList.toggle('active', b.dataset.tab === k));
-    sheet.dataset.stTab = k;
+  function openWorkshop(){
+    $id('home').classList.add('hidden');
+    wsScreen.classList.remove('hidden');
+    wsGo('index');
   }
-  setTab('play');
-  go('main');
-  new MutationObserver(() => { if (!sheet.classList.contains('open')) go('main'); })
-    .observe(sheet, { attributes:true, attributeFilter:['class'] });
+  function closeWorkshop(){
+    wsScreen.classList.add('hidden');
+    $id('home').classList.remove('hidden');
+    resetKey();
+    try{ reconstructMainMenu(); }catch(e){}
+  }
+
+  /* ---- THE HOME KEY: three candidates (TUNE picks) ----
+     DRAWER   a pull-out drawer in the cabinet's base: brass pull, a cream
+              label card in a brass holder. Tap: it slides out.
+     HATCH    a screwed-on service panel with a hazard edge and a wrench.
+              Tap: the screws spin out and it swings open on its hinge.
+     KEYPLATE a brass lock plate with a key in it. Tap: the key turns and
+              the lamp lights. */
+  const KEYS = {
+    drawer: '<span class="wk-drawer-face"><span class="wk-label"><b>WORKSHOP</b></span><span class="wk-pull" aria-hidden="true"><i></i></span></span><span class="wk-drawer-inside" aria-hidden="true"></span>',
+    hatch: '<span class="wk-hatch-hole" aria-hidden="true"></span><span class="wk-hatch-panel"><i class="wk-screw"></i><i class="wk-screw"></i><i class="wk-screw"></i><i class="wk-screw"></i>' +
+      '<span class="wk-wrench" aria-hidden="true"></span><b>WORKSHOP</b><small>SERVICE PANEL</small></span>',
+    keyplate: '<span class="wk-plate"><span class="wk-lamp" aria-hidden="true"></span><b>WORKSHOP</b><span class="wk-lock" aria-hidden="true"><span class="wk-key"><i></i></span></span></span>'
+  };
+  const homeKey = el('button', 'wk-key-btn');
+  homeKey.type = 'button'; homeKey.id = 'open-workshop'; homeKey.setAttribute('aria-label', 'Workshop');
+  const bay = document.querySelector('#menu-contraption .pc-control-bay');
+  bay.parentNode.insertBefore(homeKey, bay.nextSibling);
+  function paintKey(){
+    homeKey.dataset.wk = state.wkey || 'drawer';
+    homeKey.innerHTML = KEYS[homeKey.dataset.wk];
+    homeKey.classList.remove('is-open');
+  }
+  function resetKey(){ homeKey.classList.remove('is-open'); }
+  let opening = false;
+  homeKey.addEventListener('click', () => {
+    if (opening) return;
+    opening = true;
+    const kind = homeKey.dataset.wk;
+    try{
+      Sound.unlock();
+      if (kind === 'hatch') Sound.hatchOpen();
+      else if (kind === 'keyplate') Sound.stageUnlock();
+      else Sound.buttonPress();
+    }catch(e){}
+    homeKey.classList.add('is-open');
+    const wait = motionOff() ? 0 : (kind === 'keyplate' ? 620 : 520);
+    setTimeout(() => { opening = false; openWorkshop(); }, wait);
+  });
+  paintKey();
 
   /* ---- the volume control: FADER or STEPS (TUNE picks) ---- */
   function volumeControl(){
@@ -333,10 +381,12 @@
   }
 
   /* ---- what TUNE switches ---- */
+  // round 1's picks, locked in: one panel, the fader, hints shown
   function applyLook(){
-    html.dataset.stLayout = state.layout;
-    html.dataset.stVolume = state.volume;
-    html.dataset.stHints = state.hints;
+    html.dataset.stLayout = 'panel';
+    html.dataset.stVolume = 'fader';
+    html.dataset.stHints = 'on';
+    if (typeof paintKey === 'function') paintKey();
   }
   applyLook();
   html.dataset.stLab = 'after';
@@ -346,24 +396,23 @@
   /* ---- TUNE: the lab's own sheet ---- */
   function buildTune(){
     const ROWS = [
-      ['view', 'SETTINGS', [['after','NEW'],['before','TODAY\'S']], 'Today\'s is the sheet as it is in the game now, for comparison.'],
-      ['layout', 'LAYOUT', [['panel','ONE PANEL'],['tabs','TABS']], 'One short scroll, or a tab strip under the header.'],
-      ['volume', 'VOLUME CONTROL', [['fader','FADER'],['steps','STEPS']], 'Drag or tap. Sound plays as it changes.'],
-      ['hints', 'HINTS', [['on','SHOWN'],['off','HIDDEN']], 'The one line of small print under each setting.']
+      ['wkey', 'WORKSHOP KEY', [['drawer','DRAWER'],['hatch','HATCH'],['keyplate','KEYPLATE']], 'On the home screen, under the table buttons. Tap it to open the Workshop. DRAWER slides out of the cabinet; HATCH swings open; KEYPLATE turns its key.'],
+      ['view', 'SETTINGS', [['after','NEW'],['before','TODAY\'S']], 'Today\'s is the sheet as it is in the game now, for comparison.']
     ];
-    const seg = (k, opts) => '<div class="sdl-seg" data-key="' + k + '">' + opts.map(o => '<button type="button" data-v="' + o[0] + '"' + (state[k] === o[0] ? ' class="is-on"' : '') + '>' + o[1] + '</button>').join('') + '</div>';
+    const seg = (k, opts) => '<div class="sdl-seg" data-key="' + k + '">' + opts.map(o => '<button type="button" data-v="' + o[0] + '"' + ((state[k] || (k === 'wkey' ? 'drawer' : '')) === o[0] ? ' class="is-on"' : '') + '>' + o[1] + '</button>').join('') + '</div>';
     const key = el('button', 'sdl-key', 'TUNE'); key.type = 'button';
     const tune = el('div', 'sdl-sheet stl-sheet');
     tune.setAttribute('role', 'dialog'); tune.setAttribute('aria-label', 'Settings lab');
     tune.innerHTML =
-      '<div class="sdl-tabs"><button type="button" class="is-on" tabindex="-1">SETTINGS LAB · ROUND 1</button><button type="button" class="sdl-close" aria-label="Close">✕</button></div>' +
+      '<div class="sdl-tabs"><button type="button" class="is-on" tabindex="-1">SETTINGS + WORKSHOP · ROUND 2</button><button type="button" class="sdl-close" aria-label="Close">✕</button></div>' +
       '<div class="sdl-body">' +
-        '<h3>OPEN SETTINGS<small>The ⚙ keys in the game work too.</small></h3>' +
-        '<div class="sdl-moments"><button type="button" data-open="home">AT HOME</button><button type="button" data-open="table">AT A TABLE</button>' +
-        '<button type="button" data-open="workshop" class="is-wide">THE WORKSHOP PAGE</button></div>' +
+        '<h3>JUMP TO<small>The keys in the game work too.</small></h3>' +
+        '<div class="sdl-moments"><button type="button" data-open="workshop" class="is-wide">THE WORKSHOP</button><button type="button" data-open="home">SETTINGS AT HOME</button><button type="button" data-open="table">SETTINGS AT A TABLE</button></div>' +
         ROWS.map(r => '<div class="sdl-row"><div class="sdl-name">' + r[1] + '</div>' + seg(r[0], r[2]) + '<p class="sdl-note">' + r[3] + '</p></div>').join('') +
         '<h3>WHAT MOVED<small>Nothing is lost: every saved pick keeps its value.</small></h3>' +
         '<ul class="stl-list">' +
+          '<li>Round 2: the Workshop is its own screen, opened from the home screen only. Settings no longer links to it.</li>' +
+          '<li>Settings keeps your round-1 picks: one panel, the fader, hints shown.</li>' +
           '<li>Award Pot moved to Play: it changes when you get paid, not how it looks.</li>' +
           '<li>Card backs, dealing, the smash, chips, coin sound, colours and Finishes moved to the Workshop.</li>' +
           '<li>The table-layout knobs are gone. The table looks exactly as it does now.</li>' +
@@ -382,6 +431,7 @@
       const k = s.dataset.key, v = t.dataset.v;
       s.querySelectorAll('button').forEach(b => b.classList.toggle('is-on', b === t));
       state[k] = v; if (host) host.set({ [k]:v });
+      if (k === 'wkey'){ try{ paintKey(); }catch(err){} open(false); openAt('homescreen'); return; }
       if (k === 'view'){ if (host){ host.set({ open:'home' }); host.reload(); } return; }
       applyLook();
     });
@@ -392,12 +442,20 @@
     const sleep = ms => new Promise(r => setTimeout(r, ms));
     const visible = id => { const e = $id(id); return e && !e.classList.contains('hidden'); };
     closeOverlays();
+    if (where === 'homescreen' || where === 'workshop'){
+      const ws = $id('workshop');
+      if (ws && !ws.classList.contains('hidden')) ws.classList.add('hidden');
+      if (visible('table-screen')){ try{ leaveTable(); }catch(e){} await sleep(600); }
+      $id('home').classList.remove('hidden');
+      if (where === 'workshop'){ const k = $id('open-workshop'); if (k) k.click(); }
+      return;
+    }
     if (where === 'table' && !visible('table-screen')){
       $id('quick-play').click();
       for (let i = 0; i < 80 && !visible('table-screen'); i++) await sleep(100);
       await sleep(2600);
     }
+    if (where === 'home'){ const ws = $id('workshop'); if (ws) ws.classList.add('hidden'); $id('home').classList.remove('hidden'); }
     openOverlay('settings');
-    if (where === 'workshop' && sheet && sheet.dataset.stPage){ const k = sheet.querySelector('[data-go="workshop"]'); if (k) k.click(); }
   }
 })();

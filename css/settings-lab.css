@@ -128,3 +128,171 @@ html[data-st-volume="steps"] .st-steps{ display:flex; }
 .stl-sheet .sdl-tabs button:first-child{ pointer-events:none; }
 
 @media (prefers-reduced-motion:reduce){ .st-drawer-key:active{ transform:none; } }
+
+/* ============================================================
+   ROUND 2: THE WORKSHOP SCREEN + the home key candidates
+   ============================================================ */
+/* the screen: Hand Rankings' cabinet, with the Settings controls' faces
+   (in the game these selectors join the lists in 06-machine-system.css) */
+#workshop{
+  overflow-y:auto; -webkit-overflow-scrolling:touch;
+  background:repeating-conic-gradient(rgba(255,255,255,.016) 0% 25%, transparent 0% 50%) 0 0 / 10px 10px, var(--bg-deep);
+  padding:max(28px,var(--safe-top)) 22px max(28px,env(safe-area-inset-bottom));
+  align-items:center;
+  --ms-edge:var(--pc-edge-lo,#0B0F0C);
+  --ms-plate:var(--pc-plastic,var(--theme-case-raised));
+  --ms-plate-hi:var(--pc-plastic-hi,var(--theme-case-hi));
+  --ms-plate-lo:var(--pc-plastic-lo,color-mix(in srgb,var(--theme-case-raised) 58%,black));
+  --ms-well:color-mix(in srgb,var(--panel) 50%,black);
+  --ms-glass:#060B0A;
+  --ms-print:#A99E73;
+}
+#workshop .lobby-card{
+  padding:11px; border:4px solid var(--ms-edge); border-radius:12px;
+  background:repeating-conic-gradient(rgba(255,255,255,.05) 0 25%,transparent 0 50%) 0 0/8px 8px, var(--pc-leather);
+  box-shadow:inset 4px 4px 0 var(--pc-leather-hi),inset -5px -5px 0 var(--pc-leather-lo),0 0 0 2px var(--theme-rim),0 9px 0 #090406;
+}
+#workshop .ws-page{ display:none; }
+#workshop[data-ws-page="index"] .ws-page[data-ws-page="index"],
+#workshop[data-ws-page="cards"] .ws-page[data-ws-page="cards"],
+#workshop[data-ws-page="dealing"] .ws-page[data-ws-page="dealing"],
+#workshop[data-ws-page="showdown"] .ws-page[data-ws-page="showdown"],
+#workshop[data-ws-page="chips"] .ws-page[data-ws-page="chips"],
+#workshop[data-ws-page="cabinet"] .ws-page[data-ws-page="cabinet"]{ display:block; }
+#workshop .setup-head{
+  margin:0 0 12px; padding:5px 7px; border:3px solid var(--ms-edge);
+  background:var(--pc-plastic-dark,var(--ms-plate-lo));
+  box-shadow:inset 2px 2px 0 var(--pc-plastic-dark-hi,var(--ms-plate-hi)),inset -2px -2px 0 var(--pc-plastic-dark-lo,var(--ms-plate-lo)),0 3px 0 var(--ms-edge);
+}
+#workshop .setup-title{ font-size:9px; letter-spacing:.12em; color:#E9DDAE; text-shadow:0 1px 0 rgba(0,0,0,.55); }
+#workshop .icon-btn{
+  border:3px solid var(--ms-edge); border-radius:3px; background:var(--ms-plate); color:var(--ink);
+  box-shadow:0 3px 0 var(--ms-edge),inset 2px 2px 0 var(--ms-plate-hi),inset -2px -2px 0 rgba(0,0,0,.25);
+}
+.ws-intro{ margin:0 2px 14px; font-family:var(--font-px); font-size:13px; line-height:1.4; color:#8E896B; }
+#workshop .sheet-section{
+  display:flex; flex-direction:column; gap:16px; margin-bottom:12px; padding:12px 13px;
+  border:3px solid var(--ms-edge); border-radius:4px; background:var(--ms-well);
+  box-shadow:inset 0 5px 0 rgba(0,0,0,.44),inset 3px 0 0 rgba(0,0,0,.26),0 3px 0 var(--ms-edge);
+}
+#workshop .st-bare{ padding:0; margin:0; border:0; background:none; box-shadow:none; }
+#workshop .field{ margin:0; }
+#workshop .field .hint{ margin-top:6px; }
+#workshop .field-label{ color:var(--ms-print); }
+#workshop .hint,#workshop .ts{ color:#8E896B; }
+#workshop .segmented{ gap:6px; padding:5px; border:2px solid var(--ms-edge); border-radius:4px; background:var(--ms-well); box-shadow:inset 0 4px 0 rgba(0,0,0,.42); }
+#workshop .segmented button{
+  border:2px solid var(--ms-edge); border-radius:3px; background:var(--ms-plate); color:var(--ink);
+  box-shadow:0 3px 0 var(--ms-plate-lo),0 5px 0 var(--ms-edge),inset 2px 2px 0 var(--ms-plate-hi),inset -2px -2px 0 rgba(0,0,0,.22);
+}
+#workshop .segmented button.active{
+  background:var(--accent); color:var(--accent-ink);
+  box-shadow:0 2px 0 color-mix(in srgb,var(--accent) 55%,black),0 4px 0 var(--ms-edge),inset 0 3px 0 rgba(255,255,255,.34),inset 0 -3px 0 rgba(0,0,0,.16);
+}
+#workshop .segmented button:active{ transform:translateY(3px); box-shadow:0 1px 0 var(--ms-plate-lo),0 2px 0 var(--ms-edge),inset 2px 3px 0 rgba(0,0,0,.3); }
+#workshop .toggle-row{ padding:9px 10px; border:2px solid var(--ms-edge); border-radius:3px; background:color-mix(in srgb,var(--ms-well) 78%,black); box-shadow:inset 0 3px 0 rgba(0,0,0,.4); }
+#workshop .toggle-row .tl{ font-size:13px; }
+#workshop .switch{ border:2px solid var(--ms-edge); box-shadow:inset 0 3px 0 rgba(0,0,0,.44),0 2px 0 var(--ms-edge); }
+#workshop .btn-secondary{
+  border:3px solid var(--ms-edge); border-radius:4px; background:var(--ms-plate); color:var(--ink);
+  box-shadow:0 4px 0 var(--ms-plate-lo),0 6px 0 var(--ms-edge),inset 2px 2px 0 var(--ms-plate-hi);
+}
+#workshop .sheet-keys{ display:flex; gap:10px; }
+#workshop .sheet-keys > *{ flex:1 1 0; }
+
+/* ---- the home key: shared ---- */
+.wk-key-btn{
+  position:relative; display:block; width:100%; margin:14px 0 2px; padding:0; border:0; background:none;
+  font:inherit; color:inherit; cursor:pointer; -webkit-tap-highlight-color:transparent;
+}
+.wk-key-btn:focus-visible{ outline:2px solid var(--accent-bright); outline-offset:3px; }
+.wk-key-btn b{ font-family:var(--font-hdr); font-weight:400; letter-spacing:.12em; }
+
+/* DRAWER: a drawer in the cabinet's base, in the rail's wood */
+.wk-key-btn[data-wk="drawer"]{ height:66px; }
+.wk-drawer-inside{
+  position:absolute; inset:0; border:3px solid var(--px-ink); border-radius:4px; background:#050303;
+  box-shadow:inset 0 10px 0 rgba(0,0,0,.8),inset 0 -2px 0 color-mix(in srgb,var(--accent) 30%,transparent);
+}
+.wk-drawer-face{
+  position:absolute; inset:0; z-index:1; display:flex; align-items:center; justify-content:space-between; gap:12px; padding:0 16px;
+  border:3px solid var(--px-ink); border-radius:4px;
+  background:repeating-linear-gradient(90deg,var(--rail) 0 22px,color-mix(in srgb,var(--rail-lo) 70%,var(--rail)) 22px 24px,var(--rail) 24px 50px,color-mix(in srgb,var(--rail-hi) 35%,var(--rail)) 50px 52px);
+  box-shadow:inset 0 3px 0 var(--rail-hi),inset 0 -4px 0 var(--rail-lo),inset 3px 0 0 color-mix(in srgb,var(--rail-hi) 60%,transparent),0 4px 0 var(--px-ink);
+  transition:transform .26s steps(4,end),box-shadow .26s steps(4,end);
+}
+.wk-label{
+  padding:3px; border:2px solid var(--px-ink); background:var(--accent);
+  box-shadow:inset 0 2px 0 var(--accent-bright),inset 0 -2px 0 color-mix(in srgb,var(--accent) 55%,black),0 2px 0 rgba(0,0,0,.4);
+}
+.wk-label b{ display:block; padding:6px 9px 5px; background:#F3E6C4; color:#2A1A10; font-size:9px; box-shadow:inset 0 2px 0 rgba(0,0,0,.12); }
+.wk-pull{ position:relative; width:74px; height:22px; flex-shrink:0; }
+.wk-pull::before,.wk-pull::after{ content:""; position:absolute; top:3px; width:8px; height:14px; background:color-mix(in srgb,var(--accent) 60%,black); border:2px solid var(--px-ink); }
+.wk-pull::before{ left:6px; } .wk-pull::after{ right:6px; }
+.wk-pull i{ position:absolute; left:0; right:0; top:0; height:12px; z-index:1; border:2px solid var(--px-ink); border-radius:2px; background:var(--accent);
+  box-shadow:inset 0 3px 0 var(--accent-bright),inset 0 -2px 0 color-mix(in srgb,var(--accent) 55%,black),0 3px 0 rgba(0,0,0,.45); }
+.wk-key-btn[data-wk="drawer"]:active .wk-drawer-face{ transform:translateY(2px); }
+.wk-key-btn[data-wk="drawer"].is-open .wk-drawer-face{
+  transform:translateY(14px) scale(1.05);
+  box-shadow:inset 0 3px 0 var(--rail-hi),inset 0 -4px 0 var(--rail-lo),0 4px 0 var(--px-ink),0 12px 0 rgba(0,0,0,.45);
+}
+
+/* HATCH: a screwed-on service panel in the case plastic, hazard edges */
+.wk-key-btn[data-wk="hatch"]{ height:72px; perspective:420px; }
+.wk-hatch-hole{
+  position:absolute; inset:0; border:3px solid var(--px-ink); border-radius:3px;
+  background:linear-gradient(90deg,transparent 0 18%,color-mix(in srgb,var(--accent) 40%,transparent) 18% 19%,transparent 19% 62%,color-mix(in srgb,var(--accent) 40%,transparent) 62% 63%,transparent 63%) 0 50%/100% 3px no-repeat,#050404;
+  box-shadow:inset 0 8px 0 rgba(0,0,0,.7);
+}
+.wk-hatch-panel{
+  position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:5px;
+  border:3px solid var(--px-ink); border-radius:3px; background:var(--theme-case-raised); color:#F3E6C4;
+  box-shadow:inset 3px 3px 0 var(--theme-case-hi),inset -3px -3px 0 color-mix(in srgb,var(--theme-case-raised) 55%,black),0 4px 0 var(--px-ink);
+  transform-origin:50% 0; transition:transform .3s steps(5,end);
+}
+.wk-hatch-panel::before,.wk-hatch-panel::after{
+  content:""; position:absolute; left:14px; right:14px; height:5px;
+  background:repeating-linear-gradient(45deg,var(--accent) 0 5px,#0B0B0B 5px 10px); border:1px solid var(--px-ink);
+}
+.wk-hatch-panel::before{ top:5px; } .wk-hatch-panel::after{ bottom:5px; }
+.wk-hatch-panel b{ font-size:11px; text-shadow:0 2px 0 rgba(0,0,0,.45); }
+.wk-hatch-panel small{ font-family:var(--font-hdr); font-size:6px; letter-spacing:.2em; color:color-mix(in srgb,#F3E6C4 60%,transparent); }
+.wk-screw{
+  position:absolute; width:10px; height:10px; border-radius:50%; border:2px solid var(--px-ink);
+  background:color-mix(in srgb,var(--accent) 55%,#9C9C9C);
+}
+.wk-screw::after{ content:""; position:absolute; left:1px; right:1px; top:50%; height:2px; margin-top:-1px; background:var(--px-ink); }
+.wk-screw:nth-child(1){ left:5px; top:16px; } .wk-screw:nth-child(2){ right:5px; top:16px; transform:rotate(60deg); }
+.wk-screw:nth-child(3){ left:5px; bottom:16px; transform:rotate(-30deg); } .wk-screw:nth-child(4){ right:5px; bottom:16px; transform:rotate(100deg); }
+.wk-wrench{ position:absolute; left:34px; top:50%; width:26px; height:6px; margin-top:-3px; background:#E9DDAE; border:2px solid var(--px-ink); transform:rotate(-30deg); }
+.wk-wrench::before{ content:""; position:absolute; right:-9px; top:-6px; width:12px; height:14px; background:#E9DDAE; border:2px solid var(--px-ink); border-radius:2px;
+  clip-path:polygon(0 0,40% 0,40% 40%,70% 40%,70% 0,100% 0,100% 100%,0 100%); }
+.wk-key-btn[data-wk="hatch"]:active .wk-hatch-panel{ transform:translateY(2px); }
+.wk-key-btn[data-wk="hatch"].is-open .wk-screw{ animation:wkSpin .18s steps(4,end) 2; }
+.wk-key-btn[data-wk="hatch"].is-open .wk-hatch-panel{ transform:rotateX(-78deg); transition-delay:.2s; }
+@keyframes wkSpin{ to{ transform:rotate(360deg); } }
+
+/* KEYPLATE: a brass lock plate with the key in it */
+.wk-key-btn[data-wk="keyplate"]{ height:64px; }
+.wk-plate{
+  position:absolute; inset:0; display:flex; align-items:center; justify-content:center; gap:14px; padding:0 14px;
+  border:3px solid var(--px-ink); border-radius:5px;
+  background:linear-gradient(180deg,var(--accent-bright) 0 3px,var(--accent) 3px calc(100% - 4px),color-mix(in srgb,var(--accent) 55%,black) calc(100% - 4px));
+  box-shadow:0 4px 0 var(--px-ink),inset 3px 0 0 color-mix(in srgb,var(--accent-bright) 70%,transparent);
+}
+.wk-plate b{ flex:1; font-size:12px; color:color-mix(in srgb,var(--accent) 35%,black); text-shadow:0 1px 0 var(--accent-bright),0 -1px 0 rgba(0,0,0,.25); }
+.wk-lamp{ width:12px; height:12px; flex-shrink:0; border:2px solid var(--px-ink); background:#2A1A10; box-shadow:inset 1px 1px 0 rgba(255,255,255,.2); }
+.wk-lock{ position:relative; width:40px; height:40px; flex-shrink:0; border-radius:50%; border:3px solid var(--px-ink);
+  background:color-mix(in srgb,var(--accent) 50%,black); box-shadow:inset 0 3px 0 rgba(0,0,0,.45),0 2px 0 var(--accent-bright); }
+.wk-lock::before{ content:""; position:absolute; left:50%; top:50%; width:6px; height:14px; margin:-7px 0 0 -3px; background:#050303; }
+.wk-key{ position:absolute; inset:0; transition:transform .32s steps(4,end); }
+.wk-key::before{ content:""; position:absolute; left:50%; top:-4px; width:6px; height:24px; margin-left:-3px; background:#CFC6B0; border:2px solid var(--px-ink); }
+.wk-key i{ position:absolute; left:50%; top:-16px; width:18px; height:14px; margin-left:-9px; border:3px solid var(--px-ink); border-radius:50%; background:#CFC6B0; box-shadow:inset 0 0 0 3px #CFC6B0,inset 0 0 0 9px #050303; }
+.wk-key-btn[data-wk="keyplate"]:active .wk-plate{ transform:translateY(2px); box-shadow:0 2px 0 var(--px-ink); }
+.wk-key-btn[data-wk="keyplate"].is-open .wk-key{ transform:rotate(90deg); }
+.wk-key-btn[data-wk="keyplate"].is-open .wk-lamp{ background:#7CF29A; box-shadow:0 0 8px #7CF29A,inset 1px 1px 0 rgba(255,255,255,.5); transition:background 0s .3s,box-shadow 0s .3s; }
+
+@media (prefers-reduced-motion:reduce){
+  .wk-drawer-face,.wk-hatch-panel,.wk-key{ transition:none; }
+  .wk-key-btn.is-open .wk-screw{ animation:none; }
+}
