@@ -398,11 +398,19 @@ const CoachTalk = (() => {
   /* Short because of THEM: when you cover a short opponent, a line's
      '.opp' wording goes first ("Lucy only has 7 big blinds", not "you're
      short"). */
-  const shortKeys = (keys, n) => n && n.shortOpp ? keys.reduce((o, k) => o.concat([k + '.opp', k]), []) : keys;
+  // (and '.near' when you were nearly out anyway: a gamble is more reasonable)
+  const shortKeys = (keys, n) => {
+    const v = [].concat(n && n.nearlyOut ? ['.near'] : [], n && n.shortOpp ? ['.opp'] : []);
+    return v.length ? keys.reduce((o, k) => o.concat(v.map(x => k + x), [k]), []) : keys;
+  };
+  // how often, in plain words (no percentages until they're taught)
+  const oftenWords = p => p == null || p === '' ? 'often enough' : p <= 2 ? 'almost never' : p < 40 ? 'about 1 time in ' + Math.max(2, Math.round(100 / p))
+    : p < 60 ? 'about half the time' : p < 75 ? 'about 2 times in 3' : p < 90 ? 'about 3 times in 4' : 'almost every time';
   function slots(sp, j){
     const n = (j && j.n) || {}, seat = (sp && sp.seat) || n.seat;
     return {
       shortOpp: n.shortOpp || 'they',
+      win: n.win != null ? fmt(n.win) : '', needWords: oftenWords(n.need), eqWords: oftenWords(n.eq),
       hole: sp ? sp.holeFacts.name : '', pct: n.pct != null ? n.pct : sp ? Math.max(1, Math.round(sp.holeFacts.pct * 100)) : '',
       handWords: handWords(sp ? sp.holeFacts.pct : null), rangeWords: rangeWords(n.range),
       range: n.range != null ? n.range : '', seatOn: seatOn(seat), seatFrom: seatFrom(seat),
@@ -636,7 +644,8 @@ const CoachTalk = (() => {
      back). The first time a lesson comes up, the lesson follows. */
   function verdictOf(h){
     if (!h || !h.decisions || !h.end) return null;
-    const judged = h.decisions.filter(d => d.judgement);
+    // (you won everything they had: "you could have won more" isn't true)
+    const judged = h.decisions.filter(d => d.judgement && !(h.end.tookAll && d.judgement.tag === 'bet.missed'));
     if (!judged.length) return null;
     // the decision that matters most: how wrong or right it was, then later
     // streets and bigger pots over a close call before the flop
