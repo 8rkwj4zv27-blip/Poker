@@ -23,6 +23,10 @@ const SandMath = Object.create(Math);
 SandMath.random = seeded(+process.env.PIP_SEED || 20260929);   // PIP_SEED=n tries another run
 const ctx = { console, Math:SandMath };
 vm.createContext(ctx);
+// The real wager helpers: legality tests must agree with the game, not
+// with a second simplified version of its betting controls.
+const engine = fs.readFileSync(path.join(ROOT, 'js/05-game-engine.js'), 'utf8');
+vm.runInContext(engine.slice(engine.indexOf('function wagerStep('), engine.indexOf('function fitDecisionToTable(')), ctx);
 vm.runInContext(fs.readFileSync(path.join(ROOT, 'js/01-poker-math.js'), 'utf8') + '\n' +
   fs.readFileSync(path.join(ROOT, 'js/coach-brain.js'), 'utf8') + '\n' +
   fs.readFileSync(path.join(ROOT, 'js/coach-lines.js'), 'utf8') +

@@ -1142,18 +1142,76 @@ const QUICK_BET_PRESET_DEFINITIONS = Object.freeze({
   ])
 });
 
+/* Round steps for the raise controls: 5s at the early blinds, 25s in the
+   middle, 50s at the top. Only the display snaps to these; the legal
+   minimum and the maximum stay exact (see snapWager). */
+function wagerStep(g){
+  const bb=Math.max(0,Math.round(Number(g && g.bigBlind)||0));
+  if (bb<=100) return 5;
+  if (bb<=500) return 25;
+  return 50;
+}
+
+/* The most anyone still in the hand can put in this street. Betting past
+   it can't be called (the extra only comes back), so the controls stop
+   there. Null when the table isn't known. */
+function wagerCallableCap(g,player){
+  if (!g || !Array.isArray(g.players)) return null;
+  let cap=0;
+  g.players.forEach(o=>{
+    if (o===player || !o.inHand || o.folded) return;
+    cap=Math.max(cap,Math.round(Number(o.betThisRound)||0)+Math.max(0,Math.round(Number(o.chips)||0)));
+  });
+  return cap;
+}
+
 function wagerBounds(g,player){
   if (!g || !player) return null;
   const currentBet=Math.max(0,Math.round(Number(g.currentBet)||0));
   const playerBet=Math.max(0,Math.round(Number(player.betThisRound)||0));
   const stack=Math.max(0,Math.round(Number(player.chips)||0));
-  const maxTotal=playerBet+stack;
+  const stackTotal=playerBet+stack;
   const fullRaise=Math.max(
     currentBet+Math.max(0,Math.round(Number(g.minRaise)||0)),
     playerBet+Math.max(0,Math.round(Number(g.bigBlind)||0))
   );
+  // If nobody left can put in more than the current bet, a raise is
+  // pointless: the top is the call. Otherwise never below a legal full
+  // raise: if the cap sits under it, the minimum raise covers everyone.
+  const cap=wagerCallableCap(g,player);
+  const maxTotal=cap===null ? stackTotal
+    : cap<=currentBet ? Math.min(stackTotal,currentBet)
+    : Math.min(stackTotal,Math.max(cap,fullRaise));
   const minTotal=Math.min(maxTotal,fullRaise);
-  return {min:minTotal,max:maxTotal,currentBet,playerBet,stack};
+  return {min:minTotal,max:maxTotal,currentBet,playerBet,stack,
+    matched:maxTotal<stackTotal,step:wagerStep(g)};
+}
+
+/* Snap a requested total to the round step, keeping the exact legal
+   minimum and maximum reachable at the ends. */
+function snapWager(value,bounds,mode){
+  const v=Number(value);
+  if (!Number.isFinite(v) || v<=bounds.min) return bounds.min;
+  if (v>=bounds.max) return bounds.max;
+  const step=bounds.step||1;
+  const snapped=(mode==='up' ? Math.ceil(v/step) : Math.round(v/step))*step;
+  return Math.max(bounds.min,Math.min(bounds.max,snapped));
+}
+
+/* An opponent never bets past what anyone can call: over an all-in that
+   extra only comes back as a pointless side pot. A raise nobody can call
+   becomes a call (or check); a bigger one stops at the most anyone left
+   can put in, never under a legal full raise. */
+function fitDecisionToTable(g,player,decision){
+  if (!decision || !['bet','raise','allin'].includes(decision.action)) return decision;
+  const b=wagerBounds(g,player);
+  if (!b || !b.matched) return decision;
+  if (b.max<=b.currentBet){
+    return {action:b.currentBet>b.playerBet ? 'call' : 'check', amount:0};
+  }
+  const want=decision.action==='allin' ? b.playerBet+b.stack : Math.round(Number(decision.amount)||0);
+  if (want<=b.max) return decision;
+  return {action:b.currentBet>0 ? 'raise' : 'bet', amount:b.max};
 }
 
 function quickBetContext(g){
@@ -1171,8 +1229,7 @@ function quickBetPresetAmount(def,g,bounds){
   else if (def.kind==='wager-multiple') raw=bounds.currentBet*def.value;
   else if (def.kind==='pot-open') raw=bounds.playerBet+pot*def.value;
   else if (def.kind==='pot-after-call') raw=bounds.playerBet+toCall+(pot+toCall)*def.value;
-  const rounded=Math.round(raw);
-  return Math.max(bounds.min,Math.min(bounds.max,rounded));
+  return snapWager(Math.round(raw),bounds,'up');
 }
 
 function quickBetPresets(g,player){
@@ -1182,13 +1239,17 @@ function quickBetPresets(g,player){
   const unique=[];
   QUICK_BET_PRESET_DEFINITIONS[context].forEach(def=>{
     const amount=quickBetPresetAmount(def,g,bounds);
+    // All-in past what anyone can call becomes MATCH: exactly their stack.
+    if (def.kind==='all-in' && bounds.matched) def={id:'match',label:'Match',kind:'all-in',priority:30};
     const existing=unique.findIndex(p=>p.amount===amount);
     const item={id:def.id,label:def.label,amount,context,_priority:def.priority||10};
     if (existing<0) unique.push(item);
     else if (item._priority>unique[existing]._priority) unique[existing]=item;
   });
   if (unique.length===1 && unique[0].amount===bounds.max && bounds.min===bounds.max){
-    unique[0]={id:'all-in',label:'All-in',amount:bounds.max,context,_priority:30};
+    unique[0]=bounds.matched
+      ? {id:'match',label:'Match',amount:bounds.max,context,_priority:30}
+      : {id:'all-in',label:'All-in',amount:bounds.max,context,_priority:30};
   }
   return unique.map(({id,label,amount,context})=>({id,label,amount,context}));
 }
@@ -1196,6 +1257,7 @@ function actionLabel(action, player, amt){
   if (player.allIn) return 'All-In';
   if (action==='fold') return 'Fold';
   if (action==='check') return 'Check';
+  if (action==='match') return 'Match ' + fmtActionAmount(amt);
   if (action==='call') return amt>0 ? 'Call ' + fmtActionAmount(amt) : 'Check';
   if (action==='bet') return 'Bet ' + fmtActionAmount(amt);
   if (action==='raise') return 'Raise to ' + fmtActionAmount(amt);
@@ -1309,7 +1371,11 @@ function applyAction(player, decision){
     if (player.allIn) maybeTableTalk(player, 'allin');
     else if (action==='raise' || action==='bet') maybeTableTalk(player, 'raise');
   }
-  const streetLabel = actionLabel(action, player, shortAmt);
+  // Calling an all-in reads MATCH, with the amount matched.
+  const matchesAllIn = action==='call' && shortAmt>0 && g.players.some(o=>
+    o!==player && o.inHand && !o.folded && o.allIn && o.betThisRound===player.betThisRound);
+  const streetLabel = matchesAllIn ? actionLabel('match', player, player.betThisRound)
+    : actionLabel(action, player, shortAmt);
   player.streetAction = { type: player.allIn ? 'allin' : action, label: streetLabel, amount: shortAmt };
   setActionRows(player.name,streetLabel,false);
   flashAction(player.id, streetLabel);
@@ -3707,7 +3773,7 @@ async function continueAction(){
     if (seatEl) seatEl.root.classList.add('thinking');
     setMood(player.id, pickThinkMood(player));
     setActionRows(player.name,'IS THINKING…',true);
-    const decision = await aiDecide(player, game);   // off the main thread
+    const decision = fitDecisionToTable(game, player, await aiDecide(player, game));   // off the main thread
     await aiWait(aiThinkTime(player, decision, game));   // QUICK RESOLVE can cut this short
     if (seatEl) seatEl.root.classList.remove('thinking');
     if (game.over) return;
