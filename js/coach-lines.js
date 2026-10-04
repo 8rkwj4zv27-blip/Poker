@@ -655,7 +655,8 @@ const CoachLines = (() => {
   add('sum.lost', 3, [['unlucky', 'You lost that one. A loss alone doesn’t make a decision a mistake.']]);
   add('sum.folded', 3, [['calm', 'You folded that hand. We can judge the decision by the cards and price you faced, not by what came afterwards.']]);
   add('sum.even', 3, [['calm', 'Nothing much happened in that one.']]);
-  add('read.wait', 3, [['thinking', 'Let’s see how the cards land.'], ['calm', 'All in. Nothing to do now but watch.']]);
+  add('read.wait', 3, [['thinking', 'Let’s see how the cards land.'], ['calm', 'Nothing to do now but watch.'], ['calm', 'Let’s see who has it. Ask me again after.']]);
+  add('read.cards', 3, [['calm', 'Have a look at your cards first.'], ['calm', 'Turn your cards over, then ask me.']]);
   add('tap.done', 3, [['calm', 'That’s all I’ve got on this one.'], ['calm', 'Nothing more to add here.'], ['calm', 'That’s everything. Play on.']]);
 
   /* ================= more ways to say the things he says most ================= */
@@ -753,6 +754,41 @@ const CoachLines = (() => {
   add('comfort.out.fine', 1, [['unlucky', 'Out, but you played that one fine. It just didn’t go your way.'], ['unlucky', 'Unlucky. The play was fine; the cards weren’t. We’ll go again.']]);
   add('comfort.hurt', 1, [['wince', 'That one hurt. Tap me if you want to go over it.'], ['unlucky', 'A big one to lose. We can look at it later. Tap me.']]);
   add('comfort.fine', 1, [['unlucky', 'Unlucky. You played that fine; it just didn’t go your way.'], ['unlucky', 'That hurts, but the play was fine. Shake it off.']]);
+
+  /* ================= calling an all in (the audit, 30 Sep 2026) =================
+     Fold or call is the whole decision: the price (what you put in against
+     what you can win: only what you match) against how often you'd win.
+     Plain words, no percentages: {needWords} is "about 1 time in 3".
+     <key>.near: you were nearly out anyway (a gamble is more reasonable). */
+  add('allcall.call.good.now', 2, [['pleased', 'Good call.']]);
+  add('allcall.call.good.why', 2, [['calm', 'Calling {call} to win {win} with {hole} was right. You only needed to win {needWords}, and {hole} does better than that against an all in like that.']]);
+  add('allcall.call.good.why.near', 2, [['calm', 'Calling your last {call} with {hole} was right. You were nearly out anyway, and a chance to win {win} was worth taking.']]);
+  add('allcall.call.close.why', 4, [['calm', 'Calling {call} to win {win} with {hole} was close. You needed to win {needWords}, and {hole} is right on the edge of that.']]);
+  add('allcall.call.close.why.near', 4, [['calm', 'That call was close, but you were nearly out anyway. A gamble to win {win} was reasonable.']]);
+  add('allcall.call.bad.now', 1, [['thinking', 'That call costs too much for that hand.']]);
+  add('allcall.call.bad.now.leans', 3, [['thinking', 'A bit expensive for that hand.']]);
+  add('allcall.call.bad.why', 2, [['thinking', 'Calling {call} with {hole} was too much. You could only win {win}, so you needed to win {needWords}, and {hole} wins less often than that against an all in.']]);
+  add('allcall.call.bad.why.leans', 2, [['thinking', 'Calling {call} with {hole} there was a bit loose for the price.']]);
+  add('allcall.call.bad.why.near', 2, [['thinking', 'Even nearly out, calling with {hole} was too loose. You needed to win {needWords}, and it wins less often than that. A better hand will come.']]);
+  add('allcall.fold.good.why', 4, [['calm', 'Folding {hole} was right. Calling {call} to win {win} needed a hand that wins {needWords}.']]);
+  add('allcall.fold.close.why', 4, [['calm', 'Folding {hole} was fine. Calling would have been close too.']]);
+  add('allcall.fold.missed.now', 1, [['thinking', 'That was worth a call.']]);
+  add('allcall.fold.missed.now.leans', 3, [['thinking', 'I’d have called that.']]);
+  add('allcall.fold.missed.why', 2, [['thinking', 'Folding {hole} gave up a good price. It cost {call} to win {win}: you only needed to win {needWords}, and {hole} wins more often than that.']]);
+  add('allcall.fold.missed.why.leans', 2, [['thinking', 'Folding {hole} was a little too careful for that price. It cost {call} to win {win}.']]);
+  add('allcall.fold.missed.why.near', 2, [['thinking', 'You were nearly out anyway. {hole} was worth calling with there: it cost {call} to win {win}.']]);
+  add('advise.allcall.call', 3, [['calm', 'Call. It costs {call} to win {win}. You need to win {needWords}, and {hole} does better than that.']]);
+  add('advise.allcall.call.near', 3, [['calm', 'Call. You’re nearly out anyway, and this is a fair chance to win {win}.']]);
+  add('advise.allcall.fold', 3, [['calm', 'Fold. It costs {call} to win {win}. You’d need to win {needWords}, and {hole} wins less often than that.']]);
+  add('advise.allcall.fold.near', 3, [['calm', 'Fold. Even nearly out, {hole} is too weak for this price. Wait for a better one.']]);
+  add('hint.allcall', 3, [['thinking', 'It costs {call} to win {win}. How often does {hole} need to win to make that worth it?']]);
+
+  /* all in over someone's raise (not an opening all in: no "players after you") */
+  add('short.reshove.loose.now', 1, [['surprised', 'All in over a raise with that?']]);
+  add('short.reshove.loose.now.leans', 3, [['thinking', 'A bit loose to go all in over a raise.']]);
+  add('short.reshove.loose.why', 2, [['thinking', 'Going all in over {raiser}’s raise with {hole} was too loose. A raise usually means a good hand, and {hole} doesn’t win often enough against one.']]);
+  add('short.reshove.loose.why.leans', 2, [['thinking', 'All in over the raise with {hole} was a little loose.']]);
+  add('short.reshove.close.why', 4, [['calm', 'Fine. All in over the raise with {hole} was a close call.']]);
 
   return { lines:L, terms:TERMS };
 })();

@@ -1,31 +1,52 @@
 # P.I.P., the Coach: handover for a fresh session
 
-Written 29 Sep 2026; latest checkpoint 2 Oct 2026:
-**v0.58.7-dev · P.I.P. Quieter Coaching**, branch `codex/pip-quiet-coaching`.
-Phase 1 and Phase 2 merged through PRs #53 and #54. This replaces the first
+Written 29 Sep 2026; latest 4 Oct 2026: **v0.58.8-dev · P.I.P. tap only +
+accuracy audit** (on top of Codex's v0.58.7, PRs #53-#55). This replaces the first
 handover (the brain has since been built). Read this, then
 `CLAUDE.md` for the house rules. Open `docs/coach/BRAIN_PLAN.md` only for
 the full history of how each part was decided (it's long; sections are
 dated), and `docs/CODEMAP.md` for the rest of the game.
 
-## Current checkpoint / next task
+## Current state / next task (4 Oct 2026, v0.58.8): read this first
 
-Checkpoint 1 of Phase 3 is implemented and release-approved: routine turns
-are quiet; commitments, re-raises, expensive draws and changed plans can
-intervene. Non-critical automatic advice is capped at one per street/two
-per hand. HELP “Tell me” retains full guidance; taps remain unrestricted.
-No settings/statistics migration, new UI, hand review or player memory.
-32 speech/reliability checks cover quiet turns, taps, deduplication, budgets,
-critical overrides and existing stale-message/lesson protections.
-The release is merged/pushed as part of this checkpoint; verify the deployed
-build marker before claiming it is available on the owner's phone.
+Two lines of work met here. Another session (Codex, PRs #53-#55, up to
+v0.58.7 "Quieter Coaching") deepened the brain (value targets, draw
+pricing, river sizing, pot-aware calls after the flop, all-in consistency)
+and made his automatic talk quieter. This session (PR after #55) ran an
+accuracy audit and, on the owner's instruction, made him **tap only**. The
+owner chose (4 Oct, option A): **tap only replaces the quieter automatic
+coaching**. Codex's planned "Checkpoint 2" (an automatic post-hand
+breakdown with Continue/Skip) is therefore NOT the next step as written:
+any post-hand breakdown must be something the player taps for. Ask the
+owner before building it.
 
-Stop after this checkpoint for phone play. Next approved direction is
-Checkpoint 2: a short post-hand breakdown with one decision/one takeaway
-and Continue/Skip. Plan the surface and timing before implementing; keep
-result versus decision quality and advice-following attribution explicit.
-Checkpoint 3 (deeper Why?/alternatives) and persistent observations remain
-later work. Older sections below describe prior builds and are historical.
+- **Tap only.** P.I.P. says nothing on his own (`TAP_ONLY` in
+  `coach-talk.js`; the quieter automatic coaching code is still there
+  behind it). A tap reads the table at that moment (`sceneStamp`), with no
+  spoilers: cards face down, an all in running out, the showdown before
+  the result. His lamp blinks amber when he has a verdict on the hand you
+  just played. The TALK/HELP dials are gone from Settings.
+- **The result is on screen** only when the award key is live
+  (`resultShown()`); the locked SHOWDOWN key of a run out is not it.
+- **The accuracy audit.** `validation/tools/coach-fullgame.js` plays
+  complete games (uneven stacks, rising blinds, side pots, knockouts, the
+  real AI and pot split) and checks his numbers and verdicts against the
+  rules at every decision. Run it after ANY brain change:
+  `node validation/tools/coach-fullgame.js 300 7` must say "No
+  disagreements." (a 60-game run is inside `coach-brain-checks.js`).
+- **The real game, tapped.** `validation/tools/coach-tap-play.js` plays
+  real hands on an emulated iPhone and taps him at awkward moments; it
+  fails on talk without a tap or any spoiler.
+- The price of a call is what you can win: before the flop `spot.potWin`
+  (only what you match), after the flop Codex's `potAssessment` (per side
+  pot, same rule). Calling an all in before the flop is its own judgement
+  (`kind:'allcall'`).
+- Tests now: `coach-brain-checks.js`, `coach-reliability-checks.js`,
+  `coach-tactics-checks.js` (Codex), the full-game audit, the tap tester.
+  Codex's `docs/coach/PIP_AUDIT_2026-10-02.md` is their audit of the
+  coaching; read it for the tactical depth.
+- Next agreed step: plain words, no percentages until a lesson teaches
+  them. Details: `BRAIN_PLAN.md`, the last sections.
 
 ## The one-paragraph version
 

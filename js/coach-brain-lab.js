@@ -102,6 +102,8 @@
     ['8 BLINDS: LIMP ACE-NINE', 6, 0, 0, ['As', '9d'], 160, F([3, 4, 5]), ['call']],
     // (29 Sep: you have 1,400; Lucy in the big blind has only 70 behind)
     ['LUCY IS SHORT: FOLD SIX-TWO', 3, 0, 0, ['6d', '2d'], 1400, [[1, 'fold']], ['fold'], { chips:{ 2:70 } }],
+    // (30 Sep: Roxy all in for 850; you call your last 44 in the big blind)
+    ['ROXY ALL IN: CALL YOUR LAST CHIPS, SIX-THREE', 4, 0, 2, ['6c', '3s'], 2000, [[3, 'fold'], [0, 'fold'], [1, 'raise', 850]], ['call'], { chips:{ 1:840, 2:44 } }],
     ['LUCY IS SHORT: ALL IN KING-TEN', 3, 0, 0, ['Ks', 'Td'], 1400, [[1, 'fold']], ['raise', 1400], { chips:{ 2:70 } }],
     // after the flop: the button raised, you called in the big blind; you check, they bet
     ['FLOP: CALL A FLUSH DRAW, HALF POT', 'post', ['Ah', '5h'], ['Kh', '9h', '2c'], 0.5, ['call']],
@@ -250,10 +252,8 @@
           : '<p class="sdl-note">Nothing yet. Play a hand.</p>');
     }
     if (tab === 'talk'){
-      return '<div class="sdl-row"><div class="sdl-name">THE TALK SLIDER</div>' + seg('notch', CT.OPTIONS.notch, picks.notch) +
-        '<p class="sdl-note">1 COMMENTS: only a clear mistake gets a word. 2 DEBRIEF: + good plays, and the reasons after the hand. 3 TIPS: + his advice on the big decisions, and the smaller mistakes. 4 IN YOUR EAR: everything: advice on every decision, your seat when you\'re dealt in, close calls called close.</p></div>' +
-        '<div class="sdl-row"><div class="sdl-name">HELP: HOW DIRECT HE IS</div>' + seg('help', CT.OPTIONS.help, picks.help) +
-        '<p class="sdl-note">Before you act, before the flop (after the flop comes next). ADVICE: what he\'d do and why; says so when it\'s close. TELL ME: always the move, with the numbers and the size. HINTS: what to think about, not the move. WATCH: nothing before you act; he teaches afterwards. Tapping his screen always gets his full read.</p></div>' +
+      return '<div class="sdl-row"><div class="sdl-name">TAP ONLY</div>' +
+        '<p class="sdl-note">He says nothing on his own now. Close this sheet and play: tap his screen whenever you want his read, worked out from the table right then. Tap again to go deeper (the lesson, then a tip). Your cards face down, an all in running out, or the showdown before the result: he only says to wait and see. After a hand, his light blinks amber when he has something to say about how you played it.</p></div>' +
         '<button type="button" class="sdl-again" data-act="deal">DEAL AGAIN</button>';
     }
     return '<div class="sdl-row"><div class="sdl-name">HIS KEY</div>' + seg('keyFace', CS.OPTIONS.keyFace, picks.keyFace) +

@@ -412,11 +412,19 @@ const CoachTalk = (() => {
   /* Short because of THEM: when you cover a short opponent, a line's
      '.opp' wording goes first ("Lucy only has 7 big blinds", not "you're
      short"). */
-  const shortKeys = (keys, n) => n && n.shortOpp ? keys.reduce((o, k) => o.concat([k + '.opp', k]), []) : keys;
+  // (and '.near' when you were nearly out anyway: a gamble is more reasonable)
+  const shortKeys = (keys, n) => {
+    const v = [].concat(n && n.nearlyOut ? ['.near'] : [], n && n.shortOpp ? ['.opp'] : []);
+    return v.length ? keys.reduce((o, k) => o.concat(v.map(x => k + x), [k]), []) : keys;
+  };
+  // how often, in plain words (no percentages until they're taught)
+  const oftenWords = p => p == null || p === '' ? 'often enough' : p <= 2 ? 'almost never' : p < 40 ? 'about 1 time in ' + Math.max(2, Math.round(100 / p))
+    : p < 60 ? 'about half the time' : p < 75 ? 'about 2 times in 3' : p < 90 ? 'about 3 times in 4' : 'almost every time';
   function slots(sp, j){
     const n = (j && j.n) || {}, seat = (sp && sp.seat) || n.seat;
     return {
       shortOpp: n.shortOpp || 'they',
+      win: n.win != null ? fmt(n.win) : '', needWords: oftenWords(n.need), eqWords: oftenWords(n.eq),
       hole: sp ? sp.holeFacts.name : '', pct: n.pct != null ? n.pct : sp ? Math.max(1, Math.round(sp.holeFacts.pct * 100)) : '',
       handWords: handWords(sp ? sp.holeFacts.pct : null), rangeWords: rangeWords(n.range),
       range: n.range != null ? n.range : '', seatOn: seatOn(seat), seatFrom: seatFrom(seat),
@@ -591,17 +599,49 @@ const CoachTalk = (() => {
      thing per tap, and never loops back: his read, then the lesson behind
      it, then a tip; then "that's all" until the moment changes (your turn,
      a new street, the result, the next hand). */
+  /* TAP ONLY (owner, 4 Oct 2026): "coach should now only talk when he's
+     tapped. And when he's tapped, he reads the screen and the game right
+     then." He says nothing on his own: no deal lines, no advice, no word
+     after you act, no verdicts, no reactions. His brain still watches and
+     judges every decision; a tap works it out from the table AT THAT
+     MOMENT. When he has a verdict on the hand you just played, his lamp
+     blinks (CoachSet.notice), silently. The automatic talk is kept in the
+     code (TAP_ONLY false) should it come back with its timing rebuilt. */
+  const TAP_ONLY = true;
+  /* The result is ON SCREEN only once the award key is live (COLLECT /
+     PAY). The console flips earlier, to a locked SHOWDOWN key, while an
+     all in runs out and the cards are turned: that's not the result. */
+  function resultShown(){
+    const flip = $id('console-flip'), btn = $id('btn-award-pot-console'), face = $id('console-face-award');
+    return !!(flip && flip.classList.contains('flipped') && btn && !btn.disabled && !(face && face.classList.contains('sd-lit')));
+  }
+  // all in and nobody left to bet: the cards just run out (no spoilers)
+  function runningOut(g){
+    if (!g || !g.players) return false;
+    const live = g.players.filter(p => p.inHand && !p.folded);
+    if (live.length < 2) return false;
+    if (g.phase === 'showdown') return true;
+    const free = live.filter(p => !p.allIn && p.chips > 0);
+    return live.some(p => p.allIn) && (free.length === 0 || (free.length === 1 && free[0].betThisRound >= (g.currentBet || 0)));
+  }
   function tapContext(g, me){
-    const flip = $id('console-flip');
-    const result = !!(flip && flip.classList.contains('flipped'));
-    return [sceneStamp(), result ? 'result' : ''].join('|');
+    // (everything on the table now: a new action, bet or card is a new
+    // moment; the result only once the award key is live)
+    return [sceneStamp(), resultShown() ? 'result' : ''].join('|');
   }
   function tapItems(g, me){
     const items = [];
     const push = (key, ctx, moment) => { const t = textOf(key, ctx || {}); if (t) items.push({ text:t.text, mood:t.mood, moment:moment || [].concat(key)[0] }); };
-    const flip = $id('console-flip');
-    const result = !!(flip && flip.classList.contains('flipped'));
-    const inHand = !result && g && me && me.inHand && !me.folded && me.hand && me.hand.length === 2 && ['preflop', 'flop', 'turn', 'river'].includes(g.phase);
+    const result = resultShown();
+    // no spoilers: your cards are yours to turn over; a run out and a
+    // showdown are yours to watch
+    if (!result && g && me && me.inHand && !me.folded && g._humanCardsVisible === false && me.hand && me.hand.length){ push('read.cards'); return items; }
+    // (once the result has been on screen, the hand is over: COLLECT pressed,
+    // the next not dealt yet. Then a tap is about how you played it.)
+    const ended = !!(g && B.last && B.last.n === g.handNumber);
+    if (!result && !ended && g && me && me.inHand && !me.folded && runningOut(g)){ push('read.wait'); return items; }
+    if (!result && !ended && g && g.phase === 'showdown'){ push('read.wait'); return items; }
+    const inHand = !result && !ended && g && me && me.inHand && !me.folded && me.hand && me.hand.length === 2 && ['preflop', 'flop', 'turn', 'river'].includes(g.phase);
     if (inHand){
       const r = tapRead(me);
       if (r && r.parts.length) items.push({ text:r.parts.map(p => p.text).join(' '), mood:r.parts[0].mood, moment:'tap.read' });
@@ -634,6 +674,7 @@ const CoachTalk = (() => {
     explainGen++; holdUntil = 0;
     const g = game, me = human();
     try{ CoachSet.look('you'); }catch(e){}
+    try{ CoachSet.notice(false); }catch(e){}
     const ctxKey = tapContext(g, me);
     if (T.ctx !== ctxKey || !T.items){ T.ctx = ctxKey; T.items = tapItems(g, me); T.i = 0; }
     // (anything he's already said this hand is skipped)
@@ -687,7 +728,8 @@ const CoachTalk = (() => {
      back). The first time a lesson comes up, the lesson follows. */
   function verdictOf(h){
     if (!h || !h.decisions || !h.end) return null;
-    const judged = h.decisions.filter(d => d.judgement);
+    // (you won everything they had: "you could have won more" isn't true)
+    const judged = h.decisions.filter(d => d.judgement && !(h.end.tookAll && d.judgement.tag === 'bet.missed'));
     if (!judged.length) return null;
     // the decision that matters most: how wrong or right it was, then later
     // streets and bigger pots over a close call before the flop
@@ -818,6 +860,7 @@ const CoachTalk = (() => {
       try{ if (sp) rec = CoachBrain.record(sp, g, player, { adviceShown:A.shownId === sp.decisionId }); }catch(e){}
       try{
         if (!player || !decision) return r;
+        if (TAP_ONLY) return r;   // (he only speaks when tapped)
         const a = decision.action, amt = g.currentBet;
         if (player.isHuman){
           if (wordNow(rec)) return r;
@@ -840,6 +883,7 @@ const CoachTalk = (() => {
     const realCoach = window.updateCoach;
     window.updateCoach = function(){
       const r = realCoach.apply(this, arguments);
+      if (TAP_ONLY) return r;
       try{
         const me = human();
         if (me && pendingHumanPlayer === me){
@@ -883,7 +927,9 @@ const CoachTalk = (() => {
             }
             CoachBrain.handStart(g, W.start);
             // someone went out last hand (known for sure once the next is dealt)
-            g.players.forEach(p => { if (!p.isHuman && last.start && last.start[p.id] > 0 && (p.eliminated || p.chips <= 0 && !p.inHand)) say('oppOut', { name:p.name }); });
+            if (!TAP_ONLY) g.players.forEach(p => { if (!p.isHuman && last.start && last.start[p.id] > 0 && (p.eliminated || p.chips <= 0 && !p.inHand)) say('oppOut', { name:p.name }); });
+            // (the last hand's lamp goes out with the new deal)
+            try{ CoachSet.notice(false); }catch(e){}
           }
         }catch(e){}
       }
@@ -897,7 +943,7 @@ const CoachTalk = (() => {
         W.dealt = true;
         const h = holeCtx();
         // (not over the last hand's debrief)
-        if (h && !B.pending && !live) dealtLine(g, me, h);
+        if (!TAP_ONLY && h && !B.pending && !live) dealtLine(g, me, h);
       }
       /* the end of the hand: the moment the winner is shown and the COLLECT
          key comes up (#console-flip), before the pot is paid: he works the
@@ -905,14 +951,20 @@ const CoachTalk = (() => {
          pot's been paid, or after 20 seconds. */
       // (everyone folding before the flop goes straight to the award screen
       // with the phase still 'preflop': the screen itself is the signal)
-      const flip = $id('console-flip');
-      const shownNow = !!(flip && flip.classList.contains('flipped')) && W.dealt;
-      if (!W.ended && (g.phase === 'showdown' || g.phase === 'foldwin' || shownNow)){
+      // a tapped bubble goes when the moment it was about has passed
+      // (you act, a card comes, the result is shown, a new hand)
+      if (TAP_ONLY){ const k = tapContext(g, me); if (W.moment != null && k !== W.moment && live) clear(false); W.moment = k; }
+      // (tap only: the result counts only once it's really on screen: the
+      // award key live, never the locked SHOWDOWN key of a run out, and no
+      // guessing from the phase or a timer. A hand that ends unseen is
+      // closed exactly when the next is dealt: closeMissed.)
+      const shownNow = (TAP_ONLY ? resultShown() : !!($id('console-flip') && $id('console-flip').classList.contains('flipped'))) && W.dealt;
+      if (!W.ended && (shownNow || (!TAP_ONLY && (g.phase === 'showdown' || g.phase === 'foldwin')))){
         if (!W.endAt) W.endAt = performance.now();
         let net = null;
         if (shownNow && me){ try{ net = CoachBrain.settle(g, me); }catch(e){ net = null; } }
         const paid = (g.pot || 0) === 0;
-        if (net == null && (paid || performance.now() - W.endAt > 20000) && me) net = me.chips - (W.start[me.id] != null ? W.start[me.id] : me.chips);
+        if (net == null && (paid || (!TAP_ONLY && performance.now() - W.endAt > 20000)) && me) net = me.chips - (W.start[me.id] != null ? W.start[me.id] : me.chips);
         if (net != null){
           W.ended = true;
           if (!me) return;
@@ -924,6 +976,12 @@ const CoachTalk = (() => {
           try{ if (typeof CoachBrain !== 'undefined') done = CoachBrain.handEnd(g, me, net); }catch(e){}
           // his verdict on the hand straight away, while the result's up; the
           // plain result line only when he has nothing more useful to say
+          if (TAP_ONLY){
+            // worked out now, said when he's tapped; the lamp says he has a word
+            try{ if (done) debrief(done, false); }catch(e){}
+            try{ if (B.last && B.last.v && B.last.v.sc >= 3) CoachSet.notice(true); }catch(e){}
+            return;
+          }
           const endedHand = g.handNumber;
           setTimeout(() => {
             if (game !== g || game.handNumber !== endedHand) return;

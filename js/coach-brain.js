@@ -217,6 +217,15 @@ const CoachBrain = (() => {
     const myTotal = me.chips + (me.betThisRound || 0);
     const biggestOpp = opps.reduce((m, p) => Math.max(m, p.chips + (p.betThisRound || 0)), 0);
     const effective = Math.min(myTotal, biggestOpp);
+    /* THE PRICE OF A CALL (the audit, 30 Sep 2026): you can only win from
+       each player as much as you put in yourself; the rest of a bigger
+       stack's all in goes back to them. What a call can win is every chip
+       in the pot up to your own total once you've called (the game's
+       computePots, the pots you'd be eligible for). */
+    const myIn = (me.totalBetHand || 0) + toCall;
+    const potWin = g.players.reduce((s, p) => s + Math.min((p.totalBetHand || 0) + (p === me ? toCall : 0), myIn), 0);
+    // someone left who could still call a bet or raise of yours
+    const othersCanCall = opps.some(p => !p.allIn && p.chips > 0);
     const acts = actionsThisHand(g);
     const seat = seatLabel(g, idx);
     const preflop = g.phase === 'preflop';
@@ -259,11 +268,13 @@ const CoachBrain = (() => {
       shortByOne: opps.length === 1,
       pot, potBB: r1(pot / bb),
       toCall, toCallBB: r1(toCall / bb),
-      potOdds: toCall > 0 ? toCall / (pot + toCall) : 0,
+      potWin, potToWin: Math.max(0, potWin - toCall), othersCanCall,
+      potOdds: toCall > 0 ? toCall / Math.max(toCall, potWin) : 0,
       spr: pot > 0 ? r1(Math.max(0, effective - (me.betThisRound || 0)) / pot) : null,
       currentBet: g.currentBet || 0,
       minRaise: g.minRaise || bb,
-      mayRaise: me.mayRaise !== false && me.chips > toCall && wager.max > (g.currentBet || 0),
+      // (a raise nobody can call is just a call; the engine's own bounds too)
+      mayRaise: me.mayRaise !== false && me.chips > toCall && othersCanCall && wager.max > (g.currentBet || 0),
       wager,
       preflop: pf,
       situation: preflop ? pf.kind : streetSituation(g, me, acts, toCall).kind,
@@ -353,12 +364,16 @@ const CoachBrain = (() => {
     const raises = sp.preflop.raises;
     let r;
     if (agg && agg.allIn && agg.stackBB + agg.bet / sp.bigBlind <= 15) r = 0.30;
+    // (all in for a lot of big blinds is a strong hand, not a normal raise)
+    else if (agg && agg.allIn) r = 0.15;
     else if (raises >= 2) r = RERAISE[Math.min(raises, RERAISE.length - 1)];
     else r = sp.playersDealt === 2 ? OPEN_HEADS_UP * 0.9 : (OPEN_BY_SEAT[agg && agg.seat] || 0.2) * 0.9;
     if (raises <= 1 && sp.currentBet / sp.bigBlind > 4.5 && !(agg && agg.allIn)) r *= 0.75;
     r *= Math.pow(widthOf(agg && agg.read, 'pfr', 0.18), raises <= 1 ? 1 : 0.7);
     return Math.max(0.01, Math.min(1, r));
   }
+  // (one estimate per decision and set of ranges: his advice and his verdict
+  // on the same decision must agree, even on a borderline hand)
   function equityVs(sp, ranges){
     let memo = PRE_EQ.get(sp);
     if (!memo){ memo = new Map(); PRE_EQ.set(sp, memo); }
@@ -394,6 +409,38 @@ const CoachBrain = (() => {
       behind:sp.actingAfter, seat:sp.seat, raiser:sp.pfAggressor ? sp.pfAggressor.name : null, limpers,
       // (short because of them, not you: his lines name them)
       shortOpp: sp.effectiveBB <= 15 && sp.shortBy ? sp.shortBy : null, shortOne: sp.shortByOne };
+
+    /* ---- calling an all in: nothing to raise (the audit, 30 Sep 2026) ----
+       Either the call is all your chips, or they're all in and nobody left
+       could call a raise. Fold or call is the whole decision (a raise, an
+       all in, is only a call), and it's the price against your chance:
+       what you put in against what you can win (only what you match). */
+    if (sp.toCall > 0 && (sp.toCall >= sp.stack || !sp.othersCanCall)){
+      const Rr = raises ? raiserRange(sp) : 1;
+      const ranges = raises ? [Rr].concat(Array.from({ length:sp.preflop.callers }, () => Math.min(1, Rr * 1.6))) : [1];
+      const eq = equityVs(sp, ranges);
+      if (eq == null) return null;
+      // nearly out: fold, and the blinds take the rest soon anyway
+      const nearlyOut = sp.toCall >= sp.stack && sp.stackBB <= 3;
+      const need = sp.potOdds - (nearlyOut ? 0.04 : 0);
+      const margin = eq - need;
+      Object.assign(n, { eq:pct100(eq), need:pct100(Math.max(0.01, need)), call:sp.toCall, win:sp.potWin, margin:Math.round(margin * 100),
+        lastChips: sp.toCall >= sp.stack, nearlyOut, raiser: n.raiser || (sp.opponents.find(o => o.allIn) || {}).name || null });
+      const base = { kind:'allcall', best: margin >= 0 ? 'call' : 'fold', lesson:'pot-odds', n };
+      if (a === 'fold'){
+        // (his chance of winning is an estimate against what an all in usually
+        // means: within 5 points either way, it's close, and he says so)
+        if (margin <= -0.05) return J(Object.assign(base, { verdict:'good', confidence: margin < -0.10 ? 'clear' : 'leans', tag:'allcall.fold.good' }));
+        if (margin < 0.05) return J(Object.assign(base, { verdict:'fine', confidence:'close', tag:'allcall.fold.close' }));
+        return J(Object.assign(base, { verdict:'mistake', confidence: margin > 0.12 ? 'clear' : 'leans', tag:'allcall.fold.missed', notable:true }));
+      }
+      if (a === 'call' || a === 'allin' || a === 'raise'){
+        if (margin >= 0.03) return J(Object.assign(base, { verdict:'good', confidence: margin > 0.08 ? 'clear' : 'leans', tag:'allcall.call.good', notable: margin > 0.08 }));
+        if (margin > -0.05) return J(Object.assign(base, { verdict:'fine', confidence:'close', tag:'allcall.call.close' }));
+        return J(Object.assign(base, { verdict:'mistake', confidence: margin < -0.12 ? 'clear' : 'leans', tag:'allcall.call.bad', notable:true }));
+      }
+      return null;
+    }
 
     /* ---- short: shove or fold ---- */
     if (raises === 0 && sp.effectiveBB <= PUSH_FOLD_BB && !(sp.seat === 'BB' && sp.toCall === 0)){
@@ -525,14 +572,16 @@ const CoachBrain = (() => {
       return J(Object.assign(base, { verdict:'mistake', confidence: margin < -0.10 ? 'clear' : 'leans', tag:pre + '.call.weak', notable:true }));
     }
     if (a === 'raise' || a === 'allin'){
-      if (a === 'allin' && !short){
+      // (all in, when his own raise would have been most of your chips
+      // anyway, is just that raise)
+      if (a === 'allin' && !short && sp.stack + sp.yourBet > raiseSize(sp) * 1.35){
         if (eq >= 0.65) return J(Object.assign(base, { verdict:'fine', confidence:'leans', tag:'reraise.shove.big', lesson:'three-bet', notable:true }));
         return J(Object.assign(base, { verdict:'mistake', confidence: eq < 0.5 ? 'clear' : 'leans', tag:'reraise.shove.loose', lesson:'three-bet', notable:true }));
       }
       if (short){
         if (eq >= 0.48) return J(Object.assign(base, { verdict:'good', confidence:'clear', tag:'short.reshove.good', lesson:'short-stack', notable:true }));
-        if (eq >= 0.42) return J(Object.assign(base, { verdict:'fine', confidence:'close', tag:'short.push.close', lesson:'short-stack' }));
-        return J(Object.assign(base, { verdict:'mistake', confidence: eq < 0.35 ? 'clear' : 'leans', tag:'short.push.loose', lesson:'short-stack', notable:true }));
+        if (eq >= 0.42) return J(Object.assign(base, { verdict:'fine', confidence:'close', tag:'short.reshove.close', lesson:'short-stack' }));
+        return J(Object.assign(base, { verdict:'mistake', confidence: eq < 0.35 ? 'clear' : 'leans', tag:'short.reshove.loose', lesson:'short-stack', notable:true }));
       }
       if (value) return J(Object.assign(base, { verdict:'good', confidence:'clear', tag:pre + '.raise.value', lesson:'three-bet', notable:true }));
       if (eq >= 0.52 || (f.suited && pct <= 0.35 && margin > -0.06)) return J(Object.assign(base, { verdict:'fine', confidence:'close', tag:pre + '.raise.close', lesson:'three-bet' }));
@@ -651,6 +700,7 @@ const CoachBrain = (() => {
     if (sp.toCall <= 0) return null;   // betting when checked to: step 3b
     let a = ch.action;
     if (a === 'allin') a = sp.toCall >= sp.stack ? 'call' : 'raise';
+    if (a === 'raise' && !sp.othersCanCall) a = 'call';   // (nobody left could call a raise)
     if (a === 'check') a = 'call';
     const bf = sp.boardFacts, left = 5 - sp.board.length;
     // (one sample per decision: advice judges every move on the same spot)
@@ -683,7 +733,7 @@ const CoachBrain = (() => {
     const unseen = 52 - 2 - sp.board.length;
     const drawName = bf.draws.flush && (bf.draws.oesd || bf.draws.gutshot) ? 'a flush and straight draw' : bf.draws.flush ? 'a flush draw' : bf.draws.oesd ? 'an open-ended straight draw' : bf.draws.gutshot ? 'an inside straight draw' : '';
     const n = { street:sp.street, eq:pct100(anyDraw && madeWeak ? usable : eq), runoutEq:pct100(eq),
-      need:pct100(Math.max(0.01, need) / (anyDraw && madeWeak ? 1 : realise)), odds:Math.round(odds * 100), call:sp.toCall, pot:sp.pot,
+      need:pct100(Math.max(0.01, need) / (anyDraw && madeWeak ? 1 : realise)), odds:Math.round(odds * 100), call:sp.toCall, pot:sp.potToWin,
       pots, potNote:pots ? pots.note : '', raisePlan,
       valueTargets:raisePlan && raisePlan.continuation ? raisePlan.continuation.targetText : 'weaker made hands',
       handName:bf.handName, made:bf.made, drawName, outs:bf.drawOuts, hitNext: bf.drawOuts ? Math.round(bf.drawOuts / unseen * 100) : 0,
@@ -1047,7 +1097,7 @@ const CoachBrain = (() => {
     const risk = Math.min(sp.stack, Math.max(0, theirs - sp.yourBet));   // (they can only call what they have)
     const final = sp.pot + risk + Math.max(0, sp.yourBet + risk - o.bet);
     const shove = fe * sp.pot + (1 - fe) * (eq * final - risk);
-    const other = sp.toCall > 0 ? Math.max(0, eq * 0.9 * (sp.pot + sp.toCall) - sp.toCall) : eq * 0.9 * sp.pot;
+    const other = sp.toCall > 0 ? Math.max(0, eq * 0.9 * (sp.potWin || sp.pot + sp.toCall) - sp.toCall) : eq * 0.9 * sp.pot;
     const whole = risk >= sp.stack;
     const edge = shove - other - (whole ? (sp.mode === 'cash' ? 0.1 : 0.15) * sp.pot : 0);
     return { ok: edge >= 0, close: Math.abs(edge) < 0.1 * sp.pot, whole, risk };
@@ -1248,7 +1298,7 @@ const CoachBrain = (() => {
      have, what you're drawing to and your chance of hitting it, the price. */
   function readNow(sp){
     if (!sp) return null;
-    const out = { street:sp.street, toCall:sp.toCall, pot:sp.pot, odds:Math.round(sp.potOdds * 100), hole:sp.holeFacts.name, seat:sp.seat };
+    const out = { street:sp.street, toCall:sp.toCall, pot: sp.toCall > 0 ? sp.potToWin : sp.pot, odds:Math.round(sp.potOdds * 100), hole:sp.holeFacts.name, seat:sp.seat };
     if (sp.street === 'preflop' || !sp.boardFacts) return out;
     const bf = sp.boardFacts, left = sp.board.length === 3 ? 2 : sp.board.length === 4 ? 1 : 0;
     const drawOuts = bf.drawOuts, q = bf.drawQuality;
@@ -1327,7 +1377,9 @@ const CoachBrain = (() => {
         elig.forEach(id => { if (!best || call('compareHands', strength[id], strength[best]) > 0) best = id; });
         winners = elig.filter(id => call('compareHands', strength[id], strength[best]) === 0);
       }
-      if (winners.includes(me.id)) won += Math.floor(pot.amount / winners.length);
+      // (the odd chip of a split goes to the first winners in seat order, as the game pays it)
+      const k = winners.indexOf(me.id), share = Math.floor(pot.amount / winners.length);
+      if (k >= 0) won += share + (k < pot.amount - share * winners.length ? 1 : 0);
     }
     return won - (me.totalBetHand || 0);
   }
@@ -1343,7 +1395,10 @@ const CoachBrain = (() => {
       board: (g.board || []).map(card),
       shown: shownAtShowdown(g, me),
       yourHand: showdown ? (call('describePlayerHand', me.hand, g.board || []) || '') : null,
-      out: me.chips <= 0
+      out: me.chips <= 0,
+      // everyone still against you at the end was all in: win it, and you
+      // won everything they had (nothing more to win)
+      rivalsAllIn: (() => { const r = g.players.filter(p => p !== me && p.inHand && !p.folded); return r.length > 0 && r.every(p => p.allIn || p.chips <= 0); })()
     };
   }
   function observe(g, me){
@@ -1360,6 +1415,7 @@ const CoachBrain = (() => {
       result: net > 0 ? 'won' : net < 0 ? 'lost' : 'even',
       folded: !!foldAt, foldedOn: foldAt ? foldAt.spot.street : null
     }, v);
+    hand.end.tookAll = !!(net > 0 && v.rivalsAllIn);
     delete hand.seen;
     history.push(hand);
     while (history.length > HISTORY) history.shift();

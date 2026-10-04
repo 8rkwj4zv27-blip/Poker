@@ -821,3 +821,136 @@ Strategic brain and game rules are unchanged. The phone trial should check
 whether interventions feel timely, whether taps provide enough help, and
 whether the player prefers the existing Tell me setting for fuller guidance.
 Next task: checkpoint 2 hand breakdown; do not begin it in this release.
+
+## The accuracy audit, v0.57.5 (30 Sep – 4 Oct 2026)
+
+**Why.** The owner's 6-3 hand: Roxy all in for 1,270, the owner with 66
+left in the big blind. P.I.P. said "Call, you only need 7%", and after the
+hand called it a mistake ("too many players after you"). Both were wrong.
+You can only win from each player what you match yourself: the call was 66
+to win 192 (about 1 time in 3 needed), not 66 into 1,300. The owner, rightly:
+"It all falls apart once the player gets a single incorrect piece of
+advice." The old checks missed it because every hand-built table had equal
+stacks, and the 5,000 random checks only tested that he agrees with
+himself, never against the true answer.
+
+**What the audit is.** `validation/tools/coach-fullgame.js` plays COMPLETE
+games, first hand to last: stacks carried over (so uneven), blinds rising
+every 10 hands (`BLIND_LEVELS`), 2-6 players, 500-1,500 chips, the game's
+real AI (`aiDecide`), the engine's betting bookkeeping, side pots and odd
+chips by the engine's own `computePots` and payout rule. You are played by
+his advice most of the time and a random legal move otherwise. At every
+one of your decisions and every hand's end, checked against answers worked
+out from the rules, not from his brain:
+
+1. the price of a call: what you put in against what you can win (only
+   what you match; the game's pot split);
+2. the amount to call (never more than you have);
+3. the effective stack, and who makes it short;
+4. your made hand's name, against the game's;
+5. his advice is a move you have; never a raise nobody left can call;
+   raise sizes are legal;
+6. the numbers he quotes about the price;
+7. advice to call is never below the true price on his own estimate;
+8. a call with your last chips is judged as a call, not a shove;
+9. doing exactly what he advised is never judged a mistake;
+10. "too many players after you" only when someone is after you;
+11. his result at the showdown equals what the pots pay (side pots, split
+    pots, the odd chip);
+12. never "you could have won more" after winning everything they had.
+
+**Found (300 games, 4,911 hands, before the fixes):** the price of a call
+wrong against a bigger stack (126 decisions); quoted prices wrong (115);
+a call with your last chips judged as a shove (65); "players after you"
+with nobody after (69); a raise or all in advised when the only opponent
+was already all in (44); advice and verdict disagreeing (95, partly a flaw
+in the checker itself, fixed); calls advised below the true price (12);
+"you could have won more" after winning everything (8); his result 1 chip
+out on split pots (8).
+
+**Fixed.**
+- `spot`: `potWin` (what a call can win: every chip up to your own total)
+  and `potOdds` from it; `potToWin` for the lines; `othersCanCall`, and
+  `mayRaise` only when someone could call a raise.
+- Before the flop, **calling an all in** (`kind:'allcall'`): when the call
+  is all your chips, or they're all in and nobody else could call a raise,
+  fold or call is the whole decision: your chance against the raiser's
+  hands, at the true price. Nearly out (3 big blinds or less): a gamble is
+  a little more reasonable (`.near` lines). Within 5 points it's close, and
+  he says so. Lines in plain words, no percentages ("It costs 66 to win
+  192. You'd need to win about 1 time in 3"; `{win}`, `{needWords}`).
+- A deep all in by the raiser reads as a strong hand (top 15%), not a
+  normal open.
+- All in over a raise has its own lines (`short.reshove.*`), not the
+  opening-shove "players after you" ones.
+- All in when his own raise would be most of your chips is that raise.
+- One estimate of your chance per decision (advice and verdict agree).
+- After the flop: a raise nobody can call is judged as the call.
+- `handEnd`: `end.tookAll` (you won and everyone against you was all in);
+  the verdict then skips "you could have won more".
+- `settle`: the odd chip of a split as the game pays it.
+
+**After:** 900 full games on three seeds (about 15,000 hands): no
+disagreements. The owner's 6-3 hand now reads "It's close. I'd fold, but
+call is fine too." Checks: 5 new hand-built ones (the 6-3 hand, an all in
+nobody else can call, won everything, the odd chip), and a seeded 60-game
+full run in `coach-brain-checks.js` that fails the build on any
+disagreement.
+
+**What it can't prove.** How often you'd win depends on what he thinks
+an opponent holds, read from their betting: an estimate, not a fact. It's
+tested for sense, and close calls are called close, but there's no single
+right answer to check it against. The same goes for how often a player
+folds to a bluff. Timing and spoilers live in the real game's screen and
+are the next step (tap only).
+
+## Tap only, v0.57.6 (4 Oct 2026)
+
+**The owner:** "coach should now only talk when he's tapped. And when he's
+tapped, he reads the screen and the game right then, at that moment he's
+triggered. That way the player can receive information when they want and
+be guaranteed that it's relevant… I don't want showdowns, cards or moments
+spoilt for me." Picked: tap only as the ONLY mode for now; a silent light
+when he has something to say; then plain words (no percentages) next.
+
+- `coach-talk.js` `TAP_ONLY = true`: no deal lines, advice, word after you
+  act, verdicts, comfort lines or reactions on his own. The brain still
+  records and judges every decision. The automatic talk stays in the code
+  behind the switch, should it come back with its timing rebuilt.
+- **A tap reads the table at that moment** (the moment includes every new
+  action, so nothing stale): your turn, his advice; their turn, what their
+  betting means; the result, how you played it; between hands (COLLECT
+  pressed, next not dealt), the last hand. Tap again: the lesson, a tip,
+  then "that's all".
+- **No spoilers**: your cards face down, "Have a look at your cards first";
+  an all in running out, or the showdown before the result, "Let's see
+  how the cards land".
+- **The result is on screen only when the award key is live** (COLLECT /
+  PAY). The console flips earlier to a locked SHOWDOWN key while an all in
+  runs out: that was the early "That's the run over" (and "unlucky" before
+  a win). No more guessing the end from the phase or a 20-second timer: a
+  hand that ends unseen is closed exactly when the next is dealt.
+- A tapped bubble goes as soon as its moment passes (you act, a card
+  comes, the result, a new hand).
+- **His lamp** (`CoachSet.notice`): blinks amber, silently, when he has a
+  verdict on the hand you just played (a mistake, or a play worth
+  praising); off when tapped or at the next deal; steady amber with
+  Reduced Motion.
+- Settings: the TALK and HELP dials are replaced by one line explaining
+  tap only (`settings.coachTalk` / `coachHelp` kept, untouched).
+- Tested in the real game: `validation/tools/coach-tap-play.js` plays real
+  hands on an emulated iPhone, taps him with real touches at every awkward
+  moment, logs every bubble with the table state, and fails on anything
+  said without a tap, any read with your cards face down, anything but
+  "wait" before the result, or a verdict for the wrong hand. It found one
+  bug (after COLLECT, a tap said "wait" instead of the verdict), fixed.
+
+## Combined, v0.58.8 (4 Oct 2026)
+
+The two lines of work (Codex's PRs #53-#55, and this session's audit and
+tap only) were merged. The owner chose tap only over the quieter automatic
+coaching. Kept from both: Codex's tactical depth and pot-aware calls after
+the flop; this session's price of a call before the flop, calling an all
+in, the full-game audit and tap only. Codex's v0.58.7 still had the price
+bug before the flop (127 wrong prices in 300 full games); the combined
+build is checked by every suite on both sides.

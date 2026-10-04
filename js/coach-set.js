@@ -90,7 +90,7 @@ const CoachSet = (() => {
   const LED_BOOT = { amber:'#F2B431', red:'#E0503C', green:'#8CF0A8' };
   let ledBoot = 'amber';
   function led(c, x, y, st){
-    const col = st === 'boot' ? (LED_BOOT[ledBoot] || LED_BOOT.amber) : st ? '#8CF0A8' : '#1D3A28';
+    const col = st === 'boot' ? (LED_BOOT[ledBoot] || LED_BOOT.amber) : st === 'word' ? '#F2B431' : st ? '#8CF0A8' : '#1D3A28';
     px(c, INK, x - 1, y - 1, 4, 3); px(c, col, x, y, 2, 1);
   }
   function feet(c, x1, x2, y){ px(c, INK, x1, y, 6, 2); px(c, INK, x2, y, 6, 2); }
@@ -454,6 +454,21 @@ const CoachSet = (() => {
     setOf().draw(c, palOf(O.finish), ledState);
   }
   let ledState = false;
+  /* He has something to say (tap only, owner 4 Oct 2026): the lamp blinks
+     amber, silently, until he's tapped or the moment passes. Steady amber
+     with Reduced Motion. */
+  let noticeTimer = null;
+  function notice(want){
+    if (noticeTimer){ clearInterval(noticeTimer); noticeTimer = null; }
+    if (!on || ledState === 'boot'){ return; }
+    if (!want){ ledState = true; paintBody(); return; }
+    ledState = 'word'; paintBody();
+    if (motionOffSafe()) return;
+    noticeTimer = setInterval(() => {
+      if (!on || ledState === false || ledState === 'boot'){ clearInterval(noticeTimer); noticeTimer = null; return; }
+      ledState = ledState === 'word' ? true : 'word'; paintBody();
+    }, 520);
+  }
 
   /* ---------------- the set in the round ----------------
      For the lift on and off the table the set is a real box: its front is
@@ -1406,6 +1421,6 @@ const CoachSet = (() => {
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start); else setTimeout(start, 0);
 
-  return { apply, power, replug, reboot, setMood, mouth, look, talk, still, sheetFrames, drawTile, MOODS, OPTIONS, DEFAULTS, SETS,
+  return { apply, power, replug, reboot, setMood, mouth, look, talk, still, notice, sheetFrames, drawTile, MOODS, OPTIONS, DEFAULTS, SETS,
     get on(){ return on; }, get busy(){ return busy; }, get order(){ return Object.assign({}, O); } };
 })();
