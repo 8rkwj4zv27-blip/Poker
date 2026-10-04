@@ -269,3 +269,27 @@ change or a note wrapping to a second line moved both its edges.
   every tab: one layout per tab, the same cabinet edges across tabs.
 - Hand Rankings and Custom Game have the same centring; left for later
   (owner).
+
+**Round 10: SHOWDOWN (same link).** Two plates and a stage.
+- WHEN IT SMASHES: the game's own four keys (Monster pots, Big pots,
+  Every win, Off), moved in from Settings.
+- SMASH STYLE: four presets, each setting force, bounces, heat and pickup
+  together. Simmer is big, few, ember, flip. Big bang is the machine's own
+  (huge, lots, ember, flip). Wild is max, endless, all-in, ripple. White
+  hot is max, lots, white, all. A preset taps the original segs, which
+  stay wired in the attic, so `settings.sdForce/sdBounce/sdHeat/sdPickup`
+  save as before. A save that matches no preset shows as "Your own mix"
+  until a style is picked.
+- The stage is a felt that borrows `#felt`, just as CHIPS does. A pot of
+  22 chips cooks in the chosen heat palette, shivering as it heats. Then
+  it bangs (flash, jolt, the showdown's sound), bursts at the chosen
+  force and bounces off the felt's walls. It settles and is picked up in
+  the chosen way into a bank below the felt. It plays on opening the tab,
+  on every style tap, and on SMASH AGAIN. With smash Off, the caption
+  says the pot goes straight to the bank.
+- The preview drives a copy of `showdown.js`'s burst (`explode`) and its
+  heat palettes, using the live `Showdown.opt` values. It is not the
+  sealed showdown sequence. When this is ported, `showdown.js` should
+  expose a preview call so the copy can go.
+- Fits the cabinet at 393x852 and 430x932 (felt 120px, notes kept to one
+  line). It scrolls on an SE. One layout through every key.

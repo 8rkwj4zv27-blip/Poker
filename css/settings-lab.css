@@ -509,3 +509,12 @@ html[data-holder="brass"] .wss-lip{
    what doesn't fit scrolls inside it */
 #settings-sheet{ height:88%; }
 #settings-sheet > .sheet-body{ flex:1 1 auto; min-height:0; }
+
+/* ---- SHOWDOWN (round 10): a pot on its own felt, and two rows of keys ---- */
+.ws-stage--showdown .wss-felt{ height:120px; border-bottom:4px solid var(--rail-lo); border-radius:10px; overflow:visible; }
+.ws-stage--showdown .wss-tray{ overflow:visible; }
+#workshop .ws-again{ flex:1 1 100%; min-height:40px; }
+.ws-use:has(.ws-again){ margin:6px 0 10px; }
+.ws-stage--showdown .wss-tray{ width:110px; height:50px; }
+.ws-style-seg{ flex-wrap:wrap; row-gap:9px; }
+#workshop .ws-style-seg button{ flex:1 1 40%; min-width:0; }
