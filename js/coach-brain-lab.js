@@ -102,6 +102,8 @@
     ['8 BLINDS: LIMP ACE-NINE', 6, 0, 0, ['As', '9d'], 160, F([3, 4, 5]), ['call']],
     // (29 Sep: you have 1,400; Lucy in the big blind has only 70 behind)
     ['LUCY IS SHORT: FOLD SIX-TWO', 3, 0, 0, ['6d', '2d'], 1400, [[1, 'fold']], ['fold'], { chips:{ 2:70 } }],
+    // (30 Sep: Roxy all in for 850; you call your last 44 in the big blind)
+    ['ROXY ALL IN: CALL YOUR LAST CHIPS, SIX-THREE', 4, 0, 2, ['6c', '3s'], 2000, [[3, 'fold'], [0, 'fold'], [1, 'raise', 850]], ['call'], { chips:{ 1:840, 2:44 } }],
     ['LUCY IS SHORT: ALL IN KING-TEN', 3, 0, 0, ['Ks', 'Td'], 1400, [[1, 'fold']], ['raise', 1400], { chips:{ 2:70 } }],
     // after the flop: the button raised, you called in the big blind; you check, they bet
     ['FLOP: CALL A FLUSH DRAW, HALF POT', 'post', ['Ah', '5h'], ['Kh', '9h', '2c'], 0.5, ['call']],

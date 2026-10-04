@@ -163,7 +163,7 @@ async function playGame(opts, R, audit, log){
         applyAction(g, p, d, toCall);
         if (p.id === HERO){
           const rec = B.record(sp, g, p);
-          checkChoice(g, p, sp, adv, rec, audit, H);
+          checkChoice(g, p, sp, adv, rec, audit, H, d.followed);
         }
       }
       if (live().length <= 1) break;
@@ -241,7 +241,7 @@ function heroMove(g, me, sp, adv, R, follow){
   const toCall = Math.max(0, g.currentBet - me.betThisRound);
   if (adv && R() < follow){
     const m = adv.move === 'bet' ? 'raise' : adv.move;
-    return { action:m, amount:adv.to || 0 };
+    return { action:m, amount:adv.to || 0, followed:true };
   }
   const opts = toCall > 0 ? ['fold', 'call', 'call'] : ['check', 'check'];
   if (me.mayRaise !== false && me.chips > toCall) opts.push('raise', 'allin');
@@ -292,7 +292,7 @@ function checkSpot(g, me, sp, adv, audit, H){
   if (mv === 'call' && n.eq != null && tp.call > 0 && n.eq + 3 < Math.round(tp.odds * 100) && !(adv.sure === 'close'))
     audit('call-underpriced', 'advises calling: wins about ' + n.eq + '%, but needs ' + Math.round(tp.odds * 100) + '% at the true price', H);
 }
-function checkChoice(g, me, sp, adv, rec, audit, H){
+function checkChoice(g, me, sp, adv, rec, audit, H, followed){
   const j = rec && rec.judgement, ch = rec && rec.choice;
   if (!j || !ch) return;
   H.decisions.push({ street:sp.street, action:ch.action, tag:j.tag, verdict:j.verdict, conf:j.confidence, advice: adv ? adv.move : null, spot:H.last });
@@ -301,10 +301,8 @@ function checkChoice(g, me, sp, adv, rec, audit, H){
   if (couldOnlyCall && ch.action === 'allin' && /push|shove|raise/.test(j.tag))
     audit('allin-call', 'you called with your last chips; he judged it as "' + j.tag + '"', H);
   // A8 doing what he advised is never a mistake (the advice and the verdict agree)
-  const did = ch.action === 'allin' ? (couldOnlyCall ? 'call' : 'allin') : ch.action;
-  const said = adv ? (adv.move === 'bet' ? 'raise' : adv.move) : null;
-  const same = said && (did === said || (said === 'raise' && did === 'allin') || (said === 'allin' && did === 'raise') || (said === 'check' && did === 'call' && sp.toCall === 0));
-  if (same && j.verdict === 'mistake') audit('advice-vs-verdict', 'advised ' + adv.move + ', you did, and he called it a mistake (' + j.tag + ')', H);
+  // (you did exactly what he advised: the move and his size)
+  if (followed && j.verdict === 'mistake') audit('advice-vs-verdict', 'advised ' + adv.move + ', you did, and he called it a mistake (' + j.tag + ')', H);
   // A8b a shove judged from a seat that nobody acts after says "players after you"
   if (/short\.push\.loose/.test(j.tag) && sp.actingAfter === 0) audit('nobody-after', 'judged "' + j.tag + '" (too many players after you) with nobody after you', H);
 }

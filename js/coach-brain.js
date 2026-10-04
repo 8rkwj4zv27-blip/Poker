@@ -282,9 +282,17 @@ const CoachBrain = (() => {
     r *= Math.pow(widthOf(agg && agg.read, 'pfr', 0.18), raises <= 1 ? 1 : 0.7);
     return Math.max(0.01, Math.min(1, r));
   }
+  // (one estimate per decision and set of ranges: his advice and his verdict
+  // on the same decision must agree, even on a borderline hand)
+  const PRE_EQ = new WeakMap();
   function equityVs(sp, ranges){
-    const eq = call('estimateEquityVsRanges', sp.hole, [], ranges, 1200);
-    return typeof eq === 'number' ? eq : null;
+    const memo = PRE_EQ.get(sp) || new Map(), key = JSON.stringify(ranges);
+    PRE_EQ.set(sp, memo);
+    if (memo.has(key)) return memo.get(key);
+    let eq = call('estimateEquityVsRanges', sp.hole, [], ranges, 1200);
+    eq = typeof eq === 'number' ? eq : null;
+    memo.set(key, eq);
+    return eq;
   }
   const J = (o) => Object.assign({ notable:false }, o);
 
@@ -326,14 +334,16 @@ const CoachBrain = (() => {
         lastChips: sp.toCall >= sp.stack, nearlyOut, raiser: n.raiser || (sp.opponents.find(o => o.allIn) || {}).name || null });
       const base = { kind:'allcall', best: margin >= 0 ? 'call' : 'fold', lesson:'pot-odds', n };
       if (a === 'fold'){
-        if (margin <= -0.03) return J(Object.assign(base, { verdict:'good', confidence: margin < -0.08 ? 'clear' : 'leans', tag:'allcall.fold.good' }));
-        if (margin < 0.03) return J(Object.assign(base, { verdict:'fine', confidence:'close', tag:'allcall.fold.close' }));
-        return J(Object.assign(base, { verdict:'mistake', confidence: margin > 0.10 ? 'clear' : 'leans', tag:'allcall.fold.missed', notable:true }));
+        // (his chance of winning is an estimate against what an all in usually
+        // means: within 5 points either way, it's close, and he says so)
+        if (margin <= -0.05) return J(Object.assign(base, { verdict:'good', confidence: margin < -0.10 ? 'clear' : 'leans', tag:'allcall.fold.good' }));
+        if (margin < 0.05) return J(Object.assign(base, { verdict:'fine', confidence:'close', tag:'allcall.fold.close' }));
+        return J(Object.assign(base, { verdict:'mistake', confidence: margin > 0.12 ? 'clear' : 'leans', tag:'allcall.fold.missed', notable:true }));
       }
       if (a === 'call' || a === 'allin' || a === 'raise'){
         if (margin >= 0.03) return J(Object.assign(base, { verdict:'good', confidence: margin > 0.08 ? 'clear' : 'leans', tag:'allcall.call.good', notable: margin > 0.08 }));
-        if (margin > -0.03) return J(Object.assign(base, { verdict:'fine', confidence:'close', tag:'allcall.call.close' }));
-        return J(Object.assign(base, { verdict:'mistake', confidence: margin < -0.10 ? 'clear' : 'leans', tag:'allcall.call.bad', notable:true }));
+        if (margin > -0.05) return J(Object.assign(base, { verdict:'fine', confidence:'close', tag:'allcall.call.close' }));
+        return J(Object.assign(base, { verdict:'mistake', confidence: margin < -0.12 ? 'clear' : 'leans', tag:'allcall.call.bad', notable:true }));
       }
       return null;
     }
@@ -468,7 +478,9 @@ const CoachBrain = (() => {
       return J(Object.assign(base, { verdict:'mistake', confidence: margin < -0.10 ? 'clear' : 'leans', tag:pre + '.call.weak', notable:true }));
     }
     if (a === 'raise' || a === 'allin'){
-      if (a === 'allin' && !short){
+      // (all in, when his own raise would have been most of your chips
+      // anyway, is just that raise)
+      if (a === 'allin' && !short && sp.stack + sp.yourBet > raiseSize(sp) * 1.35){
         if (eq >= 0.65) return J(Object.assign(base, { verdict:'fine', confidence:'leans', tag:'reraise.shove.big', lesson:'three-bet', notable:true }));
         return J(Object.assign(base, { verdict:'mistake', confidence: eq < 0.5 ? 'clear' : 'leans', tag:'reraise.shove.loose', lesson:'three-bet', notable:true }));
       }
