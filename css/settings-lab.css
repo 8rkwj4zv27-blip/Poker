@@ -13,7 +13,7 @@
 #settings-sheet[data-st-page="chips"] .st-page[data-st-page="chips"],
 #settings-sheet[data-st-page="cabinet"] .st-page[data-st-page="cabinet"]{ display:block; }
 #settings-sheet .st-attic,
-#settings-sheet .st-gone{ display:none !important; }
+.st-gone{ display:none !important; }
 
 /* ---- plates and setting rows ----
    One plate per group; rows inside it split by a cut seam instead of
@@ -152,13 +152,6 @@ html[data-st-volume="steps"] .st-steps{ display:flex; }
   background:repeating-conic-gradient(rgba(255,255,255,.05) 0 25%,transparent 0 50%) 0 0/8px 8px, var(--pc-leather);
   box-shadow:inset 4px 4px 0 var(--pc-leather-hi),inset -5px -5px 0 var(--pc-leather-lo),0 0 0 2px var(--theme-rim),0 9px 0 #090406;
 }
-#workshop .ws-page{ display:none; }
-#workshop[data-ws-page="index"] .ws-page[data-ws-page="index"],
-#workshop[data-ws-page="cards"] .ws-page[data-ws-page="cards"],
-#workshop[data-ws-page="dealing"] .ws-page[data-ws-page="dealing"],
-#workshop[data-ws-page="showdown"] .ws-page[data-ws-page="showdown"],
-#workshop[data-ws-page="chips"] .ws-page[data-ws-page="chips"],
-#workshop[data-ws-page="cabinet"] .ws-page[data-ws-page="cabinet"]{ display:block; }
 #workshop .setup-head{
   margin:0 0 12px; padding:5px 7px; border:3px solid var(--ms-edge);
   background:var(--pc-plastic-dark,var(--ms-plate-lo));
@@ -169,7 +162,6 @@ html[data-st-volume="steps"] .st-steps{ display:flex; }
   border:3px solid var(--ms-edge); border-radius:3px; background:var(--ms-plate); color:var(--ink);
   box-shadow:0 3px 0 var(--ms-edge),inset 2px 2px 0 var(--ms-plate-hi),inset -2px -2px 0 rgba(0,0,0,.25);
 }
-.ws-intro{ margin:0 2px 14px; font-family:var(--font-px); font-size:13px; line-height:1.4; color:#8E896B; }
 #workshop .sheet-section{
   display:flex; flex-direction:column; gap:16px; margin-bottom:12px; padding:12px 13px;
   border:3px solid var(--ms-edge); border-radius:4px; background:var(--ms-well);
@@ -200,16 +192,100 @@ html[data-st-volume="steps"] .st-steps{ display:flex; }
 #workshop .sheet-keys{ display:flex; gap:10px; }
 #workshop .sheet-keys > *{ flex:1 1 0; }
 
-/* ---- the home key (round 3): Custom Game's slab, a gold line set
-   inside its edge and a small gold stud either side of the word ---- */
+/* ---- the home key (round 4): Custom Game's slab with a trim ----
+   html[data-wbtn]: line | studs | edge | lamp */
 body #home .pc-control-bay > .pc-button-secondary.wk-trim{
-  display:flex; align-items:center; justify-content:center; gap:14px; margin:12px 0 0;
+  display:flex; align-items:center; justify-content:center; gap:14px; margin:0 0 12px;
+}
+body #home .pc-control-bay > .home-row + .pc-button-secondary.wk-trim{ margin:12px 0 0; }
+html[data-wbtn="line"] body #home .pc-control-bay > .wk-trim{
   box-shadow:0 4px 0 color-mix(in srgb,var(--theme-case-raised) 55%,black),0 6px 0 var(--pc-edge-lo),
     inset 2px 2px 0 var(--theme-case-hi),inset -2px -2px 0 rgba(0,0,0,.24),
     inset 0 0 0 5px var(--theme-case-raised),inset 0 0 0 7px color-mix(in srgb,var(--accent) 75%,transparent);
 }
-body #home .pc-control-bay > .pc-button-secondary.wk-trim:active{
+html[data-wbtn="edge"] body #home .pc-control-bay > .wk-trim{
+  box-shadow:0 4px 0 color-mix(in srgb,var(--theme-case-raised) 55%,black),0 6px 0 var(--pc-edge-lo),
+    inset 2px 2px 0 var(--theme-case-hi),inset -2px -2px 0 rgba(0,0,0,.24),
+    0 0 0 2px color-mix(in srgb,var(--accent) 85%,#6B4A10);
+}
+html[data-wbtn="line"] body #home .pc-control-bay > .wk-trim:active,
+html[data-wbtn="edge"] body #home .pc-control-bay > .wk-trim:active{
   box-shadow:0 1px 0 color-mix(in srgb,var(--theme-case-raised) 55%,black),0 3px 0 var(--pc-edge-lo),
     inset 0 0 0 5px var(--theme-case-raised),inset 0 0 0 7px color-mix(in srgb,var(--accent) 75%,transparent);
 }
+html[data-wbtn="edge"] .wk-trim .wk-stud,
+html:not([data-wbtn="lamp"]) .wk-trim .wk-lamp,
+html[data-wbtn="lamp"] .wk-trim .wk-stud{ display:none; }
 .wk-stud{ width:6px; height:6px; flex-shrink:0; transform:rotate(45deg); background:color-mix(in srgb,var(--accent) 80%,#6B4A10); box-shadow:0 1px 0 rgba(0,0,0,.35); }
+
+/* ---- round 4: the Workshop's preview window, pinned at the top ---- */
+#workshop .lobby-card > .setup-head{ margin-bottom:10px; }
+.ws-bench{
+  position:sticky; top:calc(-1 * max(28px,var(--safe-top))); z-index:6; margin:0 -4px 12px; padding:4px;
+  background:var(--pc-leather); box-shadow:0 6px 0 rgba(0,0,0,.35);
+}
+.wsb-felt{
+  position:relative; height:190px; overflow:hidden;
+  border:4px solid var(--rail-lo); border-radius:10px;
+  background:radial-gradient(ellipse at 50% 40%,var(--felt-1),var(--felt-2) 75%);
+  box-shadow:inset 0 0 0 3px var(--rail),inset 0 0 0 5px var(--rail-hi),inset 0 8px 18px rgba(0,0,0,.45),0 3px 0 var(--px-ink);
+}
+html[data-ws-bench="small"] .wsb-felt{ height:146px; }
+/* the deck (dealer-deck.css's #felt rules, for the bench) */
+.wsb-station{ position:absolute; left:16px; top:16px; width:48px; height:78px; }
+html[data-ds-where="right"] .wsb-station{ left:auto; right:16px; }
+.ws-bench .dealer-deck{ position:absolute; inset:0; }
+.ws-bench .dealer-deck .card{ position:absolute; width:44px; height:62px; left:2px; top:calc(2px + var(--ds-i,0) * 2px); z-index:calc(20 - var(--ds-i,0)); }
+.ws-bench .dealer-deck .card.back{ box-shadow:inset 0 0 0 2px var(--cb-trim,var(--rail)); }
+.ws-bench .dealer-deck .card.back.ds-under{ border-bottom-width:1px; }
+.ws-bench .dealer-deck .card.back.ds-bottom{ border-bottom-width:2px; box-shadow:inset 0 0 0 2px var(--cb-trim,var(--rail)),0 3px 0 rgba(0,0,0,.45); }
+.ws-bench .dealer-deck .card.ds-gone{ display:none; }
+.ws-bench .dealer-deck .card.ds-exit{ z-index:25; }
+.ws-bench .dealer-deck.ds-kick{ animation:dsKick 150ms steps(3,end); }
+/* the chips */
+.wsb-chips{ position:absolute; right:22px; top:38px; height:40px; }
+html[data-ds-where="right"] .wsb-chips{ right:auto; left:22px; }
+.wsb-chips .cl-chip{ image-rendering:pixelated; }
+/* your two cards in their holder */
+.wsb-seat{ position:absolute; left:50%; bottom:-8px; width:148px; height:96px; transform:translateX(-50%); }
+.wsb-slot{ position:absolute; left:0; right:0; top:16px; height:14px; border:2px solid var(--px-ink); border-radius:2px; background:#080405;
+  box-shadow:inset 0 8px 0 rgba(0,0,0,.8),0 1px 0 var(--theme-case-hi); }
+.wsb-cards{ position:absolute; left:50%; top:0; height:72px; overflow:hidden; display:flex; gap:6px; transform:translateX(-50%); z-index:2; }
+.wsb-cards .card{ position:relative; width:62px; height:88px; }
+.wsb-cards .card .r{ font-size:21px; } .wsb-cards .card .s{ font-size:15px; } .wsb-cards .card .pip{ font-size:30px; }
+.wsb-lip{ position:absolute; left:2px; right:2px; top:62px; height:12px; z-index:4; border:2px solid var(--machine-case-lo,#000); border-top-color:var(--theme-case-hi);
+  background:var(--theme-case-raised); box-shadow:0 2px 0 rgba(0,0,0,.5); }
+html[data-holder="brass"] .wsb-lip{
+  border:2px solid var(--px-ink); border-radius:3px 3px 2px 2px;
+  background:linear-gradient(to bottom,var(--pc-lamp-amber-hi,#FFE08A) 0 2px,var(--pc-lamp-amber,#E8B83A) 2px 5px,#D0921F 5px calc(100% - 2px),#7A4B0C calc(100% - 2px));
+  box-shadow:0 3px 0 rgba(0,0,0,.55);
+}
+.ws-bench.wsb-flash .wsb-lip{ animation:wsbFlash .5s steps(4,end); }
+@keyframes wsbFlash{ 0%,50%{ filter:brightness(1.6); } 100%{ filter:none; } }
+/* the caption: one CRT line under the felt (layout only; the CRT is crt.css's) */
+.wsb-caption{ margin-top:6px; min-height:30px; padding:6px 10px; display:flex; align-items:center; }
+
+/* the sections */
+#workshop .ws-sec > h3{ margin:0 0 2px; text-transform:uppercase; font-family:var(--font-hdr); font-size:8px; font-weight:400; letter-spacing:.1em; color:var(--ms-print); display:flex; align-items:center; gap:8px; }
+#workshop .ws-sec > h3::after{ content:""; height:3px; flex:1; background:repeating-linear-gradient(90deg,var(--ms-plate) 0 9px,transparent 9px 14px); opacity:.7; }
+#workshop .ws-nav{ display:none; margin:0 0 12px; }
+#workshop .ws-nav button{ flex:1 1 0; min-height:44px; font-family:var(--font-hdr); font-size:7px; letter-spacing:.04em; padding:4px 2px; }
+html[data-ws-layout="row"] #workshop .ws-nav{ display:flex; position:sticky; top:calc(-1 * max(28px,var(--safe-top)) + 240px); z-index:5; }
+html[data-ws-layout="row"][data-ws-bench="small"] #workshop .ws-nav{ top:calc(-1 * max(28px,var(--safe-top)) + 196px); }
+html[data-ws-layout="row"] #workshop .ws-sec{ display:none; }
+html[data-ws-layout="row"] #workshop .ws-sec.is-on{ display:flex; }
+/* deal styles: the notes give way to a play key; the rarity keys stay */
+#workshop .dst-row .ts{ display:none; }
+#workshop .dst-row{ margin-bottom:8px; }
+#workshop .dst-row .toggle-row{ gap:10px; }
+#workshop .dst-row .toggle-row > div:first-child{ flex:1; }
+#workshop .dst-tier{ margin:10px 0 6px; font-family:var(--font-hdr); font-size:7px; letter-spacing:.1em; color:var(--accent); }
+#workshop .dst-rarity button{ font-size:8px; min-height:34px; padding:2px; }
+.wsb-play{
+  flex:0 0 44px; height:36px; border:2px solid var(--ms-edge); border-radius:3px; background:var(--accent); color:var(--accent-ink);
+  font-size:13px; cursor:pointer; box-shadow:0 3px 0 color-mix(in srgb,var(--accent) 55%,black),inset 0 2px 0 rgba(255,255,255,.35);
+}
+.wsb-play:active{ transform:translateY(2px); box-shadow:0 1px 0 color-mix(in srgb,var(--accent) 55%,black); }
+/* the card backs as a grid of real cards (dealer-deck.css's Settings rule) */
+#workshop #deck-back-seg{ display:grid; grid-template-columns:repeat(4,1fr); gap:6px; }
+#workshop #deck-back-seg button{ display:flex; flex-direction:column; align-items:center; gap:6px; padding:8px 2px 7px; min-height:92px; }

@@ -117,3 +117,16 @@ not built yet).
 **Round 3 (same link):** the Workshop key is the Custom Game slab
 (`pc-button-secondary`) with a gold line set inside its edge and a gold
 stud either side of the word, under Quick Deal / Hand Rankings.
+
+**Round 4 (same link):** the Workshop's inside. One menu (the same rows
+and keys as Settings) under a preview window pinned at the top: a slice
+of felt with the dealer's deck (the real deck code, borrowed: while the
+Workshop is open the bench deck takes the `dealer-deck` id), your two
+cards in their holder, a few chips (CoinWorld's own chip art at the
+picked size) and a one-line CRT saying what's showing. Card backs deal a
+card in the new back; each deal style has a play key that deals one card
+that way; the deck side moves the deck; chip size redraws the chips; coin
+sounds drop a chip with the sound; colour themes recolour everything.
+The smash's preview needs a real pot: next round, at a table. TUNE:
+button trim (GOLD LINE / STUDS / GOLD EDGE / LAMPS), where it sits,
+ONE PANEL or CHOICE ROW, preview LARGE or SMALL, and COPY MY PICKS.

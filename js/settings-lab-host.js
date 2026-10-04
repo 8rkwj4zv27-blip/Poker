@@ -15,7 +15,7 @@
   const frame = document.getElementById('stl-game');
   const inject = JSON.parse(document.getElementById('lab-inject').textContent);
   const lab = window.__lab = {
-    state:{ view:'after', wkey:'drawer', open:null },
+    state:{ view:'after', wbtn:'line', wplace:'under', wlayout:'panel', bench:'large', open:null },
     set(patch){ Object.assign(lab.state, patch); },
     reload(){ load(); }
   };
