@@ -719,6 +719,18 @@ v0.46.0 the chips ARE the game's coin files (`js/coin-world.js`,
 palettes, ladders, the bank's options, moments, YOUR BANK presets up to
 FULL) over the real game. Not loaded by the game.
 
+## `settings-lab.html` + `js/settings-lab-host.js` + `js/settings-lab.js` + `css/settings-lab.css` — Settings Lab
+
+Phase 1 of the Settings + Workshop plan (`docs/ui/SETTINGS_PLAN.md`):
+the Settings sheet regrouped into PLAY / HELP / SOUND / DISPLAY (with THIS
+TABLE first at a table), and every cosmetic moved to plain WORKSHOP pages
+inside the sheet. Built at runtime from the game's own wired controls
+(moved, never copied); hand readout, four-colour deck and volume are wired
+by the lab (volume through a shim on `AudioContext.destination`). Phone-first
+like `showdown-lab.html` (reuses its sheet styles `css/showdown-lab.css`).
+TUNE switches BEFORE/AFTER, ONE PANEL/TABS, FADER/STEPS and hints. Lab
+only; nothing loads in the game.
+
 ## `js/finishes.js` + `css/finishes.css` — Finishes menu (live)
 
 Settings → Finishes: a page inside the Settings sheet that swaps each

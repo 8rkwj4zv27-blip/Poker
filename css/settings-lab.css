@@ -1,0 +1,130 @@
+/* Settings Lab (round 1; docs/ui/SETTINGS_PLAN.md): the new Settings
+   sheet and the plain Workshop pages, drawn on the game's own machine
+   tokens (--ms-* from css/06-machine-system.css). Lab only: never loaded
+   by the game. The TUNE key and sheet reuse css/showdown-lab.css. */
+
+/* ---- pages inside the sheet ---- */
+#settings-sheet .st-page{ display:none; }
+#settings-sheet[data-st-page="main"] .st-page[data-st-page="main"],
+#settings-sheet[data-st-page="workshop"] .st-page[data-st-page="workshop"],
+#settings-sheet[data-st-page="cards"] .st-page[data-st-page="cards"],
+#settings-sheet[data-st-page="dealing"] .st-page[data-st-page="dealing"],
+#settings-sheet[data-st-page="showdown"] .st-page[data-st-page="showdown"],
+#settings-sheet[data-st-page="chips"] .st-page[data-st-page="chips"],
+#settings-sheet[data-st-page="cabinet"] .st-page[data-st-page="cabinet"]{ display:block; }
+#settings-sheet .st-attic,
+#settings-sheet .st-gone{ display:none !important; }
+
+/* ---- plates and setting rows ----
+   One plate per group; rows inside it split by a cut seam instead of
+   each row being its own box. */
+#settings-sheet .st-plate{ gap:0; }
+#settings-sheet .st-plate > h3{ margin:0 0 4px; }
+.st-row{
+  display:flex; align-items:center; gap:12px; min-height:52px; padding:10px 0;
+  border-top:2px solid rgba(0,0,0,.42); box-shadow:inset 0 2px 0 rgba(255,255,255,.035);
+}
+.st-plate > h3 + .st-row{ border-top:0; box-shadow:none; }
+.st-row--below{ flex-wrap:wrap; row-gap:8px; }
+.st-row--below .st-ctl{ flex:1 1 100%; }
+.st-text{ flex:1 1 auto; min-width:0; }
+.st-label{ font-family:var(--font-px); font-size:15px; line-height:1.2; color:#E9DDAE; }
+.st-hint{ margin-top:3px; font-family:var(--font-px); font-size:12px; line-height:1.35; color:#8E896B; }
+html[data-st-hints="off"] .st-hint{ display:none; }
+.st-ctl{ flex:0 0 auto; display:flex; justify-content:flex-end; }
+#settings-sheet .st-ctl .segmented{ margin:0; }
+#settings-sheet .st-row:not(.st-row--below) .st-ctl .segmented button{ min-width:66px; }
+#settings-sheet .st-row--below .st-ctl .segmented{ width:100%; }
+.st-note{ padding:10px 0 2px; font-family:var(--font-px); font-size:12px; line-height:1.4; color:#8E896B;
+  border-top:2px solid rgba(0,0,0,.42); box-shadow:inset 0 2px 0 rgba(255,255,255,.035); }
+.st-note b{ color:#E9DDAE; font-weight:400; }
+.st-note--center,.st-intro{ border:0; box-shadow:none; text-align:center; padding:8px 4px 0; }
+.st-intro{ padding:0 4px 12px; text-align:left; }
+.st-suits{ display:inline-flex; gap:3px; margin-left:4px; padding:0 4px; vertical-align:-1px;
+  background:var(--card-face); border:1px solid #000; border-radius:2px; }
+.st-suits i{ font-style:normal; font-size:12px; line-height:1.25; }
+.st-suits .s{ color:#22201C; } .st-suits .h{ color:#C8322B; }   /* always the four-colour set ([data-deck="four"]) */
+.st-suits .d{ color:#2F6FBF; } .st-suits .c{ color:#2E8B57; }
+
+/* This table: the plate leads when it shows */
+#settings-sheet .st-table > h3{ margin-bottom:8px; }
+#settings-sheet .st-table .settings-reset{ margin-top:10px; }
+
+/* ---- TABS layout: a choice row under the header ---- */
+#settings-sheet .st-tabs{ display:none; margin:0 0 12px; }
+html[data-st-layout="tabs"] #settings-sheet .st-tabs{ display:flex; }
+html[data-st-layout="tabs"] #settings-sheet .st-plate[data-st-plate]{ display:none; }
+html[data-st-layout="tabs"] #settings-sheet[data-st-tab="play"] .st-plate[data-st-plate="play"],
+html[data-st-layout="tabs"] #settings-sheet[data-st-tab="help"] .st-plate[data-st-plate="help"],
+html[data-st-layout="tabs"] #settings-sheet[data-st-tab="sound"] .st-plate[data-st-plate="sound"],
+html[data-st-layout="tabs"] #settings-sheet[data-st-tab="display"] .st-plate[data-st-plate="display"]{ display:flex; }
+#settings-sheet .st-tabs button{ flex:1 1 0; min-height:44px; font-family:var(--font-hdr); font-size:8px; letter-spacing:.06em; }
+
+/* ---- the drawer key (new part, for sign-off) ---- */
+.st-drawer-key{
+  display:flex; align-items:center; gap:11px; width:100%; min-height:60px; padding:10px 10px 10px 12px;
+  border:3px solid var(--ms-edge); border-radius:4px; background:var(--ms-plate); color:var(--ink);
+  font:inherit; text-align:left; cursor:pointer; -webkit-tap-highlight-color:transparent;
+  box-shadow:0 4px 0 var(--ms-plate-lo),0 6px 0 var(--ms-edge),inset 2px 2px 0 var(--ms-plate-hi),inset -2px -2px 0 rgba(0,0,0,.22);
+}
+.st-drawer-key:active{ transform:translateY(3px); box-shadow:0 1px 0 var(--ms-plate-lo),0 3px 0 var(--ms-edge),inset 2px 3px 0 rgba(0,0,0,.3); }
+.st-dk-lamp{ flex:0 0 10px; height:10px; border:2px solid var(--ms-edge); background:color-mix(in srgb,var(--accent) 45%,black); box-shadow:inset 1px 1px 0 rgba(255,255,255,.25); }
+.st-dk-text{ flex:1 1 auto; min-width:0; display:flex; flex-direction:column; gap:5px; }
+.st-dk-title{ font-family:var(--font-hdr); font-size:9px; letter-spacing:.08em; text-transform:uppercase; color:#F3E6C4; text-shadow:0 1px 0 rgba(0,0,0,.5); }
+.st-dk-sub{ font-family:var(--font-px); font-size:12px; line-height:1.25; color:color-mix(in srgb,var(--ink) 62%,transparent); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.st-dk-chev{ flex:0 0 30px; height:30px; display:grid; place-items:center; border:2px solid var(--ms-edge); border-radius:2px;
+  background:var(--ms-well); color:var(--accent-bright); font-size:13px; box-shadow:inset 0 3px 0 rgba(0,0,0,.45); }
+.st-drawers{ display:flex; flex-direction:column; gap:12px; padding-bottom:16px; }
+
+/* the Workshop entry: the same key in the dark plastic with a gold rim,
+   its lamp lit */
+.st-workshop-wrap{ margin:2px 0 16px; }
+.st-dk--workshop{
+  min-height:68px; background:var(--pc-plastic-dark,var(--ms-plate-lo));
+  box-shadow:0 4px 0 color-mix(in srgb,var(--accent) 40%,black),0 6px 0 var(--ms-edge),
+    inset 0 0 0 2px color-mix(in srgb,var(--accent) 70%,transparent),inset 3px 3px 0 rgba(255,255,255,.06);
+}
+.st-dk--workshop .st-dk-title{ font-size:11px; color:var(--accent-bright); }
+.st-dk--workshop .st-dk-lamp{ background:var(--accent-bright); box-shadow:0 0 8px color-mix(in srgb,var(--accent) 80%,transparent),inset 1px 1px 0 rgba(255,255,255,.5); }
+
+/* ---- drawers: the existing fields, spaced ---- */
+#settings-sheet .st-drawer{ gap:16px; }
+#settings-sheet .st-bare{ padding:0; margin:0; border:0; background:none; box-shadow:none; }
+
+/* ---- volume (new part, for sign-off): FADER or STEPS ---- */
+.st-vol{ display:flex; align-items:center; gap:12px; width:100%; --v:1; }
+.st-vol.is-off{ opacity:.45; }
+.st-vol-track{ position:relative; flex:1 1 auto; height:46px; touch-action:none; cursor:pointer; }
+.st-fader,.st-steps{ display:none; }
+html:not([data-st-volume="steps"]) .st-fader{ display:block; }
+html[data-st-volume="steps"] .st-steps{ display:flex; }
+.st-fader{
+  position:absolute; left:0; right:0; top:50%; height:14px; transform:translateY(-50%);
+  border:2px solid #040807; border-radius:2px; background:var(--ms-glass);
+  box-shadow:inset 0 3px 0 rgba(0,0,0,.6),0 2px 0 rgba(255,255,255,.07);
+}
+.st-fader-fill{ position:absolute; left:0; top:0; bottom:0; width:calc(var(--v) * 100%);
+  background:color-mix(in srgb,var(--accent) 70%,black); box-shadow:inset 0 2px 0 rgba(255,255,255,.18); }
+.st-fader-ticks{ position:absolute; left:12px; right:12px; top:-12px; bottom:-12px; pointer-events:none; }
+.st-fader-ticks b{ position:absolute; left:calc(var(--t) * 100%); width:2px; margin-left:-1px; top:0; bottom:0;
+  background:linear-gradient(rgba(233,221,174,.24) 0 5px,transparent 5px calc(100% - 5px),rgba(233,221,174,.24) calc(100% - 5px)); }
+.st-fader-cap{
+  position:absolute; top:50%; left:calc(var(--v) * (100% - 24px)); width:24px; height:36px; transform:translateY(-50%);
+  border:2px solid var(--ms-edge); border-radius:3px; background:var(--accent);
+  box-shadow:inset 0 3px 0 rgba(255,255,255,.4),inset 0 -3px 0 rgba(0,0,0,.2),0 3px 0 var(--ms-edge);
+}
+.st-fader-cap::after{ content:""; position:absolute; left:50%; top:6px; bottom:6px; width:2px; margin-left:-1px; background:rgba(0,0,0,.45); }
+.st-steps{
+  position:absolute; inset:0; align-items:flex-end; gap:4px; padding:4px 5px;
+  border:2px solid #040807; border-radius:2px; background:var(--ms-glass); box-shadow:inset 0 3px 0 rgba(0,0,0,.6);
+}
+.st-steps i{ flex:1 1 0; height:var(--h); border:1px solid #000; background:color-mix(in srgb,var(--ms-plate) 45%,black); }
+.st-steps i.is-lit{ background:var(--accent); box-shadow:inset 0 2px 0 rgba(255,255,255,.35),0 0 6px color-mix(in srgb,var(--accent) 55%,transparent); }
+.st-vol-readout{ flex:0 0 54px; height:38px; display:flex; align-items:center; justify-content:center; }
+
+/* ---- the lab's own sheet: a list ---- */
+.stl-list{ margin:0; padding-left:18px; font-size:13px; line-height:1.5; color:#B69A7A; }
+.stl-list li{ margin-bottom:4px; }
+.stl-sheet .sdl-tabs button:first-child{ pointer-events:none; }
+
+@media (prefers-reduced-motion:reduce){ .st-drawer-key:active{ transform:none; } }
