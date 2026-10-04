@@ -130,3 +130,26 @@ sounds drop a chip with the sound; colour themes recolour everything.
 The smash's preview needs a real pot: next round, at a table. TUNE:
 button trim (GOLD LINE / STUDS / GOLD EDGE / LAMPS), where it sits,
 ONE PANEL or CHOICE ROW, preview LARGE or SMALL, and COPY MY PICKS.
+
+**Round 4 verdict (owner):** the one pinned preview doesn't work (the deal
+previews showed nothing but a card leaving the deck). Each tab gets its
+own preview; the rack (the Career event rack's feel) replaces the grids;
+swiping previews and USE THIS chooses; a deal style's rarity is fixed to
+its tier; Showdown goes from five rows to two (when it smashes + a smash
+style); Finishes leaves Settings for a SCREENS tab.
+
+Why round 4's deal preview showed nothing: `css/04-overlays-and-modes.css`
+hides every `.fly-card` while `#table-screen` is hidden, so the flights
+were running unseen. The Workshop needs an exception to that rule (the lab
+has one) when it goes into the game.
+
+**Round 5 (same link):** the Workshop as six tabs (CARDS, DEALING,
+SHOWDOWN, CHIPS, CABINET, SCREENS). CARDS and DEALING are built: a stage
+each (felt, the dealer's deck, your hand standing in the holder on a strip
+of real dashboard; CARDS adds one big face-down card), the rack
+(`js/workshop-rack.js`, a candidate part), USE THIS BACK / ADD TO THE MIX,
+and the plain options under them. Browsing a back dresses the whole
+Workshop in it and is put back on leaving unless you tap Use. Each deal
+style deals both your cards when the rack lands on it (AGAIN replays).
+SCREENS holds Finishes' list as it was. SHOWDOWN, CHIPS and CABINET keep
+their plain controls until their rounds.

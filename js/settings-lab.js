@@ -185,24 +185,17 @@
   mainBody.appendChild(attic);
   sheet.dataset.stPage = 'main';
 
-  /* ---- THE WORKSHOP (round 4): one menu under a pinned preview ----
-     Its own screen (Hand Rankings' cabinet). At the top, a slice of felt
-     that stays in view: the dealer's deck (borrowed from the table while
-     the Workshop is open, so the game's own code deals into it), your
-     two cards in their holder, a few chips, and a one-line screen saying
-     what's showing. Under it, the menu: every cosmetic in sections, the
-     same rows and keys as Settings. Tap a pick and it plays above.
-     TUNE: ONE PANEL (every section, one scroll) or CHOICE ROW (a row of
-     keys under the preview picks the section). */
-  const SECTIONS = [
-    ['cards', 'Cards', ['deck-back-seg', 'holder-seg', 'deck-side-seg']],
-    ['dealing', 'Dealing', null],
-    ['showdown', 'Showdown', ['sd-smash-seg', 'sd-force-seg', 'sd-bounce-seg', 'sd-heat-seg', 'sd-pickup-seg']],
-    ['chips', 'Chips & sound', ['tr-coins', 'coin-sound-seg']],
-    ['cabinet', 'Cabinet', ['theme-seg']]
-  ];
-  // the chip-size row lives inside #settings-table-room (table-room.js
-  // paints it from there), so that section moves whole and shows only it
+  /* ---- THE WORKSHOP (round 5): tabs, each with its own preview ----
+     Its own screen (Hand Rankings' cabinet). A row of tabs: CARDS,
+     DEALING, SHOWDOWN, CHIPS, CABINET, SCREENS. A tab is a stage built
+     for that thing, a rack to browse with (js/workshop-rack.js: swiping
+     previews, USE THIS chooses) and at most a couple of plain options.
+     Round 5 builds CARDS and DEALING; the other tabs keep their plain
+     controls until their rounds. SCREENS holds what was Finishes.
+
+     Each stage has its own dealer's deck. The deck code works on
+     #dealer-deck, so the stage on show borrows that id while the
+     Workshop is open (the table's own deck gets it back on the way out). */
   const trSec = $id('settings-table-room');
   const coins = trSec && trSec.querySelector('[data-tr="coins"]');
   if (coins) coins.id = 'tr-coins';
@@ -215,177 +208,205 @@
   rankings.parentNode.insertBefore(wsScreen, rankings.nextSibling);
   wsCard.appendChild(pageHead('Workshop', 'home'));
 
-  // the preview window
-  const face = (rank, suit, cls, i) => '<div class="card ' + cls + '" data-wsb-card="' + i + '">' + cardInner({ rank, suit }) + '</div>';
-  let layersHTML = '';
-  for (let i = 0; i < 6; i++) layersHTML += '<div class="card back small" style="--deck-layer:' + i + ';--ds-i:' + (5 - i) + '"></div>';
-  const bench = el('div', 'ws-bench');
-  bench.innerHTML =
-    '<div class="wsb-felt">' +
-      '<div class="wsb-station"><div class="dealer-deck" data-wsb-deck>' + layersHTML + '</div></div>' +
-      '<div class="wsb-chips" aria-hidden="true"></div>' +
-      '<div class="wsb-seat"><i class="wsb-slot"></i><div class="wsb-cards">' + face('K', '♦', 'diamond', 0) + face('Q', '♣', 'club', 1) + '</div><i class="wsb-lip"></i></div>' +
-    '</div>' +
-    '<div class="crt wsb-caption"><span class="crt-line" data-wsb-say>Tap any pick to see it here</span></div>';
-  wsCard.appendChild(bench);
+  const TABS = [['cards','Cards'],['dealing','Dealing'],['showdown','Showdown'],['chips','Chips'],['cabinet','Cabinet'],['screens','Screens']];
+  const tabRow = el('div', 'segmented compact ws-tabs');
+  TABS.forEach(([k, t], i) => { const b = el('button', i === 0 ? 'active' : '', t); b.type = 'button'; b.dataset.wsTab = k; tabRow.appendChild(b); });
+  wsCard.appendChild(tabRow);
+  const pages = {};
+  TABS.forEach(([k]) => { const p = el('div', 'ws-tab'); p.dataset.wsTab = k; wsCard.appendChild(p); pages[k] = p; });
 
-  // CHOICE ROW layout: one key per section
-  const nav = el('div', 'segmented compact ws-nav');
-  SECTIONS.forEach(([k, t], i) => { const b = el('button', i === 0 ? 'active' : '', t.replace(' & sound', '')); b.type = 'button'; b.dataset.wsSec = k; nav.appendChild(b); });
-  wsCard.appendChild(nav);
-
-  SECTIONS.forEach(([k, t, ids], i) => {
-    const box = el('div', 'sheet-section st-plate ws-sec' + (i === 0 ? ' is-on' : ''));
-    box.dataset.wsSec = k;
-    box.appendChild(el('h3', null, t));
-    if (k === 'dealing'){
-      const d = $id('settings-dealing');
-      Array.from(d.childNodes).forEach(n => { if (n.nodeName !== 'H3') box.appendChild(n); });
-    } else if (k === 'chips'){
-      const cf = fieldOf('tr-coins');
-      if (trSec && cf){
-        Array.from(trSec.children).forEach(n => { if (n !== cf) n.classList.add('st-gone'); });
-        trSec.classList.add('st-bare');
-        box.appendChild(trSec);
-      }
-      box.appendChild(fieldOf('coin-sound-seg'));
-    } else {
-      ids.forEach(id => { const f = fieldOf(id); if (f) box.appendChild(f); });
-    }
-    if (k === 'showdown') box.appendChild(el('div', 'st-note', 'The smash needs a real pot, so its preview plays at a table: that comes next round.'));
-    if (k === 'cabinet'){
-      // Finishes still lives in the Settings sheet (it's styled there): this
-      // key opens the sheet straight onto it. In the game it moves here.
-      const f = el('div', 'field');
-      f.innerHTML = '<div class="field-label">Finishes</div><div class="sheet-keys"><button class="btn-secondary" type="button" data-ws-finishes>Finishes</button></div>' +
-        '<div class="hint">Other looks for the screens and buttons.</div>';
-      box.appendChild(f);
-    }
-    wsCard.appendChild(box);
-  });
-
-  /* ---- the preview: what each pick plays ---- */
-  const say = t => { const s = bench.querySelector('[data-wsb-say]'); if (s) s.textContent = t; };
-  const benchDeck = bench.querySelector('[data-wsb-deck]');
-  // while the Workshop is open the deck code's #dealer-deck is the bench's
-  function borrowDeck(on){
-    const real = document.querySelector('#felt .dealer-deck');
-    if (on){ if (real) real.id = 'dealer-deck-parked'; benchDeck.id = 'dealer-deck'; }
-    else { benchDeck.removeAttribute('id'); if (real) real.id = 'dealer-deck'; }
+  /* ---- a stage: felt, a deck, and your hand on a strip of dashboard ---- */
+  const face = (rank, suit, cls, i) => '<div class="card ' + cls + '" data-st-card="' + i + '">' + cardInner({ rank, suit }) + '</div>';
+  function stage(kind){
+    let layersHTML = '';
+    for (let i = 0; i < 6; i++) layersHTML += '<div class="card back small" style="--deck-layer:' + i + ';--ds-i:' + (5 - i) + '"></div>';
+    const s = el('div', 'ws-stage ws-stage--' + kind);
+    s.innerHTML =
+      '<div class="wss-box">' +
+        '<div class="wss-felt">' +
+          '<div class="wss-station"><div class="dealer-deck" data-wss-deck>' + layersHTML + '</div></div>' +
+          (kind === 'cards' ? '<div class="wss-spot"><div class="card back" data-st-spot></div></div>' : '') +
+        '</div>' +
+        '<div class="wss-dash"></div>' +
+        // the holder spans the join: your cards stand up out of the dashboard
+        '<div class="wss-seat"><i class="wss-slot"></i><div class="wss-cards">' +
+          face('K', '♦', 'diamond', 0) + face('Q', '♣', 'club', 1) + '</div><i class="wss-lip"></i></div>' +
+      '</div>' +
+      '<div class="crt wss-caption"><span class="crt-line" data-wss-say></span></div>';
+    return s;
   }
-  let busy = false, nextCard = 0;
-  async function dealPreview(styleId){
-    if (busy || motionOff()) return;
+  const sayOn = (st, t) => { const c = st.querySelector('[data-wss-say]'); if (c) c.textContent = t; };
+  let deckOwner = null;
+  function borrowDeck(st){
+    const real = document.querySelector('#felt .dealer-deck');
+    document.querySelectorAll('[data-wss-deck]').forEach(d => d.removeAttribute('id'));
+    if (st){ if (real) real.id = 'dealer-deck-parked'; st.querySelector('[data-wss-deck]').id = 'dealer-deck'; }
+    else if (real) real.id = 'dealer-deck';
+    deckOwner = st;
+  }
+  // one card at a time; a newer request replaces one still waiting
+  let busy = false, waiting = null;
+  async function deal(targets, styleId){
+    if (motionOff()) return;
+    if (busy){ waiting = [targets, styleId]; return; }
     busy = true;
     try{
-      const target = bench.querySelector('[data-wsb-card="' + nextCard + '"]');
-      nextCard = 1 - nextCard;
-      const st = typeof DealStyles !== 'undefined' ? DealStyles.make(styleId || 'flick') : null;
-      await DealerDeck.preview(target, st);
+      for (const t of targets){
+        if (!t.isConnected) break;
+        await DealerDeck.preview(t, typeof DealStyles !== 'undefined' ? DealStyles.make(styleId || 'flick') : null);
+      }
     }catch(e){}
     busy = false;
+    if (waiting){ const w = waiting; waiting = null; deal(w[0], w[1]); }
   }
-  const chipD = () => { const b = document.querySelector('#tr-coins button.active'); return +(b ? b.dataset.v : 13) || 13; };
-  function chipEl(colour, d){
-    const c = CoinWorld.makeChip(colour);
-    CoinWorld.setFrame(c, d, 0, false);
-    const e = c.el;
-    e.style.position = 'absolute'; e.style.width = d + 'px'; e.style.height = Math.round(d * 16 / 13) + 'px';
-    e.style.backgroundSize = '100% 100%';
-    return e;
+  const keyRow = (label) => { const w = el('div', 'ws-use'); const b = el('button', 'btn-secondary ws-use-key', label); b.type = 'button'; const n = el('div', 'ws-use-note'); w.appendChild(b); w.appendChild(n); return { w, b, n }; };
+  const optField = (title, node, hint) => { const f = el('div', 'field ws-opt'); f.innerHTML = '<div class="field-label">' + title + '</div>'; f.appendChild(node); if (hint) f.appendChild(el('div', 'hint', hint)); return f; };
+
+  /* ---- CARDS: the deck, a card face down on the felt, your hand ---- */
+  const BACKS = [...document.querySelectorAll('#deck-back-seg button')].map(b => ({ id:b.dataset.v, name:(b.querySelector('b') || b).textContent.trim() }));
+  const equippedBack = () => { try{ return DealerDeck.order.back; }catch(e){ return 'crest'; } };
+  const cardsStage = stage('cards');
+  pages.cards.appendChild(cardsStage);
+  const backRack = WorkshopRack.create({
+    items:BACKS.map(b => '<div class="wr-pick wr-back"><span class="ds-swatch" data-cb="' + b.id + '"><span class="card back"></span></span><b>' + b.name + '</b></div>'),
+    index:Math.max(0, BACKS.findIndex(b => b.id === equippedBack())),
+    onLand:i => showBack(i, true)
+  });
+  pages.cards.appendChild(backRack.el);
+  const backUse = keyRow('Use this back');
+  pages.cards.appendChild(backUse.w);
+  function showBack(i, dealIt){
+    const b = BACKS[i]; if (!b) return;
+    // browsing: the whole Workshop wears the back (put back on the way out)
+    document.documentElement.setAttribute('data-ds-back', b.id);
+    const on = b.id === equippedBack();
+    sayOn(cardsStage, b.name + (on ? ' (in use)' : ''));
+    backUse.b.textContent = on ? 'In use' : 'Use this back';
+    backUse.b.classList.toggle('is-on', on);
+    backUse.n.textContent = on ? 'This is the back on every face-down card.' : 'Swipe to look. Nothing changes until you tap Use.';
+    if (dealIt) deal([cardsStage.querySelector('[data-st-spot]')], 'flick');
   }
-  const STACKS = [['t0', 6], ['t1', 4], ['t2', 3]];
-  function paintChips(){
-    const box = bench.querySelector('.wsb-chips'); box.innerHTML = '';
-    const d = chipD();
-    try{
-      STACKS.forEach(([col, n], si) => {
-        for (let i = 0; i < n; i++){
-          const e = chipEl(col, d);
-          e.style.left = (si * (d + 5)) + 'px'; e.style.bottom = (i * 3) + 'px'; e.style.zIndex = String(i);
-          box.appendChild(e);
-        }
-      });
-    }catch(err){}
-    box.style.width = (STACKS.length * (d + 5)) + 'px';
+  backUse.b.addEventListener('click', () => {
+    const b = BACKS[backRack.index]; if (!b) return;
+    const real = document.querySelector('#deck-back-seg [data-v="' + b.id + '"]');
+    if (real) real.click();
+    showBack(backRack.index, false);
+  });
+  const holderField = fieldOf('holder-seg'), sideField = fieldOf('deck-side-seg');
+  const cardsOpts = el('div', 'sheet-section st-plate ws-opts');
+  cardsOpts.appendChild(optField('Card holder', $id('holder-seg')));
+  cardsOpts.appendChild(optField('The deck', $id('deck-side-seg')));
+  pages.cards.appendChild(cardsOpts);
+  if (holderField) holderField.remove();
+  if (sideField) sideField.remove();
+
+  /* ---- DEALING: each style deals your two cards ---- */
+  const STY = typeof DealStyles !== 'undefined' ? DealStyles.STYLES : [];
+  const TIER = { common:'Common', uncommon:'Uncommon', rare:'Rare', epic:'Epic', legendary:'Legendary' };
+  // the owner's call (round 5): a style's rarity is its own, never set
+  try{ DealStyles.apply({ rarity:Object.fromEntries(STY.map(s => [s.id, s.tier])) }); }catch(e){}
+  const inMix = id => { try{ return !!DealStyles.order.on[id]; }catch(e){ return id === 'flick'; } };
+  const styleHTML = s => '<div class="wr-pick wr-style" data-tier="' + s.tier + '"><span class="wr-tier">' + TIER[s.tier] + '</span>' +
+    '<b>' + s.name + '</b><span class="wr-note">' + s.note + '</span><span class="wr-mix">' + (inMix(s.id) ? 'In the mix' : 'Not in the mix') + '</span></div>';
+  const dealStage = stage('dealing');
+  pages.dealing.appendChild(dealStage);
+  const styleRack = WorkshopRack.create({ items:STY.map(styleHTML), index:0, onLand:i => showStyle(i, true) });
+  pages.dealing.appendChild(styleRack.el);
+  const mixUse = keyRow('Add to the mix');
+  const replay = el('button', 'btn-secondary ws-replay', '&#9654; Again'); replay.type = 'button';
+  mixUse.w.insertBefore(replay, mixUse.n);
+  pages.dealing.appendChild(mixUse.w);
+  const yourCards = st => [...st.querySelectorAll('.wss-cards .card')];
+  function showStyle(i, dealIt){
+    const s = STY[i]; if (!s) return;
+    const on = inMix(s.id);
+    sayOn(dealStage, s.name + ' · ' + TIER[s.tier] + (on ? ' · in the mix' : ''));
+    mixUse.b.textContent = on ? 'In the mix' : 'Add to the mix';
+    mixUse.b.classList.toggle('is-on', on);
+    const n = STY.filter(x => inMix(x.id)).length;
+    mixUse.n.textContent = n + ' of ' + STY.length + ' styles in the mix. ' + (on ? 'Tap to take it out.' : 'Tap to deal with it in your games.');
+    if (dealIt) deal(yourCards(dealStage), s.id);
   }
-  function dropChip(){
-    const box = bench.querySelector('.wsb-chips'), d = chipD();
-    try{
-      const si = Math.floor(Math.random() * STACKS.length), n = box.querySelectorAll('[data-s="' + si + '"]').length;
-      const e = chipEl(STACKS[si][0], d);
-      const h = STACKS[si][1] + n;
-      e.dataset.s = String(si);
-      e.style.left = (si * (d + 5)) + 'px'; e.style.bottom = (h * 3) + 'px'; e.style.zIndex = String(h);
-      box.appendChild(e);
-      if (!motionOff()) e.animate([{ transform:'translateY(-46px)' }, { transform:'translateY(0)', offset:.8 }, { transform:'translateY(-3px)' }, { transform:'none' }],
-        { duration:320, easing:'steps(6,end)' });
-      // keep the stacks short: an old top chip leaves
-      const extra = box.querySelectorAll('[data-s]');
-      if (extra.length > 4) extra[0].remove();
-    }catch(err){}
+  mixUse.b.addEventListener('click', () => {
+    const s = STY[styleRack.index]; if (!s) return;
+    const sw = document.querySelector('#deal-style-list [data-style="' + s.id + '"] .switch');
+    if (sw) sw.click();
+    styleRack.refresh(styleRack.index, styleHTML(s));
+    showStyle(styleRack.index, false);
+  });
+  replay.addEventListener('click', () => { const s = STY[styleRack.index]; if (s) deal(yourCards(dealStage), s.id); });
+  const dealOpts = el('div', 'sheet-section st-plate ws-opts');
+  const quick = $id('deal-quick-seg'), scope = $id('deal-scope-seg');
+  dealOpts.appendChild(optField('Pick a style', scope, 'Once per hand: one style deals the whole hand. Every card: each card picks its own.'));
+  dealOpts.appendChild(optField('Quick', quick));
+  pages.dealing.appendChild(dealOpts);
+  // the full list (switches and rarities) stays wired but out of sight
+  const dealSec = $id('settings-dealing');
+  if (dealSec) attic.appendChild(dealSec);
+  quick.addEventListener('click', () => setTimeout(() => { STY.forEach((s, i) => styleRack.refresh(i, styleHTML(s))); showStyle(styleRack.index, false); }, 0));
+
+  /* ---- SHOWDOWN, CHIPS, CABINET: plain controls until their rounds ---- */
+  function plainTab(k, ids, note){
+    const box = el('div', 'sheet-section st-plate ws-opts');
+    box.appendChild(el('div', 'ws-soon', note));
+    ids.forEach(id => { const f = typeof id === 'string' ? fieldOf(id) : id; if (f) box.appendChild(f); });
+    pages[k].appendChild(box);
   }
-  const label = b => (b.querySelector('b') ? b.querySelector('b').textContent : b.textContent).trim();
-  function react(b){
-    const g = b.closest('.segmented'), id = g && g.id;
-    const row = b.closest('[data-style]');
-    if (b.classList.contains('wsb-play') && row){
-      const name = (row.querySelector('.tl') || {}).textContent || row.dataset.style;
-      say('Dealing: ' + name); dealPreview(row.dataset.style); return;
+  plainTab('showdown', ['sd-smash-seg', 'sd-force-seg', 'sd-bounce-seg', 'sd-heat-seg', 'sd-pickup-seg'],
+    'Next: a pot that cooks and goes off up here, and these five rows become two (when it smashes, and a smash style).');
+  let chipField = null;
+  if (trSec){
+    const cf = fieldOf('tr-coins');
+    Array.from(trSec.children).forEach(n => { if (n !== cf) n.classList.add('st-gone'); });
+    trSec.classList.add('st-bare');
+    chipField = trSec;
+  }
+  plainTab('chips', [chipField, 'coin-sound-seg'].filter(Boolean), 'Next: a pile of chips and your bank up here, and the coin sounds in a rack.');
+  plainTab('cabinet', ['theme-seg'], 'Next: a small piece of the machine up here in each colour, and the themes in a rack (with room for new ones).');
+
+  /* ---- SCREENS: what was Finishes, out of Settings ---- */
+  const fl = $id('finishes-list');
+  const scr = el('div', 'sheet-section st-plate ws-opts ws-finishes');
+  scr.appendChild(el('div', 'ws-soon', 'What was Settings → Finishes. Next: a live screen and a button up here, and the looks in a rack.'));
+  if (fl) scr.appendChild(fl);
+  const rf = $id('reset-finishes'); if (rf) scr.appendChild(rf);
+  pages.screens.appendChild(scr);
+  const fe = $id('finishes-entry'); if (fe) attic.appendChild(fe);
+
+  /* ---- tabs, opening, closing ---- */
+  let tab = 'cards';
+  function setTab(k){
+    tab = k;
+    tabRow.querySelectorAll('button').forEach(b => b.classList.toggle('active', b.dataset.wsTab === k));
+    Object.keys(pages).forEach(p => pages[p].classList.toggle('is-on', p === k));
+    document.documentElement.setAttribute('data-ds-back', equippedBack());
+    if (k === 'cards'){ borrowDeck(cardsStage); backRack.go(backRack.index, true); }
+    else if (k === 'dealing'){ borrowDeck(dealStage); showStyle(styleRack.index, false); }
+    else borrowDeck(null);
+    if (k === 'screens'){
+      // finishes.js renders its list when its page opens: open it once,
+      // here, then put the sheet's page switch back
+      const o = $id('open-finishes'); if (o && !fl.children.length) o.click();
+      const sh = $id('settings-sheet'); if (sh) sh.classList.remove('show-finishes');
     }
-    if (row && b.classList.contains('switch')){
-      const on = b.getAttribute('aria-checked') === 'true';
-      const name = (row.querySelector('.tl') || {}).textContent || row.dataset.style;
-      say(name + (on ? ' is in the mix' : ' is out of the mix'));
-      if (on) dealPreview(row.dataset.style);
-      return;
-    }
-    if (row && g){ say(((row.querySelector('.tl') || {}).textContent || '') + ': ' + label(b)); return; }
-    if (id === 'deck-back-seg'){ say('Card back: ' + label(b)); dealPreview('flick'); return; }
-    if (id === 'holder-seg'){ say('Card holder: ' + label(b)); bench.classList.remove('wsb-flash'); void bench.offsetWidth; bench.classList.add('wsb-flash'); return; }
-    if (id === 'deck-side-seg'){ say('The deck: ' + label(b)); setTimeout(() => dealPreview('flick'), 200); return; }
-    if (id === 'deal-quick-seg' || id === 'deal-scope-seg'){ say('Dealing: ' + label(b)); return; }
-    if (id && id.startsWith('sd-')){ say('Showdown: ' + label(b) + ' (preview at a table next round)'); return; }
-    if (id === 'tr-coins'){ paintChips(); say('Chip size: ' + label(b)); return; }
-    if (id === 'coin-sound-seg'){ dropChip(); say('Coin sound: ' + label(b)); return; }
-    if (id === 'theme-seg'){ say('Colour: ' + label(b)); return; }
-  }
-  function setSec(k){
-    nav.querySelectorAll('button').forEach(b => b.classList.toggle('active', b.dataset.wsSec === k));
-    wsCard.querySelectorAll('.ws-sec').forEach(s => s.classList.toggle('is-on', s.dataset.wsSec === k));
   }
   wsScreen.addEventListener('click', e => {
     const b = e.target.closest('button'); if (!b) return;
     if (b.dataset.go === 'home'){ closeWorkshop(); return; }
-    if (b.hasAttribute('data-ws-finishes')){
-      openOverlay('settings');
-      const f = $id('open-finishes'); if (f) f.click();
-      return;
-    }
-    if (b.dataset.wsSec){ setSec(b.dataset.wsSec); wsScreen.scrollTop = 0; return; }
-    setTimeout(() => react(b), 0);   // after the control's own handler
+    if (b.dataset.wsTab){ setTab(b.dataset.wsTab); wsScreen.scrollTop = 0; return; }
+    if (b.closest('#holder-seg')) setTimeout(() => { sayOn(cardsStage, 'Card holder: ' + (b.querySelector('b') || b).textContent.trim()); cardsStage.classList.remove('wss-flash'); void cardsStage.offsetWidth; cardsStage.classList.add('wss-flash'); }, 0);
+    if (b.closest('#deck-side-seg')) setTimeout(() => { sayOn(cardsStage, 'The deck: ' + b.textContent.trim()); deal([cardsStage.querySelector('[data-st-spot]')], 'flick'); }, 200);
   });
-  // a play key on every deal style: deals one card that way, above (the
-  // list is built after this script runs, so the keys go in on opening)
-  function addPlayKeys(){
-    document.querySelectorAll('#workshop .dst-row').forEach(r => {
-      if (r.querySelector('.wsb-play')) return;
-      const pb = el('button', 'wsb-play', '&#9654;'); pb.type = 'button'; pb.setAttribute('aria-label', 'Preview ' + r.dataset.style);
-      const tr = r.querySelector('.toggle-row'); tr.insertBefore(pb, tr.querySelector('.switch'));
-    });
-  }
   function openWorkshop(){
-    addPlayKeys();
     $id('home').classList.add('hidden');
     wsScreen.classList.remove('hidden');
-    borrowDeck(true);
-    paintChips();
-    say('Tap any pick to see it here');
+    setTab(tab);
     wsScreen.scrollTop = 0;
   }
   function closeWorkshop(){
     wsScreen.classList.add('hidden');
-    borrowDeck(false);
+    borrowDeck(null);
+    document.documentElement.setAttribute('data-ds-back', equippedBack());
     $id('home').classList.remove('hidden');
     try{ reconstructMainMenu(); }catch(e){}
   }
@@ -471,8 +492,6 @@
     html.dataset.stVolume = 'fader';
     html.dataset.stHints = 'on';
     html.dataset.wbtn = state.wbtn || 'line';
-    html.dataset.wsLayout = state.wlayout || 'panel';
-    html.dataset.wsBench = state.bench || 'large';
     placeKey();
   }
   applyLook();
@@ -485,18 +504,16 @@
     const ROWS = [
       ['wbtn', 'WORKSHOP BUTTON', [['line','GOLD LINE'],['studs','STUDS'],['edge','GOLD EDGE'],['lamp','LAMPS']], 'Custom Game\'s button with a trim. GOLD LINE: a line inside the edge and a stud each side. STUDS: just the studs. GOLD EDGE: a thin gold ring. LAMPS: an amber lamp each side, like Career.'],
       ['wplace', 'WHERE IT SITS', [['under','UNDER THE ROW'],['above','ABOVE THE ROW']], 'Under Quick Deal and Hand Rankings, or between them and Custom Game.'],
-      ['wlayout', 'WORKSHOP LAYOUT', [['panel','ONE PANEL'],['row','CHOICE ROW']], 'One scroll with every section, or a row of keys under the preview that picks the section.'],
-      ['bench', 'PREVIEW WINDOW', [['large','LARGE'],['small','SMALL']], 'How tall the felt at the top of the Workshop is.'],
       ['view', 'SETTINGS', [['after','NEW'],['before','TODAY\'S']], 'Today\'s is the sheet as it is in the game now, for comparison.']
     ];
     const NAMES = Object.fromEntries(ROWS.map(r => [r[0], Object.fromEntries(r[2])]));
-    const DEF = { wbtn:'line', wplace:'under', wlayout:'panel', bench:'large', view:'after' };
+    const DEF = { wbtn:'line', wplace:'under', view:'after' };
     const seg = (k, opts) => '<div class="sdl-seg" data-key="' + k + '">' + opts.map(o => '<button type="button" data-v="' + o[0] + '"' + ((state[k] || DEF[k]) === o[0] ? ' class="is-on"' : '') + '>' + o[1] + '</button>').join('') + '</div>';
     const key = el('button', 'sdl-key', 'TUNE'); key.type = 'button';
     const tune = el('div', 'sdl-sheet stl-sheet');
     tune.setAttribute('role', 'dialog'); tune.setAttribute('aria-label', 'Settings lab');
     tune.innerHTML =
-      '<div class="sdl-tabs"><button type="button" class="is-on" tabindex="-1">SETTINGS + WORKSHOP · ROUND 4</button><button type="button" class="sdl-close" aria-label="Close">✕</button></div>' +
+      '<div class="sdl-tabs"><button type="button" class="is-on" tabindex="-1">SETTINGS + WORKSHOP · ROUND 5</button><button type="button" class="sdl-close" aria-label="Close">✕</button></div>' +
       '<div class="sdl-body">' +
         '<h3>JUMP TO<small>The keys in the game work too.</small></h3>' +
         '<div class="sdl-moments"><button type="button" data-open="workshop" class="is-wide">THE WORKSHOP</button><button type="button" data-open="home">SETTINGS AT HOME</button><button type="button" data-open="table">SETTINGS AT A TABLE</button></div>' +
@@ -505,7 +522,7 @@
         '<textarea class="sdl-copytext" readonly hidden></textarea>' +
         '<h3>WHAT MOVED<small>Nothing is lost: every saved pick keeps its value.</small></h3>' +
         '<ul class="stl-list">' +
-          '<li>Round 4: the Workshop is one menu with a preview window pinned at the top. Tap a card back, a deal style (its play key), a chip size or a coin sound and it plays there.</li>' +
+          '<li>Round 5: the Workshop is tabs, each with its own preview. CARDS and DEALING are built: swipe the rack to preview, tap Use (or Add to the mix) to choose. A style\'s rarity is now its own. Finishes moved to SCREENS.</li>' +
           '<li>The Workshop is opened from the home screen only. Settings no longer links to it.</li>' +
           '<li>Settings keeps your round-1 picks: one panel, the fader, hints shown.</li>' +
           '<li>Award Pot moved to Play: it changes when you get paid, not how it looks.</li>' +
@@ -523,7 +540,7 @@
       const t = e.target.closest('button'); if (!t) return;
       if (t.dataset.open){ open(false); openAt(t.dataset.open); return; }
       if (t.dataset.act === 'copy'){
-        const text = 'Settings + Workshop lab, round 4:\n' + ROWS.filter(r => r[0] !== 'view').map(r => '- ' + r[1].charAt(0) + r[1].slice(1).toLowerCase() + ': ' + NAMES[r[0]][state[r[0]] || DEF[r[0]]]).join('\n');
+        const text = 'Settings + Workshop lab, round 5:\n' + ROWS.filter(r => r[0] !== 'view').map(r => '- ' + r[1].charAt(0) + r[1].slice(1).toLowerCase() + ': ' + NAMES[r[0]][state[r[0]] || DEF[r[0]]]).join('\n');
         const ta = tune.querySelector('.sdl-copytext');
         const done = ok => { t.textContent = ok ? 'COPIED: PASTE IT IN THE CHAT' : 'SELECT + COPY BELOW'; setTimeout(() => { t.textContent = 'COPY MY PICKS'; }, 2600); if (!ok){ ta.hidden = false; ta.value = text; ta.focus(); ta.select(); } };
         try{ navigator.clipboard.writeText(text).then(() => done(true), () => done(false)); }catch(err){ done(false); }
@@ -536,7 +553,6 @@
       if (k === 'view'){ if (host){ host.set({ open:'home' }); host.reload(); } return; }
       applyLook();
       if (k === 'wbtn' || k === 'wplace'){ open(false); openAt('homescreen'); }
-      if (k === 'wlayout' || k === 'bench'){ open(false); openAt('workshop'); }
     });
     // a reload carries "open Settings" across
     if (state.open){ const o = state.open; if (host) host.set({ open:null }); setTimeout(() => openAt(o), 600); }

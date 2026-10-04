@@ -719,7 +719,7 @@ v0.46.0 the chips ARE the game's coin files (`js/coin-world.js`,
 palettes, ladders, the bank's options, moments, YOUR BANK presets up to
 FULL) over the real game. Not loaded by the game.
 
-## `settings-lab.html` + `js/settings-lab-host.js` + `js/settings-lab.js` + `css/settings-lab.css` — Settings Lab
+## `settings-lab.html` + `js/settings-lab-host.js` + `js/settings-lab.js` + `css/settings-lab.css` + candidate `js/workshop-rack.js` — Settings + Workshop Lab
 
 Phase 1 of the Settings + Workshop plan (`docs/ui/SETTINGS_PLAN.md`):
 the Settings sheet regrouped into PLAY / HELP / SOUND / DISPLAY (with THIS
@@ -728,8 +728,9 @@ inside the sheet. Built at runtime from the game's own wired controls
 (moved, never copied); hand readout, four-colour deck and volume are wired
 by the lab (volume through a shim on `AudioContext.destination`). Phone-first
 like `showdown-lab.html` (reuses its sheet styles `css/showdown-lab.css`).
-TUNE switches BEFORE/AFTER, ONE PANEL/TABS, FADER/STEPS and hints. Lab
-only; nothing loads in the game.
+From round 2 it also builds the WORKSHOP screen (home key, tabs, a
+stage per tab, the rack picker in `js/workshop-rack.js`); see the plan for
+the rounds. Lab only; nothing loads in the game.
 
 ## `js/finishes.js` + `css/finishes.css` — Finishes menu (live)
 
