@@ -870,4 +870,14 @@ check('Full games, start to finish (60 seeded): his numbers agree with the rules
   assert.ok(/No disagreements\./.test(out), 'the full-game audit found disagreements:\n' + out.slice(0, 3000));
 });
 
+check('Plain words: no percentages in his lines until a lesson teaches them; {p:x} names a number he has', () => {
+  const L = LINES(), NUM = new Set(['eq','need','odds','fold','foldNeed','hitPct','hitNext','pct','range']);
+  Object.entries(L).forEach(([k, pool]) => pool.forEach(([, , text]) => {
+    if (!/^(lesson|explain)\./.test(k)) assert.ok(!/%/.test(text), k + ': a percentage outside a lesson: ' + text);
+    (text.match(/\{p:(\w+)\}/g) || []).forEach(m => assert.ok(NUM.has(m.slice(3, -1)), k + ': {p:} on a blank that is not a number: ' + m));
+    // (read both ways: "about 1 time in 3" / "about 31% of the time")
+    assert.ok(!/\{p:\w+\} of the time/.test(text), k + ': "of the time" is added by {p:}: ' + text);
+  }));
+});
+
 process.stdout.write('\n' + passed + ' coach brain checks passed.\n');

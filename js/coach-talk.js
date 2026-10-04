@@ -67,7 +67,7 @@ const CoachTalk = (() => {
     oppRaise:[[4, 'thinking', '{name} has raised. That usually means a decent hand.'], [4, 'calm', '{name} raised to {amt}.'], [4, 'thinking', 'A raise from {name}. Take note.'], [4, 'calm', '{name} wants more in the pot.']],
     oppBigBet:[[3, 'thinking', '{name} bet big. Big bets tend to mean strong hands.'], [3, 'surprised', 'That’s a big bet from {name}.'], [3, 'thinking', '{name} put a lot in there.'], [3, 'thinking', 'A big one from {name}. They mean it, usually.']],
     oppAllIn:[[2, 'surprised', '{name} is all in.'], [2, 'thinking', '{name} has put everything in.'], [2, 'surprised', 'All in from {name}.']],
-    yourPrice:[[3, 'thinking', '{call} to call, {pot} in the pot. You’d need to win about {odds}% of the time.'], [3, 'calm', 'It costs {call}. The pot’s {pot}.'], [3, 'calm', '{call} to stay in. {pot} to win.']],
+    yourPrice:[[3, 'thinking', '{call} to call, {pot} in the pot. You’d need to win about {p:odds}.'], [3, 'calm', 'It costs {call}. The pot’s {pot}.'], [3, 'calm', '{call} to stay in. {pot} to win.']],
     yourFree:[[4, 'calm', 'Nobody’s bet.'], [4, 'calm', 'Your turn. Checking costs nothing.'], [4, 'calm', 'It’s free to check.']],
     youFold:[[4, 'calm', 'Folded.'], [4, 'calm', 'Out of this one.'], [4, 'calm', 'Next one.']],
     youCall:[[4, 'calm', 'Called.'], [4, 'thinking', 'Called. Let’s see the next card.'], [4, 'calm', 'You’re in.']],
@@ -103,8 +103,32 @@ const CoachTalk = (() => {
   // that starts with one gets its capital back
   // {t:name}: a poker word, in plain words until its lesson has been said;
   // {Name}: a blank with a capital, when the line needs one
+  /* HOW OFTEN, in plain words until percentages are taught (owner, 30 Sep
+     2026: "I'm not loving the whole percentage thing… It can be introduced
+     once the player has an understanding of what it means"). {p:eq} reads
+     "1 time in 3" until the pot odds lesson (which explains percentages)
+     has been shown, then "31% of the time". Lines put "about" or "to win"
+     in front, so both read naturally. */
+  const timesWords = v => {
+    v = +v;
+    if (!isFinite(v)) return 'often enough';
+    if (v < 40) return '1 time in ' + Math.min(100, Math.max(2, Math.round(100 / Math.max(1, v))));
+    return v < 60 ? 'half the time' : v < 75 ? '2 times in 3' : v < 90 ? '3 times in 4' : '9 times in 10';
+  };
+  const pctText = v => v == null || v === '' ? 'often enough' : knows('pot-odds') ? Math.round(+v) + '% of the time' : timesWords(v);
+  // (two numbers compared in one line that land on the same words get told
+  // apart: "a little less than 1 time in 3", not "1 time in 3" twice)
+  const PAIRED = { eq:['need', 'odds'], fold:['foldNeed'], hitNext:['odds'], hitPct:['odds'] };
+  function pctIn(text, k, ctx){
+    const v = ctx[k], w = pctText(v);
+    if (knows('pot-odds') || v == null || v === '') return { w, close:false };
+    const other = (PAIRED[k] || []).find(o => text.indexOf('{p:' + o + '}') >= 0 && ctx[o] != null && ctx[o] !== '');
+    if (!other || +ctx[other] === +v || timesWords(ctx[other]) !== w) return { w, close:false };
+    return { w:(+v < +ctx[other] ? 'a little less than ' : 'a little more than ') + w, close:true };
+  }
   const fill = (text, ctx) => text
     .replace(/\{t:(\w+)\}/g, (m, k) => termText(k))
+    .replace(/(about )?\{p:(\w+)\}/g, (m, about, k) => { const r = pctIn(text, k, ctx); return r.close ? r.w : (about || '') + r.w; })
     .replace(/\{(\w+)\}/g, (m, k) => ctx[k] != null ? ctx[k]
       : /^[A-Z]/.test(k) && ctx[k[0].toLowerCase() + k.slice(1)] != null ? cap(String(ctx[k[0].toLowerCase() + k.slice(1)])) : m)
     .replace(/(^|[.?!]\s+)([a-z])/g, (m, p, c) => p + c.toUpperCase());
@@ -953,7 +977,13 @@ const CoachTalk = (() => {
       // with the phase still 'preflop': the screen itself is the signal)
       // a tapped bubble goes when the moment it was about has passed
       // (you act, a card comes, the result is shown, a new hand)
-      if (TAP_ONLY){ const k = tapContext(g, me); if (W.moment != null && k !== W.moment && live) clear(false); W.moment = k; }
+      // (a real change: your turn starts or ends, a card comes, the result,
+      // a new hand. Not every bet or call by someone else.)
+      if (TAP_ONLY){
+        const k = [g.handNumber, g.phase, (g.board || []).length, resultShown() ? 'r' : '', pendingHumanPlayer === me ? 't' : '', g._humanCardsVisible === false ? 'h' : ''].join('|');
+        if (W.moment != null && k !== W.moment && live) clear(false);
+        W.moment = k;
+      }
       // (tap only: the result counts only once it's really on screen: the
       // award key live, never the locked SHOWDOWN key of a run out, and no
       // guessing from the phase or a timer. A hand that ends unseen is
@@ -1023,5 +1053,7 @@ const CoachTalk = (() => {
 
   // for a lab: the end-of-hand word for a made-up hand, now
   const labDebrief = h => { explainGen++; holdUntil = 0; clear(true); queue = null; return debrief(h, true); };
-  return { apply, say, sayAt, sayAny, slots, debrief, labDebrief, verdictOf, explain, sayAdvice, automaticReason, yourTurn, onTap, clear:() => clear(true), OPTIONS, DEFAULTS, LINES, get order(){ return Object.assign({}, O); } };
+  return { apply, say, sayAt, sayAny, slots, debrief, labDebrief, verdictOf,
+    // (for labs and checks: a line as he'd say it, and whether a lesson's been taught)
+    fillText:(text, ctx) => fill(text, ctx || {}), knows, learn:k => learnFrom('lesson.' + k), explain, sayAdvice, automaticReason, yourTurn, onTap, clear:() => clear(true), OPTIONS, DEFAULTS, LINES, get order(){ return Object.assign({}, O); } };
 })();
