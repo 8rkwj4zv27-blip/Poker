@@ -8,6 +8,30 @@ first handover (the brain has since been built). Read this, then
 the full history of how each part was decided (it's long; sections are
 dated), and `docs/CODEMAP.md` for the rest of the game.
 
+## Since then (v0.57.4 – v0.57.6, 4 Oct 2026): read this first
+
+- **Tap only.** P.I.P. says nothing on his own (`TAP_ONLY` in
+  `coach-talk.js`); a tap reads the table at that moment, with no spoilers
+  (cards face down, run outs, the showdown before the result). His lamp
+  blinks amber when he has a verdict on the hand you just played. The
+  TALK/HELP dials are gone from Settings. Most of "How he talks" below
+  describes the automatic talk, now switched off.
+- **The result is on screen** only when the award key is live
+  (`resultShown()`); the locked SHOWDOWN key of a run out is not it.
+- **The accuracy audit.** `validation/tools/coach-fullgame.js` plays
+  complete games (uneven stacks, rising blinds, side pots, knockouts, the
+  real AI and pot split) and checks his numbers and verdicts against the
+  rules at every decision. Run it after ANY brain change:
+  `node validation/tools/coach-fullgame.js 300 7` must say "No
+  disagreements." (a 60-game run is inside `coach-brain-checks.js`).
+- **The real game, tapped.** `validation/tools/coach-tap-play.js` plays
+  real hands on an emulated iPhone and taps him at awkward moments; it
+  fails on talk without a tap or any spoiler.
+- The price of a call is what you can win (`spot.potWin`: only what you
+  match), and calling an all in is its own judgement (`kind:'allcall'`).
+- Next agreed step: plain words, no percentages until a lesson teaches
+  them. Details of all of it: `BRAIN_PLAN.md`, the last three sections.
+
 ## The one-paragraph version
 
 P.I.P. (Poker Intelligence Personality) is a little pixel TV on the felt

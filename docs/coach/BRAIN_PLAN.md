@@ -634,3 +634,44 @@ tested for sense, and close calls are called close, but there's no single
 right answer to check it against. The same goes for how often a player
 folds to a bluff. Timing and spoilers live in the real game's screen and
 are the next step (tap only).
+
+## Tap only, v0.57.6 (4 Oct 2026)
+
+**The owner:** "coach should now only talk when he's tapped. And when he's
+tapped, he reads the screen and the game right then, at that moment he's
+triggered. That way the player can receive information when they want and
+be guaranteed that it's relevant… I don't want showdowns, cards or moments
+spoilt for me." Picked: tap only as the ONLY mode for now; a silent light
+when he has something to say; then plain words (no percentages) next.
+
+- `coach-talk.js` `TAP_ONLY = true`: no deal lines, advice, word after you
+  act, verdicts, comfort lines or reactions on his own. The brain still
+  records and judges every decision. The automatic talk stays in the code
+  behind the switch, should it come back with its timing rebuilt.
+- **A tap reads the table at that moment** (the moment includes every new
+  action, so nothing stale): your turn, his advice; their turn, what their
+  betting means; the result, how you played it; between hands (COLLECT
+  pressed, next not dealt), the last hand. Tap again: the lesson, a tip,
+  then "that's all".
+- **No spoilers**: your cards face down, "Have a look at your cards first";
+  an all in running out, or the showdown before the result, "Let's see
+  how the cards land".
+- **The result is on screen only when the award key is live** (COLLECT /
+  PAY). The console flips earlier to a locked SHOWDOWN key while an all in
+  runs out: that was the early "That's the run over" (and "unlucky" before
+  a win). No more guessing the end from the phase or a 20-second timer: a
+  hand that ends unseen is closed exactly when the next is dealt.
+- A tapped bubble goes as soon as its moment passes (you act, a card
+  comes, the result, a new hand).
+- **His lamp** (`CoachSet.notice`): blinks amber, silently, when he has a
+  verdict on the hand you just played (a mistake, or a play worth
+  praising); off when tapped or at the next deal; steady amber with
+  Reduced Motion.
+- Settings: the TALK and HELP dials are replaced by one line explaining
+  tap only (`settings.coachTalk` / `coachHelp` kept, untouched).
+- Tested in the real game: `validation/tools/coach-tap-play.js` plays real
+  hands on an emulated iPhone, taps him with real touches at every awkward
+  moment, logs every bubble with the table state, and fails on anything
+  said without a tap, any read with your cards face down, anything but
+  "wait" before the result, or a verdict for the wrong hand. It found one
+  bug (after COLLECT, a tap said "wait" instead of the verdict), fixed.

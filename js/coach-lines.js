@@ -630,7 +630,8 @@ const CoachLines = (() => {
   add('sum.lost', 3, [['calm', 'You lost that one, but you didn’t do anything wrong.'], ['unlucky', 'A loss, but not a mistake.']]);
   add('sum.folded', 3, [['calm', 'You folded, and that was fine.']]);
   add('sum.even', 3, [['calm', 'Nothing much happened in that one.']]);
-  add('read.wait', 3, [['thinking', 'Let’s see how the cards land.'], ['calm', 'All in. Nothing to do now but watch.']]);
+  add('read.wait', 3, [['thinking', 'Let’s see how the cards land.'], ['calm', 'Nothing to do now but watch.'], ['calm', 'Let’s see who has it. Ask me again after.']]);
+  add('read.cards', 3, [['calm', 'Have a look at your cards first.'], ['calm', 'Turn your cards over, then ask me.']]);
   add('tap.done', 3, [['calm', 'That’s all I’ve got on this one.'], ['calm', 'Nothing more to add here.'], ['calm', 'That’s everything. Play on.']]);
 
   /* ================= more ways to say the things he says most ================= */

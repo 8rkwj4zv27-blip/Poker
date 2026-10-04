@@ -226,10 +226,8 @@
           : '<p class="sdl-note">Nothing yet. Play a hand.</p>');
     }
     if (tab === 'talk'){
-      return '<div class="sdl-row"><div class="sdl-name">THE TALK SLIDER</div>' + seg('notch', CT.OPTIONS.notch, picks.notch) +
-        '<p class="sdl-note">1 COMMENTS: only a clear mistake gets a word. 2 DEBRIEF: + good plays, and the reasons after the hand. 3 TIPS: + his advice on the big decisions, and the smaller mistakes. 4 IN YOUR EAR: everything: advice on every decision, your seat when you\'re dealt in, close calls called close.</p></div>' +
-        '<div class="sdl-row"><div class="sdl-name">HELP: HOW DIRECT HE IS</div>' + seg('help', CT.OPTIONS.help, picks.help) +
-        '<p class="sdl-note">Before you act, before the flop (after the flop comes next). ADVICE: what he\'d do and why; says so when it\'s close. TELL ME: always the move, with the numbers and the size. HINTS: what to think about, not the move. WATCH: nothing before you act; he teaches afterwards. Tapping his screen always gets his full read.</p></div>' +
+      return '<div class="sdl-row"><div class="sdl-name">TAP ONLY</div>' +
+        '<p class="sdl-note">He says nothing on his own now. Close this sheet and play: tap his screen whenever you want his read, worked out from the table right then. Tap again to go deeper (the lesson, then a tip). Your cards face down, an all in running out, or the showdown before the result: he only says to wait and see. After a hand, his light blinks amber when he has something to say about how you played it.</p></div>' +
         '<button type="button" class="sdl-again" data-act="deal">DEAL AGAIN</button>';
     }
     return '<div class="sdl-row"><div class="sdl-name">HIS KEY</div>' + seg('keyFace', CS.OPTIONS.keyFace, picks.keyFace) +

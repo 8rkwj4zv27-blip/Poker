@@ -458,7 +458,8 @@ check('Coach: live, to the owner\'s order, presentation only',()=>{
     .forEach(([k,v])=>assert.ok(new RegExp('\\b'+k+":'"+v+"'").test(talkDef),'his talk\'s order sets '+k+' to '+v));
   // Off until the player switches him on; the talk slider in Settings on the sheet's segmented keys.
   assert.ok(/coachBot:false, coachTalk:'4'/.test(support),'the Coach starts off, at IN YOUR EAR');
-  assert.ok(/class="segmented compact" id="coach-talk-seg"/.test(indexHtml),'Settings → Coach talk must use the sheet\'s segmented keys');
+  // (tap only, 4 Oct 2026: no talk dial; Settings says how to ask him)
+  assert.ok(/id="coach-tap-field"/.test(indexHtml) && !/id="coach-talk-seg"/.test(indexHtml),'Settings → P.I.P. explains tap only (no talk dial)');
   // His key is the table's own small key, beside ⚙.
   assert.ok(set.includes("key.className = 'icon-btn table-settings coach-key'"),'the COACH key is the table\'s small key');
   // Under the game's menus (inside #app, below the scrim's 44).
