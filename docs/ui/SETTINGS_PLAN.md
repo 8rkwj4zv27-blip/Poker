@@ -220,3 +220,34 @@ wore whatever back the page had: the back you'd just landed on. Fixed
 with its own rule (weighted over `html[data-ds-on] .card.back`). The chip
 size bug: moving the size row out of `#settings-table-room` cut it off
 from table-room.js's painter, so its active key never moved.
+
+**The card rack's real bug (round 9).** A back sets only some of its
+`--cb-` values (frame, motif, motif edge, motif show are optional), and
+every card in the rack inherited the rest from `<html>`, which wears the
+back you last landed on: Sunburst's diamond came and went with it. Fixed
+with a zero-weight reset of those four on each rack card
+(`:where(#workshop .wr-back)`), so a back's own values win and the rest
+fall back to the defaults, as on the table. Checked by reading every
+card's motif under three page backs: identical (it wasn't before). The
+same leak exists in the old Settings grid; it goes when that grid does.
+
+**Round 8 verdict + plan (owner, 4 Oct 2026):** CHIPS, CABINET, SCREENS,
+BUTTONS become choice keys that apply on a tap (no Use), each with a
+preview of the real part.
+
+**Round 9 (same link):**
+- CHIPS: the stage's felt borrows the coin world's `#felt` while the tab
+  is open (the table's is parked; walls rebuilt, the table's tray kept and
+  put back), and every tap throws a real handful (`CoinWorld.throwAll`,
+  'lob') into a pot zone (`ws:pot`) at the chosen size (`CW.OPT.size`) in
+  the chosen sound (`CW.OPT.sfx`). The coin-sound keys' own three-coin
+  preview is held back while the tab is open (the throw is the preview).
+  Chip size keeps its own active key (cut off from table-room.js's
+  painter when it moved).
+- CABINET: four keys, each painted in its own theme (the key carries
+  `data-theme`); a tap recolours the whole machine.
+- SCREENS: the table's readouts (turn banner, hand readout, bet, stack)
+  cycling real lines; six look keys via `Finishes.choose`.
+- BUTTONS: real FOLD/CHECK/RAISE keys plus a small and a standard key;
+  four press keys via `Finishes.choose`; choosing presses the console
+  keys once so the feel shows at once.

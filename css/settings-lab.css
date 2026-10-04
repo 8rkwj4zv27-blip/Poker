@@ -448,3 +448,47 @@ html[data-holder="brass"] .wss-lip{
 #workshop .wr-back[data-cb="table"] .card.back::after{ display:none; }
 /* the Use key repaints whole when its label changes (iOS left old glyphs) */
 #workshop .ws-use-key{ transform:translateZ(0); isolation:isolate; }
+
+/* Every back in the rack starts from a clean slate. A back only sets some
+   of its --cb- values (Sunburst never says whether its diamond shows):
+   whatever it leaves unset was borrowed from the page, which wears the
+   back you last landed on, so motifs and frames came and went as you
+   swiped. Reset at no weight: the back's own values still win, and unset
+   ones fall back to the game's defaults, as they do on the table. */
+:where(#workshop .wr-back){ --cb-frame:initial; --cb-motif:initial; --cb-motif-edge:initial; --cb-motif-show:initial; }
+/* The pixel font draws a little above its line, and iOS only redraws the
+   line when the label changes, leaving the tops of the old letters. A tall
+   line keeps all of the ink inside what gets redrawn. */
+#workshop .ws-use-key{ line-height:2.4; padding-top:4px; padding-bottom:4px; }
+
+/* ============================================================
+   ROUND 9: keys and real previews for CHIPS, CABINET, SCREENS, BUTTONS
+   ============================================================ */
+/* CHIPS: the felt is the coin world's while the tab is open; a pot tray
+   in the middle catches the throw */
+.ws-stage--chips .wss-felt{ height:190px; border-bottom:4px solid var(--rail-lo); border-radius:10px; }
+.wss-tray{ position:absolute; left:50%; top:46%; width:120px; height:58px; transform:translate(-50%,-50%); border-radius:30px;
+  background:rgba(0,0,0,.22); box-shadow:inset 0 4px 0 rgba(0,0,0,.35),0 1px 0 rgba(255,255,255,.06); }
+/* CABINET: each key wears its own theme (the button carries data-theme,
+   and the theme tokens apply to any element that does) */
+#workshop #theme-seg button{
+  min-height:56px; background:var(--theme-case-raised); color:#F3E6C4;
+  box-shadow:0 3px 0 color-mix(in srgb,var(--theme-case-raised) 50%,black),0 5px 0 var(--ms-edge),inset 0 0 0 3px var(--theme-case-hi),inset 0 -12px 0 var(--felt-1);
+}
+#workshop #theme-seg button.active{ outline:3px solid var(--accent-bright); outline-offset:2px; }
+/* SCREENS: a cluster of the table's own readouts (layout only; the CRT
+   look is crt.css's) */
+.wss-readouts{ display:flex; flex-direction:column; gap:8px; padding:12px; border:3px solid var(--ms-edge); border-radius:6px; background:var(--theme-case-raised);
+  box-shadow:inset 0 3px 0 var(--theme-case-hi),inset 0 -3px 0 rgba(0,0,0,.25); }
+.wss-readouts .crt{ display:flex; align-items:center; min-height:34px; padding:0 10px; }
+.wss-ro-row{ display:flex; gap:8px; }
+.wss-ro-row .crt{ flex:1; flex-direction:column; align-items:flex-start; justify-content:center; min-height:52px; padding:6px 10px; }
+.ws-stage--screens{ margin-bottom:12px; }
+/* BUTTONS: the console's own keys and two smaller ones */
+.wss-console{ display:flex; flex-direction:column; gap:12px; padding:14px 12px; border:3px solid var(--ms-edge); border-radius:6px; background:var(--theme-case-raised);
+  box-shadow:inset 0 3px 0 var(--theme-case-hi),inset 0 -3px 0 rgba(0,0,0,.25); }
+.wss-actions{ display:flex; gap:8px; }
+.wss-actions button{ flex:1 1 0; min-width:0; min-height:58px; }
+.wss-console .wss-keys{ padding:0; border:0; background:none; box-shadow:none; }
+.ws-finish-seg{ flex-wrap:wrap; row-gap:9px; }
+#workshop .ws-finish-seg button{ flex:1 1 28%; min-width:0; }
