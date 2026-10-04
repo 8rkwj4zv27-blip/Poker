@@ -311,3 +311,17 @@ hit the rails at once. Dealing stays as it is. Ship it all to the game.
   393x852 phone), so the chips cross the felt like they cross the table
   and land spread out, not on the rails. The tab now scrolls a little
   below a Pro Max (the owner's one exception).
+
+**v0.60.1 fixes (owner, on the phone):**
+- The home cabinet was cut off on a Pro Max: the Workshop key made it
+  taller and `#home` didn't scroll. `fitHome()` in `js/workshop.js` now
+  takes the overflow off the hero, down to its compact 292px. Any phone
+  still too short scrolls the home screen.
+- SHOWDOWN's key works like AWARD POT: hold it and the pot cooks (the
+  game's steps, heat and shiver), let go and it bangs, as hard as it got
+  hot. A tap gives the flare and a smaller bang. The chips fade out where
+  they settle, with no invisible bank. The key is dimmed until a fresh
+  pot is in the tray. Picking a style or a "when" only refreshes the pot.
+- The coin layers are fixed to the screen, so while a felt is borrowed
+  they now follow the Workshop's scroll. The chips no longer sit on the
+  glass when the page moves.

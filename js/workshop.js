@@ -395,6 +395,7 @@
       const parked = $id('felt-parked'); if (parked) parked.id = 'felt';
       try{ CW.setTray(savedTray); CW.buildWalls(); }catch(e){}
       try{ const air = CW.airLayer && CW.airLayer(); if (air) air.style.filter = ''; }catch(e){}
+      [CW.airLayer && CW.airLayer(), document.querySelector('.ct-shadows')].forEach(l => { if (l) l.style.transform = ''; });
       try{ if (CoinTable.on()) CoinTable.sync(); }catch(e){}
       feltBorrowed = null;
     }
@@ -414,7 +415,7 @@
   async function throwChips(n){
     if (!CW || !feltBorrowed) return;
     const gen = ++throwGen;
-    clearChips(); chipOpts();
+    clearChips(); chipOpts(); pinAir();
     try{ CW.Coin.unlock(); }catch(e){}
     CW.buildWalls();
     const w = CW.walls(); w.blocks.length = 0;          // nothing on this felt but the pot
@@ -478,7 +479,9 @@
     '<div class="crt wss-caption" data-crt-quiet><span class="crt-line" data-wss-say></span></div>';
   pages.showdown.appendChild(sdStage);
   const sdFelt = sdStage.querySelector('[data-wss-felt]'), sdTray = sdStage.querySelector('.wss-tray');
-  const again = el('button', 'btn-secondary ws-replay ws-again', '&#9654; Smash again'); again.type = 'button';
+  // the key works like AWARD POT at a table: hold it and the pot cooks,
+  // let go and it bangs (a tap is a quick flare and a smaller bang)
+  const again = el('button', 'btn-secondary ws-replay ws-again'); again.type = 'button';
   const againRow = el('div', 'ws-use'); againRow.appendChild(again); pages.showdown.appendChild(againRow);
   const smashSeg = $id('sd-smash-seg');
   const smf = fieldOf('sd-smash-seg');
@@ -500,10 +503,9 @@
     const k = e.target.closest('button'); if (!k) return;
     const st = STYLES.find(x => x.id === k.dataset.v); if (!st) return;
     Object.entries(st.v).forEach(([key, v]) => { const b = document.querySelector('#' + SEG_OF[key] + ' [data-v="' + v + '"]'); if (b) b.click(); });
-    paintStyle(); runSmash();
+    paintStyle(); setTimeout(potReady, 0);
   });
-  smashSeg.addEventListener('click', e => { if (e.target.closest('button')) setTimeout(runSmash, 0); });
-  again.addEventListener('click', runSmash);
+  smashSeg.addEventListener('click', e => { if (e.target.closest('button')) setTimeout(potReady, 0); });
 
   // js/showdown.js: the heat palettes and the coins' tint, unchanged
   const HEAT = {
@@ -632,35 +634,57 @@
       requestAnimationFrame(tick);
     });
   }
-  // js/showdown.js intoBank(), the pickup: each coin flips (or ripples, or
-  // all at once) off the felt into your bank, here just below the felt
-  function intoBank(bodies, to){
-    const mode = sdOpt('cbank'), faster = sdOpt('cpace') === 'faster', n = bodies.length;
-    const order = bodies.slice().sort((a, c) => Math.hypot(a.x - to.x, a.y - to.y) - Math.hypot(c.x - to.x, c.y - to.y));
-    const base = mode === 'all' ? 0 : mode === 'ripple' ? Math.max(18, Math.min(40, 700 / Math.max(1, n))) : Math.max(45, Math.min(110, 1500 / Math.max(1, n)));
-    let at = 0;
-    return Promise.all(order.map((b, i) => {
-      const wait = mode === 'all' ? rr(0, 140) : at;
-      at += base * (faster ? 1.5 - 1.1 * i / Math.max(1, n - 1) : 1);
-      const flip = mode === 'flip';
-      if (flip && !motionOff()) setTimeout(() => sdSfx('bounce', .6, 1.4), wait / (CW.OPT.speed || 1));
-      return CW.launch(b, Object.assign({}, to, { x:to.x + rr(-6, 6) }), { wait, T:flip ? rr(.5, .62) : rr(.36, .48), flips:flip ? 4 : 2, combo:{ n:0 } });
-    }));
+  /* The coin world draws on fixed layers over the whole screen, so while
+     a felt is borrowed they follow the Workshop's scroll (else the chips
+     stay put on the glass as the page moves under them). */
+  let airBase = 0;
+  const coinLayers = () => [air(), document.querySelector('.ct-shadows')].filter(Boolean);
+  function pinAir(){ airBase = wsScreen.scrollTop; coinLayers().forEach(l => { l.style.transform = ''; }); }
+  wsScreen.addEventListener('scroll', () => {
+    if (!feltBorrowed) return;
+    const d = airBase - wsScreen.scrollTop;
+    coinLayers().forEach(l => { l.style.transform = d ? 'translateY(' + d + 'px)' : ''; });
+  }, { passive:true });
+  // before a bang: the coins and the walls move to where the felt is now
+  function rebase(){
+    const d = airBase - wsScreen.scrollTop;
+    if (d){ loose.forEach(b => { b.y += d; CW.draw(b); }); }
+    pinAir(); CW.buildWalls(); CW.walls().blocks.length = 0;
   }
-  let smashGen = 0;
+  // after they settle, the coins just go: each fades out where it lies
+  function vanish(bodies){
+    return new Promise(res => {
+      if (!bodies.length){ res(); return; }
+      const order = bodies.slice().sort(() => Math.random() - .5), step = Math.min(45, 700 / bodies.length);
+      order.forEach((b, i) => setTimeout(() => {
+        b.el.style.transition = 'opacity 260ms steps(4,end)'; b.el.style.opacity = '0';
+        if (b.shadow) b.shadow.style.opacity = '0';
+        if (i % 3 === 0) sdSfx('rock', .35, rr(1.2, 1.6));
+      }, i * step));
+      setTimeout(() => { bodies.forEach(b => { try{ CW.removeBody(b); b.el.remove(); }catch(e){} }); res(); }, order.length * step + 300);
+    });
+  }
+  let smashGen = 0, busy2 = false;
   const sleepMs = ms => new Promise(r => setTimeout(r, ms));
-  async function runSmash(){
+  const live = gen => gen === smashGen && feltBorrowed === sdFelt;
+  function paintKey(){
+    const on = settings.sdSmash !== 'off';
+    again.replaceChildren(document.createTextNode(busy2 ? (on ? 'Going off…' : 'Paying out…') : (on ? 'Hold to smash' : 'Tap to pay out')));
+    again.disabled = busy2;
+  }
+  function sayPot(){
+    const st = styleNow();
+    sayOn(sdStage, settings.sdSmash !== 'off' ? (st ? st.name : 'Your own mix') + '  ·  ' + noteOf(smashSeg).trim() : 'Off: the pot goes straight into your bank');
+  }
+  // a fresh pot in the tray, waiting for the key
+  function potReady(){
     if (feltBorrowed !== sdFelt) return;
-    const gen = ++smashGen, live = () => gen === smashGen && feltBorrowed === sdFelt;
-    clearChips(); heat(0); chipOpts();
-    try{ CW.Coin.unlock(); }catch(e){}
+    sayPot();
+    if (busy2) return;
+    ++smashGen;
+    clearChips(); heat(0); chipOpts(); pinAir();
     CW.buildWalls(); CW.walls().blocks.length = 0;
     const tr = sdTray.getBoundingClientRect(), cx = tr.left + tr.width / 2, cy = tr.top + tr.height / 2 + 4;
-    const fr = sdFelt.getBoundingClientRect();
-    const smashOn = settings.sdSmash !== 'off';
-    const st = styleNow();
-    sayOn(sdStage, smashOn ? (st ? st.name : 'Your own mix') + '  ·  ' + noteOf(smashSeg).trim() : 'Off: the pot goes straight into your bank');
-    // the pot: a heap of the coin world's chips in the tray
     const tiers = CW.TIERS();
     for (let i = 0; i < 22; i++){
       const chip = CW.makeChip(tiers[i % Math.min(4, tiers.length)]);
@@ -668,33 +692,73 @@
       const bd = CW.body(chip, cx + Math.cos(a) * rad * (tr.width / 2 - 14), cy + Math.sin(a) * rad * (tr.height / 2 - 10), 0, CW.D());
       bd.state = 'rest'; loose.push(bd); CW.draw(bd);
     }
-    const bank = { x:fr.left + fr.width / 2, y:fr.bottom + 26, z:0, d:CW.D(), vanish:true };
-    await sleepMs(500); if (!live()) return;
+    paintKey();
+  }
+  // the cook while the key is held: js/showdown.js chargeGate's steps,
+  // heat and shiver; a tap is its flare (a quick cook to half heat)
+  const TAP_POWER = .8, FULL_POWER = 1.35;
+  let cook = null;
+  function shiver(k){ const base = loose.map(b => [b.x, b.y]); return () => loose.forEach((b, i) => { if (!base[i]) return; b.x = base[i][0] + rr(-1, 1) * k() * 1.5; b.y = base[i][1] + rr(-1, 1) * k(); CW.draw(b); }); }
+  function cookStart(){
+    if (busy2 || cook || feltBorrowed !== sdFelt) return;
+    try{ CW.Coin.unlock(); Sound.unlock(); }catch(e){}
+    rebase();
+    const N = sdOpt('csteps') === 'smooth' ? 24 : (+sdOpt('csteps') || 9), every = (+sdOpt('ctime') || 1000) / N;
+    const c = cook = { n:0, N, t0:performance.now(), k:0, timers:[] };
+    const shake = shiver(() => c.k);
+    c.timers.push(setTimeout(() => {
+      if (cook !== c) return;
+      c.timers.push(setInterval(() => {
+        if (c.n < N){ c.n++; c.k = c.n / N; heat(c.k); sdSfx('stack', .25 + .4 * c.k, 1 + c.n * .05); if (c.n === N) sdSfx('stack', 1, 2.1); }
+        else sdSfx('stack', .3, rr(1.8, 2.2));
+      }, every));
+      c.timers.push(setInterval(shake, 60));
+    }, 220));
+    c.stop = () => c.timers.forEach(t => { clearTimeout(t); clearInterval(t); });
+  }
+  async function cookEnd(){
+    const c = cook; if (!c) return;
+    cook = null; c.stop();
+    busy2 = true; paintKey();
+    const gen = smashGen;
+    const smashOn = settings.sdSmash !== 'off';
+    let power = TAP_POWER;
     if (smashOn && !motionOff()){
-      // the cook: the heat climbs in steps and the coins shiver
-      const N = 9, base = loose.map(b => [b.x, b.y]);
-      for (let k = 1; k <= N; k++){
-        heat(k / N);
-        loose.forEach((b, i) => { b.x = base[i][0] + rr(-1, 1) * k / N * 1.5; b.y = base[i][1] + rr(-1, 1) * k / N; CW.draw(b); });
-        sdSfx('stack', .25 + .4 * k / N, 1 + k * .05);
-        await sleepMs(1000 / N); if (!live()) return;
-      }
-      // the bang: the well flashes cold, the coins fire off it
-      const bed = sdTray.querySelector('.sd-heatbed');
-      bed.classList.remove('sd-flash'); void bed.offsetWidth; bed.classList.add('sd-flash');
-      sdTray.classList.remove('sd-hot');
-      const a = air(); if (a) a.style.filter = tintOf(1);
-      sdStage.animate([{ transform:'translate(0,0)' }, { transform:'translate(2px,-2px)' }, { transform:'translate(-2px,1px)' }, { transform:'none' }], { duration:220, easing:'steps(4,end)' });
-      sdSfx('thump', 1, .65); sdSfx('knock', 1, .7); setTimeout(() => sdSfx('thump', .8, .4), 60);
-      for (let j = 0; j < 6; j++) setTimeout(() => sdSfx('stack', .9, rr(1, 1.6)), 20 + j * 25);
-      coolCoins(650);
-      await explode(loose, 1, cx, cy); if (!live()) return;
-      await sleepMs(+sdOpt('csettle') || 450); if (!live()) return;
+      if (c.n < 2){
+        // a tap: the flare
+        const shake = shiver(() => c.k);
+        for (let n = 1; n <= 5; n++){ c.k = n / 5 * .55; heat(c.k); shake(); if (n % 2) sdSfx('knock', .5, 1 + n * .1); await sleepMs(60); if (!live(gen)) return; }
+        await sleepMs(90);
+      } else power = TAP_POWER + (FULL_POWER - TAP_POWER) * c.n / c.N;
+      if (!live(gen)) return;
+      await bang(power, gen); if (!live(gen)) return;
     }
     const going = loose.slice(); loose = [];
-    await intoBank(going, bank);
-    if (gen === smashGen){ sdSfx('thump', 1, .5); setTimeout(() => { try{ Sound.counterLock && Sound.counterLock(true); }catch(e){} }, 120); }
+    await vanish(going); if (!live(gen)) return;
+    await sleepMs(350); if (!live(gen)) return;
+    busy2 = false; potReady();
   }
+  async function bang(power, gen){
+    const tr = sdTray.getBoundingClientRect(), cx = tr.left + tr.width / 2, cy = tr.top + tr.height / 2 + 4;
+    const bed = sdTray.querySelector('.sd-heatbed');
+    bed.classList.remove('sd-flash'); void bed.offsetWidth; bed.classList.add('sd-flash');
+    sdTray.classList.remove('sd-hot');
+    const a = air(); if (a) a.style.filter = tintOf(1);
+    sdStage.animate([{ transform:'translate(0,0)' }, { transform:'translate(2px,-2px)' }, { transform:'translate(-2px,1px)' }, { transform:'none' }], { duration:220, easing:'steps(4,end)' });
+    sdSfx('thump', 1, .65); sdSfx('knock', 1, .7); setTimeout(() => sdSfx('thump', .8, .4), 60);
+    for (let j = 0; j < 6; j++) setTimeout(() => sdSfx('stack', .9, rr(1, 1.6)), 20 + j * 25);
+    coolCoins(650);
+    await explode(loose, power, cx, cy); if (!live(gen)) return;
+    await sleepMs(+sdOpt('csettle') || 450);
+  }
+  again.addEventListener('pointerdown', e => { if (e.button > 0) return; e.preventDefault(); cookStart(); });
+  addEventListener('pointerup', () => { if (cook) cookEnd(); });
+  addEventListener('pointercancel', () => { if (cook) cookEnd(); });
+  again.oncontextmenu = e => { e.preventDefault(); return false; };
+  // a keyboard press: a tap
+  again.addEventListener('keydown', e => { if ((e.key === 'Enter' || e.key === ' ') && !e.repeat && !cook){ e.preventDefault(); cookStart(); cookEnd(); } });
+  // leaving the tab mid-smash: let the next pot start clean
+  function sdReset(){ if (cook){ cook.stop(); cook = null; } busy2 = false; ++smashGen; }
 
   /* CABINET: four keys, each painted in its own theme; a tap recolours the
      whole machine, which is the preview. */
@@ -818,7 +882,7 @@
   /* ---- tabs, opening, closing ---- */
   let tab = 'cards';
   function leaving(){
-    borrowDeck(null); borrowFelt(false); holdPreview(false); cycleLines(false);
+    sdReset(); borrowDeck(null); borrowFelt(false); holdPreview(false); cycleLines(false);
     document.documentElement.setAttribute('data-ds-back', equippedBack());
   }
   function setTab(k){
@@ -830,7 +894,7 @@
     if (k === 'cards') showBack(backRack.index);
     else if (k === 'dealing'){ borrowDeck(dealStage); setTimeout(() => showStyle(styleRack.index, true), 250); }
     else if (k === 'chips'){ borrowFelt(true); holdPreview(true); sayOn(chipStage, 'Chip size: ' + noteOf(sizeSeg).trim() + '  ·  coin sound: ' + noteOf(soundSeg).trim()); setTimeout(() => throwChips(8), 200); }
-    else if (k === 'showdown'){ borrowFelt(true, sdFelt); holdPreview(true); paintStyle(); setTimeout(runSmash, 250); }
+    else if (k === 'showdown'){ borrowFelt(true, sdFelt); holdPreview(true); paintStyle(); paintKey(); setTimeout(potReady, 250); }
     else if (k === 'cabinet') sayOn(cabCap, noteOf(themeSeg).trim() + '  ·  in use');
     else if (k === 'screens') cycleLines(true);
   }
@@ -864,6 +928,20 @@
     const bay = document.querySelector('#menu-contraption .pc-control-bay');
     if (bay) bay.appendChild(homeKey);
   }
+  // the key makes the cabinet taller: the hero gives up just what the phone
+  // needs (never below its compact 292px), so the cabinet isn't cut off
+  function fitHome(){
+    const home = $id('home'), hero = home && home.querySelector('.hero');
+    if (!hero || home.classList.contains('hidden')) return;
+    hero.style.flexBasis = hero.style.minHeight = '';
+    if (matchMedia('(orientation:portrait) and (max-height:700px)').matches) return;
+    const over = home.scrollHeight - home.clientHeight;
+    if (over <= 0) return;
+    const h = Math.max(292, Math.floor(hero.getBoundingClientRect().height - over));
+    hero.style.flexBasis = hero.style.minHeight = h + 'px';
+  }
+  addEventListener('resize', fitHome);
+  new MutationObserver(fitHome).observe($id('home'), { attributes:true, attributeFilter:['class'] });
 
   /* ---- the volume control: the fader ---- */
   function volumeControl(){
@@ -930,4 +1008,5 @@
   html.dataset.stHints = 'on';
   html.dataset.wbtn = 'line';
   placeKey();
+  fitHome(); requestAnimationFrame(fitHome);
 })();
