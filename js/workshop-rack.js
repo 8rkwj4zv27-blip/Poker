@@ -16,7 +16,8 @@
    Landing calls onLand(i): the Workshop previews it. Choosing is a
    separate key, so browsing never changes your setup.
 
-   WorkshopRack.create({ items:[html], index, onLand(i) })
+   WorkshopRack.create({ items:[html], index, onNotch(i), onLand(i) })
+   (onNotch: the card in the middle changed, while it's still moving)
      -> { el, index, go(i), refresh(i, html) }
    ============================================================ */
 const WorkshopRack = (() => {
@@ -122,6 +123,7 @@ const WorkshopRack = (() => {
     const notchTo = (notch,energy) => {
       if (notch === phys.detent) return;
       phys.detent = notch;
+      if (o.onNotch) o.onNotch(notch);
       sfx('stageRollClick',clamp(energy,.12,1),false); buzz(5);
     };
     const landed = () => { if (o.onLand) o.onLand(phys.target); };

@@ -253,6 +253,12 @@ html[data-ds-where="right"] .wss-station{ left:auto; right:18px; }
 .ws-stage .dealer-deck .card.ds-gone{ display:none; }
 .ws-stage .dealer-deck .card.ds-exit{ z-index:25; }
 .ws-stage .dealer-deck.ds-kick{ animation:dsKick 150ms steps(3,end); }
+/* CARDS: felt only, the game's deck in the middle at exactly twice its size */
+.ws-stage--cards .wss-felt{ height:200px; border-bottom:4px solid var(--rail-lo); border-radius:10px; }
+.ws-stage--cards .wss-station,
+html[data-ds-where="right"] .ws-stage--cards .wss-station{ left:50%; right:auto; top:50%; bottom:auto; margin:-39px 0 0 -24px; transform:scale(2); }
+/* the screen under a stage may run to two lines */
+.wss-caption .crt-line{ white-space:normal; line-height:1.5; }
 /* DEALING: felt only; the deck at one side, a card's place at the other */
 .ws-stage--dealing .wss-felt{ height:160px; border-bottom:4px solid var(--rail-lo); border-radius:10px; }
 .ws-stage--dealing .wss-station{ top:50%; bottom:auto; margin-top:-39px; }
@@ -321,25 +327,44 @@ html[data-holder="brass"] .wss-lip{
 }
 /* cards away from the middle sit in shadow (opacity only) */
 .wr-card::after{ content:""; position:absolute; z-index:45; inset:0; pointer-events:none; border-radius:6px; background:#0b0c09; opacity:var(--shade,0); }
-/* CARDS: the item is the card back itself, a full-size playing card */
-.wr-back{ display:block; width:100%; height:100%; }
-.wr-back .card{ position:relative; display:block; width:100%; height:100%; margin:0; border-radius:6px; }
-.wr-back .card.back{ box-shadow:0 4px 0 rgba(0,0,0,.5),inset 0 0 0 3px var(--cb-trim); }
-/* DEALING: a style is a ticket */
-.wr-rack:has(.wr-style) .wr-card{ width:176px; height:200px; margin-left:-88px; }
+/* CARDS: the item is the deck's own card (card back small, 44x62),
+   enlarged exactly x3 as one layer: the deck's pattern, bigger, and
+   rasterised once so it doesn't shimmer while the rack moves */
+.wr-rack:has(.wr-back) .wr-card{ width:132px; height:186px; margin-left:-66px; }
+.wr-back{ position:absolute; left:0; top:0; width:44px; height:62px; transform:scale(3); transform-origin:0 0; will-change:transform; }
+.wr-back .card{ position:relative; display:block; width:44px; height:62px; margin:0; }
+.wr-rack:has(.wr-back) .wr-card::before,.wr-rack:has(.wr-back) .wr-card::after{ border-radius:5px; }
+
+/* DEALING: a style's ticket, coloured by its rarity */
+.wr-rack:has(.wr-style) .wr-card{ width:150px; height:192px; margin-left:-75px; }
 .wr-style{
-  display:flex; flex-direction:column; gap:7px; height:100%; padding:11px 11px 10px; box-sizing:border-box;
-  border:3px solid var(--ms-edge); border-radius:5px; background:#E9DDAE; color:#22201C;
-  box-shadow:inset 0 0 0 2px #F6EBC4,inset 0 0 0 4px rgba(79,64,31,.25),0 5px 0 #786b49,0 8px 0 #0b0805;
+  --t-bg:#E9DDAE; --t-hi:#F6EBC4; --t-lo:#786B49; --t-ink:#22201C; --t-band:#2A261C; --t-band-ink:#E9DDAE;
+  position:relative; display:flex; flex-direction:column; align-items:center; height:100%; box-sizing:border-box; padding:14px 10px 0;
+  border:3px solid var(--ms-edge); border-radius:6px; overflow:hidden; background:var(--t-bg); color:var(--t-ink);
+  box-shadow:inset 0 0 0 2px var(--t-hi),inset 0 0 0 4px color-mix(in srgb,var(--t-lo) 45%,transparent),0 5px 0 var(--t-lo),0 8px 0 #0b0805;
 }
-.wr-style b{ font-family:var(--font-hdr); font-weight:400; font-size:11px; letter-spacing:.04em; line-height:1.3; text-transform:uppercase; }
-.wr-tier{ align-self:flex-start; padding:3px 6px 2px; font-family:var(--font-hdr); font-size:6px; letter-spacing:.1em; text-transform:uppercase; border:2px solid #22201C; background:#4A4A44; color:#F3E6C4; }
-.wr-style[data-tier="uncommon"] .wr-tier{ background:#2F6B45; }
-.wr-style[data-tier="rare"] .wr-tier{ background:#2F5D9E; }
-.wr-style[data-tier="epic"] .wr-tier{ background:#6E3C9A; }
-.wr-style[data-tier="legendary"] .wr-tier{ background:#B07A12; color:#1C1204; }
-.wr-note{ font-family:var(--font-px); font-size:12px; line-height:1.3; color:#3D3A30; }
-.wr-mix{ margin-top:auto; font-family:var(--font-hdr); font-size:6px; letter-spacing:.08em; text-transform:uppercase; color:#5F5B4B; }
+.wr-style[data-tier="uncommon"]{ --t-bg:#3F8A5A; --t-hi:#6FB58A; --t-lo:#1F4A31; --t-ink:#F3E6C4; --t-band:#173826; --t-band-ink:#BFE8CC; }
+.wr-style[data-tier="rare"]{ --t-bg:#3A6EB8; --t-hi:#6E9BDB; --t-lo:#1D3A66; --t-ink:#F3EEDD; --t-band:#152A4D; --t-band-ink:#BCD3F5; }
+.wr-style[data-tier="epic"]{ --t-bg:#7C46AD; --t-hi:#A87AD6; --t-lo:#40205E; --t-ink:#F6EAFB; --t-band:#2E1745; --t-band-ink:#DCC2F2; }
+.wr-style[data-tier="legendary"]{
+  --t-bg:#E2B23C; --t-hi:#FFE08A; --t-lo:#7A520E; --t-ink:#2A1A04; --t-band:#3D2806; --t-band-ink:#FFE08A;
+  background:repeating-linear-gradient(115deg,transparent 0 14px,rgba(255,240,180,.28) 14px 18px,transparent 18px 36px),var(--t-bg);
+}
+.wr-pips{ display:flex; gap:5px; }
+.wr-pips i{ width:9px; height:9px; transform:rotate(45deg); border:2px solid var(--t-ink); opacity:.35; }
+.wr-pips i.on{ opacity:1; background:var(--t-ink); }
+.wr-style b{
+  flex:1; display:flex; align-items:center; justify-content:center; text-align:center; padding:0 2px;
+  font-family:var(--font-hdr); font-weight:400; font-size:13px; letter-spacing:.04em; line-height:1.35; text-transform:uppercase; text-wrap:balance;
+}
+.wr-tier{
+  align-self:stretch; margin:0 -10px; padding:9px 4px 8px; text-align:center; white-space:nowrap;
+  font-family:var(--font-hdr); font-size:6px; letter-spacing:.06em; text-transform:uppercase;
+  background:var(--t-band); color:var(--t-band-ink); border-top:3px solid var(--ms-edge);
+}
+/* lit when the style is in the mix */
+.wr-mixlamp{ position:absolute; right:9px; top:9px; width:11px; height:11px; border:2px solid var(--ms-edge); background:#2A1E10; box-shadow:inset 1px 1px 0 rgba(255,255,255,.2); }
+.wr-mixlamp.is-on{ background:#7CF29A; box-shadow:0 0 7px #7CF29A,inset 1px 1px 0 rgba(255,255,255,.55); }
 
 /* USE THIS, and a line on what it does */
 .ws-use{ display:flex; flex-wrap:wrap; align-items:center; gap:8px 10px; margin:6px 0 14px; }

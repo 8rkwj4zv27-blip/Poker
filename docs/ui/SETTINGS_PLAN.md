@@ -168,3 +168,19 @@ in the holder; the rack is the card backs themselves, full size; the name
 is on the CRT and the Use key. DEALING: the stage is felt only, the deck
 at one side and a card's place at the other; landing on a style deals
 one card across in it.
+
+**Round 6 verdict (owner):** the backs in the rack don't look like the
+deck's (patterns tiny) and shimmer while swiping; take the card holder
+out of the Workshop; the CARDS stage is just the deck; DEALING's stage is
+right; the style tickets are too wordy and don't show rarity.
+
+**Round 7 (same link):** each back in the rack is the deck's own card
+(`card back small`, 44x62) enlarged exactly x3 as one layer
+(`will-change:transform`), so it is the deck's pattern and is rasterised
+once instead of redrawn every frame. The name and Use key follow the
+middle card as it moves (`onNotch`). CARDS' stage is the deck alone, at
+twice its size. The holder row is out (kept wired, unseen); the deck's
+side moved to DEALING, where it shows. Style tickets: coloured by rarity
+(cream, green, blue, purple, gold), five pips, the name large, a banner
+with the odds (Rare 1 in 50, Epic 1 in 80, Legendary 1 in 300) and a lamp
+lit when it's in the mix; the description moved to the CRT.

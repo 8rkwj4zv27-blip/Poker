@@ -216,8 +216,7 @@
   TABS.forEach(([k]) => { const p = el('div', 'ws-tab'); p.dataset.wsTab = k; wsCard.appendChild(p); pages[k] = p; });
 
   /* ---- the stages ----
-     CARDS: the deck on the felt and your hand standing in its holder on
-     a strip of dashboard, as at the table.
+     CARDS: the game's deck on the felt, and nothing else.
      DEALING: just felt, the deck at one side and a card's place at the
      other (the side the deck isn't on): each style deals one card across. */
   const face = (rank, suit, cls) => '<div class="card ' + cls + '">' + cardInner({ rank, suit }) + '</div>';
@@ -227,9 +226,7 @@
     const deckHTML = '<div class="wss-station"><div class="dealer-deck" data-wss-deck>' + layersHTML + '</div></div>';
     const s = el('div', 'ws-stage ws-stage--' + kind);
     s.innerHTML = kind === 'cards'
-      ? '<div class="wss-box"><div class="wss-felt">' + deckHTML + '</div><div class="wss-dash"></div>' +
-          // the holder spans the join: your cards stand up out of the dashboard
-          '<div class="wss-seat"><i class="wss-slot"></i><div class="wss-cards">' + face('K', '♦', 'diamond') + face('Q', '♣', 'club') + '</div><i class="wss-lip"></i></div></div>' +
+      ? '<div class="wss-box"><div class="wss-felt">' + deckHTML + '</div></div>' +
         '<div class="crt wss-caption"><span class="crt-line" data-wss-say></span></div>'
       : '<div class="wss-box"><div class="wss-felt">' + deckHTML + '<div class="wss-spot"><div class="card back small" data-st-spot></div></div></div></div>' +
         '<div class="crt wss-caption"><span class="crt-line" data-wss-say></span></div>';
@@ -264,13 +261,25 @@
   const cardsStage = stage('cards');
   pages.cards.appendChild(cardsStage);
   const backRack = WorkshopRack.create({
-    items:BACKS.map(b => '<span class="ds-swatch wr-back" data-cb="' + b.id + '"><span class="card back"></span></span>'),
+    // the deck's own card (card back small), drawn at its real size and
+    // enlarged exactly x3 as one layer, so the pattern is the deck's and
+    // it never redraws while it moves
+    items:BACKS.map(b => '<span class="ds-swatch wr-back" data-cb="' + b.id + '"><span class="card back small"></span></span>'),
     index:Math.max(0, BACKS.findIndex(b => b.id === equippedBack())),
+    onNotch:i => nameBack(i),
     onLand:i => showBack(i)
   });
   pages.cards.appendChild(backRack.el);
   const backUse = keyRow('Use this back');
   pages.cards.appendChild(backUse.w);
+  // the name and the key follow the card in the middle as it moves
+  function nameBack(i){
+    const b = BACKS[i]; if (!b) return;
+    const on = b.id === equippedBack();
+    sayOn(cardsStage, b.name + (on ? '  \u00b7  in use' : ''));
+    backUse.b.textContent = on ? 'In use' : 'Use ' + b.name;
+    backUse.b.classList.toggle('is-on', on);
+  }
   function showBack(i){
     const b = BACKS[i]; if (!b) return;
     // browsing: the deck wears the back (put back on the way out unless used)
@@ -290,11 +299,10 @@
     showBack(backRack.index);
   });
   const holderField = fieldOf('holder-seg'), sideField = fieldOf('deck-side-seg');
-  const cardsOpts = el('div', 'sheet-section st-plate ws-opts');
-  cardsOpts.appendChild(optField('Card holder', $id('holder-seg')));
-  cardsOpts.appendChild(optField('The deck', $id('deck-side-seg')));
-  pages.cards.appendChild(cardsOpts);
-  if (holderField) holderField.remove();
+  // the card holder is out of the Workshop for now (owner, round 6): its
+  // row stays wired, unseen. The deck's side goes to DEALING, where it shows.
+  if (holderField) attic.appendChild(holderField);
+  const sideSeg = $id('deck-side-seg');
   if (sideField) sideField.remove();
 
   /* ---- DEALING: each style deals one card across the felt ---- */
@@ -303,12 +311,19 @@
   // the owner's call (round 5): a style's rarity is its own, never set
   try{ DealStyles.apply({ rarity:Object.fromEntries(STY.map(s => [s.id, s.tier])) }); }catch(e){}
   const inMix = id => { try{ return !!DealStyles.order.on[id]; }catch(e){ return id === 'flick'; } };
-  const styleHTML = s => '<div class="wr-style" data-tier="' + s.tier + '"><span class="wr-tier">' + TIER[s.tier] + '</span>' +
-    '<b>' + s.name + '</b><span class="wr-note">' + s.note + '</span><span class="wr-mix">' + (inMix(s.id) ? '● In the mix' : '○ Not in the mix') + '</span></div>';
+  // a style's ticket: coloured by its rarity, with its pips and odds, the
+  // name big, and a lamp lit when it's in the mix (the CRT carries the rest)
+  const PIPS = { common:1, uncommon:2, rare:3, epic:4, legendary:5 };
+  const ODDS = { common:'Common', uncommon:'Uncommon', rare:'Rare \u00b7 1 in 50', epic:'Epic \u00b7 1 in 80', legendary:'Legendary \u00b7 1 in 300' };
+  const styleHTML = s => '<div class="wr-style" data-tier="' + s.tier + '">' +
+    '<span class="wr-mixlamp' + (inMix(s.id) ? ' is-on' : '') + '" aria-hidden="true"></span>' +
+    '<span class="wr-pips">' + [1,2,3,4,5].map(n => '<i' + (n <= PIPS[s.tier] ? ' class="on"' : '') + '></i>').join('') + '</span>' +
+    '<b>' + s.name + '</b>' +
+    '<span class="wr-tier">' + ODDS[s.tier] + '</span></div>';
   const dealStage = stage('dealing');
   pages.dealing.appendChild(dealStage);
   const spot = dealStage.querySelector('[data-st-spot]');
-  const styleRack = WorkshopRack.create({ items:STY.map(styleHTML), index:0, onLand:i => showStyle(i, true) });
+  const styleRack = WorkshopRack.create({ items:STY.map(styleHTML), index:0, onNotch:i => showStyle(i, false), onLand:i => showStyle(i, true) });
   pages.dealing.appendChild(styleRack.el);
   const mixUse = keyRow('Add to the mix');
   const replay = el('button', 'btn-secondary ws-replay', '&#9654; Again'); replay.type = 'button';
@@ -317,7 +332,7 @@
   function showStyle(i, dealIt){
     const s = STY[i]; if (!s) return;
     const on = inMix(s.id);
-    sayOn(dealStage, s.name + '  ·  ' + TIER[s.tier]);
+    sayOn(dealStage, s.note);   // the ticket has the name and rarity; the screen says how it flies
     mixUse.b.textContent = on ? 'In the mix' : 'Add to the mix';
     mixUse.b.classList.toggle('is-on', on);
     const n = STY.filter(x => inMix(x.id)).length;
@@ -336,6 +351,7 @@
   const quick = $id('deal-quick-seg'), scope = $id('deal-scope-seg');
   dealOpts.appendChild(optField('Pick a style', scope, 'Once per hand: one style deals the whole hand. Every card: each card picks its own.'));
   dealOpts.appendChild(optField('Quick', quick));
+  if (sideSeg) dealOpts.appendChild(optField('The deck', sideSeg, 'Which side of the table the dealer\'s deck sits.'));
   pages.dealing.appendChild(dealOpts);
   // the full list (switches and rarities) stays wired but out of sight
   const dealSec = $id('settings-dealing');
@@ -391,8 +407,7 @@
     const b = e.target.closest('button'); if (!b) return;
     if (b.dataset.go === 'home'){ closeWorkshop(); return; }
     if (b.dataset.wsTab){ setTab(b.dataset.wsTab); wsScreen.scrollTop = 0; return; }
-    if (b.closest('#holder-seg')) setTimeout(() => { sayOn(cardsStage, 'Card holder: ' + (b.querySelector('b') || b).textContent.trim()); cardsStage.classList.remove('wss-flash'); void cardsStage.offsetWidth; cardsStage.classList.add('wss-flash'); }, 0);
-    if (b.closest('#deck-side-seg')) setTimeout(() => { sayOn(cardsStage, 'The deck: ' + b.textContent.trim()); }, 0);
+    if (b.closest('#deck-side-seg')) setTimeout(() => { const st = STY[styleRack.index]; if (st) deal(spot, st.id); }, 200);
   });
   function openWorkshop(){
     $id('home').classList.add('hidden');
@@ -510,7 +525,7 @@
     const tune = el('div', 'sdl-sheet stl-sheet');
     tune.setAttribute('role', 'dialog'); tune.setAttribute('aria-label', 'Settings lab');
     tune.innerHTML =
-      '<div class="sdl-tabs"><button type="button" class="is-on" tabindex="-1">SETTINGS + WORKSHOP · ROUND 6</button><button type="button" class="sdl-close" aria-label="Close">✕</button></div>' +
+      '<div class="sdl-tabs"><button type="button" class="is-on" tabindex="-1">SETTINGS + WORKSHOP · ROUND 7</button><button type="button" class="sdl-close" aria-label="Close">✕</button></div>' +
       '<div class="sdl-body">' +
         '<h3>JUMP TO<small>The keys in the game work too.</small></h3>' +
         '<div class="sdl-moments"><button type="button" data-open="workshop" class="is-wide">THE WORKSHOP</button><button type="button" data-open="home">SETTINGS AT HOME</button><button type="button" data-open="table">SETTINGS AT A TABLE</button></div>' +
@@ -519,6 +534,7 @@
         '<textarea class="sdl-copytext" readonly hidden></textarea>' +
         '<h3>WHAT MOVED<small>Nothing is lost: every saved pick keeps its value.</small></h3>' +
         '<ul class="stl-list">' +
+          '<li>Round 7: the backs are the deck\'s own cards enlarged x3; the holder is out; CARDS shows just the deck; style tickets show rarity, not text.</li>' +
           '<li>Round 6: CARDS flicks through the card backs themselves, DEALING deals one card across the felt, both racks move exactly like the event cards.</li>' +
           '<li>Round 5: the Workshop is tabs, each with its own preview. CARDS and DEALING are built: swipe the rack to preview, tap Use (or Add to the mix) to choose. A style\'s rarity is now its own. Finishes moved to SCREENS.</li>' +
           '<li>The Workshop is opened from the home screen only. Settings no longer links to it.</li>' +
@@ -538,7 +554,7 @@
       const t = e.target.closest('button'); if (!t) return;
       if (t.dataset.open){ open(false); openAt(t.dataset.open); return; }
       if (t.dataset.act === 'copy'){
-        const text = 'Settings + Workshop lab, round 6:\n' + ROWS.filter(r => r[0] !== 'view').map(r => '- ' + r[1].charAt(0) + r[1].slice(1).toLowerCase() + ': ' + NAMES[r[0]][state[r[0]] || DEF[r[0]]]).join('\n');
+        const text = 'Settings + Workshop lab, round 7:\n' + ROWS.filter(r => r[0] !== 'view').map(r => '- ' + r[1].charAt(0) + r[1].slice(1).toLowerCase() + ': ' + NAMES[r[0]][state[r[0]] || DEF[r[0]]]).join('\n');
         const ta = tune.querySelector('.sdl-copytext');
         const done = ok => { t.textContent = ok ? 'COPIED: PASTE IT IN THE CHAT' : 'SELECT + COPY BELOW'; setTimeout(() => { t.textContent = 'COPY MY PICKS'; }, 2600); if (!ok){ ta.hidden = false; ta.value = text; ta.focus(); ta.select(); } };
         try{ navigator.clipboard.writeText(text).then(() => done(true), () => done(false)); }catch(err){ done(false); }
