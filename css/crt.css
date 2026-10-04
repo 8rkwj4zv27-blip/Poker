@@ -294,6 +294,9 @@
 @keyframes crtCursor{ 50%{ opacity:.16; } }
 [data-motion="off"] .crt .crt-cursor{ animation:none; }
 
+/* The Workshop's stage captions (js/workshop.js) may run to two lines. */
+.wss-caption .crt-line{ white-space:normal; line-height:1.5; }
+
 /* Narrow phones: every line steps down together, so long table lines fit. */
 @media (max-width:389px){ :root{ --crt-line-size:6.5px; } }
 @media (max-width:350px){ :root{ --crt-line-size:5px; } }

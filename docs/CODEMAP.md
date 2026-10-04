@@ -719,6 +719,28 @@ v0.46.0 the chips ARE the game's coin files (`js/coin-world.js`,
 palettes, ladders, the bank's options, moments, YOUR BANK presets up to
 FULL) over the real game. Not loaded by the game.
 
+## `js/workshop.js` + `css/workshop.css` + `js/workshop-rack.js` — Settings + Workshop (live, v0.60.0)
+
+The Settings sheet and the WORKSHOP screen (`docs/ui/SETTINGS_PLAN.md`;
+built in the Settings Lab, rounds 1-10, now retired). At load,
+`workshop.js` regroups the Settings sheet into THIS TABLE / PLAY / HELP /
+SOUND / DISPLAY from the game's own wired controls. They are moved, never
+copied, and anything no longer shown stays wired in a hidden attic. It
+adds hand readout, four-colour deck and volume (a master gain via a shim
+on `AudioContext.destination`).
+
+It also builds `#workshop`, opened by the home screen's Workshop key. The
+seven tabs are Cards, Dealing, Showdown, Chips, Cabinet, Screens and
+Buttons, and each previews the real part:
+- Dealing borrows `#dealer-deck`.
+- Chips and Showdown borrow the coin world's `#felt`.
+- Showdown's burst is a copy of `showdown.js`'s `explode()`, scaled to its
+  small felt.
+
+`js/workshop-rack.js` is the event-card rack that Cards and Dealing
+flick through. The Finishes entry is gone from Settings: Screens and
+Buttons choose through `Finishes.choose`.
+
 ## `js/finishes.js` + `css/finishes.css` — Finishes menu (live)
 
 Settings → Finishes: a page inside the Settings sheet that swaps each

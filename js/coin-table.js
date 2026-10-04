@@ -21,8 +21,11 @@ const CoinTable = (function(){
   // chips: the pot is always a pyramid, like the bank (owner)
   Object.assign(CW.OPT, { potShape:'pyramid' });
   // Lab 2 (coin-bank-lab.html): the bank's inside, js/coin-bank.js's View
-  // in one of its styles; 'today' is the shipped rack (Lab 1 runs on it)
-  Object.assign(CW.OPT, { bank:'tubes', bankLabels:'off', bankChange:3 });
+  // in one of its styles; 'today' is the shipped rack (Lab 1 runs on it).
+  // The game's bank is always the hoard (sync() keeps it so): start there,
+  // or a bank drawn before the first sync() built the old tubes for a
+  // moment and then failed to rebuild them as 'hoard'.
+  Object.assign(CW.OPT, { bank:'hoard', bankLabels:'off', bankChange:3 });
   const denomOn = ()=>CW.OPT.denom!=='off';
   // one small coin is the small blind this hand
   const unit = ()=>Math.max(1, (game && game.smallBlind) || 1);
