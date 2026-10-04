@@ -277,18 +277,17 @@
   // the name and the key follow the card in the middle as it moves
   function nameBack(i){
     const b = BACKS[i]; if (!b) return;
-    const on = b.id === equippedBack();
-    sayOn(cardsStage, b.name + (on ? '  \u00b7  in use' : ''));
-    backUse.b.textContent = on ? 'In use' : 'Use ' + b.name;
-    backUse.b.classList.toggle('is-on', on);
+    sayOn(cardsStage, b.name + (b.id === equippedBack() ? '  \u00b7  in use' : ''));
   }
+  // the key's label is a fresh node each time (iOS left old glyphs behind)
+  const label = (btn, t) => { btn.replaceChildren(document.createTextNode(t)); };
   function showBack(i){
     const b = BACKS[i]; if (!b) return;
     // browsing: the deck wears the back (put back on the way out unless used)
     document.documentElement.setAttribute('data-ds-back', b.id);
     const on = b.id === equippedBack();
     sayOn(cardsStage, b.name + (on ? '  ·  in use' : ''));
-    backUse.b.textContent = on ? 'In use' : 'Use ' + b.name;
+    label(backUse.b, on ? 'In use' : 'Use ' + b.name);
     backUse.b.classList.toggle('is-on', on);
     backUse.n.textContent = on ? 'This back is on every face-down card.' : 'Flick through them. Nothing changes until you tap Use.';
   }

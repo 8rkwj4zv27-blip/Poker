@@ -208,3 +208,15 @@ browsing shows, Use keeps, leaving puts back what's kept).
   press feel puts it on the whole page for the moment.
 - The name screens are `data-crt-quiet`: the channel-change effect merged
   quick changes and showed a stale name.
+
+**Round 8 verdict (owner):** the card rack still showed duplicated and
+changing backs; the rack works for CARDS but not for CHIPS, CABINET,
+SCREENS or BUTTONS (keys may suit them better); the chip preview is poor
+and chip size didn't change it; hold DEALING as it is. Rethink the four.
+
+The card-rack bug: TABLE GREEN's look was only written for the Settings
+grid (`#deck-back-seg .ds-swatch[data-cb="table"]`), so in the rack it
+wore whatever back the page had: the back you'd just landed on. Fixed
+with its own rule (weighted over `html[data-ds-on] .card.back`). The chip
+size bug: moving the size row out of `#settings-table-room` cut it off
+from table-room.js's painter, so its active key never moved.
