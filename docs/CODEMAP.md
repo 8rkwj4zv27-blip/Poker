@@ -742,9 +742,6 @@ flick through. The Finishes entry is gone from Settings: Screens and
 Buttons choose through `Finishes.choose`.
 
 Since v0.61.0 (Workshop skins):
-- Cards has a CARD FACE row and the four-colour switch (moved from
-  Display). The faces live in `js/card-faces.js` + `css/card-faces.css`
-  (below).
 - Chips has a SKIN row: `settings.chipSkin` sets `CoinWorld.OPT.chipDesign`
   (`tint` Classic, `neon`, `mint`, `dice`, `grin`; drawn by `chipFace` /
   `chipEdge` in `js/coin-world.js`), and `CoinWorld.repaint()` repaints
@@ -752,18 +749,6 @@ Since v0.61.0 (Workshop skins):
 - Screens offers four more CRT presets (Terminal, LCD, VFD, Dot LED) in
   `CRT.PRESETS` and `FINISH_SETS`.
 
-## `js/card-faces.js` + `css/card-faces.css` — card faces (live, v0.61.0)
-
-`settings.cardFace` → `body[data-face]`: classic, standard (an index in
-both corners, pips laid out, framed courts with pixel crowns), jumbo (big
-index in both corners), royals (the cast's portraits on J/Q/K, one colour
-per suit, tinted once into images with the game's own `faceTintK`),
-misprint (off-register ink). `cardInner()` adds a second index
-(`.ci-flip`) and the art (`.cf`), both aria-hidden and hidden by
-`css/02-screens.css` unless a face shows them. Each face asks the card's
-own width (a container query): under 26px stays classic, 26–39px gets the
-index-only version, 40px+ the full face; the top-left index is never
-shrunk on a small card.
 
 ## `js/finishes.js` + `css/finishes.css` — Finishes menu (live)
 

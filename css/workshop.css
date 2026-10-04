@@ -474,9 +474,3 @@ html[data-holder="brass"] .wss-lip{
    for that scrolls the home screen rather than cutting the cabinet off. */
 #home{ overflow-y:auto; -webkit-overflow-scrolling:touch; }
 
-/* CARDS: the fronts (js/card-faces.js), face up at the table's two sizes */
-.ws-stage--faces{ margin-top:10px; }
-.ws-stage--faces .wss-felt{ height:auto; padding:14px 8px; border-bottom:4px solid var(--rail-lo); border-radius:10px; }
-.wss-faces{ display:flex; flex-direction:column; align-items:center; gap:10px; }
-.wss-face-row{ display:flex; gap:8px; justify-content:center; }
-.wss-face-row--small{ gap:6px; }

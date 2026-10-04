@@ -159,9 +159,8 @@
 
   // DISPLAY
   const display = plate('display', 'Display');
-  // the four-colour deck lives in the Workshop's CARDS tab, with the faces
-  const fourColourRow = row('Four-colour deck', 'Each suit its own colour: <span class="st-suits"><i class="s">&#9824;</i><i class="h">&#9829;</i><i class="d">&#9830;</i><i class="c">&#9827;</i></span>',
-    newSwitch('sw-fourcolour', 'Four-colour deck', 'fourColour', applyTheme));
+  display.appendChild(row('Four-colour deck', 'Each suit its own colour: <span class="st-suits"><i class="s">&#9824;</i><i class="h">&#9829;</i><i class="d">&#9830;</i><i class="c">&#9827;</i></span>',
+    newSwitch('sw-fourcolour', 'Four-colour deck', 'fourColour', applyTheme)));
   display.appendChild(row('Reduced motion', 'Less shake, fewer big arcade effects.', take('sw-motion')));
 
   // the service plate: build + Developer Mode, quiet
@@ -292,35 +291,6 @@
     if (real) real.click();
     showBack(backRack.index);
   });
-  /* the fronts (js/card-faces.js): a strip of felt with face-up cards at
-     the sizes the table uses (the board's, an opponent's), the face keys
-     and the four-colour switch. A tap uses the face at once. */
-  const FACES = typeof CardFaces !== 'undefined' ? CardFaces.FACES : [];
-  const faceStage = el('div', 'ws-stage ws-stage--faces');
-  const faceCard = (rank, suit, small) => '<div class="' + cardClass(false, { rank, suit }, small) + '">' + cardInner({ rank, suit }) + '</div>';
-  faceStage.innerHTML = '<div class="wss-box"><div class="wss-felt"><div class="wss-faces">' +
-    '<div class="wss-face-row">' + [['A','\u2660'],['7','\u2665'],['10','\u2666'],['K','\u2663']].map(([r, su]) => faceCard(r, su, false)).join('') + '</div>' +
-    '<div class="wss-face-row wss-face-row--small">' + [['Q','\u2665'],['J','\u2660'],['9','\u2663'],['5','\u2666']].map(([r, su]) => faceCard(r, su, true)).join('') + '</div>' +
-    '</div></div></div>';
-  pages.cards.appendChild(faceStage);
-  const faceSeg = el('div', 'segmented compact ws-finish-seg ws-face-seg'); faceSeg.setAttribute('role', 'group');
-  FACES.forEach(f => { const k = el('button', '', f.name); k.type = 'button'; k.dataset.v = f.id; faceSeg.appendChild(k); });
-  const faceBox = keysPlate('Card face', faceSeg, null);
-  const faceNote = el('div', 'hint ws-finish-note'); faceBox.querySelector('.field').appendChild(faceNote);
-  faceBox.appendChild(fourColourRow);
-  pages.cards.appendChild(faceBox);
-  function paintFace(){
-    const now = settings.cardFace || 'classic';
-    faceSeg.querySelectorAll('button').forEach(k => k.classList.toggle('active', k.dataset.v === now));
-    const f = FACES.find(x => x.id === now) || FACES[0];
-    faceNote.textContent = f ? f.note : '';
-  }
-  faceSeg.addEventListener('click', e => {
-    const k = e.target.closest('button'); if (!k) return;
-    CardFaces.choose(k.dataset.v); paintFace();
-  });
-  paintFace();
-
   const holderField = fieldOf('holder-seg'), sideField = fieldOf('deck-side-seg');
   // the card holder is out of the Workshop for now (owner, round 6): its
   // row stays wired, unseen. The deck's side goes to DEALING, where it shows.
@@ -930,7 +900,6 @@
   const SOUNDS = [...soundSeg.querySelectorAll('button')].map(x => x.textContent.trim());
   hold(chipStage.querySelector('.wss-caption'), () => SKINS.flatMap(k => SIZES.flatMap(z => SOUNDS.map(o => 'Skin: ' + k.name + dot + z + dot + o))).concat(SIZES.map(z => 'Chip size: ' + z), SOUNDS.map(o => 'Coin sound: ' + o), SKINS.map(k => 'Skin: ' + k.name)), writeSay);
   hold(skinNote, () => SKINS.map(k => k.note));
-  hold(faceNote, () => FACES.map(f => f.note));
   hold(cabCap.querySelector('.wss-caption'), () => [...themeSeg.querySelectorAll('button')].map(x => x.textContent.trim() + dot + 'in use'), writeSay);
   hold(keyStage.querySelector('.wss-caption'), () => (pressSet ? pressSet.options.map(o => o.name + ': press any key to feel it.') : []).concat('Press any key to feel it.'), writeSay);
   pages.screens.querySelectorAll('.ws-finish-note').forEach(n => hold(n, () => crtSet ? crtSet.options.map(o => o.note) : []));

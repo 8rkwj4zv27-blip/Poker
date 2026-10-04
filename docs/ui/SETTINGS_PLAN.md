@@ -334,10 +334,11 @@ later).** Everything paints, nothing changes size, physics or timing:
   chip up to six for the top), Poker Face (a face on every coin, worried
   to grinning by value; the top one wears shades). The Chip Lab's old
   designs stay in the code, not offered.
-- CARDS → CARD FACE: Classic, Standard and Jumbo (the normal, symmetrical
-  decks), Royals and Misprint (the fun ones). The four-colour switch
-  moved here from Display. A felt strip previews the faces at the
-  board's size and an opponent's.
+- CARDS → CARD FACE (Classic, Standard, Jumbo, Royals, Misprint) was
+  built and shown in the lab; the owner: "the front of the cards look
+  awful". Taken out before shipping (the code is in commit 5be9f4e on
+  claude/workshop-skins if it's ever wanted). The cards are unchanged and
+  the four-colour switch stays in Display.
 - SCREENS → LOOK: Terminal, LCD, VFD and Dot LED join the six looks.
 - Not done yet: more card backs, showdown colours, persona themes and
   any unlocks.

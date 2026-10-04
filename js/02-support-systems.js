@@ -738,9 +738,8 @@ const DEFAULT_SETTINGS = {
   seenIntro:false, devMode:false,
   // the gold coins' sound set (js/coin-world.js); 'old' is the classic chip sounds
   coinSound:'clay',
-  // Workshop → Chips → Skin (js/coin-world.js chip designs) and Workshop →
-  // Cards → Face (css/card-faces.css)
-  chipSkin:'tint', cardFace:'classic',
+  // Workshop → Chips → Skin (js/coin-world.js chip designs)
+  chipSkin:'tint',
   // Settings → Bank (js/coin-bank.js): the inside of your bank, the tags
   // under its tubes, how much making change plays out
   bankStyle:'tubes', bankTags:'off', bankChange:'3',

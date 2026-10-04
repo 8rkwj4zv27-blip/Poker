@@ -123,13 +123,8 @@ function seatPosition(seatIdx, total){
   return { left: Math.max(9, Math.min(91, left))+'%', top: Math.max(6, Math.min(maxTop, top))+'%' };
 }
 function cardInner(card){
-  // the second index and the art are for the Workshop's card faces
-  // (js/card-faces.js); hidden on the classic face
-  const faces=typeof CardFaces!=='undefined';
-  const idx='<span class="r'+(String(card.rank).length>1?' r-wide':'')+'">'+card.rank+'</span><span class="s">'+card.suit+'</span>';
-  return '<div class="ci"'+(faces?' data-mis="'+CardFaces.wobble(card)+'"':'')+'>'+idx+'</div>' +
-         '<div class="pip">'+card.suit+'</div>' +
-         (faces?'<div class="ci ci-flip" aria-hidden="true">'+idx+'</div>'+CardFaces.art(card):'');
+  return '<div class="ci"><span class="r">'+card.rank+'</span><span class="s">'+card.suit+'</span></div>' +
+         '<div class="pip">'+card.suit+'</div>';
 }
 function cardClass(faceDown, card, small){
   let c = 'card' + (small?' small':'');
