@@ -1,35 +1,28 @@
 "use strict";
 
 /* ============================================================
-   SETTINGS LAB — inside the game (round 1, phone-first)
+   SETTINGS + WORKSHOP (docs/ui/SETTINGS_PLAN.md)
 
-   docs/ui/SETTINGS_PLAN.md, Phase 1. Rebuilds the real Settings sheet
-   into the new layout from the game's own controls: every switch and
-   choice row is MOVED (never copied), so it keeps its wiring and saves
-   exactly as it does today. Three controls are new here and wired by the
-   lab: Hand readout (settings.strength), Four-colour deck
-   (settings.fourColour) and Volume (settings.volume, 0-10).
+   Rebuilds the Settings sheet into one panel (This table, Play, Help,
+   Sound, Display) from the game's own controls: every switch and choice
+   row is MOVED (never copied), so it keeps its wiring and saves exactly
+   as before. New here: Hand readout (settings.strength), Four-colour
+   deck (settings.fourColour) and Volume (settings.volume, 0-10).
 
-   Pages inside the sheet: MAIN (Settings), WORKSHOP (the drawer list) and
-   one page per drawer. The sheet's data-st-page says which shows. The
-   Finishes page keeps its own switch (show-finishes) and returns to the
-   Cabinet drawer.
-
-   A TUNE key (top left) opens the lab's sheet: BEFORE/AFTER, layout,
-   volume control, hints, and "open Settings at home / at a table".
+   Builds the WORKSHOP screen, opened from the home screen's Workshop key:
+   seven tabs (Cards, Dealing, Showdown, Chips, Cabinet, Screens,
+   Buttons), each with a preview of the real part. What isn't shown any
+   more stays wired in an unseen attic, so every saved pick keeps working.
    ============================================================ */
 (() => {
-  const host = (() => { try{ return parent !== window && parent.__lab ? parent.__lab : null; }catch(e){ return null; } })();
-  const state = host ? host.state : { view:'after', layout:'panel', volume:'fader', hints:'on', open:null };
   const $id = id => document.getElementById(id);
   const sheet = $id('settings-sheet');
   const mainBody = sheet && sheet.querySelector(':scope > .sheet-body:not(#finishes-body)');
   const html = document.documentElement;
 
   /* ---- volume: one master gain on every audio context ----
-     The game's sounds all connect to ctx.destination; in the lab that
-     getter hands back a gain node in front of the real speaker. (In the
-     game this becomes Sound.out(), see the plan.) */
+     The game's sounds all connect to ctx.destination; that getter hands
+     back a gain node in front of the real speaker. */
   const curve = v => Math.pow(Math.max(0, Math.min(10, v)) / 10, 1.7);
   (function volumeShim(){
     const AC = window.AudioContext || window.webkitAudioContext;
@@ -62,7 +55,7 @@
   const found = {};
   const take = id => found[id] || (found[id] = $id(id));
   const fieldOf = id => { const e = $id(id); return e ? e.closest('.field') : null; };
-  if (state.view !== 'after' || !sheet || !mainBody){ buildTune(); return; }
+  if (!sheet || !mainBody) return;
 
   function plate(key, title){
     const p = el('div', 'sheet-section st-plate');
@@ -470,8 +463,8 @@
      are the coin world's, the heat is the showdown's own palette and tint,
      the bang is the showdown's own explosion (explode() copied from
      js/showdown.js, reading its options through Showdown.opt), and they
-     pick up into your bank as you've set. In the game, showdown.js would
-     offer this as a call rather than the lab keeping a copy. */
+     pick up into your bank as you've set. Later, showdown.js could offer
+     this as a call, so this copy can go. */
   const STYLES = [
     { id:'gentle', name:'Simmer',    note:'A low heat, a soft pop, a quick settle.', v:{ sdForce:'big',  sdBounce:'few',     sdHeat:'ember', sdPickup:'flip' } },
     { id:'big',    name:'Big bang',  note:'The machine’s own: ember heat, a big bang.', v:{ sdForce:'huge', sdBounce:'lots',    sdHeat:'ember', sdPickup:'flip' } },
@@ -537,8 +530,11 @@
     const t = setInterval(() => { n++; a.style.filter = n < N ? tintOf(1 - n / N) : ''; if (n >= N) clearInterval(t); }, ms / N);
   }
   // js/showdown.js explode(), copied: the bang. Changes: the ground is this
-  // felt (no dashboard dock, no solid cards), and the pot's middle is this
-  // tray's.
+  // felt (no dashboard dock, no solid cards), the pot's middle is this
+  // tray's, and the whole burst is scaled to the felt: every speed by the
+  // square root of the felt's size against the table's (TABLE_H), so the
+  // coins fly, arc and slide the same share of the felt as at a table.
+  const TABLE_H = 560;   // the table's felt on a 393x852 phone, about
   function explode(bodies, p, cx, cy){
     const W = CW, d = W.D(), r = d / 2;
     const F = W.walls().felt;
@@ -551,13 +547,14 @@
     const roll = sdOpt('croll') !== 'off';
     const GRAV = 2300, FRICT = 820, ROLLF = 330;
     const power = Math.max(.5, p);
+    const sc = Math.sqrt(Math.min(1, (F.B - F.T) / TABLE_H));
     const coins = bodies.map((b, i) => {
       if (b.zone) W.removeFromZone(b);
       W.active.delete(b);
       const cls = Math.random(), sp = (cls < .2 ? rr(360, 520) : cls < .8 ? rr(200, 360) : rr(90, 200)) * f * power;
       const dx = b.x - cx + rr(-8, 8), dy = b.y - cy + rr(-5, 5), ang = Math.atan2(dy, dx) + rr(-.8, .8);
-      const vx = Math.cos(ang) * sp, vy = Math.sin(ang) * sp * .75;
-      const vz = rr(780, 1150) * (.75 + .35 * power) * (f > 1 ? 1 + (f - 1) * .5 : 1);
+      const vx = Math.cos(ang) * sp * sc, vy = Math.sin(ang) * sp * .75 * sc;
+      const vz = rr(780, 1150) * (.75 + .35 * power) * (f > 1 ? 1 + (f - 1) * .5 : 1) * sc;
       Object.assign(b, { zone:null, target:{}, opts:{}, rx:0, tilt:1, state:'air', axis:'toss', spinRate:rr(3, 6), spinA:rr(0, 6), spinDir:Math.random() < .5 ? -1 : 1 });
       return { b, x:b.x, y:b.y, z:Math.max(2, b.z), vx, vy, vz, phase:'air', bounces:0, t:0, snd:0, rolling:false, wait:i * rr(0, 6) };
     });
@@ -594,7 +591,7 @@
               if (c.z <= 0){
                 c.z = 0;
                 const v = -c.vz;
-                if (v > 150 && c.bounces < maxB){
+                if (v > 150 * sc && c.bounces < maxB){
                   c.bounces++;
                   c.vz = v * E * rr(.88, 1.08); c.vx *= .8; c.vy *= .8;
                   c.vx += rr(-40, 40); c.vy += rr(-25, 25);
@@ -603,7 +600,7 @@
                   if (c.bounces === 1 && v > 650 && W.puff) W.puff(c.x, c.y, v);
                 } else {
                   c.vz = 0; c.phase = 'slide'; b.sq = .06;
-                  c.rolling = roll && Math.hypot(c.vx, c.vy) > 70 && Math.random() < .45;
+                  c.rolling = roll && Math.hypot(c.vx, c.vy) > 70 * sc && Math.random() < .45;
                   hit(c, 'land', .6);
                 }
               }
@@ -856,11 +853,8 @@
     try{ reconstructMainMenu(); }catch(e){}
   }
 
-  /* ---- THE HOME KEY: Custom Game's slab, with a trim (TUNE picks) ----
-     LINE   a gold line set inside the edge, a gold stud each side
-     STUDS  just the two gold studs
-     EDGE   a thin gold ring round the slab
-     LAMP   an amber lamp each side, like Career's */
+  /* ---- THE HOME KEY: Custom Game's slab with a gold line inside the
+     edge and a gold stud each side, under Quick Deal and Hand Rankings */
   const homeKey = el('button', 'pc-button pc-button-secondary wk-trim',
     '<span class="pc-lamp is-amber wk-lamp" aria-hidden="true"></span><span class="wk-stud" aria-hidden="true"></span>Workshop' +
     '<span class="wk-stud" aria-hidden="true"></span><span class="pc-lamp is-amber wk-lamp" aria-hidden="true"></span>');
@@ -868,11 +862,10 @@
   homeKey.addEventListener('click', openWorkshop);
   function placeKey(){
     const bay = document.querySelector('#menu-contraption .pc-control-bay');
-    const row = bay.querySelector('.home-row');
-    if (state.wplace === 'above') bay.insertBefore(homeKey, row); else bay.appendChild(homeKey);
+    if (bay) bay.appendChild(homeKey);
   }
 
-  /* ---- the volume control: FADER or STEPS (TUNE picks) ---- */
+  /* ---- the volume control: the fader ---- */
   function volumeControl(){
     const w = el('div', 'st-vol');
     w.setAttribute('role', 'slider'); w.setAttribute('aria-label', 'Volume');
@@ -930,102 +923,11 @@
     return w;
   }
 
-  /* ---- what TUNE switches ---- */
-  // round 1's picks, locked in: one panel, the fader, hints shown
-  function applyLook(){
-    html.dataset.stLayout = 'panel';
-    html.dataset.stVolume = 'fader';
-    html.dataset.stHints = 'on';
-    html.dataset.wbtn = state.wbtn || 'line';
-    placeKey();
-  }
-  applyLook();
-  html.dataset.stLab = 'after';
-
-  buildTune();
-
-  /* ---- TUNE: the lab's own sheet ---- */
-  function buildTune(){
-    const ROWS = [
-      ['wbtn', 'WORKSHOP BUTTON', [['line','GOLD LINE'],['studs','STUDS'],['edge','GOLD EDGE'],['lamp','LAMPS']], 'Custom Game\'s button with a trim. GOLD LINE: a line inside the edge and a stud each side. STUDS: just the studs. GOLD EDGE: a thin gold ring. LAMPS: an amber lamp each side, like Career.'],
-      ['wplace', 'WHERE IT SITS', [['under','UNDER THE ROW'],['above','ABOVE THE ROW']], 'Under Quick Deal and Hand Rankings, or between them and Custom Game.'],
-      ['view', 'SETTINGS', [['after','NEW'],['before','TODAY\'S']], 'Today\'s is the sheet as it is in the game now, for comparison.']
-    ];
-    const NAMES = Object.fromEntries(ROWS.map(r => [r[0], Object.fromEntries(r[2])]));
-    const DEF = { wbtn:'line', wplace:'under', view:'after' };
-    const seg = (k, opts) => '<div class="sdl-seg" data-key="' + k + '">' + opts.map(o => '<button type="button" data-v="' + o[0] + '"' + ((state[k] || DEF[k]) === o[0] ? ' class="is-on"' : '') + '>' + o[1] + '</button>').join('') + '</div>';
-    const key = el('button', 'sdl-key', 'TUNE'); key.type = 'button';
-    const tune = el('div', 'sdl-sheet stl-sheet');
-    tune.setAttribute('role', 'dialog'); tune.setAttribute('aria-label', 'Settings lab');
-    tune.innerHTML =
-      '<div class="sdl-tabs"><button type="button" class="is-on" tabindex="-1">SETTINGS + WORKSHOP · ROUND 10</button><button type="button" class="sdl-close" aria-label="Close">✕</button></div>' +
-      '<div class="sdl-body">' +
-        '<h3>JUMP TO<small>The keys in the game work too.</small></h3>' +
-        '<div class="sdl-moments"><button type="button" data-open="workshop" class="is-wide">THE WORKSHOP</button><button type="button" data-open="home">SETTINGS AT HOME</button><button type="button" data-open="table">SETTINGS AT A TABLE</button></div>' +
-        ROWS.map(r => '<div class="sdl-row"><div class="sdl-name">' + r[1] + '</div>' + seg(r[0], r[2]) + '<p class="sdl-note">' + r[3] + '</p></div>').join('') +
-        '<div class="sdl-actions"><button type="button" data-act="copy" class="stl-copy">COPY MY PICKS</button></div>' +
-        '<textarea class="sdl-copytext" readonly hidden></textarea>' +
-        '<h3>WHAT MOVED<small>Nothing is lost: every saved pick keeps its value.</small></h3>' +
-        '<ul class="stl-list">' +
-          '<li>Round 10: SHOWDOWN: when it smashes, and four smash styles (Simmer, Big bang, Wild, White hot), with a pot that cooks and goes off on its own felt.</li>' +
-          '<li>Round 9: CHIPS, CABINET, SCREENS and BUTTONS are choice keys that apply at once, each with a preview of the real part. Card backs no longer borrow from the page.</li>' +
-          '<li>Round 8: CHIPS (coin sounds over a pile of chips), CABINET (colour themes as little machines), SCREENS (CRT looks, each card wearing its own) and BUTTONS (press feel, with keys to press).</li>' +
-          '<li>Round 7: the backs are the deck\'s own cards enlarged x3; the holder is out; CARDS shows just the deck; style tickets show rarity, not text.</li>' +
-          '<li>Round 6: CARDS flicks through the card backs themselves, DEALING deals one card across the felt, both racks move exactly like the event cards.</li>' +
-          '<li>Round 5: the Workshop is tabs, each with its own preview. CARDS and DEALING are built: swipe the rack to preview, tap Use (or Add to the mix) to choose. A style\'s rarity is now its own. Finishes moved to SCREENS.</li>' +
-          '<li>The Workshop is opened from the home screen only. Settings no longer links to it.</li>' +
-          '<li>Settings keeps your round-1 picks: one panel, the fader, hints shown.</li>' +
-          '<li>Award Pot moved to Play: it changes when you get paid, not how it looks.</li>' +
-          '<li>Card backs, dealing, the smash, chips, coin sound, colours and Finishes moved to the Workshop.</li>' +
-          '<li>The table-layout knobs are gone. The table looks exactly as it does now.</li>' +
-          '<li>New: volume, hand readout on/off, four-colour deck.</li>' +
-          '<li>This table (Save, Leave, Reset) sits at the top when you\'re at a table.</li>' +
-        '</ul>' +
-      '</div>';
-    document.body.appendChild(key); document.body.appendChild(tune);
-    const open = on => { tune.classList.toggle('is-open', on); key.classList.toggle('is-on', on); };
-    key.addEventListener('click', () => open(!tune.classList.contains('is-open')));
-    tune.querySelector('.sdl-close').addEventListener('click', () => open(false));
-    tune.addEventListener('click', e => {
-      const t = e.target.closest('button'); if (!t) return;
-      if (t.dataset.open){ open(false); openAt(t.dataset.open); return; }
-      if (t.dataset.act === 'copy'){
-        const text = 'Settings + Workshop lab, round 10:\n' + ROWS.filter(r => r[0] !== 'view').map(r => '- ' + r[1].charAt(0) + r[1].slice(1).toLowerCase() + ': ' + NAMES[r[0]][state[r[0]] || DEF[r[0]]]).join('\n');
-        const ta = tune.querySelector('.sdl-copytext');
-        const done = ok => { t.textContent = ok ? 'COPIED: PASTE IT IN THE CHAT' : 'SELECT + COPY BELOW'; setTimeout(() => { t.textContent = 'COPY MY PICKS'; }, 2600); if (!ok){ ta.hidden = false; ta.value = text; ta.focus(); ta.select(); } };
-        try{ navigator.clipboard.writeText(text).then(() => done(true), () => done(false)); }catch(err){ done(false); }
-        return;
-      }
-      const s = t.closest('.sdl-seg'); if (!s) return;
-      const k = s.dataset.key, v = t.dataset.v;
-      s.querySelectorAll('button').forEach(b => b.classList.toggle('is-on', b === t));
-      state[k] = v; if (host) host.set({ [k]:v });
-      if (k === 'view'){ if (host){ host.set({ open:'home' }); host.reload(); } return; }
-      applyLook();
-      if (k === 'wbtn' || k === 'wplace'){ open(false); openAt('homescreen'); }
-    });
-    // a reload carries "open Settings" across
-    if (state.open){ const o = state.open; if (host) host.set({ open:null }); setTimeout(() => openAt(o), 600); }
-  }
-  async function openAt(where){
-    const sleep = ms => new Promise(r => setTimeout(r, ms));
-    const visible = id => { const e = $id(id); return e && !e.classList.contains('hidden'); };
-    closeOverlays();
-    if (where === 'homescreen' || where === 'workshop'){
-      const ws = $id('workshop');
-      if (ws && !ws.classList.contains('hidden')){ if (where === 'workshop') return; $id('workshop').querySelector('[data-go="home"]').click(); }
-      if (visible('table-screen')){ try{ leaveTable(); }catch(e){} await sleep(600); }
-      $id('home').classList.remove('hidden');
-      if (where === 'workshop'){ const k = $id('open-workshop'); if (k) k.click(); }
-      else { const k = $id('open-workshop'); if (k) setTimeout(() => k.scrollIntoView({ block:'center' }), 50); }
-      return;
-    }
-    if (where === 'table' && !visible('table-screen')){
-      $id('quick-play').click();
-      for (let i = 0; i < 80 && !visible('table-screen'); i++) await sleep(100);
-      await sleep(2600);
-    }
-    if (where === 'home'){ const ws = $id('workshop'); if (ws && !ws.classList.contains('hidden')) ws.querySelector('[data-go="home"]').click(); }
-    openOverlay('settings');
-  }
+  /* ---- the looks picked in the lab: one panel, the fader, hints shown,
+     the gold-line Workshop key ---- */
+  html.dataset.stLayout = 'panel';
+  html.dataset.stVolume = 'fader';
+  html.dataset.stHints = 'on';
+  html.dataset.wbtn = 'line';
+  placeKey();
 })();

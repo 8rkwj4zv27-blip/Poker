@@ -293,3 +293,21 @@ change or a note wrapping to a second line moved both its edges.
   expose a preview call so the copy can go.
 - Fits the cabinet at 393x852 and 430x932 (felt 120px, notes kept to one
   line). It scrolls on an SE. One layout through every key.
+
+**Round 10 verdict (owner):** the showdown felt is too small: the chips
+hit the rails at once. Dealing stays as it is. Ship it all to the game.
+
+**Shipped, v0.60.0.** The lab's code is now the game's:
+- `js/settings-lab.js` became `js/workshop.js`, minus TUNE and the host.
+  The picks it locked in are kept: one panel, the fader, hints shown, and
+  the gold-line Workshop key under the row.
+- `css/settings-lab.css` became `css/workshop.css`, minus the lab sheet
+  and round 8's dead rack cards.
+- The stage caption's two-line rule moved into `css/crt.css` (Pattern
+  Book).
+- `settings-lab.html` and its host are retired.
+- SHOWDOWN's felt is 210px tall. The burst's speeds are scaled by the
+  square root of its height against the table felt's (about 560px on a
+  393x852 phone), so the chips cross the felt like they cross the table
+  and land spread out, not on the rails. The tab now scrolls a little
+  below a Pro Max (the owner's one exception).

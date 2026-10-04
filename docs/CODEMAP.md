@@ -719,18 +719,27 @@ v0.46.0 the chips ARE the game's coin files (`js/coin-world.js`,
 palettes, ladders, the bank's options, moments, YOUR BANK presets up to
 FULL) over the real game. Not loaded by the game.
 
-## `settings-lab.html` + `js/settings-lab-host.js` + `js/settings-lab.js` + `css/settings-lab.css` + candidate `js/workshop-rack.js` — Settings + Workshop Lab
+## `js/workshop.js` + `css/workshop.css` + `js/workshop-rack.js` — Settings + Workshop (live, v0.60.0)
 
-Phase 1 of the Settings + Workshop plan (`docs/ui/SETTINGS_PLAN.md`):
-the Settings sheet regrouped into PLAY / HELP / SOUND / DISPLAY (with THIS
-TABLE first at a table), and every cosmetic moved to plain WORKSHOP pages
-inside the sheet. Built at runtime from the game's own wired controls
-(moved, never copied); hand readout, four-colour deck and volume are wired
-by the lab (volume through a shim on `AudioContext.destination`). Phone-first
-like `showdown-lab.html` (reuses its sheet styles `css/showdown-lab.css`).
-From round 2 it also builds the WORKSHOP screen (home key, tabs, a
-stage per tab, the rack picker in `js/workshop-rack.js`); see the plan for
-the rounds. Lab only; nothing loads in the game.
+The Settings sheet and the WORKSHOP screen (`docs/ui/SETTINGS_PLAN.md`;
+built in the Settings Lab, rounds 1-10, now retired). At load,
+`workshop.js` regroups the Settings sheet into THIS TABLE / PLAY / HELP /
+SOUND / DISPLAY from the game's own wired controls. They are moved, never
+copied, and anything no longer shown stays wired in a hidden attic. It
+adds hand readout, four-colour deck and volume (a master gain via a shim
+on `AudioContext.destination`).
+
+It also builds `#workshop`, opened by the home screen's Workshop key. The
+seven tabs are Cards, Dealing, Showdown, Chips, Cabinet, Screens and
+Buttons, and each previews the real part:
+- Dealing borrows `#dealer-deck`.
+- Chips and Showdown borrow the coin world's `#felt`.
+- Showdown's burst is a copy of `showdown.js`'s `explode()`, scaled to its
+  small felt.
+
+`js/workshop-rack.js` is the event-card rack that Cards and Dealing
+flick through. The Finishes entry is gone from Settings: Screens and
+Buttons choose through `Finishes.choose`.
 
 ## `js/finishes.js` + `css/finishes.css` — Finishes menu (live)
 

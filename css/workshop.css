@@ -1,7 +1,6 @@
-/* Settings Lab (round 1; docs/ui/SETTINGS_PLAN.md): the new Settings
-   sheet and the plain Workshop pages, drawn on the game's own machine
-   tokens (--ms-* from css/06-machine-system.css). Lab only: never loaded
-   by the game. The TUNE key and sheet reuse css/showdown-lab.css. */
+/* Settings + Workshop (docs/ui/SETTINGS_PLAN.md; js/workshop.js): the
+   regrouped Settings sheet and the Workshop screen, drawn on the game's
+   own machine tokens (--ms-* from css/06-machine-system.css). */
 
 /* ---- pages inside the sheet ---- */
 #settings-sheet .st-page{ display:none; }
@@ -121,11 +120,6 @@ html[data-st-volume="steps"] .st-steps{ display:flex; }
 .st-steps i{ flex:1 1 0; height:var(--h); border:1px solid #000; background:color-mix(in srgb,var(--ms-plate) 45%,black); }
 .st-steps i.is-lit{ background:var(--accent); box-shadow:inset 0 2px 0 rgba(255,255,255,.35),0 0 6px color-mix(in srgb,var(--accent) 55%,transparent); }
 .st-vol-readout{ flex:0 0 54px; height:38px; display:flex; align-items:center; justify-content:center; }
-
-/* ---- the lab's own sheet: a list ---- */
-.stl-list{ margin:0; padding-left:18px; font-size:13px; line-height:1.5; color:#B69A7A; }
-.stl-list li{ margin-bottom:4px; }
-.stl-sheet .sdl-tabs button:first-child{ pointer-events:none; }
 
 @media (prefers-reduced-motion:reduce){ .st-drawer-key:active{ transform:none; } }
 
@@ -257,8 +251,6 @@ html[data-ds-where="right"] .wss-station{ left:auto; right:18px; }
 .ws-stage--cards .wss-felt{ height:200px; border-bottom:4px solid var(--rail-lo); border-radius:10px; }
 .ws-stage--cards .wss-station,
 html[data-ds-where="right"] .ws-stage--cards .wss-station{ left:50%; right:auto; top:50%; bottom:auto; margin:-39px 0 0 -24px; transform:scale(2); }
-/* the screen under a stage may run to two lines */
-.wss-caption .crt-line{ white-space:normal; line-height:1.5; }
 /* DEALING: felt only; the deck at one side, a card's place at the other */
 .ws-stage--dealing .wss-felt{ height:160px; border-bottom:4px solid var(--rail-lo); border-radius:10px; }
 .ws-stage--dealing .wss-station{ top:50%; bottom:auto; margin-top:-39px; }
@@ -387,55 +379,11 @@ html[data-holder="brass"] .wss-lip{
 .ws-stage--caption .wss-caption{ margin-top:0; }
 /* CHIPS: felt with four stacks in the middle */
 .ws-stage--chips .wss-felt{ height:120px; border-bottom:4px solid var(--rail-lo); border-radius:10px; }
-.wss-chips{ position:absolute; left:50%; top:30px; height:56px; transform:translateX(-50%); }
-.wss-chips .cl-chip{ image-rendering:pixelated; }
 /* BUTTONS: three real keys to press, one of each size */
 .wss-keys{ display:flex; align-items:center; gap:10px; padding:14px 12px 16px; border:3px solid var(--ms-edge); border-radius:6px; background:var(--ms-well); box-shadow:inset 0 5px 0 rgba(0,0,0,.44); }
 #workshop .wss-keys .icon-btn{ flex:0 0 48px; height:48px; }
 #workshop .wss-keys .btn-secondary,#workshop .wss-keys .btn-primary{ flex:1 1 0; width:auto; min-width:0; margin:0; min-height:52px; }
 
-/* a ticket for the racks below: a plate with a picture, the name, a band */
-.wr-rack:has(.wr-ticket) .wr-card{ width:150px; height:192px; margin-left:-75px; }
-.wr-ticket{
-  display:flex; flex-direction:column; align-items:center; height:100%; box-sizing:border-box; padding:16px 10px 0; gap:12px; overflow:hidden;
-  border:3px solid var(--ms-edge); border-radius:6px; background:#E9DDAE; color:#22201C;
-  box-shadow:inset 0 0 0 2px #F6EBC4,inset 0 0 0 4px rgba(120,107,73,.45),0 5px 0 #786B49,0 8px 0 #0b0805;
-}
-.wr-ticket b{ flex:1; display:flex; align-items:center; justify-content:center; text-align:center; font-family:var(--font-hdr); font-weight:400; font-size:12px; letter-spacing:.04em; line-height:1.3; text-transform:uppercase; }
-.wr-band{ align-self:stretch; margin:0 -10px; padding:9px 4px 8px; text-align:center; white-space:nowrap; font-family:var(--font-hdr); font-size:6px; letter-spacing:.08em; text-transform:uppercase; background:#2A261C; color:#E9DDAE; border-top:3px solid var(--ms-edge); }
-/* a coin sound: the chip, big */
-.wr-chip{ display:flex; justify-content:center; height:46px; }
-.wr-chip .cl-chip{ width:36px !important; height:44px !important; image-rendering:pixelated; }
-/* a cabinet: a little machine in its own colours (the card carries data-theme) */
-.wr-theme{ background:var(--theme-case-raised); color:#F3E6C4; box-shadow:inset 0 0 0 2px var(--theme-case-hi),inset 0 0 0 4px rgba(0,0,0,.25),0 5px 0 color-mix(in srgb,var(--theme-case-raised) 50%,black),0 8px 0 #0b0805; }
-.wr-theme .wr-band{ background:color-mix(in srgb,var(--panel) 70%,black); color:var(--accent-bright); }
-.wr-mini{ display:flex; flex-direction:column; width:104px; border:3px solid var(--px-ink); border-radius:6px; overflow:hidden; box-shadow:0 0 0 2px var(--theme-rim); }
-.wr-mini-felt{ position:relative; height:46px; background:radial-gradient(ellipse at 50% 40%,var(--felt-1),var(--felt-2) 75%); box-shadow:inset 0 0 0 3px var(--rail); }
-.wr-mini-felt i{ position:absolute; top:13px; width:13px; height:19px; border:1px solid var(--px-ink); border-radius:2px; background:var(--card-face); }
-.wr-mini-felt i:first-child{ left:36px; } .wr-mini-felt i:last-child{ left:53px; }
-.wr-mini-dash{ display:flex; flex-direction:column; gap:4px; padding:5px; background:var(--theme-case-raised); border-top:2px solid var(--px-ink); }
-.wr-mini-crt{ display:block; height:9px; border:1px solid var(--px-ink); background:#060B0A; box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--accent) 40%,transparent); }
-.wr-mini-keys{ display:flex; gap:3px; }
-.wr-mini-keys i{ flex:1; height:9px; border:1px solid var(--px-ink); }
-.wr-mini-keys i:nth-child(1){ background:#8E3B37; } .wr-mini-keys i:nth-child(2){ background:var(--accent); } .wr-mini-keys i:nth-child(3){ background:#3F9E58; }
-/* a screen look: the card's own CRT wears that look's dials. Each dial's
-   level-0 value lives on :root in crt.css; here it's reset at the lowest
-   weight so the card's own attributes win and nothing leaks in from the
-   page's look (in the game, this belongs in crt.css) */
-:where(.wr-crtwrap){
-  --crt-glass:#061014; --crt-bezel:#020706; --crt-tint:rgba(120,192,211,.12); --crt-halo:rgba(93,183,213,.14);
-  --crt-bloom:0 0 0 transparent; --crt-rgb:0 0 0 transparent; --crt-scan-a:.2; --crt-grain-a:0;
-  --crt-radius:2px; --crt-vig:.62; --crt-bulge:0; --crt-flick-dip:0; --crt-flick-lift:0;
-  --crt-roll-a:0; --crt-roll-ms:6s; --crt-tear-x:0px; --crt-tear-ms:9s;
-  --crt-ink-info:#C3C8AD; --crt-ink-live:#BDE9FF; --crt-ink-money:#F6D06B; --crt-ink-danger:#FF8A7A;
-}
-.wr-crtcard{ background:var(--ms-plate); color:#F3E6C4; box-shadow:inset 0 0 0 2px var(--ms-plate-hi),inset 0 0 0 4px rgba(0,0,0,.25),0 5px 0 var(--ms-plate-lo),0 8px 0 #0b0805; }
-.wr-crtwrap{ display:flex; flex-direction:column; gap:6px; width:112px; }
-.wr-crtwrap .crt{ display:flex; align-items:center; justify-content:center; height:30px; padding:0 6px; white-space:nowrap; }
-/* a press: a key, drawn mid-press */
-.wr-presskey{ display:flex; justify-content:center; align-items:flex-end; height:46px; }
-.wr-presskey i{ width:84px; height:30px; border:3px solid var(--ms-edge); border-radius:4px; background:var(--accent); box-shadow:0 5px 0 color-mix(in srgb,var(--accent) 55%,black),0 7px 0 var(--ms-edge),inset 0 3px 0 rgba(255,255,255,.34); }
-.wr-press[data-v="heavy"] .wr-presskey i{ box-shadow:0 8px 0 color-mix(in srgb,var(--accent) 55%,black),0 10px 0 var(--ms-edge),inset 0 3px 0 rgba(255,255,255,.34); }
 #workshop .wss-keys .btn-primary{ flex:1.3 1 0; font-size:10px; white-space:nowrap; }
 
 /* TABLE GREEN is the old back: its look was only written for the Settings
@@ -511,10 +459,10 @@ html[data-holder="brass"] .wss-lip{
 #settings-sheet > .sheet-body{ flex:1 1 auto; min-height:0; }
 
 /* ---- SHOWDOWN (round 10): a pot on its own felt, and two rows of keys ---- */
-.ws-stage--showdown .wss-felt{ height:120px; border-bottom:4px solid var(--rail-lo); border-radius:10px; overflow:visible; }
+.ws-stage--showdown .wss-felt{ height:210px; border-bottom:4px solid var(--rail-lo); border-radius:10px; overflow:visible; }
 .ws-stage--showdown .wss-tray{ overflow:visible; }
 #workshop .ws-again{ flex:1 1 100%; min-height:40px; }
 .ws-use:has(.ws-again){ margin:6px 0 10px; }
-.ws-stage--showdown .wss-tray{ width:110px; height:50px; }
+.ws-stage--showdown .wss-tray{ width:120px; height:56px; }
 .ws-style-seg{ flex-wrap:wrap; row-gap:9px; }
 #workshop .ws-style-seg button{ flex:1 1 40%; min-width:0; }
