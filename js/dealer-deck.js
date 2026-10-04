@@ -309,7 +309,7 @@ const DealerDeck = (() => {
     skinEl.innerHTML = cardInner(look.card);
     skinEl.style.backgroundImage = look.bg; skinEl.style.backgroundColor = look.bgc;
     skinEl.style.boxShadow = look.shadow; skinEl.style.borderRadius = look.radius;
-    Object.keys(look.sizes).forEach(k => { const n = skinEl.querySelector(k); if (n) n.style.fontSize = look.sizes[k]; });
+    Object.keys(look.sizes).forEach(k => skinEl.querySelectorAll(k).forEach(n => { n.style.fontSize = look.sizes[k]; }));
     try{ Sound.cardFlip(false); }catch(e){}
   }
   // order.sprite: the 2.5D card, on since v0.51.0 ('off' is today's flat card)
@@ -340,7 +340,7 @@ const DealerDeck = (() => {
     front.className = cardClass(false, look.card, look.small) + ' card-turn-face card-turn-target';
     front.innerHTML = cardInner(look.card);
     front.style.cssText = 'width:100%;height:100%;background-image:' + look.bg + ';background-color:' + look.bgc + ';box-shadow:' + look.shadow + ';border-radius:' + look.radius;
-    Object.keys(look.sizes).forEach(k => { const n = front.querySelector(k); if (n) n.style.fontSize = look.sizes[k]; });
+    Object.keys(look.sizes).forEach(k => front.querySelectorAll(k).forEach(n => { n.style.fontSize = look.sizes[k]; }));
     const flipper = document.createElement('div');
     flipper.className = 'card-turn-flipper';
     flipper.append(back, front);

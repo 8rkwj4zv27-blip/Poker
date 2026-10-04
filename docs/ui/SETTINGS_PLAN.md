@@ -325,3 +325,21 @@ hit the rails at once. Dealing stays as it is. Ship it all to the game.
 - The coin layers are fixed to the screen, so while a felt is borrowed
   they now follow the Workshop's scroll. The chips no longer sit on the
   glass when the page moves.
+
+**v0.61.0, Workshop skins (owner: "let's get these in the game", unlocks
+later).** Everything paints, nothing changes size, physics or timing:
+- CHIPS → SKIN: Classic (the Tint coin), Neon (a black coin, a lit tube
+  ring and a lit band round the edge, neon colours), Peppermint (a cream
+  swirl, a candy-striped edge), Dice (die spots, one for the cheapest
+  chip up to six for the top), Poker Face (a face on every coin, worried
+  to grinning by value; the top one wears shades). The Chip Lab's old
+  designs stay in the code, not offered.
+- CARDS → CARD FACE: Classic, Standard and Jumbo (the normal, symmetrical
+  decks), Royals and Misprint (the fun ones). The four-colour switch
+  moved here from Display. A felt strip previews the faces at the
+  board's size and an opponent's.
+- SCREENS → LOOK: Terminal, LCD, VFD and Dot LED join the six looks.
+- Not done yet: more card backs, showdown colours, persona themes and
+  any unlocks.
+- Try it on the phone: `workshop-skins-lab.html` (the real game opened on
+  the Workshop), https://claude.ai/artifact/DpAbq1dFci8yjBxF8GTAFD

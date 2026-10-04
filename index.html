@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <!-- CRT recipe (Pattern Book, signed off in the CRT Lab): every CRT in the
      game takes its look from these dials; see css/crt.css. -->
-<html lang="en" data-crt-tint="dark" data-crt-glow="1" data-crt-scan="4" data-crt-rgb="0" data-crt-grain="4" data-crt-curve="0" data-crt-flicker="4" data-crt-roll="1" data-crt-tear="4" data-crt-ghost="2" data-crt-change="channel" data-crt-ink="mono">
+<html lang="en" data-crt-tint="dark" data-crt-glow="1" data-crt-scan="4" data-crt-rgb="0" data-crt-grain="4" data-crt-curve="0" data-crt-flicker="4" data-crt-roll="1" data-crt-tear="4" data-crt-ghost="2" data-crt-change="channel" data-crt-ink="mono" data-crt-mesh="0">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
@@ -18,7 +18,7 @@
      first paint so nothing flashes. -->
 <script>try{var d=document.documentElement.dataset,r={};for(var k in d)if(/^crt[A-Z]/.test(k))r[k]=d[k];window.CRT_RECIPE=r;var f=JSON.parse(localStorage.getItem('felt.finishes'))||{};for(var k in f)if(/^(finish|crt)[A-Z][A-Za-z]*$/.test(k)&&/^[a-z0-9-]+$/.test(f[k]))d[k]=f[k];}catch(e){}</script>
 <link rel="stylesheet" href="css/01-foundation.css?v=coin-1">
-<link rel="stylesheet" href="css/02-screens.css?v=felt-1">
+<link rel="stylesheet" href="css/02-screens.css?v=faces-1">
 <link rel="stylesheet" href="css/03-action-console.css">
 <link rel="stylesheet" href="css/04-overlays-and-modes.css">
 <link rel="stylesheet" href="css/05-responsive-and-arcade.css?v=felt-1">
@@ -49,8 +49,9 @@
   <link rel="stylesheet" href="css/coach-set.css?v=4">
   <link rel="stylesheet" href="css/coach-talk.css?v=1">
   <link rel="stylesheet" href="css/coach-report.css?v=1">
-  <link rel="stylesheet" href="css/workshop.css?v=2">
-  <link rel="stylesheet" href="css/crt.css?v=2">
+  <link rel="stylesheet" href="css/workshop.css?v=3">
+  <link rel="stylesheet" href="css/card-faces.css?v=1">
+  <link rel="stylesheet" href="css/crt.css?v=3">
 
 <meta name="format-detection" content="telephone=no">
 
@@ -885,15 +886,16 @@
 </div>
 
 <script src="js/01-poker-math.js?v=ai-1"></script>
-<script src="js/02-support-systems.js?v=pip-14"></script>
+<script src="js/02-support-systems.js?v=skins-1"></script>
 <script src="js/03-opponents.js?v=ai-1"></script>
 <script src="js/04-modes-and-scoring.js?v=cards-1"></script>
 <script src="js/05-game-engine.js?v=ai-1"></script>
-<script src="js/06-presentation.js?v=pip-1"></script>
-<script src="js/coin-world.js?v=room-2"></script>
+<script src="js/06-presentation.js?v=faces-1"></script>
+<script src="js/card-faces.js?v=1"></script>
+<script src="js/coin-world.js?v=skins-1"></script>
 <script src="js/coin-table.js?v=room-2"></script>
 <script src="js/coin-bank.js?v=1"></script>
-<script src="js/07-ui-wiring.js?v=report-1"></script>
+<script src="js/07-ui-wiring.js?v=faces-1"></script>
 <script src="js/career-hub-live.js?v=cabinet-4"></script>
 <script src="js/career-motion-live.js?v=4"></script>
 <script src="js/machine-wheel.js?v=2"></script>
@@ -906,11 +908,11 @@
 <script src="js/table-room.js?v=1"></script>
 <script src="js/enemy-cards.js?v=2"></script>
 <script src="js/knockout.js?v=1"></script>
-<script src="js/crt.js?v=1"></script>
-<script src="js/finishes.js?v=3"></script>
+<script src="js/crt.js?v=2"></script>
+<script src="js/finishes.js?v=4"></script>
 <script src="js/press-feel.js?v=2"></script>
 <script src="js/showdown.js?v=ai-2"></script>
-<script src="js/dealer-deck.js?v=4"></script>
+<script src="js/dealer-deck.js?v=5"></script>
 <script src="js/deal-styles.js?v=2"></script>
 <script src="js/card-holder.js?v=1"></script>
 <script src="js/action-drum.js?v=2"></script>
@@ -922,7 +924,7 @@
 <script src="js/coach-lines.js?v=14"></script>
 <script src="js/coach-report.js?v=1"></script>
 <script src="js/workshop-rack.js?v=1"></script>
-<script src="js/workshop.js?v=2"></script>
+<script src="js/workshop.js?v=3"></script>
 
 
 <script id="pwa-service-worker">

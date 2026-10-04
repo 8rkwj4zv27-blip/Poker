@@ -32,7 +32,11 @@ const FINISH_SETS = [
     { id:'warm',     name:'Warm',     note:'CRT Lab preset 2: soft glow, gentle flicker, a slight curve.' },
     { id:'pulp',     name:'Pulp',     note:'CRT Lab preset 3: amber phosphor, colour fringe, a rolling bar.' },
     { id:'vhs',      name:'VHS',      note:'CRT Lab preset 4: tracking lines, colour bleed, tears, channel change.' },
-    { id:'meltdown', name:'Meltdown', note:'CRT Lab preset 5: everything at full.' }
+    { id:'meltdown', name:'Meltdown', note:'CRT Lab preset 5: everything at full.' },
+    { id:'terminal', name:'Terminal', note:'Green phosphor: an old computer terminal that types each line out.' },
+    { id:'lcd',      name:'LCD',      note:'A pocket calculator\u2019s grey-green glass: dark ink, no glow, a slow fade.' },
+    { id:'vfd',      name:'VFD',      note:'A vacuum-fluorescent display, like a fruit machine\u2019s: glowing teal behind a fine mesh.' },
+    { id:'led',      name:'Dot LED',  note:'A red dot-matrix sign: lit LEDs on a board of unlit ones.' }
   ]},
   { attr:'finishPress', group:'Buttons', label:'Press', options:[
     { id:'',         name:'Thunk',    note:'Every button sinks and springs back with a clunk, scaled by size.' },

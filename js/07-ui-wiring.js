@@ -188,6 +188,7 @@ function renderStats(){
 function applyTheme(){
   document.body.setAttribute('data-theme', settings.theme);
   document.body.setAttribute('data-deck', settings.fourColour ? 'four' : 'classic');
+  document.body.setAttribute('data-face', settings.cardFace || 'classic');
   document.body.setAttribute('data-motion', settings.reduceMotion ? 'off' : 'on');
   document.body.setAttribute('data-cardback', settings.cardBack);
   document.body.setAttribute('data-contrast', settings.highContrast ? 'high' : 'normal');

@@ -426,10 +426,26 @@
      TARGET   concentric rings, a bullseye */
   const NEW_DESIGNS=['flat','duo','hollow','star','dash','candy','stripe','target'];
   CHIP_DESIGNS.push(...NEW_DESIGNS);
+  /* THE WORKSHOP'S SKINS (Workshop → Chips → Skin; settings.chipSkin).
+     Paint only: the same coin, the same edge, every value its own colour.
+     NEON      a black coin with a lit tube ring and a lit line round the
+               edge, in neon colours (a tower is dark with glowing bands)
+     MINT      a peppermint: a cream face with a swirl in the colour, a
+               candy-striped edge
+     DICE      a cream face with die spots, one for the lowest value up to
+               six for the top, the rim and the edge in the colour
+     GRIN      Poker Faces: a face on every coin, moodier the cheaper the
+               chip (worried, a smile, a smirk, a grin; the top one wears
+               shades) */
+  const SKIN_DESIGNS=['neon','mint','dice','grin'];
+  CHIP_DESIGNS.push(...SKIN_DESIGNS);
+  const NEON={ ivory:'#f2fbff', silver:'#e6f6ff', red:'#ff3d6e', green:'#3dff8c', black:'#3cc8ff', purple:'#c24dff', gold:'#ffd33d' };
+  const DIE=[[[0,0]],[[-1,-1],[1,1]],[[-1,-1],[0,0],[1,1]],[[-1,-1],[1,-1],[-1,1],[1,1]],[[-1,-1],[1,-1],[0,0],[-1,1],[1,1]],[[-1,-1],[1,-1],[-1,0],[1,0],[-1,1],[1,1]]];
   const GOLDC={ face:'#f4c43e', hi:'#ffe88a', lo:'#b87a10', line:'#c68a16', hl:'#fff5c0' };
   const mixc=(a,b,t)=>a.map((v,i)=>Math.round(v+(b[i]-v)*t));
   function chipColours(name,design){
-    if (name==='gold' && NEW_DESIGNS.includes(design)){ const base=hex('#e8b52c'); return { c:base, lt:hex('#ffe070'), dk:hex('#9c6408'), cream:hex('#fff4d0') }; }
+    if (design==='neon'){ const base=hex(NEON[name]||'#ffffff'); return { c:base, lt:mixc(base,[255,255,255],.55), dk:mixc(base,[0,0,0],.6), cream:hex('#f4efe1'), body:hex('#17121d'), bodyHi:hex('#2c2436'), bodyLo:hex('#0b080e') }; }
+    if (name==='gold' && (NEW_DESIGNS.includes(design) || SKIN_DESIGNS.includes(design))){ const base=hex('#e8b52c'); return { c:base, lt:hex('#ffe070'), dk:hex('#9c6408'), cream:hex('#fff4d0') }; }
     if (name==='gold') return null;
     const base=hex((PALETTES[OPT.chipPalette]||PALETTES.muted)[name]||'#888888');
     return { c:base, lt:mixc(base,[255,255,255],.35), dk:mixc(base,[0,0,0],.45), cream:hex('#f4efe1') };
@@ -447,6 +463,48 @@
     if (!K) return heads ? goldCoin() : dark(goldCoin(),.8);
     let p;
     switch (design){
+      case 'neon':
+        if (r>.84) p=ny<0 ? K.bodyHi : K.bodyLo;
+        else if (Math.abs(r-.6)<.15) p=(heads && Math.abs(r-.6)<.06 && ny<0) ? K.lt : K.c;
+        else if (r<.2) p=heads ? K.lt : K.c;
+        else p=K.body; break;
+      case 'mint': {
+        const stripe=(name==='silver' || name==='ivory') ? hex('#8d98ad') : K.c;
+        if (r>.8) p=bevel(mixc(stripe,[255,255,255],.3),mixc(stripe,[0,0,0],.35));
+        else if (r<.16) p=K.cream;
+        else p=(Math.floor((a+r*2.4+Math.PI)/(Math.PI/4))%2) ? stripe : K.cream;
+        break;
+      }
+      case 'dice': {
+        // the spots are single pixels on a 5 x 5 grid, two apart
+        const tier=Math.max(0,ladder().indexOf(name)), spots=DIE[Math.min(5,tier)];
+        const ink=name==='silver' || name==='ivory' ? hex('#2e2a33') : (name==='gold' ? K.dk : K.c);
+        const gx=Math.round(nx*rx), gy=Math.round(ny*rx*.82);
+        if (r>.78) p=bevel(K.lt,K.dk);
+        else if (heads && spots.some(([sx,sy])=>gx===sx*2 && gy===sy*2)) p=ink;
+        else p=K.cream; break;
+      }
+      case 'grin': {
+        const tier=Math.max(0,ladder().indexOf(name)), ry=rx*.82;
+        const ink=name==='black' ? K.cream : mixc(K.c,[0,0,0],.7);
+        const near=(x,y)=>Math.abs(nx-x)*rx<.7 && Math.abs(ny-y)*ry<.7;
+        if (r>.78){ p=bevel(K.lt,K.dk); break; }
+        p=K.c;
+        if (!heads) break;
+        if (tier>=5){ if (Math.abs(ny+.2)*ry<.8 && Math.abs(nx)<.6) p=hex('#141018'); }
+        else if (near(-.32,-.2) || near(.32,-.2)) p=ink;
+        // the mouth: worried, flat, a smile, a smirk, a grin
+        const m=[
+          ()=>Math.abs(nx)<.34 && Math.abs(ny-(.28+.6*nx*nx))*ry<.5,
+          ()=>Math.abs(nx)<.3 && Math.abs(ny-.32)*ry<.5,
+          ()=>Math.abs(nx)<.4 && Math.abs(ny-(.42-.9*nx*nx))*ry<.5,
+          ()=>nx>-.3 && nx<.44 && Math.abs(ny-(.36-.5*Math.max(0,nx)))*ry<.5,
+          ()=>Math.abs(nx)<.42 && ny>.18 && ny<.46-.8*nx*nx,
+          ()=>Math.abs(nx)<.42 && ny>.22 && ny<.48-.9*nx*nx
+        ][Math.min(5,tier)];
+        if (m()) p=ink;
+        break;
+      }
       case 'flat':
         if (r>.78) p=K.dk; else if (heads && nx>-.58 && nx<-.22 && ny>-.62 && ny<-.26) p=K.cream; else p=K.c; break;
       case 'duo':
@@ -497,8 +555,16 @@
   }
   // the reeded edge: gold, or the colour's own (TINT), spotted (SPOTS, GEM)
   // or striped cream (CASINO)
-  function chipEdge(design,name,x,fromBottom){
+  function chipEdge(design,name,x,fromBottom,band){
     const K=chipColours(name,design), e1=hex('#c98a1a'), e2=hex('#e8ad32'), lo=hex('#7c4a06');
+    if (K && SKIN_DESIGNS.includes(design)){
+      const b=band||4;
+      if (design==='neon') return (fromBottom>b*.38 && fromBottom<b*.78) ? K.c : (fromBottom<1.2 ? K.bodyLo : K.body);
+      if (fromBottom<1.2) return K.dk;
+      if (design==='mint'){ const stripe=(name==='silver' || name==='ivory') ? hex('#8d98ad') : K.c; return ((x+Math.floor(fromBottom))%4)<2 ? stripe : K.cream; }
+      if (design==='dice') return (x%5)===0 ? K.cream : K.c;
+      return x%2?K.c:K.lt;
+    }
     if (K && NEW_DESIGNS.includes(design)){
       if (fromBottom<1.2) return K.dk;
       if (design==='dash' || design==='stripe') return (x%6)<2 ? K.cream : (x%2?K.c:K.dk);
@@ -514,7 +580,7 @@
   }
   function chipFrameT(col,d,c,back){
     const name=tierName(col), design=OPT.chipDesign||'enamel';
-    return render(d,c,(nx,ny,r,a,s)=>chipFace(design,name,nx,ny,r,a,!back,s.rx),(nx,s,x,fromBottom)=>chipEdge(design,name,x,fromBottom),hex('#2e1a04'));
+    return render(d,c,(nx,ny,r,a,s)=>chipFace(design,name,nx,ny,r,a,!back,s.rx),(nx,s,x,fromBottom)=>chipEdge(design,name,x,fromBottom,s.band),hex('#2e1a04'));
   }
   function chipSpin(d,axis,k,N,col){
     const h=Math.round(d*HR()), light=OPT.light==='on', name=tierName(col), design=OPT.chipDesign||'enamel';
@@ -658,10 +724,21 @@
     else { c.el.className='chip-disc cl-chip '+c.colour+' '+c.variant; c.el.style.backgroundImage=''; }
     c.frame='';
   }
+  // every chip on show, so a new skin repaints them where they lie
+  const live=new Set();
   function setFrame(c,d,i,back){
     if (!pixelArt()) return;
+    c.last=[d,i,back];
+    if (!live.has(c)){ live.add(c); if (live.size>800) live.forEach(q=>{ if (!q.el.isConnected) live.delete(q); }); }
     const key=d+'|'+i+'|'+(back?1:0); if (c.frame===key) return;
     c.frame=key; const f=frames(c.colour,d); c.el.style.backgroundImage=(back?f.back:f.front)[i];
+  }
+
+  function repaint(){
+    live.forEach(c=>{
+      if (!c.el.isConnected){ live.delete(c); return; }
+      c.frame=''; setFrame(c,...c.last);
+    });
   }
 
   /* ---------------- the bank: chip-lab's heap/rack pile ---------------- */
@@ -2538,7 +2615,7 @@
     rnd, rint, rr, reseed,
     Coin, sfx, rise,
     active, dirty, squashing, zones, spinCache, frameCache,
-    makeChip, styleChip, setFrame, frames, spinFrame, coloursFor, betCoins, bankCoins, curve,
+    makeChip, styleChip, setFrame, repaint, frames, spinFrame, coloursFor, betCoins, bankCoins, curve,
     isTier, TIERS, tierName, rackSlots, rackCapacity, planZone, applyLayout, pileAdd, settleStacks, mergePile, LADDERS, PALETTES, CHIP_DESIGNS, composeTiers, chipFrameT, chipSpin,
     PIECES, KINDS, isBar, isBig, pieceD, pieceH, stepOf, depthOf, clash, compose, valueOf, merge, mergePlan, barFrame, zoneBox, mergeQuiet,
     BankPile,
