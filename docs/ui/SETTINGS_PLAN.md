@@ -184,3 +184,27 @@ side moved to DEALING, where it shows. Style tickets: coloured by rarity
 (cream, green, blue, purple, gold), five pips, the name large, a banner
 with the odds (Rare 1 in 50, Epic 1 in 80, Legendary 1 in 300) and a lamp
 lit when it's in the mix; the description moved to the CRT.
+
+**Round 7 verdict (owner):** CARDS doesn't need a preview (the rack is
+one); fix clipped names (TRANSPORTER) so every text fits with room; then
+build CHIPS, CABINET and SCREENS, with CRT screens and buttons split.
+
+**Round 8 (same link):** seven tabs (BUTTONS split from SCREENS). CARDS:
+the rack and a name screen only. Style names are sized to their longest
+word. Every rack tab is one helper (`rackTab`: name screen, rack, Use key;
+browsing shows, Use keeps, leaving puts back what's kept).
+- CHIPS: felt with four stacks; the coin sounds are a rack of tickets
+  (each with a big chip in the game's art); landing drops chips with that
+  sound (played without keeping it); chip size under it redraws the
+  stacks.
+- CABINET: each theme is a little machine drawn in its own colours (the
+  theme tokens apply to any element with `data-theme`); landing dresses
+  the whole Workshop in it.
+- SCREENS: each CRT look's card wears that look's own dials (the CRT
+  tokens are attribute-scoped, so a card can carry its own; a low-weight
+  reset of crt.css's level-0 values keeps the page's look out; in the
+  game that reset belongs in crt.css).
+- BUTTONS: three real keys (small, standard, big) to press; landing on a
+  press feel puts it on the whole page for the moment.
+- The name screens are `data-crt-quiet`: the channel-change effect merged
+  quick changes and showed a stale name.

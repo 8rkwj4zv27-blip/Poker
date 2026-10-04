@@ -229,8 +229,8 @@ html[data-wbtn="lamp"] .wk-trim .wk-stud{ display:none; }
    (04-overlays-and-modes.css); the Workshop's stages deal for real */
 body:has(#workshop:not(.hidden)):not(:has(.scrim.open)) .fly-card{ display:block !important; }
 
-#workshop .ws-tabs{ display:grid; grid-template-columns:repeat(3,1fr); gap:6px; margin:0 0 12px; }
-#workshop .ws-tabs button{ min-height:44px; font-family:var(--font-hdr); font-size:8px; letter-spacing:.06em; padding:4px 2px; }
+#workshop .ws-tabs{ display:grid; grid-template-columns:repeat(4,1fr); gap:6px; margin:0 0 12px; }
+#workshop .ws-tabs button{ min-width:0; min-height:44px; font-family:var(--font-hdr); font-size:7px; letter-spacing:.04em; padding:4px 1px; }
 #workshop .ws-tab{ display:none; }
 #workshop .ws-tab.is-on{ display:block; }
 
@@ -380,3 +380,60 @@ html[data-holder="brass"] .wss-lip{
 #workshop .finish-seg button{ flex:1 1 28%; min-width:0; }
 #workshop .finish-seg button:first-child:nth-last-child(4),
 #workshop .finish-seg button:first-child:nth-last-child(4) ~ button{ flex-basis:40%; }
+
+/* ============================================================
+   ROUND 8: CHIPS, CABINET, SCREENS, BUTTONS
+   ============================================================ */
+.ws-stage--caption .wss-caption{ margin-top:0; }
+/* CHIPS: felt with four stacks in the middle */
+.ws-stage--chips .wss-felt{ height:120px; border-bottom:4px solid var(--rail-lo); border-radius:10px; }
+.wss-chips{ position:absolute; left:50%; top:30px; height:56px; transform:translateX(-50%); }
+.wss-chips .cl-chip{ image-rendering:pixelated; }
+/* BUTTONS: three real keys to press, one of each size */
+.wss-keys{ display:flex; align-items:center; gap:10px; padding:14px 12px 16px; border:3px solid var(--ms-edge); border-radius:6px; background:var(--ms-well); box-shadow:inset 0 5px 0 rgba(0,0,0,.44); }
+#workshop .wss-keys .icon-btn{ flex:0 0 48px; height:48px; }
+#workshop .wss-keys .btn-secondary,#workshop .wss-keys .btn-primary{ flex:1 1 0; width:auto; min-width:0; margin:0; min-height:52px; }
+
+/* a ticket for the racks below: a plate with a picture, the name, a band */
+.wr-rack:has(.wr-ticket) .wr-card{ width:150px; height:192px; margin-left:-75px; }
+.wr-ticket{
+  display:flex; flex-direction:column; align-items:center; height:100%; box-sizing:border-box; padding:16px 10px 0; gap:12px; overflow:hidden;
+  border:3px solid var(--ms-edge); border-radius:6px; background:#E9DDAE; color:#22201C;
+  box-shadow:inset 0 0 0 2px #F6EBC4,inset 0 0 0 4px rgba(120,107,73,.45),0 5px 0 #786B49,0 8px 0 #0b0805;
+}
+.wr-ticket b{ flex:1; display:flex; align-items:center; justify-content:center; text-align:center; font-family:var(--font-hdr); font-weight:400; font-size:12px; letter-spacing:.04em; line-height:1.3; text-transform:uppercase; }
+.wr-band{ align-self:stretch; margin:0 -10px; padding:9px 4px 8px; text-align:center; white-space:nowrap; font-family:var(--font-hdr); font-size:6px; letter-spacing:.08em; text-transform:uppercase; background:#2A261C; color:#E9DDAE; border-top:3px solid var(--ms-edge); }
+/* a coin sound: the chip, big */
+.wr-chip{ display:flex; justify-content:center; height:46px; }
+.wr-chip .cl-chip{ width:36px !important; height:44px !important; image-rendering:pixelated; }
+/* a cabinet: a little machine in its own colours (the card carries data-theme) */
+.wr-theme{ background:var(--theme-case-raised); color:#F3E6C4; box-shadow:inset 0 0 0 2px var(--theme-case-hi),inset 0 0 0 4px rgba(0,0,0,.25),0 5px 0 color-mix(in srgb,var(--theme-case-raised) 50%,black),0 8px 0 #0b0805; }
+.wr-theme .wr-band{ background:color-mix(in srgb,var(--panel) 70%,black); color:var(--accent-bright); }
+.wr-mini{ display:flex; flex-direction:column; width:104px; border:3px solid var(--px-ink); border-radius:6px; overflow:hidden; box-shadow:0 0 0 2px var(--theme-rim); }
+.wr-mini-felt{ position:relative; height:46px; background:radial-gradient(ellipse at 50% 40%,var(--felt-1),var(--felt-2) 75%); box-shadow:inset 0 0 0 3px var(--rail); }
+.wr-mini-felt i{ position:absolute; top:13px; width:13px; height:19px; border:1px solid var(--px-ink); border-radius:2px; background:var(--card-face); }
+.wr-mini-felt i:first-child{ left:36px; } .wr-mini-felt i:last-child{ left:53px; }
+.wr-mini-dash{ display:flex; flex-direction:column; gap:4px; padding:5px; background:var(--theme-case-raised); border-top:2px solid var(--px-ink); }
+.wr-mini-crt{ display:block; height:9px; border:1px solid var(--px-ink); background:#060B0A; box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--accent) 40%,transparent); }
+.wr-mini-keys{ display:flex; gap:3px; }
+.wr-mini-keys i{ flex:1; height:9px; border:1px solid var(--px-ink); }
+.wr-mini-keys i:nth-child(1){ background:#8E3B37; } .wr-mini-keys i:nth-child(2){ background:var(--accent); } .wr-mini-keys i:nth-child(3){ background:#3F9E58; }
+/* a screen look: the card's own CRT wears that look's dials. Each dial's
+   level-0 value lives on :root in crt.css; here it's reset at the lowest
+   weight so the card's own attributes win and nothing leaks in from the
+   page's look (in the game, this belongs in crt.css) */
+:where(.wr-crtwrap){
+  --crt-glass:#061014; --crt-bezel:#020706; --crt-tint:rgba(120,192,211,.12); --crt-halo:rgba(93,183,213,.14);
+  --crt-bloom:0 0 0 transparent; --crt-rgb:0 0 0 transparent; --crt-scan-a:.2; --crt-grain-a:0;
+  --crt-radius:2px; --crt-vig:.62; --crt-bulge:0; --crt-flick-dip:0; --crt-flick-lift:0;
+  --crt-roll-a:0; --crt-roll-ms:6s; --crt-tear-x:0px; --crt-tear-ms:9s;
+  --crt-ink-info:#C3C8AD; --crt-ink-live:#BDE9FF; --crt-ink-money:#F6D06B; --crt-ink-danger:#FF8A7A;
+}
+.wr-crtcard{ background:var(--ms-plate); color:#F3E6C4; box-shadow:inset 0 0 0 2px var(--ms-plate-hi),inset 0 0 0 4px rgba(0,0,0,.25),0 5px 0 var(--ms-plate-lo),0 8px 0 #0b0805; }
+.wr-crtwrap{ display:flex; flex-direction:column; gap:6px; width:112px; }
+.wr-crtwrap .crt{ display:flex; align-items:center; justify-content:center; height:30px; padding:0 6px; white-space:nowrap; }
+/* a press: a key, drawn mid-press */
+.wr-presskey{ display:flex; justify-content:center; align-items:flex-end; height:46px; }
+.wr-presskey i{ width:84px; height:30px; border:3px solid var(--ms-edge); border-radius:4px; background:var(--accent); box-shadow:0 5px 0 color-mix(in srgb,var(--accent) 55%,black),0 7px 0 var(--ms-edge),inset 0 3px 0 rgba(255,255,255,.34); }
+.wr-press[data-v="heavy"] .wr-presskey i{ box-shadow:0 8px 0 color-mix(in srgb,var(--accent) 55%,black),0 10px 0 var(--ms-edge),inset 0 3px 0 rgba(255,255,255,.34); }
+#workshop .wss-keys .btn-primary{ flex:1.3 1 0; font-size:10px; white-space:nowrap; }

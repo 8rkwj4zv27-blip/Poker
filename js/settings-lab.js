@@ -208,7 +208,7 @@
   rankings.parentNode.insertBefore(wsScreen, rankings.nextSibling);
   wsCard.appendChild(pageHead('Workshop', 'home'));
 
-  const TABS = [['cards','Cards'],['dealing','Dealing'],['showdown','Showdown'],['chips','Chips'],['cabinet','Cabinet'],['screens','Screens']];
+  const TABS = [['cards','Cards'],['dealing','Dealing'],['showdown','Showdown'],['chips','Chips'],['cabinet','Cabinet'],['screens','Screens'],['buttons','Buttons']];
   const tabRow = el('div', 'segmented compact ws-tabs');
   TABS.forEach(([k, t], i) => { const b = el('button', i === 0 ? 'active' : '', t); b.type = 'button'; b.dataset.wsTab = k; tabRow.appendChild(b); });
   wsCard.appendChild(tabRow);
@@ -227,11 +227,12 @@
     const s = el('div', 'ws-stage ws-stage--' + kind);
     s.innerHTML = kind === 'cards'
       ? '<div class="wss-box"><div class="wss-felt">' + deckHTML + '</div></div>' +
-        '<div class="crt wss-caption"><span class="crt-line" data-wss-say></span></div>'
+        '<div class="crt wss-caption" data-crt-quiet><span class="crt-line" data-wss-say></span></div>'
       : '<div class="wss-box"><div class="wss-felt">' + deckHTML + '<div class="wss-spot"><div class="card back small" data-st-spot></div></div></div></div>' +
-        '<div class="crt wss-caption"><span class="crt-line" data-wss-say></span></div>';
+        '<div class="crt wss-caption" data-crt-quiet><span class="crt-line" data-wss-say></span></div>';
     return s;
   }
+  function captionOnly(){ const c = el('div', 'ws-stage ws-stage--caption'); c.innerHTML = '<div class="crt wss-caption" data-crt-quiet><span class="crt-line" data-wss-say></span></div>'; return c; }
   const sayOn = (st, t) => { const c = st.querySelector('[data-wss-say]'); if (c) c.textContent = t; };
   function borrowDeck(st){
     const real = document.querySelector('#felt .dealer-deck');
@@ -258,7 +259,8 @@
   /* ---- CARDS: flick through the backs themselves ---- */
   const BACKS = [...document.querySelectorAll('#deck-back-seg button')].map(b => ({ id:b.dataset.v, name:(b.querySelector('b') || b).textContent.trim() }));
   const equippedBack = () => { try{ return DealerDeck.order.back; }catch(e){ return 'crest'; } };
-  const cardsStage = stage('cards');
+  // the rack is the preview (owner, round 7): above it, only the name
+  const cardsStage = captionOnly();
   pages.cards.appendChild(cardsStage);
   const backRack = WorkshopRack.create({
     // the deck's own card (card back small), drawn at its real size and
@@ -284,8 +286,6 @@
     const b = BACKS[i]; if (!b) return;
     // browsing: the deck wears the back (put back on the way out unless used)
     document.documentElement.setAttribute('data-ds-back', b.id);
-    const deckEl = cardsStage.querySelector('[data-wss-deck]');
-    deckEl.classList.remove('ds-tap'); void deckEl.offsetWidth; deckEl.classList.add('ds-tap');
     const on = b.id === equippedBack();
     sayOn(cardsStage, b.name + (on ? '  ·  in use' : ''));
     backUse.b.textContent = on ? 'In use' : 'Use ' + b.name;
@@ -313,12 +313,15 @@
   const inMix = id => { try{ return !!DealStyles.order.on[id]; }catch(e){ return id === 'flick'; } };
   // a style's ticket: coloured by its rarity, with its pips and odds, the
   // name big, and a lamp lit when it's in the mix (the CRT carries the rest)
+  // Press Start's letters are 1em wide (+ its .04em spacing): size the
+  // name so its longest word fits the ticket's 104px with room to spare
+  const fitName = n => Math.min(13, Math.floor(104 / (Math.max(...n.split(/\s+/).map(w => w.length)) * 1.04) * 2) / 2);
   const PIPS = { common:1, uncommon:2, rare:3, epic:4, legendary:5 };
   const ODDS = { common:'Common', uncommon:'Uncommon', rare:'Rare \u00b7 1 in 50', epic:'Epic \u00b7 1 in 80', legendary:'Legendary \u00b7 1 in 300' };
   const styleHTML = s => '<div class="wr-style" data-tier="' + s.tier + '">' +
     '<span class="wr-mixlamp' + (inMix(s.id) ? ' is-on' : '') + '" aria-hidden="true"></span>' +
     '<span class="wr-pips">' + [1,2,3,4,5].map(n => '<i' + (n <= PIPS[s.tier] ? ' class="on"' : '') + '></i>').join('') + '</span>' +
-    '<b>' + s.name + '</b>' +
+    '<b style="font-size:' + fitName(s.name) + 'px">' + s.name + '</b>' +
     '<span class="wr-tier">' + ODDS[s.tier] + '</span></div>';
   const dealStage = stage('dealing');
   pages.dealing.appendChild(dealStage);
@@ -358,32 +361,173 @@
   if (dealSec) attic.appendChild(dealSec);
   quick.addEventListener('click', () => setTimeout(() => { STY.forEach((s, i) => styleRack.refresh(i, styleHTML(s))); showStyle(styleRack.index, false); }, 0));
 
-  /* ---- SHOWDOWN, CHIPS, CABINET: plain controls until their rounds ---- */
-  function plainTab(k, ids, note){
-    const box = el('div', 'sheet-section st-plate ws-opts');
-    box.appendChild(el('div', 'ws-soon', note));
-    ids.forEach(id => { const f = typeof id === 'string' ? fieldOf(id) : id; if (f) box.appendChild(f); });
-    pages[k].appendChild(box);
+  /* ---- a rack tab: the name/notes screen, the rack, the Use key ----
+     browse(i) shows a pick without keeping it; use(i) keeps it; current()
+     says which is kept. Leaving the tab (or the Workshop) puts back what's
+     kept. */
+  function rackTab(o){
+    const cap = o.stage || captionOnly();
+    o.page.appendChild(cap);
+    const rack = WorkshopRack.create({
+      items:o.items.map(o.card), index:Math.max(0, o.items.findIndex(x => x.id === o.current())),
+      onNotch:i => name(i), onLand:i => { name(i); if (o.browse) o.browse(o.items[i], cap); }
+    });
+    o.page.appendChild(rack.el);
+    const key = keyRow('Use');
+    o.page.appendChild(key.w);
+    function name(i){
+      const it = o.items[i]; if (!it) return;
+      const on = it.id === o.current();
+      sayOn(cap, it.name + (it.note ? '  ·  ' + it.note : '') + (on ? '  ·  in use' : ''));
+      key.b.textContent = on ? 'In use' : 'Use ' + it.name;
+      key.b.classList.toggle('is-on', on);
+      key.n.textContent = on ? (o.inUse || 'This is the one in use.') : 'Flick through them. Nothing changes until you tap Use.';
+    }
+    key.b.addEventListener('click', () => { const it = o.items[rack.index]; if (it){ o.use(it); name(rack.index); } });
+    return { rack, cap, show:() => { name(rack.index); if (o.browse) o.browse(o.items[rack.index], cap); }, name };
   }
-  plainTab('showdown', ['sd-smash-seg', 'sd-force-seg', 'sd-bounce-seg', 'sd-heat-seg', 'sd-pickup-seg'],
-    'Next: a pot that cooks and goes off up here, and these five rows become two (when it smashes, and a smash style).');
-  let chipField = null;
-  if (trSec){
-    const cf = fieldOf('tr-coins');
-    Array.from(trSec.children).forEach(n => { if (n !== cf) n.classList.add('st-gone'); });
-    trSec.classList.add('st-bare');
-    chipField = trSec;
-  }
-  plainTab('chips', [chipField, 'coin-sound-seg'].filter(Boolean), 'Next: a pile of chips and your bank up here, and the coin sounds in a rack.');
-  plainTab('cabinet', ['theme-seg'], 'Next: a small piece of the machine up here in each colour, and the themes in a rack (with room for new ones).');
 
-  /* ---- SCREENS: what was Finishes, out of Settings ---- */
-  const fl = $id('finishes-list');
-  const scr = el('div', 'sheet-section st-plate ws-opts ws-finishes');
-  scr.appendChild(el('div', 'ws-soon', 'What was Settings → Finishes. Next: a live screen and a button up here, and the looks in a rack.'));
-  if (fl) scr.appendChild(fl);
-  const rf = $id('reset-finishes'); if (rf) scr.appendChild(rf);
-  pages.screens.appendChild(scr);
+  /* ---- SHOWDOWN: plain controls until its round ---- */
+  const sdBox = el('div', 'sheet-section st-plate ws-opts');
+  sdBox.appendChild(el('div', 'ws-soon', 'Next: a pot that cooks and goes off up here, and these five rows become two (when it smashes, and a smash style).'));
+  ['sd-smash-seg', 'sd-force-seg', 'sd-bounce-seg', 'sd-heat-seg', 'sd-pickup-seg'].forEach(id => { const f = fieldOf(id); if (f) sdBox.appendChild(f); });
+  pages.showdown.appendChild(sdBox);
+
+  /* ---- CHIPS: coin sounds in a rack over a pile of chips ----
+     The stage is felt with three stacks; landing on a sound drops chips
+     onto them with that sound. Chip size redraws them. */
+  const SOUNDS = [...document.querySelectorAll('#coin-sound-seg button')].map(b => ({ id:b.dataset.coin, name:b.textContent.trim() }));
+  const chipD = () => { const b = document.querySelector('#tr-coins button.active'); return +(b ? b.dataset.v : 13) || 13; };
+  function chipEl(colour, d){
+    const c = CoinWorld.makeChip(colour);
+    CoinWorld.setFrame(c, d, 0, false);
+    const e = c.el;
+    e.style.position = 'absolute'; e.style.width = d + 'px'; e.style.height = Math.round(d * 16 / 13) + 'px';
+    e.style.backgroundSize = '100% 100%';
+    return e;
+  }
+  const chipStage = el('div', 'ws-stage ws-stage--chips');
+  chipStage.innerHTML = '<div class="wss-box"><div class="wss-felt"><div class="wss-chips"></div></div></div><div class="crt wss-caption" data-crt-quiet><span class="crt-line" data-wss-say></span></div>';
+  const STACKS = [['t0', 7], ['t1', 5], ['t2', 6], ['t3', 3]];
+  function paintChips(){
+    const box = chipStage.querySelector('.wss-chips'); box.innerHTML = '';
+    const d = chipD(), gap = d + 7;
+    try{
+      STACKS.forEach(([col, n], si) => {
+        for (let i = 0; i < n; i++){
+          const e = chipEl(col, d);
+          e.style.left = (si * gap) + 'px'; e.style.bottom = (i * 3) + 'px'; e.style.zIndex = String(i);
+          box.appendChild(e);
+        }
+      });
+    }catch(err){}
+    box.style.width = (STACKS.length * gap - 7) + 'px';
+  }
+  function dropChips(){
+    const box = chipStage.querySelector('.wss-chips'), d = chipD(), gap = d + 7;
+    box.querySelectorAll('.is-dropped').forEach(e => e.remove());
+    [0, 70, 150].forEach((t, k) => setTimeout(() => {
+      try{
+        const si = (k * 2 + 1) % STACKS.length, h = STACKS[si][1] + box.querySelectorAll('[data-s="' + si + '"]').length;
+        const e = chipEl(STACKS[si][0], d);
+        e.classList.add('is-dropped'); e.dataset.s = String(si);
+        e.style.left = (si * gap) + 'px'; e.style.bottom = (h * 3) + 'px'; e.style.zIndex = String(h);
+        box.appendChild(e);
+        if (!motionOff()) e.animate([{ transform:'translateY(-60px)' }, { transform:'translateY(0)', offset:.8 }, { transform:'translateY(-3px)' }, { transform:'none' }], { duration:300, easing:'steps(6,end)' });
+      }catch(err){}
+    }, t));
+  }
+  // a sound plays as itself without being kept: the coin world reads
+  // settings.coinSound when it plays, so it's swapped in for the moment
+  function playSound(id){
+    const was = settings.coinSound;
+    settings.coinSound = id;
+    try{ Sound.unlock(); if (typeof CoinTable !== 'undefined') CoinTable.preview(); }catch(e){}
+    settings.coinSound = was;
+  }
+  const soundTab = rackTab({
+    page:pages.chips, stage:chipStage, items:SOUNDS,
+    card:it => '<div class="wr-ticket wr-sound"><span class="wr-chip" data-chip></span><b>' + it.name + '</b><span class="wr-band">Coin sound</span></div>',
+    current:() => settings.coinSound,
+    browse:it => { dropChips(); playSound(it.id); },
+    use:it => { const b = document.querySelector('#coin-sound-seg [data-coin="' + it.id + '"]'); if (b) b.click(); },
+    inUse:'Every chip lands, stacks and pays out with this sound.'
+  });
+  // each ticket wears a big chip in the game's art
+  soundTab.rack.el.querySelectorAll('[data-chip]').forEach((slot, i) => {
+    try{ const e = chipEl(['t1','t0','t2','t3','t4','t5'][i % 6], 30); e.style.position = 'relative'; slot.appendChild(e); }catch(err){}
+  });
+  const chipOpts = el('div', 'sheet-section st-plate ws-opts');
+  if (trSec){
+    const sizeSeg = $id('tr-coins');
+    chipOpts.appendChild(optField('Chip size', sizeSeg, 'Every chip, on the table and in your bank.'));
+    sizeSeg.addEventListener('click', () => setTimeout(() => { paintChips(); sayOn(chipStage, 'Chip size: ' + ((sizeSeg.querySelector('.active') || {}).textContent || '')); }, 0));
+  }
+  pages.chips.appendChild(chipOpts);
+
+  /* ---- CABINET: the colour themes, each a little machine ----
+     Each card is drawn in its own theme (the theme tokens are set on any
+     element with data-theme). Landing on one dresses the whole Workshop in
+     it; Use keeps it. */
+  const THEMES = [...document.querySelectorAll('#theme-seg button')].map(b => ({ id:b.dataset.theme, name:b.textContent.trim() }));
+  const themeTab = rackTab({
+    page:pages.cabinet, items:THEMES,
+    card:it => '<div class="wr-ticket wr-theme" data-theme="' + it.id + '"><span class="wr-mini"><i class="wr-mini-felt"><i></i><i></i></i>' +
+      '<i class="wr-mini-dash"><i class="wr-mini-crt"></i><i class="wr-mini-keys"><i></i><i></i><i></i></i></i></span><b>' + it.name + '</b><span class="wr-band">Cabinet</span></div>',
+    current:() => settings.theme,
+    browse:it => { document.body.setAttribute('data-theme', it.id); },
+    use:it => { const b = document.querySelector('#theme-seg [data-theme="' + it.id + '"]'); if (b) b.click(); },
+    inUse:'The whole machine wears these colours.'
+  });
+
+  /* ---- SCREENS (CRT looks) and BUTTONS (press feel): what was Finishes ---- */
+  const SETS = (typeof Finishes !== 'undefined' && Finishes.sets) || [];
+  const crtSet = SETS.find(x => x.attr === 'finishCrt'), pressSet = SETS.find(x => x.attr === 'finishPress');
+  const finishNow = attr => document.documentElement.dataset[attr] || '';
+  const camel = k => 'crt' + k[0].toUpperCase() + k.slice(1);
+  const dash = k => 'data-crt-' + k.replace(/[A-Z]/g, m => '-' + m.toLowerCase());
+  // a look's dials as attributes, so one card can wear its own look
+  function crtAttrs(id){
+    const pr = id && typeof CRT !== 'undefined' && CRT.PRESETS.find(x => x.id === id);
+    const d = pr ? Object.fromEntries(Object.entries(pr.dials).map(([k, v]) => [camel(k), String(v)])) : Object.assign({}, window.CRT_RECIPE || {});
+    return Object.entries(d).map(([k, v]) => dash(k.replace(/^crt/, '').replace(/^./, c => c.toLowerCase())) + '="' + v + '"').join(' ');
+  }
+  if (crtSet){
+    const items = crtSet.options.map(x => ({ id:x.id, name:x.name, note:'' }));
+    rackTab({
+      page:pages.screens, items,
+      card:it => '<div class="wr-ticket wr-crtcard"><span class="wr-crtwrap" ' + crtAttrs(it.id) + '><span class="crt wr-crt-a" data-ink="live">Dealer ready</span><span class="crt wr-crt-b" data-ink="money"><span class="crt-figure">$1,250</span></span></span><b>' + it.name + '</b><span class="wr-band">Screens</span></div>',
+      current:() => finishNow('finishCrt'),
+      browse:(it, cap) => { const o = crtSet.options.find(x => x.id === it.id); sayOn(cap, it.name + '  ·  ' + (o ? o.note : '')); },
+      use:it => Finishes.choose('finishCrt', it.id),
+      inUse:'Every screen in the machine wears this look.'
+    });
+  }
+  if (pressSet){
+    const pressStage = el('div', 'ws-stage ws-stage--keys');
+    pressStage.innerHTML = '<div class="wss-keys"><button class="icon-btn" type="button" aria-label="Try the small key">⚙</button><button class="btn-secondary" type="button">Try me</button><button class="btn-primary" type="button">Big key</button></div>' +
+      '<div class="crt wss-caption" data-crt-quiet><span class="crt-line" data-wss-say></span></div>';
+    const items = pressSet.options.map(x => ({ id:x.id, name:x.name, note:'' }));
+    rackTab({
+      page:pages.buttons, stage:pressStage, items,
+      card:it => '<div class="wr-ticket wr-press"><span class="wr-presskey"><i></i></span><b>' + it.name + '</b><span class="wr-band">Buttons</span></div>',
+      current:() => finishNow('finishPress'),
+      // the press feel is the whole page's: browsing wears it, leaving puts it back
+      browse:(it, cap) => {
+        if (it.id) document.documentElement.dataset.finishPress = it.id; else delete document.documentElement.dataset.finishPress;
+        const o = pressSet.options.find(x => x.id === it.id); sayOn(cap, it.name + '  ·  ' + (o ? o.note : '') + '  Press the keys above.');
+      },
+      use:it => Finishes.choose('finishPress', it.id),
+      inUse:'Every button in the machine presses like this.'
+    });
+  }
+  // put back what's kept: back, theme, press feel
+  function restoreKept(){
+    document.documentElement.setAttribute('data-ds-back', equippedBack());
+    document.body.setAttribute('data-theme', settings.theme);
+    let kept = {}; try{ kept = JSON.parse(localStorage.getItem('felt.finishes')) || {}; }catch(e){}
+    if (kept.finishPress) document.documentElement.dataset.finishPress = kept.finishPress; else delete document.documentElement.dataset.finishPress;
+  }
   const fe = $id('finishes-entry'); if (fe) attic.appendChild(fe);
 
   /* ---- tabs, opening, closing ---- */
@@ -392,16 +536,14 @@
     tab = k;
     tabRow.querySelectorAll('button').forEach(b => b.classList.toggle('active', b.dataset.wsTab === k));
     Object.keys(pages).forEach(p => pages[p].classList.toggle('is-on', p === k));
-    document.documentElement.setAttribute('data-ds-back', equippedBack());
-    if (k === 'cards'){ borrowDeck(cardsStage); showBack(backRack.index); }
-    else if (k === 'dealing'){ borrowDeck(dealStage); setTimeout(() => showStyle(styleRack.index, true), 250); }
-    else borrowDeck(null);
-    if (k === 'screens'){
-      // finishes.js renders its list when its page opens: open it once,
-      // here, then put the sheet's page switch back
-      const o = $id('open-finishes'); if (o && !fl.children.length) o.click();
-      const sh = $id('settings-sheet'); if (sh) sh.classList.remove('show-finishes');
-    }
+    restoreKept();
+    borrowDeck(k === 'dealing' ? dealStage : null);
+    if (k === 'cards') showBack(backRack.index);
+    else if (k === 'dealing') setTimeout(() => showStyle(styleRack.index, true), 250);
+    else if (k === 'chips'){ paintChips(); soundTab.name(soundTab.rack.index); }
+    else if (k === 'cabinet') themeTab.show();
+    else { const r = pages[k].querySelector('.wr-reader'); if (r) r.querySelector('.wr-rack').focus({ preventScroll:true }); }
+    if (k === 'screens' || k === 'buttons'){ const c = pages[k]; const cap = c.querySelector('.ws-stage'); if (cap && !cap.querySelector('[data-wss-say]').textContent) cap.querySelector('[data-wss-say]').textContent = 'Flick through the looks below.'; }
   }
   wsScreen.addEventListener('click', e => {
     const b = e.target.closest('button'); if (!b) return;
@@ -418,7 +560,7 @@
   function closeWorkshop(){
     wsScreen.classList.add('hidden');
     borrowDeck(null);
-    document.documentElement.setAttribute('data-ds-back', equippedBack());
+    restoreKept();
     $id('home').classList.remove('hidden');
     try{ reconstructMainMenu(); }catch(e){}
   }
@@ -525,7 +667,7 @@
     const tune = el('div', 'sdl-sheet stl-sheet');
     tune.setAttribute('role', 'dialog'); tune.setAttribute('aria-label', 'Settings lab');
     tune.innerHTML =
-      '<div class="sdl-tabs"><button type="button" class="is-on" tabindex="-1">SETTINGS + WORKSHOP · ROUND 7</button><button type="button" class="sdl-close" aria-label="Close">✕</button></div>' +
+      '<div class="sdl-tabs"><button type="button" class="is-on" tabindex="-1">SETTINGS + WORKSHOP · ROUND 8</button><button type="button" class="sdl-close" aria-label="Close">✕</button></div>' +
       '<div class="sdl-body">' +
         '<h3>JUMP TO<small>The keys in the game work too.</small></h3>' +
         '<div class="sdl-moments"><button type="button" data-open="workshop" class="is-wide">THE WORKSHOP</button><button type="button" data-open="home">SETTINGS AT HOME</button><button type="button" data-open="table">SETTINGS AT A TABLE</button></div>' +
@@ -534,6 +676,7 @@
         '<textarea class="sdl-copytext" readonly hidden></textarea>' +
         '<h3>WHAT MOVED<small>Nothing is lost: every saved pick keeps its value.</small></h3>' +
         '<ul class="stl-list">' +
+          '<li>Round 8: CHIPS (coin sounds over a pile of chips), CABINET (colour themes as little machines), SCREENS (CRT looks, each card wearing its own) and BUTTONS (press feel, with keys to press).</li>' +
           '<li>Round 7: the backs are the deck\'s own cards enlarged x3; the holder is out; CARDS shows just the deck; style tickets show rarity, not text.</li>' +
           '<li>Round 6: CARDS flicks through the card backs themselves, DEALING deals one card across the felt, both racks move exactly like the event cards.</li>' +
           '<li>Round 5: the Workshop is tabs, each with its own preview. CARDS and DEALING are built: swipe the rack to preview, tap Use (or Add to the mix) to choose. A style\'s rarity is now its own. Finishes moved to SCREENS.</li>' +
@@ -554,7 +697,7 @@
       const t = e.target.closest('button'); if (!t) return;
       if (t.dataset.open){ open(false); openAt(t.dataset.open); return; }
       if (t.dataset.act === 'copy'){
-        const text = 'Settings + Workshop lab, round 7:\n' + ROWS.filter(r => r[0] !== 'view').map(r => '- ' + r[1].charAt(0) + r[1].slice(1).toLowerCase() + ': ' + NAMES[r[0]][state[r[0]] || DEF[r[0]]]).join('\n');
+        const text = 'Settings + Workshop lab, round 8:\n' + ROWS.filter(r => r[0] !== 'view').map(r => '- ' + r[1].charAt(0) + r[1].slice(1).toLowerCase() + ': ' + NAMES[r[0]][state[r[0]] || DEF[r[0]]]).join('\n');
         const ta = tune.querySelector('.sdl-copytext');
         const done = ok => { t.textContent = ok ? 'COPIED: PASTE IT IN THE CHAT' : 'SELECT + COPY BELOW'; setTimeout(() => { t.textContent = 'COPY MY PICKS'; }, 2600); if (!ok){ ta.hidden = false; ta.value = text; ta.focus(); ta.select(); } };
         try{ navigator.clipboard.writeText(text).then(() => done(true), () => done(false)); }catch(err){ done(false); }
