@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#140709">
+  <link rel="icon" href="data:,">
+  <title>P.I.P. Report Lab</title>
+  <!-- Phone-first Lab. The page is just the real game, full screen, with
+       P.I.P. on the table; the lab's controls run inside it
+       (js/pip-report-lab.js: a TUNE key and a bottom sheet). The report
+       itself is the candidate js/coach-report.js + css/coach-report.css.
+       Never linked from the game; never touches a real save (the copy
+       runs on in-memory storage). docs/coach/REPORT_PLAN.md -->
+  <style>
+    html,body{ height:100%; margin:0; background:#140709; overflow:hidden; }
+    #prl-game{
+      position:fixed; top:env(safe-area-inset-top,0px); left:50%;
+      width:min(100vw,430px); height:calc(100% - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px));
+      transform:translateX(-50%); border:0; display:block; background:#0C1510;
+    }
+    @media (min-width:600px){ #prl-game{ box-shadow:0 0 0 3px #080405,0 20px 60px rgba(0,0,0,.6); } }
+  </style>
+</head>
+<body>
+  <iframe id="prl-game" title="The Table (lab copy)" allow="autoplay"></iframe>
+  <!-- What goes into the game copy: the candidate and the lab's controls.
+       The bundler (validation/tools/lab-bundle.js) reads this to bake it. -->
+  <script type="application/json" id="lab-inject">{"css":["css/coach-report.css","css/pip-report-lab.css"],"js":["js/coach-report.js","js/pip-report-hands.js","js/pip-report-lab.js"],"v":"1"}</script>
+  <script src="js/pip-report-lab-host.js?v=1"></script>
+</body>
+</html>

@@ -47,6 +47,10 @@ owner before building it.
   coaching; read it for the tactical depth.
 - Next agreed step: plain words, no percentages until a lesson teaches
   them. Details: `BRAIN_PLAN.md`, the last sections.
+- **P.I.P. report (4 Oct 2026)**: the owner asked for a tap-only
+  end-of-hand breakdown with an A-F grade, replacing Hand Review, with a
+  DEAL key after each hand. Round 1 lab built; see
+  `docs/coach/REPORT_PLAN.md` before any work on it.
 
 ## The one-paragraph version
 

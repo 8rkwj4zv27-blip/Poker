@@ -624,6 +624,17 @@ lessons and repeat reminders. Tests share `validation/tools/coach-sandbox.js`.
 Lab: `coach-brain-lab.html` (+ `js/coach-brain-lab.js`, host
 `js/coach-brain-lab-host.js`).
 
+## `pip-report-lab.html` + `js/pip-report-lab.js` (+ host, `js/pip-report-hands.js`, `css/pip-report-lab.css`) + candidate `js/coach-report.js` / `css/coach-report.css` — P.I.P. Report Lab
+
+The end-of-hand P.I.P. report (`docs/coach/REPORT_PLAN.md`): a big CRT
+readout above the dashboard, opened by a REPORT key or a tap on P.I.P.
+after the pot is paid, with a DEAL key for the next hand. `CoachReport`
+(lab only, not in `index.html`) holds the pure parts the game will use
+(`grade` A-F from P.I.P.'s decision marks, `truthEquity` from shown cards
+with the game's evaluator, `pivot`, `chanceWord`, `worthIt`) and draws the
+screen. The lab freezes one real table and stages seven hand-built example
+hands on it (`PIP_REPORT_HANDS`). Phone-first like `showdown-lab.html`.
+
 ## `coach-face-lab.html` + `js/coach-face-lab.js` + `css/coach-face-lab.css` + candidate `js/coach-set.js` / `css/coach-set.css` — Coach Face Lab
 
 The Coach's look (`docs/coach/COACH_PLAN.md`), round 3: the machine's
