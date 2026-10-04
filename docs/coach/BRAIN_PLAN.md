@@ -954,3 +954,23 @@ the flop; this session's price of a call before the flop, calling an all
 in, the full-game audit and tap only. Codex's v0.58.7 still had the price
 bug before the flop (127 wrong prices in 300 full games); the combined
 build is checked by every suite on both sides.
+
+## Plain words, v0.58.9 (4 Oct 2026)
+
+The owner: "I'm not loving the whole percentage thing in messages, I
+literally don't understand it… It can be introduced once the player has an
+understanding of what it means."
+
+- No line outside a lesson or explanation writes a percentage. A number
+  blank is written `{p:eq}` (eq, need, odds, fold, foldNeed, hitPct,
+  hitNext) after "about" or "to win", and reads **"1 time in 3"** until the
+  pot odds lesson (which explains percentages) has been shown, then **"31%
+  of the time"**. About 55 lines reworded so both read naturally.
+- Two numbers compared in one line that land on the same words are told
+  apart: "you win a little less than 1 time in 3, and you needed to win 1
+  time in 3" (31 against 34), not the same words twice.
+- A tapped bubble now stays until a real change (your turn starts or ends,
+  a card, the result, a new hand), not any bet by someone else.
+- `CoachTalk.fillText` / `knows` / `learn` for labs and checks.
+- Check: no `%` outside `lesson.*` / `explain.*`; `{p:x}` only on number
+  blanks.

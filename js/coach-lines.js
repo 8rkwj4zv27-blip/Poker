@@ -9,6 +9,11 @@
    what it means for you, and what to do. A fact is only there if it
    helps you decide.
 
+   HOW OFTEN IS PLAIN WORDS (4 Oct 2026): never write a percentage. Write
+   {p:eq} (any number blank: eq, need, odds, fold, foldNeed, hitPct,
+   hitNext) after "about" or "to win": it reads "1 time in 3" until the
+   pot odds lesson has taught percentages, then "31% of the time".
+
    POKER WORDS ARE LEARNED, NOT ASSUMED. A term is written {t:name}: it
    reads in plain words ("just calling the big blind") until the lesson
    that introduces it has been said ("That's called limping."), and from
@@ -204,72 +209,72 @@ const CoachLines = (() => {
     ['thinking', '{hole} is weak to raise with from the big blind. You had a free look at the flop, and you’ll have to act first for the rest of the hand.']]);
   add('bb.defend.good.now', 2, [['pleased', 'Good call.'], ['calm', 'Good. Defend it.']]);
   add('bb.defend.good.why', 2, [
-    ['calm', 'Calling with {hole} in the big blind was right. You’d already put chips in, so the call was cheap: you needed to win {need}% of the time, and you win about {eq}%.'],
+    ['calm', 'Calling with {hole} in the big blind was right. You’d already put chips in, so the call was cheap: you needed to win {p:need}, and you win about {p:eq}.'],
     ['pleased', 'Good. In the big blind you get a discount, so you can call a raise {raiserFrom} with more hands than anywhere else.']]);
 
   /* ================= facing a raise before the flop ================= */
   add('vsraise.fold.good.now', 2, [['pleased', 'Good fold.'], ['calm', 'Good. Let it go.']]);
   add('vsraise.fold.good.why', 2, [
-    ['calm', 'When {raiser} raises, they usually have a good hand. {hole} only wins about {eq}% of the time against those. You’d need {need}%. Folding was right.'],
+    ['calm', 'When {raiser} raises, they usually have a good hand. {hole} only wins about {p:eq} against those. You’d need to win {p:need}. Folding was right.'],
     ['pleased', 'Folding {hole} to a raise was right. Calling raises with hands that only look good is the most expensive habit in poker.']]);
   add('vsraise.fold.close.why', 4, [['calm', 'Fine. That fold was a close call. Calling would have been OK too.']]);
   add('vsraise.fold.priced.now', 1, [['surprised', 'That was worth a call.'], ['thinking', 'I’d have called that.']]);
   add('vsraise.fold.priced.now.leans', 3, [['thinking', 'I’d have called.']]);
   add('vsraise.fold.priced.why', 2, [
-    ['thinking', 'You folded {hole}, but the price was good: you needed to win {need}% of the time, and against that raise you win about {eq}%. That’s a call.']]);
-  add('vsraise.fold.priced.why.leans', 2, [['thinking', 'Folding {hole} there was a little too careful. About {eq}% against {need}% needed.']]);
+    ['thinking', 'You folded {hole}, but the price was good: you needed to win {p:need}, and against that raise you win about {p:eq}. That’s a call.']]);
+  add('vsraise.fold.priced.why.leans', 2, [['thinking', 'Folding {hole} there was a little too careful. You win about {p:eq}, and you needed to win {p:need}.']]);
   add('vsraise.fold.strong.now', 1, [['surprised', 'You folded that? That’s a strong hand.']]);
   add('vsraise.fold.strong.why', 2, [
-    ['thinking', '{hole} wins about {eq}% against a raise like that. That’s a hand to raise again with, not fold.']]);
+    ['thinking', '{hole} wins about {p:eq} against a raise like that. That’s a hand to raise again with, not fold.']]);
   add('vsraise.call.good.now', 4, [['calm', 'Good call.']]);
-  add('vsraise.call.good.why', 2, [['calm', 'Calling {raiser}’s raise with {hole} was fine. You needed {need}%, and you win about {eq}%.']]);
+  add('vsraise.call.good.why', 2, [['calm', 'Calling {raiser}’s raise with {hole} was fine. You needed to win {p:need}, and you win about {p:eq}.']]);
   add('vsraise.call.close.why', 4, [['calm', 'Fine. That call was a close one. Folding would have been OK too.']]);
   add('vsraise.call.weak.now', 1, [['wince', 'That’s a weak hand to call a raise with.'], ['thinking', 'Calling a raise with that is expensive.']]);
   add('vsraise.call.weak.now.leans', 3, [['thinking', 'A loose call.'], ['thinking', 'I’d have folded.']]);
   add('vsraise.call.weak.why', 2, [
-    ['thinking', 'You called {raiser}’s raise with {hole}. A raise usually means a good hand, and {hole} only wins about {eq}% against those. You needed {need}%. That’s a fold.'],
+    ['thinking', 'You called {raiser}’s raise with {hole}. A raise usually means a good hand, and {hole} only wins about {p:eq} against those. You needed to win {p:need}. That’s a fold.'],
     ['calm', 'Calling raises with hands like {hole} is the most common leak there is. When you hit, they’ve often hit something better.'],
     ['thinking', 'A raise {raiserFrom} means a strong hand, about {rangeWords}. {hole} is behind most of those. Fold and wait.']]);
-  add('vsraise.call.weak.why.leans', 2, [['thinking', 'Calling with {hole} was a bit loose: about {eq}%, and you needed {need}%.']]);
+  add('vsraise.call.weak.why.leans', 2, [['thinking', 'Calling with {hole} was a bit loose: you win about {p:eq}, and you needed to win {p:need}.']]);
   add('vsraise.call.value.now', 3, [['thinking', 'You could raise again with that.']]);
   add('vsraise.call.value.why', 2, [
-    ['thinking', 'Calling with {hole} is fine, but it’s strong enough to raise again. You were winning about {eq}% against their raise. Make them pay.'],
+    ['thinking', 'Calling with {hole} is fine, but it’s strong enough to raise again. You were winning about {p:eq} against their raise. Make them pay.'],
     ['calm', '{hole} against one raise: raise again. That’s called {t:threeBet}, and it builds the pot while you’re ahead.']]);
   add('vsraise.raise.value.now', 2, [['pleased', 'Good re-raise.'], ['pleased', 'Right. Raise it again.']]);
   add('vsraise.raise.value.why', 2, [
-    ['pleased', 'Raising {raiser} again with {hole} was right. You win about {eq}% against their raise, so you want more chips in.']]);
+    ['pleased', 'Raising {raiser} again with {hole} was right. You win about {p:eq} against their raise, so you want more chips in.']]);
   add('vsraise.raise.close.why', 4, [['calm', 'Fine. Raising again with {hole} was bold but reasonable.']]);
   add('vsraise.raise.loose.now', 1, [['surprised', 'Raising again with that?'], ['wince', 'That’s a lot to put in with that hand.']]);
   add('vsraise.raise.loose.why', 2, [
-    ['thinking', 'You raised again with {hole}. Against a raise, it wins about {eq}%. If they call or raise back, you’re usually behind.'],
+    ['thinking', 'You raised again with {hole}. Against a raise, it wins about {p:eq}. If they call or raise back, you’re usually behind.'],
     ['calm', 'Keep the re-raise for strong hands. {hole} isn’t one against a raise.']]);
 
   /* ================= facing a re-raise ================= */
   add('vs3bet.fold.good.now', 2, [['pleased', 'Good fold.']]);
-  add('vs3bet.fold.good.why', 2, [['calm', 'Two raises before the flop means a very strong hand. {hole} wins about {eq}% against that. Folding was right.']]);
+  add('vs3bet.fold.good.why', 2, [['calm', 'Two raises before the flop means a very strong hand. {hole} wins about {p:eq} against that. Folding was right.']]);
   add('vs3bet.fold.close.why', 4, [['calm', 'Fine. Folding {hole} to the re-raise was a close call.']]);
   add('vs3bet.fold.priced.now', 3, [['thinking', 'I’d have called that.']]);
-  add('vs3bet.fold.priced.why', 2, [['thinking', 'Folding {hole} to the re-raise was a bit too careful: you needed {need}% and had about {eq}%.']]);
+  add('vs3bet.fold.priced.why', 2, [['thinking', 'Folding {hole} to the re-raise was a bit too careful: you needed to win {p:need}, and you win about {p:eq}.']]);
   add('vs3bet.fold.strong.now', 1, [['surprised', 'You folded that?']]);
-  add('vs3bet.fold.strong.why', 2, [['thinking', '{hole} still wins about {eq}% against a re-raise. That’s strong enough to keep going.']]);
+  add('vs3bet.fold.strong.why', 2, [['thinking', '{hole} still wins about {p:eq} against a re-raise. That’s strong enough to keep going.']]);
   add('vs3bet.call.good.now', 4, [['calm', 'A fair call.']]);
-  add('vs3bet.call.good.why', 4, [['calm', 'Calling the re-raise with {hole} was fine: about {eq}%, needing {need}%.']]);
+  add('vs3bet.call.good.why', 4, [['calm', 'Calling the re-raise with {hole} was fine: you win about {p:eq}, and you needed to win {p:need}.']]);
   add('vs3bet.call.close.why', 4, [['calm', 'Fine. Calling the re-raise was a close call.']]);
   add('vs3bet.call.weak.now', 1, [['wince', 'Calling a re-raise with that is expensive.']]);
   add('vs3bet.call.weak.now.leans', 3, [['thinking', 'A loose call.']]);
-  add('vs3bet.call.weak.why', 2, [['thinking', 'A re-raise means a very strong hand. {hole} only wins about {eq}% against those. You needed {need}%.']]);
+  add('vs3bet.call.weak.why', 2, [['thinking', 'A re-raise means a very strong hand. {hole} only wins about {p:eq} against those. You needed to win {p:need}.']]);
   add('vs3bet.call.weak.why.leans', 2, [['thinking', 'Calling the re-raise with {hole} was a little loose.']]);
   add('vs3bet.call.value.now', 3, [['thinking', 'That was strong enough to raise again.']]);
-  add('vs3bet.call.value.why', 2, [['calm', '{hole} was strong enough to raise again: about {eq}% even against a re-raise.']]);
+  add('vs3bet.call.value.why', 2, [['calm', '{hole} was strong enough to raise again: it wins about {p:eq} even against a re-raise.']]);
   add('vs3bet.raise.value.now', 2, [['impressed', 'Raised again. Good.']]);
-  add('vs3bet.raise.value.why', 2, [['pleased', 'Raising again with {hole} was right: about {eq}% even against a re-raise.']]);
+  add('vs3bet.raise.value.why', 2, [['pleased', 'Raising again with {hole} was right: it wins about {p:eq} even against a re-raise.']]);
   add('vs3bet.raise.close.why', 4, [['calm', 'Fine. Raising again was a close call.']]);
   add('vs3bet.raise.loose.now', 1, [['surprised', 'Raising again with that?']]);
-  add('vs3bet.raise.loose.why', 2, [['thinking', 'Raising a re-raise with {hole} is too much. Against a hand that strong, it wins about {eq}%.']]);
+  add('vs3bet.raise.loose.why', 2, [['thinking', 'Raising a re-raise with {hole} is too much. Against a hand that strong, it wins about {p:eq}.']]);
   add('reraise.shove.big.now', 3, [['calm', 'Strong enough. A bit much, though.']]);
   add('reraise.shove.big.why', 2, [['calm', 'All in with {hole} works, but a normal re-raise keeps weaker hands in and wins you more.']]);
   add('reraise.shove.loose.now', 1, [['surprised', 'All in with that?']]);
-  add('reraise.shove.loose.why', 2, [['thinking', 'All in with {hole} over a raise risks {bb} big blinds, and the hands that call you usually win. About {eq}%.']]);
+  add('reraise.shove.loose.why', 2, [['thinking', 'All in with {hole} over a raise risks {bb} big blinds, and the hands that call you usually win: {hole} wins about {p:eq} when called.']]);
 
   /* ================= short stacks ================= */
   add('short.push.good.now', 2, [['pleased', 'Good. All in.'], ['pleased', 'Right. When you’re short, all in is the play.']]);
@@ -293,18 +298,18 @@ const CoachLines = (() => {
   add('short.limp.now', 1, [['wince', 'When you’re short, all in or fold.']]);
   add('short.limp.why', 2, [['calm', 'With {bb} big blinds, just calling wastes chips you can’t spare. All in with good hands, fold the rest.']]);
   add('short.flat.now', 3, [['thinking', 'When you’re short, go all in instead.']]);
-  add('short.flat.why', 2, [['calm', 'Short-stacked, calling a raise leaves you too little to play with. {hole} wins about {eq}% here: all in instead.']]);
+  add('short.flat.why', 2, [['calm', 'Short-stacked, calling a raise leaves you too little to play with. {hole} wins about {p:eq} here: all in instead.']]);
   add('short.reshove.good.now', 2, [['pleased', 'Good. All in.']]);
-  add('short.reshove.good.why', 2, [['calm', 'All in over the raise with {hole} and {bb} big blinds was right. You win about {eq}% if they call, and sometimes they fold.']]);
+  add('short.reshove.good.why', 2, [['calm', 'All in over the raise with {hole} and {bb} big blinds was right. You win about {p:eq} if they call, and sometimes they fold.']]);
 
   /* ================= after the flop, facing a bet ================= */
   add('post.fold.strong.now', 1, [['surprised', 'You folded that? You were well ahead.'], ['wince', 'That was too good to fold.']]);
   add('post.fold.strong.why', 2, [
-    ['thinking', 'You folded {handName}. Against the hands {bettor} bets like that, you were winning about {eq}% of the time. That’s at least a call.'],
+    ['thinking', 'You folded {handName}. Against the hands {bettor} bets like that, you were winning about {p:eq}. That’s at least a call.'],
     ['calm', '{handName} was a strong hand. One bet isn’t enough reason to give it up: people bet with worse hands too.']]);
   add('post.fold.good.now', 2, [['pleased', 'Good fold.'], ['calm', 'Right. Let it go.']]);
   add('post.fold.good.why', 2, [
-    ['calm', 'Folding {handName} was right. That bet usually means a better hand, and you only win about {eq}% against those. You needed {need}%.'],
+    ['calm', 'Folding {handName} was right. That bet usually means a better hand, and you only win about {p:eq} against those. You needed to win {p:need}.'],
     ['pleased', 'A good fold. {handName} looked decent, but {bettor}’s bet said otherwise most of the time.']]);
   add('post.fold.close.why', 4, [['calm', 'Fine. That fold was a close call.']]);
   add('post.fold.draw.now', 1, [['thinking', 'That draw was cheap enough to chase.']]);
@@ -315,14 +320,14 @@ const CoachLines = (() => {
   add('post.fold.priced.now', 1, [['thinking', 'That was worth a call.']]);
   add('post.fold.priced.now.leans', 3, [['thinking', 'I’d have called that.']]);
   add('post.fold.priced.why', 2, [
-    ['thinking', 'You folded {handName} for {call}. You needed to win {need}% of the time, and you win about {eq}% against the hands {bettor} bets like that. Call next time.']]);
+    ['thinking', 'You folded {handName} for {call}. You needed to win {p:need}, and you win about {p:eq} against the hands {bettor} bets like that. Call next time.']]);
   add('post.fold.priced.why.leans', 2, [['thinking', 'Folding {handName} there was a bit too careful.']]);
   add('post.call.value.now', 3, [['thinking', 'You could raise that.']]);
   add('post.call.value.why', 2, [
     ['thinking', 'Calling with {handName} is fine. A raise can ask more from {valueTargets}; the hands that call a raise matter more than the hands that bet.']]);
   add('post.call.good.now', 4, [['calm', 'Good call.']]);
   add('post.call.good.why', 2, [
-    ['calm', 'Calling with {handName} was right. A bet doesn’t always mean a monster, and you win about {eq}% against {bettor}’s likely hands.'],
+    ['calm', 'Calling with {handName} was right. A bet doesn’t always mean a monster, and you win about {p:eq} against {bettor}’s likely hands.'],
     ['pleased', 'Good call. It was {betSize}, and {handName} wins often enough to pay for it.']]);
   add('post.call.draw.good.now', 2, [['pleased', 'Good call with the draw.']]);
   add('post.call.draw.good.why', 2, [
@@ -336,7 +341,7 @@ const CoachLines = (() => {
   add('post.call.weak.now', 1, [['wince', 'That’s a weak hand to call with.']]);
   add('post.call.weak.now.leans', 3, [['thinking', 'A loose call.']]);
   add('post.call.weak.why', 2, [
-    ['thinking', 'You called {betSize} with {handName}. That bet usually means a better hand: you win about {eq}% against those, and you needed {need}%. That’s a fold.'],
+    ['thinking', 'You called {betSize} with {handName}. That bet usually means a better hand: you win about {p:eq} against those, and you needed to win {p:need}. That’s a fold.'],
     ['calm', 'Calling because your hand “might be good” is one of the biggest leaks there is. When someone bets, fold the weak ones.']]);
   add('post.call.weak.why.leans', 2, [['thinking', 'That call with {handName} was a little loose.']]);
   add('post.raise.value.now', 2, [['pleased', 'Good raise.'], ['pleased', 'Right. Make them pay.']]);
@@ -351,7 +356,7 @@ const CoachLines = (() => {
   /* ================= checked to you: bet or check ================= */
   add('bet.missed.now', 3, [['thinking', 'You could have bet that.'], ['thinking', 'That hand was worth a bet.']]);
   add('bet.missed.why', 2, [
-    ['thinking', 'You checked {handName}. That was strong: you’d win about {eq}% of the time. When nobody bets and you’re that far ahead, bet so the weaker hands pay you.'],
+    ['thinking', 'You checked {handName}. That was strong: you’d win about {p:eq}. When nobody bets and you’re that far ahead, bet so the weaker hands pay you.'],
     ['calm', 'With {handName}, a bet of {sizeWords} could get paid by worse hands. Checking missed that chance, though a call was never guaranteed.']]);
   add('bet.value.now', 2, [['pleased', 'Good bet.'], ['pleased', 'Right. Make them pay.']]);
   add('bet.value.why', 2, [
@@ -379,12 +384,12 @@ const CoachLines = (() => {
   add('bet.check.draw.why', 4, [['calm', 'Checking {drawName} was fine. Against one player, a bet could have won it straight away.']]);
   add('bet.bluff.good.now', 2, [['pleased', 'Good bluff.'], ['impressed', 'Nicely done.']]);
   add('bet.bluff.good.why', 2, [
-    ['calm', 'Bluffing there made sense: one player, and they’d shown weakness by checking. A bet that size needs them to fold {foldNeed}% of the time, and players in that spot fold about {fold}%.'],
+    ['calm', 'Bluffing there made sense: one player, and they’d shown weakness by checking. A bet that size needs them to fold {p:foldNeed}, and players in that spot fold about {p:fold}.'],
     ['pleased', 'A good bluff. You picked one player who wasn’t showing strength.']]);
   add('bet.bluff.close.why', 4, [['calm', 'Fine. That bluff was a close call. It works sometimes.']]);
   add('bet.bluff.bad.now', 3, [['thinking', 'That bluff was risky.']]);
   add('bet.bluff.bad.why', 2, [
-    ['thinking', 'That bluff needed them to fold {foldNeed}% of the time. In that spot, they fold nearer {fold}%. Save bluffs for when they look weaker.']]);
+    ['thinking', 'That bluff needed them to fold {p:foldNeed}. In that spot, they fold more like {p:fold}. Save bluffs for when they look weaker.']]);
   add('bet.bluff.multi.now', 1, [['wince', 'Bluffing into several players rarely works.']]);
   add('bet.bluff.multi.why', 2, [
     ['thinking', 'You bet {handName} into {players} players. For a bluff to work, every one of them has to fold. Bluff one player, not several.']]);
@@ -440,7 +445,7 @@ const CoachLines = (() => {
     ['calm', 'Every call has a price. If it costs 25 to win 75, you need to win one time in four to break even: 25%. That’s called the pot odds.'],
     ['calm', 'When someone bets, ask two things: what does a bet like that usually mean, and does my hand win often enough to pay for it?']]);
   add('lesson.drawing-odds', 2, [
-    ['calm', 'When you’re waiting for a card, count the cards that would make your hand. Those are called outs. A flush draw has 9. Each card to come gives you about 2% per out.'],
+    ['calm', 'When you’re waiting for a card, count the cards that would make your hand. Those are called outs. A flush draw has 9. Each card to come gives you about 2 chances in 100 for every out.'],
     ['calm', 'Compare the price with the chance your draw wins. Some draws can pay for a bigger bet; others miss too often. Remember you may have to pay again on the next card.']]);
   add('lesson.river-bets', 2, [
     ['calm', 'Big bets on the last card are rarely bluffs, especially from quiet players. A hand that can only beat a bluff is called a bluff catcher. Careful calling with one.']]);
@@ -502,30 +507,30 @@ const CoachLines = (() => {
   add('advise.bbOption.raise', 3, [['pleased', 'Raise. {hole} is strong, and the others just called. Make it {to}.']]);
   add('advise.bbOption.allin', 3, [['calm', 'You’re short and {hole} is strong. All in.']]);
   add('advise.vsRaise.fold', 3, [
-    ['calm', 'Fold. {raiser}’s raise usually means a good hand, and {hole} only wins about {eq}% against those. You’d need {need}%.'],
+    ['calm', 'Fold. {raiser}’s raise usually means a good hand, and {hole} only wins about {p:eq} against those. You’d need to win {p:need}.'],
     ['thinking', '{raiser} raised. {hole} is behind most of the hands that means. Fold it.']]);
   add('advise.vsRaise.call', 3, [
-    ['calm', 'Call. {hole} wins about {eq}% against that raise, and you only need {need}%.'],
+    ['calm', 'Call. {hole} wins about {p:eq} against that raise, and you only need to win {p:need}.'],
     ['calm', 'The price is right. Call with {hole}.']]);
   add('advise.vsRaise.raise', 3, [
-    ['pleased', 'Raise again. {hole} wins about {eq}% against their raise. Make it {to}.']]);
-  add('advise.vsRaise.allin', 3, [['calm', 'You’re short. {hole} wins about {eq}% here: all in.']]);
-  add('advise.vsReraise.fold', 3, [['calm', 'Fold. Two raises means a very strong hand, and {hole} wins about {eq}% against that.']]);
-  add('advise.vsReraise.call', 3, [['calm', 'Call. {hole} holds up well enough: about {eq}%, needing {need}%.']]);
-  add('advise.vsReraise.raise', 3, [['pleased', 'Raise again. {hole} wins about {eq}% even against a re-raise.']]);
-  add('advise.vsReraise.allin', 3, [['calm', 'All in. {hole} is strong enough, about {eq}%, and you’re short.']]);
+    ['pleased', 'Raise again. {hole} wins about {p:eq} against their raise. Make it {to}.']]);
+  add('advise.vsRaise.allin', 3, [['calm', 'You’re short. {hole} wins about {p:eq} here: all in.']]);
+  add('advise.vsReraise.fold', 3, [['calm', 'Fold. Two raises means a very strong hand, and {hole} wins about {p:eq} against that.']]);
+  add('advise.vsReraise.call', 3, [['calm', 'Call. {hole} holds up well enough: it wins about {p:eq}, and you need to win {p:need}.']]);
+  add('advise.vsReraise.raise', 3, [['pleased', 'Raise again. {hole} wins about {p:eq} even against a re-raise.']]);
+  add('advise.vsReraise.allin', 3, [['calm', 'All in. {hole} is strong enough: it wins about {p:eq}, and you’re short.']]);
   add('advise.short.allin', 3, [
     ['calm', 'You have {bb} big blinds. All in with {hole}.'],
     ['calm', 'Short stack, first in: all in with {hole}.']]);
   add('advise.short.fold', 3, [['calm', 'Fold. With {bb} big blinds it’s all in or fold, and {hole} is a fold from here.']]);
   add('advise.post.fold', 3, [
-    ['calm', 'Fold. That bet usually means a better hand. {handName} only wins about {eq}% against those, and you’d need {need}%.'],
+    ['calm', 'Fold. That bet usually means a better hand. {handName} only wins about {p:eq} against those, and you’d need to win {p:need}.'],
     ['thinking', '{Bettor} made {betSize}. {handName} isn’t good enough. Fold it.']]);
   add('advise.post.call', 3, [
-    ['calm', 'Call. You win about {eq}% against the hands that bet like that, and you only need {need}%.'],
+    ['calm', 'Call. You win about {p:eq} against the hands that bet like that, and you only need to win {p:need}.'],
     ['calm', 'The price is right. Call with {handName}.']]);
-  add('advise.post.raise', 3, [['pleased', 'Raise. {handName} is strong: you win about {eq}% of the time. Make it {to}.']]);
-  add('advise.post.allin', 3, [['calm', 'All in. {handName} is strong enough, about {eq}%.']]);
+  add('advise.post.raise', 3, [['pleased', 'Raise. {handName} is strong: you win about {p:eq}. Make it {to}.']]);
+  add('advise.post.allin', 3, [['calm', 'All in. {handName} is strong enough: it wins about {p:eq}.']]);
   add('advise.post.call.draw', 3, [
     ['calm', 'Call is reasonable with {drawName}. {drawPriceText} {drawWarning}']]);
   add('advise.post.fold.draw', 3, [
@@ -583,15 +588,15 @@ const CoachLines = (() => {
   add('read.made.set', 3, [['impressed', '{handName}. A strong made hand; still watch for possible straights and flushes.']]);
   add('read.made.trips', 3, [['pleased', '{handName}. Strong, but someone could share it with a better other card.']]);
   add('read.made.big', 3, [['impressed', '{handName}. A big hand.']]);
-  add('read.draw', 3, [['thinking', '{DrawName}: {outs} completion cards. About {hitPct}% {byWhen}. {drawWarning}']]);
+  add('read.draw', 3, [['thinking', '{DrawName}: {outs} completion cards. It comes in about {p:hitPct} {byWhen}. {drawWarning}']]);
   add('post.fold.draw.good.now', 2, [['pleased', 'Good fold at that price.']]);
   add('post.fold.draw.good.why', 2, [['calm', 'Folding {drawName} was reasonable. {drawPriceText} {drawWarning}']]);
-  add('read.drawprice', 3, [['thinking', 'The next card makes your hand about {hitNext}% of the time. The bet needs {odds}%.']]);
-  add('read.price.bet', 3, [['calm', 'It’s {call} to call into {pot}. You need to win {odds}% of the time for that to pay.']]);
+  add('read.drawprice', 3, [['thinking', 'The next card makes your hand about {p:hitNext}. To pay for the bet, you need to win {p:odds}.']]);
+  add('read.price.bet', 3, [['calm', 'It’s {call} to call into {pot}. You need to win {p:odds} for that to pay.']]);
   add('read.price.free', 3, [['calm', 'Nobody’s bet.']]);
   add('read.threat', 3, [['thinking', 'Watch out: {threat}.']]);
   add('read.between', 3, [['calm', 'Nothing on. Deal the next one.']]);
-  add('explain.outs', 3, [['calm', 'Count the cards that would make your hand. Each one is worth about 2% per card to come. Compare that with the price.']]);
+  add('explain.outs', 3, [['calm', 'Count the cards that would make your hand. The more there are, the more often you hit: about 2 chances in 100 for each one, per card to come. Compare that with the price.']]);
   add('explain.potodds', 3, [['calm', 'If it costs 25 to win 75, you need to win one time in four: 25%. If you win more often than that, call.']]);
   add('explain.equity', 3, [['calm', 'The question is always the same: how often does my hand win, and what does it cost to find out?']]);
   add('explain.kicker', 3, [['calm', 'With the same pair, the higher other card wins. That card matters.']]);
@@ -703,14 +708,14 @@ const CoachLines = (() => {
   add('short.limp.now.opp', 1, [['wince', 'Against a stack that short, all in or fold.']]);
   add('short.limp.why.opp', 2, [['calm', '{ShortOpp} only had {bb} big blinds. Just calling lets them see cards cheaply. All in with good hands, fold the rest.']]);
   add('short.flat.now.opp', 3, [['thinking', 'They’re short. Put them all in instead.']]);
-  add('short.flat.why.opp', 2, [['calm', '{ShortOpp} only had {bb} big blinds. Calling leaves them room to play. {hole} wins about {eq}% here: all in instead.']]);
-  add('short.reshove.good.why.opp', 2, [['calm', 'All in over the raise with {hole} was right. {ShortOpp} only had {bb} big blinds. You win about {eq}% if they call, and sometimes they fold.']]);
+  add('short.flat.why.opp', 2, [['calm', '{ShortOpp} only had {bb} big blinds. Calling leaves them room to play. {hole} wins about {p:eq} here: all in instead.']]);
+  add('short.reshove.good.why.opp', 2, [['calm', 'All in over the raise with {hole} was right. {ShortOpp} only had {bb} big blinds. You win about {p:eq} if they call, and sometimes they fold.']]);
   add('short.push.good.why.foldwin.opp', 2, [['pleased', 'They folded rather than commit their short stack. Taking the blinds is a fine result.']]);
   add('advise.open.allin.opp', 3, [['calm', '{ShortOpp} only has {bb} big blinds. {hole} is good enough: go all in.']]);
   add('advise.limped.allin.opp', 3, [['calm', '{ShortOpp} only has {bb} big blinds, and {hole} is good enough: all in.']]);
   add('advise.bbOption.allin.opp', 3, [['calm', '{ShortOpp} only has {bb} big blinds, and {hole} is strong. All in.']]);
-  add('advise.vsRaise.allin.opp', 3, [['calm', '{ShortOpp} only has {bb} big blinds. {hole} wins about {eq}% here: all in.']]);
-  add('advise.vsReraise.allin.opp', 3, [['calm', 'All in. {hole} is strong enough, about {eq}%, and {shortOpp} only has {bb} big blinds.']]);
+  add('advise.vsRaise.allin.opp', 3, [['calm', '{ShortOpp} only has {bb} big blinds. {hole} wins about {p:eq} here: all in.']]);
+  add('advise.vsReraise.allin.opp', 3, [['calm', 'All in. {hole} is strong enough: it wins about {p:eq}, and {shortOpp} only has {bb} big blinds.']]);
   add('advise.short.allin.opp', 3, [['calm', '{ShortOpp} only has {bb} big blinds, so that’s all this hand is worth. All in with {hole}.']]);
   add('advise.short.raise.opp', 3, [['calm', '{ShortOpp} only has {bb} big blinds. Raise to {to} and put them all in; the rest of your stack is not at risk.']]);
   add('advise.short.fold.opp', 3, [['calm', 'Fold. {ShortOpp} only has {bb} big blinds, so it’s all in or fold, and {hole} is a fold from here.']]);
@@ -758,28 +763,28 @@ const CoachLines = (() => {
   /* ================= calling an all in (the audit, 30 Sep 2026) =================
      Fold or call is the whole decision: the price (what you put in against
      what you can win: only what you match) against how often you'd win.
-     Plain words, no percentages: {needWords} is "about 1 time in 3".
+     Plain words, no percentages: about {p:need} is "about 1 time in 3".
      <key>.near: you were nearly out anyway (a gamble is more reasonable). */
   add('allcall.call.good.now', 2, [['pleased', 'Good call.']]);
-  add('allcall.call.good.why', 2, [['calm', 'Calling {call} to win {win} with {hole} was right. You only needed to win {needWords}, and {hole} does better than that against an all in like that.']]);
+  add('allcall.call.good.why', 2, [['calm', 'Calling {call} to win {win} with {hole} was right. You only needed to win about {p:need}, and {hole} does better than that against an all in like that.']]);
   add('allcall.call.good.why.near', 2, [['calm', 'Calling your last {call} with {hole} was right. You were nearly out anyway, and a chance to win {win} was worth taking.']]);
-  add('allcall.call.close.why', 4, [['calm', 'Calling {call} to win {win} with {hole} was close. You needed to win {needWords}, and {hole} is right on the edge of that.']]);
+  add('allcall.call.close.why', 4, [['calm', 'Calling {call} to win {win} with {hole} was close. You needed to win about {p:need}, and {hole} is right on the edge of that.']]);
   add('allcall.call.close.why.near', 4, [['calm', 'That call was close, but you were nearly out anyway. A gamble to win {win} was reasonable.']]);
   add('allcall.call.bad.now', 1, [['thinking', 'That call costs too much for that hand.']]);
   add('allcall.call.bad.now.leans', 3, [['thinking', 'A bit expensive for that hand.']]);
-  add('allcall.call.bad.why', 2, [['thinking', 'Calling {call} with {hole} was too much. You could only win {win}, so you needed to win {needWords}, and {hole} wins less often than that against an all in.']]);
+  add('allcall.call.bad.why', 2, [['thinking', 'Calling {call} with {hole} was too much. You could only win {win}, so you needed to win about {p:need}, and {hole} wins less often than that against an all in.']]);
   add('allcall.call.bad.why.leans', 2, [['thinking', 'Calling {call} with {hole} there was a bit loose for the price.']]);
-  add('allcall.call.bad.why.near', 2, [['thinking', 'Even nearly out, calling with {hole} was too loose. You needed to win {needWords}, and it wins less often than that. A better hand will come.']]);
-  add('allcall.fold.good.why', 4, [['calm', 'Folding {hole} was right. Calling {call} to win {win} needed a hand that wins {needWords}.']]);
+  add('allcall.call.bad.why.near', 2, [['thinking', 'Even nearly out, calling with {hole} was too loose. You needed to win about {p:need}, and it wins less often than that. A better hand will come.']]);
+  add('allcall.fold.good.why', 4, [['calm', 'Folding {hole} was right. Calling {call} to win {win} needed a hand that wins about {p:need}.']]);
   add('allcall.fold.close.why', 4, [['calm', 'Folding {hole} was fine. Calling would have been close too.']]);
   add('allcall.fold.missed.now', 1, [['thinking', 'That was worth a call.']]);
   add('allcall.fold.missed.now.leans', 3, [['thinking', 'I’d have called that.']]);
-  add('allcall.fold.missed.why', 2, [['thinking', 'Folding {hole} gave up a good price. It cost {call} to win {win}: you only needed to win {needWords}, and {hole} wins more often than that.']]);
+  add('allcall.fold.missed.why', 2, [['thinking', 'Folding {hole} gave up a good price. It cost {call} to win {win}: you only needed to win about {p:need}, and {hole} wins more often than that.']]);
   add('allcall.fold.missed.why.leans', 2, [['thinking', 'Folding {hole} was a little too careful for that price. It cost {call} to win {win}.']]);
   add('allcall.fold.missed.why.near', 2, [['thinking', 'You were nearly out anyway. {hole} was worth calling with there: it cost {call} to win {win}.']]);
-  add('advise.allcall.call', 3, [['calm', 'Call. It costs {call} to win {win}. You need to win {needWords}, and {hole} does better than that.']]);
+  add('advise.allcall.call', 3, [['calm', 'Call. It costs {call} to win {win}. You need to win about {p:need}, and {hole} does better than that.']]);
   add('advise.allcall.call.near', 3, [['calm', 'Call. You’re nearly out anyway, and this is a fair chance to win {win}.']]);
-  add('advise.allcall.fold', 3, [['calm', 'Fold. It costs {call} to win {win}. You’d need to win {needWords}, and {hole} wins less often than that.']]);
+  add('advise.allcall.fold', 3, [['calm', 'Fold. It costs {call} to win {win}. You’d need to win about {p:need}, and {hole} wins less often than that.']]);
   add('advise.allcall.fold.near', 3, [['calm', 'Fold. Even nearly out, {hole} is too weak for this price. Wait for a better one.']]);
   add('hint.allcall', 3, [['thinking', 'It costs {call} to win {win}. How often does {hole} need to win to make that worth it?']]);
 
