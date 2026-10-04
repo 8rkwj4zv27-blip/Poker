@@ -1053,7 +1053,32 @@ const CoachTalk = (() => {
 
   // for a lab: the end-of-hand word for a made-up hand, now
   const labDebrief = h => { explainGen++; holdUntil = 0; clear(true); queue = null; return debrief(h, true); };
-  return { apply, say, sayAt, sayAny, slots, debrief, labDebrief, verdictOf,
+
+  /* His words for the P.I.P. report (js/coach-report.js), worked out but
+     not said: the reason behind one decision, and for the whole hand his
+     verdict (the same one a tap gives) and the tip that goes with it. */
+  function reasonText(d){
+    const j = d && d.judgement; if (!j) return '';
+    const keys = shortKeys(j.confidence === 'leans' ? [j.tag + '.why.leans', j.tag + '.why'] : [j.tag + '.why'], j.n);
+    const l = lineFor(keys);
+    return l ? fill(l[2], slots(d.spot, j)) : '';
+  }
+  function reportWords(h){
+    if (!h || !h.end) return { summary:'', takeaway:'' };
+    const v = verdictOf(h), net = h.end.net || 0;
+    let summary = '';
+    // (what a tap on him says, if he's already worked it out)
+    if (B.last && B.last.n === h.n && B.last.v && B.last.v.whyText) summary = fill(B.last.v.whyText, B.last.v.ctx);
+    else if (v){ const l = lineFor(v.keys), ll = v.lead ? lineFor([v.lead]) : null; if (l) summary = fill((ll ? ll[2] + ' ' : '') + l[2], v.ctx); }
+    if (!summary){
+      const k = net > 0 ? (h.end.showdown ? 'sum.won' : 'sum.allFolded') : net < 0 ? (h.end.showdown ? 'sum.lost' : h.end.folded ? 'sum.folded' : 'sum.lost') : 'sum.even';
+      const l = lineFor([k]); if (l) summary = fill(l[2], { won:fmt(Math.max(0, net)) });
+    }
+    let takeaway = '';
+    if (v && v.lesson){ const t = lineFor(['tip.' + v.lesson]); if (t) takeaway = fill(t[2], v.ctx).replace(/^Tip:\s*/, ''); }
+    return { summary, takeaway };
+  }
+  return { apply, say, sayAt, sayAny, slots, debrief, labDebrief, verdictOf, reasonText, reportWords,
     // (for labs and checks: a line as he'd say it, and whether a lesson's been taught)
     fillText:(text, ctx) => fill(text, ctx || {}), knows, learn:k => learnFrom('lesson.' + k), explain, sayAdvice, automaticReason, yourTurn, onTap, clear:() => clear(true), OPTIONS, DEFAULTS, LINES, get order(){ return Object.assign({}, O); } };
 })();

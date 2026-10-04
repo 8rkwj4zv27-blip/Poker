@@ -483,4 +483,25 @@ check('Coach: live, to the owner\'s order, presentation only',()=>{
   assert.ok(!/\.hand\b/.test(outsideShowdown.replace(/\bme\.hand\b/g,'')),'his brain reads only your cards, bar hands shown at a showdown');
 });
 
+check('P.I.P. report: live, to the owner\'s order, presentation only',()=>{
+  const js=read('js/coach-report.js'), css=read('css/coach-report.css'), md=read('docs/ui/PATTERN_BOOK.md');
+  const links=[...indexHtml.matchAll(/<link rel="stylesheet" href="([^"?]+)/g)].map(m=>m[1]);
+  const scripts=[...indexHtml.matchAll(/<script src="([^"?]+)/g)].map(m=>m[1]);
+  assert.ok(links.includes('css/coach-report.css'),'index.html must load css/coach-report.css');
+  assert.ok(scripts.indexOf('js/coach-report.js')===scripts.indexOf('js/coach-lines.js')+1,'the report loads right after his lines');
+  ["'./css/coach-report.css","'./js/coach-report.js"].forEach(f=>assert.ok(serviceWorker.includes(f),'sw.js is missing '+f));
+  // The owner's picks (round 1): the first option of each row is the default.
+  Object.entries({ arrive:'flicker', pace:'play', chance:'bar', grade:'stamp', face:'on', ink:'marks', numbers:'words' })
+    .forEach(([k,v])=>assert.ok(new RegExp('\\b'+k+":\\[\\['"+v+"'").test(js),'the report\'s order sets '+k+' to '+v));
+  // The old Hand review's switch, now the report's.
+  assert.ok(/id="sw-review"[^>]*aria-label="P\.I\.P\. report"/.test(indexHtml) && !/id="review-body"/.test(indexHtml),'Settings → P.I.P. report replaces Hand review');
+  // Under the menus: same layer as the scrim, placed before it.
+  assert.ok(/\.prp\{[\s\S]*?z-index:44/.test(css) && js.includes("getElementById('scrim')"),'the report sits under the menus');
+  assert.ok(/prefers-reduced-motion/.test(css) && js.includes('motionOff()'),'the report honours Reduced Motion');
+  // Presentation only: reads the table, never changes the game; your own cards only.
+  assert.ok(!/\b(game|pendingHumanPlayer)(\.[A-Za-z_]+)*\s*=[^=]/.test(js) && !/\b(applyAction|humanAct|startNewHand)\(/.test(js),'the report must never change game state');
+  assert.ok(!/\.hand\b/.test(js.replace(/me\.hand|CoachBrain\.hand/g,'')),'the report reads only your own cards (theirs through the brain, as shown)');
+  assert.ok(md.includes('## P.I.P. report (live v0.59.0)'),'the Pattern Book must record the P.I.P. report');
+});
+
 process.stdout.write('\n'+passed+' Pattern Book checks passed.\n');

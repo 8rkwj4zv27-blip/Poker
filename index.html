@@ -48,6 +48,7 @@
   <link rel="stylesheet" href="css/award-key.css?v=1">
   <link rel="stylesheet" href="css/coach-set.css?v=4">
   <link rel="stylesheet" href="css/coach-talk.css?v=1">
+  <link rel="stylesheet" href="css/coach-report.css?v=1">
   <link rel="stylesheet" href="css/crt.css?v=1">
 
 <meta name="format-detection" content="telephone=no">
@@ -331,10 +332,6 @@
     </div>
 
     <div id="action-area" class="dash-frame-base">
-      <div id="review" class="hidden" aria-live="polite">
-        <div class="review-head">Hand review</div>
-        <div id="review-body"></div>
-      </div>
 
       <div class="actions-dock">
         <div class="raise-panel" id="raise-panel">
@@ -490,8 +487,8 @@
           <button class="switch" id="sw-autodeal" role="switch" aria-checked="true" aria-label="Auto-Continue"></button>
         </div>
         <div class="toggle-row">
-          <div><div class="tl">Hand review</div><div class="ts">After each hand, explains who won, why, and how the pot was played.</div></div>
-          <button class="switch" id="sw-review" role="switch" aria-checked="false" aria-label="Hand review"></button>
+          <div><div class="tl">P.I.P. report</div><div class="ts">After each hand, REPORT shows how it played out, street by street, with a grade for how you played. The next hand waits for DEAL.</div></div>
+          <button class="switch" id="sw-review" role="switch" aria-checked="false" aria-label="P.I.P. report"></button>
         </div>
         <div class="toggle-row">
           <div><div class="tl">Confirm All-In</div><div class="ts">Ask for confirmation before committing your entire stack.</div></div>
@@ -887,7 +884,7 @@
 </div>
 
 <script src="js/01-poker-math.js?v=ai-1"></script>
-<script src="js/02-support-systems.js?v=pip-13"></script>
+<script src="js/02-support-systems.js?v=pip-14"></script>
 <script src="js/03-opponents.js?v=ai-1"></script>
 <script src="js/04-modes-and-scoring.js?v=cards-1"></script>
 <script src="js/05-game-engine.js?v=ai-1"></script>
@@ -895,7 +892,7 @@
 <script src="js/coin-world.js?v=room-2"></script>
 <script src="js/coin-table.js?v=room-1"></script>
 <script src="js/coin-bank.js?v=1"></script>
-<script src="js/07-ui-wiring.js?v=space-1"></script>
+<script src="js/07-ui-wiring.js?v=report-1"></script>
 <script src="js/career-hub-live.js?v=cabinet-4"></script>
 <script src="js/career-motion-live.js?v=4"></script>
 <script src="js/machine-wheel.js?v=2"></script>
@@ -919,9 +916,10 @@
 <script src="js/knock-check.js?v=1"></script>
 <script src="js/award-key.js?v=1"></script>
 <script src="js/coach-set.js?v=6"></script>
-<script src="js/coach-talk.js?v=16"></script>
+<script src="js/coach-talk.js?v=17"></script>
 <script src="js/coach-brain.js?v=14"></script>
 <script src="js/coach-lines.js?v=14"></script>
+<script src="js/coach-report.js?v=1"></script>
 
 
 <script id="pwa-service-worker">

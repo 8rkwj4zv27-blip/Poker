@@ -151,7 +151,11 @@ function buildReview(outcome){
   return { rows, lesson };
 }
 
+/* Retired (4 Oct 2026): the P.I.P. report (js/coach-report.js) replaces
+   this panel, on the same switch (settings.review). buildReview and its
+   helpers stay for the scoring checks (the hidden-information guard). */
 function showReview(outcome){
+  if (!$('review-body')) return;
   if (!settings.review || !outcome) return;
   let data;
   try{ data = buildReview(outcome); }

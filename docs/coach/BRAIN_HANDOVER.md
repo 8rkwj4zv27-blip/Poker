@@ -47,6 +47,11 @@ owner before building it.
   coaching; read it for the tactical depth.
 - Next agreed step: plain words, no percentages until a lesson teaches
   them. Details: `BRAIN_PLAN.md`, the last sections.
+- **P.I.P. report (live v0.59.0, 4 Oct 2026)**: a tap-only end-of-hand
+  breakdown with an A-F grade (Settings → P.I.P. report, replacing Hand
+  review), REPORT and DEAL on the console after each hand. Built from his
+  brain's record (`js/coach-report.js`); see `docs/coach/REPORT_PLAN.md`
+  before any work on it.
 
 ## The one-paragraph version
 
