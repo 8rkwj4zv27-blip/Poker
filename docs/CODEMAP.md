@@ -3,7 +3,8 @@
 Where things live, so a session can jump straight to the right file instead
 of searching. Read this once per session when the task isn't already
 pointing at a specific file. It is a map, not a spec — behaviour is defined
-by the code and by `CLAUDE.md`/`AGENTS.md`, not by this file.
+by the code and by `CLAUDE.md`, not by this file. Last checked against the
+code: 5 October 2026 (v0.64.4). Line counts are approximate.
 
 ## Load order (`index.html`, mirrored in `sw.js`)
 
@@ -25,8 +26,10 @@ coach-report.js         tutorial.js
 ```
 
 Later files call into earlier ones freely; there's no module system, so
-everything is a global. `08-dev-mode.js` (the DEV panel) is the only file
-gated out of the page entirely when `DEV_MODE` is off.
+everything is a global. Every file in the list is always loaded.
+**`08-dev-mode.js` is not optional:** besides the DEV panel it holds
+`wireUI()`, which builds the main menu and wires every button in the game
+(see its section below).
 
 ## `js/01-poker-math.js` (~690 lines)
 
@@ -47,7 +50,7 @@ The AI's maths (since the v0.53.0 AI rebuild) also lives here, because the worke
 - `classifyPostflop` names the made hand, the draws and the board texture.
 - `EquityService.get(..., ranges)` runs range equity in the worker.
 
-## `js/02-support-systems.js` (~1,500 lines)
+## `js/02-support-systems.js` (~1,670 lines)
 
 Grab-bag of self-contained systems: cartoon face SVG generation
 (`faceSVG`), `localStorage` wrapper (`Store`), settings, `motionOff()`
@@ -103,7 +106,7 @@ archetypes above. `HISTORY.md`'s own entry says "Not committed... the owner
 still gets the final visual review"; that review evidently didn't happen or
 didn't land. Don't assume residents exist without checking the code first.
 
-## `js/04-modes-and-scoring.js` (~1,740 lines)
+## `js/04-modes-and-scoring.js` (~1,760 lines)
 
 Game *formats*, not game *state*. `TOURNAMENT_FORMATS` (turbo/deep/headsup
 descriptors), `BLIND_LEVELS`, the Career event catalogue (`CAREER_ROOMS`,
@@ -115,7 +118,7 @@ the authoritative rules on all of this). **The XP is shelved** since v0.40.6:
 `ARCADE_XP_ON = false` switches the whole system off in the game (see the
 note at the top of `SCORING_SPEC.md`); the engine stays for its return.
 
-## `js/05-game-engine.js` (~3,600 lines, the largest file)
+## `js/05-game-engine.js` (~3,800 lines, second largest)
 
 The actual game state machine. `game` (global state), `newGame()` (table
 setup — accepts `opts.roster` for Career's pinned field), `applyAction()`
@@ -128,7 +131,7 @@ inferred), and the shared result-stage model (`careerStageModel`,
 `EVENT LOST`). If a poker rule or Career settlement number looks wrong,
 it's almost certainly in here.
 
-## `js/06-presentation.js` (~4,800 lines, second largest)
+## `js/06-presentation.js` (~4,800 lines, the largest file)
 
 Rendering and animation only — reads `game`, never mutates poker state.
 `render()` (the main table repaint), `initSeats()`, card flight/deal
@@ -193,7 +196,7 @@ pile only as far as the tray allows). Checked by
 `validation/pot-shape-checks.js`; tuned in `pot-lab.html` (+ `js/pot-lab.js`,
 the Showdown Lab's host and sheet styles).
 
-## `js/07-ui-wiring.js` (~2,000 lines)
+## `js/07-ui-wiring.js` (~2,100 lines)
 
 Screen navigation and all Career money/transaction logic.
 `showTableScreen`/`showCareerScreen`/`renderCareerScreen`, the single-player
@@ -870,22 +873,30 @@ CRT with five presets (`CRT.PRESETS`) and all dials. `pattern-book.html` is
 the visual library (isolated like the Labs). Rules and the sign-off record:
 `docs/ui/PATTERN_BOOK.md`.
 
-## `js/08-dev-mode.js` (~1,140 lines)
+## `js/08-dev-mode.js` (~1,100 lines)
 
-The DEV panel. Every control drives real production functions
-(`applyAction`, `resolveEliminations`, etc.) rather than a parallel fake
-path — see the file's own header comment. Entirely absent from the DOM when
-`DEV_MODE` is false. Useful for reaching a specific game state
+Two things in one file, despite its name:
+
+- **`wireUI()` (from about line 729): live in every build.** Queued for
+  `DOMContentLoaded` at the bottom of the file, it builds the main menu and
+  wires Fold, Check/Call, Raise, Next Hand, Settings, the overlays and the
+  rest. Removing or skipping this file leaves a game whose buttons do
+  nothing. (Audit finding F2; moving it to its own file is planned.)
+- **The DEV panel.** Every control drives real production functions
+  (`applyAction`, `resolveEliminations`, etc.) rather than a parallel fake
+  path — see the file's own header comment. The panel itself is absent
+  from the DOM when `DEV_MODE` is false (`?dev` in the URL, or the setting). Useful for reaching a specific game state
 (forced all-ins, rigged deals, Career bankroll presets) without playing
 there manually.
 
 ## Labs vs. production — do not confuse the two
 
-Files matching `*-lab.html`, `*-lab.js`, `*-lab.css` (`career-lab`,
-`career-hub-v2-lab`, `ticket-lab`, `card-flight-options`, `card-turn-lab`,
-`chip-motion-lab`, `chip-lab`, `chip-throw-lab`, `design-lab`, `result-stage-lab`, `showdown-rail-lab`, `crt-lab`, `dashboard-v2-lab`, `dashboard-order-lab`,
-`wheel-v2-lab`, `intro-lab`, `boot-lab`, `slot-lab`, `table-space-lab`, `table-room-lab`, `enemy-card-lab`, `showdown-lab`, `pot-lab`, `ko-lab`, `coin-denom-lab`, `coin-bank-lab`, `coin-tubes-lab`, `coin-hoard-lab`, `chip-lab`, `deck-lab`)
-are **isolated visual references and prototyping sandboxes**. Several are
+Every `*-lab.html` page in the root (41 of them on 5 Oct 2026), plus
+`preview.html` and `card-flight-options.html`, and the `*-lab.js`,
+`*-lab-host.js` and `*-lab.css` files they load, are **isolated visual
+references and prototyping sandboxes**. (`pattern-book.html` is the design
+reference, not a Lab.) `validation/offline-list-checks.js` fails if any of
+them is ever shipped. Several are
 committed permanently as durable references even after their feature
 shipped. Rules:
 
@@ -956,5 +967,6 @@ table (see `docs/ai/AI_PLAN.md`).
   set, coins per bet and speed, and PLAY HAND plays a real hand on it.
 - `docs/scoring/SCORING_SPEC.md` — authoritative scoring/award rules for
   both Career and Single Player.
-- `docs/ui/handover/` — earlier UI handover notes; a `python3 -m http.server`
-  one-liner for local previews lives in its `README.md`.
+- `docs/ui/handover/` — the visual-system handover of 23 August 2026,
+  written before that work reached the game. Historical; `docs/README.md` lists which docs are current. To run
+  the game locally see the top-level `README.md`.

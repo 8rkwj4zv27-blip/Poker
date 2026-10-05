@@ -1,5 +1,7 @@
 # The dealer shoe
 
+> **Historical.** The dealer deck shipped in v0.45.0 (28 September 2026). Kept as the record of how it was decided; the code and `docs/CODEMAP.md` describe the game today. Index of current docs: `docs/README.md`.
+
 The dealer's deck pass (27 September 2026). The owner's brief: make the deck
 stand out, feel polished and part of the machine. Direction chosen in chat:
 **a dealing shoe** plus every small detail, with more flourishes, all

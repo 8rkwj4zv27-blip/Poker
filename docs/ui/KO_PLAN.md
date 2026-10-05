@@ -1,5 +1,7 @@
 # K.O. and game-over upgrade
 
+> **Historical.** K.O. and game over shipped in v0.42–0.43 (27 September 2026). Kept as the record of how it was decided; the code and `docs/CODEMAP.md` describe the game today. Index of current docs: `docs/README.md`.
+
 The owner asked for a bigger opponent K.O. (the face launched round the
 screen stays the heart of it) and a real death for the player's own
 dashboard. Round 1 puts every idea on one order form, `ko-lab.html`, running

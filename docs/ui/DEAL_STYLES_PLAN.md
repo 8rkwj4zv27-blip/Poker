@@ -1,5 +1,7 @@
 # Deal styles — how cards fly off the deck
 
+> **Historical.** Deal styles shipped in v0.51.0 (28 September 2026). Kept as the record of how it was decided; the code and `docs/CODEMAP.md` describe the game today. Index of current docs: `docs/README.md`.
+
 **Lab:** `deal-style-lab.html` · **Link:** https://claude.ai/artifact/NK7KfUt3U9ooe3gTQ62yqc
 
 ## The brief (owner, 28 Sep 2026)

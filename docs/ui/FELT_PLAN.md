@@ -1,5 +1,7 @@
 # Felt plan: the table's rail, cloth and markings
 
+> **Historical.** The felt shipped in v0.47.0 (28 September 2026). Kept as the record of how it was decided; the code and `docs/CODEMAP.md` describe the game today. Index of current docs: `docs/README.md`.
+
 **Lab:** `felt-lab.html` (+ `js/felt-lab-host.js`, `js/felt-lab.js`,
 `css/felt-lab.css`). **Owner's link:** https://claude.ai/artifact/DKBPiQKX8swM15Cufx7Yew
 (republish to the same link after changes).
