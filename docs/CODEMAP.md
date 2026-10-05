@@ -799,6 +799,14 @@ Since v0.61.0 (Workshop skins):
 - Screens offers four more CRT presets (Terminal, LCD, VFD, Dot LED) in
   `CRT.PRESETS` and `FINISH_SETS`.
 
+Since v0.64.3 (One cabinet): Hand Rankings, Custom Game, the Workshop and
+Settings all sit in exactly the main menu's cabinet. `fitHome` measures
+`#menu-contraption` (after its fit scale) into `--cab-x/-y/-w/-h` on `#app`
+and `css/workshop.css` (ONE CABINET) places those screens' cabinets there;
+the rim is each screen's `::after`, and the page scrolls inside it.
+Settings is no longer a bottom sheet: it opens as that cabinet, at home or
+at a table.
+
 
 ## `js/tutorial.js` + `css/tutorial.css` — the tour (live, v0.62.0)
 
