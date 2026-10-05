@@ -10,7 +10,8 @@ by the code and by `CLAUDE.md`/`AGENTS.md`, not by this file.
 ```
 01-poker-math.js        02-support-systems.js   03-opponents.js
 04-modes-and-scoring.js 05-game-engine.js       06-presentation.js
-coin-world.js           coin-table.js           07-ui-wiring.js
+coin-world.js           coin-table.js           bank-load.js
+07-ui-wiring.js
 career-hub-live.js      career-motion-live.js   machine-wheel.js
 ticket-feed.js          table-intro.js
 08-dev-mode.js          home-cast.js            home-boot.js
@@ -533,6 +534,26 @@ lab strips `css/card-holder.css`/`js/card-holder.js` from its copy so TODAY
 still means the old holder. The page measures the seat so the GAP is real air on
 any phone. Lab only; nothing loads in the game.
 
+## `js/bank-load.js` + `css/bank-load.css` — Bank Load (live v0.64.0)
+
+How your bank fills when you sit down at a table (`docs/ui/BANK_LOAD_PLAN.md`).
+`CoinTable.loadBank()` (the table intro's bank step) hands over to
+`BankLoad.load()`: the finished rack is laid out at once
+(`CoinTable.syncHoard(true)`), the real chips are hidden, and a copy of
+them, clipped to the box, plays the entrance — COUNT IN (default) or TRAY
+IN, `settings.bankLoad`, Workshop → Bank. It returns its length and
+`js/table-intro.js` waits for it; the intro's `finish()` calls
+`BankLoad.finish()` so a tap lands on the finished rack. While COUNT IN
+runs, `updateJackpot` (06-presentation.js) is held and the load counts the
+STACK readout up itself (`updateJackpot(v, true)`). SHELVES (`.bl-shelves`)
+draws steps under the rack's back rows. `BankLoad.preview(box, style)`
+plays the same entrance in any `.bl-box` (the Workshop's Bank tab), which
+shares `#hud-left`'s finish. Presentation only.
+
+The lab it was picked in: `bank-load-lab.html` + `js/bank-load-lab-host.js`
++ `js/bank-load-lab.js` (round 1; the TUNE sheet keeps every dial, on the
+Showdown Lab's pattern and sheet styles).
+
 ## `showdown-lab.html` + `js/showdown-lab-host.js` + `js/showdown-lab.js` + `css/showdown-lab.css` + candidate `css/showdown-beats.css` / `js/showdown-beats.js` — Showdown Lab
 
 The showdown pass (`docs/ui/SHOWDOWN_PLAN.md`), phone-first (round 4): the
@@ -756,12 +777,15 @@ adds hand readout, four-colour deck and volume (a master gain via a shim
 on `AudioContext.destination`).
 
 It also builds `#workshop`, opened by the home screen's Workshop key. The
-seven tabs are Cards, Dealing, Showdown, Chips, Cabinet, Screens and
+eight tabs are Cards, Dealing, Showdown, Chips, Bank, Cabinet, Screens and
 Buttons, and each previews the real part:
 - Dealing borrows `#dealer-deck`.
 - Chips and Showdown borrow the coin world's `#felt`.
 - Showdown's burst is a copy of `showdown.js`'s `explode()`, scaled to its
   small felt.
+- Bank (v0.64.0) is your bank's own box (`.bl-box`) loading a Quick Deal's
+  $1,000 the chosen way (`BankLoad.preview`); FILLING YOUR BANK picks Count
+  in / Tray in (`settings.bankLoad`).
 
 `js/workshop-rack.js` is the event-card rack that Cards and Dealing
 flick through. The Finishes entry is gone from Settings: Screens and

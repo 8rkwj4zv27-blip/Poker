@@ -309,8 +309,9 @@ const TableIntro = (() => {
     const human = game.players.find(p => p.isHuman);
     const tower = $('hud-tower');
     if (!human || !tower) return [];
-    // the gold-coin rack (js/coin-table.js) fills itself through the hatch
-    if ((typeof coinTableOn==="function" && coinTableOn())){ CoinTable.loadBank(); return []; }
+    // the chip rack (js/coin-table.js, js/bank-load.js) loads itself; the
+    // step waits as long as its entrance takes
+    if ((typeof coinTableOn==="function" && coinTableOn())){ coinLoadMs = +CoinTable.loadBank() || 0; return []; }
     resetPile(tower, bankPile());
     const n = visualChipCount(human.chips);
     for (let i = 0; i < n; i++) createRestingChip(tower, bankPile());
@@ -318,8 +319,10 @@ const TableIntro = (() => {
     return Object.values(tower._towers || {}).sort((a, b) =>
       (+a.style.zIndex || 0) - (+b.style.zIndex || 0) || parseFloat(a.style.left) - parseFloat(b.style.left));
   }
+  let coinLoadMs = 0;
   async function loadBank(run, wait, alive){
     const human = game.players.find(p => p.isHuman);
+    coinLoadMs = 0;
     if (!human) return;
     openHatch();
     Sound.hatchOpen();
@@ -336,7 +339,7 @@ const TableIntro = (() => {
         (i * gap + drop * .72) / scale);
     });
     updateJackpot(human.chips);
-    await wait(stacks.length * gap + drop + cfg.bank.settleMs);
+    await wait(Math.max(stacks.length * gap + drop, coinLoadMs) + cfg.bank.settleMs);
     closeHatch();
     Sound.hatchClose();
   }
@@ -375,7 +378,11 @@ const TableIntro = (() => {
     const human = g.players.find(p => p.isHuman);
     const tower = $('hud-tower');
     if (human && tower){
-      if ((typeof coinTableOn==="function" && coinTableOn())) CoinTable.renderBank();
+      if ((typeof coinTableOn==="function" && coinTableOn())){
+        // a hurried intro lands on the finished rack at once
+        if (typeof BankLoad!=='undefined' && BankLoad) BankLoad.finish();
+        CoinTable.renderBank();
+      }
       else if ((tower._chipCount || 0) !== visualChipCount(human.chips)) buildBankStacks();
       tower.querySelectorAll('.ti-stack-drop').forEach(el => el.classList.remove('ti-stack-drop'));
       updateJackpot(human.chips);

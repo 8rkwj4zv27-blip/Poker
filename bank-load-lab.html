@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#140709">
+  <link rel="icon" href="data:,">
+  <title>Bank Load Lab</title>
+  <!-- Phone-first Lab (round 1). The page is just the real game, full
+       screen; the lab's controls run inside it (js/bank-load-lab.js: a TUNE
+       key and a bottom sheet). This host only loads the game copy and
+       remembers the picks across a re-deal. Never linked from the game;
+       never touches a real save (the copy runs on in-memory storage). -->
+  <style>
+    html,body{ height:100%; margin:0; background:#140709; overflow:hidden; }
+    #bll-game{
+      position:fixed; top:env(safe-area-inset-top,0px); left:50%;
+      /* an iframe doesn't stretch between top and bottom: give it a height */
+      width:min(100vw,430px); height:calc(100% - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px));
+      transform:translateX(-50%); border:0; display:block; background:#0C1510;
+    }
+    @media (min-width:600px){ #bll-game{ box-shadow:0 0 0 3px #080405,0 20px 60px rgba(0,0,0,.6); } }
+  </style>
+</head>
+<body>
+  <iframe id="bll-game" title="The Table (lab copy)" allow="autoplay"></iframe>
+  <!-- What goes into the game copy: the lab's controls (js/bank-load.js
+       itself is in the game since v0.64.0). The bundler
+       (validation/tools/lab-bundle.js) reads this to bake the copy. -->
+  <script type="application/json" id="lab-inject">{"css":["css/showdown-lab.css"],"js":["js/bank-load-lab.js"],"v":"2"}</script>
+  <script src="js/bank-load-lab-host.js?v=2"></script>
+</body>
+</html>
