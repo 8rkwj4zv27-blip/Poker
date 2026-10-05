@@ -313,9 +313,13 @@ function newGame(opts){
 }
 
 /* ---------------- table save/resume ----------------
-   Saved only at safe between-hand points (see finishHand). No deck, hole
-   cards, board, phase, or unfinished bets are ever persisted — a restored
-   table always resumes at the pre-deal moment. */
+   Saved only at safe between-hand points (see finishHand). No hole cards,
+   board, phase, or unfinished bets are ever persisted — a restored table
+   always resumes at the pre-deal moment. The one exception is the hand's
+   shuffled deck: startNewHand() pins it to the checkpoint, so a hand that
+   is saved, left or closed mid-way is dealt again with the SAME cards
+   rather than a fresh shuffle (no re-dealing a bad hand, no losing a
+   good one). */
 function serializeTable(g){
   const snapshot = {
     version: SAVE_VERSION,
@@ -509,6 +513,24 @@ function loadCareerTable(){
 }
 function clearCareerTable(){ Store.remove(CAREER_TABLE_KEY); }
 
+/* The deck in the hand-start checkpoint, as card keys in deal order, and
+   the checkpoint written straight away, so closing the app mid-hand comes
+   back to the same cards too. */
+function pinDeckToCheckpoint(g){
+  if (!g || !g._safeSave || !Array.isArray(g.deck)) return;
+  g._safeSave.deck = g.deck.map(cardKey);
+  if (g.mode === 'career') saveCareerTable();
+  else if (g.mode === 'career-cash') checkpointCareerCash(g._safeSave);
+  else if (!g.over && loadTableSave()) Store.set('felt.table', g._safeSave);
+}
+function deckFromSave(keys){
+  if (!Array.isArray(keys) || keys.length !== 52) return null;
+  const byKey = new Map(createDeck().map(c=>[cardKey(c), c]));
+  const deck = keys.map(k=>byKey.get(k));
+  if (deck.some(c=>!c) || new Set(keys).size !== 52) return null;
+  return deck;
+}
+
 function restoreTable(save){
   const players = save.players.map(sp=>{
     const personality = sp.personalityKey ? PERSONALITIES_ALL.find(p=>p.key===sp.personalityKey) : null;
@@ -549,7 +571,9 @@ function restoreTable(save){
     championshipFinalTableReached:save.championshipFinalTableReached === true,
     metricsStartedAt:Number.isFinite(save.metricsStartedAt) ? save.metricsStartedAt : Date.now(),
     sess:{ bestWin:(save.sess&&save.sess.bestWin)||0, worstLoss:(save.sess&&save.sess.worstLoss)||0 },
-    reads: aiReadsRestore(save.aiReads, players)
+    reads: aiReadsRestore(save.aiReads, players),
+    // the hand this checkpoint opened is dealt again from its own deck
+    _pinnedDeck: deckFromSave(save.deck)
   };
   if (save.mode==='elimination'){
     game.run=JSON.parse(JSON.stringify(save.run));
@@ -783,7 +807,10 @@ async function startNewHand(){
     p._holeRevealed = [];
   });
   g.board=[]; g.pot=0; g.currentBet=0; g.minRaise=g.bigBlind;
-  g.deck = shuffle(createDeck());
+  // A resumed hand deals from the deck it was saved with (restoreTable).
+  g.deck = g._pinnedDeck || shuffle(createDeck());
+  g._pinnedDeck = null;
+  pinDeckToCheckpoint(g);
   g.handNumber++;
   g.handActions = [];
   g.humanFoldSnapshot = null;
