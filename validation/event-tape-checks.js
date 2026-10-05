@@ -181,10 +181,13 @@ check('The well: the tape, the verdict, the bust-out order, best hand and luck',
   assert.ok(html.includes('YOU WERE ELIMINATED') && html.includes('BUY-IN FORFEITED'));
   assert.ok(html.includes('class="et-canvas"'));
   assert.ok(html.includes('BUST-OUT ORDER') && html.includes('BEST HAND') && html.includes('>LUCK<'));
-  // a cabinet: one raised plastic panel, its labels printed on the casing,
-  // the screens set into it
+  // a cabinet: one raised plastic panel with four screens fitted into it;
+  // nothing printed on the casing (owner, round 3), every heading on glass
   assert.ok(/class="et-well pc-raised pc-material-plastic"/.test(html));
-  ['CHIP TAPE', 'BUST-OUT ORDER', 'BEST HAND', 'LUCK'].forEach(l => assert.ok(new RegExp('<span class="pc-label">' + l).test(html), l + ' is printed on the casing'));
+  assert.ok(!html.includes('pc-label'), 'no words on the casing');
+  ['et-chart', 'et-out', 'et-best', 'et-luck'].forEach(c => assert.ok(new RegExp('class="' + c + ' pc-display crt"').test(html), c + ' is a screen'));
+  ['CHIP TAPE', 'BUST-OUT ORDER', 'BEST HAND', 'LUCK'].forEach(l => assert.ok(new RegExp('<span class="crt-caption">' + l).test(html), l + ' heads its screen'));
+  assert.ok(/YOU FINISHED \d+(ST|ND|RD|TH) OF \d/.test(html), 'your finish heads the bust-out screen');
   assert.ok(html.includes('class="et-gauge"'), 'the luck strip');
   assert.ok(html.includes('STILL IN') || html.includes('GOT YOU'));
   assert.ok(/class="et-seat is-you is-dead"/.test(html));
@@ -221,6 +224,20 @@ check('The game wires it in: recorded after eliminations, saved, restored, shown
     assert.ok(sw.includes('./' + f), 'sw.js caches ' + f);
   });
   assert.ok(index.indexOf('js/event-tape.js') > index.indexOf('js/showdown.js'), 'after showdown.js (it wraps its advancePhase)');
+});
+
+
+check('The end-screen look: defaults on <html>, every option has CSS behind it', ()=>{
+  const css = read('css/result-cabinet.css');
+  same(Object.keys(ET.LOOK), ['bust','counter','space','luck','tape','finish','se']);
+  const OPTS = { counter:['reel','bare'], space:['roomy','compact'], tape:['medium'], bust:['list','faces'], luck:['strip','words'], se:['scroll','small'], finish:['panel'] };
+  Object.entries(OPTS).forEach(([k, vs]) => vs.forEach(v => assert.ok(css.includes('data-es-' + k + '="' + v + '"'), k + '=' + v + ' has CSS')));
+  const engine2 = read('js/05-game-engine.js');
+  assert.ok(/class="stage-hero pc-raised pc-material-plastic"/.test(engine2), 'the hero is a cabinet panel');
+  assert.ok(/class="stage-hero-drums"><div class="amt-readout stage-score-readout/.test(engine2), 'its drums sit outside the glass');
+  assert.ok(/CoachSet\.clearTable/.test(engine2), 'the stage waits for P.I.P. to leave before it turns');
+  const index = read('index.html');
+  assert.ok(index.indexOf('href="css/result-cabinet.css') > 0 && index.indexOf('href="css/result-cabinet.css') < index.indexOf('href="css/crt.css'));
 });
 
 console.log('\n' + passed + ' focused Event Tape checks passed.');

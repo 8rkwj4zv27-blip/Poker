@@ -66,6 +66,31 @@ best hand unchanged; LUCK is a 15-cell strip meter (BAD … HOT, lit out from
 FAIR in the middle) instead of the needle dial. Owner: keep it less busy (no
 faces on the tape itself).
 
+## Round 3 (owner, 5 Oct 2026): screens in the cabinet (v0.58.2)
+
+Round 2 "went too far": printed words with an indent on the casing exist
+nowhere else in the game. Now:
+
+- Every section is a screen fitted into a plastic panel; **no words on the
+  casing**. Bust-out order is its own screen again.
+- **All four end screens**: the big number is physical drums (the STACK's
+  gold-framed reel) in a sunk bay in the hero panel, with the label and the
+  carry on a small screen beside them (`stageHeroHTML`). The progress strip
+  gets a plastic frame. Header back to full size; spacing from two tokens.
+  `css/result-cabinet.css`.
+- Event screens: FINISH / OUTLASTED moves onto the bust-out screen's header
+  ("YOU FINISHED 3RD OF 4") so the tape keeps its room on a standard iPhone.
+- P.I.P. on a win: `presentResultStage` waits for `CoachSet.clearTable()`
+  (he hops and drops under the table) before the stage turns.
+- The lab's LOOK tab, every row live (first = my suggestion), saved as
+  `data-es-*` on `<html>` (`EventTape.LOOK` / `EventTape.look()`):
+  THE BIG NUMBER (drums on the casing / on the glass / big drums, no frame),
+  SPACING (standard / roomy / compact), FINISH / OUTLASTED (on the bust-out
+  screen / its own panel), CHIP TAPE (tall / medium), BUST-OUT ORDER (row /
+  list / faces only), LUCK (word + strip + numbers / strip + numbers /
+  word + numbers), SE PHONES (stage scrolls / shrink to fit). Moments for all
+  four end screens. COPY MY PICKS for the owner's order.
+
 ## For sign-off
 
 New parts that go into the Pattern Book once approved: the chip tape, the

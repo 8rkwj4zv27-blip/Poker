@@ -20,7 +20,7 @@
   const frame = document.getElementById('esl-game');
   const inject = JSON.parse(document.getElementById('lab-inject').textContent);
   const lab = window.__lab = {
-    state:{ pip:'on', field:'4', length:'normal', luck:'auto', best:'on', sound:'on', moment:null },
+    state:{ pip:'on', field:'4', length:'normal', luck:'auto', best:'on', sound:'on', moment:null, look:{} },
     set(patch){ Object.assign(lab.state, patch); },
     play(moment){ lab.state.moment = moment || null; load(); }
   };

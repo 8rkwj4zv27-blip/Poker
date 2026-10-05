@@ -208,27 +208,26 @@ const EventTape = (() => {
     return clean({ v:1, start, total, field, pts, out, best:o.noBest ? null : best, allins:o.noAllins ? [] : allins });
   }
 
-  /* ---------------- the stage ---------------- */
-  // The well: the tape on top, then the three instruments.
-  /* The well is a cabinet: one raised plastic panel (the same moulding as
-     the FINISH / OUTLASTED deck above it) with the screens set into it.
-     Labels are printed on the casing (.pc-label); the glass only shows
-     the readings. */
-  const plate = (l, r) => '<div class="et-plate"><span class="pc-label">' + l + '</span>' + (r ? '<span class="pc-label">' + r + '</span>' : '') + '</div>';
+  /* ---------------- the stage ----------------
+     The well is a cabinet: one raised plastic panel (the moulding of the
+     FINISH / OUTLASTED deck) with four screens fitted into it: the chip
+     tape, the bust-out order, best hand and luck. Every word is on the
+     glass; the casing carries none. The look options (bust-out layout,
+     luck, tape height, spacing) are CSS, set as data-es-* on <html>
+     (EventTape.LOOK, css/result-cabinet.css), so the same markup serves
+     them all. */
+  const head = (l, r) => '<div class="et-head"><span class="crt-caption">' + l + '</span>' + (r ? '<span class="crt-caption">' + r + '</span>' : '') + '</div>';
   function html(d){
     const t = d.tape, won = !!d.won;
     const peak = t.pts.reduce((m, p) => p[1] > m[1] ? p : m, t.pts[0]);
-    const kos = t.out.filter(o => o.ko).length;
     const hands = Math.max(0, t.pts[t.pts.length - 1][0] - t.pts[0][0]);
     return '<div class="et-well pc-raised pc-material-plastic" data-result-beat="trophy">' +
-      '<div class="et-sec et-sec--tape">' +
-        plate('CHIP TAPE · ' + hands + ' HAND' + (hands === 1 ? '' : 'S'), (kos ? 'K.O.S ' + kos + ' · ' : '') + 'PEAK ' + E(money(peak[1]))) +
-        '<div class="et-chart pc-display crt" data-crt-quiet data-ink="' + (won ? 'live' : 'danger') + '">' +
-          '<div class="et-plot"><canvas class="et-canvas" aria-hidden="true"></canvas>' +
-            (t.total && peakCeil(t, won) >= t.total ? '<span class="et-ceil crt-caption">ALL CHIPS</span>' : '') + '</div>' +
-          '<div class="et-verdict"><span class="crt-line stage-statement">' + E(d.line) + '</span>' +
-            '<span class="crt-caption">' + E(verdictSub(d)) + '</span></div>' +
-        '</div>' +
+      '<div class="et-chart pc-display crt" data-crt-quiet data-ink="' + (won ? 'live' : 'danger') + '">' +
+        head('CHIP TAPE · ' + hands + ' HAND' + (hands === 1 ? '' : 'S'), 'PEAK ' + E(money(peak[1]))) +
+        '<div class="et-plot"><canvas class="et-canvas" aria-hidden="true"></canvas>' +
+          (t.total && peakCeil(t, won) >= t.total ? '<span class="et-ceil crt-caption">ALL CHIPS</span>' : '') + '</div>' +
+        '<div class="et-verdict"><span class="crt-line stage-statement">' + E(d.line) + '</span>' +
+          '<span class="crt-caption">' + E(verdictSub(d)) + '</span></div>' +
       '</div>' +
       outHTML(d) +
       '<div class="et-pair">' + bestHTML(t.best) + luckHTML(t.allins) + '</div>' +
@@ -246,44 +245,42 @@ const EventTape = (() => {
     const t = d.tape, won = !!d.won, field = Math.max(t.field || 0, t.out.length + 1);
     const me = t.out.find(o => o.you);
     const youPlace = won ? 1 : (d.place || (me && me.place) || field);
-    // everyone who went out, last place first; then whoever was still in
-    // when you went, then you (a win), or you in your place (a loss)
+    // everyone who went out, last place first; then you; then, after a
+    // loss, whoever was still sitting (the one who got you lit)
     const outs = t.out.filter(o => !o.you).slice().sort((a, b) => b.place - a.place);
-    const cells = [];
-    outs.forEach(o => cells.push(seat(o, 'out')));      // every one of them went out before (or with) you
+    const cells = outs.map(o => seat(o, 'out'));
     cells.push(youSeat(youPlace, won, me));
-    // a loss: the ones still sitting when you went, the one who got you lit
     if (!won){
       const killer = me && me.by[0];
-      (d.alive || []).forEach(a => cells.push(seat({ name:a.name, fc:a.fc, place:0, killer:a.name === killer }, a.name === killer ? 'killer' : 'alive')));
+      (d.alive || []).forEach(a => cells.push(seat({ name:a.name, fc:a.fc }, a.name === killer ? 'killer' : 'alive')));
     }
-    return '<div class="et-sec et-out">' +
-      plate('BUST-OUT ORDER', outs.some(o => o.ko) ? '<i class="et-ko-key" aria-hidden="true"></i>YOUR K.O.' : 'FIELD ' + field) +
+    return '<div class="et-out pc-display crt" data-crt-quiet>' +
+      // your finish rides on this screen (the FINISH / OUTLASTED panel
+      // steps out of EVENT WON / EVENT LOST unless the FINISH look says so)
+      head('BUST-OUT ORDER', 'YOU FINISHED ' + ord(youPlace) + ' OF ' + field) +
       '<ol class="et-seats" style="--n:' + cells.length + '">' + cells.join('') + '</ol></div>';
   }
   function faceImg(fc, mood){
     try{ return typeof renderFace === 'function' ? renderFace({ faceColorIdx:fc }, mood) : ''; }catch(e){ return ''; }
   }
-  // each seat: a little portrait window set into the panel, the name and
-  // the finish printed under it
   function seat(o, kind){
     const mood = kind === 'out' ? 'dead1' : kind === 'killer' ? 'gloating1' : 'neutral1';
     const tag = kind === 'out' ? ord(o.place) + ' · H' + o.h : kind === 'killer' ? 'GOT YOU' : 'STILL IN';
     return '<li class="et-seat is-' + kind + (o.ko ? ' is-ko' : '') + '">' +
-      '<span class="et-face pc-recess">' + faceImg(o.fc, mood) + '</span>' + (o.ko ? '<i class="et-ko" aria-hidden="true"></i>' : '') +
-      '<span class="et-name pc-label">' + E(String(o.name || '').slice(0, 7)) + '</span>' +
-      '<span class="et-tag pc-label">' + E(tag) + '</span></li>';
+      '<span class="et-face">' + faceImg(o.fc, mood) + (o.ko ? '<i class="et-ko" aria-hidden="true"></i>' : '') + '</span>' +
+      '<span class="et-name crt-caption">' + E(String(o.name || '').slice(0, 9)) + '</span>' +
+      '<span class="et-tag crt-caption' + (kind === 'killer' ? ' crt-danger' : '') + '">' + E(tag) + '</span></li>';
   }
   function youSeat(place, won, me){
     return '<li class="et-seat is-you' + (won ? ' is-won' : ' is-dead') + '">' +
-      '<span class="et-face et-you pc-recess"><b>YOU</b>' + (won ? '' : '<i class="et-x" aria-hidden="true"></i>') + '</span>' +
-      '<span class="et-name pc-label">' + (won ? 'WINNER' : 'YOU') + '</span>' +
-      '<span class="et-tag pc-label">' + E(ord(place)) + (!won && me ? ' · H' + me.h : '') + '</span></li>';
+      '<span class="et-face et-you"><span class="crt-caption">YOU</span>' + (won ? '' : '<i class="et-x" aria-hidden="true"></i>') + '</span>' +
+      '<span class="et-name crt-caption">' + (won ? 'WINNER' : 'YOU') + '</span>' +
+      '<span class="et-tag crt-caption">' + E(ord(place)) + (!won && me ? ' · H' + me.h : '') + '</span></li>';
   }
   function bestHTML(best){
     if (!best){
-      return '<div class="et-sec">' + plate('BEST HAND') + '<div class="et-best pc-display crt" data-crt-quiet>' +
-        '<span class="et-none crt-line">NO SHOWDOWN</span><span class="crt-caption">NOTHING TURNED OVER</span></div></div>';
+      return '<div class="et-best pc-display crt" data-crt-quiet>' + head('BEST HAND') +
+        '<span class="et-none crt-line">NO SHOWDOWN</span><span class="crt-caption">NOTHING TURNED OVER</span></div>';
     }
     let cards = '', cat = best.name, desc = '';
     try{
@@ -292,10 +289,10 @@ const EventTape = (() => {
       cards = arrangeHandForDisplay(best.result.cat, best.cards)
         .map(c => '<div class="' + cardClass(false, c, true) + '" aria-label="' + E(cardLabel(false, c)) + '">' + cardInner(c) + '</div>').join('');
     }catch(e){}
-    return '<div class="et-sec">' + plate('BEST HAND') + '<div class="et-best pc-display crt" data-crt-quiet>' +
+    return '<div class="et-best pc-display crt" data-crt-quiet>' + head('BEST HAND') +
       '<div class="crt-cards et-cards">' + cards + '</div>' +
       '<span class="crt-line et-best-name">' + E(String(cat).toUpperCase()) + '</span>' +
-      (desc ? '<span class="crt-caption et-best-desc">' + E(desc) + '</span>' : '') + '</div></div>';
+      (desc ? '<span class="crt-caption et-best-desc">' + E(desc) + '</span>' : '') + '</div>';
   }
   // Luck: how many all-ins you won against how many the odds said you
   // would. Only runouts count (an all-in called on the river had no luck
@@ -306,15 +303,29 @@ const EventTape = (() => {
     const word = !n ? 'NO ALL-INS' : diff <= -.9 ? 'RAN BAD' : diff <= -.35 ? 'BIT UNLUCKY' : diff < .35 ? 'FAIR' : diff < .9 ? 'BIT LUCKY' : 'RAN HOT';
     return { n, exp, got, diff, word };
   }
-  // a strip meter: BAD on the left, HOT on the right, lit out from the middle
+  // the verdict, a strip meter (BAD to HOT, lit out from the middle), and
+  // the numbers; the LUCK look option shows some or all of them
   function luckHTML(allins){
     const L = luckOf(allins);
     const fmt = x => (Math.round(x * 10) / 10).toFixed(1).replace(/\.0$/, '');
-    return '<div class="et-sec">' + plate('LUCK') +
-      '<div class="et-luck pc-display crt" data-crt-quiet' + (L.n && L.diff <= -.35 ? ' data-ink="danger"' : L.n && L.diff >= .35 ? ' data-ink="money"' : '') + '>' +
+    return '<div class="et-luck pc-display crt" data-crt-quiet' + (L.n && L.diff <= -.35 ? ' data-ink="danger"' : L.n && L.diff >= .35 ? ' data-ink="money"' : '') + '>' +
+      head('LUCK') +
       '<span class="crt-line et-luck-word">' + L.word + '</span>' +
       '<div class="et-strip"><span class="crt-caption">BAD</span><canvas class="et-gauge" aria-hidden="true" data-diff="' + (L.n ? L.diff.toFixed(3) : '') + '"></canvas><span class="crt-caption">HOT</span></div>' +
-      '<span class="crt-caption">' + (L.n ? 'WON ' + fmt(L.got) + ' OF ' + L.n + '</span><span class="crt-caption">ODDS SAID ' + fmt(L.exp) : 'NO ALL-INS RAN OUT') + '</span></div></div>';
+      (L.n ? '<span class="crt-caption et-luck-nums">WON ' + fmt(L.got) + ' OF ' + L.n + '</span><span class="crt-caption et-luck-nums">ODDS SAID ' + fmt(L.exp) + '</span>'
+           : '<span class="crt-caption et-luck-nums">NO ALL-INS RAN OUT</span>') + '</div>';
+  }
+
+  /* The look: the signed-off defaults, and the options the End Screens Lab
+     offers. Set on <html> as data-es-*; css/result-cabinet.css reads them. */
+  const LOOK = { bust:'row', counter:'drums', space:'standard', luck:'both', tape:'tall', finish:'merged', se:'scroll' };
+  function look(patch){
+    const r = document.documentElement;
+    Object.keys(LOOK).forEach(k => {
+      const v = patch && patch[k] != null ? patch[k] : (r.getAttribute('data-es-' + k) || LOOK[k]);
+      r.setAttribute('data-es-' + k, v);
+    });
+    try{ document.querySelectorAll('.et-well').forEach(w => paintStatic(w, w._etDetail)); }catch(e){}
   }
 
   /* ---------------- drawing ---------------- */
@@ -442,12 +453,13 @@ const EventTape = (() => {
   const sfx = (name, ...a) => { try{ if (typeof Sound !== 'undefined' && Sound[name]) Sound[name](...a); }catch(e){} };
   function paintStatic(el, d){
     const chart = el.querySelector('.et-canvas');
-    if (chart) drawChart(chart, d, 1e9, 1);
+    if (chart && d && d.tape) drawChart(chart, d, 1e9, 1);
     el.querySelectorAll('.et-gauge').forEach(drawGauge);
   }
   async function wake(el, d){
     if (!el || !d || !d.tape) return;
     const well = el.querySelector('.et-well'); if (!well) return;
+    well._etDetail = d;
     const chart = well.querySelector('.et-canvas');
     well.querySelectorAll('.et-gauge').forEach(drawGauge);
     const t = d.tape, span = Math.max(1, t.pts[t.pts.length - 1][0] - t.pts[0][0]);
@@ -496,5 +508,6 @@ const EventTape = (() => {
   }
 
   install();
-  return { afterHand, snapshot, clean, fixture, html, wake, paint:paintStatic, luckOf, noteRunout, isRunout };
+  try{ look(); }catch(e){}
+  return { LOOK, look, afterHand, snapshot, clean, fixture, html, wake, paint:paintStatic, luckOf, noteRunout, isRunout };
 })();

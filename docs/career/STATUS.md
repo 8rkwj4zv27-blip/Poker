@@ -7,8 +7,8 @@ something specific was built or decided, never by default.
 
 ## Current build
 
-- Build marker: `v0.58.1-dev · End screens: the cabinet` (main-menu footer / DEV panel).
-- Service-worker cache: `poker-v58-1`.
+- Build marker: `v0.58.2-dev · End screens: screens in the cabinet` (main-menu footer / DEV panel).
+- Service-worker cache: `poker-v58-2`.
 - Career save schema: **version 6**.
 - Production Career Hub: ticket-reader presentation (six-venue rack,
   spring-driven touch physics, printed-ticket detail flip), integrated
@@ -115,7 +115,7 @@ venue work is scheduled until the owner asks for it — see the scope note.
 ```
 node validation/career-events-checks.js     # 112 checks
 node validation/career-result-checks.js     # 44 checks
-node validation/event-tape-checks.js        # 14 checks
+node validation/event-tape-checks.js        # 15 checks
 node validation/scoring-checks.js           # 170 checks
 node validation/holiday-gameplay-checks.js  # 20 checks
 node validation/quick-bet-checks.js         # 14 checks

@@ -2570,13 +2570,19 @@ function stageHeadHTML(eyebrow, title){
     '<span>'+esc(eyebrow)+'</span><strong>'+esc(title)+'</strong>'+
     '<i aria-hidden="true"></i></header>';
 }
+/* The hero is a cabinet panel (owner, 5 Oct 2026): the number drums sit
+   on the casing in their gold frame, like the dashboard's STACK, and the
+   words (what the number is, the bankroll it leaves) are on a small
+   screen beside them. css/result-cabinet.css; the End Screens Lab's
+   COUNTER option can put the drums back on the glass. */
 function stageHeroHTML(hero){
-  return '<div class="stage-score-hero pc-display crt" data-crt-quiet>'+
-    '<span class="stage-instrument-label crt-caption">'+esc(hero.label)+'</span>'+
-    '<div class="amt-readout stage-score-readout'+(stageReelIsLong(hero.reel)?' is-long':'')+
-      '" id="'+RESULT_HERO_REEL_ID+'"></div>'+
-    '<span class="stage-score-carry"><span class="crt-caption">'+esc(hero.carryLabel)+'</span>'+
-    '<strong class="tabular">'+esc(hero.carryValue)+'</strong></span></div>';
+  return '<div class="stage-hero pc-raised pc-material-plastic">'+
+    '<div class="stage-score-hero pc-display crt" data-crt-quiet>'+
+      '<span class="stage-instrument-label crt-caption">'+esc(hero.label)+'</span>'+
+      '<span class="stage-score-carry"><span class="crt-caption">'+esc(hero.carryLabel)+'</span>'+
+      '<strong class="tabular">'+esc(hero.carryValue)+'</strong></span></div>'+
+    '<div class="stage-hero-drums"><div class="amt-readout stage-score-readout'+(stageReelIsLong(hero.reel)?' is-long':'')+
+      '" id="'+RESULT_HERO_REEL_ID+'"></div></div></div>';
 }
 /* Six or more cells is where a reel stops fitting its instrument at
    393px, so it takes the one-size-down variant rather than spilling. */
@@ -2669,7 +2675,8 @@ function resultStageHTML(model){
       stageLampHTML(model.lamp)+
     '</div>'+
     stageDetailHTML(model.detail)+
-    stageProgressHTML(model.progress)+
+    // the progress strip sits in the same plastic as everything else
+    '<div class="stage-frame pc-raised pc-material-plastic">'+stageProgressHTML(model.progress)+'</div>'+
   '</div>';
 }
 /* Reels are built, never string-rendered — see the section header. Runs
@@ -3007,6 +3014,13 @@ async function presentResultStage(g, model, opts){
   // clean-machine beat before the latch clicks".
   await sleep(motionOff() ? 0 : STAGE_ROLL_CONFIG.breatheMs);
   if (game !== g) return;
+
+  // P.I.P. gets off the table before it turns, so the wheel can't catch
+  // him (owner, 5 Oct 2026). A bust has already blown him away.
+  if (typeof CoachSet !== 'undefined' && CoachSet.clearTable){
+    await Promise.race([CoachSet.clearTable(), sleep(4000)]);
+    if (game !== g) return;
+  }
 
   // 4-7. One stage-wheel transition, shared by all four outcomes.
   await rollStageTransition(felt=>{

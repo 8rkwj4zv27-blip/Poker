@@ -1,0 +1,127 @@
+/* ============================================================
+   RESULT CABINET (v0.58.2) — layout only
+   All four end screens (TABLE CLEARED, RUN OVER, EVENT WON, EVENT LOST)
+   built as a cabinet (owner, 5 Oct 2026): the leather machine holds
+   raised plastic panels, and every panel holds glass or drums. No words
+   are printed on the casing; they're all on the screens.
+
+   - The hero: the number drums sit in a sunk bay on the casing in their
+     gold frame, like the dashboard's STACK; the label and the bankroll
+     are on a small screen beside them (stageHeroHTML).
+   - The progress strip has a plastic frame too.
+   - Spacing comes from two tokens, --es-gap and --es-pad.
+
+   The look options (the End Screens Lab offers them; the first of each is
+   the default, set by EventTape.look()) are data-es-* on <html>:
+     counter  drums | reel | bare
+     space    standard | roomy | compact
+     tape     tall | medium            (the chip tape's height)
+     bust     row | list | faces       (the bust-out order)
+     luck     both | strip | words
+     finish   merged | panel           (EVENT WON / LOST: FINISH / OUTLASTED
+                                        on the bust-out screen, or its own panel)
+     se       scroll | small           (phones 700px tall or less)
+   css/crt.css owns every screen's glass, ink and type.
+   docs/ui/END_SCREENS_PLAN.md.
+   ============================================================ */
+
+:root{ --es-gap:6px; --es-pad:7px; --es-tape-min:92px; }
+html[data-es-space="roomy"]{ --es-gap:9px; --es-pad:10px; }
+html[data-es-space="compact"]{ --es-gap:4px; --es-pad:5px; --es-tape-min:84px; }
+
+/* ---- the machine ---- */
+.stage-results-machine{ gap:var(--es-gap); padding:calc(var(--es-pad) + 1px); }
+.stage-results-head{ padding:8px 14px; }
+.stage-results-deck{ padding:var(--es-pad); gap:var(--es-gap); }
+.stage-results-instruments{ gap:var(--es-gap); }
+/* On EVENT WON / EVENT LOST the small HANDS / FIELD / PRIZE row repeats
+   what the tape (its hand count) and the bust-out order (the field) say. */
+.stage-results-machine:has(.et-well) .stage-results-recap{ display:none; }
+/* ...and with FINISH: MERGED, the FINISH / OUTLASTED panel too: your place
+   is on the bust-out screen's header, and the faces left of you are the
+   players you outlasted. */
+html:not([data-es-finish="panel"]) .stage-results-machine:has(.et-well) .stage-results-deck{ display:none; }
+/* The well's row never shrinks below what it holds: if a phone is too
+   short the stage scrolls, it never overlaps. */
+html:not([data-es-finish="panel"]) .stage-results-machine:has(.et-well){ grid-template-rows:auto auto minmax(min-content,1fr) auto; }
+html[data-es-finish="panel"] .stage-results-machine:has(.et-well){ grid-template-rows:auto auto auto minmax(min-content,1fr) auto; }
+
+/* ---- the hero: a panel with a screen and the drums ---- */
+.stage-hero{
+  display:grid; grid-template-columns:minmax(0,1fr) auto; align-items:stretch;
+  gap:var(--es-gap); padding:var(--es-pad);
+}
+.stage-hero .stage-score-hero{
+  min-height:0; padding:8px 10px;
+  display:flex; flex-direction:column; justify-content:center; align-items:flex-start; gap:6px;
+}
+.stage-hero .stage-score-hero .stage-instrument-label{ margin:0; align-self:flex-start; }
+/* a sunk bay in the casing, the drums in their gold frame inside it */
+.stage-hero-drums{
+  display:flex; align-items:center; justify-content:center; padding:6px 8px;
+  border:2px solid #0B0D0A; border-radius:6px; background-color:var(--machine-recess,#120A08);
+  box-shadow:inset 0 5px 0 rgba(0,0,0,.62),inset 3px 0 0 rgba(0,0,0,.24),0 2px 0 rgba(255,255,255,.12);
+}
+.stage-hero-drums .stage-score-readout{ grid-column:auto; grid-row:auto; }
+.stage-hero-drums .stage-score-readout .jp-cell{ height:30px; min-width:18px; font-size:14px; }
+.stage-hero-drums .stage-score-readout.is-long .jp-cell{ height:27px; min-width:15px; font-size:12px; }
+/* the drums wake with the score */
+.stage-hero-drums{ opacity:.15; filter:brightness(.4); }
+.stage-results.wake-score .stage-hero-drums{ opacity:1; filter:none; transition:opacity 130ms steps(3,end),filter 150ms steps(4,end); }
+[data-motion="off"] .stage-hero-drums{ transition:none !important; }
+
+/* COUNTER: REEL, the drums back on the glass (the v0.58.1 look) */
+html[data-es-counter="reel"] .stage-hero{ grid-template-columns:minmax(0,1fr); padding:0; border:0; background:none; box-shadow:none; }
+html[data-es-counter="reel"] .stage-hero > *{ grid-area:1 / 1; }
+html[data-es-counter="reel"] .stage-hero .stage-score-hero{ min-height:58px; }
+html[data-es-counter="reel"] .stage-hero-drums{ justify-self:end; align-self:center; z-index:1; margin-right:10px; padding:0; border:0; background:none; box-shadow:none; }
+/* COUNTER: BARE, big drums in the bay with no gold frame */
+html[data-es-counter="bare"] .stage-hero-drums .stage-score-readout{ border-color:transparent; background:none; box-shadow:none; padding:0; }
+html[data-es-counter="bare"] .stage-hero-drums .stage-score-readout .jp-cell{ height:34px; min-width:21px; font-size:16px; }
+
+/* ---- the progress strip, framed ---- */
+.stage-frame{ padding:calc(var(--es-pad) - 2px) var(--es-pad); }
+
+/* ---- TAPE: MEDIUM. Every panel at its own height, the room left over
+   spread evenly between them. ---- */
+html[data-es-tape="medium"][data-es-finish][data-es-space] .stage-results-machine:has(.et-well){ display:flex; flex-direction:column; justify-content:space-evenly; }
+html[data-es-tape="medium"][data-es-finish][data-es-space] .stage-results-machine:has(.et-well) > *{ flex:0 0 auto; }
+html[data-es-tape="medium"] .et-well{ height:auto; grid-template-rows:auto max-content max-content; }
+html[data-es-tape="medium"] .et-plot{ height:96px; }
+
+/* ---- BUST: LIST, one seat a line: face, name, finish ---- */
+html[data-es-bust="list"] .et-seats{ grid-template-columns:minmax(0,1fr); gap:3px; }
+html[data-es-bust="list"] .et-seat{ flex-direction:row; gap:8px; }
+html[data-es-bust="list"] .et-face{ width:22px; height:22px; border-width:1px; }
+html[data-es-bust="list"] .et-name{ flex:1 1 auto; text-align:left; }
+html[data-es-bust="list"] .et-tag{ flex:0 0 auto; text-align:right; }
+/* ---- BUST: FACES, faces and finishes only ---- */
+html[data-es-bust="faces"] .et-name{ display:none; }
+html[data-es-bust="faces"] .et-face{ width:36px; height:36px; }
+
+/* ---- LUCK ---- */
+html[data-es-luck="strip"] .et-luck-word{ display:none; }
+html[data-es-luck="words"] .et-strip{ display:none; }
+
+/* ---- smaller phones ---- */
+@media (orientation:portrait) and (max-height:760px){
+  :root{ --es-gap:4px; --es-pad:6px; --es-tape-min:84px; }
+  .stage-results-head{ padding:5px 10px; }
+  .et-face{ width:28px; height:28px; }
+  .et-cards .card.small{ width:20px; height:28px; }
+  .et-cards .card.small .r{ font-size:7px; }
+  .et-cards .card.small .pip{ font-size:10px; }
+  .stage-hero-drums .stage-score-readout .jp-cell{ height:24px; min-width:15px; font-size:11px; }
+}
+/* SE height: SCROLL keeps everything at a readable size and lets the
+   stage scroll; SMALL shrinks the tape, faces and cards to fit. */
+@media (orientation:portrait) and (max-height:700px){
+  html[data-es-se="scroll"][data-es-finish] .stage-results-machine:has(.et-well){ display:flex; flex-direction:column; }
+  html[data-es-se="scroll"][data-es-finish] .stage-results-machine:has(.et-well) > *{ flex:0 0 auto; }
+  html[data-es-se="scroll"] .et-well{ height:auto; min-height:max-content; }
+  html[data-es-se="scroll"] .et-plot{ height:84px; }
+  html[data-es-se="small"] .et-well{ --es-tape-min:52px; }
+  html[data-es-se="small"] .et-face{ width:22px; height:22px; }
+  html[data-es-se="small"] .et-cards .card.small{ width:17px; height:24px; }
+  html[data-es-se="small"] .et-luck-nums + .et-luck-nums{ display:none; }
+}

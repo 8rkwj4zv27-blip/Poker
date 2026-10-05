@@ -424,6 +424,13 @@ the well (chip tape, bust-out order, best hand, luck meter) and `wake()`
 runs the pen. `EventTape.fixture()` makes a made-up event for DEV tests and
 the End Screens Lab. Checks: `validation/event-tape-checks.js`.
 
+## `css/result-cabinet.css` — the four end screens as a cabinet (v0.58.2)
+
+Layout for TABLE CLEARED / RUN OVER / EVENT WON / EVENT LOST: the hero's
+drums in a bay beside their label screen (`stageHeroHTML`), the framed
+progress strip, spacing tokens, and the End Screens Lab's look options
+(`data-es-*` on `<html>`, set by `EventTape.look()`).
+
 ## `end-screens-lab.html` + `js/end-screens-lab-host.js` + `js/end-screens-lab.js` + `css/end-screens-lab.css` — End Screens Lab
 
 Phone-first lab (TUNE key inside the game): YOU BUST · EVENT LOST, EVENT

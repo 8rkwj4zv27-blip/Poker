@@ -1457,8 +1457,20 @@ const CoachSet = (() => {
     setTimeout(() => star.remove(), 900);
   }
   // a win (or any end he isn't blown up in): a hop, then out of the way
-  async function stow(){
-    if (!on || busy) return;
+  let stowing = null;
+  function stow(){
+    if (stowing) return stowing;
+    if (!on || busy) return Promise.resolve();
+    stowing = doStow().finally(() => { stowing = null; });
+    return stowing;
+  }
+  // the result stage waits on this before it turns: he's off the table
+  async function clearTable(){
+    for (let i = 0; i < 60 && busy && !stowing; i++) await sleep(60);
+    if (stowing) return stowing;
+    if (on && !away) return stow();
+  }
+  async function doStow(){
     busy = true; clearTimeout(idleT); stopPanic();
     try{ if (typeof CoachTalk !== 'undefined') CoachTalk.clear(); }catch(e){}
     try{
@@ -1593,6 +1605,6 @@ const CoachSet = (() => {
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start); else setTimeout(start, 0);
 
   return { apply, power, replug, reboot, setMood, mouth, look, talk, still, sheetFrames, drawTile, MOODS, OPTIONS, DEFAULTS, SETS,
-    panic, blast, stow, get away(){ return away; },
+    panic, blast, stow, clearTable, get away(){ return away; },
     get on(){ return on; }, get busy(){ return busy; }, get order(){ return Object.assign({}, O); } };
 })();
