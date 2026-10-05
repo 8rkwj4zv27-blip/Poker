@@ -11,8 +11,9 @@
    - The progress strip has a plastic frame too.
    - Spacing comes from two tokens, --es-gap and --es-pad.
 
-   The look options (the End Screens Lab offers them; the first of each is
-   the default, set by EventTape.look()) are data-es-* on <html>:
+   The look options (the End Screens Lab offers them; the owner's round-3
+   order is the default, set by EventTape.look(): counter BARE, bust FACES,
+   the rest the first of each) are data-es-* on <html>:
      counter  drums | reel | bare
      space    standard | roomy | compact
      tape     tall | medium            (the chip tape's height)
@@ -76,7 +77,7 @@ html[data-es-counter="reel"] .stage-hero > *{ grid-area:1 / 1; }
 html[data-es-counter="reel"] .stage-hero .stage-score-hero{ min-height:58px; }
 html[data-es-counter="reel"] .stage-hero-drums{ justify-self:end; align-self:center; z-index:1; margin-right:10px; padding:0; border:0; background:none; box-shadow:none; }
 /* COUNTER: BARE, big drums in the bay with no gold frame */
-html[data-es-counter="bare"] .stage-hero-drums .stage-score-readout{ border-color:transparent; background:none; box-shadow:none; padding:0; }
+html[data-es-counter="bare"] .felt .stage-hero-drums .stage-score-readout{ border-color:transparent; background:none; box-shadow:none; padding:0; }
 html[data-es-counter="bare"] .stage-hero-drums .stage-score-readout .jp-cell{ height:34px; min-width:21px; font-size:16px; }
 
 /* ---- the progress strip, framed ---- */

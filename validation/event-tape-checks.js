@@ -230,6 +230,8 @@ check('The game wires it in: recorded after eliminations, saved, restored, shown
 check('The end-screen look: defaults on <html>, every option has CSS behind it', ()=>{
   const css = read('css/result-cabinet.css');
   same(Object.keys(ET.LOOK), ['bust','counter','space','luck','tape','finish','se']);
+  // the owner's round-3 order is what the game ships
+  same(ET.LOOK, { bust:'faces', counter:'bare', space:'standard', luck:'both', tape:'tall', finish:'merged', se:'scroll' });
   const OPTS = { counter:['reel','bare'], space:['roomy','compact'], tape:['medium'], bust:['list','faces'], luck:['strip','words'], se:['scroll','small'], finish:['panel'] };
   Object.entries(OPTS).forEach(([k, vs]) => vs.forEach(v => assert.ok(css.includes('data-es-' + k + '="' + v + '"'), k + '=' + v + ' has CSS')));
   const engine2 = read('js/05-game-engine.js');

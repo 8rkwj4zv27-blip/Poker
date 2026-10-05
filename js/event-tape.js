@@ -316,9 +316,12 @@ const EventTape = (() => {
            : '<span class="crt-caption et-luck-nums">NO ALL-INS RAN OUT</span>') + '</div>';
   }
 
-  /* The look: the signed-off defaults, and the options the End Screens Lab
-     offers. Set on <html> as data-es-*; css/result-cabinet.css reads them. */
-  const LOOK = { bust:'row', counter:'drums', space:'standard', luck:'both', tape:'tall', finish:'merged', se:'scroll' };
+  /* The look: the owner's signed-off order (End Screens Lab round 3, 5 Oct
+     2026): BIG DRUMS, NO FRAME · STANDARD spacing · FINISH on the bust-out
+     screen · TALL tape · FACES ONLY · WORD + STRIP + NUMBERS · SE phones
+     scroll. The lab still offers the other options. Set on <html> as
+     data-es-*; css/result-cabinet.css reads them. */
+  const LOOK = { bust:'faces', counter:'bare', space:'standard', luck:'both', tape:'tall', finish:'merged', se:'scroll' };
   function look(patch){
     const r = document.documentElement;
     Object.keys(LOOK).forEach(k => {

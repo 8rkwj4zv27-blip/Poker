@@ -30,8 +30,8 @@
     ['runover', 'RUN OVER'],
     ['real', 'PLAY A REAL EVENT', true]
   ];
-  // ROUND 3: the look. Every row switches live on the screen in view; the
-  // first option of each is my suggestion (EventTape.LOOK).
+  // The look. Every row switches live on the screen in view; the defaults
+  // are the owner's round-3 order (EventTape.LOOK).
   const LOOKS = [
     ['counter', 'THE BIG NUMBER', [['drums', 'DRUMS ON THE CASING'], ['reel', 'ON THE GLASS (ROUND 2)'], ['bare', 'BIG DRUMS, NO FRAME']], 'All four end screens. Drums like your STACK, sat in a bay in the panel; the words beside them on a small screen.'],
     ['space', 'SPACING', [['standard', 'STANDARD'], ['roomy', 'ROOMY'], ['compact', 'COMPACT']], 'All four end screens.'],
@@ -91,7 +91,7 @@
         '</section>' +
         '<section data-pane="look" hidden><p class="esl-sub">Changes show at once on the screen behind. Play a moment first, then come here.</p>' +
           LOOKS.map(r => '<div class="esl-row"><div class="esl-name">' + r[1] + '</div>' + lookSeg(r[0], r[2]) + (r[3] ? '<p class="esl-note">' + r[3] + '</p>' : '') + '</div>').join('') +
-          '<div class="esl-actions"><button type="button" data-act="reset">BACK TO MY SUGGESTION</button><button type="button" data-act="copy">COPY MY PICKS</button></div>' +
+          '<div class="esl-actions"><button type="button" data-act="reset">BACK TO THE GAME LOOK</button><button type="button" data-act="copy">COPY MY PICKS</button></div>' +
           '<textarea class="esl-copytext" readonly hidden></textarea></section>' +
         '<section data-pane="new" hidden><h3>WHAT\'S IN IT</h3><ul class="esl-list">' + NEW.map(t => '<li>' + t + '</li>').join('') + '</ul></section>' +
       '</div>';
