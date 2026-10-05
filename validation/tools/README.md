@@ -108,3 +108,19 @@ Labs that declare `<script type="application/json" id="lab-inject">`
 (phone-first labs, see `CLAUDE.md`) are baked: `game.html` gets the
 storage shim, loses the service worker and gains the lab's parts, and the
 page loads it directly (`window.LAB_STATIC`).
+
+## `play-test.js` — the real game, played with real taps
+
+```
+npm run play-test                                   # 2 hands at 320x700, 390x844 and 430x932
+node validation/tools/play-test.js --hands 3 --sizes 390x844 --shots /tmp/shots
+```
+
+Serves the repo itself (no `http.server` needed), clears storage, starts a
+Single Player run and plays it the way a player would: skip the tour,
+Check/Call, Award Pot, Next Hand, NEW RUN after a bust. Fails on any
+JavaScript error, a table stuck for 90 seconds, or sideways scrolling. On the
+first error it prints the table's state and the last 15 taps (and a
+screenshot with `--shots`), so an intermittent bug arrives with its cause.
+Run it before and after any change to files players download. Not part of
+`npm test`, which needs nothing but Node.

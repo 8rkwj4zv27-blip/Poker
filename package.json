@@ -1,0 +1,10 @@
+{
+  "name": "poker-faces",
+  "private": true,
+  "description": "A tactile pixel-art Texas Hold'em game for iPhone (PWA). No build step and no dependencies: the repo is exactly what runs.",
+  "scripts": {
+    "test": "node validation/run-all.js",
+    "test:quick": "node validation/run-all.js --quick",
+    "play-test": "node validation/tools/play-test.js"
+  }
+}

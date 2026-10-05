@@ -907,7 +907,16 @@ shipped. Rules:
 
 One focused check suite per feature area, run with plain `node`, no test
 framework. `node validation/<name>.js` prints pass/fail per assertion and a
-final count. Run the relevant suite(s) before and after any change — see
+final count. **`npm test` runs every suite** (`validation/run-all.js`, about
+4 minutes; `npm run test:quick` skips the three long AI/coach simulations,
+about 20 seconds) and exits non-zero if any fails. Two suites guard the
+whole game rather than a feature: `offline-list-checks.js` (every file
+`index.html` loads is precached by `sw.js` with the same `?v=` tag) and
+`hand-eval-truth-checks.js` (all 2,598,960 five-card hands against the
+published category totals). `npm run play-test`
+(`validation/tools/play-test.js`) plays real hands with real taps in an
+emulated iPhone at three sizes and fails on any JavaScript error. Run the
+relevant suite(s) before and after any change — see
 `docs/career/STATUS.md` for the current Career-specific set and
 `validation/tools/README.md` for a browser/touch-emulation harness you can
 reuse instead of writing a new Playwright script from scratch each time.
