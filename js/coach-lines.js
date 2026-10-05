@@ -563,6 +563,12 @@ const CoachLines = (() => {
   add('advise.close', 3, [
     ['thinking', 'It’s close. I’d {lean}, but {alt} is fine too.'],
     ['calm', 'Either works. I lean to {lean}.']]);
+  // before the flop his read is the only thing he says about your cards,
+  // so a close call still names them (a bare 'Either works' read as
+  // generic advice that had nothing to do with the hand)
+  add('advise.close.pre', 3, [
+    ['thinking', 'It’s close with {hole}. I’d {lean}, but {alt} is fine too.'],
+    ['calm', '{hole} is right on the line here. I lean to {lean}.']]);
   add('advise.tail.leans', 3, [['thinking', 'Not by a lot, though.'], ['calm', 'Just about.']]);
 
   add('hint.open', 3, [['thinking', 'Nobody’s in yet. How many players still act after you?'], ['calm', 'Think about your seat before you play this.']]);

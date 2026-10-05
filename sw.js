@@ -1,4 +1,4 @@
-const CACHE_NAME = 'poker-v62-1';
+const CACHE_NAME = 'poker-v62-2';
 const APP_SHELL = [
   './',
   './index.html',
@@ -42,7 +42,7 @@ const APP_SHELL = [
   './css/crt.css?v=3',
   './css/workshop.css?v=3',
   './js/01-poker-math.js?v=ai-1',
-  './js/02-support-systems.js?v=62',
+  './js/02-support-systems.js?v=62-2',
   './js/03-opponents.js?v=ai-1',
   './js/04-modes-and-scoring.js?v=cards-1',
   './js/05-game-engine.js?v=62-1',
@@ -74,11 +74,11 @@ const APP_SHELL = [
   './js/knock-check.js?v=1',
   './js/award-key.js?v=1',
   './js/coach-set.js?v=6',
-  './js/coach-talk.js?v=17',
+  './js/coach-talk.js?v=62-2',
   './js/coach-brain.js?v=14',
-  './js/coach-lines.js?v=14',
+  './js/coach-lines.js?v=62-2',
   './js/coach-report.js?v=1',
-  './js/tutorial.js?v=62',
+  './js/tutorial.js?v=62-2',
   './js/workshop-rack.js?v=1',
   './js/workshop.js?v=62',
   // FACE_ART (js/02-support-systems.js) — every illustrated portrait an
