@@ -1,0 +1,25 @@
+# Runs every check suite (npm test) on each pull request and on main.
+# No dependencies to install: the suites need nothing but Node.
+# The iPhone play-test (npm run play-test) needs a browser and is run by
+# hand before merging changes to files players download.
+name: Tests
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: npm test
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm test
