@@ -7,6 +7,34 @@ doc: https://claude.ai/code/artifact/84fe5689-ff5e-4deb-8e99-0d76cd01ef3d
 
 Measured on `main` at `d4a0ea3` (v0.64.4). Nothing in the game was changed.
 
+## Failsafe: the pre-audit checkpoint
+
+Branch `checkpoint/pre-audit-v0.64.4` points at `d4a0ea3`: the whole game
+exactly as it was before any clean-up. **Never push to it, rebase it or
+delete it.** (It is a branch, not a tag, because this environment can only
+create branches; the owner can protect it on GitHub.)
+
+- **Undo one PR:** the Revert button on its merged pull request on GitHub.
+- **Return everything to the checkpoint** (no force-push, history kept):
+
+  ```
+  git switch -c restore-pre-audit origin/main
+  git rm -r -q . && git checkout origin/checkpoint/pre-audit-v0.64.4 -- .
+  git commit -m "Restore the pre-audit checkpoint (v0.64.4)"
+  git diff origin/checkpoint/pre-audit-v0.64.4 --stat   # must print nothing
+  ```
+
+  then open and merge that branch as a pull request. GitHub Pages redeploys
+  from `main`, and installed phones pick it up on their next online launch
+  (`sw.js` is network-first).
+- **Rehearsed 5 Oct 2026:** two engine files deleted, `index.html` broken and
+  junk added on a throwaway copy, then restored with the steps above: zero
+  differences from the checkpoint; scoring, Career events, showdown and
+  pot-shape suites pass; the play-test plays full hands.
+- **Saved data on a phone is not in git.** It is protected by the rule that
+  no change renames or reformats the 9 keys below, and by loading an old
+  build's save after every change that touches live files.
+
 ## Test suites
 
 `node validation/<suite>.js`, about 4 minutes for all 21.
@@ -29,7 +57,9 @@ Real game, `validation/tools/touch-harness.js`, real touch taps, full hands.
 Under contention, 2 of about 25 runs threw errors from `revealHoleCardsAnimated`
 (`js/05-game-engine.js:943`), `handleFoldWin` (`:1562`) and `findNextActor`
 (`:642`): a hand sequence running on table state that changed under it.
-Trigger not yet pinned (finding F1).
+Trigger not yet pinned (finding F1). It recurred once more (68 errors) on
+the restored checkpoint during the failsafe rehearsal, so it predates the
+audit.
 
 ## Saved data (must survive every change)
 
