@@ -100,8 +100,16 @@
     ['8 BLINDS: SHOVE ACE-NINE', 6, 0, 0, ['As', '9d'], 160, F([3, 4, 5]), ['raise', 160]],
     ['8 BLINDS: FOLD ACE-NINE', 6, 0, 0, ['As', '9d'], 160, F([3, 4, 5]), ['fold']],
     ['8 BLINDS: LIMP ACE-NINE', 6, 0, 0, ['As', '9d'], 160, F([3, 4, 5]), ['call']],
+    // (29 Sep: you have 1,400; Lucy in the big blind has only 70 behind)
+    ['LUCY IS SHORT: FOLD SIX-TWO', 3, 0, 0, ['6d', '2d'], 1400, [[1, 'fold']], ['fold'], { chips:{ 2:70 } }],
+    // (30 Sep: Roxy all in for 850; you call your last 44 in the big blind)
+    ['ROXY ALL IN: CALL YOUR LAST CHIPS, SIX-THREE', 4, 0, 2, ['6c', '3s'], 2000, [[3, 'fold'], [0, 'fold'], [1, 'raise', 850]], ['call'], { chips:{ 1:840, 2:44 } }],
+    ['LUCY IS SHORT: ALL IN KING-TEN', 3, 0, 0, ['Ks', 'Td'], 1400, [[1, 'fold']], ['raise', 1400], { chips:{ 2:70 } }],
     // after the flop: the button raised, you called in the big blind; you check, they bet
     ['FLOP: CALL A FLUSH DRAW, HALF POT', 'post', ['Ah', '5h'], ['Kh', '9h', '2c'], 0.5, ['call']],
+    ['FLOP: LOW FLUSH DRAW, EXPENSIVE NEXT CARD', 'post', ['5h', '4h'], ['Kh', '9h', '2c'], 1, ['call']],
+    ['FLOP: FLUSH DRAW, CALL ALL IN FOR THE RUNOUT', 'post', ['Ah', '5h'], ['Kh', '9h', '2c'], 0.5, ['call'], { stack:55 }],
+    ['FLOP: COMBINED DRAW, 15 COMPLETION CARDS', 'post', ['Jh', 'Th'], ['Qh', '9h', '2c'], 0.5, ['call']],
     ['FLOP: CHASE A GUTSHOT, POT BET', 'post', ['7s', '5d'], ['Kh', '9h', '8c'], 1.0, ['call']],
     ['FLOP: CALL WITH NOTHING', 'post', ['Qs', '3d'], ['Kh', '9h', '2c'], 0.5, ['call']],
     ['FLOP: FOLD TOP PAIR', 'post', ['Ks', 'Qd'], ['Kh', '9c', '2d'], 0.5, ['fold']],
@@ -109,15 +117,32 @@
     ['FLOP: RAISE WITH A SET', 'post', ['9s', '9d'], ['Kh', '9c', '2d'], 0.5, ['raise', 3]],
     ['RIVER: CALL A BIG BET, BOTTOM PAIR', 'post', ['2s', '3d'], ['Kh', '9c', '2d', 'Js', '5h'], 1.0, ['call']],
     ['RIVER: FOLD A MISSED FLUSH', 'post', ['Ah', '5h'], ['Kh', '9h', '2c', '3s', 'Jd'], 0.7, ['fold']],
+    // (29 Sep: they checked the flop and bet the turn; you have 400 left)
+    ['TURN: THEY WAKE UP, CALL A STRAIGHT DRAW', 'post', ['9s', '8s'], ['7h', '6c', '2d', 'Kd'], 0.4, ['call'], { stack:400 }],
+    ['TURN: ALL IN OVER THEIR BET, STRAIGHT DRAW', 'post', ['9s', '8s'], ['7h', '6c', '2d', 'Kd'], 0.5, ['allin'], { stack:400 }],
     // checked to you: you raised on the button, the big blind called and checks to you
     ['RIVER: CHECK TWO PAIR', 'bet', ['As', '2c'], ['Ah', '5d', '2s', '6d', '3d'], 'check'],
+    ['RIVER: SHORT CALL, SIDE POT YOU CANNOT WIN', 'pots', 50],
+    ['RIVER: COVERING CALL, TWO DIFFERENT POTS', 'pots', 500],
     ['RIVER: BET TWO PAIR', 'bet', ['As', '2c'], ['Ah', '5d', '2s', '6d', '3d'], 'bet'],
     ['FLOP: BET TOP PAIR', 'bet', ['Ks', 'Qd'], ['Kh', '7c', '2d'], 'bet'],
+    ['FLOP: SMALL VALUE BET, SET OF QUEENS, QUIET BOARD', 'bet', ['Qs', 'Qd'], ['Qh', '7c', '2d'], 'bet', { fraction:0.38 }],
+    ['FLOP: CHARGE DRAWS, QUEENS ON JACK-TEN-NINE', 'bet', ['Qs', 'Qd'], ['Jh', 'Th', '9c'], 'bet', { fraction:0.66 }],
+    ['FLOP: P.I.P. RECOMMENDS ALL IN (70 LEFT)', 'bet', ['Qs', 'Qd'], ['Jh', '7c', '2d'], 'allin', { stack:70 }],
+    ['FLOP: ALL IN WITH QUEENS, QUIET BOARD', 'bet', ['Qs', 'Qd'], ['Jh', '7c', '2d'], 'allin'],
     ['FLOP: CHECK A MIDDLE PAIR', 'bet', ['7s', '8d'], ['Kh', '7c', '2d'], 'check'],
     ['FLOP: BET A FLUSH DRAW', 'bet', ['Ah', '5h'], ['Kh', '9h', '2c'], 'bet'],
+    ['FLOP: LOW DRAW AGAINST A CALLER, CHECK', 'bet', ['5h', '4h'], ['Kh', '9h', '2c'], 'check', { caller:true }],
+    ['RIVER: ACE BLOCKS THE STRONGEST FLUSH', 'bet', ['Ah', '4c'], ['Kh', 'Jh', '2h', '8s', '9d'], 'bet'],
+    ['RIVER: MISSED DRAW BLOCKS POSSIBLE FOLDS', 'bet', ['Ah', '4h'], ['Kh', 'Jh', '2c', '8s', '9d'], 'bet'],
+    ['TURN: ALL IN ON A STRAIGHT DRAW (400 LEFT)', 'bet', ['9s', '8s'], ['7h', '6c', '2d', 'Kd'], 'allin', { stack:400 }],
+    ['TURN: STRAIGHT DRAW, A CALLER, 120 LEFT: CHECK', 'bet', ['9s', '8s'], ['7h', '6c', '2d', 'Kd'], 'check', { stack:120, caller:true }],
     ['FLOP: BLUFF ONE PLAYER', 'bet', ['Qs', 'Jd'], ['8h', '4c', '2d'], 'bet'],
     ['FLOP: BLUFF TWO PLAYERS', 'bet', ['Qs', 'Jd'], ['8h', '4c', '2d'], 'bet', { two:true }],
-    ['RIVER: CHECK WITH NOTHING', 'bet', ['Qs', 'Jd'], ['8h', '4c', '2d', '3s', '7h'], 'check']
+    ['RIVER: CHECK WITH NOTHING', 'bet', ['Qs', 'Jd'], ['8h', '4c', '2d', '3s', '7h'], 'check'],
+    // (29 Sep: the hand that knocks you out: a short word, no lesson; tap him for the rest)
+    ['OUT: ALL IN ON A DRAW, AND MISSED', 'hurt', 'TURN: ALL IN ON A STRAIGHT DRAW (400 LEFT)'],
+    ['OUT: A GOOD CALL THAT LOST', 'hurt', 'FLOP: CALL A FLUSH DRAW, HALF POT']
   ];
   function playBet(spec){
     const [, , hole, board, mine, opts] = spec;
@@ -131,33 +156,51 @@
     if (board.length > 4){ round(); street(g, 'river', [board[4]]); }
     if (two) act(g, 1, 'check');
     act(g, 2, 'check');
-    const me = g.players[0], sp = CB.spot(g, me);
-    act(g, 0, mine === 'bet' ? 'raise' : 'check', mine === 'bet' ? Math.round(g.pot * 0.6 / 10) * 10 : 0);
+    const me = g.players[0];
+    if (opts && opts.stack) me.chips = opts.stack;
+    if (opts && opts.caller) g.reads = { p2:{ hands:30, facedBet:12, foldedToBet:1 } };
+    const sp = CB.spot(g, me);
+    const fraction = opts && opts.fraction != null ? opts.fraction : 0.6;
+    act(g, 0, mine === 'check' ? 'check' : 'raise', mine === 'allin' ? me.chips : mine === 'bet' ? Math.round(g.pot * fraction / 10) * 10 : 0);
     const d = { spot:sp, choice:CB.choice(sp, g, me) };
     d.judgement = CB.judge(sp, d.choice);
     d.advice = CB.advise(sp);
     return d;
   }
   function playPost(spec){
-    const [, , hole, board, frac, mine] = spec;
+    const [, , hole, board, frac, mine, opts] = spec;
     const g = table(6, 0, 2, hole, 2000);
     [3, 4, 5].forEach(i => act(g, i, 'fold')); act(g, 0, 'raise', 50); act(g, 1, 'fold'); act(g, 2, 'call');
     street(g, 'flop', board.slice(0, 3));
     if (board.length > 3){ act(g, 2, 'check'); act(g, 0, 'check'); street(g, 'turn', [board[3]]); }
     if (board.length > 4){ act(g, 2, 'check'); act(g, 0, 'check'); street(g, 'river', [board[4]]); }
     act(g, 2, 'check'); act(g, 0, 'raise', Math.round(g.pot * frac));
-    const me = g.players[2], sp = CB.spot(g, me);
-    act(g, 2, mine[0], mine[0] === 'raise' ? g.currentBet * mine[1] : 0);
+    const me = g.players[2];
+    if (opts && opts.stack) me.chips = opts.stack;
+    const sp = CB.spot(g, me);
+    act(g, 2, mine[0] === 'allin' ? 'raise' : mine[0], mine[0] === 'allin' ? me.chips + me.betThisRound : mine[0] === 'raise' ? g.currentBet * mine[1] : 0);
     const d = { spot:sp, choice:CB.choice(sp, g, me) };
     d.judgement = CB.judge(sp, d.choice);
     d.advice = CB.advise(sp);
     return d;
   }
   function playSpot(i){
+    if (SPOTS[i][1] === 'pots'){
+      const g = table(3, 0, 0, ['Ah','9d'], 1000);
+      street(g, 'river', ['Kh','Qh','Jh','Th','2c']);
+      g.players.forEach((p, j) => { p.totalBetHand = [100,100,300][j]; p.betThisRound = [0,0,200][j]; });
+      const me = g.players[0]; me.chips = SPOTS[i][2];
+      g.players[1].chips = 0; g.players[1].allIn = true;
+      g.currentBet = 200; g.pot = 500;
+      const sp = CB.spot(g, me); act(g, 0, 'call');
+      const d = { spot:sp, choice:CB.choice(sp, g, me) };
+      d.judgement = CB.judge(sp, d.choice); d.advice = CB.advise(sp); return d;
+    }
     if (SPOTS[i][1] === 'post') return playPost(SPOTS[i]);
     if (SPOTS[i][1] === 'bet') return playBet(SPOTS[i]);
-    const [, n, dealer, you, hole, stack, before, mine] = SPOTS[i];
+    const [, n, dealer, you, hole, stack, before, mine, opts] = SPOTS[i];
     const g = table(n, dealer, you, hole, stack);
+    if (opts && opts.chips) Object.keys(opts.chips).forEach(k => { g.players[+k].chips = opts.chips[k]; });
     before.forEach(b => act(g, b[0], b[1], b[2]));
     const me = g.players[you], sp = CB.spot(g, me);
     act(g, you, mine[0], mine[1]);
@@ -175,13 +218,15 @@
     const n = j.n, sp = d.spot;
     const nums = j.kind === 'bet' ? (n.handName + (n.drawName ? ', ' + n.drawName : '') + '. Checked to you, against ' + n.players + (n.players === 1 ? ' player' : ' players') +
         ': you win about ' + n.eq + '% of the time. A bluff of ' + n.sizeWords + ' needs them to fold ' + n.foldNeed + '%; they fold about ' + n.fold + '% here. Their betting says: ' + n.story + '.')
-      : j.kind === 'post' ? (n.handName + (n.drawName ? ', ' + n.drawName + ' (' + n.outs + ' outs)' : '') + '. Facing ' + n.betSize + ': you win about ' + n.eq + '% against the hands that bet like that. You needed ' + n.need + '%.')
+      : j.kind === 'post' ? (n.handName + (n.drawName ? ', ' + n.drawName + ' (' + n.outs + ' completion cards)' : '') + '. Facing ' + n.betSize + ': ' +
+        (n.drawPrice && n.drawName && n.eq !== n.runoutEq ? 'adjusted one-card assessment ' + n.eq + '%, not the ' + n.runoutEq + '% runout estimate. ' + n.drawPriceText + ' ' + n.drawWarning
+          : 'you win about ' + n.eq + '% against the hands that bet like that.') + ' You needed ' + n.need + '%.')
       : n.eq != null ? 'You win about ' + n.eq + '% against the hands that raise usually means. You needed ' + n.need + '%.'
       : n.range != null ? 'Your hand: top ' + n.pct + '%. From ' + (sp.seat || 'there') + ', a sound player plays the top ' + n.range + '%.' : '';
     return '<div class="cbl-card is-' + j.verdict + '">' + (head ? '<div class="cbl-head">' + head + '</div>' : '') +
       '<div class="cbl-line">' + (sp.seat || '') + ' · ' + sp.holeFacts.name.toUpperCase() + ' · ' + (DID[d.choice.action] || d.choice.action) + '</div>' +
       '<div class="cbl-verdict">' + j.verdict.toUpperCase() + ' · ' + j.confidence.toUpperCase() + (j.best !== d.choice.action ? ' · BETTER: ' + (BEST[j.best] || j.best) : '') + '</div>' +
-      '<div class="cbl-nums">' + nums + '</div><div class="cbl-tag">' + j.tag + ' · lesson: ' + (j.lesson || '-') + '</div></div>';
+      '<div class="cbl-nums">' + nums + (n.pots && n.pots.complex ? ' Eligible pot after calling: ' + n.pots.available + '. Excluded chips: ' + n.pots.excluded + '. ' + n.potNote : '') + '</div><div class="cbl-tag">' + j.tag + ' · lesson: ' + (j.lesson || '-') + '</div></div>';
   }
   function allJudged(){
     const hands = CB.history.concat(CB.hand ? [CB.hand] : []);
@@ -207,10 +252,8 @@
           : '<p class="sdl-note">Nothing yet. Play a hand.</p>');
     }
     if (tab === 'talk'){
-      return '<div class="sdl-row"><div class="sdl-name">THE TALK SLIDER</div>' + seg('notch', CT.OPTIONS.notch, picks.notch) +
-        '<p class="sdl-note">1 COMMENTS: only a clear mistake gets a word. 2 DEBRIEF: + good plays, and the reasons after the hand. 3 TIPS: + his advice on the big decisions, and the smaller mistakes. 4 IN YOUR EAR: everything: advice on every decision, your seat when you\'re dealt in, close calls called close.</p></div>' +
-        '<div class="sdl-row"><div class="sdl-name">HELP: HOW DIRECT HE IS</div>' + seg('help', CT.OPTIONS.help, picks.help) +
-        '<p class="sdl-note">Before you act, before the flop (after the flop comes next). ADVICE: what he\'d do and why; says so when it\'s close. TELL ME: always the move, with the numbers and the size. HINTS: what to think about, not the move. WATCH: nothing before you act; he teaches afterwards. Tapping his screen always gets his full read.</p></div>' +
+      return '<div class="sdl-row"><div class="sdl-name">TAP ONLY</div>' +
+        '<p class="sdl-note">He says nothing on his own now. Close this sheet and play: tap his screen whenever you want his read, worked out from the table right then. Tap again to go deeper (the lesson, then a tip). Your cards face down, an all in running out, or the showdown before the result: he only says to wait and see. After a hand, his light blinks amber when he has something to say about how you played it.</p></div>' +
         '<button type="button" class="sdl-again" data-act="deal">DEAL AGAIN</button>';
     }
     return '<div class="sdl-row"><div class="sdl-name">HIS KEY</div>' + seg('keyFace', CS.OPTIONS.keyFace, picks.keyFace) +
@@ -252,6 +295,14 @@
         sheet.querySelectorAll('[data-tab]').forEach(b => b.classList.toggle('is-on', b === t));
         sheet.querySelectorAll('[data-pane]').forEach(p => { p.hidden = p.dataset.pane !== t.dataset.tab; });
         paint(); sheet.querySelector('.sdl-body').scrollTop = 0;
+        return;
+      }
+      if (t.dataset.spot && SPOTS[+t.dataset.spot][1] === 'hurt'){
+        // that decision, then the hand that knocked you out: what he says over it
+        const d = playSpot(SPOTS.findIndex(s => s[0] === SPOTS[+t.dataset.spot][2]));
+        lastTry = d; open(false);
+        const start = d.spot.stack + d.spot.yourBet + 100;
+        withHim(() => CT.labDebrief({ n:(typeof game !== 'undefined' && game ? game.handNumber : 0), decisions:[d], startStack:start, end:{ net:-start, showdown:true } }));
         return;
       }
       if (t.dataset.spot){

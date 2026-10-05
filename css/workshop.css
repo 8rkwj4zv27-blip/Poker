@@ -1,0 +1,476 @@
+/* Settings + Workshop (docs/ui/SETTINGS_PLAN.md; js/workshop.js): the
+   regrouped Settings sheet and the Workshop screen, drawn on the game's
+   own machine tokens (--ms-* from css/06-machine-system.css). */
+
+/* ---- pages inside the sheet ---- */
+#settings-sheet .st-page{ display:none; }
+#settings-sheet[data-st-page="main"] .st-page[data-st-page="main"],
+#settings-sheet[data-st-page="workshop"] .st-page[data-st-page="workshop"],
+#settings-sheet[data-st-page="cards"] .st-page[data-st-page="cards"],
+#settings-sheet[data-st-page="dealing"] .st-page[data-st-page="dealing"],
+#settings-sheet[data-st-page="showdown"] .st-page[data-st-page="showdown"],
+#settings-sheet[data-st-page="chips"] .st-page[data-st-page="chips"],
+#settings-sheet[data-st-page="cabinet"] .st-page[data-st-page="cabinet"]{ display:block; }
+#settings-sheet .st-attic,
+.st-gone{ display:none !important; }
+
+/* ---- plates and setting rows ----
+   One plate per group; rows inside it split by a cut seam instead of
+   each row being its own box. */
+#settings-sheet .st-plate{ gap:0; }
+#settings-sheet .st-plate > h3{ margin:0 0 4px; }
+.st-row{
+  display:flex; align-items:center; gap:12px; min-height:52px; padding:10px 0;
+  border-top:2px solid rgba(0,0,0,.42); box-shadow:inset 0 2px 0 rgba(255,255,255,.035);
+}
+.st-plate > h3 + .st-row{ border-top:0; box-shadow:none; }
+.st-row--below{ flex-wrap:wrap; row-gap:8px; }
+.st-row--below .st-ctl{ flex:1 1 100%; }
+.st-text{ flex:1 1 auto; min-width:0; }
+.st-label{ font-family:var(--font-px); font-size:15px; line-height:1.2; color:#E9DDAE; }
+.st-hint{ margin-top:3px; font-family:var(--font-px); font-size:12px; line-height:1.35; color:#8E896B; }
+html[data-st-hints="off"] .st-hint{ display:none; }
+.st-ctl{ flex:0 0 auto; display:flex; justify-content:flex-end; }
+#settings-sheet .st-ctl .segmented{ margin:0; }
+#settings-sheet .st-row:not(.st-row--below) .st-ctl .segmented button{ min-width:66px; }
+#settings-sheet .st-row--below .st-ctl .segmented{ width:100%; }
+.st-note{ padding:10px 0 2px; font-family:var(--font-px); font-size:12px; line-height:1.4; color:#8E896B;
+  border-top:2px solid rgba(0,0,0,.42); box-shadow:inset 0 2px 0 rgba(255,255,255,.035); }
+.st-note b{ color:#E9DDAE; font-weight:400; }
+.st-note--center,.st-intro{ border:0; box-shadow:none; text-align:center; padding:8px 4px 0; }
+.st-intro{ padding:0 4px 12px; text-align:left; }
+.st-suits{ display:inline-flex; gap:3px; margin-left:4px; padding:0 4px; vertical-align:-1px;
+  background:var(--card-face); border:1px solid #000; border-radius:2px; }
+.st-suits i{ font-style:normal; font-size:12px; line-height:1.25; }
+.st-suits .s{ color:#22201C; } .st-suits .h{ color:#C8322B; }   /* always the four-colour set ([data-deck="four"]) */
+.st-suits .d{ color:#2F6FBF; } .st-suits .c{ color:#2E8B57; }
+
+/* This table: the plate leads when it shows */
+#settings-sheet .st-table > h3{ margin-bottom:8px; }
+#settings-sheet .st-table .settings-reset{ margin-top:10px; }
+
+/* ---- TABS layout: a choice row under the header ---- */
+#settings-sheet .st-tabs{ display:none; margin:0 0 12px; }
+html[data-st-layout="tabs"] #settings-sheet .st-tabs{ display:flex; }
+html[data-st-layout="tabs"] #settings-sheet .st-plate[data-st-plate]{ display:none; }
+html[data-st-layout="tabs"] #settings-sheet[data-st-tab="play"] .st-plate[data-st-plate="play"],
+html[data-st-layout="tabs"] #settings-sheet[data-st-tab="help"] .st-plate[data-st-plate="help"],
+html[data-st-layout="tabs"] #settings-sheet[data-st-tab="sound"] .st-plate[data-st-plate="sound"],
+html[data-st-layout="tabs"] #settings-sheet[data-st-tab="display"] .st-plate[data-st-plate="display"]{ display:flex; }
+#settings-sheet .st-tabs button{ flex:1 1 0; min-height:44px; font-family:var(--font-hdr); font-size:8px; letter-spacing:.06em; }
+
+/* ---- the drawer key (new part, for sign-off) ---- */
+.st-drawer-key{
+  display:flex; align-items:center; gap:11px; width:100%; min-height:60px; padding:10px 10px 10px 12px;
+  border:3px solid var(--ms-edge); border-radius:4px; background:var(--ms-plate); color:var(--ink);
+  font:inherit; text-align:left; cursor:pointer; -webkit-tap-highlight-color:transparent;
+  box-shadow:0 4px 0 var(--ms-plate-lo),0 6px 0 var(--ms-edge),inset 2px 2px 0 var(--ms-plate-hi),inset -2px -2px 0 rgba(0,0,0,.22);
+}
+.st-drawer-key:active{ transform:translateY(3px); box-shadow:0 1px 0 var(--ms-plate-lo),0 3px 0 var(--ms-edge),inset 2px 3px 0 rgba(0,0,0,.3); }
+.st-dk-lamp{ flex:0 0 10px; height:10px; border:2px solid var(--ms-edge); background:color-mix(in srgb,var(--accent) 45%,black); box-shadow:inset 1px 1px 0 rgba(255,255,255,.25); }
+.st-dk-text{ flex:1 1 auto; min-width:0; display:flex; flex-direction:column; gap:5px; }
+.st-dk-title{ font-family:var(--font-hdr); font-size:9px; letter-spacing:.08em; text-transform:uppercase; color:#F3E6C4; text-shadow:0 1px 0 rgba(0,0,0,.5); }
+.st-dk-sub{ font-family:var(--font-px); font-size:12px; line-height:1.25; color:color-mix(in srgb,var(--ink) 62%,transparent); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.st-dk-chev{ flex:0 0 30px; height:30px; display:grid; place-items:center; border:2px solid var(--ms-edge); border-radius:2px;
+  background:var(--ms-well); color:var(--accent-bright); font-size:13px; box-shadow:inset 0 3px 0 rgba(0,0,0,.45); }
+.st-drawers{ display:flex; flex-direction:column; gap:12px; padding-bottom:16px; }
+
+/* the Workshop entry: the same key in the dark plastic with a gold rim,
+   its lamp lit */
+.st-workshop-wrap{ margin:2px 0 16px; }
+.st-dk--workshop{
+  min-height:68px; background:var(--pc-plastic-dark,var(--ms-plate-lo));
+  box-shadow:0 4px 0 color-mix(in srgb,var(--accent) 40%,black),0 6px 0 var(--ms-edge),
+    inset 0 0 0 2px color-mix(in srgb,var(--accent) 70%,transparent),inset 3px 3px 0 rgba(255,255,255,.06);
+}
+.st-dk--workshop .st-dk-title{ font-size:11px; color:var(--accent-bright); }
+.st-dk--workshop .st-dk-lamp{ background:var(--accent-bright); box-shadow:0 0 8px color-mix(in srgb,var(--accent) 80%,transparent),inset 1px 1px 0 rgba(255,255,255,.5); }
+
+/* ---- drawers: the existing fields, spaced ---- */
+#settings-sheet .st-drawer{ gap:16px; }
+#settings-sheet .st-bare{ padding:0; margin:0; border:0; background:none; box-shadow:none; }
+
+/* ---- volume (new part, for sign-off): FADER or STEPS ---- */
+.st-vol{ display:flex; align-items:center; gap:12px; width:100%; --v:1; }
+.st-vol.is-off{ opacity:.45; }
+.st-vol-track{ position:relative; flex:1 1 auto; height:46px; touch-action:none; cursor:pointer; }
+.st-fader,.st-steps{ display:none; }
+html:not([data-st-volume="steps"]) .st-fader{ display:block; }
+html[data-st-volume="steps"] .st-steps{ display:flex; }
+.st-fader{
+  position:absolute; left:0; right:0; top:50%; height:14px; transform:translateY(-50%);
+  border:2px solid #040807; border-radius:2px; background:var(--ms-glass);
+  box-shadow:inset 0 3px 0 rgba(0,0,0,.6),0 2px 0 rgba(255,255,255,.07);
+}
+.st-fader-fill{ position:absolute; left:0; top:0; bottom:0; width:calc(var(--v) * 100%);
+  background:color-mix(in srgb,var(--accent) 70%,black); box-shadow:inset 0 2px 0 rgba(255,255,255,.18); }
+.st-fader-ticks{ position:absolute; left:12px; right:12px; top:-12px; bottom:-12px; pointer-events:none; }
+.st-fader-ticks b{ position:absolute; left:calc(var(--t) * 100%); width:2px; margin-left:-1px; top:0; bottom:0;
+  background:linear-gradient(rgba(233,221,174,.24) 0 5px,transparent 5px calc(100% - 5px),rgba(233,221,174,.24) calc(100% - 5px)); }
+.st-fader-cap{
+  position:absolute; top:50%; left:calc(var(--v) * (100% - 24px)); width:24px; height:36px; transform:translateY(-50%);
+  border:2px solid var(--ms-edge); border-radius:3px; background:var(--accent);
+  box-shadow:inset 0 3px 0 rgba(255,255,255,.4),inset 0 -3px 0 rgba(0,0,0,.2),0 3px 0 var(--ms-edge);
+}
+.st-fader-cap::after{ content:""; position:absolute; left:50%; top:6px; bottom:6px; width:2px; margin-left:-1px; background:rgba(0,0,0,.45); }
+.st-steps{
+  position:absolute; inset:0; align-items:flex-end; gap:4px; padding:4px 5px;
+  border:2px solid #040807; border-radius:2px; background:var(--ms-glass); box-shadow:inset 0 3px 0 rgba(0,0,0,.6);
+}
+.st-steps i{ flex:1 1 0; height:var(--h); border:1px solid #000; background:color-mix(in srgb,var(--ms-plate) 45%,black); }
+.st-steps i.is-lit{ background:var(--accent); box-shadow:inset 0 2px 0 rgba(255,255,255,.35),0 0 6px color-mix(in srgb,var(--accent) 55%,transparent); }
+.st-vol-readout{ flex:0 0 54px; height:38px; display:flex; align-items:center; justify-content:center; }
+
+@media (prefers-reduced-motion:reduce){ .st-drawer-key:active{ transform:none; } }
+
+/* ============================================================
+   ROUND 2: THE WORKSHOP SCREEN + the home key candidates
+   ============================================================ */
+/* the screen: Hand Rankings' cabinet, with the Settings controls' faces
+   (in the game these selectors join the lists in 06-machine-system.css) */
+#workshop{
+  overflow-y:auto; -webkit-overflow-scrolling:touch;
+  background:repeating-conic-gradient(rgba(255,255,255,.016) 0% 25%, transparent 0% 50%) 0 0 / 10px 10px, var(--bg-deep);
+  padding:max(28px,var(--safe-top)) 22px max(28px,env(safe-area-inset-bottom));
+  align-items:center;
+  --ms-edge:var(--pc-edge-lo,#0B0F0C);
+  --ms-plate:var(--pc-plastic,var(--theme-case-raised));
+  --ms-plate-hi:var(--pc-plastic-hi,var(--theme-case-hi));
+  --ms-plate-lo:var(--pc-plastic-lo,color-mix(in srgb,var(--theme-case-raised) 58%,black));
+  --ms-well:color-mix(in srgb,var(--panel) 50%,black);
+  --ms-glass:#060B0A;
+  --ms-print:#A99E73;
+}
+#workshop .lobby-card{
+  padding:11px; border:4px solid var(--ms-edge); border-radius:12px;
+  background:repeating-conic-gradient(rgba(255,255,255,.05) 0 25%,transparent 0 50%) 0 0/8px 8px, var(--pc-leather);
+  box-shadow:inset 4px 4px 0 var(--pc-leather-hi),inset -5px -5px 0 var(--pc-leather-lo),0 0 0 2px var(--theme-rim),0 9px 0 #090406;
+}
+#workshop .setup-head{
+  margin:0 0 12px; padding:5px 7px; border:3px solid var(--ms-edge);
+  background:var(--pc-plastic-dark,var(--ms-plate-lo));
+  box-shadow:inset 2px 2px 0 var(--pc-plastic-dark-hi,var(--ms-plate-hi)),inset -2px -2px 0 var(--pc-plastic-dark-lo,var(--ms-plate-lo)),0 3px 0 var(--ms-edge);
+}
+#workshop .setup-title{ font-size:9px; letter-spacing:.12em; color:#E9DDAE; text-shadow:0 1px 0 rgba(0,0,0,.55); }
+#workshop .icon-btn{
+  border:3px solid var(--ms-edge); border-radius:3px; background:var(--ms-plate); color:var(--ink);
+  box-shadow:0 3px 0 var(--ms-edge),inset 2px 2px 0 var(--ms-plate-hi),inset -2px -2px 0 rgba(0,0,0,.25);
+}
+#workshop .sheet-section{
+  display:flex; flex-direction:column; gap:16px; margin-bottom:12px; padding:12px 13px;
+  border:3px solid var(--ms-edge); border-radius:4px; background:var(--ms-well);
+  box-shadow:inset 0 5px 0 rgba(0,0,0,.44),inset 3px 0 0 rgba(0,0,0,.26),0 3px 0 var(--ms-edge);
+}
+#workshop .st-bare{ padding:0; margin:0; border:0; background:none; box-shadow:none; }
+#workshop .field{ margin:0; }
+#workshop .field .hint{ margin-top:6px; }
+#workshop .field-label{ color:var(--ms-print); }
+#workshop .hint,#workshop .ts{ color:#8E896B; }
+#workshop .segmented{ gap:6px; padding:5px; border:2px solid var(--ms-edge); border-radius:4px; background:var(--ms-well); box-shadow:inset 0 4px 0 rgba(0,0,0,.42); }
+#workshop .segmented button{
+  border:2px solid var(--ms-edge); border-radius:3px; background:var(--ms-plate); color:var(--ink);
+  box-shadow:0 3px 0 var(--ms-plate-lo),0 5px 0 var(--ms-edge),inset 2px 2px 0 var(--ms-plate-hi),inset -2px -2px 0 rgba(0,0,0,.22);
+}
+#workshop .segmented button.active{
+  background:var(--accent); color:var(--accent-ink);
+  box-shadow:0 2px 0 color-mix(in srgb,var(--accent) 55%,black),0 4px 0 var(--ms-edge),inset 0 3px 0 rgba(255,255,255,.34),inset 0 -3px 0 rgba(0,0,0,.16);
+}
+#workshop .segmented button:active{ transform:translateY(3px); box-shadow:0 1px 0 var(--ms-plate-lo),0 2px 0 var(--ms-edge),inset 2px 3px 0 rgba(0,0,0,.3); }
+#workshop .toggle-row{ padding:9px 10px; border:2px solid var(--ms-edge); border-radius:3px; background:color-mix(in srgb,var(--ms-well) 78%,black); box-shadow:inset 0 3px 0 rgba(0,0,0,.4); }
+#workshop .toggle-row .tl{ font-size:13px; }
+#workshop .switch{ border:2px solid var(--ms-edge); box-shadow:inset 0 3px 0 rgba(0,0,0,.44),0 2px 0 var(--ms-edge); }
+#workshop .btn-secondary{
+  border:3px solid var(--ms-edge); border-radius:4px; background:var(--ms-plate); color:var(--ink);
+  box-shadow:0 4px 0 var(--ms-plate-lo),0 6px 0 var(--ms-edge),inset 2px 2px 0 var(--ms-plate-hi);
+}
+#workshop .sheet-keys{ display:flex; gap:10px; }
+#workshop .sheet-keys > *{ flex:1 1 0; }
+
+/* ---- the home key (round 4): Custom Game's slab with a trim ----
+   html[data-wbtn]: line | studs | edge | lamp */
+body #home .pc-control-bay > .pc-button-secondary.wk-trim{
+  display:flex; align-items:center; justify-content:center; gap:14px; margin:0 0 12px;
+}
+body #home .pc-control-bay > .home-row + .pc-button-secondary.wk-trim{ margin:12px 0 0; }
+html[data-wbtn="line"] body #home .pc-control-bay > .wk-trim{
+  box-shadow:0 4px 0 color-mix(in srgb,var(--theme-case-raised) 55%,black),0 6px 0 var(--pc-edge-lo),
+    inset 2px 2px 0 var(--theme-case-hi),inset -2px -2px 0 rgba(0,0,0,.24),
+    inset 0 0 0 5px var(--theme-case-raised),inset 0 0 0 7px color-mix(in srgb,var(--accent) 75%,transparent);
+}
+html[data-wbtn="edge"] body #home .pc-control-bay > .wk-trim{
+  box-shadow:0 4px 0 color-mix(in srgb,var(--theme-case-raised) 55%,black),0 6px 0 var(--pc-edge-lo),
+    inset 2px 2px 0 var(--theme-case-hi),inset -2px -2px 0 rgba(0,0,0,.24),
+    0 0 0 2px color-mix(in srgb,var(--accent) 85%,#6B4A10);
+}
+html[data-wbtn="line"] body #home .pc-control-bay > .wk-trim:active,
+html[data-wbtn="edge"] body #home .pc-control-bay > .wk-trim:active{
+  box-shadow:0 1px 0 color-mix(in srgb,var(--theme-case-raised) 55%,black),0 3px 0 var(--pc-edge-lo),
+    inset 0 0 0 5px var(--theme-case-raised),inset 0 0 0 7px color-mix(in srgb,var(--accent) 75%,transparent);
+}
+html[data-wbtn="edge"] .wk-trim .wk-stud,
+html:not([data-wbtn="lamp"]) .wk-trim .wk-lamp,
+html[data-wbtn="lamp"] .wk-trim .wk-stud{ display:none; }
+.wk-stud{ width:6px; height:6px; flex-shrink:0; transform:rotate(45deg); background:color-mix(in srgb,var(--accent) 80%,#6B4A10); box-shadow:0 1px 0 rgba(0,0,0,.35); }
+
+/* the card backs as a grid of real cards (dealer-deck.css's Settings rule) */
+#workshop #deck-back-seg{ display:grid; grid-template-columns:repeat(4,1fr); gap:6px; }
+#workshop #deck-back-seg button{ display:flex; flex-direction:column; align-items:center; gap:6px; padding:8px 2px 7px; min-height:92px; }
+
+/* ============================================================
+   ROUND 5: tabs, a stage per tab, the rack
+   ============================================================ */
+/* the game hides every flying card while the table is hidden
+   (04-overlays-and-modes.css); the Workshop's stages deal for real */
+body:has(#workshop:not(.hidden)):not(:has(.scrim.open)) .fly-card{ display:block !important; }
+
+#workshop .ws-tabs{ display:grid; grid-template-columns:repeat(4,1fr); gap:6px; margin:0 0 12px; }
+#workshop .ws-tabs button{ min-width:0; min-height:44px; font-family:var(--font-hdr); font-size:7px; letter-spacing:.04em; padding:4px 1px; }
+#workshop .ws-tab{ display:none; }
+#workshop .ws-tab.is-on{ display:block; }
+
+/* the stage: felt with a rail, and under it a strip of the dashboard
+   with your hand in its holder, as at the table */
+.ws-stage{ margin:0 0 4px; }
+.wss-felt{
+  position:relative; height:118px; overflow:hidden;
+  border:4px solid var(--rail-lo); border-bottom:0; border-radius:10px 10px 0 0;
+  background:radial-gradient(ellipse at 50% 40%,var(--felt-1),var(--felt-2) 75%);
+  box-shadow:inset 0 0 0 3px var(--rail),inset 0 0 0 5px var(--rail-hi),inset 0 8px 18px rgba(0,0,0,.45);
+}
+.wss-station{ position:absolute; left:18px; bottom:14px; width:48px; height:78px; }
+html[data-ds-where="right"] .wss-station{ left:auto; right:18px; }
+.ws-stage .dealer-deck{ position:absolute; inset:0; }
+.ws-stage .dealer-deck .card{ position:absolute; width:44px; height:62px; left:2px; top:calc(2px + var(--ds-i,0) * 2px); z-index:calc(20 - var(--ds-i,0)); }
+.ws-stage .dealer-deck .card.back{ box-shadow:inset 0 0 0 2px var(--cb-trim,var(--rail)); }
+.ws-stage .dealer-deck .card.back.ds-under{ border-bottom-width:1px; }
+.ws-stage .dealer-deck .card.back.ds-bottom{ border-bottom-width:2px; box-shadow:inset 0 0 0 2px var(--cb-trim,var(--rail)),0 3px 0 rgba(0,0,0,.45); }
+.ws-stage .dealer-deck .card.ds-gone{ display:none; }
+.ws-stage .dealer-deck .card.ds-exit{ z-index:25; }
+.ws-stage .dealer-deck.ds-kick{ animation:dsKick 150ms steps(3,end); }
+/* CARDS: felt only, the game's deck in the middle at exactly twice its size */
+.ws-stage--cards .wss-felt{ height:200px; border-bottom:4px solid var(--rail-lo); border-radius:10px; }
+.ws-stage--cards .wss-station,
+html[data-ds-where="right"] .ws-stage--cards .wss-station{ left:50%; right:auto; top:50%; bottom:auto; margin:-39px 0 0 -24px; transform:scale(2); }
+/* DEALING: felt only; the deck at one side, a card's place at the other */
+.ws-stage--dealing .wss-felt{ height:160px; border-bottom:4px solid var(--rail-lo); border-radius:10px; }
+.ws-stage--dealing .wss-station{ top:50%; bottom:auto; margin-top:-39px; }
+.wss-spot{ position:absolute; right:34px; top:50%; width:44px; height:62px; margin-top:-31px; }
+html[data-ds-where="right"] .wss-spot{ right:auto; left:34px; }
+.wss-spot::before{ content:""; position:absolute; inset:-5px; border:2px dashed color-mix(in srgb,var(--accent) 45%,transparent); border-radius:5px; }
+.wss-spot .card{ position:absolute; inset:0; width:44px; height:62px; margin:0; }
+.wss-spot .card:not(.is-dealt){ opacity:0; }
+.ws-stage .dealer-deck.ds-tap{ animation:dsTap 110ms steps(2,end); }
+/* the dashboard strip, in the case colour, with the holder set into it */
+.wss-dash{
+  position:relative; height:74px; overflow:hidden;
+  border:4px solid var(--px-ink); border-top:3px solid var(--px-ink); border-radius:0 0 8px 8px;
+  background:repeating-conic-gradient(rgba(255,255,255,.035) 0 25%,transparent 0 50%) 0 0/6px 6px,var(--theme-case-raised);
+  box-shadow:inset 0 3px 0 var(--theme-case-hi),inset 0 -3px 0 rgba(0,0,0,.25);
+}
+.wss-box{ position:relative; }
+.wss-seat{ position:absolute; left:50%; bottom:0; width:148px; height:110px; transform:translateX(-50%); z-index:3; }
+.wss-slot{ position:absolute; left:0; right:0; top:56px; height:14px; border:2px solid var(--px-ink); border-radius:2px; background:#080405;
+  box-shadow:inset 0 8px 0 rgba(0,0,0,.8),0 1px 0 var(--theme-case-hi); }
+.wss-cards{ position:absolute; left:50%; top:0; height:72px; overflow:hidden; display:flex; gap:6px; transform:translateX(-50%); z-index:2; }
+.wss-cards .card{ position:relative; width:62px; height:88px; }
+.wss-cards .card .r,.wss-spot .card .r{ font-size:21px; } .wss-cards .card .s{ font-size:15px; } .wss-cards .card .pip{ font-size:30px; }
+.wss-lip{ position:absolute; left:2px; right:2px; top:64px; height:12px; z-index:4; border:2px solid var(--machine-case-lo,#000); border-top-color:var(--theme-case-hi);
+  background:var(--theme-case-raised); box-shadow:0 2px 0 rgba(0,0,0,.5); }
+html[data-holder="brass"] .wss-lip{
+  border:2px solid var(--px-ink); border-radius:3px 3px 2px 2px;
+  background:linear-gradient(to bottom,var(--pc-lamp-amber-hi,#FFE08A) 0 2px,var(--pc-lamp-amber,#E8B83A) 2px 5px,#D0921F 5px calc(100% - 2px),#7A4B0C calc(100% - 2px));
+  box-shadow:0 3px 0 rgba(0,0,0,.55);
+}
+.ws-stage.wss-flash .wss-lip{ animation:wssFlash .5s steps(4,end); }
+@keyframes wssFlash{ 0%,50%{ filter:brightness(1.6); } 100%{ filter:none; } }
+.wss-caption{ margin-top:6px; min-height:30px; padding:6px 10px; display:flex; align-items:center; }
+
+/* the rack (js/workshop-rack.js): the event rack's reader and cards,
+   css/career-hub-v2-lab.css + css/career-motion-live.css, for the Workshop */
+.wr-reader{
+  position:relative; margin:12px 0 4px; overflow:hidden;
+  background:radial-gradient(ellipse at 50% 35%,color-mix(in srgb,var(--theme-rim) 12%,transparent),transparent 62%),
+    repeating-conic-gradient(var(--felt-1) 0 25%,var(--felt-2) 0 50%) 0 0/8px 8px;
+  border:4px solid var(--ms-edge); border-radius:5px;
+  box-shadow:inset 0 9px 0 rgba(0,0,0,.42),inset 4px 0 0 rgba(0,0,0,.28),inset -4px 0 0 rgba(0,0,0,.28),0 4px 0 #17090d;
+}
+.wr-reader.is-stop-left{ animation:wrStopL 220ms steps(3,end); }
+.wr-reader.is-stop-right{ animation:wrStopR 220ms steps(3,end); }
+@keyframes wrStopL{ 33%{ transform:translateX(4px); } 66%{ transform:translateX(-2px); } }
+@keyframes wrStopR{ 33%{ transform:translateX(-4px); } 66%{ transform:translateX(2px); } }
+.wr-rack{ position:relative; height:226px; overflow:hidden; overflow:clip; touch-action:pan-y; cursor:grab; outline:none; }
+.wr-rack:active{ cursor:grabbing; }
+.wr-rack:focus-visible{ box-shadow:inset 0 0 0 2px var(--accent-bright); }
+.wr-track{ position:absolute; inset:0; }
+.wr-card{
+  position:absolute; left:50%; top:4px; width:136px; height:190px; margin-left:-68px;
+  transform:perspective(900px)
+    translate3d(var(--card-x,0%),calc(var(--card-y,10px) + var(--hold-y,0px)),0)
+    rotate(var(--lean,0deg)) rotateX(var(--tilt-x,0deg)) rotateY(var(--tilt-y,0deg))
+    scale(var(--card-scale,1));
+  transform-origin:50% 42%; opacity:var(--card-o,0); will-change:transform;
+  user-select:none; -webkit-user-select:none;
+}
+.wr-card-inner{ position:relative; width:100%; height:100%; }
+/* a lifted card casts a hard, chunky shadow that grows with height */
+.wr-card::before{
+  content:""; position:absolute; z-index:-1; inset:2px; pointer-events:none; border-radius:6px; background:#060403;
+  opacity:calc(var(--lift,0) * .5); transform:translate(calc(var(--lift,0) * 7px),calc(var(--lift,0) * 20px));
+}
+/* cards away from the middle sit in shadow (opacity only) */
+.wr-card::after{ content:""; position:absolute; z-index:45; inset:0; pointer-events:none; border-radius:6px; background:#0b0c09; opacity:var(--shade,0); }
+/* CARDS: the item is the deck's own card (card back small, 44x62),
+   enlarged exactly x3 as one layer: the deck's pattern, bigger, and
+   rasterised once so it doesn't shimmer while the rack moves */
+.wr-rack:has(.wr-back) .wr-card{ width:132px; height:186px; margin-left:-66px; }
+.wr-back{ position:absolute; left:0; top:0; width:44px; height:62px; transform:scale(3); transform-origin:0 0; will-change:transform; }
+.wr-back .card{ position:relative; display:block; width:44px; height:62px; margin:0; }
+.wr-rack:has(.wr-back) .wr-card::before,.wr-rack:has(.wr-back) .wr-card::after{ border-radius:5px; }
+
+/* DEALING: a style's ticket, coloured by its rarity */
+.wr-rack:has(.wr-style) .wr-card{ width:150px; height:192px; margin-left:-75px; }
+.wr-style{
+  --t-bg:#E9DDAE; --t-hi:#F6EBC4; --t-lo:#786B49; --t-ink:#22201C; --t-band:#2A261C; --t-band-ink:#E9DDAE;
+  position:relative; display:flex; flex-direction:column; align-items:center; height:100%; box-sizing:border-box; padding:14px 10px 0;
+  border:3px solid var(--ms-edge); border-radius:6px; overflow:hidden; background:var(--t-bg); color:var(--t-ink);
+  box-shadow:inset 0 0 0 2px var(--t-hi),inset 0 0 0 4px color-mix(in srgb,var(--t-lo) 45%,transparent),0 5px 0 var(--t-lo),0 8px 0 #0b0805;
+}
+.wr-style[data-tier="uncommon"]{ --t-bg:#3F8A5A; --t-hi:#6FB58A; --t-lo:#1F4A31; --t-ink:#F3E6C4; --t-band:#173826; --t-band-ink:#BFE8CC; }
+.wr-style[data-tier="rare"]{ --t-bg:#3A6EB8; --t-hi:#6E9BDB; --t-lo:#1D3A66; --t-ink:#F3EEDD; --t-band:#152A4D; --t-band-ink:#BCD3F5; }
+.wr-style[data-tier="epic"]{ --t-bg:#7C46AD; --t-hi:#A87AD6; --t-lo:#40205E; --t-ink:#F6EAFB; --t-band:#2E1745; --t-band-ink:#DCC2F2; }
+.wr-style[data-tier="legendary"]{
+  --t-bg:#E2B23C; --t-hi:#FFE08A; --t-lo:#7A520E; --t-ink:#2A1A04; --t-band:#3D2806; --t-band-ink:#FFE08A;
+  background:repeating-linear-gradient(115deg,transparent 0 14px,rgba(255,240,180,.28) 14px 18px,transparent 18px 36px),var(--t-bg);
+}
+.wr-pips{ display:flex; gap:5px; }
+.wr-pips i{ width:9px; height:9px; transform:rotate(45deg); border:2px solid var(--t-ink); opacity:.35; }
+.wr-pips i.on{ opacity:1; background:var(--t-ink); }
+.wr-style b{
+  flex:1; display:flex; align-items:center; justify-content:center; text-align:center; padding:0 2px;
+  font-family:var(--font-hdr); font-weight:400; font-size:13px; letter-spacing:.04em; line-height:1.35; text-transform:uppercase; text-wrap:balance;
+}
+.wr-tier{
+  align-self:stretch; margin:0 -10px; padding:9px 4px 8px; text-align:center; white-space:nowrap;
+  font-family:var(--font-hdr); font-size:6px; letter-spacing:.06em; text-transform:uppercase;
+  background:var(--t-band); color:var(--t-band-ink); border-top:3px solid var(--ms-edge);
+}
+/* lit when the style is in the mix */
+.wr-mixlamp{ position:absolute; right:9px; top:9px; width:11px; height:11px; border:2px solid var(--ms-edge); background:#2A1E10; box-shadow:inset 1px 1px 0 rgba(255,255,255,.2); }
+.wr-mixlamp.is-on{ background:#7CF29A; box-shadow:0 0 7px #7CF29A,inset 1px 1px 0 rgba(255,255,255,.55); }
+
+/* USE THIS, and a line on what it does */
+.ws-use{ display:flex; flex-wrap:wrap; align-items:center; gap:8px 10px; margin:6px 0 12px; }
+#workshop .ws-use-key{ width:auto; flex:1 1 60%; min-height:48px; font-family:var(--font-hdr); font-size:9px; letter-spacing:.06em; }
+#workshop .ws-use-key.is-on{ background:var(--accent); color:var(--accent-ink); box-shadow:0 4px 0 color-mix(in srgb,var(--accent) 55%,black),0 6px 0 var(--ms-edge),inset 0 3px 0 rgba(255,255,255,.34); }
+#workshop .ws-replay{ width:auto; flex:0 0 auto; min-height:48px; padding:0 14px; font-family:var(--font-hdr); font-size:8px; }
+.ws-use-note{ flex:1 1 100%; font-family:var(--font-px); font-size:12px; line-height:1.35; color:#8E896B; }
+#workshop .ws-opts{ gap:14px; }
+#workshop .ws-opts .segmented{ margin:0; }
+.ws-soon{ padding:8px 10px; border:2px dashed color-mix(in srgb,var(--accent) 45%,transparent); border-radius:3px; font-family:var(--font-px); font-size:12px; line-height:1.4; color:#C9BC8C; }
+/* SCREENS: Finishes' rows (finishes.css lays them out in the sheet) */
+#workshop .finish-seg{ flex-wrap:wrap; row-gap:9px; }
+#workshop .finish-seg button{ flex:1 1 28%; min-width:0; }
+#workshop .finish-seg button:first-child:nth-last-child(4),
+#workshop .finish-seg button:first-child:nth-last-child(4) ~ button{ flex-basis:40%; }
+
+/* ============================================================
+   ROUND 8: CHIPS, CABINET, SCREENS, BUTTONS
+   ============================================================ */
+.ws-stage--caption .wss-caption{ margin-top:0; }
+/* CHIPS: felt with four stacks in the middle */
+.ws-stage--chips .wss-felt{ height:120px; border-bottom:4px solid var(--rail-lo); border-radius:10px; }
+/* BUTTONS: three real keys to press, one of each size */
+.wss-keys{ display:flex; align-items:center; gap:10px; padding:14px 12px 16px; border:3px solid var(--ms-edge); border-radius:6px; background:var(--ms-well); box-shadow:inset 0 5px 0 rgba(0,0,0,.44); }
+#workshop .wss-keys .icon-btn{ flex:0 0 48px; height:48px; }
+#workshop .wss-keys .btn-secondary,#workshop .wss-keys .btn-primary{ flex:1 1 0; width:auto; min-width:0; margin:0; min-height:52px; }
+
+#workshop .wss-keys .btn-primary{ flex:1.3 1 0; font-size:10px; white-space:nowrap; }
+
+/* TABLE GREEN is the old back: its look was only written for the Settings
+   grid, so in the rack it wore whatever back the page had (round 8 bug) */
+#workshop .wr-back[data-cb="table"] .card.back{
+  background:repeating-conic-gradient(rgba(255,255,255,.13) 0% 25%,transparent 0% 50%) 0 0 / 6px 6px,var(--felt-2);
+  box-shadow:0 3px 0 rgba(0,0,0,.5),inset 0 0 0 2px var(--rail);
+}
+#workshop .wr-back[data-cb="table"] .card.back::before,
+#workshop .wr-back[data-cb="table"] .card.back::after{ display:none; }
+/* the Use key repaints whole when its label changes (iOS left old glyphs) */
+#workshop .ws-use-key{ transform:translateZ(0); isolation:isolate; }
+
+/* Every back in the rack starts from a clean slate. A back only sets some
+   of its --cb- values (Sunburst never says whether its diamond shows):
+   whatever it leaves unset was borrowed from the page, which wears the
+   back you last landed on, so motifs and frames came and went as you
+   swiped. Reset at no weight: the back's own values still win, and unset
+   ones fall back to the game's defaults, as they do on the table. */
+:where(#workshop .wr-back){ --cb-frame:initial; --cb-motif:initial; --cb-motif-edge:initial; --cb-motif-show:initial; }
+/* The pixel font draws a little above its line, and iOS only redraws the
+   line when the label changes, leaving the tops of the old letters. A tall
+   line keeps all of the ink inside what gets redrawn. */
+#workshop .ws-use-key{ line-height:2.4; padding-top:4px; padding-bottom:4px; }
+
+/* ============================================================
+   ROUND 9: keys and real previews for CHIPS, CABINET, SCREENS, BUTTONS
+   ============================================================ */
+/* CHIPS: the felt is the coin world's while the tab is open; a pot tray
+   in the middle catches the throw */
+.ws-stage--chips .wss-felt{ height:150px; border-bottom:4px solid var(--rail-lo); border-radius:10px; }
+.wss-tray{ position:absolute; left:50%; top:46%; width:120px; height:58px; transform:translate(-50%,-50%); border-radius:30px;
+  background:rgba(0,0,0,.22); box-shadow:inset 0 4px 0 rgba(0,0,0,.35),0 1px 0 rgba(255,255,255,.06); }
+/* CABINET: each key wears its own theme (the button carries data-theme,
+   and the theme tokens apply to any element that does) */
+#workshop #theme-seg button{
+  min-height:56px; background:var(--theme-case-raised); color:#F3E6C4;
+  box-shadow:0 3px 0 color-mix(in srgb,var(--theme-case-raised) 50%,black),0 5px 0 var(--ms-edge),inset 0 0 0 3px var(--theme-case-hi),inset 0 -12px 0 var(--felt-1);
+}
+#workshop #theme-seg button.active{ outline:3px solid var(--accent-bright); outline-offset:2px; }
+/* SCREENS: a cluster of the table's own readouts (layout only; the CRT
+   look is crt.css's) */
+.wss-readouts{ display:flex; flex-direction:column; gap:8px; padding:12px; border:3px solid var(--ms-edge); border-radius:6px; background:var(--theme-case-raised);
+  box-shadow:inset 0 3px 0 var(--theme-case-hi),inset 0 -3px 0 rgba(0,0,0,.25); }
+.wss-readouts .crt{ display:flex; align-items:center; min-height:34px; padding:0 10px; }
+.wss-ro-row{ display:flex; gap:8px; }
+.wss-ro-row .crt{ flex:1; flex-direction:column; align-items:flex-start; justify-content:center; min-height:52px; padding:6px 10px; }
+.ws-stage--screens{ margin-bottom:12px; }
+/* BUTTONS: the console's own keys and two smaller ones */
+.wss-console{ display:flex; flex-direction:column; gap:12px; padding:14px 12px; border:3px solid var(--ms-edge); border-radius:6px; background:var(--theme-case-raised);
+  box-shadow:inset 0 3px 0 var(--theme-case-hi),inset 0 -3px 0 rgba(0,0,0,.25); }
+.wss-actions{ display:flex; gap:8px; }
+.wss-actions button{ flex:1 1 0; min-width:0; min-height:58px; }
+.wss-console .wss-keys{ padding:0; border:0; background:none; box-shadow:none; }
+.ws-finish-seg{ flex-wrap:wrap; row-gap:9px; }
+#workshop .ws-finish-seg button{ flex:1 1 28%; min-width:0; }
+
+/* ============================================================
+   HELD IN PLACE (owner, round 9): the frame never moves
+   ============================================================ */
+/* The Workshop's cabinet fits the phone: it fills the screen from under
+   the status bar to above the home bar on every tab, so switching tabs
+   never moves its edges or its header and tab keys. Only a tab with more
+   than fits grows past the screen, and you scroll down to its bottom. */
+#workshop{ align-items:center; }
+#workshop .lobby-card{ flex:1 0 auto; margin:0 auto; box-sizing:border-box; }
+/* the CRT readouts on SCREENS keep their size whatever line they show */
+.wss-readouts .crt{ white-space:normal; }
+
+/* Settings: the sheet is one height wherever it opens (home or a table);
+   what doesn't fit scrolls inside it */
+#settings-sheet{ height:88%; }
+#settings-sheet > .sheet-body{ flex:1 1 auto; min-height:0; }
+
+/* ---- SHOWDOWN (round 10): a pot on its own felt, and two rows of keys ---- */
+.ws-stage--showdown .wss-felt{ height:210px; border-bottom:4px solid var(--rail-lo); border-radius:10px; overflow:visible; }
+.ws-stage--showdown .wss-tray{ overflow:visible; }
+#workshop .ws-again{ flex:1 1 100%; min-height:40px; -webkit-touch-callout:none; -webkit-user-select:none; user-select:none; touch-action:none; }
+#workshop .ws-again:disabled{ filter:brightness(.6) saturate(.5); cursor:default; }
+.ws-use:has(.ws-again){ margin:6px 0 10px; }
+.ws-stage--showdown .wss-tray{ width:120px; height:56px; }
+.ws-style-seg{ flex-wrap:wrap; row-gap:9px; }
+#workshop .ws-style-seg button{ flex:1 1 40%; min-width:0; }
+
+/* The home cabinet fits the phone with the Workshop key in it:
+   js/workshop.js (fitHome) gives the hero (the POKER FACES screen) the
+   height the key takes, down to its compact 292px. A phone too short even
+   for that scrolls the home screen rather than cutting the cabinet off. */
+#home{ overflow-y:auto; -webkit-overflow-scrolling:touch; }
+

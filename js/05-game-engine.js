@@ -303,7 +303,6 @@ function newGame(opts){
     dealerIndex:-1, sbIndex:-1, bbIndex:-1, currentIndex:-1, turnPointer:0,
     phase:'setup', handNumber:0, log:[], over:false,
     buyIns:stack, netStart:stack,
-    livesEnabled: opts.mode==='cash' && !!settings.lives,
     formatId:opts.formatId || null,
     handsPerBlindLevel:Number.isInteger(opts.handsPerBlindLevel) ? opts.handsPerBlindLevel : TOURNAMENT_HANDS_PER_LEVEL,
     cashSessionId:typeof opts.cashSessionId === 'string' ? opts.cashSessionId : null,
@@ -314,9 +313,13 @@ function newGame(opts){
 }
 
 /* ---------------- table save/resume ----------------
-   Saved only at safe between-hand points (see finishHand). No deck, hole
-   cards, board, phase, or unfinished bets are ever persisted — a restored
-   table always resumes at the pre-deal moment. */
+   Saved only at safe between-hand points (see finishHand). No hole cards,
+   board, phase, or unfinished bets are ever persisted — a restored table
+   always resumes at the pre-deal moment. The one exception is the hand's
+   shuffled deck: startNewHand() pins it to the checkpoint, so a hand that
+   is saved, left or closed mid-way is dealt again with the SAME cards
+   rather than a fresh shuffle (no re-dealing a bad hand, no losing a
+   good one). */
 function serializeTable(g){
   const snapshot = {
     version: SAVE_VERSION,
@@ -327,7 +330,7 @@ function serializeTable(g){
     handsPerBlindLevel:g.handsPerBlindLevel,
     metricsStartedAt:Number.isFinite(g.metricsStartedAt)?g.metricsStartedAt:Date.now(),
     blindLevel:Number.isFinite(g.blindLevel)?g.blindLevel:0, smallBlind:g.smallBlind, bigBlind:g.bigBlind,
-    buyIns:g.buyIns, netStart:g.netStart, livesEnabled:g.livesEnabled,
+    buyIns:g.buyIns, netStart:g.netStart,
     dealerIndex:g.dealerIndex, handNumber:g.handNumber,
     sess:{ bestWin:g.sess.bestWin, worstLoss:g.sess.worstLoss },
     aiReads: aiReadsSnapshot(g),
@@ -516,6 +519,24 @@ function loadCareerTable(){
 }
 function clearCareerTable(){ Store.remove(CAREER_TABLE_KEY); }
 
+/* The deck in the hand-start checkpoint, as card keys in deal order, and
+   the checkpoint written straight away, so closing the app mid-hand comes
+   back to the same cards too. */
+function pinDeckToCheckpoint(g){
+  if (!g || !g._safeSave || !Array.isArray(g.deck)) return;
+  g._safeSave.deck = g.deck.map(cardKey);
+  if (g.mode === 'career') saveCareerTable();
+  else if (g.mode === 'career-cash') checkpointCareerCash(g._safeSave);
+  else if (!g.over && loadTableSave()) Store.set('felt.table', g._safeSave);
+}
+function deckFromSave(keys){
+  if (!Array.isArray(keys) || keys.length !== 52) return null;
+  const byKey = new Map(createDeck().map(c=>[cardKey(c), c]));
+  const deck = keys.map(k=>byKey.get(k));
+  if (deck.some(c=>!c) || new Set(keys).size !== 52) return null;
+  return deck;
+}
+
 function restoreTable(save){
   const players = save.players.map(sp=>{
     const personality = sp.personalityKey ? PERSONALITIES_ALL.find(p=>p.key===sp.personalityKey) : null;
@@ -550,14 +571,15 @@ function restoreTable(save){
     dealerIndex:save.dealerIndex, sbIndex:-1, bbIndex:-1, currentIndex:-1, turnPointer:0,
     phase:'setup', handNumber:save.handNumber, log:[], over:false,
     buyIns:save.buyIns, netStart:save.netStart,
-    livesEnabled:save.livesEnabled,
     formatId:save.formatId || null,
     handsPerBlindLevel:Number.isInteger(save.handsPerBlindLevel) ? save.handsPerBlindLevel : TOURNAMENT_HANDS_PER_LEVEL,
     cashSessionId:typeof save.cashSessionId === 'string' ? save.cashSessionId : null,
     championshipFinalTableReached:save.championshipFinalTableReached === true,
     metricsStartedAt:Number.isFinite(save.metricsStartedAt) ? save.metricsStartedAt : Date.now(),
     sess:{ bestWin:(save.sess&&save.sess.bestWin)||0, worstLoss:(save.sess&&save.sess.worstLoss)||0 },
-    reads: aiReadsRestore(save.aiReads, players)
+    reads: aiReadsRestore(save.aiReads, players),
+    // the hand this checkpoint opened is dealt again from its own deck
+    _pinnedDeck: deckFromSave(save.deck)
   };
   if (save.mode==='elimination'){
     game.run=JSON.parse(JSON.stringify(save.run));
@@ -745,15 +767,6 @@ async function startNewHand(){
     // then), so this is just the same defensive safety-net tournament
     // mode already applies above, not the primary mechanism.
     g.players.forEach(p=>{ if (p.chips<=0) p.eliminated = true; });
-  } else if (g.livesEnabled){
-    g.players.forEach(p=>{
-      if (p.isHuman || p.eliminated) return;
-      if (p._pendingRebuy || p.chips<=0){
-        p._pendingRebuy = false;
-        p.chips = g.startingStack;
-        logMsg(p.name + ' rebuys for ' + g.startingStack.toLocaleString() + ' \u2014 ' + p.lives + (p.lives===1?' life':' lives') + ' left');
-      }
-    });
   } else {
     g.players.forEach(p=>{
       if (!p.isHuman && p.chips<=0){ p.chips = g.startingStack; logMsg(p.name + ' rebuys for ' + g.startingStack.toLocaleString()); }
@@ -803,7 +816,10 @@ async function startNewHand(){
     p._holeRevealed = [];
   });
   g.board=[]; g.pot=0; g.currentBet=0; g.minRaise=g.bigBlind;
-  g.deck = shuffle(createDeck());
+  // A resumed hand deals from the deck it was saved with (restoreTable).
+  g.deck = g._pinnedDeck || shuffle(createDeck());
+  g._pinnedDeck = null;
+  pinDeckToCheckpoint(g);
   g.handNumber++;
   g.handActions = [];
   g.humanFoldSnapshot = null;
@@ -1151,18 +1167,76 @@ const QUICK_BET_PRESET_DEFINITIONS = Object.freeze({
   ])
 });
 
+/* Round steps for the raise controls: 5s at the early blinds, 25s in the
+   middle, 50s at the top. Only the display snaps to these; the legal
+   minimum and the maximum stay exact (see snapWager). */
+function wagerStep(g){
+  const bb=Math.max(0,Math.round(Number(g && g.bigBlind)||0));
+  if (bb<=100) return 5;
+  if (bb<=500) return 25;
+  return 50;
+}
+
+/* The most anyone still in the hand can put in this street. Betting past
+   it can't be called (the extra only comes back), so the controls stop
+   there. Null when the table isn't known. */
+function wagerCallableCap(g,player){
+  if (!g || !Array.isArray(g.players)) return null;
+  let cap=0;
+  g.players.forEach(o=>{
+    if (o===player || !o.inHand || o.folded) return;
+    cap=Math.max(cap,Math.round(Number(o.betThisRound)||0)+Math.max(0,Math.round(Number(o.chips)||0)));
+  });
+  return cap;
+}
+
 function wagerBounds(g,player){
   if (!g || !player) return null;
   const currentBet=Math.max(0,Math.round(Number(g.currentBet)||0));
   const playerBet=Math.max(0,Math.round(Number(player.betThisRound)||0));
   const stack=Math.max(0,Math.round(Number(player.chips)||0));
-  const maxTotal=playerBet+stack;
+  const stackTotal=playerBet+stack;
   const fullRaise=Math.max(
     currentBet+Math.max(0,Math.round(Number(g.minRaise)||0)),
     playerBet+Math.max(0,Math.round(Number(g.bigBlind)||0))
   );
+  // If nobody left can put in more than the current bet, a raise is
+  // pointless: the top is the call. Otherwise never below a legal full
+  // raise: if the cap sits under it, the minimum raise covers everyone.
+  const cap=wagerCallableCap(g,player);
+  const maxTotal=cap===null ? stackTotal
+    : cap<=currentBet ? Math.min(stackTotal,currentBet)
+    : Math.min(stackTotal,Math.max(cap,fullRaise));
   const minTotal=Math.min(maxTotal,fullRaise);
-  return {min:minTotal,max:maxTotal,currentBet,playerBet,stack};
+  return {min:minTotal,max:maxTotal,currentBet,playerBet,stack,
+    matched:maxTotal<stackTotal,step:wagerStep(g)};
+}
+
+/* Snap a requested total to the round step, keeping the exact legal
+   minimum and maximum reachable at the ends. */
+function snapWager(value,bounds,mode){
+  const v=Number(value);
+  if (!Number.isFinite(v) || v<=bounds.min) return bounds.min;
+  if (v>=bounds.max) return bounds.max;
+  const step=bounds.step||1;
+  const snapped=(mode==='up' ? Math.ceil(v/step) : Math.round(v/step))*step;
+  return Math.max(bounds.min,Math.min(bounds.max,snapped));
+}
+
+/* An opponent never bets past what anyone can call: over an all-in that
+   extra only comes back as a pointless side pot. A raise nobody can call
+   becomes a call (or check); a bigger one stops at the most anyone left
+   can put in, never under a legal full raise. */
+function fitDecisionToTable(g,player,decision){
+  if (!decision || !['bet','raise','allin'].includes(decision.action)) return decision;
+  const b=wagerBounds(g,player);
+  if (!b || !b.matched) return decision;
+  if (b.max<=b.currentBet){
+    return {action:b.currentBet>b.playerBet ? 'call' : 'check', amount:0};
+  }
+  const want=decision.action==='allin' ? b.playerBet+b.stack : Math.round(Number(decision.amount)||0);
+  if (want<=b.max) return decision;
+  return {action:b.currentBet>0 ? 'raise' : 'bet', amount:b.max};
 }
 
 function quickBetContext(g){
@@ -1180,8 +1254,7 @@ function quickBetPresetAmount(def,g,bounds){
   else if (def.kind==='wager-multiple') raw=bounds.currentBet*def.value;
   else if (def.kind==='pot-open') raw=bounds.playerBet+pot*def.value;
   else if (def.kind==='pot-after-call') raw=bounds.playerBet+toCall+(pot+toCall)*def.value;
-  const rounded=Math.round(raw);
-  return Math.max(bounds.min,Math.min(bounds.max,rounded));
+  return snapWager(Math.round(raw),bounds,'up');
 }
 
 function quickBetPresets(g,player){
@@ -1191,13 +1264,17 @@ function quickBetPresets(g,player){
   const unique=[];
   QUICK_BET_PRESET_DEFINITIONS[context].forEach(def=>{
     const amount=quickBetPresetAmount(def,g,bounds);
+    // All-in past what anyone can call becomes MATCH: exactly their stack.
+    if (def.kind==='all-in' && bounds.matched) def={id:'match',label:'Match',kind:'all-in',priority:30};
     const existing=unique.findIndex(p=>p.amount===amount);
     const item={id:def.id,label:def.label,amount,context,_priority:def.priority||10};
     if (existing<0) unique.push(item);
     else if (item._priority>unique[existing]._priority) unique[existing]=item;
   });
   if (unique.length===1 && unique[0].amount===bounds.max && bounds.min===bounds.max){
-    unique[0]={id:'all-in',label:'All-in',amount:bounds.max,context,_priority:30};
+    unique[0]=bounds.matched
+      ? {id:'match',label:'Match',amount:bounds.max,context,_priority:30}
+      : {id:'all-in',label:'All-in',amount:bounds.max,context,_priority:30};
   }
   return unique.map(({id,label,amount,context})=>({id,label,amount,context}));
 }
@@ -1205,6 +1282,7 @@ function actionLabel(action, player, amt){
   if (player.allIn) return 'All-In';
   if (action==='fold') return 'Fold';
   if (action==='check') return 'Check';
+  if (action==='match') return 'Match ' + fmtActionAmount(amt);
   if (action==='call') return amt>0 ? 'Call ' + fmtActionAmount(amt) : 'Check';
   if (action==='bet') return 'Bet ' + fmtActionAmount(amt);
   if (action==='raise') return 'Raise to ' + fmtActionAmount(amt);
@@ -1318,7 +1396,11 @@ function applyAction(player, decision){
     if (player.allIn) maybeTableTalk(player, 'allin');
     else if (action==='raise' || action==='bet') maybeTableTalk(player, 'raise');
   }
-  const streetLabel = actionLabel(action, player, shortAmt);
+  // Calling an all-in reads MATCH, with the amount matched.
+  const matchesAllIn = action==='call' && shortAmt>0 && g.players.some(o=>
+    o!==player && o.inHand && !o.folded && o.allIn && o.betThisRound===player.betThisRound);
+  const streetLabel = matchesAllIn ? actionLabel('match', player, player.betThisRound)
+    : actionLabel(action, player, shortAmt);
   player.streetAction = { type: player.allIn ? 'allin' : action, label: streetLabel, amount: shortAmt };
   setActionRows(player.name,streetLabel,false);
   flashAction(player.id, streetLabel);
@@ -2124,15 +2206,11 @@ async function finishHand(outcome){
       await sleep(motionOff() ? 0 : 1000);
     }
   } else {
-    if (g.livesEnabled) processLives(g);
+    // A standard table: no rebuys and no lives. Out of chips ends it.
     if (human.chips<=0){
-      if (g.livesEnabled && human.lives<=0){ showGameOver(g, human); return; }
-      setBanner("You're out of chips.");
-      Sound.busted(true);
-      $('btn-rebuy').textContent = 'Rebuy ' + g.startingStack.toLocaleString() + (g.livesEnabled ? ' \u00b7 costs 1 \u2665' : '');
-      $('btn-rebuy').classList.remove('hidden');
-      $('btn-new-table').classList.remove('hidden');
-      render(); return;
+      recordGameplayConclusion(g,'bust');
+      showBusted(g, human);
+      return;
     }
     if (g.players.filter(p=>p.inHand || (p.chips>0 && !p.eliminated)).length < 2){ concludeGame(); return; }
   }
@@ -2146,27 +2224,6 @@ async function finishHand(outcome){
   scheduleAutoDeal();
 }
 
-/* Lives bookkeeping at the end of a cash hand. Busted AIs spend a heart and
-   queue a rebuy for the next deal; with no hearts left, they bust out for
-   good — the death plays during the between-hand pause. */
-function processLives(g){
-  g.players.forEach(p=>{
-    if (p.isHuman || p.eliminated || p.chips>0) return;
-    if (p.lives > 0){
-      p.lives--;
-      p._pendingRebuy = true;
-      const e = seatEls[p.id];
-      if (e && e.hearts) e.hearts.classList.add('heart-hit');
-      logMsg(p.name + ' is felted \u2014 spends a life to rebuy');
-    } else {
-      p.eliminated = true;
-      p.inHand = false;
-      logMsg(p.name + ' busted out!', true);
-      playDeath(p);
-    }
-  });
-}
-
 function skullSVG(){
   return '<svg class="face skull" viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">' +
     '<rect x="8" y="6" width="24" height="21" rx="7" fill="#E8E0CC"/>' +
@@ -2177,47 +2234,6 @@ function skullSVG(){
     '<rect x="18.9" y="28" width="2.2" height="6" fill="#20302c"/>' +
     '<rect x="23.4" y="28" width="2.2" height="6" fill="#20302c"/>' +
     '</svg>';
-}
-
-async function playDeath(p){
-  const e = seatEls[p.id];
-  if (!e) return;
-  flashAction(p.id, 'Busted!');
-  Sound.busted(false);
-  if (!motionOff()){
-    e.avatar.classList.add('dying');
-    await sleep(950);
-    e.avatar.classList.remove('dying');
-  }
-  e._mood = null;
-  e.avatar.classList.add('has-face');
-  swapFace(e, p, pickDeadMood(), false);
-  e.root.classList.add('dead');
-  render();
-}
-
-function showGameOver(g, human){
-  g.over = true;
-  clearTableSave();
-  clearTimeout(autoDealT);
-  hideResultCard();
-  setBanner('<b>Game over</b> \u2014 out of lives.');
-  Sound.busted(true);
-  const el = document.createElement('div');
-  el.className = 'result-card gameover'; el.id = 'result-card';
-  const net = human.chips - g.buyIns;
-  el.innerHTML =
-    '<div class="rc-title">Game Over</div>' +
-    '<div class="go-skull">' + skullSVG() + '</div>' +
-    '<div class="pot-line"><span class="pl-tag">Hands</span><span class="pl-body">played this session</span><span class="pl-amt tabular">' + g.handNumber + '</span></div>' +
-    '<div class="pot-line"><span class="pl-tag">Best</span><span class="pl-body">biggest hand won</span><span class="pl-amt tabular">+' + (g.sess.bestWin||0).toLocaleString() + '</span></div>' +
-    '<div class="pot-line"><span class="pl-tag">Net</span><span class="pl-body">against your buy-ins</span><span class="pl-amt tabular">' + (net>=0?'+':'') + net.toLocaleString() + '</span></div>' +
-    '<div class="rc-explain">All three lives spent. New Table starts a fresh run.</div>';
-  $('felt').appendChild(el);
-  $('btn-next-hand').classList.add('hidden');
-  $('btn-rebuy').classList.add('hidden');
-  $('btn-new-table').classList.remove('hidden');
-  render();
 }
 
 /* ---------------- Career event ending ----------------
@@ -2463,9 +2479,7 @@ function concludeGame(){
   clearTimeout(autoDealT);
   const human = game.players.find(p=>p.id==='you');
   const humanAlive = human && human.chips>0 && !human.eliminated;
-  const clearedCopy = game.mode==='elimination'
-    ? 'Every opponent is eliminated.'
-    : 'Every opponent is out of lives.';
+  const clearedCopy = 'Every opponent is eliminated.';
   setBanner(humanAlive ? '<b>Table cleared.</b> ' + clearedCopy : 'Not enough players to continue.');
   $('actions-row').classList.add('hidden');
   $('btn-next-hand').classList.add('hidden');
@@ -3737,6 +3751,7 @@ async function continueAction(){
       Sound.turn(); haptic(18);
       updateActionControls();
       updateCoach();
+      if (typeof Tour !== 'undefined') Tour.maybeStart();   // first turn ever: the tour
       return;
     }
 
@@ -3744,7 +3759,7 @@ async function continueAction(){
     if (seatEl) seatEl.root.classList.add('thinking');
     setMood(player.id, pickThinkMood(player));
     setActionRows(player.name,'IS THINKING…',true);
-    const decision = await aiDecide(player, game);   // off the main thread
+    const decision = fitDecisionToTable(game, player, await aiDecide(player, game));   // off the main thread
     await aiWait(aiThinkTime(player, decision, game));   // QUICK RESOLVE can cut this short
     if (seatEl) seatEl.root.classList.remove('thinking');
     if (game.over) return;

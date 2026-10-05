@@ -1,27 +1,27 @@
 <!DOCTYPE html>
 <!-- CRT recipe (Pattern Book, signed off in the CRT Lab): every CRT in the
      game takes its look from these dials; see css/crt.css. -->
-<html lang="en" data-crt-tint="dark" data-crt-glow="1" data-crt-scan="4" data-crt-rgb="0" data-crt-grain="4" data-crt-curve="0" data-crt-flicker="4" data-crt-roll="1" data-crt-tear="4" data-crt-ghost="2" data-crt-change="channel" data-crt-ink="mono">
+<html lang="en" data-crt-tint="dark" data-crt-glow="1" data-crt-scan="4" data-crt-rgb="0" data-crt-grain="4" data-crt-curve="0" data-crt-flicker="4" data-crt-roll="1" data-crt-tear="4" data-crt-ghost="2" data-crt-change="channel" data-crt-ink="mono" data-crt-mesh="0">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="theme-color" content="#16090D">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="The Table">
+<meta name="apple-mobile-web-app-title" content="Poker Faces">
 <meta name="mobile-web-app-capable" content="yes">
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icon-180.png">
 <link rel="icon" href="icon-192.png" type="image/png">
-<title>The Table — Texas Hold'em</title>
+<title>Poker Faces — Texas Hold'em</title>
 <!-- Finishes (js/finishes.js): this device's chosen looks, applied before
      first paint so nothing flashes. -->
 <script>try{var d=document.documentElement.dataset,r={};for(var k in d)if(/^crt[A-Z]/.test(k))r[k]=d[k];window.CRT_RECIPE=r;var f=JSON.parse(localStorage.getItem('felt.finishes'))||{};for(var k in f)if(/^(finish|crt)[A-Z][A-Za-z]*$/.test(k)&&/^[a-z0-9-]+$/.test(f[k]))d[k]=f[k];}catch(e){}</script>
 <link rel="stylesheet" href="css/01-foundation.css?v=coin-1">
-<link rel="stylesheet" href="css/02-screens.css?v=felt-1">
-<link rel="stylesheet" href="css/03-action-console.css">
-<link rel="stylesheet" href="css/04-overlays-and-modes.css">
-<link rel="stylesheet" href="css/05-responsive-and-arcade.css?v=felt-1">
+<link rel="stylesheet" href="css/02-screens.css?v=faces-1">
+<link rel="stylesheet" href="css/03-action-console.css?v=62">
+<link rel="stylesheet" href="css/04-overlays-and-modes.css?v=62">
+<link rel="stylesheet" href="css/05-responsive-and-arcade.css?v=62">
 <link rel="stylesheet" href="css/06-machine-system.css">
 <link rel="stylesheet" href="css/career-hub-v2-lab.css?v=live-motion-1">
 <link rel="stylesheet" href="css/career-motion-live.css?v=4">
@@ -38,7 +38,7 @@
   <link rel="stylesheet" href="css/coin-hoard.css?v=1">
   <link rel="stylesheet" href="css/enemy-cards.css?v=1">
   <link rel="stylesheet" href="css/table-room.css?v=1">
-  <link rel="stylesheet" href="css/knockout.css?v=2">
+  <link rel="stylesheet" href="css/knockout.css?v=63">
   <link rel="stylesheet" href="css/showdown.css?v=1">
   <link rel="stylesheet" href="css/dealer-deck.css?v=4">
   <link rel="stylesheet" href="css/deal-styles.css?v=1">
@@ -46,11 +46,14 @@
   <link rel="stylesheet" href="css/action-drum.css?v=2">
   <link rel="stylesheet" href="css/knock-check.css?v=1">
   <link rel="stylesheet" href="css/award-key.css?v=1">
-  <link rel="stylesheet" href="css/coach-set.css?v=5">
+  <link rel="stylesheet" href="css/coach-set.css?v=63">
   <link rel="stylesheet" href="css/coach-talk.css?v=1">
-  <link rel="stylesheet" href="css/event-tape.css?v=3">
-  <link rel="stylesheet" href="css/result-cabinet.css?v=2">
-  <link rel="stylesheet" href="css/crt.css?v=1">
+  <link rel="stylesheet" href="css/coach-report.css?v=1">
+  <link rel="stylesheet" href="css/tutorial.css?v=62">
+  <link rel="stylesheet" href="css/workshop.css?v=3">
+  <link rel="stylesheet" href="css/event-tape.css?v=63">
+  <link rel="stylesheet" href="css/result-cabinet.css?v=63">
+  <link rel="stylesheet" href="css/crt.css?v=3">
 
 <meta name="format-detection" content="telephone=no">
 
@@ -63,7 +66,7 @@
   <div id="home" class="screen">
     <div class="lobby-card pc-housing pc-material-leather" id="menu-contraption">
       <div class="home-topbar">
-        <div class="pc-product-mark"><span id="pc-version-mark"></span><small>Electronic table game</small></div>
+        <div class="pc-product-mark"><span id="pc-version-mark">No-limit hold'em</span><small>Electronic table game</small></div>
         <div class="pc-ready-readout pc-display crt"><span class="pc-lamp is-green"></span>&nbsp; <span id="home-readout-text">DEALER READY</span></div>
         <button class="icon-btn" id="home-settings" aria-label="Settings">⚙</button>
       </div>
@@ -108,6 +111,8 @@
         <button class="pc-button pc-button-secondary" id="go-to-setup">Custom Game</button>
         <div class="home-row">
           <button class="btn-secondary" id="quick-play">Quick Deal</button>
+          <!-- Shown while a Quick Deal / Custom Game table is saved. -->
+          <button class="btn-secondary hidden" id="home-continue" type="button">Continue<small id="home-continue-line"></small></button>
           <button class="btn-secondary" id="open-rankings">Hand Rankings</button>
           <!-- XP shelved (26 Sep 2026): the Score / Awards screen is off with
                it; restore the button with ARCADE_XP_ON. -->
@@ -333,10 +338,6 @@
     </div>
 
     <div id="action-area" class="dash-frame-base">
-      <div id="review" class="hidden" aria-live="polite">
-        <div class="review-head">Hand review</div>
-        <div id="review-body"></div>
-      </div>
 
       <div class="actions-dock">
         <div class="raise-panel" id="raise-panel">
@@ -492,8 +493,8 @@
           <button class="switch" id="sw-autodeal" role="switch" aria-checked="true" aria-label="Auto-Continue"></button>
         </div>
         <div class="toggle-row">
-          <div><div class="tl">Hand review</div><div class="ts">After each hand, explains who won, why, and how the pot was played.</div></div>
-          <button class="switch" id="sw-review" role="switch" aria-checked="false" aria-label="Hand review"></button>
+          <div><div class="tl">P.I.P. report</div><div class="ts">After each hand, REPORT shows how it played out, street by street, with a grade for how you played. The next hand waits for DEAL.</div></div>
+          <button class="switch" id="sw-review" role="switch" aria-checked="false" aria-label="P.I.P. report"></button>
         </div>
         <div class="toggle-row">
           <div><div class="tl">Confirm All-In</div><div class="ts">Ask for confirmation before committing your entire stack.</div></div>
@@ -601,27 +602,14 @@
           </div>
           <div class="hint">Which side of the table the dealer's deck sits.</div>
         </div>
-        <!-- The Coach (js/coach-set.js, js/coach-talk.js): the talk slider.
-             He's switched on and off with the COACH key next to ⚙ on the table. -->
-        <div class="field">
-          <div class="field-label">P.I.P. talk</div>
-          <div class="segmented compact" id="coach-talk-seg" role="group" aria-label="P.I.P. talk">
-            <button data-v="1">Comments</button>
-            <button data-v="2">Debrief</button>
-            <button data-v="3">Tips</button>
-            <button data-v="4" class="active">In your ear</button>
-          </div>
-          <div class="hint">How much P.I.P., your coach, says. Switch him on with the P.I.P. key next to ⚙ on the table. Tap his screen any time for his read.</div>
-        </div>
-        <div class="field">
-          <div class="field-label">P.I.P. help</div>
-          <div class="segmented compact" id="coach-help-seg" role="group" aria-label="P.I.P. help">
-            <button data-v="1">Watch</button>
-            <button data-v="2">Hints</button>
-            <button data-v="3" class="active">Advice</button>
-            <button data-v="4">Tell me</button>
-          </div>
-          <div class="hint">How much he helps before you act. Watch: he only teaches afterwards. Hints: what to think about. Advice: what he'd do. Tell me: always the move, with the numbers.</div>
+        <!-- The Coach (js/coach-set.js, js/coach-talk.js). Tap only (owner,
+             4 Oct 2026): he talks only when tapped, so the talk and help
+             dials are gone from here (settings.coachTalk / coachHelp are
+             kept, untouched). He's switched on and off with the P.I.P. key
+             next to ⚙ on the table. -->
+        <div class="field" id="coach-tap-field">
+          <div class="field-label">P.I.P.</div>
+          <div class="hint">Your coach. Switch him on with the P.I.P. key next to ⚙ on the table. He stays quiet until you tap his screen, then reads the table as it is right then: tap again to go deeper. When his light blinks amber, he has something to say about the hand you just played.</div>
         </div>
       </div>
 
@@ -884,60 +872,54 @@
 
   <div id="rotate-hint">
     <div class="glyph">⟳</div>
-    <div class="t">Rotate to play</div>
-    <div class="s">This table is laid out for landscape. Turn your device back, or rotate to portrait for the tall layout.</div>
+    <div class="t">Turn your phone upright</div>
+    <div class="s">Poker Faces is played with the phone held upright.</div>
   </div>
 
-  <div id="first-run" class="hidden">
-    <div class="fr-card">
-      <h4>Before your first hand</h4>
-      <ul class="fr-list">
-        <li>Tap <b>Raise</b> once to open the sizing slider, then <b>Confirm</b> to commit.</li>
-        <li>The blinking gold frame around a seat shows whose turn it is.</li>
-      </ul>
-      <button class="btn-primary" id="fr-dismiss">Got it</button>
-    </div>
-  </div>
 
 </div>
 
 <script src="js/01-poker-math.js?v=ai-1"></script>
-<script src="js/02-support-systems.js?v=tape-4"></script>
+<script src="js/02-support-systems.js?v=63"></script>
 <script src="js/03-opponents.js?v=ai-1"></script>
 <script src="js/04-modes-and-scoring.js?v=cards-1"></script>
-<script src="js/05-game-engine.js?v=tape-2"></script>
-<script src="js/06-presentation.js?v=pip-1"></script>
-<script src="js/coin-world.js?v=room-2"></script>
-<script src="js/coin-table.js?v=room-1"></script>
+<script src="js/05-game-engine.js?v=63"></script>
+<script src="js/06-presentation.js?v=62"></script>
+<script src="js/coin-world.js?v=skins-1"></script>
+<script src="js/coin-table.js?v=room-2"></script>
 <script src="js/coin-bank.js?v=1"></script>
-<script src="js/07-ui-wiring.js?v=space-1"></script>
+<script src="js/07-ui-wiring.js?v=62"></script>
 <script src="js/career-hub-live.js?v=cabinet-4"></script>
 <script src="js/career-motion-live.js?v=4"></script>
 <script src="js/machine-wheel.js?v=2"></script>
 <script src="js/ticket-feed.js?v=1"></script>
 <script src="js/table-intro.js?v=space-1"></script>
-<script src="js/08-dev-mode.js?v=tape-1"></script>
+<script src="js/08-dev-mode.js?v=63"></script>
 <script src="js/home-cast.js?v=1"></script>
 <script src="js/home-boot.js?v=2"></script>
 <script src="js/dashboard.js?v=1"></script>
 <script src="js/table-room.js?v=1"></script>
 <script src="js/enemy-cards.js?v=2"></script>
-<script src="js/knockout.js?v=2"></script>
-<script src="js/crt.js?v=1"></script>
-<script src="js/finishes.js?v=3"></script>
+<script src="js/knockout.js?v=63"></script>
+<script src="js/crt.js?v=2"></script>
+<script src="js/finishes.js?v=4"></script>
 <script src="js/press-feel.js?v=2"></script>
-<script src="js/showdown.js?v=tape-1"></script>
-<script src="js/event-tape.js?v=4"></script>
-<script src="js/dealer-deck.js?v=4"></script>
+<script src="js/showdown.js?v=63"></script>
+<script src="js/event-tape.js?v=63"></script>
+<script src="js/dealer-deck.js?v=5"></script>
 <script src="js/deal-styles.js?v=2"></script>
 <script src="js/card-holder.js?v=1"></script>
-<script src="js/action-drum.js?v=3"></script>
+<script src="js/action-drum.js?v=63"></script>
 <script src="js/knock-check.js?v=1"></script>
 <script src="js/award-key.js?v=1"></script>
-<script src="js/coach-set.js?v=6"></script>
-<script src="js/coach-talk.js?v=6"></script>
-<script src="js/coach-brain.js?v=6"></script>
-<script src="js/coach-lines.js?v=5"></script>
+<script src="js/coach-set.js?v=63"></script>
+<script src="js/coach-talk.js?v=62-2"></script>
+<script src="js/coach-brain.js?v=14"></script>
+<script src="js/coach-lines.js?v=62-2"></script>
+<script src="js/coach-report.js?v=1"></script>
+<script src="js/tutorial.js?v=62-2"></script>
+<script src="js/workshop-rack.js?v=1"></script>
+<script src="js/workshop.js?v=62"></script>
 
 
 <script id="pwa-service-worker">

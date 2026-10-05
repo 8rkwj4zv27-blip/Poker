@@ -1,6 +1,6 @@
 {
-  "name": "The Table",
-  "short_name": "The Table",
+  "name": "Poker Faces",
+  "short_name": "Poker Faces",
   "description": "A tactile pixel-art Texas Hold'em game.",
   "start_url": "./",
   "scope": "./",

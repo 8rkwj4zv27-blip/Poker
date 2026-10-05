@@ -31,7 +31,9 @@
      data-crt-tear     0–4   VHS tracking tears
      data-crt-ghost    0–4   the old picture burning out on change (js)
      data-crt-change   burst | roll | channel | wipe | type   (js)
-     data-crt-ink      meaning | one | mono
+     data-crt-ink      meaning | one | mono | green | lcd | vfd | led
+     data-crt-mesh     0 | grid | dots   a fixed pattern on the glass, behind
+                       the picture (a VFD's mesh, an LED board's dots)
 
    Content changes are noticed by js/crt.js whoever writes them (or go
    through CRT.set()); data-crt-quiet on a screen whose changes are a number
@@ -62,6 +64,8 @@
   --crt-flick-dip:0; --crt-flick-lift:0;
   --crt-roll-a:0; --crt-roll-ms:6s;
   --crt-tear-x:0px; --crt-tear-ms:9s;
+  --crt-mesh:none;
+  --crt-inset-a:.72;   /* the tube's inner shadow (light glass wants less) */
 }
 
 /* ---------------- the parts ---------------- */
@@ -76,13 +80,14 @@
     radial-gradient(ellipse at 47% 34%,var(--crt-tint),transparent 58%),
     radial-gradient(ellipse at 50% 50%,transparent 40%,rgba(0,0,0,var(--crt-vig)) 100%),
     repeating-linear-gradient(180deg,transparent 0 2px,rgba(0,0,0,var(--crt-scan-a)) 2px 3px),
+    var(--crt-mesh),
     var(--crt-glass);
   border:2px solid var(--crt-bezel);
   border-radius:var(--crt-radius);
   box-shadow:
-    inset 0 6px 8px rgba(0,0,0,.72),
-    inset 6px 0 9px rgba(0,0,0,.42),
-    inset -6px 0 9px rgba(0,0,0,.42),
+    inset 0 6px 8px rgba(0,0,0,var(--crt-inset-a)),
+    inset 6px 0 9px rgba(0,0,0,calc(var(--crt-inset-a) * .58)),
+    inset -6px 0 9px rgba(0,0,0,calc(var(--crt-inset-a) * .58)),
     inset 0 0 0 1px rgba(255,255,255,calc(var(--crt-bulge) * .05)),
     inset 0 calc(var(--crt-bulge) * 3px) calc(var(--crt-bulge) * 6px) rgba(255,255,255,calc(var(--crt-bulge) * .025)),
     0 0 6px var(--crt-halo);
@@ -228,6 +233,11 @@
 [data-crt-tint="green"]{ --crt-glass:#030D06; --crt-bezel:#020604; --crt-tint:rgba(110,220,140,.14); --crt-halo:rgba(110,220,140,.16); }
 [data-crt-tint="amber"]{ --crt-glass:#0E0803; --crt-bezel:#060302; --crt-tint:rgba(240,168,60,.13); --crt-halo:rgba(240,168,60,.15); }
 [data-crt-tint="black"]{ --crt-glass:#010202; --crt-bezel:#000; --crt-tint:rgba(255,255,255,.035); --crt-halo:rgba(255,255,255,.03); }
+/* the Workshop's other glass: green phosphor, a calculator LCD, a VFD */
+[data-crt-tint="phosphor"]{ --crt-glass:#020A04; --crt-bezel:#010402; --crt-tint:rgba(70,255,130,.13); --crt-halo:rgba(70,255,130,.14); }
+[data-crt-tint="lcd"]{ --crt-glass:#8E9C7C; --crt-bezel:#262B20; --crt-tint:rgba(240,250,210,.28); --crt-halo:transparent; --crt-vig:.12; --crt-inset-a:.3;
+  --crt-bloom:.07em .07em 0 rgba(20,30,15,.22); }
+[data-crt-tint="vfd"]{ --crt-glass:#03100F; --crt-bezel:#010605; --crt-tint:rgba(80,255,225,.07); --crt-halo:rgba(80,255,225,.1); }
 
 /* Glow — always em, so small and large text glow alike */
 [data-crt-glow="1"]{ --crt-bloom:0 0 .3em color-mix(in srgb,currentColor 35%,transparent); }
@@ -281,6 +291,14 @@
 /* Ink scheme */
 [data-crt-ink="one"]{ --crt-ink-live:var(--crt-ink-info); }
 [data-crt-ink="mono"]{ --crt-ink-live:var(--crt-ink-info); --crt-ink-money:var(--crt-ink-info); }
+[data-crt-ink="green"]{ --crt-ink-info:#5FD983; --crt-ink-live:#B2FFC6; --crt-ink-money:#DDFF86; --crt-ink-danger:#FFB46E; }
+[data-crt-ink="lcd"]{ --crt-ink-info:#1E2718; --crt-ink-live:#122230; --crt-ink-money:#3B2A06; --crt-ink-danger:#6E1610; }
+[data-crt-ink="vfd"]{ --crt-ink-info:#6FF0D6; --crt-ink-live:#BBFFF4; --crt-ink-money:#F6E27A; --crt-ink-danger:#FF7E8E; }
+[data-crt-ink="led"]{ --crt-ink-info:#FF5A36; --crt-ink-live:#FF9A3A; --crt-ink-money:#FFD23C; --crt-ink-danger:#FF2E2E; }
+
+/* Mesh: drawn once on the glass, never animated */
+[data-crt-mesh="grid"]{ --crt-mesh:repeating-linear-gradient(90deg,rgba(0,0,0,.2) 0 1px,transparent 1px 2px),repeating-linear-gradient(0deg,rgba(0,0,0,.2) 0 1px,transparent 1px 2px); }
+[data-crt-mesh="dots"]{ --crt-mesh:radial-gradient(circle,rgba(255,70,40,.13) 0 .7px,transparent 1px) 0 0/3px 3px; }
 
 /* Reduced Motion: nothing moves on its own; changes just swap. */
 [data-motion="off"] .crt::before,
@@ -293,6 +311,9 @@
 .crt .crt-cursor{ display:inline-block; margin-left:4px; animation:crtCursor .78s steps(2,end) infinite; }
 @keyframes crtCursor{ 50%{ opacity:.16; } }
 [data-motion="off"] .crt .crt-cursor{ animation:none; }
+
+/* The Workshop's stage captions (js/workshop.js) may run to two lines. */
+.wss-caption .crt-line{ white-space:normal; line-height:1.5; }
 
 /* Narrow phones: every line steps down together, so long table lines fit. */
 @media (max-width:389px){ :root{ --crt-line-size:6.5px; } }

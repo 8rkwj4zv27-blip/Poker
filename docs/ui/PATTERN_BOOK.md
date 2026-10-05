@@ -75,7 +75,7 @@ Motion and sound are signed off from live demos, never stills.
 | FOLD / CHECK / CALL / RAISE | Kept as their own locked family | Settled |
 | Press feel | One heavy thunk on every button, scaled by size (big / standard / small), FOLD/CHECK/CALL/RAISE included | **Live** v0.39.7 |
 | Number wheels, sound | Round 2, from live demos | To do |
-| End screens | Owner's order from `end-screens-lab.html` (5 October 2026): the four end screens as a cabinet, screens fitted in plastic panels, no words on the casing, the big number as frameless drums in a sunk bay; chip tape, bust-out order (faces only), best hand, luck strip (`docs/ui/END_SCREENS_PLAN.md`) | **Live** v0.58.3 |
+| End screens | Owner's order from `end-screens-lab.html` (5 October 2026): the four end screens as a cabinet, screens fitted in plastic panels, no words on the casing, the big number as frameless drums in a sunk bay; chip tape, bust-out order (faces only), best hand, luck strip (`docs/ui/END_SCREENS_PLAN.md`) | **Live** v0.63.0 |
 | Dashboard V2 | The owner's order from the order form (25 September 2026); see **Dashboard V2** below | Release 1 of 4 **live** v0.40.2 (frame, bays, rim light); layout, raise and behaviours next |
 
 Approved-but-not-migrated families have reference captures in
@@ -102,10 +102,15 @@ layout.
 | Lamp, meter, cards | An indicator lamp, a progress meter, playing cards (keep their own inks). | `.crt-lamp`, `.crt-meter`, `.crt-cards` |
 | Ink | By meaning on the screen: none (info), `live`, `money`, `danger`; `.crt-danger` on a single element. Strong hands and money reels read as money; the negative results tone inks the score and statement as danger. The recipe's ink scheme can fold these together (the game uses mono). | `data-ink` |
 
-**Look.** Twelve dials, set once on `<html>` in `index.html` (the recipe
+**Look.** Thirteen dials, set once on `<html>` in `index.html` (the recipe
 above): tint, glow (always in em), scanlines, RGB split, grain, curve,
-flicker, rolling bar, VHS tears, ghosting, change effect, ink scheme. The
-component turns them into tokens; no screen sets any of them.
+flicker, rolling bar, VHS tears, ghosting, change effect, ink scheme, mesh.
+The component turns them into tokens; no screen sets any of them. Since
+v0.61.0 the Workshop's other kinds of glass are presets too: Terminal
+(`phosphor` tint, `green` ink), LCD (`lcd` tint and ink, a light glass
+with a lighter tube shadow, `--crt-inset-a`), VFD (`vfd`) and Dot LED
+(`led` ink); the mesh dial (`grid` | `dots`) is a fixed pattern on the
+glass behind the picture, never animated.
 
 **Changes.** `js/crt.js` watches every `.crt`. Whoever rewrites a screen
 (the table's `paintCRT`, the Home Boot, Career's record pages, the results
@@ -409,3 +414,41 @@ game. His name is P.I.P. (Poker Intelligence Personality); his brain is
 | Talk slider | Settings → **P.I.P. talk**: COMMENTS · DEBRIEF · TIPS · **IN YOUR EAR** | The sheet's segmented keys (`coachTalk`). One line at a time. |
 | Reduced Motion | | He's simply there: no lift, no boot. |
 
+
+## P.I.P. report (live v0.59.0)
+
+The end-of-hand breakdown from P.I.P., the owner's picks from the P.I.P.
+Report Lab (`pip-report-lab.html`, round 1, 4 Oct 2026;
+`docs/coach/REPORT_PLAN.md`). `js/coach-report.js` + `css/coach-report.css`.
+Presentation only: built from his brain's record of the hand and the
+table's public actions; an opponent's cards only as shown at a showdown.
+
+| Part | Order | The finish |
+|---|---|---|
+| The screen | His bubble's glass (**HIS SCREEN**) made a full screen | Dark glass in his ink with scanlines, from the top of the table to the dashboard's top edge. Inside `#app` at z 44, just before the menus' scrim, so Settings covers it. Its glass and inks are set in `css/coach-report.css`, like his bubble's. |
+| Arriving | **FLICKERS ON** | A few stepped flickers; off: a CRT line to nothing. |
+| Pace | **PLAYS THROUGH** | The streets light up one at a time (cards drop, bars fill, the marks thunk), the grade lands last, then he types. A tap skips. |
+| Your chance | **ONE BAR** | Eight segments and a word (WELL AHEAD ... WELL BEHIND); numbers only once he's taught them. |
+| The grade | **STAMPED LETTER**, A to F | Stamped in, in the marks' ink: A/B green, C amber, D/F coral. For how you played, never the result, which sits beside it. |
+| P.I.P. | **HIS FACE** | His two dots and mouth in the corner, talking as he types. |
+| Ink | **MARKS IN COLOUR** | ✓ green, close call amber, ✗ coral. |
+| The keys | REPORT and DEAL | On the console drum's NEXT HAND side, in Next Hand's place, wearing the CHECK and RAISE keys' finish. REPORT has a lamp that blinks while there's an unread report; dark when the hand has none. |
+| Setting | Settings → **P.I.P. report** (`settings.review`) | The old Hand review's switch, reused. |
+| Reduced Motion | | Everything at once, no flicker. |
+
+## The tour (live v0.62.0, awaiting the owner's sign-off on device)
+
+The first-play walk round the table, asked for by the owner before the
+friends' test (5 Oct 2026). `js/tutorial.js` + `css/tutorial.css`. Built
+from existing parts, so no new finish: the card is the old first-run card
+(`.fr-card`, its gold heading and ink), NEXT/PLAY is `.btn-primary`.
+Presentation only.
+
+| Part | The finish |
+|---|---|
+| When | Once, at your first turn ever, in any mode (the engine calls `Tour.maybeStart()` as your turn starts). The game is already waiting on you, so nothing is held. `settings.seenTour`. |
+| The window | The dim is the shadow of one lit window (`.tour-ring`): a 3px gold border on a 3px ink ring that blinks in two steps, round every part the step explains. No window on the first and last steps; those are a plain dimmed card. |
+| The card | `.fr-card` with a `N / 7` count, title, one short paragraph, SKIP (quiet outline) and NEXT (`.btn-primary`, PLAY on the last step). It sits on whichever side of the window has more room. |
+| Steps | Welcome, the opponents, your cards + hand readout, the readouts (screen, stack, bank), the three keys, the right-hand bay (blinds, bet this hand, ⚙, P.I.P.), end of a hand (SHOWDOWN, AWARD POT, Hand Rankings). |
+| Again | Settings → Help → **How to play**: now if it's your turn, else at the next one. |
+| Reduced Motion | No blink. |

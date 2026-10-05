@@ -57,24 +57,26 @@ const SEAT_MAPS = {
   3: [ {left:22, top:11.5}, {left:50, top:8.5}, {left:78, top:11.5} ],
   // 5 opponents: shallow horseshoe, centre seat highest, the two outer
   // seats dropped to the side perimeter and just clearing the board.
+  // 5 and 6 sit a little lower than they first did: the top seats' names
+  // were running into the phone's status-bar blur.
   5: [
-    {left:8,  top:17},
-    {left:29, top:10.5},
-    {left:50, top:7},
-    {left:71, top:10.5},
-    {left:92, top:17}
+    {left:8,  top:19},
+    {left:29, top:13},
+    {left:50, top:9.5},
+    {left:71, top:13},
+    {left:92, top:19}
   ],
   // 6 opponents: symmetrical wrap. The two centre seats pair off across
   // the top, the flanking pair steps down, the outer pair hugs the side
   // rail lowest — the sequence reads clockwise as left, upper-left,
   // upper-right, right, lower-right, lower-left once eyes follow the arc.
   6: [
-    {left:7,    top:18},
-    {left:24.2, top:10},
-    {left:41.4, top:6.5},
-    {left:58.6, top:6.5},
-    {left:75.8, top:10},
-    {left:93,   top:18}
+    {left:7,    top:20},
+    {left:24.2, top:12.5},
+    {left:41.4, top:9.5},
+    {left:58.6, top:9.5},
+    {left:75.8, top:12.5},
+    {left:93,   top:20}
   ]
 };
 function seatPosition(seatIdx, total){
@@ -1167,6 +1169,27 @@ function updateSeatReels(el, value){
   el.classList.add('mini-jackpot'); el.setAttribute('role','img');
   if (!el.querySelector('.jp-sym')) el.insertAdjacentHTML('afterbegin','<span class="jp-cell jp-sym">$</span>');
   updateCompactReel(el,value,{label:'Opponent stack',cascade:18});
+  fitSeatReels(el);
+}
+/* The drums have fixed widths, tuned per table size, but a seat's window
+   also narrows with the Table Room's machine size and the phone's width.
+   When a long stack still overflows, shrink the drums (zoom keeps layout
+   honest) so no digit is ever clipped off either end. */
+function fitSeatReels(el){
+  if (!el.isConnected || !el.clientWidth) return;
+  el.style.removeProperty('--reel-fit');
+  const over = el.scrollWidth - el.clientWidth;
+  if (over <= 0) return;
+  const cs = getComputedStyle(el);
+  const room = el.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
+  const need = el.scrollWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
+  let fit = Math.max(.5, Math.floor(room / need * 100) / 100);
+  el.style.setProperty('--reel-fit', fit);
+  // gaps and borders don't scale with the drums: settle the last pixels
+  for (let i = 0; i < 6 && fit > .5 && el.scrollWidth > el.clientWidth; i++){
+    fit = Math.max(.5, +(fit - .04).toFixed(2));
+    el.style.setProperty('--reel-fit', fit);
+  }
 }
 
 /* An opponent's win, counted in: freezeSeatStack(p) before the money
@@ -3735,27 +3758,12 @@ function render(){
     e.root.classList.toggle('active', idx===g.currentIndex && !['showdown','foldwin'].includes(g.phase) && !g.over);
     // No visual Dealer marker (removed) — g.dealerIndex itself still drives
     // assignBlinds()/computePositions() below and elsewhere, unchanged.
-    // Broadened beyond livesEnabled (cash+hearts) to also cover elimination
-    // mode's own eliminated players — playElimination() adds this class
-    // itself the moment its POP stage lands, and render() must not strip
-    // it back off on the very next redraw (g.livesEnabled is false there).
-    e.root.classList.toggle('dead', !!p.eliminated && (!!g.livesEnabled || g.mode==='elimination'));
-    if (e.hearts){
-      if (g.livesEnabled && !p.eliminated){
-        const n = Math.max(0, p.lives|0);
-        if (e.hearts.dataset.n !== String(n)){
-          e.hearts.dataset.n = String(n);
-          let h = '';
-          for (let k=0;k<3;k++) h += '<span class="h'+(k<n?'':' off')+'">'+pixelHeartSVG()+'</span>';
-          e.hearts.innerHTML = h;
-        }
-        e.hearts.classList.remove('hidden');
-        if (e.hearts.classList.contains('heart-hit')){
-          clearTimeout(e._heartT);
-          e._heartT = setTimeout(()=>e.hearts.classList.remove('heart-hit'), 700);
-        }
-      } else e.hearts.classList.add('hidden');
-    }
+    // Elimination mode's knocked-out players: playElimination() adds this
+    // class itself the moment its POP stage lands, and render() must not
+    // strip it back off on the very next redraw.
+    e.root.classList.toggle('dead', !!p.eliminated && g.mode==='elimination');
+    // Lives (hearts) are gone from every mode; the rows stay hidden.
+    if (e.hearts) e.hearts.classList.add('hidden');
     // An eliminated seat is an empty socket, not a player at $0: no stack
     // readout, no name, no cards, no position marker. render() runs before
     // any of those could be repainted by a later update.
@@ -3860,8 +3868,8 @@ function setWagerAmount(value,options){
   const slider=$('raise-slider'), p=pendingHumanPlayer;
   const bounds=wagerBounds(game,p);
   if (!slider || !bounds) return null;
-  const requested=Math.round(Number(value));
-  const amount=Math.max(bounds.min,Math.min(bounds.max,Number.isFinite(requested)?requested:bounds.min));
+  // Round steps between the exact legal minimum and maximum (snapWager).
+  const amount=snapWager(Math.round(Number(value)),bounds);
   slider.value=amount;
   queueRaiseReel(amount,!!(options&&options.immediate));
   syncSliderFill();

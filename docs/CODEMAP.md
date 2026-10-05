@@ -19,7 +19,8 @@ press-feel.js           showdown.js             event-tape.js
 dealer-deck.js
 action-drum.js          knock-check.js          award-key.js
 card-holder.js          deal-styles.js          coach-set.js
-coach-talk.js
+coach-talk.js           coach-brain.js          coach-lines.js
+coach-report.js         tutorial.js
 ```
 
 Later files call into earlier ones freely; there's no module system, so
@@ -650,6 +651,21 @@ lessons and repeat reminders. Tests share `validation/tools/coach-sandbox.js`.
 Lab: `coach-brain-lab.html` (+ `js/coach-brain-lab.js`, host
 `js/coach-brain-lab-host.js`).
 
+## `pip-report-lab.html` + `js/pip-report-lab.js` (+ host, `js/pip-report-hands.js`, `css/pip-report-lab.css`) + `js/coach-report.js` / `css/coach-report.css` — the P.I.P. report (live v0.59.0) and its lab
+
+The end-of-hand P.I.P. report (`docs/coach/REPORT_PLAN.md`; Pattern Book:
+P.I.P. report): a big CRT readout above the dashboard. With Settings →
+P.I.P. report on (`settings.review`, the old Hand review's switch), REPORT
+and DEAL replace Next Hand on the console drum's deal side; REPORT or a tap
+on P.I.P. opens it, built by `fromGame()` from `CoachBrain`'s hand record,
+the table's public actions and `CoachTalk.reportWords`/`reasonText`. The
+old Hand review panel is retired (`showReview` no-ops; `buildReview` stays
+for the scoring checks). `CoachReport` holds the pure parts the game will use
+(`grade` A-F from P.I.P.'s decision marks, `truthEquity` from shown cards
+with the game's evaluator, `pivot`, `chanceWord`, `worthIt`) and draws the
+screen. The lab freezes one real table and stages seven hand-built example
+hands on it (`PIP_REPORT_HANDS`). Phone-first like `showdown-lab.html`.
+
 ## `coach-face-lab.html` + `js/coach-face-lab.js` + `css/coach-face-lab.css` + candidate `js/coach-set.js` / `css/coach-set.css` — Coach Face Lab
 
 The Coach's look (`docs/coach/COACH_PLAN.md`), round 3: the machine's
@@ -728,6 +744,53 @@ v0.46.0 the chips ARE the game's coin files (`js/coin-world.js`,
 `js/coin-table.js`); the lab now injects only its controls (designs,
 palettes, ladders, the bank's options, moments, YOUR BANK presets up to
 FULL) over the real game. Not loaded by the game.
+
+## `js/workshop.js` + `css/workshop.css` + `js/workshop-rack.js` — Settings + Workshop (live, v0.60.0)
+
+The Settings sheet and the WORKSHOP screen (`docs/ui/SETTINGS_PLAN.md`;
+built in the Settings Lab, rounds 1-10, now retired). At load,
+`workshop.js` regroups the Settings sheet into THIS TABLE / PLAY / HELP /
+SOUND / DISPLAY from the game's own wired controls. They are moved, never
+copied, and anything no longer shown stays wired in a hidden attic. It
+adds hand readout, four-colour deck and volume (a master gain via a shim
+on `AudioContext.destination`).
+
+It also builds `#workshop`, opened by the home screen's Workshop key. The
+seven tabs are Cards, Dealing, Showdown, Chips, Cabinet, Screens and
+Buttons, and each previews the real part:
+- Dealing borrows `#dealer-deck`.
+- Chips and Showdown borrow the coin world's `#felt`.
+- Showdown's burst is a copy of `showdown.js`'s `explode()`, scaled to its
+  small felt.
+
+`js/workshop-rack.js` is the event-card rack that Cards and Dealing
+flick through. The Finishes entry is gone from Settings: Screens and
+Buttons choose through `Finishes.choose`.
+
+Since v0.61.0 (Workshop skins):
+- Chips has a SKIN row: `settings.chipSkin` sets `CoinWorld.OPT.chipDesign`
+  (`tint` Classic, `neon`, `mint`, `dice`, `grin`; drawn by `chipFace` /
+  `chipEdge` in `js/coin-world.js`), and `CoinWorld.repaint()` repaints
+  every chip where it lies. Paint only: same coin, same stacking.
+- Screens offers four more CRT presets (Terminal, LCD, VFD, Dot LED) in
+  `CRT.PRESETS` and `FINISH_SETS`.
+
+
+## `js/tutorial.js` + `css/tutorial.css` — the tour (live, v0.62.0)
+
+The first-play walk round the table (`Tour`). The engine calls
+`Tour.maybeStart()` when the player's turn starts; it runs once ever
+(`settings.seenTour`), in any mode, spotlighting the real parts with a
+lit window and the first-run card. Settings → Help → How to play
+(`Tour.replay()`, in `js/workshop.js`) runs it again. Presentation only.
+Recorded in `docs/ui/PATTERN_BOOK.md`.
+
+Also v0.62.0: Quick Deal / Custom Game have no lives or rebuys (busting
+ends the table through `showBusted`), at most six opponents
+(`MAX_OPPONENTS`, 02-support-systems.js), a CONTINUE key under QUICK DEAL
+on the home screen (`refreshHomeContinue`, 07-ui-wiring.js; the table is
+saved as it starts), and a full cover when a phone is turned sideways
+(`checkOrientation`, 08-dev-mode.js).
 
 ## `js/finishes.js` + `css/finishes.css` — Finishes menu (live)
 

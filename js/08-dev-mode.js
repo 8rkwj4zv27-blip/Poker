@@ -713,13 +713,17 @@ function mq(query){
   catch(e){ return false; }
 }
 function checkOrientation(){
-  // The table supports both orientations; the hint only appears if the viewport
-  // is too small in the current orientation to lay the table out sensibly.
+  // The game is built for a phone held upright. iOS ignores the manifest's
+  // portrait lock in an installed web app, so a phone turned sideways gets
+  // a full cover until it's turned back. Only phone-sized screens: a
+  // landscape desktop or tablet window is tall enough to show the game.
   const landscape = mq('(orientation:landscape)') || window.innerWidth > window.innerHeight;
-  const tooShort = landscape && window.innerHeight < 300;
-  const tooNarrow = !landscape && window.innerWidth < 280;
+  const phone = Math.min(window.innerWidth, window.innerHeight) < 540;
   const hint = $('rotate-hint');
-  if (hint) hint.style.display = (tooShort || tooNarrow) ? 'flex' : 'none';
+  if (!hint) return;
+  // straight under <body>, so no flying card or chip layer can sit above it
+  if (hint.parentNode !== document.body) document.body.appendChild(hint);
+  hint.style.display = (landscape && phone) ? 'flex' : 'none';
 }
 
 function wireUI(){
@@ -740,12 +744,12 @@ function wireUI(){
   applyGameTypeToSetup();
 
   $('opp-minus').onclick = ()=>{ settings.tournamentPreset=null; settings.opponents = Math.max(1, settings.opponents-1); setSegment('tournament-preset-seg','preset',null); syncOpp(); };
-  $('opp-plus').onclick  = ()=>{ settings.tournamentPreset=null; settings.opponents = Math.min(8, settings.opponents+1); setSegment('tournament-preset-seg','preset',null); syncOpp(); };
+  $('opp-plus').onclick  = ()=>{ settings.tournamentPreset=null; settings.opponents = Math.min(MAX_OPPONENTS, settings.opponents+1); setSegment('tournament-preset-seg','preset',null); syncOpp(); };
   function syncOpp(){
     $('opp-count').textContent = settings.opponents;
     $('opp-label').textContent = settings.opponents;
     $('opp-minus').disabled = settings.opponents<=1;
-    $('opp-plus').disabled = settings.opponents>=8;
+    $('opp-plus').disabled = settings.opponents>=MAX_OPPONENTS;
     saveSettings(); updateSetupSummary();
   }
   document.querySelectorAll('#run-size-seg button').forEach(b=>{
@@ -803,6 +807,7 @@ function wireUI(){
   $('deal-me-in').onclick = ()=>withNewTableConfirm(dealMeIn);
   $('setup-continue').onclick = ()=>{ if (loadTableSave()) continueTable(); };
   $('quick-play').onclick = ()=>withNewTableConfirm(startGame);
+  $('home-continue').onclick = ()=>{ if (loadTableSave()) continueTable(); };
   $('open-career').onclick = ()=>{ enterCareerFromHome(); };
   // Back to the menu turns the same drum the other way (machine-wheel.js).
   $('career-back').onclick = ()=>{
@@ -962,17 +967,6 @@ function wireUI(){
     await muckCards();
     startNewHand();
   };
-  $('btn-rebuy').onclick = async ()=>{
-    Sound.rebuy();
-    const human = game.players.find(p=>p.id==='you');
-    if (game.livesEnabled && human.lives>0) human.lives--;
-    human.chips = game.startingStack;
-    game.buyIns += game.startingStack;
-    $('btn-rebuy').classList.add('hidden');
-    $('btn-new-table').classList.add('hidden');
-    await muckCards();
-    startNewHand();
-  };
   $('btn-new-table').onclick = leaveTable;
 
   // overlays
@@ -1056,7 +1050,6 @@ function wireUI(){
     });
   };
 
-  $('fr-dismiss').onclick = dismissFirstRun;
 
   // keyboard shortcuts
   document.addEventListener('keydown', e=>{
@@ -1080,7 +1073,6 @@ function wireUI(){
   reconstructMainMenu();
   initHeroFaces();
   initDevPanel();
-  $('pc-version-mark').textContent = BUILD_VERSION;
 }
 
 /* The title-screen cast (initHeroFaces) lives in js/home-cast.js. */
@@ -1100,7 +1092,7 @@ if (typeof window !== 'undefined'){
     arrangeHandForDisplay, showHudResultConsole, hideHudResultConsole, hideResultCard, waitForAwardPot,
     runShowdownAwardSequence, celebrateWinnerSeat, splitHandText,
     randomOpponentName, maybeTableTalk, TABLE_TALK, PERSONALITIES, newGame,
-    seatPosition, aiThinkTime, speedMult, processLives, skullSVG, playDeath,
+    seatPosition, aiThinkTime, speedMult, skullSVG,
     nudgeMood, decayMoods, buildRankings, scheduleAutoDeal, finishHand, aiDecide,
     saveTable, loadTableSave, clearTableSave, restoreTable, continueTable,
     normalizeOpponentCount, runOpponentCount, startSinglePlayerRun,

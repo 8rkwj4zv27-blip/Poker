@@ -1,12 +1,57 @@
 # P.I.P., the Coach: handover for a fresh session
 
-Written 29 Sep 2026. `main` is **v0.57.3** (PR #48, from another
-session: you can pick P.I.P. up and throw him round the screen, a joke the
-owner asked for; see below). The brain is as at v0.57.2 (PR #47). This replaces the
-first handover (the brain has since been built). Read this, then
+Written 29 Sep 2026; latest 4 Oct 2026: **v0.58.8-dev · P.I.P. tap only +
+accuracy audit** (on top of Codex's v0.58.7, PRs #53-#55). This replaces the first
+handover (the brain has since been built). Read this, then
 `CLAUDE.md` for the house rules. Open `docs/coach/BRAIN_PLAN.md` only for
 the full history of how each part was decided (it's long; sections are
 dated), and `docs/CODEMAP.md` for the rest of the game.
+
+## Current state / next task (4 Oct 2026, v0.58.8): read this first
+
+Two lines of work met here. Another session (Codex, PRs #53-#55, up to
+v0.58.7 "Quieter Coaching") deepened the brain (value targets, draw
+pricing, river sizing, pot-aware calls after the flop, all-in consistency)
+and made his automatic talk quieter. This session (PR after #55) ran an
+accuracy audit and, on the owner's instruction, made him **tap only**. The
+owner chose (4 Oct, option A): **tap only replaces the quieter automatic
+coaching**. Codex's planned "Checkpoint 2" (an automatic post-hand
+breakdown with Continue/Skip) is therefore NOT the next step as written:
+any post-hand breakdown must be something the player taps for. Ask the
+owner before building it.
+
+- **Tap only.** P.I.P. says nothing on his own (`TAP_ONLY` in
+  `coach-talk.js`; the quieter automatic coaching code is still there
+  behind it). A tap reads the table at that moment (`sceneStamp`), with no
+  spoilers: cards face down, an all in running out, the showdown before
+  the result. His lamp blinks amber when he has a verdict on the hand you
+  just played. The TALK/HELP dials are gone from Settings.
+- **The result is on screen** only when the award key is live
+  (`resultShown()`); the locked SHOWDOWN key of a run out is not it.
+- **The accuracy audit.** `validation/tools/coach-fullgame.js` plays
+  complete games (uneven stacks, rising blinds, side pots, knockouts, the
+  real AI and pot split) and checks his numbers and verdicts against the
+  rules at every decision. Run it after ANY brain change:
+  `node validation/tools/coach-fullgame.js 300 7` must say "No
+  disagreements." (a 60-game run is inside `coach-brain-checks.js`).
+- **The real game, tapped.** `validation/tools/coach-tap-play.js` plays
+  real hands on an emulated iPhone and taps him at awkward moments; it
+  fails on talk without a tap or any spoiler.
+- The price of a call is what you can win: before the flop `spot.potWin`
+  (only what you match), after the flop Codex's `potAssessment` (per side
+  pot, same rule). Calling an all in before the flop is its own judgement
+  (`kind:'allcall'`).
+- Tests now: `coach-brain-checks.js`, `coach-reliability-checks.js`,
+  `coach-tactics-checks.js` (Codex), the full-game audit, the tap tester.
+  Codex's `docs/coach/PIP_AUDIT_2026-10-02.md` is their audit of the
+  coaching; read it for the tactical depth.
+- Next agreed step: plain words, no percentages until a lesson teaches
+  them. Details: `BRAIN_PLAN.md`, the last sections.
+- **P.I.P. report (live v0.59.0, 4 Oct 2026)**: a tap-only end-of-hand
+  breakdown with an A-F grade (Settings → P.I.P. report, replacing Hand
+  review), REPORT and DEAL on the console after each hand. Built from his
+  brain's record (`js/coach-report.js`); see `docs/coach/REPORT_PLAN.md`
+  before any work on it.
 
 ## The one-paragraph version
 
@@ -97,14 +142,19 @@ be touched (CLAUDE.md).
     `bet.missed`), check middling ones, semi-bluff a strong draw against
     one player, bluff only one player who's shown weakness and isn't a
     caller, when they fold often enough (`foldChance` vs bet/(pot+bet)).
-    **A bluff is never judged clear-cut.**
+    It now judges the amount too: too small, unnecessarily heavy and an
+    unnecessary all in are distinct. **A bluff is never judged clear-cut.**
   - A judgement: `{ kind, best, verdict: good|fine|mistake, confidence:
     clear|leans|close, tag, lesson, notable, n: numbers }`. The quoted
     numbers always agree with the verdict (tested).
 - **`advise(sp)`**: judges every move you could make; his move, how sure
-  (from the next-best move), the size (2.5bb opens + 1 per limper; 3x a
-  raise in position, 3.8x from the blinds; bets ½ pot, ⅔ on wet boards
-  and the river; to the half big blind), and `stories`.
+  (from the next-best move), the size, and `stories`. Checked-to value
+  hands carry a structured `plan`: several candidate amounts, purpose and
+  what to reassess if called. Quiet monsters bet smaller to keep worse
+  hands in; wet boards charge draws; known callers pay more; all in is
+  reserved for a strong hand when the effective chips left are already
+  small beside the pot. Every amount is capped at what a live opponent can
+  actually match, so covering a short stack never risks imaginary chips.
 - **`stories(sp)`**: what each opponent's betting says (weak / strong /
   calling / quiet) plus habits (caller, bluffer, loose, tight).
 - **`settle(g, me)`**: your result at the showdown **before COLLECT pays
@@ -169,8 +219,8 @@ words and a lesson.
 
 ## Testing
 
-- `node validation/coach-brain-checks.js` (51 checks, ~2 min; all green at
-  v0.57.3), plus `pattern-book-checks.js` (guards: the Coach never changes
+- `node validation/coach-brain-checks.js` (59 checks, ~2 min; all green at
+  v0.58.2-dev), plus `pattern-book-checks.js` (guards: the Coach never changes
   game state, never reads the deck, reads an opponent's cards only in
   `shownAtShowdown`: **name variables `handNo`, never `x.hand`, or it
   trips**), `ai-behaviour-checks.js`, `showdown-checks.js`,

@@ -91,7 +91,7 @@ nowhere else in the game. Now:
   word + numbers), SE PHONES (stage scrolls / shrink to fit). Moments for all
   four end screens. COPY MY PICKS for the owner's order.
 
-## Signed off (owner, 5 Oct 2026) — live in the game, v0.58.3
+## Signed off (owner, 5 Oct 2026) — live in the game, v0.63.0 (merged on top of v0.62.2)
 
 The owner's order from the lab's LOOK tab, now `EventTape.LOOK`:
 THE BIG NUMBER: BIG DRUMS, NO FRAME · SPACING: STANDARD · FINISH /

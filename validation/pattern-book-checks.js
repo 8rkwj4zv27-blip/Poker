@@ -106,7 +106,7 @@ check('Opening a Lab page never replaces the offline copy of the game',()=>{
 
 check('The signed-off CRT recipe sets every dial on <html>, with values the component knows',()=>{
   const html=indexHtml.match(/<html[^>]*>/)[0];
-  const dials={tint:['blue','dark','green','amber','black'],glow:'01234',scan:'01234',rgb:'01234',grain:'01234',curve:'01234',flicker:'01234',roll:'01234',tear:'01234',ghost:'01234',change:['burst','roll','channel','wipe','type'],ink:['meaning','one','mono']};
+  const dials={tint:['blue','dark','green','amber','black','phosphor','lcd','vfd'],glow:'01234',scan:'01234',rgb:'01234',grain:'01234',curve:'01234',flicker:'01234',roll:'01234',tear:'01234',ghost:'01234',change:['burst','roll','channel','wipe','type'],ink:['meaning','one','mono','green','lcd','vfd','led'],mesh:['0','grid','dots']};
   Object.entries(dials).forEach(([k,allowed])=>{
     const m=html.match(new RegExp('data-crt-'+k+'="([^"]+)"'));
     assert.ok(m,'<html> is missing data-crt-'+k);
@@ -458,7 +458,8 @@ check('Coach: live, to the owner\'s order, presentation only',()=>{
     .forEach(([k,v])=>assert.ok(new RegExp('\\b'+k+":'"+v+"'").test(talkDef),'his talk\'s order sets '+k+' to '+v));
   // Off until the player switches him on; the talk slider in Settings on the sheet's segmented keys.
   assert.ok(/coachBot:false, coachTalk:'4'/.test(support),'the Coach starts off, at IN YOUR EAR');
-  assert.ok(/class="segmented compact" id="coach-talk-seg"/.test(indexHtml),'Settings → Coach talk must use the sheet\'s segmented keys');
+  // (tap only, 4 Oct 2026: no talk dial; Settings says how to ask him)
+  assert.ok(/id="coach-tap-field"/.test(indexHtml) && !/id="coach-talk-seg"/.test(indexHtml),'Settings → P.I.P. explains tap only (no talk dial)');
   // His key is the table's own small key, beside ⚙.
   assert.ok(set.includes("key.className = 'icon-btn table-settings coach-key'"),'the COACH key is the table\'s small key');
   // Under the game's menus (inside #app, below the scrim's 44).
@@ -480,6 +481,40 @@ check('Coach: live, to the owner\'s order, presentation only',()=>{
   assert.ok(!/\.deck\b/.test(brain),'his brain never reads the deck');
   const outsideShowdown=brain.replace(/function shownAtShowdown[\s\S]*?\n  \}\n/,'');
   assert.ok(!/\.hand\b/.test(outsideShowdown.replace(/\bme\.hand\b/g,'')),'his brain reads only your cards, bar hands shown at a showdown');
+});
+
+check('P.I.P. report: live, to the owner\'s order, presentation only',()=>{
+  const js=read('js/coach-report.js'), css=read('css/coach-report.css'), md=read('docs/ui/PATTERN_BOOK.md');
+  const links=[...indexHtml.matchAll(/<link rel="stylesheet" href="([^"?]+)/g)].map(m=>m[1]);
+  const scripts=[...indexHtml.matchAll(/<script src="([^"?]+)/g)].map(m=>m[1]);
+  assert.ok(links.includes('css/coach-report.css'),'index.html must load css/coach-report.css');
+  assert.ok(scripts.indexOf('js/coach-report.js')===scripts.indexOf('js/coach-lines.js')+1,'the report loads right after his lines');
+  ["'./css/coach-report.css","'./js/coach-report.js"].forEach(f=>assert.ok(serviceWorker.includes(f),'sw.js is missing '+f));
+  // The owner's picks (round 1): the first option of each row is the default.
+  Object.entries({ arrive:'flicker', pace:'play', chance:'bar', grade:'stamp', face:'on', ink:'marks', numbers:'words' })
+    .forEach(([k,v])=>assert.ok(new RegExp('\\b'+k+":\\[\\['"+v+"'").test(js),'the report\'s order sets '+k+' to '+v));
+  // The old Hand review's switch, now the report's.
+  assert.ok(/id="sw-review"[^>]*aria-label="P\.I\.P\. report"/.test(indexHtml) && !/id="review-body"/.test(indexHtml),'Settings → P.I.P. report replaces Hand review');
+  // Under the menus: same layer as the scrim, placed before it.
+  assert.ok(/\.prp\{[\s\S]*?z-index:44/.test(css) && js.includes("getElementById('scrim')"),'the report sits under the menus');
+  assert.ok(/prefers-reduced-motion/.test(css) && js.includes('motionOff()'),'the report honours Reduced Motion');
+  // Presentation only: reads the table, never changes the game; your own cards only.
+  assert.ok(!/\b(game|pendingHumanPlayer)(\.[A-Za-z_]+)*\s*=[^=]/.test(js) && !/\b(applyAction|humanAct|startNewHand)\(/.test(js),'the report must never change game state');
+  assert.ok(!/\.hand\b/.test(js.replace(/me\.hand|CoachBrain\.hand/g,'')),'the report reads only your own cards (theirs through the brain, as shown)');
+  assert.ok(md.includes('## P.I.P. report (live v0.59.0)'),'the Pattern Book must record the P.I.P. report');
+});
+
+check('The tour: built from the first-run card and the primary key, presentation only',()=>{
+  const js=read('js/tutorial.js'), css=read('css/tutorial.css'), md=read('docs/ui/PATTERN_BOOK.md');
+  const links=[...indexHtml.matchAll(/<link rel="stylesheet" href="([^"?]+)/g)].map(m=>m[1]);
+  const scripts=[...indexHtml.matchAll(/<script src="([^"?]+)/g)].map(m=>m[1]);
+  assert.ok(links.includes('css/tutorial.css') && scripts.includes('js/tutorial.js'),'index.html must load the tour');
+  ["'./css/tutorial.css","'./js/tutorial.js"].forEach(f=>assert.ok(serviceWorker.includes(f),'sw.js is missing '+f));
+  assert.ok(js.includes('fr-card tour-card') && js.includes('btn-primary tour-next'),'the tour wears the first-run card and the primary key');
+  assert.ok(!/\.fr-card\s*\{|\.btn-primary\s*\{/.test(css),'the tour must not restyle the shared card or key');
+  assert.ok(!/\b(game|pendingHumanPlayer)(\.[A-Za-z_]+)*\s*=[^=]/.test(js) && !/\b(applyAction|humanAct|startNewHand)\(/.test(js),'the tour must never change game state');
+  assert.ok(/prefers-reduced-motion/.test(css),'the tour honours Reduced Motion');
+  assert.ok(md.includes('## The tour (live v0.62.0'),'the Pattern Book must record the tour');
 });
 
 process.stdout.write('\n'+passed+' Pattern Book checks passed.\n');
