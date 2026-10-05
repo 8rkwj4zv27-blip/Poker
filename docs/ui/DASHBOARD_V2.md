@@ -1,5 +1,7 @@
 # Dashboard 2.0
 
+> **Historical.** Dashboard V2 release 1 shipped in v0.40.2 (25 September 2026). Kept as the record of how it was decided; the code and `docs/CODEMAP.md` describe the game today. Index of current docs: `docs/README.md`.
+
 The player's dashboard, rethought. Owner direction (25 September 2026): the
 first pass (finish-only polish on the locked V1 layout) was too
 restrictive. V2 may move things, add parts and add gameplay moments, as long

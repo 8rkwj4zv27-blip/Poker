@@ -1,5 +1,7 @@
 # Action Drum — plan
 
+> **Historical.** The action drum shipped in v0.48.0 and the award key in v0.50.0 (28 September 2026). Kept as the record of how it was decided; the code and `docs/CODEMAP.md` describe the game today. Index of current docs: `docs/README.md`.
+
 **Lab link (owner's phone):** https://claude.ai/artifact/Q2qTpSN3k54rkdr3b7ZHgh
 (`action-drum-lab.html`; re-stage with `validation/tools/lab-bundle.js` and
 republish to the same link after a change.)

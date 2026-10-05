@@ -1,5 +1,7 @@
 # Dashboard V2 — handover
 
+> **Historical.** Dashboard V2 release 1 shipped in v0.40.2 (25 September 2026). Kept as the record of how it was decided; the code and `docs/CODEMAP.md` describe the game today. Index of current docs: `docs/README.md`.
+
 This is where the Dashboard V2 work stood on 25 September 2026. It is written
 so a new session (Codex or Claude) can pick it up without the original chat.
 Read `AGENTS.md` / `CLAUDE.md`, `docs/CODEMAP.md` and

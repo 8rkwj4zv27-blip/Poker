@@ -1,9 +1,0 @@
-{
-  "files.exclude": {
-    ".claude": true,
-    ".codex": true,
-    ".vscode": true,
-    "CLAUDE.md": true,
-    "AGENTS.md": true
-  }
-}

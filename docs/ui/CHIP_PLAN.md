@@ -1,5 +1,7 @@
 # The CHIP plan
 
+> **Historical.** The chip and coin work shipped across v0.40–v0.46 (26–28 September 2026). Kept as the record of how it was decided; the code and `docs/CODEMAP.md` describe the game today. Index of current docs: `docs/README.md`.
+
 Proposal and working record for upgrading the chips: bank, bet spots, pot,
 payouts and feel. Written 25 September 2026. Nothing here changes the
 production game until the owner signs an option off in `chip-lab.html`.

@@ -1,5 +1,7 @@
 # Poker Faces visual-upgrade handover
 
+> **Historical.** This handover dates from 23 August 2026, before the visual system reached the game; much of it has since changed. Kept as the record of how it was decided; the code and `docs/CODEMAP.md` describe the game today. Index of current docs: `docs/README.md`.
+
 Date: 23 August 2026  
 Status: isolated Design Lab work only; no production migration approved
 

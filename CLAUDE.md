@@ -42,7 +42,7 @@ The overall feeling is a strange velvet-covered poker machine.
 - Avoid unrelated refactors.
 - Do not migrate to a framework without explicit approval.
 - Do not introduce dependencies without approval.
-- Work in small, testable changes.
+- Work in small, testable changes. Run `npm test` before and after every change (GitHub runs it on every pull request), and `npm run play-test` before merging changes to files players download.
 - Plan substantial changes before implementing them.
 - Do not change visual design merely to make code or UI more conventional.
 - Preserve existing localStorage settings and lifetime statistics unless a task specifically requires changes to them.
@@ -92,7 +92,8 @@ with real touch (`validation/tools/touch-harness.js`) before sending.
 Before searching the codebase cold, read `docs/CODEMAP.md` — it says which
 file owns what, which files are production vs. isolated Lab prototypes, and
 where the test suites and local-preview instructions are. It's a map, not a
-spec: the code and this file remain authoritative over it.
+spec: the code and this file remain authoritative over it. `docs/README.md`
+says which docs are current and which are history.
 
 ## Career mode continuity
 

@@ -1,5 +1,7 @@
 # Dashboard V2 — the rules
 
+> **Historical.** Dashboard V2 release 1 shipped in v0.40.2 (25 September 2026). Kept as the record of how it was decided; the code and `docs/CODEMAP.md` describe the game today. Index of current docs: `docs/README.md`.
+
 Status: **signed off by the owner** (25 September 2026), with rule 6 widened
 at their request. Every Dashboard V2
 part, bespoke or shared, must pass these rules before it is shown. Written

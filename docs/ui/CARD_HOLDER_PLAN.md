@@ -1,5 +1,7 @@
 # Card Holder — the lip your cards sit in
 
+> **Historical.** The card holder shipped in v0.49.0 (28 September 2026). Kept as the record of how it was decided; the code and `docs/CODEMAP.md` describe the game today. Index of current docs: `docs/README.md`.
+
 **Lab:** `card-holder-lab.html` · **Link:** https://claude.ai/artifact/3QcNsZc9kRuybCBrnPj9AX
 
 ## The brief (owner, 28 Sep 2026)
