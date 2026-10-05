@@ -56,9 +56,13 @@ sets the chips for the next load ($200 – $25,000).
 
 - Lab link (round 1; republished with the live picks in v0.64.0): https://claude.ai/artifact/7oKKr6EvY958mCAsSN55tM
 
-## Noticed, not in scope
+## Fixed in v0.64.2: the rack jumbling after a bet
 
-After your blind is posted the rack re-settles to the new stack by sliding
-every coin to a re-planned place (`syncRack`'s `applyLayout`): for a moment
-the whole rack is a heap. That's the shipped per-bet behaviour, separate
-from the load.
+After your blind (any bet, any win) the rack was laid out again from
+scratch (`rackSlots` in `js/coin-world.js`: coins sorted by value, heights
+shared out again), so nearly every coin was handed a new place and the
+whole rack hopped at once. `keepPlaces()` now gives each colour's places
+to the coins already standing on one, then the nearest; new coins take
+what's left. Measured in an emulated iPhone, coins moving at once: blind
+36 → 3, win +300 27 → 4, win +2,000 38 → 5, a drop to $600 27 → 14 (the
+rack loses a row there, so some must move).

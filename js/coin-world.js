@@ -1314,7 +1314,30 @@
       const mine=sorted.slice(at,at+s.h); at+=s.h;
       mine.reverse().forEach((b,lv)=>out.set(b,{ x:s.x, y:s.y, z:lv*g.st, n:lv, k:ci }));
     });
-    return out;
+    return keepPlaces(out);
+  }
+  /* The rack, laid out again (a bet left it, a win joined it): coins of a
+     colour look alike, so each colour's places go first to the coins
+     already standing on one, then to the nearest. Only the coins that
+     must move do; the rest stay put (before, every coin could be handed a
+     new place and the whole rack hopped at once). New coins (planZone's
+     placeholders, no place yet) take what's left. */
+  function keepPlaces(out){
+    const groups=new Map();
+    out.forEach((s,b)=>{ const g=groups.get(b.colour)||groups.set(b.colour,{ coins:[], slots:[] }).get(b.colour); g.coins.push(b); g.slots.push(s); });
+    const res=new Map();
+    groups.forEach(g=>{
+      const placed=g.coins.filter(b=>!b.ph && Number.isFinite(b.x)), fresh=g.coins.filter(b=>b.ph || !Number.isFinite(b.x));
+      const free=new Set(g.slots.keys()), done=new Set();
+      const dist=(b,s)=>Math.hypot(b.x-s.x,b.y-s.y)+Math.abs((b.z||0)-s.z);
+      const pairs=[];
+      placed.forEach((b,bi)=>g.slots.forEach((s,si)=>pairs.push([dist(b,s),bi,si])));
+      pairs.sort((a,c)=>a[0]-c[0]);
+      pairs.forEach(([,bi,si])=>{ if (done.has(bi) || !free.has(si)) return; done.add(bi); free.delete(si); res.set(placed[bi],g.slots[si]); });
+      const left=[...free].sort((a,c)=>a-c);
+      fresh.forEach((b,i)=>res.set(b,g.slots[left[i]]));
+    });
+    return res;
   }
   // where every coin of `z` goes once `extra` (colour names) have joined it:
   // { map (coin -> place), extras: [place, ...] in the order given }
