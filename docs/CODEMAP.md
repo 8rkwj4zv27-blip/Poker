@@ -217,9 +217,12 @@ functions in `07-ui-wiring.js`; owns no money itself. Styled by
 `css/career-hub-cabinet.css` (live-only layout: Back/Settings keys on the
 top rail; one dark console housing the ticket slot — cartridge-hole mouth
 over a readout whose text `career-hub-live.js` keeps in step with the
-ticket state and the feed — plus the main button and Abandon/Cash Out; the
-old bottom `.setup-head` strip is hidden). Chosen in `slot-lab.html`
-(option B, mount 3).
+ticket state and the feed — plus the main button; the old bottom
+`.setup-head` strip is hidden). Chosen in `slot-lab.html` (option B,
+mount 3). Since v0.64.4 Abandon / Cash Out is not in the console: it is a
+red tab (`.ch2-card-quit`) beside DETAILS in the paid ticket's tab row
+(`.ch2-card-keys`), shown only on `.is-paid`, so paying never changes the
+ticket's or the console's height.
 
 ## `js/machine-wheel.js` + `css/machine-wheel.css` — Machine Wheel V2 (live)
 

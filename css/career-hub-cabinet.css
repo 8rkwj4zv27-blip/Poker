@@ -10,7 +10,8 @@
    - The cabinet starts a little lower under the status bar, sections get
      real gaps, and the tickets get clear air on every side.
    - The console is one dark-plastic housing (the menu top bar's material)
-     holding the ticket slot, the BUY IN cradle and Abandon/Cash Out. The
+     holding the ticket slot and the BUY IN cradle (Abandon/Cash Out is a
+     red tab on the paid ticket, beside DETAILS). The
      slot is the cartridge hole over a small display that says what it is
      doing (career-hub-live.js keeps the text). Chosen in slot-lab.html
      (option B, mount 3). Only .ch2-intake and .ch2-intake-mouth matter to
@@ -46,15 +47,14 @@
 /* ---- Tickets: clear air above, below and to the sides ---- */
 #career-hub .ch2-card{ top:16px; height:calc(100% - 32px); }
 
-/* The YOUR TABLE panel shrinks with the ticket (shorter phones, or when
-   the Abandon/Cash Out key takes room). Portraits are sized by the
+/* The YOUR TABLE panel shrinks with the ticket (shorter phones). Portraits are sized by the
    panel's height as well as its width, so they never ride up over the
    label. 44px = the label, the gap and the name under each face. */
 #career-hub .ch2-card-front{ grid-template-rows:42px 54px 58px 58px minmax(96px,1fr) 43px; }
 #career-hub .ch2-opponent-stage{ container-type:size; gap:9px; }
 #career-hub .ch2-opponent-stage .ch2-face{ max-width:max(40px,calc(100cqh - 34px)); }
 
-/* ---- Console: one housing for the slot, the button and Abandon ---- */
+/* ---- Console: one housing for the slot and the button ---- */
 #career-hub .ch2-console{
   display:flex; flex-direction:column; gap:8px; min-width:0; padding:8px 8px 10px;
   background:var(--pc-plastic-dark); border:3px solid var(--pc-edge-lo); border-radius:3px;
@@ -66,14 +66,23 @@
    on all four sides at every phone size. */
 #career-hub .ch2-action-cradle{ height:auto; flex:0 0 auto; margin:0; padding:9px 7px 23px; }
 #career-hub .ch2-action-cradle::before{ top:16px; height:78px; }
-#career-hub .ch2-secondary{
-  min-height:40px; margin:0; padding:6px 10px;
-  border:3px solid var(--pc-edge-lo); border-radius:3px; background:var(--pc-plastic); color:var(--px-ink);
-  box-shadow:inset 2px 2px 0 var(--pc-plastic-hi),inset -2px -2px 0 var(--pc-plastic-lo),0 3px 0 var(--pc-edge-lo);
-  font:8px/1.15 var(--font-hdr); letter-spacing:.08em; cursor:pointer;
+
+/* ---- The paid ticket's red tab: Abandon / Cash Out beside DETAILS ----
+   It lives in the ticket's own tab row (the front's last grid row), so a
+   paid ticket is exactly as tall as any other and the console never grows.
+   Unpaid: DETAILS alone at its usual width. Paid: the two tabs share the
+   row at the same size, the second in the ticket tab's red finish. */
+#career-hub .ch2-card-keys{ align-self:end; display:flex; justify-content:center; gap:8px; min-width:0; margin:0 8px; }
+#career-hub .ch2-card-keys .ch2-card-flip{ margin:5px 0 0; }
+#career-hub .ch2-card-keys .ch2-card-quit{ display:none; }
+#career-hub .ch2-card.is-paid .ch2-card-keys .ch2-card-flip{ flex:1 1 0; width:auto; min-width:0; padding-left:20px; padding-right:20px; }
+#career-hub .ch2-card.is-paid .ch2-card-keys .ch2-card-quit{ display:block; }
+#career-hub .ch2-card-quit{
+  border-color:#5E1712; background:#C9473D; color:#FFF0D8;
+  box-shadow:inset 1px 1px 0 #EE8A7E,inset -2px -2px 0 rgba(0,0,0,.24),0 3px 0 #3A0F0B;
 }
-#career-hub .ch2-secondary:active{ transform:translateY(2px); box-shadow:inset 2px 2px 0 var(--pc-plastic-hi),0 1px 0 var(--pc-edge-lo); }
-#career-hub .ch2-secondary[hidden]{ display:none; }
+#career-hub .ch2-card-quit::before,#career-hub .ch2-card-quit::after{ border-top-color:rgba(255,240,216,.42); }
+#career-hub .ch2-card-quit:active{ box-shadow:inset 2px 2px 0 #EE8A7E,inset -2px -2px 0 rgba(0,0,0,.28),0 1px 0 #3A0F0B; }
 
 /* ---- The ticket slot: the cartridge hole over a readout ---- */
 #career-hub .ch2-intake{

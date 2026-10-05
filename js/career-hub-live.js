@@ -101,7 +101,12 @@
           '<div class="ch2-opponent-stage"><span class="ch2-stage-label">YOUR TABLE</span>' + faces(entry) + '</div>' +
           '<div class="ch2-stamp ch2-stamp-lock">LOCKED</div><div class="ch2-stamp ch2-stamp-paid">ENTRY PAID</div>' +
           '<div class="ch2-requirement">' + esc(requirement) + '</div>' +
-          '<button class="pc-button ch2-card-flip" type="button" data-card-flip="back">DETAILS</button>' +
+          // The paid ticket carries its own way out: a red tab beside
+          // DETAILS (Abandon, or Cash Out at the cash table), shown only
+          // while .is-paid. It sits in the tab row the ticket already has,
+          // so paying never changes the ticket's or the console's height.
+          '<div class="ch2-card-keys"><button class="pc-button ch2-card-flip" type="button" data-card-flip="back">DETAILS</button>' +
+          '<button class="pc-button ch2-card-flip ch2-card-quit" type="button" data-card-quit tabindex="-1">' + (entry.cash ? 'CASH OUT' : 'ABANDON') + '</button></div>' +
         '</section>' +
         '<section class="ch2-card-face ch2-card-back ch2-paper" aria-hidden="true">' +
           '<header class="ch2-card-venue">' + esc(shortVenue(entry.venue)) + '</header>' +
@@ -186,6 +191,7 @@
       node.querySelector('.ch2-card-back').setAttribute('aria-hidden',String(!(delta === 0 && flipped)));
       node.querySelector('[data-card-flip="back"]').tabIndex = delta === 0 && !flipped ? 0 : -1;
       node.querySelector('[data-card-flip="front"]').tabIndex = delta === 0 && flipped ? 0 : -1;
+      node.querySelector('[data-card-quit]').tabIndex = delta === 0 && !flipped && all[i].state === 'active' ? 0 : -1;
     });
     rack.setAttribute('aria-label',all[current].venue + ', ' + all[current].title + ', ' + all[current].state);
     const currentEntry = all[current];
@@ -201,16 +207,6 @@
     else if (currentEntry.state === 'available') { main.textContent = currentEntry.cash ? 'BUY IN ' + amount(CAREER_CASH_CONFIG.buyIn) : currentEntry.event.buyIn ? 'BUY IN ' + amount(currentEntry.event.buyIn) : 'TAKE SEAT'; sub.textContent = 'TAKE SEAT'; }
     else if (currentEntry.state === 'unaffordable') { main.textContent = 'BANKROLL LOW'; sub.textContent = 'ENTRY UNAFFORDABLE'; }
     else { main.textContent = currentEntry.state === 'blocked' ? 'TABLE IN PLAY' : 'LOCKED'; sub.textContent = currentEntry.state === 'blocked' ? 'FINISH ACTIVE EVENT' : 'EVENT UNAVAILABLE'; }
-    const secondary = document.getElementById('ch2-secondary');
-    if (secondary){
-      secondary.hidden = currentEntry.state !== 'active';
-      secondary.disabled = accepting;
-      secondary.textContent = currentEntry.cash ? 'CASH OUT ' + amount(careerMoneyCommitted()) : 'ABANDON EVENT';
-      secondary.onclick = () => {
-        if (currentEntry.cash) careerCashOutPressed();
-        else careerAbandonPressed(currentEntry.id);
-      };
-    }
   }
 
   /* The slot's readout says what the slot is doing, in the DEALER READY
@@ -246,8 +242,8 @@
       '<div class="ch2-money-block"><div class="cpi-bankroll-housing ch2-bankroll-housing"><div class="amt-readout ch2-bankroll-reel" id="ch2-bankroll" role="img" aria-live="polite" aria-label="Bankroll ' + esc(amount(bank)) + '" style="grid-template-columns:21px repeat(' + Math.max(7,String(bank).length) + ',minmax(12px,1fr))">' + reelMarkup(bank) + '</div></div></div>' +
       '<button class="ch2-record" id="ch2-record" type="button"><span class="ch2-crt-glass crt" id="ch2-crt-glass"><span class="ch2-crt-stat crt-cell"><small class="crt-caption" id="ch2-crt-label-a"></small><strong class="tabular crt-figure" id="ch2-crt-value-a"></strong></span><span class="ch2-crt-stat crt-cell"><small class="crt-caption" id="ch2-crt-label-b"></small><strong class="tabular crt-figure" id="ch2-crt-value-b"></strong></span></span></button></header>' +
       '<section class="ch2-reader" aria-label="Career event browser"><div class="ch2-rack" id="ch2-rack"><div class="ch2-track" id="ch2-track" role="listbox" tabindex="0" aria-label="Career events. Swipe, tap an exposed ticket edge, or use left and right arrow keys">' + all.map(card).join('') + '</div></div></section>' +
-      // The console: one dark-plastic housing holding the ticket slot, the
-      // main button and Abandon/Cash Out. In the slot only .ch2-intake and
+      // The console: one dark-plastic housing holding the ticket slot and
+      // the main button (Abandon/Cash Out live on the paid ticket). In the slot only .ch2-intake and
       // .ch2-intake-mouth are load-bearing (the ticket feed finds the slot
       // by id and measures the mouth); the readout says what it is doing.
       '<div class="ch2-console">' +
@@ -256,7 +252,6 @@
         '<span class="pc-display ch2-slot-readout crt"><span class="pc-lamp ch2-slot-lamp"></span><span id="ch2-slot-text"></span></span>' +
       '</div>' +
       '<div class="pc-primary-cradle ch2-action-cradle"><span class="pc-slot-aperture" aria-hidden="true"><span class="pc-slot-door"></span></span><button class="pc-button pc-button-primary ch2-primary" id="ch2-primary" type="button"><span class="pc-lamp is-amber" aria-hidden="true"></span><span><strong id="ch2-primary-main"></strong><small id="ch2-primary-sub"></small></span><span class="pc-lamp is-amber" aria-hidden="true"></span></button></div>' +
-      '<button class="ch2-secondary" id="ch2-secondary" type="button" hidden></button>' +
       '</div>' +
       '</main>';
     const root = board.querySelector('#career-hub');
@@ -459,11 +454,20 @@
       selectedCard.querySelector('.ch2-card-back').setAttribute('aria-hidden',String(!flipped));
       selectedCard.querySelector('[data-card-flip="back"]').tabIndex = flipped ? -1 : 0;
       selectedCard.querySelector('[data-card-flip="front"]').tabIndex = flipped ? 0 : -1;
+      selectedCard.querySelector('[data-card-quit]').tabIndex = !flipped && selectedCard.classList.contains('is-paid') ? 0 : -1;
       queue(() => { turning = false; selectedCard.querySelector('[data-card-flip="' + (flipped ? 'front' : 'back') + '"]')?.focus(); },motionReduced() ? 0 : 640);
       Sound.buttonRelease('award');
     };
     root.querySelector('#ch2-record').onclick = () => { if (accepting) return; recordIndex = (recordIndex + 1) % 3; record(true); };
     track.onclick = event => {
+      const quit = event.target.closest('[data-card-quit]');
+      if (quit){
+        const entry = all[selected()];
+        if (accepting || turning || !entry || entry.state !== 'active' || !quit.closest('.ch2-card.is-selected')) return;
+        if (entry.cash) careerCashOutPressed();
+        else careerAbandonPressed(entry.id);
+        return;
+      }
       const button = event.target.closest('[data-card-flip]');
       if (button) flip(button.dataset.cardFlip === 'back');
     };

@@ -1,4 +1,4 @@
-const CACHE_NAME = 'poker-v64-3';
+const CACHE_NAME = 'poker-v64-4';
 const APP_SHELL = [
   './',
   './index.html',
@@ -16,7 +16,7 @@ const APP_SHELL = [
   './css/career-motion-live.css?v=4',
   './css/machine-wheel.css?v=1',
   './css/ticket-feed.css?v=1',
-  './css/career-hub-cabinet.css?v=4',
+  './css/career-hub-cabinet.css?v=64-4',
   './css/table-intro.css?v=space-1',
   './css/home-boot.css?v=2',
   './css/press-feel.css?v=2',
@@ -55,7 +55,7 @@ const APP_SHELL = [
   './js/coin-bank.js?v=1',
   './js/bank-load.js?v=1',
   './js/07-ui-wiring.js?v=62',
-  './js/career-hub-live.js?v=cabinet-4',
+  './js/career-hub-live.js?v=64-4',
   './js/career-motion-live.js?v=4',
   './js/machine-wheel.js?v=2',
   './js/ticket-feed.js?v=1',
@@ -69,7 +69,7 @@ const APP_SHELL = [
   './js/knockout.js?v=63',
   './js/crt.js?v=2',
   './js/finishes.js?v=4',
-  './js/press-feel.js?v=2',
+  './js/press-feel.js?v=64-4',
   './js/showdown.js?v=63',
   './js/event-tape.js?v=63',
   './js/dealer-deck.js?v=5',
