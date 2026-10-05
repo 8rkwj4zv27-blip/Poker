@@ -532,4 +532,14 @@ check('Your bank: one box finish, the load is presentation only',()=>{
   assert.ok(md.includes('## Your bank: the load and the shelves (live v0.64.0)') && book.includes('Your bank: the load and the shelves'),'the Pattern Book must record the bank load');
 });
 
+check('Ticket tabs: Abandon / Cash Out is the red tab on the paid ticket, never a console key',()=>{
+  const js=read('js/career-hub-live.js'), css=read('css/career-hub-cabinet.css'), md=read('docs/ui/PATTERN_BOOK.md');
+  assert.ok(/<div class="ch2-card-keys"><button class="pc-button ch2-card-flip" type="button" data-card-flip="back">/.test(js),'DETAILS must sit in the ticket\'s tab row');
+  assert.ok(js.includes('class="pc-button ch2-card-flip ch2-card-quit"'),'the red tab must be the shared flip tab with .ch2-card-quit');
+  assert.ok(!js.includes('ch2-secondary'),'Abandon / Cash Out must not come back as a console key (it changed the cabinet\'s height)');
+  assert.ok(/\.ch2-card-keys \.ch2-card-quit\{ display:none; \}/.test(css) && /\.ch2-card\.is-paid \.ch2-card-keys \.ch2-card-quit\{ display:block; \}/.test(css),'the red tab shows only on a paid ticket');
+  assert.ok(!/\.ch2-card-quit[^{]*\{[^}]*(min-height|height|font)/.test(css),'the red tab is the flip tab\'s size and type, only its colours change');
+  assert.ok(md.includes('## Ticket tabs (live v0.64.4)') && book.includes('<h2>Ticket tabs</h2>'),'the Pattern Book must record the ticket tabs');
+});
+
 process.stdout.write('\n'+passed+' Pattern Book checks passed.\n');

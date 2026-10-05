@@ -468,3 +468,16 @@ rack's back rows: the owner's picks from the Bank Load Lab
 | Count in | **STRAIGHT DOWN**, **CHIP BY CHIP**, **BACK ROW FIRST**, **1.2 S**, readout **COUNTS UP** | Each chip drops from above the box onto its stack with a small squash and a clink, faster as it goes; the STACK readout climbs as they land. |
 | Tray in | **FROM ABOVE**, **SMOOTH + BOUNCE**, **0.6 S** | The rack comes down on its brass-rimmed tray (`.bl-tray`), overshoots 3px and settles; a clunk, a 2px jolt of the box, a gleam. |
 | Reduced Motion | | The rack is simply there. |
+
+## Ticket tabs (live v0.64.4)
+
+The tabs on a Career ticket's bottom edge. They are part of the ticket
+stock, not machine keys. The owner approved the red tab in chat on
+5 Oct 2026. Styles are in `css/career-hub-v2-lab.css` (`.ch2-card-flip`) and
+`css/career-hub-cabinet.css` (the row and the red tab).
+
+| Part | Rule | Class |
+|---|---|---|
+| Flip tab | DETAILS on the front, EVENT on the back: the reinforced tab in the venue's paper and mark colours. | `.ch2-card-flip` |
+| Tab row | The front's last grid row. Unpaid: DETAILS alone at its usual width. Paid: the two tabs share the row at the same size. The ticket and the console never change height. | `.ch2-card-keys` |
+| Red tab | The paid ticket's way out (ABANDON, or CASH OUT at the cash table), beside DETAILS. It is the flip tab in red with cream print and only shows on `.is-paid`. Abandon still asks for confirmation. | `.ch2-card-flip.ch2-card-quit` |
