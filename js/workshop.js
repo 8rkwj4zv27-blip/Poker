@@ -1020,6 +1020,9 @@
     const home = $id('home'), hero = home && home.querySelector('.hero');
     const cab = $id('menu-contraption');
     if (!hero || home.classList.contains('hidden')) return;
+    // Reduce Motion gives everything a hair of a transition, which would
+    // leave these sizes a frame behind the measuring below
+    hero.style.transition = 'none';
     hero.style.flexBasis = hero.style.minHeight = '';
     if (cab) cab.style.scale = '';
     if (!matchMedia('(orientation:portrait) and (max-height:700px)').matches){
@@ -1037,8 +1040,26 @@
     const room = home.clientHeight - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom);
     const tall = cab.offsetHeight;
     if (tall > room && room > 0) cab.style.scale = String(Math.floor(room / tall * 1000) / 1000);
+    shareCabinet(cab);
+  }
+  /* Hand Rankings, Custom Game, the Workshop and Settings draw their cabinet
+     exactly where this one is drawn (css/workshop.css, ONE CABINET). */
+  function shareCabinet(cab){
+    // from layout, not the drawn box, so the boot and launch moves (which
+    // transform it) never skew it; the fit scale grows from its top centre
+    const app = $id('app'), w = cab.offsetWidth, h = cab.offsetHeight;
+    if (!w || !h) return;
+    const s = parseFloat(cab.style.scale) || 1;
+    const px = v => (Math.round(v * 10) / 10) + 'px';
+    app.style.setProperty('--cab-x', px(cab.offsetLeft + w * (1 - s) / 2));
+    app.style.setProperty('--cab-y', px(cab.offsetTop));
+    app.style.setProperty('--cab-w', px(w * s));
+    app.style.setProperty('--cab-h', px(h * s));
   }
   addEventListener('resize', fitHome);
+  // the pixel fonts arrive after the first fit and change its height
+  if (document.fonts && document.fonts.addEventListener) document.fonts.addEventListener('loadingdone', fitHome);
+  addEventListener('load', fitHome);
   new MutationObserver(fitHome).observe($id('home'), { attributes:true, attributeFilter:['class'] });
   if ($id('menu-contraption')) new MutationObserver(fitHome).observe($id('menu-contraption'), { attributes:true, attributeFilter:['class'] });
 

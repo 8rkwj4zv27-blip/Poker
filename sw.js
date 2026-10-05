@@ -1,4 +1,4 @@
-const CACHE_NAME = 'poker-v64-2';
+const CACHE_NAME = 'poker-v64-3';
 const APP_SHELL = [
   './',
   './index.html',
@@ -43,7 +43,7 @@ const APP_SHELL = [
   './css/event-tape.css?v=63',
   './css/result-cabinet.css?v=63',
   './css/crt.css?v=3',
-  './css/workshop.css?v=64-1',
+  './css/workshop.css?v=64-3',
   './js/01-poker-math.js?v=ai-1',
   './js/02-support-systems.js?v=64-2',
   './js/03-opponents.js?v=ai-1',
@@ -85,7 +85,7 @@ const APP_SHELL = [
   './js/coach-report.js?v=1',
   './js/tutorial.js?v=62-2',
   './js/workshop-rack.js?v=1',
-  './js/workshop.js?v=64-1',
+  './js/workshop.js?v=64-3',
   // FACE_ART (js/02-support-systems.js) — every illustrated portrait an
   // opponent can wear, precached so a live seat's expression can always
   // swap from Cache Storage rather than depending on a network round-trip
