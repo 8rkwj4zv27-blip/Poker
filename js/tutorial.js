@@ -125,10 +125,22 @@ const Tour = (() => {
     // on the table and actually waiting on the player
     if (typeof pendingHumanPlayer === 'undefined' || !pendingHumanPlayer) return;
     if ($('table-screen') && $('table-screen').classList.contains('hidden')) return;
-    // let the cards land and the keys light first
-    setTimeout(() => {
-      if (!open() && pendingHumanPlayer && !settings.seenTour) start();
-    }, motionOff() ? 0 : 700);
+    // let the cards land and the keys light first, and P.I.P. (when he's
+    // switched on) finish dropping in: opening over his arrival hid it and
+    // left him out of step for the first hand
+    const t0 = performance.now();
+    const go = () => {
+      if (open() || !pendingHumanPlayer || settings.seenTour) return;
+      if (pipArriving() && performance.now() - t0 < 8000){ setTimeout(go, 250); return; }
+      start();
+    };
+    setTimeout(go, motionOff() ? 0 : 700);
+  }
+  function pipArriving(){
+    try{
+      if (!settings.coachBot || typeof CoachSet === 'undefined') return false;
+      return !CoachSet.on || CoachSet.busy;
+    }catch(e){ return false; }
   }
 
   /* Settings → Help → HOW TO PLAY: now if it's your turn, else at the next. */

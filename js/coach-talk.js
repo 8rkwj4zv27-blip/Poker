@@ -514,13 +514,14 @@ const CoachTalk = (() => {
     }
     return shortKeys(['advise.' + a.kind + '.' + a.move], a.n);
   }
+  const closeKey = sp => sp && sp.street === 'preflop' ? 'advise.close.pre' : 'advise.close';
   function sayAdvice(a, sp, help, notch){
     const ctx = adviceCtx(a, sp);
     if (help <= 1) return false;
     const drawing = a.kind === 'post' && a.n && a.n.drawName && !['overpair', 'top-pair', 'two-pair', 'set', 'trips', 'straight', 'flush', 'full-house', 'quads', 'straight-flush'].includes(a.n.made);
     const lead = storyKey(a);
     if (help === 2) return sayAt(drawing ? ['hint.post.draw', 'hint.post'] : shortKeys(['hint.' + a.kind], a.n), ctx, notch, lead);
-    const said = help === 3 && a.sure === 'close' && a.alt ? sayAt(['advise.close'], ctx, notch, lead)
+    const said = help === 3 && a.sure === 'close' && a.alt ? sayAt([closeKey(sp)], ctx, notch, lead)
       : sayAt(adviceKeys(a), ctx, notch, lead, a.sure === 'leans' || a.sure === 'close' ? 'advise.tail.leans' : habitKey(a));
     return said;
   }
@@ -582,7 +583,7 @@ const CoachTalk = (() => {
     const parts = [];
     if (r.street === 'preflop'){
       if (mine){ const a = CoachBrain.advisePreflop(sp); if (a){ A.advice = a; A.spot = sp; A.handNo = g.handNumber;
-        const c = adviceCtx(a, sp); const t = textOf(a.sure === 'close' && a.alt ? 'advise.close' : adviceKeys(a), c);
+        const c = adviceCtx(a, sp); const t = textOf(a.sure === 'close' && a.alt ? closeKey(sp) : adviceKeys(a), c);
         if (t) parts.push(t); return { parts, topic:a.lesson ? 'lesson.' + a.lesson : null, n:a.n, ctx:c }; } }
       const t = textOf('read.pre.wait', ctx); if (t) parts.push(t);
       return { parts, topic:'explain.position' };
@@ -602,7 +603,7 @@ const CoachTalk = (() => {
     if (adv){
       A.advice = adv; A.spot = sp; A.handNo = g.handNumber;
       const c = adviceCtx(adv, sp);
-      const t = textOf(adv.sure === 'close' && adv.alt ? 'advise.close' : adviceKeys(adv), c);
+      const t = textOf(adv.sure === 'close' && adv.alt ? closeKey(sp) : adviceKeys(adv), c);
       if (t) parts.push(t);
       if (adv.n && adv.n.blockerNote && !adv.plan) parts.push(adv.n.blockerNote);
       if (adv.n && adv.n.potNote) parts.push(adv.n.potNote);
