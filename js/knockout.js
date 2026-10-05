@@ -744,6 +744,7 @@ const Knockout = (function(){
   async function gameOver(g, killer, opts){
     const k = PACE[O.gopace] || 1, T = ms => sleep(ms * k);
     const frame = $id('hud-frame'), area = $id('action-area'), dock = $id('your-seat-dock');
+    if (dashState) restoreDash();      // a wreck still kept from the last one
     dashState = { blown:[], hidden:[], tilt:[], smokes:[], overlays:[], classed:[], reels:new Map() };
     await T(220);
 
@@ -763,6 +764,10 @@ const Knockout = (function(){
       await T(120);
     }
 
+    // P.I.P., if he's on the table, sees it coming: he starts to blink
+    const pip = typeof CoachSet !== 'undefined' && CoachSet.on ? CoachSet : null;
+    if (pip) try{ pip.panic(); }catch(e){}
+
     // THE HIT
     const hitDash = (m, px) => {
       [dock, area].forEach(el => restart(el, 'kofx-dhit', { '--kdx':(Math.random() < .5 ? -1 : 1) * px + 'px', '--kd-ms':'230ms' }));
@@ -776,8 +781,11 @@ const Knockout = (function(){
       hitDash(2.6, 9); await T(260);
     }
 
-    // THE DAMAGE: a chain of failures, then the lights go
+    // THE DAMAGE: a chain of failures, then the lights go. The first
+    // blast sends P.I.P. to the moon and snaps his lead.
+    const pipGone = pip ? sleep(260 * k).then(() => pip.blast()).catch(() => {}) : null;
     await damageChain(g, k, T, frame, area, dock);
+    if (pipGone) await pipGone;
 
     // LIGHTS OUT
     await T(160);
@@ -1155,6 +1163,8 @@ const Knockout = (function(){
   // the dashboard as it was (buttons back, lights on)
   function restoreDash(){
     const s = dashState; dashState = null;
+    clearInterval(repairWatch); repairWatch = 0;
+    const area = $id('action-area'); if (area) area.classList.remove('kofx-lastkey');
     if (s){
       s.smokes.forEach(h => h.stop = true);
       s.blown.forEach(b => { b.classList.remove('kofx-blown'); if (!quiet()) b.animate([{ transform:'translateY(14px) scale(.9)' }, { transform:'translateY(-4px)' }, { transform:'none' }], { duration:220, easing:'steps(4,end)' }); });
@@ -1170,6 +1180,52 @@ const Knockout = (function(){
     ['hud-frame', 'action-area', 'your-seat-dock'].forEach(id => { const el = $id(id); if (el) el.classList.remove('kofx-dead', 'kofx-dead-deep', 'kofx-flicker', 'kofx-rimdead', 'kofx-askew'); });
   }
 
+  /* The wreck stays (owner, 29 Sep 2026: "we go from a destroyed dashboard
+     to a fixed one"). Under RUN OVER / EVENT LOST the dashboard is left as
+     the game over broke it, still smouldering; only the key bay gets its
+     power back, once the drum has limped round to the way out. It's
+     repaired when you leave: in the dark of the wheel's roll, as the
+     result stage goes. */
+  function smolder(el){
+    const h = { stop:false };
+    (function puff(){
+      if (h.stop || !dashState) return;
+      const r = rectOf(el);
+      if (r && r.width && !quiet()){
+        const x = r.left + r.width * rand(.15, .85), y = r.top + r.height * rand(.15, .5);
+        spawnBits(x, y, { n:1, dir:-Math.PI / 2, spread:.3, speed:[14, 30], size:[5, 9], colors:['rgba(150,146,140,.4)','rgba(110,106,102,.38)'], gravity:-8, life:[1100, 1700], grow:1.7, drag:.5 });
+        if (Math.random() < .08) sparks(x, y, -Math.PI / 2, 2);
+      }
+      setTimeout(puff, rand(420, 900));
+    })();
+    return h;
+  }
+  // the one key that still works: its bay comes back on, stuttering
+  function wakeKeyBay(){
+    const area = $id('action-area'); if (!area || !area.classList.contains('kofx-dead')) return;
+    area.classList.remove('kofx-dead', 'kofx-dead-deep', 'kofx-flicker');
+    if (!quiet()){ restart(area, 'kofx-lastkey'); Snd.bulb(); }
+  }
+  let repairWatch = 0;
+  function keepWreck(){
+    if (!dashState) return;
+    const dock = $id('your-seat-dock');
+    if (dock) dashState.smokes.push(smolder(dock));
+    clearInterval(repairWatch);
+    const kept = dashState;
+    let seen = false;
+    const t0 = now();
+    repairWatch = setInterval(() => {
+      const ts = $id('table-screen'), felt = $id('felt');
+      const shown = !!felt && felt.classList.contains('results-mode');
+      seen = seen || shown;
+      // repaired once the result stage has been and gone (or the table has),
+      // never before it has rolled in
+      const gone = !ts || ts.classList.contains('hidden') || (seen && !shown) || (!seen && now() - t0 > 20000);
+      if (gone || dashState !== kept){ clearInterval(repairWatch); repairWatch = 0; if (dashState === kept) restoreDash(); }
+    }, 250);
+  }
+
   /* presentResultStage, wrapped: the game-over beat before a bust's
      result stage. Positive results pass straight through. */
   async function presentResultStageFx(g, model, opts){
@@ -1182,14 +1238,22 @@ const Knockout = (function(){
     const how = await gameOver(g, killerOf(g), {});
     const o = Object.assign({}, opts);
     const con = o.console;
-    o.console = () => { if (con) con(); setTimeout(restoreDash, 650); };
+    // the drum limps round to the way out, and that key alone lights
+    o.console = () => {
+      let lit = false;
+      const light = () => { if (!lit){ lit = true; wakeKeyBay(); } };
+      try{ if (window.ActionDrum && ActionDrum.state.on) ActionDrum.limp(light); else setTimeout(light, 300); }catch(e){ setTimeout(light, 300); }
+      if (con) con();
+      // whatever happens, the way out works
+      setTimeout(() => { if (!lit){ try{ ActionDrum.limp(false); }catch(e){} light(); } }, 4200);
+    };
+    keepWreck();
     if (how === 'crt'){
       const felt = $id('felt');
       const done = ORIG.stage.call(this, g, model, o);
       const t0 = now();
       while (!(felt && felt.classList.contains('results-mode')) && now() - t0 < 6000) await sleep(40);
-      // repaired in the dark: the machine comes back on rebooted
-      restoreDash();
+      // the screen comes back on, the dashboard still dead under it
       await sleep(120);
       await crtOn();
       return done;

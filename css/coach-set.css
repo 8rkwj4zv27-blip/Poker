@@ -75,3 +75,17 @@
 .cs-jack--lamp::after{ content:""; position:absolute; right:1px; top:1px; width:2px; height:2px; background:#3A1A14; box-shadow:-12px 0 0 #5A4214; }
 .cs-jack--lamp.is-live::after{ background:#8CF0A8; box-shadow:-12px 0 0 #5A4214,0 0 4px #8CF0A8; }
 .cs-jack--plate.is-live{ box-shadow:inset 0 2px 0 #FFE380,0 0 4px rgba(232,184,58,.45); }
+
+/* Off to the moon (v0.58.0): the twinkle where he leaves the sky. A
+   four-point pixel star that flashes out and back in steps. */
+.cs-star{
+  position:fixed; z-index:44; width:2px; height:2px; margin:-1px 0 0 -1px; pointer-events:none;
+  background:#FFF6E0;
+  box-shadow:0 -2px 0 #FFF6E0,0 2px 0 #FFF6E0,-2px 0 0 #FFF6E0,2px 0 0 #FFF6E0,
+    0 -4px 0 #F6D06B,0 4px 0 #F6D06B,-4px 0 0 #F6D06B,4px 0 0 #F6D06B,0 -6px 0 rgba(246,208,107,.6),0 6px 0 rgba(246,208,107,.6);
+  animation:csStar 800ms steps(8,end) both;
+}
+@keyframes csStar{
+  0%{ transform:scale(0); opacity:0; } 20%{ transform:scale(1.6); opacity:1; } 45%{ transform:scale(.8); opacity:1; }
+  65%{ transform:scale(1.3); opacity:1; } 100%{ transform:scale(0); opacity:0; }
+}

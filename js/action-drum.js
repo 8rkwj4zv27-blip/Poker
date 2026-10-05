@@ -143,26 +143,41 @@
     const u = (t - .6) / .4;
     return [1, 14 * Math.exp(-4 * u) * Math.sin(u * Math.PI * 2.5)];
   }
+  /* THE LIMP (v0.58.0): after a bust the dashboard is wrecked, and the
+     drum's next turn is a broken one: slow, past its blank sides, catching
+     and slipping back, grinding, 12 steps a second, then a heavy clunk.
+     ActionDrum.limp(onLand) arms it once; onLand runs when it lands. */
+  let limpNext = null;
+  const LIMP = [[0, 0], [.16, .08], [.3, .31], [.38, .33], [.43, .29], [.5, .31], [.64, .62], [.72, .64], [.76, .6], [.9, .96], [.95, 1.035], [1, 1]];
+  function limpEase(t){
+    let i = 0; while (i < LIMP.length - 2 && LIMP[i + 1][0] < t) i++;
+    const [ta, fa] = LIMP[i], [tb, fb] = LIMP[i + 1], k = Math.max(0, Math.min(1, (t - ta) / ((tb - ta) || 1)));
+    const e = k < .5 ? 2 * k * k : 1 - Math.pow(-2 * k + 2, 2) / 2;
+    return fa + (fb - fa) * e;
+  }
   function spinTo(key){
     const toEl = elOf(key), fromEl = shown;
-    if (toEl === fromEl){ current = key; return Promise.resolve(); }
+    if (toEl === fromEl){ current = key; if (limpNext && key === 'results'){ const cb = limpNext; limpNext = null; cb(); } return Promise.resolve(); }
+    const limp = limpNext && key === 'results' ? limpNext : null;
+    if (limp) limpNext = null;
     const up = opts.dir === 'up' || (opts.dir === 'meaning' && key !== 'play') ? 1 : -1;
     const step = opts.style === 'flap' ? 180 : 90;
-    const steps = opts.style === 'reel' ? 3 : 1;
+    const steps = limp ? 3 : opts.style === 'reel' ? 3 : 1;
     const from = D, to = D + up * step * steps;
     slots = new Map();
     slots.set(fromEl, from);
-    if (opts.style === 'reel') plates.slice(0, steps - 1).forEach((p, i) => slots.set(p, from + up * step * (i + 1)));
+    if (steps > 1) plates.slice(0, steps - 1).forEach((p, i) => slots.set(p, from + up * step * (i + 1)));
     slots.set(toEl, to);
     current = key; shown = toEl;
     if (fromEl === faces.deal) dealShown.forEach(b => b.classList.add('ad-hold'));
-    if (reduced() || opts.style === 'shipped'){ D = to; rest(); return Promise.resolve(); }
+    if (reduced() || opts.style === 'shipped'){ D = to; rest(); if (limp) limp(); return Promise.resolve(); }
 
     spinning = true;
     flip.classList.add('ad-spinning');
     if (consoleEl) consoleEl.classList.add('ad-spinning');
-    const dur = (SPEED[opts.speed] || 360) * (steps > 1 ? 1.9 : 1);
-    const frame = opts.motion === 'smooth' ? 0 : opts.motion === 'stepped12' ? 1000 / 12 : 1000 / 20;
+    const dur = limp ? 2600 : (SPEED[opts.speed] || 360) * (steps > 1 ? 1.9 : 1);
+    const frame = limp ? 1000 / 12 : opts.motion === 'smooth' ? 0 : opts.motion === 'stepped12' ? 1000 / 12 : 1000 / 20;
+    let grind = 0;
     const t0 = performance.now();
     let passed = 0;
     return new Promise(done => {
@@ -170,8 +185,11 @@
         let el = now - t0;
         if (frame) el = Math.floor(el / frame) * frame;
         const t = Math.min(1, el / dur);
-        const [f, over] = ease(t);
-        D = from + (to - from) * f + up * over;
+        const [f, over] = limp ? [limpEase(t), 0] : ease(t);
+        // a broken drum judders as it goes, and grinds
+        const judder = limp && t < 1 ? (Math.random() - .5) * 2.4 : 0;
+        D = from + (to - from) * f + up * over + judder;
+        if (limp && t < .95 && now - grind > 170){ grind = now; sound('wheelBackTick'); }
         const crossed = Math.floor(Math.abs(D - from) / step + 0.5);
         if (crossed > passed && crossed <= steps){
           passed = crossed;
@@ -181,8 +199,10 @@
         if (t < 1){ raf = requestAnimationFrame(tick); return; }
         D = to;
         if (opts.sound !== 'off') sound('wheelCatch');
+        if (limp) sound('koThunk', 1.4);
         rest();
         spinning = false;
+        if (limp) limp();
         done();
       };
       raf = requestAnimationFrame(tick);
@@ -288,6 +308,7 @@
 
   window.ActionDrum = {
     install, uninstall, set, sync,
+    limp(onLand){ limpNext = onLand === false ? null : typeof onLand === 'function' ? onLand : () => {}; },
     get opts(){ return Object.assign({}, opts); },
     get state(){ return { on, current, spinning, angle:D }; },
     DEFAULTS

@@ -15,7 +15,8 @@ career-hub-live.js      career-motion-live.js   machine-wheel.js
 ticket-feed.js          table-intro.js
 08-dev-mode.js          home-cast.js            home-boot.js
 dashboard.js            crt.js                  finishes.js
-press-feel.js           showdown.js             dealer-deck.js
+press-feel.js           showdown.js             event-tape.js
+dealer-deck.js
 action-drum.js          knock-check.js          award-key.js
 card-holder.js          deal-styles.js          coach-set.js
 coach-talk.js           coach-brain.js          coach-lines.js
@@ -411,6 +412,31 @@ candidate instead, so every option still runs on V1 cards (options are
 the coin table's `EnemyCards` questions itself. Its default ("YOUR ORDER")
 is the shipped order. Shows each card's footprint against V1. Not loaded
 by the game.
+
+## `js/event-tape.js` + `css/event-tape.css` — EVENT WON / EVENT LOST's well (v0.58.0)
+
+The Career event's record and the result stage's RESULT well
+(`docs/ui/END_SCREENS_PLAN.md`). `EventTape.afterHand()` (called by
+`finishHand()`'s Career branch) notes each settled hand: stack, level, who
+went out and who beat them, best showdown hand; a wrapper on `advancePhase`
+notes your odds at a runout. `g.tape` is saved with the Career table
+(`serializeTable`/`restoreTable`, via `EventTape.clean`). `html()` builds
+the well (chip tape, bust-out order, best hand, luck meter) and `wake()`
+runs the pen. `EventTape.fixture()` makes a made-up event for DEV tests and
+the End Screens Lab. Checks: `validation/event-tape-checks.js`.
+
+## `css/result-cabinet.css` — the four end screens as a cabinet (v0.58.2)
+
+Layout for TABLE CLEARED / RUN OVER / EVENT WON / EVENT LOST: the hero's
+drums in a bay beside their label screen (`stageHeroHTML`), the framed
+progress strip, spacing tokens, and the End Screens Lab's look options
+(`data-es-*` on `<html>`, set by `EventTape.look()`).
+
+## `end-screens-lab.html` + `js/end-screens-lab-host.js` + `js/end-screens-lab.js` + `css/end-screens-lab.css` — End Screens Lab
+
+Phone-first lab (TUNE key inside the game): YOU BUST · EVENT LOST, EVENT
+WON, PLAY A REAL EVENT, with field, length, luck, best hand and P.I.P.
+options. Injects only its controls; the screens are the game's own.
 
 ## `js/action-drum.js` + `css/action-drum.css` — the key bay's drum (live, v0.48.0)
 

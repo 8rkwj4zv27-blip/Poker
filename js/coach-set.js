@@ -244,6 +244,41 @@ const CoachSet = (() => {
     const s = ctx.createBufferSource(); s.buffer = b; return s;
   }
   const SFX = {
+    // the lead snapping: a twang and a crack
+    snap(){
+      const ctx = ac(); if (!ctx) return; const t = ctx.currentTime;
+      const o = ctx.createOscillator(), g = ctx.createGain();
+      o.type = 'sawtooth'; o.frequency.setValueAtTime(420, t); o.frequency.exponentialRampToValueAtTime(90, t + .28);
+      g.gain.setValueAtTime(.0001, t); g.gain.exponentialRampToValueAtTime(.09, t + .006); g.gain.exponentialRampToValueAtTime(.0001, t + .3);
+      o.connect(g).connect(out(ctx)); o.start(t); o.stop(t + .32);
+      const n = noise(ctx, .05), f = ctx.createBiquadFilter(), ng = ctx.createGain();
+      f.type = 'highpass'; f.frequency.value = 2200; ng.gain.setValueAtTime(.3, t); ng.gain.exponentialRampToValueAtTime(.0001, t + .05);
+      n.connect(f).connect(ng).connect(out(ctx)); n.start(t);
+    },
+    // off to the moon: a rising whistle, then (far away) a twinkle
+    whoosh(){
+      const ctx = ac(); if (!ctx) return; const t = ctx.currentTime;
+      const o = ctx.createOscillator(), g = ctx.createGain();
+      o.type = 'sine'; o.frequency.setValueAtTime(500, t); o.frequency.exponentialRampToValueAtTime(2600, t + .6);
+      g.gain.setValueAtTime(.0001, t); g.gain.exponentialRampToValueAtTime(.05, t + .05); g.gain.exponentialRampToValueAtTime(.0001, t + .65);
+      o.connect(g).connect(out(ctx)); o.start(t); o.stop(t + .67);
+    },
+    ping(){
+      const ctx = ac(); if (!ctx) return; const t = ctx.currentTime;
+      [2637, 3520].forEach((hz, i) => {
+        const o = ctx.createOscillator(), g = ctx.createGain(), s = t + i * .09;
+        o.type = 'triangle'; o.frequency.value = hz;
+        g.gain.setValueAtTime(.0001, s); g.gain.exponentialRampToValueAtTime(.05, s + .004); g.gain.exponentialRampToValueAtTime(.0001, s + .35);
+        o.connect(g).connect(out(ctx)); o.start(s); o.stop(s + .37);
+      });
+    },
+    alarm(){
+      const ctx = ac(); if (!ctx) return; const t = ctx.currentTime;
+      const o = ctx.createOscillator(), g = ctx.createGain();
+      o.type = 'square'; o.frequency.value = 1760;
+      g.gain.setValueAtTime(.0001, t); g.gain.exponentialRampToValueAtTime(.03, t + .004); g.gain.exponentialRampToValueAtTime(.0001, t + .07);
+      o.connect(g).connect(out(ctx)); o.start(t); o.stop(t + .08);
+    },
     thud(weight){
       const ctx = ac(); if (!ctx) return; const t = ctx.currentTime, w = weight || 1;
       const o = ctx.createOscillator(), g = ctx.createGain();
@@ -663,7 +698,7 @@ const CoachSet = (() => {
      Lab's rows choose its look (lead, colour, length, where it leaves the
      set, the plug, the jack) and its moves (in, out, spark, the jump on
      the landing, 14-a-second or smooth). */
-  let rope = null, ropeRAF = 0, ropeLen = 0, plugged = false, plugTo = null, jack = null;
+  let rope = null, ropeRAF = 0, ropeLen = 0, plugged = false, plugTo = null, jack = null, snapped = false;
   let spark = 0, fillAmt = 0, fillGlow = 0, pulse = -1, lastDrawStep = -1;
   const LEADS = { black:['#3A3A40', '#6A6A74'], grey:['#7A7E86', '#A8ACB4'], cream:['#CDBF9B', '#F2E8CB'] };
   function leadCols(){ if (O.leadCol === 'dash'){ const p = palOf('dashboard'); return [p.base, p.hi]; } return LEADS[O.leadCol] || LEADS.black; }
@@ -712,7 +747,7 @@ const CoachSet = (() => {
     // hanging from the set
     for (let i = 0; i <= N; i++){ const t = 1 - i / N; rope.push({ x:b[0] + (home.left ? -1 : 1) * t * 6, y:b[1] + t * ropeLen * .8, px:0, py:0 }); }
     rope.forEach(p => { p.px = p.x; p.py = p.y; });
-    plugged = false; plugTo = null; lastDrawStep = -1;
+    plugged = false; plugTo = null; lastDrawStep = -1; snapped = false;
     cancelAnimationFrame(ropeRAF); let last = performance.now();
     const step = now => {
       const dt = Math.min(.033, (now - last) / 1000); last = now;
@@ -723,10 +758,11 @@ const CoachSet = (() => {
     };
     ropeRAF = requestAnimationFrame(step);
   }
-  function ropeStop(){ cancelAnimationFrame(ropeRAF); ropeRAF = 0; rope = null; plugged = false; ensureJack(); if (cableC){ const c = cableC.getContext('2d'); c.clearRect(0, 0, cableC.width, cableC.height); } }
+  function ropeStop(){ cancelAnimationFrame(ropeRAF); ropeRAF = 0; rope = null; plugged = false; snapped = false; ensureJack(); if (cableC){ const c = cableC.getContext('2d'); c.clearRect(0, 0, cableC.width, cableC.height); } }
   const floorY = () => { const dock = $id('your-seat-dock'); return dock ? dock.getBoundingClientRect().top + 7 : Infinity; };
   function tickRope(dt){
-    const b = portAt(); if (!b || !rope) return;
+    if (!rope) return;
+    const b = snapped ? [rope[rope.length - 1].x, -1e9] : portAt(); if (!b) return;
     const N = rope.length - 1, seg = ropeLen / N, g = 1500, floor = floorY();
     for (let i = 0; i < N; i++){
       if (i === 0 && (plugged || plugTo)) continue;
@@ -736,16 +772,21 @@ const CoachSet = (() => {
     const j = jackAt();
     if (plugTo){ rope[0].x = plugTo[0]; rope[0].y = plugTo[1]; }
     else if (plugged && j){ rope[0].x = j[0]; rope[0].y = j[1]; }
-    rope[N].x = b[0]; rope[N].y = b[1];
+    if (!snapped){ rope[N].x = b[0]; rope[N].y = b[1]; }
+    else {
+      // the torn end: loose, like the rest of it
+      const p = rope[N], vx = (p.x - p.px) * .95, vy = (p.y - p.py) * .95;
+      p.px = p.x; p.py = p.y; p.x += vx; p.y += vy + g * dt * dt;
+    }
     for (let k = 0; k < 14; k++){
       for (let i = 0; i < N; i++){
         const a = rope[i], c = rope[i + 1], dx = c.x - a.x, dy = c.y - a.y, dd = Math.hypot(dx, dy) || .001, diff = (dd - seg) / dd * .5;
-        const aFixed = i === 0 && (plugged || plugTo), cFixed = i + 1 === N;
+        const aFixed = i === 0 && (plugged || plugTo), cFixed = i + 1 === N && !snapped;
         if (!aFixed){ a.x += dx * diff * (cFixed ? 2 : 1); a.y += dy * diff * (cFixed ? 2 : 1); }
         if (!cFixed){ c.x -= dx * diff * (aFixed ? 2 : 1); c.y -= dy * diff * (aFixed ? 2 : 1); }
       }
       // the slack lies on the dashboard's top edge
-      if (b[1] <= floor) for (let i = 1; i < N; i++) if (rope[i].y > floor){ rope[i].y = floor; rope[i].py = floor + (rope[i].py - floor) * .3; rope[i].px = rope[i].x - (rope[i].x - rope[i].px) * .6; }
+      if (b[1] <= floor) for (let i = 1; i <= (snapped ? N : N - 1); i++) if (rope[i].y > floor){ rope[i].y = floor; rope[i].py = floor + (rope[i].py - floor) * .3; rope[i].px = rope[i].x - (rope[i].x - rope[i].px) * .6; }
       if (!plugged && !plugTo && rope[0].y > floor){ rope[0].y = floor; rope[0].py = floor; }
     }
   }
@@ -831,7 +872,15 @@ const CoachSet = (() => {
     }
     // the lead goes in behind the set: nothing of it is drawn over his
     // sprite while he's on the felt (the port is on his back)
-    if (tv && tv.isConnected && !tv.classList.contains('is-air')){
+    if (snapped){
+      // the torn end: copper strands, and now and then a spark
+      const e = P2[P2.length - 1];
+      if (e){
+        c.fillStyle = '#E8B83A'; c.fillRect(e[0] - 1, e[1] + 1, 1, 2); c.fillRect(e[0] + 1, e[1] + 1, 1, 3); c.fillRect(e[0], e[1] + 2, 1, 2);
+        if (Math.random() < .12){ c.fillStyle = '#FFE380'; c.fillRect(e[0] + (Math.random() < .5 ? -2 : 2), e[1] + 3 + Math.round(Math.random() * 2), 1, 1); }
+      }
+    }
+    if (!away && tv && tv.isConnected && !tv.classList.contains('is-air')){
       const S = setOf(), tr = tv.getBoundingClientRect(), k = tr.width / (S.w * P) || 1;
       const bx = Math.floor((tr.left + S.box.x * P * k) / P), by = Math.floor((tr.top + S.box.y * P * k) / P);
       c.clearRect(bx, by, Math.ceil(S.box.w * k) + 1, Math.ceil(S.box.h * k));
@@ -1323,6 +1372,143 @@ const CoachSet = (() => {
     }, true);
   }
 
+  /* ---------------- when you bust: to the moon ----------------
+     The owner, 29 Sep 2026: if he's on the table when the player dies he
+     starts to blink, then gets blown off the screen, violently: yeeted,
+     sent to the moon, and his lead snaps. The game over (js/knockout.js)
+     calls panic() as the dashboard takes its hits and blast() as the chain
+     reaction starts. He stays gone, his torn lead lying on the wrecked
+     dashboard, until the table's put right; then he comes back the usual
+     way (the Settings switch still says he's on). On a win he ducks
+     under the table out of the result's way instead (stow). */
+  let away = false, awayGame = null, panicking = null;
+  const curGame = () => { try{ return typeof game !== 'undefined' ? game : null; }catch(e){ return null; } };
+  function panic(){
+    if (!on || busy || panicking || motionOffSafe()) return;
+    clearTimeout(idleT);
+    try{ if (typeof CoachTalk !== 'undefined') CoachTalk.clear(); }catch(e){}
+    st.mood = 'surprised'; st.gaze = null; paintFace();
+    let k = 0;
+    panicking = setInterval(() => {
+      if (!on){ clearInterval(panicking); panicking = null; return; }
+      k++;
+      // the tube and the lamp blink, faster as it goes on
+      bootFrame = k % 2 ? { kind:'dot' } : null;
+      ledState = !(k % 2); paintBody(); paintFace();
+      if (k % 2) SFX.alarm();
+    }, 150);
+  }
+  function stopPanic(){ clearInterval(panicking); panicking = null; bootFrame = null; }
+  async function blast(){
+    stopPanic();
+    if (!on || busy || !tv) return false;
+    if (motionOffSafe()){ offNow(); away = true; awayGame = curGame(); return true; }
+    busy = true; thrown = true; clearTimeout(idleT);
+    try{ if (typeof CoachTalk !== 'undefined') CoachTalk.clear(); }catch(e){}
+    const S = setOf();
+    const [x, y] = homeScreen();
+    if (!flyLayer || !flyLayer.isConnected){ flyLayer = document.createElement('div'); flyLayer.className = 'cs-fly'; }
+    ($id('app') || document.body).appendChild(flyLayer);
+    flyLayer.appendChild(tv); tv.classList.add('is-air');
+    shadow.style.visibility = 'hidden';
+    st.mood = 'surprised'; st.gaze = null; ledState = true; paintBody(); paintFace(); faceIntoSolid();
+    SFX.thud(1.3); SFX.whoosh(); jolt(3);
+    const side = home.left ? 1 : -1;      // away from his corner, towards the middle
+    const b = { x, y, w:S.w * P, h:S.h * P, vx:side * (260 + Math.random() * 320), vy:-(1750 + Math.random() * 350),
+      yaw:0, pitch:0, roll:0, vyaw:side * (700 + Math.random() * 500), vpitch:-(900 + Math.random() * 500), vroll:side * (500 + Math.random() * 400), s:1, step:-1 };
+    const x0 = x + b.w / 2;
+    let last = performance.now(), snapAt = 0;
+    await new Promise(res => {
+      const tick = now => {
+        const dt = Math.min(.033, (now - last) / 1000); last = now;
+        b.vy += 420 * dt;
+        b.x += b.vx * dt; b.y += b.vy * dt;
+        b.yaw += b.vyaw * dt; b.pitch += b.vpitch * dt; b.roll += b.vroll * dt;
+        // he knocks off a side of the screen on his way up
+        if (b.x < 0){ b.x = 0; b.vx = -b.vx * .7; SFX.thud(.5); jolt(1); }
+        else if (b.x > innerWidth - b.w * b.s){ b.x = innerWidth - b.w * b.s; b.vx = -b.vx * .7; SFX.thud(.5); jolt(1); }
+        // smaller and smaller as he goes
+        b.s = Math.max(.3, 1 - Math.max(0, y - b.y) / (innerHeight * 1.5));
+        // the lead goes taut, then snaps
+        if (!snapped && rope){
+          const port = portAt(), j = jackAt();
+          if (port && j && Math.hypot(port[0] - j[0], port[1] - j[1]) > ropeLen * 1.35){
+            snapped = true; snapAt = now; SFX.snap();
+            const e = rope[rope.length - 1];
+            e.px = e.x - b.vx * .012; e.py = e.y + 26;        // it whips back down
+          }
+        }
+        const stepN = Math.floor(now / FRAME);
+        tv.style.transform = 'translate(' + Math.round(b.x / P) * P + 'px,' + Math.round(b.y / P) * P + 'px) scale(' + (Math.round(b.s * 8) / 8) + ')';
+        if (stepN !== b.step){ b.step = stepN; Object.assign(pose, { lift:24, yaw:b.yaw, pitch:b.pitch, roll:b.roll }); render3D(); }
+        if (b.y + b.h * b.s < -30) { res(); return; }
+        requestAnimationFrame(tick);
+      };
+      requestAnimationFrame(tick);
+    });
+    // gone: a twinkle where he left the sky
+    tv.style.visibility = 'hidden';
+    if (!snapped){ snapped = true; SFX.snap(); }
+    const sx = Math.max(16, Math.min(innerWidth - 16, b.x + b.w * b.s / 2));
+    setTimeout(() => twinkle(sx, 22 + Math.random() * 18), 380);
+    on = false; ledState = false; bootFrame = null;
+    away = true; awayGame = curGame();
+    fly = null; thrown = false;
+    (layer || ensureLayer() && layer).appendChild(tv);
+    tv.classList.remove('is-air'); tv.style.visibility = '';
+    Object.assign(pose, { x:0, y:0, lift:0, sx:1, sy:1, bank:0, lean:0, yaw:0, pitch:0, roll:0 });
+    buildSolid(); render();
+    if (key){ key.classList.remove('is-on'); key.setAttribute('aria-pressed', 'false'); }
+    busy = false;
+    void x0;
+    return true;
+  }
+  function twinkle(x, y){
+    const star = document.createElement('i');
+    star.className = 'cs-star';
+    star.style.left = Math.round(x) + 'px'; star.style.top = Math.round(y) + 'px';
+    document.body.appendChild(star);
+    SFX.ping();
+    setTimeout(() => star.remove(), 900);
+  }
+  // a win (or any end he isn't blown up in): a hop, then out of the way
+  let stowing = null;
+  function stow(){
+    if (stowing) return stowing;
+    if (!on || busy) return Promise.resolve();
+    stowing = doStow().finally(() => { stowing = null; });
+    return stowing;
+  }
+  // the result stage waits on this before it turns: he's off the table
+  async function clearTable(){
+    for (let i = 0; i < 60 && busy && !stowing; i++) await sleep(60);
+    if (stowing) return stowing;
+    if (on && !away) return stow();
+  }
+  async function doStow(){
+    busy = true; clearTimeout(idleT); stopPanic();
+    try{ if (typeof CoachTalk !== 'undefined') CoachTalk.clear(); }catch(e){}
+    try{
+      if (!motionOffSafe()){
+        const W = WEIGHT[O.weight] || WEIGHT.heavy;
+        st.mood = 'impressed'; paintFace();
+        for (let i = 0; i < 2; i++){
+          await play([{ t:0 }, { t:FRAME * 2, lift:14, sy:1.06, sx:.96, ease:'out' }, { t:FRAME * 4, lift:0, ease:'in' }, { t:FRAME * 5, sx:1 + W.squash * .6, sy:1 - W.squash * .6 }, { t:FRAME * 6 }]);
+          SFX.thud(.5);
+        }
+        await sleep(260);
+        await unboot();
+        await pullOut(); await sleep(FRAME * 3);
+        await leave();
+      }
+    } finally {
+      on = false; ledState = false; bootFrame = null; ropeStop(); render();
+      if (key){ key.classList.remove('is-on'); key.setAttribute('aria-pressed', 'false'); }
+      away = true; awayGame = curGame();
+      busy = false;
+    }
+  }
+
   /* ---------------- life ---------------- */
   let idleT = null;
   function idle(){
@@ -1408,7 +1594,19 @@ const CoachSet = (() => {
   function follow(){
     let wantOn = false;
     try{ wantOn = !!settings.coachBot; }catch(e){}
+    const g = curGame();
+    // back once the table's put right: a new table, or off to another screen
+    if (away && !busy && (!tableShowing() || g !== awayGame || !g || !g.over)){ away = false; awayGame = null; ropeStop(); }
     if (!tableShowing()){ if ((on || rope) && !busy) offNow(); return; }
+    if (away) return;
+    // the game's over and he's still sitting there: out of the result's way
+    // (a bust waits for the game over to blow him up, unless it never comes)
+    if (on && !busy && g && g.over){
+      const me = g.players && g.players.find(p => p.isHuman);
+      const felt = $id('felt');
+      if (!me || me.chips > 0 || (felt && felt.classList.contains('results-mode'))) stow();
+      return;
+    }
     if (key){ key.classList.toggle('is-on', on); key.setAttribute('aria-pressed', on ? 'true' : 'false'); }
     if (wantOn && !on && !busy && home.edge !== undefined) power(true);
   }
@@ -1422,5 +1620,6 @@ const CoachSet = (() => {
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start); else setTimeout(start, 0);
 
   return { apply, power, replug, reboot, setMood, mouth, look, talk, still, notice, sheetFrames, drawTile, MOODS, OPTIONS, DEFAULTS, SETS,
+    panic, blast, stow, clearTable, get away(){ return away; },
     get on(){ return on; }, get busy(){ return busy; }, get order(){ return Object.assign({}, O); } };
 })();

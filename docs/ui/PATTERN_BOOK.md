@@ -75,6 +75,7 @@ Motion and sound are signed off from live demos, never stills.
 | FOLD / CHECK / CALL / RAISE | Kept as their own locked family | Settled |
 | Press feel | One heavy thunk on every button, scaled by size (big / standard / small), FOLD/CHECK/CALL/RAISE included | **Live** v0.39.7 |
 | Number wheels, sound | Round 2, from live demos | To do |
+| End screens | Owner's order from `end-screens-lab.html` (5 October 2026): the four end screens as a cabinet, screens fitted in plastic panels, no words on the casing, the big number as frameless drums in a sunk bay; chip tape, bust-out order (faces only), best hand, luck strip (`docs/ui/END_SCREENS_PLAN.md`) | **Live** v0.63.0 |
 | Dashboard V2 | The owner's order from the order form (25 September 2026); see **Dashboard V2** below | Release 1 of 4 **live** v0.40.2 (frame, bays, rim light); layout, raise and behaviours next |
 
 Approved-but-not-migrated families have reference captures in

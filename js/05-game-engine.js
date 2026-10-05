@@ -362,6 +362,12 @@ function serializeTable(g){
         ? Object.assign({}, g.event.reward, { decisionSnapshots:[] })
         : null
     });
+    // The event's chip tape (js/event-tape.js): what the result stage
+    // draws, so a resumed event keeps the hands it already played.
+    if (g.tape && typeof EventTape !== 'undefined'){
+      const tape = EventTape.clean(g.tape);
+      if (tape) snapshot.tape = tape;
+    }
   }
   return snapshot;
 }
@@ -596,6 +602,9 @@ function restoreTable(save){
       reward: isValidEventReward(ev.reward) ? ev.reward : makeEventRewardState()
     });
     if (game.event && !Array.isArray(game.event.reward.decisionSnapshots)) game.event.reward.decisionSnapshots = [];
+    // A save from before the tape (or a bad one) just starts a fresh tape
+    // at the next hand.
+    if (save.tape && typeof EventTape !== 'undefined') game.tape = EventTape.clean(save.tape) || undefined;
   }
 }
 
@@ -2165,6 +2174,8 @@ async function finishHand(outcome){
     const recoveredResult = await recoverMissedEliminations(g, outcome);
     const koCount = (eliminationResult?eliminationResult.koCount:0) + (recoveredResult?recoveredResult.koCount:0);
     const aiRemaining = g.players.filter(p=>!p.isHuman && !p.eliminated);
+    // The event's chip tape notes the settled hand (read-only).
+    if (typeof EventTape !== 'undefined') EventTape.afterHand(g, outcome, netProfit);
     // Same rule as elimination above: a hand that ends the event banks its
     // points and presents nothing, so EVENT WON / EVENT LOST is never
     // preceded by a carousel.
@@ -2323,7 +2334,12 @@ function buildCareerResultModel(g, settled){
     // The field the player actually entered, from the event's own
     // immutable snapshot. Never g.players.length, which by the time a
     // result exists is the field MINUS everyone eliminated.
-    field: Number.isInteger(ev.playerCount) && ev.playerCount > 0 ? ev.playerCount : null
+    field: Number.isInteger(ev.playerCount) && ev.playerCount > 0 ? ev.playerCount : null,
+    // The chip tape (js/event-tape.js) and who was still sitting when the
+    // player went out, for the bust-out order. Display data only.
+    tape: typeof EventTape !== 'undefined' ? EventTape.snapshot(g) : null,
+    alive: (g.players||[]).filter(p=>!p.isHuman && !p.eliminated && p.chips>0)
+      .map(p=>({ name:p.name, fc:Number.isInteger(p.faceColorIdx) ? p.faceColorIdx : null }))
   };
 }
 
@@ -2568,13 +2584,19 @@ function stageHeadHTML(eyebrow, title){
     '<span>'+esc(eyebrow)+'</span><strong>'+esc(title)+'</strong>'+
     '<i aria-hidden="true"></i></header>';
 }
+/* The hero is a cabinet panel (owner, 5 Oct 2026): the number drums sit
+   on the casing in their gold frame, like the dashboard's STACK, and the
+   words (what the number is, the bankroll it leaves) are on a small
+   screen beside them. css/result-cabinet.css; the End Screens Lab's
+   COUNTER option can put the drums back on the glass. */
 function stageHeroHTML(hero){
-  return '<div class="stage-score-hero pc-display crt" data-crt-quiet>'+
-    '<span class="stage-instrument-label crt-caption">'+esc(hero.label)+'</span>'+
-    '<div class="amt-readout stage-score-readout'+(stageReelIsLong(hero.reel)?' is-long':'')+
-      '" id="'+RESULT_HERO_REEL_ID+'"></div>'+
-    '<span class="stage-score-carry"><span class="crt-caption">'+esc(hero.carryLabel)+'</span>'+
-    '<strong class="tabular">'+esc(hero.carryValue)+'</strong></span></div>';
+  return '<div class="stage-hero pc-raised pc-material-plastic">'+
+    '<div class="stage-score-hero pc-display crt" data-crt-quiet>'+
+      '<span class="stage-instrument-label crt-caption">'+esc(hero.label)+'</span>'+
+      '<span class="stage-score-carry"><span class="crt-caption">'+esc(hero.carryLabel)+'</span>'+
+      '<strong class="tabular">'+esc(hero.carryValue)+'</strong></span></div>'+
+    '<div class="stage-hero-drums"><div class="amt-readout stage-score-readout'+(stageReelIsLong(hero.reel)?' is-long':'')+
+      '" id="'+RESULT_HERO_REEL_ID+'"></div></div></div>';
 }
 /* Six or more cells is where a reel stops fitting its instrument at
    393px, so it takes the one-size-down variant rather than spilling. */
@@ -2640,6 +2662,7 @@ function stageStatementHTML(detail){
   '</div>';
 }
 function stageDetailHTML(detail){
+  if (detail.kind === 'tape') return typeof EventTape !== 'undefined' ? EventTape.html(detail) : stageStatementHTML(detail);
   return detail.kind === 'statement'
     ? stageStatementHTML(detail)
     : tableBestHandTrophyHTML(detail.best);
@@ -2666,7 +2689,8 @@ function resultStageHTML(model){
       stageLampHTML(model.lamp)+
     '</div>'+
     stageDetailHTML(model.detail)+
-    stageProgressHTML(model.progress)+
+    // the progress strip sits in the same plastic as everything else
+    '<div class="stage-frame pc-raised pc-material-plastic">'+stageProgressHTML(model.progress)+'</div>'+
   '</div>';
 }
 /* Reels are built, never string-rendered — see the section header. Runs
@@ -2871,10 +2895,13 @@ function careerStageModel(m){
           : { label:'Prize', value:'$0' }
     ]],
     lamp:null,
+    // With a chip tape the well shows the event's story (js/event-tape.js)
+    // and carries the same statement as its caption.
     detail:{
-      kind:'statement', label:'Result',
+      kind: m.tape ? 'tape' : 'statement', label:'Result',
       line: champion ? 'THE INVITATIONAL IS YOURS' : won ? 'EVERY OPPONENT IS OUT' : 'YOU WERE ELIMINATED',
-      sub: champion ? 'CHAMPION STATUS RECORDED' : won ? 'PRIZE CREDITED TO BANKROLL' : freeLoss ? 'NO BUY-IN LOST' : 'BUY-IN FORFEITED'
+      sub: champion ? 'CHAMPION STATUS RECORDED' : won ? 'PRIZE CREDITED TO BANKROLL' : freeLoss ? 'NO BUY-IN LOST' : 'BUY-IN FORFEITED',
+      tape: m.tape || null, won, place: m.place, alive: m.alive || []
     },
     progress: champion
       ? { label:'CAREER CHAMPION', value:'', next:'NEXT: DEFEND THE TITLE' }
@@ -2891,6 +2918,7 @@ async function wakeResultStage(g, model){
   if (!el || game!==g) return false;
   if (motionOff()){
     el.classList.add('wake-head','wake-score','wake-instruments','wake-recap','wake-trophy','wake-progress');
+    if (model.detail && model.detail.kind === 'tape' && typeof EventTape !== 'undefined') EventTape.wake(el, model.detail);
     return true;
   }
   const beat=async (cls,ms)=>{
@@ -2908,6 +2936,8 @@ async function wakeResultStage(g, model){
   revealResultAmount($(RESULT_INSTRUMENT_REEL_ID),false);
   if (!await beat('wake-recap',150)) return false;
   if (!await beat('wake-trophy',140)) return false;
+  // the chip tape's pen runs while the rest wakes
+  if (model.detail && model.detail.kind === 'tape' && typeof EventTape !== 'undefined') EventTape.wake(el, model.detail);
   if (!await beat('wake-progress',110)) return false;
   startResultStatCycle(g,el,model.recapPages);
   return true;
@@ -2998,6 +3028,13 @@ async function presentResultStage(g, model, opts){
   // clean-machine beat before the latch clicks".
   await sleep(motionOff() ? 0 : STAGE_ROLL_CONFIG.breatheMs);
   if (game !== g) return;
+
+  // P.I.P. gets off the table before it turns, so the wheel can't catch
+  // him (owner, 5 Oct 2026). A bust has already blown him away.
+  if (typeof CoachSet !== 'undefined' && CoachSet.clearTable){
+    await Promise.race([CoachSet.clearTable(), sleep(4000)]);
+    if (game !== g) return;
+  }
 
   // 4-7. One stage-wheel transition, shared by all four outcomes.
   await rollStageTransition(felt=>{
