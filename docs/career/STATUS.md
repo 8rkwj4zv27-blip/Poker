@@ -7,8 +7,8 @@ something specific was built or decided, never by default.
 
 ## Current build
 
-- Build marker: `v0.58.0-dev · End screens: chip tape, wreck stays, P.I.P. to the moon` (main-menu footer / DEV panel).
-- Service-worker cache: `poker-v58-0`.
+- Build marker: `v0.58.1-dev · End screens: the cabinet` (main-menu footer / DEV panel).
+- Service-worker cache: `poker-v58-1`.
 - Career save schema: **version 6**.
 - Production Career Hub: ticket-reader presentation (six-venue rack,
   spring-driven touch physics, printed-ticket detail flip), integrated

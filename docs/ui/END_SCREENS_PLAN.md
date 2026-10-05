@@ -55,10 +55,21 @@ violently, to the moon, and his cable snaps.
   out. He comes back the usual way at the next table. On a win (or any end
   he isn't blown up in) he hops twice and ducks under the table.
 
+## Round 2 (owner, 5 Oct 2026): the cabinet (v0.58.1)
+
+"Very CRT": build it as a cabinet with the CRTs inside. Done: the well is
+one `.pc-raised .pc-material-plastic` panel (the FINISH / OUTLASTED deck's
+moulding); CHIP TAPE, BUST-OUT ORDER, BEST HAND and LUCK are `.pc-label`s
+printed on the casing; the tape keeps its big screen; bust-out faces sit in
+`.pc-recess` portrait windows with name and finish printed under them;
+best hand unchanged; LUCK is a 15-cell strip meter (BAD … HOT, lit out from
+FAIR in the middle) instead of the needle dial. Owner: keep it less busy (no
+faces on the tape itself).
+
 ## For sign-off
 
 New parts that go into the Pattern Book once approved: the chip tape, the
-bust-out face frame, the luck gauge. The glass, ink and type are the shared
+bust-out portrait window, the luck strip. The glass, ink and type are the shared
 CRT; `css/event-tape.css` is layout only.
 
 ## Checks

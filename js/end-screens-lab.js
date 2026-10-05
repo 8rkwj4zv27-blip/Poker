@@ -37,6 +37,7 @@
     ['sound', 'SOUND', [['on', 'ON'], ['off', 'OFF']]]
   ];
   const NEW = [
+    'ROUND 2 (the cabinet): the well is one raised plastic panel like the FINISH / OUTLASTED deck, with the screens set into it. Labels are printed on the casing, not the glass. The bust-out faces sit in little portrait windows. LUCK is a strip meter (BAD to HOT, lit out from the middle).',
     'EVENT WON / EVENT LOST: the RESULT well is the event\'s story now.',
     'CHIP TAPE: your stack hand by hand, drawn in by a pen. K.O.s are little bursts, the flag is your peak, the dashed line is where you started. Bust: it flatlines to the edge with a tone. Win: it reaches the ALL CHIPS line.',
     'BUST-OUT ORDER: who went out when, first out on the left. Your K.O.s have a burst. After a bust, who got you is lit and the rest say STILL IN.',
@@ -65,7 +66,7 @@
           '<h3>THE EVENT<small>Made-up events for the two quick moments; the real event uses the field.</small></h3>' +
           OPTIONS.map(r => '<div class="esl-row"><div class="esl-name">' + r[1] + '</div>' + seg(r[0], r[2]) + (r[3] ? '<p class="esl-note">' + r[3] + '</p>' : '') + '</div>').join('') +
         '</section>' +
-        '<section data-pane="new" hidden><h3>ROUND 1</h3><ul class="esl-list">' + NEW.map(t => '<li>' + t + '</li>').join('') + '</ul></section>' +
+        '<section data-pane="new" hidden><h3>WHAT\'S IN IT</h3><ul class="esl-list">' + NEW.map(t => '<li>' + t + '</li>').join('') + '</ul></section>' +
       '</div>';
     document.body.append(key, again, sheet);
     const open = on => { sheet.classList.toggle('is-open', on); key.classList.toggle('is-on', on); };

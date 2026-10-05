@@ -180,7 +180,12 @@ check('The well: the tape, the verdict, the bust-out order, best hand and luck',
   assert.ok(html.includes('data-result-beat="trophy"'));
   assert.ok(html.includes('YOU WERE ELIMINATED') && html.includes('BUY-IN FORFEITED'));
   assert.ok(html.includes('class="et-canvas"'));
-  assert.ok(html.includes('BUST-OUT ORDER') && html.includes('BEST HAND') && html.includes('LUCK METER'));
+  assert.ok(html.includes('BUST-OUT ORDER') && html.includes('BEST HAND') && html.includes('>LUCK<'));
+  // a cabinet: one raised plastic panel, its labels printed on the casing,
+  // the screens set into it
+  assert.ok(/class="et-well pc-raised pc-material-plastic"/.test(html));
+  ['CHIP TAPE', 'BUST-OUT ORDER', 'BEST HAND', 'LUCK'].forEach(l => assert.ok(new RegExp('<span class="pc-label">' + l).test(html), l + ' is printed on the casing'));
+  assert.ok(html.includes('class="et-gauge"'), 'the luck strip');
   assert.ok(html.includes('STILL IN') || html.includes('GOT YOU'));
   assert.ok(/class="et-seat is-you is-dead"/.test(html));
   // every CRT screen here is built on the shared .crt

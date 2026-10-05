@@ -210,19 +210,25 @@ const EventTape = (() => {
 
   /* ---------------- the stage ---------------- */
   // The well: the tape on top, then the three instruments.
+  /* The well is a cabinet: one raised plastic panel (the same moulding as
+     the FINISH / OUTLASTED deck above it) with the screens set into it.
+     Labels are printed on the casing (.pc-label); the glass only shows
+     the readings. */
+  const plate = (l, r) => '<div class="et-plate"><span class="pc-label">' + l + '</span>' + (r ? '<span class="pc-label">' + r + '</span>' : '') + '</div>';
   function html(d){
     const t = d.tape, won = !!d.won;
     const peak = t.pts.reduce((m, p) => p[1] > m[1] ? p : m, t.pts[0]);
     const kos = t.out.filter(o => o.ko).length;
     const hands = Math.max(0, t.pts[t.pts.length - 1][0] - t.pts[0][0]);
-    const head = '<div class="et-head"><span class="crt-caption">CHIP TAPE · ' + hands + ' HAND' + (hands === 1 ? '' : 'S') + '</span>' +
-      '<span class="crt-caption">' + (kos ? 'K.O.S ' + kos + ' · ' : '') + 'PEAK ' + E(money(peak[1])) + '</span></div>';
-    return '<div class="et-well" data-result-beat="trophy">' +
-      '<div class="et-chart pc-display crt" data-crt-quiet data-ink="' + (won ? 'live' : 'danger') + '">' + head +
-        '<div class="et-plot"><canvas class="et-canvas" aria-hidden="true"></canvas>' +
-          (t.total && peakCeil(t, won) >= t.total ? '<span class="et-ceil crt-caption">ALL CHIPS</span>' : '') + '</div>' +
-        '<div class="et-verdict"><span class="crt-line stage-statement">' + E(d.line) + '</span>' +
-          '<span class="crt-caption">' + E(verdictSub(d)) + '</span></div>' +
+    return '<div class="et-well pc-raised pc-material-plastic" data-result-beat="trophy">' +
+      '<div class="et-sec et-sec--tape">' +
+        plate('CHIP TAPE · ' + hands + ' HAND' + (hands === 1 ? '' : 'S'), (kos ? 'K.O.S ' + kos + ' · ' : '') + 'PEAK ' + E(money(peak[1]))) +
+        '<div class="et-chart pc-display crt" data-crt-quiet data-ink="' + (won ? 'live' : 'danger') + '">' +
+          '<div class="et-plot"><canvas class="et-canvas" aria-hidden="true"></canvas>' +
+            (t.total && peakCeil(t, won) >= t.total ? '<span class="et-ceil crt-caption">ALL CHIPS</span>' : '') + '</div>' +
+          '<div class="et-verdict"><span class="crt-line stage-statement">' + E(d.line) + '</span>' +
+            '<span class="crt-caption">' + E(verdictSub(d)) + '</span></div>' +
+        '</div>' +
       '</div>' +
       outHTML(d) +
       '<div class="et-pair">' + bestHTML(t.best) + luckHTML(t.allins) + '</div>' +
@@ -251,31 +257,33 @@ const EventTape = (() => {
       const killer = me && me.by[0];
       (d.alive || []).forEach(a => cells.push(seat({ name:a.name, fc:a.fc, place:0, killer:a.name === killer }, a.name === killer ? 'killer' : 'alive')));
     }
-    return '<div class="et-out pc-display crt" data-crt-quiet>' +
-      '<div class="et-head"><span class="crt-caption">BUST-OUT ORDER</span><span class="crt-caption">' + (outs.some(o => o.ko) ? '<i class="et-ko-key" aria-hidden="true"></i> YOUR K.O.' : 'FIELD ' + field) + '</span></div>' +
+    return '<div class="et-sec et-out">' +
+      plate('BUST-OUT ORDER', outs.some(o => o.ko) ? '<i class="et-ko-key" aria-hidden="true"></i>YOUR K.O.' : 'FIELD ' + field) +
       '<ol class="et-seats" style="--n:' + cells.length + '">' + cells.join('') + '</ol></div>';
   }
   function faceImg(fc, mood){
     try{ return typeof renderFace === 'function' ? renderFace({ faceColorIdx:fc }, mood) : ''; }catch(e){ return ''; }
   }
+  // each seat: a little portrait window set into the panel, the name and
+  // the finish printed under it
   function seat(o, kind){
     const mood = kind === 'out' ? 'dead1' : kind === 'killer' ? 'gloating1' : 'neutral1';
-    const tag = kind === 'out' ? ord(o.place) : kind === 'killer' ? 'GOT YOU' : 'STILL IN';
+    const tag = kind === 'out' ? ord(o.place) + ' · H' + o.h : kind === 'killer' ? 'GOT YOU' : 'STILL IN';
     return '<li class="et-seat is-' + kind + (o.ko ? ' is-ko' : '') + '">' +
-      '<span class="et-face">' + faceImg(o.fc, mood) + (o.ko ? '<i class="et-ko" aria-hidden="true"></i>' : '') + '</span>' +
-      '<span class="et-name crt-caption">' + E(String(o.name || '').slice(0, 7)) + '</span>' +
-      '<span class="et-tag crt-caption">' + E(tag) + (kind === 'out' ? ' · H' + o.h : '') + '</span></li>';
+      '<span class="et-face pc-recess">' + faceImg(o.fc, mood) + '</span>' + (o.ko ? '<i class="et-ko" aria-hidden="true"></i>' : '') +
+      '<span class="et-name pc-label">' + E(String(o.name || '').slice(0, 7)) + '</span>' +
+      '<span class="et-tag pc-label">' + E(tag) + '</span></li>';
   }
   function youSeat(place, won, me){
     return '<li class="et-seat is-you' + (won ? ' is-won' : ' is-dead') + '">' +
-      '<span class="et-face et-you"><span class="crt-caption">YOU</span>' + (won ? '' : '<i class="et-x" aria-hidden="true"></i>') + '</span>' +
-      '<span class="et-name crt-caption">' + (won ? 'WINNER' : 'OUT') + '</span>' +
-      '<span class="et-tag crt-caption">' + E(ord(place)) + (!won && me ? ' · H' + me.h : '') + '</span></li>';
+      '<span class="et-face et-you pc-recess"><b>YOU</b>' + (won ? '' : '<i class="et-x" aria-hidden="true"></i>') + '</span>' +
+      '<span class="et-name pc-label">' + (won ? 'WINNER' : 'YOU') + '</span>' +
+      '<span class="et-tag pc-label">' + E(ord(place)) + (!won && me ? ' · H' + me.h : '') + '</span></li>';
   }
   function bestHTML(best){
     if (!best){
-      return '<div class="et-best pc-display crt" data-crt-quiet><span class="crt-caption">BEST HAND</span>' +
-        '<span class="et-none crt-line">NO SHOWDOWN</span><span class="crt-caption">NOTHING TURNED OVER</span></div>';
+      return '<div class="et-sec">' + plate('BEST HAND') + '<div class="et-best pc-display crt" data-crt-quiet>' +
+        '<span class="et-none crt-line">NO SHOWDOWN</span><span class="crt-caption">NOTHING TURNED OVER</span></div></div>';
     }
     let cards = '', cat = best.name, desc = '';
     try{
@@ -284,10 +292,10 @@ const EventTape = (() => {
       cards = arrangeHandForDisplay(best.result.cat, best.cards)
         .map(c => '<div class="' + cardClass(false, c, true) + '" aria-label="' + E(cardLabel(false, c)) + '">' + cardInner(c) + '</div>').join('');
     }catch(e){}
-    return '<div class="et-best pc-display crt" data-crt-quiet><span class="crt-caption">BEST HAND</span>' +
+    return '<div class="et-sec">' + plate('BEST HAND') + '<div class="et-best pc-display crt" data-crt-quiet>' +
       '<div class="crt-cards et-cards">' + cards + '</div>' +
       '<span class="crt-line et-best-name">' + E(String(cat).toUpperCase()) + '</span>' +
-      (desc ? '<span class="crt-caption et-best-desc">' + E(desc) + '</span>' : '') + '</div>';
+      (desc ? '<span class="crt-caption et-best-desc">' + E(desc) + '</span>' : '') + '</div></div>';
   }
   // Luck: how many all-ins you won against how many the odds said you
   // would. Only runouts count (an all-in called on the river had no luck
@@ -298,15 +306,15 @@ const EventTape = (() => {
     const word = !n ? 'NO ALL-INS' : diff <= -.9 ? 'RAN BAD' : diff <= -.35 ? 'BIT UNLUCKY' : diff < .35 ? 'FAIR' : diff < .9 ? 'BIT LUCKY' : 'RAN HOT';
     return { n, exp, got, diff, word };
   }
+  // a strip meter: BAD on the left, HOT on the right, lit out from the middle
   function luckHTML(allins){
     const L = luckOf(allins);
     const fmt = x => (Math.round(x * 10) / 10).toFixed(1).replace(/\.0$/, '');
-    return '<div class="et-luck pc-display crt" data-crt-quiet' + (L.n && L.diff <= -.35 ? ' data-ink="danger"' : L.n && L.diff >= .35 ? ' data-ink="money"' : '') + '>' +
-      '<span class="crt-caption">LUCK METER</span>' +
-      '<canvas class="et-gauge" aria-hidden="true" data-diff="' + (L.n ? L.diff.toFixed(3) : '') + '"></canvas>' +
+    return '<div class="et-sec">' + plate('LUCK') +
+      '<div class="et-luck pc-display crt" data-crt-quiet' + (L.n && L.diff <= -.35 ? ' data-ink="danger"' : L.n && L.diff >= .35 ? ' data-ink="money"' : '') + '>' +
       '<span class="crt-line et-luck-word">' + L.word + '</span>' +
-      (L.n ? '<span class="crt-caption">ALL-INS WON ' + fmt(L.got) + '/' + L.n + '</span><span class="crt-caption">ODDS SAID ' + fmt(L.exp) + '</span>'
-           : '<span class="crt-caption">NO LUCK TO READ</span>') + '</div>';
+      '<div class="et-strip"><span class="crt-caption">BAD</span><canvas class="et-gauge" aria-hidden="true" data-diff="' + (L.n ? L.diff.toFixed(3) : '') + '"></canvas><span class="crt-caption">HOT</span></div>' +
+      '<span class="crt-caption">' + (L.n ? 'WON ' + fmt(L.got) + ' OF ' + L.n + '</span><span class="crt-caption">ODDS SAID ' + fmt(L.exp) : 'NO ALL-INS RAN OUT') + '</span></div></div>';
   }
 
   /* ---------------- drawing ---------------- */
@@ -401,21 +409,18 @@ const EventTape = (() => {
     const ink = inkOf(root, '.crt-line'), dim = inkOf(root, '.crt-caption');
     const raw = canvas.dataset.diff, has = raw !== '' && raw != null;
     const diff = has ? Math.max(-1.5, Math.min(1.5, +raw)) : 0;
-    const cx = Math.round(W / 2), cy = H - 2, r = Math.min(W / 2 - 3, H - 4);
-    // the scale: an arc of ticks, BAD on the left, HOT on the right
-    for (let i = 0; i <= 12; i++){
-      const a = Math.PI + i / 12 * Math.PI, long = i % 3 === 0;
-      for (let k = long ? 0 : 1; k < 3; k++){
-        const rr = r - k;
-        c.fillStyle = i === 6 ? ink : dim; c.globalAlpha = i === 6 ? 1 : .8;
-        c.fillRect(Math.round(cx + Math.cos(a) * rr), Math.round(cy + Math.sin(a) * rr), 1, 1);
-      }
+    // 15 cells; the middle one is FAIR; lit from the middle out to the reading
+    const N = 15, mid = 7, gap = 1, cw = Math.max(2, Math.floor((W - gap * (N - 1)) / N));
+    const x0 = Math.floor((W - (cw * N + gap * (N - 1))) / 2), y = 1, h = Math.max(3, H - 2);
+    const reach = has ? Math.round(diff / 1.5 * mid) : 0;
+    for (let i = 0; i < N; i++){
+      const k = i - mid;
+      const lit = has && (k === 0 || (reach < 0 ? k < 0 && k >= reach : k > 0 && k <= reach));
+      c.fillStyle = lit ? ink : dim; c.globalAlpha = lit ? 1 : .28;
+      c.fillRect(x0 + i * (cw + gap), y, cw, h);
     }
     c.globalAlpha = 1;
-    if (!has){ c.fillStyle = dim; c.fillRect(cx - 1, cy - 1, 3, 2); return; }
-    const a = Math.PI * 1.5 + diff / 1.5 * (Math.PI / 2) * .92;
-    for (let k = 0; k < r - 3; k++){ c.fillStyle = ink; c.fillRect(Math.round(cx + Math.cos(a) * k), Math.round(cy + Math.sin(a) * k), 1, 1); }
-    c.fillStyle = '#FFF6E0'; c.fillRect(cx - 1, cy - 1, 3, 2);
+    c.fillStyle = dim; c.fillRect(x0 + mid * (cw + gap) + Math.floor(cw / 2), 0, 1, 1);
   }
 
   /* ---------------- the wake: the pen runs ---------------- */
