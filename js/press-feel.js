@@ -49,7 +49,7 @@ const PressFeel = (() => {
   const SIZES = [
     ['big',   '.pc-button-primary, .btn-primary, .btn-fold, .btn-check, .btn-call, .btn-raise, .btn-award-console, .btn-quick-resolve, .wide-btn'],
     ['small', '.icon-btn, .ch2-key, .table-save, .stepper button'],
-    ['std',   '.pc-button-secondary, .btn-secondary, .segmented button, .quick-bet, .ch2-secondary, .ch2-card-flip, .cdir-primary, .cdir-abandon']
+    ['std',   '.pc-button-secondary, .btn-secondary, .segmented button, .quick-bet, .ch2-card-flip, .cdir-primary, .cdir-abandon']
   ];
   const SOUND = { big:'allin', std:'thunk', small:'key' };
   // These play their own press sound on pointerdown.

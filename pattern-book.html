@@ -243,6 +243,23 @@
     </div>
   </section>
 
+  <section>
+    <h2>Ticket tabs</h2>
+    <p class="lead">The tabs on a Career ticket's bottom edge belong to the ticket stock, not the machine. The owner approved the red tab on 5 October 2026: Abandon / Cash Out sits on the paid ticket, so paying never changes the ticket's or the console's height.</p>
+    <div class="plate">
+      <span class="status live">LIVE IN THE GAME · v0.64.4</span>
+      <h3>Anatomy</h3>
+      <div class="scroll"><table class="rules">
+        <thead><tr><th>Part</th><th>Rule</th><th>Class</th></tr></thead>
+        <tbody>
+          <tr><td>Flip tab</td><td>DETAILS on the front, EVENT on the back: the reinforced tab in the venue's paper and mark colours.</td><td><code>.ch2-card-flip</code></td></tr>
+          <tr><td>Tab row</td><td>The front's last row. Unpaid: DETAILS alone. Paid: two tabs of the same size, side by side.</td><td><code>.ch2-card-keys</code></td></tr>
+          <tr><td>Red tab</td><td>ABANDON (or CASH OUT at the cash table) beside DETAILS, only on a paid ticket: the flip tab in red with cream print. Abandon still asks for confirmation.</td><td><code>.ch2-card-flip.ch2-card-quit</code></td></tr>
+        </tbody>
+      </table></div>
+    </div>
+  </section>
+
   <!-- ======================= APPROVED, NOT YET MIGRATED ======================= -->
   <section>
     <h2>Approved, moving over next</h2>
