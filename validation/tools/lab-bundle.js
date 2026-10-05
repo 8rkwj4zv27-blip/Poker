@@ -14,7 +14,7 @@
        reserved). A small shim in the lab page sends the lab's
        fetch('index.html') to game.html, so no lab has to change.
      - every file the game and the lab load: css/, js/, the icons and
-       manifest, and assets/ (minus assets/chips/_old)
+       manifest, and assets/
      - files.json: the list of published paths, for the Artifact tool's
        `files` (with `root` = <outDir>)
 
@@ -60,7 +60,7 @@ refs(lab).filter(f => f.endsWith('.js')).forEach(f => {
 (function walk(dir){
   fs.readdirSync(path.join(ROOT, dir), { withFileTypes:true }).forEach(e => {
     const p = dir + '/' + e.name;
-    if (e.isDirectory()){ if (e.name !== '_old') walk(p); }
+    if (e.isDirectory()) walk(p);
     else files.add(p);
   });
 })('assets');
