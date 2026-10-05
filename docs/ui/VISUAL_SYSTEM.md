@@ -117,6 +117,6 @@ The system is live in the game as of 24 August 2026, delivered by
 shipped and what remains unauthorised.
 
 The isolated Design Lab (`design-lab.html`) and the comparison harness
-(`preview.html`) remain in the repository as untracked working surfaces. Note
+(`preview.html`) were working surfaces; both were archived on 5 Oct 2026 to the branch `checkpoint/labs-archive-2026-10`. Note
 that "Original" in the harness now means the migrated game, not the
 pre-migration one.
