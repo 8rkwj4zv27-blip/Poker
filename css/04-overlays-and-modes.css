@@ -665,7 +665,7 @@ body:has(#table-screen.hidden) .arcade-bank-flight{
   #home .pc-primary-cradle::before{ height:62px; }   /* body matches the smaller face */
 }
 @media (max-height:820px){
-  #home{ overflow-y:auto; align-items:flex-start; }
+  #home{ align-items:flex-start; }
   #home .lobby-card.pc-housing{ height:auto; overflow:visible; }
   #home .hero{ min-height:292px; flex-basis:292px; }
   .pc-cast-drawer{ flex-basis:94px; }
