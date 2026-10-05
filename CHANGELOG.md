@@ -16,6 +16,8 @@ reached `main`. Releases before v0.39.8 are recorded in
 - `npm run play-test`: real hands, real taps, three iPhone sizes.
 - README, this changelog, LICENSE, a docs index; `AGENTS.md` now points to
   `CLAUDE.md`.
+- Unused art out of `assets/`: the old chip images deleted; the owner's
+  blue, purple and yellow face sets kept as originals in `art-source/faces/`.
 
 ## v0.64 — 5 October 2026
 

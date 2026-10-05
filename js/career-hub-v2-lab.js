@@ -7,9 +7,9 @@
 
   const FACES = [
     { name:'Harry', src:'assets/faces/red-sly01.PNG', expression:'assets/faces/red-thinking01.PNG' },
-    { name:'Tony', src:'assets/faces/yellow-thinking01.PNG', expression:'assets/faces/yellow-thinking02.PNG' },
-    { name:'Lucy', src:'assets/faces/purple-sly01.PNG', expression:'assets/faces/purple-thinking01.PNG' },
-    { name:'Nigel', src:'assets/faces/blue-thinking01.PNG', expression:'assets/faces/blue-thinking02.PNG' },
+    { name:'Tony', src:'art-source/faces/yellow-thinking01.PNG', expression:'art-source/faces/yellow-thinking02.PNG' },
+    { name:'Lucy', src:'art-source/faces/purple-sly01.PNG', expression:'art-source/faces/purple-thinking01.PNG' },
+    { name:'Nigel', src:'art-source/faces/blue-thinking01.PNG', expression:'art-source/faces/blue-thinking02.PNG' },
     { name:'Steve', src:'assets/faces/red-gloating01.PNG', expression:'assets/faces/red-tilted01.PNG' }
   ];
   const EVENTS = [

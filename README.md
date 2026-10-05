@@ -22,6 +22,7 @@ plays without a signal.
 ```
 index.html  sw.js  manifest.json  icon-*.png   the game and its offline/app shell
 js/  css/  assets/                              the game's code, styles and art
+art-source/                                     original art the game does not load
 *-lab.html  preview.html  card-flight-options.html
                                                 Labs: prototyping pages, never shipped
 pattern-book.html                               the visual design reference
