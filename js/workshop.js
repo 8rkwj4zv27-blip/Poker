@@ -147,6 +147,17 @@
     newSwitch('sw-strength', 'Hand readout', 'strength', () => { try{ updateHandInstrument(); }catch(e){} })));
   help.appendChild(row('Win chance', 'When everyone is all in, a meter shows each hand\'s chance.', take('sw-sd-winchance')));
   help.appendChild(row('P.I.P. report', 'A street-by-street grade after each hand. The next hand waits for DEAL.', take('sw-review')));
+  // HOW TO PLAY: the first-play tour (js/tutorial.js) again
+  const tourKey = el('button', 'btn-secondary st-tour-key', 'Show');
+  tourKey.type = 'button'; tourKey.id = 'replay-tour';
+  tourKey.addEventListener('click', () => {
+    const atTurn = typeof pendingHumanPlayer !== 'undefined' && !!pendingHumanPlayer
+      && !$id('table-screen').classList.contains('hidden');
+    if (atTurn) closeOverlays();
+    Tour.replay();
+    if (!atTurn) tourKey.textContent = 'At your next turn';
+  });
+  help.appendChild(row('How to play', 'A quick walk round the table and its keys.', tourKey));
   help.appendChild(el('div', 'st-note', '<b>P.I.P.</b>, your coach, has his own key beside ⚙ at the table. Tap his screen when you want a read.'));
 
   // SOUND
@@ -967,11 +978,15 @@
     if (matchMedia('(orientation:portrait) and (max-height:700px)').matches) return;
     const over = home.scrollHeight - home.clientHeight;
     if (over <= 0) return;
-    const h = Math.max(292, Math.floor(hero.getBoundingClientRect().height - over));
+    // With CONTINUE in the bay (07-ui-wiring.js, refreshHomeContinue) the
+    // POKER FACES screen gives up more of its empty felt.
+    const floor = home.querySelector('#menu-contraption.has-continue') ? 236 : 292;
+    const h = Math.max(floor, Math.floor(hero.getBoundingClientRect().height - over));
     hero.style.flexBasis = hero.style.minHeight = h + 'px';
   }
   addEventListener('resize', fitHome);
   new MutationObserver(fitHome).observe($id('home'), { attributes:true, attributeFilter:['class'] });
+  if ($id('menu-contraption')) new MutationObserver(fitHome).observe($id('menu-contraption'), { attributes:true, attributeFilter:['class'] });
 
   /* ---- the volume control: the fader ---- */
   function volumeControl(){

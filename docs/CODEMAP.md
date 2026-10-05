@@ -19,7 +19,7 @@ press-feel.js           showdown.js             dealer-deck.js
 action-drum.js          knock-check.js          award-key.js
 card-holder.js          deal-styles.js          coach-set.js
 coach-talk.js           coach-brain.js          coach-lines.js
-coach-report.js
+coach-report.js         tutorial.js
 ```
 
 Later files call into earlier ones freely; there's no module system, so
@@ -749,6 +749,22 @@ Since v0.61.0 (Workshop skins):
 - Screens offers four more CRT presets (Terminal, LCD, VFD, Dot LED) in
   `CRT.PRESETS` and `FINISH_SETS`.
 
+
+## `js/tutorial.js` + `css/tutorial.css` — the tour (live, v0.62.0)
+
+The first-play walk round the table (`Tour`). The engine calls
+`Tour.maybeStart()` when the player's turn starts; it runs once ever
+(`settings.seenTour`), in any mode, spotlighting the real parts with a
+lit window and the first-run card. Settings → Help → How to play
+(`Tour.replay()`, in `js/workshop.js`) runs it again. Presentation only.
+Recorded in `docs/ui/PATTERN_BOOK.md`.
+
+Also v0.62.0: Quick Deal / Custom Game have no lives or rebuys (busting
+ends the table through `showBusted`), at most six opponents
+(`MAX_OPPONENTS`, 02-support-systems.js), a CONTINUE key under QUICK DEAL
+on the home screen (`refreshHomeContinue`, 07-ui-wiring.js; the table is
+saved as it starts), and a full cover when a phone is turned sideways
+(`checkOrientation`, 08-dev-mode.js).
 
 ## `js/finishes.js` + `css/finishes.css` — Finishes menu (live)
 

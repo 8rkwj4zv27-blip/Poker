@@ -1,6 +1,6 @@
-# THE TABLE
+# POKER FACES
 
-The Table is a mobile-first, single-player Texas Hold'em game primarily designed to be played as an installed PWA on iPhone.
+Poker Faces is a mobile-first, single-player Texas Hold'em game primarily designed to be played as an installed PWA on iPhone.
 
 ## Core design principle
 

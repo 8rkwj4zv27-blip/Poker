@@ -85,9 +85,6 @@ body:has(#confirm-dialog:not(.hidden)) .chip-physics-layer,
 body:has(#confirm-dialog:not(.hidden)) .ko-physics-layer,
 body:has(#confirm-dialog:not(.hidden)) .score-smash-layer,
 body:has(#confirm-dialog:not(.hidden)) .arcade-bank-flight,
-body:has(#first-run:not(.hidden)) .fly-card,
-body:has(#first-run:not(.hidden)) .fly-chip,
-body:has(#first-run:not(.hidden)) > .chip-disc,
 body:has(#table-screen.hidden) .fly-card,
 body:has(#table-screen.hidden) .fly-chip,
 body:has(#table-screen.hidden) > .chip-disc,
@@ -98,8 +95,10 @@ body:has(#table-screen.hidden) .arcade-bank-flight{
   display:none !important;
 }
 
+/* Landscape isn't built yet: on a phone turned sideways this covers
+   everything (checkOrientation) until it's turned back upright. */
 #rotate-hint{
-  position:absolute; inset:0; z-index:70; display:none;
+  position:fixed; inset:0; z-index:2147483600; display:none;
   background:var(--bg-deep); flex-direction:column; align-items:center; justify-content:center;
   padding:34px; text-align:center; gap:14px;
 }
@@ -107,10 +106,6 @@ body:has(#table-screen.hidden) .arcade-bank-flight{
 #rotate-hint .t{ font-size:17px; font-weight:800; }
 #rotate-hint .s{ font-size:13px; color:var(--ink-dim); line-height:1.55; max-width:280px; }
 
-#first-run{
-  position:absolute; inset:0; z-index:65; display:flex; align-items:center; justify-content:center;
-  background:rgba(3,8,7,.86); padding:26px;
-}
 .fr-card{
   background:var(--panel); border:2px solid var(--px-ink); border-radius:var(--radius);
   padding:22px; max-width:340px; width:100%;
@@ -635,6 +630,12 @@ body:has(#table-screen.hidden) .arcade-bank-flight{
   background:#29291F; color:#C8BD92; font-size:7px; line-height:1.35;
   box-shadow:0 4px 0 #15150F,0 6px 0 #090605,inset 2px 2px 0 #4A4B39,inset -2px -2px 0 #171710;
 }
+/* CONTINUE sits under QUICK DEAL; HAND RANKINGS stands the full height
+   beside the pair so the bay has no hole. */
+#home .home-row #home-continue{ grid-column:1; grid-row:2; color:#F2D16B; }
+#home .home-row #home-continue small{ display:block; margin-top:4px; color:#9C9474; font-size:6px; letter-spacing:.04em; }
+#home .home-row.has-continue #open-rankings{ grid-column:2; grid-row:1 / span 2; }
+#home .home-row.has-continue .btn-secondary{ min-height:44px; }
 #home .home-row .btn-secondary:active{
   transform:translateY(4px);
   box-shadow:0 1px 0 #15150F,0 3px 0 #090605,inset 2px 2px 0 #4A4B39;

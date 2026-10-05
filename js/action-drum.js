@@ -95,7 +95,7 @@
   function plate(i){
     const p = document.createElement('div');
     p.className = 'ad-plate'; p.setAttribute('aria-hidden', 'true');
-    p.innerHTML = '<i></i><span>' + (i % 2 ? '· THE TABLE ·' : '♠ ♥ ♣ ♦') + '</span><i></i>';
+    p.innerHTML = '<i></i><span>' + (i % 2 ? '· POKER FACES ·' : '♠ ♥ ♣ ♦') + '</span><i></i>';
     flip.appendChild(p);
     return p;
   }

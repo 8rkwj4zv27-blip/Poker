@@ -504,4 +504,17 @@ check('P.I.P. report: live, to the owner\'s order, presentation only',()=>{
   assert.ok(md.includes('## P.I.P. report (live v0.59.0)'),'the Pattern Book must record the P.I.P. report');
 });
 
+check('The tour: built from the first-run card and the primary key, presentation only',()=>{
+  const js=read('js/tutorial.js'), css=read('css/tutorial.css'), md=read('docs/ui/PATTERN_BOOK.md');
+  const links=[...indexHtml.matchAll(/<link rel="stylesheet" href="([^"?]+)/g)].map(m=>m[1]);
+  const scripts=[...indexHtml.matchAll(/<script src="([^"?]+)/g)].map(m=>m[1]);
+  assert.ok(links.includes('css/tutorial.css') && scripts.includes('js/tutorial.js'),'index.html must load the tour');
+  ["'./css/tutorial.css","'./js/tutorial.js"].forEach(f=>assert.ok(serviceWorker.includes(f),'sw.js is missing '+f));
+  assert.ok(js.includes('fr-card tour-card') && js.includes('btn-primary tour-next'),'the tour wears the first-run card and the primary key');
+  assert.ok(!/\.fr-card\s*\{|\.btn-primary\s*\{/.test(css),'the tour must not restyle the shared card or key');
+  assert.ok(!/\b(game|pendingHumanPlayer)(\.[A-Za-z_]+)*\s*=[^=]/.test(js) && !/\b(applyAction|humanAct|startNewHand)\(/.test(js),'the tour must never change game state');
+  assert.ok(/prefers-reduced-motion/.test(css),'the tour honours Reduced Motion');
+  assert.ok(md.includes('## The tour (live v0.62.0'),'the Pattern Book must record the tour');
+});
+
 process.stdout.write('\n'+passed+' Pattern Book checks passed.\n');
