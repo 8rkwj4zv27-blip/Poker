@@ -434,3 +434,20 @@ table's public actions; an opponent's cards only as shown at a showdown.
 | The keys | REPORT and DEAL | On the console drum's NEXT HAND side, in Next Hand's place, wearing the CHECK and RAISE keys' finish. REPORT has a lamp that blinks while there's an unread report; dark when the hand has none. |
 | Setting | Settings → **P.I.P. report** (`settings.review`) | The old Hand review's switch, reused. |
 | Reduced Motion | | Everything at once, no flicker. |
+
+## The tour (live v0.62.0, awaiting the owner's sign-off on device)
+
+The first-play walk round the table, asked for by the owner before the
+friends' test (5 Oct 2026). `js/tutorial.js` + `css/tutorial.css`. Built
+from existing parts, so no new finish: the card is the old first-run card
+(`.fr-card`, its gold heading and ink), NEXT/PLAY is `.btn-primary`.
+Presentation only.
+
+| Part | The finish |
+|---|---|
+| When | Once, at your first turn ever, in any mode (the engine calls `Tour.maybeStart()` as your turn starts). The game is already waiting on you, so nothing is held. `settings.seenTour`. |
+| The window | The dim is the shadow of one lit window (`.tour-ring`): a 3px gold border on a 3px ink ring that blinks in two steps, round every part the step explains. No window on the first and last steps; those are a plain dimmed card. |
+| The card | `.fr-card` with a `N / 7` count, title, one short paragraph, SKIP (quiet outline) and NEXT (`.btn-primary`, PLAY on the last step). It sits on whichever side of the window has more room. |
+| Steps | Welcome, the opponents, your cards + hand readout, the readouts (screen, stack, bank), the three keys, the right-hand bay (blinds, bet this hand, ⚙, P.I.P.), end of a hand (SHOWDOWN, AWARD POT, Hand Rankings). |
+| Again | Settings → Help → **How to play**: now if it's your turn, else at the next one. |
+| Reduced Motion | No blink. |

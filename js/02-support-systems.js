@@ -735,7 +735,7 @@ const DEFAULT_SETTINGS = {
   // `gameType` is the player-facing choice on top of it, and it is the only
   // thing that knows about the run.
   gameType:'cash', runOpponents:4, tournamentPreset:null,
-  seenIntro:false, devMode:false,
+  seenTour:false, devMode:false,
   // the gold coins' sound set (js/coin-world.js); 'old' is the classic chip sounds
   coinSound:'clay',
   // Workshop → Chips → Skin (js/coin-world.js chip designs)
@@ -758,13 +758,18 @@ const DEFAULT_SETTINGS = {
 const DEFAULT_STATS = { hands:0, won:0, showdownsWon:0, biggestPot:0, net:0 };
 const SAVE_VERSION = 1;
 /* Bump on every release so the main-menu header shows what's actually installed. */
-const BUILD_VERSION = 'v0.61.0-dev · Workshop skins';
+const BUILD_VERSION = 'v0.62.0-dev · Friends test';
 
 let settings = Object.assign({}, DEFAULT_SETTINGS, Store.get('felt.settings', {}));
 // The Settings menu cleanup dropped RELAXED from the Game Speed control
 // (now just NORMAL/FAST) — migrate anyone still on it so the segmented
 // control has a matching active state instead of showing nothing selected.
 if (settings.speed === 'relaxed') settings.speed = 'normal';
+// Tables seat at most six opponents (seven players): bigger tables never
+// fitted the phone. Bring an older, larger choice back inside the range.
+const MAX_OPPONENTS = 6;
+if (!(settings.opponents >= 1)) settings.opponents = DEFAULT_SETTINGS.opponents;
+if (settings.opponents > MAX_OPPONENTS) settings.opponents = MAX_OPPONENTS;
 // A settings blob written before Custom Game existed has no gameType. Adopt
 // the mode it already had rather than resetting the player to Cash.
 if (settings.gameType !== 'cash' && settings.gameType !== 'tournament' && settings.gameType !== 'elimination'){

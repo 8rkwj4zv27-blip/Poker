@@ -381,26 +381,10 @@ function startGame(){
   $('career').classList.add('hidden');
   $('table-screen').classList.remove('hidden');
   initSeats();
-  if (!settings.seenIntro){
-    // First table ever: the tips come before the machine powers up, so
-    // they never cover the Table Intro and no card is dealt under them.
-    showFirstRun(()=>startNewHand());
-    return;
-  }
+  // The first checkpoint: saveTable() otherwise fires only at the end of a
+  // hand, so an app closed during hand 1 had nothing to continue.
+  saveTable();
   startNewHand();
-}
-
-let firstRunThen = null;
-function showFirstRun(then){
-  firstRunThen = then || null;
-  $('first-run').classList.remove('hidden');
-}
-function dismissFirstRun(){
-  $('first-run').classList.add('hidden');
-  settings.seenIntro = true; saveSettings();
-  const then = firstRunThen;
-  firstRunThen = null;
-  if (then) then();
 }
 
 let menuLaunchInFlight = false;
@@ -411,7 +395,23 @@ function reconstructMainMenu(){
   if (home) home.classList.remove('menu-launching','menu-over-table','menu-clearing');
   if (button){ button.disabled=false; button.classList.remove('pc-launch-clunk'); }
   refreshCustomGameResume();
+  refreshHomeContinue();
   refreshCareerMenuButton();
+}
+
+/* CONTINUE under QUICK DEAL: the saved Quick Deal / Custom Game table, one
+   tap from the menu (it used to be reachable only inside Custom Game). */
+function refreshHomeContinue(){
+  const btn = $('home-continue');
+  if (!btn) return;
+  const save = loadTableSave();
+  btn.classList.toggle('hidden', !save);
+  if (btn.parentNode) btn.parentNode.classList.toggle('has-continue', !!save);
+  const cab = $('menu-contraption');
+  if (cab) cab.classList.toggle('has-continue', !!save);
+  const line = $('home-continue-line');
+  if (line) line.textContent = save && Number.isFinite(save.handNumber) && save.handNumber > 0
+    ? 'Hand ' + save.handNumber : '';
 }
 
 /* Career is the FEATURED cartridge. Only the sub-line changes with state:

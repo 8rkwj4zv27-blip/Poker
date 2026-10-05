@@ -8,20 +8,20 @@
 <meta name="theme-color" content="#16090D">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="The Table">
+<meta name="apple-mobile-web-app-title" content="Poker Faces">
 <meta name="mobile-web-app-capable" content="yes">
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icon-180.png">
 <link rel="icon" href="icon-192.png" type="image/png">
-<title>The Table — Texas Hold'em</title>
+<title>Poker Faces — Texas Hold'em</title>
 <!-- Finishes (js/finishes.js): this device's chosen looks, applied before
      first paint so nothing flashes. -->
 <script>try{var d=document.documentElement.dataset,r={};for(var k in d)if(/^crt[A-Z]/.test(k))r[k]=d[k];window.CRT_RECIPE=r;var f=JSON.parse(localStorage.getItem('felt.finishes'))||{};for(var k in f)if(/^(finish|crt)[A-Z][A-Za-z]*$/.test(k)&&/^[a-z0-9-]+$/.test(f[k]))d[k]=f[k];}catch(e){}</script>
 <link rel="stylesheet" href="css/01-foundation.css?v=coin-1">
 <link rel="stylesheet" href="css/02-screens.css?v=faces-1">
-<link rel="stylesheet" href="css/03-action-console.css">
-<link rel="stylesheet" href="css/04-overlays-and-modes.css">
-<link rel="stylesheet" href="css/05-responsive-and-arcade.css?v=felt-1">
+<link rel="stylesheet" href="css/03-action-console.css?v=62">
+<link rel="stylesheet" href="css/04-overlays-and-modes.css?v=62">
+<link rel="stylesheet" href="css/05-responsive-and-arcade.css?v=62">
 <link rel="stylesheet" href="css/06-machine-system.css">
 <link rel="stylesheet" href="css/career-hub-v2-lab.css?v=live-motion-1">
 <link rel="stylesheet" href="css/career-motion-live.css?v=4">
@@ -49,6 +49,7 @@
   <link rel="stylesheet" href="css/coach-set.css?v=4">
   <link rel="stylesheet" href="css/coach-talk.css?v=1">
   <link rel="stylesheet" href="css/coach-report.css?v=1">
+  <link rel="stylesheet" href="css/tutorial.css?v=62">
   <link rel="stylesheet" href="css/workshop.css?v=3">
   <link rel="stylesheet" href="css/crt.css?v=3">
 
@@ -63,7 +64,7 @@
   <div id="home" class="screen">
     <div class="lobby-card pc-housing pc-material-leather" id="menu-contraption">
       <div class="home-topbar">
-        <div class="pc-product-mark"><span id="pc-version-mark"></span><small>Electronic table game</small></div>
+        <div class="pc-product-mark"><span id="pc-version-mark">No-limit hold'em</span><small>Electronic table game</small></div>
         <div class="pc-ready-readout pc-display crt"><span class="pc-lamp is-green"></span>&nbsp; <span id="home-readout-text">DEALER READY</span></div>
         <button class="icon-btn" id="home-settings" aria-label="Settings">⚙</button>
       </div>
@@ -108,6 +109,8 @@
         <button class="pc-button pc-button-secondary" id="go-to-setup">Custom Game</button>
         <div class="home-row">
           <button class="btn-secondary" id="quick-play">Quick Deal</button>
+          <!-- Shown while a Quick Deal / Custom Game table is saved. -->
+          <button class="btn-secondary hidden" id="home-continue" type="button">Continue<small id="home-continue-line"></small></button>
           <button class="btn-secondary" id="open-rankings">Hand Rankings</button>
           <!-- XP shelved (26 Sep 2026): the Score / Awards screen is off with
                it; restore the button with ARCADE_XP_ON. -->
@@ -867,39 +870,29 @@
 
   <div id="rotate-hint">
     <div class="glyph">⟳</div>
-    <div class="t">Rotate to play</div>
-    <div class="s">This table is laid out for landscape. Turn your device back, or rotate to portrait for the tall layout.</div>
+    <div class="t">Turn your phone upright</div>
+    <div class="s">Poker Faces is played with the phone held upright.</div>
   </div>
 
-  <div id="first-run" class="hidden">
-    <div class="fr-card">
-      <h4>Before your first hand</h4>
-      <ul class="fr-list">
-        <li>Tap <b>Raise</b> once to open the sizing slider, then <b>Confirm</b> to commit.</li>
-        <li>The blinking gold frame around a seat shows whose turn it is.</li>
-      </ul>
-      <button class="btn-primary" id="fr-dismiss">Got it</button>
-    </div>
-  </div>
 
 </div>
 
 <script src="js/01-poker-math.js?v=ai-1"></script>
-<script src="js/02-support-systems.js?v=skins-1"></script>
+<script src="js/02-support-systems.js?v=62"></script>
 <script src="js/03-opponents.js?v=ai-1"></script>
 <script src="js/04-modes-and-scoring.js?v=cards-1"></script>
-<script src="js/05-game-engine.js?v=ai-1"></script>
-<script src="js/06-presentation.js?v=faces-1"></script>
+<script src="js/05-game-engine.js?v=62"></script>
+<script src="js/06-presentation.js?v=62"></script>
 <script src="js/coin-world.js?v=skins-1"></script>
 <script src="js/coin-table.js?v=room-2"></script>
 <script src="js/coin-bank.js?v=1"></script>
-<script src="js/07-ui-wiring.js?v=faces-1"></script>
+<script src="js/07-ui-wiring.js?v=62"></script>
 <script src="js/career-hub-live.js?v=cabinet-4"></script>
 <script src="js/career-motion-live.js?v=4"></script>
 <script src="js/machine-wheel.js?v=2"></script>
 <script src="js/ticket-feed.js?v=1"></script>
 <script src="js/table-intro.js?v=space-1"></script>
-<script src="js/08-dev-mode.js?v=econ-1"></script>
+<script src="js/08-dev-mode.js?v=62"></script>
 <script src="js/home-cast.js?v=1"></script>
 <script src="js/home-boot.js?v=2"></script>
 <script src="js/dashboard.js?v=1"></script>
@@ -913,7 +906,7 @@
 <script src="js/dealer-deck.js?v=5"></script>
 <script src="js/deal-styles.js?v=2"></script>
 <script src="js/card-holder.js?v=1"></script>
-<script src="js/action-drum.js?v=2"></script>
+<script src="js/action-drum.js?v=62"></script>
 <script src="js/knock-check.js?v=1"></script>
 <script src="js/award-key.js?v=1"></script>
 <script src="js/coach-set.js?v=6"></script>
@@ -921,8 +914,9 @@
 <script src="js/coach-brain.js?v=14"></script>
 <script src="js/coach-lines.js?v=14"></script>
 <script src="js/coach-report.js?v=1"></script>
+<script src="js/tutorial.js?v=62"></script>
 <script src="js/workshop-rack.js?v=1"></script>
-<script src="js/workshop.js?v=3"></script>
+<script src="js/workshop.js?v=62"></script>
 
 
 <script id="pwa-service-worker">

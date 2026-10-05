@@ -303,7 +303,6 @@ function newGame(opts){
     dealerIndex:-1, sbIndex:-1, bbIndex:-1, currentIndex:-1, turnPointer:0,
     phase:'setup', handNumber:0, log:[], over:false,
     buyIns:stack, netStart:stack,
-    livesEnabled: opts.mode==='cash' && !!settings.lives,
     formatId:opts.formatId || null,
     handsPerBlindLevel:Number.isInteger(opts.handsPerBlindLevel) ? opts.handsPerBlindLevel : TOURNAMENT_HANDS_PER_LEVEL,
     cashSessionId:typeof opts.cashSessionId === 'string' ? opts.cashSessionId : null,
@@ -327,7 +326,7 @@ function serializeTable(g){
     handsPerBlindLevel:g.handsPerBlindLevel,
     metricsStartedAt:Number.isFinite(g.metricsStartedAt)?g.metricsStartedAt:Date.now(),
     blindLevel:Number.isFinite(g.blindLevel)?g.blindLevel:0, smallBlind:g.smallBlind, bigBlind:g.bigBlind,
-    buyIns:g.buyIns, netStart:g.netStart, livesEnabled:g.livesEnabled,
+    buyIns:g.buyIns, netStart:g.netStart,
     dealerIndex:g.dealerIndex, handNumber:g.handNumber,
     sess:{ bestWin:g.sess.bestWin, worstLoss:g.sess.worstLoss },
     aiReads: aiReadsSnapshot(g),
@@ -544,7 +543,6 @@ function restoreTable(save){
     dealerIndex:save.dealerIndex, sbIndex:-1, bbIndex:-1, currentIndex:-1, turnPointer:0,
     phase:'setup', handNumber:save.handNumber, log:[], over:false,
     buyIns:save.buyIns, netStart:save.netStart,
-    livesEnabled:save.livesEnabled,
     formatId:save.formatId || null,
     handsPerBlindLevel:Number.isInteger(save.handsPerBlindLevel) ? save.handsPerBlindLevel : TOURNAMENT_HANDS_PER_LEVEL,
     cashSessionId:typeof save.cashSessionId === 'string' ? save.cashSessionId : null,
@@ -736,15 +734,6 @@ async function startNewHand(){
     // then), so this is just the same defensive safety-net tournament
     // mode already applies above, not the primary mechanism.
     g.players.forEach(p=>{ if (p.chips<=0) p.eliminated = true; });
-  } else if (g.livesEnabled){
-    g.players.forEach(p=>{
-      if (p.isHuman || p.eliminated) return;
-      if (p._pendingRebuy || p.chips<=0){
-        p._pendingRebuy = false;
-        p.chips = g.startingStack;
-        logMsg(p.name + ' rebuys for ' + g.startingStack.toLocaleString() + ' \u2014 ' + p.lives + (p.lives===1?' life':' lives') + ' left');
-      }
-    });
   } else {
     g.players.forEach(p=>{
       if (!p.isHuman && p.chips<=0){ p.chips = g.startingStack; logMsg(p.name + ' rebuys for ' + g.startingStack.toLocaleString()); }
@@ -2179,15 +2168,11 @@ async function finishHand(outcome){
       await sleep(motionOff() ? 0 : 1000);
     }
   } else {
-    if (g.livesEnabled) processLives(g);
+    // A standard table: no rebuys and no lives. Out of chips ends it.
     if (human.chips<=0){
-      if (g.livesEnabled && human.lives<=0){ showGameOver(g, human); return; }
-      setBanner("You're out of chips.");
-      Sound.busted(true);
-      $('btn-rebuy').textContent = 'Rebuy ' + g.startingStack.toLocaleString() + (g.livesEnabled ? ' \u00b7 costs 1 \u2665' : '');
-      $('btn-rebuy').classList.remove('hidden');
-      $('btn-new-table').classList.remove('hidden');
-      render(); return;
+      recordGameplayConclusion(g,'bust');
+      showBusted(g, human);
+      return;
     }
     if (g.players.filter(p=>p.inHand || (p.chips>0 && !p.eliminated)).length < 2){ concludeGame(); return; }
   }
@@ -2201,27 +2186,6 @@ async function finishHand(outcome){
   scheduleAutoDeal();
 }
 
-/* Lives bookkeeping at the end of a cash hand. Busted AIs spend a heart and
-   queue a rebuy for the next deal; with no hearts left, they bust out for
-   good — the death plays during the between-hand pause. */
-function processLives(g){
-  g.players.forEach(p=>{
-    if (p.isHuman || p.eliminated || p.chips>0) return;
-    if (p.lives > 0){
-      p.lives--;
-      p._pendingRebuy = true;
-      const e = seatEls[p.id];
-      if (e && e.hearts) e.hearts.classList.add('heart-hit');
-      logMsg(p.name + ' is felted \u2014 spends a life to rebuy');
-    } else {
-      p.eliminated = true;
-      p.inHand = false;
-      logMsg(p.name + ' busted out!', true);
-      playDeath(p);
-    }
-  });
-}
-
 function skullSVG(){
   return '<svg class="face skull" viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">' +
     '<rect x="8" y="6" width="24" height="21" rx="7" fill="#E8E0CC"/>' +
@@ -2232,47 +2196,6 @@ function skullSVG(){
     '<rect x="18.9" y="28" width="2.2" height="6" fill="#20302c"/>' +
     '<rect x="23.4" y="28" width="2.2" height="6" fill="#20302c"/>' +
     '</svg>';
-}
-
-async function playDeath(p){
-  const e = seatEls[p.id];
-  if (!e) return;
-  flashAction(p.id, 'Busted!');
-  Sound.busted(false);
-  if (!motionOff()){
-    e.avatar.classList.add('dying');
-    await sleep(950);
-    e.avatar.classList.remove('dying');
-  }
-  e._mood = null;
-  e.avatar.classList.add('has-face');
-  swapFace(e, p, pickDeadMood(), false);
-  e.root.classList.add('dead');
-  render();
-}
-
-function showGameOver(g, human){
-  g.over = true;
-  clearTableSave();
-  clearTimeout(autoDealT);
-  hideResultCard();
-  setBanner('<b>Game over</b> \u2014 out of lives.');
-  Sound.busted(true);
-  const el = document.createElement('div');
-  el.className = 'result-card gameover'; el.id = 'result-card';
-  const net = human.chips - g.buyIns;
-  el.innerHTML =
-    '<div class="rc-title">Game Over</div>' +
-    '<div class="go-skull">' + skullSVG() + '</div>' +
-    '<div class="pot-line"><span class="pl-tag">Hands</span><span class="pl-body">played this session</span><span class="pl-amt tabular">' + g.handNumber + '</span></div>' +
-    '<div class="pot-line"><span class="pl-tag">Best</span><span class="pl-body">biggest hand won</span><span class="pl-amt tabular">+' + (g.sess.bestWin||0).toLocaleString() + '</span></div>' +
-    '<div class="pot-line"><span class="pl-tag">Net</span><span class="pl-body">against your buy-ins</span><span class="pl-amt tabular">' + (net>=0?'+':'') + net.toLocaleString() + '</span></div>' +
-    '<div class="rc-explain">All three lives spent. New Table starts a fresh run.</div>';
-  $('felt').appendChild(el);
-  $('btn-next-hand').classList.add('hidden');
-  $('btn-rebuy').classList.add('hidden');
-  $('btn-new-table').classList.remove('hidden');
-  render();
 }
 
 /* ---------------- Career event ending ----------------
@@ -2513,9 +2436,7 @@ function concludeGame(){
   clearTimeout(autoDealT);
   const human = game.players.find(p=>p.id==='you');
   const humanAlive = human && human.chips>0 && !human.eliminated;
-  const clearedCopy = game.mode==='elimination'
-    ? 'Every opponent is eliminated.'
-    : 'Every opponent is out of lives.';
+  const clearedCopy = 'Every opponent is eliminated.';
   setBanner(humanAlive ? '<b>Table cleared.</b> ' + clearedCopy : 'Not enough players to continue.');
   $('actions-row').classList.add('hidden');
   $('btn-next-hand').classList.add('hidden');
@@ -3766,6 +3687,7 @@ async function continueAction(){
       Sound.turn(); haptic(18);
       updateActionControls();
       updateCoach();
+      if (typeof Tour !== 'undefined') Tour.maybeStart();   // first turn ever: the tour
       return;
     }
 

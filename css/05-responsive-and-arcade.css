@@ -470,6 +470,10 @@
    of out of the face. */
 .felt.opponents-6 .seat-card{ padding:1px; gap:1px; }
 .felt.opponents-6 .seat-name{ font-size:9px; }
+/* The blind puck: at 5/6-up the seats are scaled down and "BB" no longer
+   fits the 17px circle, so the puck grows back to stay legible. */
+.felt.opponents-5 .seat:not(.you) .pos-btn,
+.felt.opponents-6 .seat:not(.you) .pos-btn{ width:20px; height:20px; top:-5px; right:-2px; font-size:7px; }
 
 /* ---- compact action/status bar ----
    CALL 20 / FOLD / CHECK / RAISE TO 120 / ELIMINATED! read as too heavy
