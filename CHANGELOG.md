@@ -23,6 +23,7 @@ reached `main`. Releases before v0.39.8 are recorded in
 
 ## v0.64 — 5 October 2026
 
+- **v0.64.5** Honest file names, no change in play: the game's controls (`wireUI()`) move from `08-dev-mode.js` to their own `09-controls.js`, and the live Career Hub stylesheet loses "lab" from its name (`career-hub-v2.css`).
 - **v0.64.4** Career hub: Abandon / Cash Out moves onto the paid ticket.
 - **v0.64.3** One cabinet: menu screens and Settings match the main menu's size.
 - **v0.64.2** The bank rack stops jumbling after a bet.

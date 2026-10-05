@@ -27,7 +27,7 @@
    Career key stays sunk while the screen rolls away) is left held.
 
    The table actions keep their own per-action press sounds (fold, check,
-   raise…) from 08-dev-mode.js; they only take the motion. Click handlers
+   raise…) from 09-controls.js; they only take the motion. Click handlers
    that used to play a press sound ask pressFeelSounded(button) first and
    skip theirs if this already played it. Keyboard/programmatic presses
    never set it, so they sound as before.

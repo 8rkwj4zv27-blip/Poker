@@ -182,5 +182,5 @@ const HeroCast = (() => {
   return { init, arrive, settle, get count(){ return faces.length; } };
 })();
 
-/* Called by wireUI() (08-dev-mode.js). */
+/* Called by wireUI() (09-controls.js). */
 function initHeroFaces(){ HeroCast.init(); }

@@ -17,7 +17,8 @@ const opponentSource = fs.readFileSync(path.join(root, 'js/03-opponents.js'), 'u
 const modesSource = fs.readFileSync(path.join(root, 'js/04-modes-and-scoring.js'), 'utf8');
 const engineSource = fs.readFileSync(path.join(root, 'js/05-game-engine.js'), 'utf8');
 const wiringSource = fs.readFileSync(path.join(root, 'js/07-ui-wiring.js'), 'utf8');
-const devSource = fs.readFileSync(path.join(root, 'js/08-dev-mode.js'), 'utf8');
+// the DEV panel and wireUI() (moved to 09-controls.js, audit F2), read together
+const devSource = ['js/08-dev-mode.js', 'js/09-controls.js'].map(f => fs.readFileSync(path.join(root, f), 'utf8')).join('\n');
 
 function sliceBetween(source, start, end){
   const from = source.indexOf(start);
@@ -2281,7 +2282,7 @@ check('Production never loads a Lab, and the Ticket Lab loads no game logic', ()
   assert.deepStrictEqual(scripts, ['js/02-support-systems.js', 'js/ticket-lab.js'],
     'the Ticket Lab loads only the Sound module and itself: ' + scripts.join(', '));
   ['01-poker-math','03-opponents','04-modes-and-scoring','05-game-engine',
-   '06-presentation','07-ui-wiring','08-dev-mode'].forEach(mod=>{
+   '06-presentation','07-ui-wiring','08-dev-mode','09-controls'].forEach(mod=>{
     assert.ok(!lab.includes(mod), 'the Ticket Lab must not load ' + mod);
   });
   // And it must not reach into Career state even if something were loaded.

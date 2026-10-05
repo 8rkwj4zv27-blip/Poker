@@ -10,7 +10,8 @@ const root = path.resolve(__dirname, '..');
 const modes = fs.readFileSync(path.join(root,'js/04-modes-and-scoring.js'),'utf8');
 const engine = fs.readFileSync(path.join(root,'js/05-game-engine.js'),'utf8');
 const wiring = fs.readFileSync(path.join(root,'js/07-ui-wiring.js'),'utf8');
-const dev = fs.readFileSync(path.join(root,'js/08-dev-mode.js'),'utf8');
+// the DEV panel and wireUI() (moved to 09-controls.js, audit F2), read together
+const dev = ['js/08-dev-mode.js','js/09-controls.js'].map(f=>fs.readFileSync(path.join(root,f),'utf8')).join('\n');
 const opponents = fs.readFileSync(path.join(root,'js/03-opponents.js'),'utf8');
 const html = fs.readFileSync(path.join(root,'index.html'),'utf8');
 

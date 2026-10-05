@@ -286,7 +286,7 @@ html[data-holder="brass"] .wss-lip{
 .wss-caption{ margin-top:6px; min-height:30px; padding:6px 10px; display:flex; align-items:center; }
 
 /* the rack (js/workshop-rack.js): the event rack's reader and cards,
-   css/career-hub-v2-lab.css + css/career-motion-live.css, for the Workshop */
+   css/career-hub-v2.css + css/career-motion-live.css, for the Workshop */
 .wr-reader{
   position:relative; margin:12px 0 4px; overflow:hidden;
   background:radial-gradient(ellipse at 50% 35%,color-mix(in srgb,var(--theme-rim) 12%,transparent),transparent 62%),

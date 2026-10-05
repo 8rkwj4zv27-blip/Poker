@@ -15,7 +15,8 @@ coin-world.js           coin-table.js           bank-load.js
 07-ui-wiring.js
 career-hub-live.js      career-motion-live.js   machine-wheel.js
 ticket-feed.js          table-intro.js
-08-dev-mode.js          home-cast.js            home-boot.js
+08-dev-mode.js          09-controls.js          home-cast.js
+home-boot.js
 dashboard.js            crt.js                  finishes.js
 press-feel.js           showdown.js             event-tape.js
 dealer-deck.js
@@ -27,9 +28,10 @@ coach-report.js         tutorial.js
 
 Later files call into earlier ones freely; there's no module system, so
 everything is a global. Every file in the list is always loaded.
-**`08-dev-mode.js` is not optional:** besides the DEV panel it holds
-`wireUI()`, which builds the main menu and wires every button in the game
-(see its section below).
+**`09-controls.js` holds `wireUI()`**, which builds the main menu and wires
+every button in the game; it must load straight after `08-dev-mode.js` (the
+DEV panel), so its `DOMContentLoaded` listener is queued before
+`home-cast.js` and `home-boot.js` (see its section below).
 
 ## `js/01-poker-math.js` (~690 lines)
 
@@ -215,7 +217,7 @@ rack, ticket cards, buy-in sequence, and the Home↔Career↔table motion
 transitions (`careerDepartToTable`, the Home entrance in
 `enterCareerFromHome`). Reads Career state and calls the real transaction
 functions in `07-ui-wiring.js`; owns no money itself. Styled by
-`css/career-hub-v2-lab.css` (shared with the Lab, see below) plus
+`css/career-hub-v2.css` (named `career-hub-v2-lab.css` until v0.64.5) plus
 `css/career-motion-live.css` for the transitions and
 `css/career-hub-cabinet.css` (live-only layout: Back/Settings keys on the
 top rail; one dark console housing the ticket slot — cartridge-hole mouth
@@ -873,21 +875,24 @@ CRT with five presets (`CRT.PRESETS`) and all dials. `pattern-book.html` is
 the visual library (isolated like the Labs). Rules and the sign-off record:
 `docs/ui/PATTERN_BOOK.md`.
 
-## `js/08-dev-mode.js` (~1,100 lines)
+## `js/08-dev-mode.js` (~710 lines)
 
-Two things in one file, despite its name:
+The DEV panel. Every control drives real production functions
+(`applyAction`, `resolveEliminations`, etc.) rather than a parallel fake
+path — see the file's own header comment. The panel itself is absent from
+the DOM when `DEV_MODE` is false (`?dev` in the URL, or the setting).
+Useful for reaching a specific game state (forced all-ins, rigged deals,
+Career bankroll presets) without playing there manually.
 
-- **`wireUI()` (from about line 729): live in every build.** Queued for
-  `DOMContentLoaded` at the bottom of the file, it builds the main menu and
-  wires Fold, Check/Call, Raise, Next Hand, Settings, the overlays and the
-  rest. Removing or skipping this file leaves a game whose buttons do
-  nothing. (Audit finding F2; moving it to its own file is planned.)
-- **The DEV panel.** Every control drives real production functions
-  (`applyAction`, `resolveEliminations`, etc.) rather than a parallel fake
-  path — see the file's own header comment. The panel itself is absent
-  from the DOM when `DEV_MODE` is false (`?dev` in the URL, or the setting). Useful for reaching a specific game state
-(forced all-ins, rigged deals, Career bankroll presets) without playing
-there manually.
+## `js/09-controls.js` (~400 lines)
+
+`wireUI()`: live in every build. Queued for `DOMContentLoaded` at the
+bottom of the file, it builds the main menu and wires Fold, Check/Call,
+Raise, the raise slider, Next Hand, Settings, the overlays and the rotate
+hint (`checkOrientation()`), then calls `initHeroFaces()` and
+`initDevPanel()`. Also sets `window.__pokerDebug`. Removing or skipping this
+file leaves a game whose buttons do nothing. It was the bottom of
+`08-dev-mode.js` until v0.64.5 (audit finding F2), moved unchanged.
 
 ## Labs vs. production — do not confuse the two
 
@@ -919,10 +924,10 @@ shipped. Rules:
 - A Lab may load real production systems (e.g. `Sound` from
   `02-support-systems.js`) to audition them accurately, but never writes to
   `localStorage`, `felt.career`, or any real save.
-- `css/career-hub-v2-lab.css` is the one exception worth knowing:
-  production's live Career Hub (`career-hub-live.js`) **also** loads this
-  stylesheet — it's the real production ticket/card CSS, not lab-only,
-  despite the filename. Don't assume `*-lab.css` is always inert.
+- No live file has "lab" in its name: the live Career Hub's ticket/card
+  stylesheet was `css/career-hub-v2-lab.css` until v0.64.5 and is now
+  `css/career-hub-v2.css`. `validation/offline-list-checks.js` fails if a
+  `*-lab` file is ever shipped.
 - If you're not sure whether a file is live, check `index.html`'s
   `<script>`/`<link>` tags and `sw.js`'s `APP_SHELL` array — if it's not
   listed there, it's not shipped to players.

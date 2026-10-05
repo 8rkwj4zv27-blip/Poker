@@ -82,9 +82,8 @@ check('every face the game draws is precached',()=>{
 });
 
 check('no Lab page or Lab-only file is shipped',()=>{
-  const lab=u=>/-lab(-host|-frame)?\.(html|js|css)$/.test(bare(u)) && bare(u)!=='css/career-hub-v2-lab.css';
+  const lab=u=>/-lab(-host|-frame)?\.(html|js|css)$/.test(bare(u));
   const shipped=[...indexRefs,...shell].filter(lab);
-  // css/career-hub-v2-lab.css is the one live file with "lab" in its name (docs/CODEMAP.md)
   assert.deepStrictEqual(shipped,[],'Lab file shipped: '+shipped.join(', '));
 });
 

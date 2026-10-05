@@ -7,8 +7,8 @@ something specific was built or decided, never by default.
 
 ## Current build
 
-- Build marker: `v0.64.4-dev · Abandon on the ticket` (main-menu footer / DEV panel).
-- Service-worker cache: `poker-v64-4`.
+- Build marker: `v0.64.5-dev · Honest file names` (main-menu footer / DEV panel).
+- Service-worker cache: `poker-v64-5`.
 - Career save schema: **version 6**.
 - Production Career Hub: ticket-reader presentation (six-venue rack,
   spring-driven touch physics, printed-ticket detail flip), integrated

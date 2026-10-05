@@ -9,7 +9,8 @@ const vm=require('vm');
 const root=path.resolve(__dirname,'..');
 const engine=fs.readFileSync(path.join(root,'js/05-game-engine.js'),'utf8');
 const presentation=fs.readFileSync(path.join(root,'js/06-presentation.js'),'utf8');
-const wiring=fs.readFileSync(path.join(root,'js/08-dev-mode.js'),'utf8');
+// wireUI() moved from 08-dev-mode.js to 09-controls.js (audit F2): read both
+const wiring=['js/08-dev-mode.js','js/09-controls.js'].map(f=>fs.readFileSync(path.join(root,f),'utf8')).join('\n');
 const html=fs.readFileSync(path.join(root,'index.html'),'utf8');
 const css=fs.readFileSync(path.join(root,'css/03-action-console.css'),'utf8');
 
