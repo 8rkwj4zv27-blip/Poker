@@ -533,6 +533,17 @@ lab strips `css/card-holder.css`/`js/card-holder.js` from its copy so TODAY
 still means the old holder. The page measures the seat so the GAP is real air on
 any phone. Lab only; nothing loads in the game.
 
+## `bank-load-lab.html` + `js/bank-load-lab-host.js` + `js/bank-load-lab.js` + candidate `css/bank-load.css` / `js/bank-load.js` — Bank Load Lab
+
+How your bank fills when you sit down at a table (`docs/ui/BANK_LOAD_PLAN.md`).
+Phone-first, on the Showdown Lab's pattern (its sheet styles too). The
+candidate replaces `CoinTable.loadBank()` (the table intro's bank step):
+the finished rack is laid out at once and a clipped copy of it plays the
+entrance (A · COUNT IN through the slot, or C · TRAY IN), then the real
+coins show; it stretches `TABLE_INTRO_CONFIG.bank.settleMs` so the intro
+waits for it, and holds `updateJackpot` so the readout can count up.
+SHELVES draws steps under the rack's back rows. Lab only until picked.
+
 ## `showdown-lab.html` + `js/showdown-lab-host.js` + `js/showdown-lab.js` + `css/showdown-lab.css` + candidate `css/showdown-beats.css` / `js/showdown-beats.js` — Showdown Lab
 
 The showdown pass (`docs/ui/SHOWDOWN_PLAN.md`), phone-first (round 4): the
