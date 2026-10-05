@@ -471,8 +471,10 @@ html[data-holder="brass"] .wss-lip{
 /* The home cabinet fits the phone with the Workshop key in it:
    js/workshop.js (fitHome) gives the hero (the POKER FACES screen) the
    height the key takes, down to its compact 292px. A phone too short even
-   for that scrolls the home screen rather than cutting the cabinet off. */
-#home{ overflow-y:auto; -webkit-overflow-scrolling:touch; }
+   for that gets the whole cabinet scaled down to fit (from its top edge):
+   the main menu never scrolls or drags. */
+#home{ overflow:hidden; }
+#menu-contraption{ transform-origin:50% 0; }
 
 
 /* BANK (v0.64.0): your bank's own box (.bl-box, the table's finish,

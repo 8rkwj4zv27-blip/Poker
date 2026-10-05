@@ -1,4 +1,4 @@
-const CACHE_NAME = 'poker-v64-1';
+const CACHE_NAME = 'poker-v64-2';
 const APP_SHELL = [
   './',
   './index.html',
@@ -9,7 +9,7 @@ const APP_SHELL = [
   './css/01-foundation.css?v=coin-1',
   './css/02-screens.css?v=64',
   './css/03-action-console.css?v=64',
-  './css/04-overlays-and-modes.css?v=62',
+  './css/04-overlays-and-modes.css?v=64-1',
   './css/05-responsive-and-arcade.css?v=62',
   './css/06-machine-system.css',
   './css/career-hub-v2-lab.css?v=live-motion-1',
@@ -43,14 +43,14 @@ const APP_SHELL = [
   './css/event-tape.css?v=63',
   './css/result-cabinet.css?v=63',
   './css/crt.css?v=3',
-  './css/workshop.css?v=64',
+  './css/workshop.css?v=64-1',
   './js/01-poker-math.js?v=ai-1',
-  './js/02-support-systems.js?v=64-1',
+  './js/02-support-systems.js?v=64-2',
   './js/03-opponents.js?v=ai-1',
   './js/04-modes-and-scoring.js?v=cards-1',
   './js/05-game-engine.js?v=63',
   './js/06-presentation.js?v=64',
-  './js/coin-world.js?v=64-1',
+  './js/coin-world.js?v=64-2',
   './js/coin-table.js?v=64',
   './js/coin-bank.js?v=1',
   './js/bank-load.js?v=1',
@@ -85,7 +85,7 @@ const APP_SHELL = [
   './js/coach-report.js?v=1',
   './js/tutorial.js?v=62-2',
   './js/workshop-rack.js?v=1',
-  './js/workshop.js?v=64',
+  './js/workshop.js?v=64-1',
   // FACE_ART (js/02-support-systems.js) — every illustrated portrait an
   // opponent can wear, precached so a live seat's expression can always
   // swap from Cache Storage rather than depending on a network round-trip

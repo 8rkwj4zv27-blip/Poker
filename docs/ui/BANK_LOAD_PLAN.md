@@ -56,7 +56,7 @@ sets the chips for the next load ($200 – $25,000).
 
 - Lab link (round 1; republished with the live picks in v0.64.0): https://claude.ai/artifact/7oKKr6EvY958mCAsSN55tM
 
-## Fixed in v0.64.1: the rack jumbling after a bet
+## Fixed in v0.64.2: the rack jumbling after a bet
 
 After your blind (any bet, any win) the rack was laid out again from
 scratch (`rackSlots` in `js/coin-world.js`: coins sorted by value, heights

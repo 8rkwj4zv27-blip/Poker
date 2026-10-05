@@ -1013,19 +1013,30 @@
     if (bay) bay.appendChild(homeKey);
   }
   // the key makes the cabinet taller: the hero gives up just what the phone
-  // needs (never below its compact 292px), so the cabinet isn't cut off
+  // needs (never below its compact 292px), so the cabinet isn't cut off.
+  // A phone too short even for that (notch and home bar included) shrinks
+  // the whole cabinet to fit: the main menu never scrolls.
   function fitHome(){
     const home = $id('home'), hero = home && home.querySelector('.hero');
+    const cab = $id('menu-contraption');
     if (!hero || home.classList.contains('hidden')) return;
     hero.style.flexBasis = hero.style.minHeight = '';
-    if (matchMedia('(orientation:portrait) and (max-height:700px)').matches) return;
-    const over = home.scrollHeight - home.clientHeight;
-    if (over <= 0) return;
-    // With CONTINUE in the bay (07-ui-wiring.js, refreshHomeContinue) the
-    // POKER FACES screen gives up more of its empty felt.
-    const floor = home.querySelector('#menu-contraption.has-continue') ? 236 : 292;
-    const h = Math.max(floor, Math.floor(hero.getBoundingClientRect().height - over));
-    hero.style.flexBasis = hero.style.minHeight = h + 'px';
+    if (cab) cab.style.scale = '';
+    if (!matchMedia('(orientation:portrait) and (max-height:700px)').matches){
+      const over = home.scrollHeight - home.clientHeight;
+      if (over > 0){
+        // With CONTINUE in the bay (07-ui-wiring.js, refreshHomeContinue) the
+        // POKER FACES screen gives up more of its empty felt.
+        const floor = home.querySelector('#menu-contraption.has-continue') ? 236 : 292;
+        const h = Math.max(floor, Math.floor(hero.getBoundingClientRect().height - over));
+        hero.style.flexBasis = hero.style.minHeight = h + 'px';
+      }
+    }
+    if (!cab) return;
+    const cs = getComputedStyle(home);
+    const room = home.clientHeight - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom);
+    const tall = cab.offsetHeight;
+    if (tall > room && room > 0) cab.style.scale = String(Math.floor(room / tall * 1000) / 1000);
   }
   addEventListener('resize', fitHome);
   new MutationObserver(fitHome).observe($id('home'), { attributes:true, attributeFilter:['class'] });
