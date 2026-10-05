@@ -18,6 +18,8 @@ reached `main`. Releases before v0.39.8 are recorded in
   `CLAUDE.md`.
 - Unused art out of `assets/`: the old chip images deleted; the owner's
   blue, purple and yellow face sets kept as originals in `art-source/faces/`.
+- 23 finished labs and the 75 files only they used (23,606 lines) archived
+  to the protected branch `checkpoint/labs-archive-2026-10`.
 
 ## v0.64 — 5 October 2026
 

@@ -1,9 +1,0 @@
-/* Chip Lab: the gallery of chip designs in the TUNE sheet (lab only). */
-.chl-gallery{ display:grid; gap:6px; margin:4px 0 8px; }
-.chl-gallery button{
-  display:flex; align-items:center; gap:8px; min-height:48px; padding:6px 8px; border:2px solid #080405; border-radius:3px;
-  background:#0F1C14; color:#B69A7A; cursor:pointer; box-shadow:inset 0 3px 0 rgba(0,0,0,.35);
-}
-.chl-gallery button.is-on{ border-color:#E8B83A; box-shadow:inset 0 3px 0 rgba(0,0,0,.35),0 0 0 2px rgba(232,184,58,.35); color:#E8B83A; }
-.chl-gallery span{ flex:0 0 62px; font-family:var(--font-hdr); font-size:7px; letter-spacing:.06em; text-align:left; }
-.chl-gallery b{ display:flex; gap:2px; align-items:flex-end; }

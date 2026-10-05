@@ -23,8 +23,8 @@ plays without a signal.
 index.html  sw.js  manifest.json  icon-*.png   the game and its offline/app shell
 js/  css/  assets/                              the game's code, styles and art
 art-source/                                     original art the game does not load
-*-lab.html  preview.html  card-flight-options.html
-                                                Labs: prototyping pages, never shipped
+*-lab.html  card-flight-options.html          Labs: prototyping pages, never shipped
+                                                (finished ones archived on checkpoint/labs-archive-2026-10)
 pattern-book.html                               the visual design reference
 validation/                                     test suites and QA tools
 docs/                                           design rules, plans and history

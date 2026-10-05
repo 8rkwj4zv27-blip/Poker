@@ -324,7 +324,7 @@ ORDER") is the owner's signed-off build spec, recorded in
 `docs/ui/PATTERN_BOOK.md` (Dashboard V2). Every part is built to
 `docs/ui/DASHBOARD_V2_RULES.md`. Not loaded by the game.
 
-## `dashboard-v2-lab.html` + `js/dashboard-v2-lab.js` + `css/dashboard-v2-lab.css` — Dashboard 2.0 (Lab)
+## `dashboard-v2-lab.html` + `js/dashboard-v2-lab.js` + `css/dashboard-v2-lab.css` — Dashboard 2.0 (Lab) — **archived 5 Oct 2026**
 
 Standalone prototype of the player's dashboard: four directions (V1+,
 Console, Slot, Cockpit), three sizes, and every interaction and big moment
@@ -335,7 +335,7 @@ hold'em driver, so it never touches the engine or a save. **Rejected by
 the owner as a visual direction**; see `docs/ui/DASHBOARD_V2_HANDOVER.md`
 for what carries forward.
 
-## `table-space-lab.html` + `js/table-space-lab.js` + `js/table-space-lab-frame.js` + `css/table-space-lab.css` — Table Space Lab
+## `table-space-lab.html` + `js/table-space-lab.js` + `js/table-space-lab-frame.js` + `css/table-space-lab.css` — Table Space Lab — **archived 5 Oct 2026**
 
 The table spacing pass (docs/ui/CHIP_PLAN.md, "Next: a table spacing
 pass"). Runs the **real game** sandboxed (like `dashboard-order-lab.html`)
@@ -379,7 +379,7 @@ Since v0.52 the game ships the picks, so the lab starts it on
 `TableRoom.CLASSIC` and its HOLD: CLASSIC is the old table. Not loaded by
 the game.
 
-## `felt-lab.html` + `js/felt-lab-host.js` + `js/felt-lab.js` + `css/felt-lab.css` — Felt Lab
+## `felt-lab.html` + `js/felt-lab-host.js` + `js/felt-lab.js` + `css/felt-lab.css` — Felt Lab — **archived 5 Oct 2026**
 
 The table finish pass (docs/ui/FELT_PLAN.md): rail, stitching, cloth,
 felt colour, light, printed markings, bet spots and the felt/console seam.
@@ -408,7 +408,7 @@ re-lay when a seat moves, not its tucked cards), and calls `slot(p, ms)` to
 light the cup. Presentation only. Character names live in
 `PERSONALITIES_ALL` (`name`; the old label is `style`).
 
-## `enemy-card-lab.html` + `js/enemy-card-lab.js` + `css/enemy-card-lab.css` + candidate `css/enemy-card.css` / `js/enemy-card.js` — Enemy Cards order form (Lab)
+## `enemy-card-lab.html` + `js/enemy-card-lab.js` + `css/enemy-card-lab.css` + candidate `css/enemy-card.css` / `js/enemy-card.js` — Enemy Cards order form (Lab) — **archived 5 Oct 2026**
 
 Where Enemy Cards V2 was ordered (rounds 1–3). Runs the **real game**
 sandboxed at the owner's phone (430 x 932, safe areas rewritten to 59px /
@@ -496,7 +496,7 @@ killer's gloat, thunks, a random damage chain, CRT off or rubble).
 Presentation only; the order is `KNOCKOUT_ORDER` at the top. Its sounds
 are a small synth of its own, unlocked on the first tap.
 
-## `ko-lab.html` + `js/ko-lab.js` + `css/ko-lab.css` + candidate `css/ko-fx.css` / `js/ko-fx.js` — K.O. order form (Lab)
+## `ko-lab.html` + `js/ko-lab.js` + `css/ko-lab.css` + candidate `css/ko-fx.css` / `js/ko-fx.js` — K.O. order form (Lab) — **archived 5 Oct 2026**
 
 Where the K.O. / game over was ordered (docs/ui/KO_PLAN.md). Runs the
 **real game** sandboxed at the owner's phone (430 x 932, safe areas as in
@@ -528,7 +528,7 @@ felt, then flip into the winner's bank). `ORDER` holds the fixed order;
 defaults in `DEFAULT_SETTINGS`). Without the coin table the shipped award
 runs. Presentation only.
 
-## `card-holder-lab.html` + `js/card-holder-lab.js` + `css/card-holder-lab.css` — Card Holder Lab
+## `card-holder-lab.html` + `js/card-holder-lab.js` + `css/card-holder-lab.css` — Card Holder Lab — **archived 5 Oct 2026**
 
 The lip your two cards sit in (`docs/ui/CARD_HOLDER_PLAN.md`): lip style,
 seat shadow, width, the gap to the hand-name screen and the card overhang,
@@ -610,7 +610,7 @@ of `#hand-strength` on any phone (the holder rises; the screens stay put).
 Settings → The deck → Card holder (`settings.cardHolder`: `brass`, the
 default, or `classic`), set on `<html>` as `data-holder`.
 
-## `card-holder-deal-lab.html` + `js/holder-deal-lab.js` + `css/holder-deal-lab.css` — Holder Deal Lab
+## `card-holder-deal-lab.html` + `js/holder-deal-lab.js` + `css/holder-deal-lab.css` — Holder Deal Lab — **archived 5 Oct 2026**
 
 How your two cards arrive in the card holder (`docs/ui/CARD_HOLDER_PLAN.md`,
 round 3): A turns in the air, B turns just above the lip, both then slip
@@ -627,7 +627,7 @@ pose and (for the specials) pixel effects and Web Audio sounds; plugs into
 rarity, scope), FLICK alone by default. Common/uncommon share the hands by
 weight; rare, epic and legendary are a fixed chance on a single card.
 
-## `deal-style-lab.html` + `js/deal-style-lab.js` + `css/deal-style-lab.css` + candidate `js/deal-styles.js` / `css/deal-styles.css` — Deal Style Lab
+## `deal-style-lab.html` + `js/deal-style-lab.js` + `css/deal-style-lab.css` + candidate `js/deal-styles.js` / `css/deal-styles.css` — Deal Style Lab — **archived 5 Oct 2026**
 
 How cards fly off the deck (`docs/ui/DEAL_STYLES_PLAN.md`): eighteen styles
 in five tiers (common to legendary; FLICK is the shipped one), each with
@@ -728,7 +728,7 @@ sheet styles; it runs the live `js/dealer-deck.js` and adds only its
 controls (every row of the order, ten backs as cards, THE DEALER: TODAY
 for the old deck). Not loaded by the game.
 
-## `coin-denom-lab.html` + `js/coin-denom-lab.js` + `css/coin-denom-lab.css` + candidate `js/coin-denom-world.js` / `js/coin-denom-table.js` — Coin Denominations Lab (Lab 1)
+## `coin-denom-lab.html` + `js/coin-denom-lab.js` + `css/coin-denom-lab.css` + candidate `js/coin-denom-world.js` / `js/coin-denom-table.js` — Coin Denominations Lab (Lab 1) — **archived 5 Oct 2026**
 
 The coin economy pass (`docs/ui/CHIP_PLAN.md`, "Denominations"): small
 coins, big coins (5 small) and gold bars (25 small) on the real table, a
@@ -739,7 +739,7 @@ pieces added (sprites, flight, one kind per tower, banded pot tidy, the
 change-up merge, one counting rule for every bet); the copy strips the
 shipped coin files so they run alone. Not loaded by the game.
 
-## `coin-bank-lab.html` + `js/coin-bank-lab.js` + candidate `js/coin-bank.js` / `css/coin-bank.css` — Coin Bank Lab (Lab 2)
+## `coin-bank-lab.html` + `js/coin-bank-lab.js` + candidate `js/coin-bank.js` / `css/coin-bank.css` — Coin Bank Lab (Lab 2) — **archived 5 Oct 2026**
 
 The inside of your bank for the coin economy pass (`docs/ui/CHIP_PLAN.md`):
 `CoinBank.View` shows your stack as small coins, big coins and bars in one
@@ -748,7 +748,7 @@ dropping in. Runs on Lab 1's candidates (`js/coin-denom-table.js` drives it
 when `CoinWorld.OPT.bank` is a style) and the Showdown Lab's host. Not
 loaded by the game.
 
-## `coin-tubes-lab.html` + `js/coin-tubes-lab.js` + candidate `js/coin-bank-tubes2.js` / `css/coin-bank-tubes2.css` — Bank Tubes Lab
+## `coin-tubes-lab.html` + `js/coin-tubes-lab.js` + candidate `js/coin-bank-tubes2.js` / `css/coin-bank-tubes2.css` — Bank Tubes Lab — **archived 5 Oct 2026**
 
 The bank's TUBES, round 2 (owner: works, but doesn't read well; keep it
 simple): NEW TUBES adds a style to the live `CoinBank` (coins tipped
@@ -756,7 +756,7 @@ toward you, warm lamp light, clearer glass, bars on a low shelf under two
 tubes) to compare with the shipped one. Runs on the game's own coin files.
 Not loaded by the game.
 
-## `coin-hoard-lab.html` + `js/coin-hoard-lab.js` + `css/coin-hoard.css` + candidate `js/coin-hoard-world.js` / `js/coin-hoard-table.js` — Hoard Lab
+## `coin-hoard-lab.html` + `js/coin-hoard-lab.js` + `css/coin-hoard.css` + candidate `js/coin-hoard-world.js` / `js/coin-hoard-table.js` — Hoard Lab — **archived 5 Oct 2026**
 
 The bank, round 3: the HOARD, your stack as a pile of gold like the pot
 (a coin-world zone in the bank's own box: grows from a few pieces into a
@@ -764,7 +764,7 @@ heap, wins land on it, bets off the top, tap to tidy, gleams when rich).
 The candidates are copies of the shipped coin files with box zones added;
 the copy strips the shipped ones. Not loaded by the game.
 
-## `chip-lab.html` + `js/chip-lab.js` + `css/chip-lab.css` — Chip Lab
+## `chip-lab.html` + `js/chip-lab.js` + `css/chip-lab.css` — Chip Lab — **archived 5 Oct 2026**
 
 Where the chips were built (rounds 4-7, docs/ui/CHIP_PLAN.md). Since
 v0.46.0 the chips ARE the game's coin files (`js/coin-world.js`,
@@ -891,10 +891,23 @@ there manually.
 
 ## Labs vs. production — do not confuse the two
 
-Every `*-lab.html` page in the root (41 of them on 5 Oct 2026), plus
-`preview.html` and `card-flight-options.html`, and the `*-lab.js`,
+Every `*-lab.html` page in the root (19 of them after the 5 Oct 2026
+archive), plus `card-flight-options.html`, and the `*-lab.js`,
 `*-lab-host.js` and `*-lab.css` files they load, are **isolated visual
-references and prototyping sandboxes**. (`pattern-book.html` is the design
+references and prototyping sandboxes**.
+
+**Archived labs.** On 5 Oct 2026, 23 finished labs (their features had
+shipped) and the 75 files only they used were removed from `main`:
+boot, card-holder, card-holder-deal, career-hub-v2, chip, chip-throw, the
+four coin labs, dashboard-v2, deal-style, design, enemy-card, felt, intro,
+ko, pot, `preview.html`, result-stage, slot, table-space and wheel-v2.
+They are kept exactly as they were on the protected branch
+`checkpoint/labs-archive-2026-10`; sections below marked **archived**
+describe them. To bring one back:
+`git checkout origin/checkpoint/labs-archive-2026-10 -- <file> [<file>…]`.
+Labs that a test suite reads (card-turn, card-flight-options, chip-motion,
+showdown-rail, deck, action-drum, career, ticket, dashboard-order,
+table-room) were kept: they double as fixtures for checks on the live game. (`pattern-book.html` is the design
 reference, not a Lab.) `validation/offline-list-checks.js` fails if any of
 them is ever shipped. Several are
 committed permanently as durable references even after their feature
