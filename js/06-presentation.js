@@ -1158,8 +1158,10 @@ function buildJackpot(){
   const j = $('jackpot'); if (!j) return;
   ensureFixedReel(j,6);
 }
-function updateJackpot(v){
+function updateJackpot(v, force){
   const j = $('jackpot'); if (!j) return;
+  // the bank's COUNT IN entrance (js/bank-load.js) counts it up itself
+  if (!force && typeof BankLoad!=='undefined' && BankLoad && BankLoad.holdsReadout) return;
   updateFixedReel(j,v,{label:'Player stack',mine:true,lock:true,cascade:24});
 }
 

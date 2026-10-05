@@ -452,3 +452,19 @@ Presentation only.
 | Steps | Welcome, the opponents, your cards + hand readout, the readouts (screen, stack, bank), the three keys, the right-hand bay (blinds, bet this hand, ⚙, P.I.P.), end of a hand (SHOWDOWN, AWARD POT, Hand Rankings). |
 | Again | Settings → Help → **How to play**: now if it's your turn, else at the next one. |
 | Reduced Motion | No blink. |
+
+## Your bank: the load and the shelves (live v0.64.0)
+
+How your bank fills when you sit down at a table, and the steps under the
+rack's back rows: the owner's picks from the Bank Load Lab
+(`bank-load-lab.html`, round 1, 5 Oct 2026; `docs/ui/BANK_LOAD_PLAN.md`).
+`js/bank-load.js` + `css/bank-load.css`. Presentation only.
+
+| Part | Order | The finish |
+|---|---|---|
+| The box | | Your bank's recessed box: `#hud-left` at the table, `.bl-box` anywhere else (the Workshop's preview), one finish (`css/02-screens.css`, `css/03-action-console.css`, `css/coin-hoard.css`'s `.hoard-well`). |
+| Shelves | **ON** | Every back row of the rack stands on a step (`.bl-shelves i`): a brass lip at the row's floor, a dark face down to the row in front. |
+| The load | Workshop → **Bank** (`settings.bankLoad`), COUNT IN by default | The finished rack is laid out first; a copy of it plays the entrance, clipped to the box (`.bl-clip`), then the real chips show. The table intro waits for it; a tap jumps to the end. |
+| Count in | **STRAIGHT DOWN**, **CHIP BY CHIP**, **BACK ROW FIRST**, **1.2 S**, readout **COUNTS UP** | Each chip drops from above the box onto its stack with a small squash and a clink, faster as it goes; the STACK readout climbs as they land. |
+| Tray in | **FROM ABOVE**, **SMOOTH + BOUNCE**, **0.6 S** | The rack comes down on its brass-rimmed tray (`.bl-tray`), overshoots 3px and settles; a clunk, a 2px jolt of the box, a gleam. |
+| Reduced Motion | | The rack is simply there. |

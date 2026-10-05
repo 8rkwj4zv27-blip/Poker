@@ -568,8 +568,10 @@ const CoinTable = (function(){
     if (!bank) return;
     bank.chips.forEach(c=>c.el && c.el.remove()); bank.chips.length = 0; bank.clumps = [];
   }
-  // TABLE INTRO: the rack fills through the hatch, a coin at a time
+  // TABLE INTRO: the rack loads in (js/bank-load.js: COUNT IN or TRAY IN,
+  // Workshop → Bank); returns how long the intro waits for it
   function loadBank(){
+    if (hoardOn() && typeof BankLoad!=='undefined' && BankLoad) return BankLoad.load();
     if (hoardOn()){ const z = ensureHoard(); if (!z) return 0; syncHoard(false); return 900; }
     if (viewOn()){ const v = ensureView(); if (!v) return 0; v.clear(); settleView({ stagger:26 }); return 900; }
     const h = human(), b = ensureBank(); if (!h || !b) return 0;

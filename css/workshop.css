@@ -474,3 +474,9 @@ html[data-holder="brass"] .wss-lip{
    for that scrolls the home screen rather than cutting the cabinet off. */
 #home{ overflow-y:auto; -webkit-overflow-scrolling:touch; }
 
+
+/* BANK (v0.64.0): your bank's own box (.bl-box, the table's finish,
+   css/bank-load.css) at its size at the table, on a strip of the
+   dashboard; a tap plays the load again */
+.ws-stage--bank .wss-bank{ height:190px; border-top:4px solid var(--px-ink); border-radius:8px; display:flex; align-items:center; justify-content:center; cursor:pointer; -webkit-tap-highlight-color:transparent; }
+.ws-stage--bank .bl-box{ width:90px; height:155px; box-sizing:border-box; flex:none; }

@@ -740,6 +740,9 @@ const DEFAULT_SETTINGS = {
   coinSound:'clay',
   // Workshop → Chips → Skin (js/coin-world.js chip designs)
   chipSkin:'tint',
+  // Workshop → Bank (js/bank-load.js): how your bank fills when you sit
+  // down at a table, 'count' (COUNT IN) or 'tray' (TRAY IN)
+  bankLoad:'count',
   // Settings → Bank (js/coin-bank.js): the inside of your bank, the tags
   // under its tubes, how much making change plays out
   bankStyle:'tubes', bankTags:'off', bankChange:'3',
@@ -758,7 +761,7 @@ const DEFAULT_SETTINGS = {
 const DEFAULT_STATS = { hands:0, won:0, showdownsWon:0, biggestPot:0, net:0 };
 const SAVE_VERSION = 1;
 /* Bump on every release so the main-menu header shows what's actually installed. */
-const BUILD_VERSION = 'v0.63.0-dev · End screens';
+const BUILD_VERSION = 'v0.64.0-dev · Bank load';
 
 let settings = Object.assign({}, DEFAULT_SETTINGS, Store.get('felt.settings', {}));
 // The Settings menu cleanup dropped RELAXED from the Game Speed control

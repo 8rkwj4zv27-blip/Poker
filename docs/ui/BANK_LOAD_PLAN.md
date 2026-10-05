@@ -17,15 +17,14 @@ Measured in an emulated iPhone on a Quick Deal ($1,000 = 36 chips):
 3. **The finished rack looks broken.** Its back rows stand higher in the
    box with nothing under them, so back stacks seem to float.
 
-## The candidate (`js/bank-load.js`, `css/bank-load.css`)
+## Live in v0.64.0 (`js/bank-load.js`, `css/bank-load.css`)
 
 The finished rack is built first, exactly as the game lays it out
 (`CoinTable.syncHoard(true)`), and the real coins stay hidden while a copy
 of them plays the entrance, clipped to the box. When it ends the copy goes
 and the real coins show, so the bank is always right underneath (a tap to
-skip, a bet, a resize can't leave it half-filled). The intro waits for the
-entrance's real length (lab: through `TABLE_INTRO_CONFIG.bank.settleMs`;
-for the game, `table-intro.js` should await `CoinTable.loadBank()`).
+skip, a bet, a resize can't leave it half-filled). `table-intro.js`'s bank step
+waits for the entrance's real length (what `CoinTable.loadBank()` returns).
 
 - **A · COUNT IN** — the hatch opens and the chips come down through the
   slot stack by stack in a fixed order, the STACK readout counting up.
@@ -35,7 +34,17 @@ for the game, `table-intro.js` should await `CoinTable.loadBank()`).
   tray, locks with a clunk and gleams. Dials: from below / above, stepped
   or smooth, time.
 - **SHELVES** (both) — each back row stands on a step, so nothing floats.
-  A new part: needs sign-off and a Pattern Book entry before it ships.
+  Signed off with the picks; recorded in the Pattern Book.
+
+## The owner's picks (round 1, 5 Oct 2026) — live
+
+Both are offered: Workshop → **Bank** → FILLING YOUR BANK
+(`settings.bankLoad`), with a preview in your bank's own box. Count in is
+the default.
+
+- **Count in:** shelves on, straight down, chip by chip, back row first,
+  1.2 s, the readout counts up.
+- **Tray in:** shelves on, from above, smooth + bounce, 0.6 s.
 
 ## Lab
 
@@ -45,7 +54,7 @@ screen; TUNE opens the sheet (LOAD · A · C), AGAIN loads the bank again on
 the table that's up, SIT DOWN replays the whole table entrance. YOUR STACK
 sets the chips for the next load ($200 – $25,000).
 
-- Round 1 link: https://claude.ai/artifact/7oKKr6EvY958mCAsSN55tM
+- Lab link (round 1; republished with the live picks in v0.64.0): https://claude.ai/artifact/7oKKr6EvY958mCAsSN55tM
 
 ## Noticed, not in scope
 

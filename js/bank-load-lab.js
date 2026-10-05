@@ -4,7 +4,8 @@
    BANK LOAD LAB — the controls, inside the game (round 1, phone-first)
 
    Runs in the game copy the host page (bank-load-lab.html,
-   js/bank-load-lab-host.js) builds, with the candidate js/bank-load.js.
+   js/bank-load-lab-host.js) builds. js/bank-load.js is live since v0.64.0
+   (the owner's round-1 picks); the lab keeps its dials to compare.
    A small TUNE key opens a bottom sheet: LOAD (which entrance, sit down
    at a table again, the stack, the shelves), A · COUNT IN and C · TRAY IN
    (each one's dials). AGAIN replays the bank load on the table that's up.
@@ -17,22 +18,24 @@
   const state = host ? host.state : { order:null, stack:'1000', sound:'on', moment:null };
   const O = BANK_LOAD_OPT;
   if (state.order) Object.assign(O, state.order);
+  // the entrance is the player's setting (Workshop → Bank) since v0.64.0
+  if (O.style) settings.bankLoad = O.style; else O.style = BankLoad.style();
 
-  // Every row's first option is my suggestion.
+  // Every row's first option is the owner's round-1 pick (live since v0.64.0).
   const BOTH = [
     ['style','WHICH ENTRANCE', [['count','A · COUNT IN'],['tray','C · TRAY IN']]],
     ['shelves','SHELVES', [['on','ON'],['off','OFF']], 'The back rows of the rack stand on steps, so they don\'t look like they float over the front ones.']
   ];
   const A = [
-    ['entry','WHERE THEY COME IN', [['slot','THROUGH THE SLOT'],['drop','STRAIGHT DOWN']], 'The slot: out of the middle of the top edge and over to their stack. Straight down: each falls in right above its stack.'],
-    ['unit','HOW', [['stack','WHOLE STACKS'],['chip','CHIP BY CHIP']]],
+    ['entry','WHERE THEY COME IN', [['drop','STRAIGHT DOWN'],['slot','THROUGH THE SLOT']], 'The slot: out of the middle of the top edge and over to their stack. Straight down: each falls in right above its stack.'],
+    ['unit','HOW', [['chip','CHIP BY CHIP'],['stack','WHOLE STACKS']]],
     ['order','ORDER', [['back','BACK ROW FIRST'],['middle','MIDDLE OUT']]],
     ['countMs','TIME', [['1200','1.2 S'],['900','0.9 S'],['1600','1.6 S']]],
     ['readout','STACK READOUT', [['count','COUNTS UP'],['once','ALL AT ONCE']], 'COUNTS UP: the figure climbs with each stack that lands.']
   ];
   const C = [
-    ['from','FROM', [['below','BELOW'],['above','ABOVE']]],
-    ['motion','MOTION', [['stepped','STEPPED + HARD STOP'],['smooth','SMOOTH + BOUNCE']]],
+    ['from','FROM', [['above','ABOVE'],['below','BELOW']]],
+    ['motion','MOTION', [['smooth','SMOOTH + BOUNCE'],['stepped','STEPPED + HARD STOP']]],
     ['trayMs','TIME', [['600','0.6 S'],['450','0.45 S'],['900','0.9 S']]]
   ];
   const ROWS = BOTH.concat(A, C);
@@ -95,13 +98,13 @@
         if (k === 'stack' || k === 'sound'){
           state[k] = v; if (host) host.set({ [k]:v });
           if (k === 'sound') try{ settings.sound = v === 'on'; CoinTable.sync(); }catch(err){}
-        } else { O[k] = v; save(); if (k === 'shelves') BankLoad.paintShelves(); }
+        } else { O[k] = v; save(); if (k === 'style') settings.bankLoad = v; if (k === 'shelves') BankLoad.paintShelves(); }
         // the entrance picked here and on its own tab stay in step
         sheet.querySelectorAll('.sdl-seg[data-key="' + k + '"] button').forEach(b => b.classList.toggle('is-on', b.dataset.v === v));
         return;
       }
       if (t.dataset.act === 'reset'){
-        ROWS.forEach(r => { O[r[0]] = r[2][0][0]; }); save();
+        ROWS.forEach(r => { O[r[0]] = r[2][0][0]; }); save(); settings.bankLoad = O.style;
         sheet.querySelectorAll('.sdl-seg').forEach(s2 => { const k = s2.dataset.key; if (k === 'stack' || k === 'sound') return; s2.querySelectorAll('button').forEach(b => b.classList.toggle('is-on', b.dataset.v === O[k])); });
         BankLoad.paintShelves();
         return;
@@ -126,7 +129,7 @@
     try{
       openHatch(); Sound.hatchOpen();
       await new Promise(r => setTimeout(r, 150));
-      await BankLoad.play();
+      BankLoad.load(); await BankLoad.done;
       closeHatch(); Sound.hatchClose();
     }catch(err){ console.error(err); }
     finally{ busy = false; }

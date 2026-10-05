@@ -212,7 +212,7 @@
   rankings.parentNode.insertBefore(wsScreen, rankings.nextSibling);
   wsCard.appendChild(pageHead('Workshop', 'home'));
 
-  const TABS = [['cards','Cards'],['dealing','Dealing'],['showdown','Showdown'],['chips','Chips'],['cabinet','Cabinet'],['screens','Screens'],['buttons','Buttons']];
+  const TABS = [['cards','Cards'],['dealing','Dealing'],['showdown','Showdown'],['chips','Chips'],['bank','Bank'],['cabinet','Cabinet'],['screens','Screens'],['buttons','Buttons']];
   const tabRow = el('div', 'segmented compact ws-tabs');
   TABS.forEach(([k, t], i) => { const b = el('button', i === 0 ? 'active' : '', t); b.type = 'button'; b.dataset.wsTab = k; tabRow.appendChild(b); });
   wsCard.appendChild(tabRow);
@@ -495,6 +495,48 @@
   });
   // the size key the table is using now
   try{ const now = TableRoom.opts().coins; sizeSeg.querySelectorAll('button').forEach(x => x.classList.toggle('active', x.dataset.v === now)); }catch(e){}
+
+  /* BANK (v0.64.0): how your bank fills when you sit down at a table
+     (js/bank-load.js). The stage is your bank's own box (.bl-box, the
+     table's finish) on a strip of the dashboard, loading a Quick Deal's
+     $1,000 the chosen way; the caption counts it in. A tap on the stage
+     plays it again. */
+  const LOADS = [
+    { id:'count', name:'Count in', note:'The chips drop in one by one, back row first, and the stack counts up as they land.' },
+    { id:'tray',  name:'Tray in',  note:'The whole rack comes down into the box on its tray and locks in with a clunk.' }
+  ];
+  const loadNow = () => LOADS.some(x => x.id === settings.bankLoad) ? settings.bankLoad : 'count';
+  const bankStage = el('div', 'ws-stage ws-stage--bank');
+  bankStage.innerHTML = '<div class="wss-dash wss-bank" data-wss-bank><div class="bl-box"><div class="hoard-well"></div></div></div>' +
+    '<div class="crt wss-caption" data-crt-quiet><span class="crt-line" data-wss-say></span></div>';
+  pages.bank.appendChild(bankStage);
+  const bankBox = bankStage.querySelector('.bl-box');
+  const loadSeg = el('div', 'segmented compact ws-finish-seg'); loadSeg.setAttribute('role', 'group');
+  LOADS.forEach(k0 => { const k = el('button', '', k0.name); k.type = 'button'; k.dataset.v = k0.id; loadSeg.appendChild(k); });
+  const loadBox = keysPlate('Filling your bank', loadSeg, null);
+  const loadNote = el('div', 'hint ws-finish-note'); loadBox.querySelector('.field').appendChild(loadNote);
+  pages.bank.appendChild(loadBox);
+  function paintLoad(){
+    const now = loadNow();
+    loadSeg.querySelectorAll('button').forEach(k => k.classList.toggle('active', k.dataset.v === now));
+    loadNote.textContent = (LOADS.find(x => x.id === now) || LOADS[0]).note;
+  }
+  let loadGen = 0;
+  function playLoad(){
+    if (typeof BankLoad === 'undefined' || !BankLoad) return;
+    const gen = ++loadGen, l = LOADS.find(x => x.id === loadNow()) || LOADS[0];
+    const money = v => '$' + Math.round(v).toLocaleString('en-US');
+    sayOn(bankStage, l.name + '  \u00b7  ' + money(l.id === 'count' ? 0 : 1000));
+    try{ CW.Coin.unlock(); }catch(e){}
+    BankLoad.preview(bankBox, l.id, { chips:1000, onLand:f => { if (gen === loadGen) sayOn(bankStage, l.name + '  \u00b7  ' + money(1000 * f)); } });
+  }
+  loadSeg.addEventListener('click', e => {
+    const k = e.target.closest('button'); if (!k) return;
+    settings.bankLoad = k.dataset.v; saveSettings();
+    paintLoad(); setTimeout(playLoad, 0);
+  });
+  bankStage.querySelector('[data-wss-bank]').addEventListener('click', playLoad);
+  paintLoad();
 
   /* SHOWDOWN (round 10): two controls instead of five.
      WHEN IT SMASHES: the four keys from before (monster pots, big pots,
@@ -935,6 +977,7 @@
     if (k === 'cards') showBack(backRack.index);
     else if (k === 'dealing'){ borrowDeck(dealStage); setTimeout(() => showStyle(styleRack.index, true), 250); }
     else if (k === 'chips'){ borrowFelt(true); holdPreview(true); sayOn(chipStage, 'Skin: ' + noteOf(skinSeg).trim() + '  ·  ' + noteOf(sizeSeg).trim() + '  ·  ' + noteOf(soundSeg).trim()); setTimeout(() => throwChips(8), 200); }
+    else if (k === 'bank') setTimeout(playLoad, 250);
     else if (k === 'showdown'){ borrowFelt(true, sdFelt); holdPreview(true); paintStyle(); paintKey(); setTimeout(potReady, 250); }
     else if (k === 'cabinet') sayOn(cabCap, noteOf(themeSeg).trim() + '  ·  in use');
     else if (k === 'screens') cycleLines(true);

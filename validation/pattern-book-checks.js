@@ -517,4 +517,19 @@ check('The tour: built from the first-run card and the primary key, presentation
   assert.ok(md.includes('## The tour (live v0.62.0'),'the Pattern Book must record the tour');
 });
 
+check('Your bank: one box finish, the load is presentation only',()=>{
+  const js=read('js/bank-load.js'), css=read('css/bank-load.css'), md=read('docs/ui/PATTERN_BOOK.md');
+  const links=[...indexHtml.matchAll(/<link rel="stylesheet" href="([^"?]+)/g)].map(m=>m[1]);
+  const scripts=[...indexHtml.matchAll(/<script src="([^"?]+)/g)].map(m=>m[1]);
+  assert.ok(links.includes('css/bank-load.css') && scripts.includes('js/bank-load.js'),'index.html must load the bank load');
+  assert.ok(scripts.indexOf('js/bank-load.js')>scripts.indexOf('js/coin-table.js') && scripts.indexOf('js/bank-load.js')<scripts.indexOf('js/table-intro.js'),'the bank load runs on the coin table, before the table intro');
+  ["'./css/bank-load.css","'./js/bank-load.js"].forEach(f=>assert.ok(serviceWorker.includes(f),'sw.js is missing '+f));
+  // the Workshop's box is the bank's box: the same rules, never a copy
+  assert.ok(/#hud-left,\.bl-box\{/.test(read('css/02-screens.css')) && /#hud-left,#hud-right,\.bl-box\{/.test(read('css/03-action-console.css')) && read('css/coin-hoard.css').includes('#hud-left .hoard-well,.bl-box .hoard-well{'),'.bl-box must share #hud-left\'s finish');
+  assert.ok(!/\.bl-box\s*\{/.test(css),'css/bank-load.css must not restyle the box itself');
+  assert.ok(!/\b(game|pendingHumanPlayer)(\.[A-Za-z_]+)*\s*=[^=]/.test(js) && !/\.chips\s*=[^=]/.test(js) && !/\b(applyAction|humanAct|startNewHand)\(/.test(js),'the bank load must never change game state');
+  assert.ok(js.includes('motionOff()'),'the bank load honours Reduced Motion');
+  assert.ok(md.includes('## Your bank: the load and the shelves (live v0.64.0)') && book.includes('Your bank: the load and the shelves'),'the Pattern Book must record the bank load');
+});
+
 process.stdout.write('\n'+passed+' Pattern Book checks passed.\n');

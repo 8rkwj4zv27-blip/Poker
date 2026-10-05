@@ -24,10 +24,10 @@
 </head>
 <body>
   <iframe id="bll-game" title="The Table (lab copy)" allow="autoplay"></iframe>
-  <!-- What goes into the game copy: the candidate (js/bank-load.js) and
-       the lab's controls. The bundler
+  <!-- What goes into the game copy: the lab's controls (js/bank-load.js
+       itself is in the game since v0.64.0). The bundler
        (validation/tools/lab-bundle.js) reads this to bake the copy. -->
-  <script type="application/json" id="lab-inject">{"css":["css/bank-load.css","css/showdown-lab.css"],"js":["js/bank-load.js","js/bank-load-lab.js"],"v":"1"}</script>
-  <script src="js/bank-load-lab-host.js?v=1"></script>
+  <script type="application/json" id="lab-inject">{"css":["css/showdown-lab.css"],"js":["js/bank-load-lab.js"],"v":"2"}</script>
+  <script src="js/bank-load-lab-host.js?v=2"></script>
 </body>
 </html>

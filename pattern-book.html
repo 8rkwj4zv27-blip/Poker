@@ -224,6 +224,25 @@
     </div>
   </section>
 
+  <section>
+    <h2>Your bank: the load and the shelves</h2>
+    <p class="lead">The owner's picks from the Bank Load Lab (round 1, 5 October 2026): how the bank fills when you sit down at a table, and the steps the rack's back rows stand on. Workshop &rarr; Bank chooses the load.</p>
+    <div class="plate">
+      <span class="status live">LIVE IN THE GAME · v0.64.0</span>
+      <h3>Anatomy</h3>
+      <div class="scroll"><table class="rules">
+        <thead><tr><th>Part</th><th>Rule</th><th>Class</th></tr></thead>
+        <tbody>
+          <tr><td>The box</td><td>Your bank's recessed box, the same finish wherever it's shown (the table, the Workshop's preview).</td><td><code>#hud-left</code>, <code>.bl-box</code> + <code>.hoard-well</code></td></tr>
+          <tr><td>Shelves</td><td>Every back row of the rack stands on a step: a brass lip at the row's floor, a dark face down to the row in front.</td><td><code>.bl-shelves i</code></td></tr>
+          <tr><td>Count in (default)</td><td>The chips drop in one by one, straight down onto their stacks, back row first, faster as it goes; the STACK readout counts up as they land. 1.2 s.</td><td><code>.bl-clip</code> (the copy, clipped to the box)</td></tr>
+          <tr><td>Tray in</td><td>The whole rack comes down into the box on a brass-rimmed tray, settles with a small bounce, a clunk and a jolt of the box, and gleams. 0.6 s.</td><td><code>.bl-tray</code></td></tr>
+          <tr><td>Reduced Motion</td><td>The rack is simply there.</td><td></td></tr>
+        </tbody>
+      </table></div>
+    </div>
+  </section>
+
   <!-- ======================= APPROVED, NOT YET MIGRATED ======================= -->
   <section>
     <h2>Approved, moving over next</h2>
