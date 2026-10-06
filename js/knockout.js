@@ -447,15 +447,6 @@ const Knockout = (function(){
       })();
     });
   }
-  function crack(x, y, r0){
-    const R = 170, svg = crackSvg(R, Math.max(10, r0 * .18));
-    svg.setAttribute('class', 'kofx-crack');
-    svg.style.left = (x - R) + 'px'; svg.style.top = (y - R) + 'px';
-    document.body.appendChild(svg);
-    const live = 1500 * L().k;
-    setTimeout(() => svg.animate([{ opacity:1 }, { opacity:0 }], { duration:420, easing:'steps(4,end)', fill:'forwards' }), live);
-    setTimeout(() => svg.remove(), live + 450);
-  }
   // a pixel crack: jagged spokes from the impact, chords between them
   function crackSvg(R, core){
     const NS = 'http://www.w3.org/2000/svg';
@@ -532,7 +523,6 @@ const Knockout = (function(){
   function koObs(extra){ return koObstacles().concat(extra || []); }
 
   /* ---------------- THE K.O. ---------------- */
-  let running = null;
   async function koSequence(entries){
     if (!entries.length) return;
     // Reduced Motion: the game's own instant end state. A single K.O. goes

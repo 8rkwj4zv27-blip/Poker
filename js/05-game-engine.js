@@ -1824,7 +1824,7 @@ function strongWinningCardKeys(cat, tiebreak, cards){
     cards.forEach(c=>strong.add(cardKey(c)));
   } else if (cat===6){
     // full house: all five strong; trips allowed a touch more emphasis
-    const tripsVal = tiebreak[0], pairVal = tiebreak[1];
+    const tripsVal = tiebreak[0];
     cards.forEach(c=>{
       strong.add(cardKey(c));
       if (c.value===tripsVal) hero.add(cardKey(c));
@@ -2059,7 +2059,6 @@ async function finishHand(outcome){
   } else $('actions-row').classList.add('hidden');
   closeRaisePanel();
   clearHumanReadouts();
-  showReview(outcome);
 
   stats.hands++;
   const human = g.players.find(p=>p.id==='you');
@@ -2343,17 +2342,6 @@ function buildCareerResultModel(g, settled){
   };
 }
 
-/* Plain, atomic strings. Every amount is ONE text node with its currency
-   symbol and thousands separators attached, so nothing can wrap or
-   fragment mid-number. Deliberately NOT the mechanical per-digit reel
-   builders (buildResultAmount/buildResultCounter): those emit a separate
-   element per glyph, which is what split TOTAL into loose +, digits and
-   commas across several lines. Those builders remain untouched for the
-   Arcade results they were designed for. */
-function careerResultRow(label, value){
-  return '<div class="career-res-row"><span class="career-res-k">' + esc(label) +
-         '</span><span class="career-res-v tabular">' + esc(value) + '</span></div>';
-}
 /* EVENT CASHED only. A win and a bust are outcomes of the event and go to
    the shared result stage (careerStageModel/resultStageHTML); a non-winning
    paid place deliberately stays below both in presentation weight and keeps
@@ -2534,8 +2522,9 @@ function tableReportStatPages(r){
 
    ONE physical chassis presents all four major outcomes: TABLE CLEARED,
    RUN OVER, EVENT WON and EVENT LOST. They are semantic states of the
-   same hardware, not four screens — see docs/ui/handover/CURRENT_STATE.md
-   and result-stage-lab.html, the approved visual source of truth.
+   same hardware, not four screens. The design record: docs/ui/handover/
+   CURRENT_STATE.md (historical) and result-stage-lab.html, archived on the
+   branch checkpoint/labs-archive-2026-10.
 
    Not a card floating over the felt, and not a cleared poker table with
    stats on it. See .felt.results-mode / rollStageTransition() in
@@ -3204,7 +3193,6 @@ async function playElimination(p, opts){
   const ko = !!(opts && opts.ko);
   const e = seatEls[p.id];
   if (!e || !e.card) return;
-  const idx = game.players.indexOf(p);
   const cfg = ko ? ELIMINATION_CONFIG.koTimings : ELIMINATION_CONFIG.elimTimings;
   const shake = ko ? ELIMINATION_CONFIG.shakeIntensity.ko : ELIMINATION_CONFIG.shakeIntensity.elim;
   const card = e.card;

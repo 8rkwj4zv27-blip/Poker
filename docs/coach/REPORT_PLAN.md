@@ -83,7 +83,7 @@ no console errors. On a 667px-tall phone the glass scrolls about 50px.
 
 - Settings → **P.I.P. report** (`settings.review`, off by default; the old
   Hand review's key, so saved settings carry over). The old panel is
-  retired: `#review` is gone from `index.html`, `showReview` returns early,
+  retired: `#review` is gone from `index.html`, `showReview` returned early (removed in v0.64.6),
   `buildReview` and its helpers stay for the scoring checks.
 - With it on, the game already skips Auto-Continue. When it puts up Next
   Hand, the report swaps it (hidden by `html[data-pip-report]`) for REPORT

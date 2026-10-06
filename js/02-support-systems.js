@@ -88,15 +88,6 @@ function faceSVG(mood, hue){
 }
 
 
-/* A proper pixel heart: 9x8 grid of hard blocks with a stepped outline and
-   a single highlight pixel — filled/empty state handled by CSS on .h/.off */
-function pixelHeartSVG(){
-  return '<svg class="pxheart" viewBox="0 0 9 8" aria-hidden="true">' +
-    '<path fill="currentColor" d="M1 1h2v1H1zM6 1h2v1H6zM0 2h4v1H0zM5 2h4v1H5zM0 3h9v2H0zM1 5h7v1H1zM2 6h5v1H2zM3 7h3v1H3z"/>' +
-    '<rect x="1" y="2" width="1" height="1" fill="rgba(255,255,255,.55)"/>' +
-  '</svg>';
-}
-
 /* ============================================================
    FACE ART — one illustrated portrait set per expression, shared by
    every opponent regardless of AI personality (rock/shark/maniac/etc).
@@ -381,9 +372,8 @@ function faceTintK(hex, sourceFill){
 }
 /* The purple batch's filter per FACE_COLORS index — the batch's own
    analogue of each entry's `.filter` field above (which is, and remains,
-   the red-batch filter; kept there rather than moved, so the one existing
-   direct read of it — the home-screen hero faces in 08-dev-mode.js, which
-   only ever cycle red-batch moods — needs no change). Plain id strings,
+   the red-batch filter; kept there rather than moved, and faceFilter()
+   below picks between the two by the batch a mood was drawn in). Plain id strings,
    computable eagerly with no DOM dependency. */
 const FACE_TINT_PURPLE = FACE_COLORS.map((c,i)=>
   i === FACE_SOURCE_FAMILIES.purple.pristineIndex ? '' : 'url(#'+FACE_SOURCE_FAMILIES.purple.idPrefix+'-'+i+')'
@@ -761,7 +751,7 @@ const DEFAULT_SETTINGS = {
 const DEFAULT_STATS = { hands:0, won:0, showdownsWon:0, biggestPot:0, net:0 };
 const SAVE_VERSION = 1;
 /* Bump on every release so the main-menu header shows what's actually installed. */
-const BUILD_VERSION = 'v0.64.5-dev · Honest file names';
+const BUILD_VERSION = 'v0.64.6-dev · Dead code out';
 
 let settings = Object.assign({}, DEFAULT_SETTINGS, Store.get('felt.settings', {}));
 // The Settings menu cleanup dropped RELAXED from the Game Speed control

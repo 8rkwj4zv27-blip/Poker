@@ -25,7 +25,6 @@
 const EventTape = (() => {
   const P = 2;                           // screen pixels per art pixel
   const MAX_POINTS = 600;
-  const $id = id => document.getElementById(id);
   const quiet = () => { try{ return motionOff(); }catch(e){ return false; } };
   const money = n => '$' + Math.max(0, Math.round(n || 0)).toLocaleString('en-US');
   const E = s => (typeof esc === 'function' ? esc(s) : String(s));

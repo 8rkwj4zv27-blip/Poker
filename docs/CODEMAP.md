@@ -688,7 +688,7 @@ P.I.P. report on (`settings.review`, the old Hand review's switch), REPORT
 and DEAL replace Next Hand on the console drum's deal side; REPORT or a tap
 on P.I.P. opens it, built by `fromGame()` from `CoachBrain`'s hand record,
 the table's public actions and `CoachTalk.reportWords`/`reasonText`. The
-old Hand review panel is retired (`showReview` no-ops; `buildReview` stays
+old Hand review panel is retired (`showReview` removed in v0.64.6; `buildReview` stays
 for the scoring checks). `CoachReport` holds the pure parts the game will use
 (`grade` A-F from P.I.P.'s decision marks, `truthEquity` from shown cards
 with the game's evaluator, `pivot`, `chanceWord`, `worthIt`) and draws the

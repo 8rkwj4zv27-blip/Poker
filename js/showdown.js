@@ -64,7 +64,6 @@ const Showdown = (function(){
     press:   () => ['always','mine','auto'].includes(settings.sdAwardPot) ? settings.sdAwardPot : ORDER.press
   };
   const opt = k => PLAYER[k] ? PLAYER[k]() : ORDER[k];
-  const root = () => document.documentElement;
 
   const CW = () => window.CoinWorld;
   const coinsOn = () => typeof coinTableOn === 'function' && coinTableOn() && !!CW() && !!CW().zones.pot;
@@ -584,54 +583,6 @@ const Showdown = (function(){
     // translate only: a scale on the table turns the felt brown for a frame
     el.animate([{ transform:'none' }, { transform:'translateY(' + a + 'px)', offset:.2 }, { transform:'translateY(' + (-a / 3) + 'px)', offset:.46 }, { transform:'none' }], { duration:320, easing:'steps(6,end)' });
   }
-  // a hit-stop: the whole coin world holds its breath for a few frames
-  function hitStop(ms){
-    const W = CW(); if (quiet()) return;
-    const sp = W.OPT.speed; W.OPT.speed = .0001;
-    setTimeout(() => { W.OPT.speed = sp; W.kick(); }, ms);
-  }
-  function impact(p){
-    bump(p); CW().shake(); if (p > .55) setTimeout(() => CW().shake(), 90);
-    if (typeof DashRim !== 'undefined') DashRim.win();
-    sfx('thump', 1, .55 + .15 * p); sfx('knock', 1, .7); setTimeout(() => sfx('thump', .8, .45), 70);
-  }
-  // a coin let loose with a velocity (the physics does the rest)
-  function loose(q, vx, vy, vz){
-    Object.assign(q, { target:{}, opts:{}, bounces:0, maxB:2, e:.34, knocked:true, inFelt:true, edge:false,
-      vx, vy, vz, fr:Math.PI * 2 * 3 / .5, phi:0, t:.1, T:0, d0:q.d, d1:q.d, moving:0,
-      state:'air', axis:'toss', spinA:rr(0, 6), spinDir:Math.random() < .5 ? -1 : 1, spinRate:rr(3, 7) });
-    CW().active.add(q); CW().kick();
-  }
-  const resting = bodies => bodies.every(b => b.state === 'rest' || !CW().active.has(b));
-  async function settled(bodies, ms){ const end = performance.now() + ms; while (performance.now() < end && !resting(bodies)) await sleep(60); }
-  // THE TOP FRAME: coins that reach the table's top rail hit it and are
-  // thrown back down, hard and sideways, instead of leaving the screen
-  function ceiling(bodies, p, onHit){
-    const f = $('felt'); if (!f || quiet()) return () => {};
-    const top = f.getBoundingClientRect().top + 6;
-    let run = true, hits = 0, shookAt = 0;
-    const tickFn = () => {
-      if (!run) return;
-      bodies.forEach(b => {
-        if (b.state !== 'air' || b.vz <= 0) return;
-        const coinTop = b.y - b.z - b.d * 1.2;
-        if (coinTop > top) return;
-        b.z = b.y - top - b.d * 1.2;
-        b.vz = -Math.abs(b.vz) * rr(.45, .72);
-        b.vx += rr(-1, 1) * (180 + 220 * p); b.vy += rr(10, 110);
-        b.spinRate = (b.spinRate || 4) * 1.6; b.bounces = 0; b.maxB = 2;
-        hits++;
-        sfx('knock', 1, rr(.95, 1.35)); if (hits % 3 === 1) sfx('stack', .9, rr(1.2, 1.6));
-        CW().glintAt(b.x, top + 4);
-        const now = performance.now();
-        if (now - shookAt > 160){ shookAt = now; CW().shake(); }
-        if (onHit) onHit(b);
-      });
-      requestAnimationFrame(tickFn);
-    };
-    requestAnimationFrame(tickFn);
-    return () => { run = false; };
-  }
 
   /* ---------------- THE COOK ----------------
      The one smash. Hold AWARD POT and the pot's recessed well heats up in
@@ -902,7 +853,7 @@ const Showdown = (function(){
 
   // BANG: the well flashes and snaps cold; the coins fire off it
   async function bang(bodies, p){
-    const W = CW(), T = W.tray();
+    const W = CW();
     const t = trayEl(), bed = t && t.querySelector('.sd-heatbed');
     if (bed && !quiet()){ bed.classList.remove('sd-flash'); void bed.offsetWidth; bed.classList.add('sd-flash'); }
     heat(0);
@@ -1163,7 +1114,6 @@ const Showdown = (function(){
     const shown = mergePotResultsForDisplay(potResults);
     const totalAmount = potResults.reduce((s, r) => s + r.amount, 0);
     const foldWin = !(potResults.length !== 1 || potResults[0].hand !== null);
-    const human = g.players.find(p => p.isHuman);
     const humanIn = contenders.some(p => p.isHuman);
     const humanWonContested = potResults.some(r => r.contested > 1 && r.winnerIds.includes('you'));
     const press = pressWanted(shown, contenders);

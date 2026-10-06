@@ -7,7 +7,7 @@ deliberately dense velvet-and-brass console.
 
 - **Play:** https://8rkwj4zv27-blip.github.io/Poker/ (GitHub Pages, served from `main`).
   On an iPhone, open it in Safari and choose **Share → Add to Home Screen**.
-- **Version:** v0.64.5 (see [CHANGELOG.md](CHANGELOG.md)).
+- **Version:** v0.64.6 (see [CHANGELOG.md](CHANGELOG.md)).
 - **Modes:** Single Player runs, and Career (six venues, buy-ins, a bankroll).
   The coach, P.I.P., can teach as you play.
 

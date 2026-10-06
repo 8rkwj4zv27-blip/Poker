@@ -64,6 +64,10 @@ function describeLine(playerId){
   return parts.join(', ');
 }
 
+/* The Hand Review panel retired on 4 Oct 2026 (the P.I.P. report,
+   js/coach-report.js, replaced it on the same switch, settings.review), and
+   its showReview() was removed in v0.64.6. buildReview() and its helpers
+   stay: the scoring checks use them as the hidden-information guard. */
 function buildReview(outcome){
   const g = game;
   const human = g.players.find(p=>p.id==='you');
@@ -151,24 +155,6 @@ function buildReview(outcome){
   return { rows, lesson };
 }
 
-/* Retired (4 Oct 2026): the P.I.P. report (js/coach-report.js) replaces
-   this panel, on the same switch (settings.review). buildReview and its
-   helpers stay for the scoring checks (the hidden-information guard). */
-function showReview(outcome){
-  if (!$('review-body')) return;
-  if (!settings.review || !outcome) return;
-  let data;
-  try{ data = buildReview(outcome); }
-  catch(e){ return; }
-  if (!data || !data.rows.length) return;
-  let html = data.rows.map(r=>'<div class="review-row">' + r + '</div>').join('');
-  if (data.lesson){
-    html += '<div class="review-lesson"><span class="rl-tag">' + esc(data.lesson[0]) + '</span>' +
-            esc(data.lesson[1]) + '</div>';
-  }
-  $('review-body').innerHTML = html;
-  $('review').classList.remove('hidden');
-}
 
 function renderStats(){
   const cells = [

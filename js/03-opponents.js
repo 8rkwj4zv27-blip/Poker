@@ -747,7 +747,7 @@ function estimateRaiserRange(g, raiser, level, read, observer){
 }
 
 async function aiPreflop(player, g, c){
-  const { dp, pers, mood, formatAdj, toCall, stack, bb, bbLeft } = c;
+  const { dp, mood, formatAdj, toCall, stack, bb, bbLeft } = c;
   let { aggression, tightness } = c;
   const sk = skillBlend(PREFLOP_SKILL, aiSkillOf(player, g));
   const idx = g.players.indexOf(player);
@@ -1121,7 +1121,6 @@ async function aiPostflop(player, g, c){
 }
 
 async function aiDecide(player, g){
-  const idx = g.players.indexOf(player);
   const numOpp = g.players.filter(p=>p.inHand && !p.folded && p.id!==player.id).length;
   const dp = aiDifficultyParams(player, g);
 

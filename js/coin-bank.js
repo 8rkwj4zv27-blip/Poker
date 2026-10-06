@@ -30,7 +30,6 @@
   const V = { gold:1, 'gold-big':5, 'gold-bar':25 };
   // the pieces in the bank, a touch smaller than on the felt (a 76px bay)
   const SIZE = { gold:14, 'gold-big':19, 'gold-bar':24 };
-  const hold = ms => new Promise(r => setTimeout(r, motionOff() ? 0 : ms / CW.OPT.speed));
   const sfx = (k, p, q) => { try{ CW.sfx(k, p, q); }catch(e){} };
 
   // sprites: coins at rest (the table's tilt), edge-on (in a tube) or just
