@@ -35,6 +35,22 @@ create branches; the owner can protect it on GitHub.)
   no change renames or reformats the 9 keys below, and by loading an old
   build's save after every change that touches live files.
 
+## Other backup branches
+
+All three `checkpoint/` branches are protected on GitHub. Never push to them
+or delete them.
+
+| Branch | What it keeps | Get something back |
+| --- | --- | --- |
+| `checkpoint/pre-audit-v0.64.4` | The whole game before the audit (above) | The steps above |
+| `checkpoint/labs-archive-2026-10` | The 23 finished labs archived in audit PR 5, and the files only they used | `git checkout origin/checkpoint/labs-archive-2026-10 -- <file>` (`docs/CODEMAP.md` lists them) |
+| `checkpoint/old-branches-2026-10` | The ten superseded branches deleted in the audit's GitHub tidy (8 from before `main`'s history restart on 24 Sept, plus `wizardly-noether` and `pass-3a-checkpoint`) | Its one commit has the same files as `main`; the ten branches' last commits are its extra parents, listed with their names in its message. `git log -1 origin/checkpoint/old-branches-2026-10`, then `git checkout -b <name> <sha>` |
+
+Two unmerged branches stay live on purpose: `claude/tender-dijkstra-zso8dm`
+(the Speech Lab, which `docs/coach/COACH_PLAN.md` refers to) and
+`claude/sweet-pasteur-6yard0` (Skin Lab). Every other `claude/` and `codex/`
+branch was already merged into `main`, so deleting it loses nothing.
+
 ## Test suites
 
 `node validation/<suite>.js`, about 4 minutes for all 21.
