@@ -1,4 +1,4 @@
-const CACHE_NAME = 'poker-v64-6';
+const CACHE_NAME = 'poker-v64-7';
 const APP_SHELL = [
   './',
   './index.html',
@@ -45,7 +45,7 @@ const APP_SHELL = [
   './css/crt.css?v=3',
   './css/workshop.css?v=64-5',
   './js/01-poker-math.js?v=ai-1',
-  './js/02-support-systems.js?v=64-6',
+  './js/02-support-systems.js?v=64-7',
   './js/03-opponents.js?v=64-6',
   './js/04-modes-and-scoring.js?v=64-6',
   './js/05-game-engine.js?v=64-6',

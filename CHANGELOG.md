@@ -31,6 +31,7 @@ reached `main`. Releases before v0.39.8 are recorded in
 
 ## v0.64 — 5 and 6 October 2026
 
+- **v0.64.7** New app icon: the happy face in indigo, in a gold frame whose corners follow the iPhone's icon shape.
 - **v0.64.6** Dead code out, no change in play: the retired Hand Review panel's `showReview()` and three other uncalled functions, 12 unused inner helpers and 23 unused variables removed; stale code comments corrected.
 - **v0.64.5** Honest file names, no change in play: the game's controls (`wireUI()`) move from `08-dev-mode.js` to their own `09-controls.js`, and the live Career Hub stylesheet loses "lab" from its name (`career-hub-v2.css`).
 - **v0.64.4** Career hub: Abandon / Cash Out moves onto the paid ticket.
