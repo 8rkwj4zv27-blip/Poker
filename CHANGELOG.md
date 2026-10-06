@@ -31,6 +31,7 @@ reached `main`. Releases before v0.39.8 are recorded in
 
 ## v0.66 — 6 October 2026
 
+- **v0.66.1** The Safari tab reads just "Poker Faces" and shows the new icon (icon links versioned so browsers drop the old one).
 - **v0.66.0** Developer Mode is hidden from players: its switch in Settings only appears with `?dev` in the address (or while it is already on). The build number still shows.
 
 ## v0.65 — 6 October 2026
