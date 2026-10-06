@@ -670,6 +670,9 @@ async function playReactionSequence(playerId, steps){
 const Store = (function(){
   let memory = {};
   let usable = null;
+  // set on the way out of a restore or reset (js/save-data.js): nothing
+  // may save over the new state before the page reloads
+  let frozen = false;
   function probe(){
     if (usable !== null) return usable;
     try{
@@ -691,16 +694,19 @@ const Store = (function(){
       return fallback;
     },
     set(key, value){
+      if (frozen) return;
       memory[key] = value;
       try{ if (probe()) window.localStorage.setItem(key, JSON.stringify(value)); }
       catch(e){ /* stay in memory */ }
     },
     remove(key){
+      if (frozen) return;
       delete memory[key];
       try{ if (probe()) window.localStorage.removeItem(key); }
       catch(e){ /* stay in memory */ }
     },
-    persistent(){ return probe(); }
+    persistent(){ return probe(); },
+    freeze(){ frozen = true; }
   };
 })();
 
@@ -746,12 +752,14 @@ const DEFAULT_SETTINGS = {
   deckBack:'crest', deckSide:'left',
   // The Coach (js/coach-set.js, js/coach-talk.js): whether he's switched on
   // (the COACH key next to ⚙) and how much he says (Settings → Coach talk)
-  coachBot:false, coachTalk:'4', coachHelp:'3'
+  coachBot:false, coachTalk:'4', coachHelp:'3',
+  // Settings → Save data (js/save-data.js): when this phone last backed up
+  saveExportedAt:null
 };
 const DEFAULT_STATS = { hands:0, won:0, showdownsWon:0, biggestPot:0, net:0 };
 const SAVE_VERSION = 1;
 /* Bump on every release so the main-menu header shows what's actually installed. */
-const BUILD_VERSION = 'v0.64.7-dev · New app icon';
+const BUILD_VERSION = 'v0.65.0-dev · Save data';
 
 let settings = Object.assign({}, DEFAULT_SETTINGS, Store.get('felt.settings', {}));
 // The Settings menu cleanup dropped RELAXED from the Game Speed control

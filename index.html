@@ -20,8 +20,8 @@
 <link rel="stylesheet" href="css/01-foundation.css?v=coin-1">
 <link rel="stylesheet" href="css/02-screens.css?v=64">
 <link rel="stylesheet" href="css/03-action-console.css?v=64">
-<link rel="stylesheet" href="css/04-overlays-and-modes.css?v=64-1">
-<link rel="stylesheet" href="css/05-responsive-and-arcade.css?v=62">
+<link rel="stylesheet" href="css/04-overlays-and-modes.css?v=65-0">
+<link rel="stylesheet" href="css/05-responsive-and-arcade.css?v=65-0">
 <link rel="stylesheet" href="css/06-machine-system.css">
 <link rel="stylesheet" href="css/career-hub-v2.css?v=64-5">
 <link rel="stylesheet" href="css/career-motion-live.css?v=4">
@@ -51,7 +51,7 @@
   <link rel="stylesheet" href="css/coach-talk.css?v=1">
   <link rel="stylesheet" href="css/coach-report.css?v=1">
   <link rel="stylesheet" href="css/tutorial.css?v=62">
-  <link rel="stylesheet" href="css/workshop.css?v=64-5">
+  <link rel="stylesheet" href="css/workshop.css?v=65-0">
   <link rel="stylesheet" href="css/event-tape.css?v=63">
   <link rel="stylesheet" href="css/result-cabinet.css?v=63">
   <link rel="stylesheet" href="css/crt.css?v=3">
@@ -115,6 +115,8 @@
           <!-- Shown while a Quick Deal / Custom Game table is saved. -->
           <button class="btn-secondary hidden" id="home-continue" type="button">Continue<small id="home-continue-line"></small></button>
           <button class="btn-secondary" id="open-rankings">Hand Rankings</button>
+          <!-- Opens Settings on its SAVE DATA plate (js/save-data.js). -->
+          <button class="btn-secondary" id="open-save" type="button">Save Data</button>
           <!-- XP shelved (26 Sep 2026): the Score / Awards screen is off with
                it; restore the button with ARCADE_XP_ON. -->
           <button class="btn-secondary hidden" id="open-awards">Score / Awards</button>
@@ -881,7 +883,7 @@
 </div>
 
 <script src="js/01-poker-math.js?v=ai-1"></script>
-<script src="js/02-support-systems.js?v=64-7"></script>
+<script src="js/02-support-systems.js?v=65-0"></script>
 <script src="js/03-opponents.js?v=64-6"></script>
 <script src="js/04-modes-and-scoring.js?v=64-6"></script>
 <script src="js/05-game-engine.js?v=64-6"></script>
@@ -890,7 +892,7 @@
 <script src="js/coin-table.js?v=64"></script>
 <script src="js/coin-bank.js?v=64-6"></script>
 <script src="js/bank-load.js?v=1"></script>
-<script src="js/07-ui-wiring.js?v=64-6"></script>
+<script src="js/07-ui-wiring.js?v=65-0"></script>
 <script src="js/career-hub-live.js?v=64-4"></script>
 <script src="js/career-motion-live.js?v=4"></script>
 <script src="js/machine-wheel.js?v=2"></script>
@@ -923,6 +925,7 @@
 <script src="js/tutorial.js?v=62-2"></script>
 <script src="js/workshop-rack.js?v=1"></script>
 <script src="js/workshop.js?v=64-6"></script>
+<script src="js/save-data.js?v=1"></script>
 
 
 <script id="pwa-service-worker">
