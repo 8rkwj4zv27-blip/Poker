@@ -1,11 +1,11 @@
-const CACHE_NAME = 'poker-v66-0';
+const CACHE_NAME = 'poker-v66-1';
 const APP_SHELL = [
   './',
   './index.html',
   './manifest.json',
-  './icon-180.png',
-  './icon-192.png',
-  './icon-512.png',
+  './icon-180.png?v=66-1',
+  './icon-192.png?v=66-1',
+  './icon-512.png?v=66-1',
   './css/01-foundation.css?v=coin-1',
   './css/02-screens.css?v=64',
   './css/03-action-console.css?v=64',
@@ -45,7 +45,7 @@ const APP_SHELL = [
   './css/crt.css?v=3',
   './css/workshop.css?v=65-0',
   './js/01-poker-math.js?v=ai-1',
-  './js/02-support-systems.js?v=66-0',
+  './js/02-support-systems.js?v=66-1',
   './js/03-opponents.js?v=64-6',
   './js/04-modes-and-scoring.js?v=64-6',
   './js/05-game-engine.js?v=64-6',
