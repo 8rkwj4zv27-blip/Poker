@@ -89,11 +89,39 @@ with real touch (`validation/tools/touch-harness.js`) before sending.
 
 ## Codebase map
 
-Before searching the codebase cold, read `docs/CODEMAP.md` — it says which
-file owns what, which files are production vs. isolated Lab prototypes, and
-where the test suites and local-preview instructions are. It's a map, not a
-spec: the code and this file remain authoritative over it. `docs/README.md`
-says which docs are current and which are history.
+Before searching the codebase cold, read `docs/QUICKMAP.md` (one page:
+which file owns what). Open `docs/CODEMAP.md` only for the section on the
+file you're about to change; it's long, so never read it whole. Both are
+maps, not specs: the code and this file remain authoritative.
+`docs/README.md` says which docs are current and which are history.
+
+## Housekeeping (keep it tidy)
+
+- **One job per branch and pull request.** Merge only with `npm test`
+  green. Never push straight to `main`.
+- **Every change to files players download is a release:** bump
+  `BUILD_VERSION` (`js/02-support-systems.js`) and `CACHE_NAME` (`sw.js`),
+  bump the `?v=` tag of each changed file identically in `index.html` and
+  `sw.js`, and add a line to `CHANGELOG.md`. `version-checks.js` and
+  `offline-list-checks.js` fail if these drift.
+- **Keep the maps true in the same pull request.** A new, moved or deleted
+  live file updates `docs/QUICKMAP.md` and its `docs/CODEMAP.md` section.
+  A new plan doc goes into `docs/README.md`, and a shipped plan gets the
+  Historical banner. A Career milestone updates `docs/career/STATUS.md`.
+- **Labs don't pile up.** When a lab's feature ships, keep the lab only if
+  a test suite reads it. Otherwise move it and its files to the
+  `checkpoint/labs-archive-2026-10` branch, and mark it archived in
+  `CODEMAP.md`.
+- **No leftovers.** No unused functions, variables, files or art, no
+  commented-out code, and no `console.log` left in live files. Remove what
+  your change makes unused. Original art lives in `art-source/`, never in
+  `assets/`.
+- **Nothing is deleted without a way back.** Unmerged work goes to a
+  protected `checkpoint/` branch first. `docs/audit/PHASE0_BASELINE.md`
+  lists every backup and how to restore it.
+- **Cheap sessions:** read the quick map, then only the files and sections
+  the job needs. Don't read whole large files (`06-presentation.js`,
+  `05-game-engine.js`, `coin-world.js`) when a search finds the function.
 
 ## Career mode continuity
 
