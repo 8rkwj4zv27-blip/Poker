@@ -465,11 +465,15 @@ function setDevMode(on){
 }
 /* Settings' own DEVELOPER section — kept out of the normal player-facing
    rows entirely (see #settings-dev-section), only ever shown once
-   Developer Mode is switched on via the quiet toggle above it. */
+   Developer Mode is switched on via the quiet toggle above it. The toggle
+   itself only appears with ?dev in the address (or while it's already on,
+   so it can be switched off); players just see the build number. */
 function syncDevSection(){
   const section = $('settings-dev-section');
   if (!section) return;
   section.classList.toggle('hidden', !settings.devMode);
+  const reachable = new URLSearchParams(location.search).has('dev') || !!settings.devMode;
+  ['sw-devmode', 'settings-dev-title'].forEach(id => { const el = $(id); if (el) el.classList.toggle('hidden', !reachable); });
 }
 
 /* DEV-only Career testing control. This changes only the off-table bankroll
