@@ -44,7 +44,6 @@ const EnemyCards = (function(){
 
   /* ---------------- dressing a seat ---------------- */
   function dress(p, e){
-    const card = e.card;
     if (!e._ec){
       e.actionSlot.insertAdjacentHTML('afterend',
         '<div class="ec-read" aria-hidden="true"><div class="crt ec-glass" data-crt-quiet><span class="crt-line ec-v">–</span><span class="crt-line ec-a"></span></div></div>');

@@ -3938,7 +3938,6 @@ function syncQuickResolveControl(){
 
 function updateActionControls(){
   const g = game;
-  const banner = $('banner');
   const row = $('actions-row');
   syncQuickResolveControl();
   if (!pendingHumanPlayer){

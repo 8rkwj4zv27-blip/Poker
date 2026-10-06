@@ -402,11 +402,6 @@ const CoachTalk = (() => {
     try{ pct = preflopPercentile(me.hand) * 100; }catch(e){}
     return { hole:describeHole(me.hand), pct:Math.max(1, Math.round(pct)), p:pct / 100, pair:me.hand[0].value === me.hand[1].value };
   }
-  function ctxNow(extra){
-    const g = game || {}, me = human() || {};
-    const call = Math.max(0, (g.currentBet || 0) - (me.betThisRound || 0));
-    return Object.assign({ call:fmt(call), pot:fmt(g.pot || 0), odds:call ? Math.round(call / ((g.pot || 0) + call) * 100) : 0 }, extra || {});
-  }
   /* ---------------- his brain speaking (docs/coach/BRAIN_PLAN.md) ----------------
      A word right after you act (only when it's worth one), and the reason
      after the hand. Judged lines take their notch from the verdict:

@@ -1108,7 +1108,6 @@ const CoachSet = (() => {
     ledState = 'boot'; paintBody(); ensureJack();
     await powerLead(true);
     SFX.relay(); await T(160);
-    const ink = INKS[O.ink];
     if (O.tube === 'text' || O.tube === 'bios'){
       SFX.whine();
       bootFrame = { kind:'dark' }; paintFace(); await T(120);
@@ -1417,7 +1416,7 @@ const CoachSet = (() => {
     const b = { x, y, w:S.w * P, h:S.h * P, vx:side * (260 + Math.random() * 320), vy:-(1750 + Math.random() * 350),
       yaw:0, pitch:0, roll:0, vyaw:side * (700 + Math.random() * 500), vpitch:-(900 + Math.random() * 500), vroll:side * (500 + Math.random() * 400), s:1, step:-1 };
     const x0 = x + b.w / 2;
-    let last = performance.now(), snapAt = 0;
+    let last = performance.now();
     await new Promise(res => {
       const tick = now => {
         const dt = Math.min(.033, (now - last) / 1000); last = now;
@@ -1433,7 +1432,7 @@ const CoachSet = (() => {
         if (!snapped && rope){
           const port = portAt(), j = jackAt();
           if (port && j && Math.hypot(port[0] - j[0], port[1] - j[1]) > ropeLen * 1.35){
-            snapped = true; snapAt = now; SFX.snap();
+            snapped = true; SFX.snap();
             const e = rope[rope.length - 1];
             e.px = e.x - b.vx * .012; e.py = e.y + 26;        // it whips back down
           }

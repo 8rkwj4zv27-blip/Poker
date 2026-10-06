@@ -85,26 +85,11 @@
     });
     return b;
   }
-  // A drawer key: lamp, title, what's picked now, chevron.
-  function drawerKey(page, title, sub, extra){
-    const b = el('button', 'st-drawer-key' + (extra ? ' ' + extra : ''));
-    b.type = 'button'; b.dataset.go = page;
-    b.innerHTML = '<span class="st-dk-lamp" aria-hidden="true"></span>' +
-      '<span class="st-dk-text"><span class="st-dk-title">' + title + '</span><span class="st-dk-sub" data-sub="' + page + '">' + (sub || '') + '</span></span>' +
-      '<span class="st-dk-chev" aria-hidden="true">&#9656;</span>';
-    return b;
-  }
   function pageHead(title, back){
     const h = el('div', 'setup-head');
     h.innerHTML = '<button class="icon-btn" type="button" data-go="' + back + '" aria-label="Back">&larr;</button>' +
       '<h2 class="setup-title">' + title + '</h2><div class="setup-head-spacer" aria-hidden="true"></div>';
     return h;
-  }
-  function page(key){
-    const b = el('div', 'sheet-body st-page');
-    b.dataset.stPage = key;
-    sheet.insertBefore(b, $id('finishes-body'));
-    return b;
   }
 
   /* ---- the attic: what's left of the old sheet, kept wired but unseen ---- */
@@ -223,7 +208,6 @@
      CARDS: the game's deck on the felt, and nothing else.
      DEALING: just felt, the deck at one side and a card's place at the
      other (the side the deck isn't on): each style deals one card across. */
-  const face = (rank, suit, cls) => '<div class="card ' + cls + '">' + cardInner({ rank, suit }) + '</div>';
   function stage(kind){
     let layersHTML = '';
     for (let i = 0; i < 6; i++) layersHTML += '<div class="card back small" style="--deck-layer:' + i + ';--ds-i:' + (5 - i) + '"></div>';
@@ -311,7 +295,6 @@
 
   /* ---- DEALING: each style deals one card across the felt ---- */
   const STY = typeof DealStyles !== 'undefined' ? DealStyles.STYLES : [];
-  const TIER = { common:'Common', uncommon:'Uncommon', rare:'Rare', epic:'Epic', legendary:'Legendary' };
   // the owner's call (round 5): a style's rarity is its own, never set
   try{ DealStyles.apply({ rarity:Object.fromEntries(STY.map(s => [s.id, s.tier])) }); }catch(e){}
   const inMix = id => { try{ return !!DealStyles.order.on[id]; }catch(e){ return id === 'flick'; } };

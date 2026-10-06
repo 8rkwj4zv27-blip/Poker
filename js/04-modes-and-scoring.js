@@ -1026,7 +1026,6 @@ const ARCADE_COMMENTARY = {
 /* The one text source. `context` carries only public quantities; nothing
    in it is derived from a card the player did not see. */
 function commentaryLine(id,context){
-  const c=context||{};
   switch (id){
     case 'sidePotWonNetLoss':   return 'Side pot won. Down on the hand.';
     case 'potChopped':          return 'Pot chopped. Stake returned.';
@@ -1580,7 +1579,6 @@ function devArcadeCommentary(id){
   const text=commentaryLine(id,{});
   if (text) setBanner(esc(text));
 }
-function devArcadeLuck(id){ devArcadeCommentary(id); }
 function devArcadeScenario(id){
   const scenario=DEV_ARCADE_SCENARIOS[id];
   if (!scenario) return;

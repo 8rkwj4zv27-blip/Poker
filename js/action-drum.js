@@ -35,7 +35,7 @@
   let faces = null, plates = [];
   let D = 0;                 // the drum's angle, degrees
   let slots = new Map();     // side element -> its angle on the drum
-  let current = 'play', shown = null, spinning = false, queued = null, raf = 0;
+  let current = 'play', shown = null, spinning = false, raf = 0;
 
   const elOf = k => k === 'play' ? faces.play : k === 'quick' ? faces.quick : k === 'deal' ? faces.deal : faces.award;
   function target(){

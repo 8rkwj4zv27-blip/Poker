@@ -21,8 +21,9 @@ reached `main`. Releases before v0.39.8 are recorded in
 - 23 finished labs and the 75 files only they used (23,606 lines) archived
   to the protected branch `checkpoint/labs-archive-2026-10`.
 
-## v0.64 — 5 October 2026
+## v0.64 — 5 and 6 October 2026
 
+- **v0.64.6** Dead code out, no change in play: the retired Hand Review panel's `showReview()` and three other uncalled functions, 12 unused inner helpers and 23 unused variables removed; stale code comments corrected.
 - **v0.64.5** Honest file names, no change in play: the game's controls (`wireUI()`) move from `08-dev-mode.js` to their own `09-controls.js`, and the live Career Hub stylesheet loses "lab" from its name (`career-hub-v2.css`).
 - **v0.64.4** Career hub: Abandon / Cash Out moves onto the paid ticket.
 - **v0.64.3** One cabinet: menu screens and Settings match the main menu's size.
