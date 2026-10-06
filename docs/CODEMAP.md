@@ -1,29 +1,31 @@
 # Code map
 
-Where things live, so a session can jump straight to the right file instead
-of searching. Read this once per session when the task isn't already
-pointing at a specific file. It is a map, not a spec — behaviour is defined
-by the code and by `CLAUDE.md`, not by this file. Last checked against the
-code: 5 October 2026 (v0.64.4). Line counts are approximate.
+The full detail, one section per file. Start with the one-page
+[`QUICKMAP.md`](QUICKMAP.md), then open only the section for the file
+you're changing (the headings are file names), rather than reading this
+whole. It is a map, not a spec: behaviour is defined by the code and by
+`CLAUDE.md`, not by this file. Last checked against the code: 6 October
+2026 (v0.64.6). Line counts are approximate.
 
 ## Load order (`index.html`, mirrored in `sw.js`)
 
 ```
 01-poker-math.js        02-support-systems.js   03-opponents.js
 04-modes-and-scoring.js 05-game-engine.js       06-presentation.js
-coin-world.js           coin-table.js           bank-load.js
-07-ui-wiring.js
+coin-world.js           coin-table.js           coin-bank.js
+bank-load.js            07-ui-wiring.js
 career-hub-live.js      career-motion-live.js   machine-wheel.js
 ticket-feed.js          table-intro.js
 08-dev-mode.js          09-controls.js          home-cast.js
 home-boot.js
-dashboard.js            crt.js                  finishes.js
+dashboard.js            table-room.js           enemy-cards.js
+knockout.js             crt.js                  finishes.js
 press-feel.js           showdown.js             event-tape.js
-dealer-deck.js
+dealer-deck.js          deal-styles.js          card-holder.js
 action-drum.js          knock-check.js          award-key.js
-card-holder.js          deal-styles.js          coach-set.js
-coach-talk.js           coach-brain.js          coach-lines.js
-coach-report.js         tutorial.js
+coach-set.js            coach-talk.js           coach-brain.js
+coach-lines.js          coach-report.js         tutorial.js
+workshop-rack.js        workshop.js
 ```
 
 Later files call into earlier ones freely; there's no module system, so
@@ -938,9 +940,11 @@ One focused check suite per feature area, run with plain `node`, no test
 framework. `node validation/<name>.js` prints pass/fail per assertion and a
 final count. **`npm test` runs every suite** (`validation/run-all.js`, about
 4 minutes; `npm run test:quick` skips the three long AI/coach simulations,
-about 20 seconds) and exits non-zero if any fails. Two suites guard the
+about 20 seconds) and exits non-zero if any fails. Three suites guard the
 whole game rather than a feature: `offline-list-checks.js` (every file
-`index.html` loads is precached by `sw.js` with the same `?v=` tag) and
+`index.html` loads is precached by `sw.js` with the same `?v=` tag),
+`version-checks.js` (`BUILD_VERSION`, `CACHE_NAME` and the newest
+`CHANGELOG.md` entry agree) and
 `hand-eval-truth-checks.js` (all 2,598,960 five-card hands against the
 published category totals). `npm run play-test`
 (`validation/tools/play-test.js`) plays real hands with real taps in an

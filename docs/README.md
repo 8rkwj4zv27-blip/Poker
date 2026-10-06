@@ -9,7 +9,8 @@ Last sorted: 6 October 2026 (v0.64.6).
 | Doc | What it is |
 | --- | --- |
 | [`../CLAUDE.md`](../CLAUDE.md) | The project's rules for every contributor, human or AI |
-| [`CODEMAP.md`](CODEMAP.md) | Which file owns what; Labs vs. production; test suites |
+| [`QUICKMAP.md`](QUICKMAP.md) | One page: which file owns what. Read first |
+| [`CODEMAP.md`](CODEMAP.md) | The detail, one section per file; Labs vs. production; test suites |
 | [`career/STATUS.md`](career/STATUS.md) | Current build and the one next Career task |
 | [`audit/PHASE0_BASELINE.md`](audit/PHASE0_BASELINE.md) | The audit baseline, and every backup branch with restore steps |
 | [`../validation/tools/README.md`](../validation/tools/README.md) | Browser, touch and play-test tools |

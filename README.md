@@ -30,7 +30,8 @@ validation/                                     test suites and QA tools
 docs/                                           design rules, plans and history
 ```
 
-Which file owns what: [docs/CODEMAP.md](docs/CODEMAP.md). Which docs are
+Which file owns what: [docs/QUICKMAP.md](docs/QUICKMAP.md) (one page), with
+the detail in [docs/CODEMAP.md](docs/CODEMAP.md). Which docs are
 current and which are history: [docs/README.md](docs/README.md).
 
 ## Run it locally
@@ -49,7 +50,7 @@ then open http://localhost:8765. Add `?dev` to the address for the DEV panel
 Every suite needs only Node (22 or later):
 
 ```
-npm test               # all 23 suites, about 4 minutes
+npm test               # all 24 suites, about 4 minutes
 npm run test:quick     # skips the three long AI/coach simulations, about 20 seconds
 npm run play-test      # plays real hands in an emulated iPhone at three sizes
 ```
@@ -72,7 +73,8 @@ contributor, human or AI: the design principles, what must never change
 - The dense, cluttered console is intentional. Do not make it a clean,
   conventional mobile UI.
 - No frameworks or dependencies without the owner's approval.
-- Small changes, each through a pull request with green tests.
+- Small changes, each through a pull request with green tests, keeping the
+  repo tidy as `CLAUDE.md`'s Housekeeping rules say.
 
 `docs/career/STATUS.md` states the current Career build and the next task.
 The pre-audit checkpoint and how to restore it are in

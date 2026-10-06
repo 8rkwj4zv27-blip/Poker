@@ -24,6 +24,10 @@ reached `main`. Releases before v0.39.8 are recorded in
   `checkpoint/old-branches-2026-10` and deleted, along with the branches
   already merged into `main`. Backups and restore steps are listed in
   `docs/audit/PHASE0_BASELINE.md`.
+- Housekeeping rules in `CLAUDE.md` to keep the repo tidy; a one-page
+  `docs/QUICKMAP.md` read before the long code map; a new suite,
+  `version-checks.js`, fails if `BUILD_VERSION`, `CACHE_NAME` and the
+  newest changelog entry disagree.
 
 ## v0.64 — 5 and 6 October 2026
 
