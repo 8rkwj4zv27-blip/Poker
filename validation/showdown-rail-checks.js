@@ -220,6 +220,7 @@ check('The isolated page mounts the real production table without live wiring',(
   assert.ok(/<script src="js\/06-presentation\.js(?:\?[^\"]+)?"><\/script>/.test(html));
   assert.ok(!html.includes('js/07-ui-wiring.js'));
   assert.ok(!html.includes('js/08-dev-mode.js'));
+  assert.ok(!html.includes('js/09-controls.js'));
   assert.ok(labSource.includes("fetch('index.html',{cache:'no-store'})"));
   assert.ok(labSource.includes("doc.querySelector('#table-screen')"));
   assert.ok(labSource.includes("location.protocol==='file:'"));

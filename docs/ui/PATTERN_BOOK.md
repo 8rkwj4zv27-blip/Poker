@@ -473,7 +473,7 @@ rack's back rows: the owner's picks from the Bank Load Lab
 
 The tabs on a Career ticket's bottom edge. They are part of the ticket
 stock, not machine keys. The owner approved the red tab in chat on
-5 Oct 2026. Styles are in `css/career-hub-v2-lab.css` (`.ch2-card-flip`) and
+5 Oct 2026. Styles are in `css/career-hub-v2.css` (`.ch2-card-flip`) and
 `css/career-hub-cabinet.css` (the row and the red tab).
 
 | Part | Rule | Class |

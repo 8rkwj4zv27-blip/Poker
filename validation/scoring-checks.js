@@ -373,7 +373,7 @@ check('4B', 'The decision evaluator and its hidden-card helpers are deleted', ()
 
 check('4B', 'No removed id survives anywhere in production, including the DEV panel', () => {
   ['js/04-modes-and-scoring.js', 'js/05-game-engine.js', 'js/06-presentation.js',
-   'js/07-ui-wiring.js', 'js/08-dev-mode.js'].forEach(file => {
+   'js/07-ui-wiring.js', 'js/08-dev-mode.js', 'js/09-controls.js'].forEach(file => {
     const src = fs.readFileSync(path.join(root, file), 'utf8')
       /* Strip block and line comments: the deleted awards are named in the
          comments that record WHY they were removed, and that record is the

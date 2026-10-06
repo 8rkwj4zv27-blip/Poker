@@ -284,7 +284,8 @@ const HomeBoot = (() => {
   return { start, replay, config: cfg, finish: () => finish(false), get running(){ return !!run; } };
 })();
 
-/* wireUI() is queued for DOMContentLoaded by 08-dev-mode.js (loaded just
-   before this file), so queuing after it runs the boot on a built menu. */
+/* wireUI() is queued for DOMContentLoaded by 09-controls.js (loaded just
+   before this file, after 08-dev-mode.js), so queuing after it runs the
+   boot on a built menu. */
 if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', () => HomeBoot.start());
 else HomeBoot.start();

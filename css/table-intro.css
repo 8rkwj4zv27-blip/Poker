@@ -37,7 +37,7 @@
 
 /* ---- 2. TICKET: the Career ticket itself crosses the felt ----
    Built from the Hub's own ticket classes (.ch2-card / .ch2-paper and the
-   per-venue data-venue rules in css/career-hub-v2-lab.css, which the live
+   per-venue data-venue rules in css/career-hub-v2.css, which the live
    game already loads), resized for the felt and taken out of the rack's
    positioning. */
 .ti-ticket-lane{
