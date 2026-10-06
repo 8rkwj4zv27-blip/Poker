@@ -20,6 +20,10 @@ reached `main`. Releases before v0.39.8 are recorded in
   blue, purple and yellow face sets kept as originals in `art-source/faces/`.
 - 23 finished labs and the 75 files only they used (23,606 lines) archived
   to the protected branch `checkpoint/labs-archive-2026-10`.
+- GitHub tidy: ten superseded branches kept on the protected branch
+  `checkpoint/old-branches-2026-10` and deleted, along with the branches
+  already merged into `main`. Backups and restore steps are listed in
+  `docs/audit/PHASE0_BASELINE.md`.
 
 ## v0.64 — 5 and 6 October 2026
 

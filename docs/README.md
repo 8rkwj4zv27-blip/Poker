@@ -2,7 +2,7 @@
 
 Which documents describe the game as it is today, and which are history.
 When two disagree, the code wins, then `CLAUDE.md`, then the newest doc.
-Last sorted: 5 October 2026 (v0.64.4).
+Last sorted: 6 October 2026 (v0.64.6).
 
 ## Start here
 
@@ -11,7 +11,7 @@ Last sorted: 5 October 2026 (v0.64.4).
 | [`../CLAUDE.md`](../CLAUDE.md) | The project's rules for every contributor, human or AI |
 | [`CODEMAP.md`](CODEMAP.md) | Which file owns what; Labs vs. production; test suites |
 | [`career/STATUS.md`](career/STATUS.md) | Current build and the one next Career task |
-| [`audit/PHASE0_BASELINE.md`](audit/PHASE0_BASELINE.md) | The audit baseline, and the pre-audit checkpoint with restore steps |
+| [`audit/PHASE0_BASELINE.md`](audit/PHASE0_BASELINE.md) | The audit baseline, and every backup branch with restore steps |
 | [`../validation/tools/README.md`](../validation/tools/README.md) | Browser, touch and play-test tools |
 
 ## Rules and references (current)
