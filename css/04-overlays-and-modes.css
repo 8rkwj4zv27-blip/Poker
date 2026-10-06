@@ -630,11 +630,12 @@ body:has(#table-screen.hidden) .arcade-bank-flight{
   background:#29291F; color:#C8BD92; font-size:7px; line-height:1.35;
   box-shadow:0 4px 0 #15150F,0 6px 0 #090605,inset 2px 2px 0 #4A4B39,inset -2px -2px 0 #171710;
 }
-/* CONTINUE sits under QUICK DEAL; HAND RANKINGS stands the full height
-   beside the pair so the bay has no hole. */
+/* CONTINUE sits under QUICK DEAL; HAND RANKINGS and SAVE DATA stand the
+   full height beside the pair so the bay has no hole. */
 #home .home-row #home-continue{ grid-column:1; grid-row:2; color:#F2D16B; }
 #home .home-row #home-continue small{ display:block; margin-top:4px; color:#9C9474; font-size:6px; letter-spacing:.04em; }
 #home .home-row.has-continue #open-rankings{ grid-column:2; grid-row:1 / span 2; }
+#home .home-row.has-continue #open-save{ grid-column:3; grid-row:1 / span 2; }
 #home .home-row.has-continue .btn-secondary{ min-height:44px; }
 #home .home-row .btn-secondary:active{
   transform:translateY(4px);

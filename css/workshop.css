@@ -34,6 +34,7 @@ html[data-st-hints="off"] .st-hint{ display:none; }
 #settings-sheet .st-ctl .segmented{ margin:0; }
 #settings-sheet .st-row:not(.st-row--below) .st-ctl .segmented button{ min-width:66px; }
 #settings-sheet .st-row--below .st-ctl .segmented{ width:100%; }
+#settings-sheet .st-row--below .st-ctl .sheet-keys{ flex:1 1 auto; }
 .st-note{ padding:10px 0 2px; font-family:var(--font-px); font-size:12px; line-height:1.4; color:#8E896B;
   border-top:2px solid rgba(0,0,0,.42); box-shadow:inset 0 2px 0 rgba(255,255,255,.035); }
 .st-note b{ color:#E9DDAE; font-weight:400; }

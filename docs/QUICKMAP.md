@@ -2,7 +2,7 @@
 
 The short version of [`CODEMAP.md`](CODEMAP.md). Read this first. Open
 `CODEMAP.md` only for the section about the file you are about to change
-(its headings are the file names). Last checked: 6 October 2026 (v0.64.6).
+(its headings are the file names). Last checked: 6 October 2026 (v0.65.0).
 
 ## How the game is put together
 
@@ -37,6 +37,7 @@ so the installed iPhone app plays offline. A file not in `index.html` and
 | `coach-set.js`, `coach-talk.js`, `coach-brain.js`, `coach-lines.js`, `coach-report.js` | P.I.P.: his TV, his voice, his judgement, his lines, his report |
 | `tutorial.js` | The first-run tour |
 | `workshop-rack.js`, `workshop.js` | Settings and the Workshop (skins) |
+| `save-data.js` | Settings → Save data: back up, restore, reset stats, start over |
 
 Stylesheets in `css/` share these names. `01-` to `06-` are the base
 layers, and `career-hub-cabinet.css` and `result-cabinet.css` lay out the
@@ -57,3 +58,6 @@ Hub and the end screens.
 `felt.settings`, `felt.stats`, `felt.table`, `felt.career`,
 `felt.career.table`, `felt.arcade`, `felt.finishes`,
 `felt.gameplay.metrics.v1`, `pip.coach`.
+
+A new saved key also joins `SaveData.KEYS` (`js/save-data.js`) so backups
+carry it; `save-data-checks.js` fails until it does.

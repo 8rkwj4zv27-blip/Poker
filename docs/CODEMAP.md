@@ -818,6 +818,36 @@ Settings is no longer a bottom sheet: it opens as that cabinet, at home or
 at a table.
 
 
+## `js/save-data.js` — Save data: back up, restore, reset (live, v0.65.0)
+
+A SAVE DATA plate at the foot of the Settings sheet (above Developer
+mode), and the main menu's SAVE DATA key (`#open-save`, the third key
+beside Quick Deal and Hand Rankings) opens Settings scrolled to it.
+Hidden at a table (`SaveData.refresh`, called by `refreshSettingsContext`
+in `07-ui-wiring.js`). Built from existing parts only: `st-row`,
+`sheet-keys`, `btn-secondary` / `btn-danger`, `showConfirmDialog`.
+- BACK UP: `SaveData.snapshot()` reads every key in `SaveData.KEYS` (the
+  QUICKMAP "Saved data" list) as it is into
+  `{format:'poker-faces-save', v:1, build, savedAt, data}`. SAVE FILE
+  hands a `.json` to the share sheet (`navigator.share`, files), or
+  downloads it where there is none; COPY CODE puts it on the clipboard as
+  `PF1:` + base64. `settings.saveExportedAt` drives "Last backed up".
+- RESTORE: OPEN FILE (a hidden file input) or PASTE CODE (clipboard, then
+  a prompt). `SaveData.parse` turns away anything that isn't a save (wrong
+  format or version, unknown keys, a malformed career, settings or
+  stats); a confirm shows what the save holds; `write` replaces every key,
+  clearing those the save doesn't have.
+- RESET STATS clears `STATS_KEYS` (`felt.stats`, `felt.arcade`,
+  `felt.gameplay.metrics.v1`). START OVER (two confirms) also clears the
+  Career, both table saves and `pip.coach`; settings and `felt.finishes`
+  stay.
+- After a restore or reset, `Store.freeze()` stops every later write and
+  the page reloads, so each part starts from what's saved.
+
+A new saved key must join `SaveData.KEYS`: `validation/save-data-checks.js`
+fails if the live code saves a key the backup leaves out.
+
+
 ## `js/tutorial.js` + `css/tutorial.css` — the tour (live, v0.62.0)
 
 The first-play walk round the table (`Tour`). The engine calls

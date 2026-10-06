@@ -220,6 +220,7 @@ function refreshSettingsContext(){
   $('save-progress').classList.toggle('hidden', !onTable);
   $('settings-reset').classList.toggle('hidden', !canReset);
   $('settings-table-section').classList.toggle('hidden', !onTable && !canReset);
+  if (typeof SaveData !== 'undefined') SaveData.refresh(onTable);
   const body = document.querySelector('#settings-sheet > .sheet-body');
   if (body) body.scrollTop = 0;
   const build = $('settings-build');

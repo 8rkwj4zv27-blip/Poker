@@ -29,6 +29,10 @@ reached `main`. Releases before v0.39.8 are recorded in
   `version-checks.js`, fails if `BUILD_VERSION`, `CACHE_NAME` and the
   newest changelog entry disagree.
 
+## v0.65 — 6 October 2026
+
+- **v0.65.0** Save data: back up your career, stats and settings to a file or a save code, restore them on a fresh install, reset your stats, or start over (Settings → Save data, or SAVE DATA on the main menu).
+
 ## v0.64 — 5 and 6 October 2026
 
 - **v0.64.7** New app icon: the happy face in indigo, in a gold frame whose corners follow the iPhone's icon shape.
