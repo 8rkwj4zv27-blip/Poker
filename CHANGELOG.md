@@ -33,6 +33,9 @@ reached `main`. Releases before v0.39.8 are recorded in
   Stale plans and audits (the 25 September visual audit, the P.I.P. audit
   and seven shipped plans) marked Historical; `career/STATUS.md` brought
   up to v0.66.1.
+- 8 more shipped labs and the 19 files only they used archived
+  (bank-load, end-screens, workshop-skins, pip-report, coach
+  brain/face/rig/voice); restore from `e64b215`.
 
 ## v0.66 — 6 October 2026
 

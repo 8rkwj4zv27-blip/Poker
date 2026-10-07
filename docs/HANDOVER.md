@@ -27,19 +27,20 @@ audit's complaints (dashboard rims, clipped result line, chip pile) are gone.
 - v0.66.0 Developer Mode hidden unless `?dev` is in the address.
 - v0.65.0 Save data: back up, restore, reset stats, start over.
 - v0.64.7 New app icon. Before it: the codebase audit (no game change).
-- 7 Oct (docs only): this handover note; stale docs marked Historical.
+- 7 Oct (no game change): this handover note; stale docs marked
+  Historical; 8 shipped labs archived (`CODEMAP.md`, "Archived labs").
 
 ## Open items (verified, not scheduled)
 
 - Career Hub on small iPhones (375x667, SE/8): BUY IN sits below the
   screen. Fine on the owner's Pro Max.
-- Eight shipped labs that no test reads are still in the repo (bank-load,
-  end-screens, workshop-skins, pip-report, coach-brain/face/rig/voice).
-  Archiving them ("Labs don't pile up" in `CLAUDE.md`) needs the owner's
-  go-ahead: removing files was refused by this session's permission check.
+- Stale code comments still name archived labs or say "not loaded by the
+  game" (`js/coach-set.js`, `js/coach-talk.js`, `js/coach-report.js`,
+  `css/coach-report.css`, `js/bank-load.js`). Fix them in the next release
+  that touches those files, not in a release of their own.
 - GitHub: about 27 merged and 19 unmerged `claude/` branches are still on
-  the remote, though `docs/audit/PHASE0_BASELINE.md` says the tidy deleted
-  them. Deleting branches is the owner's call.
+  the remote. The owner chose (7 Oct) to leave them: several unmerged
+  ones are not backed up. Don't delete branches unasked.
 - Rare engine errors under heavy CPU load at 320x700 (audit finding F1,
   `PHASE0_BASELINE.md`): never pinned or fixed.
 - Unmeasured: Career economy numbers (`docs/career/STATUS.md`).
