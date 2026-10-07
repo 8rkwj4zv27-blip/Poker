@@ -56,3 +56,8 @@ saying so. They stay at their paths because code comments link to them.
 | [`ui/DASHBOARD_V2.md`](ui/DASHBOARD_V2.md), [`ui/DASHBOARD_V2_RULES.md`](ui/DASHBOARD_V2_RULES.md), [`ui/DASHBOARD_V2_HANDOVER.md`](ui/DASHBOARD_V2_HANDOVER.md) | Dashboard V2, release 1, v0.40.2 |
 | [`ui/handover/`](ui/handover/README.md) | The visual-system handover of 23 August 2026, before it reached the game |
 | [`career/HISTORY.md`](career/HISTORY.md) | Every completed Career milestone, dated |
+
+## Active visual experiment
+
+[Shallow perspective study](ui/PERSPECTIVE_STUDY.md): lab-only camera and
+construction exploration based on v0.66.1. No production art decision.

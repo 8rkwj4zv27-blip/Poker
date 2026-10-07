@@ -1,0 +1,35 @@
+/* Study geometry only. No replacement palette or button-family finishes. */
+.ps-surface,.ps-front{display:none;pointer-events:none}
+html[data-ps-view=perspective] #felt{background:none;border-color:transparent;box-shadow:none}
+html[data-ps-view=perspective] #felt::before,html[data-ps-view=perspective] #felt::after{display:none}
+html[data-ps-view=perspective] .ps-surface{
+ display:block;position:absolute;inset:-3px -5px 0;border-radius:52px;
+ transform:perspective(2000px) rotateX(20deg);transform-origin:50% 100%;
+ background:radial-gradient(ellipse 72% 50% at 50% 57%,rgba(255,236,190,.1),transparent 76%),repeating-conic-gradient(var(--felt-1) 0% 25%,var(--felt-2) 0% 50%) 0 0/4px 4px;
+ border:2px solid var(--px-ink);box-shadow:inset 0 4px 0 #0005,inset 0 -4px 0 #0005,0 12px 0 var(--felt-2),0 15px 0 var(--px-ink);
+}
+html[data-ps-view=perspective] .ps-surface::before{content:'';position:absolute;inset:-10px;border-radius:60px;border:2px solid var(--px-ink);z-index:-1;background:linear-gradient(var(--felt-1) 0 14%,var(--felt-2) 14% 78%,var(--felt-2) 78%);box-shadow:0 7px 0 var(--px-ink)}
+html[data-ps-view=perspective] .ps-surface::after{content:'';position:absolute;inset:5px;border:2px dashed #0005;border-radius:45px}
+html[data-ps-view=perspective] #felt .seat:not(.you) .seat-card{box-shadow:4px 6px 0 var(--px-ink),6px 9px 0 #0004}
+html[data-ps-view=perspective] #felt .seat:not(.you) .seat-card::before{content:'';position:absolute;inset:-7px -2px auto 2px;height:7px;background:var(--theme-case-raised);border:2px solid var(--px-ink);transform:skewX(-24deg);transform-origin:bottom}
+html[data-ps-view=perspective] #board{perspective:600px}
+html[data-ps-view=perspective] #board > .card:not(.ps-land){transform:rotateX(18deg);box-shadow:0 4px 0 #0006}
+html[data-ps-view=perspective] #your-seat-dock::before,html[data-ps-view=perspective] #your-seat-dock::after{transform:perspective(1000px) rotateX(14deg);transform-origin:50% 100%}
+html[data-ps-view=perspective] #action-area{position:relative;z-index:9;padding-bottom:24px}
+html[data-ps-view=perspective] .ps-front{display:block;position:absolute;left:6px;right:6px;bottom:2px;height:20px;background:var(--theme-case-raised);border:2px solid var(--px-ink);border-radius:0 0 12px 12px;box-shadow:inset 0 3px 0 #0005,inset 0 -3px 0 #0006,0 4px 0 #0008}
+html[data-ps-view=perspective] .ps-front::after{content:'';position:absolute;left:43%;right:43%;top:8px;height:4px;background:var(--px-ink);box-shadow:0 2px 0 #fff1}
+.ps-press{animation:psKey 480ms steps(4,end)!important}
+@keyframes psKey{0%,100%{translate:0 0}22%,60%{translate:0 5px}}
+.ps-land{animation:psLand 700ms steps(10,end) both;animation-delay:var(--ps-delay)}
+@keyframes psLand{0%{translate:-18px -48px;rotate:-9deg;scale:.94;opacity:0}12%{opacity:1}68%{translate:0 2px;rotate:1deg;scale:1.02}84%{translate:0 -1px;rotate:0deg;scale:1}100%{translate:0 0}}
+.ps-tune{position:absolute!important;right:12px;top:10px;z-index:200;width:60px;min-height:44px;font:10px var(--font-hdr);background:var(--panel-2);color:var(--accent);border:2px solid var(--px-ink);box-shadow:0 3px 0 #0008}
+.ps-caption{position:absolute;left:14px;top:19px;z-index:190;font:8px var(--font-hdr);color:var(--accent);pointer-events:none}
+.ps-shade{position:absolute;inset:0;z-index:300;background:#0008;display:flex;align-items:flex-end}
+.ps-shade[hidden]{display:none}
+.ps-sheet{width:100%;box-sizing:border-box;background:var(--panel);color:var(--text);padding:18px;border:3px solid var(--px-ink);box-shadow:0 -4px 0 var(--accent);font:14px var(--font-body)}
+.ps-head{display:flex;align-items:center;gap:10px;justify-content:space-between}.ps-head h2{font:10px var(--font-hdr);line-height:1.8}
+.ps-sheet button{min-height:44px;border:2px solid var(--px-ink);background:var(--panel-2);color:var(--accent);font:10px var(--font-hdr);padding:10px;box-shadow:0 3px 0 #0008}
+.ps-head button{min-width:44px}.ps-options{display:flex;gap:8px;margin:18px 0}.ps-options button{flex:1}.ps-options button[aria-pressed=true]{outline:2px solid var(--accent)}.ps-demo{width:100%}.ps-sheet p{line-height:1.5}
+@media(prefers-reduced-motion:reduce){.ps-land,.ps-press{animation:none!important}}
+
+.ps-cloth{position:absolute;inset:0;background:inherit;border-radius:inherit;z-index:0;box-shadow:inset 0 4px 0 #0005,inset 0 -4px 0 #0005}

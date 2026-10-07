@@ -61,3 +61,9 @@ Hub and the end screens.
 
 A new saved key also joins `SaveData.KEYS` (`js/save-data.js`) so backups
 carry it; `save-data-checks.js` fails until it does.
+
+## Active perspective experiment
+
+`perspective-study-lab.html`, `js/perspective-study-lab-host.js`,
+`js/perspective-study-lab.js`, and `css/perspective-study-lab.css` are an
+isolated staged visual study; see `docs/ui/PERSPECTIVE_STUDY.md`.

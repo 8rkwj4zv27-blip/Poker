@@ -1022,3 +1022,10 @@ table (see `docs/ai/AI_PLAN.md`).
 - `docs/ui/handover/` — the visual-system handover of 23 August 2026,
   written before that work reached the game. Historical; `docs/README.md` lists which docs are current. To run
   the game locally see the top-level `README.md`.
+
+## perspective-study-lab.html
+
+Isolated v0.66.1 shallow perspective study. The host injects lab-only geometry
+and a disposable staged flop into the original page with volatile storage.
+The study script offers current/perspective, key press and card landing.
+No production entry point. Plan: `docs/ui/PERSPECTIVE_STUDY.md`.
