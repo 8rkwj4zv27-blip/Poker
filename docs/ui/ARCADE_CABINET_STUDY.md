@@ -40,7 +40,9 @@ Portable baked preview checked at 390×844, 390×667 and 320×700. Cabinets,
 community cards, pot readout and card holder remain separated; controls fit.
 Pointer and Space-key press/release, cabinet feedback, motion toggle, Escape
 close and table replay verified. Visible tap targets meet 44px minimum height.
-No browser console errors observed. Actual iPhone touch/performance remain
+A startup MutationObserver warning surfaced after reloading the baked preview
+(the same warning appeared in the previous lab); its source is unconfirmed.
+The composition and controls remained functional. Actual iPhone touch/performance remain
 unverified; the touch harness was not used because this session's browser
 policy requires all browser interaction through the CUA tool.
 
