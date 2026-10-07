@@ -1029,3 +1029,13 @@ Isolated v0.66.1 shallow perspective study. The host injects lab-only geometry
 and a disposable staged flop into the original page with volatile storage.
 The study script offers current/perspective, key press and card landing.
 No production entry point. Plan: `docs/ui/PERSPECTIVE_STUDY.md`.
+
+## arcade-cabinet-lab.html
+
+Full authored pixel-cabinet composition, independent of the game renderer.
+`js/arcade-cabinet-lab.js` owns integer raster geometry, native art loading,
+portrait tinting from the existing game mapping, adaptive scene layout and
+accessible DOM hit areas for press/release and cabinet/landing demos.
+`css/arcade-cabinet-lab.css` owns the lab controls; its host copies the
+volatile-storage loader. No production entry point.
+Plan: `docs/ui/ARCADE_CABINET_STUDY.md`.

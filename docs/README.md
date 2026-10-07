@@ -61,3 +61,6 @@ saying so. They stay at their paths because code comments link to them.
 
 [Shallow perspective study](ui/PERSPECTIVE_STUDY.md): lab-only camera and
 construction exploration based on v0.66.1. No production art decision.
+
+[Pixel arcade cabinet composition](ui/ARCADE_CABINET_STUDY.md): a larger
+2.5D pixel-art reconstruction experiment, ready for visual assessment.

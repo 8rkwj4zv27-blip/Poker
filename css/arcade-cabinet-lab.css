@@ -1,0 +1,17 @@
+/* The canvas is an authored pixel scene; DOM keys provide accessible input. */
+html[data-cc-study=on] #app{position:relative;isolation:isolate;width:100%;max-width:none;padding:0;overflow:hidden;background:#281923}
+#cc-study{position:absolute;inset:0;overflow:hidden;touch-action:manipulation;color:#eee5cf;background:#281923}
+#cc-art{position:absolute;inset:0;width:100%;height:100%;image-rendering:pixelated;pointer-events:none}
+#cc-study .cc-hit{position:absolute;margin:0;padding:0;border:0!important;border-radius:0;background:transparent!important;box-shadow:none!important;transform:none!important;min-height:44px;color:transparent;touch-action:manipulation}
+#cc-study .cc-hit:focus-visible{outline:2px dashed #f2d78a;outline-offset:-4px}
+#cc-study .cc-tune{position:absolute;right:12px;top:7px;min-width:58px;min-height:44px;border:2px solid #110e16;border-radius:0;background:#44232e;color:#eee5cf;font:8px var(--font-hdr);box-shadow:inset 0 2px 0 #97616a,0 3px 0 #110e16}
+#cc-study .cc-tune:active{translate:0 2px}
+.cc-live{position:absolute;clip-path:inset(50%);width:1px;height:1px;overflow:hidden;white-space:nowrap}
+.cc-loading{position:absolute;inset:35% 12px auto;background:#281923;padding:24px 10px;text-align:center;font:9px var(--font-hdr);line-height:2;border:2px solid #c5a45b}
+.cc-shade{position:absolute;inset:0;background:#110e16b3;display:flex;align-items:flex-end;z-index:5}
+.cc-shade[hidden]{display:none}
+.cc-sheet{box-sizing:border-box;width:100%;max-height:92%;overflow:auto;overscroll-behavior:contain;background:#38222c;border:3px solid #110e16;border-top:3px solid #c5a45b;padding:18px;color:#eee5cf;font:16px var(--font-body);box-shadow:inset 0 2px 0 #97616a}
+.cc-sheet-head{display:flex;align-items:center;justify-content:space-between;gap:8px}.cc-sheet h2{font:10px var(--font-hdr);line-height:1.7;margin:0}.cc-sheet p{line-height:1.45;margin:16px 0}
+.cc-sheet button{min-height:44px;padding:12px 9px;background:#231b23;color:#eee5cf;border:2px solid #110e16;border-radius:0;font:8px var(--font-hdr);box-shadow:inset 0 2px 0 #6a4550,0 3px 0 #110e16}
+.cc-close{min-width:44px;font-size:16px!important}.cc-options{display:flex;gap:10px;margin:18px 0}.cc-options button{flex:1}.cc-options [aria-pressed=true]{outline:2px solid #c5a45b;outline-offset:-4px}
+.cc-replay,.cc-deal{width:100%;margin-bottom:12px}.cc-sheet .cc-note{color:#b9a299;font-size:14px;margin-bottom:0}

@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#130d10">
+  <link rel="icon" href="data:,">
+  <title>Poker Faces · Pixel arcade cabinet study</title>
+  <style>
+    html,body{height:100%;margin:0;overflow:hidden;background:#130d10}
+    #ps-game{position:fixed;inset:0;margin:auto;width:min(100%,430px);height:100%;border:0;display:block}
+    #ps-error{position:fixed;inset:auto 20px 20px;color:#eee0bd;font:16px monospace}
+  </style>
+</head>
+<body>
+  <iframe id="ps-game" title="Poker Faces pixel arcade cabinet study" allow="autoplay"></iframe>
+  <script type="application/json" id="lab-inject">{"css":["css/arcade-cabinet-lab.css"],"js":["js/arcade-cabinet-lab.js"],"v":"1"}</script>
+  <script src="js/arcade-cabinet-lab-host.js?v=1"></script>
+</body>
+</html>

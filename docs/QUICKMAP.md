@@ -67,3 +67,6 @@ carry it; `save-data-checks.js` fails until it does.
 `perspective-study-lab.html`, `js/perspective-study-lab-host.js`,
 `js/perspective-study-lab.js`, and `css/perspective-study-lab.css` are an
 isolated staged visual study; see `docs/ui/PERSPECTIVE_STUDY.md`.
+
+`arcade-cabinet-lab.html` and its host/script/styles compose a full pixel
+arcade-cabinet scene. Plan: `docs/ui/ARCADE_CABINET_STUDY.md`. Lab only.
