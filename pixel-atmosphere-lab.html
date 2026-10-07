@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#130d10">
+  <link rel="icon" href="data:,">
+  <title>Poker Faces · Pixel atmosphere experiment</title>
+  <style>
+    html,body{height:100%;margin:0;overflow:hidden;background:#130d10}
+    #pal-game{position:fixed;inset:0;margin:auto;width:min(100%,430px);height:100%;border:0;display:block}
+    #pal-error{position:fixed;inset:auto 20px 20px;color:#eee0bd;font:16px monospace}
+  </style>
+</head>
+<body>
+  <iframe id="pal-game" title="Poker Faces visual experiment" allow="autoplay"></iframe>
+  <script type="application/json" id="lab-inject">{"css":["css/pixel-atmosphere-lab.css"],"js":["js/pixel-atmosphere-lab.js"],"v":"1"}</script>
+  <script src="js/pixel-atmosphere-lab-host.js?v=1"></script>
+</body>
+</html>

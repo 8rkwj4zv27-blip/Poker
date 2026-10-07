@@ -926,6 +926,17 @@ hint (`checkOrientation()`), then calls `initHeroFaces()` and
 file leaves a game whose buttons do nothing. It was the bottom of
 `08-dev-mode.js` until v0.64.5 (audit finding F2), moved unchanged.
 
+## `pixel-atmosphere-lab.html` — Pixel atmosphere experiment (proposal)
+
+`js/pixel-atmosphere-lab-host.js` loads the v0.66.1 game copy, with volatile
+storage and service-worker registration disabled. `js/pixel-atmosphere-lab.js`
+owns the in-game TUNE sheet, current / refined / crafted comparison, Back Room
+and High Roller atmosphere, guided check/call demonstration and normal-AI
+option. `css/pixel-atmosphere-lab.css` owns candidate finishes and restrained
+motion. A static, two-pixel canvas draws cloth, light and rail at the actual
+viewport size; it repaints only on resize or a finish change. No new file is
+linked by the live game or precached. See `ui/PIXEL_ATMOSPHERE_LAB.md`.
+
 ## Labs vs. production — do not confuse the two
 
 Every `*-lab.html` page in the root (19 of them after the 5 Oct 2026

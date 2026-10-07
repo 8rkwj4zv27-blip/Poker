@@ -1,0 +1,76 @@
+/* Candidate recipes. Nothing here is loaded by index.html or the PWA.
+   No artwork replacement, geometry migration or changes to poker. */
+
+/* The controls are a service key and an in-game sheet, not a mock phone. */
+.pal-key{position:fixed;z-index:210;left:max(14px,env(safe-area-inset-left));top:max(178px,calc(env(safe-area-inset-top) + 178px));min-width:58px;min-height:44px;padding:8px;border:2px solid #080a08;border-top-color:#b59b6f;border-radius:3px;background:#292820;color:#f2ddac;font:8px var(--font-hdr);box-shadow:0 3px 0 #070909;cursor:pointer}
+.pal-key::before{content:'';display:inline-block;width:5px;height:5px;background:#d4b76c;margin-right:6px;box-shadow:0 1px 0 #080a08}
+.pal-shade{position:fixed;inset:0;z-index:220;background:#070909b8;display:flex;align-items:flex-end}
+.pal-shade[hidden]{display:none}
+.pal-sheet{width:100%;max-height:85%;overflow:auto;box-sizing:border-box;padding:18px 16px max(18px,env(safe-area-inset-bottom));background:#1e2420;border:3px solid #050807;border-top-color:#a08b5d;border-radius:12px 12px 0 0;box-shadow:inset 0 3px 0 #3b493b;color:#eee0bb;font-family:var(--font-px)}
+.pal-head{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:12px}
+.pal-head h2{font:10px/1.8 var(--font-hdr);margin:0;color:#f0d8a2}
+.pal-sheet p{font-size:16px;line-height:1.25;margin:8px 0 16px;color:#b9c5b6}
+.pal-label{font:8px/1.6 var(--font-hdr);color:#dec58f;margin:16px 0 8px}
+.pal-options{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+.pal-options.pal-two{grid-template-columns:repeat(2,minmax(0,1fr))}
+.pal-sheet button{min-height:48px;padding:10px 7px;border:2px solid #080c09;border-top-color:#71816d;border-radius:3px;box-shadow:0 3px 0 #080c09;background:#3c5143;color:#e9e6ce;font:8px/1.5 var(--font-hdr);cursor:pointer}
+.pal-sheet button[aria-pressed="true"]{background:#dbba6a;color:#211d13;border-top-color:#f3dea7}
+.pal-sheet .pal-close{min-width:48px;background:#ddd0aa;color:#28261c;font-size:18px}
+.pal-sheet .pal-play{width:100%;margin-top:16px;background:#d6b66c;color:#231e12}
+.pal-note{margin-top:12px;font-size:14px;color:#a6b3a2}
+.pal-material{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;border-radius:inherit;z-index:0;image-rendering:pixelated}
+.pal-room{position:absolute;left:50%;top:35%;transform:translate(-50%,-50%);z-index:2;white-space:nowrap;pointer-events:none;padding:7px 18px 6px;border:2px solid #100e0e;border-top-color:#725747;border-radius:2px;background:#271b1b;color:#c4aa82;box-shadow:0 3px 0 #0b1110;font:7px/1.3 var(--font-hdr);letter-spacing:.08em}
+.pal-room::before,.pal-room::after{content:'';position:absolute;top:10px;width:3px;height:3px;background:#937555;box-shadow:0 1px 0 #0b0c0b}
+.pal-room::before{left:5px}.pal-room::after{right:5px}
+[data-pal-room="high"] .pal-room{background:#15191c;color:#d7c697;border-top-color:#aa9565}
+[data-pal-look="current"] .pal-material,[data-pal-look="current"] .pal-room,.results-mode .pal-material,.results-mode .pal-room{display:none}
+.felt:has(#showdown-inspection-lane:not(:empty)) .pal-room{display:none}
+
+/* A: closer to the approved Emerald case, richer contact and less mesh. */
+:root[data-pal-look="refined"]{--pal-case:#243a2e;--pal-raised:#3d5942;--pal-hi:#7b8e60;--pal-lo:#0c1914;--pal-metal:#ba9c5f;--pal-edge:#6e7650;--pal-key:#537459;--pal-fold:#ab5851;--pal-call:#d9bc70;--pal-cloth:#224b37;--pal-glass:#0a1310}
+:root[data-pal-look="refined"][data-pal-room="high"]{--pal-case:#17292b;--pal-raised:#2c4446;--pal-hi:#7a8b7a;--pal-lo:#071316;--pal-metal:#c7b67c;--pal-edge:#778278;--pal-key:#476966;--pal-fold:#9b555a;--pal-call:#dac995;--pal-cloth:#173f3a;--pal-glass:#081214}
+
+/* B: velvet-and-enamel machinery; more intentional mass and pixel metal. */
+:root[data-pal-look="crafted"]{--pal-case:#351e26;--pal-raised:#653541;--pal-hi:#a06b67;--pal-lo:#170d13;--pal-metal:#c9a56a;--pal-edge:#997146;--pal-key:#516855;--pal-fold:#a85750;--pal-call:#dfbd73;--pal-cloth:#214b37;--pal-glass:#0d1010}
+:root[data-pal-look="crafted"][data-pal-room="high"]{--pal-case:#171d24;--pal-raised:#303d46;--pal-hi:#899a96;--pal-lo:#070d13;--pal-metal:#d2c28e;--pal-edge:#a69465;--pal-key:#536f70;--pal-fold:#9d5962;--pal-call:#d8c591;--pal-cloth:#153e3b;--pal-glass:#080e12}
+
+:root:not([data-pal-look="current"])[data-pal-look] #table-screen{background:#0c1010}
+:root:not([data-pal-look="current"])[data-pal-look] .felt{background:var(--pal-cloth);border-color:#080c0b;box-shadow:0 7px 0 #050908,inset 0 3px 0 #0a1711}
+:root:not([data-pal-look="current"])[data-pal-look] .felt::before{background:#131817;border-color:#070c0a;box-shadow:0 5px 0 #050908}
+:root:not([data-pal-look="current"])[data-pal-look] .felt::after{display:none}
+:root:not([data-pal-look="current"])[data-pal-look] #app .dash-frame{--dash-lo:var(--pal-lo);--dash-mid-hi:var(--pal-raised);--dash-mid-lo:var(--pal-case);--theme-case-raised:var(--pal-raised);--theme-case-hi:var(--pal-hi);--machine-case:var(--pal-case);--dash-glow:4px}
+:root:not([data-pal-look="current"])[data-pal-look] #app .dash-frame::before{border-radius:12px;background:var(--pal-raised);box-shadow:inset 2px 2px 0 var(--pal-hi),inset 4px 4px 0 var(--pal-raised),inset -3px -3px 0 var(--pal-lo),0 5px 0 #060909}
+:root[data-pal-look="crafted"] #app .dash-frame::before{background:linear-gradient(180deg,var(--pal-edge) 0 3px,var(--pal-raised) 3px calc(100% - 5px),var(--pal-lo) calc(100% - 5px));box-shadow:inset 2px 0 0 var(--pal-edge),inset -2px 0 0 var(--pal-lo),inset 5px 5px 0 var(--pal-raised),0 5px 0 #050708}
+:root:not([data-pal-look="current"])[data-pal-look] #app .dash-frame::after{border-width:2px;border-radius:8px;filter:none}
+:root:not([data-pal-look="current"])[data-pal-look] #app .dash-frame #hud-frame,
+:root:not([data-pal-look="current"])[data-pal-look] #app .dash-frame-base .action-console{background:linear-gradient(90deg,#ffffff04 0 2px,transparent 2px calc(100% - 2px),#00000022 calc(100% - 2px)),var(--pal-case)}
+:root:not([data-pal-look="current"])[data-pal-look] #app .dash-frame[data-rim] #hud-frame{box-shadow:inset 0 3px 0 color-mix(in srgb,var(--dash-lamp) 25%,var(--pal-case))}
+:root:not([data-pal-look="current"])[data-pal-look] #app .dash-bay{border-radius:3px;background-color:var(--pal-glass);box-shadow:inset 0 4px 0 #040707,inset 3px 0 0 #080b0b,0 2px 0 var(--pal-edge)}
+:root:not([data-pal-look="current"])[data-pal-look] .seat.ec-seat .seat-card{--ec-glow:3px;--ec-glow-a:35%;border-radius:3px;background:linear-gradient(180deg,color-mix(in srgb,var(--ec-own) 24%,var(--pal-raised)) 0 3px,transparent 3px),color-mix(in srgb,var(--ec-own) 16%,var(--pal-case));border-color:color-mix(in srgb,var(--ec-own) 30%,var(--pal-hi));box-shadow:inset 2px 0 0 #ffffff0d,inset -2px -2px 0 #00000050,0 4px 0 var(--pal-lo),0 8px 0 #03080799}
+:root:not([data-pal-look="current"])[data-pal-look] .seat.ec-seat .seat-card::after{filter:none}
+:root:not([data-pal-look="current"])[data-pal-look] .seat.ec-seat .seat-name{color:#e5d9bb;background:#101514;border-bottom:1px solid var(--pal-metal);box-shadow:inset 0 2px 0 #040806}
+:root:not([data-pal-look="current"])[data-pal-look] .seat.ec-seat .avatar-wrap{box-shadow:0 2px 0 #080c0d,inset 2px 2px 0 #ffffff13,inset -2px -2px 0 #00000021}
+:root:not([data-pal-look="current"])[data-pal-look] .pot-chip{background:#101412;border-color:var(--pal-metal);box-shadow:inset 0 2px 0 #ffffff09,0 3px 0 #07110e;border-radius:2px}
+:root:not([data-pal-look="current"])[data-pal-look] .pot-chip .pot-word{color:#c1b18a}
+:root:not([data-pal-look="current"])[data-pal-look] .board .card:not(.back):not(.card-turning){box-shadow:inset 0 2px 0 #fff9e6,inset -2px -2px 0 #d5cdb5,0 2px 0 #102118,0 5px 0 #08100d7a}
+:root:not([data-pal-look="current"])[data-pal-look] #hud-mid .seat.you .seat-cards:not(.sd-shown) .card:not(.back):not(.card-turning){box-shadow:inset 0 2px 0 #fff9e6,inset -2px 0 0 #d5cdb5}
+:root:not([data-pal-look="current"])[data-pal-look] #app .actions-row .btn-fold{background:var(--pal-fold)}
+:root:not([data-pal-look="current"])[data-pal-look] #app .actions-row .btn-check,
+:root:not([data-pal-look="current"])[data-pal-look] #app .actions-row .btn-call{background:var(--pal-call)}
+:root:not([data-pal-look="current"])[data-pal-look] #app .actions-row .btn-raise{background:var(--pal-key)}
+:root:not([data-pal-look="current"])[data-pal-look] #app .actions-row button{border:2px solid #100f0e;border-radius:3px;box-shadow:inset 0 2px 0 #ffffff40,inset 2px 0 0 #ffffff12,inset -2px -3px 0 #00000024,0 4px 0 #100d0e,0 6px 0 #070b0a;color:#1e2016}
+:root[data-pal-look="crafted"] #app .actions-row button{box-shadow:inset 0 3px 0 #ffffff40,inset 3px 0 0 #ffffff10,inset -3px -4px 0 #00000030,0 4px 0 #180f12,0 6px 0 #080b0c}
+:root:not([data-pal-look="current"])[data-pal-look] .raise-panel{background:linear-gradient(180deg,var(--pal-raised) 0 3px,var(--pal-case) 3px);border:3px solid var(--pal-lo);border-top-color:var(--pal-metal);outline:none;border-radius:4px;box-shadow:inset 2px 0 0 var(--pal-raised),inset -2px -2px 0 var(--pal-lo),0 5px 0 #070a09}
+:root:not([data-pal-look="current"])[data-pal-look] .raise-panel input[type=range]::-webkit-slider-thumb{background:repeating-linear-gradient(90deg,transparent 0 5px,#00000018 5px 7px),var(--pal-metal);border-radius:2px;box-shadow:inset 2px 2px 0 #efe0b9,inset -2px -2px 0 #765e3a,0 4px 0 #070b09}
+:root:not([data-pal-look="current"])[data-pal-look] .raise-panel input[type=range]::-moz-range-thumb{background:var(--pal-metal);border-radius:2px}
+
+/* Mass without an extra layer of wobble: reuse the real press engine. */
+:root:not([data-pal-look="current"])[data-pal-look] [data-pf="big"]{--pf-t:4px;--pf-o1:-1px;--pf-o2:1px;--pf-o3:0px;--pf-ms:220ms}
+:root:not([data-pal-look="current"])[data-pal-look] [data-pf="std"]{--pf-t:3px;--pf-o1:-1px;--pf-o2:0px;--pf-o3:0px;--pf-ms:180ms}
+:root:not([data-pal-look="current"])[data-pal-look] .raise-panel{transition:transform .22s steps(6,end),opacity .12s steps(2,end);transform-origin:50% 100%}
+:root:not([data-pal-look="current"])[data-pal-look] .pal-arrive{animation:palCardLand 260ms steps(1,end)}
+@keyframes palCardLand{0%{translate:0 -2px}30%{translate:0 1px}65%,100%{translate:0 0}}
+:root[data-pal-still="true"] .pal-arrive,:root[data-motion="off"] .pal-arrive{animation:none}
+@media(prefers-reduced-motion:reduce){.pal-arrive{animation:none}}
+@media(max-height:780px){.pal-room{top:86%;font-size:6px;padding:6px 12px}.pal-key{top:250px}}
+@media(max-width:350px){.pal-key{top:250px;min-width:54px}.pal-room{top:86%;font-size:6px;padding:6px 12px}.pal-sheet{padding-inline:12px}.pal-sheet button{font-size:7px}}

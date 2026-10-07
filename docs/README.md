@@ -38,6 +38,7 @@ Last sorted: 6 October 2026 (v0.64.6).
 | [`ui/SHOWDOWN_PLAN.md`](ui/SHOWDOWN_PLAN.md) | Showdown, and the Showdown Lab pattern |
 | [`ui/TABLE_ROOM_PLAN.md`](ui/TABLE_ROOM_PLAN.md) | Table room (v0.52) |
 | [`ui/VISUAL_AUDIT.md`](ui/VISUAL_AUDIT.md) | 25 September visual audit: proposals, not approvals |
+| [`ui/PIXEL_ATMOSPHERE_LAB.md`](ui/PIXEL_ATMOSPHERE_LAB.md) | Whole-table pixel material and venue experiment; lab only, awaiting review |
 
 ## Historical (shipped; kept as the record)
 

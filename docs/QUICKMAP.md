@@ -48,6 +48,7 @@ Hub and the end screens.
 | Where | What |
 | --- | --- |
 | `*-lab.html` (root) and their `*-lab*.js/css` | Labs: prototyping pages, never shipped. Finished ones are archived on `checkpoint/labs-archive-2026-10` |
+| `pixel-atmosphere-lab.html` + `js/pixel-atmosphere-lab*.js` + `css/pixel-atmosphere-lab.css` | Isolated table-material / venue comparison; current and two candidates, volatile saves |
 | `pattern-book.html`, `docs/ui/PATTERN_BOOK.md` | The visual rule book |
 | `validation/*.js` | `npm test` runs them all; one suite per feature. `validation/tools/` holds the play-test and the touch harness |
 | `art-source/` | The owner's original art; the game does not load it |
