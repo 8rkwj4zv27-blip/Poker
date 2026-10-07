@@ -1,5 +1,7 @@
 # Showdown pass: the end of a hand
 
+> **Historical.** The showdown shipped in v0.42.0 (27 September 2026). The phone-first lab pattern it started is in `CLAUDE.md` ("Visual labs") and `showdown-lab.html`. The code, `docs/CODEMAP.md` and `docs/HANDOVER.md` describe the game today. Index of current docs: `docs/README.md`.
+
 The end of a hand, from the moment betting closes to the next deal, is
 built as a set of beats with choices, the way the Enemy Cards were ordered.
 Written 27 Sep 2026. Presentation only: pot building (`computePots`), the

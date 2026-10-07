@@ -87,6 +87,24 @@ app on a phone). `showdown-lab.html` + `js/showdown-lab-host.js` +
 `js/showdown-lab.js` are the pattern to copy. Check it in an emulated iPhone
 with real touch (`validation/tools/touch-harness.js`) before sending.
 
+## Handover note (read first, update last)
+
+`docs/HANDOVER.md` is one screen: the build, where the game is, recent
+changes, open items, what's parked and what's next.
+
+- **Start of every session:** read it before anything else, and before
+  telling the owner where the game is. Plan docs, audits and old "Next"
+  sections are dated snapshots: anything they propose is only current if
+  the handover repeats it. Before repeating a claim from any other doc,
+  check it against the code or `git log` since that doc's date.
+- **End of every change, in the same pull request:** update it. Bump the
+  build line on a release, add one line to Recent changes (drop the
+  oldest past five), and correct Open items, Parked and Next. Replace,
+  don't append. `version-checks.js` fails if its build line drifts from
+  `BUILD_VERSION`.
+- **Retire what you supersede:** when a change makes a plan or audit
+  out of date, give it the Historical banner in the same pull request.
+
 ## Codebase map
 
 Before searching the codebase cold, read `docs/QUICKMAP.md` (one page:
@@ -125,8 +143,9 @@ maps, not specs: the code and this file remain authoritative.
 
 ## Career mode continuity
 
-Before Career work, read `docs/career/STATUS.md` first — it's short, and
-states the current build and the one concrete Immediate next task. Only
+Before Career work, read `docs/career/STATUS.md` after the handover note —
+it's short, and states what's shipped in Career and its Immediate next
+task. Only
 read `docs/career/CAREER_DESIGN.md` (product rules/economy) or
 `docs/career/BUILD_PLAN.md` (phase sequence and scope) when the task
 actually touches those — most presentation, polish, or bug-fix work needs

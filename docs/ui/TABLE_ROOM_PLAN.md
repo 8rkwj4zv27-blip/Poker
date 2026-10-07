@@ -1,5 +1,7 @@
 # Table room: the crowded table (plan)
 
+> **Historical.** Table room shipped in v0.52.0 (28 September 2026). Of its "Next": the tidier settings menu shipped in v0.60; the bank spilling off the screen was never reproduced, and goes into `docs/HANDOVER.md` if the owner sees it again. The code, `docs/CODEMAP.md` and `docs/HANDOVER.md` describe the game today. Index of current docs: `docs/README.md`.
+
 ## The worry (owner, 28 Sep 2026)
 
 With a big enemy bet, or all five shared cards out and the chips coming

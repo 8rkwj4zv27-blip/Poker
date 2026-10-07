@@ -254,8 +254,8 @@ words and a lesson.
 
 ## Parked, and what's next
 
-- **Now**: the owner is playing v0.57.3 and will send notes. Fix what they
-  report: small, tested, into the lab, into the game when they say.
+- **Now**: see `docs/HANDOVER.md` (Next). Fix what the owner reports:
+  small, tested, into the lab, into the game when they say.
 - **Parked by the owner** (don't start unasked):
   - "Ask P.I.P." question keys in his bubble ("Should I have just called?"
     etc.), hand-written answers.

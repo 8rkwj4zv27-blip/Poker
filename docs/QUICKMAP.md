@@ -1,6 +1,7 @@
 # Quick map
 
-The short version of [`CODEMAP.md`](CODEMAP.md). Read this first. Open
+The short version of [`CODEMAP.md`](CODEMAP.md). Read it after
+[`HANDOVER.md`](HANDOVER.md), before searching the code. Open
 `CODEMAP.md` only for the section about the file you are about to change
 (its headings are the file names). Last checked: 6 October 2026 (v0.65.0).
 

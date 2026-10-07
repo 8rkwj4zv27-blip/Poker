@@ -46,6 +46,11 @@ or delete them.
 | `checkpoint/labs-archive-2026-10` | The 23 finished labs archived in audit PR 5, and the files only they used | `git checkout origin/checkpoint/labs-archive-2026-10 -- <file>` (`docs/CODEMAP.md` lists them) |
 | `checkpoint/old-branches-2026-10` | The ten superseded branches deleted in the audit's GitHub tidy (8 from before `main`'s history restart on 24 Sept, plus `wizardly-noether` and `pass-3a-checkpoint`) | Its one commit has the same files as `main`; the ten branches' last commits are its extra parents, listed with their names in its message. `git log -1 origin/checkpoint/old-branches-2026-10`, then `git checkout -b <name> <sha>` |
 
+**Checked 7 Oct 2026: the deletions did not happen.** The ten branches
+and about 27 merged `claude/` branches are still on GitHub (the backups
+above exist, so deleting them is safe when the owner chooses to). Open
+item in `docs/HANDOVER.md`.
+
 Two unmerged branches stay live on purpose: `claude/tender-dijkstra-zso8dm`
 (the Speech Lab, which `docs/coach/COACH_PLAN.md` refers to) and
 `claude/sweet-pasteur-6yard0` (Skin Lab). Every other `claude/` and `codex/`

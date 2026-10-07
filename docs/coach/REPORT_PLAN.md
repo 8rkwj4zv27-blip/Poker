@@ -1,5 +1,7 @@
 # P.I.P. report — plan
 
+> **Historical.** The P.I.P. report shipped in v0.59.0 (4 October 2026). The code, `docs/CODEMAP.md` and `docs/HANDOVER.md` describe the game today. Index of current docs: `docs/README.md`.
+
 **Status (4 Oct 2026): LIVE as v0.59.0** with the owner's round 1 picks
 (FLICKERS ON · PLAYS THROUGH · ONE BAR · STAMPED LETTER · HIS FACE · MARKS
 IN COLOUR · WORDS until taught). Lab:

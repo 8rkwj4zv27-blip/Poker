@@ -28,6 +28,11 @@ reached `main`. Releases before v0.39.8 are recorded in
   `docs/QUICKMAP.md` read before the long code map; a new suite,
   `version-checks.js`, fails if `BUILD_VERSION`, `CACHE_NAME` and the
   newest changelog entry disagree.
+- A handover note, `docs/HANDOVER.md`: one screen each session reads first
+  and updates last; `version-checks.js` fails if it names another build.
+  Stale plans and audits (the 25 September visual audit, the P.I.P. audit
+  and seven shipped plans) marked Historical; `career/STATUS.md` brought
+  up to v0.66.1.
 
 ## v0.66 — 6 October 2026
 
