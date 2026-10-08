@@ -89,3 +89,29 @@ Home-screen version: `pack-lab-app.html` (+ `pack-lab.webmanifest`). Once on
 `main`, it lives at https://8rkwj4zv27-blip.github.io/Poker/pack-lab-app.html:
 open it in Safari, Share, Add to Home Screen. It opens full screen like the
 game, on in-memory storage (never the game's save), fresh each launch.
+
+## Round 2 (8 Oct 2026): the card, and your hand
+
+The owner played Pack Lab 1 and decided:
+
+- **Career opens on your hand**, the collection as the hub: a player
+  dashboard (bankroll, record, progress by pack) with a fanned hand of
+  suggested tickets (your next step, one you haven't played in a while,
+  one that suits your bankroll, anything new, a wild). The Case and the
+  Vendor are rooms off it. (Close to the parked Phase 5 "smart picks";
+  the owner reopened it in this form.)
+- **Physical cards:** dealt and spread out, turned over, picked up, moved,
+  fed into the machine by hand.
+- **Quality up everywhere:** Pattern Book parts for every button; a real
+  design pass on the vendor (the panel was cramped and the keys didn't
+  make sense), the packs, the reveal stage and the case. The chip spill
+  used the old PNG chips: use the game's own coins.
+- **The card first.** `card-lab.html` (+ `js/card-lab-host.js`,
+  `js/card-lab-art.js`, `js/card-lab.js`, `css/card-lab.css`): four cards
+  with animated pixel illustrations (Harry's Table, Bomb Pot Night, The
+  Ghost Seat, Marked Deck), three frame directions (Parlour, Enamel, Full
+  art), dealt into your hand with spring physics, a close look with tilt,
+  and a reader you drag cards into. The owner picks a frame; then the hub,
+  then the vendor and reveal, then Pack Lab 2.
+- **Art:** the owner will draw some later; until then the art is pushed
+  code pixel art.

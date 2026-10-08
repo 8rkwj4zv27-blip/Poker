@@ -294,6 +294,18 @@ are the same lab as a home-screen app: the game page fetched and rebuilt
 with the lab's parts (no frame, no service worker), for Add to Home Screen
 from the GitHub Pages site.
 
+## `card-lab.html` + `js/card-lab-host.js` + `js/card-lab-art.js` + `js/card-lab.js` + `css/card-lab.css` — Card Lab
+
+Round 2 of the packs work (`docs/career/PACKS_PLAN.md`): the card itself
+and your hand. Phone-first like `pack-lab.html`; Career's screen becomes a
+table (`#cl` inside `#career`). `card-lab-art.js` draws every card as one
+88 × 124 canvas: pixel tools (ordered-dither ramps, shapes, sprites), a 5×7
+and a 3×5 pixel font, four animated scenes, three frames and the back.
+`card-lab.js` deals the hand, runs its springs, the pick-up, the close
+look and the reader. Lab only; nothing loads in the game. `card-lab-app.html`
++ `card-lab.webmanifest` are its home-screen version, built the same way as
+`pack-lab-app.html`.
+
 ## `js/home-boot.js` + `css/home-boot.css` — Home Boot (live)
 
 "The cabinet switches on": ~1.6s on the main menu, once per real page load

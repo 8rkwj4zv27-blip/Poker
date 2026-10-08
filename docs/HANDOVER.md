@@ -26,6 +26,8 @@ audit's complaints (dashboard rims, clipped result line, chip pile) are gone.
 
 ## Recent changes (newest first)
 
+- 8 Oct (no game change): Card Lab (`card-lab.html`): four illustrated
+  pixel cards in three frames, dealt into your hand; the owner picks a frame.
 - 8 Oct (no game change): Career as packs of cards, brainstormed with
   the owner (`docs/career/PACKS_PLAN.md`); the visual lab `pack-lab.html`
   (vending machine, rip, reveal, ticket case, feed into a real table).
@@ -36,7 +38,6 @@ audit's complaints (dashboard rims, clipped result line, chip pile) are gone.
 - 8 Oct (no game change): the events rework planned with the owner
   (`docs/career/EVENTS_PLAN.md`); `validation/tools/event-sim.js` plays
   whole Career events to measure it.
-- v0.66.1 Tab reads just "Poker Faces", with the new icon.
 - v0.66.0 Developer Mode hidden unless `?dev` is in the address.
 
 ## Open items (verified, not scheduled)
@@ -63,10 +64,10 @@ own speech bubbles (`claude/tender-dijkstra-zso8dm`).
 
 ## Next
 
-The owner plays the Pack Lab (`pack-lab.html`, link in
-`docs/career/PACKS_PLAN.md`) and says whether packs are Career's
-direction. If they are, they reshape Events Releases 2 to 4 (heat gauge,
-venue ladders, formats in `docs/career/EVENTS_PLAN.md`): agree the order
-with the owner before building either. Still open: the owner's verdict on
+Packs are Career's direction (owner, after Pack Lab 1). Next: the owner
+picks a card frame in the Card Lab (`docs/career/PACKS_PLAN.md`, Round
+2); then the hub ("your hand"), then the vendor and reveal redone, then
+Pack Lab 2. Agree with the owner how this reshapes Events Releases 2 to 4
+(`docs/career/EVENTS_PLAN.md`) before building either. Still open: the owner's verdict on
 the new Back Room (v0.67.0; minutes per hand unmeasured). The owner wants fancier tickets by tier and a
 venue-change moment later; don't start those before the ladders.
