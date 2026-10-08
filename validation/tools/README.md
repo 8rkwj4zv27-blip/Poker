@@ -124,3 +124,20 @@ first error it prints the table's state and the last 15 taps (and a
 screenshot with `--shots`), so an intermittent bug arrives with its cause.
 Run it before and after any change to files players download. Not part of
 `npm test`, which needs nothing but Node.
+
+## `event-sim.js` — whole Career events, measured
+
+```
+node validation/tools/event-sim.js back-room-freezeout
+node validation/tools/event-sim.js back-room-freezeout --stack 1000 --per-level 15 --skill 20
+```
+
+Plays complete events from the real catalogue (`CAREER_EVENT_LIST`):
+stacks carry over, blinds rise on the event's schedule, players bust and
+places are paid from its payout table. "You" are the game's AI at a skill
+(`--you 30,50,80`, or `abc`). Prints, for each: how often you win and
+cash, your average profit per event, the event's length in hands, and how
+often an opponent knocks the other out first. Override any setting
+(`--stack`, `--per-level`, `--skill`, `--players`, `--payouts`,
+`--buy-in`) to measure a proposal before building it. About 1,500 events
+take a few minutes. Not part of `npm test`.

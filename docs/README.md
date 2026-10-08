@@ -25,6 +25,7 @@ Last sorted: 7 October 2026 (v0.66.1).
 | [`scoring/SCORING_SPEC.md`](scoring/SCORING_SPEC.md) | Authoritative scoring and award rules, Career and Single Player |
 | [`career/CAREER_DESIGN.md`](career/CAREER_DESIGN.md) | Career product rules and economy |
 | [`career/BUILD_PLAN.md`](career/BUILD_PLAN.md) | Career phase sequence and scope |
+| [`career/EVENTS_PLAN.md`](career/EVENTS_PLAN.md) | The events rework (8 Oct 2026): easier start, harder top, ladders, formats, heat gauge. In progress |
 | [`ai/AI_PLAN.md`](ai/AI_PLAN.md) | The opponent AI: tier ladder and baselines |
 
 ## P.I.P. (current reference)

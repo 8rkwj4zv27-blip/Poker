@@ -989,14 +989,20 @@ relevant suite(s) before and after any change — see
 `validation/tools/README.md` for a browser/touch-emulation harness you can
 reuse instead of writing a new Playwright script from scratch each time.
 `validation/tools/ai-harness.js` + `ai-sim.js` are the AI's measuring
-table (see `docs/ai/AI_PLAN.md`).
+table (see `docs/ai/AI_PLAN.md`). `validation/tools/event-sim.js` plays
+whole Career events from the real catalogue (stacks carry over, blinds
+rise, places pay) with the AI standing in for you at a chosen skill: how
+often each kind of player wins, cashes and profits (see
+`docs/career/EVENTS_PLAN.md`).
 
 ## `docs/`
 
 - `docs/ai/AI_PLAN.md` — the opponent AI rebuild: tier ladder, steps,
   baselines. Read first for any AI work.
-- `docs/career/STATUS.md` — **read first** for any Career task. Current
-  build, current state, immediate next task.
+- `docs/career/STATUS.md` — **read first** for any Career task (after
+  `docs/HANDOVER.md`). What's shipped in Career, immediate next task.
+- `docs/career/EVENTS_PLAN.md` — the events rework: easier start, harder
+  top, venue ladders, new formats, the heat gauge, with measured numbers.
 - `docs/career/CAREER_DESIGN.md` — product rules and economy. Read only
   when the task touches catalogue, pricing, unlock rules, or other product
   decisions.

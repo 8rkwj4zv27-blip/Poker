@@ -6,6 +6,25 @@ Expansion promoted: 2026-08-25
 
 Poker Faces V2 Career pass completed: 2026-09-21
 
+## Owner-directed sequence override — Events rework — 2026-10-08
+
+The owner approved `EVENTS_PLAN.md`. It runs in this order, one release at
+a time, each measured with `validation/tools/event-sim.js` before and
+after:
+
+1. **Back Room** (the Immediate next task): opponent skill 20, 50-big-blind
+   stacks, blinds every 15 hands, a new 5-HAND Top-2 ticket; event skill
+   carried by the event and its snapshot.
+2. **Heat gauge** on the ticket reader: lab, Pattern Book, then the game.
+3. **Venue ladders** (warm-up / main / headliner), Pub first, then one
+   venue at a time with the smooth skill climb.
+4. **New formats:** heads-up duel, bounty, satellite, then shootout.
+5. **Later, the look:** tickets by tier and the venue-change moment (labs).
+
+Phase 6's measurement purpose is served by `event-sim.js` for the poker
+and by timing real events on the owner's phone for minutes per hand.
+Phases 5, 7 and 8 stay shelved.
+
 ## Owner-directed live motion promotion — 2026-09-23
 
 The owner judged the isolated motion lab unsuitable and explicitly authorised

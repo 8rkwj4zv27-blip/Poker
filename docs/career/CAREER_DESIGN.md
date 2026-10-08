@@ -6,6 +6,33 @@ Expansion promoted: 2026-08-25
 
 Poker Faces V2 Career presentation approved and implemented: 2026-09-21
 
+## Events rework — 2026-10-08
+
+The owner, after long play, found Career "crushing" at the start: the
+first tables should build a stack, and playing for massive pots should be
+the hard part. Measured (`validation/tools/event-sim.js`), the Back Room
+has the shallowest stacks and fastest blinds of the ladder and pays only
+first place, so a strong player wins its 3-HAND only about 2 times in 5.
+The owner approved the rework in `EVENTS_PLAN.md`:
+
+- **Easier start, harder top.** Back Room opponents move to 20 on the
+  skill dial (from Medium, 30), stacks to 50 big blinds, blinds up every 15
+  hands, and a new five-player Top-2 ticket. Skill then climbs smoothly up
+  the venues (proposed 20 / 35 / 50 / 65 / 80 / 90). This supersedes the
+  "AI progression" list below as each venue's release lands.
+- **No overlay.** Payouts still add up exactly to the entries.
+- **A heat gauge on the ticket reader** shows how good a ticket's
+  opponents are (a new part: lab and Pattern Book first).
+- **Venue ladders** (warm-up, main event, headliner) and **new formats**
+  (heads-up duel, bounty, satellite, shootout). Satellites follow
+  "Deferred satellite and seat rules" below.
+- **Later:** tickets that look different by tier, and a moment when the
+  rack scrolls to a fancier venue.
+- **Reversed:** "a bot-simulation framework" is no longer outside the
+  build. `event-sim.js` measures every event change before it ships.
+
+Tickets already bought keep the terms they were bought on.
+
 ## Phase 5/7/8 shelved — 2026-09-24
 
 The owner does not currently want Phase 5's contextual Recommended /
