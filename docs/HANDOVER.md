@@ -6,12 +6,14 @@ note"). Keep it to one screen: replace old lines rather than adding to them.
 If this note and the code disagree, the code wins: fix the note.
 
 Build: `v0.66.1-dev · Tab name and icon`
-Updated: 7 October 2026
+Updated: 8 October 2026
 
 ## Where the game is
 
-All of it is live and played on the owner's iPhone: Single Player and
-Custom Game; Career (six venues, the ticket-reader Hub, buy-in feed, Table
+All of it is live and played on the owner's iPhone: Quick Deal (the
+endless table run, called "Single Player" in code) and Custom Game, which
+the owner rarely uses; Career, which the owner thinks of as *the* game
+(six venues, the ticket-reader Hub, buy-in feed, Table
 Intro, end screens); opponents with personalities, moods and sparse table
 talk; P.I.P. the coach (tap only, with the end-of-hand report); Settings and
 the Workshop (skins); save data (back up, restore, start over).
@@ -23,10 +25,12 @@ audit's complaints (dashboard rims, clipped result line, chip pile) are gone.
 
 ## Recent changes (newest first)
 
+- 8 Oct (no game change): the events rework planned with the owner
+  (`docs/career/EVENTS_PLAN.md`); `validation/tools/event-sim.js` plays
+  whole Career events to measure it.
 - v0.66.1 Tab reads just "Poker Faces", with the new icon.
 - v0.66.0 Developer Mode hidden unless `?dev` is in the address.
 - v0.65.0 Save data: back up, restore, reset stats, start over.
-- v0.64.7 New app icon. Before it: the codebase audit (no game change).
 - 7 Oct (no game change): this handover note; stale docs marked
   Historical; 8 shipped labs archived (`CODEMAP.md`, "Archived labs").
 
@@ -43,7 +47,8 @@ audit's complaints (dashboard rims, clipped result line, chip pile) are gone.
   ones are not backed up. Don't delete branches unasked.
 - Rare engine errors under heavy CPU load at 320x700 (audit finding F1,
   `PHASE0_BASELINE.md`): never pinned or fixed.
-- Unmeasured: Career economy numbers (`docs/career/STATUS.md`).
+- Unmeasured: minutes per hand on the phone, and the upper venues'
+  economy (`docs/career/STATUS.md`).
 
 ## Parked by the owner (don't start unasked)
 
@@ -53,4 +58,7 @@ own speech bubbles (`claude/tender-dijkstra-zso8dm`).
 
 ## Next
 
-Nothing scheduled. Ask the owner what they've noticed on their phone.
+Events rework, Release 1: the Back Room (`docs/career/EVENTS_PLAN.md`,
+`docs/career/STATUS.md`). Then the heat gauge lab, venue ladders and new
+formats, in that order. The owner wants fancier tickets by tier and a
+venue-change moment later; don't start those before the ladders.

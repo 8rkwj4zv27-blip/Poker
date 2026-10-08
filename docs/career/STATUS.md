@@ -106,12 +106,14 @@ either.
 
 ## Immediate next task
 
-**None scheduled.** The owner's on-device review of the Hub happened in
-late September and the game moved on (v0.42 to v0.66); the visual audit's
-"V2 design pass" is history (`docs/ui/VISUAL_AUDIT.md`). The one Career
-item open is BUY IN sitting below the screen on small iPhones (375x667),
-listed in `docs/HANDOVER.md`. No new Career system or venue work is
-scheduled until the owner asks for it — see the scope note.
+**Events rework, Release 1: the Back Room** (`docs/career/EVENTS_PLAN.md`,
+approved by the owner 8 Oct 2026). Opponent skill 20 (a new optional
+`skill` on events and their snapshots), 50-big-blind stacks, blinds up
+every 15 hands, and a new 5-HAND Top-2 ticket ($100, pays $350/$150).
+Tickets already bought keep their terms. Measure with `event-sim.js`
+before and after, and record the result in the plan. Releases 2 to 4
+(heat gauge, venue ladders, new formats) follow in that order. Also open:
+BUY IN below the screen on small iPhones (375x667), in `docs/HANDOVER.md`.
 
 ## How to test
 
@@ -140,15 +142,18 @@ historical string, so they no longer go stale on every version bump.
   (unobserved — needs real playtesting).
 - Upper-tier economy, event durations, and the 4–8 hour career-length
   target (all provisional, unmeasured).
-- Career pacing has bounded local measurement only; no further stack-depth
-  or cadence change is justified yet.
+- Stack depth and blind pace: measured with `event-sim.js` on 8 Oct 2026
+  and changed by the owner's decision (`EVENTS_PLAN.md`). Minutes per hand
+  on the phone are still unmeasured.
 
 ## Not implemented
 
 Contextual board selection, career records/dossiers/trophies/titles, boss
 seats, cosmetics, satellites, and Card Club-and-above gameplay balancing —
 see `HISTORY.md`'s "Not implemented" and phase-table entries for the full,
-dated list. Nothing above is scheduled — see the scope note.
+dated list. Satellites and venue balancing are now scheduled in
+`EVENTS_PLAN.md` (Releases 3 and 4); the rest stays unscheduled — see the
+scope note.
 
 ## Handoff protocol
 

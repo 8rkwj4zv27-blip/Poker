@@ -36,6 +36,9 @@ reached `main`. Releases before v0.39.8 are recorded in
 - 8 more shipped labs and the 19 files only they used archived
   (bank-load, end-screens, workshop-skins, pip-report, coach
   brain/face/rig/voice); restore from `e64b215`.
+- The events rework planned with the owner (`docs/career/EVENTS_PLAN.md`)
+  and a tool that plays whole Career events to measure it
+  (`validation/tools/event-sim.js`).
 
 ## v0.66 — 6 October 2026
 

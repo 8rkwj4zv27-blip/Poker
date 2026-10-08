@@ -50,7 +50,7 @@ Hub and the end screens.
 | --- | --- |
 | `*-lab.html` (root) and their `*-lab*.js/css` | Labs: prototyping pages, never shipped. Finished ones are archived (`CODEMAP.md`, "Archived labs") |
 | `pattern-book.html`, `docs/ui/PATTERN_BOOK.md` | The visual rule book |
-| `validation/*.js` | `npm test` runs them all; one suite per feature. `validation/tools/` holds the play-test and the touch harness |
+| `validation/*.js` | `npm test` runs them all; one suite per feature. `validation/tools/` holds the play-test, the touch harness and the AI and event simulators |
 | `art-source/` | The owner's original art; the game does not load it |
 | `docs/` | Rules, plans, history: [`docs/README.md`](README.md) says which are current |
 
