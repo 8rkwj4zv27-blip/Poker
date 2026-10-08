@@ -115,7 +115,13 @@ either.
 
 ## Immediate next task
 
-**Owner plays Release 1 on the phone** (v0.67.0, `docs/career/EVENTS_PLAN.md`):
+**Owner plays the Pack Lab** (`pack-lab.html`, `docs/career/PACKS_PLAN.md`):
+Career as packs of event cards from a vending machine, the owner's chosen
+direction from the 8 Oct brainstorm, built visual-first. Nothing in the
+game has changed. If the owner confirms packs, agree with them how they
+reshape Releases 2 to 4 below before building any of it.
+
+Before that, still open: **owner plays Release 1 on the phone** (v0.67.0, `docs/career/EVENTS_PLAN.md`):
 does the Back Room build a stack, and are its longer events still fun?
 Time a few real events (minutes per hand is unmeasured). Then **Release
 2, the heat gauge**: a phone-first lab for a needle meter on the ticket

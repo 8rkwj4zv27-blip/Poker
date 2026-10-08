@@ -26,6 +26,9 @@ audit's complaints (dashboard rims, clipped result line, chip pile) are gone.
 
 ## Recent changes (newest first)
 
+- 8 Oct (no game change): Career as packs of cards, brainstormed with
+  the owner (`docs/career/PACKS_PLAN.md`); the visual lab `pack-lab.html`
+  (vending machine, rip, reveal, ticket case, feed into a real table).
 - v0.67.0 The Back Room builds a stack (Events Release 1): a new 5-HAND
   Top-2 ticket, 1,000-chip stacks, blinds every 15 hands, opponents at
   skill 20 (events now carry a `skill`). Tickets already bought keep
@@ -35,8 +38,6 @@ audit's complaints (dashboard rims, clipped result line, chip pile) are gone.
   whole Career events to measure it.
 - v0.66.1 Tab reads just "Poker Faces", with the new icon.
 - v0.66.0 Developer Mode hidden unless `?dev` is in the address.
-- 7 Oct (no game change): this handover note; stale docs marked
-  Historical; 8 shipped labs archived (`CODEMAP.md`, "Archived labs").
 
 ## Open items (verified, not scheduled)
 
@@ -62,8 +63,10 @@ own speech bubbles (`claude/tender-dijkstra-zso8dm`).
 
 ## Next
 
-The owner plays the new Back Room on the phone (v0.67.0): does it build a
-stack, do events feel too long (minutes per hand are unmeasured)? Then
-Events Release 2, the heat gauge lab (`docs/career/EVENTS_PLAN.md`), then
-venue ladders and new formats, in that order. The owner wants fancier tickets by tier and a
+The owner plays the Pack Lab (`pack-lab.html`, link in
+`docs/career/PACKS_PLAN.md`) and says whether packs are Career's
+direction. If they are, they reshape Events Releases 2 to 4 (heat gauge,
+venue ladders, formats in `docs/career/EVENTS_PLAN.md`): agree the order
+with the owner before building either. Still open: the owner's verdict on
+the new Back Room (v0.67.0; minutes per hand unmeasured). The owner wants fancier tickets by tier and a
 venue-change moment later; don't start those before the ladders.

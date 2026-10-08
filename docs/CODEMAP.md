@@ -277,6 +277,23 @@ Both pairs are loaded by `index.html` (after `machine-wheel.js`) and
 precached by `sw.js`. `intro-lab.html` runs the real game sandboxed with
 NEW/OLD switches for each, for future tuning.
 
+## `pack-lab.html` + `js/pack-lab-host.js` + `js/pack-lab.js` + `js/pack-lab-art.js` + `js/pack-lab-sound.js` + `js/pack-lab-cards.js` + `css/pack-lab.css` — Pack Lab
+
+Career as packs of event cards (`docs/career/PACKS_PLAN.md`), the visual
+lab. Phone-first like `showdown-lab.html`: the real game in one frame, with
+the Career screen replaced by a pack vendor (`#pk` inside `#career`; the
+Hub is hidden, not changed). `pack-lab-art.js` draws on canvas at art
+resolution (packs, coils, card scenes, the card back, a 3x5 pixel font);
+`pack-lab-sound.js` is its own procedural sound set; `pack-lab-cards.js` is
+a placeholder card set per pack and the card faces; `pack-lab.js` runs the
+machine, the vend and drop, the finger-driven rip, the reveal, the ticket
+case, the feed into a real Career event (`enterCareerEvent` +
+`careerDepartToTable`) and the TUNE sheet. In-memory storage only. Lab
+only; nothing loads in the game. `pack-lab-app.html` + `pack-lab.webmanifest`
+are the same lab as a home-screen app: the game page fetched and rebuilt
+with the lab's parts (no frame, no service worker), for Add to Home Screen
+from the GitHub Pages site.
+
 ## `js/home-boot.js` + `css/home-boot.css` — Home Boot (live)
 
 "The cabinet switches on": ~1.6s on the main menu, once per real page load
