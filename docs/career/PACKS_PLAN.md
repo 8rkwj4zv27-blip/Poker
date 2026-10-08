@@ -109,4 +109,6 @@ and the shimmer were good. Decided:
 - Mockups as stills first, then the moving lab: `hub-lab.html`
   (+ `js/hub-lab-host.js`, `js/hub-lab.js`, `css/hub-lab.css`;
   home-screen: `hub-lab-app.html` + `hub-lab.webmanifest`).
+- Link: https://claude.ai/artifact/2yG9jqdsRWqgXqCRitTqbM (home-screen, once
+  on `main`: https://8rkwj4zv27-blip.github.io/Poker/hub-lab-app.html).
 - Next: the Vendor and the Case screens to this standard.
