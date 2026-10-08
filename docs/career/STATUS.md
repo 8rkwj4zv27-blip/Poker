@@ -87,6 +87,15 @@ Full detail for the first two is in `HISTORY.md` under the 2026-09-24 entries. N
 Career transaction, save field, catalogue, roster, poker or AI code changed
 in any of these passes; the DETAILS card flip is untouched.
 
+8. **Events Release 1: the Back Room builds a stack** (2026-10-08,
+   v0.67.0, `EVENTS_PLAN.md`). A new `back-room-five` ticket (5 players,
+   $100, pays $350/$150); the 3-HAND, HEADS-UP and Second Chance move to
+   deeper stacks and slower blinds; every Back Room event carries
+   `skill:20`, which `aiSkillOf` reads from the table's event. Snapshots
+   carry the skill, so a ticket bought before keeps its old terms. A v6
+   save from before the new ticket migrates with every field kept
+   (`career-events-checks.js`, now 115 checks).
+
 ## Scope note — Phase 5/7/8 shelved (2026-09-24)
 
 The owner does not currently want:
@@ -106,19 +115,18 @@ either.
 
 ## Immediate next task
 
-**Events rework, Release 1: the Back Room** (`docs/career/EVENTS_PLAN.md`,
-approved by the owner 8 Oct 2026). Opponent skill 20 (a new optional
-`skill` on events and their snapshots), 50-big-blind stacks, blinds up
-every 15 hands, and a new 5-HAND Top-2 ticket ($100, pays $350/$150).
-Tickets already bought keep their terms. Measure with `event-sim.js`
-before and after, and record the result in the plan. Releases 2 to 4
-(heat gauge, venue ladders, new formats) follow in that order. Also open:
+**Owner plays Release 1 on the phone** (v0.67.0, `docs/career/EVENTS_PLAN.md`):
+does the Back Room build a stack, and are its longer events still fun?
+Time a few real events (minutes per hand is unmeasured). Then **Release
+2, the heat gauge**: a phone-first lab for a needle meter on the ticket
+reader that reads an event's `skill`. Releases 3 and 4 (venue ladders,
+new formats) follow in that order. Also open:
 BUY IN below the screen on small iPhones (375x667), in `docs/HANDOVER.md`.
 
 ## How to test
 
 ```
-node validation/career-events-checks.js     # 112 checks
+node validation/career-events-checks.js     # 115 checks
 node validation/career-result-checks.js     # 44 checks
 node validation/event-tape-checks.js        # 15 checks
 node validation/scoring-checks.js           # 170 checks

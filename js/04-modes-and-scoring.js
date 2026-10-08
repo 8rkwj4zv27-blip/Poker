@@ -44,6 +44,28 @@ function tournamentFormatById(id){ return typeof id === 'string' ? (TOURNAMENT_F
    ============================================================ */
 const CAREER_START_BANKROLL = 500;
 const CAREER_EVENT_LIST = Object.freeze([
+  /* The Back Room builds a stack (docs/career/EVENTS_PLAN.md, Release 1):
+     opponents at 20 on the skill dial (`skill` beats `difficulty`), 50 big
+     blinds and slow blinds so skill counts, and a five-seat Top-2 ticket
+     that pays in most events. */
+  Object.freeze({
+    id:'back-room-five',
+    venue:'BACK ROOM',
+    name:'BACK ROOM 5-HAND',
+    title:'5-HAND',
+    format:'Top-2 Freezeout',
+    playerCount:5,
+    opponentCount:4,
+    buyIn:100,
+    prize:350,
+    payouts:Object.freeze([350,150]),
+    stack:1000,
+    initialBlindLevel:0,
+    handsPerBlindLevel:15,
+    difficulty:'medium',
+    skill:20,
+    unlockRequirement:null
+  }),
   Object.freeze({
     id:'back-room-freezeout',
     venue:'BACK ROOM',
@@ -55,10 +77,11 @@ const CAREER_EVENT_LIST = Object.freeze([
     buyIn:100,
     prize:300,
     payouts:Object.freeze([300]),
-    stack:500,
+    stack:1000,
     initialBlindLevel:0,
-    handsPerBlindLevel:10,
+    handsPerBlindLevel:15,
     difficulty:'medium',
+    skill:20,
     unlockRequirement:null
   }),
   Object.freeze({
@@ -72,10 +95,11 @@ const CAREER_EVENT_LIST = Object.freeze([
     buyIn:100,
     prize:200,
     payouts:Object.freeze([200]),
-    stack:600,
+    stack:1200,
     initialBlindLevel:0,
-    handsPerBlindLevel:8,
+    handsPerBlindLevel:12,
     difficulty:'medium',
+    skill:20,
     unlockRequirement:null
   }),
   Object.freeze({
@@ -277,10 +301,11 @@ const CAREER_EVENT_LIST = Object.freeze([
     buyIn:0,
     prize:150,
     payouts:Object.freeze([150]),
-    stack:500,
+    stack:1000,
     initialBlindLevel:0,
-    handsPerBlindLevel:10,
+    handsPerBlindLevel:15,
     difficulty:'medium',
+    skill:20,
     unlockRequirement:null
   })
 ]);
@@ -426,7 +451,7 @@ function isSecondChanceEligible(bankroll){
 }
 function careerEventSnapshot(event){
   if (!event) return null;
-  return {
+  const snapshot = {
     id:event.id,
     venue:event.venue,
     name:event.name,
@@ -445,6 +470,12 @@ function careerEventSnapshot(event){
           venue:event.unlockRequirement.venue }
       : null
   };
+  if (isCareerEventSkill(event.skill)) snapshot.skill = event.skill;
+  return snapshot;
+}
+/* An event's opponent skill, 0-100 on the AI's skill dial. */
+function isCareerEventSkill(value){
+  return Number.isFinite(value) && value >= 0 && value <= 100;
 }
 function isValidCareerEventSnapshot(event){
   if (!event || typeof event !== 'object') return false;
@@ -456,6 +487,9 @@ function isValidCareerEventSnapshot(event){
   if (event.playerCount !== event.opponentCount + 1 || event.opponentCount < 1) return false;
   if (!Number.isInteger(event.initialBlindLevel) || event.initialBlindLevel >= BLIND_LEVELS.length) return false;
   if (!Number.isInteger(event.handsPerBlindLevel) || event.handsPerBlindLevel < 1) return false;
+  // Optional: a ticket bought before events carried a skill has none, and
+  // plays its named difficulty.
+  if (event.skill !== undefined && !isCareerEventSkill(event.skill)) return false;
   // The payouts/prize invariant. A snapshot written before multi-place
   // payouts existed has no `payouts` at all and is deliberately rejected
   // here, which is exactly what routes it through the migration path.

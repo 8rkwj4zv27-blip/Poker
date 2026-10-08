@@ -15,7 +15,7 @@
      --events N       events per player (default 600)
      --stack N        starting stack instead of the event's
      --per-level N    hands per blind level instead of the event's
-     --skill N        the table's AI skill (0-100) instead of its difficulty
+     --skill N        the table's AI skill (0-100) instead of the event's
      --players N      seats including you, instead of the event's
      --payouts a,b    prize per place instead of the event's
      --buy-in N       entry instead of the event's
@@ -81,7 +81,7 @@ async function playEvent(A, rnd, cfg, you){
     hands++;
     const dealer = button++ % n;
     const g = { players, board:[], pot:0, currentBet:0, minRaise:bb, bigBlind:bb, smallBlind:sb,
-      dealerIndex:dealer, difficulty:cfg.event.difficulty, mode:'career', reads };
+      dealerIndex:dealer, difficulty:cfg.event.difficulty, mode:'career', reads, event:cfg.event };
     if (typeof cfg.skill === 'number') g.skill = cfg.skill;
     A.setGame(g);
     const deck = A.shuffle(A.createDeck()); let di = 0;
@@ -246,7 +246,7 @@ function arg(name, fallback){
 
   const table = {
     event: id, players: cfg.players, stack: cfg.stack, bigBlind: BLIND_LEVELS[cfg.firstLevel][1],
-    perLevel: cfg.perLevel, aiSkill: cfg.skill === undefined ? event.difficulty : cfg.skill,
+    perLevel: cfg.perLevel, aiSkill: cfg.skill !== undefined ? cfg.skill : event.skill !== undefined ? event.skill : event.difficulty,
     buyIn, payouts, results,
   };
   if (process.argv.includes('--json')){ console.log(JSON.stringify(table, null, 2)); return; }

@@ -5,7 +5,7 @@ in the same pull request as the change (rules in `CLAUDE.md`, "Handover
 note"). Keep it to one screen: replace old lines rather than adding to them.
 If this note and the code disagree, the code wins: fix the note.
 
-Build: `v0.66.1-dev · Tab name and icon`
+Build: `v0.67.0-dev · Back Room builds a stack`
 Updated: 8 October 2026
 
 ## Where the game is
@@ -18,19 +18,23 @@ Intro, end screens); opponents with personalities, moods and sparse table
 talk; P.I.P. the coach (tap only, with the end-of-hand report); Settings and
 the Workshop (skins); save data (back up, restore, start over).
 
-Checked on 7 Oct 2026 by playing the real game on emulated iPhones (430x932,
-390x844): all 25 test suites pass, the play-test passes, and the table,
-dashboard, showdown, Home and Career Hub render cleanly. The 25 Sept visual
+Checked on 8 Oct 2026 (v0.67.0) on emulated iPhones: all 25 test suites
+and the play-test pass; a real Career buy-in to the new 5-HAND, hands,
+reload and CONTINUE work. On 7 Oct the table, dashboard, showdown, Home and
+Career Hub all rendered cleanly. The 25 Sept visual
 audit's complaints (dashboard rims, clipped result line, chip pile) are gone.
 
 ## Recent changes (newest first)
 
+- v0.67.0 The Back Room builds a stack (Events Release 1): a new 5-HAND
+  Top-2 ticket, 1,000-chip stacks, blinds every 15 hands, opponents at
+  skill 20 (events now carry a `skill`). Tickets already bought keep
+  their terms.
 - 8 Oct (no game change): the events rework planned with the owner
   (`docs/career/EVENTS_PLAN.md`); `validation/tools/event-sim.js` plays
   whole Career events to measure it.
 - v0.66.1 Tab reads just "Poker Faces", with the new icon.
 - v0.66.0 Developer Mode hidden unless `?dev` is in the address.
-- v0.65.0 Save data: back up, restore, reset stats, start over.
 - 7 Oct (no game change): this handover note; stale docs marked
   Historical; 8 shipped labs archived (`CODEMAP.md`, "Archived labs").
 
@@ -58,7 +62,8 @@ own speech bubbles (`claude/tender-dijkstra-zso8dm`).
 
 ## Next
 
-Events rework, Release 1: the Back Room (`docs/career/EVENTS_PLAN.md`,
-`docs/career/STATUS.md`). Then the heat gauge lab, venue ladders and new
-formats, in that order. The owner wants fancier tickets by tier and a
+The owner plays the new Back Room on the phone (v0.67.0): does it build a
+stack, do events feel too long (minutes per hand are unmeasured)? Then
+Events Release 2, the heat gauge lab (`docs/career/EVENTS_PLAN.md`), then
+venue ladders and new formats, in that order. The owner wants fancier tickets by tier and a
 venue-change moment later; don't start those before the ladders.
