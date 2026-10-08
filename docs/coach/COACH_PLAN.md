@@ -1,5 +1,7 @@
 # The Coach — plan
 
+> **Historical.** The record of P.I.P.'s look, rig and voice, live since v0.54. Its "Next" list is from 29 September and is not a plan; how he works now is in `docs/coach/BRAIN_HANDOVER.md`. The code, `docs/CODEMAP.md` and `docs/HANDOVER.md` describe the game today. Index of current docs: `docs/README.md`.
+
 **Status (29 Sep 2026): LIVE as v0.57.3, with his brain.** Start with
 **`docs/coach/BRAIN_HANDOVER.md`** (where things stand, how he works, how
 to work with the owner); the brain's history is `docs/coach/BRAIN_PLAN.md`.

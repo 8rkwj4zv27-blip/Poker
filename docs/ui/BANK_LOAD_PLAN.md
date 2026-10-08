@@ -1,5 +1,7 @@
 # Bank Load — how your bank fills when you sit down
 
+> **Historical.** Bank load shipped in v0.64.0 (5 October 2026). The code, `docs/CODEMAP.md` and `docs/HANDOVER.md` describe the game today. Index of current docs: `docs/README.md`.
+
 The table intro's bank step (Quick Deal, a run, a Career table): what the
 owner sees as the chips arriving in the bank box.
 

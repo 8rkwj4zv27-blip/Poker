@@ -1,5 +1,7 @@
 # Poker Faces — visual & polish audit (25 September 2026)
 
+> **Historical.** A snapshot of v0.40.0 on 25 September 2026. Its fixes shipped in v0.40.1, and most of its "V2 design pass" was overtaken by v0.42 to v0.66 (felt, dealer deck, chips, action drum, card holder, table room, bank, end screens, Settings and Workshop). A check of v0.66.1 on 7 October 2026 found its table and dashboard complaints gone. Don't plan from its lists; what is still open is in `docs/HANDOVER.md`. The code, `docs/CODEMAP.md` and `docs/HANDOVER.md` describe the game today. Index of current docs: `docs/README.md`.
+
 Build audited: v0.40.0-dev · CRT rebuild (branch claude/poker-faces-design-audit-qx3v1u).
 
 A full-screen/motion/glitch audit of the whole game, captured in the real game in headless Chromium at iPhone sizes. The illustrated version (screenshots for every finding) was published as a private Artifact for the owner; this file is the durable copy for future sessions. It is a proposal, not approval: nothing here changes a signed-off finish until the owner picks it (see `PATTERN_BOOK.md`).

@@ -1,6 +1,7 @@
 # Quick map
 
-The short version of [`CODEMAP.md`](CODEMAP.md). Read this first. Open
+The short version of [`CODEMAP.md`](CODEMAP.md). Read it after
+[`HANDOVER.md`](HANDOVER.md), before searching the code. Open
 `CODEMAP.md` only for the section about the file you are about to change
 (its headings are the file names). Last checked: 6 October 2026 (v0.65.0).
 
@@ -47,7 +48,7 @@ Hub and the end screens.
 
 | Where | What |
 | --- | --- |
-| `*-lab.html` (root) and their `*-lab*.js/css` | Labs: prototyping pages, never shipped. Finished ones are archived on `checkpoint/labs-archive-2026-10` |
+| `*-lab.html` (root) and their `*-lab*.js/css` | Labs: prototyping pages, never shipped. Finished ones are archived (`CODEMAP.md`, "Archived labs") |
 | `pattern-book.html`, `docs/ui/PATTERN_BOOK.md` | The visual rule book |
 | `validation/*.js` | `npm test` runs them all; one suite per feature. `validation/tools/` holds the play-test and the touch harness |
 | `art-source/` | The owner's original art; the game does not load it |

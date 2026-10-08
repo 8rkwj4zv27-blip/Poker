@@ -1,15 +1,18 @@
 # Career Mode — Current Status
 
-This is the short handoff file: current build, what's actually shipped, and
-the one concrete next task. Full milestone write-ups, superseded plans and
-old phase records live in `HISTORY.md` — read that only to research how
-something specific was built or decided, never by default.
+Career's own handoff: what's shipped in Career and its next task. The
+whole game's build, recent changes and open items live in
+`docs/HANDOVER.md`; read that first. Full milestone write-ups, superseded
+plans and old phase records live in `HISTORY.md` — read that only to
+research how something specific was built or decided, never by default.
 
-## Current build
+## Current state
 
-- Build marker: `v0.64.6-dev · Dead code out` (main-menu footer / DEV panel).
-- Service-worker cache: `poker-v64-6`.
-- Career save schema: **version 6**.
+- Last checked: 7 October 2026, against v0.66.1. Since v0.64.4 (Abandon /
+  Cash Out on the paid ticket) Career's only changes are the audit's file
+  tidy and save data (v0.65.0), which backs up and restores the Career
+  save without changing its fields.
+- Career save schema: **version 6** (`CAREER_SAVE_VERSION`).
 - Production Career Hub: ticket-reader presentation (six-venue rack,
   spring-driven touch physics, printed-ticket detail flip), integrated
   2026-09-23, with a Home→Career→table motion pass on top (2026-09-24).
@@ -103,12 +106,12 @@ either.
 
 ## Immediate next task
 
-**Owner on-device (iPhone/PWA) review** of the fix pass (item 6) and the
-Hub polish above: swipe weight, flick reach, the lift-over swap, the
-buy-in roll length, and the new back rolls. Tune from that feedback, then
-start the V2 design pass in `docs/ui/VISUAL_AUDIT.md` ("V2 design pass")
-one Lab at a time. No new Career system or
-venue work is scheduled until the owner asks for it — see the scope note.
+**None scheduled.** The owner's on-device review of the Hub happened in
+late September and the game moved on (v0.42 to v0.66); the visual audit's
+"V2 design pass" is history (`docs/ui/VISUAL_AUDIT.md`). The one Career
+item open is BUY IN sitting below the screen on small iPhones (375x667),
+listed in `docs/HANDOVER.md`. No new Career system or venue work is
+scheduled until the owner asks for it — see the scope note.
 
 ## How to test
 

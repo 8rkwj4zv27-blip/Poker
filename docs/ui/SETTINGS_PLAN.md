@@ -1,5 +1,7 @@
 # Settings + Workshop plan
 
+> **Historical.** Settings, the Workshop and its skins shipped in v0.60 to v0.61 (4 October 2026). The code, `docs/CODEMAP.md` and `docs/HANDOVER.md` describe the game today. Index of current docs: `docs/README.md`.
+
 The Settings sheet had grown to ~38 controls in one 7,190px scroll (about
 eight and a half phone screens). Real settings (game speed, when the pot
 pays out, Leave table) were mixed in with cosmetics (17 deal styles, smash

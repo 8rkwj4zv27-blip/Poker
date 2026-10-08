@@ -443,7 +443,7 @@ drums in a bay beside their label screen (`stageHeroHTML`), the framed
 progress strip, spacing tokens, and the End Screens Lab's look options
 (`data-es-*` on `<html>`, set by `EventTape.look()`).
 
-## `end-screens-lab.html` + `js/end-screens-lab-host.js` + `js/end-screens-lab.js` + `css/end-screens-lab.css` — End Screens Lab
+## `end-screens-lab.html` + `js/end-screens-lab-host.js` + `js/end-screens-lab.js` + `css/end-screens-lab.css` — End Screens Lab — **archived 7 Oct 2026**
 
 Phone-first lab (TUNE key inside the game): YOU BUST · EVENT LOST, EVENT
 WON, PLAY A REAL EVENT, with field, length, luck, best hand and P.I.P.
@@ -562,7 +562,7 @@ shares `#hud-left`'s finish. Presentation only.
 
 The lab it was picked in: `bank-load-lab.html` + `js/bank-load-lab-host.js`
 + `js/bank-load-lab.js` (round 1; the TUNE sheet keeps every dial, on the
-Showdown Lab's pattern and sheet styles).
+Showdown Lab's pattern and sheet styles). **Archived 7 Oct 2026.**
 
 ## `showdown-lab.html` + `js/showdown-lab-host.js` + `js/showdown-lab.js` + `css/showdown-lab.css` + candidate `css/showdown-beats.css` / `js/showdown-beats.js` — Showdown Lab
 
@@ -680,9 +680,9 @@ remembered under the `pip.coach` storage key.
 routes a word after you act, the reason after the hand, first-time
 lessons and repeat reminders. Tests share `validation/tools/coach-sandbox.js`.
 Lab: `coach-brain-lab.html` (+ `js/coach-brain-lab.js`, host
-`js/coach-brain-lab-host.js`).
+`js/coach-brain-lab-host.js`), **archived 7 Oct 2026**.
 
-## `pip-report-lab.html` + `js/pip-report-lab.js` (+ host, `js/pip-report-hands.js`, `css/pip-report-lab.css`) + `js/coach-report.js` / `css/coach-report.css` — the P.I.P. report (live v0.59.0) and its lab
+## `pip-report-lab.html` + `js/pip-report-lab.js` (+ host, `js/pip-report-hands.js`, `css/pip-report-lab.css`) + `js/coach-report.js` / `css/coach-report.css` — the P.I.P. report (live v0.59.0) and its lab (lab **archived 7 Oct 2026**)
 
 The end-of-hand P.I.P. report (`docs/coach/REPORT_PLAN.md`; Pattern Book:
 P.I.P. report): a big CRT readout above the dashboard. With Settings →
@@ -697,7 +697,7 @@ with the game's evaluator, `pivot`, `chanceWord`, `worthIt`) and draws the
 screen. The lab freezes one real table and stages seven hand-built example
 hands on it (`PIP_REPORT_HANDS`). Phone-first like `showdown-lab.html`.
 
-## `coach-face-lab.html` + `js/coach-face-lab.js` + `css/coach-face-lab.css` + candidate `js/coach-set.js` / `css/coach-set.css` — Coach Face Lab
+## `coach-face-lab.html` + `js/coach-face-lab.js` + `css/coach-face-lab.css` + candidate `js/coach-set.js` / `css/coach-set.css` — Coach Face Lab — **archived 7 Oct 2026**
 
 The Coach's look (`docs/coach/COACH_PLAN.md`), round 3: the machine's
 soul in a little pixel TV (sprites drawn in code), lifted onto the felt
@@ -705,7 +705,7 @@ opposite the dealer deck in 2.5D steps, cabled (a verlet rope) into a
 COACH key beside ⚙. Phone-first; the sheet reuses `css/showdown-lab.css`.
 Not loaded by the game.
 
-## `coach-rig-lab.html` + `js/coach-rig-lab.js` (+ `js/coach-rig-lab-host.js`) — Coach Rig Lab
+## `coach-rig-lab.html` + `js/coach-rig-lab.js` (+ `js/coach-rig-lab-host.js`) — Coach Rig Lab — **archived 7 Oct 2026**
 
 The Coach's lead and boot (`docs/coach/COACH_PLAN.md`, Rig Lab round 1),
 on the look locked in the Coach Face Lab. Drives the same candidate,
@@ -714,7 +714,7 @@ exit; plug and jack; plugging in and out; the power up the lead, five
 tube boots (a 3x5 pixel font for typed lines), wake-ups, lamp, sounds,
 switch-offs. Phone-first; not loaded by the game.
 
-## `coach-voice-lab.html` + `js/coach-voice-lab.js` (+ host) + candidate `js/coach-talk.js` / `css/coach-talk.css` — Coach Voice Lab
+## `coach-voice-lab.html` + `js/coach-voice-lab.js` (+ host) + candidate `js/coach-talk.js` / `css/coach-talk.css` — Coach Voice Lab — **archived 7 Oct 2026**
 
 The Coach talks (`docs/coach/COACH_PLAN.md`, Voice Lab round 1): a bubble
 from his set (the Speech Lab's card stock, or dark glass in his ink), his
@@ -942,6 +942,11 @@ They are kept exactly as they were on the protected branch
 `checkpoint/labs-archive-2026-10`; sections below marked **archived**
 describe them. To bring one back:
 `git checkout origin/checkpoint/labs-archive-2026-10 -- <file> [<file>…]`.
+On 7 Oct 2026 eight more went the same way, with the 19 files only they
+used: bank-load, end-screens, workshop-skins, pip-report and the four coach
+labs (brain, face, rig, voice). The checkpoint branches are protected, so
+these were not added to one; they are as they were on `main` at `e64b215`:
+`git checkout e64b215 -- <file> [<file>…]`.
 Labs that a test suite reads (card-turn, card-flight-options, chip-motion,
 showdown-rail, deck, action-drum, career, ticket, dashboard-order,
 table-room) were kept: they double as fixtures for checks on the live game. (`pattern-book.html` is the design

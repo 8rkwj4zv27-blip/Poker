@@ -7,7 +7,8 @@
    fetch the new files) and the newest entry in CHANGELOG.md. If
    CACHE_NAME is forgotten, players keep the old game. If the CHANGELOG
    is forgotten, the record is wrong. This suite fails the moment the
-   three disagree.
+   three disagree, or when the handover note (docs/HANDOVER.md) names
+   another build.
    Run: node validation/version-checks.js */
 
 const assert=require('assert');
@@ -51,6 +52,22 @@ check('CACHE_NAME matches BUILD_VERSION',()=>{
 
 check('the newest CHANGELOG entry matches BUILD_VERSION',()=>{
   assert.strictEqual(logged,build,'CHANGELOG.md newest entry is '+logged+' but BUILD_VERSION is '+build+': add a line for '+build);
+});
+
+// docs/HANDOVER.md is the note each session leaves the next (CLAUDE.md,
+// "Handover note"). A release that forgets it leaves the next session
+// planning from a stale picture of the game.
+check('docs/HANDOVER.md names the current build',()=>{
+  const note=read('docs/HANDOVER.md');
+  const full=/const BUILD_VERSION = '([^']+)';/.exec(read('js/02-support-systems.js'))[1];
+  const m=/^Build: `([^`]+)`$/m.exec(note);
+  assert(m,'no "Build: `...`" line in docs/HANDOVER.md');
+  assert.strictEqual(m[1],full,'docs/HANDOVER.md says '+m[1]+' but BUILD_VERSION is '+full+': update the handover note');
+});
+
+check('docs/HANDOVER.md stays one screen',()=>{
+  const lines=read('docs/HANDOVER.md').split('\n').length;
+  assert(lines<=80,'docs/HANDOVER.md is '+lines+' lines: replace old lines instead of adding (limit 80)');
 });
 
 process.stdout.write('\n'+passed+' version checks passed.\n');

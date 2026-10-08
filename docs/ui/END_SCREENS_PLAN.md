@@ -1,5 +1,7 @@
 # End screens — plan (EVENT WON / EVENT LOST)
 
+> **Historical.** The end screens shipped in v0.63.0 (5 October 2026). The code, `docs/CODEMAP.md` and `docs/HANDOVER.md` describe the game today. Index of current docs: `docs/README.md`.
+
 **Lab link (owner's phone):** https://claude.ai/artifact/6K6poGQZ1d8yNFzfbdAiUZ
 (`end-screens-lab.html`; re-stage with `validation/tools/lab-bundle.js` and
 republish to the same link after a change.)
