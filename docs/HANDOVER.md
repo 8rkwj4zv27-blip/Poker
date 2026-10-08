@@ -26,8 +26,9 @@ audit's complaints (dashboard rims, clipped result line, chip pile) are gone.
 
 ## Recent changes (newest first)
 
-- 8 Oct (no game change): Hub Lab (`hub-lab.html`): Career opens on
-  tonight's tickets, dealt and styled by kind, fed into a slot.
+- 8 Oct (no game change): Hub Round 4 (`hub-lab.html`): three larger
+  invitations, selected paper brief, upward flick into a top reader;
+  entry safety and paid-table resume checked (`HUB_ROUND4_REVIEW.md`).
 - 8 Oct (no game change): Career as packs of cards, brainstormed with
   the owner (`docs/career/PACKS_PLAN.md`); the visual lab `pack-lab.html`
   (vending machine, rip, reveal, ticket case, feed into a real table).
@@ -65,8 +66,10 @@ own speech bubbles (`claude/tender-dijkstra-zso8dm`).
 ## Next
 
 Packs are Career's direction (owner, 8 Oct). Next: the owner plays the
-Hub Lab (`docs/career/PACKS_PLAN.md`, Round 3: Career opens on tonight's
-tickets); then the Vendor and the Case screens to the same standard.
+Hub Round 4 (`docs/career/PACKS_PLAN.md`): three invitations, the paper
+brief and top reader; resolve feedback, then the Vendor and the Case.
+The old private Claude link still shows Round 3 (publisher unavailable
+here); the new bundle and local preview are ready for review.
 Agree with the owner how this reshapes Events Releases 2 to 4
 (`docs/career/EVENTS_PLAN.md`) before building either. Still open: the
 owner's verdict on the new Back Room (v0.67.0; minutes per hand

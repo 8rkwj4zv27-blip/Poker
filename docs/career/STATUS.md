@@ -8,10 +8,8 @@ research how something specific was built or decided, never by default.
 
 ## Current state
 
-- Last checked: 7 October 2026, against v0.66.1. Since v0.64.4 (Abandon /
-  Cash Out on the paid ticket) Career's only changes are the audit's file
-  tidy and save data (v0.65.0), which backs up and restores the Career
-  save without changing its fields.
+- Last checked: 8 October 2026, against v0.67.0. Back Room event
+  balancing is live (item 8). Round 4 Hub work is lab-only (item 9).
 - Career save schema: **version 6** (`CAREER_SAVE_VERSION`).
 - Production Career Hub: ticket-reader presentation (six-venue rack,
   spring-driven touch physics, printed-ticket detail flip), integrated
@@ -96,6 +94,14 @@ in any of these passes; the DETAILS card flip is untouched.
    save from before the new ticket migrates with every field kept
    (`career-events-checks.js`, now 115 checks).
 
+9. **Hub Round 4 lab** (2026-10-08, no release): owner-authorised polish
+   of `hub-lab.html` / `hub-lab-app.html`. Three larger invitations, one
+   top reader, selected paper brief, upward flick/direct slot placement,
+   stepped feed and actual Career entry in an in-memory fixture. Risky
+   cancel/confirm, affordability, repeat-charge guard and paid-event resume
+   retain authoritative Career behavior. Real portraits remain placeholder
+   art. `PACKS_PLAN.md` and `HUB_ROUND4_REVIEW.md` hold scope and validation.
+
 ## Scope note — Phase 5/7/8 shelved (2026-09-24)
 
 The owner does not currently want:
@@ -115,10 +121,12 @@ either.
 
 ## Immediate next task
 
-**Owner plays the Hub Lab** (`hub-lab.html`, `docs/career/PACKS_PLAN.md`,
-Round 3): packs are Career's direction; Career opens on tonight's
-tickets. Nothing in the game has changed. Then the Vendor and the Case
-screens; agree with the owner how this reshapes Releases 2 to 4 below.
+**Owner reviews Hub Round 4 on the phone** (`hub-lab.html`,
+`PACKS_PLAN.md`, `HUB_ROUND4_REVIEW.md`): three invitations, selected
+paper brief and the top reader. Lab-only; production stays v0.67.0.
+The older private Claude link is not updated because the publisher is
+unavailable in this session. Resolve Hub feedback, then the Vendor and
+the Case; agree how this reshapes Releases 2–4 below.
 
 Before that, still open: **owner plays Release 1 on the phone** (v0.67.0, `docs/career/EVENTS_PLAN.md`):
 does the Back Room build a stack, and are its longer events still fun?

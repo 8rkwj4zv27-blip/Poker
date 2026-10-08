@@ -1,474 +1,220 @@
 "use strict";
-
-/* ============================================================
-   HUB LAB — Career opens on your tickets (lab only, never loaded by the game)
-
-   Runs inside the game copy that hub-lab.html builds. Career's screen
-   becomes the hub the owner asked for (docs/career/PACKS_PLAN.md, Round 3):
-
-     YOU       bankroll reel and record, the same parts as today's Career
-     TONIGHT   six tickets dealt from the deck in the corner of the felt,
-               each tabbed with why it was dealt. Every kind of ticket has
-               its own look: events are tickets, new formats are machine
-               slips, character tables and wilds are playing cards, jinxes
-               are dark slips
-     PICK      tap a ticket to pick it; press and drag to pick it up and
-               carry it; in the hand of five, slide along the fan
-     FEED      drag the ticket into the slot, or press BUY IN: it goes in,
-               the bankroll counts down and the real table rolls in
-     DOORS     THE CASE and THE VENDOR (their screens are the next labs)
-
-   Every ticket plays a real catalogue event with its real field of faces;
-   the art window shows them until the owner's artwork goes in.
-   ============================================================ */
+/* Round 4: three invitations and a top reader. Lab only, in-memory saves.
+   Printed terms, advertised rosters and the entry transaction remain Career's. */
 (() => {
-  const host = (() => { try{ return parent !== window && parent.__lab ? parent.__lab : null; }catch(e){ return null; } })();
-  const state = host ? host.state : {};
-  const defaults = { deal:'grid6', speed:1 };
-  Object.keys(defaults).forEach(k => { if (state[k] == null) state[k] = defaults[k]; });
-  const save = patch => { Object.assign(state, patch); if (host) host.set(patch); };
-  const speed = () => Number(state.speed) || 1;
-  const wait = ms => new Promise(r => setTimeout(r, ms / speed()));
-  const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
-  const esc = s => String(s).replace(/[&<>"]/g, ch => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;' })[ch]);
-  const money = n => '$' + Number(n).toLocaleString('en-US');
-  const short = n => n >= 1000 ? '$' + (Math.round(n / 100) / 10).toString().replace(/\.0$/, '') + 'K' : money(n);
-  const S = {
-    deal(){ try{ Sound.cardDeal(); }catch(e){} }, flip(){ try{ Sound.cardFlip(); }catch(e){} }, land(){ try{ Sound.cardLanded(); }catch(e){} },
-    lift(){ try{ Sound.cardReturn(); }catch(e){} }, key(){ try{ Sound.buttonPress('thunk'); }catch(e){} },
-    tick(s){ try{ Sound.stageRollClick(s || .5, false); }catch(e){} }, bite(){ try{ Sound.hatchClose(); }catch(e){} }
-  };
-  const buzz = p => { try{ haptic(p); }catch(e){} };
-  const TW = 112, TH = 157;
-
-  const VENUE_KEY = { 'BACK ROOM':'backroom', 'PUB CIRCUIT':'pub', 'CARD CLUB':'cardclub', 'CASINO FLOOR':'casino', 'HIGH ROLLER ROOM':'highroller', 'INVITATIONAL CHAMPIONSHIP':'invitational' };
-  const VENUE_SHORT = { 'BACK ROOM':'BACK ROOM', 'PUB CIRCUIT':'PUB CIRCUIT', 'CARD CLUB':'CARD CLUB', 'CASINO FLOOR':'CASINO', 'HIGH ROLLER ROOM':'HIGH ROLLER', 'INVITATIONAL CHAMPIONSHIP':'INVITATIONAL' };
-  const SUIT = { backroom:'♣', pub:'♥', cardclub:'♠', casino:'♦', highroller:'♠', invitational:'♥' };
-  /* what each kind of ticket looks like */
-  const STYLE = { event:'ticket', format:'slip', character:'card', wild:'card', jinx:'slip', big:'ticket' };
-
-  /* Tonight's deals: a career a little way in (Back Room cleared, the
-     Pub open, the Card Club a stretch). Each RE-DEAL draws six. */
-  const POOL = [
-    { id:'pub-freezeout', kind:'event', why:'NEXT STEP', note:'Win it and the Card Club opens' },
-    { id:'back-room-heads-up', kind:'character', why:'OVERDUE', note:'Harry\'s been asking after you', title:'HARRY\'S TABLE', face:6, mood:'sly', who:'HARRY', rank:'H' },
-    { id:'pub-turbo', kind:'format', why:'NEW', note:'Pulled from a Pub pack last night', title:'PUB TURBO', rule:'BLINDS UP EVERY 6 HANDS' },
-    { id:'back-room-five', kind:'event', why:'SAFE BET', note:'Paid in most of these. Builds your stack' },
-    { id:'pub-open', kind:'wild', why:'WILD CARD', note:'Every 5th hand all ante big: a bomb pot', title:'BOMB POT NIGHT', rule:'BOMB POT EVERY 5TH' },
-    { id:'pub-freezeout', kind:'jinx', why:'JINX', note:'Blinds double. So does the prize', title:'MARKED DECK', rule:'BLINDS ×2 · PRIZE ×2' },
-    { id:'card-club-deep', kind:'event', why:'A STRETCH', note:'A big buy-in for your bankroll' },
-    { id:'pub-open', kind:'character', why:'FAVOURITE', note:'You\'ve won here twice', title:'LUCY\'S LOCK-IN', face:2, mood:'smug', who:'LUCY', rank:'L' },
-    { id:'back-room-freezeout', kind:'format', why:'NEW', note:'A new format to try', title:'BOUNTY NIGHT', rule:'EVERY KO PAYS $40' },
-    { id:'casino-main', kind:'big', why:'A STRETCH', note:'The Casino. One day.' }
+  const host=(()=>{try{return parent!==window && parent.__lab ? parent.__lab:null;}catch(_){return null;}})();
+  const state=host ? host.state:{};
+  const query=new URLSearchParams(host ? parent.location.search:location.search);
+  Object.assign(state,{speed:1,motion:'full',pose:query.get('pose')||'play',brief:'paper',...state});
+  const save=p=>{Object.assign(state,p);if(host)host.set(p);};
+  const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+  const esc=v=>String(v).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+  const money=v=>'$'+Number(v).toLocaleString('en-US');
+  const reduced=()=>state.motion==='reduced'||matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const still=()=>state.pose!=='play';
+  const wait=ms=>new Promise(r=>setTimeout(r,reduced()||still()?0:ms/state.speed));
+  const sound=(name,...args)=>{if(!still()&&!reduced()){try{Sound[name](...args);}catch(_){}}};
+  const buzz=v=>{if(!still()&&!reduced()){try{haptic(v);}catch(_){}}};
+  const TW=152,TH=216;
+  const VENUES={'BACK ROOM':['backroom','BACK ROOM'],'PUB CIRCUIT':['pub','PUB CIRCUIT'],'CARD CLUB':['cardclub','CARD CLUB'],'CASINO FLOOR':['casino','CASINO'],'HIGH ROLLER ROOM':['highroller','HIGH ROLLER'],'INVITATIONAL CHAMPIONSHIP':['invitational','INVITATIONAL']};
+  const POOL=[
+    {id:'pub-freezeout',kind:'event',why:'NEXT STEP',note:'Win here to open the Card Club.'},
+    {id:'back-room-heads-up',kind:'character',why:'A PRIVATE TABLE',note:'One opponent. One invitation. Winner takes the pot.'},
+    {id:'pub-turbo',kind:'format',why:'A CHANGE OF PACE',note:'A shorter stack and quicker blinds. Same Hold’em.',title:'PUB TURBO'},
+    {id:'back-room-five',kind:'event',why:'TWO PLACES PAID',note:'Five players. First and second take home a prize.'},
+    {id:'pub-open',kind:'event',why:'TWO PLACES PAID',note:'A bigger field with a second paid place.'},
+    {id:'card-club-deep',kind:'event',why:'A BIGGER SHOT',note:'More chips and more time to play.',title:'DEEP STACK'}
   ];
-  let dealNo = 0;
-  function drawSix(){
-    const picks = dealNo === 0 ? [0, 1, 2, 3, 4, 5] : shuffle([...POOL.keys()]).slice(0, 6);
-    dealNo++;
-    return picks.map(i => ticketData(POOL[i]));
+  let root,layer,cards=[],picked=-1,press=null,holding=null,dealing=false,busy=false,raf=0,last=0,epoch=0,dealNo=0,shown=0;
+  let tuneSheet,tuneKey,scrim,seeded=false,wasHidden=true;
+  const visible=()=>root&&!document.getElementById('career').classList.contains('hidden');
+  const phase=n=>{root.dataset.phase=n;};
+  const box=el=>{const a=el.getBoundingClientRect(),b=root.getBoundingClientRect();return{x:a.left-b.left,y:a.top-b.top,w:a.width,h:a.height};};
+  const point=e=>{const r=root.getBoundingClientRect();return{x:e.clientX-r.left,y:e.clientY-r.top};};
+  const wake=()=>{if(!raf&&visible()){last=0;raf=requestAnimationFrame(step);}};
+  function data(d){
+    const event=careerEventById(d.id),roster=careerRosterFor(d.id)||[],who=d.kind==='character'?careerSeatName(roster[0]).toUpperCase():'';
+    return {...d,event,roster,who,venue:VENUES[event.venue][0],venueName:VENUES[event.venue][1],title:who?who+'’S TABLE':d.title||careerEventTitle(event),price:event.buyIn,style:d.kind==='character'?'card':d.kind==='format'?'slip':'ticket'};
   }
-  function shuffle(a){ for (let i = a.length - 1; i > 0; i--){ const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
-  function ticketData(d){
-    const e = careerEventById(d.id);
-    const venue = VENUE_KEY[e.venue] || 'backroom';
-    const roster = (() => { try{ return careerRosterFor(e.id) || []; }catch(err){ return []; } })();
-    return {
-      id:e.id, kind:d.kind, style:STYLE[d.kind] || 'ticket', venue, venueName:VENUE_SHORT[e.venue] || e.venue,
-      title:d.title || careerEventTitle(e), why:d.why, note:d.note, rule:d.rule || '', face:d.face, mood:d.mood, who:d.who, rank:d.rank,
-      seats:e.opponentCount + 1, buyIn:e.buyIn, top:e.payouts[0], paid:e.payouts.length, roster
-    };
-  }
-
-  /* ---- a ticket ---- */
-  function artHTML(t){
-    if (t.kind === 'character'){
-      return '<span class="hb-hero">' + renderFace({ faceColorIdx:t.face }, t.mood || 'idle') + '<b>' + esc(t.who) + '</b></span>';
-    }
-    const n = Math.min(5, t.roster.length);
-    return '<span class="hb-faces n' + n + '">' + t.roster.slice(0, n).map(seat => '<span class="hb-face">' + renderFace({ faceColorIdx:seat.faceColorIdx }, 'idle') + '</span>').join('') + '</span>';
-  }
-  function makeTicket(t, i){
-    const el = document.createElement('div');
-    el.className = 'hb-t';
-    el.dataset.venue = t.venue; el.dataset.style = t.style; el.dataset.kind = t.kind; el.dataset.i = i;
-    el.style.width = TW + 'px'; el.style.height = TH + 'px';
-    const suit = SUIT[t.venue];
-    const rank = t.rank || String(t.seats);
-    const tag = t.kind === 'wild' ? '<span class="hb-tag is-wild">WILD</span>' : t.kind === 'jinx' ? '<span class="hb-tag is-jinx">JINX</span>' : t.kind === 'format' ? '<span class="hb-tag is-new">NEW FORMAT</span>' : '';
-    el.innerHTML =
-      '<span class="hb-why">' + esc(t.why) + '</span>' +
-      '<span class="hb-card">' +
-        '<span class="hb-t-body">' +
-          '<span class="hb-idx hb-idx-a" aria-hidden="true"><b>' + rank + '</b><i>' + suit + '</i></span>' +
-          '<span class="hb-idx hb-idx-b" aria-hidden="true"><b>' + rank + '</b><i>' + suit + '</i></span>' +
-          '<span class="hb-venue">' + esc(t.venueName) + '</span>' +
-          '<span class="hb-art">' + artHTML(t) + tag + '</span>' +
-          '<span class="hb-title">' + esc(t.title) + '</span>' +
-          '<span class="hb-line">' + esc(t.rule || (t.seats + ' SEATS · ' + t.paid + ' PAID')) + '</span>' +
-          '<span class="hb-money"><span><small>IN</small><b>' + short(t.buyIn) + '</b></span><span><small>TOP</small><b>' + short(t.top) + '</b></span></span>' +
-          (t.kind === 'wild' || t.kind === 'big' || t.kind === 'character' ? '<span class="hb-foil' + (t.kind === 'character' ? ' is-soft' : '') + '" aria-hidden="true"><i></i></span>' : '') +
-        '</span>' +
-        '<span class="hb-back" aria-hidden="true"></span>' +
-      '</span>';
-    return el;
-  }
-
-  /* ============================================================
-     THE SPRINGS: every ticket lives in one layer over the whole hub, so
-     it can be carried anywhere; the felt only says where its slot is
-     ============================================================ */
-  let root, layer, tickets = [], cards = [], picked = -1, holding = null, scrub = null, feeding = false, raf = 0, last = 0;
-  function card(el, t, i){
-    return { el, t, i, card:el.querySelector('.hb-card'), x:0, y:0, r:0, s:1, vx:0, vy:0, vr:0, vs:0, tx:0, ty:0, tr:0, ts:1, flip:0, tflip:0, home:{ x:0, y:0, r:0, s:1 }, z:i };
+  const portrait=(seat,mood='idle')=>renderFace({faceColorIdx:seat.faceColorIdx},mood);
+  function ticket(t,i){
+    const el=document.createElement('button');el.type='button';el.className='hb-t';el.dataset.i=i;el.dataset.kind=t.kind;el.dataset.style=t.style;el.dataset.venue=t.venue;
+    el.setAttribute('aria-label',t.venueName+', '+t.title+', entry '+money(t.price)+'. Inspect ticket');el.setAttribute('aria-pressed','false');
+    const art=t.kind==='character'?'<span class="hb-hero">'+portrait(t.roster[0],'sly')+'</span>':'<span class="hb-faces">'+t.roster.slice(0,4).map(s=>'<span class="hb-face">'+portrait(s)+'</span>').join('')+'</span>';
+    el.innerHTML='<span class="hb-shadow" aria-hidden="true"></span><span class="hb-card"><span class="hb-t-body"><span class="hb-venue">'+esc(t.venueName)+'</span><span class="hb-title">'+esc(t.title)+'</span><span class="hb-art">'+art+'</span><span class="hb-kind">'+(t.kind==='character'?'PRIVATE INVITATION':t.kind==='format'?'TURBO FREEZEOUT':'ADMIT ONE')+'</span><span class="hb-stub"><span class="hb-serial">'+(t.kind==='character'?'H /':t.kind==='format'?'T /':'Nº')+' 0'+(i+1)+'</span><span class="hb-price"><small>ENTRY</small><b>'+money(t.price)+'</b></span></span>'+(t.kind==='character'?'<span class="hb-foil" aria-hidden="true"><i></i></span>':'')+'</span><span class="hb-back" aria-hidden="true"><i>PF</i></span><span class="hb-shade" aria-hidden="true"></span></span>';
+    el.addEventListener('click',e=>{if(e.detail===0&&!busy&&!dealing)choose(picked===i?-1:i);});
+    el.addEventListener('keydown',e=>{
+      if(busy||dealing)return;
+      if(e.key==='Escape'){e.preventDefault();choose(-1);}
+      if(e.key==='ArrowRight'||e.key==='ArrowLeft'){e.preventDefault();const j=(i+(e.key==='ArrowRight'?1:2))%3;choose(j);cards[j].el.focus({preventScroll:true});}
+    });
+    layer.appendChild(el);
+    return{el,t,i,x:0,y:0,r:0,s:1,vx:0,vy:0,vr:0,vs:0,tx:0,ty:0,tr:0,ts:1,flip:1,tflip:1,feeding:false};
   }
   function slots(){
-    const deal = root.querySelector('#hb-deal').getBoundingClientRect(), rr = root.getBoundingClientRect();
-    const W = deal.width, H = deal.height, ox = deal.left - rr.left, oy = deal.top - rr.top;
-    const n = cards.length, mode = state.deal;
-    if (mode === 'fan5'){
-      const s = clamp(Math.min(W * .42 / TW, H * .8 / TH), .8, 1.45);
-      const sp = Math.min(TW * s * .5, (W - TW * s - 10) / Math.max(1, n - 1));
-      return cards.map((c, i) => {
-        const o = i - (n - 1) / 2;
-        const lift = i === picked ? -TH * s * .22 : scrub && scrub.i === i ? -TH * s * .12 : 0;
-        return { x:ox + W / 2 + o * sp, y:oy + H * .55 + o * o * 6 + lift, r:o * 6 * (i === picked ? .3 : 1), s:i === picked ? s * 1.08 : s };
-      });
-    }
-    const cols = 3, rows = mode === 'row3' ? 1 : 2;
-    const gapX = 8, gapY = 20;
-    const s = Math.min(1.25, (W - gapX * (cols - 1) - 6) / (cols * TW), (H - gapY * (rows - 1) - 10) / (rows * TH));
-    const cw = TW * s, ch = TH * s;
-    const gx = ox + (W - (cols * cw + gapX * (cols - 1))) / 2, gy = oy + (H - (rows * ch + gapY * (rows - 1))) / 2 + 6;
-    return cards.map((c, i) => {
-      const col = i % cols, row = Math.floor(i / cols);
-      const lift = i === picked ? -6 : 0;
-      return { x:gx + col * (cw + gapX) + cw / 2, y:gy + row * (ch + gapY) + ch / 2 + lift, r:0, s:i === picked ? s * 1.07 : s };
+    const a=box(root.querySelector('#hb-deal')),W=a.w,H=a.h;
+    const rest=Math.min(1.08,(W-20)/(TW*2.45),H*.67/TH),spread=Math.min(W*.34,TW*rest*.86,(root.clientWidth-TW*rest*1.2)/2-8);
+    const bh=state.brief==='paper'?root.querySelector('#hb-brief').offsetHeight:64;
+    const zoom=Math.min(1.42,(W-64)/TW,(H-bh-15)/TH);
+    return cards.map((c,i)=>{
+      if(picked===i)return{x:a.x+W/2,y:a.y+TH*zoom/2+8,r:0,s:zoom};
+      if(picked>=0){const side=cards.filter(other=>other.i!==picked).indexOf(c)===0?-1:1;return{x:a.x+W/2+side*W*.34,y:a.y+H*.38+(i%2)*10,r:side*11,s:rest*.78};}
+      return{x:a.x+W/2+(i-1)*spread,y:a.y+H*.46+(i===0?18:i===2?28:0),r:[-8,1,7][i],s:rest};
     });
   }
-  function rehome(){ const sl = slots(); cards.forEach((c, i) => { c.home = sl[i]; if (c !== holding && !c.feeding){ c.tx = sl[i].x; c.ty = sl[i].y; c.tr = sl[i].r; c.ts = sl[i].s; } }); }
+  function rehome(){
+    if(!root||!cards.length)return;
+    const homes=slots();cards.forEach((c,i)=>{c.home=homes[i];if(c!==holding&&!c.feeding){c.tx=c.home.x;c.ty=c.home.y;c.tr=c.home.r;c.ts=c.home.s;}});wake();
+  }
   function step(now){
-    const dt = Math.min(.04, (now - (last || now)) / 1000) * speed(); last = now;
-    const k = 200, d = 20;
-    cards.forEach(c => {
-      if (c !== holding){
-        c.vx += (k * (c.tx - c.x) - d * c.vx) * dt; c.x += c.vx * dt;
-        c.vy += (k * (c.ty - c.y) - d * c.vy) * dt; c.y += c.vy * dt;
-      }
-      c.vr += (k * (c.tr - c.r) - d * c.vr) * dt; c.r += c.vr * dt;
-      c.vs += (k * (c.ts - c.s) - d * c.vs) * dt; c.s += c.vs * dt;
-      c.flip += clamp(c.tflip - c.flip, -dt * 6, dt * 6);
-      c.el.style.transform = 'translate(' + (c.x - TW / 2).toFixed(1) + 'px,' + (c.y - TH / 2).toFixed(1) + 'px) rotate(' + c.r.toFixed(2) + 'deg) scale(' + c.s.toFixed(3) + ')';
-      c.el.style.zIndex = String(c === holding ? 300 : c.feeding ? 2 : c.i === picked ? 120 : scrub && scrub.i === c.i ? 110 : 10 + c.z);
-      // the turn: the card narrows to an edge and opens on its other face
-      const f = c.flip, sx = Math.abs(Math.cos(f * Math.PI));
-      c.card.style.transform = 'scaleX(' + Math.max(.02, sx).toFixed(3) + ')';
-      c.el.classList.toggle('is-down', f < .5);
+    raf=0;if(!visible()||document.hidden)return;
+    const dt=Math.min(.032,(now-(last||now))/1000)*state.speed;last=now;let moving=false;
+    cards.forEach(c=>{
+      const instant=reduced()||still();
+      if(c!==holding){if(instant){c.x=c.tx;c.y=c.ty;c.vx=c.vy=0;}else{c.vx+=(210*(c.tx-c.x)-26*c.vx)*dt;c.x+=c.vx*dt;c.vy+=(210*(c.ty-c.y)-26*c.vy)*dt;c.y+=c.vy*dt;}}
+      if(instant){c.r=c.tr;c.s=c.ts;c.flip=c.tflip;}else{c.vr+=(220*(c.tr-c.r)-27*c.vr)*dt;c.r+=c.vr*dt;c.vs+=(220*(c.ts-c.s)-27*c.vs)*dt;c.s+=c.vs*dt;c.flip+=clamp(c.tflip-c.flip,-dt*5.5,dt*5.5);}
+      c.el.style.transform='translate('+Math.round(c.x-TW/2)+'px,'+Math.round(c.y-TH/2)+'px) rotate('+c.r.toFixed(2)+'deg) scale('+c.s.toFixed(3)+')';
+      c.el.style.zIndex=String(c===holding?100:c.i===picked?60:10+c.i);
+      c.el.querySelector('.hb-card').style.transform='scaleX('+Math.max(.025,Math.abs(Math.cos(c.flip*Math.PI))).toFixed(3)+')';
+      c.el.classList.toggle('is-down',c.flip<.5);c.el.style.setProperty('--lift',c===holding?'12px':c.i===picked?'8px':'3px');
+      if(Math.abs(c.tx-c.x)+Math.abs(c.ty-c.y)+Math.abs(c.vx)+Math.abs(c.vy)>.4||Math.abs(c.tr-c.r)+Math.abs(c.vr)+Math.abs(c.ts-c.s)+Math.abs(c.vs)+Math.abs(c.tflip-c.flip)>.02)moving=true;
     });
-    raf = requestAnimationFrame(step);
+    if(moving||holding)raf=requestAnimationFrame(step);
   }
-
-  /* ---- the deal ---- */
+  function status(a,b){root.querySelector('#hb-ro-a').textContent=a;root.querySelector('#hb-ro-b').textContent=b;}
+  function lock(on){
+    busy=on;['#hb-back','#hb-set','#hb-redeal','#hb-case','#hb-vendor'].forEach(id=>root.querySelector(id).disabled=on);
+    tuneKey.disabled=on;cards.forEach(c=>c.el.disabled=on||dealing);paint();
+  }
+  function paint(){
+    const t=cards[picked]&&cards[picked].t;root.classList.toggle('is-selected',!!t);root.classList.toggle('is-reduced',reduced()||still());
+    cards.forEach(c=>{c.el.classList.toggle('is-picked',c.i===picked);c.el.classList.toggle('is-dim',!!t&&c.i!==picked);c.el.setAttribute('aria-pressed',String(c.i===picked));});
+    const brief=root.querySelector('#hb-brief'),slot=root.querySelector('#hb-slot'),key=root.querySelector('#hb-feed');
+    brief.hidden=!t||busy;brief.inert=!t||busy;brief.classList.toggle('is-face-only',state.brief!=='paper');slot.classList.toggle('is-ready',!!t);
+    root.querySelector('#hb-slot-word').textContent=t?'ENTRY '+money(t.price):'TICKET READER';
+    root.querySelector('#hb-hint').textContent=t?'FLICK UP TO FEED · TAP FELT TO PUT BACK':'THREE INVITATIONS. PICK YOUR TABLE.';
+    if(!t){root.classList.remove('is-resuming');if(!busy)status('TONIGHT’S TICKETS','PICK ONE UP TO TAKE A LOOK');return;}
+    const event=t.event,entryState=careerEventState(t.id);
+    root.querySelector('#hb-brief-title').textContent=t.why;
+    root.querySelector('#hb-specs').innerHTML='<span><small>FIELD</small><b>'+(event.opponentCount+1)+' PLAYERS</b></span><span><small>STACK</small><b>'+event.stack.toLocaleString('en-US')+'</b></span><span><small>BLINDS UP</small><b>'+event.handsPerBlindLevel+' HANDS</b></span>';
+    root.querySelector('#hb-payout').textContent='PAYS '+event.payouts.map((v,i)=>(i+1)+(i===0?'ST':i===1?'ND':'RD')+' '+money(v)).join(' · ');
+    root.querySelector('#hb-field').textContent=t.roster.map(careerSeatName).join(' · ');key.textContent='FEED IT · '+money(t.price);key.disabled=busy||entryState!=='available';
+    const resuming=careerHasActiveEvent()&&career.active.eventId===t.id;root.classList.toggle('is-resuming',resuming);
+    if(resuming){key.textContent='CONTINUE EVENT';key.disabled=busy;root.querySelector('#hb-slot-word').textContent='ENTRY ALREADY PAID';if(!busy)status('ENTRY ALREADY PAID',t.title+' · CONTINUE YOUR TABLE');return;}
+    if(!busy){if(entryState==='unaffordable')status('ENTRY '+money(t.price),'NOT ENOUGH IN THE BANKROLL');else if(entryState!=='available')status('TICKET UNAVAILABLE',careerRequirementText(event,entryState));else status(t.venueName+' · '+t.title,t.note);}
+  }
+  function choose(i){if(busy||dealing||(careerHasActiveEvent()&&(i<0||cards[i].t.id!==career.active.eventId)))return;if(still()){cards.forEach(c=>c.feeding=false);root.classList.remove('is-docking');}picked=i;paint();rehome();phase(i<0?'idle':'selected');sound(i<0?'cardLanded':'cardReturn');buzz(6);}
+  function shuffled(items){const a=items.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
   async function deal(){
-    if (feeding) return;
-    picked = -1; paintConsole();
-    const deck = root.querySelector('#hb-deck').getBoundingClientRect(), rr = root.getBoundingClientRect();
-    const dx = deck.left - rr.left + deck.width / 2, dy = deck.top - rr.top + deck.height / 2;
-    // sweep any old ones back into the deck first
-    if (cards.length){
-      for (const c of cards.slice().reverse()){ c.tflip = 0; c.tx = dx; c.ty = dy; c.tr = 0; c.ts = .5; S.deal(); await wait(45); }
-      await wait(320);
-      cards.forEach(c => c.el.remove());
-    }
-    tickets = drawSix().slice(0, state.deal === 'row3' ? 3 : state.deal === 'fan5' ? 5 : 6);
-    cards = tickets.map((t, i) => { const el = makeTicket(t, i); layer.appendChild(el); const c = card(el, t, i); Object.assign(c, { x:dx, y:dy, tx:dx, ty:dy, s:.5, ts:.5, r:-8 + i * 3, tr:-8 + i * 3, flip:0, tflip:0 }); return c; });
-    rehome();
-    cards.forEach(c => { c.tx = dx; c.ty = dy; c.ts = .5; });
-    root.querySelector('#hb-deck').classList.add('is-dealing');
-    await wait(160);
-    for (const c of cards){
-      c.tx = c.home.x; c.ty = c.home.y; c.tr = c.home.r + (Math.random() - .5) * 6; c.ts = c.home.s;
-      c.vy = -380; S.deal(); buzz(5);
-      await wait(115);
-    }
-    await wait(300);
-    root.querySelector('#hb-deck').classList.remove('is-dealing');
-    S.land();
-    for (const c of cards){ c.tr = c.home.r; c.tflip = 1; c.ts = c.home.s * 1.08; S.flip(); await wait(90); c.ts = c.home.s; }
-    root.querySelector('#hb-hint').textContent = state.deal === 'fan5' ? 'SLIDE ALONG · TAP TO PICK · DRAG TO THE SLOT' : 'TAP TO PICK · DRAG ONE TO THE SLOT';
-    root.querySelector('#hb-hint').classList.add('is-on');
+    if(busy||dealing||!visible())return;
+    dealing=true;const token=++epoch;picked=-1;paint();phase('dealing');root.querySelector('#hb-redeal').disabled=true;
+    const d=box(root.querySelector('#hb-deck')),dx=d.x+d.w/2,dy=d.y+d.h/2;
+    cards.forEach(c=>{c.el.disabled=true;c.tx=dx;c.ty=dy;c.tr=0;c.ts=.25;c.tflip=0;});wake();if(cards.length)await wait(260);
+    if(token!==epoch||!visible()){dealing=false;return;}
+    cards.forEach(c=>c.el.remove());const pool=careerHasActiveEvent()?[POOL.find(d=>d.id===career.active.eventId),...POOL.filter(d=>d.id!==career.active.eventId).slice(0,2)]:(dealNo++===0?POOL.slice(0,3):shuffled(POOL).slice(0,3));
+    cards=pool.map((d,i)=>ticket(data(d),i));rehome();
+    cards.forEach(c=>{Object.assign(c,{x:dx,y:dy,tx:dx,ty:dy,r:-12,s:.25,ts:.25,flip:0,tflip:0});c.el.disabled=true;});root.querySelector('#hb-deck').classList.add('is-dealing');wake();
+    for(const c of cards){if(token!==epoch||!visible()){dealing=false;return;}Object.assign(c,{tx:c.home.x,ty:c.home.y,tr:c.home.r,ts:c.home.s});sound('cardDeal');buzz(4);wake();await wait(125);c.tflip=1;wake();}
+    await wait(340);if(token!==epoch||!visible()){dealing=false;return;}
+    dealing=false;root.querySelector('#hb-deck').classList.remove('is-dealing');cards.forEach(c=>c.el.disabled=false);root.querySelector('#hb-redeal').disabled=false;sound('cardLanded');phase('idle');
+    if(careerHasActiveEvent()){picked=0;paint();rehome();phase('resume');cards.forEach(c=>c.el.disabled=true);root.querySelector('#hb-redeal').disabled=true;return;}
+    if(state.pose==='selected')choose(1);
+    if(state.pose==='feed'){choose(0);dock(cards[0]);phase('preview-feed');status('ENTRY '+money(cards[0].t.price),'TICKET HELD AT THE READER');}
   }
-
-  /* ---- picking: tap, carry, and the fan's scrub ---- */
-  function at(e){ const rr = root.getBoundingClientRect(); return { x:e.clientX - rr.left, y:e.clientY - rr.top }; }
   function down(e){
-    if (feeding) return;
-    const el = e.target.closest('.hb-t'); const p = at(e);
-    if (state.deal === 'fan5' && (el || inFelt(p))){
-      e.preventDefault();
-      const i = nearestFan(p.x);
-      scrub = { id:e.pointerId, i, x0:p.x, y0:p.y, t:performance.now(), moved:false };
-      S.tick(.4); rehome();
-      return;
-    }
-    if (!el) return;
-    e.preventDefault();
-    const c = cards[+el.dataset.i];
-    holding = null;
-    c.press = { id:e.pointerId, x0:p.x, y0:p.y, ox:p.x - c.x, oy:p.y - c.y, lx:p.x, ly:p.y, lt:performance.now() };
-    pressCard = c;
+    if(busy||dealing||!visible()||e.button>0)return;const el=e.target.closest('.hb-t');if(!el)return;
+    e.preventDefault();try{Sound.unlock();}catch(_){}
+    const c=cards[Number(el.dataset.i)],p=point(e);press={c,id:e.pointerId,x0:p.x,y0:p.y,ox:p.x-c.x,oy:p.y-c.y,lx:p.x,ly:p.y,lt:e.timeStamp,vy:0};el.setPointerCapture(e.pointerId);
   }
-  let pressCard = null;
   function move(e){
-    const p = at(e);
-    if (scrub && e.pointerId === scrub.id){
-      e.preventDefault();
-      // pulling up out of the fan picks that card up
-      if (scrub.y0 - p.y > 34){
-        const c = cards[scrub.i];
-        scrub = null;
-        startCarry(c, p, e.pointerId);
-        return;
-      }
-      const i = nearestFan(p.x);
-      if (i !== scrub.i){ scrub.i = i; scrub.moved = true; S.tick(.35); buzz(4); rehome(); }
-      return;
-    }
-    const c = holding || pressCard;
-    if (!c || !c.press || e.pointerId !== c.press.id) return;
-    e.preventDefault();
-    if (!holding){
-      if (Math.hypot(p.x - c.press.x0, p.y - c.press.y0) < 8) return;
-      startCarry(c, p, e.pointerId);
-    }
-    const now = performance.now(), dt = Math.max(8, now - c.press.lt);
-    const vx = (p.x - c.press.lx) / dt * 16;
-    c.press.lx = p.x; c.press.ly = p.y; c.press.lt = now;
-    c.x = p.x - c.press.ox; c.y = p.y - c.press.oy; c.vx = c.vy = 0;
-    c.tr = clamp(vx * 2, -16, 16);
-    root.querySelector('#hb-slot').classList.toggle('is-near', overSlot(c));
+    if(!press||press.id!==e.pointerId)return;e.preventDefault();const p=point(e),c=press.c,now=e.timeStamp,dt=Math.max(1,now-press.lt);
+    if(!holding&&Math.hypot(p.x-press.x0,p.y-press.y0)<7)return;
+    if(!holding){holding=c;picked=c.i;paint();rehome();phase('holding');root.classList.add('is-holding');c.ts=Math.min(1.4,c.home.s*1.08);sound('cardReturn');buzz(8);}
+    press.vy=(p.y-press.ly)/dt;c.x=p.x-press.ox;c.y=p.y-press.oy;c.vx=c.vy=0;c.tr=reduced()?0:clamp((p.x-press.lx)/dt*5,-13,13);press.lx=p.x;press.ly=p.y;press.lt=now;
+    root.querySelector('#hb-slot').classList.toggle('is-near',overSlot(c));wake();
   }
-  function startCarry(c, p, id){
-    holding = c;
-    c.press = { id, x0:p.x, y0:p.y, ox:p.x - c.x, oy:p.y - c.y, lx:p.x, ly:p.y, lt:performance.now() };
-    c.ts = c.home.s * 1.15;
-    if (picked !== c.i){ picked = c.i; paintConsole(); rehome(); }
-    root.classList.add('is-holding');
-    S.lift(); buzz(10);
+  function release(e,cancel=false){
+    if(!press||press.id!==e.pointerId)return;const p=point(e),a=press,c=a.c,carried=holding===c;
+    press=null;holding=null;root.classList.remove('is-holding');root.querySelector('#hb-slot').classList.remove('is-near');if(c.el.hasPointerCapture(e.pointerId))c.el.releasePointerCapture(e.pointerId);
+    if(cancel){rehome();phase(picked<0?'idle':'selected');return;}
+    if(carried){const flick=!reduced()&&e.timeStamp-a.lt<110&&a.vy<-.55&&a.y0-p.y>44&&a.y0-p.y>Math.abs(a.x0-p.x)*1.25&&Math.abs(a.x0-p.x)<110;if(overSlot(c)||flick){requestFeed(c);return;}rehome();phase('selected');sound('cardLanded');return;}
+    choose(picked===c.i?-1:c.i);
   }
-  function up(e){
-    if (scrub && e.pointerId === scrub.id){
-      const i = scrub.i, moved = scrub.moved; scrub = null;
-      choose(!moved && picked === i ? -1 : i);
-      return;
-    }
-    const c = holding || pressCard;
-    if (!c || !c.press || e.pointerId !== c.press.id) return;
-    const wasCarry = holding === c;
-    c.press = null; pressCard = null; holding = null;
-    root.classList.remove('is-holding');
-    root.querySelector('#hb-slot').classList.remove('is-near');
-    if (wasCarry){
-      if (overSlot(c)){ feed(c); return; }
-      rehome(); S.land(); buzz(6);
-      return;
-    }
-    choose(picked === c.i ? -1 : c.i);
+  function overSlot(c){const m=box(root.querySelector('.hb-mouth'));return Math.abs(c.x-(m.x+m.w/2))<Math.max(44,(m.w-TW*c.s*.5)/2)&&Math.abs(c.y-TH*c.s/2-(m.y+m.h/2))<18;}
+  function dock(c){const m=box(root.querySelector('.hb-mouth'));c.feeding=true;c.tx=m.x+m.w/2;c.ts=Math.min(1,(m.w-8)/TW);c.ty=m.y+m.h/2+TH*c.ts/2-2;c.tr=0;root.classList.add('is-docking');root.querySelector('#hb-slot').classList.add('is-near');wake();}
+  function returnTicket(c,message){
+    c.feeding=false;c.el.style.visibility='';root.classList.remove('is-docking','is-taking');root.querySelector('#hb-slot').classList.remove('is-near','is-taking');lock(false);rehome();phase('selected');if(message)status('TICKET RETURNED',message);sound('cardLanded');
   }
-  function choose(i){
-    picked = i;
-    S.land(); buzz(8);
-    rehome(); paintConsole();
+  async function requestFeed(c){
+    if(busy||dealing||!c||!visible())return;
+    if(still()){picked=c.i;paint();dock(c);phase('preview-feed');return;}
+    if(!careerCanEnterEvent(c.t.id)){picked=c.i;paint();rehome();phase('selected');return;}
+    picked=c.i;lock(true);phase('docking');dock(c);status('ENTRY '+money(c.t.price),'READER ACCEPTING YOUR INVITATION');await wait(300);
+    if(!visible()){returnTicket(c);return;}
+    if(careerRiskBand(c.t.event)==='risky'){
+      phase('warning');status('ENTRY '+money(c.t.price),'LEAVES '+money(careerBankroll()-c.t.price)+' IN YOUR BANKROLL');
+      showConfirmDialog({title:'Take a bankroll shot?',body:'This '+money(c.t.price)+' entry leaves '+money(careerBankroll()-c.t.price)+' available. Permanent room access is never lost.',confirmLabel:'Feed ticket · '+money(c.t.price),danger:false,onConfirm:()=>{root.inert=false;accept(c);},onCancel:()=>{root.inert=false;returnTicket(c,'NO ENTRY PAID');c.el.focus({preventScroll:true});}});
+      root.inert=true;document.getElementById('confirm-dialog-no').focus({preventScroll:true});
+    }else accept(c);
   }
-  function inFelt(p){ const r = root.querySelector('#hb-deal').getBoundingClientRect(), rr = root.getBoundingClientRect(); return p.y > r.top - rr.top - 20 && p.y < r.bottom - rr.top + 20; }
-  function nearestFan(x){ let best = 0, bd = Infinity; cards.forEach((c, i) => { const d = Math.abs(c.home.x - x); if (d < bd){ bd = d; best = i; } }); return best; }
-  function overSlot(c){ const r = root.querySelector('#hb-slot').getBoundingClientRect(), rr = root.getBoundingClientRect(); return c.y + TH * c.s * .3 > r.top - rr.top - 10; }
-
-  /* ---- the console ---- */
-  function paintConsole(){
-    cards.forEach((c, j) => { c.el.classList.toggle('is-picked', j === picked); c.el.classList.toggle('is-dim', picked >= 0 && j !== picked); });
-    const t = tickets[picked];
-    const buy = root.querySelector('#hb-buy'), slot = root.querySelector('#hb-slot');
-    slot.classList.toggle('is-ready', !!t);
-    if (!t){
-      root.querySelector('#hb-ro-a').textContent = 'PICK A TICKET';
-      root.querySelector('#hb-ro-b').textContent = 'TONIGHT\'S DEAL IS ON THE FELT';
-      root.querySelector('#hb-buy-a').textContent = 'BUY IN'; root.querySelector('#hb-buy-b').textContent = 'PICK A TICKET FIRST';
-      buy.disabled = true; return;
-    }
-    root.querySelector('#hb-ro-a').textContent = t.why + ' · ' + t.venueName;
-    root.querySelector('#hb-ro-b').textContent = t.note.toUpperCase();
-    root.querySelector('#hb-buy-a').textContent = 'BUY IN ' + money(t.buyIn);
-    root.querySelector('#hb-buy-b').textContent = t.title + ' · TOP PRIZE ' + money(t.top);
-    buy.disabled = false;
+  async function accept(c){
+    if(!busy||!visible()){returnTicket(c);return;}
+    phase('feeding');root.classList.add('is-taking');root.querySelector('#hb-slot').classList.add('is-taking');status('FEEDING '+c.t.title,'ENTRY '+money(c.t.price));
+    const startY=c.ty,h=TH*c.ts;
+    for(let i=1;i<=5;i++){c.ty=startY-h*i/5;wake();sound('stageRollClick',.35+i*.07,false);buzz(4);await wait(95);}
+    c.el.style.visibility='hidden';
+    // The sole debit: Career rechecks eligibility, freezes terms, and persists.
+    if(!enterCareerEvent(c.t.id)){returnTicket(c,'ENTRY NOT AVAILABLE · NO MONEY TAKEN');return;}
+    phase('paid');root.classList.remove('is-taking');root.classList.add('is-paid');status('ENTRY PAID · '+money(c.t.price),'NOW SEATING '+c.t.title);sound('hatchClose');buzz([10,8,20]);await countBank(careerBankroll());await wait(180);
+    const launch=()=>startCareerEvent();if(reduced())launch();else careerDepartToTable(launch,{callout:c.t.title});
   }
-
-  /* ---- the feed: into the slot, the money moves, the table rolls in ---- */
-  async function feed(c){
-    if (feeding) return;
-    feeding = true;
-    picked = c.i; paintConsole();
-    const slot = root.querySelector('#hb-slot'), mouth = slot.querySelector('.hb-mouth');
-    const rr = root.getBoundingClientRect(), mr = mouth.getBoundingClientRect();
-    const mx = mr.left - rr.left + mr.width / 2, my = mr.top - rr.top + mr.height / 2;
-    const s = clamp((mr.width - 6) / TW, .6, 1);
-    c.feeding = true; c.tx = mx; c.ty = my - TH * s / 2 - 4; c.tr = 0; c.ts = s;
-    slot.classList.add('is-taking');
-    await wait(340);
-    // bites: down into the mouth; the plate above it hides what's gone in
-    c.el.classList.add('is-feeding');
-    const bites = 6, h = TH * s;
-    for (let b = 1; b <= bites; b++){
-      c.ty = my - h / 2 - 4 + (h + 6) * b / bites; c.y = c.ty; c.vy = 0;
-      c.el.style.setProperty('--cut', Math.round(TH * b / bites) + 'px');
-      S.tick(.5 + b / bites * .5); buzz(5);
-      await wait(115);
-    }
-    c.el.style.visibility = 'hidden';
-    S.bite(); buzz([20, 10, 30]);
-    // the real buy-in: the same functions today's Career uses
-    const t = c.t;
-    let entered = false;
-    try{ entered = enterCareerEvent(t.id); }catch(e){ entered = false; }
-    slot.classList.remove('is-taking');
-    if (!entered){
-      root.querySelector('#hb-ro-a').textContent = 'REJECTED';
-      root.querySelector('#hb-ro-b').textContent = 'NOT ENOUGH IN THE BANKROLL';
-      c.el.style.visibility = ''; c.el.classList.remove('is-feeding'); c.feeding = false; rehome(); feeding = false;
-      return;
-    }
-    slot.classList.add('is-read');
-    root.querySelector('#hb-ro-a').textContent = 'ENTRY PAID · ' + t.venueName;
-    root.querySelector('#hb-ro-b').textContent = 'NOW SEATING: ' + t.title;
-    await countBank(careerBankroll());
-    await wait(320);
-    const launch = () => { try{ startCareerEvent(); }catch(e){} };
-    try{ if (typeof careerDepartToTable === 'function') careerDepartToTable(launch, { callout:t.title }); else launch(); }catch(e){ launch(); }
+  function reel(v){const digits=String(Math.max(0,Math.floor(v))).padStart(7,'0'),lead=7-String(Math.max(0,Math.floor(v))).length;return'<span class="jp-cell jp-sym">$</span>'+digits.split('').map((d,i)=>'<span class="jp-cell jp-digit'+(i<lead?' is-leading':'')+'">'+d+'</span>').join('');}
+  async function countBank(to){
+    if(reduced()){shown=to;root.querySelector('#hb-reel').innerHTML=reel(to);return;}
+    const from=shown;for(let i=1;i<=9;i++){root.querySelector('#hb-reel').innerHTML=reel(Math.round(from+(to-from)*i/9));sound('counterTick',true);await wait(45);}shown=to;
   }
-  let shown = 0;
-  function reel(v){
-    const digits = String(Math.max(0, Math.floor(v))).padStart(7, '0');
-    const lead = 7 - String(Math.max(0, Math.floor(v))).length;
-    return '<span class="jp-cell jp-sym">$</span>' + digits.split('').map((d, i) => '<span class="jp-cell jp-digit' + (i < lead ? ' is-leading' : '') + '">' + d + '</span>').join('');
-  }
-  function countBank(to){
-    const from = shown, t0 = performance.now(), dur = 700 / speed();
-    return new Promise(res => {
-      const tick = now => {
-        const k = clamp((now - t0) / dur, 0, 1), q = Math.floor(k * 12) / 12;
-        const v = Math.round(from + (to - from) * q);
-        root.querySelector('#hb-reel').innerHTML = reel(v);
-        if (k < 1){ if (Math.random() < .5) S.tick(.3); requestAnimationFrame(tick); } else { shown = to; res(); }
-      };
-      requestAnimationFrame(tick);
-    });
-  }
-
-  /* ---- the screen ---- */
-  function build(){
-    const careerEl = document.getElementById('career');
-    if (!careerEl || document.getElementById('hb')) return;
-    careerEl.classList.add('hb-on');
-    root = document.createElement('div');
-    root.id = 'hb'; root.className = 'hb';
-    root.innerHTML =
-      '<div class="hb-top">' +
-        '<div class="hb-rail">' +
-          '<button class="hb-key" id="hb-back" type="button" aria-label="Back to main menu"><span class="hb-nav" aria-hidden="true"></span></button>' +
-          '<span class="hb-plate">CAREER</span>' +
-          '<button class="hb-key" id="hb-set" type="button" aria-label="Settings">⚙</button>' +
-        '</div>' +
-        '<div class="hb-bank"><div class="hb-reel" id="hb-reel"></div></div>' +
-        '<div class="hb-record crt" id="hb-record">' +
-          '<span class="crt-cell"><small class="crt-caption">PLAYED</small><strong class="crt-figure tabular">14</strong></span>' +
-          '<span class="crt-cell"><small class="crt-caption">WON</small><strong class="crt-figure tabular">4</strong></span>' +
-          '<span class="crt-cell"><small class="crt-caption">CIRCUIT</small><strong class="crt-figure tabular">2/6</strong></span>' +
-        '</div>' +
-      '</div>' +
-      '<div class="hb-felt">' +
-        '<div class="hb-felt-head"><span class="hb-label">TONIGHT\'S TICKETS</span><button class="hb-key hb-redeal" id="hb-redeal" type="button">RE-DEAL</button>' +
-          '<span class="hb-deck" id="hb-deck" aria-hidden="true"><i></i><i></i><i></i></span></div>' +
-        '<div class="hb-deal" id="hb-deal"></div>' +
-        '<div class="hb-hint" id="hb-hint"></div>' +
-      '</div>' +
-      '<div class="hb-console">' +
-        '<div class="hb-slot" id="hb-slot"><span class="hb-slot-lamp" aria-hidden="true"></span><span class="hb-mouth" aria-hidden="true"><i></i></span><span class="hb-slot-word">INSERT TICKET</span></div>' +
-        '<div class="hb-readout crt" id="hb-readout"><small class="crt-caption" id="hb-ro-a">PICK A TICKET</small><strong class="crt-line" id="hb-ro-b">TONIGHT\'S DEAL IS ON THE FELT</strong></div>' +
-        '<div class="pc-primary-cradle hb-cradle"><span class="pc-slot-aperture" aria-hidden="true"><span class="pc-slot-door"></span></span>' +
-          '<button class="pc-button pc-button-primary hb-buy" id="hb-buy" type="button" disabled><span class="pc-lamp is-amber" aria-hidden="true"></span><span><strong id="hb-buy-a">BUY IN</strong><small id="hb-buy-b">PICK A TICKET FIRST</small></span><span class="pc-lamp is-amber" aria-hidden="true"></span></button></div>' +
-      '</div>' +
-      '<div class="hb-doors">' +
-        '<button class="btn-secondary hb-door" id="hb-case" type="button"><span class="hb-door-ico is-case" aria-hidden="true"></span><span>THE CASE<small>23 TICKETS</small></span></button>' +
-        '<button class="btn-secondary hb-door" id="hb-vendor" type="button"><span class="hb-door-ico is-vendor" aria-hidden="true"></span><span>THE VENDOR<small>BUY PACKS</small></span></button>' +
-      '</div>' +
-      '<div class="hb-layer" id="hb-layer"></div>';
-    careerEl.appendChild(root);
-    layer = root.querySelector('#hb-layer');
-    root.querySelector('#hb-back').addEventListener('click', () => { S.key(); const real = document.getElementById('ch2-back'); if (real) real.click(); });
-    root.querySelector('#hb-redeal').addEventListener('click', () => { S.key(); deal(); });
-    root.querySelector('#hb-buy').addEventListener('click', () => { const c = cards[picked]; if (c) feed(c); });
-    ['#hb-case', '#hb-vendor'].forEach(id => root.querySelector(id).addEventListener('click', () => {
-      S.key();
-      root.querySelector('#hb-ro-a').textContent = id === '#hb-case' ? 'THE CASE' : 'THE VENDOR';
-      root.querySelector('#hb-ro-b').textContent = 'ITS NEW SCREEN IS THE NEXT LAB';
-    }));
-    root.addEventListener('pointerdown', down);
-    root.addEventListener('pointermove', move, { passive:false });
-    root.addEventListener('pointerup', up);
-    root.addEventListener('pointercancel', up);
-    root.addEventListener('touchmove', e => { if (holding || scrub) e.preventDefault(); }, { passive:false });
-    raf = requestAnimationFrame(step);
-    // the lab's pretend career is set once; after that the money is real
-    let seeded = false, wasHidden = true;
-    const enter = () => {
-      if (!seeded){
-        seeded = true;
-        try{
-          career.active = null; career.cash = null; career.bankroll = 1840; career.eventsPlayed = 14; career.eventsWon = 4;
-          CAREER_EVENT_LIST.forEach(e => { career.unlocks[e.id] = true; }); saveCareer();
-        }catch(e){}
-      }
-      shown = careerBankroll(); root.querySelector('#hb-reel').innerHTML = reel(shown);
-      feeding = false;
-      setTimeout(deal, 300);
-    };
-    new MutationObserver(() => {
-      const hidden = careerEl.classList.contains('hidden');
-      if (wasHidden && !hidden) enter();
-      wasHidden = hidden;
-    }).observe(careerEl, { attributes:true, attributeFilter:['class'] });
-    new ResizeObserver(() => rehome()).observe(root);
-  }
-
-  /* ---- TUNE ---- */
+  function openTune(on){root.inert=on;tuneSheet.classList.toggle('is-open',on);tuneSheet.inert=!on;tuneSheet.setAttribute('aria-hidden',String(!on));scrim.hidden=!on;tuneKey.setAttribute('aria-expanded',String(on));if(on)tuneSheet.querySelector('button').focus({preventScroll:true});else if(visible())tuneKey.focus({preventScroll:true});}
   function tune(){
-    const key = document.createElement('button');
-    key.type = 'button'; key.className = 'hbl-key'; key.textContent = 'TUNE';
-    const sheet = document.createElement('div');
-    sheet.className = 'hbl-sheet'; sheet.setAttribute('role', 'dialog'); sheet.setAttribute('aria-label', 'Hub lab');
-    const seg = (k, opts) => '<div class="hbl-seg" data-key="' + k + '">' + opts.map(o => '<button type="button" data-v="' + o[0] + '"' + (String(state[k]) === String(o[0]) ? ' class="is-on"' : '') + '>' + o[1] + '</button>').join('') + '</div>';
-    sheet.innerHTML =
-      '<div class="hbl-head"><b>HUB LAB</b><button type="button" class="hbl-close" aria-label="Close">✕</button></div>' +
-      '<div class="hbl-body">' +
-        '<h3>THE DEAL<small>How many tickets you\'re dealt, and how they lie on the felt.</small></h3>' +
-        seg('deal', [['grid6', '2 ROWS OF 3'], ['row3', '3 IN A ROW'], ['fan5', 'A HAND OF 5']]) +
-        '<p class="hbl-note">In the hand of 5, slide your thumb along the fan: the card under it rises. Let go to pick it, or pull it up and out to carry it.</p>' +
-        '<h3>MOTION</h3>' + seg('speed', [[1, 'REAL'], [.5, 'HALF'], [.25, 'QUARTER']]) +
-      '</div>';
-    root.querySelector('.hb-felt-head').insertBefore(key, root.querySelector('#hb-redeal'));
-    document.body.appendChild(sheet);
-    const open = on => { sheet.classList.toggle('is-open', on); key.classList.toggle('is-on', on); };
-    key.addEventListener('click', () => { try{ Sound.unlock(); }catch(e){} open(!sheet.classList.contains('is-open')); });
-    sheet.addEventListener('click', e => {
-      const t = e.target.closest('button'); if (!t) return;
-      if (t.classList.contains('hbl-close')){ open(false); return; }
-      const s = t.closest('.hbl-seg'); if (!s) return;
-      let v = t.dataset.v; if (s.dataset.key === 'speed') v = Number(v);
-      save({ [s.dataset.key]:v });
-      s.querySelectorAll('button').forEach(b => b.classList.toggle('is-on', b === t));
-      root.style.setProperty('--hb-speed', state.speed);
-      if (s.dataset.key === 'deal'){ open(false); dealNo = 0; deal(); }
+    tuneKey=root.querySelector('#hb-tune');scrim=document.createElement('div');scrim.className='hbl-scrim';scrim.hidden=true;
+    tuneSheet=document.createElement('div');tuneSheet.className='hbl-sheet';tuneSheet.inert=true;tuneSheet.setAttribute('role','dialog');tuneSheet.setAttribute('aria-label','Hub lab');tuneSheet.setAttribute('aria-modal','true');tuneSheet.setAttribute('aria-hidden','true');
+    const seg=(k,opts)=>'<div class="hbl-seg" data-key="'+k+'">'+opts.map(o=>'<button type="button" data-v="'+o[0]+'" class="'+(String(state[k])===String(o[0])?'is-on':'')+'">'+o[1]+'</button>').join('')+'</div>';
+    tuneSheet.innerHTML='<div class="hbl-head"><b>HUB · ROUND 4</b><button type="button" class="hbl-close" aria-label="Close">✕</button></div><div class="hbl-body"><h3>COMPOSITION STUDIES</h3>'+seg('pose',[['play','PLAY'],['rest','REST'],['selected','SELECTED'],['feed','AT THE SLOT']])+'<p>Stills use the same tickets and layout. PLAY enables paid entry in this throwaway career.</p><h3>SELECTED TICKET</h3>'+seg('brief',[['paper','PAPER BRIEF'],['face','FACE ONLY']])+'<h3>MOTION</h3>'+seg('motion',[['full','FULL'],['reduced','REDUCED']])+seg('speed',[[1,'REAL'],[.5,'HALF'],[.25,'QUARTER']])+'<h3>BANKROLL FIXTURE</h3><div class="hbl-seg" data-key="bank"><button type="button" data-v="1840">$1,840</button><button type="button" data-v="350">$350 · RISKY</button><button type="button" data-v="50">$50 · LOW</button></div><p>The Case and Vendor are preview doors. Tickets play their printed catalogue terms; pack rules and collecting are not implemented here.</p></div>';
+    document.body.append(scrim,tuneSheet);tuneKey.addEventListener('click',()=>openTune(true));scrim.addEventListener('click',()=>openTune(false));
+    tuneSheet.addEventListener('keydown',e=>{
+      if(e.key==='Escape'){e.preventDefault();openTune(false);}
+      if(e.key==='Tab'){const nodes=[...tuneSheet.querySelectorAll('button')],first=nodes[0],last=nodes[nodes.length-1];if(e.shiftKey&&document.activeElement===first){e.preventDefault();last.focus();}else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first.focus();}}
+    });
+    tuneSheet.addEventListener('click',e=>{
+      const key=e.target.closest('button');if(!key)return;if(key.classList.contains('hbl-close')){openTune(false);return;}
+      const group=key.closest('[data-key]');if(!group)return;const k=group.dataset.key,v=['speed','bank'].includes(k)?Number(key.dataset.v):key.dataset.v;
+      if(k==='bank'){career.bankroll=v;saveCareer();shown=v;root.querySelector('#hb-reel').innerHTML=reel(v);}else save({[k]:v});
+      group.querySelectorAll('button').forEach(b=>b.classList.toggle('is-on',b===key));root.style.setProperty('--hb-speed',state.speed);paint();rehome();
+      if(k==='pose'||k==='bank'){openTune(false);cards.forEach(c=>c.feeding=false);root.classList.remove('is-docking');dealNo=0;deal();}
     });
   }
-  function start(){ build(); if (root){ tune(); root.style.setProperty('--hb-speed', state.speed); } }
-  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start); else start();
+  function build(){
+    const careerEl=document.getElementById('career');if(!careerEl||document.getElementById('hb'))return;careerEl.classList.add('hb-on');root=document.createElement('div');root.id='hb';root.className='hb';root.dataset.phase='idle';
+    root.innerHTML='<header class="hb-top"><div class="hb-rail"><button type="button" class="ch2-key hb-key" id="hb-back" aria-label="Back to main menu"><span class="hb-nav" aria-hidden="true"></span></button><span class="hb-plate">CAREER</span><button type="button" class="ch2-key hb-key" id="hb-set" aria-label="Settings">⚙</button></div><div class="hb-bank"><span class="hb-bank-label">BANKROLL</span><div class="hb-reel" id="hb-reel" aria-label="Bankroll"></div></div><div class="hb-readout crt" data-crt-quiet id="hb-readout" aria-live="polite"><small class="crt-caption" id="hb-ro-a">TONIGHT’S TICKETS</small><span class="crt-line" id="hb-ro-b">PICK ONE UP TO TAKE A LOOK</span></div><div class="hb-record"><span>PLAYED <b>14</b></span><span>WON <b>4</b></span><span>CIRCUIT <b>2/6</b></span></div><div class="hb-slot" id="hb-slot"><span class="hb-slot-lamp" aria-hidden="true"></span><span class="hb-mouth" aria-hidden="true"><i></i></span><span class="hb-slot-word" id="hb-slot-word">TICKET READER</span></div></header><section class="hb-felt" aria-label="Tonight’s tickets"><div class="hb-felt-head"><span class="hb-label">TONIGHT’S<br>TICKETS</span><button type="button" class="ch2-key hb-key hb-tune" id="hb-tune" aria-expanded="false">TUNE</button><button type="button" class="ch2-key hb-key hb-redeal" id="hb-redeal" aria-label="Shuffle tonight’s tickets">SHUFFLE</button><span class="hb-deck" id="hb-deck" aria-hidden="true"><i></i><i></i><i>PF</i></span></div><div class="hb-deal" id="hb-deal"><article class="hb-brief" id="hb-brief" hidden inert><span class="hb-brief-title" id="hb-brief-title"></span><div class="hb-specs" id="hb-specs"></div><span class="hb-payout" id="hb-payout"></span><span class="hb-field" id="hb-field"></span><div class="hb-brief-keys"><button type="button" class="btn-secondary hb-return" id="hb-return">PUT BACK</button><button type="button" class="btn-secondary hb-feed" id="hb-feed">FEED IT</button></div></article></div><div class="hb-hint" id="hb-hint">THREE INVITATIONS. PICK YOUR TABLE.</div></section><footer class="hb-doors"><button type="button" class="btn-secondary hb-door" id="hb-case"><span class="hb-door-ico is-case" aria-hidden="true"></span>THE CASE</button><button type="button" class="btn-secondary hb-door" id="hb-vendor"><span class="hb-door-ico is-vendor" aria-hidden="true"></span>THE VENDOR</button></footer><div class="hb-layer" id="hb-layer"></div>';
+    careerEl.appendChild(root);layer=root.querySelector('#hb-layer');tune();
+    root.querySelector('#hb-back').addEventListener('click',()=>document.getElementById('ch2-back').click());root.querySelector('#hb-set').addEventListener('click',()=>{openOverlay('settings');});
+    root.querySelector('#hb-redeal').addEventListener('click',()=>{sound('cardDeal');deal();});root.querySelector('#hb-return').addEventListener('click',()=>choose(-1));root.querySelector('#hb-feed').addEventListener('click',()=>{if(careerHasActiveEvent())continueCareerEvent();else requestFeed(cards[picked]);});
+    ['case','vendor'].forEach(name=>root.querySelector('#hb-'+name).addEventListener('click',()=>status('THE '+name.toUpperCase(),'THIS DOOR IS THE NEXT LAB')));
+    root.addEventListener('pointerdown',down);root.addEventListener('pointermove',move,{passive:false});root.addEventListener('pointerup',e=>release(e));root.addEventListener('pointercancel',e=>release(e,true));root.addEventListener('lostpointercapture',e=>{if(press&&press.id===e.pointerId)release(e,true);});
+    document.getElementById('confirm-dialog').addEventListener('keydown',e=>{
+      if(root.dataset.phase!=='warning')return;
+      const no=document.getElementById('confirm-dialog-no'),yes=document.getElementById('confirm-dialog-yes');
+      if(e.key==='Escape'){e.preventDefault();no.click();}
+      if(e.key==='Tab'){e.preventDefault();(document.activeElement===no?yes:no).focus();}
+    });
+    root.querySelector('#hb-deal').addEventListener('click',e=>{if(e.target.id==='hb-deal'&&picked>=0)choose(-1);});
+    const enter=()=>{
+      if(!seeded){seeded=true;career.active=null;career.cash=null;career.bankroll=1840;career.eventsPlayed=14;career.eventsWon=4;CAREER_EVENT_LIST.forEach(e=>career.unlocks[e.id]=true);careerRosterStore()['back-room-heads-up']=[{personalityKey:'professor',faceColorIdx:6}];saveCareer();}
+      shown=careerBankroll();root.querySelector('#hb-reel').innerHTML=reel(shown);busy=false;dealing=false;holding=null;press=null;root.classList.remove('is-docking','is-taking','is-paid');cards.forEach(c=>{c.feeding=false;c.el.style.visibility='';});lock(false);deal();
+    };
+    new MutationObserver(()=>{const hidden=careerEl.classList.contains('hidden');if(wasHidden&&!hidden)enter();if(!wasHidden&&hidden){++epoch;dealing=false;press=null;holding=null;cancelAnimationFrame(raf);raf=0;openTune(false);}wasHidden=hidden;}).observe(careerEl,{attributes:true,attributeFilter:['class']});
+    const layoutObserver=new ResizeObserver(()=>rehome());layoutObserver.observe(root);layoutObserver.observe(root.querySelector('#hb-brief'));
+    document.addEventListener('visibilitychange',()=>{if(document.hidden){if(press)release({pointerId:press.id,clientX:0,clientY:0},true);cancelAnimationFrame(raf);raf=0;}else wake();});
+    if(still())showCareerScreen();else if(query.has('hub'))document.getElementById('open-career').click();
+  }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',build);else build();
 })();
