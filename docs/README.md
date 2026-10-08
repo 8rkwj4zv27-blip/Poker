@@ -26,7 +26,8 @@ Last sorted: 7 October 2026 (v0.66.1).
 | [`career/CAREER_DESIGN.md`](career/CAREER_DESIGN.md) | Career product rules and economy |
 | [`career/BUILD_PLAN.md`](career/BUILD_PLAN.md) | Career phase sequence and scope |
 | [`career/EVENTS_PLAN.md`](career/EVENTS_PLAN.md) | The events rework (8 Oct 2026): easier start, harder top, ladders, formats, heat gauge. In progress |
-| [`career/PACKS_PLAN.md`](career/PACKS_PLAN.md) | Career as packs of event cards: a vending machine, the rip, the ticket case (8 Oct 2026). Visual lab first (`pack-lab.html`) |
+| [`career/PACKS_PLAN.md`](career/PACKS_PLAN.md) | Packs direction and Hub Round 4 lab: three invitations, selected brief, top reader (8 Oct 2026). Visual lab first |
+| [`career/HUB_ROUND4_REVIEW.md`](career/HUB_ROUND4_REVIEW.md) | Hub Round 4 review steps, browser validation and delivery status |
 | [`ai/AI_PLAN.md`](ai/AI_PLAN.md) | The opponent AI: tier ladder and baselines |
 
 ## P.I.P. (current reference)
