@@ -1,0 +1,15 @@
+{
+  "name": "Hub Lab",
+  "short_name": "Hub Lab",
+  "description": "Poker Faces lab: the Career hub, tickets dealt.",
+  "start_url": "./hub-lab-app.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#140709",
+  "theme_color": "#140709",
+  "orientation": "portrait",
+  "icons": [
+    { "src": "icon-192.png?v=66-1", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png?v=66-1", "sizes": "512x512", "type": "image/png", "purpose": "any" }
+  ]
+}

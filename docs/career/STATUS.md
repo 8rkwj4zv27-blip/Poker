@@ -115,11 +115,10 @@ either.
 
 ## Immediate next task
 
-**Owner plays the Pack Lab** (`pack-lab.html`, `docs/career/PACKS_PLAN.md`):
-Career as packs of event cards from a vending machine, the owner's chosen
-direction from the 8 Oct brainstorm, built visual-first. Nothing in the
-game has changed. If the owner confirms packs, agree with them how they
-reshape Releases 2 to 4 below before building any of it.
+**Owner plays the Hub Lab** (`hub-lab.html`, `docs/career/PACKS_PLAN.md`,
+Round 3): packs are Career's direction; Career opens on tonight's
+tickets. Nothing in the game has changed. Then the Vendor and the Case
+screens; agree with the owner how this reshapes Releases 2 to 4 below.
 
 Before that, still open: **owner plays Release 1 on the phone** (v0.67.0, `docs/career/EVENTS_PLAN.md`):
 does the Back Room build a stack, and are its longer events still fun?

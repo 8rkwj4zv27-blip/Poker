@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#140709">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Hub Lab">
+<link rel="manifest" href="hub-lab.webmanifest">
+<link rel="apple-touch-icon" href="icon-180.png?v=66-1">
+<title>Hub Lab</title>
+<!-- The Hub Lab as a home-screen app (Share → Add to Home Screen). It
+     opens like the game: the real game page, full screen, with the lab's
+     parts added (the same list as hub-lab.html's #lab-inject) and no
+     frame around it. It runs on in-memory storage, so it never reads or
+     writes the game's save, and it registers no service worker. Every
+     launch starts a fresh pretend career and deals. Never linked from the game. -->
+<style>html,body{ margin:0; height:100%; background:#140709; }</style>
+</head>
+<body>
+<script>
+(() => {
+  const INJECT = { css:['css/hub-lab.css'], js:['js/hub-lab.js'], v:'1' };
+  const SHIM = `(function(){
+    var mem = Object.create(null);
+    mem['felt.settings'] = JSON.stringify({ sound:true, seenIntro:true, seenTour:true });
+    var P = Storage.prototype;
+    P.getItem = function(k){ k = String(k); return k in mem ? mem[k] : null; };
+    P.setItem = function(k, v){ mem[String(k)] = String(v); };
+    P.removeItem = function(k){ delete mem[String(k)]; };
+    P.clear = function(){ mem = Object.create(null); };
+    P.key = function(i){ var k = Object.keys(mem)[i]; return k === undefined ? null : k; };
+    try{ Object.defineProperty(P, 'length', { configurable:true, get:function(){ return Object.keys(mem).length; } }); }catch(e){}
+    if (navigator.serviceWorker){ try{ navigator.serviceWorker.register = function(){ return Promise.reject(new Error('lab')); }; }catch(e){} }
+  })();`;
+  fetch('index.html', { cache:'no-store' }).then(r => r.text()).then(src => {
+    const tail = INJECT.css.map(f => '<link rel="stylesheet" href="' + f + '?v=' + INJECT.v + '">').join('') +
+      INJECT.js.map(f => '<script src="' + f + '?v=' + INJECT.v + '"><\/script>').join('');
+    const page = src
+      .replace(/<script id="pwa-service-worker">[\s\S]*?<\/script>/, '')
+      .replace('<link rel="manifest" href="manifest.json">', '<link rel="manifest" href="hub-lab.webmanifest">')
+      .replace(/<meta name="apple-mobile-web-app-title" content="[^"]*">/, '<meta name="apple-mobile-web-app-title" content="Hub Lab">')
+      .replace(/<title>[^<]*<\/title>/, '<title>Hub Lab</title>')
+      .replace(/<head>/i, '<head><script>' + SHIM + '<\/script>')
+      .replace(/<\/body>/i, tail + '</body>');
+    document.open(); document.write(page); document.close();
+  }).catch(err => {
+    document.body.innerHTML = '<p style="padding:24px;color:#F3E6C4;font:15px/1.4 -apple-system,sans-serif">The game didn\'t load. Check your connection and open Hub Lab again.<br><small>' + String(err && err.message || err) + '</small></p>';
+  });
+})();
+</script>
+</body>
+</html>
