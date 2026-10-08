@@ -1,7 +1,7 @@
 # Events rework — plan
 
-Written 8 October 2026 with the owner. Status: **planned, nothing built
-yet.** The next step is Release 1 (below). Measured with
+Written 8 October 2026 with the owner. Status: **Release 1 live in
+v0.67.0** (8 Oct 2026); next, the owner plays it, then Release 2. Measured with
 `validation/tools/event-sim.js`; every number here can be re-run.
 
 ## Why
@@ -62,7 +62,7 @@ $300 to the winner.
   short, strong players move all in with a wide range rather than wait.
   P.I.P. could teach this at that moment.)
 
-## Release 1 — the Back Room (the next task)
+## Release 1 — the Back Room (live, v0.67.0)
 
 One release, Back Room only. Opponent skill moves from Medium (30 on the
 dial) to **20**. Stacks double and blinds slow down.

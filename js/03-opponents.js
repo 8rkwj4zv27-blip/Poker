@@ -75,13 +75,16 @@ const DIFFICULTY_PARAMS = {
 const SKILL_ANCHORS = { easy:15, medium:30, hard:50, expert:70, elite:90 };
 
 /* Skill for this seat: a per-seat override (a regular sitting in a soft
-   room), else the table's number, else the table's named difficulty. */
+   room), else the table's number, else its Career event's, else the
+   table's named difficulty. */
 function aiSkillOf(player, g){
   const n = v => typeof v === 'number' && isFinite(v) ? Math.max(0, Math.min(100, v)) : null;
   const own = n(player && player.skill);
   if (own !== null) return own;
   const table = n(g && g.skill);
   if (table !== null) return table;
+  const event = n(g && g.event && g.event.skill);
+  if (event !== null) return event;
   return SKILL_ANCHORS[g && g.difficulty] != null ? SKILL_ANCHORS[g.difficulty] : SKILL_ANCHORS.medium;
 }
 

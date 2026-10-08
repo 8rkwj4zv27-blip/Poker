@@ -99,7 +99,8 @@ records public betting history for the AI: `g.streetRaises`,
 `g.streetAggressorId`, `g.pfAggressorId`, `g.pfRaises` and
 `g.prevAggressorId`. AI skill is a 0–100 dial (`SKILL_ANCHORS`,
 `aiSkillOf`, `skillBlend`): named difficulties are points on it, and a
-seat's `skill` or the table's `g.skill` can set any value in between.
+seat's `skill`, the table's `g.skill` or its Career event's `skill`
+(`g.event.skill`, v0.67.0) can set any value in between.
 
 **Note:** `HISTORY.md` documents an "Enemy / Personality Pass" (named
 residents Harry/Tony/Lucy/Nigel/Steve, `js/03-residents.js`, House Faces,
@@ -114,7 +115,8 @@ didn't land. Don't assume residents exist without checking the code first.
 
 Game *formats*, not game *state*. `TOURNAMENT_FORMATS` (turbo/deep/headsup
 descriptors), `BLIND_LEVELS`, the Career event catalogue (`CAREER_ROOMS`,
-`CAREER_EVENT_LIST`, per-event descriptors), Career naming/threat helpers
+`CAREER_EVENT_LIST`, per-event descriptors with an optional opponent
+`skill`, carried into snapshots), Career naming/threat helpers
 (`careerEventTitle`, `careerThreatOf`), and the scoring/award system (the
 objective award catalogue — `POT WINNINGS`, `BIG WIN`, `MONSTER HAND`,
 `K.O.`, `EVENT WON`/`TABLE CLEARED` — see `docs/scoring/SCORING_SPEC.md` for

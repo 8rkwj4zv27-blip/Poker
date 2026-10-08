@@ -145,6 +145,7 @@ function makeContext(initialCareer){
       events:CAREER_EVENT_LIST,
       eventById:careerEventById,
       snapshot:careerEventSnapshot,
+      isValidSnapshot:isValidCareerEventSnapshot,
       getCareer:()=>career,
       setCareer:value=>{ career=value; },
       migrate:migrateCareer,
@@ -236,12 +237,18 @@ function check(name, fn){
 
 check('Career registry contains the complete six-room catalogue', ()=>{
   const { api } = makeContext();
-  assert.strictEqual(api.events.length, 13);
+  assert.strictEqual(api.events.length, 14);
   assert.deepStrictEqual(clone(api.eventById('back-room-freezeout')), {
     id:'back-room-freezeout', venue:'BACK ROOM', name:'BACK ROOM 3-HAND', title:'3-HAND',
     format:'Freezeout',
-    playerCount:3, opponentCount:2, buyIn:100, prize:300, payouts:[300], stack:500,
-    initialBlindLevel:0, handsPerBlindLevel:10, difficulty:'medium', unlockRequirement:null
+    playerCount:3, opponentCount:2, buyIn:100, prize:300, payouts:[300], stack:1000,
+    initialBlindLevel:0, handsPerBlindLevel:15, difficulty:'medium', skill:20, unlockRequirement:null
+  });
+  assert.deepStrictEqual(clone(api.eventById('back-room-five')), {
+    id:'back-room-five', venue:'BACK ROOM', name:'BACK ROOM 5-HAND', title:'5-HAND',
+    format:'Top-2 Freezeout',
+    playerCount:5, opponentCount:4, buyIn:100, prize:350, payouts:[350,150], stack:1000,
+    initialBlindLevel:0, handsPerBlindLevel:15, difficulty:'medium', skill:20, unlockRequirement:null
   });
   assert.deepStrictEqual(clone(api.eventById('pub-freezeout')), {
     id:'pub-freezeout', venue:'PUB CIRCUIT', name:'PUB CIRCUIT 4-HAND', title:'4-HAND',
@@ -450,14 +457,15 @@ check('careerPrizeForPlace rejects every non-place value', ()=>{
   assert.strictEqual(api.prizeForPlace({prize:300}, 2), 0);
 });
 
-check('Back Room entry and launch retain the approved original configuration', ()=>{
+check('Back Room entry and launch use its stack-building terms (EVENTS_PLAN Release 1)', ()=>{
   const { api, calls } = makeContext();
   assert.strictEqual(api.state('back-room-freezeout'), 'available');
   assert.strictEqual(api.enter('back-room-freezeout'), true);
   assert.strictEqual(api.getCareer().bankroll, 400);
+  assert.strictEqual(api.getCareer().active.snapshot.skill, 20);
   assert.ok(api.start());
   assert.deepStrictEqual(launchTerms(calls.launches[0]), {
-    mode:'career', difficulty:'medium', opponents:2, stack:500, blindLevel:0
+    mode:'career', difficulty:'medium', opponents:2, stack:1000, blindLevel:0
   });
   assert.strictEqual(calls.hands, 1);
 });
@@ -550,7 +558,9 @@ check('Version-1 bankroll and active Back Room event migrate safely', ()=>{
   assert.strictEqual(migrated.v, api.saveVersion);
   assert.strictEqual(migrated.bankroll, 417);
   assert.strictEqual(migrated.active.eventId, 'back-room-freezeout');
-  assert.strictEqual(migrated.active.snapshot.stack, 500);
+  // A version-1 ticket recorded no table terms, so it is rebuilt from
+  // today's catalogue; only what was paid (entry and prizes) is kept.
+  assert.strictEqual(migrated.active.snapshot.stack, 1000);
   assert.strictEqual(migrated.active.snapshot.buyIn, 100);
   // A winner-take-all save reconstructs as exactly that, never as the
   // catalogue's current (possibly multi-place) table.
@@ -741,12 +751,12 @@ check('Classic and Arcade remain on their established non-Career boundaries', ()
 
 check('Second Chance descriptor is free, three-handed and pays $150 to first only', ()=>{
   const { api } = makeContext();
-  assert.strictEqual(api.events.length, 13);
+  assert.strictEqual(api.events.length, 14);
   assert.deepStrictEqual(clone(api.eventById('second-chance')), {
     id:'second-chance', venue:'BACK ROOM', name:'SECOND CHANCE', title:'SECOND CHANCE',
     format:'Freezeout',
-    playerCount:3, opponentCount:2, buyIn:0, prize:150, payouts:[150], stack:500,
-    initialBlindLevel:0, handsPerBlindLevel:10, difficulty:'medium', unlockRequirement:null
+    playerCount:3, opponentCount:2, buyIn:0, prize:150, payouts:[150], stack:1000,
+    initialBlindLevel:0, handsPerBlindLevel:15, difficulty:'medium', skill:20, unlockRequirement:null
   });
   assert.strictEqual(api.secondChanceEventId, 'second-chance');
   assert.strictEqual(api.secondChanceThreshold, 100);
@@ -798,7 +808,7 @@ check('Second Chance entry is free and does not debit bankroll', ()=>{
   assert.strictEqual(api.getCareer().bankroll, 50);
   assert.strictEqual(api.getCareer().active.snapshot.buyIn, 0);
   assert.strictEqual(api.getCareer().active.snapshot.playerCount, 3);
-  assert.strictEqual(api.getCareer().active.snapshot.stack, 500);
+  assert.strictEqual(api.getCareer().active.snapshot.stack, 1000);
 });
 
 check('Second Chance win credits $150 additively, from $0 and from $99', ()=>{
@@ -1198,13 +1208,28 @@ check('Career Heads-Up is a real two-player descriptor and a first place opens P
   const { api } = makeContext(recoveryCareer(500));
   const event = api.eventById('back-room-heads-up');
   assert.deepStrictEqual({players:event.playerCount,opponents:event.opponentCount,stack:event.stack,cadence:event.handsPerBlindLevel,payouts:clone(event.payouts)},
-    {players:2,opponents:1,stack:600,cadence:8,payouts:[200]});
+    {players:2,opponents:1,stack:1200,cadence:12,payouts:[200]});
   assert.strictEqual(api.enter(event.id),true);
   assert.strictEqual(api.settle({place:1}),true);
   assert.strictEqual(api.getCareer().bankroll,600);
   assert.strictEqual(api.getCareer().unlocks['pub-freezeout'],true);
   assert.strictEqual(api.getCareer().unlocks['pub-open'],true);
   assert.strictEqual(api.getCareer().unlocks['pub-turbo'],true);
+});
+
+check('Back Room 5-HAND pays 2nd place, and only a first place opens Pub', ()=>{
+  const second = makeContext(recoveryCareer(500));
+  assert.strictEqual(second.api.state('back-room-five'),'available');
+  assert.strictEqual(second.api.enter('back-room-five'),true);
+  assert.strictEqual(second.api.getCareer().bankroll,400);
+  assert.strictEqual(second.api.settle({place:2}),true);
+  assert.strictEqual(second.api.getCareer().bankroll,550);   // 400 + 150
+  assert.strictEqual(second.api.getCareer().unlocks['pub-freezeout'],false);
+  const first = makeContext(recoveryCareer(500));
+  first.api.enter('back-room-five');
+  assert.strictEqual(first.api.settle({place:1}),true);
+  assert.strictEqual(first.api.getCareer().bankroll,750);    // 400 + 350
+  assert.strictEqual(first.api.getCareer().unlocks['pub-freezeout'],true);
 });
 
 check('Career Turbo is shorter without changing four-handed no-rake payout arithmetic', ()=>{
@@ -1564,7 +1589,7 @@ check('The directory lists the complete 2/3/2/2/2/1 room catalogue', ()=>{
   const { api } = makeContext(openCareer());
   assert.strictEqual(api.rooms.map(room=>room.venue).join('|'),
     'BACK ROOM|PUB CIRCUIT|CARD CLUB|CASINO FLOOR|HIGH ROLLER ROOM|INVITATIONAL CHAMPIONSHIP');
-  assert.strictEqual(api.events.length, 13);
+  assert.strictEqual(api.events.length, 14);
   assert.strictEqual(api.roomEvents('CASINO FLOOR').map(e=>e.id).join('|'), 'casino-main|casino-turbo');
   assert.strictEqual(api.roomEvents('HIGH ROLLER ROOM').map(e=>e.id).join('|'), 'high-roller-feature|high-roller-pressure');
   assert.strictEqual(api.roomEvents('INVITATIONAL CHAMPIONSHIP').map(e=>e.id).join('|'), 'invitational-final');
@@ -1576,7 +1601,7 @@ check('Within a room the free recovery event sorts above the paid one', ()=>{
   const { api } = makeContext(recoveryCareer(40));
   // Cheapest first, so Second Chance leads the Back Room.
   assert.strictEqual(api.roomEvents('BACK ROOM').map(e=>e.id).join('|'),
-    'second-chance|back-room-freezeout|back-room-heads-up');
+    'second-chance|back-room-five|back-room-freezeout|back-room-heads-up');
   assert.strictEqual(api.entryLabel(api.eventById('second-chance')), 'FREE ENTRY');
   assert.strictEqual(api.entryLabel(api.eventById('back-room-freezeout')), '$100 ENTRY');
   assert.strictEqual(api.entryLabel(api.eventById('pub-open')), '$300 ENTRY');
@@ -1648,12 +1673,13 @@ check('Event titles are the short venue-relative labels, ids unchanged', ()=>{
   // the short title. The Freezeout/Open distinction is gone: all four ARE
   // freezeouts, which is exactly why "Open" could not stay a title.
   assert.strictEqual(api.title(api.eventById('back-room-freezeout')), '3-HAND');
+  assert.strictEqual(api.title(api.eventById('back-room-five')), '5-HAND');
   assert.strictEqual(api.title(api.eventById('pub-freezeout')), '4-HAND');
   assert.strictEqual(api.title(api.eventById('pub-open')), '5-HAND');
   assert.strictEqual(api.title(api.eventById('second-chance')), 'SECOND CHANCE');
   // The save identifiers are untouched by the rename.
   assert.strictEqual(api.events.map(e=>e.id).sort().join('|'),
-    'back-room-freezeout|back-room-heads-up|card-club-deep|card-club-six|casino-main|casino-turbo|high-roller-feature|high-roller-pressure|invitational-final|pub-freezeout|pub-open|pub-turbo|second-chance');
+    'back-room-five|back-room-freezeout|back-room-heads-up|card-club-deep|card-club-six|casino-main|casino-turbo|high-roller-feature|high-roller-pressure|invitational-final|pub-freezeout|pub-open|pub-turbo|second-chance');
   // The venue-qualified record name is what a save and a settled result
   // still carry, because on its own "4-HAND" does not say where.
   assert.strictEqual(api.eventById('pub-freezeout').name, 'PUB CIRCUIT 4-HAND');
@@ -1818,7 +1844,7 @@ check('Rosters remain additive inside a current save', ()=>{
   // was an additive field, not a version bump. (openCareer() deliberately
   // omits the second-chance unlock and so is NOT valid; it is a migration
   // fixture. This one carries every catalogue key.)
-  const preRoster = openCareer({'back-room-freezeout':true,'pub-freezeout':true,
+  const preRoster = openCareer({'back-room-five':true,'back-room-freezeout':true,'pub-freezeout':true,
     'pub-open':true,'second-chance':true,'back-room-heads-up':true,'pub-turbo':true,
     'card-club-deep':false,'card-club-six':false,
     'casino-main':false,'casino-turbo':false,
@@ -1839,6 +1865,56 @@ check('Rosters remain additive inside a current save', ()=>{
   const junk = makeContext(Object.assign(openCareer(), { rosters:{ 'pub-open':'nonsense' } }));
   assert.strictEqual(junk.api.getCareer().bankroll, 500);
   assert.strictEqual(junk.api.rosterFor('pub-open').length, 4);
+});
+
+check('A v6 save from before the Back Room 5-HAND keeps everything and opens the new ticket', ()=>{
+  // The owner's save on 8 Oct 2026: valid v6, mid-ticket, with history.
+  // The new catalogue entry makes it invalid, so it goes through migration,
+  // which must keep every field and every ticket's paid terms.
+  const paid = clone(makeContext().api.snapshot(makeContext().api.eventById('back-room-freezeout')));
+  paid.stack = 500; paid.handsPerBlindLevel = 10; delete paid.skill;   // bought on the old terms
+  const before = openCareer({'back-room-freezeout':true,'pub-freezeout':true,
+    'pub-open':true,'second-chance':true,'back-room-heads-up':true,'pub-turbo':true,
+    'card-club-deep':false,'card-club-six':false,'casino-main':false,'casino-turbo':false,
+    'high-roller-feature':false,'high-roller-pressure':false,'invitational-final':false});
+  Object.assign(before, { v:6, bankroll:1234, eventsPlayed:17, eventsWon:6, champion:false,
+    cash:null, cashClosed:[],
+    active:{ eventId:'back-room-freezeout', snapshot:paid },
+    lastResult:{ outcome:'win', place:1, prize:300, eventId:'back-room-freezeout' } });
+  const { api } = makeContext(before);
+  const after = api.getCareer();
+  assert.strictEqual(after.v, api.saveVersion);
+  assert.strictEqual(after.bankroll, 1234);
+  assert.strictEqual(after.eventsPlayed, 17);
+  assert.strictEqual(after.eventsWon, 6);
+  assert.strictEqual(after.lastResult.eventId, 'back-room-freezeout');
+  assert.strictEqual(after.unlocks['pub-freezeout'], true);
+  assert.strictEqual(after.unlocks['back-room-five'], true);
+  assert.strictEqual(api.state('back-room-five'), 'blocked', 'open, but a ticket is already in play');
+  // The ticket in progress keeps the terms it was bought on.
+  assert.strictEqual(after.active.snapshot.stack, 500);
+  assert.strictEqual(after.active.snapshot.handsPerBlindLevel, 10);
+  assert.strictEqual(after.active.snapshot.skill, undefined);
+});
+
+check('An event snapshot carries its skill, and a bad one is refused', ()=>{
+  const { api } = makeContext();
+  const snap = clone(api.snapshot(api.eventById('back-room-five')));
+  assert.strictEqual(snap.skill, 20);
+  assert.strictEqual(api.isValidSnapshot(snap), true);
+  delete snap.skill;
+  assert.strictEqual(api.isValidSnapshot(snap), true, 'a ticket from before skill plays its difficulty');
+  [-1, 101, NaN, '20'].forEach(bad=>{
+    assert.strictEqual(api.isValidSnapshot(Object.assign({}, snap, { skill:bad })), false, String(bad));
+  });
+  assert.strictEqual(clone(api.snapshot(api.eventById('pub-open'))).skill, undefined);
+  // The AI reads it: the event's skill beats the named difficulty, a
+  // table's own number beats both, and an event without one is unchanged.
+  const { aiSkillOf } = require('./tools/ai-harness').loadAI(1);
+  assert.strictEqual(aiSkillOf({}, { difficulty:'medium', event:{ skill:20 } }), 20);
+  assert.strictEqual(aiSkillOf({}, { difficulty:'medium', skill:45, event:{ skill:20 } }), 45);
+  assert.strictEqual(aiSkillOf({}, { difficulty:'medium', event:{} }), 30);
+  assert.strictEqual(aiSkillOf({}, { difficulty:'hard', event:snap }), 50);
 });
 
 /* ---- machine theme vs venue identity ---- */

@@ -192,7 +192,7 @@ no-rake tournament arithmetic:
 
 | Event | Entry | Field | Stack / cadence | Payout | Access |
 |---|---:|---:|---|---:|---|
-| Back Room Heads-Up | $100 | 2 | 600 / 8 hands | $200 to 1st | Career start |
+| Back Room Heads-Up | $100 | 2 | 1,200 / 12 hands (v0.67.0; was 600 / 8) | $200 to 1st | Career start |
 | Pub Circuit Turbo | $300 | 4 | 600 / 6 hands | $1,200 to 1st | Win a Back Room event |
 | Card Club Deep Stack | $1,000 | 4 | 1,500 / 12 hands | $4,000 to 1st | First place in any Pub Circuit event |
 
@@ -341,10 +341,11 @@ These are prototype commitments:
 
 | Event | Entry | Field | Stack | AI | Payout | Access |
 |---|---:|---:|---:|---|---|---|
-| Back Room 3-HAND | $100 | 3 | 500 | Medium | $300 to 1st | Available from career start |
+| Back Room 5-HAND (v0.67.0) | $100 | 5 | 1,000, blinds every 15 hands | Skill 20 | $350 to 1st; $150 to 2nd | Available from career start |
+| Back Room 3-HAND | $100 | 3 | 1,000, blinds every 15 hands (v0.67.0; was 500 / 10) | Skill 20 (was Medium) | $300 to 1st | Available from career start |
 | Pub Circuit 4-HAND | $300 | 4 | 750 | Hard | $1,200 to 1st | Win Back Room 3-HAND |
 | Pub Circuit 5-HAND | $300 | 5 | 750 | Hard working default | $1,050 to 1st; $450 to 2nd | Win Back Room 3-HAND |
-| Second Chance | Free | 3 | 500 | Medium | $150 to 1st | Bankroll below $100 only |
+| Second Chance | Free | 3 | 1,000, blinds every 15 hands (v0.67.0) | Skill 20 | $150 to 1st | Bankroll below $100 only |
 
 The 5-HAND's 70/30 split is a prototype value to test, not a universal approved ratio for every future event.
 
