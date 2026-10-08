@@ -89,3 +89,24 @@ Home-screen version: `pack-lab-app.html` (+ `pack-lab.webmanifest`). Once on
 `main`, it lives at https://8rkwj4zv27-blip.github.io/Poker/pack-lab-app.html:
 open it in Safari, Share, Add to Home Screen. It opens full screen like the
 game, on in-memory storage (never the game's save), fresh each launch.
+
+## Round 3 (8 Oct 2026): the Career hub, tickets dealt
+
+The owner on the Card Lab: the cards were hard to read, the art too
+abstract and "very AI", and the hand awkward; picking cards up, the foil
+and the shimmer were good. Decided:
+
+- **Simple tickets that say what you're playing**, with a window kept
+  for the owner's own artwork (until then: the faces at that table).
+- **Variety by kind**: events are tickets, new formats are machine slips,
+  character tables and wilds are playing cards, jinxes are dark slips.
+- **The hub first**: bankroll and record, then tonight's tickets dealt
+  from your collection, each tabbed with why it was dealt (next step,
+  safe bet, new, overdue, wild, jinx), a slot and BUY IN, and two doors
+  (the Case, the Vendor). **Two rows of three** is the favourite deal; the
+  hand of five stays an option if it works without awkwardness (slide
+  along the fan; pull a card out to carry it).
+- Mockups as stills first, then the moving lab: `hub-lab.html`
+  (+ `js/hub-lab-host.js`, `js/hub-lab.js`, `css/hub-lab.css`;
+  home-screen: `hub-lab-app.html` + `hub-lab.webmanifest`).
+- Next: the Vendor and the Case screens to this standard.

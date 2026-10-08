@@ -294,6 +294,16 @@ are the same lab as a home-screen app: the game page fetched and rebuilt
 with the lab's parts (no frame, no service worker), for Add to Home Screen
 from the GitHub Pages site.
 
+## `hub-lab.html` + `js/hub-lab-host.js` + `js/hub-lab.js` + `css/hub-lab.css` — Hub Lab
+
+Round 3 of the packs work (`docs/career/PACKS_PLAN.md`): Career opens on
+tonight's tickets. Phone-first like `pack-lab.html`; Career's screen
+becomes the hub (`#hb` inside `#career`). Six real catalogue events dealt
+from a deck, styled by kind, carried on springs in one layer over the
+hub, fed into a slot and on to a real table (`enterCareerEvent` +
+`careerDepartToTable`). `hub-lab-app.html` + `hub-lab.webmanifest` are its
+home-screen version. Lab only; nothing loads in the game.
+
 ## `js/home-boot.js` + `css/home-boot.css` — Home Boot (live)
 
 "The cabinet switches on": ~1.6s on the main menu, once per real page load
