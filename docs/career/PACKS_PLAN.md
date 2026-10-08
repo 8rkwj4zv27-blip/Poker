@@ -112,6 +112,8 @@ The owner played Pack Lab 1 and decided:
   Ghost Seat, Marked Deck), three frame directions (Parlour, Enamel, Full
   art), dealt into your hand with spring physics, a close look with tilt,
   and a reader you drag cards into. The owner picks a frame; then the hub,
-  then the vendor and reveal, then Pack Lab 2.
+  then the vendor and reveal, then Pack Lab 2. Link:
+  https://claude.ai/artifact/AariVXNoKcZ8MzXWDriLyA (home-screen version,
+  once on `main`: https://8rkwj4zv27-blip.github.io/Poker/card-lab-app.html).
 - **Art:** the owner will draw some later; until then the art is pushed
   code pixel art.
