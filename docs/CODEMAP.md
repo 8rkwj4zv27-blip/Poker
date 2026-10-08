@@ -289,7 +289,10 @@ a placeholder card set per pack and the card faces; `pack-lab.js` runs the
 machine, the vend and drop, the finger-driven rip, the reveal, the ticket
 case, the feed into a real Career event (`enterCareerEvent` +
 `careerDepartToTable`) and the TUNE sheet. In-memory storage only. Lab
-only; nothing loads in the game.
+only; nothing loads in the game. `pack-lab-app.html` + `pack-lab.webmanifest`
+are the same lab as a home-screen app: the game page fetched and rebuilt
+with the lab's parts (no frame, no service worker), for Add to Home Screen
+from the GitHub Pages site.
 
 ## `js/home-boot.js` + `css/home-boot.css` — Home Boot (live)
 

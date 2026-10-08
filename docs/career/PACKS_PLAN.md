@@ -84,3 +84,8 @@ or late career, slow motion, sound. It runs on in-memory storage and never
 touches a real save; the card fed in plays an existing Back Room event.
 
 Link: https://claude.ai/artifact/45h2gSXxYLBFSN1LmaiHPz (republish to the same link after a change).
+
+Home-screen version: `pack-lab-app.html` (+ `pack-lab.webmanifest`). Once on
+`main`, it lives at https://8rkwj4zv27-blip.github.io/Poker/pack-lab-app.html:
+open it in Safari, Share, Add to Home Screen. It opens full screen like the
+game, on in-memory storage (never the game's save), fresh each launch.
