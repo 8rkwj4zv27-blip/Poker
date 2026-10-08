@@ -83,4 +83,4 @@ sheet: pick a pack, force the pull (rare, foil, wild, jinx, chips), early
 or late career, slow motion, sound. It runs on in-memory storage and never
 touches a real save; the card fed in plays an existing Back Room event.
 
-Link: (recorded here once published).
+Link: https://claude.ai/artifact/45h2gSXxYLBFSN1LmaiHPz (republish to the same link after a change).
