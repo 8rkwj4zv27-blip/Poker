@@ -112,3 +112,21 @@ and the shimmer were good. Decided:
 - Link: https://claude.ai/artifact/2yG9jqdsRWqgXqCRitTqbM (home-screen, once
   on `main`: https://8rkwj4zv27-blip.github.io/Poker/hub-lab-app.html).
 - Next: the Vendor and the Case screens to this standard.
+
+## Round 4 (9 Oct 2026): isolated event-card visual system
+
+The owner approved a card-only experiment in `event-card-lab.html`, using
+the Hub Lab's three-card deal and physical interactions. Clarification:
+rarity is a physical finish; gameplay category is a printed mark; venue
+is a printed header. They must mix independently on the same construction
+(including Legendary Classic and Common Wild). All cards have the same
+artwork aperture, using actual game faces or a clean placeholder.
+
+Implementation, actual phone-size screenshots and the separate Visual
+Gauntlet are recorded in [`EVENT_CARD_LAB.md`](EVENT_CARD_LAB.md).
+One targeted correction pass addressed small-card clipping and short-phone
+inspection spacing. Feeding only reads and returns the card; no table,
+charge, collection or production change. Next: owner reviews this lab
+before any decision about integration or the Vendor / Case. The earlier
+Round 3 "variety by kind" constructions remain historical exploration;
+this experiment follows the owner's independent-layer direction.

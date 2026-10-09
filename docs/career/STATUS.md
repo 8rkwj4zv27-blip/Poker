@@ -96,6 +96,16 @@ in any of these passes; the DETAILS card flip is untouched.
    save from before the new ticket migrates with every field kept
    (`career-events-checks.js`, now 115 checks).
 
+9. **Isolated Event Card Visual System Lab** (2026-10-09, no release):
+   owner-approved three-card experiment in `event-card-lab.html`, with
+   independent rarity, gameplay category and venue layers, a consistent
+   artwork aperture, larger inspection and reader-only return. Separate
+   rendered Gauntlet plus one correction pass at four phone sizes.
+   `npm test`: 26/26 suites passed, including 150 lab checks; real touch,
+   reduced motion, keyboard and persistent-storage isolation verified.
+   Awaiting owner review; no production Career/poker/save/navigation
+   changes. Details and screenshots: `EVENT_CARD_LAB.md`.
+
 ## Scope note — Phase 5/7/8 shelved (2026-09-24)
 
 The owner does not currently want:
@@ -115,10 +125,12 @@ either.
 
 ## Immediate next task
 
-**Owner plays the Hub Lab** (`hub-lab.html`, `docs/career/PACKS_PLAN.md`,
-Round 3): packs are Career's direction; Career opens on tonight's
-tickets. Nothing in the game has changed. Then the Vendor and the Case
-screens; agree with the owner how this reshapes Releases 2 to 4 below.
+**Owner reviews the Event Card Visual System Lab** (`event-card-lab.html`,
+`EVENT_CARD_LAB.md`): approve or revise its shared construction and
+independent rarity/category/venue layers. No merge or production
+integration approved. The earlier Hub Lab and later Vendor / Case remain
+the wider packs exploration; agree how this reshapes Releases 2 to 4
+below before implementing them.
 
 Before that, still open: **owner plays Release 1 on the phone** (v0.67.0, `docs/career/EVENTS_PLAN.md`):
 does the Back Room build a stack, and are its longer events still fun?
