@@ -304,6 +304,19 @@ hub, fed into a slot and on to a real table (`enterCareerEvent` +
 `careerDepartToTable`). `hub-lab-app.html` + `hub-lab.webmanifest` are its
 home-screen version. Lab only; nothing loads in the game.
 
+## `event-card-lab.html` + `js/event-card-lab-model.js` + `js/event-card-lab.js` + `css/event-card-lab.css` — Event Card Visual System Lab
+
+Isolated three-card experiment, awaiting owner review (9 Oct 2026;
+`docs/career/EVENT_CARD_LAB.md`). Reuses `js/hub-lab-host.js` and
+`css/hub-lab.css` unchanged. One card construction with independent
+rarity finish, category print and venue header; existing portrait assets
+or clean placeholders in one 8:5 artwork aperture. Pickup, inspection,
+reader return and a TUNE sheet. Unlike the older Hub Lab, feeding does
+not enter an event. In-memory storage; no production navigation, save,
+catalogue or gameplay hooks. Nothing loads in the game. Checks:
+`validation/event-card-lab-checks.js`; render evidence in
+`docs/ui/event-card-lab/`.
+
 ## `js/home-boot.js` + `css/home-boot.css` — Home Boot (live)
 
 "The cabinet switches on": ~1.6s on the main menu, once per real page load

@@ -6,7 +6,7 @@ note"). Keep it to one screen: replace old lines rather than adding to them.
 If this note and the code disagree, the code wins: fix the note.
 
 Build: `v0.67.0-dev · Back Room builds a stack`
-Updated: 8 October 2026
+Updated: 9 October 2026
 
 ## Where the game is
 
@@ -26,6 +26,10 @@ audit's complaints (dashboard rims, clipped result line, chip pile) are gone.
 
 ## Recent changes (newest first)
 
+- 9 Oct (no game change): isolated Event Card Visual System Lab
+  (`event-card-lab.html`, `docs/career/EVENT_CARD_LAB.md`), independent
+  rarity/category/venue, artwork window, inspection and reader return.
+  26/26 test suites; four phone sizes, touch and a corrected visual pass.
 - 8 Oct (no game change): Hub Lab (`hub-lab.html`): Career opens on
   tonight's tickets, dealt and styled by kind, fed into a slot.
 - 8 Oct (no game change): Career as packs of cards, brainstormed with
@@ -38,7 +42,6 @@ audit's complaints (dashboard rims, clipped result line, chip pile) are gone.
 - 8 Oct (no game change): the events rework planned with the owner
   (`docs/career/EVENTS_PLAN.md`); `validation/tools/event-sim.js` plays
   whole Career events to measure it.
-- v0.66.1 Tab reads just "Poker Faces", with the new icon.
 
 ## Open items (verified, not scheduled)
 
@@ -64,10 +67,9 @@ own speech bubbles (`claude/tender-dijkstra-zso8dm`).
 
 ## Next
 
-Packs are Career's direction (owner, 8 Oct). Next: the owner plays the
-Hub Lab (`docs/career/PACKS_PLAN.md`, Round 3: Career opens on tonight's
-tickets); then the Vendor and the Case screens to the same standard.
-Agree with the owner how this reshapes Events Releases 2 to 4
-(`docs/career/EVENTS_PLAN.md`) before building either. Still open: the
-owner's verdict on the new Back Room (v0.67.0; minutes per hand
-unmeasured).
+Next: owner reviews the Event Card Visual System Lab
+(`docs/career/EVENT_CARD_LAB.md`). No merge or production integration
+approved. Packs remain Career's direction; the wider Hub, Vendor and Case
+exploration follows review. Agree how this reshapes Events Releases 2 to
+4 before building them. Still open: owner's verdict on the Back Room
+(v0.67.0; minutes per hand unmeasured).
