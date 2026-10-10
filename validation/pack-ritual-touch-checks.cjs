@@ -53,18 +53,21 @@ async function study(width,height,reducedMotion=false){
     // CRT glass has overscan effects; test the text and visible sheet bounds.
     assert.ok(details.rect.left>=0&&details.rect.right<=width,'inspection sheet fits the phone');assert.ok(details.lines.every(l=>l.scroll<=l.client+2),'event text does not clip');
     const card=await rect('[data-card="0"]');assert.ok(card.y>=felt.y-6,'inspected card clears the top rail');
+    const yaw0=(await state()).cards[0].yaw;
     await drag(card.x+card.width*.48,card.y+card.height*.5,card.x+card.width*.80,card.y+card.height*.44);
-    assert.ok(Math.abs((await state()).cards[0].yaw)>15,'inspection angle responds to touch');await snap('08-angle');
+    assert.ok(Math.abs((await state()).cards[0].yaw-yaw0)>15,'inspection angle responds to touch');await snap('08-angle');
     await click('#pr-left');await page.waitForTimeout(reducedMotion?0:300);await snap('09-reverse');
     assert.ok((await state()).cards[0].yaw>90,'manual turn shows a neutral back');
     await click('#pr-main');assert.equal((await state()).inspecting,null);
     assert.equal(await f.locator('[data-card="0"]').getAttribute('data-qa-identity'),'same-card');
-    const first=await rect('[data-card="0"]');await touch.flick(first.x+first.width*.5,first.y+first.height*.5,first.x+first.width*.95,first.y+first.height*.62);await ready();
+    const first=await rect('[data-card="0"]');await touch.flick(first.x+first.width*.5,first.y+first.height*.5,first.x+first.width*.95,first.y+first.height*.62);
+    // Sample the banner as it appears; a fixed delay is too timing-sensitive.
+    if(!reducedMotion)await fr.waitForFunction(()=>Number(document.getElementById('pr-award').style.opacity)>0,null,{timeout:3000});await ready();
     assert.equal((await state()).active,1);await page.waitForTimeout(reducedMotion?0:170);await snap('10-rare');
-    if(!reducedMotion)assert.ok(await f.locator('#pr-award').evaluate(el=>Number(getComputedStyle(el).opacity)>0),'Rare is visually announced without audio');
-    await click('#pr-main');await page.waitForTimeout(reducedMotion?0:280);await snap('11-legendary');
+    if(!reducedMotion)assert.ok(await f.locator('#pr-award').evaluate(el=>/RARE/.test(el.textContent)),'Rare is visually announced without audio');
+    await ready();await f.locator('#pr-main').tap();if(!reducedMotion)await fr.waitForFunction(()=>Number(document.querySelector('.pr-card[data-rarity="legendary"]')?.style.getPropertyValue('--aura'))>.1,null,{timeout:5000});await ready();await snap('11-legendary');
     assert.equal((await state()).active,2);assert.ok((await state()).chipRevealed);assert.ok((await state()).coinCount>0);assert.equal((await state()).chipValue,75);
-    if(!reducedMotion){assert.ok(await f.locator('.pr-card[data-rarity="legendary"]').evaluate(el=>Number(el.style.getPropertyValue('--aura'))>.1),'Legendary glows without sound');}
+    // Legendary glow without sound is asserted by the wait above.
     await page.waitForTimeout(reducedMotion?0:950);await snap('12-chips');
     const sprites=await fr.evaluate(()=>[...document.querySelectorAll('[class*="coin"] img')].map(e=>e.getAttribute('src')));
     assert.ok(!sprites.some(src=>src&&src.includes('assets/chips')),'no obsolete chip PNG sprites');

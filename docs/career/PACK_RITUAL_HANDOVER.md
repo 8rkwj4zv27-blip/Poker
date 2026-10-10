@@ -46,10 +46,8 @@ SW registration and the listed Home boot script. The host uses
 locally. Opus can rebuild the bundle anywhere. No Mac absolute path appears
 in the lab or publishing manifest.
 
-**No Artifact has been published.** This agent has no Artifact publishing
-tool; the owner explicitly requested a bundle check for Opus to publish.
-Follow CLAUDE.md's private Artifact workflow with the staged lab, bundle
-root and `files.json`, then record the phone link here.
+**Phone link (private Artifact):** https://claude.ai/artifact/WpEzVxtqctwzN7haKTtvEy
+— republish to the same link after changes.
 
 ## Files and dependencies
 
@@ -265,3 +263,41 @@ The browser suite is deliberately separate from the dependency-free
 
 Everything needed to inspect/build this lab is on the branch. Nothing in
 this handover authorises merging the backup branch or shipping the lab.
+
+## Opus pass 1 — 11 October 2026 (not yet owner-rated)
+
+Played frame-by-frame at 390×844 (filmstrips of every stage), not just stills.
+Found and fixed:
+
+- **Scene stuck at 30% brightness until BUY.** The inherited `#home.hb-boot`
+  class (Home boot dimming) was never removed because `home-boot.js` is
+  stripped. The packet landing and selection played in the dark. Fixed by
+  stripping `hb-*` classes in `setup()`.
+- **Extraction broke the illusion.** Cards flew up over the header, and the
+  wrapper's `rotateX` exposed its striped lining. The stack now rises only
+  partway from the mouth, with a slight fan and jitter, and the front stays
+  facing you. The empty wrapper then hops aside to the bottom-left.
+- **Legendary had no pop.** It is now a ~1.15s beat: wind-up (the scene dims
+  and the card squashes), then a punch (white flash, scale spring, rotating
+  event-coloured rays, a 2–3px table shake, a burst and an 18ms vibrate where
+  supported), then the glow fades. Rare gets a smaller pop and flash. Commons
+  stay quiet.
+- **Inspection** overlapped the details panel. The card now sits clear, with a
+  stronger default angle so the stock edge shows. It also sways gently in the
+  hand, so the foil keeps catching light; a drag sets the sway's new rest
+  angle. The scene dims further behind it.
+- **Bottom clutter.** The torn strip lands top-left, out of the pile. The chip
+  total shows only on the spread. Card focus sits slightly lower, so the
+  banner clears the card.
+- **Touch checks.** The Rare-banner and Legendary-glow checks sampled at fixed
+  delays and failed on the unmodified baseline in the cloud. They now wait
+  for the effect. The inspect-angle check now measures change rather than
+  absolute yaw.
+
+Verified: touch checks pass (both phones, reduced motion, all 16 finds);
+`npm test` 25/25. Not verified: real iPhone feel, audio, 120Hz.
+
+Next candidates: seam resistance and strip recoil; extraction drag feel on a
+real finger; a distinct per-event Legendary flourish beyond particles (Bomb
+fuse spark, Wild misregistration, Freezeout frost); chip pile composition;
+sound palette.
