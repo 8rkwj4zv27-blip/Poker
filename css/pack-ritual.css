@@ -6,17 +6,17 @@ body.ritual-lab #home{display:flex!important;position:fixed;inset:0;padding:10px
 #ritual{--find:#edcc73;--scene-dim:0;touch-action:manipulation;user-select:none;-webkit-user-select:none;}
 .pr-top{display:flex;align-items:center;gap:8px;flex:none;}
 .pr-brand{flex:1;min-width:0;font:10px/1.7 var(--font-hdr);color:var(--pc-plastic);letter-spacing:-.03em;}
-.pr-brand small{display:block;font:11px/1.1 var(--font-px);letter-spacing:.16em;color:var(--ink-faint);}
+.pr-brand small{display:block;white-space:nowrap;font:9px/1.6 var(--font-px);letter-spacing:.08em;color:var(--ink-faint);}
 .pr-top .icon-btn{width:46px;height:44px;min-width:44px;flex:none;font:9px/1.2 var(--font-hdr);}
 .pr-bank{flex:1;min-width:0;height:42px;}
 #home #ritual .pr-bank{grid-template-columns:14px repeat(5,minmax(12px,1fr));gap:1px;padding:2px;}
 #home .pr-bank .jp-cell{font-size:16px;height:26px;}
 .pr-wallet{width:124px;height:42px;flex:none;}
-.pr-status{display:grid;grid-template-columns:1fr auto;align-items:center;min-height:45px;padding:7px 10px;flex:none;}
-.pr-status .crt-line{font-size:12px;}
-.pr-status .crt-caption{font-size:9px;}
+.pr-status{display:grid;grid-template-columns:1fr auto;align-items:center;height:48px;padding:7px 10px;flex:none;}
+
+
 .pr-status-count{padding-left:8px;text-align:right;}
-.pr-status-count .crt-figure{font-size:19px;}
+
 .pr-stage{position:relative;flex:1;min-height:160px;margin:12px 9px 14px;isolation:isolate;touch-action:none;}
 .pr-stage>.felt{z-index:auto;pointer-events:none;}
 .pr-table-mark{position:absolute;left:50%;top:43%;transform:translate(-50%,-50%);color:#9cb786;opacity:.12;text-align:center;pointer-events:none;}
@@ -45,8 +45,8 @@ body.ritual-lab #home{display:flex!important;position:fixed;inset:0;padding:10px
 .pr-card .ccl-object.is-held .ccl-finish{opacity:var(--light-strength,.22);}
 .pr-coat{position:absolute;inset:0;z-index:8;clip-path:var(--cut);pointer-events:none;background:linear-gradient(var(--foil-angle,120deg),transparent 17%,#8aefdb44 30%,#e1a1ff66 37%,#fff4ceaa 41%,#94d4ff66 46%,transparent 61%);background-size:220% 180%;background-position:var(--foil-x,100%) 50%;mix-blend-mode:screen;opacity:var(--coat,.08);}
 .pr-card[data-rarity=common] .pr-coat{display:none;}
-.pr-card[data-rarity=legendary] .pr-coat{--coat:.27;}
-.pr-card[data-rarity=rare] .pr-coat{--coat:.12;}
+.pr-card[data-rarity=legendary] .pr-coat{--coat:.58;}
+.pr-card[data-rarity=rare] .pr-coat{--coat:.22;}
 .pr-card-label{position:absolute;top:calc(100% + 11px);left:50%;transform:translateX(-50%);font:9px/1.5 var(--font-hdr);color:#dde4c6;white-space:nowrap;text-shadow:1px 2px #0a2218;pointer-events:none;}
 .pr-card-label b{color:#f3d880;font-weight:400;}
 .pr-packet{width:240px;height:390px;container-type:inline-size;--foil:#bec9c3;--foil-light:#ecedd6;--foil-dark:#758a87;--packet-ink:#ecddaf;--print:#622c37;--print-dark:#3e202a;}
@@ -77,9 +77,9 @@ body.ritual-lab #home{display:flex!important;position:fixed;inset:0;padding:10px
 .pr-award small{display:block;font:11px/1.8 var(--font-px);letter-spacing:.18em;}
 .pr-inspect-info{position:absolute;left:6px;right:6px;bottom:22px;z-index:110;display:none;padding:10px 12px;pointer-events:auto;}
 .pr-inspect-info .pr-detail-head{display:flex;justify-content:space-between;align-items:baseline;gap:7px;margin-bottom:6px;}
-.pr-inspect-info .crt-figure{font-size:21px;white-space:nowrap;}
-.pr-inspect-info .crt-caption{font-size:9px;}
-.pr-inspect-info .crt-line{font-size:14px;line-height:1.25;}
+.pr-inspect-info .crt-figure{white-space:nowrap;}
+
+.pr-inspect-info .crt-line{white-space:normal;}
 .pr-inspect-info p{margin:7px 0 0;}
 .pr-inspecting .pr-inspect-info{display:block;}
 .pr-inspecting .pr-hint{display:none;}
@@ -88,7 +88,7 @@ body.ritual-lab #home{display:flex!important;position:fixed;inset:0;padding:10px
 #home #ritual .pc-button-primary{min-height:62px;padding:9px 12px;font-size:11px;}
 #home #ritual .pc-primary-cradle::before{height:62px;}
 .pr-action-label{display:block;line-height:1.6;}
-.pr-secondary-row{display:flex;justify-content:space-between;align-items:center;gap:8px;margin:0 0 5px;min-height:35px;}
+.pr-secondary-row{display:flex;justify-content:space-between;align-items:center;gap:8px;margin:0 0 5px;height:44px;}
 .pr-secondary-row button{margin:0;min-height:44px;font-size:10px;padding:4px 10px;flex:1;}
 .pr-secondary-row:has(button:not([hidden])) .pr-step{display:none;}
 .pr-step{font:10px/1.3 var(--font-px);letter-spacing:.1em;color:#c1a68d;}
@@ -107,12 +107,26 @@ body.ritual-lab #home{display:flex!important;position:fixed;inset:0;padding:10px
 .pr-collection-item{position:relative;cursor:pointer;background:none;border:0;padding:0;}
 .pr-collection-item>b{position:absolute;right:4px;bottom:5px;z-index:12;background:#171c13;color:#ffe2a1;padding:3px 5px;font:11px var(--font-hdr);}
 .pr-collection-preview .crt{padding:10px;}
-.pr-collection-preview .crt-line{font-size:14px;}
+
 .pr-chip-total{position:absolute;right:16px;bottom:50px;color:#e9d294;font:10px/1.6 var(--font-hdr);z-index:40;text-shadow:2px 2px #092417;pointer-events:none;}
 .pr-chip-total small{display:block;font:10px var(--font-px);text-align:right;}
-@media(max-height:740px){#home #ritual.lobby-card{gap:5px;padding:8px;}.pr-top{gap:5px;}.pr-brand{font-size:9px;}.pr-wallet{width:112px;}.pr-status{min-height:38px;padding:5px 8px;}.pr-stage{margin:9px 8px 11px;}.pr-secondary-row{min-height:30px;margin-bottom:2px;}#home #ritual .pc-button-primary{min-height:50px;}#home #ritual .pc-primary-cradle::before{height:50px;}.pr-inspect-info{bottom:12px;padding:8px;}.pr-inspect-info .crt-line{font-size:12px;}.pr-inspect-info p{margin-top:4px;}.pr-hint{font-size:11px;bottom:12px;}.pr-award{font-size:12px;}}
+@media(max-height:740px){#home #ritual.lobby-card{gap:5px;padding:8px;}.pr-top{gap:5px;}.pr-brand{font-size:9px;}.pr-wallet{width:112px;}.pr-status{height:44px;padding:5px 8px;}.pr-stage{margin:9px 8px 11px;}.pr-secondary-row{height:44px;margin-bottom:2px;}#home #ritual .pc-button-primary{min-height:50px;}#home #ritual .pc-primary-cradle::before{height:50px;}.pr-inspect-info{bottom:12px;padding:8px;}.pr-inspect-info p{margin-top:4px;}.pr-hint{font-size:11px;bottom:12px;}.pr-award{font-size:12px;}}
 @media(prefers-reduced-motion:reduce){.pr-object,.pr-solid{will-change:auto;}.pr-speck{display:none;}}
 
-.pr-status{min-width:0;width:100%;}.pr-status>div:first-child{min-width:0;}.pr-status .crt-line,.pr-status .crt-caption{display:block;white-space:normal;}.pr-status br{display:none;}.pr-top .pr-brand{font-size:9px;}.pr-status-count{flex:none;}.pr-status .crt-caption{font-size:9px;}
+.pr-status{min-width:0;width:100%;}.pr-status>div:first-child{min-width:0;}.pr-status .crt-line,.pr-status .crt-caption{display:block;white-space:normal;}.pr-status br{display:none;}.pr-top .pr-brand{font-size:8px;}.pr-status-count{flex:none;}
 
 .pr-wrapper{backface-visibility:hidden;}
+
+/* New collectible surfaces; casing and readouts keep the shared finishes. */
+.pr-aura{position:absolute;inset:-5px;opacity:var(--aura,0);box-shadow:0 0 0 3px var(--find),0 0 24px 8px var(--find);pointer-events:none;}
+.pr-plane-light{position:absolute;inset:0;z-index:9;clip-path:var(--cut);background:linear-gradient(var(--shade-direction,90deg),#081009 0%,transparent 64%);opacity:var(--edge-shade,0);pointer-events:none;}
+.pr-inspect-info .pr-detail-head>span:first-child{min-width:0;}
+.pr-inspect-info .crt-caption{white-space:normal;}
+.pr-inspect-info .pr-detail-head>span:last-child{flex:none;}
+.pr-inspecting .pr-chip-total{display:none;}
+.pr-secondary-row{justify-content:center;}
+.pr-stock-edge{border:1px solid #57482e;}
+.pr-card .pr-back{clip-path:var(--cut);}
+.pr-stage>.felt{box-sizing:border-box;}
+
+#ritual:has(#pr-tune-sheet:not([hidden])) .pr-stage,#ritual:has(#pr-tune-sheet:not([hidden])) .pr-stage *{pointer-events:none;}

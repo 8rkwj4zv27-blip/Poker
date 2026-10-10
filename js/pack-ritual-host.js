@@ -1,11 +1,11 @@
 "use strict";
 
 /* ============================================================
-   PACK LAB — the host page (phone-first)
+   PACK RITUAL LAB — the host page (phone-first)
 
    Loads the real game into one full-screen frame with the lab's parts
    injected (listed in #lab-inject) and keeps the lab's settings in
-   parent.__lab, where js/pack-lab.js reads and writes them.
+   parent.__lab (the opening scene owns its session state).
 
    LOCAL (a dev server): the game page is fetched and rebuilt as srcdoc
    with the injections, the in-memory storage shim and no service worker.
@@ -37,7 +37,8 @@
     const base = new URL('.', location.href).href;
     const tail = inject.css.map(f => '<link rel="stylesheet" href="' + f + '?v=' + inject.v + '">').join('') +
       inject.js.map(f => '<script src="' + f + '?v=' + inject.v + '"><\/script>').join('');
-    return source.replace(sw, '')
+    const stripped=(inject.strip||[]).reduce((doc,f)=>doc.replace(new RegExp('<script src="'+f.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+'[^"]*"><\\/script>\\s*','g'),''),source);
+    return stripped.replace(sw, '')
       .replace(/<head>/i, '<head><base href="' + base + '"><script>' + SHIM + '<\/script>')
       .replace(/<\/body>/i, tail + '</body>');
   }
