@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#2a0d14">
+  <meta name="format-detection" content="telephone=no">
+  <link rel="icon" href="data:,">
+  <title>Poker Faces — Career Card Visual Lab · Collector Editions</title>
+  <link rel="stylesheet" href="css/01-foundation.css">
+  <link rel="stylesheet" href="css/career-card-visual-lab.css?v=6">
+  <script defer src="js/career-collectibles-lab.js?v=1"></script>
+  <script defer src="js/career-card-visual-lab.js?v=7"></script>
+</head>
+<body class="ccl-body" data-theme="burgundy">
+  <main class="ccl-machine" aria-label="Career Card Visual Lab, Collector Editions">
+    <header class="ccl-dashboard">
+      <div class="ccl-brand"><span class="ccl-brand-suits" aria-hidden="true">♠ ♥ ♣ ♦</span><span>POKER FACES</span><small>CAREER / CARD ROOM</small></div>
+      <div class="ccl-readout"><span class="ccl-lamp" aria-hidden="true"></span><span>FOUR EVENTS<br><b>SIXTEEN EDITIONS</b></span><span class="ccl-readout-count">16</span></div>
+    </header>
+    <section class="ccl-tray" aria-labelledby="ccl-tray-title">
+      <div class="ccl-tray-heading"><h1 id="ccl-tray-title">THE EVENT DRAWER</h1><span id="ccl-set-label">BOMB / C → L</span></div>
+      <div class="ccl-selector">
+        <div class="ccl-view-keys" role="group" aria-label="Comparison view"><button class="ccl-key" type="button" data-view="rarities" aria-pressed="true">COMPARE RARITIES</button><button class="ccl-key" type="button" data-view="events" aria-pressed="false">EVENT DRAWER</button></div>
+        <div class="ccl-set-keys" id="ccl-set-keys" role="group" aria-label="Choose event to compare"></div>
+        <p id="ccl-set-note" aria-live="polite">BOMB / COMMON → LEGENDARY</p>
+      </div>
+      <div class="ccl-grid" id="ccl-grid"></div>
+      <p class="ccl-tray-note"><span aria-hidden="true">↗</span> Pick one up. Have a closer look.</p>
+    </section>
+    <footer class="ccl-console">
+      <div class="ccl-lab-plate"><strong>CARD VISUAL LAB</strong><span>PASS 06 / COLLECTOR EDITIONS</span></div>
+      <button type="button" class="ccl-key ccl-motion-key" id="ccl-blind" aria-pressed="false" aria-label="Hide rarity identifiers">MARKS <span id="ccl-blind-state">SHOWN</span></button>
+      <button type="button" class="ccl-key ccl-motion-key" id="ccl-motion" aria-pressed="false" aria-label="Reduced motion">MOTION <span id="ccl-motion-state">ON</span></button>
+    </footer>
+  </main>
+  <dialog class="ccl-inspector" id="ccl-inspector" aria-labelledby="ccl-inspect-title" aria-describedby="ccl-inspect-note">
+    <div class="ccl-inspect-head"><span id="ccl-inspect-title">CARD INSPECTION</span><button class="ccl-key" id="ccl-close" type="button" autofocus aria-label="Return card to drawer">CLOSE ×</button></div>
+    <div class="ccl-inspect-stage" id="ccl-inspect-stage"></div>
+    <div class="ccl-inspect-info"><p id="ccl-inspect-note"></p><span class="ccl-inspect-hint">HOLD + MOVE TO TILT THE STOCK</span></div>
+    <div class="ccl-inspect-controls"><button class="ccl-key" id="ccl-prev" type="button" aria-label="Inspect previous card">←</button><button class="ccl-key ccl-finish-key" id="ccl-finish" type="button">CATCH THE LIGHT</button><button class="ccl-key" id="ccl-next" type="button" aria-label="Inspect next card">→</button></div>
+    <p class="ccl-specimen-note">Illustrative prizes · visual specimens only</p>
+  </dialog>
+  <noscript><p class="ccl-noscript">Enable JavaScript to view and inspect the card editions.</p></noscript>
+</body>
+</html>
