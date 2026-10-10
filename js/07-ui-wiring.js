@@ -217,15 +217,188 @@ function openOverlay(which){
   if (which==='log'){ logDirty = true; renderLog(); $('log-drawer').classList.add('open'); }
   if (which==='settings'){ $('settings-sheet').classList.add('open'); }
   if (which==='newtable'){ $('confirm-newtable').classList.add('open'); }
+  if (which==='dossier'){
+    const sheet = $('dossier-sheet');
+    sheet.classList.add('open');
+    sheet.removeAttribute('inert');
+    sheet.setAttribute('aria-hidden','false');
+  }
+}
+/* Is a menu currently sitting over the table? One predicate, so the
+   keyboard shortcuts and the dossier agree on what "an overlay is open"
+   means rather than each testing a different element. */
+function anyOverlayOpen(){
+  const scrim = $('scrim'), dlg = $('confirm-dialog'), intro = $('first-run');
+  return !!(
+    (scrim && scrim.classList.contains('open')) ||
+    (dlg && !dlg.classList.contains('hidden')) ||
+    (intro && !intro.classList.contains('hidden'))
+  );
 }
 function closeOverlays(){
+  dossierRequestToken++;
   $('scrim').classList.remove('open');
   $('log-drawer').classList.remove('open');
   $('settings-sheet').classList.remove('open');
   $('scoring-guide-sheet').classList.remove('open');
+  $('dossier-sheet').classList.remove('open');
+  $('dossier-sheet').setAttribute('inert','');
+  $('dossier-sheet').setAttribute('aria-hidden','true');
   $('confirm-newtable').classList.remove('open');
   pendingNewTableAction = null;
+  releaseDossierFocus();
   if (game && !game.over && !$('btn-next-hand').classList.contains('hidden')) scheduleAutoDeal();
+}
+
+/* ============================================================
+   THE DOSSIER — one renderer, two surfaces
+
+   The House Faces screen and the in-game portrait sheet print the SAME
+   model through the SAME function. That is the whole point: a player who
+   reads about Lucy in the menu and then taps her at the table must be
+   told the same things about the same person.
+
+   Everything here comes out of dossierModel() (03-residents.js), which
+   is contractually public-only — no hole cards, no equity, no bluff
+   state, no pending decision, no tendency dials. The mood line is read
+   from faceMood, the same state that already decides which portrait is
+   on screen, so it reveals nothing the felt does not.
+   ============================================================ */
+function dossierPortraitHTML(model, cls){
+  /* renderFace() is the production portrait path, never a locally derived
+     filter — that is what keeps a colour correct across both face-art
+     batches (see faceFilter, 02-support-systems.js), and it is why the
+     resting expression can be any FACE_ART key without this function
+     knowing which batch it came from.
+
+     `rest` rather than 'idle': a dossier is a file photo of a specific
+     person, and their neutral face is part of the identity the player is
+     supposed to learn. */
+  const seat = { faceColorIdx: Number.isInteger(model.faceColorIdx) ? model.faceColorIdx : 0 };
+  return '<span class="' + cls + '">' + renderFace(seat, model.rest || 'idle') + '</span>';
+}
+function dossierCardHTML(model){
+  const tend = (model.tendencies || []).map(t=>'<li>' + esc(t) + '</li>').join('');
+  return '<div class="dossier">' +
+      '<div class="dossier-head">' +
+        dossierPortraitHTML(model, 'dossier-portrait') +
+        '<div class="dossier-id">' +
+          '<div class="dossier-name">' + esc(model.name) + '</div>' +
+          '<div class="dossier-style">' + esc(model.style) + '</div>' +
+          (model.mood ? '<div class="dossier-mood">At the table: <b>' + esc(model.mood) + '</b></div>' : '') +
+        '</div>' +
+      '</div>' +
+      '<p class="dossier-blurb">' + esc(model.blurb) + '</p>' +
+      '<div class="card-label">How they play</div>' +
+      '<ul class="dossier-tendencies">' + tend + '</ul>' +
+    '</div>';
+}
+
+/* ---- House Faces screen ---- */
+let castSelectedId = null;
+function renderOpponentsScreen(){
+  const rail = $('cast-rail');
+  if (!rail) return;
+  if (!castSelectedId || !residentById(castSelectedId)) castSelectedId = RESIDENTS[0].id;
+  rail.innerHTML = RESIDENTS.map(res=>{
+    const model = dossierModel(res);
+    const on = res.id === castSelectedId;
+    return '<span class="cast-chip' + (on ? ' active' : '') + '" role="button" tabindex="0"' +
+      ' aria-pressed="' + (on ? 'true' : 'false') + '" data-resident="' + esc(res.id) + '"' +
+      ' aria-label="' + esc(res.name + ' — ' + res.style) + '">' +
+      dossierPortraitHTML(model, 'cast-chip-face') +
+      '<span class="cast-chip-name">' + esc(res.name) + '</span>' +
+      '<span class="cast-chip-style">' + esc(res.style) + '</span>' +
+    '</span>';
+  }).join('');
+  const detail = $('cast-detail');
+  if (detail) detail.innerHTML = dossierCardHTML(dossierModel(residentById(castSelectedId)));
+}
+function selectCastResident(id){
+  if (!residentById(id)) return;
+  castSelectedId = id;
+  const rail = $('cast-rail');
+  if (rail){
+    rail.querySelectorAll('.cast-chip').forEach(chip=>{
+      const on = chip.dataset.resident === id;
+      chip.classList.toggle('active',on);
+      chip.setAttribute('aria-pressed',on?'true':'false');
+    });
+  }
+  const detail = $('cast-detail');
+  if (detail) detail.innerHTML = dossierCardHTML(dossierModel(residentById(id)));
+}
+function showOpponentsScreen(){
+  renderOpponentsScreen();
+  $('home').classList.add('hidden');
+  $('setup').classList.add('hidden');
+  $('rankings').classList.add('hidden');
+  $('awards').classList.add('hidden');
+  $('career').classList.add('hidden');
+  $('table-screen').classList.add('hidden');
+  $('opponents').classList.remove('hidden');
+}
+
+/* ---- In-game portrait dossier ----
+   Opening one must not change the game. It reads a player object, writes
+   nothing to it, submits no action, and leaves currentIndex, the betting
+   round and every AI timer exactly where they were. The one side effect
+   is the overlay contract every scrim-backed panel already has: the
+   between-hand auto-deal clock is paused here and rescheduled by
+   closeOverlays(), identical to opening Settings mid-table. */
+let dossierReturnFocus = null;
+let dossierRequestToken = 0;
+
+/* A dossier is reading material, so it opens only while the table is already
+   waiting for the player or sitting between hands. It never masks a live deal,
+   chip transfer, showdown rail or result effect and never pauses an AI turn.
+   A tap made during the final few frames of a player-bound transfer waits for
+   that owned motion to land, then opens; it is abandoned if the table stops
+   being a safe reading moment. */
+function dossierReadingMoment(){
+  if (!game || game.over || game._transitioning) return false;
+  const next = $('btn-next-hand');
+  const betweenHands = !!(next && !next.classList.contains('hidden'));
+  return !!pendingHumanPlayer || betweenHands;
+}
+function dossierPresentationBusy(){
+  if (typeof DealFX !== 'undefined' && DealFX.activeCount() > 0) return true;
+  if (typeof activeChipFlightCount === 'function' && activeChipFlightCount() > 0) return true;
+  if (typeof showdownRailAnimations !== 'undefined' && showdownRailAnimations.size > 0) return true;
+  return !!document.querySelector(
+    '.fly-card,.fly-chip,.chip-physics-layer,.ko-physics-layer,' +
+    '.score-smash-layer,.arcade-bank-flight,#showdown-inspection-lane'
+  );
+}
+function releaseDossierFocus(){
+  const el = dossierReturnFocus;
+  dossierReturnFocus = null;
+  if (el && typeof el.focus === 'function' && el.isConnected){
+    try{ el.focus(); }catch(e){}
+  }
+}
+function openDossier(playerId, returnFocusEl){
+  if (!game || !Array.isArray(game.players)) return;
+  const player = game.players.find(p=>p && p.id === playerId);
+  if (!player || player.isHuman) return;
+  if (!dossierReadingMoment()) return;
+  const request = ++dossierRequestToken;
+  const started = Date.now();
+  const mount = ()=>{
+    if (request !== dossierRequestToken || !dossierReadingMoment()) return;
+    if (dossierPresentationBusy()){
+      if (Date.now()-started < 1200) setTimeout(mount,50);
+      return;
+    }
+    const body = $('dossier-body');
+    if (!body) return;
+    body.innerHTML = dossierCardHTML(dossierModel(player));
+    dossierReturnFocus = returnFocusEl || null;
+    openOverlay('dossier');
+    const close = $('close-dossier');
+    if (close && typeof close.focus === 'function'){ try{ close.focus(); }catch(e){} }
+  };
+  mount();
 }
 // Gates a "start a new table" action behind a discard-confirmation whenever
 // a resumable save exists, so Play/Quick Deal can't silently blow it away.
@@ -356,6 +529,7 @@ function startGame(){
   $('home').classList.add('hidden');
   $('setup').classList.add('hidden');
   $('rankings').classList.add('hidden');
+  $('opponents').classList.add('hidden');
   $('awards').classList.add('hidden');
   $('career').classList.add('hidden');
   $('table-screen').classList.remove('hidden');
@@ -728,13 +902,33 @@ function migrateCareer(raw){
   migrated.eventsWon = normalizeCareerCounter(raw.eventsWon);
   migrated.champion = raw.champion === true;
   migrateCareerCash(raw, migrated);
-  // Advertised fields carry across verbatim where they still describe a
-  // real event; anything else is dropped and redrawn on the next visit.
+  /* Advertised fields carry across verbatim where they still describe a
+     real event; anything else is dropped and redrawn on the next visit.
+
+     ENEMY PERSONALITY PASS — the one migration this pass performs, and
+     the smallest one that does the job. An entry in this book is an
+     event the player has only LOOKED at: nothing is paid, no unlock and
+     no counter depends on it, and it is regenerated for free on the next
+     visit. So a book entry drawn before residents existed (no
+     `residentId` on any seat) is dropped here, and the directory then
+     advertises the house cast the player is about to meet.
+
+     What is deliberately NOT touched: `career.active.roster`, which is a
+     PAID term of an event already entered and is carried through
+     normalizeActiveCareerEvent above exactly as stored. That table keeps
+     the opponents it was bought in against until it settles. Bankroll,
+     unlocks, counters, champion status, cash state and lifetime
+     statistics are untouched, and CAREER_SAVE_VERSION does not move —
+     `rosters` has always been optional in isValidCareer(). Idempotent:
+     once refreshed, every seat carries a residentId and nothing is
+     dropped on later loads. */
   if (raw.rosters && typeof raw.rosters === 'object' && !Array.isArray(raw.rosters)){
     migrated.rosters = {};
     Object.keys(raw.rosters).forEach(id=>{
       const roster = normalizeCareerRoster(raw.rosters[id], careerEventById(id));
-      if (roster) migrated.rosters[id] = roster;
+      if (!roster) return;
+      if (roster.some(seat=>!seat.residentId)) return;   // pre-residents preview: redraw
+      migrated.rosters[id] = roster;
     });
   }
   if (raw.unlocks && typeof raw.unlocks === 'object'){
@@ -834,7 +1028,7 @@ function careerSeatedRosterFromTable(event){
   if (!save || !Array.isArray(save.players)) return null;
   const seats = save.players
     .filter(p=>p && !p.isHuman)
-    .map(p=>({ personalityKey:p.personalityKey, faceColorIdx:p.faceColorIdx }));
+    .map(p=>({ residentId:p.residentId || null, personalityKey:p.personalityKey, faceColorIdx:p.faceColorIdx }));
   return normalizeCareerRoster(seats, event);
 }
 
@@ -1208,6 +1402,7 @@ function showTableScreen(){
   $('home').classList.add('hidden');
   $('setup').classList.add('hidden');
   $('rankings').classList.add('hidden');
+  $('opponents').classList.add('hidden');
   $('awards').classList.add('hidden');
   $('career').classList.add('hidden');
   $('table-screen').classList.remove('hidden');
@@ -1223,6 +1418,7 @@ function showCareerScreen(options){
   if (!options || !options.keepHomeVisible) $('home').classList.add('hidden');
   $('setup').classList.add('hidden');
   $('rankings').classList.add('hidden');
+  $('opponents').classList.add('hidden');
   $('awards').classList.add('hidden');
   $('table-screen').classList.add('hidden');
   $('career').classList.remove('hidden');
@@ -1681,6 +1877,194 @@ function careerCassetteHTML(event, state){
   '</div>';
 }
 
+/* ============================================================
+   CAREER V2 — FOCUSED EVENT BROWSER
+
+   The catalogue, state machine and entry paths above remain authoritative.
+   This layer only changes how those values are browsed: one horizontal
+   cassette rack, one selected ticket in the reader, one primary action.
+   ============================================================ */
+let careerSelectedEventId = null;
+let careerDetailsOpen = false;
+let careerSelectionDirection = 0;
+
+function careerBrowserEntries(){
+  const entries = [];
+  CAREER_ROOMS.forEach(room=>{
+    if (room.venue === 'BACK ROOM'){
+      entries.push({
+        id:CAREER_CASH_CONFIG.id, venue:'BACK ROOM', title:'CASH TABLE',
+        state:careerCashState(), cash:true, event:null
+      });
+    }
+    careerRoomEvents(room.venue).forEach(event=>{
+      const state = careerEventState(event.id);
+      if (state !== 'hidden') entries.push({
+        id:event.id, venue:event.venue, title:careerEventTitle(event),
+        state, cash:false, event
+      });
+    });
+  });
+  return entries;
+}
+
+function careerEnsureBrowserSelection(entries){
+  const liveId = career.cash ? CAREER_CASH_CONFIG.id
+    : career.active ? career.active.eventId : null;
+  if (liveId && entries.some(entry=>entry.id === liveId)){
+    careerSelectedEventId = liveId;
+    return liveId;
+  }
+  if (careerSelectedEventId && entries.some(entry=>entry.id === careerSelectedEventId)){
+    return careerSelectedEventId;
+  }
+  const currentVenue = careerHighestAccess();
+  const atCurrentVenue = entries.filter(entry=>entry.venue === currentVenue && !entry.cash);
+  const firstOpen = atCurrentVenue.find(entry=>entry.state === 'available') || atCurrentVenue[0]
+    || entries.find(entry=>!entry.cash && entry.state === 'available')
+    || entries.find(entry=>!entry.cash) || entries[0];
+  careerSelectedEventId = firstOpen ? firstOpen.id : null;
+  return careerSelectedEventId;
+}
+
+function careerSelectBrowserEvent(id, direction){
+  const entries = careerBrowserEntries();
+  const next = entries.find(entry=>entry.id === id);
+  if (!next || next.id === careerSelectedEventId) return false;
+  careerSelectionDirection = Math.sign(direction ||
+    (entries.findIndex(entry=>entry.id === id) - entries.findIndex(entry=>entry.id === careerSelectedEventId)));
+  careerSelectedEventId = next.id;
+  careerOpenEventId = next.id;
+  careerDetailsOpen = false;
+  Sound.unlock();
+  Sound.buttonRelease('award');
+  renderCareerScreen();
+  return true;
+}
+
+function careerMoveBrowserSelection(delta){
+  const entries = careerBrowserEntries();
+  const selected = careerEnsureBrowserSelection(entries);
+  const at = entries.findIndex(entry=>entry.id === selected);
+  if (at < 0 || !entries.length) return;
+  const next = Math.max(0, Math.min(entries.length - 1, at + delta));
+  if (next !== at) careerSelectBrowserEvent(entries[next].id, delta);
+}
+
+function careerHeroFacesHTML(event){
+  if (!event) return '';
+  const roster = careerRosterFor(event.id) || [];
+  const moods = event.difficulty === 'medium'
+    ? ['idle','think','idle','think','idle']
+    : ['smug','sly','angry','gloating','think'];
+  return roster.slice(0, event.opponentCount).map((entry,i)=>{
+    const seat = { faceColorIdx:entry.faceColorIdx };
+    return '<span class="cdir-hero-seat"><span class="cdir-hero-face">' +
+      renderFace(seat, moods[i % moods.length]) + '</span><span>' +
+      esc(careerSeatName(entry) || '\u2014') + '</span></span>';
+  }).join('');
+}
+
+function careerBrowserControlsHTML(entry){
+  if (entry.cash){
+    if (entry.state === 'active') return '<div class="cdir-cradle"><button type="button" class="cdir-primary" data-cash-resume>' +
+      '<span class="pc-lamp is-amber"></span><span class="cdir-legend-wrap"><span class="cdir-legend">Resume Table</span>' +
+      '<small>$' + careerMoneyCommitted().toLocaleString() + ' on felt</small></span><span class="pc-lamp is-amber"></span></button></div>' +
+      '<button type="button" class="cdir-abandon" data-cash-out>Cash Out $' + careerMoneyCommitted().toLocaleString() + '</button>';
+    if (entry.state === 'available') return '<div class="cdir-cradle"><button type="button" class="cdir-primary" data-cash-open>' +
+      '<span class="pc-lamp is-amber"></span><span class="cdir-legend-wrap"><span class="cdir-legend">Buy In $' +
+      CAREER_CASH_CONFIG.buyIn + '</span><small>Take a seat</small></span><span class="pc-lamp is-amber"></span></button></div>';
+  } else if (entry.state === 'active'){
+    return '<div class="cdir-cradle"><button type="button" class="cdir-primary" data-career-continue="' + esc(entry.id) + '">' +
+      '<span class="pc-lamp is-amber"></span><span class="cdir-legend-wrap"><span class="cdir-legend">Continue</span>' +
+      '<small>' + esc(entry.title) + '</small></span><span class="pc-lamp is-amber"></span></button></div>' +
+      '<button type="button" class="cdir-abandon" data-career-abandon="' + esc(entry.id) + '">Abandon Event</button>';
+  } else if (entry.state === 'available'){
+    return '<div class="cdir-cradle"><button type="button" class="cdir-primary" data-career-enter="' + esc(entry.id) + '">' +
+      '<span class="pc-lamp is-amber"></span><span class="cdir-legend-wrap"><span class="cdir-legend">Take Seat</span>' +
+      '<small>' + esc(entry.title) + '</small></span><span class="pc-lamp is-amber"></span></button></div>';
+  }
+  const word = entry.state === 'unaffordable' ? 'Bankroll short'
+    : entry.state === 'blocked' ? 'Finish the active table first' : 'Locked';
+  return '<div class="cdir-locked-strip"><span class="pc-lamp"></span><span>' + esc(word) + '</span></div>';
+}
+
+function careerCashRequirement(state){
+  if (state === 'active') return '$' + careerMoneyCommitted().toLocaleString() + ' ON TABLE · SAVED BETWEEN HANDS';
+  if (state === 'unaffordable') return 'NEEDS $' + Math.max(0, CAREER_CASH_CONFIG.buyIn - career.bankroll).toLocaleString() + ' MORE THAN YOU HOLD';
+  if (state === 'blocked') return 'FINISH THE OPEN TOURNAMENT FIRST';
+  return 'NO RAKE · FULL-STACK CASH-OUT BETWEEN HANDS';
+}
+
+function careerBrowserHeroHTML(entry){
+  const event = entry.event;
+  const tier = careerVenueTier(entry.venue);
+  const stateWord = careerStatusWord(entry.state);
+  const payout = entry.cash ? '$1 / $2' : careerPayoutSummary(event);
+  const entryValue = entry.cash ? '$' + CAREER_CASH_CONFIG.buyIn
+    : event.buyIn === 0 ? 'FREE' : '$' + event.buyIn.toLocaleString();
+  const players = entry.cash ? CAREER_CASH_CONFIG.playerCount : event.playerCount;
+  const requirement = entry.cash ? careerCashRequirement(entry.state)
+    : careerRequirementText(event, entry.state);
+  const facts = entry.cash
+    ? [['Stack',CAREER_CASH_CONFIG.stack],['Format','Cash Game'],['Cash-out','Between hands']]
+    : [['Stack',event.stack.toLocaleString()],['Format',String(event.format).toUpperCase()],
+       ['Blind pace',event.handsPerBlindLevel + ' hands']];
+  const details = facts.map(pair=>'<span><small>' + esc(pair[0]) + '</small><b>' + esc(pair[1]) + '</b></span>').join('');
+  const faces = entry.cash ? '' : careerHeroFacesHTML(event);
+  const direction = careerSelectionDirection < 0 ? ' is-from-left' : careerSelectionDirection > 0 ? ' is-from-right' : '';
+  return '<section class="cdir-reader is-' + entry.state + direction + '" data-career-reader>' +
+    '<div class="cdir-reader-clamp" aria-hidden="true"><i></i><span>SELECTED EVENT</span><i></i></div>' +
+    '<div class="cdir-reader-paper" data-prestige="' + tier.prestige + '">' +
+      '<div class="cdir-reader-head"><span class="cdir-tk-venue cdir-tk-venue-' + tier.key + '">' + esc(entry.venue) + '</span>' +
+      '<span class="cdir-reader-state is-' + entry.state + '">' + esc(stateWord) + '</span></div>' +
+      '<h2>' + esc(entry.title) + '</h2>' +
+      '<div class="cdir-reader-threat">TABLE THREAT · ' + esc(entry.cash ? '1/6 · MODERATE' : careerThreatOf(event)) + '</div>' +
+      '<div class="cdir-reader-money"><span><small>' + (entry.cash ? 'Stakes' : 'Prize') + '</small><b>' + esc(payout) + '</b></span>' +
+      '<span><small>' + (entry.cash ? 'Buy-in' : 'Entry') + '</small><b>' + esc(entryValue) + '</b></span>' +
+      '<span><small>Players</small><b>' + players + '</b></span></div>' +
+      (faces ? '<div class="cdir-hero-faces" aria-label="Opponents">' + faces + '</div>' : '') +
+      '<p class="cdir-reader-note' + ((entry.state === 'locked' || entry.state === 'unaffordable') ? ' is-requirement' : '') + '">' + esc(requirement) + '</p>' +
+    '</div>' +
+    '<div class="cdir-reader-controls">' + careerBrowserControlsHTML(entry) + '</div>' +
+    '<button type="button" class="cdir-details-toggle" data-career-details aria-expanded="' + (careerDetailsOpen ? 'true' : 'false') + '">' +
+      (careerDetailsOpen ? 'Close Event Details' : 'Event Details') + '<span aria-hidden="true">' + (careerDetailsOpen ? '\u2212' : '+') + '</span></button>' +
+    (careerDetailsOpen ? '<div class="cdir-details"><div class="cdir-details-grid">' + details + '</div>' +
+      (!entry.cash && faces ? '<div class="cdir-details-caption">Your table</div><div class="cdir-details-roster">' + faces + '</div>' : '') +
+      '</div>' : '') +
+  '</section>';
+}
+
+function careerBrowserHTML(){
+  const entries = careerBrowserEntries();
+  const selectedId = careerEnsureBrowserSelection(entries);
+  const selected = entries.find(entry=>entry.id === selectedId) || entries[0];
+  if (!selected) return '<div class="cdir-empty">NO EVENTS LOADED</div>';
+  const selectedIndex = entries.findIndex(entry=>entry.id === selected.id);
+  const rooms = CAREER_ROOMS.map(room=>{
+    const roomEntries = entries.filter(entry=>entry.venue === room.venue);
+    const reached = room.venue === 'BACK ROOM' || roomEntries.some(entry=>entry.state !== 'locked');
+    const active = selected.venue === room.venue;
+    return '<button type="button" class="cdir-venue-stop' + (active ? ' is-current' : '') + (reached ? '' : ' is-locked') +
+      '" data-career-venue="' + esc(room.venue) + '" aria-pressed="' + active + '" aria-label="' + esc(room.venue) + '">' +
+      '<span>' + (CAREER_ROOMS.indexOf(room) + 1) + '</span><b>' + esc(room.venue.replace(' CHAMPIONSHIP','').replace(' ROOM','')) + '</b></button>';
+  }).join('');
+  const rack = entries.map((entry,i)=>'<button type="button" class="cdir-selector is-' + entry.state +
+      (entry.id === selected.id ? ' is-selected' : '') + '" data-career-select="' + esc(entry.id) +
+      '" aria-pressed="' + (entry.id === selected.id) + '">' +
+      '<span class="cdir-selector-notch" aria-hidden="true"></span><small>' + esc(entry.venue) + '</small><b>' + esc(entry.title) + '</b>' +
+      '<em>' + esc(entry.cash ? '$50 BUY-IN' : careerEntryLabel(entry.event)) + '</em>' +
+      (entry.state === 'locked' ? '<i>LOCKED</i>' : entry.state === 'active' ? '<i>ACTIVE</i>' : '') +
+    '</button>').join('');
+  return '<div class="cdir-status"><span>CAREER CIRCUIT</span><b>' + (selectedIndex + 1) + ' / ' + entries.length + '</b></div>' +
+    '<nav class="cdir-venue-rail" aria-label="Career venues">' + rooms + '</nav>' +
+    '<div class="cdir-selector-shell"><button type="button" class="cdir-step" data-career-prev aria-label="Previous event"' +
+      (selectedIndex <= 0 ? ' disabled' : '') + '>&lsaquo;</button><div class="cdir-event-rail" data-career-rail>' + rack + '</div>' +
+      '<button type="button" class="cdir-step" data-career-next aria-label="Next event"' +
+      (selectedIndex >= entries.length - 1 ? ' disabled' : '') + '>&rsaquo;</button></div>' +
+    careerBrowserHeroHTML(selected);
+}
+
 function renderCareerScreen(){
   const bank = $('career-bankroll');
   if (bank) buildCareerBankroll(bank, careerBankroll());
@@ -1705,28 +2089,64 @@ function renderCareerScreen(){
   if (available) available.textContent = '$' + careerBankroll().toLocaleString();
   if (committed) committed.textContent = '$' + careerMoneyCommitted().toLocaleString();
   if (total) total.textContent = '$' + careerTotalOwned().toLocaleString();
+  const careerScreen = $('career');
+  if (careerScreen) careerScreen.classList.remove('career-departing');
   const board = $('career-events');
   if (board){
-    // An open tray belonging to an event that is no longer rendered (its
-    // eligibility lapsed, or a fresh career replaced it) must not survive.
-    if (careerOpenEventId && careerOpenEventId !== CAREER_CASH_CONFIG.id
-        && careerEventState(careerOpenEventId) === 'hidden'){
-      careerOpenEventId = null;
+    board.innerHTML = careerBrowserHTML();
+
+    board.querySelectorAll('[data-career-select]').forEach(button=>{
+      button.onclick = ()=>careerSelectBrowserEvent(button.dataset.careerSelect);
+    });
+    board.querySelectorAll('[data-career-venue]').forEach(button=>{
+      button.onclick = ()=>{
+        const entries = careerBrowserEntries();
+        const inRoom = entries.filter(entry=>entry.venue === button.dataset.careerVenue);
+        const target = inRoom.find(entry=>entry.state === 'available' || entry.state === 'active') || inRoom[0];
+        if (target) careerSelectBrowserEvent(target.id);
+      };
+    });
+    const previous = board.querySelector('[data-career-prev]');
+    const next = board.querySelector('[data-career-next]');
+    if (previous) previous.onclick = ()=>careerMoveBrowserSelection(-1);
+    if (next) next.onclick = ()=>careerMoveBrowserSelection(1);
+    const details = board.querySelector('[data-career-details]');
+    if (details) details.onclick = ()=>{
+      careerDetailsOpen = !careerDetailsOpen;
+      Sound.buttonRelease('award');
+      renderCareerScreen();
+    };
+
+    /* The rack is genuinely flickable and snap-aligned. Once native
+       scrolling settles, whichever cassette is closest to the reading
+       notch becomes the selected event. The same handler supports older
+       Safari builds through a short scroll debounce. */
+    const rail = board.querySelector('[data-career-rail]');
+    if (rail && typeof rail.addEventListener === 'function'){
+      let settleTimer = null;
+      const settle = ()=>{
+        const choices = Array.from(rail.querySelectorAll('[data-career-select]'));
+        if (!choices.length || typeof rail.getBoundingClientRect !== 'function') return;
+        const centre = rail.getBoundingClientRect().left + rail.clientWidth / 2;
+        let closest = choices[0], distance = Infinity;
+        choices.forEach(choice=>{
+          const rect = choice.getBoundingClientRect();
+          const away = Math.abs((rect.left + rect.width / 2) - centre);
+          if (away < distance){ distance = away; closest = choice; }
+        });
+        if (closest && closest.dataset.careerSelect !== careerSelectedEventId){
+          careerSelectBrowserEvent(closest.dataset.careerSelect);
+        }
+      };
+      rail.addEventListener('scroll', ()=>{
+        clearTimeout(settleTimer);
+        settleTimer = setTimeout(settle, 110);
+      }, { passive:true });
+      const selectedCassette = rail.querySelector('.cdir-selector.is-selected');
+      if (selectedCassette && typeof selectedCassette.scrollIntoView === 'function'){
+        requestAnimationFrame(()=>selectedCassette.scrollIntoView({ block:'nearest', inline:'center', behavior:'auto' }));
+      }
     }
-    board.innerHTML = CAREER_ROOMS.map(room=>{
-      const events = careerRoomEvents(room.venue)
-        .map(event=>({ event, state:careerEventState(event.id) }))
-        .filter(entry=>entry.state !== 'hidden');
-      const eventCassettes = events.map(entry=>careerCassetteHTML(entry.event, entry.state)).join('');
-      const cassettes = (room.venue === 'BACK ROOM' ? careerCashCassetteHTML() : '') + eventCassettes;
-      const body = cassettes || '<div class="cdir-door"><span class="cdir-door-text">LOCKED &middot; COMING SOON</span></div>';
-      // Header and events are ONE venue section: the marker is the top
-      // band of the venue's own housing, not a label pinned to a separate
-      // panel inside it.
-      return '<section class="cdir-room cdir-room-' + room.key + '">' +
-        '<header class="cdir-room-plate"><span class="cdir-room-name">' + esc(room.venue) + '</span></header>' +
-        '<div class="cdir-room-bay">' + body + '</div></section>';
-    }).join('');
 
     board.querySelectorAll('[data-career-toggle]').forEach(button=>{
       // Presentation only: no save, no debit, no unlock, no table state.
@@ -1748,59 +2168,13 @@ function renderCareerScreen(){
       button.onclick = ()=>careerCashOpenPressed();
     });
     board.querySelectorAll('[data-cash-resume]').forEach(button=>{
-      button.onclick = ()=>startCareerCashSession();
+      button.onclick = ()=>careerDepartToTable(startCareerCashSession);
     });
     board.querySelectorAll('[data-cash-out]').forEach(button=>{
       button.onclick = ()=>careerCashOutPressed();
     });
 
-    // The tray's REAL height extends in discrete mechanical beats, so every
-    // later cassette and room is genuinely pushed down the directory
-    // rather than overlaid.
-    const tray = typeof board.querySelector === 'function'
-      ? board.querySelector('.cdir-hatch.is-open .cdir-tray') : null;
-    const printing = careerPrintArmed;
-    careerPrintArmed = false;           // consumed, whatever happens next
-    if (tray){
-      const inner = tray.firstElementChild;
-      const paper = tray.querySelector('.cdir-paper');
-      const slot = tray.querySelector('.cdir-slot');
-      // Reduced motion reveals the ticket immediately, with no travel at
-      // all. A re-render that is not a fresh opening lands here too: the
-      // ticket is simply present, exactly as it already was.
-      if (motionOff() || !printing){
-        tray.style.height = 'auto';
-        if (slot) slot.classList.add('is-open');
-        if (paper) paper.classList.add('is-settled');
-        // Sound is independent of the motion preference: a player who has
-        // turned motion off has not turned sound off.
-        if (printing) Sound.ticketPrint();
-      } else {
-        const target = inner.getBoundingClientRect().height;
-        tray.style.height = '0px';
-        void tray.offsetHeight;
-        tray.classList.add('is-extending');
-        tray.style.height = target + 'px';
-        tray.addEventListener('transitionend', function settle(){
-          tray.classList.remove('is-extending');
-          tray.style.height = 'auto';
-          tray.removeEventListener('transitionend', settle);
-        });
-        // 1. the mechanism engages and the slot opens, 2-5. the paper
-        // feeds down, overshoots and settles. Both are CSS; this only
-        // starts them and marks the rest state when they finish.
-        if (slot) slot.classList.add('is-open');
-        if (paper){
-          paper.classList.add('is-printing');
-          paper.addEventListener('animationend', function done(){
-            paper.classList.remove('is-printing');
-            paper.classList.add('is-settled');
-            paper.removeEventListener('animationend', done);
-          });
-        }
-        Sound.ticketPrint();
-      }
-    }
+    careerSelectionDirection = 0;
   }
 
   const hasAffordableUnlocked = CAREER_EVENT_LIST.some(event=>careerEventState(event.id) === 'available');
@@ -1834,16 +2208,29 @@ function renderCareerScreen(){
   if (typeof refreshDevPanel === 'function') refreshDevPanel();
 }
 
+function careerDepartToTable(launch){
+  const screen = $('career');
+  if (!screen || motionOff()){
+    launch();
+    return;
+  }
+  screen.classList.add('career-departing');
+  setTimeout(()=>{
+    screen.classList.remove('career-departing');
+    launch();
+  }, 190);
+}
+
 function careerEnterPressed(eventId){
   if (careerHasActiveEvent()){
-    if (career.active.eventId === eventId) continueCareerEvent();
+    if (career.active.eventId === eventId) careerDepartToTable(continueCareerEvent);
     return;
   }
   const event=careerEventById(eventId);
   const launch=()=>{
     if (!enterCareerEvent(eventId)){ renderCareerScreen(); return; }
     renderCareerScreen();       // bankroll visibly drops before the table appears
-    startCareerEvent();
+    careerDepartToTable(startCareerEvent);
   };
   if (event && event.buyIn>0 && careerRiskBand(event)==='risky'){
     showConfirmDialog({
@@ -1862,7 +2249,7 @@ function careerCashOpenPressed(){
   const launch = ()=>{
     if (!openCareerCashSession()){ renderCareerScreen(); return; }
     renderCareerScreen();
-    startCareerCashSession();
+    careerDepartToTable(startCareerCashSession);
   };
   if (career.bankroll < CAREER_CASH_CONFIG.buyIn * 3){
     showConfirmDialog({
@@ -1901,6 +2288,8 @@ function careerAbandonPressed(eventId){
 function startFreshCareer(){
   career = defaultCareer();
   careerOpenEventId = null;
+  careerSelectedEventId = null;
+  careerDetailsOpen = false;
   saveCareer();
   clearCareerTable();
   renderCareerScreen();
@@ -1925,6 +2314,7 @@ function startSinglePlayerRun(options){
   if (!keepMenuVisible) $('home').classList.add('hidden');
   $('setup').classList.add('hidden');
   $('rankings').classList.add('hidden');
+  $('opponents').classList.add('hidden');
   $('awards').classList.add('hidden');
   $('career').classList.add('hidden');
   $('table-screen').classList.remove('hidden');
@@ -1947,6 +2337,7 @@ function continueTable(){
   $('home').classList.add('hidden');
   $('setup').classList.add('hidden');
   $('rankings').classList.add('hidden');
+  $('opponents').classList.add('hidden');
   $('awards').classList.add('hidden');
   $('career').classList.add('hidden');
   $('table-screen').classList.remove('hidden');

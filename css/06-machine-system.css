@@ -80,13 +80,24 @@
    is deliberately not touched here.
    ============================================================ */
 #home .pc-button,
-#home .home-row .btn-secondary{
+#home .home-row .btn-secondary,
+#home .pc-cast-drawer{
   transition:transform 150ms cubic-bezier(.34,1.56,.64,1),box-shadow 120ms ease-out;
 }
 
 #home .pc-button:active,
-#home .home-row .btn-secondary:active{
+#home .home-row .btn-secondary:active,
+#home .pc-cast-drawer:active{
   transition:transform 50ms linear,box-shadow 50ms linear;
+}
+
+/* The cast drawer is now the control that opens House Faces, so it gets
+   the family's press — the same recipe, well inside the approved four
+   pixels of travel, and no new motion language. */
+#home .pc-cast-drawer{ cursor:pointer; }
+#home .pc-cast-drawer:active{
+  transform:translateY(3px);
+  box-shadow:inset 0 0 0 5px #B9AA78,inset 0 7px 0 #75663E,inset 0 -5px 0 #554A2E,0 1px 0 #160B08;
 }
 
 #home .pc-button-primary:active{ transform:translateY(4px); }
@@ -158,6 +169,8 @@
 #rankings,
 #awards,
 #career,
+#opponents,
+#dossier-sheet .sheet-body,
 #settings-sheet .sheet-body{
   --ms-edge:var(--pc-edge-lo,#0B0F0C);
   --ms-plate:var(--pc-plastic,var(--theme-case-raised));
@@ -179,6 +192,7 @@
    SCREEN below. */
 #setup .lobby-card,
 #rankings .lobby-card,
+#opponents .lobby-card,
 #awards .lobby-card{
   padding:11px;
   border:4px solid var(--ms-edge);
@@ -197,6 +211,7 @@
 #setup .setup-head,
 #rankings .setup-head,
 #awards .setup-head,
+#opponents .setup-head,
 #career .setup-head{
   margin-bottom:11px;
   padding:5px 7px;
@@ -211,6 +226,7 @@
 #setup .setup-title,
 #rankings .setup-title,
 #awards .setup-title,
+#opponents .setup-title,
 #career .setup-title{
   font-size:9px;
   letter-spacing:.12em;
@@ -220,6 +236,7 @@
 
 /* ---- Panels become plates let into the board ---- */
 #setup .panel-card,
+#opponents .panel-card,
 #career .panel-card{
   border:3px solid var(--ms-edge);
   border-radius:4px;
@@ -236,6 +253,8 @@
 /* ---- Printed panel headings with the machine's seam rule ---- */
 #setup .card-label,
 #career .card-label,
+#opponents .card-label,
+#dossier-sheet .card-label,
 #settings-sheet h3{
   display:flex;
   align-items:center;
@@ -247,6 +266,8 @@
 
 #setup .card-label::after,
 #career .card-label::after,
+#opponents .card-label::after,
+#dossier-sheet .card-label::after,
 #settings-sheet h3::after{
   content:"";
   height:3px;
@@ -267,6 +288,8 @@
 #awards .hint,
 #career .hint,
 #settings-sheet .hint,
+#opponents .hint,
+#dossier-sheet .hint,
 #settings-sheet .ts{ color:#8E896B; }
 
 /* ---- Physical control faces ---- */
@@ -362,6 +385,7 @@
 #setup .icon-btn,
 #rankings .icon-btn,
 #awards .icon-btn,
+#opponents .icon-btn,
 #career .icon-btn{
   border:3px solid var(--ms-edge);
   border-radius:3px;
@@ -427,6 +451,7 @@
 #awards .award-glossary-meta{ color:var(--ms-print); }
 
 /* ---- Settings: the same construction, deliberately quieter ---- */
+#dossier-sheet .sheet-body,
 #settings-sheet .sheet-body{
   background:
     repeating-conic-gradient(rgba(255,255,255,.04) 0 25%,transparent 0 50%) 0 0/8px 8px,
@@ -435,6 +460,7 @@
   box-shadow:inset 0 4px 0 var(--pc-leather-hi),inset 0 -5px 0 var(--pc-leather-lo);
 }
 
+#dossier-sheet .sheet-section,
 #settings-sheet .sheet-section{
   padding:12px 13px;
   border:3px solid var(--ms-edge);
@@ -461,6 +487,7 @@
   box-shadow:inset 0 3px 0 rgba(0,0,0,.44),0 2px 0 var(--ms-edge);
 }
 
+#dossier-sheet .btn-secondary,
 #settings-sheet .btn-secondary{
   border:3px solid var(--ms-edge);
   border-radius:4px;
@@ -981,6 +1008,34 @@
 .career-funds small{ font-family:var(--font-hdr); font-size:5px; text-transform:uppercase; color:#9A956F; }
 .career-funds b{ font-family:var(--font-hdr); font-size:8px; color:var(--pc-display-ink); }
 .cpi .career-last-result{ margin:0; }
+
+/* V2 turns the player instrument into a restrained persistent header.
+   Bankroll remains dominant, but it no longer consumes a third of the
+   phone before the player reaches the event they came here to choose. */
+.cpi{
+  display:grid; grid-template-columns:minmax(0,1.45fr) minmax(120px,.85fr);
+  gap:5px 7px; padding:7px;
+}
+.cpi-nameplate{ grid-column:1 / -1; min-height:18px; padding-block:2px; }
+.cpi-bankroll-label{ grid-column:1; align-self:end; }
+.cpi-bankroll-housing{ grid-column:1; padding:4px; }
+#career .cpi-reel{ padding:3px 4px; gap:3px; }
+#career .cpi-reel .jp-cell{ height:34px; font-size:18px; }
+#career .cpi-reel .jp-sym{ flex-basis:20px; width:20px; font-size:15px; }
+.career-funds{ grid-column:2; grid-row:2 / span 2; grid-template-columns:1fr; gap:2px; }
+.career-funds > span{ padding:3px; gap:1px; }
+.career-funds small{ font-size:4.5px; }
+.career-funds b{ font-size:7px; }
+.cpi-stats{ grid-column:1 / -1; gap:4px; }
+.cpi-stat-well{ min-height:19px; padding:4px 3px 3px; }
+.cpi-stat-value{ font-size:7px; }
+.cpi .career-last-result{ grid-column:1 / -1; }
+
+@media (max-width:350px){
+  .cpi{ grid-template-columns:minmax(0,1.35fr) minmax(104px,.8fr); }
+  #career .cpi-reel .jp-cell{ height:30px; font-size:15px; }
+  .cpi-stat .pc-label{ font-size:5px; }
+}
 /* ---- 2. HOUSE DIRECTORY ------------------------------------
    Where the player's machine ends and the Career WORLD begins.
 
@@ -1549,3 +1604,277 @@
 [data-motion="off"] .cdir-paper{ animation:none !important; transform:translateY(0) !important; }
 [data-motion="off"] .cdir-slot,
 [data-motion="off"] .cdir-feed{ transition:none !important; }
+
+/* ============================================================
+   CAREER V2 — THE EVENT READER
+
+   The old room stack remains above as the Ticket Lab's material source.
+   Production now uses one compact circuit strip, one snapping cassette
+   rack and one reading bay. A dozen locked events can exist without
+   becoming a dozen full-height rows.
+   ============================================================ */
+.cdir{
+  gap:8px; padding:2px 0 12px;
+  scrollbar-width:thin; scrollbar-color:#67572D #0A0A09;
+}
+.cdir-status{
+  flex:0 0 auto; min-height:25px; padding:6px 9px 5px;
+  display:flex; align-items:center; justify-content:space-between;
+  background:#14140F; border:2px solid #0A0A09;
+  box-shadow:inset 0 3px 0 #080806;
+  font-family:var(--font-hdr); font-size:6px; letter-spacing:.14em;
+  color:#8A8371; text-shadow:none;
+}
+.cdir-status b{ font-size:7px; font-weight:400; color:#E7B633; }
+
+/* Six venue stops read as a circuit diagram, not six dashboard tabs. */
+.cdir-venue-rail{
+  flex:0 0 auto; min-height:52px; padding:4px 3px;
+  display:grid; grid-template-columns:repeat(6,minmax(0,1fr)); gap:2px;
+  background:#0A0A09; box-shadow:inset 0 4px 0 #050504;
+}
+.cdir-venue-stop{
+  min-width:0; min-height:44px; padding:3px 1px; cursor:pointer;
+  display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px;
+  background:#24231B; color:#8A8371; border:1px solid #3D392C;
+  box-shadow:inset 0 2px 0 rgba(255,255,255,.035);
+  font-family:var(--font-hdr); text-shadow:none;
+}
+.cdir-venue-stop span{
+  width:13px; height:13px; display:flex; align-items:center; justify-content:center;
+  background:#070B09; border:1px solid #3D392C; color:#9FD3A8;
+  font-size:5px; line-height:1;
+}
+.cdir-venue-stop b{
+  max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+  font-size:4px; font-weight:400; line-height:1; letter-spacing:.02em;
+}
+.cdir-venue-stop.is-current{
+  background:#4A3521; color:#E0B15F; border-color:#8A6D2E;
+  box-shadow:inset 0 2px 0 #6B4E31,0 2px 0 #080806;
+}
+.cdir-venue-stop.is-current span{ border-color:#E7B633; color:#E7B633; }
+.cdir-venue-stop.is-locked{ color:#5E5A4E; }
+.cdir-venue-stop.is-locked span{ color:#5E5A4E; }
+.cdir-venue-stop:active{ transform:translateY(2px); }
+
+/* The rack is native horizontal scrolling with mandatory snap. Side
+   padding lets the first and last cassettes settle under the central
+   reading notch rather than sticking to an edge. */
+.cdir-selector-shell{
+  flex:0 0 auto; position:relative; min-height:91px;
+  display:grid; grid-template-columns:31px minmax(0,1fr) 31px; align-items:stretch;
+  background:#11110D; border:3px solid #0A0A09;
+  box-shadow:inset 0 6px 0 #070705, inset 0 -3px 0 #25231A;
+}
+.cdir-selector-shell::before{
+  content:""; position:absolute; z-index:3; top:-3px; left:50%; width:18px; height:8px;
+  transform:translateX(-50%); background:#E7B633; border:2px solid #0A0A09;
+  clip-path:polygon(0 0,100% 0,50% 100%);
+}
+.cdir-step{
+  position:relative; z-index:4; min-width:31px; padding:0; cursor:pointer;
+  background:#2B291F; border:0; color:#E7B633;
+  font-family:var(--font-hdr); font-size:24px; line-height:1;
+  box-shadow:inset 0 0 0 2px #0A0A09, inset 0 3px 0 #413D2D;
+}
+.cdir-step:active:not(:disabled){ transform:translateY(2px); color:#FFE17B; }
+.cdir-step:disabled{ color:#4E4938; cursor:default; }
+.cdir-event-rail{
+  min-width:0; padding:9px calc(50% - 74px) 12px;
+  display:flex; gap:8px; overflow-x:auto; overflow-y:hidden;
+  scroll-snap-type:x mandatory; overscroll-behavior-x:contain;
+  scrollbar-width:none; -webkit-overflow-scrolling:touch;
+}
+.cdir-event-rail::-webkit-scrollbar{ display:none; }
+.cdir-selector{
+  flex:0 0 148px; width:148px; min-height:66px; padding:8px 9px 7px; cursor:pointer;
+  scroll-snap-align:center; scroll-snap-stop:always; position:relative;
+  display:grid; grid-template-columns:1fr auto; gap:4px 6px; text-align:left;
+  background:#A79F86; color:#28271F; border:3px solid #0A0A09; border-radius:2px;
+  box-shadow:inset 2px 2px 0 #CFC6A8, inset -2px -3px 0 #6F6956,0 4px 0 #080806;
+  font-family:var(--font-hdr); text-shadow:none;
+  transform:translateY(3px); opacity:.68;
+  transition:transform 150ms cubic-bezier(.34,1.56,.64,1),opacity 120ms linear,box-shadow 120ms linear;
+}
+.cdir-selector small{
+  grid-column:1 / -1; font-size:4.5px; letter-spacing:.1em; color:#5E594A;
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+}
+.cdir-selector b{
+  min-width:0; font-size:8px; font-weight:400; line-height:1.15; letter-spacing:.04em;
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+}
+.cdir-selector em{
+  align-self:center; font-size:5px; font-style:normal; color:#72560F; white-space:nowrap;
+}
+.cdir-selector i{
+  position:absolute; right:6px; top:5px; padding:2px 3px;
+  background:#514D40; color:#C8C1A9; border:1px solid #28271F;
+  font-size:4px; font-style:normal; letter-spacing:.06em;
+}
+.cdir-selector-notch{
+  position:absolute; left:10px; right:10px; bottom:5px; height:3px;
+  background:repeating-linear-gradient(90deg,#403D32 0 5px,transparent 5px 8px);
+}
+.cdir-selector.is-selected{
+  background:#D8CDA9; opacity:1; transform:translateY(0);
+  box-shadow:inset 2px 2px 0 #FFF1C7,inset -2px -3px 0 #8A8268,0 6px 0 #0A0A09;
+}
+.cdir-selector.is-active{ background:#E1D39C; }
+.cdir-selector.is-locked,.cdir-selector.is-blocked{
+  background:#777466; color:#3B3A33; opacity:.46;
+  box-shadow:inset 2px 2px 0 #908D7B,inset -2px -3px 0 #4E4C41,0 3px 0 #080806;
+}
+.cdir-selector.is-locked em,.cdir-selector.is-blocked em{ color:#4A473D; }
+.cdir-selector:active{ transform:translateY(4px); }
+
+/* The reading bay owns the page. Important terms and the primary action
+   precede progressive details, so TAKE SEAT never sits below a dossier. */
+.cdir-reader{
+  flex:0 0 auto; position:relative; padding:8px;
+  background:#171711; border:4px solid #0A0A09;
+  box-shadow:inset 0 6px 0 #080806, inset 3px 0 0 rgba(255,255,255,.035),0 4px 0 #050504;
+}
+.cdir-reader.is-from-right{ animation:cdirReaderRight 180ms steps(4,end); }
+.cdir-reader.is-from-left{ animation:cdirReaderLeft 180ms steps(4,end); }
+@keyframes cdirReaderRight{ from{ transform:translateX(12px); opacity:.35; } to{ transform:translateX(0); opacity:1; } }
+@keyframes cdirReaderLeft{ from{ transform:translateX(-12px); opacity:.35; } to{ transform:translateX(0); opacity:1; } }
+.cdir-reader-clamp{
+  min-height:19px; margin:-3px 1px 0; padding:3px 6px;
+  display:grid; grid-template-columns:1fr auto 1fr; align-items:center; gap:7px;
+  background:#29271D; border:2px solid #0A0A09; color:#8A8371;
+  font-family:var(--font-hdr); font-size:4.5px; letter-spacing:.14em; text-shadow:none;
+}
+.cdir-reader-clamp i{ height:3px; background:repeating-linear-gradient(90deg,#6A6248 0 5px,#16150F 5px 9px); }
+.cdir-reader-paper{
+  --tk-paper:#E8E1CE; --tk-ink:#22211C; --tk-ink-dim:#6E6857;
+  position:relative; margin:0 3px; padding:10px 12px 11px;
+  background:repeating-linear-gradient(180deg,rgba(0,0,0,.035) 0 1px,transparent 1px 4px),var(--tk-paper);
+  color:var(--tk-ink); filter:drop-shadow(0 4px 0 rgba(0,0,0,.5));
+  clip-path:polygon(0 0,100% 0,100% calc(100% - 9px),calc(100% - 9px) 100%,0 100%);
+}
+.cdir-reader-paper[data-prestige="basic"]{ --tk-paper:#E2DAC3; }
+.cdir-reader-paper[data-prestige="standard"]{ --tk-paper:#E9E2CF; }
+.cdir-reader-paper[data-prestige="premium"]{ --tk-paper:#F0E9D4; box-shadow:inset 0 0 0 2px rgba(34,33,28,.42); }
+.cdir-reader-paper[data-prestige="luxury"]{ --tk-paper:#F4EEDC; box-shadow:inset 0 0 0 2px #8A6D2E; }
+.cdir-reader-head{ display:flex; align-items:flex-start; justify-content:space-between; gap:8px; }
+.cdir-reader-head .cdir-tk-venue{ margin:0; }
+.cdir-reader-state{
+  padding:4px 6px 3px; border:2px solid currentColor; transform:rotate(2deg);
+  font-family:var(--font-hdr); font-size:6px; letter-spacing:.08em; color:#2F6B3D; text-shadow:none;
+}
+.cdir-reader-state.is-locked,.cdir-reader-state.is-blocked{ color:#817A6C; }
+.cdir-reader-state.is-unaffordable{ color:#9A4038; }
+.cdir-reader-state.is-active{ color:#8A5A0B; }
+.cdir-reader h2{
+  margin:7px 0 2px; font-family:var(--font-hdr); font-size:19px; font-weight:400;
+  line-height:1.05; letter-spacing:.05em; color:var(--tk-ink); text-shadow:none;
+}
+.cdir-reader-threat{
+  font-family:var(--font-hdr); font-size:5px; letter-spacing:.08em;
+  color:var(--tk-ink-dim); text-shadow:none;
+}
+.cdir-reader-money{
+  margin-top:8px; display:grid; grid-template-columns:minmax(0,1.55fr) minmax(0,.9fr) minmax(48px,.55fr);
+  border:2px solid rgba(34,33,28,.45); background:rgba(34,33,28,.055);
+}
+.cdir-reader-money > span{ min-width:0; padding:7px 8px; border-right:1px solid rgba(34,33,28,.28); }
+.cdir-reader-money > span:last-child{ border:0; }
+.cdir-reader-money small,.cdir-details-grid small{
+  display:block; margin-bottom:4px; font-family:var(--font-hdr); font-size:4.5px;
+  letter-spacing:.12em; text-transform:uppercase; color:var(--tk-ink-dim); text-shadow:none;
+}
+.cdir-reader-money b{
+  display:block; font-family:var(--font-hdr); font-size:11px; font-weight:400;
+  line-height:1.2; color:var(--tk-ink); text-shadow:none; overflow-wrap:anywhere;
+}
+.cdir-reader-money > span:first-child b{ font-size:13px; }
+.cdir-reader-note{
+  margin:8px 0 0; font-family:var(--font-hdr); font-size:6px; line-height:1.35;
+  letter-spacing:.03em; color:#4A473C; text-shadow:none;
+}
+.cdir-reader-note.is-requirement{
+  padding:6px 8px; color:var(--tk-ink); background:rgba(34,33,28,.07); border-left:3px solid rgba(34,33,28,.55);
+}
+.cdir-hero-faces{
+  margin-top:8px; min-height:39px; display:flex; align-items:flex-start; gap:5px; overflow:hidden;
+}
+.cdir-hero-seat{ flex:0 0 35px; width:35px; display:flex; flex-direction:column; align-items:center; gap:2px; }
+.cdir-hero-face{
+  width:29px; height:29px; overflow:hidden; background:#D6CDB4; border:1px solid #22211C;
+  box-shadow:0 1px 0 rgba(34,33,28,.5);
+}
+.cdir-hero-face .face{ width:100%; height:100%; margin:0; }
+.cdir-hero-seat > span:last-child{
+  max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+  font-family:var(--font-hdr); font-size:4.5px; color:var(--tk-ink); text-shadow:none;
+}
+.cdir-reader-controls{ margin-top:8px; }
+.cdir-reader-controls .cdir-mount{ margin-top:0; }
+.cdir-reader-controls .cdir-cradle{ padding:5px 5px 10px; }
+.cdir-reader-controls .cdir-primary{ min-height:54px; padding-block:9px; }
+.cdir-reader-controls .cdir-legend{ font-size:11px; }
+.cdir-reader-controls .cdir-abandon{ margin-top:6px; }
+.cdir-details-toggle{
+  width:100%; min-height:44px; margin-top:7px; padding:8px 10px; cursor:pointer;
+  display:flex; align-items:center; justify-content:space-between;
+  background:#29271D; border:2px solid #0A0A09; color:#C7B987;
+  box-shadow:inset 0 3px 0 #3B3829,0 2px 0 #080806;
+  font-family:var(--font-hdr); font-size:6px; letter-spacing:.08em; text-shadow:none;
+}
+.cdir-details-toggle span{ font-size:12px; color:#E7B633; }
+.cdir-details-toggle:active{ transform:translateY(2px); box-shadow:inset 0 2px 0 #16150F; }
+.cdir-details{
+  padding:9px; background:#0B0D0A; border:2px solid #0A0A09; border-top:0;
+  box-shadow:inset 0 4px 0 #050604;
+  animation:cdirDetailsOpen 150ms steps(3,end);
+}
+@keyframes cdirDetailsOpen{ from{ transform:translateY(-6px); opacity:0; } to{ transform:none; opacity:1; } }
+.cdir-details-grid{ display:grid; grid-template-columns:repeat(3,1fr); gap:4px; }
+.cdir-details-grid > span{ min-width:0; padding:7px; background:#111711; border:1px solid #3B4738; }
+.cdir-details-grid small{ color:#79816D; }
+.cdir-details-grid b{
+  display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+  font-family:var(--font-hdr); font-size:7px; font-weight:400; color:#9FD3A8; text-shadow:none;
+}
+.cdir-details-caption{
+  margin:10px 0 6px; font-family:var(--font-hdr); font-size:5px; letter-spacing:.12em;
+  text-transform:uppercase; color:#8A8371; text-shadow:none;
+}
+.cdir-details-roster{ display:flex; flex-wrap:wrap; gap:8px; }
+.cdir-details-roster .cdir-hero-seat{ flex-basis:42px; width:42px; }
+.cdir-details-roster .cdir-hero-face{ width:36px; height:36px; }
+.cdir-empty{ padding:30px; text-align:center; font-family:var(--font-hdr); font-size:8px; color:#8A8371; }
+
+/* TAKE SEAT is a short physical hand-off: the reader clamps, the light
+   drops, then the existing table screen takes over. */
+.career-departing .cdir-reader{ animation:cdirDepart 190ms steps(4,end) both; pointer-events:none; }
+@keyframes cdirDepart{
+  0%{ transform:translateY(0); filter:brightness(1); }
+  55%{ transform:translateY(4px); filter:brightness(1.12); }
+  100%{ transform:translateY(9px); filter:brightness(.2); opacity:0; }
+}
+[data-motion="off"] .cdir-reader,
+[data-motion="off"] .cdir-details,
+[data-motion="off"] .career-departing .cdir-reader{ animation:none !important; }
+
+@media (min-width:700px){
+  .cdir-event-rail{ padding-inline:calc(50% - 92px); }
+  .cdir-selector{ flex-basis:184px; width:184px; }
+  .cdir-reader{ max-width:620px; width:100%; margin-inline:auto; }
+}
+
+@media (max-width:350px){
+  #career{ padding-left:7px; padding-right:7px; }
+  #career .cdir{ margin-top:11px; }
+  .cdir-venue-stop b{ display:none; }
+  .cdir-selector-shell{ grid-template-columns:28px minmax(0,1fr) 28px; }
+  .cdir-step{ min-width:28px; }
+  .cdir-reader{ padding:6px; }
+  .cdir-reader-paper{ padding:9px; }
+  .cdir-reader h2{ font-size:16px; }
+  .cdir-reader-money > span{ padding:6px 5px; }
+  .cdir-reader-money b{ font-size:9px; }
+  .cdir-reader-money > span:first-child b{ font-size:11px; }
+}

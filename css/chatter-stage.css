@@ -1,0 +1,32 @@
+/* ============================================================
+   CHATTER STAGE — fixture-only styling
+   The stage document is the production table screen and is styled by
+   the production sheets. This file exists solely to stand in for the
+   few things a real running game builds with JavaScript geometry —
+   principally the bank chip tower, which bankPile() normally lays out
+   from live measurements of #hud-left.
+
+   Nothing here is a candidate treatment and nothing here should ever
+   ship. If a rule in this file starts affecting how chatter LOOKS, it
+   is in the wrong file.
+   ============================================================ */
+
+/* The bank tower: three overlapping columns of the real .chip-disc
+   artwork, sized to the same 21px production uses (#hud-tower
+   .chip-disc, 02-screens.css). bankPile() sets #hud-tower's box
+   inline from a live measurement; a fixed height stands in for that. */
+#hud-tower{ height:118px; }
+.chs-tower-row{
+  display:flex; gap:3px; align-items:flex-end; justify-content:center;
+  height:100%; padding-top:20px;
+}
+.chs-tower-col{ display:flex; flex-direction:column; align-items:center; }
+
+
+/* A six-handed table needs six seat boxes but the prototype cast is
+   five. The sixth chair is an empty socket rather than a duplicated
+   resident — see buildSeats() in js/chatter-stage.js for why. It is
+   deliberately quiet: it exists to occupy space so the bubble
+   collision test is honest, not to be looked at. */
+.seat.seat-empty{ opacity:.34; }
+.seat.seat-empty .seat-cards{ min-height:var(--card-h,40px); }

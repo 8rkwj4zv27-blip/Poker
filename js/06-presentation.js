@@ -1505,10 +1505,14 @@ function initSeats(){
       // action-slot and protruding hole cards all live inside the same
       // frame — nothing floats loose outside it.
       root.innerHTML =
-        '<div class="seat-card">' +
+        '<div class="seat-card seat-dossier-target" role="button" tabindex="0"' +
+          ' aria-label="' + esc(p.name) + ' — opponent dossier">' +
           '<span class="seat-name">'+esc(p.name)+'</span>' +
           '<div class="hearts hidden" aria-hidden="true"></div>' +
-          '<div class="avatar-wrap">' +
+          /* The surrounding seat-card owns the invisible interaction area.
+             The portrait itself keeps exactly the same dimensions and chrome,
+             including on the dense optional 7/8-opponent layouts. */
+          '<div class="avatar-wrap seat-portrait">' +
             '<div class="turn-ring"></div>' +
             '<div class="avatar">'+esc(initials)+'</div>' +
             '<div class="pos-btn hidden"></div>' +
@@ -1520,6 +1524,21 @@ function initSeats(){
         '<div class="action-bubble"></div>';
     }
     if (p.isHuman && hudMid) hudMid.insertBefore(root, hudMid.firstChild); else felt.appendChild(root);
+    /* Tap/click or Enter/Space on an opponent's seat opens their
+       dossier. Deliberately the ONLY interaction added to a seat: it
+       reads game state and writes none, and it cannot reach a poker
+       control because no seat contains a poker action control. Space is
+       preventDefault-ed so the page does not scroll under the sheet. */
+    if (!p.isHuman){
+      const target = root.querySelector('.seat-dossier-target');
+      if (target){
+        const open = ()=>{ if (typeof openDossier === 'function') openDossier(p.id, target); };
+        target.addEventListener('click', open);
+        target.addEventListener('keydown', e=>{
+          if (e.key === 'Enter' || e.key === ' ' || e.key === 'Spacebar'){ e.preventDefault(); open(); }
+        });
+      }
+    }
     const avatar = root.querySelector('.avatar');
     if (p.isHuman){
       avatar.style.background = settings.avatarColour;
@@ -1617,6 +1636,7 @@ function squareAnchor(rect){
    Hand/screen teardown lands each owned chip through its normal bookkeeping
    path, so no placeholder, pending counter or detached chip can survive. */
 const activeChipFlights=new Set();
+function activeChipFlightCount(){ return activeChipFlights.size; }
 function cancelAllChipFlights(){
   Array.from(activeChipFlights).forEach(owner=>owner.cancel());
 }

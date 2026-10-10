@@ -42,7 +42,17 @@
           <h1 class="brand"><span>Poker</span><span>Faces</span></h1>
           <div class="brand-rule"></div>
         </div>
-        <div class="pc-cast-drawer">
+        <!-- THE WAY IN TO THE HOUSE. This drawer already existed as the
+             machine's decorative cast window; it is now the control that
+             opens it. Deliberately still a <div> with role="button"
+             rather than a real <button>: it is a hand-built grid with
+             tuned inset shadows, a fixed flex basis and a theme-swapped
+             background, and putting UA button styling underneath all of
+             that buys nothing. #hero-faces stays decorative and
+             aria-hidden — the two printed HOUSE / FACES indices are the
+             accessible label, and aria-label states it outright. -->
+        <div class="pc-cast-drawer" id="open-opponents" role="button" tabindex="0"
+             aria-label="House Faces — the regulars and how they play">
           <span class="pc-cast-index">HOUSE</span>
           <div class="hero-faces" id="hero-faces" aria-hidden="true"></div>
           <span class="pc-cast-index">FACES</span>
@@ -94,6 +104,29 @@
       </div>
       <div id="rankings-list"></div>
       <div class="hint" style="text-align:center; margin-top:4px; margin-bottom:20px;">Strongest at the top. Ties are broken by the highest cards involved.</div>
+    </div>
+  </div>
+
+  <!-- ============================ HOUSE FACES ============================
+       The five residents, their permanent colours, and a plain-language
+       impression of how each of them plays. Built from the same
+       dossierModel() the in-game portrait dossier uses, so the two can
+       never drift apart, and it prints no percentage, threshold or
+       internal weight — the player gets an impression, not the AI.
+       Construction is the #awards cabinet exactly (see css/06-machine-system.css
+       section 5, where #opponents joins every selector list). -->
+  <div id="opponents" class="screen hidden">
+    <div class="lobby-card">
+      <div class="setup-head">
+        <button class="icon-btn" id="opponents-back" aria-label="Back">&larr;</button>
+        <div class="setup-title">House Faces</div>
+        <div style="width:44px; flex-shrink:0;"></div>
+      </div>
+      <div class="panel-card">
+        <div class="card-label">The regulars</div>
+        <div class="cast-rail" id="cast-rail" role="group" aria-label="The house regulars"></div>
+      </div>
+      <div class="panel-card" id="cast-detail"></div>
     </div>
   </div>
 
@@ -538,6 +571,23 @@
     </div>
   </div>
 
+  <!-- OPPONENT DOSSIER. Opened by tapping a seat portrait during play.
+       Reads the same dossierModel() as the House Faces screen and shows
+       nothing the player cannot already see: the public mood line comes
+       from faceMood, which is itself driven only by public table events,
+       so the sheet can never become a poker tell. It submits no action
+       and touches no poker state. -->
+  <div class="sheet" id="dossier-sheet" role="dialog" aria-modal="true"
+       aria-label="Opponent dossier" aria-hidden="true" inert>
+    <div class="sheet-grip"></div>
+    <div class="sheet-body">
+      <div class="sheet-section" id="dossier-body"></div>
+      <div class="sheet-section">
+        <button class="btn-secondary" id="close-dossier" type="button">Close</button>
+      </div>
+    </div>
+  </div>
+
   <div class="sheet" id="scoring-guide-sheet" role="dialog" aria-label="Scoring Guide">
     <div class="sheet-grip"></div>
     <div class="sheet-body">
@@ -594,6 +644,7 @@
 
 <script src="js/01-poker-math.js"></script>
 <script src="js/02-support-systems.js"></script>
+<script src="js/03-residents.js"></script>
 <script src="js/03-opponents.js"></script>
 <script src="js/04-modes-and-scoring.js"></script>
 <script src="js/05-game-engine.js"></script>

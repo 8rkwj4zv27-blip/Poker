@@ -810,6 +810,34 @@ function wireUI(){
   };
   $('open-rankings').onclick = ()=>{ buildRankings(); $('home').classList.add('hidden'); $('rankings').classList.remove('hidden'); };
   $('rankings-back').onclick = ()=>{ $('rankings').classList.add('hidden'); $('home').classList.remove('hidden'); reconstructMainMenu(); };
+  /* HOUSE FACES. The existing cast drawer on the main menu is the way in
+     — no new menu button was added. It is a role="button" div (see the
+     comment on it in index.html), so it needs its own Enter/Space
+     handling; a real <button> would have brought UA styling into a
+     hand-built machine component for no gain. */
+  const castDrawer = $('open-opponents');
+  if (castDrawer){
+    const openCast = ()=>showOpponentsScreen();
+    castDrawer.onclick = openCast;
+    castDrawer.onkeydown = e=>{
+      if (e.key === 'Enter' || e.key === ' ' || e.key === 'Spacebar'){ e.preventDefault(); openCast(); }
+    };
+  }
+  $('opponents-back').onclick = ()=>{ $('opponents').classList.add('hidden'); $('home').classList.remove('hidden'); reconstructMainMenu(); };
+  // Delegated so the rail can be re-rendered on every selection without
+  // rebinding, and so a chip added later needs no extra wiring.
+  const castRail = $('cast-rail');
+  if (castRail){
+    const pick = target=>{
+      const chip = target && target.closest ? target.closest('.cast-chip') : null;
+      if (chip && chip.dataset.resident) selectCastResident(chip.dataset.resident);
+    };
+    castRail.addEventListener('click', e=>pick(e.target));
+    castRail.addEventListener('keydown', e=>{
+      if (e.key === 'Enter' || e.key === ' ' || e.key === 'Spacebar'){ e.preventDefault(); pick(e.target); }
+    });
+  }
+  $('close-dossier').onclick = closeOverlays;
   $('open-awards').onclick = ()=>{ buildAwardsGlossary(); $('home').classList.add('hidden'); $('awards').classList.remove('hidden'); };
   $('awards-back').onclick = ()=>{ $('awards').classList.add('hidden'); $('home').classList.remove('hidden'); reconstructMainMenu(); };
   $('home-settings').onclick = ()=>openOverlay('settings');
@@ -1032,8 +1060,21 @@ function wireUI(){
 
   // keyboard shortcuts
   document.addEventListener('keydown', e=>{
+    // Escape closes whatever menu is over the table. No overlay handled
+    // it before; the dossier is opened mid-hand far more often than
+    // Settings ever was, so it needs a real keyboard way out.
+    if (e.key === 'Escape' && anyOverlayOpen() && $('confirm-dialog').classList.contains('hidden')){
+      e.preventDefault();
+      closeOverlays();
+      return;
+    }
     if (!pendingHumanPlayer) return;
     if (e.target && /INPUT|TEXTAREA/.test(e.target.tagName)) return;
+    /* An open menu must never be able to submit a poker action. This
+       guard is required by the portrait dossier — it is opened during a
+       live hand by design — and it also closes a pre-existing hole: with
+       Settings open, typing "f" folded the hand. */
+    if (anyOverlayOpen()) return;
     if (e.key==='f' || e.key==='F'){ humanAct('fold'); }
     else if (e.key==='c' || e.key==='C'){ humanAct('call'); }
     else if (e.key==='r' || e.key==='R'){ $('btn-raise').click(); }

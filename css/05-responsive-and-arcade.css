@@ -388,6 +388,17 @@
   .arcade-mult-unit strong{ font-size:7px; }
   .arcade-hero{ letter-spacing:0; }
   #home .home-row .btn-secondary{ font-size:6px; }
+  /* House Faces at 320-389px. The rail steps its tiles down exactly the
+     way the cast drawer it came from already does (64 -> 54px), so five
+     regulars still land two-and-three across a 320px screen without the
+     row overflowing or a name being clipped. */
+  #opponents{ padding-left:14px; padding-right:14px; }
+  .cast-rail{ gap:9px 7px; }
+  .cast-chip{ flex-basis:64px; width:64px; padding:4px 2px 5px; }
+  .cast-chip-face{ width:52px; height:52px; }
+  .cast-chip-style{ font-size:8.5px; }
+  .dossier-portrait{ width:66px; height:66px; }
+  .dossier-name{ font-size:12px; }
 }
 @media (orientation:portrait){
   #table-screen.arcade-active .arcade-score-machine{ margin-top:20px; }

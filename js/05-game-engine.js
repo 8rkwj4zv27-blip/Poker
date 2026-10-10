@@ -231,11 +231,17 @@ function makePlayer(id, name, isHuman, chips, personality){
 /* Accepts a supplied roster only if it seats exactly this table and every
    seat names a personality that still exists. Anything else returns null
    and the table falls back to the ordinary random draw — a partial roster
-   must never build a table with an undefined persona in a seat. */
+   must never build a table with an undefined persona in a seat.
+
+   A seat may name a resident (`residentId`, current builds) or a legacy
+   archetype key (older saved/advertised fields). Both resolve through
+   isKnownPersonalityKey, so an event whose roster was drawn before the
+   Enemy Personality pass still launches the field it advertised rather
+   than being silently re-cast at the table. */
 function careerLaunchRoster(roster, numOpponents){
   if (!Array.isArray(roster) || roster.length !== numOpponents) return null;
   const ok = roster.every(seat=>seat && typeof seat.personalityKey === 'string'
-    && PERSONALITIES_ALL.some(p=>p.key === seat.personalityKey)
+    && isKnownPersonalityKey(seat.personalityKey)
     && Number.isInteger(seat.faceColorIdx));
   return ok ? roster : null;
 }
@@ -261,21 +267,35 @@ function newGame(opts){
   // the played table the advertised table. Every other caller passes none
   // and keeps the original random draw, unchanged.
   const roster = careerLaunchRoster(opts.roster, numOpponents);
+  // Without a roster the table seats the house cast first and only fills
+  // what is left over with a visitor — see pickTableCast in 03-opponents.js
+  // for why that is the shape rather than capping the table at five.
   const personas = roster
-    ? roster.map(seat=>PERSONALITIES_ALL.find(p=>p.key===seat.personalityKey))
-    : pickPersonalities(numOpponents);
+    ? roster.map(seat=>personalityByKey(seat.personalityKey))
+    : pickTableCast(numOpponents);
   const usedNames = new Set();
   for (let i=0;i<numOpponents;i++){
-    // Display names are still resolved live from the current setting, as
-    // before: the directory advertises faces, not names, so a roster fixes
-    // WHO is at the table without freezing what the name setting shows.
-    const displayName = settings.opponentNames === 'random' ? randomOpponentName(usedNames) : personas[i].name;
-    const player = makePlayer('ai'+i, displayName, false, stack, personas[i]);
+    /* A RESIDENT IS ALWAYS THEIR OWN NAME. The Opponent Names = Random
+       setting exists so an anonymous field can be given human names; it
+       was never meant to alias somebody the player is supposed to learn,
+       and a Harry who turns up as "Reese" is not a recurring character.
+       So the setting still governs visitors — whose names carry no
+       continuity and never did — and residents are exempt. */
+    const persona = personas[i];
+    const isResident = !!(persona && persona.residentId);
+    const displayName = (!isResident && settings.opponentNames === 'random')
+      ? randomOpponentName(usedNames) : persona.name;
+    const player = makePlayer('ai'+i, displayName, false, stack, persona);
+    // Roster colour first (Career's advertised field is authoritative),
+    // then the resident's own permanent colour. Only a visitor reaches
+    // assignFaceColors below with no colour at all.
     if (roster) player.faceColorIdx = roster[i].faceColorIdx;
+    else if (isResident) player.faceColorIdx = persona.faceColorIdx;
     players.push(player);
   }
   // Only ever backfills a seat still without a colour, so a roster's
-  // colours are never shuffled out from under it.
+  // colours — and a resident's permanent one — are never shuffled out
+  // from under them.
   assignFaceColors(players);
   const lvl = opts.mode==='tournament' ? (opts.initialBlindLevel||0) : (opts.blindLevel||0);
   const explicitBlinds = Number.isFinite(opts.smallBlind) && Number.isFinite(opts.bigBlind)
@@ -326,6 +346,12 @@ function serializeTable(g){
       id:p.id, name:p.name, isHuman:p.isHuman, chips:p.chips,
       lives:p.lives, eliminated:p.eliminated,
       personalityKey: p.personality ? p.personality.key : null,
+      // Additive, and deliberately alongside personalityKey rather than
+      // replacing it: SAVE_VERSION must not move (isValidTableSave DELETES
+      // any save whose version differs, which would throw away every table
+      // in progress), and a build that predates residents can still read
+      // the personalityKey it understands.
+      residentId: p.personality && p.personality.residentId ? p.personality.residentId : null,
       moodState: p.moodState || null,
       faceMood: p.faceMood || null,
       faceColorIdx: Number.isInteger(p.faceColorIdx) ? p.faceColorIdx : null,
@@ -369,7 +395,7 @@ function isValidTableSave(save){
     if (typeof p.id !== 'string' || typeof p.name !== 'string') return false;
     if (typeof p.chips !== 'number' || Number.isNaN(p.chips)) return false;
     if (typeof p.lives !== 'number' || Number.isNaN(p.lives)) return false;
-    if (p.personalityKey && !PERSONALITIES_ALL.some(pp=>pp.key===p.personalityKey)) return false;
+    if (p.personalityKey && !isKnownPersonalityKey(p.personalityKey)) return false;
   }
   return true;
 }
@@ -430,7 +456,7 @@ function isValidCareerTableSave(save){
   if (save.dealerIndex < -1 || save.dealerIndex >= save.players.length) return false;
   for (const p of save.players){
     if (typeof p.id !== 'string' || typeof p.chips !== 'number' || Number.isNaN(p.chips)) return false;
-    if (p.personalityKey && !PERSONALITIES_ALL.some(pp=>pp.key===p.personalityKey)) return false;
+    if (p.personalityKey && !isKnownPersonalityKey(p.personalityKey)) return false;
   }
   return isValidCareerEventSnapshot(save.event);
 }
@@ -453,7 +479,7 @@ function isValidCareerCashTableSave(save){
     else if (!Number.isSafeInteger(p.cashReserve) || p.cashReserve < 0
       || p.cashReserve % CAREER_CASH_CONFIG.stack !== 0) return false;
     sessionFunds += p.chips + (p.isHuman ? 0 : p.cashReserve);
-    if (p.personalityKey && !PERSONALITIES_ALL.some(pp=>pp.key===p.personalityKey)) return false;
+    if (p.personalityKey && !isKnownPersonalityKey(p.personalityKey)) return false;
   }
   const initialFunds = CAREER_CASH_CONFIG.stack
     + CAREER_CASH_CONFIG.opponentCount * (CAREER_CASH_CONFIG.stack + CAREER_CASH_CONFIG.residentReserve);
@@ -503,12 +529,25 @@ function clearCareerTable(){ Store.remove(CAREER_TABLE_KEY); }
 
 function restoreTable(save){
   const players = save.players.map(sp=>{
-    const personality = sp.personalityKey ? PERSONALITIES_ALL.find(p=>p.key===sp.personalityKey) : null;
-    // Persona display names are derived live from PERSONALITIES_ALL rather than
+    /* Identity resolution order, and the whole migration policy in four
+       lines: the saved residentId wins, then the saved personalityKey.
+
+       A save written by this build names a resident and comes back as
+       exactly that person. A LEGACY save has no residentId and an
+       archetype key, so it comes back as the archetype it was dealt and
+       that table keeps its original opponents until it ends — nobody's
+       table is re-cast underneath them mid-event, and nothing is
+       discarded or rewritten. New tables started afterwards seat the
+       cast normally. */
+    const personality = residentPersonaById(sp.residentId)
+      || (sp.personalityKey ? personalityByKey(sp.personalityKey) : null);
+    // Persona display names are derived live from the registry rather than
     // trusted from the saved snapshot, so a table saved under an older persona
     // naming scheme picks up current names on resume instead of freezing them.
-    // Random-mode names have no live source, so those are always kept as saved.
-    const usesLiveName = !sp.isHuman && personality && save.namesMode !== 'random';
+    // Random-mode names have no live source, so those are always kept as saved
+    // — except for a resident, who is never shown under an alias.
+    const isResident = !!(personality && personality.residentId);
+    const usesLiveName = !sp.isHuman && personality && (isResident || save.namesMode !== 'random');
     const name = usesLiveName ? personality.name : sp.name;
     const p = makePlayer(sp.id, name, sp.isHuman, sp.chips, personality);
     p.lives = sp.lives;
@@ -520,7 +559,10 @@ function restoreTable(save){
     p.faceMood = (sp.faceMood && FACE_MOOD_POOLS[sp.faceMood.family])
       ? { family: sp.faceMood.family, intensity: clamp01(sp.faceMood.intensity) }
       : { family:'neutral', intensity:0 };
-    p.faceColorIdx = Number.isInteger(sp.faceColorIdx) ? sp.faceColorIdx : null;
+    // A resident's colour is permanent, so the registry is the authority
+    // and a hand-edited or stale snapshot cannot recolour them.
+    p.faceColorIdx = isResident ? personality.faceColorIdx
+      : Number.isInteger(sp.faceColorIdx) ? sp.faceColorIdx : null;
     if (Number.isSafeInteger(sp.cashReserve) && sp.cashReserve >= 0) p.cashReserve = sp.cashReserve;
     return p;
   });

@@ -50,6 +50,7 @@
   const bankrollHousing = document.querySelector('.ch2-bankroll-housing');
   const motionPreference = window.matchMedia('(prefers-reduced-motion: reduce)');
   const motionToggle = document.getElementById('ch2-motion');
+  const motionLab = new URLSearchParams(location.search).has('motion');
 
   const state = {
     index:0, forcedState:'auto', bankroll:500, paid:false, accepting:false, flipped:false,
@@ -60,6 +61,7 @@
 
   if (new URLSearchParams(location.search).has('lab')) document.body.classList.add('ch2-lab-enabled');
   else labToggle.hidden = true;
+  if (motionLab) document.body.classList.add('ch2-motion-lab');
   if (state.reducedMotion) document.documentElement.dataset.motion = 'off';
 
   const money = value => '$' + Number(value).toLocaleString('en-US');
@@ -257,6 +259,7 @@
     if (state.accepting) return;
     const next = Math.max(0, Math.min(EVENTS.length - 1, index));
     if (next === state.index) return;
+    const oldPositions = motionLab ? [...track.querySelectorAll('.ch2-card')].map(card => card.getBoundingClientRect().left) : null;
     state.index = next;
     rack.scrollLeft = 0;
     restoreFaces();
@@ -268,6 +271,24 @@
     track.querySelectorAll('.ch2-card').forEach(card => card.classList.remove('is-turning-back','is-turning-front'));
     rack.classList.remove('is-turning');
     track.classList.remove('is-dragging','is-settling');
+    if (motionLab) {
+      track.classList.add('is-dragging');
+      track.querySelectorAll('.ch2-card').forEach(card => card.style.setProperty('--motion-x','0px'));
+      render();
+      const cards = [...track.querySelectorAll('.ch2-card')];
+      cards.forEach((card, i) => {
+        if (Math.abs(i - state.index) > 1 && Math.abs(i - (state.index - direction)) > 1) return;
+        const delta = oldPositions[i] - card.getBoundingClientRect().left;
+        card.style.setProperty('--motion-x', `${delta}px`);
+      });
+      void track.offsetWidth;
+      track.classList.remove('is-dragging');
+      track.classList.add('is-settling');
+      requestAnimationFrame(() => cards.forEach(card => card.style.setProperty('--motion-x','0px')));
+      window.setTimeout(() => track.classList.remove('is-settling'), state.reducedMotion ? 0 : 380);
+      tactile(6);
+      return;
+    }
     void track.offsetWidth;
     track.classList.add('is-settling');
     track.style.setProperty('--drag-x', `${direction * -10}px`);
@@ -295,22 +316,41 @@
     const dx = event.clientX - state.lastX;
     const dt = Math.max(8, now - state.lastTime);
     state.velocity = state.velocity * .55 + (dx / dt) * .45;
-    state.dragX = Math.max(-125, Math.min(125, event.clientX - state.startX));
+    const raw = event.clientX - state.startX;
+    const blocked = (raw > 0 && state.index === 0) || (raw < 0 && state.index === EVENTS.length - 1);
+    state.dragX = motionLab
+      ? Math.max(-Math.min(210,rack.clientWidth * .57), Math.min(Math.min(210,rack.clientWidth * .57), raw * (blocked ? .22 : 1)))
+      : Math.max(-125,Math.min(125,raw));
     state.lastX = event.clientX;
     state.lastTime = now;
-    track.style.setProperty('--drag-x', `${state.dragX}px`);
+    if (motionLab) {
+      const progress = Math.min(1, Math.abs(state.dragX) / Math.max(1,rack.clientWidth * .7));
+      track.querySelectorAll('.ch2-card').forEach((card, index) => {
+        const near = Math.abs(index - state.index) <= 1;
+        card.style.setProperty('--motion-x', near ? `${state.dragX * (index === state.index ? 1 : .82)}px` : '0px');
+        card.style.setProperty('--motion-angle', index === state.index ? `${Math.max(-2,Math.min(2,state.dragX / 85))}deg` : '0deg');
+        card.style.setProperty('--motion-lift', index === state.index ? `${-Math.round(progress * 5)}px` : '0px');
+      });
+    } else track.style.setProperty('--drag-x', `${state.dragX}px`);
   }
 
-  function onPointerUp(event) {
+  function onPointerUp(event, cancelled = false) {
     if (event.pointerId !== state.pointerId) return;
     const projected = state.dragX + state.velocity * 105;
-    const direction = projected < -48 ? 1 : projected > 48 ? -1 : 0;
+    const direction = cancelled ? 0 : projected < -48 ? 1 : projected > 48 ? -1 : 0;
     state.pointerId = null;
     track.classList.remove('is-dragging');
-    if (direction) select(state.index + direction, direction);
+    if (motionLab) {
+      track.querySelectorAll('.ch2-card').forEach(card => {
+        card.style.setProperty('--motion-angle','0deg');
+        card.style.setProperty('--motion-lift','0px');
+      });
+    }
+    if (direction && (!motionLab || (state.index + direction >= 0 && state.index + direction < EVENTS.length))) select(state.index + direction, direction);
     else {
       track.classList.add('is-settling');
       track.style.setProperty('--drag-x', '0px');
+      if (motionLab) track.querySelectorAll('.ch2-card').forEach(card => card.style.setProperty('--motion-x','0px'));
       window.setTimeout(() => track.classList.remove('is-settling'), state.reducedMotion ? 0 : 220);
     }
   }
@@ -449,10 +489,17 @@
 
   document.getElementById('ch2-prev').addEventListener('click', () => select(state.index - 1, -1));
   document.getElementById('ch2-next').addEventListener('click', () => select(state.index + 1, 1));
+  if (motionLab) rack.addEventListener('click', event => {
+    if (event.target.closest('button') || Math.abs(state.dragX) > 12) return;
+    const x = event.clientX - rack.getBoundingClientRect().left;
+    const edge = Math.max(36, Math.min(70, rack.clientWidth * .18));
+    if (x < edge) select(state.index - 1, -1);
+    else if (x > rack.clientWidth - edge) select(state.index + 1, 1);
+  });
   rack.addEventListener('pointerdown', onPointerDown);
   rack.addEventListener('pointermove', onPointerMove);
   rack.addEventListener('pointerup', onPointerUp);
-  rack.addEventListener('pointercancel', onPointerUp);
+  rack.addEventListener('pointercancel', event => onPointerUp(event, true));
   track.addEventListener('click', event => {
     const control = event.target.closest('[data-card-flip]');
     if (control) flipSelected(control.dataset.cardFlip === 'back');
@@ -480,6 +527,11 @@
     document.documentElement.dataset.motion = state.reducedMotion ? 'off' : 'on';
     if (state.reducedMotion) restoreFaces();
     renderRecord(false);
+  });
+  if (motionLab) window.addEventListener('message', event => {
+    if (event.origin !== location.origin || event.data?.type !== 'career-motion-reduced') return;
+    motionToggle.checked = Boolean(event.data.value);
+    motionToggle.dispatchEvent(new Event('change'));
   });
   motionPreference.addEventListener('change', () => {
     state.reducedMotion = motionToggle.checked || motionPreference.matches;

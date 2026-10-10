@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Chatter Stage — production phone screen</title>
+
+<!-- The six production stylesheets, in production order (index.html:15-20).
+     Not one line of them is edited. This document IS the production table
+     screen: same markup, same ids, same classes, same cascade. It runs in
+     its own iframe viewport, which is the only way the orientation and
+     width/height media queries in 05-responsive-and-arcade.css fire the
+     way they do on a real phone. -->
+<link rel="stylesheet" href="css/01-foundation.css">
+<link rel="stylesheet" href="css/02-screens.css">
+<link rel="stylesheet" href="css/03-action-console.css">
+<link rel="stylesheet" href="css/04-overlays-and-modes.css">
+<link rel="stylesheet" href="css/05-responsive-and-arcade.css">
+<link rel="stylesheet" href="css/06-machine-system.css">
+
+<!-- Lab-only candidate treatments. Loaded last and never used by index.html. -->
+<link rel="stylesheet" href="css/chatter-system.css?pass=10">
+<!-- Fixture-only touches: never a treatment, never production styling. -->
+<link rel="stylesheet" href="css/chatter-stage.css">
+</head>
+
+<body data-theme="burgundy" data-deck="classic" data-cardback="table" data-motion="on">
+<div id="app">
+
+  <!-- ============================ TABLE ============================
+       Copied verbatim from index.html:188-345. The only differences:
+       #table-screen is not `hidden`, and the score machine is not
+       `hidden` — both are display states a real Career table reaches. -->
+  <div id="table-screen" class="screen">
+    <div class="table-main">
+      <div class="topbar">
+        <div class="table-identity">
+          <div class="brandmini">POKER</div>
+          <div class="meta" id="table-meta">Hand 12</div>
+        </div>
+        <div class="table-tools">
+          <button class="table-save" id="save-progress" type="button">Save</button>
+          <button class="icon-btn table-settings" id="open-settings" aria-label="Settings">⚙</button>
+        </div>
+      </div>
+      <div class="arcade-score-machine" id="arcade-score-machine" aria-label="Score 0">
+        <div class="arcade-score-label"><strong>SCORE</strong></div>
+        <div class="arcade-score-digits" id="arcade-score-value" aria-hidden="true">
+          <span>0</span><span>0</span><span>4</span><span>7</span><span>2</span><span>6</span><span>0</span>
+        </div>
+      </div>
+
+      <!-- Kept as a neutral fixture mount. The rebuilt candidates do not
+           insert permanent chrome here or move the production table. -->
+      <div class="cht-rail" id="cht-rail"></div>
+
+      <div class="felt-wrap">
+        <div class="stage-bay" id="stage-bay">
+          <div class="felt" id="felt">
+            <div class="pot-area" id="pot-area">
+              <div class="pot-stacks" id="pot-stacks" aria-hidden="true"></div>
+              <div class="pot-chip"><span class="pot-word">Pot</span><span class="v tabular" id="pot-val">1,450</span></div>
+            </div>
+            <div class="board" id="board" role="group" aria-label="Community cards"></div>
+            <div class="dealer-station" aria-hidden="true">
+              <div class="dealer-label">Dealer</div>
+              <div class="dealer-deck" id="dealer-deck">
+                <div class="card back small"></div>
+                <div class="card back small"></div>
+                <div class="card back small"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div id="your-seat-dock">
+        <div id="hud-frame">
+          <div id="hud-left">
+            <div id="hud-tower" aria-hidden="true"></div>
+            <div class="bank-hatch" id="bank-hatch" aria-hidden="true">
+              <div class="bank-hatch-leaf bank-hatch-leaf-l"></div>
+              <div class="bank-hatch-leaf bank-hatch-leaf-r"></div>
+            </div>
+          </div>
+          <div id="hud-mid">
+            <div id="hud-status">
+              <div id="hud-status-normal">
+                <div class="hand-strength crt-screen crt-hand" id="hand-strength">Two Pair, Aces and Nines</div>
+                <div class="banner crt-screen crt-action" id="banner" role="status" aria-live="polite">Tony raises to $120</div>
+                <div class="stack-readout">
+                  <span class="instrument-label">Stack</span>
+                  <div id="jackpot" role="img" aria-label="Player stack"><span class="jp-cell jp-sym">$</span></div>
+                </div>
+              </div>
+              <div class="hud-result" id="hud-result"></div>
+            </div>
+          </div>
+          <div id="hud-right">
+            <div class="hearts" id="hud-hearts" aria-hidden="true"></div>
+            <div class="blind-lamps" aria-label="Blind position">
+              <div class="blind-indicator" id="hud-sb-indicator"><i></i><span>SB</span></div>
+              <div class="blind-indicator" id="hud-bb-indicator"><i></i><span>BB</span></div>
+            </div>
+            <div class="bet-this-hand" aria-live="polite">
+              <span class="instrument-label">Bet this hand</span>
+              <div class="crt-screen" id="hud-invested" role="img" aria-label="Bet this hand: 120">$120</div>
+            </div>
+            <div class="hud-speaker" aria-hidden="true">
+              <i></i><i></i><i></i><i></i><i></i>
+              <i></i><i></i><i></i><i></i><i></i>
+              <i></i><i></i><i></i><i></i><i></i>
+              <i></i><i></i><i></i><i></i><i></i>
+            </div>
+            <div class="action-slot act-empty hidden" id="hud-action">–</div>
+            <div class="pos-btn hidden" id="hud-pos"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="action-area">
+      <div class="actions-dock">
+        <div class="action-console" id="action-console">
+          <div class="console-flip" id="console-flip">
+            <div class="console-face console-face-actions">
+              <div class="actions-flip" id="actions-flip">
+                <div class="actions-face actions-face-play">
+                  <div class="actions-row" id="actions-row">
+                    <button class="btn-fold" id="btn-fold">Fold</button>
+                    <button class="btn-check" id="btn-checkcall">Call $120</button>
+                    <button class="btn-raise" id="btn-raise">Raise</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- One production script, for the real portrait pipeline and the real
+     pixel heart. No game logic. -->
+<script src="js/02-support-systems.js"></script>
+<script src="js/03-residents.js"></script>
+
+<script src="js/chatter/01-residents.js"></script>
+<script src="js/chatter/03-voice.js?pass=10"></script>
+<script src="js/chatter/05-presenters.js?pass=10"></script>
+<script src="js/chatter-stage.js?pass=10"></script>
+</body>
+</html>

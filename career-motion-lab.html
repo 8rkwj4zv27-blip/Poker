@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#0c1510">
+  <meta name="format-detection" content="telephone=no">
+  <link rel="icon" href="data:,">
+  <title>Poker Faces — Career Motion Lab</title>
+  <link rel="stylesheet" href="css/01-foundation.css">
+  <link rel="stylesheet" href="css/02-screens.css">
+  <link rel="stylesheet" href="css/03-action-console.css">
+  <link rel="stylesheet" href="css/04-overlays-and-modes.css">
+  <link rel="stylesheet" href="css/05-responsive-and-arcade.css">
+  <link rel="stylesheet" href="css/06-machine-system.css">
+  <link rel="stylesheet" href="css/career-motion-lab.css?v=3">
+  <script defer src="js/career-motion-lab.js?v=2"></script>
+</head>
+<body class="motion-lab-body">
+  <main class="motion-window" id="motion-window" aria-label="Career entrance and ticket motion prototype">
+    <div class="motion-cavity" aria-hidden="true"></div>
+    <section class="motion-face motion-home" id="home" aria-label="Home menu motion scene">
+      <div class="lobby-card pc-housing">
+        <div class="home-topbar">
+          <div class="pc-product-mark">Poker Faces<small>Electronic table game</small></div>
+          <div class="pc-ready-readout pc-display"><span class="pc-lamp is-green"></span> &nbsp;DEALER READY</div>
+          <span class="motion-settings icon-btn" aria-hidden="true">⚙</span>
+        </div>
+        <div class="hero pc-raised pc-material-plastic">
+          <button class="pc-title-well pc-recess pc-material-felt motion-glass" id="motion-glass" type="button" aria-label="Poker Faces title glass. Tap for a surprise">
+            <span class="motion-glass-content">
+              <span class="brand"><span>Poker</span><span>Faces</span></span>
+              <span class="brand-rule"></span>
+            </span>
+            <span class="motion-sprite-layer" id="motion-sprite-layer" aria-hidden="true"></span>
+          </button>
+          <div class="pc-cast-drawer" aria-label="House Faces">
+            <span class="pc-cast-index">HOUSE</span>
+            <div class="hero-faces" aria-hidden="true">
+              <img class="hf" src="assets/faces/red-sly01.PNG" alt="">
+              <img class="hf" src="assets/faces/yellow-thinking01.PNG" alt="">
+              <img class="hf" src="assets/faces/purple-sly01.PNG" alt="">
+              <img class="hf" src="assets/faces/blue-thinking01.PNG" alt="">
+            </div>
+            <span class="pc-cast-index">FACES</span>
+          </div>
+        </div>
+        <div class="pc-readout-row"><div class="panel-card stats-card pc-display"><div class="stat-strip motion-stat-strip"><span class="stat-cell"><b class="v">014</b><small class="k">GAMES PLAYED</small></span><span class="stat-cell"><b class="v">005</b><small class="k">GAMES WON</small></span></div></div></div>
+        <div class="pc-control-bay pc-recess">
+          <div class="pc-control-head"><span class="pc-label">Select table</span><span class="pc-seam"></span><span class="pc-lamp is-amber"></span></div>
+          <div class="pc-primary-cradle">
+            <span class="pc-slot-aperture" aria-hidden="true"><span class="pc-slot-door"></span></span>
+            <button class="pc-button pc-button-primary" id="motion-career" type="button"><span class="pc-lamp is-amber"></span><span>Career<small>Build your bankroll</small></span><span class="pc-lamp is-amber"></span></button>
+          </div>
+          <button class="pc-button pc-button-secondary" type="button" disabled>Custom Game</button>
+          <div class="home-row"><button class="btn-secondary" type="button" disabled>Quick Deal</button><button class="btn-secondary" type="button" disabled>Hand Rankings</button></div>
+        </div>
+      </div>
+    </section>
+    <section class="motion-face motion-career" id="motion-career-face" aria-label="Career ticket scene" inert>
+      <iframe id="motion-career-frame" title="Career ticket reader motion fixture" src="career-hub-v2-lab.html?motion=1&v=4"></iframe>
+    </section>
+    <div class="motion-joint" aria-hidden="true"></div>
+  </main>
+  <nav class="motion-lab-controls" aria-label="Motion lab controls">
+    <button id="motion-return" type="button" disabled>HOME</button>
+    <button id="motion-replay" type="button">REPLAY</button>
+    <button id="motion-reduce" type="button" aria-pressed="false">MOTION ON</button>
+  </nav>
+</body>
+</html>

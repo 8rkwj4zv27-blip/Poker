@@ -15,7 +15,7 @@
 <link rel="stylesheet" href="css/04-overlays-and-modes.css">
 <link rel="stylesheet" href="css/05-responsive-and-arcade.css">
 <link rel="stylesheet" href="css/06-machine-system.css">
-<link rel="stylesheet" href="css/showdown-rail-lab.css?v=32-8">
+<link rel="stylesheet" href="css/showdown-rail-lab.css?v=33-2">
 </head>
 <body data-theme="emerald" data-motion="on" data-cardback="classic" class="sdr-body">
   <details class="sdr-dev-panel" id="sdr-dev-panel" open>
@@ -45,20 +45,42 @@
       </div>
       <div class="sdr-chip-controls hidden" id="sdr-chip-controls">
         <label class="sdr-field" for="sdr-chip-count">
-          <span>Chips</span>
+          <span>Win</span>
           <select id="sdr-chip-count" aria-label="Visible chip count">
-            <option value="2">2 · Small</option>
-            <option value="6" selected>6 · Ordinary</option>
-            <option value="18">18 · Large</option>
-            <option value="60">60 · Maximum</option>
+            <option value="6">Small · 6 chips</option>
+            <option value="14" selected>Normal · 14 chips</option>
+            <option value="24">Big · 24 chips</option>
+            <option value="32">Massive pot · 32 chips</option>
           </select>
         </label>
-        <div class="sdr-chip-button-row" aria-label="Chip motion controls">
-          <button id="sdr-chip-bank-pot" type="button">Bank → Pot</button>
-          <button id="sdr-chip-opponent-pot" type="button">Opponent → Pot</button>
-          <button id="sdr-chip-pot-opponent" type="button">Pot → Opponent</button>
-          <button id="sdr-chip-smash-bank" type="button" class="is-primary">Smash → Bank</button>
+        <label class="sdr-field" for="sdr-payout-stage">
+          <span>Inspect</span>
+          <select id="sdr-payout-stage" aria-label="Payout phase">
+            <option value="full" selected>Full journey</option>
+            <option value="smash">Smash + felt scatter</option>
+            <option value="bank">Suction + bank bounce</option>
+            <option value="stack">Bank bounce + towers</option>
+          </select>
+        </label>
+        <label class="sdr-field" for="sdr-chip-speed">
+          <span>Playback</span>
+          <select id="sdr-chip-speed" aria-label="Payout playback speed">
+            <option value="1" selected>Full speed</option>
+            <option value="1.55">Inspection</option>
+          </select>
+        </label>
+        <div class="sdr-chip-button-row sdr-payout-options" aria-label="Pot collection options">
+          <button id="sdr-payout-a" data-payout-option="magnet" type="button" class="is-primary"><b>A</b> Magnetic Rack</button>
+          <button id="sdr-payout-b" data-payout-option="counter" type="button"><b>B</b> Casino Counter</button>
+          <button id="sdr-payout-c" data-payout-option="gather" type="button"><b>C</b> Croupier Gather</button>
+          <button id="sdr-payout-d" data-payout-option="overload" type="button"><b>D</b> Jackpot Overload</button>
         </div>
+        <div class="sdr-lab-actions" aria-label="Replay controls">
+          <button id="sdr-replay-seed" type="button">Replay same</button>
+          <button id="sdr-reroll-seed" type="button">Reroll chaos</button>
+          <button id="sdr-sound-toggle" type="button" aria-pressed="false">Sound off</button>
+        </div>
+        <p class="sdr-option-copy" id="sdr-option-copy">A · Controlled magnetic lanes: crunchy impact, readable felt bounce, then a clean pull into the real bank.</p>
       </div>
       <div class="sdr-motion" role="group" aria-label="Motion preview">
         <button type="button" data-motion-choice="on" class="active" aria-pressed="true">Normal motion</button>
@@ -258,11 +280,13 @@
        renderer; deliberately no 07-ui-wiring.js or 08-dev-mode.js. -->
   <script src="js/01-poker-math.js"></script>
   <script src="js/02-support-systems.js"></script>
+  <script src="js/03-residents.js"></script>
   <script src="js/03-opponents.js"></script>
   <script src="js/04-modes-and-scoring.js"></script>
   <script src="js/05-game-engine.js"></script>
-  <script src="js/06-presentation.js?v=32-8"></script>
+  <script src="js/06-presentation.js?v=33-2"></script>
   <script src="js/showdown-rail-model.js"></script>
-  <script src="js/showdown-rail-lab.js?v=32-8"></script>
+  <script src="js/chip-payout-options.js?v=33-4"></script>
+  <script src="js/showdown-rail-lab.js?v=33-3"></script>
 </body>
 </html>

@@ -1,5 +1,188 @@
 # Career Mode — Current Status
 
+## Pack Opening Lab — Pass 2 tactile rebuild (2026-10-10)
+
+The owner rejected Pass 1 and authorised a substantial rebuild of this isolated
+lab. `career-pack-opening-lab.html` now keeps the same physical objects from the
+sealed packet through hand-led jagged tearing, clipped-mouth extraction,
+face-up handling, received fan, inspection and gathering. Partial tears keep
+their damage; cancelled draws and card drags return without advancing. The
+wrapper and torn strip remain movable. Automatic flips, disappearing-card next
+transitions and the rejected optical reader are removed.
+
+Inspection lifts and turns the same object, with event information above and
+below. All 16 approved invitation faces remain unchanged. Finite first-discovery
+material/audio accents give Bomb, Wild and premium Freezeout distinct responses.
+A foil sleeve pours a small chunk of actual current gameplay chips onto the felt;
+chips remain movable and an isolated four-drum readout shows the fixture amount.
+An optional sixth find displays the authentic Classic card back. No invented
+sample chips or cabinet swatches remain. The three authored packet standards,
+mixed/ordinary/double-Legendary fixtures, mute and Reduced Motion are retained.
+
+Critical review corrected phone control reach, inspection dimming, hand-following
+lag, shadow scale, chip sleeve/stack composition, chip landing/prize overlap,
+weak cosmetic presentation, missing seam depth, packet reverse artwork, chip
+contact sound and responsive desktop height. Browser assessment: ready for owner
+experience review, with no numerical quality claim or owner approval inferred.
+
+Validation: 346 browser assertions through eight complete packets and 41
+inspection cycles; all 16 editions covered. 20 dispatched-touch assertions plus
+three repeated muted/Reduced Motion openings cover cancellations, tear resume,
+peek/flick, rotation, chip handling and interruption/reset. Focused final phone
+and desktop checks, syntax and 115 event / 41 result regressions pass. No browser
+errors, horizontal overflow or storage writes observed. Captures and recorded
+movement: `validation/career-pack-opening-screenshots/pass2/`. Review and
+reproducible checks: `PACK_OPENING_LAB_PASS_2.md`.
+
+Immediate next task **for this lab**: owner experience review, then actual iPhone
+feel/audio/timing review. Device/120Hz quality remains unverified. Production
+pack odds, purchasing, inventory, duplicates, ownership and special-event rules
+remain outside this study. No production files, saves, dependencies, commit or
+merge changed by this pass. Production next task remains unchanged.
+
+## Pack Opening Lab — Pass 1 rejected by owner (2026-10-10)
+
+Pass 1's functional checks passed, but the owner rejected its tactile and creative
+quality: weak tear/extraction continuity, cheap automatic flipping and next-card
+movement, inadequate object handling, an unsatisfactory optical reader and poor
+extra-item/chip presentation. Its earlier agent assessment of polish was not
+supported by the owner's experience. `PACK_OPENING_LAB_PASS_1.md` is historical;
+its reader and extra-item approach are superseded by Pass 2 and the revised brief.
+
+## Career Card Visual Lab — Pass 6 collector editions (2026-10-10)
+
+The owner approved Pass 5's Table design and authorised extending it to the
+other three families. Bomb, Wild and Freezeout now each have four distinct
+editions in the isolated lab. Premium tiers use authored colour-print,
+expanded foreground and full-face Legendary compositions. Bomb Legendary has
+blackened copper foil, a cracked casing, additional real side ruptures and
+larger finite external embers. Wild Legendary has one dominant crooked grin,
+a card fan, displaced print and a touch-driven wink. Freezeout Legendary has
+midnight stock, monumental ice and cold reflective print. Existing prizes and
+the approved Table rendering remain unchanged.
+
+Critical review corrected Bomb's fuse/title collision and obscured expression,
+then strengthened Wild's static expression. All families were reviewed at drawer
+size and enlarged, with motion/identifiers removed and additionally in grayscale
+with prize amounts hidden. Agent assessment: ready for owner review; approval of
+these three families and actual iPhone/120Hz feel remain pending.
+
+Validation: 96 inspect/return cycles at six sizes, 24 composition checks,
+readable text bounds, both modes, focus/keyboard, all four Legendary mouse/touch
+foil responses, Wild wink/reset, physically absent Bomb corners/side ruptures,
+escaped visible embers and finite particle rest. Reduced Motion, cabinet geometry,
+no overflow/page errors/storage writes pass. Approved Table baseline comparison
+is pixel-identical. Syntax/whitespace and 115 event / 41 result checks pass.
+Evidence: `validation/career-card-visual-lab-screenshots/pass6/`.
+
+Immediate next task **for this lab**: owner review of Bomb, Wild and Freezeout,
+then on-device feel/material review. No production changes, dependencies, commit
+or merge. Production next task stays unchanged. Full assessment:
+`CARD_VISUAL_LAB_PASS_6.md`.
+
+## Career Card Visual Lab — Pass 5 Table study (2026-10-10)
+
+At the owner's direction, prove a stronger rarity progression in Table before
+expanding it to other families. Four Table editions now differ in stock, print
+coverage and authored composition: cream invitation; green colour print;
+blue/silver enlarged scene with foreground frame overlap; and a bespoke full-face
+velvet casino Legendary with integrated foil print and prize plaque. MARKS hides
+rarity letters/edition labels for still review. Other event families remain
+explicit Pass 04 references; their redesign is not claimed complete.
+
+Critical review corrected Legendary descriptor/lamp crowding and a Rare frame
+line crossing the foreground art. At 390px with motion and identifiers removed,
+and with prizes hidden in grayscale, the four remain visually distinct. Agent
+visual assessment: Table is ready for owner review; owner approval and actual
+iPhone feel/120Hz review remain outstanding.
+
+Validation: 96 inspect/return cycles across six sizes; both modes, focus/keyboard,
+no overflow/page errors/storage writes, Reduced Motion and pointer foil pass.
+Targeted Table composition/text bounds, cabinet stability and emulated touch
+reflection/settle pass. Syntax/whitespace and 115 event / 41 result checks pass.
+Captures: `validation/career-card-visual-lab-screenshots/pass5/`.
+
+Immediate next task **for this lab**: owner review of Table's rarity progression
+before extending the construction/art direction to the other three families.
+No production changes, dependencies, commit or merge. Production next task stays
+unchanged. Full assessment: `CARD_VISUAL_LAB_PASS_5.md`.
+
+## Career Card Visual Lab — Pass 4 rarity study (2026-10-10)
+
+The owner requested all four rarities for every event. The isolated lab now has
+16 specimens. Compare Rarities shows one event in C/UC/R/L editions; Event Drawer
+shows all four events at a selected tier. Rarity upgrades add mint lacquer,
+blue/silver print and full-card Legendary foil while retaining each event's
+stock/art/material identity. Bomb's cut corners and embers persist at every tier.
+Illustrative prizes rise by rarity and preserve the four Pass 3 anchor values.
+
+Validation: 96 inspect/return checks across six screen sizes; both modes,
+identity/prize progression, keyboard/focus, pointer/foil, emulated touch,
+physical cuts/escaped finite embers, stable geometry, Reduced Motion, no overflow
+or browser errors and unchanged storage. All 16 inspect captures and four event
+comparison drawers are in `validation/career-card-visual-lab-screenshots/pass4/`.
+Syntax/whitespace and 115 Career event / 41 result checks pass.
+
+No production gameplay, economy, saves, PWA or dependencies changed; no commit or
+merge. Immediate next task **for this lab**: owner rarity/material and on-device
+feel review. Production next task remains unchanged. Full fixtures and review
+instructions: `CARD_VISUAL_LAB_PASS_4.md`.
+
+## Career Card Visual Lab — Pass 3 (2026-10-10)
+
+The owner-directed upgrade is implemented in the existing isolated lab.
+Cabinet, four-card layout and pickup/return routes are preserved. Large rarity
+labels are replaced with C/R/L corner indices and independent green/blue/foil
+rims (UC/teal is supported). Printed TOP PRIZE panels show the owner's fixture
+values: $300 / $1,500 / $750 / $10,000. All four pixel illustrations are refined.
+Bomb has genuine stepped silhouette cuts with traced hot/scorched edges and
+six finite external embers. Wild has a full-card foil coating, spectral print
+and movement-responsive rim/art/title/prize reflection. Stock thickness,
+zero-blur shadows and bounded tilt remain shared physical foundations.
+
+Validation: 24 inspect/return cycles across five phone sizes and 1024×900;
+no horizontal overflow or page errors; keyboard/focus/navigation, pointer and
+emulated touch, independent rarity trim, actual clipped holes, visible escaped
+embers, particle rest, full-card foil response, unchanged cabinet geometry,
+manual/system Reduced Motion and unchanged localStorage. JavaScript syntax and
+115 Career event / 41 result checks pass before and after. Pass 3 screenshots
+are in `validation/career-card-visual-lab-screenshots/pass3/`; Pass 2 captures
+are preserved separately.
+
+Not implemented: packs/openings/intake, owned-card inventory, playable Bomb/Wild
+events or production integration. Production flow, poker, economy, saves,
+statistics and PWA files remain unchanged. Immediate next task **for the lab**:
+owner creative and on-device feel/120Hz review. No commit or merge was made;
+the production next task is unchanged. Full detail: `CARD_VISUAL_LAB_PASS_3.md`.
+
+## Career Card Visual Lab — Pass 2 (2026-10-09)
+
+Owner-directed isolated exploration in `career-card-visual-lab.html`, with its
+own CSS/JavaScript and production foundation fonts/material tokens. Four
+reusable display specimens sit in a felt Hub drawer: Table Event / Common,
+Freezeout / Rare, Bomb / Common and Wild Event / Legendary. Tap lifts a card
+into inspection; hold/move tilts the stock; type-specific finite glints,
+cinders and foil respond in the inspector. Close returns the card and focus.
+System and temporary lab Reduced Motion are supported.
+
+Implemented: authored pixel SVG panels, printed card anatomy, distinct stock
+and rarity finishes, responsive cabinet and tactile inspection. Not
+implemented: playable Bomb/Wild events, rewards, inventory, catalogue changes
+or production integration. No live Career flow, poker, save, settings,
+statistics, PWA files or production assets were changed.
+
+Validation: 24 inspect/return checks across 320×700, 375×667, 390×844,
+393×852, 430×932 and 1024×900; no horizontal overflow or page errors;
+navigation/wrap, keyboard, focus return, pointer tilt/release, finish replay,
+manual/system Reduced Motion and unchanged browser storage pass. The 115
+Career event checks and 41 result checks pass before and after the lab.
+Drawer and all four inspect screenshots are retained under
+`validation/career-card-visual-lab-screenshots/`.
+
+Immediate next task **for this lab**: owner review of card identities, rarity
+materials and iPhone tactile feel. This is not a production milestone and does
+not replace the existing production next-task instructions. No merge or commit
+was made. Full construction/boundaries: `CARD_VISUAL_LAB_PASS_2.md`.
 
 ## Live motion pass — owner-approved for sync (2026-09-24)
 
@@ -17,6 +200,22 @@ includes the production motion assets.
 The owner tested the real game and approved the feel for now. Next: further
 owner-directed polish only. The isolated motion lab remains local history,
 not the current approval surface.
+
+## Superseded Career motion lab (2026-09-23)
+
+An isolated `career-motion-lab.html` now pairs a visually faithful home-menu
+fixture with the existing in-memory ticket Lab. It prototypes a brief CRT
+shutdown and linked vertical wheel into Career; a shorter Home return; an
+Easter egg confined to the Poker Faces title glass; and motion-mode tickets
+that follow the finger, spring back or settle one event, resist the rack ends,
+and use exposed edge taps instead of visible arrows. Reduced Motion is
+available from lab-only controls. No live menu/Career entry code, save,
+transaction, bankroll or poker state was changed. The old ticket Lab remains
+available without the `motion` query flag.
+
+The next task is owner on-device feel review, then a separately approved
+production integration if the motion is right. This lab does not supersede
+the live Career integration status below.
 
 ## Career Hub ticket reader — production integration (2026-09-23)
 

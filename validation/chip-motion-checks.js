@@ -100,7 +100,7 @@ check('Maximum smash batches source geometry before removing chips',()=>{
 
 check('The production-native fixture covers every approved direction and load',()=>{
   ['bank-pot','opponent-pot','pot-opponent','smash-bank'].forEach(kind=>assert.ok(lab.includes(kind)));
-  ['value="2"','value="6"','value="18"','value="60"'].forEach(value=>assert.ok(labHtml.includes(value)));
+  ['value="6"','value="14"','value="24"','value="32"'].forEach(value=>assert.ok(labHtml.includes(value)));
   assert.ok(lab.includes('transferChips(count'));
   assert.ok(lab.includes('payoutTo(opponent,count)'));
   assert.ok(lab.includes('runPotSmashSequence'));
@@ -108,7 +108,7 @@ check('The production-native fixture covers every approved direction and load',(
   assert.ok(lab.includes('averageMs'));
   assert.ok(lab.includes('over34'));
   assert.ok(lab.includes('storageUnchanged'));
-  assert.ok(entry.includes('chip-motion=1&source=embedded'));
+  assert.ok(entry.includes('chip-payout=1&source=embedded'));
 });
 
 check('Fixture remains outside the offline game shell',()=>{
@@ -117,8 +117,8 @@ check('Fixture remains outside the offline game shell',()=>{
 });
 
 check('Build and offline cache markers identify this checkpoint',()=>{
-  assert.ok(support.includes("const BUILD_VERSION = 'v0.32.8-dev · Chip Flow'"));
-  assert.ok(serviceWorker.includes("const CACHE_NAME = 'poker-v32-8'"));
+  assert.ok(support.includes("const BUILD_VERSION = 'v0.33.1-dev · Enemy Personalities'"));
+  assert.ok(serviceWorker.includes("const CACHE_NAME = 'poker-v33-1'"));
 });
 
 process.stdout.write('\n'+passed+' focused Chip Motion checks passed.\n');

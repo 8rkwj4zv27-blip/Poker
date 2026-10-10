@@ -11,6 +11,7 @@ const modes = fs.readFileSync(path.join(root,'js/04-modes-and-scoring.js'),'utf8
 const engine = fs.readFileSync(path.join(root,'js/05-game-engine.js'),'utf8');
 const wiring = fs.readFileSync(path.join(root,'js/07-ui-wiring.js'),'utf8');
 const dev = fs.readFileSync(path.join(root,'js/08-dev-mode.js'),'utf8');
+const residents = fs.readFileSync(path.join(root,'js/03-residents.js'),'utf8');
 const opponents = fs.readFileSync(path.join(root,'js/03-opponents.js'),'utf8');
 const html = fs.readFileSync(path.join(root,'index.html'),'utf8');
 
@@ -88,7 +89,7 @@ check('The shared table save carries format id and blind cadence',()=>{
 const aiAdjustCode=slice(opponents,'function aiFormatAdjustments','async function aiDecide');
 const aiContext={ELIMINATION_CONFIG:{shortStackBB:8,foldGateWidenPerBB:.018}};
 vm.createContext(aiContext);
-vm.runInContext(aiAdjustCode+'\nglobalThis.adjust=aiFormatAdjustments;',aiContext);
+vm.runInContext(residents+'\n'+aiAdjustCode+'\nglobalThis.adjust=aiFormatAdjustments;',aiContext);
 check('Heads-up widens opening and aggression ranges using public table state only',()=>{
   const g={mode:'career',event:{payouts:[200]},players:[{chips:300},{chips:300}]};
   const a=JSON.parse(JSON.stringify(aiContext.adjust(g,g.players[1],1,12)));

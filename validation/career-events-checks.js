@@ -13,6 +13,7 @@ const vm = require('vm');
 const root = path.resolve(__dirname, '..');
 const mathSource = fs.readFileSync(path.join(root, 'js/01-poker-math.js'), 'utf8');
 const supportSource = fs.readFileSync(path.join(root, 'js/02-support-systems.js'), 'utf8');
+const residentSource = fs.readFileSync(path.join(root, 'js/03-residents.js'), 'utf8');
 const opponentSource = fs.readFileSync(path.join(root, 'js/03-opponents.js'), 'utf8');
 const modesSource = fs.readFileSync(path.join(root, 'js/04-modes-and-scoring.js'), 'utf8');
 const engineSource = fs.readFileSync(path.join(root, 'js/05-game-engine.js'), 'utf8');
@@ -35,7 +36,10 @@ const faceColorCode = sliceBetween(supportSource, 'const FACE_COLORS = [', '/* O
 const assignColorCode = sliceBetween(supportSource, 'function assignFaceColors(players){', 'function faceHue');
 const personalityCode = sliceBetween(opponentSource, 'const PERSONALITIES_ALL = [', 'const RANDOM_FIRST_NAMES');
 const randomNameCode = sliceBetween(opponentSource, 'const RANDOM_FIRST_NAMES', 'const DIFFICULTY_PARAMS');
-const opponentCode = shuffleCode + '\n' + faceColorCode + '\n' + assignColorCode + '\n' + personalityCode;
+/* The canonical resident registry is loaded whole rather than sliced: it
+   is pure data plus small pure helpers, and a Career roster must be drawn
+   from the same five people the game seats. */
+const opponentCode = residentSource + '\n' + shuffleCode + '\n' + faceColorCode + '\n' + assignColorCode + '\n' + personalityCode;
 /* The REAL table builder, so the other half of the roster guarantee — that
    newGame() actually seats the field it is handed — is tested against
    production rather than against the stub the Career checks use. */
@@ -198,6 +202,9 @@ function makeContext(initialCareer){
       totalOwned:careerTotalOwned,
       cashCassetteHTML:careerCashCassetteHTML,
       cashTrayHTML:careerCashTrayHTML,
+      browserEntries:careerBrowserEntries,
+      browserHTML:careerBrowserHTML,
+      heroHTML:careerBrowserHeroHTML,
       riskBand:careerRiskBand,
       validCash:isValidCareerCashSession,
       setDevMode:value=>{ DEV_MODE=value; },
@@ -719,8 +726,8 @@ check('Career table persistence and DEV completion stay descriptor-driven', ()=>
   assert.ok(engineSource.includes('isValidCareerEventSnapshot(save.event)'));
   assert.ok(engineSource.includes('g.event.handsPerBlindLevel'));
   assert.ok(engineSource.includes("if (game.mode === 'career') return saveCareerTable()"));
-  ['data-career-enter','data-career-continue','data-career-abandon','data-career-toggle',
-   'OPEN TO YOU NOW','UNAVAILABLE WHILE AN EVENT IS ACTIVE','LOCKED &middot; COMING SOON']
+  ['data-career-enter','data-career-continue','data-career-abandon','data-career-select',
+   'data-career-rail','data-career-details','OPEN TO YOU NOW','UNAVAILABLE WHILE AN EVENT IS ACTIVE']
     .forEach(copy=>assert.ok(wiringSource.includes(copy), copy));
   assert.ok(devSource.includes("if (g.mode === 'career') endCareerEvent(g, {place:1})"));
   // Placement must reach settlement from the table, not from a win/loss value.
@@ -771,7 +778,7 @@ check('Second Chance is visible and available at $0, $49, $50 and $99', ()=>{
     assert.strictEqual(api.state('second-chance'), 'available', String(bankroll));
     api.render();
     const board = context.$('career-events');
-    assert.ok(board.innerHTML.indexOf('data-career-toggle="second-chance"') !== -1, String(bankroll));
+    assert.ok(board.innerHTML.indexOf('data-career-select="second-chance"') !== -1, String(bankroll));
   });
 });
 
@@ -781,7 +788,7 @@ check('Second Chance is hidden and its entry is rejected at $100 and $101', ()=>
     assert.strictEqual(api.state('second-chance'), 'hidden', String(bankroll));
     api.render();
     const board = context.$('career-events');
-    assert.ok(board.innerHTML.indexOf('data-career-toggle="second-chance"') === -1, String(bankroll));
+    assert.ok(board.innerHTML.indexOf('data-career-select="second-chance"') === -1, String(bankroll));
     // A stale or manually triggered entry attempt must fail cleanly: no
     // charge, no active event, no save write.
     assert.strictEqual(api.canEnter('second-chance'), false, String(bankroll));
@@ -1230,9 +1237,9 @@ check('Card Club Club Six is a no-rake six-handed Top-2 alternative', ()=>{
   const event=api.eventById('card-club-six');
   assert.deepStrictEqual({venue:event.venue,players:event.playerCount,stack:event.stack,
     cadence:event.handsPerBlindLevel,buyIn:event.buyIn,payouts:clone(event.payouts),
-    difficulty:event.difficulty,rosterKeys:clone(event.rosterKeys)},
+    difficulty:event.difficulty,rosterResidents:clone(event.rosterResidents)},
     {venue:'CARD CLUB',players:6,stack:1000,cadence:10,buyIn:1000,payouts:[3600,2400],
-      difficulty:'hard',rosterKeys:['shark','professor','grinder','hammer','wildcard']});
+      difficulty:'hard',rosterResidents:['harry','tony','lucy','nigel','steve']});
   assert.strictEqual(event.payouts.reduce((n,v)=>n+v,0),event.buyIn*event.playerCount);
   assert.strictEqual(api.state(event.id),'locked');
 });
@@ -1268,22 +1275,22 @@ check('Upper-room descriptors carry the approved economics, formats and curated 
   const { api }=makeContext();
   const expected=[
     ['casino-main','MAIN EVENT',6,3000,[9000,6000,3000],1200,10,'expert',
-      ['shark','professor','grinder','hammer','wildcard'],'CARD CLUB'],
+      ['harry','tony','lucy','nigel','steve'],'CARD CLUB'],
     ['casino-turbo','MIDNIGHT TURBO',4,3000,[12000],600,6,'expert',
-      ['maniac','hammer','wildcard'],'CARD CLUB'],
+      ['harry','steve','tony'],'CARD CLUB'],
     ['high-roller-feature','FEATURE TABLE',4,10000,[40000],2000,12,'elite',
-      ['shark','professor','grinder'],'CASINO FLOOR'],
+      ['lucy','nigel','steve'],'CASINO FLOOR'],
     ['high-roller-pressure','PRESSURE FIVE',5,10000,[35000,15000],1000,8,'elite',
-      ['shark','professor','hammer','rock'],'CASINO FLOOR'],
+      ['lucy','nigel','harry','steve'],'CASINO FLOOR'],
     ['invitational-final','THE FINAL',6,30000,[100000,50000,30000],2400,12,'elite',
-      ['shark','professor','grinder','hammer','wildcard'],'HIGH ROLLER ROOM']
+      ['harry','tony','lucy','nigel','steve'],'HIGH ROLLER ROOM']
   ];
-  expected.forEach(([id,title,players,buyIn,payouts,stack,cadence,difficulty,rosterKeys,requiredVenue])=>{
+  expected.forEach(([id,title,players,buyIn,payouts,stack,cadence,difficulty,rosterResidents,requiredVenue])=>{
     const event=api.eventById(id);
     assert.deepStrictEqual({title:event.title,players:event.playerCount,buyIn:event.buyIn,
       payouts:clone(event.payouts),stack:event.stack,cadence:event.handsPerBlindLevel,
-      difficulty:event.difficulty,rosterKeys:clone(event.rosterKeys),requiredVenue:event.unlockRequirement.venue},
-    {title,players,buyIn,payouts,stack,cadence,difficulty,rosterKeys,requiredVenue},id);
+      difficulty:event.difficulty,rosterResidents:clone(event.rosterResidents),requiredVenue:event.unlockRequirement.venue},
+    {title,players,buyIn,payouts,stack,cadence,difficulty,rosterResidents,requiredVenue},id);
     assert.strictEqual(event.opponentCount,players-1,id+' field');
     assert.strictEqual(payouts.reduce((sum,value)=>sum+value,0),buyIn*players,id+' no rake');
   });
@@ -1637,6 +1644,46 @@ check('The renderer reads live Career values rather than fixtures', ()=>{
   ['BACK ROOM','PUB CIRCUIT','CARD CLUB','CASINO FLOOR','HIGH ROLLER ROOM','INVITATIONAL CHAMPIONSHIP']
     .forEach(venue=>assert.ok(board.innerHTML.indexOf(venue) !== -1, venue));
   assert.ok(board.innerHTML.indexOf('LOCKED &middot; COMING SOON') === -1);
+});
+
+check('Career V2 renders one focused event over a snapping cassette rack', ()=>{
+  const { api } = makeContext(openCareer());
+  const html = api.browserHTML();
+  assert.strictEqual((html.match(/class="cdir-reader /g) || []).length, 1, 'one reading bay');
+  assert.ok(html.includes('data-career-rail'), 'flickable rack exists');
+  assert.ok(html.includes('data-career-prev') && html.includes('data-career-next'), 'adjacent controls exist');
+  assert.ok(html.includes('data-career-venue="BACK ROOM"'));
+  assert.ok(html.includes('data-career-venue="INVITATIONAL CHAMPIONSHIP"'));
+  const css = fs.readFileSync(path.join(root, 'css/06-machine-system.css'), 'utf8');
+  const rail = css.slice(css.indexOf('.cdir-event-rail{'), css.indexOf('.cdir-event-rail::-webkit-scrollbar'));
+  assert.ok(/overflow-x:auto/.test(rail));
+  assert.ok(/scroll-snap-type:x mandatory/.test(rail));
+  const selector = css.slice(css.indexOf('.cdir-selector{'), css.indexOf('.cdir-selector small'));
+  assert.ok(/scroll-snap-align:center/.test(selector));
+});
+
+check('The focused ticket puts the real primary action before progressive details', ()=>{
+  const { api } = makeContext(openCareer());
+  const event = api.browserEntries().find(entry=>entry.id === 'pub-open');
+  const html = api.heroHTML(event);
+  const action = html.indexOf('data-career-enter="pub-open"');
+  const details = html.indexOf('data-career-details');
+  assert.ok(action >= 0 && details > action, 'TAKE SEAT precedes details');
+  ['PUB CIRCUIT','5-HAND','$1,050 TO 1ST','$300','Players','cdir-hero-face']
+    .forEach(term=>assert.ok(html.includes(term), term));
+  assert.ok(!html.includes('cdir-details-grid'), 'secondary terms begin closed');
+});
+
+check('An active event owns focus and locked events remain previews, not dead rows', ()=>{
+  const { api } = makeContext(openCareer());
+  assert.strictEqual(api.enter('back-room-freezeout'), true);
+  const html = api.browserHTML();
+  const selected = html.match(/class="cdir-selector[^\"]*is-selected[^\"]*" data-career-select="([^\"]+)"/);
+  assert.ok(selected && selected[1] === 'back-room-freezeout');
+  assert.ok(html.includes('>Continue<'));
+  assert.ok(html.includes('cdir-selector is-blocked') || html.includes('cdir-selector is-locked'),
+    'future events stay in the rack');
+  assert.strictEqual((html.match(/class="cdir-reader /g) || []).length, 1);
 });
 
 /* ---- event display names ---- */
@@ -2044,10 +2091,13 @@ check('A legacy active event advertises the opponents in its table save', ()=>{
     { id:'ai2', isHuman:false, personalityKey:'grinder', faceColorIdx:7 }
   ]};
   const seated = api.seatedFromTable(api.getCareer().active.snapshot);
+  // A pre-residents table save carries archetype keys and no residentId.
+  // It normalises to visitor seats and is kept exactly as seated: an
+  // event already under way is never re-cast underneath the player.
   assert.deepStrictEqual(clone(seated), [
-    { personalityKey:'rock',    faceColorIdx:5 },
-    { personalityKey:'shark',   faceColorIdx:2 },
-    { personalityKey:'grinder', faceColorIdx:7 }
+    { residentId:null, personalityKey:'rock',    faceColorIdx:5 },
+    { residentId:null, personalityKey:'shark',   faceColorIdx:2 },
+    { residentId:null, personalityKey:'grinder', faceColorIdx:7 }
   ]);
   assert.deepStrictEqual(clone(api.rosterFor('pub-freezeout')), clone(seated));
   // ...and those are the names printed on the ticket.
@@ -2170,26 +2220,15 @@ check('The roster is left aligned and never centred', ()=>{
   assert.ok(!/text-overflow:ellipsis/.test(name), 'names must not truncate');
 });
 
-check('The print sequence is armed only by an explicit opening', ()=>{
+check('The focused reader travels only when the selected event changes', ()=>{
   const wiring = fs.readFileSync(path.join(root, 'js/07-ui-wiring.js'), 'utf8');
-  // Exactly one place ARMS it, and only when opening: the toggle handler.
-  const assigns = wiring.match(/careerPrintArmed\s*=\s*[^;]+/g) || [];
-  const arming = assigns.filter(a=>!/=\s*false/.test(a));
-  assert.deepStrictEqual(arming, ['careerPrintArmed = opening'],
-    'one arming site only: ' + assigns.join(' | '));
-  // Everything else that touches it only ever clears it (the declaration
-  // and the consume), so nothing can arm it by accident.
-  assert.strictEqual(assigns.length, 3, 'declaration, arm, consume: ' + assigns.join(' | '));
-  // The renderer consumes it before doing anything else with it, so a
-  // re-render can never inherit an armed flag.
-  const render = wiring.slice(wiring.indexOf('const printing = careerPrintArmed;'));
-  assert.ok(render.indexOf('careerPrintArmed = false;') < 120, 'the flag is consumed immediately');
-  // Sound is only ever called from the print path, never on load.
-  const soundCalls = (wiring.match(/Sound\.ticketPrint\(/g) || []).length;
-  assert.strictEqual(soundCalls, 2, 'one call per branch, reduced-motion and animated');
-  // Reduced motion still sounds: the sound call is not inside a motion guard.
-  assert.ok(wiring.includes('if (printing) Sound.ticketPrint();'),
-    'the reduced-motion branch still prints its sound');
+  assert.ok(wiring.includes('function careerSelectBrowserEvent(id, direction)'));
+  assert.ok(wiring.includes('careerSelectionDirection = Math.sign'));
+  assert.ok(wiring.includes('careerSelectionDirection = 0;'), 'render consumes the direction');
+  const css = fs.readFileSync(path.join(root, 'css/06-machine-system.css'), 'utf8');
+  assert.ok(css.includes('.cdir-reader.is-from-right'));
+  assert.ok(css.includes('.cdir-reader.is-from-left'));
+  assert.ok(css.includes('[data-motion="off"] .cdir-reader'), 'reduced motion is immediate');
 });
 
 check('The production print sound is Mechanical Ticket, and muted is silent', ()=>{

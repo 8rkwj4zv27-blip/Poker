@@ -81,7 +81,7 @@ function buildContext(){
   vm.createContext(ctx);
 
   const files = [
-    'js/01-poker-math.js', 'js/02-support-systems.js', 'js/03-opponents.js',
+    'js/01-poker-math.js', 'js/02-support-systems.js', 'js/03-residents.js', 'js/03-opponents.js',
     'js/04-modes-and-scoring.js', 'js/05-game-engine.js', 'js/07-ui-wiring.js'
   ];
   for (const f of files){

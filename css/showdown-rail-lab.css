@@ -45,6 +45,26 @@
 }
 .sdr-button-row{ display:grid; grid-template-columns:.65fr 1fr .8fr 1fr; gap:4px; margin-top:7px; }
 .sdr-chip-button-row{ display:grid; grid-template-columns:1fr 1fr; gap:5px; margin-top:7px; }
+.sdr-payout-options button{
+  min-height:42px; display:grid; grid-template-columns:18px minmax(0,1fr);
+  align-items:center; gap:4px; text-align:left; line-height:1.25;
+}
+.sdr-payout-options button b{
+  display:grid; place-items:center; width:18px; height:18px;
+  color:var(--accent-ink); background:var(--accent); border:2px solid var(--px-ink);
+  box-shadow:0 2px 0 var(--px-ink); font-size:7px;
+}
+.sdr-payout-options button.is-primary b{
+  color:var(--accent); background:var(--px-ink); box-shadow:0 2px 0 rgba(255,255,255,.12);
+}
+.sdr-option-copy{
+  min-height:35px; margin:7px 0 0; padding:6px 7px;
+  color:var(--ink-dim); background:var(--machine-glass); border:2px solid var(--px-ink);
+  font-size:7px; line-height:1.45;
+}
+.sdr-lab-actions{ display:grid; grid-template-columns:1fr 1fr 1fr; gap:5px; margin-top:6px; }
+.sdr-lab-actions button{ min-height:29px; font-size:5px; }
+.sdr-lab-actions button[aria-pressed="true"]{ color:var(--accent-ink); background:var(--accent); }
 .sdr-motion{ display:grid; grid-template-columns:1fr 1fr; gap:5px; margin-top:5px; }
 .sdr-dev-panel button{
   min-width:0; min-height:32px; padding:5px 3px; color:var(--ink-dim);
@@ -134,3 +154,35 @@
 
 [data-motion="off"] .sdr-inspection-lane.is-present{ opacity:1; }
 [data-motion="off"] .sdr-destination-card{ transform:none!important; }
+
+/* Payout lab: the same physical disc travels from pot to felt, through the
+   bank lip, bounces inside its clipped bay, then becomes a real tower chip. */
+.payout-physics-chip{
+  position:fixed; z-index:500; margin:0; pointer-events:none;
+  transform-origin:50% 50%; will-change:transform;
+}
+.payout-bank-physics-layer{
+  position:fixed; z-index:501; inset:0; overflow:hidden; pointer-events:none;
+}
+.payout-bank-physics-layer .payout-physics-chip{ z-index:501; }
+.payout-physics-chip.is-hero-chip{
+  z-index:502; box-shadow:0 4px 0 rgba(0,0,0,.5),0 0 0 2px rgba(244,191,48,.36);
+}
+.payout-smash-weight{
+  position:fixed; z-index:503; width:74px; height:36px; display:grid;
+  grid-template-columns:24px 1fr; place-items:center; pointer-events:none;
+  color:var(--accent-bright); background:var(--machine-case);
+  border:3px solid var(--px-ink); border-top-color:var(--machine-case-hi);
+  box-shadow:0 6px 0 rgba(0,0,0,.58),inset 0 -3px 0 var(--machine-case-lo);
+  font-family:var(--font-hdr); text-transform:uppercase; transform-origin:50% 100%;
+}
+.payout-smash-weight b{ font-size:14px; line-height:1; }
+.payout-smash-weight span{ font-size:4.5px; line-height:1.25; text-align:left; }
+.payout-impacting .pot-readout{ box-shadow:0 0 0 2px var(--accent-bright),0 4px 0 var(--px-ink); }
+@media (max-width:350px){
+  .sdr-lab-actions{ grid-template-columns:1fr 1fr; }
+  .sdr-lab-actions #sdr-sound-toggle{ grid-column:1/-1; }
+}
+@media (prefers-reduced-motion:reduce){
+  .payout-smash-weight{ display:none; }
+}

@@ -50,6 +50,14 @@
    the whole sheet into a horizontally-swipeable surface. */
 .sheet-body{ overflow-y:auto; overflow-x:hidden; -webkit-overflow-scrolling:touch; min-width:0; touch-action: pan-y; }
 .sheet-section{ margin-bottom:22px; min-width:0; }
+/* The opponent dossier is a short, single-subject panel, not a settings
+   list, so its sections sit closer together and the last one carries no
+   trailing gap above the safe-area padding. Everything else about it —
+   the cabinet, the plates, the printed labels — comes from the machine
+   system, where #dossier-sheet joins the #settings-sheet selector lists. */
+#dossier-sheet .sheet-section{ margin-bottom:12px; }
+#dossier-sheet .sheet-section:last-child{ margin-bottom:0; }
+#dossier-sheet .btn-secondary{ width:100%; }
 .sheet-title-wrap{ text-align:center; margin-bottom:18px; }
 .sheet-title{
   font-family:var(--font-hdr); font-size:14px; font-weight:400; letter-spacing:.08em;

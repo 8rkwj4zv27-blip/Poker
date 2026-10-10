@@ -1,0 +1,94 @@
+/* Chatter Design Lab only. Focused E1 pass: two elastic, speaker-owned bubbles. */
+.felt{
+  --cht-paper:#f7f0dc;
+  --cht-paper-hi:#fffaf0;
+  --cht-ink:#1c1713;
+  --cht-wine:#551d2c;
+  --cht-gold:#e8b83a;
+  --cht-copy:13px;
+}
+.seat-card{ position:relative; }
+.seat{ transition:opacity var(--dur),transform 180ms steps(3,end); }
+.seat.cht-lane-seat{ transform:translateY(10px); }
+.seat .seat-card{ transition:border-color 120ms steps(2,end),box-shadow 120ms steps(2,end); }
+.seat.cht-speaking{ z-index:30; }
+.seat.cht-speaking .seat-card{
+  border-color:var(--accent);
+  box-shadow:0 0 0 1px var(--px-ink),0 4px 0 rgba(0,0,0,.55),inset 0 2px 0 rgba(255,255,255,.12);
+}
+.seat.cht-speaking .seat-name{ color:var(--accent-bright); }
+.seat.cht-speaking .avatar-wrap{ animation:cht-face-bump 200ms steps(4,end) 1; }
+@keyframes cht-face-bump{
+  0%{ transform:translateY(0); }
+  42%{ transform:translateY(-3px); }
+  72%{ transform:translateY(1px); }
+  100%{ transform:translateY(0); }
+}
+
+.cht-bubble{
+  --tail-border:var(--cht-ink);
+  --tail-paper:var(--cht-paper);
+  position:absolute; z-index:31; pointer-events:none; opacity:0;
+  min-width:76px; min-height:32px; padding:8px 10px 7px;
+  color:var(--cht-ink); background:var(--cht-paper);
+  border:2px solid var(--cht-ink); border-radius:2px;
+  box-shadow:0 4px 0 rgba(0,0,0,.58),inset 0 2px 0 rgba(255,255,255,.55);
+  font-family:var(--font-px); font-size:var(--cht-copy); font-weight:700; line-height:1.12;
+  letter-spacing:.01em; text-align:left;
+}
+.cht-copy-wrap{ position:relative; z-index:2; display:block; }
+.cht-copy{ display:inline; overflow:visible; }
+.cht-cursor{
+  display:none; width:4px; height:10px; margin-left:2px; vertical-align:-1px;
+  background:var(--cht-wine); animation:cht-cursor-blink 150ms steps(2,end) infinite;
+}
+.cht-bubble.is-typing .cht-cursor{ display:inline-block; }
+@keyframes cht-cursor-blink{ 0%,49%{opacity:1} 50%,100%{opacity:.22} }
+
+/* A separately drawn stepped tail: four solid pixel rows with an inset paper
+   centre. It does not depend on rotating a diagonal gradient, so the centre
+   speaker keeps exactly the same visible pointer as either side. */
+.cht-tail{
+  position:absolute; z-index:4; top:calc(100% - 2px); display:block;
+  width:17px; height:13px; background:var(--tail-paper);
+  clip-path:polygon(0 0,100% 0,100% 23%,76% 23%,76% 46%,65% 46%,65% 69%,53% 69%,53% 100%,41% 100%,41% 69%,29% 69%,29% 46%,18% 46%,18% 23%,0 23%);
+  filter:drop-shadow(-2px 0 0 var(--tail-border)) drop-shadow(2px 0 0 var(--tail-border)) drop-shadow(0 2px 0 var(--tail-border)) drop-shadow(0 3px 0 rgba(0,0,0,.42));
+}
+
+.cht-elastic{
+  bottom:calc(100% - 19px); width:max-content; max-width:214px;
+  transform:translateY(4px) scaleX(.78); transition:opacity 65ms steps(2,end),transform 145ms steps(4,end);
+}
+.cht-elastic.dir-right{ left:calc(50% - 10px); transform-origin:18px 100%; }
+.cht-elastic.dir-left{ right:calc(50% - 10px); transform-origin:calc(100% - 18px) 100%; }
+.cht-elastic.dir-centre{ left:50%; transform:translateX(-50%) translateY(4px) scaleX(.78); transform-origin:50% 100%; }
+.cht-elastic.edge-left{ left:20px; }
+.cht-elastic.edge-right{ right:20px; }
+.cht-elastic.is-in{ opacity:1; transform:translateY(0) scaleX(1); }
+.cht-elastic.is-in.dir-centre{ transform:translateX(-50%) translateY(0) scaleX(1); }
+.cht-elastic.dir-right .cht-tail{ left:12px; }
+.cht-elastic.dir-left .cht-tail{ right:12px; }
+.cht-elastic.dir-centre .cht-tail{ left:50%; transform:translateX(-50%); }
+
+/* E2 has one legible idea: a whole mustard card behind the cream card, then
+   a wine backing behind that. No confetti, corner blips, or ornamental noise. */
+.cht-paper{
+  --tail-border:var(--cht-wine);
+  padding:8px 11px 7px;
+  border:3px solid var(--cht-wine); border-radius:2px;
+  background:linear-gradient(180deg,var(--cht-paper-hi) 0 5px,var(--cht-paper) 5px 100%);
+  box-shadow:-3px -3px 0 var(--cht-gold),4px 4px 0 var(--cht-wine),7px 7px 0 rgba(0,0,0,.62);
+}
+
+.cht-fit-fail{ color:#fff5dd; background:#8c2735; border-color:#1b0b0f; }
+.cht-fit-fail .cht-copy{ font-family:var(--font-hdr); font-size:7px; line-height:1.25; letter-spacing:.07em; }
+
+@media (orientation:portrait) and (max-height:700px){
+  .felt{ --cht-copy:12px; }
+  .seat.cht-lane-seat{ transform:translateY(8px); }
+  .cht-elastic{ bottom:calc(100% - 46px); max-width:198px; padding:7px 9px 6px; }
+}
+@media (prefers-reduced-motion:reduce){
+  .seat,.seat .seat-card,.cht-bubble{ transition-duration:1ms!important; }
+  .seat.cht-speaking .avatar-wrap,.cht-cursor{ animation:none!important; }
+}

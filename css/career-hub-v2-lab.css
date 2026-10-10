@@ -137,6 +137,14 @@ button{ touch-action:manipulation; }
 .ch2-track.is-settling .ch2-card{ transition:transform 230ms cubic-bezier(.2,.9,.28,1.16),filter 180ms ease,opacity 160ms ease; }
 .ch2-track.is-settling .ch2-card.is-selected .ch2-card-inner{ animation:ch2PaperSettle 260ms cubic-bezier(.18,.84,.3,1.18); }
 .ch2-track.is-dragging .ch2-card{ transition:none; }
+.ch2-motion-lab .ch2-arrow{ display:none; }
+.ch2-motion-lab .ch2-card{
+  transform:translateX(calc(var(--card-x) + var(--motion-x, 0px))) translateY(calc(var(--card-y) + var(--motion-lift, 0px))) rotate(var(--motion-angle, 0deg)) scale(var(--card-scale));
+}
+.ch2-motion-lab .ch2-track.is-settling .ch2-card{
+  transition:transform 360ms cubic-bezier(.18,.82,.24,1),filter 220ms ease,opacity 180ms ease;
+}
+.ch2-motion-lab .ch2-rack{ cursor:grab; }
 #career-hub .ch2-card{
   transform:translateX(calc(var(--card-x) + var(--motion-x, 0px))) translateY(calc(var(--card-y) + var(--motion-lift, 0px))) rotate(var(--motion-angle, 0deg)) scale(var(--card-scale));
 }

@@ -16,6 +16,7 @@ const APP_SHELL = [
   './css/career-motion-live.css?v=1',
   './js/01-poker-math.js',
   './js/02-support-systems.js',
+  './js/03-residents.js',
   './js/03-opponents.js',
   './js/04-modes-and-scoring.js',
   './js/05-game-engine.js',

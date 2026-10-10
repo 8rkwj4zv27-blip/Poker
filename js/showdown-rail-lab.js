@@ -10,7 +10,8 @@
 (function(){
   'use strict';
 
-  const chipMode=new URLSearchParams(location.search).get('chip-motion')==='1';
+  const query=new URLSearchParams(location.search);
+  const chipMode=query.get('chip-motion')==='1' || query.get('chip-payout')==='1';
 
   const TIMING=Object.freeze({
     settleMs:150,
@@ -28,6 +29,10 @@
   let activeAnimations=new Set();
   let activeSampler=null;
   let lastSample=null;
+  let lastPayout=null;
+  let selectedPayout='magnet';
+  let payoutSeed=2401;
+  let labSound=false;
   let fullInProgress=false;
   let storageBaseline='';
 
@@ -47,10 +52,10 @@
   }
 
   function controlsLocked(locked){
-    ['sdr-fixture','sdr-theme','sdr-before','sdr-replay','sdr-live','sdr-full','sdr-chip-count',
-      'sdr-chip-bank-pot','sdr-chip-opponent-pot','sdr-chip-pot-opponent','sdr-chip-smash-bank'].forEach(id=>{
+    ['sdr-fixture','sdr-theme','sdr-before','sdr-replay','sdr-live','sdr-full','sdr-chip-count','sdr-chip-speed','sdr-payout-stage','sdr-replay-seed','sdr-reroll-seed','sdr-sound-toggle'].forEach(id=>{
       const el=$(id); if (el) el.disabled=!!locked;
     });
+    document.querySelectorAll('[data-payout-option]').forEach(el=>{ el.disabled=!!locked; });
     document.querySelectorAll('[data-motion-choice]').forEach(el=>{ el.disabled=!!locked; });
   }
 
@@ -64,6 +69,7 @@
 
   function cancelActivePresentation(){
     runToken++;
+    if (typeof PayoutOptionFX!=='undefined') PayoutOptionFX.cancel();
     if (typeof cancelAllChipFlights==='function') cancelAllChipFlights();
     if (activeSampler) activeSampler.stop();
     activeSampler=null;
@@ -194,7 +200,7 @@
   function renderFixtureState(){
     cancelActivePresentation();
     lastSample=null;
-    settings.sound=false;
+    settings.sound=labSound;
     settings.haptics=false;
     settings.faces=true;
     settings.reduceMotion=document.body.dataset.motion==='off';
@@ -253,6 +259,75 @@
 
   function physicsChipProbe(){
     return document.querySelector('.chip-physics-layer .chip-disc');
+  }
+
+  function payoutChipProbe(){
+    return document.querySelector('.payout-physics-chip');
+  }
+
+  function seedPayoutFixture(count){
+    const pot=$('pot-stacks'),bank=$('hud-tower');
+    const human=game.players.find(player=>player.isHuman);
+    human.chips=1000;
+    game.pot=count*100;
+    resetPile(bank,bankPile());
+    resetPile(pot,potPile());
+    renderBank();
+    for(let i=0;i<count;i++) createRestingChip(pot,potPile()).classList.remove('disc-in');
+    $('pot-area').classList.remove('hidden');
+    $('pot-val').textContent=game.pot.toLocaleString();
+    updateJackpot(human.chips);
+    return {pot,bank,human};
+  }
+
+  async function replayPayoutOption(variant){
+    if (fullInProgress || typeof PayoutOptionFX==='undefined') return;
+    renderFixtureState();
+    const token=runToken;
+    selectedPayout=variant||selectedPayout;
+    const count=chipCount();
+    const stage=$('sdr-payout-stage').value;
+    const speed=Math.max(1,Number($('sdr-chip-speed').value)||1);
+    const fixtureState=seedPayoutFixture(count);
+    document.querySelectorAll('[data-payout-option]').forEach(button=>{
+      const on=button.dataset.payoutOption===selectedPayout;
+      button.classList.toggle('is-primary',on);
+      button.setAttribute('aria-pressed',on?'true':'false');
+    });
+    $('sdr-option-copy').textContent=PayoutOptionFX.copy[selectedPayout];
+    controlsLocked(true);
+    fullInProgress=true;
+    lastPayout=null;
+    setState((settings.reduceMotion?'Reduced · ':'Playing · ')+selectedPayout,'playing');
+    paintCRT($('banner'),actionRowsHTML('POT COLLECTION',selectedPayout.toUpperCase(),false),false);
+    if (!settings.reduceMotion) activeSampler=startFrameSampler(payoutChipProbe,token);
+    const result=await PayoutOptionFX.play({
+      variant:selectedPayout,count,speed,stage,seed:payoutSeed,amount:game.pot,
+      pot:fixtureState.pot,bank:fixtureState.bank,
+      potPile:potPile(),bankPile:bankPile(),
+      onPhase:next=>setState('Playing · '+next,'playing'),
+      onLand:(landed,total)=>updateJackpot(fixtureState.human.chips+Math.round(game.pot*(landed/total)))
+    });
+    if (activeSampler){ activeSampler.stop(); activeSampler=null; }
+    if (token!==runToken) return;
+    lastPayout=result;
+    if (!result.parked){
+      fixtureState.human.chips+=game.pot;
+      game.pot=0;
+      $('pot-val').textContent='0';
+      $('pot-area').classList.add('hidden');
+      updateJackpot(fixtureState.human.chips);
+    }
+    const residue=result.parked?0:document.querySelectorAll('.payout-physics-chip,.payout-bank-physics-layer,.payout-smash-weight').length+
+      PayoutOptionFX.state().chips+PayoutOptionFX.state().placeholders;
+    const duration=Math.round(result.durationMs||0);
+    const recovered=!!result.recovered;
+    setState((result.parked?'Parked for inspection':'Settled')+' · '+count+' chips · clean '+(!residue&&!recovered?'yes':'no'),'complete');
+    paintCRT($('banner'),actionRowsHTML(result.parked?'PHASE PARKED':'BANKED',count+' CHIPS · '+duration+'MS',false),false);
+    $('sdr-sampler').textContent+=
+      ' · duration '+duration+'ms · landed '+result.landed+'/'+count+' · residue '+residue+(recovered?' · recovery used':'');
+    fullInProgress=false;
+    controlsLocked(false);
   }
 
   async function replayChipMotion(kind){
@@ -599,19 +674,30 @@
     $('sdr-replay').onclick=()=>replay(false);
     $('sdr-live').onclick=replayLiveRail;
     $('sdr-full').onclick=()=>replay(true);
-    $('sdr-chip-bank-pot').onclick=()=>replayChipMotion('bank-pot');
-    $('sdr-chip-opponent-pot').onclick=()=>replayChipMotion('opponent-pot');
-    $('sdr-chip-pot-opponent').onclick=()=>replayChipMotion('pot-opponent');
-    $('sdr-chip-smash-bank').onclick=()=>replayChipMotion('smash-bank');
+    document.querySelectorAll('[data-payout-option]').forEach(button=>{
+      button.onclick=()=>replayPayoutOption(button.dataset.payoutOption);
+    });
+    $('sdr-replay-seed').onclick=()=>replayPayoutOption(selectedPayout);
+    $('sdr-reroll-seed').onclick=()=>{ payoutSeed=(payoutSeed+7919)%100000; replayPayoutOption(selectedPayout); };
+    $('sdr-payout-stage').onchange=()=>replayPayoutOption(selectedPayout);
+    $('sdr-chip-count').onchange=()=>replayPayoutOption(selectedPayout);
+    $('sdr-sound-toggle').onclick=()=>{
+      labSound=!labSound;
+      settings.sound=labSound;
+      $('sdr-sound-toggle').setAttribute('aria-pressed',labSound?'true':'false');
+      $('sdr-sound-toggle').textContent=labSound?'Sound on':'Sound off';
+      if (labSound && typeof Sound!=='undefined' && Sound.unlock) Sound.unlock();
+    };
     document.querySelectorAll('[data-motion-choice]').forEach(button=>{ button.onclick=()=>setMotion(button.dataset.motionChoice); });
     model=buildShowdownRailModel(fixture);
     renderFixtureState();
     if (chipMode){
-      $('sdr-title').textContent='Chip Motion Lab';
+      $('sdr-title').textContent='Pot Collection Lab';
       $('sdr-fixture-field').classList.add('hidden');
       $('sdr-showdown-controls').classList.add('hidden');
       $('sdr-chip-controls').classList.remove('hidden');
-      document.title='Chip Motion Lab';
+      document.title='Pot Collection Lab';
+      await replayPayoutOption('magnet');
     } else {
       await replay(false);
     }
@@ -626,7 +712,9 @@
     };
     window.__chipMotionLab={
       run:replayChipMotion,
-      state:()=>({phase,motion:document.body.dataset.motion,count:chipCount(),lastSample,
+      payout:replayPayoutOption,
+      state:()=>({phase,motion:document.body.dataset.motion,count:chipCount(),style:selectedPayout,stage:$('sdr-payout-stage').value,seed:payoutSeed,sound:labSound,lastSample,
+        lastPayout,payoutFX:typeof PayoutOptionFX!=='undefined'?PayoutOptionFX.state():null,
         activeFlights:activeChipFlights.size,physicsLayers:document.querySelectorAll('.chip-physics-layer').length,
         fixedChips:document.querySelectorAll('body > .chip-disc[style*="position: fixed"]').length,
         bankChips:$('hud-tower')._chipCount||0,potChips:$('pot-stacks')._chipCount||0,

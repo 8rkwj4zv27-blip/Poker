@@ -15,14 +15,13 @@ const PERSONALITIES_ALL = [
   {key:'professor', name:'Prof',      aggression:.50, tightness:.58, bluffFreq:.11, sizing:.70, thinkSpeed:1.30},
   {key:'hammer',    name:'Hammer',    aggression:.75, tightness:.45, bluffFreq:.16, sizing:.95, thinkSpeed:.90},
 ];
-// Preferred roster: the four archetypes a normal table is built from
-// first. This is a gameplay choice, not an art constraint — illustrated
-// face art is fully decoupled from persona (see FACE_ART in
+// Preferred VISITOR roster: the four archetypes an overflow seat is
+// filled from first. Since the Enemy Personality pass, PERSONALITIES_ALL
+// no longer seats the main field — the five residents in 03-residents.js
+// do — so everything below serves the seats a table has LEFT OVER once
+// the cast is seated. This is a gameplay choice, not an art constraint:
+// illustrated face art is fully decoupled from persona (see FACE_ART in
 // 02-support-systems.js) and works for any entry in PERSONALITIES_ALL.
-// A 5- or 6-opponent Single Player table simply draws its extra seats
-// from the rest of PERSONALITIES_ALL below (rock/station/grinder/hammer),
-// so every seat is a real, distinct AI character — no duplicates, and
-// nothing about their faces depends on which persona they got.
 const PERSONALITIES = PERSONALITIES_ALL.filter(p => ['maniac','professor','wildcard','shark'].includes(p.key));
 function pickPersonalities(n){
   const pool = PERSONALITIES.slice();
@@ -35,6 +34,43 @@ function pickPersonalities(n){
   const extra = PERSONALITIES_ALL.filter(p => !pool.includes(p));
   for (let i=extra.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); const t=extra[i]; extra[i]=extra[j]; extra[j]=t; }
   return pool.concat(extra).slice(0,n);
+}
+
+/* ============================================================
+   SEATING THE CAST — residents first, then visitors
+
+   THE RULE: the five residents fill a table before anybody else, in a
+   shuffled order, never duplicated. Only the seats left over after all
+   five are seated draw a visitor from PERSONALITIES_ALL.
+
+   That matters because the supported table sizes do not all fit five:
+     Career events      1-5 opponents  -> residents only
+     Single Player run  4, 5 or 6      -> one visitor at 6
+     Custom Game        1-8 opponents  -> up to three visitors
+   Capping the game at five opponents would have deleted working table
+   sizes, and inventing three more permanent characters was not on the
+   table, so the overflow seat keeps EXACTLY the behaviour it had before
+   this pass: an ordinary archetype under the ordinary name setting, with
+   a neutral tendency profile (RESIDENT_NEUTRAL_POKER) so its play is
+   bit-identical to the pre-pass AI. A visitor is a real person for one
+   session and is presented as one — public style label, no biography,
+   no id, no continuity, nothing that could be mistaken for a sixth
+   member of the cast.
+
+   Colour distinctness falls out for free: the residents own indices
+   0/1/3/4/5 permanently, assignFaceColors() only ever backfills seats
+   that have none, and FACE_COLORS has exactly 8 entries — so the three
+   possible visitors take 2/6/7 and no table can ever repeat a colour. */
+function pickTableCast(n){
+  const seats = Math.max(0, n|0);
+  if (!seats) return [];
+  const residents = RESIDENT_PERSONAS.slice();
+  for (let i=residents.length-1;i>0;i--){
+    const j=Math.floor(Math.random()*(i+1)); const t=residents[i]; residents[i]=residents[j]; residents[j]=t;
+  }
+  const cast = residents.slice(0, Math.min(seats, residents.length));
+  if (seats > cast.length) cast.push(...pickPersonalities(seats - cast.length));
+  return cast.slice(0, seats);
 }
 
 const RANDOM_FIRST_NAMES = ['Alex','Jordan','Sam','Casey','Riley','Morgan','Taylor','Jamie','Avery','Quinn',
@@ -133,13 +169,26 @@ function maybeTableTalk(player, trigger){
 }
 
 // seats still to act after this player in the current round (0 = last to act)
+/* How many live opponents still have to act behind this seat — the raw
+   material for "am I in position?".
+
+   `!p.acted` is what makes this a position read at all. Without it the
+   loop wrapped the whole table and counted every live opponent, which is
+   the same number aiDecide already has in `numOpp` — so the positional
+   term `dp.positionWeight * (1 - seatsAfter/numOpp)` evaluated to zero in
+   every ordinary hand, and the whole position axis (including the
+   difficulty ladder's positionWeight, which rises easy -> elite) was
+   silently doing nothing. `acted` is existing, maintained state: cleared
+   at the start of each betting round (startNewHand/openBettingRound) and
+   re-cleared for everyone by a full raise, then set in applyAction. The
+   acting player is excluded by the id test regardless. */
 function seatsAfter(playerIdx){
   const g = game;
   let count = 0;
   const n = g.players.length;
   for (let c=1;c<n;c++){
     const p = g.players[(playerIdx+c)%n];
-    if (p.inHand && !p.folded && !p.allIn && p.id !== g.players[playerIdx].id) count++;
+    if (p.inHand && !p.folded && !p.allIn && !p.acted && p.id !== g.players[playerIdx].id) count++;
   }
   return count;
 }
@@ -151,12 +200,23 @@ function clamp01(x){ return Math.max(0, Math.min(1, x)); }
      'up'      — riding a big win: plays looser and a touch more aggressive
      'down'    — stung by a loss/missed draw: calls a little wider
      'steamed' — lost a big pot with a real hand: tightens up, but hits harder
-   Intensity decays ~45% per hand and evaporates below 0.15. */
+   Intensity decays ~45% per hand and evaporates below 0.15.
+
+   TEMPERAMENT (Enemy Personality pass): how far a public event moves a
+   given character, and how fast it fades, is now part of who they are —
+   Steve rides a run, Lucy barely registers one. It scales the incoming
+   intensity and the per-hand decay only; the three kinds, the call sites
+   and the small biases aiDecide() applies are untouched, so mood stays
+   SUBORDINATE to the resident's underlying poker identity rather than
+   becoming a second personality system. Visitors get moodGain 1 /
+   moodDecay 0.75, i.e. exactly the previous behaviour. */
 function nudgeMood(p, kind, intensity){
   if (!p || p.isHuman) return;
+  const temper = personaTemperament(p.personality);
+  const amount = Math.min(1, Math.max(0, intensity * temper.moodGain));
   const cur = p.moodState;
-  if (cur && cur.kind===kind) cur.intensity = Math.min(1, cur.intensity + intensity*0.6);
-  else p.moodState = { kind, intensity: Math.min(1, intensity) };
+  if (cur && cur.kind===kind) cur.intensity = Math.min(1, cur.intensity + amount*0.6);
+  else p.moodState = { kind, intensity: amount };
 }
 function decayMoods(){
   if (!game) return;
@@ -165,7 +225,7 @@ function decayMoods(){
     if (!m) return;
     // slower decay than before: a hot or cold run should read as a
     // multi-hand streak, not a one-hand blip
-    m.intensity *= 0.75;
+    m.intensity *= personaTemperament(p.personality).moodDecay;
     if (m.intensity < 0.15) p.moodState = null;
   });
 }
@@ -249,6 +309,23 @@ function decayFaceMoods(){
    land on a different face later. */
 function baselineFaceExpression(p){
   const m = faceMoodOf(p);
+  const res = residentOf(p);
+  if (res){
+    const role = m.family === 'positive' ? 'pleased'
+      : m.family === 'confident' ? (m.intensity > 0.62 ? 'smug' : 'sly')
+      : m.family === 'irritated' ? 'cross'
+      : m.family === 'nervous' ? (m.intensity > 0.62 ? 'wound' : 'rattled')
+      : m.family === 'uncertain' ? 'rattled'
+      : m.family === 'shock' ? 'wild'
+      : 'rest';
+    const key = residentFace(p, role, res.rest);
+    const sig = 'resident|' + res.id + '|' + m.family + '|' + role + '|' + key;
+    if (p._faceSig !== sig || p._faceKey !== key){
+      p._faceSig = sig;
+      p._faceKey = key;
+    }
+    return p._faceKey;
+  }
   const pool = faceMoodPool(m.family, m.intensity);
   const sig = m.family + '|' + pool.join(',');
   if (p._faceSig !== sig || !p._faceKey){
@@ -271,6 +348,7 @@ function betweenHandsMood(p, g){
   if (p.isHuman || p.eliminated) return base;
   const shortStacked = g && g.bigBlind && p.chips < g.bigBlind*8;
   if (shortStacked && Math.random()<0.18){
+    if (residentOf(p)) return residentFace(p, 'rattled', base);
     return pickFaceExpression('nervous', Math.max(0.45, faceMoodOf(p).intensity), p._faceKey);
   }
   return base;
@@ -310,6 +388,13 @@ const FACE_THINK_POOLS = {
 };
 function pickThinkMood(p){
   const m = faceMoodOf(p);
+  if (residentOf(p)){
+    if (m.family === 'confident') return residentFace(p, 'smug', baselineFaceExpression(p));
+    if (m.family === 'irritated') return residentFace(p, 'cross', baselineFaceExpression(p));
+    if (m.family === 'nervous' || m.family === 'uncertain') return residentFace(p, 'rattled', baselineFaceExpression(p));
+    if (m.family === 'shock') return residentFace(p, 'wild', baselineFaceExpression(p));
+    return residentFace(p, 'sly', baselineFaceExpression(p));
+  }
   // deep moods think in their own register rather than the mild pool
   if (m.family==='nervous' && m.intensity>0.6) return Math.random()<0.6 ? 'veryNervous1' : 'nervous2';
   if (m.family==='confident' && m.intensity>0.7) return Math.random()<0.5 ? 'gloating1' : 'scheming1';
@@ -339,8 +424,8 @@ function reactToWin(p, swingBB){
   if (wasNegative && swingBB > 6){
     setFaceMood(p, 'positive', 0.45);
     playReactionSequence(p.id, [
-      { mood:'relieved1', ms: REACTION_TIMING.beat },
-      { mood: pickFaceExpression('positive', 0.5, 'relieved1'), ms: REACTION_TIMING.mid },
+      { mood: residentFace(p, 'pleased', 'relieved1'), ms: REACTION_TIMING.beat },
+      { mood: residentFace(p, 'sly', ()=>pickFaceExpression('positive', 0.5, 'relieved1')), ms: REACTION_TIMING.mid },
       { mood: baselineFaceExpression(p), ms: REACTION_TIMING.hold }
     ]);
     return;
@@ -348,7 +433,7 @@ function reactToWin(p, swingBB){
   if (swingBB > 20){
     nudgeFaceMood(p, 'confident', 0.55);
     playReactionSequence(p.id, [
-      { mood: pickFaceExpression('positive', 0.8, null), ms: REACTION_TIMING.beat },
+      { mood: residentFace(p, 'pleased', ()=>pickFaceExpression('positive', 0.8, null)), ms: REACTION_TIMING.beat },
       { mood: baselineFaceExpression(p), ms: REACTION_TIMING.hold }
     ]);
     return;
@@ -380,9 +465,9 @@ function foldFaceExpression(p){
   const aggro = typeof pers.aggression === 'number' ? pers.aggression : 0.5;
   const r = Math.random();
   // Aggressive characters hate folding; passive ones shrug it off.
-  if (r < aggro * 0.55) return pickFromPool(FOLD_FACE_POOLS.annoyed);
-  if (r > 0.82) return pickFromPool(FOLD_FACE_POOLS.relieved);
-  return pickFromPool(FOLD_FACE_POOLS.resigned);
+  if (r < aggro * 0.55) return residentFace(p, 'cross', ()=>pickFromPool(FOLD_FACE_POOLS.annoyed));
+  if (r > 0.82) return residentFace(p, 'pleased', ()=>pickFromPool(FOLD_FACE_POOLS.relieved));
+  return residentFace(p, 'rattled', ()=>pickFromPool(FOLD_FACE_POOLS.resigned));
 }
 function reactToFold(p){
   if (!p || p.isHuman || p.eliminated) return;
@@ -408,9 +493,9 @@ function reactToLoss(p, lostBB, stung, opts){
   if (opts && opts.busted){
     nudgeFaceMood(p, family, 1, {override:true});
     playReactionSequence(p.id, [
-      { mood:'shocked1', ms: REACTION_TIMING.beat },
-      { mood: family==='irritated' ? 'angry1' : 'terrified1', ms: REACTION_TIMING.mid },
-      { mood: family==='irritated' ? 'angry1' : 'veryNervous1', ms: BUSTED_FACE_HOLD_MS }
+      { mood:residentFace(p, 'wild', 'shocked1'), ms: REACTION_TIMING.beat },
+      { mood:residentFace(p, family==='irritated' ? 'cross' : 'wound', family==='irritated' ? 'angry1' : 'terrified1'), ms: REACTION_TIMING.mid },
+      { mood:residentFace(p, family==='irritated' ? 'cross' : 'wound', family==='irritated' ? 'angry1' : 'veryNervous1'), ms: BUSTED_FACE_HOLD_MS }
     ]);
     return;
   }
@@ -423,8 +508,8 @@ function reactToLoss(p, lostBB, stung, opts){
   if ((opts && opts.allInLoss) || lostBB > 20){
     nudgeFaceMood(p, family, 0.75, {override:true});
     playReactionSequence(p.id, [
-      { mood:'shocked1', ms: REACTION_TIMING.beat },
-      { mood: family==='irritated' ? 'angry1' : 'veryNervous1', ms: REACTION_TIMING.mid },
+      { mood:residentFace(p, 'wild', 'shocked1'), ms: REACTION_TIMING.beat },
+      { mood:residentFace(p, family==='irritated' ? 'cross' : 'wound', family==='irritated' ? 'angry1' : 'veryNervous1'), ms: REACTION_TIMING.mid },
       { mood: baselineFaceExpression(p), ms: REACTION_TIMING.hold }
     ]);
     return;
@@ -435,7 +520,7 @@ function reactToLoss(p, lostBB, stung, opts){
     nudgeFaceMood(p, family, 0.45, {override:true});
     if (deepening){
       playReactionSequence(p.id, [
-        { mood: pickFaceExpression(family, Math.min(1, before.intensity + 0.2), null), ms: REACTION_TIMING.beat },
+        { mood: residentFace(p, family==='irritated' ? 'cross' : 'rattled', ()=>pickFaceExpression(family, Math.min(1, before.intensity + 0.2), null)), ms: REACTION_TIMING.beat },
         { mood: baselineFaceExpression(p), ms: REACTION_TIMING.hold }
       ]);
     } else {
@@ -459,6 +544,98 @@ function pickDeadMood(){
 /* Public-state-only format adjustments. This helper deliberately receives no
    hole cards, deck or equity: heads-up width, short-stack pressure and a
    paid-place bubble are properties visible to everyone at the table. */
+/* ============================================================
+   PUBLIC DRAW STRENGTH
+
+   How live a drawing hand is, computed from the AI's OWN two cards plus
+   the shared board and nothing else. Every input here is either private
+   to the player computing it or already face-up on the table, so this
+   adds no information path that did not exist — aiDecide has always read
+   player.hand and g.board.
+
+   Why it exists: the Monte Carlo equity estimate already prices a draw
+   correctly on average, but it cannot express a PREFERENCE about draws,
+   and "calls readily with draws" versus "gives up on them" is one of the
+   real differences between Tony and Nigel. This returns the shape of the
+   draw so personality can weight it; it never replaces the equity.
+
+     1   = eight-plus outs (flush draw, or open-ended straight draw)
+     0.5 = four outs (gutshot)
+     0   = no draw, or the hand is already made
+
+   Only meaningful on the flop and turn: with a complete board there is
+   nothing left to draw to, and preflop there is no board to draw with. */
+function publicDrawStrength(hand, board){
+  if (!Array.isArray(hand) || !Array.isArray(board)) return 0;
+  if (board.length < 3 || board.length > 4) return 0;
+  const cards = hand.concat(board);
+
+  // Flush draw: exactly four of a suit. Five is a made flush, not a draw.
+  const suits = {};
+  cards.forEach(c=>{ suits[c.suit] = (suits[c.suit]||0) + 1; });
+  for (const s in suits){ if (suits[s] === 4) return 1; }
+
+  // Straight draw: how many distinct ranks would complete a straight?
+  // Two or more completing ranks is eight outs (open-ended); one is four
+  // (gutshot). The ace is counted both high and low so A-2-3-4 reads as
+  // the wheel draw it is.
+  const have = new Set();
+  cards.forEach(c=>{ have.add(c.value); if (c.value === 14) have.add(1); });
+  const makesStraight = set=>{
+    for (let low=1; low<=10; low++){
+      let run = 0;
+      for (let v=low; v<low+5; v++){ if (set.has(v)) run++; else break; }
+      if (run === 5) return true;
+    }
+    return false;
+  };
+  if (makesStraight(have)) return 0;          // already made
+  let completing = 0;
+  for (let r=2; r<=14; r++){
+    if (have.has(r)) continue;
+    const probe = new Set(have);
+    probe.add(r);
+    if (r === 14) probe.add(1);
+    if (makesStraight(probe)) completing++;
+  }
+  return completing >= 2 ? 1 : completing === 1 ? 0.5 : 0;
+}
+
+/* ============================================================
+   THE GEAR — Steve's changing gears, and nobody else's
+
+   Once per hand a resident with a non-zero `gearRange` picks a gear in
+   [-1, 1] that scales their aggression, sizing and bluff frequency
+   TOGETHER. Coherence is the whole point: a hand where he has decided
+   the table is soft is consistently aggressive rather than randomly so,
+   which is what separates "changes gears" from "is noisy".
+
+   The seed uses PUBLIC state only — the hand number, the seat's id, and
+   the seat's stack in big blinds, all of which the player can see. The
+   stack term is what lets a big public swing move him into a different
+   gear for the hands that follow, satisfying "can change gears after
+   public table events" without reading anything hidden. Cached per hand
+   so the gear cannot drift between streets inside one hand.
+
+   Everyone else has gearRange 0 and gets exactly 0 back. */
+function residentGear(player, g){
+  const range = personaPoker(player && player.personality).gearRange;
+  if (!range) return 0;
+  const handNo = g && Number.isFinite(g.handNumber) ? g.handNumber : 0;
+  if (player._gearHand === handNo && typeof player._gear === 'number') return player._gear;
+  const bb = g && g.bigBlind > 0 ? g.bigBlind : 1;
+  const stackBB = Math.round((player.chips + (player.totalBetHand||0)) / bb);
+  let h = 2166136261;
+  const seed = handNo + '|' + String(player.id) + '|' + stackBB;
+  for (let i=0;i<seed.length;i++){ h ^= seed.charCodeAt(i); h = Math.imul(h, 16777619); }
+  // >>>0 then a fixed divisor: a stable 0..1 from the hash, mapped to
+  // [-1,1] and scaled by how far this character's gears actually travel.
+  const unit = ((h >>> 0) % 100000) / 100000;
+  player._gearHand = handNo;
+  player._gear = (unit * 2 - 1) * range;
+  return player._gear;
+}
+
 function aiFormatAdjustments(g, player, numOpp, bbLeft){
   const freezeout = g && (g.mode==='tournament' || g.mode==='career' || g.mode==='elimination');
   const headsUp = numOpp===1;
@@ -467,12 +644,17 @@ function aiFormatAdjustments(g, player, numOpp, bbLeft){
   const alive = g && Array.isArray(g.players)
     ? g.players.filter(p=>p.chips>0 && !p.eliminated).length : 0;
   const bubble = paidPlaces>1 && alive===paidPlaces+1;
+  // How hard this character pushes a short stack is part of who they are:
+  // Nigel would rather find a spot than blind down, Tony would rather see
+  // one more flop. It only scales the EXISTING widening — a visitor's
+  // shortStackDrive is 1, so ordinary archetypes are unchanged.
+  const shortDrive = personaPoker(player && player.personality).shortStackDrive;
   return {
     aggression:headsUp?0.08:(bubble&&bbLeft<=10?0.06:0),
     tightness:headsUp?-0.08:(bubble?0.04:0),
     bluffFreq:headsUp?0.04:0,
     foldGateWiden:freezeout&&bbLeft<ELIMINATION_CONFIG.shortStackBB
-      ? (ELIMINATION_CONFIG.shortStackBB-bbLeft)*ELIMINATION_CONFIG.foldGateWidenPerBB : 0,
+      ? (ELIMINATION_CONFIG.shortStackBB-bbLeft)*ELIMINATION_CONFIG.foldGateWidenPerBB*shortDrive : 0,
     callOffFloor:headsUp?0.48:0.56,
     headsUp,bubble,freezeout
   };
@@ -486,9 +668,19 @@ async function aiDecide(player, g){
 
   const pers = player.personality;
   const mood = player.moodState || { kind:null, intensity:0 };
+  // The character's private tendency dials. A visitor archetype has none
+  // and lands on RESIDENT_NEUTRAL_POKER, whose every multiplier is 1 and
+  // every offset 0 — so an ordinary archetype takes exactly the decisions
+  // it took before the Enemy Personality pass.
+  const prof = personaPoker(pers);
+  // Steve's per-hand gear (0 for everyone else). Applied to the three
+  // dials that read as "what mode is he in" so the hand stays coherent.
+  const gear = residentGear(player, g);
 
-  // mood biases are deliberately small — noticeable over a session, not per hand
-  let aggression = pers.aggression, tightness = pers.tightness, bluffFreq = pers.bluffFreq;
+  let aggression = clamp01(pers.aggression + gear*0.42);
+  let tightness = clamp01(pers.tightness - gear*0.20);
+  let bluffFreq = clamp01(pers.bluffFreq + gear*0.20);
+  const sizingDial = Math.max(0.30, Math.min(1.25, pers.sizing + gear*0.55));
   let callLoosen = 0;
   if (mood.kind==='up'){
     aggression = Math.min(1, aggression + 0.10*mood.intensity);
@@ -511,13 +703,28 @@ async function aiDecide(player, g){
   bluffFreq = clamp01(bluffFreq + formatAdj.bluffFreq);
   const noise = (Math.random()-0.5) * dp.noise;
   const tightAdj = (tightness - 0.5) * -0.10;
-  // late position (few players left to act) nudges confidence up slightly
-  const posAdj = dp.positionWeight * (1 - Math.min(1, seatsAfter(idx) / Math.max(1, numOpp)));
-  const perceived = clamp01(rawEquity + noise + tightAdj + posAdj);
+  /* late position (few players left to act) nudges confidence up slightly.
+
+     PERSONALITY x DIFFICULTY, and the one place they legitimately meet:
+     dp.positionWeight is how ACCURATELY this difficulty reads position
+     at all, and positionSensitivity is how much this character CARES.
+     They multiply rather than one replacing the other, so Nigel is
+     recognisably the positional one at every difficulty, and every
+     difficulty still improves the underlying read. Personality never
+     touches dp.iterations or dp.noise. */
+  const posAdj = dp.positionWeight * prof.positionSensitivity
+    * (1 - Math.min(1, seatsAfter(idx) / Math.max(1, numOpp)));
+  /* Draw weighting. publicDrawStrength reads only this player's own two
+     cards and the public board (see its header), and the credit is small
+     and capped: it shifts how willingly a character stays with a draw,
+     it does not pretend the draw is already made. drawPersistence is 1
+     for visitors, so this term is a no-op for them. */
+  const drawAdj = 0.055 * publicDrawStrength(player.hand, g.board) * (prof.drawPersistence - 1);
+  const perceived = clamp01(rawEquity + noise + tightAdj + posAdj + drawAdj);
   const shortStack = bbLeft <= ELIMINATION_CONFIG.shortStackBB;   // shoving territory — caps don't apply
   const preflop = g.board.length===0;
   const bluffRoll = Math.random() < bluffFreq * (preflop ? 0.5 : 1);
-  const sizeMul = 0.85 + pers.sizing*0.30;       // archetype bet-size fingerprint
+  const sizeMul = 0.85 + sizingDial*0.30;        // character bet-size fingerprint
 
   /* Stack discipline, measured across the WHOLE hand: total commitment may
      not pass ~28% of the hand-start stack on a merely decent hand, ~45% on a
@@ -549,7 +756,11 @@ async function aiDecide(player, g){
   // ---------------- preflop: fold weak, raise strong, keep sizes honest ----------------
   if (preflop){
     const facingRaise = g.currentBet > bb;
-    let foldGate = 0.30 + tightness*0.14
+    // entryBias is how wide this character comes in: Tony's is the most
+    // negative, Nigel's the most positive. It moves the gate, it does not
+    // bypass it, so a genuinely unplayable hand is still folded by all of
+    // them.
+    let foldGate = 0.30 + tightness*0.14 + prof.entryBias
       + (facingRaise ? 0.10 + Math.min(0.10, (toCall/Math.max(1,stack))*0.5) : 0);
     // Every freezeout short stack widens gradually rather than folding into
     // the blinds. Ordinary cash remains unchanged.
@@ -560,14 +771,18 @@ async function aiDecide(player, g){
       return {action:'fold'};
     }
     const raiseGate = facingRaise ? 0.62 + tightness*0.06 : 0.52 + (1-aggression)*0.10;
+    // raiseDrive is raise/re-raise PROPENSITY, kept separate from the
+    // strength gate above: Harry raises the same holdings more often,
+    // Nigel and Tony less often, and neither of them starts raising
+    // hands the gate rejects. Clamped so a high drive can still miss.
     const wantsRaise = player.mayRaise && stack > toCall &&
       (perceived > raiseGate || (bluffRoll && !facingRaise && Math.random()<0.5)) &&
-      Math.random() < 0.30 + aggression*0.45;
+      Math.random() < Math.min(0.92, (0.30 + aggression*0.45) * prof.raiseDrive);
     if (wantsRaise){
       // Critical freezeout stack (< ~5BB): cappedTotal()'s 28%/45%
       // hand-start budget caps make no sense once the whole stack IS only
       // a few BB — jam it. Push/fold framing instead of a sized raise.
-      if (formatAdj.freezeout && bbLeft < ELIMINATION_CONFIG.criticalStackBB){
+      if (formatAdj.freezeout && bbLeft < ELIMINATION_CONFIG.criticalStackBB * prof.shortStackDrive){
         return raiseOrSettle(player.betThisRound + stack);
       }
       const mult = (facingRaise ? 2.6 + aggression*0.8 : 2.2 + aggression*0.9) * sizeMul;
@@ -579,6 +794,16 @@ async function aiDecide(player, g){
 
   // ---------------- postflop, nothing to call ----------------
   if (toCall <= 0){
+    /* THE TRAP. With a hand strong enough that betting is obviously
+       right, a trapping character sometimes checks it instead and lets
+       somebody else bet. Gated above the value-bet threshold on purpose:
+       checking a monster costs almost nothing and can win more, whereas
+       "trapping" with a mediocre hand is just passivity. Lucy traps most,
+       visitors never (trapChance 0). Because it is a probability and not
+       a rule, a check from her is never a reliable read. */
+    if (perceived > 0.80 && prof.trapChance && Math.random() < prof.trapChance){
+      return {action:'check'};
+    }
     // probe: small information bet with a medium hand in an unopened pot
     const probe = perceived > 0.38 && perceived <= 0.58 && Math.random() < 0.30 + aggression*0.25;
     const valueBet = perceived > (0.58 + (1-aggression)*0.10);
@@ -594,9 +819,16 @@ async function aiDecide(player, g){
 
   // ---------------- facing a bet ----------------
   const betPressure = Math.min(1, toCall / Math.max(1, g.pot));   // 1 = pot-sized or more
+  /* callTolerance is how wide this character continues at all;
+     pressureRespect is how much a LARGE bet specifically moves that
+     threshold. They are separate because they are separate traits: Tony
+     continues wide but is not especially brave against a pot-sized bet,
+     while Nigel folds a lot generally AND folds far more to size. Both
+     are neutral (0 / 1) for visitors. */
   const callThreshold = potOdds - 0.03
       + (tightness-0.5)*0.08
-      + betPressure*0.10          // big bets demand a real hand to continue
+      + betPressure*0.10*prof.pressureRespect   // big bets demand a real hand to continue
+      - prof.callTolerance
       - callLoosen;
   if (perceived < callThreshold && !bluffRoll){
     const cheap = toCall <= Math.max(bb, stack*0.02) && perceived > callThreshold-0.12;
@@ -604,7 +836,7 @@ async function aiDecide(player, g){
   }
   const wantsRaise = player.mayRaise && stack > toCall
     && (perceived > 0.74 || (bluffRoll && betPressure < 0.5 && Math.random()<0.35))
-    && Math.random() < (0.25 + aggression*0.45);
+    && Math.random() < Math.min(0.92, (0.25 + aggression*0.45) * prof.raiseDrive);
   if (wantsRaise){
     let frac = (0.45 + aggression*0.30) * sizeMul;
     let total = potSizedTotal(player, Math.min(frac, 0.8));

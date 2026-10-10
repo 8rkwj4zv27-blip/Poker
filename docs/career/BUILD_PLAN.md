@@ -6,6 +6,80 @@ Expansion promoted: 2026-08-25
 
 Poker Faces V2 Career pass completed: 2026-09-21
 
+## Owner-directed Pack Opening Lab — Pass 2 built, 2026-10-10
+
+The owner rejected Pass 1 despite its functional checks and explicitly authorised
+a tactile rebuild. Keep this isolated from production. Continuous packet/card/
+strip/chip objects, irreversible hand-led tearing, clipped-mouth extraction,
+free face-up handling, manual whole-object turning, received-card revisits and
+on-table information above/below replace automatic flips and the optical reader.
+Use current gameplay chips poured from a foil sleeve and the authentic Classic
+back as an optional extra. Preserve all 16 approved invitation faces and the
+separate Card Visual Lab.
+
+Pass 2 includes iterative visual/motion corrections, browser/touch checks,
+ordinary and double-Legendary fixtures, Reduced Motion and mute. Remaining gate:
+owner experience review and actual iPhone feel/audio/timing review. Browser
+verification is not owner approval or a 10/10 quality claim. Production pack odds,
+economy, inventory and special-event rules remain separate decisions. No
+production phase order changes. See `PACK_OPENING_LAB_PLAN.md` and
+`PACK_OPENING_LAB_PASS_2.md`; Pass 1 review is historical and superseded.
+
+## Owner-approved Table direction extended — 2026-10-10
+
+The owner approved Pass 5 and explicitly authorised the same process for Bomb,
+Wild and Freezeout. Pass 6 extends distinct colour-print, expanded Rare and
+bespoke full-face Legendary compositions to those families, preserving the
+approved Table render and isolated cabinet. Bomb Legendary should feel unstable;
+Wild Legendary should feel strange and expressive; Freezeout retains its cold
+premium identity. Exit gate: still/hidden-identifier/grayscale drawer review,
+readable inspections, all-family responsive/touch/Reduced Motion checks, then
+owner review. Production phase order, balance and rules remain unchanged.
+See `CARD_VISUAL_LAB_PASS_6.md`.
+
+## Owner-directed composition proof — 2026-10-10
+
+Pass 4's subtle rarity differentiation was rejected. Prove Table across four
+tiers first: ordinary paper, bold colour print, enlarged silver-framed artwork,
+and an exclusive full-face Legendary scene. Keep the isolated cabinet and card
+footprint. Exit gate: critical still/hidden-identifier/grayscale review at drawer
+size, readable enlarged inspections, responsive/touch/Reduced Motion checks and
+owner review. Other event families retain Pass 4 references until this progression
+is reviewed. No production phase, economy or rule changes.
+See `CARD_VISUAL_LAB_PASS_5.md`.
+
+## Owner-directed rarity comparison — 2026-10-10
+
+Pass 4 extends the isolated card lab to all four event identities at all four
+rarities. Keep the four-card grid and inspection; add two specimen views:
+one event across C/UC/R/L, or four events at one rarity. Tier upgrades change
+print/material finish while preserving event identity and increase illustrative
+prize figures. These fixtures do not prescribe production balance. Exit gate:
+all 16 specimens rendered and inspected, responsive/material/touch/Reduced Motion
+checks, then owner rarity and on-device review. Production phase order is
+unchanged. See `CARD_VISUAL_LAB_PASS_4.md`.
+
+## Owner-directed card quality upgrade — 2026-10-10
+
+Pass 3 upgrades the existing isolated Card Visual Lab; its machine and four-card
+layout stay fixed. Scope: independent corner rarity/rim treatment; owner-supplied
+lab prize figures; improved authored pixel artwork; true clipped Bomb damage
+with external embers; and full-card, finger-responsive Legendary foil. Exit gate:
+responsive drawer/inspect captures, geometry/material/touch and Reduced Motion
+checks, then owner creative/on-device review. This does not change the production
+phase sequence, catalogue, economy or rules. See `CARD_VISUAL_LAB_PASS_3.md`.
+
+## Owner-directed isolated card exploration — 2026-10-09
+
+Career Card Visual Lab — Pass 2 is a separate review surface, not a production
+phase or a change to the live sequence. It explores four collectible display
+objects (Table Event / Common, Freezeout / Rare, Bomb / Common, Wild Event /
+Legendary) using reusable HTML/CSS and authored pixel SVG art, in a Hub drawer
+with tactile inspection and restrained type-specific finishes. No event terms,
+rules, rewards, inventory, save data or live screens are connected. Exit gate:
+responsive browser verification and screenshots, followed by owner creative
+and on-device feel review. Any production integration needs a new instruction.
+
 ## Owner-directed live motion promotion — 2026-09-23
 
 The owner judged the isolated motion lab unsuitable and explicitly authorised
@@ -21,6 +95,15 @@ ticket drag/edge taps and details; syntax and focused Career suites; PWA cache
 bump including the new production assets; owner on-device feel review, now
 approved for sync. The earlier motion lab remains local history, not an
 integration gate.
+
+## Superseded motion-lab plan — 2026-09-23
+
+Before the direct-production instruction, the owner requested a focused,
+presentation-only motion lab. It tests the home Career-key press and linked
+vertical wheel arrival, finger-led ticket travel with edge-tap navigation,
+and a short title-glass Easter egg. The existing House Faces row, live Career
+screen, save, economy and table logic stay unchanged. The owner later
+superseded this staging requirement with the live motion promotion above.
 
 ## Owner-directed ticket-reader integration — 2026-09-23
 

@@ -148,7 +148,7 @@ const CAREER_EVENT_LIST = Object.freeze([
     initialBlindLevel:0,
     handsPerBlindLevel:12,
     difficulty:'hard',
-    rosterKeys:Object.freeze(['shark','professor','grinder']),
+    rosterResidents:Object.freeze(['lucy','nigel','tony']),
     unlockRequirement:Object.freeze({ type:'venue-win', venue:'PUB CIRCUIT' })
   }),
   Object.freeze({
@@ -166,7 +166,7 @@ const CAREER_EVENT_LIST = Object.freeze([
     initialBlindLevel:0,
     handsPerBlindLevel:10,
     difficulty:'hard',
-    rosterKeys:Object.freeze(['shark','professor','grinder','hammer','wildcard']),
+    rosterResidents:Object.freeze(['harry','tony','lucy','nigel','steve']),
     unlockRequirement:Object.freeze({ type:'venue-win', venue:'PUB CIRCUIT' })
   }),
   Object.freeze({
@@ -184,7 +184,7 @@ const CAREER_EVENT_LIST = Object.freeze([
     initialBlindLevel:0,
     handsPerBlindLevel:10,
     difficulty:'expert',
-    rosterKeys:Object.freeze(['shark','professor','grinder','hammer','wildcard']),
+    rosterResidents:Object.freeze(['harry','tony','lucy','nigel','steve']),
     unlockRequirement:Object.freeze({ type:'venue-win', venue:'CARD CLUB' })
   }),
   Object.freeze({
@@ -202,7 +202,7 @@ const CAREER_EVENT_LIST = Object.freeze([
     initialBlindLevel:0,
     handsPerBlindLevel:6,
     difficulty:'expert',
-    rosterKeys:Object.freeze(['maniac','hammer','wildcard']),
+    rosterResidents:Object.freeze(['harry','steve','tony']),
     unlockRequirement:Object.freeze({ type:'venue-win', venue:'CARD CLUB' })
   }),
   Object.freeze({
@@ -220,7 +220,7 @@ const CAREER_EVENT_LIST = Object.freeze([
     initialBlindLevel:0,
     handsPerBlindLevel:12,
     difficulty:'elite',
-    rosterKeys:Object.freeze(['shark','professor','grinder']),
+    rosterResidents:Object.freeze(['lucy','nigel','steve']),
     unlockRequirement:Object.freeze({ type:'venue-win', venue:'CASINO FLOOR' })
   }),
   Object.freeze({
@@ -238,7 +238,7 @@ const CAREER_EVENT_LIST = Object.freeze([
     initialBlindLevel:0,
     handsPerBlindLevel:8,
     difficulty:'elite',
-    rosterKeys:Object.freeze(['shark','professor','hammer','rock']),
+    rosterResidents:Object.freeze(['lucy','nigel','harry','steve']),
     unlockRequirement:Object.freeze({ type:'venue-win', venue:'CASINO FLOOR' })
   }),
   Object.freeze({
@@ -256,7 +256,7 @@ const CAREER_EVENT_LIST = Object.freeze([
     initialBlindLevel:0,
     handsPerBlindLevel:12,
     difficulty:'elite',
-    rosterKeys:Object.freeze(['shark','professor','grinder','hammer','wildcard']),
+    rosterResidents:Object.freeze(['harry','tony','lucy','nigel','steve']),
     unlockRequirement:Object.freeze({ type:'venue-win', venue:'HIGH ROLLER ROOM' })
   }),
   /* The free recovery event. Its visibility/enterability is NOT the
@@ -323,13 +323,23 @@ function careerEventTitle(event){
 
    A roster is drawn ONCE per event instance and then owned by Career
    state: it drives the preview, the launch, the active save and the
-   resume. It is deliberately minimal — a personality key and a face
-   colour index per seat. No name, no dialogue, no familiarity, no
-   history: named residents are Phase 7 and nothing here anticipates them.
+   resume.
 
-   Both generators below are the PRODUCTION paths (pickPersonalities and
+   Since the Enemy Personality pass a seat is a RESIDENT — `residentId`
+   plus the personality key and face colour that identify them — so the
+   ticket now advertises Harry, Tony, Lucy, Nigel and Steve by name and
+   permanent colour, and those exact people are dealt in. A seat whose
+   `residentId` is null is a visitor, which only happens on a field wider
+   than the five-strong cast (no Career event is) or in a roster stored
+   before this pass.
+
+   Both generators below are the PRODUCTION paths (pickTableCast and
    assignFaceColors), not copies of them, so a Career field is drawn from
    exactly the same distribution a Single Player table is.
+
+   Authored copy still never enters the save: the roster holds ids, not
+   names, bios or dialogue. Everything readable comes from the registry
+   in 03-residents.js at render time.
    ============================================================ */
 function careerRosterSeats(event){
   return event && Number.isInteger(event.opponentCount) && event.opponentCount > 0
@@ -342,59 +352,79 @@ function careerRosterSeats(event){
 function generateCareerRoster(event){
   const seats = careerRosterSeats(event);
   if (!seats) return null;
-  if (typeof pickPersonalities !== 'function' || typeof assignFaceColors !== 'function') return null;
-  const curated = event && Array.isArray(event.rosterKeys) && event.rosterKeys.length === seats
-    ? event.rosterKeys.map(key=>PERSONALITIES_ALL.find(p=>p.key===key)) : null;
-  const personas = curated && curated.every(Boolean) && new Set(curated.map(p=>p.key)).size===seats
-    ? curated : pickPersonalities(seats);
+  if (typeof pickTableCast !== 'function' || typeof assignFaceColors !== 'function') return null;
+  // A curated event names its cast outright; anything else draws the
+  // house cast in a random order. Both go through the same production
+  // path, so a curated field is not a second seating implementation.
+  const curated = event && Array.isArray(event.rosterResidents) && event.rosterResidents.length === seats
+    ? event.rosterResidents.map(id=>residentPersonaById(id)) : null;
+  const personas = curated && curated.every(Boolean)
+    && new Set(curated.map(p=>p.key)).size === seats
+    ? curated : pickTableCast(seats);
   if (!Array.isArray(personas) || personas.length < seats) return null;
-  // A throwaway seat list run through the real colour assigner, so the
-  // distinctness rule and the shuffle are the table's own, not a second
-  // implementation of them.
+  // A throwaway seat list run through the real colour assigner. Residents
+  // carry their permanent colour in already, so the assigner only fills a
+  // visitor seat — the same rule the live table uses, not a copy of it.
   const seatList = [{ isHuman:true, faceColorIdx:null }];
-  for (let i = 0; i < seats; i++) seatList.push({ isHuman:false, faceColorIdx:null });
+  for (let i = 0; i < seats; i++){
+    const persona = personas[i];
+    seatList.push({ isHuman:false,
+      faceColorIdx: persona && Number.isInteger(persona.faceColorIdx) ? persona.faceColorIdx : null });
+  }
   assignFaceColors(seatList);
   const roster = [];
   for (let i = 0; i < seats; i++){
     const persona = personas[i];
     const idx = seatList[i+1].faceColorIdx;
     if (!persona || typeof persona.key !== 'string' || !Number.isInteger(idx)) return null;
-    roster.push({ personalityKey:persona.key, faceColorIdx:idx });
+    roster.push({
+      residentId: persona.residentId || null,
+      personalityKey: persona.key,
+      faceColorIdx: idx
+    });
   }
   return roster;
 }
 
-/* The canonical catalogue name for a seat's personality — 'Shark', 'Prof',
-   'Maniac' and so on. Read straight from PERSONALITIES_ALL, which is the
-   same list newGame() seats the table from, so a name on a Career ticket
-   and the personality that turns up are the same character. No new name is
-   invented here and no second roster exists.
+/* The name printed under a seat on the ticket. For a resident that is
+   simply their name — and because a resident is never shown under an
+   alias at the table either (see newGame), the ticket and the felt now
+   agree exactly, whatever the Opponent Names setting says.
 
-   NOTE on the "random names" setting: with Opponent Names set to Random the
-   TABLE labels each seat with a random first name generated at launch, which
-   by definition cannot be advertised in advance. The ticket therefore always
-   shows the canonical personality, which remains truthful about who is
-   seated even when the table is showing them under an alias. */
+   A visitor seat, or a legacy roster stored before this pass, still
+   resolves to its archetype's catalogue name ('Shark', 'Prof', …), which
+   remains truthful about who is seated even when the table is showing
+   that seat under a random alias. No new name is invented here and no
+   second roster exists. */
 function careerSeatName(seat){
-  if (!seat || typeof seat.personalityKey !== 'string') return '';
-  if (typeof PERSONALITIES_ALL === 'undefined' || !Array.isArray(PERSONALITIES_ALL)) return '';
-  const persona = PERSONALITIES_ALL.find(p=>p.key === seat.personalityKey);
+  if (!seat || typeof seat !== 'object') return '';
+  const res = seat.residentId && typeof residentById === 'function' ? residentById(seat.residentId) : null;
+  if (res) return res.name;
+  if (typeof seat.personalityKey !== 'string') return '';
+  const persona = typeof personalityByKey === 'function' ? personalityByKey(seat.personalityKey) : null;
   return persona && persona.name ? persona.name : '';
 }
 
 /* A stored roster is trusted only if it still describes THIS event exactly:
-   the right number of seats, every personality key still in the roster of
-   archetypes, every face colour a real index, and no seat duplicating
-   another's persona or colour. Anything else returns null and is redrawn —
-   a malformed field must never reach a table half-built. */
+   the right number of seats, every personality key one the build can still
+   seat, every face colour a real index, and no seat duplicating another's
+   person or colour. Anything else returns null and is redrawn — a
+   malformed field must never reach a table half-built.
+
+   A roster stored BEFORE the Enemy Personality pass has no residentId and
+   an archetype key. That is still a valid field and is accepted unchanged:
+   `career.active.roster` is a paid term of an event the player has already
+   entered, so re-casting it here would silently replace the opponents they
+   bought in against. Refreshing the un-paid preview book is a separate,
+   explicit migration step (see migrateCareer in 07-ui-wiring.js). */
 function normalizeCareerRoster(roster, event){
   const seats = careerRosterSeats(event);
   if (!seats || !Array.isArray(roster) || roster.length !== seats) return null;
   const colours = typeof FACE_COLORS !== 'undefined' && Array.isArray(FACE_COLORS)
     ? FACE_COLORS.length : 0;
-  const known = typeof PERSONALITIES_ALL !== 'undefined' && Array.isArray(PERSONALITIES_ALL)
-    ? PERSONALITIES_ALL : null;
+  const canResolve = typeof isKnownPersonalityKey === 'function';
   const keys = new Set();
+  const residents = new Set();
   const used = new Set();
   const normalized = [];
   for (let i = 0; i < seats; i++){
@@ -402,13 +432,21 @@ function normalizeCareerRoster(roster, event){
     if (!seat || typeof seat !== 'object') return null;
     const key = seat.personalityKey;
     if (typeof key !== 'string' || !key || keys.has(key)) return null;
-    if (known && !known.some(p=>p.key === key)) return null;
+    if (canResolve && !isKnownPersonalityKey(key)) return null;
+    // A resident may sit at a table once. Two Harrys is the one outcome
+    // this whole pass exists to make impossible.
+    const residentId = typeof seat.residentId === 'string' && seat.residentId ? seat.residentId : null;
+    if (residentId){
+      if (residents.has(residentId)) return null;
+      if (typeof residentById === 'function' && !residentById(residentId)) return null;
+      residents.add(residentId);
+    }
     const idx = seat.faceColorIdx;
     if (!Number.isInteger(idx) || idx < 0 || used.has(idx)) return null;
     if (colours && idx >= colours) return null;
     keys.add(key);
     used.add(idx);
-    normalized.push({ personalityKey:key, faceColorIdx:idx });
+    normalized.push({ residentId, personalityKey:key, faceColorIdx:idx });
   }
   return normalized;
 }

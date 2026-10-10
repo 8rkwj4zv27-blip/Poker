@@ -1,0 +1,132 @@
+/* ============================================================
+   DASHBOARD LAB — visual-refinement comparison only.
+
+   Part A is three proposed option layers on top of the PRODUCTION
+   player-dashboard rules (css/02-screens.css "PLAYER HUD" section +
+   css/03-action-console.css "GAMEPLAY CONTRAPTION" section). Every rule
+   here is scoped under .lab-device[data-option="t1|t2|t3"] — nothing
+   leaks outside the lab, and D0 (no data-option override) is production
+   untouched. Composition, geometry and locked elements are identical
+   across all four; only spacing/border/shadow/colour rhythm changes.
+
+   Part B is lab chrome and exists only in this file.
+
+   Loaded by dashboard-lab.html only. Not referenced by index.html, not
+   in sw.js.
+   ============================================================ */
+
+/* ============================================================
+   PART A — proposed dashboard refinements
+   ============================================================ */
+
+/* ---- T1. Conservative tidy ------------------------------------------
+   Correct only spacing, corner and shadow-depth INCONSISTENCIES already
+   present between the dashboard's own parts — nothing added, nothing
+   moved. Radius rhythm: hud-frame is 4px, the console housing is 3-5px,
+   but hud-left/hud-right/every crt-screen sit at 2px — brought up to 3px
+   so the whole assembly reads as one corner language. Shadow depth: the
+   two side bays inset 5px while every crt-screen insets 4px — matched to
+   4px throughout. Gap rhythm: hud-mid's 4px and hud-frame's 7px are
+   nudged onto the 6/8px rhythm the rest of the dashboard already uses.
+   ------------------------------------------------------------------- */
+.lab-device[data-option="t1"] #hud-left,
+.lab-device[data-option="t1"] #hud-right,
+.lab-device[data-option="t1"] .crt-screen{ border-radius:3px; }
+.lab-device[data-option="t1"] #hud-left,
+.lab-device[data-option="t1"] #hud-right{
+  box-shadow:inset 0 4px 0 rgba(0,0,0,.55),inset 2px 0 0 rgba(0,0,0,.22),
+    inset 0 -2px 0 rgba(255,255,255,.08),0 0 0 1px var(--theme-case-hi),0 2px 0 rgba(0,0,0,.35);
+}
+.lab-device[data-option="t1"] #hud-frame{ gap:8px; }
+.lab-device[data-option="t1"] #hud-mid{ gap:6px; }
+.lab-device[data-option="t1"] .action-console{ border-radius:0 0 4px 4px; }
+
+/* ---- T2. Unified cabinet ---------------------------------------------
+   Same arrangement, same sizes — only the housing's rim/recess tokens
+   change, borrowed from the shared submenu/result-stage cabinet
+   vocabulary (--pc-edge-*/--pc-recess*, already theme-scoped on `body`
+   in 03-action-console.css) instead of the dashboard's own separate
+   --theme-case-*/--machine-* set. Outer cabinet (hud-frame + the action
+   console below it), chip bay (hud-left) and card dock (the seat.you
+   rail) all pick up the same edge tone so they read as one construction
+   with the rest of the machine, not a bolted-on module.
+   ------------------------------------------------------------------- */
+.lab-device[data-option="t2"] #hud-frame{
+  border-color:var(--pc-edge-lo); border-top-color:var(--pc-edge-hi);
+  box-shadow:0 0 0 2px var(--pc-edge-mid),
+    0 5px 0 var(--machine-case-lo),0 9px 0 rgba(0,0,0,.5),
+    inset 2px 2px 0 rgba(255,255,255,.09),inset -2px -2px 0 rgba(0,0,0,.25);
+}
+.lab-device[data-option="t2"] #hud-left,
+.lab-device[data-option="t2"] #hud-right{
+  border-color:var(--pc-edge-lo); background:var(--pc-recess);
+  box-shadow:inset 0 5px 0 var(--pc-recess-deep),inset 2px 0 0 rgba(0,0,0,.22),
+    inset 0 -2px 0 rgba(255,255,255,.08),0 0 0 1px var(--pc-edge-mid),0 2px 0 rgba(0,0,0,.35);
+}
+.lab-device[data-option="t2"] .seat.you::before{
+  border-color:var(--pc-edge-lo); background:var(--pc-recess);
+  box-shadow:inset 0 6px 0 var(--pc-recess-deep),inset 2px 0 0 rgba(0,0,0,.28),0 1px 0 var(--pc-edge-hi);
+}
+.lab-device[data-option="t2"] .seat.you::after{
+  border-color:var(--pc-edge-lo); border-top-color:var(--pc-edge-hi);
+}
+.lab-device[data-option="t2"] .action-console,
+.lab-device[data-option="t2"] .console-flip{ border-color:var(--pc-edge-lo); }
+.lab-device[data-option="t2"] .action-console::before{ background:var(--pc-edge-mid); }
+
+/* ---- T3. CRT emphasis -------------------------------------------------
+   Physical construction untouched; every crt-screen (hand-strength,
+   banner, bet-this-hand) gets a visibly deeper bezel/vignette so it
+   reads unmistakably as a recessed live display rather than a printed
+   panel. The banner — the one CRT carrying the current decision, i.e.
+   live table information — also takes the system's pale-blue live-info
+   ink instead of the ordinary amber/green mix; hand-strength keeps its
+   own established gold hand-tier language untouched.
+   ------------------------------------------------------------------- */
+.lab-device[data-option="t3"] .crt-screen{
+  box-shadow:inset 0 5px 0 rgba(0,0,0,.66),inset 3px 0 0 rgba(0,0,0,.32),
+    inset 0 -1px 0 rgba(255,255,255,.06),0 0 0 2px var(--machine-case-lo),
+    0 1px 0 color-mix(in srgb,var(--machine-case-hi) 32%,transparent);
+}
+.lab-device[data-option="t3"] .crt-screen::before{ opacity:.32; }
+.lab-device[data-option="t3"] .banner.crt-screen{
+  --crt-action-ink:#9FD3E8;
+}
+.lab-device[data-option="t3"] .banner.crt-screen .crt-line-primary{ color:var(--crt-action-ink); }
+
+/* ============================================================
+   PART B — lab chrome (never leaves this file)
+   ============================================================ */
+body{ margin:0; min-height:100vh; background:#12161B; color:#D8DEE4; font-family:ui-monospace,Menlo,monospace; }
+.lab-shell{ display:flex; flex-direction:column; min-height:100vh; }
+.lab-bar{
+  position:sticky; top:0; z-index:5;
+  display:flex; flex-wrap:wrap; align-items:center; gap:10px 18px;
+  padding:12px 16px; background:#0D1116; border-bottom:2px solid #262E36;
+}
+.lab-bar h1{
+  margin:0; font-family:var(--font-hdr); font-size:11px; letter-spacing:.06em;
+  font-weight:400; color:#E8B83A;
+}
+.lab-picker{ display:flex; flex-wrap:wrap; gap:6px; }
+.lab-picker button{
+  padding:8px 12px; cursor:pointer;
+  font-family:var(--font-hdr); font-size:9px; letter-spacing:.04em;
+  color:#AFBBC6; background:#1A2129; border:2px solid #2E3843; border-radius:4px;
+}
+.lab-picker button:hover{ color:#fff; border-color:#4A5866; }
+.lab-picker button.is-on{ color:#101418; background:#E8B83A; border-color:#F6D06B; }
+
+.lab-single{ display:flex; justify-content:center; padding:24px 16px 40px; }
+.lab-cell{ margin:0; display:flex; flex-direction:column; gap:8px; align-items:center; }
+.lab-cell figcaption{
+  font-family:var(--font-hdr); font-size:8px; letter-spacing:.08em;
+  text-transform:uppercase; color:#7E8B98;
+}
+.lab-device{
+  width:393px; height:852px; display:flex; flex-direction:column;
+  position:relative; overflow:hidden;
+  background:var(--bg-deep);
+  border:2px solid #2E3843; border-radius:6px;
+  box-shadow:0 10px 0 #0A0D11;
+}

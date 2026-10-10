@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Character Chatter — Design Lab</title>
+<link rel="stylesheet" href="css/chatter-lab.css?pass=10">
+</head>
+<body>
+<main class="lab-preview" aria-label="Poker Faces phone preview">
+  <div class="lab-phone" id="lab-phone">
+    <iframe id="lab-frame" src="chatter-stage.html?pass=10" title="Active Poker Faces hand"></iframe>
+  </div>
+  <div class="lab-viewport" aria-label="Preview size">
+    <button data-device="393x852" class="is-on">393 × 852</button>
+    <button data-device="430x932">430 × 932</button>
+    <button data-device="375x667">375 × 667</button>
+  </div>
+</main>
+
+<aside class="lab-panel">
+  <header class="lab-heading">
+    <span class="lab-kicker">CHARACTER CHATTER / DESIGN LAB</span>
+    <strong id="lab-current">E1 · ELASTIC / CLEAN</strong>
+    <span id="lab-line">Harry: “Here he is!”</span>
+  </header>
+
+  <section class="lab-control">
+    <h2>VISUAL</h2>
+    <div class="lab-family">
+      <span>ELASTIC · SPEAKER-OWNED BUBBLE</span>
+      <div class="lab-buttons lab-six">
+        <button data-visual="E1" class="is-on"><b>E1</b> Clean</button>
+        <button data-visual="E2"><b>E2</b> Paper-backed</button>
+      </div>
+    </div>
+  </section>
+
+  <section class="lab-control">
+    <h2>SOUND</h2>
+    <div class="lab-buttons lab-two" id="lab-sounds">
+      <button data-sound="repeat" class="is-on"><b>♪</b> Rapid Pixel Chatter</button>
+      <button data-sound="mute"><b>×</b> Mute</button>
+    </div>
+  </section>
+
+  <section class="lab-control lab-sample">
+    <h2>SAMPLE</h2>
+    <div class="lab-buttons lab-four">
+      <button data-sample="harry" class="lab-fire">HARRY</button>
+      <button data-sample="lucy" class="lab-fire">LUCY</button>
+      <button data-sample="exchange" class="lab-fire">EXCHANGE</button>
+      <button data-sample="next" class="lab-fire">NEXT ›</button>
+    </div>
+  </section>
+
+  <footer class="lab-foot">
+    <span>Active hand · 5 opponents · board and pot live</span>
+    <span><kbd>1–2</kbd> visual &nbsp; <kbd>M</kbd> mute &nbsp; <kbd>Space</kbd> replay &nbsp; <kbd>[ ]</kbd> seats</span>
+  </footer>
+</aside>
+
+<script src="js/chatter-lab.js?pass=10"></script>
+</body>
+</html>

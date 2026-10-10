@@ -1,0 +1,104 @@
+/* Lab arrangement only. Component appearance lives in 01-machine-components.css. */
+
+.lab-shell{
+  width:min(760px,calc(100% - 18px));
+  margin:max(12px,env(safe-area-inset-top)) auto max(26px,env(safe-area-inset-bottom));
+}
+
+.lab-header{
+  padding:18px;
+}
+
+.lab-header h1{ margin-top:10px; }
+
+.lab-list{
+  margin:22px 0 0;
+  padding:0;
+  display:grid;
+  gap:22px;
+  list-style:none;
+  counter-reset:lab-item;
+}
+
+.lab-item{
+  width:100%;
+  min-width:0;
+  padding:16px;
+  counter-increment:lab-item;
+}
+
+.lab-item > h2{
+  min-width:0;
+  margin-bottom:18px;
+  display:flex;
+  align-items:center;
+  gap:10px;
+}
+
+.lab-item > h2::before{
+  content:counter(lab-item,decimal-leading-zero);
+  flex:0 0 auto;
+  color:var(--lab-ink-faint);
+  font-size:8px;
+}
+
+.crt-list{
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:12px;
+}
+
+.instrument-board{
+  min-width:0;
+  padding:11px;
+  display:flex;
+  flex-direction:column;
+  gap:11px;
+}
+
+.instrument-board .machine-key{ margin-top:auto; }
+
+.action-console{
+  min-width:0;
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:10px;
+}
+
+.utility-console{
+  min-width:0;
+  margin-top:16px;
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:9px;
+}
+
+.counter-machine{ width:min(100%,470px); }
+
+.lab-control{
+  margin-top:15px;
+  width:min(100%,230px);
+}
+
+a.machine-key.lab-control{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  text-decoration:none;
+}
+
+.submenu-frame{ width:min(100%,520px); }
+.result-stage{ width:min(100%,520px); }
+
+@media (max-width:680px){
+  .lab-shell{ width:calc(100% - 14px); }
+  .lab-header,.lab-item{ padding:12px; }
+  .crt-list{ grid-template-columns:1fr; }
+  .instrument-board{ padding:10px; }
+}
+
+@media (max-width:380px){
+  .lab-shell{ width:calc(100% - 10px); }
+  .lab-header,.lab-item{ padding:10px; }
+  .action-console,.utility-console{ gap:7px; }
+}
