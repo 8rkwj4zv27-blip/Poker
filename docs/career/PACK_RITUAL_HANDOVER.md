@@ -41,7 +41,7 @@ node validation/tools/lab-bundle.js pack-ritual-lab.html /tmp/bundle-pack-ritual
 
 The bundler succeeded: **167 accompanying files, 5.4 MB**. It reads the
 `lab-inject` JSON and bakes the injected game into `game.html`, stripping
-SW registration and the listed Home boot/cast scripts. The host uses
+SW registration and the listed Home boot script. The host uses
 `window.LAB_STATIC` when published, and a fetched `index.html`/srcdoc copy
 locally. Opus can rebuild the bundle anywhere. No Mac absolute path appears
 in the lab or publishing manifest.
@@ -72,11 +72,13 @@ Updated supporting files: `validation/tools/touch-harness.js` adds an
 optional installed-browser `executablePath` argument; default cloud
 behaviour is unchanged. `docs/HANDOVER.md`, `docs/QUICKMAP.md`,
 `docs/CODEMAP.md`, `docs/README.md` and `docs/career/STATUS.md` identify this
-isolated work and its next review. No production JS/CSS, `index.html`,
+isolated work and its next review. Home Cast remains loaded because the shared `wireUI()` calls
+`initHeroFaces`; stripping it caused a console error caught by touch QA
+and corrected before delivery. No production JS/CSS, `index.html`,
 `sw.js`, poker logic, save schema or release number is changed.
 
 The inherited game copy loads exactly the scripts/styles in `index.html`,
-except the two stripped Home scripts. The complete bundler dependency
+except the stripped Home boot script. The complete bundler dependency
 inventory is committed as
 `validation/pack-ritual-captures/bundle-files.json` (regenerate from the
 bundler's `files.json`). Principal reused parts:
@@ -131,7 +133,8 @@ collection key; chips fly into the bankroll. Fresh packets land.
 
 The small TUNE key offers mixed/rotating events, forced Legendary event
 kinds, all-common and double-Legendary fixtures, sound/reduced motion,
-reset and test credits. Busy transitions disable tuning/reset and keys.
+reset and test credits. Busy transitions disable tuning/reset and keys. Reduced-motion manual
+turns resolve immediately rather than leaving a delayed partial turn.
 The scene frame stays fixed; overflow is clipped to prevent browser focus
 from scrolling the cabinet when objects travel beyond it.
 
@@ -199,8 +202,15 @@ machine, cosmetics or new currencies are in this focused opening study.
 ## Verification evidence and limits
 
 - Before pass: **25/25 npm test suites green** (245 seconds).
-- After pass and final touch/bundle results: see the committed QA evidence
-  in `validation/pack-ritual-captures/QA.json` and `CHECKS.md`.
+- After pass: the full regression run passed 24/25; only the main
+  handover’s 83-line length failed. Shortened it and reran the version
+  suite (all seven assertions passed) and quick suite (22/22). The three
+  long simulations already passed; all 25 suites are verified green
+  across that run/rechecks. Full detail: `validation/pack-ritual-captures/CHECKS.md`.
+- Final touch suite passed at both sizes and reduced motion, with no
+  console/page errors. Four mixed packs exposed all 16 combinations.
+  Results: `validation/pack-ritual-captures/QA.json`; all 32 numbered
+  screenshots are committed. Bundler succeeded on the final source.
 - Touch harness drives actual emulated touch at **390×844 and 375×667**:
   partial seam drag, extraction, flick, same-object inspection, angle and
   reverse, reinspection from the haul, filing, bankroll/reward arithmetic,

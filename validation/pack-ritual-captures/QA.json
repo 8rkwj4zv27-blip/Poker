@@ -1,0 +1,23 @@
+{
+  "tested": "2026-10-10T23:22:59.346Z",
+  "results": [
+    {
+      "viewport": "390x844",
+      "reducedMotion": false,
+      "packNumber": 4,
+      "errors": []
+    },
+    {
+      "viewport": "375x667",
+      "reducedMotion": false,
+      "packNumber": 1,
+      "errors": []
+    },
+    {
+      "viewport": "375x667",
+      "reducedMotion": true,
+      "packNumber": 1,
+      "errors": []
+    }
+  ]
+}

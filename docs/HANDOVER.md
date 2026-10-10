@@ -3,7 +3,7 @@
 The note one session leaves for the next. **Read this first; update it last**,
 in the same pull request as the change (rules in `CLAUDE.md`, "Handover
 note"). Keep it to one screen: replace old lines rather than adding to them.
-If this note and the code disagree, the code wins: fix the note.
+If this note and the code disagree, the code wins.
 
 Build: `v0.67.0-dev · Back Room builds a stack`
 Updated: 11 October 2026 (isolated lab only)
@@ -28,7 +28,6 @@ audit's complaints (dashboard rims, clipped result line, chip pile) are gone.
 
 - 11 Oct (no game change): Pack Ritual opening polish and cloud handover,
   `codex/pack-ritual`; read [`career/PACK_RITUAL_HANDOVER.md`](career/PACK_RITUAL_HANDOVER.md).
-
 - 8 Oct (no game change): Hub Lab (`hub-lab.html`): Career opens on
   tonight's tickets, dealt and styled by kind, fed into a slot.
 - 8 Oct (no game change): Career as packs of cards, brainstormed with
@@ -36,8 +35,7 @@ audit's complaints (dashboard rims, clipped result line, chip pile) are gone.
   (vending machine, rip, reveal, ticket case, feed into a real table).
 - v0.67.0 The Back Room builds a stack (Events Release 1): a new 5-HAND
   Top-2 ticket, 1,000-chip stacks, blinds every 15 hands, opponents at
-  skill 20 (events now carry a `skill`). Tickets already bought keep
-  their terms.
+  skill 20. Tickets already bought keep their terms.
 - 8 Oct (no game change): the events rework planned with the owner
   (`docs/career/EVENTS_PLAN.md`); `validation/tools/event-sim.js` plays
   whole Career events to measure it.
@@ -47,7 +45,6 @@ audit's complaints (dashboard rims, clipped result line, chip pile) are gone.
 - Pack Ritual needs Opus and owner phone review; revised pass is not
   owner-approved. Full evidence/limits/feedback in
   [`career/PACK_RITUAL_HANDOVER.md`](career/PACK_RITUAL_HANDOVER.md).
-
 - Career Hub on small iPhones (375x667, SE/8): BUY IN sits below the
   screen. Fine on the owner's Pro Max.
 - Stale code comments still name archived labs or say "not loaded by the
@@ -73,8 +70,7 @@ own speech bubbles (`claude/tender-dijkstra-zso8dm`).
 Owner requested cloud handover (11 Oct): Opus inspects/publishes the Pack
 Ritual lab from `codex/pack-ritual`, then owner phone review. Read
 [`career/PACK_RITUAL_HANDOVER.md`](career/PACK_RITUAL_HANDOVER.md) first.
-Earlier pending work: the owner plays the
-Hub Lab (`docs/career/PACKS_PLAN.md`, Round 3: Career opens on tonight's
+Earlier pending work: the owner plays the Hub Lab (`docs/career/PACKS_PLAN.md`, Round 3: Career opens on tonight's
 tickets); then the Vendor and the Case screens to the same standard.
 Agree with the owner how this reshapes Events Releases 2 to 4
 (`docs/career/EVENTS_PLAN.md`) before building either. Still open: the
