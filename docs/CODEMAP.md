@@ -955,6 +955,17 @@ hint (`checkOrientation()`), then calls `initHeroFaces()` and
 file leaves a game whose buttons do nothing. It was the bottom of
 `08-dev-mode.js` until v0.64.5 (audit finding F2), moved unchanged.
 
+## `pack-ritual-lab.html` — Pack Ritual (isolated, 11 October 2026)
+
+`js/pack-ritual-host.js` runs a memory-only current-game copy with
+`js/pack-ritual.js`, `js/pack-ritual-art.js`, `js/pack-ritual-cards.js` and
+`css/pack-ritual.css`, `css/pack-ritual-cards.css`. Choose/buy/tear/extract,
+physical card handling, rarity reveals, inspection, production CoinWorld
+chips and session collection. Full handover/feedback/verification:
+`docs/career/PACK_RITUAL_HANDOVER.md`. Browser checks:
+`validation/pack-ritual-touch-checks.cjs`, captures under
+`validation/pack-ritual-captures/`. Not loaded by production; no real saves.
+
 ## Labs vs. production — do not confuse the two
 
 Every `*-lab.html` page in the root (19 of them after the 5 Oct 2026

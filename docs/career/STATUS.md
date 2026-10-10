@@ -113,9 +113,22 @@ until the owner asks for them again. It's recorded here (and in
 `CAREER_DESIGN.md`) so a future session doesn't default back into building
 either.
 
+## Isolated Pack Ritual study (11 October 2026, no game change)
+
+On `codex/pack-ritual`: full choose/buy/rip/extract/flick/inspect/spread/file
+loop using v0.67 game components and current CoinWorld chips. The owner
+rated its earlier preview 6/10 and now requests handover to Opus for
+further review. Read `PACK_RITUAL_HANDOVER.md` for preserved feedback,
+this pass, test evidence and the two backup/work branches. No production
+Career save, event terms or economy changed.
+
 ## Immediate next task
 
-**Owner plays the Hub Lab** (`hub-lab.html`, `docs/career/PACKS_PLAN.md`,
+**Opus reviews and publishes the Pack Ritual lab for owner phone review**
+(`PACK_RITUAL_HANDOVER.md`, branch `codex/pack-ritual`), per the owner’s
+11 October handover request. Do not integrate it yet.
+
+The earlier pending task remains **Owner plays the Hub Lab** (`hub-lab.html`, `docs/career/PACKS_PLAN.md`,
 Round 3): packs are Career's direction; Career opens on tonight's
 tickets. Nothing in the game has changed. Then the Vendor and the Case
 screens; agree with the owner how this reshapes Releases 2 to 4 below.

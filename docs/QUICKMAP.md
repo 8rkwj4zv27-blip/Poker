@@ -49,6 +49,7 @@ Hub and the end screens.
 | Where | What |
 | --- | --- |
 | `*-lab.html` (root) and their `*-lab*.js/css` | Labs: prototyping pages, never shipped. Finished ones are archived (`CODEMAP.md`, "Archived labs") |
+| `pack-ritual-lab.html`, `js/pack-ritual*.js`, `css/pack-ritual*.css` | Isolated pack opening and session collection; current-game components. See `career/PACK_RITUAL_HANDOVER.md` |
 | `pattern-book.html`, `docs/ui/PATTERN_BOOK.md` | The visual rule book |
 | `validation/*.js` | `npm test` runs them all; one suite per feature. `validation/tools/` holds the play-test, the touch harness and the AI and event simulators |
 | `art-source/` | The owner's original art; the game does not load it |
