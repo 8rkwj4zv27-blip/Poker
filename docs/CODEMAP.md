@@ -1094,6 +1094,16 @@ case (the album), chips (riffle), a rare visitor. The pack scene's
 album's inspect shows your history with each design.
 Touch checks: `validation/career-hub-checks.cjs`.
 
+## `hub-stills-lab.html` — Career hub stills (isolated, 11 October 2026)
+
+Round 2 of `docs/career/CAREER_HUB_DESK_PLAN.md`. Same host as the pack lab
+(`js/pack-opening-host.js`), injecting `js/hub-stills.js` + `css/hub-stills.css`
+(plus the card faces and `EventCards`). Four static layouts (`STILLS` A–D)
+of the simplified hub: the full-width bankroll reel, CRT · slot · CRT, the
+felt with a faint spread and three cards, a deck in a corner, chip stacks
+drawn with CoinWorld's sprites, the SHOP · PLAY · CARDS key bay. TUNE picks
+a still. Nothing moves.
+
 ## `pack-opening-lab.html` — Pack Opening V3 (isolated, 11 October 2026)
 
 Plan and owner decisions: `docs/career/PACK_OPENING_V3_PLAN.md`. The host

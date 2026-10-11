@@ -65,3 +65,31 @@ Opening V3 lab (`career/PACK_OPENING_V3_PLAN.md`) and the packs direction
 - New Pattern Book parts to sign off: the desk, the slot, the matchbooks,
   the lamp, the bell, the case, the shop's hatches, the inspect screen.
 - The real handover to a table (ticket feed, Table Intro) and back.
+
+## Round 2 (11 Oct): the owner's notes, and a simpler hub
+
+The owner rejected the props desk: the lamp, the bell, the matchbooks, the
+filing case, the chip taps and the hatch shop all go. The new direction:
+
+- **The top cabinet:** the bankroll reel runs full width. Under it, the card
+  slot sits in the middle, exactly a card wide and satisfying to feed. A
+  CRT sits on each side, neat and symmetrical.
+- **The felt:** a faint darker rectangle where three cards are thrown.
+  They're chosen for reasons, but nothing on screen labels them. A deck
+  in a corner deals one more card each time it's tapped. A key sucks
+  them all up and deals three fresh.
+- **The chips:** they work as in the game. Pick one up and throw it, it
+  bounces, and a double tap tidies them. You can knock towers over. The
+  pile follows the bankroll.
+- **Moving between screens:** the shop rolls down from the top and the
+  collection (later a collector's book with category pages) rolls up from
+  below. The main hub is settled first.
+
+**Stills first.** `hub-stills-lab.html` (`js/hub-stills.js`,
+`css/hub-stills.css`) has four still layouts, A to D, switched with TUNE.
+Nothing in them moves. It's published at
+https://claude.ai/artifact/FpUrE7DTH5uqFqhV4eC8ir.
+
+**Next:** once the owner picks a still, build its behaviour, then polish
+it against their notes. `career-desk.js` is retired or cut down at that
+point.
