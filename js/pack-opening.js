@@ -873,7 +873,6 @@
     await CardInspect.open({
       items:fan.map(c => ({ card:c.card, source:() => c.el })),
       index:fan.indexOf(card),
-      key:{ label:'BACK TO THE HAND', sub:fan.length > 1 ? 'SWIPE FOR THE NEXT CARD' : '' },
       onClose:() => {
         phase = 'haul';
         figure(String(fan.length).padStart(2, '0'), 'IN HAND');
@@ -882,6 +881,20 @@
       }
     });
   }
+  /* During the opening: tap the card you just turned to look at it (and
+     flick back through the ones already turned). BACK and the opening
+     carries on where it was. */
+  async function inspectShown(){
+    if (phase !== 'shown' || !rc) return;
+    phase = 'inspect';
+    const run = [...fan, rc];
+    await CardInspect.open({
+      items:run.map(c => ({ card:c.card, source:() => c.el })),
+      index:run.length - 1,
+      onClose:() => { phase = 'shown'; idleAt = performance.now(); }
+    });
+  }
+
   /* ---- the wrapper: it rattles; flick it away and the chips fall out ---- */
   function rattle(power = .5){
     const p = chosen;
@@ -1033,7 +1046,7 @@
       const [k, r] = d.split(':'), f = found.get(d);
       return f ? { card:f, source:() => buttons[i].querySelector('.po-mini-card') } : { card:EventCards.make(k, r, 'back-room-five', { roster:false }), locked:true, source:() => buttons[i].querySelector('.po-mini-card') };
     });
-    CardInspect.open({ items, index:buttons.indexOf(btn), key:{ label:'BACK TO THE ALBUM' } });
+    CardInspect.open({ items, index:buttons.indexOf(btn) });
   }
   function renderHub(){
     const desk = $('po-hub-desk'), tonight = held.slice(0, 6);
@@ -1052,7 +1065,7 @@
       items:cards.map((c, i) => ({ card:c, source:() => buttons[i].querySelector('.po-mini-card') })),
       index:buttons.indexOf(btn),
       key:{
-        label:'BUY IN', sub:'THE CARD IS USED UP',
+        label:'BUY IN',
         press:async (item, i, api) => {
           const c = item.card;
           if (wallet < c.event.buyIn){ S.koFailClick(); Haptic.tick(6); return; }
@@ -1217,7 +1230,7 @@
       chosen.body.set({ r:clamp(dy * .05, -6, 6), z:4 + Math.min(10, moved * .05) });
       return;
     }
-    if ((q.mode === 'toyPress' || q.mode === 'shownPress') && moved > 8){ q.mode = 'toy'; S.cardReturn(); }
+    if (q.mode === 'shownPress' && moved > 8){ q.mode = 'toy'; S.cardReturn(); }
     if (q.mode === 'toy'){
       const before = q.card.yaw || 0;
       setBank(q.card, q.yaw0 + dx * 1.2, dy * .5);
@@ -1270,9 +1283,8 @@
       if (!cancel && fresh && sp > .3) tossFlap(q.vx, q.vy);
       else glide(flap, { z:0 }, 120, { easing:ease.in }).then(() => { Foil.crinkle(); puff(stage, flap.x, flap.y + 8, AW * flap.s * .5, { n:3 }); });
     }
-    else if (q.mode === 'shownPress' && !cancel){ stow(); enterDeck(); }
+    else if (q.mode === 'shownPress' && tap && !cancel) inspectShown();
     else if (q.mode === 'toy') spin(q.card, fresh && !cancel ? q.vyaw : 0);
-    else if (q.mode === 'toyPress' && !cancel) spin(q.card, .9); // a tap gives it a half turn
     else if (q.mode === 'cardPress' && tap && !cancel) inspect(q.card);
     else if (q.mode === 'wrapPress' && tap && !cancel) rattle(1);
     else if (q.mode === 'wrap'){

@@ -28,8 +28,8 @@ audit's complaints (dashboard rims, clipped result line, chip pile) are gone.
 
 - 11 Oct (no game change): Pack Opening V3 (`pack-opening-lab.html`,
   [plan](career/PACK_OPENING_V3_PLAN.md)): the packet, the reveal, the haul,
-  a polish pass; then one shared card inspect screen (`js/card-inspect.js`:
-  real event, real opponents, rarity = prize) used by the pack, album, hub.
+  a polish pass; then one shared card inspect screen (`js/card-inspect.js`,
+  simplified on the owner's notes) used by the pack, album and hub.
 - 8 Oct (no game change): Hub Lab (`hub-lab.html`): Career opens on
   tonight's tickets, dealt and styled by kind, fed into a slot.
 - 8 Oct (no game change): Career as packs of cards, brainstormed with

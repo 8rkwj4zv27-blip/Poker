@@ -9,9 +9,9 @@
    - Playing a card uses it up. The album is a separate, permanent record
      of every design you've pulled.
    - Rarity raises the prize money (MULT, placeholder). Special rules and
-     wild modes come later; until then each kind has a placeholder twist.
-   Reads the live game's catalogue (careerEventById, careerPayouts,
-   BLIND_LEVELS) and the placeholder faces (PokerCollectibleLab).
+     wild modes come later.
+   Reads the live game's catalogue (careerEventById, careerPayouts) and the
+   placeholder faces (PokerCollectibleLab).
    ============================================================ */
 (() => {
   'use strict';
@@ -24,13 +24,6 @@
     club:['pub-freezeout', 'pub-open', 'pub-turbo', 'card-club-deep', 'card-club-six'],
     reserve:['casino-main', 'casino-turbo', 'high-roller-feature', 'high-roller-pressure']
   };
-  const TWIST = {
-    table:'NO TWIST. A STRAIGHT GAME OF HOLD’EM.',
-    freezeout:'PLACEHOLDER: ONE LIFE. NO SECOND CHANCES.',
-    bomb:'PLACEHOLDER: NOW AND THEN A BOMB POT GOES OFF.',
-    wild:'PLACEHOLDER: THE HOUSE BENDS ONE RULE.'
-  };
-  const FIELD = { easy:1, medium:2, hard:3, expert:4, elite:5 };
   let uid = 0;
   const pick = a => a[Math.floor(Math.random() * a.length)];
   const round = v => v >= 1000 ? Math.round(v / 50) * 50 : Math.round(v / 10) * 10;
@@ -60,19 +53,10 @@
     return tiers.map(r => make(r === 'legendary' ? lkind() : kind(), r, pick(ids)));
   }
 
-  /* Everything the inspect screen prints about a card. */
+  /* What the inspect screen prints about a card (the card prints the rest). */
   function describe(card){
-    const ev = card.event, lvl = (typeof BLIND_LEVELS !== 'undefined' && BLIND_LEVELS[ev.initialBlindLevel || 0]) || [10, 20];
-    const names = (card.roster || []).map(seat => { try { return careerSeatName(seat) || 'VISITOR'; } catch (e) { return 'VISITOR'; } });
-    return {
-      venue:ev.venue, title:ev.title || ev.name, name:ev.name, format:ev.format,
-      seats:ev.playerCount, opponents:ev.opponentCount, names,
-      entry:ev.buyIn, payouts:card.payouts, stack:ev.stack,
-      blinds:lvl[0] + '/' + lvl[1], every:ev.handsPerBlindLevel || 10,
-      field:Number.isFinite(ev.skill) ? Math.max(1, Math.min(5, Math.round(ev.skill / 20))) : (FIELD[ev.difficulty] || 2),
-      twist:TWIST[card.kind] || TWIST.table,
-      rarity:card.rarity.toUpperCase()
-    };
+    const ev = card.event;
+    return { venue:ev.venue, title:ev.title || ev.name, seats:ev.playerCount, entry:ev.buyIn, payouts:card.payouts };
   }
 
   const designs = () => KINDS.flatMap(k => RARITIES.map(r => k + ':' + r));

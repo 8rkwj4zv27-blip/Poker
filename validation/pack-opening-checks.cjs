@@ -103,6 +103,12 @@ async function run(width, height, reducedMotion){
         // 1: tap the deck
         await tap(...centre(await box('.po-deck'))); await phase('shown');
         assert.equal((await state()).shown, end.contents[0]);
+        // tap the card you just turned: the inspect screen; BACK and carry on
+        await tap(...centre(await g.locator('.po-objects .ec-card').last().boundingBox()));
+        await fr.waitForFunction(() => PackOpening.state.inspecting, null, { timeout:5000 });
+        await page.waitForTimeout(600);
+        await tap(...centre(await g.locator('#ci .ci-key').boundingBox()));
+        await phase('shown');
         // 2: hold it, peel the corner a little, let go: still face down
         let dk = centre(await box('.po-deck'));
         await touch.start(dk[0], dk[1]); await page.waitForTimeout(500);
@@ -124,17 +130,18 @@ async function run(width, height, reducedMotion){
         await phase('haul');
         // the machine reads the four cards as a poker hand
         assert.match(await g.locator('#po-title').textContent(), /PAIR|THREE|FOUR OF A KIND|RAINBOW/, 'the hand is named');
-        // pick a card out of the hand: the shared inspect screen opens with
-        // the real opponents seated; spin the card, swipe to the next, put it back
+        // pick a card out of the hand: the shared inspect screen opens; flick
+        // the card left for the next one, swipe the screen for the one after
         await tap(...centre(await g.locator('.po-objects .ec-card').nth(1).boundingBox()));
-        await fr.waitForFunction(() => PackOpening.state.inspecting && document.querySelectorAll('#ci .ci-seat').length > 0, null, { timeout:5000 });
-        assert.equal(await g.locator('#ci .ci-seat:not(.is-empty)').count(), await g.locator('#ci .ci-seat').count(), 'every seat has a face');
+        await fr.waitForFunction(() => PackOpening.state.inspecting && document.querySelectorAll('#ci .ci-line').length >= 2, null, { timeout:5000 });
+        await page.waitForTimeout(500);
         const ic = centre(await g.locator('#ci .ec-card').boundingBox());
-        await touch.drag(ic[0], ic[1], ic[0] + 90, ic[1], 6, 16); await touch.end();
-        await page.waitForTimeout(400);
+        await touch.drag(ic[0], ic[1], ic[0] - 120, ic[1], 5, 16); await touch.end();
+        await fr.waitForFunction(() => CardInspect.index === 2, null, { timeout:5000 });
+        await page.waitForTimeout(500);
         const cr = centre(await g.locator('#ci .ci-crt').boundingBox());
         await touch.drag(cr[0] + 60, cr[1], cr[0] - 80, cr[1], 6, 16); await touch.end();
-        await fr.waitForFunction(() => CardInspect.index === 2, null, { timeout:5000 });
+        await fr.waitForFunction(() => CardInspect.index === 3, null, { timeout:5000 });
         await page.waitForTimeout(500);
         await tap(felt.x + 10, felt.y + 10); await phase('haul');
         assert.equal(await g.locator('#ci').isHidden(), true, 'the inspect screen closed');

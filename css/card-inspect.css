@@ -57,43 +57,21 @@
 .ec-card.is-locked .ec-face{ filter:brightness(0) opacity(.75); }
 .ec-card.is-locked .ec-face::after{ content:"?"; position:absolute; inset:0; display:grid; place-items:center; font:24px/1 var(--font-hdr); color:#5b4a2c; filter:brightness(1); }
 
-/* the drawer: a leather panel that rises from the console */
+/* the drawer: a leather panel that rises from the console, holding a
+   small CRT and the dashboard's key bay */
 .ci-drawer{ position:absolute; z-index:5; left:50%; bottom:0; width:min(100% - 12px,420px); translate:-50% 0; box-sizing:border-box;
-  padding:10px 10px calc(10px + env(safe-area-inset-bottom,0px)); display:flex; flex-direction:column; gap:8px;
-  background:var(--pc-leather); border:4px solid var(--pc-edge-lo); border-bottom:0; border-radius:12px 12px 0 0;
+  padding:12px 12px calc(12px + env(safe-area-inset-bottom,0px)); display:flex; flex-direction:column; gap:12px;
+  background:var(--pc-leather); border:4px solid var(--pc-edge-lo); border-bottom:0; border-radius:14px 14px 0 0;
   box-shadow:inset 4px 4px 0 var(--pc-leather-hi),inset -5px 0 0 var(--pc-leather-lo),0 -4px 0 rgba(0,0,0,.35); }
-/* the seats: the opponents stand behind a brass lip on a strip of felt */
-.ci-seats{ position:relative; padding:8px 10px 0; background:#1b3a2a; border:2px solid #0c1b13; border-radius:6px 6px 3px 3px; box-shadow:inset 0 4px 0 rgba(0,0,0,.35); }
-.ci-faces{ display:flex; justify-content:center; align-items:flex-end; gap:8px; min-height:58px; }
-.ci-faces .ci-seat{ width:min(52px,20%); opacity:0; translate:0 -10px; }
-.ci-faces[data-n="1"] .ci-seat{ width:64px; }
-.ci-faces .ci-seat.is-in{ opacity:1; translate:0 0; transition:translate .16s steps(2), opacity .16s steps(2); }
-.ci-faces .ci-seat b{ display:block; margin-top:3px; font:7px/1.2 var(--font-hdr); color:#e9dcb4; text-align:center; white-space:nowrap; letter-spacing:.04em; }
-.ci-empty{ display:grid; place-items:center; width:100%; aspect-ratio:1; box-sizing:border-box; border:3px solid #151815; background:#0f1d16; box-shadow:0 3px 0 #705b3c; font:14px/1 var(--font-hdr); color:#3c5a48; }
-.ci-lip{ margin:4px -10px 0; }
-.ci-crt{ padding:8px 10px; display:flex; flex-direction:column; gap:6px; }
-.ci-head{ display:grid; grid-template-columns:minmax(0,1fr) auto; column-gap:10px; row-gap:2px; align-items:end; padding-bottom:5px; border-bottom:1px dashed rgba(195,200,173,.25); }
-.ci-head .ci-title{ grid-column:1; grid-row:1; overflow:hidden; text-overflow:ellipsis; }
-.ci-head .ci-sub{ grid-column:1; grid-row:2; }
-.ci-head .ci-prize{ grid-column:2; grid-row:1; text-align:right; }
-.ci-head .ci-prize-l{ grid-column:2; grid-row:2; text-align:right; }
-.ci-rows{ display:grid; grid-template-columns:auto 1fr; column-gap:10px; row-gap:5px; align-items:center; }
-.ci-v{ min-width:0; }
-.ci-crt .ci-v .ci-wrap{ white-space:normal; }
-.ci-meter{ display:block; width:96px; }
-.ci-note{ display:block; text-align:center; }
-.ci-keys{ display:grid; grid-template-columns:48px 1fr 48px; gap:8px; align-items:stretch; }
-:is(#home,#career-hub) .ci-keys .ci-step{ min-height:56px; margin:0; padding:0; font-size:12px; }
+.ci-crt{ padding:10px 12px; display:flex; flex-direction:column; align-items:center; gap:7px; min-height:44px; justify-content:center; }
+/* the key bay: sunk like the dashboard's (near-black, ink edge, hard top shadow, lit lip) */
+.ci-bay{ padding:8px 8px 12px; background:#0d0709; border:2px solid var(--px-ink); border-radius:10px; box-shadow:inset 0 5px 0 rgba(0,0,0,.6),0 2px 0 var(--pc-leather-hi); }
+.ci-keys{ display:grid; grid-template-columns:1fr 2fr 1fr; gap:10px; padding-top:0; }
+.ci-keys .ci-step.is-off{ visibility:hidden; }
 .ci-arrow{ display:block; width:10px; height:14px; margin:auto; background:currentColor; clip-path:polygon(0 0,30% 0,100% 50%,30% 100%,0 100%,0 0); }
 .ci-arrow.is-left{ transform:scaleX(-1); }
-.ci-keys .ci-step[hidden]{ visibility:hidden; display:block; }
-:is(#home,#career-hub) .ci .ci-cradle{ margin:0; }
-:is(#home,#career-hub) .ci .ci-key{ width:100%; min-height:56px; padding:8px 10px; font-size:11px; }
-:is(#home,#career-hub) .ci .ci-cradle::before{ height:56px; }
-.ci-key-label{ display:block; line-height:1.6; }
-@media (max-height:700px){
-  .ci-faces{ min-height:46px; } .ci-faces .ci-seat{ width:min(42px,18%); }
-  .ci-drawer{ gap:6px; padding-top:8px; }
-  :is(#home,#career-hub) .ci .ci-key, :is(#home,#career-hub) .ci-keys .ci-step{ min-height:48px; } :is(#home,#career-hub) .ci .ci-cradle::before{ height:48px; }
-}
-@media (prefers-reduced-motion:reduce){ .ci-faces .ci-seat.is-in{ transition:none; } }
+/* which card of the run: pixel pips under the card */
+.ci-pips{ position:absolute; z-index:3; left:0; right:0; display:flex; justify-content:center; gap:6px; pointer-events:none; }
+.ci-pips i{ width:6px; height:6px; background:rgba(243,230,196,.28); box-shadow:1px 1px 0 #04140C; }
+.ci-pips i.is-on{ background:#F3E6C4; }
+@media (max-height:700px){ .ci-drawer{ gap:8px; padding-top:9px; } .ci-bay{ padding:6px 6px 9px; } }
