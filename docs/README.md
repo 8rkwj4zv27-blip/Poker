@@ -28,6 +28,7 @@ Last sorted: 7 October 2026 (v0.66.1).
 | [`career/EVENTS_PLAN.md`](career/EVENTS_PLAN.md) | The events rework (8 Oct 2026): easier start, harder top, ladders, formats, heat gauge. In progress |
 | [`career/PACK_RITUAL_HANDOVER.md`](career/PACK_RITUAL_HANDOVER.md) | Current isolated opening study, owner feedback, evidence and Opus handover (`codex/pack-ritual`) |
 | [`career/CAREER_HUB_DESK_PLAN.md`](career/CAREER_HUB_DESK_PLAN.md) | The Career desk: Career's main screen as a felt desk (slot, three cards, matchbooks, lamp, bell, shop, album). Rejected in round 2; stills of a simpler hub with the owner |
+| [`career/VENDING_PLAN.md`](career/VENDING_PLAN.md) | The packet machine: Career's shop as a vending machine that rolls in on the wheel; stills with the owner |
 | [`career/PACK_OPENING_V3_PLAN.md`](career/PACK_OPENING_V3_PLAN.md) | Pack opening rebuild ("The Squeeze"): audit, reference games, plan; approved, slice 1 built |
 | [`career/PACKS_PLAN.md`](career/PACKS_PLAN.md) | Career as packs of event cards: a vending machine, the rip, the ticket case (8 Oct 2026). Visual lab first (`pack-lab.html`) |
 | [`ai/AI_PLAN.md`](ai/AI_PLAN.md) | The opponent AI: tier ladder and baselines |

@@ -18,7 +18,7 @@ Intro, end screens); opponents with personalities, moods and sparse table
 talk; P.I.P. the coach (tap only, with the end-of-hand report); Settings and
 the Workshop (skins); save data (back up, restore, start over).
 
-Checked on 8 Oct 2026 (v0.67.0) on emulated iPhones: all 25 test suites
+Play-test passed on v0.67.1 (11 Oct). Checked on 8 Oct (v0.67.0): all 25 test suites
 and the play-test pass; a real Career buy-in to the new 5-HAND, hands,
 reload and CONTINUE work. On 7 Oct the table, dashboard, showdown, Home and
 Career Hub all rendered cleanly. The 25 Sept visual
@@ -26,6 +26,8 @@ audit's complaints (dashboard rims, clipped result line, chip pile) are gone.
 
 ## Recent changes (newest first)
 
+- 11 Oct (no game change): the shop is a vending machine (owner's idea,
+  [plan](career/VENDING_PLAN.md)): stills, `vending-stills-lab.html`.
 - 11 Oct (no game change): the desk lab ([plan](career/CAREER_HUB_DESK_PLAN.md))
   was rejected; stills of a simpler hub became `career-main-lab.html`:
   the table's deck deals cards, P.I.P. to tap or throw (v0.67.1 hooks).
@@ -38,12 +40,10 @@ audit's complaints (dashboard rims, clipped result line, chip pile) are gone.
 - 8 Oct (no game change): Career as packs of cards, brainstormed with
   the owner (`docs/career/PACKS_PLAN.md`); the visual lab `pack-lab.html`
   (vending machine, rip, reveal, ticket case, feed into a real table).
-- v0.67.0 The Back Room builds a stack (Events Release 1): a new 5-HAND
-  Top-2 ticket, 1,000-chip stacks, blinds every 15 hands, opponents at
-  skill 20. Tickets already bought keep their terms.
 
 ## Open items (verified, not scheduled)
 
+- The owner's notes on the packet machine stills: https://claude.ai/artifact/WKWLooBRqQNJGYqfbDf1B1
 - The owner's verdict on the moving hub: https://claude.ai/artifact/FpUrE7DTH5uqFqhV4eC8ir
   (and the pack lab: https://claude.ai/artifact/2A5hyH5pufRp7Tdj513SQp)
 - Career Hub on small iPhones (375x667, SE/8): BUY IN sits below the
@@ -68,9 +68,8 @@ own speech bubbles (`claude/tender-dijkstra-zso8dm`).
 
 ## Next
 
-The Career hub: the owner plays the moving hub (link in Open items) and
-gives notes; next P.I.P.'s style counts (new save data: ask), the shop
-rolling down, the collection book rolling up; then into Career: the collection save, a pack economy
+The packet machine: notes on the stills, then the moving machine. The
+hub: notes; P.I.P.'s style counts (save data: ask); the collection book; then into Career: the collection save, a pack economy
 simulation, Pattern Book sign-off for the new parts, the real table hand-off.
 Read [`career/CAREER_HUB_DESK_PLAN.md`](career/CAREER_HUB_DESK_PLAN.md) and
 [`career/PACK_OPENING_V3_PLAN.md`](career/PACK_OPENING_V3_PLAN.md).

@@ -1135,6 +1135,23 @@ over the cabinet, so a carried card meets the slot.
   `CoachTalk.sayText`.
 - After a throw he sometimes says a `THROWN` line.
 
+**For the shop (lab):** `window.CareerMain` (`sweepAway`, `takeIn`,
+`showBank`, `keyEl`, `pipSay`, the wallet) and `window.CareerShop`, which,
+when present, takes the keys (`key`), the screens (`screens`) and the
+felt's touches (`out`).
+
+## `vending-stills-lab.html` — the packet machine, stills (isolated, 11 October 2026)
+
+Plan: `docs/career/VENDING_PLAN.md`. The Career main hub
+(`js/career-main.js`) with `js/vending-stills.js` + `css/vending-stills.css`
+over its felt. `build` makes the machine (window, button rail with flip
+counters, drop well with guide rails and gates, PUSH tray; side panel:
+credit CRT, chip slot, rarity lamps, pips, CLEAR, velvet); `place` lays it
+over the felt; `sizeWindow` sizes the packets to fit (`is-compact` on
+short screens). Packets are POPacket bodies; chips are CoinWorld's own
+frames (`chip`). `show` draws one of eight stills (TUNE: still, paint,
+tray).
+
 ## `pack-opening-lab.html` — Pack Opening V3 (isolated, 11 October 2026)
 
 Plan and owner decisions: `docs/career/PACK_OPENING_V3_PLAN.md`. The host
@@ -1148,6 +1165,10 @@ the peeling flap, the mouth, the Legendary light, the slumped wrapper,
 the foil shimmer (a band masked to bare-foil pixels) and the turn (a
 narrowing face, a crimped edge, the near side taller). Back canvas / card
 stack / front canvas keep the cards inside.
+`js/pack-opening.js` also runs embedded (`window.PO_EMBED`): no table of
+its own, `PackOpeningEmbed.attach(cfg)` puts the opening on a host's felt
+(its reel, screens and key), `offer(packet)` starts at the packet on offer;
+KEEP hands the hand to the host (`stow`). Not used by a lab yet.
 `js/pack-opening.js`: the scene and state (deal, move and throw packets,
 select and turn, hold to buy, tear, draw; then the reveal: tap, flick or
 squeeze the deck, four tier moments, Legendary dip/slam/CRT flash and an
