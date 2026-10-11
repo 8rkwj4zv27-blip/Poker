@@ -27,8 +27,8 @@ audit's complaints (dashboard rims, clipped result line, chip pile) are gone.
 ## Recent changes (newest first)
 
 - 11 Oct (no game change): the desk lab ([plan](career/CAREER_HUB_DESK_PLAN.md))
-  was rejected; `hub-stills-lab.html` is now one still of a simpler hub
-  (plain slot, deck-only re-deal, the game's bank rack for chips).
+  was rejected; stills of a simpler hub became `career-main-lab.html`:
+  deck deals/gathers, cards feed the slot, live chips to throw about.
 - 11 Oct (no game change): Pack Opening V3 (`pack-opening-lab.html`,
   [plan](career/PACK_OPENING_V3_PLAN.md)): the packet, the reveal, the haul,
   a polish pass; then one shared card inspect screen (`js/card-inspect.js`,
@@ -44,7 +44,7 @@ audit's complaints (dashboard rims, clipped result line, chip pile) are gone.
 
 ## Open items (verified, not scheduled)
 
-- The owner's verdict on the hub still: https://claude.ai/artifact/FpUrE7DTH5uqFqhV4eC8ir
+- The owner's verdict on the moving hub: https://claude.ai/artifact/FpUrE7DTH5uqFqhV4eC8ir
   (and the pack lab: https://claude.ai/artifact/2A5hyH5pufRp7Tdj513SQp)
 - Career Hub on small iPhones (375x667, SE/8): BUY IN sits below the
   screen. Fine on the owner's Pro Max.
@@ -68,8 +68,8 @@ own speech bubbles (`claude/tender-dijkstra-zso8dm`).
 
 ## Next
 
-The Career hub: the owner approves the still (link in Open items); build
-its behaviour (deal, deck, slot, live chips), then plan it into Career: the collection save, a pack economy
+The Career hub: the owner plays the moving hub (link in Open items) and
+gives notes; next the shop rolling down and the collection book rolling up, then plan it into Career: the collection save, a pack economy
 simulation, Pattern Book sign-off for the new parts, the real table hand-off.
 Read [`career/CAREER_HUB_DESK_PLAN.md`](career/CAREER_HUB_DESK_PLAN.md) and
 [`career/PACK_OPENING_V3_PLAN.md`](career/PACK_OPENING_V3_PLAN.md).

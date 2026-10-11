@@ -130,3 +130,25 @@ TUNE mixes the parts and sets the bankroll. The link is the same.
   them into two rows.
 
 TUNE sets the screens, the cards out (3, 4 or 5) and the bankroll.
+
+**Moving version (11 Oct).** The owner's notes on still 3:
+- the felt's spread moved with the size of the pile;
+- the chips should pile like the table's (a pyramid building in the
+  middle), not a neat staircase;
+- build the moving version.
+
+The stills became `career-main-lab.html` (`js/career-main.js`,
+`css/career-main.css`), on the same link.
+- **The spread:** fixed.
+- **The chips:** CoinWorld's live chips, tidied by the pot's own shapes
+  (`potSlots`: pyramid by default, heap or rows in TUNE).
+- **The deck:** tap to deal (the hand shuffles up), hold to gather and
+  deal three.
+- **The cards:** drag to arrange, tap to inspect, drag into the slot to
+  feed (it ratchets in).
+- **PLAY:** pays the entry in chips through the slot, and the reel counts
+  it off. Here the game would seat you.
+- **SHOP and CARDS:** only say they'll roll down and up (next).
+
+`career-desk.js` (the rejected props desk) is still used by the pack lab's
+hub view. It's retired once this hub replaces that view.

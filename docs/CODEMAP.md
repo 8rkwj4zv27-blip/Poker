@@ -1094,23 +1094,41 @@ case (the album), chips (riffle), a rare visitor. The pack scene's
 album's inspect shows your history with each design.
 Touch checks: `validation/career-hub-checks.cjs`.
 
-## `hub-stills-lab.html` — Career hub still (isolated, 11 October 2026)
+## `career-main-lab.html` — Career main hub, moving (isolated, 11 October 2026)
 
-This is round 2 of `docs/career/CAREER_HUB_DESK_PLAN.md`. It uses the same
-host as the pack lab (`js/pack-opening-host.js`) and injects
-`js/hub-stills.js` + `css/hub-stills.css`, plus the card faces and
-`EventCards`. It shows one static layout of the simplified hub:
-- **Cabinet:** the full-width bankroll reel over a slim row of CRT · plain
-  slot · CRT. Both CRTs share one grid.
-- **Felt:** a faint spread with the cards thrown wide (`PLACES` for 3, 4
-  or 5 cards).
-- **Deck:** bottom-left. Tap for a card, hold to gather.
-- **Bank rack:** bottom-right, laid out by `CoinWorld.rackSlots`. The count
-  follows the table's bank curve and the tiers come from `composeTiers`.
-  `CoinWorld.OPT.size` is set to `l`.
-- **Keys:** the SHOP · PLAY · CARDS key bay.
+This is round 2 of `docs/career/CAREER_HUB_DESK_PLAN.md`; the stills it
+grew from were `hub-stills-*`, renamed. It uses the same host as the pack
+lab (`js/pack-opening-host.js`). It injects the card faces, `PO`
+(`pack-opening-core.js`), `EventCards`, `CardInspect`, and
+`js/career-main.js` + `css/career-main.css`.
 
-TUNE sets the screens, the cards out and the bankroll. Nothing moves.
+**Cabinet:** the full-width reel, then a slim row of CRT · plain slot ·
+CRT. The slot's mouth is `--cm-card` wide, the card's width on the felt.
+- `screen()`/`screens()` draw the CRTs three ways (TUNE).
+- `say()` shows a short message on them.
+
+**Felt** (above the cabinet, so a carried card can reach the slot):
+- **The spread:** fixed.
+- **The cards:** `CardInspect.make` bodies at `PLACES[n]`. `chooseThree()`
+  picks the safe, next-step and stretch cards from the case (`pool`), and
+  `relay(n)` shuffles the hand up for a new card.
+- **The deck:** tap for one card (`drawOne`); hold `HOLD_MS` to gather all
+  and deal three (`gather`).
+- **Cards:** drag to arrange, tap to inspect (PLAY key there), drag up
+  onto the slot to `feed`. The card is clipped into the mouth in four
+  ratchet teeth.
+
+**PLAY:** with a card in, `play()` pays the entry: `pay()` flies the chips
+it no longer has into the slot (`CoinWorld.launch` … `vanish`), drops in
+the change, tidies, and the reel counts down.
+
+**Chips:** live CoinWorld bodies in zone `cm-bank`.
+- **Pile:** `z.pile` footprint, `potSlots` shapes (pyramid, heap or rows,
+  in TUNE). Count from the bankroll on the table's bank curve, tiers from
+  `composeTiers`.
+- **Handling:** pick up the top chip of a stack (`chipAt`, state `held`),
+  throw it (`drop`: CoinWorld lands, bounces, knocks and topples, seats).
+  Tap: it hops. Double tap: `tidyZone`.
 
 ## `pack-opening-lab.html` — Pack Opening V3 (isolated, 11 October 2026)
 
