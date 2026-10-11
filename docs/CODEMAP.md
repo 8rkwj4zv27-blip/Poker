@@ -1073,3 +1073,17 @@ often each kind of player wins, cashes and profits (see
 - `docs/ui/handover/` — the visual-system handover of 23 August 2026,
   written before that work reached the game. Historical; `docs/README.md` lists which docs are current. To run
   the game locally see the top-level `README.md`.
+
+## `pack-opening-lab.html` — Pack Opening V3 (isolated, 11 October 2026)
+
+Plan and owner decisions: `docs/career/PACK_OPENING_V3_PLAN.md`. The host
+(`js/pack-opening-host.js`) runs a memory-only copy of the current game.
+`js/pack-opening-core.js` (PO): one rAF loop, skippable tweens
+(`PO.finishAll`), bodies whose pose steps at 14 fps, pixel shadows,
+felt puffs, jolts, foil/paper sounds, and a safe proxy onto `Sound`.
+`js/pack-opening-packet.js` (POPacket): rasterises the approved packet art
+(`js/pack-ritual-art.js`) and redraws it a column at a time: the tear,
+the peeling flap, the mouth, the Legendary light, the slumped wrapper.
+Back canvas / card stack / front canvas keep the cards inside.
+`js/pack-opening.js`: the scene and state (deal, select, hold to buy,
+tear, draw). Slice 1 of 4. Touch checks: `validation/pack-opening-checks.cjs`.

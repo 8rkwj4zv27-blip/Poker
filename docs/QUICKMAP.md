@@ -49,7 +49,8 @@ Hub and the end screens.
 | Where | What |
 | --- | --- |
 | `*-lab.html` (root) and their `*-lab*.js/css` | Labs: prototyping pages, never shipped. Finished ones are archived (`CODEMAP.md`, "Archived labs") |
-| `pack-ritual-lab.html`, `js/pack-ritual*.js`, `css/pack-ritual*.css` | Isolated pack opening and session collection; current-game components. See `career/PACK_RITUAL_HANDOVER.md` |
+| `pack-ritual-lab.html`, `js/pack-ritual*.js`, `css/pack-ritual*.css` | Superseded pack opening study (reference; art and faces reused by V3); current-game components. See `career/PACK_RITUAL_HANDOVER.md` |
+| `pack-opening-lab.html`, `js/pack-opening*.js`, `css/pack-opening.css` | Pack Opening V3 lab (isolated): core motion, pixel-canvas packet, scene. Plan `career/PACK_OPENING_V3_PLAN.md`; checks `validation/pack-opening-checks.cjs` |
 | `pattern-book.html`, `docs/ui/PATTERN_BOOK.md` | The visual rule book |
 | `validation/*.js` | `npm test` runs them all; one suite per feature. `validation/tools/` holds the play-test, the touch harness and the AI and event simulators |
 | `art-source/` | The owner's original art; the game does not load it |

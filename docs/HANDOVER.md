@@ -26,8 +26,10 @@ audit's complaints (dashboard rims, clipped result line, chip pile) are gone.
 
 ## Recent changes (newest first)
 
-- 11 Oct (no game change): Pack Ritual opening polish and cloud handover,
-  `codex/pack-ritual`; read [`career/PACK_RITUAL_HANDOVER.md`](career/PACK_RITUAL_HANDOVER.md).
+- 11 Oct (no game change): Pack Opening V3 slice 1 (`pack-opening-lab.html`,
+  branch `claude/trusting-mayer-4omex1`): deal, hold to buy, pixel tear,
+  draw the deck. Plan: [`career/PACK_OPENING_V3_PLAN.md`](career/PACK_OPENING_V3_PLAN.md).
+  Replaces the Pack Ritual approach (`codex/pack-ritual`, reference only).
 - 8 Oct (no game change): Hub Lab (`hub-lab.html`): Career opens on
   tonight's tickets, dealt and styled by kind, fed into a slot.
 - 8 Oct (no game change): Career as packs of cards, brainstormed with
@@ -42,9 +44,8 @@ audit's complaints (dashboard rims, clipped result line, chip pile) are gone.
 
 ## Open items (verified, not scheduled)
 
-- Pack Ritual needs Opus and owner phone review; revised pass is not
-  owner-approved. Full evidence/limits/feedback in
-  [`career/PACK_RITUAL_HANDOVER.md`](career/PACK_RITUAL_HANDOVER.md).
+- Pack Opening V3 slice 1 awaits the owner's phone verdict:
+  https://claude.ai/artifact/2A5hyH5pufRp7Tdj513SQp
 - Career Hub on small iPhones (375x667, SE/8): BUY IN sits below the
   screen. Fine on the owner's Pro Max.
 - Stale code comments still name archived labs or say "not loaded by the
@@ -67,9 +68,9 @@ own speech bubbles (`claude/tender-dijkstra-zso8dm`).
 
 ## Next
 
-Owner requested cloud handover (11 Oct): Opus inspects/publishes the Pack
-Ritual lab from `codex/pack-ritual`, then owner phone review. Read
-[`career/PACK_RITUAL_HANDOVER.md`](career/PACK_RITUAL_HANDOVER.md) first.
+Pack Opening V3: the owner plays slice 1 on the phone link; on approval,
+slice 2 (the reveal: flick, squeeze, four tiers, Legendary flourishes).
+Read [`career/PACK_OPENING_V3_PLAN.md`](career/PACK_OPENING_V3_PLAN.md).
 Earlier pending work: the owner plays the Hub Lab (`docs/career/PACKS_PLAN.md`, Round 3: Career opens on tonight's
 tickets); then the Vendor and the Case screens to the same standard.
 Agree with the owner how this reshapes Events Releases 2 to 4

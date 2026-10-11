@@ -1,0 +1,91 @@
+/* ============================================================
+   PACK OPENING V3 — lab styles. The housing, CRT, felt, keys and
+   bankroll reel are production parts; only the objects are new.
+   ============================================================ */
+body.po-lab #home{ display:flex!important; position:fixed; inset:0; padding:10px; overflow:clip; visibility:visible!important; opacity:1!important; transform:none!important; }
+#home.po-home > :not(#po){ display:none!important; }
+#home #po.lobby-card{ height:100%; max-height:none; margin:0; gap:8px; padding:10px; overflow:clip; display:flex; flex-direction:column; }
+#po{ touch-action:manipulation; user-select:none; -webkit-user-select:none; }
+
+/* header: brand, the real bankroll reel, the lab key */
+.po-top{ display:flex; align-items:center; gap:8px; flex:none; }
+.po-brand{ flex:1; min-width:0; font:9px/1.7 var(--font-hdr); color:var(--pc-plastic); letter-spacing:-.03em; }
+.po-brand small{ display:block; white-space:nowrap; font:9px/1.6 var(--font-px); letter-spacing:.08em; color:var(--ink-faint); }
+.po-top .icon-btn{ width:52px; height:44px; min-width:44px; flex:none; font:9px/1.2 var(--font-hdr); }
+.po-wallet{ width:132px; height:42px; flex:none; }
+#home #po .po-bank{ grid-template-columns:14px repeat(5,minmax(12px,1fr)); gap:1px; padding:2px; height:42px; }
+#home .po-bank .jp-cell{ font-size:16px; height:26px; }
+
+/* the CRT narrates; nothing is printed on the felt */
+.po-status{ display:grid; grid-template-columns:1fr auto; align-items:center; gap:8px; height:50px; padding:7px 10px; flex:none; }
+.po-status > div:first-child{ min-width:0; }
+.po-status .crt-line, .po-status .crt-caption{ display:block; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.po-count{ text-align:right; }
+.po-count > span{ display:block; }
+
+/* the felt */
+.po-stage{ position:relative; flex:1; min-height:200px; margin:6px 6px 4px; isolation:isolate; touch-action:none; overflow:visible; }
+.po-stage > .felt{ pointer-events:none; }
+.po-shadows, .po-objects, .po-fx{ position:absolute; inset:0; pointer-events:none; }
+.po-objects{ z-index:2; } .po-fx{ z-index:4; }
+.po-body{ position:absolute; left:0; top:0; will-change:transform; pointer-events:auto; }
+.po-shadow{ position:absolute; left:0; top:0; background:#04140C; border-radius:3px; will-change:transform; }
+.po-shadow-packet{ border-radius:2px; clip-path:polygon(3% 0,97% 0,100% 2%,100% 98%,97% 100%,3% 100%,0 98%,0 2%); }
+.po-bit{ position:absolute; left:0; top:0; width:3px; height:3px; }
+
+/* the packet: back canvas / cards / front canvas */
+.po-packet canvas{ position:absolute; left:0; top:0; width:120px; height:200px; image-rendering:pixelated; image-rendering:crisp-edges; pointer-events:none; }
+.po-pk-back{ z-index:1; } .po-pk-front{ z-index:3; }
+.po-pk-stack{ position:absolute; left:19px; top:60px; width:82px; height:120px; z-index:2; pointer-events:none; }
+.po-card{ position:absolute; left:0; top:0; width:82px; height:120px; }
+.po-card .card.back{ width:100%; height:100%; box-sizing:border-box; margin:0; box-shadow:inset 0 0 0 2px var(--cb-trim,#D9A93B); }
+.po-deck{ pointer-events:auto; }
+.po-flap{ image-rendering:pixelated; image-rendering:crisp-edges; }
+
+/* the price tag: ticket stock on a string */
+.po-tag{ position:absolute; left:84px; top:166px; z-index:4; transform:rotate(9deg); transform-origin:2px 2px; padding:3px 4px 2px 7px; background:#E9DFB6; border:1px solid #2A1810; box-shadow:1px 1px 0 #2A1810; font:8px/1 var(--font-hdr); color:#3B2416; white-space:nowrap; pointer-events:none; }
+.po-tag i{ position:absolute; left:2px; top:3px; width:2px; height:2px; background:#2A1810; }
+.po-tag b{ font-weight:400; }
+.po-tag[hidden]{ display:none; }
+.po-tag-loose{ position:absolute; left:0; top:0; transform-origin:50% 50%; padding:0; display:flex; align-items:center; justify-content:center; font-size:16px; }
+
+/* the hint: a stepped chevron that waits until you've been idle */
+.po-nudge{ position:absolute; z-index:6; width:0; height:0; pointer-events:none; }
+.po-nudge::before{ content:''; position:absolute; left:-6px; top:-6px; width:12px; height:12px; background:#F3E6C4;
+  clip-path:polygon(0 0,40% 0,100% 50%,40% 100%,0 100%,60% 50%); animation:po-nudge-x .86s steps(4) infinite; filter:drop-shadow(1px 2px 0 #04140C); }
+.po-nudge[data-dir="up"]::before{ clip-path:polygon(0 100%,0 60%,50% 0,100% 60%,100% 100%,50% 40%); animation-name:po-nudge-y; }
+@keyframes po-nudge-x{ 0%{ transform:translateX(0); } 50%{ transform:translateX(10px); } 100%{ transform:translateX(0); } }
+@keyframes po-nudge-y{ 0%{ transform:translateY(0); } 50%{ transform:translateY(-10px); } 100%{ transform:translateY(0); } }
+
+/* console: the brass card-holder lip (your hand's rail in slice 3) and one key */
+.po-console{ flex:none; position:relative; z-index:20; }
+.po-rail{ height:12px; margin:0 6px 8px; box-sizing:border-box; border:2px solid var(--px-ink); border-radius:3px 3px 2px 2px;
+  background:
+    linear-gradient(#FFF1C4,#FFF1C4) 5px 2px/2px 1px no-repeat,
+    linear-gradient(#FFF1C4,#FFF1C4) right 5px top 2px/2px 1px no-repeat,
+    linear-gradient(#6B430E,#6B430E) 4px 3px/4px 3px no-repeat,
+    linear-gradient(#6B430E,#6B430E) right 4px top 3px/4px 3px no-repeat,
+    linear-gradient(to bottom,var(--pc-lamp-amber-hi) 0 2px,var(--pc-lamp-amber) 2px 5px,#D0921F 5px calc(100% - 2px),#7A4B0C calc(100% - 2px));
+  box-shadow:0 3px 0 rgba(0,0,0,.55); }
+#home #po .pc-primary-cradle{ margin-bottom:0; }
+#home #po .pc-button-primary{ min-height:62px; padding:9px 12px; font-size:11px; width:100%; }
+#home #po .pc-primary-cradle::before{ height:62px; }
+.po-key-label{ display:block; line-height:1.6; }
+
+/* the lab sheet */
+.po-sheet{ position:absolute; left:0; right:0; bottom:0; z-index:200; padding:16px 14px 18px; background:var(--pc-leather-lo); border:3px solid var(--pc-edge-lo); box-shadow:0 -4px #8b493f; max-height:82%; overflow:auto; }
+.po-sheet[hidden]{ display:none; }
+.po-sheet h2{ font:12px/1.5 var(--font-hdr); color:var(--pc-plastic); margin:0 0 10px; }
+.po-sheet p{ font:15px/1.35 var(--font-px); color:#c5b99a; margin:0 0 8px; }
+.po-sheet label{ display:block; font:10px/1.4 var(--font-hdr); color:#c9ba95; margin:12px 0 6px; }
+.po-seg{ display:flex; gap:6px; flex-wrap:wrap; margin-top:6px; }
+.po-seg button{ flex:1; min-height:44px; font-size:9px; margin:0; padding:4px 6px; }
+.po-seg button[aria-pressed="true"]{ filter:brightness(1.25); box-shadow:inset 0 0 0 2px var(--pc-lamp-amber); }
+
+@media (max-height:740px){
+  #home #po.lobby-card{ gap:5px; padding:8px; }
+  .po-status{ height:44px; padding:5px 8px; }
+  #home #po .pc-button-primary{ min-height:52px; }
+  #home #po .pc-primary-cradle::before{ height:52px; }
+  .po-rail{ margin-bottom:6px; }
+}

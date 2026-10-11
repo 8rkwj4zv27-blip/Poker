@@ -1,6 +1,8 @@
 # Pack Opening V3 — audit and plan ("The Squeeze")
 
-11 October 2026. Proposal only: nothing here is built or approved. It replaces
+11 October 2026. Approved by the owner the same day. **Slice 1 built**
+(deal, hold to buy, tear, draw): https://claude.ai/artifact/2A5hyH5pufRp7Tdj513SQp
+(republish to the same link). Awaiting the owner's phone verdict. It replaces
 the Pack Ritual lab's approach (`docs/career/PACK_RITUAL_HANDOVER.md`). That
 lab stays on `codex/pack-ritual` as a reference, not as a base.
 
