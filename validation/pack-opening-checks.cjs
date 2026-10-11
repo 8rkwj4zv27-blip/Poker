@@ -9,7 +9,8 @@
    tap, flick and squeeze the deck to turn the cards, the key-only
    reveal, and a whole pack ending in the hand. Slice 3: pick a card
    out of the hand and spin it, flick the wrapper so its chips spill,
-   KEEP (the hand into the collection, the chips into the bank). */
+   KEEP (the hand into the collection, the chips into the bank).
+   Slice 4: the hand is read as a poker hand. */
 'use strict';
 const assert = require('node:assert/strict');
 const { withPage } = require('./tools/touch-harness');
@@ -121,6 +122,8 @@ async function run(width, height, reducedMotion){
         await touch.end(); await phase('shown');
         await tap(felt.x + 10, felt.y + 10);
         await phase('haul');
+        // the machine reads the four cards as a poker hand
+        assert.match(await g.locator('#po-title').textContent(), /PAIR|THREE|FOUR OF A KIND|RAINBOW/, 'the hand is named');
         // pick a card out of the hand, spin it, put it back
         await tap(...centre(await g.locator('.po-rc').nth(1).boundingBox()));
         await phase('inspect');
@@ -158,5 +161,5 @@ async function run(width, height, reducedMotion){
 (async () => {
   if (!process.env.ONLY_REDUCED){ await run(390, 844, false); await run(375, 667, false); }
   await run(390, 844, true);
-  console.log('Pack Opening slices 1 to 3 checks passed.');
+  console.log('Pack Opening slices 1 to 4 checks passed.');
 })().catch(e => { console.error(e); process.exit(1); });

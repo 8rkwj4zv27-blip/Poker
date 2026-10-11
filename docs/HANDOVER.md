@@ -28,8 +28,8 @@ audit's complaints (dashboard rims, clipped result line, chip pile) are gone.
 
 - 11 Oct (no game change): Pack Opening V3 slices 1-3 (`pack-opening-lab.html`,
   [plan](career/PACK_OPENING_V3_PLAN.md)): packets to move, throw and turn;
-  buy, tear, draw; the reveal; the hand, the card toy, the wrapper's chips,
-  KEEP. Its sound now plays (it was silent). Replaces `codex/pack-ritual`.
+  buy, tear, draw; the reveal; the haul and KEEP; then a polish pass
+  (haptics, swinging tag, collisions, the hand read as a poker hand).
 - 8 Oct (no game change): Hub Lab (`hub-lab.html`): Career opens on
   tonight's tickets, dealt and styled by kind, fed into a slot.
 - 8 Oct (no game change): Career as packs of cards, brainstormed with
@@ -41,7 +41,7 @@ audit's complaints (dashboard rims, clipped result line, chip pile) are gone.
 
 ## Open items (verified, not scheduled)
 
-- Pack Opening V3 slices 1-3 await the owner's look at the whole moment:
+- Pack Opening V3 (all four slices, first polish) awaits the owner's verdict:
   https://claude.ai/artifact/2A5hyH5pufRp7Tdj513SQp
 - Career Hub on small iPhones (375x667, SE/8): BUY IN sits below the
   screen. Fine on the owner's Pro Max.
@@ -65,9 +65,9 @@ own speech bubbles (`claude/tender-dijkstra-zso8dm`).
 
 ## Next
 
-Pack Opening V3: the owner plays the whole moment on the phone link, then
-slice 4 (polish from their notes: the card faces, a replacement for the
-removed Legendary stamp if wanted, the sound mix, small phones).
+Pack Opening V3: the owner plays the polished moment on the phone link;
+more polish from their notes, then plan its way into Career (new parts to
+the Pattern Book first: packet canvas, squeeze, hand fan, collection slot).
 Read [`career/PACK_OPENING_V3_PLAN.md`](career/PACK_OPENING_V3_PLAN.md).
 Earlier pending work: the owner plays the Hub Lab (`docs/career/PACKS_PLAN.md`, Round 3: Career opens on tonight's
 tickets); then the Vendor and the Case screens to the same standard.

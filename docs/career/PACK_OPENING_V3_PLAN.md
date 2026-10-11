@@ -1,7 +1,10 @@
 # Pack Opening V3 — audit and plan ("The Squeeze")
 
-11 October 2026. Approved by the owner the same day. **Slices 1 to 3 built**
-(the packet; the reveal; the haul), plus the owner's notes: packets you can
+11 October 2026. Approved by the owner the same day. **Slices 1 to 4 built**
+(the packet; the reveal; the haul; a first polish pass: haptics, a
+swinging price tag, packets that knock each other, foil flecks, a
+flickable strip, a shake rattle, a prize count-up, a last-card heartbeat,
+the hand read as a poker hand), plus the owner's notes: packets you can
 move and throw, a drawn turn with a crimped edge and momentum, the foil
 shimmer; the LEGENDARY stamp removed (the CRT flashes instead):
 https://claude.ai/artifact/2A5hyH5pufRp7Tdj513SQp (republish to the same

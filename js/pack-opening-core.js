@@ -220,7 +220,8 @@
         const a = c(); if (!a || a._po) return;
         try { const s = a.createBufferSource(); s.buffer = a.createBuffer(1, 1, 22050); s.connect(a.destination); s.start(0); a._po = a.state === 'running'; } catch (e) {}
       },
-      crackle(power = 1){ noise(18 + Math.random() * 18, .09 * power, 1800 + Math.random() * 1600, 9000, .08); },
+      // rise 0..1 lifts the pitch: a tear climbs as it goes
+      crackle(power = 1, rise = 0){ noise(18 + Math.random() * 18, .09 * power, (1800 + Math.random() * 1600) * (1 + rise * .8), 9000 + rise * 3000, .08); },
       rip(){ noise(240, .22, 900, 7000, .05); setTimeout(() => noise(90, .12, 2400, 9000), 70); },
       crinkle(){ noise(60, .07, 1400, 6000, .12); },
       rustle(power = 1){ noise(120, .06 * power, 600, 3200); },
@@ -247,13 +248,44 @@
     };
   })();
 
+  /* A tap you can feel. Android vibrates; iPhone Safari has no vibrate,
+     but toggling a hidden switch control through its label gives a
+     system haptic tick (Safari 18+). Both quietly do nothing elsewhere. */
+  const Haptic = (() => {
+    let label = null, last = 0;
+    function ios(){
+      if (!label){
+        const id = 'po-haptic-' + Math.random().toString(36).slice(2, 7);
+        const input = document.createElement('input');
+        input.type = 'checkbox'; input.setAttribute('switch', ''); input.id = id;
+        input.setAttribute('aria-hidden', 'true'); input.tabIndex = -1;
+        input.style.cssText = 'position:fixed;left:-99px;top:0;opacity:0;pointer-events:none;';
+        label = document.createElement('label');
+        label.htmlFor = id; label.setAttribute('aria-hidden', 'true');
+        label.style.cssText = 'position:fixed;left:-99px;top:0;opacity:0;pointer-events:none;';
+        document.body.append(input, label);
+      }
+      label.click();
+    }
+    return {
+      on:true,
+      // ms: how long on Android; gap: the shortest time between two ticks
+      tick(ms = 10, gap = 45){
+        const now = performance.now();
+        if (!this.on || now - last < gap) return;
+        last = now;
+        try { if (navigator.vibrate) navigator.vibrate(ms); else ios(); } catch (e) {}
+      }
+    };
+  })();
+
   // Safe calls into the game's Sound palette.
   const S = new Proxy({}, { get:(o, k) => (...a) => { try { if (typeof Sound !== 'undefined' && typeof Sound[k] === 'function') return Sound[k](...a); } catch (e) {} } });
   // every finished tap anywhere unlocks both: the game's sounds and the foil's
   ['pointerup', 'touchend', 'click'].forEach(t => document.addEventListener(t, () => { Foil.unlock(); S.unlock(); }, { capture:true, passive:true }));
 
   window.PO = {
-    FPS, clamp, snap, mix, ease, tween, wait, glide, squash, puff, burst, jolt, every, finishAll, reset, wake, Body, Foil, S,
+    FPS, clamp, snap, mix, ease, tween, wait, glide, squash, puff, burst, jolt, every, finishAll, reset, wake, Body, Foil, S, Haptic,
     get busy(){ return tweens.size > 0; },
     get speed(){ return speed; }, set speed(v){ speed = v; },
     get reduced(){ return reduced; }, set reduced(v){ reduced = !!v; },

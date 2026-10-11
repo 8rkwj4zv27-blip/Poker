@@ -1095,5 +1095,7 @@ NEW pips, the card toy (bank, thickness edge, momentum spin, CRT read-out),
 the wrapper flicked away spilling CoinWorld chips, KEEP into the
 collection slot with COUNT IN, restock). Card faces come from
 `js/pack-ritual-cards.js` + `css/pack-ritual-cards.css`, laid out at 2x
-and scaled into the card. Slices 1-3 of 4.
+and scaled into the card. Slice 4 polish: `PO.Haptic` (vibrate, or the
+iOS switch-label tick), the price tag's pendulum (`swingTags`), packet
+collisions, the prize count-up, the last-card beat, `handName`.
 Touch checks: `validation/pack-opening-checks.cjs`.

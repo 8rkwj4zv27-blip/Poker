@@ -164,3 +164,6 @@ body.po-lab #home{ display:flex!important; position:fixed; inset:0; padding:10px
 #home #po .po-status.is-legend{ animation:po-crt 1.3s steps(1) both; }
 @keyframes po-crt{ 0%,20%,40%{ filter:brightness(1.9) saturate(1.4); } 10%,30%{ filter:brightness(.8); } 60%,100%{ filter:none; } }
 @media (prefers-reduced-motion:reduce){ #home #po .po-status.is-legend, .po-new{ animation:none; } }
+/* the collection slot's lamp blinks as each card drops in */
+.po-slot.is-lit .po-slot-n{ animation:po-slot .3s steps(1) both; }
+@keyframes po-slot{ 0%{ color:#FFF1C4; text-shadow:0 0 0 #FFF1C4,1px 1px 0 #04140C; } 100%{ color:var(--pc-lamp-amber,#E8B52C); } }
