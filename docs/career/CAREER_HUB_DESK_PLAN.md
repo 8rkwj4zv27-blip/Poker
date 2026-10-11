@@ -111,3 +111,22 @@ pyramid, a stair or a level row. The bankroll sets the number of towers
 (1, 3, 5 or 7) and CoinWorld's change-making sets the chips' tiers.
 
 TUNE mixes the parts and sets the bankroll. The link is the same.
+
+**Still 3 (11 Oct).** The owner's notes on stills E to H:
+- the cabinet's screens and slot were too tall;
+- no rake or lever: tap the deck for a card, hold it to gather;
+- the chips should be the game's bank (rows and columns with depth) in a
+  corner;
+- the cards were bunched.
+
+`hub-stills-lab.html` is now one still:
+- **The cabinet:** a slim row (the CRTs and slot are as tall as their
+  content).
+- **The deck:** alone in the bottom-left corner.
+- **The chips:** in the bottom-right corner, laid out by the game's own
+  `CoinWorld.rackSlots`. The count follows the table's bank curve and the
+  colours come from `composeTiers`.
+- **The cards:** spread across the felt. A fourth or fifth card reshuffles
+  them into two rows.
+
+TUNE sets the screens, the cards out (3, 4 or 5) and the bankroll.

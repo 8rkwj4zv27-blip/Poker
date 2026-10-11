@@ -14,13 +14,13 @@ body.hs-lab #home{ display:flex!important; position:fixed; inset:0; padding:10px
 .hs-cabinet{ flex:none; display:flex; flex-direction:column; gap:8px; padding:8px; border:3px solid var(--pc-edge-lo); border-radius:8px;
   background:var(--pc-leather-lo); box-shadow:inset 3px 3px 0 var(--pc-leather),inset -3px -3px 0 #160509; }
 .hs-bank{ height:48px; }
-.hs-row{ display:grid; grid-template-columns:1fr auto 1fr; gap:8px; align-items:stretch; height:86px; }
+.hs-row{ display:grid; grid-template-columns:1fr auto 1fr; gap:8px; align-items:stretch; }
 .hs-crt-l, .hs-crt-r{ min-width:0; display:flex; }
 /* both screens share one grid: the same rows at the same heights, centred, never wrapping */
-.hs-crt{ flex:1; min-width:0; display:grid; place-content:center; justify-items:center; gap:8px; padding:6px 4px; text-align:center; white-space:nowrap; }
+.hs-crt{ flex:1; min-width:0; display:grid; place-content:center; justify-items:center; gap:5px; padding:4px; text-align:center; white-space:nowrap; }
 
 /* the slot: a plain machined mouth exactly a card wide */
-.hs-slot{ position:relative; width:122px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:7px; box-sizing:border-box; padding:6px 0;
+.hs-slot{ position:relative; width:122px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:5px; box-sizing:border-box; padding:6px 0 5px;
   border:3px solid var(--px-ink); border-radius:6px; background:linear-gradient(#3b2a22,#24170f); box-shadow:inset 0 2px 0 #5a4030,inset 0 -3px 0 #120a07,0 3px 0 rgba(0,0,0,.5); }
 .hs-mouth{ position:relative; width:100px; height:20px; box-sizing:border-box; background:#050203; border:3px solid #120a07; border-radius:3px; box-shadow:inset 0 4px 0 #000,0 1px 0 #5a4030; overflow:hidden; }
 .hs-throat{ position:absolute; left:3px; right:3px; top:50%; height:2px; background:#1a0d06; }
@@ -35,26 +35,12 @@ body.hs-lab #home{ display:flex!important; position:fixed; inset:0; padding:10px
 .hs-card .ccl-object{ width:164px; transform:scale(.5); transform-origin:0 0; }
 .hs-card .ccl-stock{ filter:none; }
 
-/* the deck in its corner; tap it for one more card */
-.hs-deck{ position:absolute; left:14px; bottom:14px; display:flex; align-items:flex-end; gap:8px; z-index:5; }
+/* the deck in its corner: tap it for one more card, hold it to gather */
+.hs-deck{ position:absolute; left:16px; bottom:18px; z-index:5; }
 .hs-deck-stack{ position:relative; width:calc(82px * var(--s)); height:calc(120px * var(--s) + 5px); }
 .hs-deck-card{ position:absolute; left:0; width:82px; height:120px; transform-origin:0 0; scale:var(--s); filter:drop-shadow(2px 2px 0 rgba(4,20,12,.6)); }
 .hs-deck-card:nth-child(1){ top:5px; } .hs-deck-card:nth-child(2){ top:4px; } .hs-deck-card:nth-child(3){ top:3px; } .hs-deck-card:nth-child(4){ top:2px; } .hs-deck-card:nth-child(5){ top:1px; }
 .hs-deck-stack .card.back{ width:100%; height:100%; margin:0; box-sizing:border-box; box-shadow:inset 0 0 0 2px var(--cb-trim,#D9A93B); }
-
-/* the lever: a little machine arm beside the deck; pull it to gather and deal three */
-.hs-lever{ position:relative; width:22px; height:66px; flex:none; }
-.hs-lever-base{ position:absolute; left:3px; bottom:0; width:16px; height:30px; box-sizing:border-box; border:3px solid var(--px-ink); border-radius:3px;
-  background:linear-gradient(90deg,#b8862a,#e6b84a 45%,#b8862a); box-shadow:inset 0 2px 0 #fff1c4,0 3px 0 rgba(4,20,12,.6); }
-.hs-lever-base::after{ content:""; position:absolute; left:3px; right:3px; top:4px; bottom:4px; background:#050203; }
-.hs-lever-arm{ position:absolute; left:9px; bottom:14px; width:4px; height:44px; background:linear-gradient(90deg,#d8d8d0,#8a8a84); box-shadow:0 0 0 2px var(--px-ink); z-index:1; }
-.hs-lever-arm b{ position:absolute; left:-7px; top:-14px; width:18px; height:18px; border-radius:50%; background:#c7524d; box-shadow:inset -3px -3px 0 #8c2e2a,inset 3px 3px 0 #f08070,0 0 0 2px var(--px-ink); }
-
-/* the rake: a croupier's rake left lying under the cards */
-.hs-rake{ position:absolute; height:34px; z-index:4; rotate:-3deg; filter:drop-shadow(3px 4px 0 rgba(4,20,12,.6)); }
-.hs-rake-head{ position:absolute; left:0; top:0; width:12px; height:34px; box-sizing:border-box; border:3px solid var(--px-ink); border-radius:2px; background:linear-gradient(90deg,#f0c860,#b8862a); box-shadow:inset 2px 2px 0 #fff1c4,inset -2px -2px 0 #7a4b0c; }
-.hs-rake-stick{ position:absolute; left:10px; right:0; top:12px; height:10px; box-sizing:border-box; border:3px solid var(--px-ink); border-left:0; border-radius:0 5px 5px 0; background:linear-gradient(#c08850,#6b4220); box-shadow:inset 0 2px 0 #e0b07a; }
-.hs-rake-stick::after{ content:""; position:absolute; right:6px; top:-3px; bottom:-3px; width:5px; background:#d9a93b; border:2px solid var(--px-ink); }
 
 /* the key bay */
 .hs-console{ flex:none; }
@@ -65,16 +51,12 @@ body.hs-lab #home{ display:flex!important; position:fixed; inset:0; padding:10px
 .hs-sheet[hidden]{ display:none; }
 .hs-sheet h2{ font:12px/1.5 var(--font-hdr); color:var(--pc-plastic); margin:0 0 10px; }
 .hs-sheet p{ font:15px/1.35 var(--font-px); color:#c5b99a; margin:0 0 10px; }
-.hs-picks{ display:flex; flex-direction:column; gap:8px; }
-.hs-picks button{ display:block; width:100%; margin:0; padding:10px; text-align:left; min-height:44px; }
-.hs-picks b{ display:block; font:10px/1.4 var(--font-hdr); font-weight:400; }
-.hs-picks small{ display:block; margin-top:4px; font:13px/1.3 var(--font-px); text-transform:none; letter-spacing:0; }
 .hs-sheet button[aria-pressed="true"]{ filter:brightness(1.25); box-shadow:inset 0 0 0 2px var(--pc-lamp-amber); }
 .hs-sheet h3{ font:9px/1.4 var(--font-hdr); font-weight:400; color:var(--pc-plastic); margin:14px 0 6px; }
 .hs-seg{ display:flex; gap:6px; margin-top:6px; }
 .hs-seg button{ flex:1; min-width:0; min-height:44px; margin:0; padding:4px; font-size:8px; line-height:1.3; }
 
 @media (max-height:740px){
-  .hs-row{ height:72px; } .hs-bank{ height:42px; }
+  .hs-bank{ height:42px; }
   #home #hs.lobby-card{ gap:6px; padding:8px; }
 }
