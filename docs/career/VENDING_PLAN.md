@@ -71,6 +71,31 @@ panel, red panelling).
   inspect, send; the roll out; the pile on the hub; opening one there
   (the pack opening, embedded) and KEEP into the deck.
 
+## Round 3 (11 Oct): the owner's notes on the moving lab, and the hub
+
+- Fixed: TUNE while the machine was down pushed it off the screen (it was
+  measured from the hub's rows where the roll had pushed them). Fixed:
+  every packet after the first opened with its cards half out.
+- A packet's first tap only looks at it (its key glows, the CRT and lamps
+  show it); the second (or its key) puts one in. The CRT: edition, price,
+  TOTAL; long prices drop a size.
+- The chips go in as a stream: one movement each from the reel to the
+  slit, turning onto the edge on the way down; nothing waits on the CRT.
+- The tray is seen straight on: packets lie on its bottom (or on each
+  other), mostly on their sides, no squashed perspective.
+- The hub: P.I.P. is gone; a printed card outline opposite the deck is the
+  clean-up spot (tap: every card slides in, squares up, back into the
+  deck, shuffled; holding the deck no longer sweeps). One table size:
+  packets waiting, opened cards, the wrapper and the strip all match the
+  hub's cards; the pile lands on a clear patch.
+- After an opening the hand is read, then laid down among the cards. The
+  wrapper (ripped seam) and the strip stay on the felt as things to push
+  about or throw off the edge.
+- The chips come out in a clear plastic bag with the amount on a sticker.
+  Drag across its top corner to snip it; the chips spill and sit on the
+  felt (tap one, it bounces) until the clean-up, which counts them (and
+  any bag still shut) into the bankroll.
+
 ## Open
 
 - The opening reveals four cards now; five things (cards or chips) need
@@ -83,5 +108,5 @@ panel, red panelling).
 
 ## Next
 
-The owner's notes on the moving lab (feel on the phone: the roll, the
-chips, the drop, the flick), then polish from those notes.
+The owner's notes on round 3 (the select tap, the chip stream, the flat
+tray, the hub's clean-up spot, the bag), then polish from those notes.

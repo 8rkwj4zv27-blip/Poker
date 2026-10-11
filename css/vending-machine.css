@@ -65,6 +65,7 @@
   font:6px/1 var(--font-hdr); color:transparent; }
 .vm-key.is-on{ translate:0 1px; box-shadow:0 1px 0 #1a0a08; }
 .vm-key.is-on b{ background:#2a1d08; color:#ffd36b; text-shadow:0 0 4px rgba(255,200,80,.9); box-shadow:inset 0 0 4px rgba(255,190,60,.55); }
+.vm-key.is-sel b{ background:#4a3a1c; box-shadow:inset 0 0 5px rgba(255,200,90,.6); }
 .vm-key.is-flip b{ transform:scaleY(.2); }
 .vm-key.is-out b{ background:#5a1610; color:#ff7a66; }
 .vm-key.is-blink b{ background:#ffe49b; color:#5a3a06; }
@@ -83,12 +84,13 @@
 .vm.is-stuck .vm-shimmer{ opacity:1; animation:vm-shimmer 2.6s steps(26) infinite; }
 @keyframes vm-shimmer{ from{ background-position:120% 0; } to{ background-position:-120% 0; } }
 
-/* the tray: the floor the packets land on (seen from above, so squashed),
-   behind a ribbed, smoked plastic flap with PUSH on it */
-.vm-tray{ flex:1; min-height:56px; overflow:clip; background:#0d0405; }
-.vm-floor-wrap{ position:absolute; left:0; right:0; bottom:0; transform-origin:50% 100%; }
-.vm-floor-wrap::before{ content:''; position:absolute; inset:0; background:
-  repeating-linear-gradient(90deg,rgba(255,255,255,.03) 0 3px,transparent 3px 14px),linear-gradient(#1c0a0b,#2a1210); }
+/* the tray: seen straight on, the packets lying on its bottom, behind a
+   ribbed, smoked plastic flap with PUSH on it */
+.vm-tray{ flex:1; min-height:56px; overflow:clip; background:
+  linear-gradient(to top,#2a1210 0 3px,rgba(0,0,0,0) 3px),
+  repeating-linear-gradient(90deg,rgba(255,255,255,.03) 0 3px,transparent 3px 14px),linear-gradient(#0d0405,#1f0b0b); }
+.vm-tray > .vm-stage{ inset:2px; }
+.vm-tray > .vm-floor{ z-index:2; }
 .vm-tray > .vm-tfall{ z-index:3; }
 .vm-flap{ position:absolute; inset:3px; z-index:5; transform-origin:50% 0; display:grid; place-items:center; cursor:pointer;
   border:2px solid var(--dash-ink); border-radius:4px;
@@ -143,6 +145,10 @@
 .vm-pile .po-body{ pointer-events:auto; cursor:pointer; }
 .vm-open{ z-index:5; touch-action:none; user-select:none; -webkit-user-select:none; }
 .vm-open.is-live{ pointer-events:auto; }
+
+/* the things left on the hub's felt */
+.vm-bag, .vm-bit{ image-rendering:pixelated; image-rendering:crisp-edges; cursor:grab; }
+#cm .cm-felt .vm-loose{ cursor:grab; }
 
 /* the hub's keys while the machine is down */
 #cm .cm-keys .vm-latched{ translate:0 3px; filter:brightness(.82); }

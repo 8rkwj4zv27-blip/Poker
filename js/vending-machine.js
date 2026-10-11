@@ -6,23 +6,31 @@
    time, and the machine rolls down and locks; its tube flickers on and
    the keys light row by row. Built like the Player Dashboard: one moulded
    frame, the checker case, sunk bays.
-   - Choose: tap a packet or the cream key under it; again for another
-     (the key's window shows how many). The credit CRT shows the last one
-     touched, its price and the total; the four lamps its chances (lit:
-     always, blinking: maybe, dark: never). CLEAR empties it.
-   - Pay: hold the green key. Each chip leaves the reel as the table's own
-     2.5D chip, comes down face showing, turns up onto its edge over the
-     slot, pushes into the slit and goes in with a CHUNK.
+   - Choose: tap a packet to look at it: its key glows, the credit CRT
+     shows its edition and price, the four lamps its chances (lit: always,
+     blinking: maybe, dark: never). Tap it again (or its cream key) to put
+     one in (the key's window shows how many). CLEAR empties it.
+   - Pay: hold the green key. The chips leave the reel in a stream, the
+     table's own 2.5D chips: each comes over and down, turning up onto its
+     edge as it reaches the slot, pushes into the slit and goes in with a
+     CHUNK, the next one already on its way.
    - Drop: a relay clicks, the key blinks, the motor hums; the packet tips
      off its shelf and falls the whole way, past the rows below, into the
-     tray behind the ribbed PUSH flap, where it lands, bounces and lies
-     where it lands. The spare behind slides forward. Now and then one
+     tray behind the ribbed PUSH flap, where it lands on the bottom (or on
+     the ones already there), bounces and lies where it lands. The spare behind slides forward. Now and then one
      sticks: the glass shimmers; tap the machine (twice) to knock it free.
    - Take: tap PUSH (or the key): the flap swings in, a packet comes out
      to you; turn it, shake it; flick it down to send it to the hub.
    - Back on the hub (SHOP again): the packets you sent drop onto the felt
-     in a pile; tap one and it's opened there with the pack opening
-     (js/pack-opening.js, embedded); KEEP puts the cards into the deck.
+     in a pile, at the table's size; tap one and it's opened there with the
+     pack opening (js/pack-opening.js, embedded). Its chips come out in a
+     clear bag with the amount on it. The four cards are laid down among
+     the others; the empty wrapper and the torn strip stay on the felt.
+   - Things on the felt: pick them up, slide them, throw them (off the
+     edge and they're gone). Drag across the bag's top corner to snip it:
+     the chips spill out onto the felt; tap one and it bounces. The hub's
+     clean-up spot clears the lot: the cards into the deck, the chips (and
+     any bag still shut) into the bankroll, the rubbish away.
    Lab money, nothing saved.
    ============================================================ */
 window.PO_EMBED = true;
@@ -50,13 +58,15 @@ window.PO_EMBED = true;
   const money = n => '$' + Math.round(n).toLocaleString('en-US');
   const rr = (a, b) => a + Math.random() * (b - a);
   const pick = a => a[Math.floor(Math.random() * a.length)];
-  const FLOOR = .46;     // how squashed the tray's floor is: seen from above
+  // what's in each edition's bag of chips (placeholders)
+  const BAG = { alley:20, house:40, pub:50, club:75, wild:100, casino:120, reserve:150, highroller:300 };
 
   let M, E, root, drum, vm, chipsEl, handEl, pileEl, openEl;
   let G = null;          // the window's geometry
   let slots = [], order = [], tray = [], pile = [], sent = 0;
   let mode = 'hub';      // hub · rolling · idle · paying · dispensing · stuck · taking · opening
   let shown = null;      // the edition the CRT is showing
+  let sel = null;        // the slot you're looking at (its key glows)
   let inHand = null;     // the packet out of the tray, in your hand
   let knocks = 0, stuckP = null, freed = null;
   const $ = q => root.querySelector(q);
@@ -120,7 +130,7 @@ window.PO_EMBED = true;
           <div class="vm-paint">CARD PACKETS</div>
         </div>
         <div class="vm-bay vm-tray">
-          <div class="vm-floor-wrap"><div class="vm-stage vm-floor">${STAGE}</div></div>
+          <div class="vm-stage vm-floor">${STAGE}</div>
           <div class="vm-stage vm-tfall">${STAGE}</div>
           <button class="vm-flap" type="button" aria-label="Push: take your packets"><b>PUSH</b></button>
         </div>
@@ -162,8 +172,14 @@ window.PO_EMBED = true;
 
   /* ---------------- layout ---------------- */
   // the drum: from the top of the cabinet's screen row to the foot of the felt
+  // (measured where the hub's faces sit, not where the roll has pushed them)
+  function unmoved(el){
+    const r = rel(el), t = /(-?[\d.]+)px$/.exec(el.style.translate || '');
+    if (t) r.y -= +t[1];
+    return r;
+  }
   function region(){
-    const row = rel($('.cm-row')), cab = rel($('.cm-cabinet')), felt = rel($('.cm-felt'));
+    const row = unmoved($('.cm-row')), cab = rel($('.cm-cabinet')), felt = unmoved($('.cm-felt'));
     return { x:cab.x, y:row.y - 4, w:cab.w, h:felt.y + felt.h + 6 - (row.y - 4) };
   }
   function layout(){
@@ -171,7 +187,7 @@ window.PO_EMBED = true;
     Object.assign(drum.style, { left:r.x + 'px', top:r.y + 'px', width:r.w + 'px', height:r.h + 'px' });
     const con = rel($('.cm-console'));
     Object.assign(handEl.style, { left:'0', top:'0', width:'100%', height:Math.round(con.y - 4) + 'px' });
-    const f = rel($('.cm-felt'));
+    const f = unmoved($('.cm-felt'));
     Object.assign(openEl.style, { left:f.x + 'px', top:f.y + 'px', width:f.w + 'px', height:f.h + 'px' });
     vm.classList.toggle('is-compact', r.h < 520);
     vm.classList.toggle('no-paint', !look.paint);
@@ -204,12 +220,22 @@ window.PO_EMBED = true;
     if (!before) stock();
     sizeTray();
   }
-  // the tray's floor: its depth seen squashed, so packets lie on it
   function sizeTray(){
-    const tr = vq('.vm-tray'), w = vq('.vm-floor-wrap'), h = tr.clientHeight - 4;
-    G.trayH = h; G.trayW = tr.clientWidth - 4;
-    Object.assign(w.style, { height:Math.round(h / FLOOR) + 'px', transform:`scaleY(${FLOOR})` });
+    const tr = vq('.vm-tray');
+    G.trayH = tr.clientHeight - 4; G.trayW = tr.clientWidth - 4;
   }
+  // where a packet comes to rest in the tray: on the bottom, or on the
+  // ones already lying there (seen straight on, as it is)
+  function restFor(x, r){
+    const s = G.k * .94, a = r * Math.PI / 180, w = AW * s, h = AH * s;
+    const ex = (w * Math.abs(Math.cos(a)) + h * Math.abs(Math.sin(a))) / 2, ey = (w * Math.abs(Math.sin(a)) + h * Math.abs(Math.cos(a))) / 2;
+    x = clamp(x, ex + 2, G.trayW - ex - 2);
+    let bottom = G.trayH - 3;
+    tray.forEach(q => { if (Math.abs(q.body.x - x) < ex + q.ex * .6) bottom = Math.min(bottom, q.body.y - q.ey * .3); });
+    return { x, y:Math.max(bottom - ey, ey + 2), r, s, ex, ey };
+  }
+  // mostly lying down; now and then one leans
+  const restAngle = () => (Math.random() < .78 ? rr(70, 100) : rr(28, 50)) * pick([-1, 1]);
   const slotX = s => G.colW * (s.c + .5);
   const shelfY = s => G.P + G.rowH * (s.r + 1) - G.RL;
   const frontPose = s => ({ x:slotX(s), y:shelfY(s) - AH * G.k / 2 + 2, s:G.k, r:[-1, 0, 1, 0, -1][s.c] || 0, z:0, sx:1, sy:1, alpha:1 });
@@ -247,7 +273,7 @@ window.PO_EMBED = true;
   function crt(cap, fig, line, ink){
     const c = vq('.vm-crt');
     c.dataset.ink = ink || '';
-    c.innerHTML = `<span class="crt-caption">${cap}</span><span class="crt-figure${fig.length > 7 ? ' vm-fig-sm' : ''}">${fig}</span><span class="vm-total">${line || ''}</span>`;
+    c.innerHTML = `<span class="crt-caption">${cap}</span><span class="crt-figure${fig.length > 5 ? ' vm-fig-sm' : ''}">${fig}</span><span class="vm-total">${line || ''}</span>`;
   }
   function panel(){
     if (mode === 'paying') return;
@@ -277,24 +303,38 @@ window.PO_EMBED = true;
   }
 
   /* ---------------- choosing ---------------- */
-  function choose(s){
+  // a packet: the first tap looks at it, the next puts one in; a key puts one in
+  function choose(s, add){
     if (mode !== 'idle' || !s) return;
     if (!s.id){ S.wheelRelay(.4); Foil.thud(.25); Haptic.tick(6); jolt(s.keyEl, 1); return; }
+    if (!add && sel !== s){ peek(s); return; }
     if (s.count >= 9){ Foil.thud(.3); return; }
-    s.count++; order.push(s); shown = s.id;
+    if (sel !== s) peek(s, true);
+    s.count++; order.push(s);
     S.counterTick(true); Haptic.tick(8);
     flip(s);
-    // the packet answers: a little hop forward
-    const b = s.p.body, f = frontPose(s);
-    glide(b, { z:5, s:G.k * 1.05 }, 70, { easing:ease.out }).then(() => glide(b, { z:0, s:f.s }, 110, { easing:ease.in })).then(() => squash(b, .05, 140));
+    hop(s, 1.05);
     panel(); keys();
+  }
+  // looked at: its key glows, the screen and the lamps show it
+  function peek(s, quiet){
+    sel?.keyEl.classList.remove('is-sel');
+    sel = s; shown = s.id;
+    s.keyEl.classList.add('is-sel');
+    if (!quiet){ S.counterTick(false); Haptic.tick(5); hop(s, 1.025); panel(); }
+  }
+  function unpeek(){ sel?.keyEl.classList.remove('is-sel'); sel = null; shown = null; }
+  // the packet answers: a little hop forward
+  function hop(s, k){
+    const b = s.p.body, f = frontPose(s);
+    glide(b, { z:5 * (k - 1) / .05, s:G.k * k }, 70, { easing:ease.out }).then(() => glide(b, { z:0, s:f.s }, 110, { easing:ease.in })).then(() => squash(b, .05, 140));
   }
   function clearAll(){
     if (mode !== 'idle') return;
-    if (!order.length){ shown = null; panel(); return; }
+    if (!order.length){ unpeek(); panel(); return; }
     S.wheelRelay(.6); Haptic.tick(10);
     const lit = slots.filter(s => s.count);
-    order = []; shown = null;
+    order = []; unpeek();
     lit.forEach((s, i) => setTimeout(() => { s.count = 0; flip(s); S.counterTick(false); }, i * 45));
     panel(); keys();
   }
@@ -321,7 +361,7 @@ window.PO_EMBED = true;
     await payChips(due);
     mode = 'dispensing'; keys();
     await dispenseAll();
-    mode = 'idle'; shown = null;
+    mode = 'idle'; unpeek();
     panel(); keys();
   }
   // how many chips, and of what colour, make the price
@@ -330,24 +370,21 @@ window.PO_EMBED = true;
     const each = due / n, tier = each < 40 ? 't0' : each < 120 ? 't1' : each < 400 ? 't2' : 't3';
     return Array.from({ length:n }, () => tier);
   }
+  // the chips go in as a stream: each leaves the reel so it reaches the
+  // slot just as the one before has gone in
   async function payChips(due){
     const cols = chipsFor(due), from = M.wallet, n = cols.length;
     const reel = rel(M.reelEl), slit = vq('.vm-slit');
-    let paid = 0, slotFree = Promise.resolve();
+    const gap = PO.reduced ? 0 : 250;
+    let went = 0;
     crt('PAID', money(0), 'OF ' + money(due), 'money');
-    const flights = cols.map((col, i) => wait(PO.reduced ? 0 : i * 210).then(() => fly(col, reel, i)));
-    for (let i = 0; i < n; i++){
-      const chip = await flights[i];
-      await slotFree;
-      let done;
-      slotFree = new Promise(r => { done = r; });
-      await insert(chip, slit);
-      paid = i === n - 1 ? due : Math.round(due * (i + 1) / n / 5) * 5;
+    await Promise.all(cols.map((col, i) => wait(i * gap).then(() => feed(col, reel, slit, i)).then(() => {
+      went++;
+      const paid = went === n ? due : Math.round(due * went / n / 5) * 5;
       M.showBank(from - paid);
       crt('PAID', money(paid), 'OF ' + money(due), 'money');
       S.counterTick(true);
-      done();
-    }
+    })));
     M.wallet = from - due;
     S.counterLock(true);
     await wait(160);
@@ -368,50 +405,38 @@ window.PO_EMBED = true;
     c.el.style.transformOrigin = `50% ${oy * 100}%`;
     c.el.style.transform = `translate(${Math.round(c.x - c.d / 2)}px,${Math.round(c.y - c.h * oy)}px) rotate(${snap(c.rot, 15)}deg)`;
   }
-  // up out of the reel, over, and down to just above the slot, turning as it comes
-  async function fly(col, reel, i){
+  // one chip, one movement: up out of the reel, over, and down onto the
+  // slot, face showing and spinning, then turning up onto its edge as it
+  // comes down to the slit; it pushes in, catches, and CHUNK
+  async function feed(col, reel, slit, i){
     const d = vm.classList.contains('is-compact') ? 26 : 30;
     const c = chipEl(col, d);
-    c.clip.style.height = '100%';
-    const sl = rel(vq('.vm-slit')), sx = sl.x + sl.w / 2, top = sl.y;
-    const x0 = reel.x + reel.w * rr(.3, .7), y0 = reel.y + reel.h * .5, x1 = sx - 16, y1 = top - d * 1.7;
-    const spin = (i % 2 ? 1 : -1) * rr(200, 320);
-    S.chipBounce(.35); Haptic.tick(4);
-    await tween(PO.reduced ? 1 : 440, (e, t) => {
-      c.x = mix(x0, x1, e); c.y = mix(y0, y1, e) - Math.sin(t * Math.PI) * 54;
-      c.rot = spin * (1 - e);
-      c.tilt = t < .5 ? 1 : 2;
-      drawChip(c);
-    }, ease.inOut);
-    c.hoverAt = performance.now();
-    return c;
-  }
-  // over the slot it turns up onto its edge, lines up, pushes in, and CHUNK
-  async function insert(c, slit){
     const sl = rel(slit), sx = sl.x + sl.w / 2, top = sl.y;
     // the slit's lip hides whatever's gone in
     c.clip.style.height = Math.round(top + 1) + 'px';
-    const x0 = c.x, y0 = c.y;
-    for (const [tilt, rot] of [[3, 30], [4, 60], [5, 90]]){
-      c.tilt = tilt; c.rot = rot;
-      c.x = mix(x0, sx, tilt / 5); c.y = mix(y0, top - c.d * .55, tilt / 5);
+    const x0 = reel.x + reel.w * rr(.3, .7), y0 = reel.y + reel.h * .5, y1 = top - d * .55;
+    const cx = mix(x0, sx, .75), cy = Math.min(y0, top) - 60;
+    const spin = (i % 2 ? 1 : -1) * rr(200, 320);
+    S.chipBounce(.35); Haptic.tick(4);
+    await tween(PO.reduced ? 1 : 560, (e, t) => {
+      const u = 1 - e;
+      c.x = u * u * x0 + 2 * u * e * cx + e * e * sx;
+      c.y = u * u * y0 + 2 * u * e * cy + e * e * y1;
+      if (t < .55){ c.tilt = t < .3 ? 1 : 2; c.rot = spin * (1 - t / .55); }
+      else { const k = (t - .55) / .45; c.tilt = Math.min(5, 3 + Math.floor(k * 3)); c.rot = 90 * Math.min(1, k * 1.15); }
       drawChip(c);
-      if (!PO.reduced) await wait(46);
-    }
-    Foil.scrape(); Haptic.tick(4, 40);
-    if (!PO.reduced) await wait(70);
+    }, ease.inOut);
+    c.tilt = 5; c.rot = 90; c.x = sx; c.y = y1; drawChip(c);
     // pushed in: it goes a third of the way and catches
-    await tween(PO.reduced ? 1 : 120, e => { c.y = mix(top - c.d * .55, top - c.d * .12, e); drawChip(c); }, ease.out);
+    Foil.scrape(); Haptic.tick(4, 40);
+    await tween(PO.reduced ? 1 : 100, e => { c.y = mix(y1, top - d * .12, e); drawChip(c); }, ease.out);
     c.x = sx + 1; drawChip(c);
-    if (!PO.reduced) await wait(60);
-    c.x = sx; drawChip(c);
+    if (!PO.reduced) await wait(40);
     // CHUNK: the mechanism takes it
-    c.y = top + c.d; drawChip(c);
     S.wheelBolt(); S.chipCollect(.7); Haptic.tick(18, 0);
     jolt(vq('.vm-plate'), 2);
     slit.classList.add('is-lit'); setTimeout(() => slit.classList.remove('is-lit'), 130);
     c.clip.remove();
-    if (!PO.reduced) await wait(70);
   }
 
   /* ---------------- the drop ---------------- */
@@ -468,14 +493,14 @@ window.PO_EMBED = true;
     reparent(p, fallW);
     p.body.sh?.remove(); p.body.sh = null;
     const b = p.body;
-    // where it will come to rest on the tray's floor
-    const fx = clamp(rel(win, vm).x + b.x - rel(trEl, vm).x + rr(-30, 30), AW * G.k * .5, G.trayW - AW * G.k * .5);
-    const fyFloor = G.trayH / FLOOR * rr(.42, .7);
-    const trayTop = rel(trEl, vm).y, winTop = rel(win, vm).y;
+    // where it will come to rest in the tray
+    const wr = rel(win, vm), tr = rel(trEl, vm);
+    const r0 = restAngle(), fx = clamp(wr.x + b.x - tr.x + rr(-30, 30), AW * G.k * .4, G.trayW - AW * G.k * .4);
+    const rest = restFor(fx, r0);
     // in the machine's coordinates
-    const x0 = rel(win, vm).x + b.x, y0 = winTop + b.y, tx = rel(trEl, vm).x + fx, ty = trayTop + 2 + (G.trayH - (G.trayH / FLOOR - fyFloor) * FLOOR);
-    const g = 2400, dist = ty - y0 - AH * b.s * .15, T = Math.sqrt(2 * Math.max(40, dist) / g);
-    const spin = pick([-1, 1]) * rr(1.1, 1.8), wob = pick([-1, 1]);
+    const x0 = wr.x + b.x, y0 = wr.y + b.y, tx = tr.x + 2 + rest.x, ty = tr.y + 2 + rest.y;
+    const g = 2400, dist = ty - y0, T = Math.sqrt(2 * Math.max(40, dist) / g);
+    const spin = pick([-1, 1]) * rr(1.1, 1.8);
     let inTray = false, ph = .35;
     await tween(PO.reduced ? 1 : T * 1000, (e, t) => {
       const y = y0 + .5 * g * (t * T) ** 2, x = mix(x0, tx, t * t);
@@ -485,46 +510,40 @@ window.PO_EMBED = true;
       const face = c < 0 ? 'back' : 'front';
       if (face !== p.face){ p.face = face; p.draw(); }
       // into the tray: behind the bay's edge and the ribbed flap
-      if (!inTray && y > rel(trEl, vm).y - 2){ inTray = true; reparent(p, stageOf(vq('.vm-tfall'))); }
-      const st = inTray ? rel(trEl, vm) : rel(win, vm);
-      b.set({ x:x - st.x, y:y - st.y, sy:Math.max(.14, Math.abs(c)), r:wob * 9 * Math.sin(t * Math.PI * 1.5), s:G.k * (1.04 - .1 * t) });
+      if (!inTray && y > tr.y - 2){ inTray = true; reparent(p, stageOf(vq('.vm-tfall'))); }
+      const st = inTray ? tr : wr;
+      b.set({ x:x - st.x, y:y - st.y, sy:Math.max(.14, Math.abs(c)), r:mix(0, r0, t * t), s:mix(G.k * 1.04, rest.s, t) });
     }, ease.lin);
     if (!inTray) reparent(p, stageOf(vq('.vm-tfall')));
-    land(p, fx, fyFloor);
+    land(p, rest);
   }
-  // down onto the floor: it lies where it lands, bounces once, slides, settles
-  function land(p, fx, fy){
-    const floor = stageOf(vq('.vm-floor'));
-    floor.objects.append(p.el); p.body.stage = floor;
+  // down on the bottom (or on the others): it lands, bounces once, and lies there
+  function land(p, rest){
+    reparent(p, stageOf(vq('.vm-floor')));
     if (p.face !== 'front' && Math.random() < .6){ p.face = 'front'; p.draw(); }
-    const b = p.body, r0 = rr(-50, 50), s = G.k * .94;
-    b.set({ x:fx, y:fy, z:0, r:r0, s, sx:1, sy:1 });
-    const sh = document.createElement('i'); sh.className = 'po-shadow po-shadow-packet';
-    Object.assign(sh.style, { width:AW + 'px', height:AH + 'px' }); floor.shadows.append(sh);
-    b.sh = sh; b.shW = AW; b.shH = AH; b.dirty = true;
+    const b = p.body, { x, y, r, s } = rest;
+    b.set({ x, y, z:0, r, s, sx:1, sy:1 });
+    p.ex = rest.ex; p.ey = rest.ey;
     tray.push(p);
     p.el.style.zIndex = String(10 + tray.length);
     // THUNK: the flap knocks, the machine jolts
     S.cardLanded(); Foil.thud(.75); Haptic.tick(20, 0);
     jolt(vm, 2); knock();
-    puff(floor, fx, fy + AH * s * .3, AW * s, { n:6, colour:'#5a3a34' });
+    puff(stageOf(vq('.vm-floor')), x, y + p.ey * .8, p.ex * 2, { n:6, colour:'#5a3a34' });
     squash(b, .12, 200);
-    // one bounce, a slide, a turn
-    const dx = rr(-18, 18), dr = rr(-24, 24);
-    return glide(b, { z:26, x:fx + dx * .5, r:r0 + dr * .6 }, 120, { easing:ease.out })
-      .then(() => glide(b, { z:0, x:fx + dx, r:r0 + dr }, 140, { easing:ease.in }))
-      .then(() => { S.cardLanded(); Foil.thud(.3); squash(b, .06, 160); nudgeAround(p); })
-      .then(() => glide(b, { x:clamp(fx + dx * 1.3, AW * s * .45, G.trayW - AW * s * .45), r:r0 + dr * 1.15 }, 160, { easing:ease.out }));
+    nudgeAround(p);
+    // one bounce, and it settles a touch round
+    const dr = rr(-8, 8);
+    return glide(b, { y:y - 12, r:r + dr * .5 }, 110, { easing:ease.out })
+      .then(() => glide(b, { y, r:r + dr }, 130, { easing:ease.in }))
+      .then(() => { S.cardLanded(); Foil.thud(.3); squash(b, .06, 160); });
   }
-  // packets it lands on are knocked aside
+  // the ones it lands on are knocked about
   function nudgeAround(p){
     const b = p.body;
     tray.forEach(q => {
-      if (q === p) return;
-      const o = q.body, dx = o.x - b.x, dy = (o.y - b.y) * FLOOR, d = Math.hypot(dx, dy), near = AW * b.s * .6;
-      if (d > near) return;
-      const k = (near - d) / near, ux = d ? dx / d : pick([-1, 1]);
-      glide(o, { x:clamp(o.x + ux * 18 * k, AW * o.s * .45, G.trayW - AW * o.s * .45), r:o.r + rr(-14, 14) * k }, 160, { easing:ease.out });
+      if (q === p || Math.abs(q.body.x - b.x) > p.ex + q.ex * .6) return;
+      glide(q.body, { r:q.body.r + rr(-6, 6), y:q.body.y + 1 }, 140, { easing:ease.out });
       Foil.crinkle();
     });
   }
@@ -578,7 +597,7 @@ window.PO_EMBED = true;
     p.body.stage = hs;
     const b = p.body;
     // where it is now, on screen: squashed flat as it lies
-    b.set({ x:r.left - hr.left + r.width / 2, y:r.top - hr.top + r.height / 2, s:G.k * .94, sy:FLOOR, z:0 });
+    b.set({ x:r.left - hr.left + r.width / 2, y:r.top - hr.top + r.height / 2, s:G.k * .94, sy:1, z:0 });
     if (p.face !== 'front'){ p.face = 'front'; p.draw(); }
     const W = handEl.clientWidth, H = handEl.clientHeight, s = Math.min(1.9, W / AW * .5);
     const dimEl = handEl.querySelector('.vm-dim');
@@ -609,13 +628,14 @@ window.PO_EMBED = true;
     const p = inHand; if (!p) return;
     inHand = null;
     const floor = stageOf(vq('.vm-floor')), fr = vq('.vm-floor').getBoundingClientRect(), hr = handEl.getBoundingClientRect();
-    const fx = rr(.3, .7) * G.trayW, fy = G.trayH / FLOOR * .55;
-    const tx = fr.left - hr.left + fx, ty = fr.top - hr.top + fy * FLOOR;
+    const rest = restFor(rr(.3, .7) * G.trayW, restAngle());
     S.cardReturn();
-    await glide(p.body, { x:tx, y:ty, s:G.k * .94, sy:FLOOR, r:rr(-40, 40) }, 280, { arc:30, easing:ease.in });
+    await glide(p.body, { x:fr.left - hr.left + rest.x, y:fr.top - hr.top + rest.y, s:rest.s, r:rest.r }, 280, { arc:30, easing:ease.in });
     floor.objects.append(p.el); if (p.body.sh) floor.shadows.append(p.body.sh);
-    p.body.stage = floor; p.body.set({ x:fx, y:fy, sy:1 });
-    tray.push(p); S.cardLanded(); Foil.thud(.4);
+    p.body.stage = floor; p.body.set({ x:rest.x, y:rest.y });
+    p.ex = rest.ex; p.ey = rest.ey;
+    tray.push(p); p.el.style.zIndex = String(10 + tray.length);
+    S.cardLanded(); Foil.thud(.4);
     putAway();
   }
   async function putAway(){
@@ -625,7 +645,7 @@ window.PO_EMBED = true;
     const f = vq('.vm-flap');
     for (const a of [-48, -20, 6, 0]){ f.style.transform = a ? `perspective(220px) rotateX(${a}deg)` : ''; await wait(PO.reduced ? 0 : 45); }
     S.hatchClose(); Foil.thud(.3);
-    mode = 'idle'; shown = null; panel(); keys();
+    mode = 'idle'; unpeek(); panel(); keys();
   }
   // the packet in your hand: turn it, shake it, flick it down
   let hp = null;
@@ -679,7 +699,7 @@ window.PO_EMBED = true;
     if (mode !== 'idle') return;
     const k = e.target.closest('.vm-key'), pk = e.target.closest('.vm-packet');
     const i = k ? +k.dataset.i : pk && pk.dataset.i != null ? +pk.dataset.i : null;
-    if (i != null && !isNaN(i)){ e.preventDefault(); choose(slots[i]); }
+    if (i != null && !isNaN(i)){ e.preventDefault(); choose(slots[i], !!k); }
   }
 
   /* ---------------- the roll: the hub turns away, the machine comes down ---------------- */
@@ -722,7 +742,7 @@ window.PO_EMBED = true;
     vm.classList.add('is-off');
     layout();
     vm.style.transform = `translateY(${-drum.clientHeight}px)`;
-    shown = null; panel(); crt('', '', '');
+    unpeek(); panel(); crt('', '', '');
     await roll(1);
     await boot();
     mode = 'idle'; panel(); keys();
@@ -769,22 +789,28 @@ window.PO_EMBED = true;
   }
 
   /* ---------------- the hub: the packets waiting ---------------- */
-  let pileStage = null, pileKids = [];
+  // a packet on the hub is the table's size: a little wider than a card
+  const tableS = () => M.scale;
+  // the pile lands on a clear patch of felt and stays there till it's gone
+  let pileStage = null, pileKids = [], pileAt = null;
   function pileBox(){
-    const f = rel($('.cm-felt')), w = Math.min(150, f.w * .42), h = 150;
-    Object.assign(pileEl.style, { left:Math.round(f.x + f.w - w - 14) + 'px', top:Math.round(f.y + 16) + 'px', width:Math.round(w) + 'px', height:h + 'px' });
+    const f = unmoved($('.cm-felt')), s = tableS(), w = Math.round(AW * s * 1.3), h = Math.round(AH * s * 1.08);
+    if (!pileKids.length || !pileAt) pileAt = clearSpot(w, h, f);
+    const x = clamp(pileAt.x, w / 2, f.w - w / 2), y = clamp(pileAt.y, h / 2, f.h - h / 2);
+    Object.assign(pileEl.style, { left:Math.round(f.x + x - w / 2) + 'px', top:Math.round(f.y + y - h / 2) + 'px', width:w + 'px', height:h + 'px' });
     pileStage = stageOf(pileEl.querySelector('.vm-stage'));
-    return { w, h };
+    return { w, h, s };
   }
   // the ones you sent drop onto the felt, one on top of another
   async function dropPile(){
-    const { w, h } = pileBox(), s = .58;
+    const { w, h, s } = pileBox();
+    pileKids.forEach(p => p.body.set({ s }));
     const fresh = pile.slice(pileKids.length);
     for (const series of fresh){
       const p = new Packet(pileStage, series, 0);
       p.tagEl.hidden = true; p.el.classList.add('vm-packet');
-      const n = pileKids.length, x = w / 2 + rr(-18, 18), y = h / 2 + rr(-10, 10), r = rr(-28, 28);
-      p.body.set({ x, y:-70, s, r:r - 40, z:30, sx:1, sy:1 });
+      const n = pileKids.length, x = w / 2 + rr(-8, 8), y = h / 2 + rr(-6, 6), r = rr(-14, 14);
+      p.body.set({ x, y:-h * .6, s, r:r - 40, z:30, sx:1, sy:1 });
       p.body.render(performance.now());
       p.el.style.zIndex = String(10 + n);
       pileKids.push(p);
@@ -800,7 +826,7 @@ window.PO_EMBED = true;
   }
   // tap the pile: the top one is opened on the felt
   function pileDown(e){
-    if (mode !== 'hub' || !pileKids.length) return;
+    if (mode !== 'hub' || !pileKids.length || M.busy) return;
     const el = e.target.closest('.vm-packet'); if (!el) return;
     e.preventDefault();
     const p = pileKids.pop(); pile.pop();
@@ -811,6 +837,7 @@ window.PO_EMBED = true;
     p.body.stage = os;
     mode = 'opening'; keys();
     openEl.classList.add('is-live');
+    E.layout({ tableS:tableS() });
     E.openOwned(p);
   }
 
@@ -822,30 +849,22 @@ window.PO_EMBED = true;
     'SOMETHING IN THERE IS GLOWING':['SOMETHING', 'GLOWS', 'money'], 'SEAL BROKEN':['PULL THEM', 'OUT'],
     'FOUR CARDS, FACE DOWN':['TAP TO', 'TURN'], 'NEXT CARD':['TAP FOR', 'NEXT'], 'LAST ONE…':['LAST', 'ONE'],
     'SQUEEZE IT':['PEEL THE', 'CORNER'], 'YOU SAW IT':['TAP TO', 'TURN'], 'STILL FACE DOWN':['TAP TO', 'TURN'],
-    'RARE!':['A', 'RARE', 'live'], 'LEGENDARY!':['A', 'LEGEND', 'money'], '…':['', '…'],
-    'KEEPING THEM':['INTO YOUR', 'DECK'], 'COUNT IN':['COUNT IN', '', 'money']
+    'RARE!':['A', 'RARE', 'live'], 'LEGENDARY!':['A', 'LEGEND', 'money'], '…':['', '…']
   };
   const KIND = { 'TABLE EVENT':'TABLE', 'FREEZEOUT':'FREEZE', 'BOMB':'BOMB', 'WILD EVENT':'WILD' };
   function shortly(title, sub){
-    if (title === 'COUNT IN') return ['COUNT IN', sub, 'money'];
-    if (title === 'YOUR HAND') return /FLICK/.test(sub) ? ['FLICK THE', 'WRAPPER'] : ['KEEP', 'THEM'];
     if (SHORT[title]) return SHORT[title];
     if (KIND[title]) return [sub.split(' · ')[0].toUpperCase(), KIND[title]];
     const w = title.split(' '), last = w.pop();
     return [w.join(' ') || 'YOUR HAND', last];
   }
-  let saidLegend = false;
   function attachOpening(){
     E = window.PackOpeningEmbed;
     if (!E) return;
     E.attach({
       root, stage:stageOf(openEl),
       ui:{
-        status(title, sub){
-          const [cap, fig, ink] = shortly(title, sub || '');
-          hubCrt('r', cap, fig, ink);
-          if (title === 'LEGENDARY!' && !saidLegend){ saidLegend = true; setTimeout(() => M.pipSay('surprised', 'A legendary. Don’t put your coffee on it.'), 1600); }
-        },
+        status(title, sub){ const [cap, fig, ink] = shortly(title, sub || ''); hubCrt('r', cap, fig, ink); },
         figure(n, label){ hubCrt('l', label, n, /PRIZE|PRICE/.test(label) ? 'money' : ''); },
         key(label, sub, on){ midKey(label, on); },
         keySub(){},
@@ -860,25 +879,290 @@ window.PO_EMBED = true;
       focus:() => null,
       layout:{ handY:.66, squareY:.66, wrapY:.42, railLift:66 },
       onPutBack(){}, onBought(){},
-      async stow(fan){
-        S.cardReturn();
-        await Promise.all(fan.map((c, i) => { c.body.sh?.remove(); return DealerDeck.collect(c.el, i * 90).then(() => c.body.remove()); }));
-      },
-      done(cards){
-        mode = 'hub'; saidLegend = false;
+      bag:at => dropBag(at),
+      stow:fan => M.layDown(fan),
+      done({ wrapper, flap }){
+        mode = 'hub';
         openEl.classList.remove('is-live');
-        M.addToCase(cards);
+        // (they were there before the cards were laid down: under them)
+        if (wrapper){ wrapper.el.style.zIndex = '30'; leave('wrapper', wrapper.body, wrapper, true); }
+        if (flap){ flap.el.style.zIndex = '30'; leave('flap', flap, null, true); }
         keys(); M.screens();
-        if (Math.random() < .35) M.pipSay('pleased', pick(['Four more for the deck.', 'I had a feeling about that one.', 'Smell that? New cards.']));
       }
     });
+  }
+
+  /* ---------------- things left on the felt ----------------
+     The empty wrappers, the torn strips and the bags of chips stay on the
+     hub's felt (under the cards) as things: pick them up, slide them, throw
+     them; off the edge and they're gone. */
+  let feltStage = null;
+  const loose = [];
+  function leave(kind, body, p, under = false){
+    const a = body.stage.el.getBoundingClientRect(), b = feltStage.el.getBoundingClientRect();
+    body.set({ x:body.x + a.left - b.left, y:body.y + a.top - b.top });
+    feltStage.objects.append(body.el); if (body.sh) feltStage.shadows.append(body.sh);
+    body.stage = feltStage;
+    body.el.classList.add('vm-loose');
+    if (!under) M.raise(body.el);
+    const it = { kind, body, p };
+    loose.push(it);
+    return it;
+  }
+  let lp = null;
+  const fl = e => { const r = feltStage.el.getBoundingClientRect(); return { x:e.clientX - r.left, y:e.clientY - r.top }; };
+  function feltDown(e){
+    if (mode !== 'hub' || lp || M.busy) return;
+    // a chip: it bounces
+    const hitC = chipAt(e.clientX, e.clientY);
+    if (hitC && !e.target.closest('.cm-card')){ e.preventDefault(); bounceChip(hitC, e.clientX, e.clientY); return; }
+    const el = e.target.closest('.vm-loose'), it = el && loose.find(q => q.body.el === el);
+    if (!it) return;
+    e.preventDefault();
+    const pt = fl(e), b = it.body, now = performance.now();
+    lp = { id:e.pointerId, it, x0:pt.x, y0:pt.y, x:pt.x, y:pt.y, ox:b.x - pt.x, oy:b.y - pt.y, t:now, hist:[{ ...pt, t:now }], mode:'press' };
+    if (it.kind === 'bag' && !it.open){ const l = bagLocal(b, pt.x, pt.y); if (l.y < BH * .42 && l.x > BW * .35) lp.mode = 'snip'; }
+    M.raise(it.body.el);
+    try { feltStage.el.setPointerCapture(e.pointerId); } catch (_) {}
+    if (it.kind === 'bag') S.chipBounce(.2); else Foil.crinkle();
+    Haptic.tick(5);
+  }
+  function feltMove(e){
+    const q = lp; if (!q || e.pointerId !== q.id) return;
+    const pt = fl(e), now = performance.now();
+    q.x = pt.x; q.y = pt.y;
+    q.hist.push({ ...pt, t:now }); while (q.hist.length > 2 && now - q.hist[0].t > 90) q.hist.shift();
+    const moved = Math.hypot(q.x - q.x0, q.y - q.y0);
+    if (q.mode === 'snip'){ snipTo(q.it, Math.abs(q.x - q.x0) / (BW * q.it.body.s * .55)); return; }
+    if (q.mode === 'press' && moved > 8) q.mode = 'drag';
+    if (q.mode === 'drag'){
+      const v = vel(q), b = q.it.body;
+      b.set({ x:q.x + q.ox, y:q.y + q.oy, z:6, r:b.r + clamp(v.x / 400, -3, 3) });
+    }
+  }
+  function vel(q){ const a = q.hist[0], z = q.hist[q.hist.length - 1], dt = Math.max(16, z.t - a.t); return { x:(z.x - a.x) / dt * 1000, y:(z.y - a.y) / dt * 1000, fresh:performance.now() - z.t < 70 }; }
+  function feltUp(e){
+    const q = lp; if (!q || e.pointerId !== q.id) return;
+    lp = null;
+    const it = q.it, b = it.body;
+    if (q.mode === 'snip'){ if ((it.cut || 0) < 1) snipTo(it, 0, true); return; }
+    if (q.mode === 'press'){
+      // a tap: it hops (a bag of chips rattles)
+      glide(b, { z:8 }, 70, { easing:ease.out }).then(() => glide(b, { z:0 }, 110, { easing:ease.in })).then(() => squash(b, .08, 140));
+      if (it.kind === 'bag' && !it.open){ S.chipBounce(.5); Foil.scrape(); } else Foil.crinkle();
+      return;
+    }
+    // let go: it slides on, or flies off the edge and is gone
+    const v = vel(q), W = feltStage.el.clientWidth, H = feltStage.el.clientHeight, vx = v.fresh ? v.x : 0, vy = v.fresh ? v.y : 0;
+    const tx = b.x + vx * .14, ty = b.y + vy * .14;
+    if (it.kind !== 'bag' && (tx < -30 || tx > W + 30 || ty < -30 || ty > H + 30) && Math.hypot(vx, vy) > 500){
+      loose.splice(loose.indexOf(it), 1);
+      Foil.flutter(); Haptic.tick(8);
+      tween(380, (e2, t) => b.set({ x:b.x + vx * .016, y:b.y + vy * .016, z:6 + Math.sin(t * Math.PI) * 20, r:b.r + Math.sign(vx || 1) * 18, alpha:1 - t }), ease.lin).then(() => b.remove());
+      return;
+    }
+    const m = 14, x = clamp(tx, m, W - m), y = clamp(ty, m, H - m);
+    glide(b, { x, y, z:0, r:b.r + clamp(vx / 30, -40, 40) }, 240, { easing:ease.out }).then(() => {
+      squash(b, .06, 140);
+      if (it.kind === 'bag'){ S.chipBounce(.3); Foil.thud(.3); } else Foil.crinkle();
+    });
+  }
+
+  /* ---- the bag of chips: clear plastic, the amount on a sticker ---- */
+  const BW = 44, BH = 54, CUT = 13;
+  const CHIP_INK = { t0:['#efe6c8', '#b3392f'], t1:['#d0362a', '#f3eee2'], t2:['#1f9a57', '#f3eee2'], t3:['#2a2630', '#e0b54a'] };
+  function chipCols(value){
+    const out = [];
+    try { CoinWorld.composeTiers(value, 9).counts.forEach((n, k) => { for (let i = 0; i < n; i++) out.push('t' + k); }); } catch (e) {}
+    // a handful at least: the biggest broken into smaller ones
+    for (let g = 0; out.length < 5 && g < 9; g++){
+      const top = out.reduce((a, c) => c > a ? c : a, 't0');
+      if (top === 't0') break;
+      out.splice(out.indexOf(top), 1, ...Array(2).fill('t' + (+top[1] - 1)));
+    }
+    return out.length ? out : ['t0', 't0', 't0', 't1', 't1'];
+  }
+  function drawBag(it){
+    const c = it.ctx, cut = it.open ? 1 : 0, part = it.cut || 0;
+    c.clearRect(0, 0, BW, BH);
+    const L = 3, R = BW - 3, T = 3, B = BH - 2;
+    const inside = (x, y) => !(cut && x > R - CUT + (y - T));
+    // the plastic: barely there, brighter at its edges
+    for (let y = T; y < B; y++) for (let x = L; x < R; x++){
+      if (!inside(x, y)) continue;
+      const edge = x === L || x === R - 1 || y === T || y === B - 1 || (cut && x === R - CUT + (y - T));
+      c.fillStyle = edge ? 'rgba(236,248,250,.78)' : y < T + 6 ? 'rgba(226,242,246,.30)' : 'rgba(214,234,240,.16)';
+      c.fillRect(x, y, 1, 1);
+    }
+    // the chips inside, in a heap at the bottom
+    it.cols.slice(0, it.open ? 0 : 9).forEach((col, i) => {
+      const [face, band] = CHIP_INK[col] || CHIP_INK.t0, row = i < 4 ? 0 : i < 7 ? 1 : 2, k = i - [0, 4, 7][row];
+      const x = L + 4 + k * 9 + row * 4 + (row === 1 ? 1 : 0), y = B - 6 - row * 4 - (k % 2);
+      c.fillStyle = 'rgba(10,6,6,.55)'; c.fillRect(x, y + 1, 10, 4);
+      c.fillStyle = face; c.fillRect(x, y, 10, 3);
+      c.fillStyle = band; c.fillRect(x + 2, y, 2, 3); c.fillRect(x + 6, y, 2, 3);
+      c.fillStyle = 'rgba(255,255,255,.35)'; c.fillRect(x + 1, y, 8, 1);
+    });
+    // the seal: a zip across the top
+    for (let x = L + 1; x < R - 1; x++){ if (!inside(x, T + 6)) continue; c.fillStyle = 'rgba(168,214,236,.95)'; c.fillRect(x, T + 6, 1, 1); c.fillStyle = 'rgba(255,255,255,.6)'; c.fillRect(x, T + 7, 1, 1); }
+    // a glint down the plastic
+    c.fillStyle = 'rgba(255,255,255,.42)';
+    for (let k = 0; k < 18; k += 2) c.fillRect(L + 4 + Math.floor(k / 3), T + 14 + k, 1, 2);
+    // the sticker with the amount
+    c.drawImage(it.label, Math.round((BW - it.label.width) / 2), 17);
+    // the snip so far: a nick along the corner
+    if (!cut && part > 0){
+      c.fillStyle = '#fff';
+      const n = Math.round(CUT * part);
+      for (let k = 0; k < n; k++) c.fillRect(R - CUT + k, T + k, 1, 1);
+    }
+  }
+  function sticker(text){
+    const w = text.length * 8 + 6, h = 12, cv = Object.assign(document.createElement('canvas'), { width:w, height:h }), x = cv.getContext('2d');
+    x.fillStyle = '#efe4c4'; x.fillRect(0, 0, w, h);
+    x.fillStyle = '#c9b88e'; x.fillRect(0, h - 1, w, 1); x.fillRect(w - 1, 0, 1, h);
+    const t = Object.assign(document.createElement('canvas'), { width:w, height:h }), tx = t.getContext('2d');
+    tx.font = '8px "Press Start 2P"'; tx.textBaseline = 'top'; tx.fillStyle = '#000'; tx.fillText(text, 3, 2);
+    const img = tx.getImageData(0, 0, w, h), d = img.data;
+    x.fillStyle = '#3a1810';
+    for (let i = 0; i < d.length; i += 4) if (d[i + 3] > 110){ const p = i / 4; x.fillRect(p % w, Math.floor(p / w), 1, 1); }
+    return cv;
+  }
+  // it comes out of the packet with the cards and drops onto the felt
+  async function dropBag({ x, y, series }){
+    try { await document.fonts.load('8px "Press Start 2P"'); } catch (e) {}
+    const value = BAG[series] || 40;
+    const el = Object.assign(document.createElement('canvas'), { width:BW, height:BH, className:'vm-bag' });
+    const os = stageOf(openEl), body = new PO.Body(os, el, { w:BW, h:BH, shadowW:BW, shadowH:BH * .4, shadowY:BH * .3 });
+    const it = { kind:'bag', body, value, cols:chipCols(value), ctx:el.getContext('2d'), label:sticker(money(value)), open:false, cut:0 };
+    drawBag(it);
+    const s = tableS(), W = openEl.clientWidth, H = openEl.clientHeight;
+    body.set({ x, y, z:20, r:0, s:s * .8, sx:1, sy:1, alpha:1 });
+    body.render(performance.now());
+    el.style.zIndex = '45';
+    S.chipBounce(.6); Foil.crinkle();
+    const { x:tx, y:ty } = clearSpot(BW * s, BH * s);
+    await glide(body, { x:tx, y:ty, z:0, r:rr(-25, 25), s }, 460, { arc:50, easing:ease.out });
+    S.chipBounce(.8); Foil.thud(.4); Haptic.tick(10);
+    puff(os, tx, ty + BH * s * .4, BW * s, { n:5 });
+    squash(body, .12, 200);
+    // left on the hub's felt with the rest
+    const l = leave('bag', body);
+    Object.assign(l, it, { body });
+  }
+  // somewhere on the felt clear of the cards out, the deck, the clean-up
+  // spot, the packets waiting and the bags (f: the felt where it sits still)
+  function clearSpot(w, h, f = M.felt.getBoundingClientRect()){
+    const W = f.width || f.w, H = f.height || f.h, o = M.felt.getBoundingClientRect();
+    const busy = [...M.felt.querySelectorAll('.cm-card, .cm-pad, .cm-station, .vm-bag')].map(e => e.getBoundingClientRect())
+      .map(r => ({ left:r.left - o.left, right:r.right - o.left, top:r.top - o.top, bottom:r.bottom - o.top }));
+    if (pileKids.length){ const r = pileEl.getBoundingClientRect(); busy.push({ left:r.left - o.left, right:r.right - o.left, top:r.top - o.top, bottom:r.bottom - o.top }); }
+    let best = null, least = 1e9;
+    for (let i = 0; i < 40; i++){
+      const x = rr(w * .7, W - w * .7), y = rr(h * .7, H - h * .7);
+      const over = busy.reduce((a, r) => a + Math.max(0, Math.min(x + w / 2, r.right) - Math.max(x - w / 2, r.left)) * Math.max(0, Math.min(y + h / 2, r.bottom) - Math.max(y - h / 2, r.top)), 0);
+      if (over < least){ least = over; best = { x, y }; }
+      if (!over) break;
+    }
+    return best;
+  }
+  function bagLocal(b, px, py){
+    const dx = px - b.x, dy = py - (b.y - b.z), a = -b.r * Math.PI / 180;
+    return { x:(dx * Math.cos(a) - dy * Math.sin(a)) / b.s + BW / 2, y:(dx * Math.sin(a) + dy * Math.cos(a)) / b.s + BH / 2 };
+  }
+  // drag across its top corner: the plastic gives, a nick at a time; all
+  // the way and the corner comes off and the chips pour out
+  function snipTo(it, v, back){
+    if (it.open) return;
+    const was = it.cut || 0;
+    it.cut = back ? 0 : clamp(Math.max(was, v), 0, 1);
+    if (Math.floor(it.cut * 6) !== Math.floor(was * 6) && !back){ Foil.crackle(.5 + it.cut * .4, it.cut); Haptic.tick(4, 50); }
+    drawBag(it);
+    if (it.cut >= 1) spillBag(it);
+  }
+  async function spillBag(it){
+    it.open = true; lp = null;
+    Foil.rip(); Haptic.tick(20);
+    drawBag(it);
+    const b = it.body, s = b.s;
+    // the corner, snipped off: it flutters away
+    const bit = Object.assign(document.createElement('canvas'), { width:CUT, height:CUT, className:'vm-bit' });
+    const bx = bit.getContext('2d'); bx.fillStyle = 'rgba(236,248,250,.8)';
+    for (let k = 0; k < CUT; k++) bx.fillRect(k, 0, CUT - k, 1);
+    const cb = new PO.Body(feltStage, bit, { w:CUT, h:CUT, shadowW:CUT, shadowH:4, shadowY:4 });
+    const a = b.r * Math.PI / 180, ox = (BW / 2 - CUT / 2) * s, oy = (-BH / 2 + CUT / 2) * s;
+    const cx = b.x + ox * Math.cos(a) - oy * Math.sin(a), cy = b.y + ox * Math.sin(a) + oy * Math.cos(a);
+    cb.set({ x:cx, y:cy, z:4, r:b.r, s, sx:1, sy:1, alpha:1 });
+    glide(cb, { x:cx + rr(20, 40), y:cy + rr(-10, 20), z:0, r:b.r + rr(90, 200) }, 420, { arc:30 }).then(() => leave('flap', cb));
+    // it tips, the cut corner down, and the chips pour out of it
+    await glide(b, { r:b.r + 50, z:6 }, 160, { easing:ease.out });
+    const f = feltStage.el.getBoundingClientRect(), d = Math.round(M.scale * 82 * .22);
+    const mouth = () => { const a2 = b.r * Math.PI / 180; return { x:f.left + b.x + ox * Math.cos(a2) - oy * Math.sin(a2), y:f.top + b.y + ox * Math.sin(a2) + oy * Math.cos(a2) - b.z }; };
+    try {
+      CoinWorld.setHost(feltStage.el, [3, 3]);   // on top of whatever they land on CoinWorld.setExtraBlocks([]); CoinWorld.buildWalls();
+      const m = mouth();
+      const out = it.cols.map((col, i) => {
+        const c = CoinWorld.body(CoinWorld.makeChip(col), m.x, m.y, 10, d);
+        c.fresh = true; chips.push(c);
+        return CoinWorld.launch(c, { x:clamp(m.x + rr(-20, 70), f.left + d, f.right - d), y:clamp(m.y + rr(10, 70), f.top + d, f.bottom - d), d },
+          { T:PO.reduced ? .01 : .3 + i * .015, wait:PO.reduced ? 0 : 30 + i * 55, flips:PO.reduced ? 0 : 1 + (i % 3), i });
+      });
+      chipValue += it.value;
+      Foil.rustle(.6);
+      await Promise.all(out);
+    } catch (e) { chipValue += it.value; }
+    it.value = 0;
+    await glide(b, { r:b.r - 20, z:0 }, 200, { easing:ease.in });
+    squash(b, .06, 140); Foil.crinkle();
+  }
+
+  /* ---- the chips on the felt: tap one and it bounces ---- */
+  const chips = [];
+  let chipValue = 0;
+  function chipAt(x, y){
+    let hit = null, best = 1e9;
+    chips.forEach(b => {
+      if (b.state !== 'rest') return;
+      const d = Math.hypot(b.x - x, b.y - b.z - b.d * .5 - y);
+      if (d < b.d * .9 && d < best){ best = d; hit = b; }
+    });
+    return hit;
+  }
+  function bounceChip(hit, x, y){
+    const CW = CoinWorld, dx = hit.x - x || CW.rr(-1, 1), dy = (hit.y - y) * .4, L = Math.max(1, Math.hypot(dx, dy));
+    Object.assign(hit, { target:{}, opts:{}, bounces:0, maxB:1, e:.3, knocked:true, inFelt:true, edge:false,
+      vx:dx / L * CW.rr(60, 100), vy:dy / L * CW.rr(20, 40), vz:CW.rr(160, 220), fr:Math.PI * 2 / .25, phi:0, t:.1, T:0, state:'air' });
+    CW.active.add(hit); CW.kick(); CW.sfx('stack', .7); Haptic.tick(6);
+  }
+
+  /* ---- the hub's clean-up spot: the shop's things go too ---- */
+  // the rubbish goes into the spot and away; the chips (and any bag still
+  // shut) go into the bankroll, and the reel counts them in
+  async function sweep(pc){
+    const things = loose.splice(0);
+    let value = chipValue; chipValue = 0;
+    const r = M.reelEl.getBoundingClientRect();
+    const away = things.map((it, i) => {
+      const b = it.body;
+      if (it.kind === 'bag' && !it.open){
+        value += it.value;
+        const f = feltStage.el.getBoundingClientRect();
+        return wait(i * 50).then(() => glide(b, { x:r.left + r.width / 2 - f.left, y:r.top + r.height / 2 - f.top, s:b.s * .5, z:20, alpha:.4 }, 380, { arc:40, easing:ease.in })).then(() => { S.chipCollect(.6); b.remove(); });
+      }
+      return wait(i * 50).then(() => glide(b, { x:pc.x, y:pc.y, r:b.r + rr(-90, 90), s:b.s * .55, z:0 }, 280, { arc:12, easing:ease.in }))
+        .then(() => tween(140, e => b.set({ alpha:1 - e, s:b.s * (1 - e * .3) }))).then(() => { Foil.crinkle(); b.remove(); });
+    });
+    const home = chips.splice(0).map((c, i) => CoinWorld.launch(c, { x:r.left + r.width / 2, y:r.top + r.height / 2, d:14, vanish:true }, { wait:PO.reduced ? 0 : i * 40, T:PO.reduced ? .01 : .34, flips:PO.reduced ? 0 : 1, i }));
+    await Promise.all([...away, ...home]);
+    if (home.length){ try { CoinWorld.clearWorld(); } catch (e) {} }
+    if (value){ hubCrt('r', 'COUNT IN', '+' + money(value), 'money'); await M.countIn(value); }
   }
 
   /* ---------------- the lab's sheet ---------------- */
   function sheet(){
     const s = $('#cm-sheet');
     s.querySelector('h2').textContent = 'CAREER · THE PACKET MACHINE';
-    s.querySelector('p').textContent = 'SHOP rolls the machine down. Tap packets (again for another), hold the green key to pay, watch them drop. Tap PUSH to take one: turn it, shake it, flick it down to send it. SHOP again: they wait on the felt; tap one to open it. Lab money, nothing saved.';
+    s.querySelector('p').textContent = 'SHOP rolls the machine down. Tap a packet to look, again (or its key) to put one in; hold the green key to pay, watch them drop. Tap PUSH to take one: turn it, shake it, flick it down to send it. SHOP again: they wait on the felt; tap one to open it. Snip the bag of chips across its top corner. Tap the outline opposite the deck to clear the felt. Lab money, nothing saved.';
     const seg = (key, opts) => `<div class="vm-seg" data-vm="${key}">${Object.entries(opts).map(([v, n]) => `<button class="pc-button pc-button-secondary" data-v="${v}">${n}</button>`).join('')}</div>`;
     s.querySelector('#cm-done').parentNode.insertAdjacentHTML('beforebegin', `
       <h3>THE WINDOW</h3>${seg('cols', { 4:'4 ACROSS', 5:'5 ACROSS' })}${seg('rows', { 4:'4 ROWS', 3:'3 ROWS' })}
@@ -922,17 +1206,39 @@ window.PO_EMBED = true;
     if (!M || !window.PackOpeningEmbed) return;
     build(); sheet();
     E.applyTune();
+    feltStage = stageOf(M.felt);
+    M.felt.addEventListener('pointerdown', feltDown);
+    M.felt.addEventListener('pointermove', feltMove);
+    M.felt.addEventListener('pointerup', feltUp);
+    M.felt.addEventListener('pointercancel', feltUp);
     window.CareerShop = {
-      key, screens,
+      key, screens, sweep,
       get out(){ return mode !== 'hub'; },
-      keepOff:() => pileKids.length ? pileEl.getBoundingClientRect() : null
+      keepOff:() => [...(pileKids.length ? [pileEl.getBoundingClientRect()] : []), ...loose.filter(q => q.kind === 'bag').map(q => q.body.el.getBoundingClientRect())]
     };
     pileBox(); layout(); keys();
     new ResizeObserver(() => { if (mode === 'idle'){ layout(); } else if (mode === 'hub'){ layout(); pileBox(); } }).observe(root);
     // read-only diagnostics for the lab's checks
     window.VendingLab = {
-      get state(){ return { mode, cols:G?.C, rows:G?.R, k:G?.k, order:order.map(s => s.id), total:total(), wallet:M.wallet, tray:tray.length, inHand:!!inHand, pile:pile.length, stuck:!!stuckP, deck:M.pool, cards:M.cards, open:E.state.phase }; },
-      slots:() => slots.map(s => ({ i:s.i, id:s.id, r:s.r, c:s.c, count:s.count }))
+      get state(){ return { mode, cols:G?.C, rows:G?.R, k:G?.k, sel:sel?.id || null, order:order.map(s => s.id), total:total(), wallet:M.wallet, tray:tray.length, inHand:!!inHand, pile:pile.length, stuck:!!stuckP, pool:M.pool, deck:M.deck, cards:M.cards, open:E.state.phase, loose:loose.map(q => q.kind + (q.open ? ':open' : '')), chips:chips.length, busy:M.busy }; },
+      slots:() => slots.map(s => ({ i:s.i, id:s.id, r:s.r, c:s.c, count:s.count })),
+      // where on screen a point of the bag is (fractions of it), and a chip
+      // a corner of the bag nothing's lying on: [fx, fy]
+      bagGrip(){
+        const bag = loose.find(q => q.kind === 'bag').body.el;
+        for (const fy of [.2, .3, .12]) for (const fx of [.45, .55, .65, .4]){ const [x, y] = this.bagPoint(fx, fy); if (document.elementFromPoint(x, y)?.closest('.vm-bag') === bag) return [fx, fy]; }
+        return null;
+      },
+      bagPoint(fx, fy){
+        const b = loose.find(q => q.kind === 'bag').body, f = feltStage.el.getBoundingClientRect(), a = b.r * Math.PI / 180;
+        const lx = (fx - .5) * BW * b.s, ly = (fy - .5) * BH * b.s;
+        return [f.left + b.x + lx * Math.cos(a) - ly * Math.sin(a), f.top + b.y - b.z + lx * Math.sin(a) + ly * Math.cos(a)];
+      },
+      chipPoint(){
+        const at = c => [c.x, c.y - c.z - c.d * .5];
+        const c = chips.find(q => { const [x, y] = at(q), e = document.elementFromPoint(x, y); return q.state === 'rest' && !e.closest('.vm-pile, .cm-card, .vm-loose, .cm-station, .cm-pad'); }) || chips[0];
+        return at(c);
+      }
     };
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', () => setTimeout(setup, 0)); else setTimeout(setup, 0);

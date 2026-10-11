@@ -26,6 +26,9 @@ audit's complaints (dashboard rims, clipped result line, chip pile) are gone.
 
 ## Recent changes (newest first)
 
+- 11 Oct (no game change): the packet machine, round 3 (owner's notes):
+  TUNE fix, select then add, a chip stream, a flat tray; the hub loses
+  P.I.P., gains a clean-up spot, one table size, a bag of chips to snip.
 - 11 Oct (no game change): the shop is a vending machine (owner's idea,
   [plan](career/VENDING_PLAN.md)), moving: `vending-lab.html`.
 - 11 Oct (no game change): the desk lab ([plan](career/CAREER_HUB_DESK_PLAN.md))
@@ -37,9 +40,6 @@ audit's complaints (dashboard rims, clipped result line, chip pile) are gone.
   simplified on the owner's notes) used by the pack, album and hub.
 - 8 Oct (no game change): Hub Lab (`hub-lab.html`): Career opens on
   tonight's tickets, dealt and styled by kind, fed into a slot.
-- 8 Oct (no game change): Career as packs of cards, brainstormed with
-  the owner (`docs/career/PACKS_PLAN.md`); the visual lab `pack-lab.html`
-  (vending machine, rip, reveal, ticket case, feed into a real table).
 
 ## Open items (verified, not scheduled)
 
@@ -68,8 +68,8 @@ own speech bubbles (`claude/tender-dijkstra-zso8dm`).
 
 ## Next
 
-The packet machine: the owner's notes on the moving lab, then polish. The
-hub: notes; P.I.P.'s style counts (save data: ask); the collection book; then into Career: the collection save, a pack economy
+The packet machine and hub: the owner's notes on round 3, then polish.
+Then the collection book; then into Career: the collection save, a pack economy
 simulation, Pattern Book sign-off for the new parts, the real table hand-off.
 Read [`career/CAREER_HUB_DESK_PLAN.md`](career/CAREER_HUB_DESK_PLAN.md) and
 [`career/PACK_OPENING_V3_PLAN.md`](career/PACK_OPENING_V3_PLAN.md).

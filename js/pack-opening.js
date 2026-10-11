@@ -24,10 +24,13 @@
    Any tap during an animation finishes it. The key always does the
    next thing. Memory-only: no game saves, no Career transactions.
 
-   EMBEDDED (window.PO_EMBED, set by js/career-shop.js): no table of its
+   EMBEDDED (window.PO_EMBED, set by js/vending-machine.js): no table of its
    own. The shop hands it one packet on the hub's felt (offer), and the
    hub's reel, CRTs and key stand in for the machine around the felt.
-   KEEP gives the hand to the hub (it goes into the deck), then it waits.
+   Everything is sized to the hub's table (L.tableS). The chips come out
+   in a bag (cfg.bag); after the hand is read it's laid down on the hub's
+   table (cfg.stow), and the wrapper and the strip are left there too
+   (cfg.done), then it waits.
    ============================================================ */
 (() => {
   'use strict';
@@ -43,7 +46,8 @@
   // embedded: the host's machine (ui) and its hooks (cfg); see attach()
   let ui = null, cfg = null, nudgeEl = null;
   // where the hand, its squaring and the wrapper sit (fractions of the felt)
-  const L = { handY:.83, squareY:.8, wrapY:.56, railLift:0 };
+  // tableS (embedded): the host table's scale, which everything left on it shares
+  const L = { handY:.83, squareY:.8, wrapY:.56, railLift:0, tableS:0 };
 
   let root, stage, W = 0, H = 0, phase = 'boot', lock = false;
   let packets = [], chosen = null, deck = null, flap = null, wallet = 5000, packNo = 0;
@@ -61,8 +65,8 @@
   const home = p => ({ x:W * p.home.fx, y:H * p.home.fy, s:rowS(), r:p.home.r, z:0, alpha:1, sx:1, sy:1 });
   const focus = () => ({ x:W / 2, y:H * .45, s:focusS(), r:0, z:4, alpha:1, sx:1, sy:1, ...(cfg?.focus?.(W, H) || {}) });
   const aside = k => ({ x:k ? W * .9 : W * .1, y:H * .1, s:rowS() * .62, r:k ? 12 : -12, z:0, alpha:.75 });
-  const deckSpot = () => ({ x:W * .83, y:H * .62, z:0, r:4, s:Math.min(1.2, focusS() * .6), sx:1, sy:1 });
-  const wrapperSpot = () => ({ x:W * .16, y:H * L.wrapY, z:0, r:-27, s:Math.min(1, focusS() * .46), sx:1, sy:1 });
+  const deckSpot = () => ({ x:W * .83, y:H * .62, z:0, r:4, s:L.tableS || Math.min(1.2, focusS() * .6), sx:1, sy:1 });
+  const wrapperSpot = () => ({ x:W * .16, y:H * L.wrapY, z:0, r:-27, s:L.tableS || Math.min(1, focusS() * .46), sx:1, sy:1 });
 
   /* ---------------- the machine around the felt ---------------- */
   function status(title, sub){ if (ui) return ui.status(title, sub || ''); $('po-title').textContent = title; $('po-sub').textContent = sub || ''; }
@@ -473,7 +477,7 @@
     p.open = true; p.tear = 1; p.draw();
     const f = focus(), side = p.dir;
     // the strip flies off the way you tore it and lands on the felt
-    glide(flap, { x:side > 0 ? W * .74 : W * .26, y:H * .13, r:side * 168, z:0, s:Math.min(1.25, focusS() * .6) }, 560, { arc:70, easing:ease.out })
+    glide(flap, { x:side > 0 ? W * .74 : W * .26, y:H * .13, r:side * 168, z:0, s:L.tableS || Math.min(1.25, focusS() * .6) }, 560, { arc:70, easing:ease.out })
       .then(() => { Foil.crinkle(); puff(stage, flap.x, flap.y + 8, AW * flap.s * .6, { n:4 }); squash(flap, .1); });
     // the packet springs back and puffs open; the cards jostle up into the mouth
     S.hatchOpen();
@@ -538,10 +542,12 @@
     p.cards = [];
     // the deck arcs to its spot and squares up, a card at a time
     const d = deckSpot();
+    // embedded: the chips come out with the cards, in a bag, and drop to the felt
+    if (EMBED) cfg.bag?.({ x:p.body.x, y:p.body.y - AH * p.body.s * .42, series:p.series });
     const wrapper = glide(p.body, wrapperSpot(), 480, { arc:10 }).then(async () => {
       Foil.crinkle();
       await tween(260, e => { p.slump = e; p.draw(); });
-      p.chips = true; p.draw(); S.chipBounce(.55);
+      if (!EMBED){ p.chips = true; p.draw(); S.chipBounce(.55); }
     });
     S.cardDeal();
     await glide(deck, d, 360, { arc:14 });
@@ -573,9 +579,9 @@
   let contents = [], revealed = 0, rc = null, fan = [];
   const revealSpot = () => ({ x:W / 2, y:H * .38, s:focusS(), r:0, z:6, sx:1, sy:1, alpha:1 });
   // turned cards stand in the brass card-holder lip, fanned like a hand
-  const railSpot = i => { const s = Math.min(.66, focusS() * .33), k = i - 1.5; return { x:W / 2 + k * CARD_W * s * .8, y:H - CARD_H * s / 2 + 18 - L.railLift + Math.abs(k) * 3, s, r:k * 7, z:0, sx:1, sy:1 }; };
+  const railSpot = i => { const s = L.tableS || Math.min(.66, focusS() * .33), k = i - 1.5; return { x:W / 2 + k * CARD_W * s * .8, y:H - CARD_H * s / 2 + 18 - L.railLift + Math.abs(k) * 3, s, r:k * 7, z:0, sx:1, sy:1 }; };
   // when the pack is done the fan lifts out of the lip into a held hand
-  const handSpot = (i, n = fan.length) => { const s = Math.min(.86, focusS() * .42), k = i - (n - 1) / 2; return { x:W / 2 + k * CARD_W * s * .82, y:H * L.handY + k * k * 3, s, r:k * 8, z:0, sx:1, sy:1 }; };
+  const handSpot = (i, n = fan.length) => { const s = L.tableS || Math.min(.86, focusS() * .42), k = i - (n - 1) / 2; return { x:W / 2 + k * CARD_W * s * .82, y:H * L.handY + k * k * 3, s, r:k * 8, z:0, sx:1, sy:1 }; };
 
   function enterDeck(){
     lock = false;
@@ -891,6 +897,8 @@
     }
     S.arcadeReward(h.tier);
     if (h.tier !== 'strong') lamps();
+    // embedded: a beat to read it, then the hand is laid down on the host's table
+    if (EMBED){ key('…', '', false); await wait(PO.reduced ? 200 : 1100); phase = 'haul'; return keep(); }
     lock = false; phase = 'haul';
     figure(String(fan.length).padStart(2, '0'), 'IN HAND');
     key('KEEP', chosen ? 'FLICK THE WRAPPER · TAP A CARD' : 'TAP A CARD TO LOOK');
@@ -1021,6 +1029,7 @@
     if (phase !== 'haul') return;
     lock = true; phase = 'keeping';
     nudge(false);
+    if (EMBED) return keepEmbedded();
     fan.forEach(c => c.el.querySelector('.po-new')?.remove());
     if (chosen && !chosen.tossed){ await tossWrapper(0, 0); }
     status('KEEPING THEM', String(fan.length) + (EMBED ? ' INTO YOUR DECK' : ' INTO THE COLLECTION'));
@@ -1058,20 +1067,18 @@
     dealIn();
   }
 
-  // embedded: the host takes the squared hand (into its deck), the chips
-  // come home to its reel, and the felt is left as it was found
+  // embedded: the hand is laid down on the host's table, and the empty
+  // wrapper and the torn strip are left there with it, as things
   async function keepEmbedded(){
-    const cards = fan.map(c => c.card);
-    await cfg.stow(fan.slice());
-    fan = [];
-    await chipsHome();
-    if (flap){ const f = flap; flap = null; await glide(f, { x:-W * .3, y:f.y + 20, r:f.r - 90, alpha:.3 }, 300, { easing:ease.in }); f.remove(); }
-    try { CoinWorld.clearWorld(); } catch (e) {}
+    const cards = fan.slice();
+    cards.forEach(c => c.el.querySelector('.po-new')?.remove());
     clearShown();
-    deck = rc = null; packets = []; chosen = null;
+    fan = [];
+    await cfg.stow(cards);
+    const left = { cards:cards.map(c => c.card), wrapper:chosen && !chosen.tossed ? chosen : null, flap };
+    deck = rc = flap = chosen = null; packets = [];
     lock = false; phase = 'idle';
-    nudge(false);
-    cfg.done?.(cards);
+    cfg.done?.(left);
   }
 
   /* ---------------- the faces of the machine ----------------
@@ -1212,7 +1219,7 @@
         if (live.length) sweep(live[(sweepAt++) % live.length]);
       }
       // the empty wrapper rattles now and then: there's something in it
-      if (phase === 'haul' && chosen && !chosen.tossed && !pointer && performance.now() - idleAt > 2400 && performance.now() - (lastRattle || 0) > 2600){ lastRattle = performance.now(); rattle(.5); }
+      if (!EMBED && phase === 'haul' && chosen && !chosen.tossed && !pointer && performance.now() - idleAt > 2400 && performance.now() - (lastRattle || 0) > 2600){ lastRattle = performance.now(); rattle(.5); }
       const p = chosen, idle = performance.now() - idleAt > 1600 && !pointer && !lock;
       if (p && idle && (phase === 'sealed' || phase === 'open')){
         const f = focus(), top = f.y - AH * f.s / 2;
@@ -1560,8 +1567,9 @@
      ui      status(t, s) figure(n, l) key(l, s, on) keySub(s) bank(v)
              bankEl() flash(): the host's reel, screens and key
      wallet, setWallet(v), focus(W, H) (where a packet on offer sits),
-     layout  overrides for L (handY, squareY, wrapY, railLift)
-     onPutBack(p) onBought(p) stow(cards) done(cards): the host's hooks */
+     layout  overrides for L (handY, squareY, wrapY, railLift, tableS)
+     onPutBack(p) onBought(p) bag({ x, y, series }) stow(fan)
+     done({ cards, wrapper, flap }): the host's hooks */
   function attach(c){
     cfg = c; ui = c.ui; root = c.root; stage = c.stage;
     Object.assign(L, c.layout || {});
@@ -1597,6 +1605,7 @@
     if (phase !== 'idle') return;
     wallet = cfg.wallet(); measure();
     packets = [p]; chosen = p; packNo++;
+    pull = 0; deck = flap = rc = null; fan = [];
     p.yaw = 0; p.face = 'front'; p.body.set({ shx:1 });
     if (!p.cards.length) fillStack(p);
     hasLegend = tune.contents === 'legendary' || tune.contents === 'double' || (tune.contents === 'surprise' && Math.random() < 1 / 3);
@@ -1616,6 +1625,8 @@
   if (EMBED){
     window.PackOpeningEmbed = {
       attach, offer, putBack, openOwned,
+      // the host's table can change size between openings
+      layout(o){ Object.assign(L, o); },
       keyDown:onKeyDown, keyUp:onKeyUp,
       keyCancel(){ keyFrom = null; keyHeld = false; if (phase === 'charging') releaseCharge(); },
       finish(){ PO.finishAll(); },

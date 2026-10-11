@@ -2,14 +2,18 @@
    Start a server at the repo root (python3 -m http.server 8765), then:
      node validation/vending-checks.cjs
    VENDING_URL overrides the page. Real emulated touch through
-   validation/tools/touch-harness.js: SHOP rolls the machine down; a
-   sold-out key does nothing; two packets chosen (a key twice, a packet
-   once), CLEAR empties them, chosen again; HOLD TO BUY pays (the bankroll
-   drops by the total) and they drop into the tray; one sticks and two
-   knocks free it; PUSH takes one out; a flick down sends it; SHOP takes
-   the rest; on the hub they wait in a pile; one is opened there and KEEP
-   puts four cards in the deck. At three sizes (one with reduced motion),
-   with no errors and no game storage writes. */
+   validation/tools/touch-harness.js: SHOP rolls the machine down; TUNE
+   changes while it's down leave it where it is; a sold-out key does
+   nothing; a key twice puts two in, a packet's first tap only looks at it
+   and its second puts one in; CLEAR empties them, chosen again; HOLD TO
+   BUY pays (the bankroll drops by the total) and they drop into the tray;
+   one sticks and two knocks free it; PUSH takes one out; a flick down
+   sends it; SHOP takes the rest; on the hub they wait in a pile; one is
+   opened there: its four cards are laid down on the felt, the wrapper,
+   the strip and a bag of chips left there; the bag is snipped and the
+   chips spill; the clean-up spot puts every card back in the deck and the
+   chips in the bankroll. At three sizes (one with reduced motion), with
+   no errors and no game storage writes. */
 'use strict';
 const assert = require('node:assert/strict');
 const { withPage } = require('./tools/touch-harness');
@@ -27,29 +31,43 @@ async function run(width, height, reducedMotion){
     const until = async (fn, what, ms = 30000) => {
       const t = Date.now();
       while (Date.now() - t < ms){ const s = await st(); if (fn(s)) return s; await page.waitForTimeout(60); }
-      throw new Error('waiting for ' + what + ', state ' + JSON.stringify(await st()));
+      throw new Error('waiting for ' + what + ', state ' + JSON.stringify(await st()) + ' errors ' + page._errors.join(' · '));
     };
     const centre = async sel => { const r = await g.locator(sel).first().boundingBox(); assert.ok(r, sel + ' visible'); return [r.x + r.width / 2, r.y + r.height / 2]; };
     const tap = async (x, y) => { await touch.start(x, y); await page.waitForTimeout(30); await touch.end(); await page.waitForTimeout(60); };
     const tune = (k, v) => fr.evaluate(([k, v]) => document.querySelector(`[data-vm="${k}"] [data-v="${v}"]`).click(), [k, v]);
+    const ifr = await page.locator('#pk-game').boundingBox();
 
     // SHOP: the machine rolls down and boots
     await tune('stuck', 'next');
     await tap(...await centre('[data-key="shop"]'));
     let s = await until(q => q.mode === 'idle', 'the machine');
     assert.ok(s.k > .3, 'packets a readable size (' + s.k + ')');
+    // TUNE while it's down: it stays where it is, and the keys still work
+    const spot = async () => fr.evaluate(() => { const v = document.querySelector('.vm').getBoundingClientRect(), r = document.querySelector('.cm-cabinet').getBoundingClientRect(), c = document.querySelector('.cm-console').getBoundingClientRect(); return { top:v.top, bottom:v.bottom, cab:r.bottom, con:c.top }; });
+    const at0 = await spot();
+    await tap(...await centre('#cm-tune'));
+    await tune('rows', '3'); await tune('cols', '5'); await page.waitForTimeout(200);
+    await tune('rows', '4'); await tune('cols', '4'); await page.waitForTimeout(200);
+    await fr.evaluate(() => document.querySelector('#cm-done').click());
+    const at1 = await spot();
+    assert.ok(Math.abs(at1.top - at0.top) < 2 && at1.bottom <= at1.con + 2, 'the machine stays put after TUNE (' + JSON.stringify([at0, at1]) + ')');
     const slots = await fr.evaluate(() => VendingLab.slots());
     const out = slots.find(q => !q.id), club = slots.find(q => q.id === 'club'), house = slots.find(q => q.id === 'house');
     const key = i => centre(`.vm-key[data-i="${i}"]`);
 
     // a sold-out key does nothing
     if (out){ await tap(...await key(out.i)); assert.equal((await st()).order.length, 0, 'sold out: nothing chosen'); }
-    // a key twice and a packet once; CLEAR; again
+    // a key twice; a packet: the first tap looks, the second puts one in; CLEAR; again
     await tap(...await key(club.i)); await tap(...await key(club.i));
     const pk = await g.locator(`.vm-show .vm-packet[data-i="${house.i}"]`).boundingBox();
     await tap(pk.x + pk.width / 2, pk.y + pk.height / 2);
     s = await st();
-    assert.deepEqual(s.order, ['club', 'club', 'house'], 'chosen: a key twice, a packet once');
+    assert.equal(s.sel, 'house', 'a packet tapped once is looked at');
+    assert.deepEqual(s.order, ['club', 'club'], 'and not put in');
+    await tap(pk.x + pk.width / 2, pk.y + pk.height / 2);
+    s = await st();
+    assert.deepEqual(s.order, ['club', 'club', 'house'], 'chosen: a key twice, a packet tapped twice');
     assert.equal(s.total, 700);
     await tap(...await centre('.vm-clear'));
     assert.equal((await st()).order.length, 0, 'CLEAR empties it');
@@ -81,13 +99,15 @@ async function run(width, height, reducedMotion){
     await touch.end();
     s = await until(q => q.inHand && q.tray === 0, 'the next one out');
     // SHOP: the rest come too; on the hub they wait in a pile
+    // (a tap straight after a flick only stops the fling in Chrome's touch emulation)
+    await page.waitForTimeout(500);
     await tap(...await centre('[data-key="shop"]'));
     s = await until(q => q.mode === 'hub' && q.pile === 2, 'the hub and the pile');
     await page.waitForTimeout(900);
     assert.match(await g.locator('.cm-crt-r').textContent(), /WAITING\s*2/, 'the screen counts them');
 
-    // tap the pile: it's opened on the felt; the key runs it to KEEP
-    const deck = s.deck;
+    // tap the pile: it's opened on the felt; the key runs it to the end
+    const { pool, cards } = s, wallet0 = s.wallet;
     await tap(...await centre('.vm-pile .vm-packet:last-child'));
     await until(q => q.open === 'sealed', 'the packet on the felt');
     for (let i = 0; i < 40; i++){
@@ -96,9 +116,38 @@ async function run(width, height, reducedMotion){
       if (!(await fr.evaluate(() => PackOpeningEmbed.state.lock))) await tap(kx, ky);
       await page.waitForTimeout(q.open === 'haul' ? 200 : 350);
     }
-    s = await until(q => q.mode === 'hub', 'KEEP', 40000);
-    assert.equal(s.deck, deck + 4, 'four cards into the deck');
+    s = await until(q => q.mode === 'hub' && q.cards === cards + 4 && q.loose.includes('bag'), 'the cards laid down', 40000);
+    assert.equal(s.pool, pool + 4, 'four cards into your case');
     assert.equal(s.pile, 1, 'one still waiting');
+    assert.ok(s.loose.includes('wrapper') && s.loose.includes('flap'), 'the wrapper and the strip left on the felt: ' + s.loose);
+
+    // snip the bag across its top corner: the chips spill out
+    await page.waitForTimeout(400);
+    const pt = (lx, ly) => fr.evaluate(([lx, ly]) => VendingLab.bagPoint(lx, ly), [lx, ly]);
+    const grip = await fr.evaluate(() => VendingLab.bagGrip());
+    assert.ok(grip, 'the bag can be reached');
+    const [ax, ay] = await pt(...grip), [bx, by] = await pt(grip[0] + .65, grip[1]);
+    await touch.start(ifr.x + ax, ifr.y + ay);
+    for (let i = 1; i <= 8; i++){ await touch.move(ifr.x + ax + (bx - ax) * i / 8, ifr.y + ay + (by - ay) * i / 8); await page.waitForTimeout(16); }
+    await touch.end();
+    s = await until(q => q.loose.includes('bag:open') && q.chips > 0, 'the chips spilled');
+    await page.waitForTimeout(900);
+    const [cx, cy] = await fr.evaluate(() => VendingLab.chipPoint());
+    await tap(ifr.x + cx, ifr.y + cy);
+
+    // the clean-up spot: every card back in the deck, the chips in the bankroll
+    await until(q => !q.busy, 'the hub still');
+    await page.waitForTimeout(600);
+    // (somewhere on the spot that nothing's lying on)
+    const [qx, qy] = await fr.evaluate(() => {
+      const r = document.querySelector('.cm-pad').getBoundingClientRect();
+      for (let i = 1; i < 25; i++){ const x = r.left + r.width * ((i * 7) % 10 + .5) / 10, y = r.top + r.height * ((i * 3) % 10 + .5) / 10, e = document.elementFromPoint(x, y); if (!e.closest('.vm-loose, .cm-card, .vm-pile')) return [x, y]; }
+      return [r.left + r.width / 2, r.top + r.height / 2];
+    });
+    await tap(ifr.x + qx, ifr.y + qy);
+    s = await until(q => q.cards === 0 && q.chips === 0 && !q.loose.length && !q.busy, 'the felt cleared', 20000);
+    assert.equal(s.deck, s.pool, 'every card back in the deck');
+    assert.ok(s.wallet > wallet0, 'the chips counted into the bankroll');
 
     assert.equal(await page.evaluate(() => localStorage.getItem('vending-qa')), 'untouched', 'no game storage writes');
   });

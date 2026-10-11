@@ -9,13 +9,12 @@
      card comes off with the table's deal, lands somewhere on the felt,
      on top of whatever's there, and turns over. Nothing else moves; you
      arrange them yourself. The deck is your case: it thins as you deal.
-     Hold it and every card is swept back the way the table clears a
-     hand, then the deck is shuffled by hand and three are dealt. The
-     first three after a shuffle are chosen for a reason (the safe one,
-     the step up, the stretch), never labelled.
-   - P.I.P. opposite the deck (CoachSet's hub mode). Tap him: one line,
-     about the cards on the felt, how you play, or nothing much. Throw
-     him about as at the table; he has something to say about that.
+     The first three after a shuffle are chosen for a reason (the safe
+     one, the step up, the stretch), never labelled.
+   - The clean-up spot opposite the deck: a printed outline on the felt.
+     Tap it and every card on the felt slides into it and squares up,
+     then goes back into the deck, and the deck is shuffled by hand.
+     (The shop's things on the felt are cleared with them.)
    Drag a card up into the slot, or tap it to inspect it and press PLAY:
    the card feeds in; PLAY pays the entry and the game would seat you.
    ============================================================ */
@@ -27,16 +26,14 @@
   const state = host ? host.state : {};
   const money = n => '$' + Math.round(n).toLocaleString('en-US');
   const rr = (a, b) => a + Math.random() * (b - a);
-  const pick = a => a[Math.floor(Math.random() * a.length)];
 
   // the two screens, three ways (TUNE): they share one grid either way
   const SCREENS = { pair:'LABEL + FIGURE', big:'BIG FIGURE', lamp:'ONE LINE' };
   const BANKS = [620, 12650, 186400];
   const look = { screens:SCREENS[state.screens] ? state.screens : 'pair', bank:+state.bank || BANKS[1] };
   let wallet = look.bank, played = 14;
-  const HOLD_MS = 480;
 
-  let root, felt, stage, station, slotEl, mouthEl;
+  let root, felt, stage, station, slotEl, mouthEl, padEl;
   let s = 1;                     // the cards' scale on the felt
   const hand = [];               // the cards on the felt: { card, c }
   let pool = [], next = [];      // your case; the order the deck deals it in
@@ -94,7 +91,7 @@
       <footer class="cm-console"><div class="cm-console-case"><div class="ec-bay"><div class="actions-row cm-keys"><button class="btn-check" type="button" data-key="shop">SHOP</button><button class="btn-raise" type="button" data-key="play">PLAY</button><button class="btn-check" type="button" data-key="cards">CARDS</button></div></div></div></footer>
       <section class="po-sheet cm-sheet" id="cm-sheet" hidden aria-label="Tune">
         <h2>CAREER · MAIN</h2>
-        <p>Tap the deck for a card; hold it to sweep them up and shuffle. Drag a card into the slot, or tap it to look. Tap P.I.P. to hear from him; throw him if you must.</p>
+        <p>Tap the deck for a card; tap the outline opposite to clear them all back into the deck. Drag a card into the slot, or tap it to look.</p>
         <h3>SCREENS</h3>${seg('screens', SCREENS)}
         <h3>BANKROLL</h3>${seg('bank', Object.fromEntries(BANKS.map(b => [b, money(b)])))}
         <div class="cm-seg"><button class="pc-button pc-button-secondary" id="cm-done">DONE</button></div>
@@ -113,7 +110,10 @@
     felt.id = 'felt';
     felt.append(station);
     station.classList.add('cm-station');
-    station.setAttribute('aria-hidden', 'false'); station.setAttribute('aria-label', 'The deck: tap for a card, hold to sweep them up and shuffle');
+    station.setAttribute('aria-hidden', 'false'); station.setAttribute('aria-label', 'The deck: tap for a card');
+    padEl = Object.assign(document.createElement('div'), { className:'cm-pad' });
+    padEl.setAttribute('aria-label', 'Clear the felt'); padEl.setAttribute('role', 'button');
+    felt.prepend(padEl);
     stage = { el:felt, objects:felt.querySelector('.po-objects'), shadows:felt.querySelector('.po-shadows'), fx:felt.querySelector('.po-fx') };
     slotEl = $('.cm-slot'); mouthEl = $('.cm-mouth');
     $('#cm-tune').onclick = () => { $('#cm-sheet').hidden = !$('#cm-sheet').hidden; };
@@ -138,7 +138,9 @@
   function measure(){
     s = Math.min(1.1, felt.clientWidth / (CW * 3.7));
     root.style.setProperty('--cm-card', Math.round(CW * s) + 'px');
+    Object.assign(padEl.style, { width:Math.round(CW * s + 10) + 'px', height:Math.round(CH * s + 10) + 'px' });
   }
+  function padPoint(){ return { x:padEl.offsetLeft + padEl.offsetWidth / 2, y:padEl.offsetTop + padEl.offsetHeight / 2 }; }
 
   /* ---------------- your case ---------------- */
   // placeholder cards across the venues (the lab's own)
@@ -168,23 +170,28 @@
   function deckCount(){ DealerDeck.setCount(next.length ? Math.max(1, Math.round(next.length / pool.length * 52)) : 0); }
 
   /* ---------------- the cards ---------------- */
-  // somewhere on the felt, clear of the deck's corner and P.I.P.'s
+  // somewhere on the felt, clear of the deck's corner and the clean-up spot
   function landing(){
     const W = felt.clientWidth, H = felt.clientHeight, hw = CW * s / 2, hh = CH * s / 2;
-    const f = felt.getBoundingClientRect(), d = station.getBoundingClientRect(), pip = document.getElementById('coach-station')?.getBoundingClientRect();
-    const keepOff = [{ L:d.left - f.left - 10, R:d.right - f.left + 10, T:d.top - f.top - 10, B:H }];
-    if (pip && pip.width) keepOff.push({ L:pip.left - f.left - 10, R:W, T:pip.top - f.top - 10, B:H });
-    const shop = window.CareerShop?.keepOff?.();   // the shop's packets waiting on the felt
-    if (shop && shop.width){ keepOff.push({ L:shop.left - f.left - 10, R:shop.right - f.left + 10, T:shop.top - f.top - 10, B:shop.bottom - f.top + 10 }); }
-    let p = null;
-    for (let i = 0; i < 24; i++){
+    const f = felt.getBoundingClientRect(), d = station.getBoundingClientRect(), pad = padEl.getBoundingClientRect();
+    const keepOff = [{ L:d.left - f.left - 10, R:d.right - f.left + 10, T:d.top - f.top - 10, B:H }, { L:pad.left - f.left - 10, R:W, T:pad.top - f.top - 10, B:H }];
+    // the shop's things on the felt: packets waiting, a bag of chips
+    (window.CareerShop?.keepOff?.() || []).forEach(k => { if (k.width) keepOff.push({ L:k.left - f.left - 10, R:k.right - f.left + 10, T:k.top - f.top - 10, B:k.bottom - f.top + 10 }); });
+    // the first clear place found, or failing that the least covered
+    let p = null, least = 1e9;
+    for (let i = 0; i < 40; i++){
       const x = rr(hw + 10, W - hw - 10), y = rr(hh + 10, H - hh - 14);
-      p = { x, y, r:rr(-22, 22) };
-      if (!keepOff.some(k => x + hw * .7 > k.L && x - hw * .7 < k.R && y + hh * .7 > k.T && y - hh * .7 < k.B)) break;
+      const over = keepOff.reduce((a, k) => a + Math.max(0, Math.min(x + hw * .7, k.R) - Math.max(x - hw * .7, k.L)) * Math.max(0, Math.min(y + hh * .7, k.B) - Math.max(y - hh * .7, k.T)), 0);
+      if (over < least){ least = over; p = { x, y, r:rr(-22, 22) }; }
+      if (!over) break;
     }
     return p;
   }
-  function order(){ hand.forEach((h, i) => { h.c.el.style.zIndex = String(60 + i); }); }
+  // whatever was put down or picked up last is on top (cards, and the
+  // shop's things on the felt, share one count)
+  let zTop = 60;
+  const raise = el => { el.style.zIndex = String(++zTop); };
+  function order(){ raise(hand[hand.length - 1].c.el); }
   // one off the top with the table's deal; it lands where it lands, on top
   // of whatever's there, and turns over
   async function dealOne(){
@@ -217,26 +224,43 @@
   // tap: one more, or a shrug when the case is all out
   async function drawOne(){
     if (busy) return;
-    if (!next.length){ Foil.thud(.3); Haptic.tick(6); say(['THE CASE', 'EMPTY'], ['HOLD', 'DECK']); return; }
+    if (!next.length){ Foil.thud(.3); Haptic.tick(6); say(['THE CASE', 'EMPTY'], ['CLEAR', 'FELT']); return; }
     busy = true;
     await dealOne();
     busy = false;
   }
-  // hold: swept back like the end of a hand, shuffled by hand, three dealt
-  async function gather(){
+  // the clean-up spot: every card on the felt slides into it, one on
+  // another, squares up, and goes back into the deck; the deck is shuffled
+  // by hand. The shop clears its own things (wrappers, chips) alongside.
+  async function cleanUp(){
     if (busy) return;
     busy = true;
-    Haptic.tick(12, 0);
-    const out = hand.splice(0);
-    const gap = DEAL_TIMING.collectStaggerMaxMs || 260;
-    // (each card's own shadow goes with it: the sweep flies a card back)
-    await Promise.all(out.map(h => { h.c.body.sh?.remove(); return DealerDeck.collect(h.c.el, Math.random() * gap).then(() => h.c.body.remove()); }));
+    padEl.classList.add('is-pressed'); setTimeout(() => padEl.classList.remove('is-pressed'), 140);
+    Haptic.tick(12, 0); S.wheelRelay(.5);
+    const out = hand.splice(0), pc = padPoint();
+    const shop = window.CareerShop?.sweep?.(pc) || Promise.resolve();
+    await Promise.all(out.map((h, i) => wait(i * 60).then(() => {
+      raise(h.c.el);
+      S.cardReturn();
+      return glide(h.c.body, { x:pc.x + rr(-4, 4), y:pc.y + rr(-4, 4) - i * .5, r:rr(-7, 7), s, z:0 }, 260, { arc:16, easing:ease.out });
+    }).then(() => { S.cardLanded(); squash(h.c.body, .05, 120); })));
+    if (out.length){
+      // squared up: two taps, like the dealer's deck
+      await wait(120);
+      await Promise.all(out.map((h, i) => glide(h.c.body, { x:pc.x, y:pc.y - i * .5, r:0 }, 90)));
+      S.deckSettle(); jolt(padEl, 1); Haptic.tick(10, 0);
+      await wait(160);
+      const gap = DEAL_TIMING.collectStaggerMaxMs || 260;
+      await Promise.all(out.slice().reverse().map((h, i) => { h.c.body.sh?.remove(); return DealerDeck.collect(h.c.el, Math.min(gap, i * 45)).then(() => h.c.body.remove()); }));
+    }
+    await shop;
     screens();
-    await DealerDeck.squareUp();
-    shuffleOrder();
-    await DealerDeck.shuffle('full');
-    deckCount();
-    await deal(3);
+    if (out.length){
+      await DealerDeck.squareUp();
+      shuffleOrder();
+      await DealerDeck.shuffle('full');
+      deckCount();
+    } else Foil.thud(.25);
     busy = false;
   }
 
@@ -308,89 +332,27 @@
     say([k === 'shop' ? 'SHOP' : 'CARDS', 'SOON'], ['ROLLS', k === 'shop' ? 'DOWN' : 'UP']);
   }
 
-  /* ---------------- P.I.P. ---------------- */
-  // Tap him: one line at a time, never the same twice running. Some are
-  // about the cards on the felt, some about how you play (your lifetime
-  // stats), some nothing much. Thrown, he has a word about that.
-  const FUN = [['calm', 'I’ve been in this box a long time.'], ['calm', 'The felt’s warm. Someone’s been sitting here.'],
-    ['pleased', 'I watched that shuffle. It was honest.'], ['thinking', 'Tap me again. I dare you.'],
-    ['calm', 'If you’re going to throw me, aim for the soft bits.'], ['pleased', 'Nice night for it.'],
-    ['thinking', 'Somebody left a chip under me. I’m keeping it.'], ['calm', 'I don’t blink. That’s a scanline.']];
-  const THROWN = [['wince', 'Rude.'], ['wince', 'I felt that in my valves.'], ['surprised', 'Again? Really?'],
-    ['wince', 'Ow. I’m fine. I’m fine.'], ['unlucky', 'I had a picture on before you did that.']];
-  function statLines(){
-    const st = (() => { try { return stats; } catch (e) { return null; } })() || {};
-    const out = [];
-    if (st.hands > 0 && st.won > 0) out.push(['thinking', `You’ve played ${st.hands} hands and won ${st.won}. About one in ${Math.max(1, Math.round(st.hands / st.won))}.`]);
-    if (st.biggestPot > 0) out.push(['pleased', `Biggest pot you’ve taken: ${money(st.biggestPot)}. I remember it.`]);
-    if (st.net > 0) out.push(['pleased', `You’re ${money(st.net)} up, all told. Don’t tell anyone.`]);
-    if (st.net < 0) out.push(['unlucky', `You’re ${money(-st.net)} down overall. We’ll get it back.`]);
-    if (st.won > st.showdownsWon) out.push(['calm', `${st.won - st.showdownsWon} of your wins came without a showdown. They folded to you.`]);
-    out.push(['calm', `${played} tables played. That’s a career.`]);
-    if (wallet < 1000) out.push(['thinking', 'Bankroll’s thin. Pick a cheap one.']);
-    return out;
-  }
-  function cardLines(){
-    if (!hand.length) return [['calm', 'No cards out. Tap the deck.']];
-    const out = [], cards = hand.map(h => h.card);
-    const dear = cards.filter(c => info(c).entry > wallet);
-    if (dear.length) out.push(['thinking', `You can’t afford ${info(dear[0]).title} yet.`]);
-    const big = cards.filter(c => info(c).entry <= wallet && info(c).entry > wallet * .25)[0];
-    if (big) out.push(['thinking', `${info(big).title} costs ${money(info(big).entry)}. That’s a big piece of your bank.`]);
-    const cheap = cards.slice().sort((a, b) => info(a).entry - info(b).entry)[0];
-    out.push(['calm', `${info(cheap).venue}, ${money(info(cheap).entry)} in. Good place to build up.`]);
-    const rich = cards.slice().sort((a, b) => top(b) - top(a))[0];
-    out.push(['impressed', `${info(rich).title} pays ${money(top(rich))} to win. Just saying.`]);
-    if (cards.some(c => c.spec.rarity === 'legendary')) out.push(['surprised', 'A legendary. Don’t put your coffee on it.']);
-    if (cards.length >= 8) out.push(['calm', 'That’s a lot of cards. Pick one.']);
-    return out;
-  }
-  let lastSaid = '';
-  function pipLine(){
-    const r = Math.random();
-    const from = r < .45 ? cardLines() : r < .8 ? statLines() : FUN;
-    const fresh = from.filter(l => l[1] !== lastSaid);
-    const l = pick(fresh.length ? fresh : from);
-    lastSaid = l[1];
-    return l;
-  }
-  function pipSay([mood, text]){
-    try { if (!CoachSet.on || CoachSet.busy) return; CoachTalk.sayText(text, mood); } catch (e) {}
-  }
-  function wirePip(){
-    CoachSet.hub(felt);
-    document.addEventListener('click', e => {
-      if (!e.target.closest || !e.target.closest('#coach-station')) return;
-      try { CoachSet.look('you'); } catch (_) {}
-      pipSay(pipLine());
-    });
-    // thrown: once he's home and over it, sometimes a word
-    let wasAir = false;
-    setInterval(() => {
-      const air = !!document.querySelector('.cs-fly #coach-station');
-      if (wasAir && !air) setTimeout(() => { if (Math.random() < .65) pipSay(pick(THROWN)); }, 1300);
-      wasAir = air;
-    }, 200);
-  }
-
-  /* ---------------- for the shop (js/career-shop.js) ----------------
+  /* ---------------- for the shop (js/vending-machine.js) ----------------
      Lab only: what the shop needs from the hub. */
-  // every card on the felt swept back into the deck, nothing dealt
-  async function sweepAway(){
-    if (fed){ hand.push(fed); fed = null; slotEl.classList.remove('is-fed'); $('[data-key="play"]').classList.remove('is-ready'); }
-    const out = hand.splice(0);
-    const gap = DEAL_TIMING.collectStaggerMaxMs || 260;
-    await Promise.all(out.map(h => { if (!h.c.el.isConnected){ h.c.body.remove(); return; } h.c.body.sh?.remove(); return DealerDeck.collect(h.c.el, Math.random() * gap).then(() => h.c.body.remove()); }));
+  // an opened packet's cards, laid down among the others: they join your
+  // case, at the table's size, where they land
+  async function layDown(cards){
+    await Promise.all(cards.map((c, i) => wait(i * 110).then(async () => {
+      const a = c.body.stage.el.getBoundingClientRect(), b = felt.getBoundingClientRect();
+      c.body.set({ x:c.body.x + a.left - b.left, y:c.body.y + a.top - b.top });
+      stage.objects.append(c.el); if (c.body.sh) stage.shadows.append(c.body.sh);
+      c.body.stage = stage;
+      c.el.classList.add('cm-card');
+      const h = { card:c.card, c };
+      hand.push(h); pool.push(c.card); order();
+      const p = landing();
+      S.cardDeal(); Foil.flutter();
+      await glide(c.body, { x:p.x, y:p.y, r:p.r, s, z:0, sx:1, sy:1 }, 300, { arc:20, easing:ease.out });
+      S.cardLanded(); DealerDeck.puff(c.el); Haptic.tick(6);
+      squash(c.body, .05, 160);
+      screens();
+    })));
     deckCount();
-  }
-  // new cards into your case: shuffled in, and three dealt
-  async function takeIn(cards){
-    pool.push(...cards);
-    await DealerDeck.squareUp();
-    shuffleOrder();
-    await DealerDeck.shuffle('full');
-    deckCount();
-    await deal(3);
   }
   window.CareerMain = {
     get root(){ return root; }, get felt(){ return felt; }, get station(){ return station; },
@@ -401,25 +363,27 @@
     get busy(){ return busy; }, set busy(v){ busy = !!v; },
     get cards(){ return hand.length; }, get deck(){ return next.length; }, get pool(){ return pool.length; },
     keyEl:k => $(`[data-key="${k}"]`),
-    screens, sweepAway, takeIn,
-    // new cards into your case, nothing dealt
-    addToCase(cards){ pool.push(...cards); next.push(...cards); deckCount(); screens(); },
-    pipSay:(mood, text) => pipSay([mood, text])
+    get scale(){ return s; }, get pad(){ return padEl; }, raise,
+    screens, layDown,
+    // chips home: the reel counts them in
+    countIn:v => countTo(wallet + v)
   };
 
   /* ---------------- input ---------------- */
-  let ptr = null, holdT = 0;
+  let ptr = null;
+  // the spot is printed on the felt, under everything on it
+  const inside = (el, e) => { const r = el.getBoundingClientRect(); return e.clientX > r.left && e.clientX < r.right && e.clientY > r.top && e.clientY < r.bottom; };
   const local = e => { const f = felt.getBoundingClientRect(); return { x:e.clientX - f.left, y:e.clientY - f.top }; };
   function down(e){
     if (ptr || e.button > 0 || CardInspect.isOpen || window.CareerShop?.out) return;
-    if (e.target.closest('#coach-station')) return;   // P.I.P. handles his own
     const p = local(e), now = performance.now();
     ptr = { id:e.pointerId, x0:p.x, y0:p.y, x:p.x, y:p.y, t:now, hist:[{ x:p.x, y:p.y, t:now }] };
-    const onDeck = e.target.closest('.cm-station'), onCard = e.target.closest('.cm-card');
+    const onDeck = e.target.closest('.cm-station'), onCard = e.target.closest('.cm-card'), onPad = inside(padEl, e);
     if (onDeck){
       ptr.mode = 'deck';
       station.classList.add('is-pressed'); Haptic.tick(5);
-      holdT = setTimeout(() => { if (ptr?.mode === 'deck'){ ptr.mode = 'held'; station.classList.remove('is-pressed'); gather(); } }, HOLD_MS);
+    } else if (onPad && !onCard && !e.target.closest('.vm-loose')){
+      ptr.mode = 'pad'; padEl.classList.add('is-pressed'); Haptic.tick(5);
     } else if (onCard){
       const h = hand.find(q => q.c.el === onCard);
       if (!h || busy){ ptr = null; return; }
@@ -438,7 +402,8 @@
     ptr.x = p.x; ptr.y = p.y;
     ptr.hist.push({ x:p.x, y:p.y, t:now }); while (ptr.hist.length > 2 && now - ptr.hist[0].t > 90) ptr.hist.shift();
     const far = Math.hypot(p.x - ptr.x0, p.y - ptr.y0) > 8;
-    if (ptr.mode === 'deck' && far){ clearTimeout(holdT); station.classList.remove('is-pressed'); ptr.mode = 'off'; }
+    if (ptr.mode === 'deck' && far){ station.classList.remove('is-pressed'); ptr.mode = 'off'; }
+    if (ptr.mode === 'pad' && far){ padEl.classList.remove('is-pressed'); ptr.mode = 'off'; }
     if (ptr.mode === 'card'){
       const h = ptr.h, v = vel(ptr);
       h.c.body.set({ x:p.x + ptr.dx, y:p.y + ptr.dy, z:8, r:clamp(v.x / 90, -14, 14), s:s * 1.04 });
@@ -452,9 +417,9 @@
   function up(e, cancel){
     if (!ptr || e.pointerId !== ptr.id) return;
     const q = ptr; ptr = null;
-    clearTimeout(holdT);
     const moved = Math.hypot(q.x - q.x0, q.y - q.y0) > 8, quick = performance.now() - q.t < 300;
     if (q.mode === 'deck'){ station.classList.remove('is-pressed'); if (!cancel) drawOne(); return; }
+    if (q.mode === 'pad'){ padEl.classList.remove('is-pressed'); if (!cancel) cleanUp(); return; }
     if (q.mode !== 'card') return;
     const h = q.h;
     felt.classList.remove('is-carrying'); slotEl.classList.remove('is-near');
@@ -483,11 +448,8 @@
     $('#cm-reel').innerHTML = reel(wallet);
     measure();
     fillPool();
-    // (the lab's memory-only copy has no history: P.I.P. gets placeholder stats)
-    try { if (host && !stats.hands) Object.assign(stats, { hands:412, won:97, showdownsWon:41, biggestPot:4200, net:2650 }); } catch (e) {}
     shuffleOrder(); deckCount();
     screens();
-    wirePip();
     await wait(500);
     busy = true; await deal(3); busy = false;
     new ResizeObserver(() => measure()).observe(felt);

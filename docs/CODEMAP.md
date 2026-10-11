@@ -1120,26 +1120,23 @@ over the cabinet, so a carried card meets the slot.
 - **Deal:** `dealOne` flies the table's deal (`DealerDeck.dealTo`) to a
   random `landing()`, on top of the pile. Then the real card appears and
   turns over.
-- **Hold the deck:** `gather` runs `DealerDeck.collect` on every card,
+- **The clean-up spot** (`.cm-pad`, a printed outline opposite the deck,
+  found by position since it lies under the felt's layers): `cleanUp`
+  slides every card into it, squares them, `DealerDeck.collect`s them,
   then `squareUp`, `shuffleOrder` (the safe, step-up and stretch cards
-  first, unlabelled), `DealerDeck.shuffle` and three dealt.
+  first, unlabelled) and `DealerDeck.shuffle`; nothing dealt.
 - **Deck thickness:** the case left (`setCount`).
 - **Cards on the felt:** drag to arrange, tap to inspect, drag onto the
-  slot to feed.
+  slot to feed. `raise` keeps whatever was put down or picked up last on
+  top (the shop's things share the count). `landing()` takes the first
+  clear place, or the least covered.
 
-**P.I.P.:**
-- `CoachSet.hub(felt)` puts him opposite the deck, with no lead, thrown as
-  at the table.
-- A tap says `pipLine()`: a card remark, a stats line (lifetime `stats`;
-  placeholders in the memory-only lab) or a fun one, via
-  `CoachTalk.sayText`.
-- After a throw he sometimes says a `THROWN` line.
-
-**For the shop (lab):** `window.CareerMain` (`sweepAway`, `takeIn`,
-`showBank`, `keyEl`, `pipSay`, `addToCase`, the wallet) and
-`window.CareerShop`, which, when present, takes the keys (`key`), the
-screens (`screens`), the felt's touches (`out`) and keeps dealt cards off
-its pile (`keepOff`).
+**For the shop (lab):** `window.CareerMain` (`layDown` an opened hand onto
+the felt, `countIn`, `showBank`, `keyEl`, `raise`, `scale`, the wallet)
+and `window.CareerShop`, which, when present, takes the keys (`key`), the
+screens (`screens`), the felt's touches (`out`), clears its things with
+the clean-up (`sweep`) and keeps dealt cards off its pile and bags
+(`keepOff`).
 
 ## `vending-lab.html` — the packet machine (isolated, 11 October 2026)
 
@@ -1156,17 +1153,29 @@ opening embedded (`js/pack-opening.js`, `window.PO_EMBED` set first).
   column (`ED`: placeholder editions and lamp odds).
 - **Roll:** `roll` steps the machine and the hub's faces a tooth at a time
   (transitions off); `boot` flickers the tube on and lights the keys.
-- **Choose / pay:** `choose`, `clearAll`, `holdBuy` → `buy` → `payChips`
-  (`fly` from the reel, `insert`: the chip's own CoinWorld frames, turned
-  onto its edge, clipped at the slit, CHUNK).
+- **Measure:** `unmoved` reads the hub's faces where they sit, not where
+  the roll has pushed them (so TUNE while the machine is down is safe).
+- **Choose / pay:** `choose` (a packet's first tap `peek`s: key glow, CRT,
+  lamps; then it adds), `clearAll`, `holdBuy` → `buy` → `payChips`: a
+  stream of `feed`s, each one movement from the reel to the slit (the
+  chip's own CoinWorld frames, turned onto its edge on the way down,
+  clipped at the slit, CHUNK).
 - **Drop:** `dispense` (relay, blink, motor, tip, `restock`), `fall` (end
-  over end, into the tray's stage), `land` on the squashed floor
-  (`FLOOR`), `nudgeAround`, `knock`; `stick`/`thump` for a stuck one.
+  over end, into the tray's stage), `land` at `restFor` (the tray seen
+  straight on: the bottom, or on the ones there), `nudgeAround`, `knock`;
+  `stick`/`thump` for a stuck one.
 - **Take:** `take`, `liftOut`, the hand's touches (turn, shake, flick or
   drag down → `send`), `putBack`, `putAway`.
-- **Hub:** `rollOut`, `dropPile`, `pileDown` → `PackOpeningEmbed.openOwned`;
-  `attachOpening` maps the opening's narration onto the hub's CRTs and
-  key; `done` → `CareerMain.addToCase`.
+- **Hub:** `rollOut`, `dropPile` (at the table's size, on a `clearSpot`),
+  `pileDown` → `PackOpeningEmbed.openOwned`; `attachOpening` maps the
+  opening's narration onto the hub's CRTs and key; `bag` → `dropBag`,
+  `stow` → `CareerMain.layDown`, `done` leaves the wrapper and strip.
+- **Things on the felt:** `leave` hands a body to the hub's felt;
+  `feltDown/Move/Up` pick up, slide and throw them (off the edge: gone).
+  The bag (`drawBag`, `sticker`): drag across its top corner (`snipTo`)
+  and `spillBag` pours CoinWorld chips onto the felt; `bounceChip` on a
+  tap. `sweep` (from the hub's clean-up) clears the rubbish into the spot
+  and counts the chips and shut bags into the bankroll.
 
 ## `pack-opening-lab.html` — Pack Opening V3 (isolated, 11 October 2026)
 
@@ -1184,8 +1193,11 @@ stack / front canvas keep the cards inside.
 `js/pack-opening.js` also runs embedded (`window.PO_EMBED`): no table of
 its own, `PackOpeningEmbed.attach(cfg)` puts the opening on a host's felt
 (its reel, screens and key), `offer(packet)` starts at the packet on offer;
-KEEP hands the hand to the host (`stow`); `openOwned(packet)` opens one
-the host already owns (the packet machine's pile).
+`openOwned(packet)` opens one the host already owns (the packet machine's
+pile), sized to the host's table (`layout({ tableS })`). Embedded, the
+chips come out in a bag (`cfg.bag`), the hand is read and then laid down
+on the host's felt (`stow`), and the wrapper and strip are handed over
+(`done`).
 `js/pack-opening.js`: the scene and state (deal, move and throw packets,
 select and turn, hold to buy, tear, draw; then the reveal: tap, flick or
 squeeze the deck, four tier moments, Legendary dip/slam/CRT flash and an
