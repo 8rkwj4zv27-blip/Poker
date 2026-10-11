@@ -1,0 +1,69 @@
+/* ============================================================
+   EVENT TAPE (v0.58.2) — layout only (js/event-tape.js)
+   The RESULT well of EVENT WON / EVENT LOST: a raised plastic cabinet
+   panel with four screens fitted into it (the chip tape, the bust-out
+   order, best hand, luck). css/crt.css owns every screen's glass, ink and
+   type; the look options (data-es-* on <html>) are in
+   css/result-cabinet.css. docs/ui/END_SCREENS_PLAN.md.
+   ============================================================ */
+
+.et-well{
+  min-height:0; height:100%; box-sizing:border-box;
+  padding:var(--es-pad,7px);
+  display:grid; grid-template-rows:minmax(var(--es-tape-min,96px),1fr) max-content max-content; gap:var(--es-gap,6px);
+}
+.et-head{ display:flex; align-items:baseline; justify-content:space-between; gap:8px; white-space:nowrap; }
+.et-head .crt-caption{ overflow:hidden; text-overflow:ellipsis; }
+
+/* the chip tape: the big screen */
+.et-chart{ min-height:0; display:grid; grid-template-rows:auto 1fr auto; gap:3px; padding:6px 8px 7px; }
+.et-plot{ position:relative; min-height:44px; }
+.et-canvas{ position:absolute; inset:0; width:100%; height:100%; image-rendering:pixelated; image-rendering:crisp-edges; }
+.et-ceil{ position:absolute; left:2px; top:-1px; }
+.et-verdict{ display:flex; flex-direction:column; align-items:center; gap:3px; text-align:center; }
+.et-verdict .crt-caption{ white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:100%; }
+
+/* bust-out order: its own screen; first out on the left */
+.et-out{ display:flex; flex-direction:column; gap:6px; padding:6px 8px 8px; }
+.et-seats{
+  list-style:none; margin:0; padding:0;
+  display:grid; grid-template-columns:repeat(var(--n,4),minmax(0,1fr)); gap:4px; justify-items:center;
+}
+.et-seat{ min-width:0; width:100%; display:flex; flex-direction:column; align-items:center; gap:3px; }
+.et-face{
+  position:relative; box-sizing:border-box; width:32px; height:32px; flex:0 0 auto;
+  display:flex; align-items:center; justify-content:center;
+  border:2px solid #080405; border-radius:2px; background:#0B1410;
+}
+.et-face img, .et-face svg{ width:100%; height:100%; object-fit:cover; display:block; }
+.et-seat.is-alive .et-face{ opacity:.6; }
+.et-seat.is-killer .et-face{ border-color:#C9473B; }
+.et-seat.is-won .et-face{ border-color:#B8862A; }
+.et-x{ position:absolute; inset:4px; pointer-events:none; opacity:.8; }
+.et-x::before, .et-x::after{ content:""; position:absolute; left:50%; top:50%; width:120%; height:3px; background:#E2483A; }
+.et-x::before{ transform:translate(-50%,-50%) rotate(45deg); }
+.et-x::after{ transform:translate(-50%,-50%) rotate(-45deg); }
+.et-you > .crt-caption{ position:relative; z-index:1; }
+.et-name, .et-tag{ max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; text-align:center; }
+.et-ko, .et-ko-key{
+  /* a 7-pixel burst, the same mark the tape puts on the hand */
+  position:absolute; width:2px; height:2px; background:#FFF6E0;
+  box-shadow:0 -4px 0 #E8B83A,0 -2px 0 #E8B83A,-4px 0 0 #E8B83A,-2px 0 0 #E8B83A,2px 0 0 #E8B83A,4px 0 0 #E8B83A,0 2px 0 #E8B83A,0 4px 0 #E8B83A;
+}
+.et-ko{ right:-5px; top:-5px; }
+.et-ko-key{ position:relative; display:inline-block; top:-2px; margin:0 8px 0 5px; vertical-align:middle; }
+
+/* best hand beside luck */
+.et-pair{ display:grid; grid-template-columns:1.25fr 1fr; gap:var(--es-gap,6px); }
+.et-best, .et-luck{ min-width:0; padding:6px 8px 8px; display:flex; flex-direction:column; align-items:center; gap:5px; text-align:center; }
+.et-best > .et-head, .et-luck > .et-head{ align-self:stretch; }
+.et-cards{ gap:2px; }
+.et-cards .card.small{ width:24px; height:34px; border-width:2px; border-radius:2px; box-shadow:0 2px 0 rgba(0,0,0,.45); }
+.et-cards .card.small .r{ font-size:9px; top:2px; left:2px; }
+.et-cards .card.small .s{ display:none; }
+.et-cards .card.small .pip{ font-size:12px; }
+.et-best-name, .et-luck-word{ white-space:nowrap; }
+.et-best-desc, .et-luck-nums{ max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.et-strip{ width:100%; display:flex; align-items:center; gap:5px; }
+.et-gauge{ flex:1 1 auto; min-width:0; height:12px; image-rendering:pixelated; image-rendering:crisp-edges; }
+.et-none{ margin-top:4px; }
