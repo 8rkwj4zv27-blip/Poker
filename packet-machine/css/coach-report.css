@@ -1,0 +1,223 @@
+/* ============================================================
+   P.I.P. REPORT (candidate, lab only: pip-report-lab.html)
+   A big CRT readout from P.I.P., above the dashboard. His bubble's glass
+   (HIS SCREEN, css/coach-talk.css) made into a full screen. The glass and
+   inks are set here for the lab; on sign-off they move into a Pattern
+   Book part (css/crt.css owns every CRT's finish).
+   ============================================================ */
+.prp{
+  --prp-glass:#0A120F; --prp-ink:#C3C8AD; --prp-bright:#E9EDD5; --prp-dim:rgba(195,200,173,.46); --prp-faint:rgba(195,200,173,.16);
+  --prp-good:#8FE08A; --prp-close:#E8C35A; --prp-bad:#FF7A5E; --prp-truth:#8CC8FF; --prp-money:#E8B83A; --prp-loss:#FF7A5E;
+  position:fixed; z-index:44; top:calc(env(safe-area-inset-top,0px) + 6px); bottom:34%;
+  left:max(8px, calc(50% - 211px)); right:max(8px, calc(50% - 211px));
+  overflow:hidden; -webkit-tap-highlight-color:transparent; user-select:none; -webkit-user-select:none;
+}
+.prp[hidden]{ display:none; }
+.prp[data-ink="mono"]{ --prp-good:var(--prp-bright); --prp-close:var(--prp-ink); --prp-bad:var(--prp-bright); --prp-truth:var(--prp-bright); --prp-money:var(--prp-bright); --prp-loss:var(--prp-bright); }
+.prp-glass{
+  box-sizing:border-box; height:100%; display:flex; flex-direction:column; gap:6px; padding:7px 9px 6px;
+  background:repeating-linear-gradient(180deg,transparent 0 2px,rgba(0,0,0,.28) 2px 3px),var(--prp-glass);
+  color:var(--prp-ink); text-shadow:0 0 4px rgba(195,200,173,.4);
+  border:3px solid #080405; box-shadow:inset 0 0 0 1px rgba(255,255,255,.06), inset 0 0 40px rgba(0,0,0,.6), 4px 5px 0 rgba(8,4,5,.55);
+  overflow-y:auto; overflow-x:hidden; -webkit-overflow-scrolling:touch;
+}
+
+/* the head: his face, the title, the hand, back to the table */
+.prp-head{ display:flex; align-items:center; gap:8px; min-height:30px; border-bottom:1px solid var(--prp-faint); padding-bottom:4px; }
+.prp-face{ width:39px; height:27px; flex:0 0 auto; color:var(--prp-ink); background:rgba(0,0,0,.35); border:2px solid #080405; padding:2px 3px; box-sizing:content-box; }
+.prp-face svg{ display:block; width:39px; height:27px; shape-rendering:crispEdges; }
+.prp-title{ font-family:var(--font-hdr); font-size:9px; letter-spacing:.08em; color:var(--prp-bright); }
+.prp-hand{ font-family:var(--font-hdr); font-size:7px; letter-spacing:.06em; color:var(--prp-dim); margin-left:auto; }
+.prp-x{
+  flex:0 0 auto; width:44px; height:34px; margin:-2px -4px -2px 0; border:0; background:transparent; color:var(--prp-ink);
+  font-family:var(--font-hdr); font-size:11px; cursor:pointer; text-shadow:inherit;
+}
+.prp-x:focus-visible,.prp-col:focus-visible,.prp-next:focus-visible,.prp-back:focus-visible{ outline:1px dashed var(--prp-bright); outline-offset:1px; }
+
+/* the verdict: the grade, the result, why */
+.prp-verdict{ display:flex; align-items:center; gap:12px; min-height:74px; }
+.prp-g--A,.prp-g--B{ color:var(--prp-good); }
+.prp-g--C{ color:var(--prp-close); }
+.prp-g--D,.prp-g--F{ color:var(--prp-bad); }
+.prp-stamp{
+  flex:0 0 auto; width:62px; height:62px; display:grid; place-items:center; box-sizing:border-box;
+  border:4px solid currentColor; transform:rotate(-5deg); text-shadow:0 0 8px currentColor;
+  box-shadow:0 0 10px -2px currentColor, inset 0 0 10px -2px currentColor;
+}
+.prp-stamp .prp-g-letter{ font-family:var(--font-hdr); font-size:34px; line-height:1; margin:3px 0 0 4px; }
+.prp-res{ display:flex; flex-direction:column; gap:4px; min-width:0; }
+.prp-cap{ font-family:var(--font-hdr); font-size:6.5px; letter-spacing:.08em; color:var(--prp-dim); }
+.prp-fig{ font-family:var(--font-hdr); font-size:15px; letter-spacing:.02em; color:var(--prp-bright); }
+.is-money{ color:var(--prp-money); }
+.is-loss{ color:var(--prp-loss); }
+.prp-reason{ margin:0; font-family:var(--font-px); font-size:14px; line-height:1.2; color:var(--prp-ink); }
+/* NEEDLE DIAL */
+.prp-dial{ position:relative; flex:0 0 auto; width:100px; height:60px; }
+.prp-dial svg{ display:block; width:100px; height:60px; overflow:visible; }
+.prp-dial-arc{ fill:none; stroke:var(--prp-dim); stroke-width:2; stroke-dasharray:3 2; }
+.prp-dial-t{ font-family:var(--font-hdr); font-size:8px; fill:var(--prp-dim); text-anchor:middle; }
+.prp-dial-t.is-on{ fill:currentColor; font-size:13px; }
+.prp-needle{ position:absolute; left:50px; top:30px; width:3px; height:24px; margin-left:-1.5px; background:currentColor; transform-origin:50% 100%; transform:rotate(var(--ang)); box-shadow:0 0 6px currentColor; }
+.prp-hub{ position:absolute; left:44px; top:50px; width:12px; height:8px; background:var(--prp-ink); box-shadow:0 0 0 2px #080405; }
+/* PRINTED LINE */
+.prp-receipt{ flex:1; display:flex; flex-direction:column; gap:6px; min-width:0; }
+.prp-rl{ display:flex; align-items:baseline; gap:6px; font-family:var(--font-hdr); font-size:8px; letter-spacing:.06em; }
+.prp-rl i{ flex:1; border-bottom:2px dotted var(--prp-dim); transform:translateY(-3px); }
+.prp-rl b{ font-weight:400; font-size:12px; color:var(--prp-bright); }
+.prp-rl b.prp-g-letter{ font-size:22px; }
+.prp-rl b.is-money{ color:var(--prp-money); } .prp-rl b.is-loss{ color:var(--prp-loss); }
+.prp-rl b.prp-g--A,.prp-rl b.prp-g--B{ color:var(--prp-good); } .prp-rl b.prp-g--C{ color:var(--prp-close); } .prp-rl b.prp-g--D,.prp-rl b.prp-g--F{ color:var(--prp-bad); }
+
+/* the four streets: a label column, then a column per street */
+.prp-grid{ display:flex; gap:4px; border-top:1px solid var(--prp-faint); border-bottom:1px solid var(--prp-faint); padding:4px 0; }
+.prp-labels,.prp-col{ display:grid; grid-template-rows:22px 32px 34px 26px 36px 36px; row-gap:3px; }
+.prp-labels{ flex:0 0 40px; padding:3px 0 2px; font-family:var(--font-hdr); font-size:6px; letter-spacing:.06em; color:var(--prp-dim); }
+.prp-labels > span{ display:flex; flex-direction:column; justify-content:center; gap:2px; }
+.prp-labels small{ font-family:var(--font-px); font-size:9px; letter-spacing:0; line-height:1.15; color:var(--prp-dim); }
+.prp-labels small i{ display:inline-block; vertical-align:middle; margin-right:3px; }
+.prp-key-tick{ width:0; height:0; border-left:4px solid transparent; border-right:4px solid transparent; border-bottom:6px solid var(--prp-truth); }
+.prp-key-know{ width:9px; height:2px; background:var(--prp-ink); }
+.prp-key-truth{ width:9px; height:0; border-top:2px dashed var(--prp-truth); }
+.prp-key-mine{ width:5px; height:7px; background:var(--prp-money); }
+.prp-cols{ position:relative; flex:1; min-width:0; display:grid; grid-template-columns:repeat(4, minmax(0,1fr)); gap:2px; }
+.prp-col{ position:relative; min-width:0; padding:3px 2px 2px; border-left:1px dashed var(--prp-faint); cursor:pointer; text-align:center; }
+.prp-col > div{ display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px; min-width:0; }
+.prp-col.is-sel{ background:rgba(195,200,173,.07); box-shadow:inset 0 0 0 1px var(--prp-dim); }
+.prp-col.is-pivot{ box-shadow:inset 0 0 0 2px var(--prp-close); }
+.prp-col.is-pivot.is-sel{ box-shadow:inset 0 0 0 2px var(--prp-close), inset 0 0 0 3px #080405; }
+.prp-col.is-off{ opacity:.5; }
+.prp-sh{ font-family:var(--font-hdr); font-size:7px; letter-spacing:.06em; color:var(--prp-bright); }
+.prp-sh em{ font-style:normal; font-size:5.5px; letter-spacing:.04em; color:#080405; background:var(--prp-close); padding:2px 3px 1px; text-shadow:none; white-space:nowrap; }
+/* the cards: little cream cards, like the table's */
+.prp-cards{ flex-direction:row !important; gap:2px !important; }
+.prp-card{
+  display:inline-flex; flex-direction:column; align-items:center; justify-content:center; width:19px; height:27px; box-sizing:border-box;
+  background:#F3E6C4; color:#1B0E0C; border:1px solid #080405; box-shadow:1px 2px 0 rgba(0,0,0,.5); text-shadow:none; line-height:1;
+}
+.prp-card b{ font-family:var(--font-hdr); font-weight:400; font-size:7px; letter-spacing:-.06em; }
+.prp-card i{ font-style:normal; font-size:11px; margin-top:1px; }
+.prp-card.is-red{ color:#C8372D; }
+.prp-notdealt{ font-family:var(--font-hdr); font-size:5.5px; letter-spacing:.04em; color:var(--prp-dim); line-height:1.5; }
+/* your chance */
+.prp-barwrap{ position:relative; display:inline-block; padding-bottom:7px; }
+.prp-bar{ display:flex; gap:1px; }
+.prp-bar i{ width:6px; height:8px; background:var(--prp-faint); }
+.prp-bar i.is-on{ background:var(--prp-ink); box-shadow:0 0 3px rgba(195,200,173,.5); }
+.prp-tick{ position:absolute; left:var(--x); bottom:0; width:0; height:0; margin-left:-4px; border-left:4px solid transparent; border-right:4px solid transparent; border-bottom:6px solid var(--prp-truth); filter:drop-shadow(0 0 2px var(--prp-truth)); }
+.prp-word{ font-family:var(--font-hdr); font-size:6px; letter-spacing:.03em; color:var(--prp-bright); white-space:nowrap; }
+.prp-word.is-truth{ color:var(--prp-truth); }
+.prp-dim{ color:var(--prp-dim); font-family:var(--font-hdr); font-size:7px; }
+/* the pot, your part of it in gold */
+.prp-bar--pot i.is-on{ background:var(--prp-ink); }
+.prp-bar--pot i.is-mine{ background:var(--prp-money); box-shadow:0 0 3px rgba(232,184,58,.5); }
+.prp-num{ font-family:var(--font-hdr); font-size:6.5px; color:var(--prp-ink); }
+/* your decisions, stamped */
+.prp-act{ display:flex; align-items:center; gap:3px; font-family:var(--font-px); font-size:12px; line-height:1.05; color:var(--prp-bright); text-align:left; }
+.prp-act > span{ min-width:0; }
+.prp-mark-i{ flex:0 0 auto; width:10px; height:10px; shape-rendering:crispEdges; }
+.prp-mk--good .prp-mark-i{ color:var(--prp-good); }
+.prp-mk--fine .prp-mark-i{ color:var(--prp-ink); }
+.prp-mk--close .prp-mark-i{ color:var(--prp-close); }
+.prp-mk--mistake .prp-mark-i{ color:var(--prp-bad); }
+.prp-mk--mistake{ color:var(--prp-bad); }
+/* what their betting said */
+.prp-them span{ font-family:var(--font-px); font-size:11px; line-height:1.05; color:var(--prp-dim); }
+.prp-them b{ font-family:var(--font-hdr); font-weight:400; font-size:5.5px; letter-spacing:.04em; color:var(--prp-ink); }
+/* TWO LINES: one graph over the chance row */
+.prp-linebox{ position:absolute; left:0; right:0; top:60px; height:34px; pointer-events:none; clip-path:inset(0 calc(100% - var(--shown,100%)) 0 0); }
+.prp-line{ display:block; width:100%; height:100%; overflow:visible; }
+.prp-line-mid{ stroke:var(--prp-faint); stroke-width:1; stroke-dasharray:2 3; vector-effect:non-scaling-stroke; }
+.prp-line-know{ fill:none; stroke:var(--prp-ink); stroke-width:2.5; vector-effect:non-scaling-stroke; filter:drop-shadow(0 0 2px rgba(195,200,173,.6)); }
+.prp-line-truth{ fill:none; stroke:var(--prp-truth); stroke-width:2.5; stroke-dasharray:5 3; vector-effect:non-scaling-stroke; }
+
+/* his words */
+.prp-talk{ flex:1 0 auto; min-height:92px; display:flex; flex-direction:column; gap:4px; }
+.prp-talk-h{ display:flex; align-items:center; justify-content:space-between; min-height:18px; }
+.prp-talk-who{ font-family:var(--font-hdr); font-size:7px; letter-spacing:.08em; color:var(--prp-dim); }
+.prp-back{ min-height:30px; margin:-6px -4px -6px 0; padding:0 4px; border:0; background:transparent; color:var(--prp-ink); font-family:var(--font-hdr); font-size:6.5px; letter-spacing:.06em; cursor:pointer; text-shadow:inherit; }
+.prp-text{ margin:0; font-family:var(--font-px); font-size:15px; line-height:1.28; color:var(--prp-bright); min-height:2.56em; }
+.prp-take{ margin:0; font-family:var(--font-px); font-size:14px; line-height:1.25; color:var(--prp-close); }
+.prp-take:empty,.prp-figs:empty{ display:none; }
+.prp-figs{ margin:0; font-family:var(--font-hdr); font-size:6.5px; line-height:1.6; letter-spacing:.04em; color:var(--prp-truth); }
+.prp-foot{ display:flex; align-items:center; justify-content:flex-end; min-height:16px; font-family:var(--font-hdr); font-size:6px; letter-spacing:.06em; color:var(--prp-dim); }
+.prp-next{
+  margin-left:auto; min-width:150px; min-height:44px; border:2px solid var(--prp-ink); background:rgba(195,200,173,.08); color:var(--prp-bright);
+  font-family:var(--font-hdr); font-size:8px; letter-spacing:.06em; cursor:pointer; text-shadow:inherit;
+}
+.prp-next:active{ background:rgba(195,200,173,.2); }
+
+/* ---- the play-through ---- */
+.prp.is-playing .prp-col:not(.is-lit) > :not(.prp-sh),
+.prp.is-stepping .prp-col:not(.is-lit) > :not(.prp-sh){ visibility:hidden; }
+.prp.is-playing .prp-col:not(.is-lit) .prp-sh,
+.prp.is-stepping .prp-col:not(.is-lit) .prp-sh{ opacity:.35; }
+.prp.is-playing .prp-col.is-pivot:not(.is-lit),.prp.is-stepping .prp-col.is-pivot:not(.is-lit){ box-shadow:none; }
+.prp.is-playing .prp-col:not(.is-lit) .prp-sh em,.prp.is-stepping .prp-col:not(.is-lit) .prp-sh em{ visibility:hidden; }
+.prp.is-playing .prp-col.is-lit .prp-card{ animation:prp-drop .28s steps(4,end) both; }
+.prp.is-playing .prp-col.is-lit .prp-card:nth-child(2){ animation-delay:.07s; }
+.prp.is-playing .prp-col.is-lit .prp-card:nth-child(3){ animation-delay:.14s; }
+.prp.is-playing .prp-col.is-lit .prp-bar i.is-on,.prp.is-playing .prp-col.is-lit .prp-bar i.is-mine,
+.prp.is-stepping .prp-col.is-lit .prp-bar i.is-on,.prp.is-stepping .prp-col.is-lit .prp-bar i.is-mine{ animation:prp-seg .1s steps(1,end) both; animation-delay:calc(.15s + var(--i,0) * 35ms); }
+.prp.is-playing .prp-col.is-lit .prp-act,.prp.is-stepping .prp-col.is-lit .prp-act{ animation:prp-thunk .3s steps(3,end) both; animation-delay:.38s; }
+.prp.is-playing .prp-col.is-lit .prp-sh em,.prp.is-stepping .prp-col.is-lit .prp-sh em{ animation:prp-blink .5s steps(1,end) 3 both; animation-delay:.4s; }
+/* the grade waits for the end */
+.prp:not(.is-graded) .prp-verdict .prp-g-letter,.prp:not(.is-graded) .prp-needle,
+.prp:not(.is-graded) .prp-fig,.prp:not(.is-graded) .prp-reason,.prp:not(.is-graded) .prp-rl b{ visibility:hidden; }
+.prp:not(.is-graded) .prp-dial-t.is-on{ fill:var(--prp-dim); font-size:8px; }
+.prp:not(.is-graded) .prp-stamp{ border-style:dashed; color:var(--prp-dim); box-shadow:none; text-shadow:none; }
+.prp:not(.is-graded) .prp-res::after,.prp:not(.is-graded) .prp-receipt::after{ content:"WORKING IT OUT"; font-family:var(--font-hdr); font-size:7px; letter-spacing:.06em; color:var(--prp-dim); animation:prp-blink 1s steps(1,end) infinite; }
+.prp.is-graded:not(.is-done) .prp-stamp,.prp.is-graded .prp-stamp{ animation:prp-stamp .32s steps(4,end) both; }
+.prp.is-done.is-graded .prp-stamp{ animation:none; }
+.prp.is-graded .prp-needle{ animation:prp-needle .7s steps(7,end) both; }
+.prp.is-done.is-graded .prp-needle{ animation:none; }
+@keyframes prp-drop{ 0%{ transform:translateY(-10px); opacity:0; } 50%{ opacity:1; } 100%{ transform:none; opacity:1; } }
+@keyframes prp-seg{ from{ visibility:hidden; } to{ visibility:visible; } }
+@keyframes prp-thunk{ 0%{ transform:scale(1.6); opacity:0; } 50%{ opacity:1; } 100%{ transform:none; opacity:1; } }
+@keyframes prp-blink{ 0%{ opacity:1; } 50%{ opacity:0; } }
+@keyframes prp-stamp{ 0%{ transform:rotate(-5deg) scale(2.2); opacity:0; } 40%{ opacity:1; } 75%{ transform:rotate(-5deg) scale(.92); } 100%{ transform:rotate(-5deg) scale(1); } }
+@keyframes prp-needle{ 0%{ transform:rotate(-90deg); } 70%{ transform:rotate(calc(var(--ang) + 8deg)); } 100%{ transform:rotate(var(--ang)); } }
+
+/* ---- arriving and leaving ---- */
+.prp[data-arrive="switch"].is-arriving .prp-glass{ animation:prp-switch .36s steps(6,end) both; }
+.prp[data-arrive="rise"].is-arriving .prp-glass{ animation:prp-rise .36s steps(5,end) both; }
+.prp[data-arrive="flicker"].is-arriving .prp-glass{ animation:prp-flicker .42s steps(1,end) both; }
+.prp.is-out .prp-glass{ animation:prp-off .22s steps(4,end) both; }
+.prp[data-arrive="rise"].is-out .prp-glass{ animation:prp-sink .22s steps(4,end) both; }
+@keyframes prp-switch{ 0%{ transform:scale(.06,.006); filter:brightness(4); } 35%{ transform:scale(1,.006); filter:brightness(3); } 100%{ transform:none; filter:none; } }
+@keyframes prp-rise{ from{ transform:translateY(100%); } to{ transform:none; } }
+@keyframes prp-flicker{ 0%{ opacity:0; } 15%{ opacity:.8; filter:brightness(2.4); } 30%{ opacity:.1; } 45%{ opacity:1; filter:brightness(1.6); } 60%{ opacity:.4; } 75%,100%{ opacity:1; filter:none; } }
+@keyframes prp-off{ 0%{ transform:none; } 60%{ transform:scale(1,.006); filter:brightness(3); } 100%{ transform:scale(0,.006); filter:brightness(4); } }
+@keyframes prp-sink{ from{ transform:none; } to{ transform:translateY(100%); } }
+
+@media (max-width:360px){
+  .prp-labels{ flex-basis:34px; font-size:5px; }
+  .prp-card{ width:17px; height:25px; }
+  .prp-text{ font-size:14px; }
+}
+/* short phones (SE, mini): everything a step tighter; the glass scrolls if it must */
+@media (max-height:760px){
+  .prp-glass{ gap:4px; padding-top:5px; }
+  .prp-head{ min-height:24px; padding-bottom:2px; }
+  .prp-face{ width:30px; height:21px; } .prp-face svg{ width:30px; height:21px; }
+  .prp-verdict{ min-height:54px; gap:10px; }
+  .prp-stamp{ width:48px; height:48px; border-width:3px; } .prp-stamp .prp-g-letter{ font-size:26px; }
+  .prp-fig{ font-size:13px; } .prp-reason{ font-size:13px; }
+  .prp-labels,.prp-col{ grid-template-rows:20px 29px 31px 23px 33px 32px; row-gap:2px; }
+  .prp-linebox{ top:53px; height:31px; }
+  .prp-talk{ min-height:70px; } .prp-text{ font-size:14px; }
+}
+@media (prefers-reduced-motion:reduce){
+  .prp *,.prp .prp-glass{ animation:none !important; }
+}
+
+/* ---- the keys on the console after a hand: REPORT and DEAL ---- */
+.prp-keys button{ position:relative; }
+.prp-keys .prp-key-report.is-dark{ opacity:.32; pointer-events:none; }
+.prp-lamp{ position:absolute; top:7px; right:8px; width:6px; height:6px; background:#3A2A10; box-shadow:0 0 0 2px #080405; }
+.prp-keys .prp-key-report.has-word .prp-lamp{ background:#FFB43A; box-shadow:0 0 0 2px #080405, 0 0 8px #FFB43A; animation:prp-blink 1.04s steps(1,end) infinite; }
+@media (prefers-reduced-motion:reduce){ .prp-keys .prp-key-report.has-word .prp-lamp{ animation:none; } }
+/* while REPORT and DEAL are up, the game's own Next Hand button stands aside (DEAL presses it) */
+html[data-pip-report] #btn-next-hand{ display:none !important; }
+/* on the console drum's NEXT HAND side, the size of the key it replaces */
+html.ad-drum #ad-face-deal .prp-keys{ display:flex; gap:10px; padding:0; margin-top:var(--ad-key-top,0px); height:var(--ad-key-h,54px); }
+html.ad-drum #ad-face-deal .prp-keys button{ flex:1; height:100%; min-height:0; }

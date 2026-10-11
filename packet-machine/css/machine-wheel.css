@@ -1,0 +1,139 @@
+/* ============================================================
+   MACHINE WHEEL V2 — the parts machineWheelRig() (js/machine-wheel.js)
+   adds to a host for one roll. Audition only: loaded by the lab, not by
+   index.html.
+
+   Pixel-honest rules: no scale, no filter, no blur. Things move in whole
+   pixels (the JS snaps them), shading is opacity on flat colour, and
+   every open/close here is a steps() transition so the parts clack into
+   place rather than glide.
+   ============================================================ */
+.mw-host{ overflow:hidden !important; isolation:isolate; }
+
+/* Dark drum cavity behind the faces. Only seen through the gaps. */
+.mw-back{
+  position:absolute; inset:0; pointer-events:none;
+  background:
+    repeating-linear-gradient(180deg,transparent 0 10px,rgba(0,0,0,.35) 10px 12px),
+    repeating-linear-gradient(90deg,transparent 0 18px,rgba(232,184,58,.12) 18px 21px,transparent 21px 39px),
+    radial-gradient(ellipse at 50% 50%,#30271a 0 18%,#12100c 55%,#050504 100%);
+  box-shadow:inset 0 28px 22px rgba(0,0,0,.82),inset 0 -28px 22px rgba(0,0,0,.88);
+}
+.mw-back.is-full{
+  background:
+    linear-gradient(180deg,transparent calc(50% - 5px),#0a0806 calc(50% - 5px) calc(50% - 3px),#6d5a36 calc(50% - 3px) calc(50% - 1px),#2c2417 calc(50% - 1px) calc(50% + 3px),#0a0806 calc(50% + 3px) calc(50% + 5px),transparent calc(50% + 5px)),
+    repeating-linear-gradient(180deg,transparent 0 10px,rgba(0,0,0,.35) 10px 12px),
+    repeating-linear-gradient(90deg,transparent 0 18px,rgba(232,184,58,.16) 18px 21px,transparent 21px 39px),
+    radial-gradient(ellipse at 50% 50%,#3a2e1b 0 18%,#12100c 55%,#050504 100%);
+}
+
+.mw-front{ position:absolute; inset:0; pointer-events:none; }
+.mw-front > *{ position:absolute; pointer-events:none; }
+.mw-shades{ inset:0; }
+
+/* Per-face lamp/turn shading: flat near-black, stepped opacity. */
+.mw-shade{ position:absolute; inset:0; background:#050403; opacity:0; will-change:transform,opacity; }
+
+/* Hinge bar joining two faces (the V1 joint, redrawn). */
+.mw-joint{
+  left:-3px; right:-3px; top:0; height:var(--mw-gap,22px);
+  display:flex; align-items:center; justify-content:space-around;
+  background:linear-gradient(180deg,#100c08 0 3px,#75613b 3px 7px,#2e2618 7px calc(100% - 7px),#927744 calc(100% - 7px) calc(100% - 4px),#0b0906 calc(100% - 4px));
+  border:2px solid #080604;
+  box-shadow:inset 0 2px 0 #c7a55e;
+  transform:translate3d(0,-200px,0);
+  will-change:transform;
+}
+.mw-joint > i{
+  width:10px; height:10px; transform:rotate(45deg); background:#d5ad51; border:2px solid #171008;
+  box-shadow:inset 2px 2px 0 #ffe380,2px 2px 0 rgba(0,0,0,.5);
+}
+/* FULL: an open hinge — two edge rails with a window onto a gear inside. */
+.mw-joint.is-open{
+  display:flex; flex-direction:column; align-items:stretch; justify-content:space-between;
+  background:#070604; box-shadow:none;
+}
+.mw-joint.is-open > .mw-joint-rail{
+  display:block; width:auto; height:7px; transform:none; border:0; border-block:2px solid #080604;
+  background:linear-gradient(180deg,#c7a55e 0 1px,#75613b 1px 3px,#2e2618 3px);
+  box-shadow:none;
+}
+.mw-gear{ position:relative; flex:1; overflow:hidden; background:#0b0907; }
+.mw-gear-teeth{
+  position:absolute; left:14%; right:14%; top:-10px; bottom:-10px;
+  background:repeating-linear-gradient(180deg,#5f4d2c 0 4px,#9c7f45 4px 6px,#17120b 6px 10px);
+  border-inline:2px solid #080604;
+  will-change:transform;
+}
+.mw-gear > b{
+  position:absolute; top:50%; width:16px; height:16px; margin-top:-8px; background:#d5ad51;
+  border:2px solid #171008; box-shadow:inset 2px 2px 0 #ffe380,inset -2px -2px 0 #75613b;
+}
+.mw-gear > b:first-of-type{ left:calc(14% - 20px); }
+.mw-gear > b:last-of-type{ right:calc(14% - 20px); }
+
+/* Window-fixed cylinder shading: the drum curves away from the viewer
+   at the cabinet lips, in three hard bands, only while it turns. */
+.mw-bands{
+  inset:0; opacity:0;
+  background:
+    linear-gradient(180deg,
+      rgba(0,0,0,.5) 0 4%, rgba(0,0,0,.32) 4% 8%, rgba(0,0,0,.16) 8% 13%, transparent 13%,
+      transparent 87%, rgba(0,0,0,.16) 87% 92%, rgba(0,0,0,.32) 92% 96%, rgba(0,0,0,.5) 96%);
+  transition:opacity 150ms steps(3,end);
+}
+.mw-front.is-rolling .mw-bands{ opacity:1; }
+/* A fixed specular line the surface slides under — brightest at speed. */
+.mw-glint{
+  left:0; right:0; top:27%; height:3px; opacity:0;
+  background:linear-gradient(180deg,rgba(255,241,181,.28) 0 1px,rgba(255,241,181,.12) 1px 2px,transparent 2px);
+}
+
+/* Fixed cabinet lips: they close over the face edges at release (the face
+   "drops back" behind them) and open again after the lock. */
+.mw-lip{
+  left:0; right:0; height:9px; z-index:4;
+  background:linear-gradient(180deg,color-mix(in srgb,var(--panel,#3a1418) 70%,black) 0 6px,#080604 6px);
+  box-shadow:inset 0 2px 0 color-mix(in srgb,var(--accent,#e8b83a) 26%,transparent);
+  transition:transform 120ms steps(3,end);
+}
+.mw-lip.is-top{ top:0; transform:translate3d(0,-100%,0); }
+.mw-lip.is-bottom{
+  bottom:0; transform:translate3d(0,100%,0);
+  background:linear-gradient(180deg,#080604 0 3px,color-mix(in srgb,var(--panel,#3a1418) 70%,black) 3px);
+}
+.mw-front.is-engaged .mw-lip{ transform:translate3d(0,0,0); }
+
+/* RIM + FULL: knurled side rails turning with the drum, and a brass pawl
+   in the top lip that kicks on every tooth. */
+.mw-rail{ top:0; bottom:0; width:7px; overflow:hidden; z-index:3; background:#0b0907; transition:transform 120ms steps(3,end); }
+.mw-rail.is-left{ left:0; transform:translate3d(-100%,0,0); border-right:1px solid #080604; }
+.mw-rail.is-right{ right:0; transform:translate3d(100%,0,0); border-left:1px solid #080604; }
+.mw-front.is-engaged .mw-rail{ transform:translate3d(0,0,0); }
+.mw-rail > span{
+  position:absolute; left:0; right:0; top:-12px; bottom:-12px;
+  background:repeating-linear-gradient(180deg,#8f743f 0 2px,#d5ad51 2px 4px,#4a3c23 4px 8px,#17120b 8px 12px);
+  will-change:transform;
+}
+.mw-pawl{
+  position:absolute; top:5px; right:18%; width:10px; height:8px;
+  background:#d5ad51; border:2px solid #171008; box-shadow:inset 2px 2px 0 #ffe380,inset -2px -1px 0 #75613b;
+}
+.mw-pawl.is-kick{ transform:translate3d(0,3px,0); }
+
+/* Latch bolts: shoot in from the cabinet sides at the lock. */
+.mw-bolt{
+  top:calc(50% - 6px); width:22px; height:12px; z-index:5; display:none;
+  transition:transform 90ms steps(3,end);
+}
+.mw-front.has-bolts .mw-bolt{ display:block; }
+.mw-bolt > span{
+  position:absolute; inset:0; background:#d5ad51; border:2px solid #171008;
+  box-shadow:inset 0 2px 0 #ffe380,inset 0 -2px 0 #75613b,0 2px 0 rgba(0,0,0,.55);
+}
+.mw-bolt.is-left{ left:0; transform:translate3d(-100%,0,0); }
+.mw-bolt.is-right{ right:0; transform:translate3d(100%,0,0); }
+.mw-front.is-bolted .mw-bolt{ transform:translate3d(0,0,0); }
+
+/* Lock flash: one hard gold frame for two steps as the CLUNK lands. */
+.mw-front.is-flash{ box-shadow:inset 0 0 0 2px color-mix(in srgb,var(--accent-bright,#ffd76a) 60%,transparent); }
