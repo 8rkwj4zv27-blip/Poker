@@ -1083,7 +1083,13 @@ Plan and owner decisions: `docs/career/PACK_OPENING_V3_PLAN.md`. The host
 felt puffs, jolts, foil/paper sounds, and a safe proxy onto `Sound`.
 `js/pack-opening-packet.js` (POPacket): rasterises the approved packet art
 (`js/pack-ritual-art.js`) and redraws it a column at a time: the tear,
-the peeling flap, the mouth, the Legendary light, the slumped wrapper.
-Back canvas / card stack / front canvas keep the cards inside.
-`js/pack-opening.js`: the scene and state (deal, select, hold to buy,
-tear, draw). Slice 1 of 4. Touch checks: `validation/pack-opening-checks.cjs`.
+the peeling flap, the mouth, the Legendary light, the slumped wrapper,
+the foil shimmer (a band masked to bare-foil pixels) and the turn (a
+narrowing face, a crimped edge, the near side taller). Back canvas / card
+stack / front canvas keep the cards inside.
+`js/pack-opening.js`: the scene and state (deal, move and throw packets,
+select and turn, hold to buy, tear, draw; then the reveal: tap, flick or
+squeeze the deck, four tier moments, Legendary dip/slam/stamp and an event
+flourish, the cards into a small fan). Card faces come from
+`js/pack-ritual-cards.js` + `css/pack-ritual-cards.css`. Slices 1-2 of 4.
+Touch checks: `validation/pack-opening-checks.cjs`.

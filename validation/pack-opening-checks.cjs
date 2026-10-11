@@ -4,7 +4,10 @@
    PACK_OPENING_URL overrides the page. Uses real emulated touch through
    validation/tools/touch-harness.js. Slice 1: deal, pick, hold to buy
    (and cancel), tear by hand, draw by hand, the key-only path, tap to
-   fast-forward, reduced motion, a small phone, and no game storage writes. */
+   fast-forward, reduced motion, a small phone, and no game storage writes.
+   Also: a packet picked up and thrown lands somewhere new. Slice 2:
+   tap, flick and squeeze the deck to turn the cards, the key-only
+   reveal, and a whole pack ending in the hand. */
 'use strict';
 const assert = require('node:assert/strict');
 const { withPage } = require('./tools/touch-harness');
@@ -31,6 +34,13 @@ async function run(width, height, reducedMotion){
     await tap(felt.x + 10, felt.y + 10);
     await phase('choose');
     assert.equal((await state()).packets, 3, 'three packets dealt');
+
+    // pick a packet up and throw it: it lands somewhere new, still a packet to buy
+    const h0 = (await state()).homes[0];
+    const hp = centre(await box('.po-packet[data-series=house] .po-pk-front'));
+    await touch.drag(hp[0], hp[1], hp[0] + 40, hp[1] + 90, 8, 16); await touch.end();
+    await fr.waitForFunction(h => { const n = PackOpening.state.homes[0]; return n && (n[0] !== h[0] || n[1] !== h[1]); }, h0, { timeout:5000 });
+    await phase('choose');
 
     for (let round = 0; round < 2; round++){
       const series = round ? 'reserve' : 'club';
@@ -82,10 +92,41 @@ async function run(width, height, reducedMotion){
       }
       const end = await state();
       assert.ok(end.deck && end.pull > 40, 'the deck is on the felt');
+      assert.equal(end.contents.length, 4, 'four cards inside');
       const d = await box('.po-deck');
       assert.ok(d.y > felt.y - 4 && d.y + d.height < felt.y + felt.height + 4, 'the deck lands on the felt');
-      // next packet
       const k = centre(await box('#po-key'));
+      if (round === 0){
+        // 1: tap the deck
+        await tap(...centre(await box('.po-deck'))); await phase('shown');
+        assert.equal((await state()).shown, end.contents[0]);
+        // 2: hold it, peel the corner a little, let go: still face down
+        let dk = centre(await box('.po-deck'));
+        await touch.start(dk[0], dk[1]); await page.waitForTimeout(500);
+        assert.equal((await state()).phase, 'squeeze', 'a hold squeezes');
+        for (let i = 1; i <= 4; i++){ await touch.move(dk[0] - i * 4, dk[1] + i * 4); await page.waitForTimeout(30); }
+        assert.ok((await state()).fold > 0, 'the corner lifts');
+        await touch.end(); await phase('peek');
+        await tap(felt.x + felt.width / 2, felt.y + 20); await phase('shown');
+        // 3: flick the deck
+        dk = centre(await box('.po-deck'));
+        await touch.drag(dk[0], dk[1], dk[0] - 20, dk[1] - 80, 5, 16); await touch.end();
+        await phase('shown');
+        // 4: squeeze it all the way over
+        dk = centre(await box('.po-deck'));
+        await touch.start(dk[0], dk[1]); await page.waitForTimeout(500);
+        for (let i = 1; i <= 12; i++){ await touch.move(dk[0] - i * 9, dk[1] + i * 9); await page.waitForTimeout(25); }
+        await touch.end(); await phase('shown');
+        await tap(felt.x + 10, felt.y + 10);
+      } else {
+        // the key turns each one over, then puts the last into the hand
+        await tap(k[0], k[1]);
+        for (let i = 0; i < 4; i++){ await phase('shown'); await tap(k[0], k[1]); }
+      }
+      await phase('done');
+      const fin = await state();
+      assert.equal(fin.revealed, 4); assert.equal(fin.fan, 4, 'all four in the hand');
+      // next packet
       await tap(k[0], k[1]);
       await page.waitForTimeout(200);
       await tap(felt.x + 10, felt.y + 10); // fast-forward the deal
@@ -100,5 +141,5 @@ async function run(width, height, reducedMotion){
 (async () => {
   if (!process.env.ONLY_REDUCED){ await run(390, 844, false); await run(375, 667, false); }
   await run(390, 844, true);
-  console.log('Pack Opening slice 1 checks passed.');
+  console.log('Pack Opening slice 1 and 2 checks passed.');
 })().catch(e => { console.error(e); process.exit(1); });

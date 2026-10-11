@@ -66,7 +66,7 @@
      it. Pose (r, sx, sy, flip) steps at 14 fps; position glides. */
   class Body {
     constructor(stage, el, { w, h, ax = w / 2, ay = h / 2, shadow = true, shadowW = w, shadowH = h, shadowY = 0 } = {}){
-      Object.assign(this, { stage, el, w, h, ax, ay, x:0, y:0, z:0, r:0, s:1, sx:1, sy:1, alpha:1, live:false, dirty:true, poseAt:-1 });
+      Object.assign(this, { stage, el, w, h, ax, ay, x:0, y:0, z:0, r:0, s:1, sx:1, sy:1, shx:1, alpha:1, live:false, dirty:true, poseAt:-1 });
       el.classList.add('po-body');
       el.style.width = w + 'px'; el.style.height = h + 'px';
       el.style.transformOrigin = ax + 'px ' + ay + 'px';
@@ -99,7 +99,7 @@
         const z = Math.max(0, this.z), grow = 1 + z / 700;
         // centred under the body; it drifts down-right and spreads as the body rises
         const sw = this.shW, shh = this.shH;
-        this.sh.style.transform = `translate(${(this.x - sw / 2 + 3 + z * .35).toFixed(1)}px,${(this.y - shh / 2 + this.shadowY * s + 5 + z * .6).toFixed(1)}px) rotate(${this.pr}deg) scale(${(s * this.psx * grow).toFixed(3)},${(s * Math.abs(this.psy) * grow).toFixed(3)})`;
+        this.sh.style.transform = `translate(${(this.x - sw / 2 + 3 + z * .35).toFixed(1)}px,${(this.y - shh / 2 + this.shadowY * s + 5 + z * .6).toFixed(1)}px) rotate(${this.pr}deg) scale(${(s * this.psx * this.shx * grow).toFixed(3)},${(s * Math.abs(this.psy) * grow).toFixed(3)})`;
         this.sh.style.opacity = (Math.max(.06, .3 - z / 300) * this.alpha).toFixed(2);
       }
     }
@@ -153,6 +153,36 @@
     });
   }
 
+  /* Sparks, embers, chips: square pixels thrown out, stepped at 14 fps.
+     o: { n, colours[], vx:[min,max], vy:[min,max], g (gravity px/s²), life s, size, spread } */
+  function burst(stage, x, y, o = {}){
+    if (reduced) return;
+    const { n = 10, colours = ['#F3E6C4'], vx = [-80, 80], vy = [-160, -40], g = 260, life = .7, size = 3, spread = 10, w = 0, h = 0, layer = stage.fx } = o;
+    const bits = [];
+    for (let i = 0; i < n; i++){
+      const el = document.createElement('i');
+      el.className = 'po-bit';
+      el.style.background = colours[i % colours.length];
+      el.style.width = el.style.height = size + (i % 2) + 'px';
+      layer.append(el);
+      bits.push({ el, x:x + (Math.random() - .5) * (spread + w), y:y + (Math.random() - .5) * (spread + h), vx:mix(vx[0], vx[1], Math.random()), vy:mix(vy[0], vy[1], Math.random()), l:life * (.6 + Math.random() * .4) });
+    }
+    let t = 0, step = -1;
+    every(dt => {
+      t += dt * speed;
+      const f = Math.floor(t * FPS);
+      if (f !== step){
+        step = f;
+        const tt = f / FPS;
+        for (const b of bits){
+          b.el.style.transform = `translate(${Math.round(b.x + b.vx * tt)}px,${Math.round(b.y + b.vy * tt + g * tt * tt / 2)}px)`;
+          b.el.style.opacity = tt > b.l ? '0' : tt > b.l * .7 ? '.5' : '1';
+        }
+      }
+      if (t > life + .1){ bits.forEach(b => b.el.remove()); return false; }
+    });
+  }
+
   /* The box takes the hit: a 2px drop for one frame, then back. */
   function jolt(el, px = 2){
     if (reduced) return;
@@ -187,7 +217,26 @@
       rip(){ noise(240, .22, 900, 7000, .05); setTimeout(() => noise(90, .12, 2400, 9000), 70); },
       crinkle(){ noise(60, .07, 1400, 6000, .12); },
       rustle(power = 1){ noise(120, .06 * power, 600, 3200); },
-      scrape(){ noise(26, .07, 1200, 4200); }
+      scrape(){ noise(26, .07, 1200, 4200); },
+      thud(power = 1){ noise(90, .25 * power, 40, 420); },
+      flutter(){ noise(50, .08, 2200, 8000, .2); },
+      // a plucked note that climbs through the pack, a step per card
+      note(step = 0, power = 1){
+        const a = c(); if (!a) return;
+        const f = 392 * Math.pow(2, step * 2 / 12), o = a.createOscillator(), g = a.createGain(), t = a.currentTime;
+        o.type = 'square'; o.frequency.setValueAtTime(f, t);
+        g.gain.setValueAtTime(.0001, t); g.gain.exponentialRampToValueAtTime(.045 * power, t + .005); g.gain.exponentialRampToValueAtTime(.0001, t + .18);
+        o.connect(g); g.connect(a.destination); o.start(t); o.stop(t + .2);
+      },
+      chord(fs, power = 1){
+        const a = c(); if (!a) return;
+        fs.forEach((f, i) => {
+          const o = a.createOscillator(), g = a.createGain(), t = a.currentTime + i * .05;
+          o.type = i % 2 ? 'square' : 'triangle'; o.frequency.setValueAtTime(f, t);
+          g.gain.setValueAtTime(.0001, t); g.gain.exponentialRampToValueAtTime(.04 * power, t + .006); g.gain.exponentialRampToValueAtTime(.0001, t + .5);
+          o.connect(g); g.connect(a.destination); o.start(t); o.stop(t + .55);
+        });
+      }
     };
   })();
 
@@ -195,7 +244,7 @@
   const S = new Proxy({}, { get:(o, k) => (...a) => { try { if (window.Sound && typeof Sound[k] === 'function') return Sound[k](...a); } catch (e) {} } });
 
   window.PO = {
-    FPS, clamp, snap, mix, ease, tween, wait, glide, squash, puff, jolt, every, finishAll, reset, wake, Body, Foil, S,
+    FPS, clamp, snap, mix, ease, tween, wait, glide, squash, puff, burst, jolt, every, finishAll, reset, wake, Body, Foil, S,
     get busy(){ return tweens.size > 0; },
     get speed(){ return speed; }, set speed(v){ speed = v; },
     get reduced(){ return reduced; }, set reduced(v){ reduced = !!v; },

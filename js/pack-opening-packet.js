@@ -9,6 +9,11 @@
      angles, then breaks free as its own object
    - columns near the tear front pinch up (tension); an empty wrapper
      crinkles
+   - the foil catches the light: a stepped diagonal band that only
+     lights foil pixels (print and ink stay matte)
+   - turning it over is drawn, not squashed: the face narrows a column
+     at a time, the near side grows taller and the pouch's crimped edge
+     shows as a band of foil
    Layers inside .po-packet: back canvas (rear wall and inner lining),
    the card stack, front canvas (front face, flap, light). That
    sandwich is what keeps the cards INSIDE the packet.
@@ -67,9 +72,27 @@
       }
       return c;
     };
-    const out = { front:await raster(false), back:await raster(true), pal };
+    const front = await raster(false), back = await raster(true);
+    const out = { front, back, pal, mask:{ front:foilMask(front, pal), back:foilMask(back, pal) } };
     artCache.set(series, out);
     return out;
+  }
+
+  /* Which pixels are bare foil (they shine) and which are printed (a
+     little) or inked (not at all). */
+  function foilMask(src, pal){
+    const hex = k => [1, 3, 5].map(i => parseInt(pal[k].slice(i, i + 2), 16));
+    const foil = ['foil-base', 'foil-light', 'foil-dark'].map(hex), print = ['print', 'print-dark'].map(hex);
+    const same = (d, i, c) => Math.abs(d[i] - c[0]) < 6 && Math.abs(d[i + 1] - c[1]) < 6 && Math.abs(d[i + 2] - c[2]) < 6;
+    const c = canvas(AW, AH), x = c.getContext('2d'), img = src.getContext('2d').getImageData(0, 0, AW, AH), d = img.data;
+    const out = x.createImageData(AW, AH), o = out.data;
+    for (let i = 0; i < d.length; i += 4){
+      if (d[i + 3] < 128) continue;
+      const a = foil.some(f => same(d, i, f)) ? 255 : print.some(f => same(d, i, f)) ? 70 : 0;
+      o[i] = o[i + 1] = o[i + 2] = 255; o[i + 3] = a;
+    }
+    x.putImageData(out, 0, 0);
+    return c;
   }
 
   function jagLine(){
@@ -94,7 +117,8 @@
       this.tagEl = this.el.querySelector('.po-tag');
       this.body = new PO.Body(stage, this.el, { w:CW, h:CH, ax:OX + AW / 2, ay:OY + AH / 2, shadowW:AW, shadowH:AH, shadowY:0 });
       this.body.sh.classList.add('po-shadow-packet');
-      Object.assign(this, { tear:0, dir:1, open:false, face:'front', pinch:0, slump:0, light:0, chips:false, seamHint:0, frame:0, cards:[] });
+      Object.assign(this, { tear:0, dir:1, open:false, face:'front', pinch:0, slump:0, light:0, chips:false, seamHint:0, frame:0, cards:[], yaw:0, shine:-40, shineA:0 });
+      this.shineC = canvas(AW, AH);
       this.jag = jagLine();
       this.ready = art(series).then(a => { this.art = a; this.draw(); });
     }
@@ -106,6 +130,12 @@
       const f = this.front, b = this.back, src = this.face === 'back' ? this.art.back : this.art.front, pal = this.art.pal;
       f.clearRect(0, 0, CW, CH); b.clearRect(0, 0, CW, CH);
       f.imageSmoothingEnabled = b.imageSmoothingEnabled = false;
+      const lit = this.prepShine();
+      const yr = this.yaw * Math.PI / 180;
+      this.stackEl.style.visibility = Math.abs(Math.sin(yr)) > .02 ? 'hidden' : '';
+      // the tag hangs off the front: edge-on and round the back it's out of sight
+      this.tagEl.style.visibility = Math.abs(Math.sin(yr)) > .45 || this.face === 'back' ? 'hidden' : '';
+      if (Math.abs(Math.sin(yr)) > .02) return this.drawTurned(f, src, pal, yr, lit);
       const torn = this.tear > 0, fx = this.front_x;
       // the rear wall and its inner lining, only where the top is gone
       if (torn){
@@ -129,6 +159,7 @@
         if (this.pinch && !c && Math.abs(x - fx) < 6) dy = -Math.round((6 - Math.abs(x - fx)) / 3 * this.pinch);
         if (this.slump) dy += Math.round(Math.sin(x * .55 + 1.7) * 1.4 * this.slump + Math.sin(x * .17) * 1.2 * this.slump);
         f.drawImage(src, x, y0, 1, AH - y0, OX + x, OY + y0 + dy, 1, AH - y0);
+        if (lit) f.drawImage(this.shineC, x, y0, 1, AH - y0, OX + x, OY + y0 + dy, 1, AH - y0);
       }
       // the seam: a stepped dotted line marching toward the corner you tear from
       if (!torn && this.seamHint && this.face === 'front'){
@@ -172,6 +203,51 @@
           if ((this.frame + i * 7) % 28 < 2){ f.fillStyle = '#fff'; f.fillRect(OX + cx + 6, y - 2, 1, 1); f.fillRect(OX + cx + 5, y - 1, 3, 1); }
         });
       }
+    }
+
+    /* The light band, cut to the foil of the face that's showing. */
+    prepShine(){
+      if (this.shineA <= .02 || this.open) return false;
+      const x = this.shineC.getContext('2d'), a = PO.snap(this.shineA, .25);
+      if (!a) return false;
+      x.globalCompositeOperation = 'source-over';
+      x.clearRect(0, 0, AW, AH);
+      const pos = Math.round(this.shine);
+      for (let y = 0; y < AH; y++){
+        const sx = pos - Math.floor(y * .5);
+        x.fillStyle = `rgba(255,250,226,${(.55 * a).toFixed(2)})`; x.fillRect(sx, y, 9, 1);
+        x.fillStyle = `rgba(255,255,255,${(.8 * a).toFixed(2)})`; x.fillRect(sx + 3, y, 3, 1);
+        x.fillStyle = `rgba(255,250,226,${(.4 * a).toFixed(2)})`; x.fillRect(sx + 13, y, 2, 1);
+      }
+      x.globalCompositeOperation = 'destination-in';
+      x.drawImage(this.art.mask[this.face], 0, 0);
+      return true;
+    }
+
+    /* Mid-turn: the face narrows column by column, the near side stands
+       taller (a pixel trapezoid), and the pouch's crimped edge shows. */
+    drawTurned(f, src, pal, yr, lit){
+      const c = Math.cos(yr), sn = Math.sin(yr);
+      const w = Math.max(2, Math.round(AW * Math.abs(c) / 2) * 2);
+      const e = Math.max(2, Math.round(5 * Math.abs(sn)));
+      const nearLeft = c * sn > 0, x0 = OX + Math.round((AW - w - e) / 2), fx = nearLeft ? x0 + e : x0;
+      const lean = Math.round(4 * Math.abs(sn));
+      for (let i = 0; i < w; i++){
+        const k = (i + .5) / w, near = nearLeft ? 1 - k : k, g = Math.round(near * lean), sx = Math.min(AW - 1, Math.floor(k * AW));
+        f.drawImage(src, sx, 0, 1, AH, fx + i, OY - g, 1, AH + g * 2);
+        if (lit) f.drawImage(this.shineC, sx, 0, 1, AH, fx + i, OY - g, 1, AH + g * 2);
+      }
+      // the crimped edge: dark foil, a bright crease, the crimp teeth top and bottom
+      const ex = nearLeft ? x0 : fx + w;
+      for (let j = 0; j < e; j++){
+        const x = ex + j, out = nearLeft ? j === 0 : j === e - 1;
+        f.fillStyle = out ? pal['foil-light'] : (j % 2 ? pal['foil-base'] : pal['foil-dark']);
+        f.fillRect(x, OY - lean, 1, AH + lean * 2);
+        f.fillStyle = pal['print-dark'];
+        for (let y = 0; y < 12; y += 2){ f.fillRect(x, OY - lean + y, 1, 1); f.fillRect(x, OY + AH + lean - 1 - y, 1, 1); }
+      }
+      // a glint runs down the edge while it faces you
+      if (Math.abs(sn) > .7){ f.fillStyle = '#fffbe8'; f.fillRect(nearLeft ? x0 : fx + w + e - 1, OY + 20 + ((this.frame * 9) % (AH - 40)), 1, 6); }
     }
 
     /* The top of the art above the jag, for the flap. */

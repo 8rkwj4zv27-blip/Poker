@@ -26,10 +26,10 @@ audit's complaints (dashboard rims, clipped result line, chip pile) are gone.
 
 ## Recent changes (newest first)
 
-- 11 Oct (no game change): Pack Opening V3 slice 1 (`pack-opening-lab.html`,
-  branch `claude/trusting-mayer-4omex1`): deal, hold to buy, pixel tear,
-  draw the deck. Plan: [`career/PACK_OPENING_V3_PLAN.md`](career/PACK_OPENING_V3_PLAN.md).
-  Replaces the Pack Ritual approach (`codex/pack-ritual`, reference only).
+- 11 Oct (no game change): Pack Opening V3 slices 1-2 (`pack-opening-lab.html`,
+  [plan](career/PACK_OPENING_V3_PLAN.md)): packets to move, throw and turn;
+  hold to buy, tear, draw; the reveal (tap, flick, squeeze), four tiers,
+  Legendary flourishes. Replaces Pack Ritual (`codex/pack-ritual`, reference).
 - 8 Oct (no game change): Hub Lab (`hub-lab.html`): Career opens on
   tonight's tickets, dealt and styled by kind, fed into a slot.
 - 8 Oct (no game change): Career as packs of cards, brainstormed with
@@ -38,13 +38,10 @@ audit's complaints (dashboard rims, clipped result line, chip pile) are gone.
 - v0.67.0 The Back Room builds a stack (Events Release 1): a new 5-HAND
   Top-2 ticket, 1,000-chip stacks, blinds every 15 hands, opponents at
   skill 20. Tickets already bought keep their terms.
-- 8 Oct (no game change): the events rework planned with the owner
-  (`docs/career/EVENTS_PLAN.md`); `validation/tools/event-sim.js` plays
-  whole Career events to measure it.
 
 ## Open items (verified, not scheduled)
 
-- Pack Opening V3 slice 1 awaits the owner's phone verdict:
+- Pack Opening V3 slices 1 and 2 await the owner's phone verdict:
   https://claude.ai/artifact/2A5hyH5pufRp7Tdj513SQp
 - Career Hub on small iPhones (375x667, SE/8): BUY IN sits below the
   screen. Fine on the owner's Pro Max.
@@ -68,8 +65,9 @@ own speech bubbles (`claude/tender-dijkstra-zso8dm`).
 
 ## Next
 
-Pack Opening V3: the owner plays slice 1 on the phone link; on approval,
-slice 2 (the reveal: flick, squeeze, four tiers, Legendary flourishes).
+Pack Opening V3: the owner plays slices 1 and 2 on the phone link; on
+approval, slice 3 (the hand fan on the rail, the inspect toy, the wrapper
+flicked away so the chips spill, KEEP, restock).
 Read [`career/PACK_OPENING_V3_PLAN.md`](career/PACK_OPENING_V3_PLAN.md).
 Earlier pending work: the owner plays the Hub Lab (`docs/career/PACKS_PLAN.md`, Round 3: Career opens on tonight's
 tickets); then the Vendor and the Case screens to the same standard.
