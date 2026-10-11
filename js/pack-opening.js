@@ -1591,9 +1591,31 @@
     measure();
     return select(p);
   }
+  // a packet you already own, from the host's pile: it comes to the middle
+  // of the felt sealed, ready to tear
+  async function openOwned(p){
+    if (phase !== 'idle') return;
+    wallet = cfg.wallet(); measure();
+    packets = [p]; chosen = p; packNo++;
+    p.yaw = 0; p.face = 'front'; p.body.set({ shx:1 });
+    if (!p.cards.length) fillStack(p);
+    hasLegend = tune.contents === 'legendary' || tune.contents === 'double' || (tune.contents === 'surprise' && Math.random() < 1 / 3);
+    contents = EventCards.pack(p.series, { legend:hasLegend, double:tune.contents === 'double', event:tune.event }); revealed = 0;
+    lock = true; phase = 'bought';
+    S.cardReturn(); Foil.rustle(.7);
+    const f = focus();
+    await glide(p.body, { ...f, z:0, r:0 }, 420, { arc:60 });
+    S.cardLanded(); Foil.thud(.5); Haptic.tick(14);
+    puff(stage, f.x, f.y + AH * f.s / 2, AW * f.s, { n:10 });
+    await squash(p.body, .1, 240);
+    lock = false; phase = 'sealed';
+    p.seamHint = 1; p.draw();
+    status('TEAR IT OPEN', 'DRAG ACROSS THE TOP SEAM'); figure('04', 'INSIDE'); key('OPEN IT', 'OR DRAG ACROSS THE SEAM');
+    idleAt = performance.now();
+  }
   if (EMBED){
     window.PackOpeningEmbed = {
-      attach, offer, putBack,
+      attach, offer, putBack, openOwned,
       keyDown:onKeyDown, keyUp:onKeyUp,
       keyCancel(){ keyFrom = null; keyHeld = false; if (phase === 'charging') releaseCharge(); },
       finish(){ PO.finishAll(); },

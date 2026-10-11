@@ -1136,21 +1136,37 @@ over the cabinet, so a carried card meets the slot.
 - After a throw he sometimes says a `THROWN` line.
 
 **For the shop (lab):** `window.CareerMain` (`sweepAway`, `takeIn`,
-`showBank`, `keyEl`, `pipSay`, the wallet) and `window.CareerShop`, which,
-when present, takes the keys (`key`), the screens (`screens`) and the
-felt's touches (`out`).
+`showBank`, `keyEl`, `pipSay`, `addToCase`, the wallet) and
+`window.CareerShop`, which, when present, takes the keys (`key`), the
+screens (`screens`), the felt's touches (`out`) and keeps dealt cards off
+its pile (`keepOff`).
 
-## `vending-stills-lab.html` — the packet machine, stills (isolated, 11 October 2026)
+## `vending-lab.html` — the packet machine (isolated, 11 October 2026)
 
-Plan: `docs/career/VENDING_PLAN.md`. The Career main hub
-(`js/career-main.js`) with `js/vending-stills.js` + `css/vending-stills.css`
-over its felt. `build` makes the machine (window, button rail with flip
-counters, drop well with guide rails and gates, PUSH tray; side panel:
-credit CRT, chip slot, rarity lamps, pips, CLEAR, velvet); `place` lays it
-over the felt; `sizeWindow` sizes the packets to fit (`is-compact` on
-short screens). Packets are POPacket bodies; chips are CoinWorld's own
-frames (`chip`). `show` draws one of eight stills (TUNE: still, paint,
-tray).
+Plan: `docs/career/VENDING_PLAN.md`; touch checks:
+`validation/vending-checks.cjs`. The Career main hub (`js/career-main.js`)
+with `js/vending-machine.js` + `css/vending-machine.css` and the pack
+opening embedded (`js/pack-opening.js`, `window.PO_EMBED` set first).
+- **Build:** `build` makes the drum (the space from the cabinet's screen
+  row to the foot of the felt), the machine (Player Dashboard frame,
+  checker case, sunk bays: the window, the tray, the side panel), the chip
+  layer, the hand layer, the hub pile and the opening's stage.
+  `sizeWindow` fits the rows (`GRID` 4 or 5 across, up to 4 rows) and
+  gives the tray the rest; `stock` puts a front packet and a spare in each
+  column (`ED`: placeholder editions and lamp odds).
+- **Roll:** `roll` steps the machine and the hub's faces a tooth at a time
+  (transitions off); `boot` flickers the tube on and lights the keys.
+- **Choose / pay:** `choose`, `clearAll`, `holdBuy` → `buy` → `payChips`
+  (`fly` from the reel, `insert`: the chip's own CoinWorld frames, turned
+  onto its edge, clipped at the slit, CHUNK).
+- **Drop:** `dispense` (relay, blink, motor, tip, `restock`), `fall` (end
+  over end, into the tray's stage), `land` on the squashed floor
+  (`FLOOR`), `nudgeAround`, `knock`; `stick`/`thump` for a stuck one.
+- **Take:** `take`, `liftOut`, the hand's touches (turn, shake, flick or
+  drag down → `send`), `putBack`, `putAway`.
+- **Hub:** `rollOut`, `dropPile`, `pileDown` → `PackOpeningEmbed.openOwned`;
+  `attachOpening` maps the opening's narration onto the hub's CRTs and
+  key; `done` → `CareerMain.addToCase`.
 
 ## `pack-opening-lab.html` — Pack Opening V3 (isolated, 11 October 2026)
 
@@ -1168,7 +1184,8 @@ stack / front canvas keep the cards inside.
 `js/pack-opening.js` also runs embedded (`window.PO_EMBED`): no table of
 its own, `PackOpeningEmbed.attach(cfg)` puts the opening on a host's felt
 (its reel, screens and key), `offer(packet)` starts at the packet on offer;
-KEEP hands the hand to the host (`stow`). Not used by a lab yet.
+KEEP hands the hand to the host (`stow`); `openOwned(packet)` opens one
+the host already owns (the packet machine's pile).
 `js/pack-opening.js`: the scene and state (deal, move and throw packets,
 select and turn, hold to buy, tear, draw; then the reveal: tap, flick or
 squeeze the deck, four tier moments, Legendary dip/slam/CRT flash and an

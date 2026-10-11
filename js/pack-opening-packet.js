@@ -24,8 +24,15 @@
   const PAL = {
     house:   { 'foil-base':'#bec9c3', 'foil-light':'#ecedd6', 'foil-dark':'#758a87', print:'#622c37', 'print-dark':'#3e202a', ink:'#ecddaf' },
     club:    { 'foil-base':'#92b0a1', 'foil-light':'#d4e4c8', 'foil-dark':'#5b8275', print:'#204b3a', 'print-dark':'#163627', ink:'#e6e8c3' },
-    reserve: { 'foil-base':'#ae9773', 'foil-light':'#e3c69a', 'foil-dark':'#705363', print:'#30202e', 'print-dark':'#20151e', ink:'#f1d9a0' }
+    reserve: { 'foil-base':'#ae9773', 'foil-light':'#e3c69a', 'foil-dark':'#705363', print:'#30202e', 'print-dark':'#20151e', ink:'#f1d9a0' },
+    // the packet machine's other editions (placeholders, lab only)
+    alley:   { 'foil-base':'#a4a89a', 'foil-light':'#dcdfcf', 'foil-dark':'#6c7264', print:'#3e4a32', 'print-dark':'#29321f', ink:'#e4e6c8' },
+    pub:     { 'foil-base':'#c29a5a', 'foil-light':'#efd29a', 'foil-dark':'#8a6230', print:'#6a3a14', 'print-dark':'#46250c', ink:'#f6e2b4' },
+    casino:  { 'foil-base':'#9fb0c8', 'foil-light':'#dfe8f4', 'foil-dark':'#62738f', print:'#1f3a6e', 'print-dark':'#14264a', ink:'#e6eefa' },
+    highroller:{ 'foil-base':'#c9a646', 'foil-light':'#f6dc8a', 'foil-dark':'#86691e', print:'#1c1a17', 'print-dark':'#0e0d0b', ink:'#f3d27a' },
+    wild:    { 'foil-base':'#7fc4b8', 'foil-light':'#c8f0e4', 'foil-dark':'#4a8c84', print:'#6a1e5a', 'print-dark':'#46123c', ink:'#ffd6f2' }
   };
+  const NAME = { alley:'ALLEY', highroller:'HI-ROLLER' };
   const canvas = (w, h) => { const c = document.createElement('canvas'); c.width = w; c.height = h; return c; };
 
   /* Text in the game's pixel face, hard-thresholded so no pixel is soft. */
@@ -61,7 +68,7 @@
       if (!back){
         pixelText(x, 'POKER', 0, 27, pal.ink, pal['print-dark']);
         pixelText(x, 'FACES', 0, 37, pal.ink, pal['print-dark']);
-        pixelText(x, series.toUpperCase(), 0, 108, pal.ink, pal['print-dark']);
+        pixelText(x, NAME[series] || series.toUpperCase(), 0, 108, pal.ink, pal['print-dark']);
         pixelText(x, 'EDITION', 0, 119, pal['foil-light'], pal['print-dark']);
       } else {
         pixelText(x, 'POKER', 0, 40, pal.ink, pal['print-dark']);

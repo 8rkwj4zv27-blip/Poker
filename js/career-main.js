@@ -174,6 +174,8 @@
     const f = felt.getBoundingClientRect(), d = station.getBoundingClientRect(), pip = document.getElementById('coach-station')?.getBoundingClientRect();
     const keepOff = [{ L:d.left - f.left - 10, R:d.right - f.left + 10, T:d.top - f.top - 10, B:H }];
     if (pip && pip.width) keepOff.push({ L:pip.left - f.left - 10, R:W, T:pip.top - f.top - 10, B:H });
+    const shop = window.CareerShop?.keepOff?.();   // the shop's packets waiting on the felt
+    if (shop && shop.width){ keepOff.push({ L:shop.left - f.left - 10, R:shop.right - f.left + 10, T:shop.top - f.top - 10, B:shop.bottom - f.top + 10 }); }
     let p = null;
     for (let i = 0; i < 24; i++){
       const x = rr(hw + 10, W - hw - 10), y = rr(hh + 10, H - hh - 14);
@@ -400,6 +402,8 @@
     get cards(){ return hand.length; }, get deck(){ return next.length; }, get pool(){ return pool.length; },
     keyEl:k => $(`[data-key="${k}"]`),
     screens, sweepAway, takeIn,
+    // new cards into your case, nothing dealt
+    addToCase(cards){ pool.push(...cards); next.push(...cards); deckCount(); screens(); },
     pipSay:(mood, text) => pipSay([mood, text])
   };
 

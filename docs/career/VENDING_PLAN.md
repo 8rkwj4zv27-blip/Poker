@@ -1,9 +1,10 @@
-# The packet machine: Career's shop as a vending machine (plan + stills)
+# The packet machine: Career's shop as a vending machine (plan + lab)
 
-11 October 2026, with the owner. Lab: `vending-stills-lab.html`
-(`js/vending-stills.js`, `css/vending-stills.css`), phone link
+11 October 2026, with the owner. Lab: `vending-lab.html`
+(`js/vending-machine.js`, `css/vending-machine.css`), phone link
 https://claude.ai/artifact/WKWLooBRqQNJGYqfbDf1B1 (republish to the same
-link). Nothing here is in the game. Stills only: nothing moves yet.
+link). Nothing here is in the game. Touch checks:
+`validation/vending-checks.cjs`.
 
 ## How we got here
 
@@ -45,6 +46,31 @@ panel, red panelling).
 - **On the hub:** they wait in one pile, top right of the felt
   (WAITING 3), to be opened there with the pack opening.
 
+## Round 2 (11 Oct): the owner's notes on the stills, and the moving lab
+
+- No ALWAYS/MAYBE legend and no CARDS FOR SURE pips: leave things to be
+  learnt, don't label everything. The four lamps stay (C, UC, R, L).
+- More packets: 4 across (5 in TUNE), up to 4 rows; eight placeholder
+  editions (new palettes in `js/pack-opening-packet.js`), a sold-out
+  column. Short screens drop to 3 rows.
+- Built like the Player Dashboard: the moulded frame, the checker case,
+  sunk bays (the burgundy theme's materials). No velvet stripes; a speaker
+  grille fills the side panel.
+- The machine takes the cabinet's screen row and slot too (they're never
+  used in the shop); the reel stays.
+- The tray: one ribbed, smoked PUSH flap over the whole opening; packets
+  fall past the rows below (no separate drop well), land, bounce and lie
+  where they land, seen through the ribbed plastic.
+- No fan: PUSH brings one packet out at a time; turn it, shake it, flick
+  (or drag) it down to send it; the next comes out.
+- Built and checked: the roll in (stepped teeth, overshoot, lock) and the
+  boot (tube flicker, keys row by row); choosing with counts in the keys;
+  CLEAR; hold to buy; the chips into the slot (face, turn, edge, push,
+  CHUNK); the drop (relay, blink, motor, tip, tumble, the tray, the knock
+  on the flap, the spare forward); stuck (the shimmer, two knocks); take,
+  inspect, send; the roll out; the pile on the hub; opening one there
+  (the pack opening, embedded) and KEEP into the deck.
+
 ## Open
 
 - The opening reveals four cards now; five things (cards or chips) need
@@ -53,10 +79,9 @@ panel, red panelling).
 - The exact odds behind each lamp.
 - Pattern Book sign-off for the new parts (the window, the keys and flip
   counters, the drop well, the flap, the side panel, the lamps).
-- More editions later: the window only fits three across.
+- The editions, prices and lamp odds are placeholders.
 
 ## Next
 
-The owner's notes on the stills; then the moving machine in slices (roll
-in and boot; choose and pay; the drop, the tray and the stuck packet;
-take, inspect, send and the hub pile).
+The owner's notes on the moving lab (feel on the phone: the roll, the
+chips, the drop, the flick), then polish from those notes.

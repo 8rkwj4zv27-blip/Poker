@@ -27,7 +27,7 @@ audit's complaints (dashboard rims, clipped result line, chip pile) are gone.
 ## Recent changes (newest first)
 
 - 11 Oct (no game change): the shop is a vending machine (owner's idea,
-  [plan](career/VENDING_PLAN.md)): stills, `vending-stills-lab.html`.
+  [plan](career/VENDING_PLAN.md)), moving: `vending-lab.html`.
 - 11 Oct (no game change): the desk lab ([plan](career/CAREER_HUB_DESK_PLAN.md))
   was rejected; stills of a simpler hub became `career-main-lab.html`:
   the table's deck deals cards, P.I.P. to tap or throw (v0.67.1 hooks).
@@ -43,7 +43,7 @@ audit's complaints (dashboard rims, clipped result line, chip pile) are gone.
 
 ## Open items (verified, not scheduled)
 
-- The owner's notes on the packet machine stills: https://claude.ai/artifact/WKWLooBRqQNJGYqfbDf1B1
+- The owner's notes on the moving packet machine: https://claude.ai/artifact/WKWLooBRqQNJGYqfbDf1B1
 - The owner's verdict on the moving hub: https://claude.ai/artifact/FpUrE7DTH5uqFqhV4eC8ir
   (and the pack lab: https://claude.ai/artifact/2A5hyH5pufRp7Tdj513SQp)
 - Career Hub on small iPhones (375x667, SE/8): BUY IN sits below the
@@ -68,7 +68,7 @@ own speech bubbles (`claude/tender-dijkstra-zso8dm`).
 
 ## Next
 
-The packet machine: notes on the stills, then the moving machine. The
+The packet machine: the owner's notes on the moving lab, then polish. The
 hub: notes; P.I.P.'s style counts (save data: ask); the collection book; then into Career: the collection save, a pack economy
 simulation, Pattern Book sign-off for the new parts, the real table hand-off.
 Read [`career/CAREER_HUB_DESK_PLAN.md`](career/CAREER_HUB_DESK_PLAN.md) and
