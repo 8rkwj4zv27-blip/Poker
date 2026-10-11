@@ -32,6 +32,8 @@
   const SERIES = [{ id:'house', name:'HOUSE', price:100 }, { id:'club', name:'CLUB', price:300 }, { id:'reserve', name:'RESERVE', price:1000 }];
   const CARD_W = 82, CARD_H = 120, STACK_X = 7, STACK_Y = 20, CARDS = 4, HOLD_MS = 650;
   const money = n => '$' + Math.round(n).toLocaleString('en-US');
+  // the Career lab (career-hub-lab.html) opens on the desk; this table becomes the packet shop
+  const CAREER = !!window.CAREER_LAB;
 
   let root, stage, W = 0, H = 0, phase = 'boot', lock = false;
   let packets = [], chosen = null, deck = null, flap = null, wallet = 5000, packNo = 0;
@@ -73,11 +75,12 @@
   /* ---------------- 1 · the deal ---------------- */
   async function dealIn(){
     phase = 'deal'; lock = true; chosen = null; hasLegend = false; pull = 0;
-    status('THE HOUSE DEALS', 'THREE SEALED PACKETS'); figure('03', 'PACKETS'); key('PICK A PACKET', 'TAP ONE TO TAKE A LOOK', false);
+    status(CAREER ? 'THE PACKET SHOP' : 'THE HOUSE DEALS', 'THREE SEALED PACKETS'); figure('03', 'PACKETS'); key('PICK A PACKET', 'TAP ONE TO TAKE A LOOK', false);
     packets = SERIES.map(d => new Packet(stage, d.id, d.price));
     await Promise.all(packets.map(p => p.ready));
     packets.forEach(fillStack);
-    packets.forEach((p, i) => { p.home = slot(i); const h = home(p); p.el.style.zIndex = 10 + i; p.body.set({ ...h, x:h.x + (1 - i) * 30, y:-H * .35, z:40, r:h.r - 60 }); });
+    if (CAREER) return dispense();
+    packets.forEach((p, i) => { p.home = slot(i); const h = home(p); p.el.style.zIndex = 12 - i; p.body.set({ ...h, x:h.x + (1 - i) * 30, y:-H * .35, z:40, r:h.r - 60 }); });
     await Promise.all(packets.map(async (p, i) => {
       await wait(i * 120);
       S.cardDeal(); Foil.flutter();
@@ -92,6 +95,35 @@
     }));
     lock = false; phase = 'choose';
     status('PICK A PACKET', 'TAP ONE · OR MOVE THEM ABOUT');
+  }
+
+  /* The shop's machine: each packet waits behind a brass hatch. The hatch
+     clunks open, the packet drops onto the counter felt and bounces. */
+  const hatchAt = i => { const h = $('po-hatches').children[i], st = stage.el.getBoundingClientRect(), r = h.getBoundingClientRect(); return { x:r.left - st.left + r.width / 2, y:r.top - st.top + r.height * .6 }; };
+  async function dispense(){
+    packets.forEach((p, i) => { p.home = slot(i); p.el.style.zIndex = 12 - i; const a = hatchAt(i); p.body.set({ ...home(p), x:a.x, y:a.y, z:0, s:rowS() * .3, alpha:0, r:0 }); });
+    await Promise.all(packets.map(async (p, i) => {
+      await wait(PO.reduced ? 0 : 140 + i * 170);
+      const hatch = $('po-hatches').children[i];
+      hatch.classList.add('is-open'); S.hatchOpen(); Haptic.tick(8);
+      await glide(p.body, { alpha:1, s:rowS() * .6, z:10 }, 90);
+      Foil.crinkle();
+      const h = home(p);
+      await glide(p.body, { ...h, x:h.x + (1 - i) * 4, y:h.y - 6, z:0 }, 360, { arc:46, easing:ease.in });
+      S.cardLanded(); Foil.thud(.4); Haptic.tick(10); puff(stage, h.x, h.y + AH * h.s / 2, AW * h.s, { n:6 });
+      squash(p.body, .12, 260);
+      await glide(p.body, h, 140, { easing:ease.out });
+      setTimeout(() => { hatch.classList.remove('is-open'); S.hatchClose(); }, 120);
+    }));
+    lock = false; phase = 'choose';
+    status('THE PACKET SHOP', 'TAP ONE · OR MOVE THEM ABOUT');
+  }
+  // the packets you didn't buy go back up into their hatches
+  function restock(q){
+    const i = SERIES.findIndex(d => d.id === q.series), hatch = $('po-hatches').children[i], a = hatchAt(i);
+    hatch.classList.add('is-open'); S.hatchOpen();
+    return glide(q.body, { x:a.x, y:a.y, z:10, s:rowS() * .3, alpha:0, r:0 }, 320, { arc:30, easing:ease.in })
+      .then(() => { q.body.remove(); hatch.classList.remove('is-open'); S.hatchClose(); });
   }
 
   /* Packets are objects: pick one up, slide it, throw it. It lifts off
@@ -242,7 +274,7 @@
     turnTo(was, 0);
     await Promise.all(packets.map(q => glide(q.body, home(q), 300, { arc:8 })));
     S.cardLanded(); Foil.thud(.35);
-    packets.forEach((q, i) => q.el.style.zIndex = 10 + i);
+    packets.forEach((q, i) => q.el.style.zIndex = 12 - i);
     lock = false;
     status('PICK A PACKET', 'TAP ONE · OR MOVE THEM ABOUT'); figure('03', 'PACKETS'); key('PICK A PACKET', 'TAP ONE TO TAKE A LOOK', false);
   }
@@ -353,7 +385,7 @@
     tearOffTag(p);
     status("IT'S YOURS", p.series.toUpperCase() + ' EDITION'); figure('04', 'INSIDE'); key('…', '', false);
     // the others go back to the house
-    packets.filter(q => q !== p).forEach(q => glide(q.body, { y:-H * .3, alpha:0, r:q.body.r * 2 }, 300, { easing:ease.in }).then(() => q.body.remove()));
+    packets.filter(q => q !== p).forEach(q => CAREER ? restock(q) : glide(q.body, { y:-H * .3, alpha:0, r:q.body.r * 2 }, 300, { easing:ease.in }).then(() => q.body.remove()));
     packets = [p];
     // POP: squash, launch, one stepped turn in the air, land with weight
     const f = focus();
@@ -988,7 +1020,7 @@
     S.cardDeal();
     await Promise.all(fan.map(c => glide(c.body, { x:sx, y:sy - 34, s:.42, r:0 }, 300, { arc:30 })));
     await Promise.all(fan.map((c, i) => wait(i * 60).then(() => tween(140, e => c.body.set({ y:sy - 34 + e * 30, sy:1 - e * .6, alpha:1 - e }), ease.in)).then(() => {
-      collection++; held.push(c.card); found.set(c.card.design, { ...c.card, roster:null });
+      collection++; c.card.isNew = true; held.push(c.card); found.set(c.card.design, { ...c.card, roster:null });
       S.counterTick(true); jolt(slot, 2); Haptic.tick(8, 0);
       Foil.note(7 + i * 2, .6);
       slot.classList.remove('is-lit'); void slot.offsetWidth; slot.classList.add('is-lit');
@@ -1006,22 +1038,50 @@
     dealIn();
   }
 
-  /* ---------------- the other doors (placeholders) ----------------
-     The same inspect screen opens from the album and from the hub desk,
-     to prove it is one shared part. Both are rough stand-ins. */
-  let view = 'packs', saved = null;
+  /* ---------------- the faces of the machine ----------------
+     packs: the packet shop (this table); album: every design you've
+     pulled, with your history in it; hub: the Career desk
+     (js/career-desk.js). Changing face rolls the felt over like the
+     game's drum, a tooth at a time. */
+  let view = 'packs', saved = null, rolling = false;
   const RCODE = { common:'C', uncommon:'UC', rare:'R', legendary:'L' };
-  function door(to){
-    if (to === view || lock || CardInspect.isOpen || pointer) return;
+  const KNAME = { table:'TABLE', freezeout:'FREEZEOUT', bomb:'BOMB', wild:'WILD' };
+  async function door(to, { instant = false } = {}){
+    if (to === view || rolling || lock || CardInspect.isOpen || pointer) return;
     if (view === 'packs') saved = { t:$('po-title').textContent, s:$('po-sub').textContent, f:$('po-fig').textContent, fl:$('po-fig-l').textContent, k:$('po-key-label').textContent, ks:$('po-key-sub').textContent, kd:$('po-key').disabled };
+    rolling = true;
+    const from = view, dir = to === 'hub' ? -1 : 1;
+    if (!instant) await roll(dir, 'out');
+    if (from === 'hub') CareerDesk.leave();
     view = to;
-    S.consoleShift(); Haptic.tick(8);
     $('po-album').hidden = to !== 'album'; $('po-hub').hidden = to !== 'hub';
     stage.el.classList.toggle('is-away', to !== 'packs');
+    $('po-back').hidden = !CAREER || to === 'hub';
+    $('po-brand-sub').textContent = to === 'hub' ? 'CAREER' : to === 'album' ? 'ALBUM' : CAREER ? 'SHOP' : 'THE PACK TABLE';
+    $('po-hatches').hidden = !CAREER || to !== 'packs';
     root.querySelectorAll('[data-door]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.door === to)));
     if (to === 'album') renderAlbum();
-    else if (to === 'hub') renderHub();
+    else if (to === 'hub') CareerDesk.enter();
+    else if (CAREER && !packets.length && !deck) dealIn();
     else if (saved){ status(saved.t, saved.s); figure(saved.f, saved.fl); key(saved.k, saved.ks, !saved.kd); }
+    if (!instant) await roll(dir, 'in');
+    rolling = false;
+  }
+  // the felt rolls away a tooth at a time, the next face rolls in, overshoots and locks
+  async function roll(dir, part){
+    if (PO.reduced) return;
+    const el = stage.el, h = H || el.clientHeight, teeth = 5;
+    el.classList.add('is-rolling');
+    if (part === 'out'){
+      S.wheelRelease(); Haptic.tick(8);
+      for (let t = 1; t <= teeth; t++){ el.style.setProperty('--roll', Math.round(dir * -h * t / teeth) + 'px'); S.wheelTooth(.8, false); Haptic.tick(3, 20); await wait(26); }
+    } else {
+      for (let t = teeth - 1; t >= 0; t--){ el.style.setProperty('--roll', Math.round(dir * h * t / teeth) + 'px'); S.wheelTooth(.6, t === 0); await wait(30); }
+      el.style.setProperty('--roll', Math.round(dir * -10) + 'px'); S.wheelCatch(); await wait(50);
+      el.style.setProperty('--roll', Math.round(dir * 3) + 'px'); await wait(40);
+      el.style.setProperty('--roll', '0px'); S.wheelLock(); Haptic.tick(12, 0);
+      el.classList.remove('is-rolling');
+    }
   }
   function mini(card, cls = ''){
     return `<span class="po-mini-card ${cls}">${Cards().objectHTML(card.spec)}</span>`;
@@ -1030,6 +1090,7 @@
     const cell = box.querySelector('.po-mini-card');
     if (cell) box.style.setProperty('--k', (cell.clientWidth / 164).toFixed(4));
   }
+  /* The album: one slot per design, kinds down, rarities across. */
   function renderAlbum(){
     const grid = $('po-album-grid'), ds = EventCards.designs();
     grid.innerHTML = ds.map(d => {
@@ -1038,48 +1099,52 @@
     }).join('');
     scaleMinis(grid);
     status('THE ALBUM', found.size + ' OF ' + ds.length + ' DESIGNS FOUND'); figure(String(found.size).padStart(2, '0'), 'FOUND');
-    key('BACK TO THE PACK TABLE', 'TAP A CARD TO LOOK');
+    key(CAREER ? 'BACK TO THE DESK' : 'BACK TO THE PACK TABLE', 'TAP A CARD TO LOOK');
   }
+  // inspecting a design shows your history with it
   function albumInspect(btn){
     const ds = EventCards.designs(), buttons = [...$('po-album-grid').children];
     const items = ds.map((d, i) => {
-      const [k, r] = d.split(':'), f = found.get(d);
-      return f ? { card:f, source:() => buttons[i].querySelector('.po-mini-card') } : { card:EventCards.make(k, r, 'back-room-five', { roster:false }), locked:true, source:() => buttons[i].querySelector('.po-mini-card') };
+      const [k, r] = d.split(':'), f = found.get(d), h = history.get(d), src = () => buttons[i].querySelector('.po-mini-card');
+      if (!f) return { card:EventCards.make(k, r, 'back-room-five', { roster:false }), locked:true, source:src };
+      const n = held.filter(c => c.design === d).length;
+      const lines = [KNAME[k] + ' · ' + r.toUpperCase() + (n ? ' · ' + n + ' IN YOUR CASE' : '')];
+      if (h){ lines.push('PLAYED ' + h.played + ' · BEST ' + ord(h.best)); if (h.won) lines.push({ t:'WON ' + money(h.won) + ' WITH IT', money:true }); }
+      else lines.push('NOT PLAYED YET');
+      return { card:f, source:src, lines };
     });
     CardInspect.open({ items, index:buttons.indexOf(btn) });
   }
-  function renderHub(){
-    const desk = $('po-hub-desk'), tonight = held.slice(0, 6);
-    desk.innerHTML = [0, 1].map(row => `<div class="po-hub-row">${[0, 1, 2].map(col => {
-      const c = tonight[row * 3 + col];
-      return c ? `<button class="po-mini po-hub-card" type="button" data-uid="${c.uid}">${mini(c)}</button>` : '<span class="po-mini po-hub-gap"><span class="po-mini-card"></span></span>';
-    }).join('')}</div><span class="ec-lip po-hub-lip"></span>`).join('');
-    scaleMinis(desk);
-    status('TONIGHT', held.length ? held.length + ' CARD' + (held.length > 1 ? 'S' : '') + ' IN YOUR CASE' : 'NO CARDS · OPEN A PACK');
-    figure(money(wallet), 'BANK');
-    key('BACK TO THE PACK TABLE', 'TAP A CARD TO LOOK');
+  const ord = n => n + ((n % 100 >= 11 && n % 100 <= 13) ? 'TH' : ({ 1:'ST', 2:'ND', 3:'RD' })[n % 10] || 'TH');
+
+  /* ---------------- Career state (memory only, the lab's) ---------------- */
+  const history = new Map(), venueHistory = new Map(), venues = new Set(['BACK ROOM']);
+  function record(card, finish, prize){
+    for (const [map, k] of [[history, card.design], [venueHistory, card.event.venue]]){
+      const h = map.get(k) || { played:0, best:99, won:0 };
+      h.played++; h.best = Math.min(h.best, finish); h.won += prize;
+      map.set(k, h);
+    }
   }
-  function hubInspect(btn){
-    const buttons = [...$('po-hub-desk').querySelectorAll('.po-hub-card')], cards = buttons.map(b => held.find(c => c.uid === b.dataset.uid));
-    CardInspect.open({
-      items:cards.map((c, i) => ({ card:c, source:() => buttons[i].querySelector('.po-mini-card') })),
-      index:buttons.indexOf(btn),
-      key:{
-        label:'BUY IN',
-        press:async (item, i, api) => {
-          const c = item.card;
-          if (wallet < c.event.buyIn){ S.koFailClick(); Haptic.tick(6); return; }
-          await api.consume();
-          wallet -= c.event.buyIn; bank(); S.counterLock(true);
-          held.splice(held.indexOf(c), 1);
-          await api.close();
-          renderHub();
-          status('SEATED: ' + c.event.name, 'THE TABLE STARTS HERE, LATER');
-        }
-      },
-      onClose:() => renderHub()
-    });
+  // a career a little way in: the Back Room cleared, the Pub open, a few cards in the case
+  function seed(){
+    venues.add('PUB CIRCUIT');
+    wallet = 3000;
+    [['table', 'common', 'back-room-five'], ['freezeout', 'common', 'back-room-freezeout'], ['bomb', 'uncommon', 'pub-open'], ['wild', 'common', 'pub-freezeout'], ['table', 'rare', 'pub-turbo'], ['freezeout', 'uncommon', 'back-room-heads-up']]
+      .forEach(([k, r, e]) => { const c = EventCards.make(k, r, e); held.push(c); found.set(c.design, { ...c, roster:null }); });
+    held[4].isNew = true;
+    record(held[0], 2, 150); record(held[0], 4, 0);
   }
+  const CareerLab = {
+    get root(){ return root; }, get view(){ return view; },
+    get container(){ return $('po-hub'); },
+    get wallet(){ return wallet; }, set wallet(v){ wallet = v; },
+    held, found, venues,
+    status, figure, bank, door, record,
+    historyFor:venue => venueHistory.get(venue) || { played:0, best:0, won:0 },
+    keys(on){ root.classList.toggle('is-desk', on); },
+    keyPlay(label, enabled){ const b = $('po-play'); b.textContent = label; b.disabled = !enabled; b.className = 'btn-raise po-play-key'; b.id = 'po-play'; }
+  };
 
   function fresh(){
     PO.reset(); charge?.motor.stop(); charge = null; coast = null;
@@ -1129,6 +1194,8 @@
   }
   function at(e){ const r = stage.el.getBoundingClientRect(); return { x:e.clientX - r.left, y:e.clientY - r.top }; }
   function onDown(e){
+    // the desk and the album handle their own touches
+    if (view !== 'packs' || rolling) return;
     if (pointer || e.button > 0) return;
     Foil.unlock(); S.unlock(); idleAt = performance.now(); nudge(false);
     if (lock){ PO.finishAll(); return; } // tap to fast-forward
@@ -1323,7 +1390,7 @@
   }
   function onKeyUp(){
     const from = keyFrom; keyFrom = null; keyHeld = false;
-    if (from === 'door'){ door('packs'); return; }
+    if (from === 'door'){ door(CAREER ? 'hub' : 'packs'); return; }
     if (phase === 'charging') releaseCharge();
     else if (lock || from !== phase || pointer) return;
     else if (phase === 'sealed'){ chosen.dir = 1; finishTear(false); }
@@ -1353,7 +1420,8 @@
     root.id = 'po'; root.className = 'lobby-card pc-housing';
     root.innerHTML = `
       <header class="po-top">
-        <div class="po-brand">POKER FACES<small>THE PACK TABLE</small></div>
+        <button class="icon-btn po-back" id="po-back" type="button" hidden aria-label="Back to the desk">◄ DESK</button>
+        <div class="po-brand">POKER FACES<small id="po-brand-sub">THE PACK TABLE</small></div>
         <div class="po-wallet ch2-bankroll-housing"><div class="ch2-bankroll-reel po-bank" id="po-bank"></div></div>
         <button class="icon-btn" id="po-tune" aria-label="Lab controls">TUNE</button>
       </header>
@@ -1366,19 +1434,21 @@
         <div class="po-shadows"></div><div class="po-objects"></div><div class="po-fx"></div>
         <i class="po-nudge" id="po-nudge" hidden></i>
         <div class="po-view po-album" id="po-album" hidden><div class="po-album-grid" id="po-album-grid"></div></div>
-        <div class="po-view po-hub" id="po-hub" hidden><div class="po-hub-desk" id="po-hub-desk"></div></div>
+        <div class="po-view po-hub" id="po-hub" hidden></div>
+        <div class="po-hatches" id="po-hatches" hidden aria-hidden="true">${SERIES.map(d => `<span class="po-hatch" data-series="${d.id}"><i class="po-hatch-door"></i><b>${d.name}<small>${money(d.price)}</small></b><i class="po-hatch-lamp"></i></span>`).join('')}</div>
         <div class="po-slot" id="po-slot" aria-label="Collection"><span class="ec-lip po-slot-lip"></span><span class="po-slot-n" id="po-slot-n">000</span></div>
       </section>
       <footer class="po-console">
         <div class="ec-lip po-rail" aria-hidden="true"></div>
-        <div class="pc-primary-cradle"><button class="pc-button pc-button-primary" id="po-key"><span class="pc-lamp is-amber"></span><span><span class="po-key-label" id="po-key-label"></span><small id="po-key-sub"></small></span><span class="pc-lamp is-amber"></span></button></div>
+        <div class="ec-bay po-desk-keys"><div class="actions-row"><button class="btn-check" type="button" id="po-case-key">CASE</button><button class="btn-raise po-play-key" type="button" id="po-play">PLAY</button><button class="btn-check" type="button" id="po-shop-key">SHOP</button></div></div>
+        <div class="pc-primary-cradle po-one-key"><button class="pc-button pc-button-primary" id="po-key"><span class="pc-lamp is-amber"></span><span><span class="po-key-label" id="po-key-label"></span><small id="po-key-sub"></small></span><span class="pc-lamp is-amber"></span></button></div>
       </footer>
       <section class="po-sheet" id="po-sheet" hidden aria-label="Lab controls">
         <h2>PACK OPENING · SLICE 4</h2>
         <p>Move the packets about, pick one, hold to buy, tear, draw, turn the cards (tap, flick, or hold to squeeze), play with your hand, flick the wrapper away, KEEP. Lab money, nothing saved.</p>
-        <label>DOORS (THE SAME INSPECT SCREEN IN EACH)</label>
-        <div class="po-seg"><button class="pc-button pc-button-secondary" data-door="packs" aria-pressed="true">PACK TABLE</button><button class="pc-button pc-button-secondary" data-door="album">ALBUM</button><button class="pc-button pc-button-secondary" data-door="hub">HUB DESK</button></div>
-        <div class="po-seg"><button class="pc-button pc-button-secondary" id="po-fill">FIND ALL 16 + DEAL 3</button></div>
+        <label>DOORS</label>
+        <div class="po-seg"><button class="pc-button pc-button-secondary" data-door="hub">DESK</button><button class="pc-button pc-button-secondary" data-door="packs" aria-pressed="true">SHOP</button><button class="pc-button pc-button-secondary" data-door="album">ALBUM</button></div>
+        <div class="po-seg"><button class="pc-button pc-button-secondary" id="po-fill">FIND ALL 16 + 3 CARDS</button><button class="pc-button pc-button-secondary" id="po-visitor">A VISITOR, NOW</button></div>
         <label>NEXT PACK HOLDS</label>
         <div class="po-seg"><button class="pc-button pc-button-secondary" data-tune="contents" data-v="surprise">SURPRISE</button><button class="pc-button pc-button-secondary" data-tune="contents" data-v="legendary">A LEGENDARY</button><button class="pc-button pc-button-secondary" data-tune="contents" data-v="none">NO LEGENDARY</button><button class="pc-button pc-button-secondary" data-tune="contents" data-v="double">TWO</button></div>
         <label>LEGENDARY EVENT</label>
@@ -1419,10 +1489,14 @@
       EventCards.designs().forEach(d => { if (!found.has(d)){ const [k, r] = d.split(':'); found.set(d, EventCards.make(k, r, EventCards.SERIES.house[0], { roster:false })); } });
       ['house', 'club', 'reserve'].forEach(s => held.push(EventCards.make(EventCards.KINDS[Math.floor(Math.random() * 4)], 'common', EventCards.SERIES[s][0])));
       $('po-sheet').hidden = true;
-      if (view === 'album') renderAlbum(); else if (view === 'hub') renderHub();
+      if (view === 'album') renderAlbum(); else if (view === 'hub'){ CareerDesk.leave(); CareerDesk.enter(); }
     };
     $('po-album').addEventListener('click', e => { const b = e.target.closest('.po-mini'); if (b) albumInspect(b); });
-    $('po-hub').addEventListener('click', e => { const b = e.target.closest('.po-hub-card'); if (b) hubInspect(b); });
+    $('po-back').onclick = () => door('hub');
+    $('po-visitor').onclick = () => { $('po-sheet').hidden = true; if (view !== 'hub') door('hub'); setTimeout(() => CareerDesk.visitor(), 700); };
+    $('po-case-key').onclick = () => CareerDesk.key('case');
+    $('po-play').onclick = () => CareerDesk.key('play');
+    $('po-shop-key').onclick = () => CareerDesk.key('shop');
     $('po-fresh').onclick = () => { sheet(); fresh(); };
     $('po-credit').onclick = () => { wallet += 5000; bank(); if (phase === 'selected' && chosen) key('HOLD TO BUY', money(chosen.price) + ' · ' + chosen.series.toUpperCase() + ' EDITION', true); };
     root.querySelectorAll('[data-tune]').forEach(b => b.onclick = () => {
@@ -1433,11 +1507,14 @@
       if (!w || (Math.abs(w - W) < 1 && Math.abs(h - H) < 1) || lock || pointer) return;
       if (phase === 'choose') packets.forEach(p => p.body.set(home(p)));
       if (chosen && ['selected', 'sealed', 'open'].includes(phase)) chosen.body.set(focus());
+      CareerDesk.resize();
     }).observe(st);
     measure(); bank(); applyTune(); startTicks();
-    dealIn();
+    CareerDesk.init(CareerLab);
+    if (CAREER){ root.classList.add('is-career'); seed(); bank(); door('hub', { instant:true }); }
+    else dealIn();
     // read-only diagnostics for the lab's checks
-    window.PackOpening = { get state(){ return { phase, lock, wallet, packNo, hasLegend, tear:chosen?.tear ?? 0, pull, chosen:chosen?.series ?? null, packets:packets.length, deck:!!deck, size:{ W, H }, contents:contents.map(c => c.rarity), revealed, fan:fan.length, collection, chips:chips.length, wrapper:!!(chosen && chosen.open && !chosen.tossed), inspecting:CardInspect.isOpen, view, held:held.length, found:found.size, fold:rc?.fold ?? 0, shown:rc?.shown ? rc.spec.rarity : null, homes:packets.map(p => p.home && [+p.home.fx.toFixed(3), +p.home.fy.toFixed(3)]) }; } };
+    window.PackOpening = { get state(){ return { phase, lock, wallet, packNo, hasLegend, tear:chosen?.tear ?? 0, pull, chosen:chosen?.series ?? null, packets:packets.length, deck:!!deck, size:{ W, H }, contents:contents.map(c => c.rarity), revealed, fan:fan.length, collection, chips:chips.length, wrapper:!!(chosen && chosen.open && !chosen.tossed), inspecting:CardInspect.isOpen, view, held:held.length, found:found.size, desk:CareerDesk.state, venues:[...venues], played:[...history.values()].reduce((a, h) => a + h.played, 0), fold:rc?.fold ?? 0, shown:rc?.shown ? rc.spec.rarity : null, homes:packets.map(p => p.home && [+p.home.fx.toFixed(3), +p.home.fy.toFixed(3)]) }; } };
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', setup); else setup();
 })();

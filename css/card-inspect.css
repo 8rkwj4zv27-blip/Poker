@@ -64,8 +64,8 @@
   background:var(--pc-leather); border:4px solid var(--pc-edge-lo); border-bottom:0; border-radius:14px 14px 0 0;
   box-shadow:inset 4px 4px 0 var(--pc-leather-hi),inset -5px 0 0 var(--pc-leather-lo),0 -4px 0 rgba(0,0,0,.35); }
 .ci-crt{ padding:10px 12px; display:flex; flex-direction:column; align-items:center; gap:7px; min-height:44px; justify-content:center; }
-/* the key bay: sunk like the dashboard's (near-black, ink edge, hard top shadow, lit lip) */
-.ci-bay{ padding:8px 8px 12px; background:#0d0709; border:2px solid var(--px-ink); border-radius:10px; box-shadow:inset 0 5px 0 rgba(0,0,0,.6),0 2px 0 var(--pc-leather-hi); }
+/* the key bay (shared): sunk like the dashboard's (near-black, ink edge, hard top shadow, lit lip) */
+.ec-bay{ padding:8px 8px 12px; background:#0d0709; border:2px solid var(--px-ink); border-radius:10px; box-shadow:inset 0 5px 0 rgba(0,0,0,.6),0 2px 0 var(--pc-leather-hi); }
 .ci-keys{ display:grid; grid-template-columns:1fr 2fr 1fr; gap:10px; padding-top:0; }
 .ci-keys .ci-step.is-off{ visibility:hidden; }
 .ci-arrow{ display:block; width:10px; height:14px; margin:auto; background:currentColor; clip-path:polygon(0 0,30% 0,100% 50%,30% 100%,0 100%,0 0); }
@@ -74,4 +74,4 @@
 .ci-pips{ position:absolute; z-index:3; left:0; right:0; display:flex; justify-content:center; gap:6px; pointer-events:none; }
 .ci-pips i{ width:6px; height:6px; background:rgba(243,230,196,.28); box-shadow:1px 1px 0 #04140C; }
 .ci-pips i.is-on{ background:#F3E6C4; }
-@media (max-height:700px){ .ci-drawer{ gap:8px; padding-top:9px; } .ci-bay{ padding:6px 6px 9px; } }
+@media (max-height:700px){ .ci-drawer{ gap:8px; padding-top:9px; } .ec-bay{ padding:6px 6px 9px; } }

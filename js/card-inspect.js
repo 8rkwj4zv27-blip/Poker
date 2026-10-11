@@ -7,7 +7,9 @@
    setTurn / setBank / spin / flat / faceUp   the toy: turn it, bank it,
                                    flick it and it spins with momentum
    CardInspect.open({ items, index, key, onClose })
-     items: [{ card, source:() => element, locked }]  what you can swipe
+     items: [{ card, source:() => element, locked, lines }]  what you can swipe
+            through (lines: the CRT's own lines, e.g. the album's history;
+            a line can be { t, money:true })
             through; the card rises from its source and goes back to it
      host:  the screen root it mounts in (default #home): the keys take
             that screen's own styles, exactly as its other keys do
@@ -115,7 +117,7 @@
       <div class="ci-pips" aria-hidden="true"></div>
       <div class="ci-drawer">
         <div class="crt ci-crt" data-crt-quiet></div>
-        <div class="ci-bay"><div class="actions-row ci-keys">
+        <div class="ec-bay"><div class="actions-row ci-keys">
           <button class="btn-check ci-step" type="button" data-step="-1" aria-label="Previous card"><i class="ci-arrow is-left"></i></button>
           <button class="btn-check ci-key" type="button"></button>
           <button class="btn-check ci-step" type="button" data-step="1" aria-label="Next card"><i class="ci-arrow"></i></button>
@@ -268,11 +270,14 @@
      only when there's something worth saying. The prize is on the card. */
   function fill(item){
     const d = EventCards.describe(item.card);
-    const lines = item.locked
-      ? ['NOT YET FOUND', 'PULL ONE FROM A PACK']
-      : [d.venue + ' · ' + d.title, 'ENTRY ' + money(d.entry) + ' · ' + d.seats + ' SEATS'];
-    if (!item.locked && d.payouts.length > 1) lines.push('2ND PAYS ' + money(d.payouts[1]));
-    ui.crt.innerHTML = lines.map((t, i) => `<span class="crt-line ci-line${i === 2 ? ' crt-money' : ''}">${esc(t)}</span>`).join('');
+    let lines = item.lines;
+    if (!lines){
+      lines = item.locked
+        ? ['NOT YET FOUND', 'PULL ONE FROM A PACK']
+        : [d.venue + ' · ' + d.title, 'ENTRY ' + money(d.entry) + ' · ' + d.seats + ' SEATS'];
+      if (!item.locked && d.payouts.length > 1) lines.push({ t:'2ND PAYS ' + money(d.payouts[1]), money:true });
+    }
+    ui.crt.innerHTML = lines.map(l => typeof l === 'string' ? { t:l } : l).map(l => `<span class="crt-line ci-line${l.money ? ' crt-money' : ''}">${esc(l.t)}</span>`).join('');
     typeOn();
   }
   // the lines come up one after another, each with a soft relay tick

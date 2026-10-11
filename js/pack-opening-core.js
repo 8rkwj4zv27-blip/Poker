@@ -236,6 +236,18 @@
         g.gain.setValueAtTime(.0001, t); g.gain.exponentialRampToValueAtTime(.045 * power, t + .005); g.gain.exponentialRampToValueAtTime(.0001, t + .18);
         o.connect(g); g.connect(a.destination); o.start(t); o.stop(t + .2);
       },
+      // a brass desk bell: a bright strike and a long ring with a slow beat
+      bell(power = 1){
+        const a = c(); if (!a) return;
+        const t = a.currentTime;
+        [[1760, .07, 1.4], [1765, .05, 1.4], [3520, .025, .5], [5280, .012, .25]].forEach(([f, v, d]) => {
+          const o = a.createOscillator(), g = a.createGain();
+          o.type = 'sine'; o.frequency.setValueAtTime(f, t);
+          g.gain.setValueAtTime(.0001, t); g.gain.exponentialRampToValueAtTime(v * power, t + .004); g.gain.exponentialRampToValueAtTime(.0001, t + d);
+          o.connect(g); g.connect(a.destination); o.start(t); o.stop(t + d + .05);
+        });
+        noise(14, .06 * power, 3000, 12000);
+      },
       chord(fs, power = 1){
         const a = c(); if (!a) return;
         fs.forEach((f, i) => {

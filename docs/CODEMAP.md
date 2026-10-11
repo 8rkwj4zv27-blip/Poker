@@ -1074,6 +1074,26 @@ often each kind of player wins, cashes and profits (see
   written before that work reached the game. Historical; `docs/README.md` lists which docs are current. To run
   the game locally see the top-level `README.md`.
 
+## `career-hub-lab.html` — the Career desk (isolated, 11 October 2026)
+
+Plan: `docs/career/CAREER_HUB_DESK_PLAN.md`. The page is the pack lab's
+(same host, same injected files) plus `js/career-hub-lab-boot.js`, which
+sets `CAREER_LAB` so the pack scene opens on the desk and its table becomes
+the packet shop (brass hatches: `dispense`, `restock`).
+`js/career-desk.js` (CareerDesk) + `css/career-desk.css`: the desk. The
+pack scene hosts it and hands it `CareerLab` (wallet, case `held`, album
+`found`, `history`, `venues`, `door`, `keyPlay`, `record`). On it: the
+slot (carry a card up and it bites under the plate; PAY: chips into the
+slot via CoinWorld, four ratchet teeth, the IN PLAY marker, a simulated
+table, winnings as chips out of the slot; a first venue win flies the next
+matchbook out), three suggested cards (`suggest`: NEW, NEXT STEP, BIG ONE,
+SAFE BET, A STRETCH, HOUSE), matchbooks (tap opens, hold strikes), the
+banker's lamp (pull; the felt's hidden print), the bell (the shop), the
+case (the album), chips (riffle), a rare visitor. The pack scene's
+`door()` rolls between the desk, the shop and the album (`roll`); the
+album's inspect shows your history with each design.
+Touch checks: `validation/career-hub-checks.cjs`.
+
 ## `pack-opening-lab.html` — Pack Opening V3 (isolated, 11 October 2026)
 
 Plan and owner decisions: `docs/career/PACK_OPENING_V3_PLAN.md`. The host

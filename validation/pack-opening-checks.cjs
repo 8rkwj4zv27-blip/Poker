@@ -166,17 +166,22 @@ async function run(width, height, reducedMotion){
       await tap(felt.x + 10, felt.y + 10); // fast-forward a fresh deal (no-op if done)
       await phase('choose');
     }
-    // the same inspect screen from the hub desk: BUY IN uses the card up
+    // the same inspect screen from the Career desk (its own checks are
+    // validation/career-hub-checks.cjs): BUY IN plays the card and uses it up
     await fr.evaluate(() => document.querySelector('[data-door=hub]').click());
-    const before = (await state()).held;
-    assert.ok(before >= 1, 'kept cards are in the case');
-    await tap(...centre(await g.locator('.po-hub-card').first().boundingBox()));
+    await fr.waitForFunction(() => { const s = PackOpening.state; return s.view === 'hub' && !s.desk.busy && s.desk.cards === 3; }, null, { timeout:15000 });
+    await page.waitForTimeout(300);
+    const before = await state();
+    assert.ok(before.held >= 3, 'kept cards are in the case');
+    await tap(...centre(await g.locator('.hd .ec-card').first().boundingBox()));
     await fr.waitForFunction(() => PackOpening.state.inspecting, null, { timeout:5000 });
     await page.waitForTimeout(700);
     await tap(...centre(await g.locator('#ci .ci-key').boundingBox()));
-    await fr.waitForFunction(h => PackOpening.state.held === h - 1 && !PackOpening.state.inspecting, before, { timeout:6000 });
+    await fr.waitForFunction(b => { const s = PackOpening.state; return s.held === b.held - 1 && s.played === b.played + 1 && !s.desk.busy && !s.inspecting; }, before, { timeout:15000 });
     // and from the album, where every kept design is found
     await fr.evaluate(() => document.querySelector('[data-door=album]').click());
+    await fr.waitForFunction(() => PackOpening.state.view === 'album', null, { timeout:8000 });
+    await page.waitForTimeout(400);
     assert.ok((await state()).found >= 1, 'the album records what you pulled');
     await tap(...centre(await g.locator('.po-album .po-mini:not(.is-unfound)').first().boundingBox()));
     await fr.waitForFunction(() => PackOpening.state.inspecting, null, { timeout:5000 });

@@ -26,6 +26,9 @@ audit's complaints (dashboard rims, clipped result line, chip pile) are gone.
 
 ## Recent changes (newest first)
 
+- 11 Oct (no game change): the Career desk lab (`career-hub-lab.html`,
+  [plan](career/CAREER_HUB_DESK_PLAN.md)): Career's main screen as a felt
+  desk (slot, three cards, matchbooks, lamp, bell, shop, album, history).
 - 11 Oct (no game change): Pack Opening V3 (`pack-opening-lab.html`,
   [plan](career/PACK_OPENING_V3_PLAN.md)): the packet, the reveal, the haul,
   a polish pass; then one shared card inspect screen (`js/card-inspect.js`,
@@ -41,8 +44,8 @@ audit's complaints (dashboard rims, clipped result line, chip pile) are gone.
 
 ## Open items (verified, not scheduled)
 
-- Pack Opening V3 (all four slices, first polish) awaits the owner's verdict:
-  https://claude.ai/artifact/2A5hyH5pufRp7Tdj513SQp
+- The owner's verdict on the Career desk lab: https://claude.ai/artifact/UdbYubPDiABddKThhANX4k
+  (and the pack lab: https://claude.ai/artifact/2A5hyH5pufRp7Tdj513SQp)
 - Career Hub on small iPhones (375x667, SE/8): BUY IN sits below the
   screen. Fine on the owner's Pro Max.
 - Stale code comments still name archived labs or say "not loaded by the
@@ -65,14 +68,12 @@ own speech bubbles (`claude/tender-dijkstra-zso8dm`).
 
 ## Next
 
-Pack Opening V3: the owner reviews the shared inspect screen on the phone
-link; then buying packs (the vending machine) and the Career hub desk.
-New parts go to the Pattern Book before the game: packet canvas, squeeze,
-hand fan, collection slot, the inspect screen.
-Read [`career/PACK_OPENING_V3_PLAN.md`](career/PACK_OPENING_V3_PLAN.md).
-Earlier pending work: the owner plays the Hub Lab (`docs/career/PACKS_PLAN.md`, Round 3: Career opens on tonight's
-tickets); then the Vendor and the Case screens to the same standard.
-Agree with the owner how this reshapes Events Releases 2 to 4
+The Career desk: the owner plays the desk lab (link in Open items) and
+gives notes; then plan it into Career: the collection save, a pack economy
+simulation, Pattern Book sign-off for the new parts, the real table hand-off.
+Read [`career/CAREER_HUB_DESK_PLAN.md`](career/CAREER_HUB_DESK_PLAN.md) and
+[`career/PACK_OPENING_V3_PLAN.md`](career/PACK_OPENING_V3_PLAN.md).
+(It supersedes the Hub Lab's ticket rack.) Agree with the owner how this reshapes Events Releases 2 to 4
 (`docs/career/EVENTS_PLAN.md`) before building either. Still open: the
 owner's verdict on the new Back Room (v0.67.0; minutes per hand
 unmeasured).
