@@ -27,6 +27,7 @@ Last sorted: 7 October 2026 (v0.66.1).
 | [`career/BUILD_PLAN.md`](career/BUILD_PLAN.md) | Career phase sequence and scope |
 | [`career/EVENTS_PLAN.md`](career/EVENTS_PLAN.md) | The events rework (8 Oct 2026): easier start, harder top, ladders, formats, heat gauge. In progress |
 | [`career/PACK_RITUAL_HANDOVER.md`](career/PACK_RITUAL_HANDOVER.md) | Current isolated opening study, owner feedback, evidence and Opus handover (`codex/pack-ritual`) |
+| [`career/PACK_OPENING_V3_PLAN.md`](career/PACK_OPENING_V3_PLAN.md) | Proposed rebuild ("The Squeeze"): audit, reference games, critiqued plan. Awaiting owner approval |
 | [`career/PACKS_PLAN.md`](career/PACKS_PLAN.md) | Career as packs of event cards: a vending machine, the rip, the ticket case (8 Oct 2026). Visual lab first (`pack-lab.html`) |
 | [`ai/AI_PLAN.md`](ai/AI_PLAN.md) | The opponent AI: tier ladder and baselines |
 
