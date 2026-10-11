@@ -1091,11 +1091,26 @@ stack / front canvas keep the cards inside.
 select and turn, hold to buy, tear, draw; then the reveal: tap, flick or
 squeeze the deck, four tier moments, Legendary dip/slam/CRT flash and an
 event flourish, the cards into the rail; then the haul: the held hand with
-NEW pips, the card toy (bank, thickness edge, momentum spin, CRT read-out),
-the wrapper flicked away spilling CoinWorld chips, KEEP into the
+NEW pips, the wrapper flicked away spilling CoinWorld chips, KEEP into the
 collection slot with COUNT IN, restock). Card faces come from
 `js/pack-ritual-cards.js` + `css/pack-ritual-cards.css`, laid out at 2x
 and scaled into the card. Slice 4 polish: `PO.Haptic` (vibrate, or the
 iOS switch-label tick), the price tag's pendulum (`swingTags`), packet
-collisions, the prize count-up, the last-card beat, `handName`.
+collisions, the prize count-up, the last-card beat, `handName`. The TUNE
+sheet's DOORS open two placeholder screens (the album, the hub desk) to
+prove the inspect screen is shared.
+`js/event-cards.js` (EventCards): what a card is (owner, 11 Oct): one real
+Career event (`careerEventById`) plus its opponents drawn once
+(`generateCareerRoster`); rarity scales the prize (`MULT`, placeholder);
+a placeholder twist per kind; `pack(series)` deals four; `describe(card)`
+gives the inspect screen its rows.
+`js/card-inspect.js` + `css/card-inspect.css` (CardInspect): the shared
+card part. `make` builds the card object (back, face, fold flap, edge,
+shade); `setTurn`/`setBank`/`spin`/`flat`/`faceUp` are the toy; `open`
+mounts the inspect screen in the host screen (`#home`, later
+`#career-hub`) so its keys take that screen's styles: the card rises from
+its source, a leather drawer brings the seats (real faces, `ch2-face`) and
+a CRT of details; swipe or ◄ ► for the next card; `key.press` with
+`api.consume()` uses a card up (the hub's BUY IN). Also owns `.ec-lip`,
+the brass lip.
 Touch checks: `validation/pack-opening-checks.cjs`.

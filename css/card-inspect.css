@@ -1,0 +1,99 @@
+/* ============================================================
+   EVENT CARD + INSPECT (shared part; lab until signed off)
+
+   One card object and one inspect screen for every place a card shows:
+   the pack opening, the album, the Career hub. js/card-inspect.js.
+   ============================================================ */
+
+/* ---- the card: a back, a face, a fold flap, an edge, a shade ---- */
+.ec-card{ pointer-events:auto; }
+.ec-card > div{ position:absolute; left:0; top:0; width:82px; height:120px; transform:skewY(var(--sk,0deg)); }
+.ec-back .card.back{ width:100%; height:100%; box-sizing:border-box; margin:0; box-shadow:inset 0 0 0 2px var(--cb-trim,#D9A93B); }
+.ec-card[data-side="back"] .ec-face, .ec-card[data-side="face"] .ec-back, .ec-card[data-side="face"] .ec-flap{ visibility:hidden; }
+/* the face is laid out at twice the size and scaled into the card, so its
+   type sits at the sizes it was drawn for (it looked squashed at 82px) */
+.ec-card .ccl-object{ width:164px; transform:scale(.5); transform-origin:0 0; }
+.ec-card .ccl-stock{ filter:none; }
+.ec-flap{ pointer-events:none; filter:drop-shadow(-2px 2px 0 rgba(4,20,12,.5)); }
+.ec-flap[hidden]{ display:none; }
+.ec-flap-in{ position:absolute; left:0; top:0; width:82px; height:120px; transform-origin:0 0; }
+/* the card's thickness, seen as it turns edge-on */
+.ec-edge{ position:absolute; left:100%; top:1px; height:118px; width:0; transform:skewY(var(--sk,0deg)); transform-origin:-41px 50%; background:linear-gradient(90deg,#f3e9c8 0 45%,#a99668 45% 70%,#5b4a2c 70%); }
+.ec-card.edge-left .ec-edge{ left:auto; right:100%; transform-origin:calc(100% + 41px) 50%; background:linear-gradient(270deg,#f3e9c8 0 45%,#a99668 45% 70%,#5b4a2c 70%); }
+/* banking away, the card darkens in hard steps */
+.ec-shade{ position:absolute; z-index:9; left:0; top:0; width:82px; height:120px; background:#04140c; opacity:var(--shade,0); pointer-events:none; transform:skewY(var(--sk,0deg));
+  clip-path:polygon(3px 0,calc(100% - 3px) 0,100% 3px,100% calc(100% - 3px),calc(100% - 3px) 100%,3px 100%,0 calc(100% - 3px),0 3px); }
+/* a card you haven't had before */
+.ec-new{ position:absolute; z-index:10; right:-8px; top:-7px; padding:3px 3px 2px; background:#c8322b; color:#F3E6C4; font:8px/1 var(--font-hdr); font-style:normal; border:1px solid #2a1810; box-shadow:1px 1px 0 #2a1810; transform:rotate(9deg); pointer-events:none; animation:ec-new .3s steps(3) both; }
+@keyframes ec-new{ from{ transform:rotate(9deg) scale(2); opacity:0; } to{ transform:rotate(9deg) scale(1); opacity:1; } }
+.ec-card.is-hot .ec-edge{ background:#fff6d0; box-shadow:0 0 0 2px #ffd36b,0 0 0 5px rgba(255,190,80,.45); }
+/* the tell: a glint hops round the back's trim */
+.ec-glint{ position:absolute; z-index:3; left:4px; top:4px; width:7px; height:7px; opacity:0; background:#eaf4ff;
+  clip-path:polygon(43% 0,57% 0,57% 43%,100% 43%,100% 57%,57% 57%,57% 100%,43% 100%,43% 57%,0 57%,0 43%,43% 43%); }
+.ec-card.is-tell .ec-glint{ animation:po-glint .72s steps(1) 1 both; }
+.ec-card[data-rarity="legendary"].is-tell .ec-glint{ background:#ffd96b; animation-iteration-count:2; }
+@keyframes po-glint{ 0%{ opacity:1; left:4px; top:4px; } 14%{ left:36px; top:0; } 28%{ left:72px; top:6px; } 42%{ left:76px; top:56px; } 57%{ left:72px; top:108px; } 71%{ left:36px; top:112px; } 85%{ left:2px; top:60px; opacity:1; } 100%{ opacity:0; } }
+
+/* ---- the brass lip (the card holder): shared by the rail, the slot and the seats ---- */
+.ec-lip{ display:block; height:12px; box-sizing:border-box; border:2px solid var(--px-ink); border-radius:3px 3px 2px 2px;
+  background:
+    linear-gradient(#FFF1C4,#FFF1C4) 5px 2px/2px 1px no-repeat,
+    linear-gradient(#FFF1C4,#FFF1C4) right 5px top 2px/2px 1px no-repeat,
+    linear-gradient(#6B430E,#6B430E) 4px 3px/4px 3px no-repeat,
+    linear-gradient(#6B430E,#6B430E) right 4px top 3px/4px 3px no-repeat,
+    linear-gradient(to bottom,var(--pc-lamp-amber-hi) 0 2px,var(--pc-lamp-amber) 2px 5px,#D0921F 5px calc(100% - 2px),#7A4B0C calc(100% - 2px));
+  box-shadow:0 3px 0 rgba(0,0,0,.55); }
+
+/* ---- the inspect screen: its own top layer over whatever opened it ---- */
+.ci{ position:fixed; inset:0; z-index:400; touch-action:none; user-select:none; -webkit-user-select:none; overflow:hidden; }
+.ci[hidden]{ display:none; }
+.ci-dim{ position:absolute; inset:0; background:#06030a; opacity:0; }
+.ci-stage, .ci-stage > div{ position:absolute; inset:0; pointer-events:none; }
+.ci-objects{ z-index:2; } .ci-fx{ z-index:4; }
+.ci .po-body{ pointer-events:auto; }
+.ci-back{ position:absolute; z-index:6; top:calc(10px + env(safe-area-inset-top,0px)); right:12px; width:60px; height:44px; font:9px/1.2 var(--font-hdr); }
+.ci-back[hidden]{ display:none; }
+/* a design you haven't pulled: a dark silhouette */
+.ec-card.is-locked .ec-face{ filter:brightness(0) opacity(.75); }
+.ec-card.is-locked .ec-face::after{ content:"?"; position:absolute; inset:0; display:grid; place-items:center; font:24px/1 var(--font-hdr); color:#5b4a2c; filter:brightness(1); }
+
+/* the drawer: a leather panel that rises from the console */
+.ci-drawer{ position:absolute; z-index:5; left:50%; bottom:0; width:min(100% - 12px,420px); translate:-50% 0; box-sizing:border-box;
+  padding:10px 10px calc(10px + env(safe-area-inset-bottom,0px)); display:flex; flex-direction:column; gap:8px;
+  background:var(--pc-leather); border:4px solid var(--pc-edge-lo); border-bottom:0; border-radius:12px 12px 0 0;
+  box-shadow:inset 4px 4px 0 var(--pc-leather-hi),inset -5px 0 0 var(--pc-leather-lo),0 -4px 0 rgba(0,0,0,.35); }
+/* the seats: the opponents stand behind a brass lip on a strip of felt */
+.ci-seats{ position:relative; padding:8px 10px 0; background:#1b3a2a; border:2px solid #0c1b13; border-radius:6px 6px 3px 3px; box-shadow:inset 0 4px 0 rgba(0,0,0,.35); }
+.ci-faces{ display:flex; justify-content:center; align-items:flex-end; gap:8px; min-height:58px; }
+.ci-faces .ci-seat{ width:min(52px,20%); opacity:0; translate:0 -10px; }
+.ci-faces[data-n="1"] .ci-seat{ width:64px; }
+.ci-faces .ci-seat.is-in{ opacity:1; translate:0 0; transition:translate .16s steps(2), opacity .16s steps(2); }
+.ci-faces .ci-seat b{ display:block; margin-top:3px; font:7px/1.2 var(--font-hdr); color:#e9dcb4; text-align:center; white-space:nowrap; letter-spacing:.04em; }
+.ci-empty{ display:grid; place-items:center; width:100%; aspect-ratio:1; box-sizing:border-box; border:3px solid #151815; background:#0f1d16; box-shadow:0 3px 0 #705b3c; font:14px/1 var(--font-hdr); color:#3c5a48; }
+.ci-lip{ margin:4px -10px 0; }
+.ci-crt{ padding:8px 10px; display:flex; flex-direction:column; gap:6px; }
+.ci-head{ display:grid; grid-template-columns:minmax(0,1fr) auto; column-gap:10px; row-gap:2px; align-items:end; padding-bottom:5px; border-bottom:1px dashed rgba(195,200,173,.25); }
+.ci-head .ci-title{ grid-column:1; grid-row:1; overflow:hidden; text-overflow:ellipsis; }
+.ci-head .ci-sub{ grid-column:1; grid-row:2; }
+.ci-head .ci-prize{ grid-column:2; grid-row:1; text-align:right; }
+.ci-head .ci-prize-l{ grid-column:2; grid-row:2; text-align:right; }
+.ci-rows{ display:grid; grid-template-columns:auto 1fr; column-gap:10px; row-gap:5px; align-items:center; }
+.ci-v{ min-width:0; }
+.ci-crt .ci-v .ci-wrap{ white-space:normal; }
+.ci-meter{ display:block; width:96px; }
+.ci-note{ display:block; text-align:center; }
+.ci-keys{ display:grid; grid-template-columns:48px 1fr 48px; gap:8px; align-items:stretch; }
+:is(#home,#career-hub) .ci-keys .ci-step{ min-height:56px; margin:0; padding:0; font-size:12px; }
+.ci-arrow{ display:block; width:10px; height:14px; margin:auto; background:currentColor; clip-path:polygon(0 0,30% 0,100% 50%,30% 100%,0 100%,0 0); }
+.ci-arrow.is-left{ transform:scaleX(-1); }
+.ci-keys .ci-step[hidden]{ visibility:hidden; display:block; }
+:is(#home,#career-hub) .ci .ci-cradle{ margin:0; }
+:is(#home,#career-hub) .ci .ci-key{ width:100%; min-height:56px; padding:8px 10px; font-size:11px; }
+:is(#home,#career-hub) .ci .ci-cradle::before{ height:56px; }
+.ci-key-label{ display:block; line-height:1.6; }
+@media (max-height:700px){
+  .ci-faces{ min-height:46px; } .ci-faces .ci-seat{ width:min(42px,18%); }
+  .ci-drawer{ gap:6px; padding-top:8px; }
+  :is(#home,#career-hub) .ci .ci-key, :is(#home,#career-hub) .ci-keys .ci-step{ min-height:48px; } :is(#home,#career-hub) .ci .ci-cradle::before{ height:48px; }
+}
+@media (prefers-reduced-motion:reduce){ .ci-faces .ci-seat.is-in{ transition:none; } }

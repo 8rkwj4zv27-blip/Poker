@@ -26,10 +26,10 @@ audit's complaints (dashboard rims, clipped result line, chip pile) are gone.
 
 ## Recent changes (newest first)
 
-- 11 Oct (no game change): Pack Opening V3 slices 1-3 (`pack-opening-lab.html`,
-  [plan](career/PACK_OPENING_V3_PLAN.md)): packets to move, throw and turn;
-  buy, tear, draw; the reveal; the haul and KEEP; then a polish pass
-  (haptics, swinging tag, collisions, the hand read as a poker hand).
+- 11 Oct (no game change): Pack Opening V3 (`pack-opening-lab.html`,
+  [plan](career/PACK_OPENING_V3_PLAN.md)): the packet, the reveal, the haul,
+  a polish pass; then one shared card inspect screen (`js/card-inspect.js`:
+  real event, real opponents, rarity = prize) used by the pack, album, hub.
 - 8 Oct (no game change): Hub Lab (`hub-lab.html`): Career opens on
   tonight's tickets, dealt and styled by kind, fed into a slot.
 - 8 Oct (no game change): Career as packs of cards, brainstormed with
@@ -65,9 +65,10 @@ own speech bubbles (`claude/tender-dijkstra-zso8dm`).
 
 ## Next
 
-Pack Opening V3: the owner plays the polished moment on the phone link;
-more polish from their notes, then plan its way into Career (new parts to
-the Pattern Book first: packet canvas, squeeze, hand fan, collection slot).
+Pack Opening V3: the owner reviews the shared inspect screen on the phone
+link; then buying packs (the vending machine) and the Career hub desk.
+New parts go to the Pattern Book before the game: packet canvas, squeeze,
+hand fan, collection slot, the inspect screen.
 Read [`career/PACK_OPENING_V3_PLAN.md`](career/PACK_OPENING_V3_PLAN.md).
 Earlier pending work: the owner plays the Hub Lab (`docs/career/PACKS_PLAN.md`, Round 3: Career opens on tonight's
 tickets); then the Vendor and the Case screens to the same standard.

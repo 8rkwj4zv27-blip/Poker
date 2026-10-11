@@ -4,7 +4,11 @@
 (the packet; the reveal; the haul; a first polish pass: haptics, a
 swinging price tag, packets that knock each other, foil flecks, a
 flickable strip, a shake rattle, a prize count-up, a last-card heartbeat,
-the hand read as a poker hand), plus the owner's notes: packets you can
+the hand read as a poker hand); then the shared inspect screen (owner, 11
+Oct: a card is one specific table with its opponents; playing it uses it
+up; an album records every design pulled; rarity = prize for now; twists
+are placeholders; one inspect screen for pack, album and hub), plus the
+owner's notes: packets you can
 move and throw, a drawn turn with a crimped edge and momentum, the foil
 shimmer; the LEGENDARY stamp removed (the CRT flashes instead):
 https://claude.ai/artifact/2A5hyH5pufRp7Tdj513SQp (republish to the same

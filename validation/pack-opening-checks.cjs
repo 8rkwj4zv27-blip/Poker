@@ -124,13 +124,20 @@ async function run(width, height, reducedMotion){
         await phase('haul');
         // the machine reads the four cards as a poker hand
         assert.match(await g.locator('#po-title').textContent(), /PAIR|THREE|FOUR OF A KIND|RAINBOW/, 'the hand is named');
-        // pick a card out of the hand, spin it, put it back
-        await tap(...centre(await g.locator('.po-rc').nth(1).boundingBox()));
-        await phase('inspect');
-        const ic = centre(await g.locator('.po-rc').nth(1).boundingBox());
+        // pick a card out of the hand: the shared inspect screen opens with
+        // the real opponents seated; spin the card, swipe to the next, put it back
+        await tap(...centre(await g.locator('.po-objects .ec-card').nth(1).boundingBox()));
+        await fr.waitForFunction(() => PackOpening.state.inspecting && document.querySelectorAll('#ci .ci-seat').length > 0, null, { timeout:5000 });
+        assert.equal(await g.locator('#ci .ci-seat:not(.is-empty)').count(), await g.locator('#ci .ci-seat').count(), 'every seat has a face');
+        const ic = centre(await g.locator('#ci .ec-card').boundingBox());
         await touch.drag(ic[0], ic[1], ic[0] + 90, ic[1], 6, 16); await touch.end();
-        await phase('inspect');
+        await page.waitForTimeout(400);
+        const cr = centre(await g.locator('#ci .ci-crt').boundingBox());
+        await touch.drag(cr[0] + 60, cr[1], cr[0] - 80, cr[1], 6, 16); await touch.end();
+        await fr.waitForFunction(() => CardInspect.index === 2, null, { timeout:5000 });
+        await page.waitForTimeout(500);
         await tap(felt.x + 10, felt.y + 10); await phase('haul');
+        assert.equal(await g.locator('#ci').isHidden(), true, 'the inspect screen closed');
         // flick the wrapper away: its chips spill onto the felt
         const w = centre(await box('.po-packet .po-pk-front'));
         await touch.drag(w[0], w[1], w[0] - 30, w[1] - 110, 5, 16); await touch.end();
@@ -152,6 +159,23 @@ async function run(width, height, reducedMotion){
       await tap(felt.x + 10, felt.y + 10); // fast-forward a fresh deal (no-op if done)
       await phase('choose');
     }
+    // the same inspect screen from the hub desk: BUY IN uses the card up
+    await fr.evaluate(() => document.querySelector('[data-door=hub]').click());
+    const before = (await state()).held;
+    assert.ok(before >= 1, 'kept cards are in the case');
+    await tap(...centre(await g.locator('.po-hub-card').first().boundingBox()));
+    await fr.waitForFunction(() => PackOpening.state.inspecting, null, { timeout:5000 });
+    await page.waitForTimeout(700);
+    await tap(...centre(await g.locator('#ci .ci-key').boundingBox()));
+    await fr.waitForFunction(h => PackOpening.state.held === h - 1 && !PackOpening.state.inspecting, before, { timeout:6000 });
+    // and from the album, where every kept design is found
+    await fr.evaluate(() => document.querySelector('[data-door=album]').click());
+    assert.ok((await state()).found >= 1, 'the album records what you pulled');
+    await tap(...centre(await g.locator('.po-album .po-mini:not(.is-unfound)').first().boundingBox()));
+    await fr.waitForFunction(() => PackOpening.state.inspecting, null, { timeout:5000 });
+    await page.waitForTimeout(700);
+    await fr.evaluate(() => CardInspect.close());
+    await fr.waitForFunction(() => !PackOpening.state.inspecting, null, { timeout:5000 });
     assert.equal(await page.evaluate(() => localStorage.getItem('pack-opening-qa')), 'untouched');
   });
   assert.deepEqual(errors, [], 'no page errors');
@@ -161,5 +185,5 @@ async function run(width, height, reducedMotion){
 (async () => {
   if (!process.env.ONLY_REDUCED){ await run(390, 844, false); await run(375, 667, false); }
   await run(390, 844, true);
-  console.log('Pack Opening slices 1 to 4 checks passed.');
+  console.log('Pack Opening checks passed (slices 1-4 and the shared inspect screen).');
 })().catch(e => { console.error(e); process.exit(1); });

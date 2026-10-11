@@ -28,6 +28,7 @@
   'use strict';
   const { clamp, mix, snap, ease, tween, wait, glide, squash, puff, burst, jolt, every, S, Foil, Haptic } = PO;
   const { Packet, AW, AH, OX, OY } = POPacket;
+  const { setTurn, setBank, spin, flat, faceUp } = CardInspect;
   const SERIES = [{ id:'house', name:'HOUSE', price:100 }, { id:'club', name:'CLUB', price:300 }, { id:'reserve', name:'RESERVE', price:1000 }];
   const CARD_W = 82, CARD_H = 120, STACK_X = 7, STACK_Y = 20, CARDS = 4, HOLD_MS = 650;
   const money = n => '$' + Math.round(n).toLocaleString('en-US');
@@ -347,7 +348,7 @@
     wallet -= p.price; bank(); S.counterLock(true);
     hasLegend = tune.contents === 'legendary' || tune.contents === 'double' || (tune.contents === 'surprise' && Math.random() < 1 / 3);
     p.shineA = 0; p.yaw = 0; p.draw();
-    contents = packContents(); revealed = 0;
+    contents = EventCards.pack(p.series, { legend:hasLegend, double:tune.contents === 'double', event:tune.event }); revealed = 0;
     p.tagEl.querySelector('b').textContent = 'SOLD';
     tearOffTag(p);
     status("IT'S YOURS", p.series.toUpperCase() + ' EDITION'); figure('04', 'INSIDE'); key('…', '', false);
@@ -525,14 +526,6 @@
   const railSpot = i => { const s = Math.min(.66, focusS() * .33), k = i - 1.5; return { x:W / 2 + k * CARD_W * s * .8, y:H - CARD_H * s / 2 + 18 + Math.abs(k) * 3, s, r:k * 7, z:0, sx:1, sy:1 }; };
   // when the pack is done the fan lifts out of the lip into a held hand
   const handSpot = (i, n = fan.length) => { const s = Math.min(.86, focusS() * .42), k = i - (n - 1) / 2; return { x:W / 2 + k * CARD_W * s * .82, y:H * .83 + k * k * 3, s, r:k * 8, z:0, sx:1, sy:1 }; };
-  const inspectSpot = () => ({ x:W / 2, y:H * .38, s:focusS(), r:0, z:10, sx:1, sy:1 });
-
-  function packContents(){
-    const L = Cards(), pick = () => L.cards[Math.floor(Math.random() * L.cards.length)];
-    const ev = () => tune.event === 'random' ? pick() : L.cards.find(c => c.kind === tune.event);
-    if (tune.contents === 'double') return [L.specimen(pick(), 'common'), L.specimen(pick(), 'uncommon'), L.specimen(ev(), 'legendary'), L.specimen(ev(), 'legendary')];
-    return [L.specimen(pick(), 'common'), L.specimen(pick(), 'common'), L.specimen(pick(), 'uncommon'), L.specimen(hasLegend ? ev() : pick(), hasLegend ? 'legendary' : 'rare')];
-  }
 
   function enterDeck(){
     lock = false;
@@ -544,19 +537,9 @@
     idleAt = performance.now();
   }
 
-  function makeCard(spec){
-    const el = document.createElement('div'), face = Cards().objectHTML(spec);
-    el.className = 'po-rc'; el.dataset.side = 'back'; el.dataset.rarity = spec.rarity; el.dataset.kind = spec.kind;
-    el.innerHTML = `<div class="po-rc-back ds-swatch" data-cb="crest"><div class="card back"></div><i class="po-rc-glint"></i></div>`
-      + `<div class="po-rc-face">${face}<i class="po-rc-frost"></i><i class="po-fuse"></i></div><i class="po-rc-shade"></i>`
-      + `<div class="po-rc-flap" hidden aria-hidden="true"><div class="po-rc-flap-in">${face}</div></div><i class="po-rc-edge"></i>`;
-    const body = new PO.Body(stage, el, { w:CARD_W, h:CARD_H, shadowW:CARD_W, shadowH:CARD_H });
-    el.style.zIndex = 60;
-    return { el, body, spec, fold:0, stops:[], extras:[], shown:false };
-  }
   // the top card leaves the deck exactly where it lay
   function takeTop(){
-    const card = makeCard(contents[revealed]);
+    const card = CardInspect.make(stage, contents[revealed]);
     deck.el.lastElementChild?.remove();
     card.body.set({ x:deck.x, y:deck.y - deck.z, z:deck.z, s:deck.s, r:deck.r });
     if (!deck.el.children.length){ const d = deck; deck = null; d.remove(); }
@@ -570,13 +553,6 @@
     setTimeout(() => Foil.note(card.spec.tier === 3 ? 16 : 14, .35), 120);
     if (card.spec.tier === 3) setTimeout(() => Foil.note(18, .3), 360);
   }
-  // the flip's sliver shows the card's thickness: cream stock, dark core
-  function setTurn(card, v){
-    v = Math.max(.06, v);
-    card.body.set({ sx:v });
-    card.el.querySelector('.po-rc-edge').style.width = (v > .9 ? 0 : Math.min(36, 3 / v)).toFixed(1) + 'px';
-  }
-
   async function revealNext(how){
     if (phase !== 'deck' || !deck) return;
     lock = true; phase = 'lifting';
@@ -616,7 +592,7 @@
     const sp = card.spec, L = sp.tier === 3;
     lock = true; phase = 'flipping';
     if (card.fold) await tween(90, e => setFold(card, card.fold * (1 - e)), ease.in);
-    card.el.querySelector('.po-rc-flap').hidden = true;
+    card.el.querySelector('.ec-flap').hidden = true;
     if (L) await dip(true);
     S.cardFlip(sp.tier >= 2); Foil.flutter();
     if (card.body.z < 14) glide(card.body, { z:24 }, 140, { easing:ease.out });
@@ -798,7 +774,7 @@
     rc = takeTop();
     S.cardDeal(); Haptic.tick(6);
     await glide(rc.body, { ...revealSpot(), z:10 }, 240, { arc:14 });
-    rc.el.querySelector('.po-rc-flap').hidden = false;
+    rc.el.querySelector('.ec-flap').hidden = false;
     lock = false; phase = 'squeeze';
     status('SQUEEZE IT', 'DRAG TO PEEL THE CORNER BACK');
   }
@@ -810,8 +786,8 @@
     if (d === card.fold) return;
     const was = card.fold, c = CARD_W - d;
     card.fold = d;
-    card.el.querySelector('.po-rc-back').style.clipPath = d ? `polygon(0 0,${c}px 0,${CARD_W}px ${d}px,${CARD_W}px ${CARD_H}px,0 ${CARD_H}px)` : '';
-    const f = card.el.querySelector('.po-rc-flap-in');
+    card.el.querySelector('.ec-back').style.clipPath = d ? `polygon(0 0,${c}px 0,${CARD_W}px ${d}px,${CARD_W}px ${CARD_H}px,0 ${CARD_H}px)` : '';
+    const f = card.el.querySelector('.ec-flap-in');
     f.style.transform = `matrix(0,-1,1,0,${c},${CARD_W - c})`;
     f.style.clipPath = `polygon(0 0,${d}px 0,0 ${d}px)`;
     if (Math.floor(d / 5) !== Math.floor(was / 5)){ Foil.scrape(); Haptic.tick(3, 40); }
@@ -824,7 +800,7 @@
     phase = 'peek';
     const from = card.fold;
     S.cardReturn();
-    tween(200, e => setFold(card, from * (1 - e)), ease.back).then(() => { if (phase === 'peek') card.el.querySelector('.po-rc-flap').hidden = true; });
+    tween(200, e => setFold(card, from * (1 - e)), ease.back).then(() => { if (phase === 'peek') card.el.querySelector('.ec-flap').hidden = true; });
     status(card.peeked ? 'YOU SAW IT' : 'STILL FACE DOWN', 'TAP TO TURN IT OVER');
     key('TURN IT OVER', 'OR SQUEEZE AGAIN');
   }
@@ -837,7 +813,8 @@
      the chips go home to the bank, and the house deals again. */
   const BONUS = { house:40, club:75, reserve:150 }; // the "+1": a few chips in every packet
   const seen = new Set();
-  let insp = null, chips = [], spilling = null, collection = 0;
+  let chips = [], spilling = null, collection = 0;
+  const held = [], found = new Map(); // the cards in your case (playable), and every design you've pulled
 
   async function enterHaul(){
     lock = true; phase = 'lifting';
@@ -886,92 +863,25 @@
     Foil.note(10 + fan.indexOf(c) * 2, .4);
   }
 
-  /* ---- the toy: bank it, see its thickness, flick it and it spins ---- */
-  function setBank(card, yaw, pitch = 0){
-    yaw = snap(yaw, 6);
-    card.yaw = yaw;
-    const r = yaw * Math.PI / 180, c = Math.cos(r), sn = Math.sin(r), v = Math.max(.06, Math.abs(c));
-    const side = c < 0 ? 'back' : 'face';
-    if (card.el.dataset.side !== side){ card.el.dataset.side = side; Foil.flutter(); }
-    card.body.set({ sx:v, sy:1 - clamp(Math.abs(pitch), 0, 40) * .003 });
-    card.el.querySelector('.po-rc-edge').style.width = (v > .95 ? 0 : Math.min(36, 3 / v)).toFixed(1) + 'px';
-    card.el.classList.toggle('edge-left', sn * c < 0);
-    card.el.style.setProperty('--sk', snap(sn * 7 * Math.sign(c || 1), 1.75).toFixed(2) + 'deg');
-    card.el.style.setProperty('--shade', snap(Math.abs(sn) * .45 + clamp(pitch, -40, 40) * .004, .08).toFixed(2));
-    const face = card.el.querySelector('.po-rc-face .ccl-object');
-    face.classList.add('is-inspected', 'is-held');
-    face.style.setProperty('--sheen-x', Math.round(sn * 120) + '%');
-    face.style.setProperty('--light-strength', (.25 + Math.abs(sn) * .5).toFixed(2));
-  }
-  function spin(card, v, done){
-    card.spin?.();
-    let vel = clamp(v * 1000, -1800, 1800);
-    const settle = () => {
-      card.spin = null;
-      const from = card.yaw || 0, to = Math.round(from / 180) * 180;
-      return tween(260, e => setBank(card, mix(from, to, e)), ease.back).then(() => { flat(card); S.cardLanded(); done?.(); });
-    };
-    if (Math.abs(vel) < 150 || PO.reduced){ settle(); return; }
-    let half = Math.floor((card.yaw || 0) / 180);
-    const stop = every(dt => {
-      setBank(card, (card.yaw || 0) + vel * dt * PO.speed);
-      const h = Math.floor(card.yaw / 180);
-      if (h !== half){ half = h; S.cardFlip(false); }
-      vel *= Math.pow(.3, dt * PO.speed);
-      if (Math.abs(vel) < 220){ settle(); return false; }
-    });
-    card.spin = () => { stop(); card.spin = null; };
-  }
-  // back to a flat card, whichever face is up
-  function flat(card){
-    card.yaw = ((card.yaw || 0) % 360 + 360) % 360;
-    card.body.set({ sx:1, sy:1 });
-    card.el.querySelector('.po-rc-edge').style.width = '0px';
-    card.el.style.setProperty('--sk', '0deg'); card.el.style.setProperty('--shade', '0');
-    const face = card.el.querySelector('.po-rc-face .ccl-object');
-    face.classList.remove('is-held');
-  }
-  function faceUp(card){
-    card.spin?.();
-    if (card.el.dataset.side === 'face' && !(card.yaw % 360)) return flat(card);
-    const from = card.yaw || 0, to = Math.round(from / 360) * 360;
-    return tween(200, e => setBank(card, mix(from, to, e)), ease.out).then(() => flat(card));
-  }
-
+  /* Tap a card in your hand: the shared inspect screen lifts it out,
+     and you can swipe through the rest of the hand from there. */
   async function inspect(card){
     if (phase !== 'haul') return;
-    lock = true; phase = 'lifting';
-    insp = card;
-    card.el.querySelector('.po-new')?.remove();
-    card.el.style.zIndex = 80;
-    S.cardReturn(); Foil.flutter();
-    // the rest of the hand drops back into the lip while you look
-    fan.forEach((c, i) => { if (c !== card) glide(c.body, railSpot(i), 220); });
-    await glide(card.body, inspectSpot(), 280, { arc:24 });
-    const sp = card.spec, d = $('po-detail');
-    d.querySelector('.crt-line').textContent = Cards().rarities[sp.rarity].name.toUpperCase() + ' · ' + sp.edition;
-    d.querySelector('.crt-caption').textContent = sp.note;
-    d.hidden = false;
-    status(sp.title, sp.type); figure(money(sp.prize), 'TOP PRIZE');
-    key('BACK TO THE HAND', 'DRAG TO TILT IT · FLICK TO SPIN');
-    lock = false; phase = 'inspect';
+    phase = 'inspect';
+    card.el.querySelector('.ec-new')?.remove();
+    glide(card.body, { z:0 }, 60);
+    await CardInspect.open({
+      items:fan.map(c => ({ card:c.card, source:() => c.el })),
+      index:fan.indexOf(card),
+      key:{ label:'BACK TO THE HAND', sub:fan.length > 1 ? 'SWIPE FOR THE NEXT CARD' : '' },
+      onClose:() => {
+        phase = 'haul';
+        figure(String(fan.length).padStart(2, '0'), 'IN HAND');
+        status('YOUR HAND', chosen ? 'FLICK THE WRAPPER OFF THE FELT' : 'KEEP THEM');
+        key('KEEP', chosen ? 'FLICK THE WRAPPER · TAP A CARD' : 'TAP A CARD TO LOOK');
+      }
+    });
   }
-  async function closeInspect(){
-    const card = insp;
-    if (!card || phase !== 'inspect') return;
-    lock = true; phase = 'lifting';
-    $('po-detail').hidden = true;
-    await faceUp(card);
-    insp = null;
-    S.cardReturn();
-    await Promise.all(fan.map((c, i) => { c.el.style.zIndex = 20 + i; return glide(c.body, handSpot(i), 260, { arc:c === card ? 16 : 6 }); }));
-    S.cardLanded();
-    lock = false; phase = 'haul';
-    figure(String(fan.length).padStart(2, '0'), 'IN HAND');
-    status('YOUR HAND', chosen ? 'FLICK THE WRAPPER OFF THE FELT' : 'KEEP THEM');
-    key('KEEP', chosen ? 'FLICK THE WRAPPER · TAP A CARD' : 'TAP A CARD TO LOOK');
-  }
-
   /* ---- the wrapper: it rattles; flick it away and the chips fall out ---- */
   function rattle(power = .5){
     const p = chosen;
@@ -1065,7 +975,8 @@
     S.cardDeal();
     await Promise.all(fan.map(c => glide(c.body, { x:sx, y:sy - 34, s:.42, r:0 }, 300, { arc:30 })));
     await Promise.all(fan.map((c, i) => wait(i * 60).then(() => tween(140, e => c.body.set({ y:sy - 34 + e * 30, sy:1 - e * .6, alpha:1 - e }), ease.in)).then(() => {
-      collection++; S.counterTick(true); jolt(slot, 2); Haptic.tick(8, 0);
+      collection++; held.push(c.card); found.set(c.card.design, { ...c.card, roster:null });
+      S.counterTick(true); jolt(slot, 2); Haptic.tick(8, 0);
       Foil.note(7 + i * 2, .6);
       slot.classList.remove('is-lit'); void slot.offsetWidth; slot.classList.add('is-lit');
       $('po-slot-n').textContent = String(collection).padStart(3, '0');
@@ -1082,10 +993,85 @@
     dealIn();
   }
 
+  /* ---------------- the other doors (placeholders) ----------------
+     The same inspect screen opens from the album and from the hub desk,
+     to prove it is one shared part. Both are rough stand-ins. */
+  let view = 'packs', saved = null;
+  const RCODE = { common:'C', uncommon:'UC', rare:'R', legendary:'L' };
+  function door(to){
+    if (to === view || lock || CardInspect.isOpen || pointer) return;
+    if (view === 'packs') saved = { t:$('po-title').textContent, s:$('po-sub').textContent, f:$('po-fig').textContent, fl:$('po-fig-l').textContent, k:$('po-key-label').textContent, ks:$('po-key-sub').textContent, kd:$('po-key').disabled };
+    view = to;
+    S.consoleShift(); Haptic.tick(8);
+    $('po-album').hidden = to !== 'album'; $('po-hub').hidden = to !== 'hub';
+    stage.el.classList.toggle('is-away', to !== 'packs');
+    root.querySelectorAll('[data-door]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.door === to)));
+    if (to === 'album') renderAlbum();
+    else if (to === 'hub') renderHub();
+    else if (saved){ status(saved.t, saved.s); figure(saved.f, saved.fl); key(saved.k, saved.ks, !saved.kd); }
+  }
+  function mini(card, cls = ''){
+    return `<span class="po-mini-card ${cls}">${Cards().objectHTML(card.spec)}</span>`;
+  }
+  function scaleMinis(box){
+    const cell = box.querySelector('.po-mini-card');
+    if (cell) box.style.setProperty('--k', (cell.clientWidth / 164).toFixed(4));
+  }
+  function renderAlbum(){
+    const grid = $('po-album-grid'), ds = EventCards.designs();
+    grid.innerHTML = ds.map(d => {
+      const f = found.get(d), r = d.split(':')[1], n = held.filter(c => c.design === d).length;
+      return `<button class="po-mini${f ? '' : ' is-unfound'}" type="button" data-design="${d}">${f ? mini(f) : `<span class="po-mini-card po-mini-q"><b>?</b><small>${RCODE[r]}</small></span>`}${n ? `<i class="po-mini-n">×${n}</i>` : ''}</button>`;
+    }).join('');
+    scaleMinis(grid);
+    status('THE ALBUM', found.size + ' OF ' + ds.length + ' DESIGNS FOUND'); figure(String(found.size).padStart(2, '0'), 'FOUND');
+    key('BACK TO THE PACK TABLE', 'TAP A CARD TO LOOK');
+  }
+  function albumInspect(btn){
+    const ds = EventCards.designs(), buttons = [...$('po-album-grid').children];
+    const items = ds.map((d, i) => {
+      const [k, r] = d.split(':'), f = found.get(d);
+      return f ? { card:f, source:() => buttons[i].querySelector('.po-mini-card') } : { card:EventCards.make(k, r, 'back-room-five', { roster:false }), locked:true, source:() => buttons[i].querySelector('.po-mini-card') };
+    });
+    CardInspect.open({ items, index:buttons.indexOf(btn), key:{ label:'BACK TO THE ALBUM' } });
+  }
+  function renderHub(){
+    const desk = $('po-hub-desk'), tonight = held.slice(0, 6);
+    desk.innerHTML = [0, 1].map(row => `<div class="po-hub-row">${[0, 1, 2].map(col => {
+      const c = tonight[row * 3 + col];
+      return c ? `<button class="po-mini po-hub-card" type="button" data-uid="${c.uid}">${mini(c)}</button>` : '<span class="po-mini po-hub-gap"><span class="po-mini-card"></span></span>';
+    }).join('')}</div><span class="ec-lip po-hub-lip"></span>`).join('');
+    scaleMinis(desk);
+    status('TONIGHT', held.length ? held.length + ' CARD' + (held.length > 1 ? 'S' : '') + ' IN YOUR CASE' : 'NO CARDS · OPEN A PACK');
+    figure(money(wallet), 'BANK');
+    key('BACK TO THE PACK TABLE', 'TAP A CARD TO LOOK');
+  }
+  function hubInspect(btn){
+    const buttons = [...$('po-hub-desk').querySelectorAll('.po-hub-card')], cards = buttons.map(b => held.find(c => c.uid === b.dataset.uid));
+    CardInspect.open({
+      items:cards.map((c, i) => ({ card:c, source:() => buttons[i].querySelector('.po-mini-card') })),
+      index:buttons.indexOf(btn),
+      key:{
+        label:'BUY IN', sub:'THE CARD IS USED UP',
+        press:async (item, i, api) => {
+          const c = item.card;
+          if (wallet < c.event.buyIn){ S.koFailClick(); Haptic.tick(6); return; }
+          await api.consume();
+          wallet -= c.event.buyIn; bank(); S.counterLock(true);
+          held.splice(held.indexOf(c), 1);
+          await api.close();
+          renderHub();
+          status('SEATED: ' + c.event.name, 'THE TABLE STARTS HERE, LATER');
+        }
+      },
+      onClose:() => renderHub()
+    });
+  }
+
   function fresh(){
     PO.reset(); charge?.motor.stop(); charge = null; coast = null;
-    clearShown(); fan = []; rc = null; insp = null; chips = []; spilling = null; root.classList.remove('is-dipped');
-    $('po-detail').hidden = true;
+    clearShown(); fan = []; rc = null; chips = []; spilling = null; root.classList.remove('is-dipped');
+    if (CardInspect.isOpen) CardInspect.close();
     try { CoinWorld.clearWorld(); } catch (e) {}
     stage.objects.innerHTML = ''; stage.shadows.innerHTML = ''; stage.fx.innerHTML = '';
     packets = []; deck = flap = chosen = null; lock = false; pointer = null; pull = 0;
@@ -1161,25 +1147,22 @@
       const l = local(p, pt.x, pt.y);
       if (l.y < 120){ pointer.mode = 'pull'; pointer.pull0 = pull; }
     }
-    else if (phase === 'shown' && rc && e.target.closest('.po-rc') === rc.el){ rc.spin?.(); pointer.mode = 'shownPress'; pointer.card = rc; pointer.yaw0 = rc.yaw || 0; }
+    else if (phase === 'shown' && rc && e.target.closest('.ec-card') === rc.el){ rc.spin?.(); pointer.mode = 'shownPress'; pointer.card = rc; pointer.yaw0 = rc.yaw || 0; }
     else if (phase === 'shown'){
       stow(); enterDeck();
       if (phase === 'deck' && onDeck) deckPress(pointer); else pointer.mode = null;
     }
     else if (phase === 'haul'){
-      const cel = e.target.closest('.po-rc'), card = cel && fan.find(c => c.el === cel);
+      const cel = e.target.closest('.ec-card'), card = cel && fan.find(c => c.el === cel);
       // a card in your hand rises under your finger
       if (card){ pointer.mode = 'cardPress'; pointer.card = card; glide(card.body, { z:8 }, 70); Foil.scrape(); Haptic.tick(5); }
       else if (p && p === chosen && !p.tossed){ pointer.mode = 'wrapPress'; pointer.ox = p.body.x - pt.x; pointer.oy = p.body.y - pt.y; }
     }
-    else if (phase === 'inspect'){
-      if (insp && e.target.closest('.po-rc') === insp.el){ insp.spin?.(); pointer.mode = 'toyPress'; pointer.card = insp; pointer.yaw0 = insp.yaw || 0; }
-      else pointer.mode = 'away';
-    }
+
     else if (phase === 'deck' && onDeck) deckPress(pointer);
     else if (phase === 'peek'){
       pointer.mode = 'peekPress';
-      pointer.timer = setTimeout(() => { if (pointer && pointer.mode === 'peekPress' && phase === 'peek'){ pointer.mode = 'squeeze'; phase = 'squeeze'; rc.el.querySelector('.po-rc-flap').hidden = false; creep(pointer); status('SQUEEZE IT', 'DRAG TO PEEL THE CORNER BACK'); } }, 170);
+      pointer.timer = setTimeout(() => { if (pointer && pointer.mode === 'peekPress' && phase === 'peek'){ pointer.mode = 'squeeze'; phase = 'squeeze'; rc.el.querySelector('.ec-flap').hidden = false; creep(pointer); status('SQUEEZE IT', 'DRAG TO PEEL THE CORNER BACK'); } }, 170);
     }
     e.preventDefault();
   }
@@ -1299,7 +1282,6 @@
       if (!cancel && ((fresh && sp > .3) || far)) tossWrapper(sp > .3 ? q.vx : (q.x - q.x0) / 120, sp > .3 ? q.vy : (q.y - q.y0) / 120);
       else { glide(chosen.body, wrapperSpot(), 240, { easing:ease.back }).then(() => { Foil.thud(.4); rattle(.6); }); }
     }
-    else if (q.mode === 'away' && phase === 'inspect' && tap && !cancel) closeInspect();
     else if (q.mode === 'peekPress' && tap && !cancel) flip(rc);
     else if (q.mode === 'squeeze') endSqueeze(cancel);
     else if (q.mode === 'tear'){
@@ -1317,6 +1299,7 @@
   let keyFrom = null, keyHeld = false;
   function onKeyDown(){
     Foil.unlock(); S.unlock(); idleAt = performance.now();
+    if (view !== 'packs'){ keyFrom = 'door'; return; }
     keyFrom = lock ? null : phase; keyHeld = true;
     if (lock){
       PO.finishAll();
@@ -1328,6 +1311,7 @@
   }
   function onKeyUp(){
     const from = keyFrom; keyFrom = null; keyHeld = false;
+    if (from === 'door'){ door('packs'); return; }
     if (phase === 'charging') releaseCharge();
     else if (lock || from !== phase || pointer) return;
     else if (phase === 'sealed'){ chosen.dir = 1; finishTear(false); }
@@ -1336,7 +1320,7 @@
     else if (phase === 'peek') flip(rc);
     else if (phase === 'shown'){ stow(); enterDeck(); if (phase === 'deck') revealNext('key'); }
     else if (phase === 'haul') keep();
-    else if (phase === 'inspect') closeInspect();
+    else if (phase === 'inspect') CardInspect.close();
   }
 
   /* ---------------- the lab sheet ---------------- */
@@ -1369,16 +1353,20 @@
         <div class="felt"></div>
         <div class="po-shadows"></div><div class="po-objects"></div><div class="po-fx"></div>
         <i class="po-nudge" id="po-nudge" hidden></i>
-        <div class="po-slot" id="po-slot" aria-label="Collection"><span class="po-rail po-slot-lip"></span><span class="po-slot-n" id="po-slot-n">000</span></div>
-        <div class="crt po-detail" id="po-detail" hidden><span class="crt-line"></span><span class="crt-caption"></span></div>
+        <div class="po-view po-album" id="po-album" hidden><div class="po-album-grid" id="po-album-grid"></div></div>
+        <div class="po-view po-hub" id="po-hub" hidden><div class="po-hub-desk" id="po-hub-desk"></div></div>
+        <div class="po-slot" id="po-slot" aria-label="Collection"><span class="ec-lip po-slot-lip"></span><span class="po-slot-n" id="po-slot-n">000</span></div>
       </section>
       <footer class="po-console">
-        <div class="po-rail" aria-hidden="true"></div>
+        <div class="ec-lip po-rail" aria-hidden="true"></div>
         <div class="pc-primary-cradle"><button class="pc-button pc-button-primary" id="po-key"><span class="pc-lamp is-amber"></span><span><span class="po-key-label" id="po-key-label"></span><small id="po-key-sub"></small></span><span class="pc-lamp is-amber"></span></button></div>
       </footer>
       <section class="po-sheet" id="po-sheet" hidden aria-label="Lab controls">
         <h2>PACK OPENING · SLICE 4</h2>
         <p>Move the packets about, pick one, hold to buy, tear, draw, turn the cards (tap, flick, or hold to squeeze), play with your hand, flick the wrapper away, KEEP. Lab money, nothing saved.</p>
+        <label>DOORS (THE SAME INSPECT SCREEN IN EACH)</label>
+        <div class="po-seg"><button class="pc-button pc-button-secondary" data-door="packs" aria-pressed="true">PACK TABLE</button><button class="pc-button pc-button-secondary" data-door="album">ALBUM</button><button class="pc-button pc-button-secondary" data-door="hub">HUB DESK</button></div>
+        <div class="po-seg"><button class="pc-button pc-button-secondary" id="po-fill">FIND ALL 16 + DEAL 3</button></div>
         <label>NEXT PACK HOLDS</label>
         <div class="po-seg"><button class="pc-button pc-button-secondary" data-tune="contents" data-v="surprise">SURPRISE</button><button class="pc-button pc-button-secondary" data-tune="contents" data-v="legendary">A LEGENDARY</button><button class="pc-button pc-button-secondary" data-tune="contents" data-v="none">NO LEGENDARY</button><button class="pc-button pc-button-secondary" data-tune="contents" data-v="double">TWO</button></div>
         <label>LEGENDARY EVENT</label>
@@ -1414,6 +1402,15 @@
     k.addEventListener('keydown', e => { if ((e.key === 'Enter' || e.key === ' ') && !e.repeat){ e.preventDefault(); onKeyDown(); } });
     k.addEventListener('keyup', e => { if (e.key === 'Enter' || e.key === ' '){ e.preventDefault(); onKeyUp(); } });
     $('po-tune').onclick = sheet; $('po-done').onclick = sheet;
+    root.querySelectorAll('[data-door]').forEach(b => b.onclick = () => { $('po-sheet').hidden = true; door(b.dataset.door); });
+    $('po-fill').onclick = () => {
+      EventCards.designs().forEach(d => { if (!found.has(d)){ const [k, r] = d.split(':'); found.set(d, EventCards.make(k, r, EventCards.SERIES.house[0], { roster:false })); } });
+      ['house', 'club', 'reserve'].forEach(s => held.push(EventCards.make(EventCards.KINDS[Math.floor(Math.random() * 4)], 'common', EventCards.SERIES[s][0])));
+      $('po-sheet').hidden = true;
+      if (view === 'album') renderAlbum(); else if (view === 'hub') renderHub();
+    };
+    $('po-album').addEventListener('click', e => { const b = e.target.closest('.po-mini'); if (b) albumInspect(b); });
+    $('po-hub').addEventListener('click', e => { const b = e.target.closest('.po-hub-card'); if (b) hubInspect(b); });
     $('po-fresh').onclick = () => { sheet(); fresh(); };
     $('po-credit').onclick = () => { wallet += 5000; bank(); if (phase === 'selected' && chosen) key('HOLD TO BUY', money(chosen.price) + ' · ' + chosen.series.toUpperCase() + ' EDITION', true); };
     root.querySelectorAll('[data-tune]').forEach(b => b.onclick = () => {
@@ -1428,7 +1425,7 @@
     measure(); bank(); applyTune(); startTicks();
     dealIn();
     // read-only diagnostics for the lab's checks
-    window.PackOpening = { get state(){ return { phase, lock, wallet, packNo, hasLegend, tear:chosen?.tear ?? 0, pull, chosen:chosen?.series ?? null, packets:packets.length, deck:!!deck, size:{ W, H }, contents:contents.map(c => c.rarity), revealed, fan:fan.length, collection, chips:chips.length, wrapper:!!(chosen && chosen.open && !chosen.tossed), inspecting:!!insp, fold:rc?.fold ?? 0, shown:rc?.shown ? rc.spec.rarity : null, homes:packets.map(p => p.home && [+p.home.fx.toFixed(3), +p.home.fy.toFixed(3)]) }; } };
+    window.PackOpening = { get state(){ return { phase, lock, wallet, packNo, hasLegend, tear:chosen?.tear ?? 0, pull, chosen:chosen?.series ?? null, packets:packets.length, deck:!!deck, size:{ W, H }, contents:contents.map(c => c.rarity), revealed, fan:fan.length, collection, chips:chips.length, wrapper:!!(chosen && chosen.open && !chosen.tossed), inspecting:CardInspect.isOpen, view, held:held.length, found:found.size, fold:rc?.fold ?? 0, shown:rc?.shown ? rc.spec.rarity : null, homes:packets.map(p => p.home && [+p.home.fx.toFixed(3), +p.home.fy.toFixed(3)]) }; } };
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', setup); else setup();
 })();
