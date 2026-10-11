@@ -152,3 +152,29 @@ The stills became `career-main-lab.html` (`js/career-main.js`,
 
 `career-desk.js` (the rejected props desk) is still used by the pack lab's
 hub view. It's retired once this hub replaces that view.
+
+**Cards, deck and P.I.P. (11 Oct).** The owner's notes on the moving hub:
+- a dealt card shouldn't rearrange the others;
+- the chips felt random, so drop them;
+- keep it simple: the deck bottom left, cards dealt with the game's own
+  animations, landing at random and piling up; hold the deck to sweep
+  them back and shuffle, like the game;
+- P.I.P. instead of the chips: tap him for observations and stats, a few
+  random comments, remarks on the cards on the felt, and throw him around
+  like in the game;
+- the keys in a console like the dashboard.
+
+The owner approved opening up the live deck. v0.67.1 adds hooks only, with
+no change at the table:
+- `DealerDeck.dealTo`, `collect`, `shuffle`, `squareUp`, `puff` and
+  `setCount`;
+- `CoachSet.hub(el)` (he sits on another felt, with no lead);
+- `CoachTalk.sayText`, and a tap on him is left to the hub when he's
+  there.
+
+The hub uses the real deck and the real P.I.P. Style comments ("you call
+more than you raise") need new counts saved as you play. That's the next
+P.I.P. step, with the owner's go-ahead on the new save data.
+
+In the game, the stylesheet's rule that hides flying cards off the table
+needs a hub exception. The lab overrides it.

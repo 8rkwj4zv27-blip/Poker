@@ -5,7 +5,7 @@ in the same pull request as the change (rules in `CLAUDE.md`, "Handover
 note"). Keep it to one screen: replace old lines rather than adding to them.
 If this note and the code disagree, the code wins.
 
-Build: `v0.67.0-dev · Back Room builds a stack`
+Build: `v0.67.1-dev · Hub hooks for the deck and P.I.P.`
 Updated: 11 October 2026 (isolated lab only)
 
 ## Where the game is
@@ -28,7 +28,7 @@ audit's complaints (dashboard rims, clipped result line, chip pile) are gone.
 
 - 11 Oct (no game change): the desk lab ([plan](career/CAREER_HUB_DESK_PLAN.md))
   was rejected; stills of a simpler hub became `career-main-lab.html`:
-  deck deals/gathers, cards feed the slot, live chips to throw about.
+  the table's deck deals cards, P.I.P. to tap or throw (v0.67.1 hooks).
 - 11 Oct (no game change): Pack Opening V3 (`pack-opening-lab.html`,
   [plan](career/PACK_OPENING_V3_PLAN.md)): the packet, the reveal, the haul,
   a polish pass; then one shared card inspect screen (`js/card-inspect.js`,
@@ -69,11 +69,11 @@ own speech bubbles (`claude/tender-dijkstra-zso8dm`).
 ## Next
 
 The Career hub: the owner plays the moving hub (link in Open items) and
-gives notes; next the shop rolling down and the collection book rolling up, then plan it into Career: the collection save, a pack economy
+gives notes; next P.I.P.'s style counts (new save data: ask), the shop
+rolling down, the collection book rolling up; then into Career: the collection save, a pack economy
 simulation, Pattern Book sign-off for the new parts, the real table hand-off.
 Read [`career/CAREER_HUB_DESK_PLAN.md`](career/CAREER_HUB_DESK_PLAN.md) and
 [`career/PACK_OPENING_V3_PLAN.md`](career/PACK_OPENING_V3_PLAN.md).
 (It supersedes the Hub Lab's ticket rack.) Agree with the owner how this reshapes Events Releases 2 to 4
 (`docs/career/EVENTS_PLAN.md`) before building either. Still open: the
-owner's verdict on the new Back Room (v0.67.0; minutes per hand
-unmeasured).
+owner's verdict on the new Back Room (v0.67.0; minutes per hand unmeasured).

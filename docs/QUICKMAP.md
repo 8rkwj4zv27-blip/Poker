@@ -52,7 +52,7 @@ Hub and the end screens.
 | `pack-ritual-lab.html`, `js/pack-ritual*.js`, `css/pack-ritual*.css` | Superseded pack opening study (reference; art and faces reused by V3); current-game components. See `career/PACK_RITUAL_HANDOVER.md` |
 | `pack-opening-lab.html`, `js/pack-opening*.js`, `css/pack-opening.css` | Pack Opening V3 lab (isolated): core motion, pixel-canvas packet, scene and the card reveal (faces from `js/pack-ritual-cards.js`). Plan `career/PACK_OPENING_V3_PLAN.md`; checks `validation/pack-opening-checks.cjs` |
 | `career-hub-lab.html`, `js/career-desk.js`, `css/career-desk.css`, `js/career-hub-lab-boot.js` | Career desk lab (isolated): Career's main screen as a felt desk, hosted by the pack scene. Plan `career/CAREER_HUB_DESK_PLAN.md`; checks `validation/career-hub-checks.cjs` |
-| `career-main-lab.html`, `js/career-main.js`, `css/career-main.css` | Career main hub, moving (isolated): deck deals and gathers, cards feed the slot, live CoinWorld chips to throw about |
+| `career-main-lab.html`, `js/career-main.js`, `css/career-main.css` | Career main hub, moving (isolated): the table's deck deals event cards onto the felt, hold to sweep and shuffle, cards feed the slot, P.I.P. to tap or throw |
 | `js/event-cards.js`, `js/card-inspect.js`, `css/card-inspect.css` | Lab: what an event card is (event + drawn opponents + rarity prize), and the one shared card object and inspect screen (pack opening, album, hub) |
 | `pattern-book.html`, `docs/ui/PATTERN_BOOK.md` | The visual rule book |
 | `validation/*.js` | `npm test` runs them all; one suite per feature. `validation/tools/` holds the play-test, the touch harness and the AI and event simulators |

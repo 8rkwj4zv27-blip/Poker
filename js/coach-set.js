@@ -410,9 +410,14 @@ const CoachSet = (() => {
   let pose = { x:0, y:0, lift:0, sx:1, sy:1, bank:0, lean:0, yaw:0, pitch:0, roll:0 }, home = { x:0, y:0 };
   let bootFrame = null;   // while booting, the tube shows these instead of the face
   const setOf = () => SETS[O.set] || SETS.portable;
+  // HUB: another screen's felt can host him (the Career hub, lab for now):
+  // he sits opposite its dealer deck, has no lead, and is there whenever
+  // that felt is showing. CoachSet.hub(el) to host, hub(null) to hand back.
+  let hubEl = null;
+  const feltEl = () => hubEl || $id('felt');
 
   function ensureLayer(){
-    const felt = $id('felt'); if (!felt) return false;
+    const felt = feltEl(); if (!felt) return false;
     if (!layer || !layer.isConnected){
       layer = document.createElement('div'); layer.className = 'cs-layer'; felt.appendChild(layer);
       shadow = document.createElement('i'); shadow.className = 'cs-shadow'; layer.appendChild(shadow);
@@ -641,7 +646,7 @@ const CoachSet = (() => {
 
   /* where he sits: the deck's mirror, bottoms level */
   function measureHome(){
-    const felt = $id('felt'), stn = felt && felt.querySelector('.dealer-station');
+    const felt = feltEl(), stn = felt && felt.querySelector('.dealer-station');
     if (!felt || !stn || !tv) return;
     const fr = felt.getBoundingClientRect(), dr = stn.getBoundingClientRect();
     if (!fr.width || !dr.width) return;
@@ -714,7 +719,7 @@ const CoachSet = (() => {
     return [Math.round(cxHome + (home.left ? 22 : -22)), Math.round(dr.top + 5)];
   }
   function ensureJack(){
-    const dock = $id('your-seat-dock'); if (!dock) return;
+    const dock = $id('your-seat-dock'); if (!dock || hubEl) return;
     if (!jack || !jack.isConnected){ jack = document.createElement('i'); ($id('app') || document.body).appendChild(jack); }
     jack.className = 'cs-jack cs-jack--' + (O.jack || 'none');
     const j = jackAt(); if (!j) return;
@@ -740,6 +745,7 @@ const CoachSet = (() => {
   }
   function leadLength(){ return ({ short:46, medium:64, long:88 })[O.length] || (O.cable === 'tight' ? 46 : 64); }
   function ropeStart(){
+    if (hubEl) return;
     const b = portAt(); if (!b) return;
     const N = 16;
     ropeLen = leadLength();
@@ -1205,19 +1211,19 @@ const CoachSet = (() => {
           await plugIn();
           await boot();
         }
-        key.classList.add('is-on'); key.setAttribute('aria-pressed', 'true');
+        if (key){ key.classList.add('is-on'); key.setAttribute('aria-pressed', 'true'); }
         idle();
       } else {
         clearTimeout(idleT);
         if (!motionOffSafe()){
           await unboot();
-          key.classList.remove('is-on');
+          if (key) key.classList.remove('is-on');
           await pullOut(); await sleep(FRAME * 3);
           await leave();
           await sleep(120);
         } else { on = false; }
         on = false; render(); ropeStop();
-        key.classList.remove('is-on'); key.setAttribute('aria-pressed', 'false');
+        if (key){ key.classList.remove('is-on'); key.setAttribute('aria-pressed', 'false'); }
       }
     } finally { busy = false; render(); }
   }
@@ -1241,7 +1247,7 @@ const CoachSet = (() => {
   const THROW = { g:900, keep:.55, bounce:.72, spin:.55, flightMs:1600, minSpeed:260, maxSpeed:4200 };
   let fly = null, flyLayer = null, thrown = false, noClickUntil = 0, grab = null;
   function homeScreen(){
-    const felt = $id('felt'), fr = felt.getBoundingClientRect();
+    const felt = feltEl(), fr = felt.getBoundingClientRect();
     return [fr.left + felt.clientLeft + home.x, fr.top + felt.clientTop + home.y];
   }
   // his face on the box's front while he's in the air (it's normally blank there)
@@ -1590,7 +1596,20 @@ const CoachSet = (() => {
     ropeStop(); render();
     if (key){ key.classList.remove('is-on'); key.setAttribute('aria-pressed', 'false'); }
   }
+  function hub(el){
+    if ((el || null) === hubEl) return;
+    if (on || rope) offNow();
+    hubEl = el || null;
+    if (layer){ layer.remove(); layer = null; }
+    ensureLayer(); measureHome();
+  }
   function follow(){
+    if (hubEl){
+      // on the hub he's there whenever its felt is
+      if (!hubEl.isConnected || hubEl.offsetParent === null){ if (on && !busy) offNow(); return; }
+      if (!on && !busy){ measureHome(); if (home.edge !== undefined) power(true); }
+      return;
+    }
     let wantOn = false;
     try{ wantOn = !!settings.coachBot; }catch(e){}
     const g = curGame();
@@ -1619,6 +1638,6 @@ const CoachSet = (() => {
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start); else setTimeout(start, 0);
 
   return { apply, power, replug, reboot, setMood, mouth, look, talk, still, notice, sheetFrames, drawTile, MOODS, OPTIONS, DEFAULTS, SETS,
-    panic, blast, stow, clearTable, get away(){ return away; },
+    panic, blast, stow, clearTable, hub, get away(){ return away; }, get hubbed(){ return !!hubEl; },
     get on(){ return on; }, get busy(){ return busy; }, get order(){ return Object.assign({}, O); } };
 })();

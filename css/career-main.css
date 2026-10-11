@@ -30,25 +30,27 @@ body.cm-lab #home{ display:flex!important; position:fixed; inset:0; padding:10px
 .cm-slot.is-fed .cm-throat{ background:#f2c23c; box-shadow:0 0 8px 2px rgba(242,194,60,.7); }
 .cm-slot.is-fed .cm-slot-label{ color:#f6d06b; }
 
-/* the felt: a faint darker rectangle where your cards are thrown. It sits
-   over the cabinet, so a card carried up meets the slot (and goes in, clipped
-   at the mouth) and the entry's chips fly up into it */
-.cm-felt{ position:relative; z-index:2; flex:1; min-height:200px; margin:2px 4px 0; isolation:isolate; touch-action:none; user-select:none; -webkit-user-select:none; }
-.cm-felt > .felt{ pointer-events:none; }
-.cm-spread{ position:absolute; z-index:1; border-radius:6px; background:rgba(4,20,12,.2); box-shadow:inset 0 0 0 2px rgba(4,20,12,.14),inset 0 3px 0 rgba(0,0,0,.12); pointer-events:none; }
-.cm-felt > .po-objects{ z-index:2; }
-.cm-felt.is-carrying > .po-objects{ z-index:6; }
+/* the felt: the table's own, only cards on it. It sits over the cabinet,
+   so a card carried up meets the slot (and goes in, clipped at the mouth) */
+.cm-felt{ position:relative; z-index:2; flex:1; min-height:200px; margin:14px 14px 12px; isolation:isolate; touch-action:none; user-select:none; -webkit-user-select:none; }
+.cm-felt .po-objects{ z-index:2; }
+.cm-felt > .felt.is-carrying > .po-objects{ z-index:7; }
 .cm-felt .ec-card{ cursor:grab; }
+/* where a dealt card is headed: the deck's flight needs an element there */
+.cm-landing{ position:absolute; visibility:hidden; pointer-events:none; }
 
-/* the deck in its corner: tap it for one more card, hold it to gather */
-.cm-deck{ position:absolute; left:16px; bottom:18px; z-index:5; width:calc(82px * var(--s,.6)); height:calc(120px * var(--s,.6) + 5px); cursor:pointer; transition:translate 60ms steps(2); }
-.cm-deck.is-pressed{ translate:0 2px; }
-.cm-deck-card{ position:absolute; left:0; width:82px; height:120px; transform-origin:0 0; scale:var(--s,.6); filter:drop-shadow(2px 2px 0 rgba(4,20,12,.6)); pointer-events:none; }
-.cm-deck-card:nth-child(1){ top:5px; } .cm-deck-card:nth-child(2){ top:4px; } .cm-deck-card:nth-child(3){ top:3px; } .cm-deck-card:nth-child(4){ top:2px; } .cm-deck-card:nth-child(5){ top:1px; }
-.cm-deck .card.back{ width:100%; height:100%; margin:0; box-sizing:border-box; box-shadow:inset 0 0 0 2px var(--cb-trim,#D9A93B); }
+/* the table's dealer deck, bottom left, bigger; tap for a card, hold to sweep */
+#home #cm .dealer-station.cm-station{ left:52px; top:auto; bottom:12px; transform:translateX(-50%) scale(1.35); transform-origin:50% 100%; pointer-events:auto; cursor:pointer; }
+#home #cm .dealer-station.cm-station .dealer-deck{ pointer-events:none; }
+#home #cm .dealer-station.cm-station.is-pressed{ translate:0 2px; }
+/* the deck's flying cards: the game hides them whenever the table isn't
+   showing; here the hub is where they fly */
+html:has(#cm) body.cm-lab .fly-card{ display:block !important; }
 
-/* the key bay; PLAY lights once a card is in the slot */
+/* the keys in a console like the dashboard's: a case, then the bay */
 .cm-console{ flex:none; position:relative; z-index:3; }
+.cm-console-case{ padding:8px; border:3px solid var(--px-ink); border-radius:14px; background:var(--pc-leather-lo);
+  box-shadow:inset 3px 3px 0 var(--pc-leather),inset -3px -3px 0 #160509,0 4px 0 rgba(0,0,0,.55); }
 .cm-keys{ display:grid; grid-template-columns:1fr 1.3fr 1fr; gap:10px; padding-top:0; }
 .cm-keys .is-ready{ filter:brightness(1.18); box-shadow:0 0 0 2px var(--pc-lamp-amber,#f2c23c); }
 

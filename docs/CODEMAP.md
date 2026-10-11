@@ -611,6 +611,10 @@ the candidate runs alone. Not loaded by the game.
 
 ## `js/dealer-deck.js` + `css/dealer-deck.css` — Dealer deck (live, v0.45.0)
 
+(v0.67.1: `DealerDeck.dealTo`, `collect`, `shuffle`, `squareUp`, `puff`,
+`setCount` let another screen handle its cards with the table's hands;
+used by `career-main-lab.html`.)
+
 The dealer's deck, the owner's order from `deck-lab.html` (recorded in
 `docs/ui/PATTERN_BOOK.md`, Dealer deck; `docs/ui/DEALER_PLAN.md`). A plain
 deck made of the same card as the ones dealt off it (one card-back recipe
@@ -677,6 +681,9 @@ The Coach on the table (`docs/coach/COACH_PLAN.md`; Pattern Book: Coach).
 the lift on and off in 2.5D, his aux lead, the boot, picking him up and
 throwing him round the screen (a joke, v0.57.3); he follows the table
 (there whenever it's showing and he's switched on, gone when it isn't).
+v0.67.1: `CoachSet.hub(el)` lets another screen's felt host him instead
+(opposite its dealer station, no lead, there while that felt shows), and
+`CoachTalk.sayText` is exported; a tap on him there is the hub's.
 `coach-talk.js`: his bubble, voice and lines, the talk slider (Settings →
 Coach talk, `settings.coachTalk`); hears the game through `applyAction`
 and `updateCoach` and by watching `game.handNumber` / `game.phase`.
@@ -1096,39 +1103,37 @@ Touch checks: `validation/career-hub-checks.cjs`.
 
 ## `career-main-lab.html` — Career main hub, moving (isolated, 11 October 2026)
 
-This is round 2 of `docs/career/CAREER_HUB_DESK_PLAN.md`; the stills it
-grew from were `hub-stills-*`, renamed. It uses the same host as the pack
-lab (`js/pack-opening-host.js`). It injects the card faces, `PO`
-(`pack-opening-core.js`), `EventCards`, `CardInspect`, and
-`js/career-main.js` + `css/career-main.css`.
+This is round 2 of `docs/career/CAREER_HUB_DESK_PLAN.md`. It uses the same
+host as the pack lab and injects the card faces, `PO`, `EventCards`,
+`CardInspect` and `js/career-main.js` + `css/career-main.css`. The table's
+felt id and dealer station move onto the hub (`build`). The felt sits
+over the cabinet, so a carried card meets the slot.
 
-**Cabinet:** the full-width reel, then a slim row of CRT · plain slot ·
-CRT. The slot's mouth is `--cm-card` wide, the card's width on the felt.
-- `screen()`/`screens()` draw the CRTs three ways (TUNE).
-- `say()` shows a short message on them.
+**Cabinet:** the reel and a slim row of CRT · plain slot · CRT.
+- `screen()`/`screens()` draw the CRTs three ways (TUNE); `say()` shows a
+  short message.
+- The slot's mouth is `--cm-card` wide.
+- `feed` clips a card into the mouth in four teeth; `play()` pays the
+  entry on the reel.
 
-**Felt** (above the cabinet, so a carried card can reach the slot):
-- **The spread:** fixed.
-- **The cards:** `CardInspect.make` bodies at `PLACES[n]`. `chooseThree()`
-  picks the safe, next-step and stretch cards from the case (`pool`), and
-  `relay(n)` shuffles the hand up for a new card.
-- **The deck:** tap for one card (`drawOne`); hold `HOLD_MS` to gather all
-  and deal three (`gather`).
-- **Cards:** drag to arrange, tap to inspect (PLAY key there), drag up
-  onto the slot to `feed`. The card is clipped into the mouth in four
-  ratchet teeth.
+**Cards:** `CardInspect.make` bodies.
+- **Deal:** `dealOne` flies the table's deal (`DealerDeck.dealTo`) to a
+  random `landing()`, on top of the pile. Then the real card appears and
+  turns over.
+- **Hold the deck:** `gather` runs `DealerDeck.collect` on every card,
+  then `squareUp`, `shuffleOrder` (the safe, step-up and stretch cards
+  first, unlabelled), `DealerDeck.shuffle` and three dealt.
+- **Deck thickness:** the case left (`setCount`).
+- **Cards on the felt:** drag to arrange, tap to inspect, drag onto the
+  slot to feed.
 
-**PLAY:** with a card in, `play()` pays the entry: `pay()` flies the chips
-it no longer has into the slot (`CoinWorld.launch` … `vanish`), drops in
-the change, tidies, and the reel counts down.
-
-**Chips:** live CoinWorld bodies in zone `cm-bank`.
-- **Pile:** `z.pile` footprint, `potSlots` shapes (pyramid, heap or rows,
-  in TUNE). Count from the bankroll on the table's bank curve, tiers from
-  `composeTiers`.
-- **Handling:** pick up the top chip of a stack (`chipAt`, state `held`),
-  throw it (`drop`: CoinWorld lands, bounces, knocks and topples, seats).
-  Tap: it hops. Double tap: `tidyZone`.
+**P.I.P.:**
+- `CoachSet.hub(felt)` puts him opposite the deck, with no lead, thrown as
+  at the table.
+- A tap says `pipLine()`: a card remark, a stats line (lifetime `stats`;
+  placeholders in the memory-only lab) or a fun one, via
+  `CoachTalk.sayText`.
+- After a throw he sometimes says a `THROWN` line.
 
 ## `pack-opening-lab.html` — Pack Opening V3 (isolated, 11 October 2026)
 
