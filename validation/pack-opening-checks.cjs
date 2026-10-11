@@ -7,7 +7,9 @@
    fast-forward, reduced motion, a small phone, and no game storage writes.
    Also: a packet picked up and thrown lands somewhere new. Slice 2:
    tap, flick and squeeze the deck to turn the cards, the key-only
-   reveal, and a whole pack ending in the hand. */
+   reveal, and a whole pack ending in the hand. Slice 3: pick a card
+   out of the hand and spin it, flick the wrapper so its chips spill,
+   KEEP (the hand into the collection, the chips into the bank). */
 'use strict';
 const assert = require('node:assert/strict');
 const { withPage } = require('./tools/touch-harness');
@@ -118,18 +120,33 @@ async function run(width, height, reducedMotion){
         for (let i = 1; i <= 12; i++){ await touch.move(dk[0] - i * 9, dk[1] + i * 9); await page.waitForTimeout(25); }
         await touch.end(); await phase('shown');
         await tap(felt.x + 10, felt.y + 10);
+        await phase('haul');
+        // pick a card out of the hand, spin it, put it back
+        await tap(...centre(await g.locator('.po-rc').nth(1).boundingBox()));
+        await phase('inspect');
+        const ic = centre(await g.locator('.po-rc').nth(1).boundingBox());
+        await touch.drag(ic[0], ic[1], ic[0] + 90, ic[1], 6, 16); await touch.end();
+        await phase('inspect');
+        await tap(felt.x + 10, felt.y + 10); await phase('haul');
+        // flick the wrapper away: its chips spill onto the felt
+        const w = centre(await box('.po-packet .po-pk-front'));
+        await touch.drag(w[0], w[1], w[0] - 30, w[1] - 110, 5, 16); await touch.end();
+        await fr.waitForFunction(() => !PackOpening.state.wrapper && PackOpening.state.chips > 0, null, { timeout:5000 });
       } else {
         // the key turns each one over, then puts the last into the hand
         await tap(k[0], k[1]);
         for (let i = 0; i < 4; i++){ await phase('shown'); await tap(k[0], k[1]); }
       }
-      await phase('done');
+      await phase('haul');
       const fin = await state();
       assert.equal(fin.revealed, 4); assert.equal(fin.fan, 4, 'all four in the hand');
-      // next packet
+      // KEEP: the hand into the collection, the chips into the bank, deal again
       await tap(k[0], k[1]);
-      await page.waitForTimeout(200);
-      await tap(felt.x + 10, felt.y + 10); // fast-forward the deal
+      await phase('choose');
+      const kept = await state();
+      assert.equal(kept.collection, 4 * (round + 1), 'the hand went into the collection');
+      assert.ok(kept.wallet > fin.wallet, 'the chips counted into the bank');
+      await tap(felt.x + 10, felt.y + 10); // fast-forward a fresh deal (no-op if done)
       await phase('choose');
     }
     assert.equal(await page.evaluate(() => localStorage.getItem('pack-opening-qa')), 'untouched');
@@ -141,5 +158,5 @@ async function run(width, height, reducedMotion){
 (async () => {
   if (!process.env.ONLY_REDUCED){ await run(390, 844, false); await run(375, 667, false); }
   await run(390, 844, true);
-  console.log('Pack Opening slice 1 and 2 checks passed.');
+  console.log('Pack Opening slices 1 to 3 checks passed.');
 })().catch(e => { console.error(e); process.exit(1); });

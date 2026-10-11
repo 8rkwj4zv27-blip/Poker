@@ -1089,7 +1089,11 @@ narrowing face, a crimped edge, the near side taller). Back canvas / card
 stack / front canvas keep the cards inside.
 `js/pack-opening.js`: the scene and state (deal, move and throw packets,
 select and turn, hold to buy, tear, draw; then the reveal: tap, flick or
-squeeze the deck, four tier moments, Legendary dip/slam/stamp and an event
-flourish, the cards into a small fan). Card faces come from
-`js/pack-ritual-cards.js` + `css/pack-ritual-cards.css`. Slices 1-2 of 4.
+squeeze the deck, four tier moments, Legendary dip/slam/CRT flash and an
+event flourish, the cards into the rail; then the haul: the held hand with
+NEW pips, the card toy (bank, thickness edge, momentum spin, CRT read-out),
+the wrapper flicked away spilling CoinWorld chips, KEEP into the
+collection slot with COUNT IN, restock). Card faces come from
+`js/pack-ritual-cards.js` + `css/pack-ritual-cards.css`, laid out at 2x
+and scaled into the card. Slices 1-3 of 4.
 Touch checks: `validation/pack-opening-checks.cjs`.

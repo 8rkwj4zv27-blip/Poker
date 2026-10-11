@@ -1,5 +1,5 @@
 /* ============================================================
-   PACK OPENING V3 — the scene (lab only). Slices 1 and 2.
+   PACK OPENING V3 — the scene (lab only). Slices 1 to 3.
 
    Plan: docs/career/PACK_OPENING_V3_PLAN.md. Beats:
    1 three packets are dealt onto the felt; pick them up, slide them,
@@ -16,7 +16,11 @@
    6 the reveal: tap or flick the deck and the top card flies up and
      flips; hold it to squeeze the corner and peek at the index first.
      Each tier lands harder; a Legendary dims the house, hangs on its
-     edge, slams, stamps and plays its own event flourish
+     edge, slams, lights up the CRT and plays its own event flourish
+   7 the haul: the hand lifts out of the lip; tap a card to bank it,
+     spin it and read it; flick the wrapper away and its chips spill;
+     KEEP posts the hand into the collection, the chips count in, and
+     the house deals again
    Any tap during an animation finishes it. The key always does the
    next thing. Memory-only: no game saves, no Career transactions.
    ============================================================ */
@@ -44,8 +48,8 @@
   const home = p => ({ x:W * p.home.fx, y:H * p.home.fy, s:rowS(), r:p.home.r, z:0, alpha:1, sx:1, sy:1 });
   const focus = () => ({ x:W / 2, y:H * .45, s:focusS(), r:0, z:4, alpha:1, sx:1, sy:1 });
   const aside = k => ({ x:k ? W * .9 : W * .1, y:H * .1, s:rowS() * .62, r:k ? 12 : -12, z:0, alpha:.75 });
-  const deckSpot = () => ({ x:W * .8, y:H * .76, z:0, r:4, s:Math.min(1.2, focusS() * .6), sx:1, sy:1 });
-  const wrapperSpot = () => ({ x:W * .19, y:H * .78, z:0, r:-27, s:Math.min(1, focusS() * .46), sx:1, sy:1 });
+  const deckSpot = () => ({ x:W * .83, y:H * .62, z:0, r:4, s:Math.min(1.2, focusS() * .6), sx:1, sy:1 });
+  const wrapperSpot = () => ({ x:W * .17, y:H * .62, z:0, r:-27, s:Math.min(1, focusS() * .46), sx:1, sy:1 });
 
   /* ---------------- the machine around the felt ---------------- */
   function status(title, sub){ $('po-title').textContent = title; $('po-sub').textContent = sub || ''; }
@@ -450,7 +454,11 @@
   const PEEK = 36, TURN_OVER = 50; // fold depth (card px) to read the index, and to throw it over
   let contents = [], revealed = 0, rc = null, fan = [];
   const revealSpot = () => ({ x:W / 2, y:H * .38, s:focusS(), r:0, z:6, sx:1, sy:1, alpha:1 });
-  const fanSpot = i => ({ x:W * (.4 + i * .065), y:H * .9 - (i % 3 ? 3 : 0), s:Math.min(.62, focusS() * .3), r:-9 + i * 6, z:0, sx:1, sy:1 });
+  // turned cards stand in the brass card-holder lip, fanned like a hand
+  const railSpot = i => { const s = Math.min(.66, focusS() * .33), k = i - 1.5; return { x:W / 2 + k * CARD_W * s * .8, y:H - CARD_H * s / 2 + 18 + Math.abs(k) * 3, s, r:k * 7, z:0, sx:1, sy:1 }; };
+  // when the pack is done the fan lifts out of the lip into a held hand
+  const handSpot = (i, n = fan.length) => { const s = Math.min(.86, focusS() * .42), k = i - (n - 1) / 2; return { x:W / 2 + k * CARD_W * s * .82, y:H * .83 + k * k * 3, s, r:k * 8, z:0, sx:1, sy:1 }; };
+  const inspectSpot = () => ({ x:W / 2, y:H * .38, s:focusS(), r:0, z:10, sx:1, sy:1 });
 
   function packContents(){
     const L = Cards(), pick = () => L.cards[Math.floor(Math.random() * L.cards.length)];
@@ -461,14 +469,7 @@
 
   function enterDeck(){
     lock = false;
-    if (revealed >= contents.length){
-      phase = 'done';
-      const best = contents.reduce((a, c) => c.tier > a.tier ? c : a, contents[0]);
-      status('PACK COMPLETE', 'BEST: ' + best.title + ' · ' + Cards().rarities[best.rarity].name.toUpperCase());
-      figure(String(contents.length).padStart(2, '0'), 'IN HAND');
-      key('ANOTHER PACK', 'KEEPING THEM IS SLICE 3');
-      return;
-    }
+    if (revealed >= contents.length){ enterHaul(); return; }
     phase = 'deck';
     status(revealed ? 'NEXT CARD' : 'FOUR CARDS, FACE DOWN', 'TAP TO TURN · HOLD TO SQUEEZE');
     figure(String(contents.length - revealed).padStart(2, '0'), 'TO REVEAL');
@@ -480,7 +481,7 @@
     const el = document.createElement('div'), face = Cards().objectHTML(spec);
     el.className = 'po-rc'; el.dataset.side = 'back'; el.dataset.rarity = spec.rarity; el.dataset.kind = spec.kind;
     el.innerHTML = `<div class="po-rc-back ds-swatch" data-cb="crest"><div class="card back"></div><i class="po-rc-glint"></i></div>`
-      + `<div class="po-rc-face">${face}<i class="po-rc-frost"></i><i class="po-fuse"></i><b class="po-stamp" hidden>LEGENDARY</b></div>`
+      + `<div class="po-rc-face">${face}<i class="po-rc-frost"></i><i class="po-fuse"></i></div><i class="po-rc-shade"></i>`
       + `<div class="po-rc-flap" hidden aria-hidden="true"><div class="po-rc-flap-in">${face}</div></div><i class="po-rc-edge"></i>`;
     const body = new PO.Body(stage, el, { w:CARD_W, h:CARD_H, shadowW:CARD_W, shadowH:CARD_H });
     el.style.zIndex = 60;
@@ -591,8 +592,8 @@
     S.arcadeReward('jackpot');
     face.classList.add('is-inspected', 'is-finishing');
     status('LEGENDARY!', col.name + ' · ' + sp.edition);
-    await wait(380);
-    await stamp(card);
+    await wait(240);
+    crtFlash();
     flourish(card, col);
     await dip(false, sp.kind === 'table');
     bob(card);
@@ -620,13 +621,12 @@
     stage.objects.append(r);
     card.extras.push(r);
   }
-  async function stamp(card){
-    const st = card.el.querySelector('.po-stamp');
-    st.hidden = false;
-    await tween(150, e => { st.style.transform = `rotate(-14deg) scale(${snap(mix(2.8, 1, e), .2).toFixed(2)})`; st.style.opacity = e < .2 ? '0' : '1'; }, ease.in);
-    S.ticketPrint(); Foil.thud(1.1); jolt(stage.el, 2); squash(card.body, .05, 160);
-    const b = card.body;
-    burst(stage, b.x, b.y - b.z + 6, { n:8, colours:['#c8322b'], vx:[-80, 80], vy:[-60, 20], g:120, life:.3, size:2, spread:CARD_W * b.s * .6 });
+  // the machine announces it: the CRT flashes in steps and the relay clunks
+  function crtFlash(){
+    const c = root.querySelector('.po-status');
+    c.classList.remove('is-legend'); void c.offsetWidth; c.classList.add('is-legend');
+    S.stageLock(); Foil.thud(.8);
+    setTimeout(() => c.classList.remove('is-legend'), 1400);
   }
   // the per-event flourish
   function flourish(card, col){
@@ -686,6 +686,7 @@
     const card = rc;
     if (!card || !card.shown) return;
     rc = null;
+    if (card.yaw) faceUp(card);
     card.stops.forEach(f => f()); card.stops = [];
     card.extras.forEach(x => x.remove()); card.extras = [];
     stage.objects.querySelector('.po-dip')?.remove();
@@ -693,7 +694,7 @@
     const i = fan.length; fan.push(card);
     card.el.style.zIndex = 20 + i;
     S.cardReturn();
-    glide(card.body, fanSpot(i), 280, { arc:16 }).then(() => { S.cardLanded(); squash(card.body, .06, 160); });
+    glide(card.body, railSpot(i), 280, { arc:16 }).then(() => { S.cardLanded(); squash(card.body, .06, 160); });
   }
 
   /* ---------------- the squeeze ---------------- */
@@ -734,20 +735,231 @@
     key('TURN IT OVER', 'OR SQUEEZE AGAIN');
   }
 
-  /* ---------------- the next packet ---------------- */
-  async function anotherPack(){
-    lock = true;
-    clearShown();
-    const leaving = [deck, flap, chosen && chosen.body, ...fan.map(c => c.body), rc && rc.body].filter(Boolean);
-    await Promise.all(leaving.map((b, i) => glide(b, { x:b.x + (i % 2 ? 1 : -1) * W * .2, y:H * 1.25, r:b.r + (i % 2 ? 40 : -40), alpha:.4 }, 340, { easing:ease.in })));
-    leaving.forEach(b => b.remove());
-    deck = flap = rc = null; packets = []; fan = [];
+  /* ---------------- 7 · the haul ----------------
+     The fan lifts out of the lip into a held hand (NEW on cards you
+     haven't had before). Tap a card to pick it up and play with it.
+     The empty wrapper rattles: flick it off the felt and the chips spill
+     out of it. KEEP squares the hand, posts it into the collection slot,
+     the chips go home to the bank, and the house deals again. */
+  const BONUS = { house:40, club:75, reserve:150 }; // the "+1": a few chips in every packet
+  const seen = new Set();
+  let insp = null, chips = [], spilling = null, collection = 0;
+
+  async function enterHaul(){
+    lock = true; phase = 'lifting';
+    S.cardDeal(); Foil.rustle(.6);
+    await Promise.all(fan.map(async (c, i) => {
+      await wait(i * 50);
+      c.el.style.zIndex = 20 + i;
+      await glide(c.body, handSpot(i), 300, { arc:22 });
+      const k = c.spec.kind + ':' + c.spec.rarity;
+      if (!seen.has(k)){ seen.add(k); newPip(c); }
+    }));
+    S.cardLanded();
+    lock = false; phase = 'haul';
+    const best = contents.reduce((a, c) => c.tier > a.tier ? c : a, contents[0]);
+    status('YOUR HAND', 'BEST: ' + best.title + ' · ' + Cards().rarities[best.rarity].name.toUpperCase());
+    figure(String(fan.length).padStart(2, '0'), 'IN HAND');
+    key('KEEP', chosen ? 'FLICK THE WRAPPER · TAP A CARD' : 'TAP A CARD TO LOOK');
+    idleAt = performance.now();
+  }
+  function newPip(c){
+    const n = document.createElement('i');
+    n.className = 'po-new'; n.textContent = 'NEW';
+    c.el.append(n);
+    Foil.note(10 + fan.indexOf(c) * 2, .4);
+  }
+
+  /* ---- the toy: bank it, see its thickness, flick it and it spins ---- */
+  function setBank(card, yaw, pitch = 0){
+    yaw = snap(yaw, 6);
+    card.yaw = yaw;
+    const r = yaw * Math.PI / 180, c = Math.cos(r), sn = Math.sin(r), v = Math.max(.06, Math.abs(c));
+    const side = c < 0 ? 'back' : 'face';
+    if (card.el.dataset.side !== side){ card.el.dataset.side = side; Foil.flutter(); }
+    card.body.set({ sx:v, sy:1 - clamp(Math.abs(pitch), 0, 40) * .003 });
+    card.el.querySelector('.po-rc-edge').style.width = (v > .95 ? 0 : Math.min(36, 3 / v)).toFixed(1) + 'px';
+    card.el.classList.toggle('edge-left', sn * c < 0);
+    card.el.style.setProperty('--sk', snap(sn * 7 * Math.sign(c || 1), 1.75).toFixed(2) + 'deg');
+    card.el.style.setProperty('--shade', snap(Math.abs(sn) * .45 + clamp(pitch, -40, 40) * .004, .08).toFixed(2));
+    const face = card.el.querySelector('.po-rc-face .ccl-object');
+    face.classList.add('is-inspected', 'is-held');
+    face.style.setProperty('--sheen-x', Math.round(sn * 120) + '%');
+    face.style.setProperty('--light-strength', (.25 + Math.abs(sn) * .5).toFixed(2));
+  }
+  function spin(card, v, done){
+    card.spin?.();
+    let vel = clamp(v * 1000, -1800, 1800);
+    const settle = () => {
+      card.spin = null;
+      const from = card.yaw || 0, to = Math.round(from / 180) * 180;
+      return tween(260, e => setBank(card, mix(from, to, e)), ease.back).then(() => { flat(card); S.cardLanded(); done?.(); });
+    };
+    if (Math.abs(vel) < 150 || PO.reduced){ settle(); return; }
+    let half = Math.floor((card.yaw || 0) / 180);
+    const stop = every(dt => {
+      setBank(card, (card.yaw || 0) + vel * dt * PO.speed);
+      const h = Math.floor(card.yaw / 180);
+      if (h !== half){ half = h; S.cardFlip(false); }
+      vel *= Math.pow(.3, dt * PO.speed);
+      if (Math.abs(vel) < 220){ settle(); return false; }
+    });
+    card.spin = () => { stop(); card.spin = null; };
+  }
+  // back to a flat card, whichever face is up
+  function flat(card){
+    card.yaw = ((card.yaw || 0) % 360 + 360) % 360;
+    card.body.set({ sx:1, sy:1 });
+    card.el.querySelector('.po-rc-edge').style.width = '0px';
+    card.el.style.setProperty('--sk', '0deg'); card.el.style.setProperty('--shade', '0');
+    const face = card.el.querySelector('.po-rc-face .ccl-object');
+    face.classList.remove('is-held');
+  }
+  function faceUp(card){
+    card.spin?.();
+    if (card.el.dataset.side === 'face' && !(card.yaw % 360)) return flat(card);
+    const from = card.yaw || 0, to = Math.round(from / 360) * 360;
+    return tween(200, e => setBank(card, mix(from, to, e)), ease.out).then(() => flat(card));
+  }
+
+  async function inspect(card){
+    if (phase !== 'haul') return;
+    lock = true; phase = 'lifting';
+    insp = card;
+    card.el.querySelector('.po-new')?.remove();
+    card.el.style.zIndex = 80;
+    S.cardReturn(); Foil.flutter();
+    // the rest of the hand drops back into the lip while you look
+    fan.forEach((c, i) => { if (c !== card) glide(c.body, railSpot(i), 220); });
+    await glide(card.body, inspectSpot(), 280, { arc:24 });
+    const sp = card.spec, d = $('po-detail');
+    d.querySelector('.crt-line').textContent = Cards().rarities[sp.rarity].name.toUpperCase() + ' · ' + sp.edition;
+    d.querySelector('.crt-caption').textContent = sp.note;
+    d.hidden = false;
+    status(sp.title, sp.type); figure(money(sp.prize), 'TOP PRIZE');
+    key('BACK TO THE HAND', 'DRAG TO TILT IT · FLICK TO SPIN');
+    lock = false; phase = 'inspect';
+  }
+  async function closeInspect(){
+    const card = insp;
+    if (!card || phase !== 'inspect') return;
+    lock = true; phase = 'lifting';
+    $('po-detail').hidden = true;
+    await faceUp(card);
+    insp = null;
+    S.cardReturn();
+    await Promise.all(fan.map((c, i) => { c.el.style.zIndex = 20 + i; return glide(c.body, handSpot(i), 260, { arc:c === card ? 16 : 6 }); }));
+    S.cardLanded();
+    lock = false; phase = 'haul';
+    figure(String(fan.length).padStart(2, '0'), 'IN HAND');
+    status('YOUR HAND', chosen ? 'FLICK THE WRAPPER OFF THE FELT' : 'KEEP THEM');
+    key('KEEP', chosen ? 'FLICK THE WRAPPER · TAP A CARD' : 'TAP A CARD TO LOOK');
+  }
+
+  /* ---- the wrapper: it rattles; flick it away and the chips fall out ---- */
+  function rattle(power = .5){
+    const p = chosen;
+    if (!p || p.tossed) return;
+    S.chipBounce(.2 + power * .3); Foil.crinkle();
+    tween(220, (e, t) => p.body.set({ r:wrapperSpot().r + Math.sin(t * Math.PI * 4) * 4 * power * (1 - t) }), ease.lin);
+  }
+  async function tossWrapper(vx, vy){
+    const p = chosen;
+    if (!p || p.tossed) return;
+    p.tossed = true;
+    // the key throws it up and off to the left
+    if (Math.hypot(vx, vy) < .4){ vx = -1.1; vy = -.5; }
+    const b = p.body, x0 = b.x, y0 = b.y, z0 = b.z, r0 = b.r, spinDir = vx < 0 ? -1 : 1;
+    Foil.crinkle(); Foil.flutter(); S.cardReturn();
+    spilling = spill(p);
+    await tween(560, (e, t) => {
+      b.set({ x:x0 + vx * 600 * t, y:y0 + vy * 600 * t + 520 * t * t, z:z0 + Math.sin(Math.min(1, t * 1.4) * Math.PI) * 50, r:r0 + snap(spinDir * 600 * t, 30), alpha:t > .7 ? 1 - (t - .7) / .3 : 1 });
+      p.slump = 1 + Math.sin(t * 12) * .4; p.draw();
+    }, ease.lin);
+    b.remove(); packets = packets.filter(q => q !== p);
+    chosen = null;
+    if (phase === 'haul') key('KEEP', 'TAP A CARD TO LOOK');
+  }
+  // real table chips, out of the wrapper's mouth, bouncing off the cabinet
+  function spill(p){
+    p.chips = false; p.draw();
+    const st = stage.el.getBoundingClientRect(), b = p.body;
+    const value = BONUS[p.series] || 40;
+    try {
+      CoinWorld.setHost(stage.el, [1, 3]); CoinWorld.setExtraBlocks([]); CoinWorld.buildWalls();
+      const tiers = CoinWorld.composeTiers(value, 9), cols = [];
+      tiers.counts.forEach((n, k) => { for (let i = 0; i < n; i++) cols.push('t' + k); });
+      const mouthY = st.top + b.y - b.z - AH * b.s * .4;
+      chips = cols.map((col, i) => {
+        const c = CoinWorld.body(CoinWorld.makeChip(col), st.left + b.x, mouthY, 30 + i * 3, 22);
+        c.fresh = true;
+        return c;
+      });
+      chips.value = value;
+      return Promise.all(chips.map((c, i) => CoinWorld.launch(c, { x:st.left + W * (.28 + (i % 4) * .11) + (Math.random() - .5) * 30, y:st.top + H * (.54 + Math.floor(i / 4) * .07) + (Math.random() - .5) * 22, d:22 },
+        { T:PO.reduced ? .01 : .34 + i * .02, wait:PO.reduced ? 0 : 40 + i * 50, flips:PO.reduced ? 0 : 2 + (i % 3), i })));
+    } catch (e) { chips = []; chips.value = value; return Promise.resolve(); }
+  }
+  // chips home: they fly into the bank and the reel counts them in
+  async function chipsHome(){
+    await spilling;
+    const value = chips.value || 0;
+    if (chips.length){
+      const r = $('po-bank').getBoundingClientRect();
+      await Promise.all(chips.map((c, i) => CoinWorld.launch(c, { x:r.left + r.width / 2, y:r.top + r.height / 2, d:14, vanish:true }, { wait:PO.reduced ? 0 : i * 40, T:PO.reduced ? .01 : .34, flips:PO.reduced ? 0 : 1, i })));
+    }
+    chips = []; spilling = null;
+    if (!value) return;
+    const from = wallet; wallet += value;
+    status('COUNT IN', '+' + money(value));
+    const steps = 8;
+    for (let i = 1; i <= steps; i++){ bank(from + value * i / steps); S.counterTick(true); await wait(55); }
+    S.counterLock(true);
+  }
+
+  /* ---- KEEP ---- */
+  async function keep(){
+    if (phase !== 'haul') return;
+    lock = true; phase = 'keeping';
+    nudge(false);
+    fan.forEach(c => c.el.querySelector('.po-new')?.remove());
+    if (chosen && !chosen.tossed){ await tossWrapper(0, 0); }
+    status('KEEPING THEM', String(fan.length) + ' INTO THE COLLECTION');
+    // square the hand: two taps, like the dealer's deck
+    const sq = { x:W / 2, y:H * .8, s:handSpot(0).s, z:0, sx:1, sy:1 };
+    S.cardReturn();
+    await Promise.all(fan.map((c, i) => glide(c.body, { ...sq, r:i % 2 ? 2 : -2, y:sq.y - i }, 220)));
+    S.cardLanded(); fan.forEach(c => squash(c.body, .05, 140));
+    await wait(120);
+    fan.forEach(c => c.body.set({ r:0 }));
+    S.deckSettle(); jolt(stage.el, 1);
+    await wait(120);
+    // into the slot: up to it, then down behind its lip
+    const slot = $('po-slot'), sr = slot.getBoundingClientRect(), st = stage.el.getBoundingClientRect();
+    const sx = sr.left - st.left + sr.width / 2, sy = sr.top - st.top + sr.height / 2;
+    S.cardDeal();
+    await Promise.all(fan.map(c => glide(c.body, { x:sx, y:sy - 34, s:.42, r:0 }, 300, { arc:30 })));
+    await Promise.all(fan.map((c, i) => wait(i * 60).then(() => tween(140, e => c.body.set({ y:sy - 34 + e * 30, sy:1 - e * .6, alpha:1 - e }), ease.in)).then(() => {
+      collection++; S.counterTick(true); jolt(slot, 2);
+      $('po-slot-n').textContent = String(collection).padStart(3, '0');
+    })));
+    S.stageLock();
+    fan.forEach(c => c.body.remove()); fan = [];
+    figure(String(collection).padStart(3, '0'), 'COLLECTED');
+    await chipsHome();
+    // sweep the torn strip away and deal again
+    if (flap){ const f = flap; flap = null; await glide(f, { x:-W * .3, y:f.y + 20, r:f.r - 90, alpha:.3 }, 300, { easing:ease.in }); f.remove(); }
+    try { CoinWorld.clearWorld(); } catch (e) {}
+    deck = rc = null; packets = []; chosen = null;
     lock = false;
     dealIn();
   }
+
   function fresh(){
     PO.reset(); charge?.motor.stop(); charge = null; coast = null;
-    clearShown(); fan = []; rc = null; root.classList.remove('is-dipped');
+    clearShown(); fan = []; rc = null; insp = null; chips = []; spilling = null; root.classList.remove('is-dipped');
+    $('po-detail').hidden = true;
+    try { CoinWorld.clearWorld(); } catch (e) {}
     stage.objects.innerHTML = ''; stage.shadows.innerHTML = ''; stage.fx.innerHTML = '';
     packets = []; deck = flap = chosen = null; lock = false; pointer = null; pull = 0;
     nudge(false);
@@ -771,6 +983,8 @@
         const live = packets.filter(p => !p.open && (phase === 'choose' || p === chosen));
         if (live.length) sweep(live[(sweepAt++) % live.length]);
       }
+      // the empty wrapper rattles now and then: there's something in it
+      if (phase === 'haul' && chosen && !chosen.tossed && !pointer && performance.now() - idleAt > 2400 && performance.now() - (lastRattle || 0) > 2600){ lastRattle = performance.now(); rattle(.5); }
       const p = chosen, idle = performance.now() - idleAt > 1600 && !pointer && !lock;
       if (p && idle && (phase === 'sealed' || phase === 'open')){
         const f = focus(), top = f.y - AH * f.s / 2;
@@ -779,7 +993,7 @@
       } else nudge(false);
     });
   }
-  let stopTicks = null, lastSweep = 0, sweepAt = 0;
+  let stopTicks = null, lastSweep = 0, sweepAt = 0, lastRattle = 0;
 
   /* ---------------- input ---------------- */
   function local(p, px, py){
@@ -813,9 +1027,19 @@
       const l = local(p, pt.x, pt.y);
       if (l.y < 120){ pointer.mode = 'pull'; pointer.pull0 = pull; }
     }
+    else if (phase === 'shown' && rc && e.target.closest('.po-rc') === rc.el){ rc.spin?.(); pointer.mode = 'shownPress'; pointer.card = rc; pointer.yaw0 = rc.yaw || 0; }
     else if (phase === 'shown'){
       stow(); enterDeck();
       if (phase === 'deck' && onDeck) deckPress(pointer); else pointer.mode = null;
+    }
+    else if (phase === 'haul'){
+      const cel = e.target.closest('.po-rc'), card = cel && fan.find(c => c.el === cel);
+      if (card) pointer.mode = 'cardPress', pointer.card = card;
+      else if (p && p === chosen && !p.tossed){ pointer.mode = 'wrapPress'; pointer.ox = p.body.x - pt.x; pointer.oy = p.body.y - pt.y; }
+    }
+    else if (phase === 'inspect'){
+      if (insp && e.target.closest('.po-rc') === insp.el){ insp.spin?.(); pointer.mode = 'toyPress'; pointer.card = insp; pointer.yaw0 = insp.yaw || 0; }
+      else pointer.mode = 'away';
     }
     else if (phase === 'deck' && onDeck) deckPress(pointer);
     else if (phase === 'peek'){
@@ -867,6 +1091,19 @@
       chosen.body.set({ r:clamp(dy * .05, -6, 6), z:4 + Math.min(10, moved * .05) });
       return;
     }
+    if ((q.mode === 'toyPress' || q.mode === 'shownPress') && moved > 8){ q.mode = 'toy'; S.cardReturn(); }
+    if (q.mode === 'toy'){
+      const before = q.card.yaw || 0;
+      setBank(q.card, q.yaw0 + dx * 1.2, dy * .5);
+      q.vyaw = mix(q.vyaw, ((q.card.yaw || 0) - before) / dt, .5);
+      return;
+    }
+    if (q.mode === 'wrapPress' && moved > 6){ q.mode = 'wrap'; chosen.body.set({ z:12 }); rattle(.4); }
+    if (q.mode === 'wrap'){
+      const b = chosen.body;
+      b.set({ x:q.x + q.ox, y:q.y + q.oy, r:wrapperSpot().r + clamp(q.vx * 20, -18, 18) });
+      return;
+    }
     if (q.mode === 'deck' && moved > 12){ clearTimeout(q.timer); q.mode = null; revealNext('flick'); return; }
     if (q.mode === 'peekPress' && moved > 10){ clearTimeout(q.timer); q.mode = null; }
     if (q.mode === 'squeeze'){ squeezeTo(q); return; }
@@ -895,13 +1132,26 @@
     const fresh = performance.now() - (q.tm || 0) < 60;
     if (q.mode === 'pick' && tap && !cancel) select(q.p);
     else if (q.mode === 'drag') throwPacket(q.p, fresh ? q.vx : 0, fresh ? q.vy : 0);
-    else if (q.mode === 'away' && tap && !cancel) putBack();
+    else if (q.mode === 'away' && tap && !cancel && phase === 'selected') putBack();
     else if (q.mode === 'charge') releaseCharge();
     else if (q.mode === 'turn'){
       glide(chosen.body, focus(), 220, { easing:ease.back });
       coastTurn(chosen, fresh && !cancel ? q.vyaw : 0);
     }
     else if (q.mode === 'deck' && !cancel) revealNext('tap');
+    else if (q.mode === 'shownPress' && !cancel){ stow(); enterDeck(); }
+    else if (q.mode === 'toy') spin(q.card, fresh && !cancel ? q.vyaw : 0);
+    else if (q.mode === 'toyPress' && !cancel) spin(q.card, .9); // a tap gives it a half turn
+    else if (q.mode === 'cardPress' && tap && !cancel) inspect(q.card);
+    else if (q.mode === 'wrapPress' && tap && !cancel) rattle(1);
+    else if (q.mode === 'wrap'){
+      const sp = Math.hypot(q.vx, q.vy);
+      // a flick, or a long drag off toward the edge, throws it away
+      const far = Math.hypot(q.x - q.x0, q.y - q.y0) > 90;
+      if (!cancel && ((fresh && sp > .3) || far)) tossWrapper(sp > .3 ? q.vx : (q.x - q.x0) / 120, sp > .3 ? q.vy : (q.y - q.y0) / 120);
+      else { glide(chosen.body, wrapperSpot(), 240, { easing:ease.back }).then(() => { Foil.thud(.4); rattle(.6); }); }
+    }
+    else if (q.mode === 'away' && phase === 'inspect' && tap && !cancel) closeInspect();
     else if (q.mode === 'peekPress' && tap && !cancel) flip(rc);
     else if (q.mode === 'squeeze') endSqueeze(cancel);
     else if (q.mode === 'tear'){
@@ -937,7 +1187,8 @@
     else if (phase === 'deck') revealNext('key');
     else if (phase === 'peek') flip(rc);
     else if (phase === 'shown'){ stow(); enterDeck(); if (phase === 'deck') revealNext('key'); }
-    else if (phase === 'done') anotherPack();
+    else if (phase === 'haul') keep();
+    else if (phase === 'inspect') closeInspect();
   }
 
   /* ---------------- the lab sheet ---------------- */
@@ -969,14 +1220,16 @@
         <div class="felt"></div>
         <div class="po-shadows"></div><div class="po-objects"></div><div class="po-fx"></div>
         <i class="po-nudge" id="po-nudge" hidden></i>
+        <div class="po-slot" id="po-slot" aria-label="Collection"><span class="po-rail po-slot-lip"></span><span class="po-slot-n" id="po-slot-n">000</span></div>
+        <div class="crt po-detail" id="po-detail" hidden><span class="crt-line"></span><span class="crt-caption"></span></div>
       </section>
       <footer class="po-console">
         <div class="po-rail" aria-hidden="true"></div>
         <div class="pc-primary-cradle"><button class="pc-button pc-button-primary" id="po-key"><span class="pc-lamp is-amber"></span><span><span class="po-key-label" id="po-key-label"></span><small id="po-key-sub"></small></span><span class="pc-lamp is-amber"></span></button></div>
       </footer>
       <section class="po-sheet" id="po-sheet" hidden aria-label="Lab controls">
-        <h2>PACK OPENING · SLICE 2</h2>
-        <p>Move the packets about, pick one, hold to buy, tear, draw, then turn the cards: tap, flick, or hold to squeeze. Lab money, nothing saved.</p>
+        <h2>PACK OPENING · SLICE 3</h2>
+        <p>Move the packets about, pick one, hold to buy, tear, draw, turn the cards (tap, flick, or hold to squeeze), play with your hand, flick the wrapper away, KEEP. Lab money, nothing saved.</p>
         <label>NEXT PACK HOLDS</label>
         <div class="po-seg"><button class="pc-button pc-button-secondary" data-tune="contents" data-v="surprise">SURPRISE</button><button class="pc-button pc-button-secondary" data-tune="contents" data-v="legendary">A LEGENDARY</button><button class="pc-button pc-button-secondary" data-tune="contents" data-v="none">NO LEGENDARY</button><button class="pc-button pc-button-secondary" data-tune="contents" data-v="double">TWO</button></div>
         <label>LEGENDARY EVENT</label>
@@ -1024,7 +1277,7 @@
     measure(); bank(); applyTune(); startTicks();
     dealIn();
     // read-only diagnostics for the lab's checks
-    window.PackOpening = { get state(){ return { phase, lock, wallet, packNo, hasLegend, tear:chosen?.tear ?? 0, pull, chosen:chosen?.series ?? null, packets:packets.length, deck:!!deck, size:{ W, H }, contents:contents.map(c => c.rarity), revealed, fan:fan.length, fold:rc?.fold ?? 0, shown:rc?.shown ? rc.spec.rarity : null, homes:packets.map(p => p.home && [+p.home.fx.toFixed(3), +p.home.fy.toFixed(3)]) }; } };
+    window.PackOpening = { get state(){ return { phase, lock, wallet, packNo, hasLegend, tear:chosen?.tear ?? 0, pull, chosen:chosen?.series ?? null, packets:packets.length, deck:!!deck, size:{ W, H }, contents:contents.map(c => c.rarity), revealed, fan:fan.length, collection, chips:chips.length, wrapper:!!(chosen && chosen.open && !chosen.tossed), inspecting:!!insp, fold:rc?.fold ?? 0, shown:rc?.shown ? rc.spec.rarity : null, homes:packets.map(p => p.home && [+p.home.fx.toFixed(3), +p.home.fy.toFixed(3)]) }; } };
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', setup); else setup();
 })();

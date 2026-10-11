@@ -196,7 +196,9 @@
   const Foil = (() => {
     let ctx;
     function c(){
-      if (!window.settings || !settings.sound) return null;
+      // the game declares settings (and Sound) with let/const: they're
+      // globals, but not properties of window
+      if (typeof settings === 'undefined' || !settings.sound) return null;
       try { ctx ||= new (window.AudioContext || window.webkitAudioContext)(); if (ctx.state === 'suspended') ctx.resume(); } catch (e) { return null; }
       return ctx;
     }
@@ -212,7 +214,12 @@
       s.connect(h); h.connect(l); l.connect(g); g.connect(a.destination); s.start();
     }
     return {
-      unlock(){ c(); },
+      // iOS only lets audio start inside a finished tap; a silent buffer
+      // played there keeps the context running
+      unlock(){
+        const a = c(); if (!a || a._po) return;
+        try { const s = a.createBufferSource(); s.buffer = a.createBuffer(1, 1, 22050); s.connect(a.destination); s.start(0); a._po = a.state === 'running'; } catch (e) {}
+      },
       crackle(power = 1){ noise(18 + Math.random() * 18, .09 * power, 1800 + Math.random() * 1600, 9000, .08); },
       rip(){ noise(240, .22, 900, 7000, .05); setTimeout(() => noise(90, .12, 2400, 9000), 70); },
       crinkle(){ noise(60, .07, 1400, 6000, .12); },
@@ -241,7 +248,9 @@
   })();
 
   // Safe calls into the game's Sound palette.
-  const S = new Proxy({}, { get:(o, k) => (...a) => { try { if (window.Sound && typeof Sound[k] === 'function') return Sound[k](...a); } catch (e) {} } });
+  const S = new Proxy({}, { get:(o, k) => (...a) => { try { if (typeof Sound !== 'undefined' && typeof Sound[k] === 'function') return Sound[k](...a); } catch (e) {} } });
+  // every finished tap anywhere unlocks both: the game's sounds and the foil's
+  ['pointerup', 'touchend', 'click'].forEach(t => document.addEventListener(t, () => { Foil.unlock(); S.unlock(); }, { capture:true, passive:true }));
 
   window.PO = {
     FPS, clamp, snap, mix, ease, tween, wait, glide, squash, puff, burst, jolt, every, finishAll, reset, wake, Body, Foil, S,
