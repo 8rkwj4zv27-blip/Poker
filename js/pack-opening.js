@@ -23,6 +23,11 @@
      the house deals again
    Any tap during an animation finishes it. The key always does the
    next thing. Memory-only: no game saves, no Career transactions.
+
+   EMBEDDED (window.PO_EMBED, set by js/career-shop.js): no table of its
+   own. The shop hands it one packet on the hub's felt (offer), and the
+   hub's reel, CRTs and key stand in for the machine around the felt.
+   KEEP gives the hand to the hub (it goes into the deck), then it waits.
    ============================================================ */
 (() => {
   'use strict';
@@ -34,6 +39,11 @@
   const money = n => '$' + Math.round(n).toLocaleString('en-US');
   // the Career lab (career-hub-lab.html) opens on the desk; this table becomes the packet shop
   const CAREER = !!window.CAREER_LAB;
+  const EMBED = !!window.PO_EMBED;
+  // embedded: the host's machine (ui) and its hooks (cfg); see attach()
+  let ui = null, cfg = null, nudgeEl = null;
+  // where the hand, its squaring and the wrapper sit (fractions of the felt)
+  const L = { handY:.83, squareY:.8, wrapY:.56, railLift:0 };
 
   let root, stage, W = 0, H = 0, phase = 'boot', lock = false;
   let packets = [], chosen = null, deck = null, flap = null, wallet = 5000, packNo = 0;
@@ -49,25 +59,28 @@
   // where each packet rests: dealt into a row, then wherever you leave it
   const slot = i => ({ fx:.2 + .3 * i, fy:i === 1 ? .43 : .46, r:[-6, 0, 6][i] });
   const home = p => ({ x:W * p.home.fx, y:H * p.home.fy, s:rowS(), r:p.home.r, z:0, alpha:1, sx:1, sy:1 });
-  const focus = () => ({ x:W / 2, y:H * .45, s:focusS(), r:0, z:4, alpha:1, sx:1, sy:1 });
+  const focus = () => ({ x:W / 2, y:H * .45, s:focusS(), r:0, z:4, alpha:1, sx:1, sy:1, ...(cfg?.focus?.(W, H) || {}) });
   const aside = k => ({ x:k ? W * .9 : W * .1, y:H * .1, s:rowS() * .62, r:k ? 12 : -12, z:0, alpha:.75 });
   const deckSpot = () => ({ x:W * .83, y:H * .62, z:0, r:4, s:Math.min(1.2, focusS() * .6), sx:1, sy:1 });
-  const wrapperSpot = () => ({ x:W * .16, y:H * .56, z:0, r:-27, s:Math.min(1, focusS() * .46), sx:1, sy:1 });
+  const wrapperSpot = () => ({ x:W * .16, y:H * L.wrapY, z:0, r:-27, s:Math.min(1, focusS() * .46), sx:1, sy:1 });
 
   /* ---------------- the machine around the felt ---------------- */
-  function status(title, sub){ $('po-title').textContent = title; $('po-sub').textContent = sub || ''; }
-  function figure(n, label){ $('po-fig').textContent = n; $('po-fig-l').textContent = label; }
-  function key(label, sub, enabled = true){ $('po-key-label').textContent = label; $('po-key-sub').textContent = sub || ''; $('po-key').disabled = !enabled; }
+  function status(title, sub){ if (ui) return ui.status(title, sub || ''); $('po-title').textContent = title; $('po-sub').textContent = sub || ''; }
+  function figure(n, label){ if (ui) return ui.figure(n, label); $('po-fig').textContent = n; $('po-fig-l').textContent = label; }
+  function key(label, sub, enabled = true){ if (ui) return ui.key(label, sub || '', enabled); $('po-key-label').textContent = label; $('po-key-sub').textContent = sub || ''; $('po-key').disabled = !enabled; }
+  function keySub(sub){ if (ui) return ui.keySub(sub); $('po-key-sub').textContent = sub; }
+  const bankEl = () => ui ? ui.bankEl() : $('po-bank');
   // the production reel: each digit that changes rolls over
   let shownBank = null;
   function bank(value = wallet){
+    if (ui) return ui.bank(value);
     const digits = String(Math.max(0, Math.round(value))).padStart(5, '0'), was = shownBank ?? digits;
     shownBank = digits;
     $('po-bank').innerHTML = '<span class="jp-cell jp-sym">$</span>' + [...digits].map((n, i) => `<span class="jp-cell jp-digit${n !== was[i] ? ' is-turning' : ''}" style="--roll-delay:${i * 20}ms"><span class="ch2-digit-window"><span class="ch2-digit-strip"><span>${was[i]}</span><span>${n}</span></span></span></span>`).join('');
     $('po-bank').setAttribute('aria-label', 'Lab bankroll ' + money(value));
   }
   function nudge(on, x, y){
-    const n = $('po-nudge');
+    const n = nudgeEl;
     n.hidden = !on;
     if (on){ n.style.left = Math.round(x) + 'px'; n.style.top = Math.round(y) + 'px'; }
   }
@@ -270,6 +283,7 @@
   }
   async function putBack(){
     if (!chosen) return;
+    if (EMBED){ const was = chosen; turnTo(was, 0); chosen = null; packets = []; phase = 'idle'; cfg.onPutBack?.(was); return; }
     lock = true; const was = chosen; chosen = null; phase = 'choose';
     turnTo(was, 0);
     await Promise.all(packets.map(q => glide(q.body, home(q), 300, { arc:8 })));
@@ -356,7 +370,7 @@
         charge.shown = shown;
         p.tagEl.querySelector('b').textContent = money(shown);
         bank(wallet - (p.price - shown));
-        $('po-key-sub').textContent = money(shown) + ' TO GO';
+        keySub(money(shown) + ' TO GO');
       }
       if (q >= 1){ commit(); return false; }
     });
@@ -377,7 +391,7 @@
     const p = chosen, c = charge; charge = null; stopTick?.();
     c.motor.stop();
     lock = true; phase = 'bought'; packNo++;
-    wallet -= p.price; bank(); S.counterLock(true);
+    wallet -= p.price; cfg?.setWallet(wallet); bank(); S.counterLock(true);
     hasLegend = tune.contents === 'legendary' || tune.contents === 'double' || (tune.contents === 'surprise' && Math.random() < 1 / 3);
     p.shineA = 0; p.yaw = 0; p.draw();
     contents = EventCards.pack(p.series, { legend:hasLegend, double:tune.contents === 'double', event:tune.event }); revealed = 0;
@@ -387,14 +401,18 @@
     // the others go back to the house
     packets.filter(q => q !== p).forEach(q => CAREER ? restock(q) : glide(q.body, { y:-H * .3, alpha:0, r:q.body.r * 2 }, 300, { easing:ease.in }).then(() => q.body.remove()));
     packets = [p];
+    // embedded: the shop puts itself away, and the felt in front of you clears
+    cfg?.onBought?.(p);
     // POP: squash, launch, one stepped turn in the air, land with weight
-    const f = focus();
-    await tween(90, e => p.body.set({ sx:1 + .14 * e, sy:1 - .16 * e, z:mix(24, 2, e), x:f.x, y:f.y, r:0 }));
+    // (where it lands may have moved: embedded, it comes down centre felt)
+    const x0 = EMBED ? p.body.x : focus().x, y0 = EMBED ? p.body.y : focus().y, s0 = p.body.s;
+    await tween(90, e => p.body.set({ sx:1 + .14 * e, sy:1 - .16 * e, z:mix(24, 2, e), x:x0, y:y0, r:0 }));
     Foil.crinkle(); Haptic.tick(20);
+    const f = focus();
     await tween(560, (e, t) => {
       const lift = Math.sin(t * Math.PI) * Math.min(130, H * .2);
       const stretch = t < .25 ? 1 - t * 4 : 0;
-      p.body.set({ z:2 + lift, sy:1 + .12 * stretch, sx:1, r:Math.sin(t * Math.PI * 2) * 4 });
+      p.body.set({ x:mix(x0, f.x, e), y:mix(y0, f.y, e), s:EMBED ? mix(s0, f.s, e) : s0, z:2 + lift, sy:1 + .12 * stretch, sx:1, r:Math.sin(t * Math.PI * 2) * 4 });
       if (!PO.reduced) setYaw(p, t * 360);
     }, ease.lin);
     setYaw(p, 0); p.yaw = 0; p.shineA = 0; p.draw();
@@ -555,9 +573,9 @@
   let contents = [], revealed = 0, rc = null, fan = [];
   const revealSpot = () => ({ x:W / 2, y:H * .38, s:focusS(), r:0, z:6, sx:1, sy:1, alpha:1 });
   // turned cards stand in the brass card-holder lip, fanned like a hand
-  const railSpot = i => { const s = Math.min(.66, focusS() * .33), k = i - 1.5; return { x:W / 2 + k * CARD_W * s * .8, y:H - CARD_H * s / 2 + 18 + Math.abs(k) * 3, s, r:k * 7, z:0, sx:1, sy:1 }; };
+  const railSpot = i => { const s = Math.min(.66, focusS() * .33), k = i - 1.5; return { x:W / 2 + k * CARD_W * s * .8, y:H - CARD_H * s / 2 + 18 - L.railLift + Math.abs(k) * 3, s, r:k * 7, z:0, sx:1, sy:1 }; };
   // when the pack is done the fan lifts out of the lip into a held hand
-  const handSpot = (i, n = fan.length) => { const s = Math.min(.86, focusS() * .42), k = i - (n - 1) / 2; return { x:W / 2 + k * CARD_W * s * .82, y:H * .83 + k * k * 3, s, r:k * 8, z:0, sx:1, sy:1 }; };
+  const handSpot = (i, n = fan.length) => { const s = Math.min(.86, focusS() * .42), k = i - (n - 1) / 2; return { x:W / 2 + k * CARD_W * s * .82, y:H * L.handY + k * k * 3, s, r:k * 8, z:0, sx:1, sy:1 }; };
 
   function enterDeck(){
     lock = false;
@@ -724,6 +742,7 @@
   }
   // the machine announces it: the CRT flashes in steps and the relay clunks
   function crtFlash(){
+    if (ui) return ui.flash();
     const c = root.querySelector('.po-status');
     c.classList.remove('is-legend'); void c.offsetWidth; c.classList.add('is-legend');
     S.stageLock(); Foil.thud(.8);
@@ -985,12 +1004,12 @@
     await spilling;
     const value = chips.value || 0;
     if (chips.length){
-      const r = $('po-bank').getBoundingClientRect();
+      const r = bankEl().getBoundingClientRect();
       await Promise.all(chips.map((c, i) => CoinWorld.launch(c, { x:r.left + r.width / 2, y:r.top + r.height / 2, d:14, vanish:true }, { wait:PO.reduced ? 0 : i * 40, T:PO.reduced ? .01 : .34, flips:PO.reduced ? 0 : 1, i })));
     }
     chips = []; spilling = null;
     if (!value) return;
-    const from = wallet; wallet += value;
+    const from = wallet; wallet += value; cfg?.setWallet(wallet);
     status('COUNT IN', '+' + money(value));
     const steps = 8;
     for (let i = 1; i <= steps; i++){ bank(from + value * i / steps); S.counterTick(true); await wait(55); }
@@ -1004,9 +1023,9 @@
     nudge(false);
     fan.forEach(c => c.el.querySelector('.po-new')?.remove());
     if (chosen && !chosen.tossed){ await tossWrapper(0, 0); }
-    status('KEEPING THEM', String(fan.length) + ' INTO THE COLLECTION');
+    status('KEEPING THEM', String(fan.length) + (EMBED ? ' INTO YOUR DECK' : ' INTO THE COLLECTION'));
     // square the hand: two taps, like the dealer's deck
-    const sq = { x:W / 2, y:H * .8, s:handSpot(0).s, z:0, sx:1, sy:1 };
+    const sq = { x:W / 2, y:H * L.squareY, s:handSpot(0).s, z:0, sx:1, sy:1 };
     S.cardReturn();
     await Promise.all(fan.map((c, i) => glide(c.body, { ...sq, r:i % 2 ? 2 : -2, y:sq.y - i }, 220)));
     S.cardLanded(); Haptic.tick(10, 0); fan.forEach(c => squash(c.body, .05, 140));
@@ -1014,6 +1033,7 @@
     fan.forEach(c => c.body.set({ r:0 }));
     S.deckSettle(); jolt(stage.el, 1); Haptic.tick(14, 0);
     await wait(120);
+    if (EMBED) return keepEmbedded();
     // into the slot: up to it, then down behind its lip
     const slot = $('po-slot'), sr = slot.getBoundingClientRect(), st = stage.el.getBoundingClientRect();
     const sx = sr.left - st.left + sr.width / 2, sy = sr.top - st.top + sr.height / 2;
@@ -1036,6 +1056,22 @@
     deck = rc = null; packets = []; chosen = null;
     lock = false;
     dealIn();
+  }
+
+  // embedded: the host takes the squared hand (into its deck), the chips
+  // come home to its reel, and the felt is left as it was found
+  async function keepEmbedded(){
+    const cards = fan.map(c => c.card);
+    await cfg.stow(fan.slice());
+    fan = [];
+    await chipsHome();
+    if (flap){ const f = flap; flap = null; await glide(f, { x:-W * .3, y:f.y + 20, r:f.r - 90, alpha:.3 }, 300, { easing:ease.in }); f.remove(); }
+    try { CoinWorld.clearWorld(); } catch (e) {}
+    clearShown();
+    deck = rc = null; packets = []; chosen = null;
+    lock = false; phase = 'idle';
+    nudge(false);
+    cfg.done?.(cards);
   }
 
   /* ---------------- the faces of the machine ----------------
@@ -1181,7 +1217,7 @@
       if (p && idle && (phase === 'sealed' || phase === 'open')){
         const f = focus(), top = f.y - AH * f.s / 2;
         nudge(true, f.x + (phase === 'sealed' ? -AW * f.s * .35 : 0), top + (phase === 'sealed' ? 10 : -26));
-        $('po-nudge').dataset.dir = phase === 'sealed' ? 'right' : 'up';
+        nudgeEl.dataset.dir = phase === 'sealed' ? 'right' : 'up';
       } else nudge(false);
     });
   }
@@ -1196,6 +1232,7 @@
   function onDown(e){
     // the desk and the album handle their own touches
     if (view !== 'packs' || rolling) return;
+    if (EMBED && phase === 'idle') return;
     if (pointer || e.button > 0) return;
     Foil.unlock(); S.unlock(); idleAt = performance.now(); nudge(false);
     if (lock){ PO.finishAll(); return; } // tap to fast-forward
@@ -1470,6 +1507,7 @@
     const st = $('po-stage');
     st.querySelector('.felt').id = 'felt';
     stage = { el:st, shadows:st.querySelector('.po-shadows'), objects:st.querySelector('.po-objects'), fx:st.querySelector('.po-fx') };
+    nudgeEl = $('po-nudge');
     try { CoinWorld.setTray(null); } catch (e) {}
     st.addEventListener('pointerdown', onDown);
     st.addEventListener('pointermove', onMove);
@@ -1516,5 +1554,51 @@
     // read-only diagnostics for the lab's checks
     window.PackOpening = { get state(){ return { phase, lock, wallet, packNo, hasLegend, tear:chosen?.tear ?? 0, pull, chosen:chosen?.series ?? null, packets:packets.length, deck:!!deck, size:{ W, H }, contents:contents.map(c => c.rarity), revealed, fan:fan.length, collection, chips:chips.length, wrapper:!!(chosen && chosen.open && !chosen.tossed), inspecting:CardInspect.isOpen, view, held:held.length, found:found.size, desk:CareerDesk.state, venues:[...venues], played:[...history.values()].reduce((a, h) => a + h.played, 0), fold:rc?.fold ?? 0, shown:rc?.shown ? rc.spec.rarity : null, homes:packets.map(p => p.home && [+p.home.fx.toFixed(3), +p.home.fy.toFixed(3)]) }; } };
   }
-  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', setup); else setup();
+  /* Embedded on another felt (the Career hub). cfg:
+     root    the host's machine (jolts, the dip's dimming, lamps)
+     stage   { el, shadows, objects, fx } over the host's felt
+     ui      status(t, s) figure(n, l) key(l, s, on) keySub(s) bank(v)
+             bankEl() flash(): the host's reel, screens and key
+     wallet, setWallet(v), focus(W, H) (where a packet on offer sits),
+     layout  overrides for L (handY, squareY, wrapY, railLift)
+     onPutBack(p) onBought(p) stow(cards) done(cards): the host's hooks */
+  function attach(c){
+    cfg = c; ui = c.ui; root = c.root; stage = c.stage;
+    Object.assign(L, c.layout || {});
+    phase = 'idle';
+    nudgeEl = Object.assign(document.createElement('i'), { className:'po-nudge', hidden:true });
+    stage.el.append(nudgeEl);
+    const st = stage.el;
+    st.addEventListener('pointerdown', onDown);
+    st.addEventListener('pointermove', onMove);
+    st.addEventListener('pointerup', e => onUp(e, false));
+    st.addEventListener('pointercancel', e => onUp(e, true));
+    new ResizeObserver(() => {
+      const w = W, h = H; measure();
+      if (!w || (Math.abs(w - W) < 1 && Math.abs(h - H) < 1) || lock || pointer) return;
+      if (chosen && ['selected', 'sealed', 'open'].includes(phase)) chosen.body.set(focus());
+    }).observe(st);
+    measure(); startTicks();
+  }
+  // the shop hands over a packet on this felt: it's on offer
+  function offer(p){
+    if (phase !== 'idle' && phase !== 'selected') return;
+    if (charge) return;
+    wallet = cfg.wallet();
+    packets = [p]; chosen = null;
+    p.yaw = p.yaw || 0; p.face = 'front';
+    if (!p.cards.length) fillStack(p);
+    measure();
+    return select(p);
+  }
+  if (EMBED){
+    window.PackOpeningEmbed = {
+      attach, offer, putBack,
+      keyDown:onKeyDown, keyUp:onKeyUp,
+      keyCancel(){ keyFrom = null; keyHeld = false; if (phase === 'charging') releaseCharge(); },
+      finish(){ PO.finishAll(); },
+      tune, applyTune:() => { PO.speed = tune.speed; PO.reduced = !tune.motion || matchMedia('(prefers-reduced-motion: reduce)').matches; try { settings.sound = tune.sound; } catch (e) {} Haptic.on = tune.haptics; },
+      get state(){ return { phase, lock, wallet, packNo, hasLegend, chosen:chosen?.series ?? null, tear:chosen?.tear ?? 0, pull, deck:!!deck, contents:contents.map(c => c.rarity), revealed, fan:fan.length, chips:chips.length, wrapper:!!(chosen && chosen.open && !chosen.tossed), inspecting:CardInspect.isOpen, fold:rc?.fold ?? 0, shown:rc?.shown ? rc.spec.rarity : null }; }
+    };
+  } else if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', setup); else setup();
 })();

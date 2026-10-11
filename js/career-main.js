@@ -61,6 +61,7 @@
     $('.cm-crt-' + side).innerHTML = `<div class="crt cm-crt is-${k}"${ink ? ` data-ink="${ink}"` : ''}>${html}</div>`;
   }
   function screens(){
+    if (window.CareerShop?.screens()) return;   // the shop has the screens
     if (fed){ screen('l', ['ENTRY', money(EventCards.describe(fed.card).entry)], 'money'); screen('r', ['READY', 'PLAY'], 'live'); return; }
     screen('l', ['IN HAND', String(hand.length)]); screen('r', ['PLAYED', String(played)]);
   }
@@ -298,8 +299,9 @@
     busy = false;
   }
   function key(b){
-    jolt(b, 2); Haptic.tick(8);
     const k = b.dataset.key;
+    if (window.CareerShop?.key(k, b)) return;   // the shop's keys while it's out
+    jolt(b, 2); Haptic.tick(8);
     if (k === 'play') return play();
     say([k === 'shop' ? 'SHOP' : 'CARDS', 'SOON'], ['ROLLS', k === 'shop' ? 'DOWN' : 'UP']);
   }
@@ -369,11 +371,43 @@
     }, 200);
   }
 
+  /* ---------------- for the shop (js/career-shop.js) ----------------
+     Lab only: what the shop needs from the hub. */
+  // every card on the felt swept back into the deck, nothing dealt
+  async function sweepAway(){
+    if (fed){ hand.push(fed); fed = null; slotEl.classList.remove('is-fed'); $('[data-key="play"]').classList.remove('is-ready'); }
+    const out = hand.splice(0);
+    const gap = DEAL_TIMING.collectStaggerMaxMs || 260;
+    await Promise.all(out.map(h => { if (!h.c.el.isConnected){ h.c.body.remove(); return; } h.c.body.sh?.remove(); return DealerDeck.collect(h.c.el, Math.random() * gap).then(() => h.c.body.remove()); }));
+    deckCount();
+  }
+  // new cards into your case: shuffled in, and three dealt
+  async function takeIn(cards){
+    pool.push(...cards);
+    await DealerDeck.squareUp();
+    shuffleOrder();
+    await DealerDeck.shuffle('full');
+    deckCount();
+    await deal(3);
+  }
+  window.CareerMain = {
+    get root(){ return root; }, get felt(){ return felt; }, get station(){ return station; },
+    get wallet(){ return wallet; },
+    set wallet(v){ wallet = v; $('#cm-reel').innerHTML = reel(v); },
+    showBank(v){ $('#cm-reel').innerHTML = reel(v); },
+    get reelEl(){ return $('#cm-reel'); },
+    get busy(){ return busy; }, set busy(v){ busy = !!v; },
+    get cards(){ return hand.length; }, get deck(){ return next.length; }, get pool(){ return pool.length; },
+    keyEl:k => $(`[data-key="${k}"]`),
+    screens, sweepAway, takeIn,
+    pipSay:(mood, text) => pipSay([mood, text])
+  };
+
   /* ---------------- input ---------------- */
   let ptr = null, holdT = 0;
   const local = e => { const f = felt.getBoundingClientRect(); return { x:e.clientX - f.left, y:e.clientY - f.top }; };
   function down(e){
-    if (ptr || e.button > 0 || CardInspect.isOpen) return;
+    if (ptr || e.button > 0 || CardInspect.isOpen || window.CareerShop?.out) return;
     if (e.target.closest('#coach-station')) return;   // P.I.P. handles his own
     const p = local(e), now = performance.now();
     ptr = { id:e.pointerId, x0:p.x, y0:p.y, x:p.x, y:p.y, t:now, hist:[{ x:p.x, y:p.y, t:now }] };
