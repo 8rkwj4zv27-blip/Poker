@@ -26,9 +26,9 @@ audit's complaints (dashboard rims, clipped result line, chip pile) are gone.
 
 ## Recent changes (newest first)
 
-- 11 Oct (no game change): Career desk lab (`career-hub-lab.html`,
-  [plan](career/CAREER_HUB_DESK_PLAN.md)), rejected by the owner; four
-  stills of a simpler hub (`hub-stills-lab.html`) for them to pick from.
+- 11 Oct (no game change): the desk lab ([plan](career/CAREER_HUB_DESK_PLAN.md))
+  was rejected; `hub-stills-lab.html` has stills of a simpler hub (plain
+  slot picked; E-H: screens, re-deal, chip pile).
 - 11 Oct (no game change): Pack Opening V3 (`pack-opening-lab.html`,
   [plan](career/PACK_OPENING_V3_PLAN.md)): the packet, the reveal, the haul,
   a polish pass; then one shared card inspect screen (`js/card-inspect.js`,

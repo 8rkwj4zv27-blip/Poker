@@ -1098,11 +1098,23 @@ Touch checks: `validation/career-hub-checks.cjs`.
 
 Round 2 of `docs/career/CAREER_HUB_DESK_PLAN.md`. Same host as the pack lab
 (`js/pack-opening-host.js`), injecting `js/hub-stills.js` + `css/hub-stills.css`
-(plus the card faces and `EventCards`). Four static layouts (`STILLS` A–D)
-of the simplified hub: the full-width bankroll reel, CRT · slot · CRT, the
-felt with a faint spread and three cards, a deck in a corner, chip stacks
-drawn with CoinWorld's sprites, the SHOP · PLAY · CARDS key bay. TUNE picks
-a still. Nothing moves.
+(plus the card faces and `EventCards`). Static layouts
+of the simplified hub. Each still has:
+- the full-width bankroll reel;
+- CRT · plain slot · CRT;
+- the felt with a faint spread and three fanned cards;
+- a deck in the corner.
+
+Below that, the SHOP · PLAY · CARDS key bay.
+
+Stills E to H (`STILLS`) are presets of three parts:
+- `SCREENS`: the two CRTs share one grid;
+- `RESETS`: lever, rake or holding the deck;
+- `PILES`: one row of towers in the corner, shaped as a pyramid, a stair
+  or a level row. Its size comes from the bankroll, and its tiers from
+  `CoinWorld.composeTiers`.
+
+TUNE mixes the parts and sets the bankroll. Nothing moves.
 
 ## `pack-opening-lab.html` — Pack Opening V3 (isolated, 11 October 2026)
 

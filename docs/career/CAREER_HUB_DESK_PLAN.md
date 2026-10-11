@@ -93,3 +93,21 @@ https://claude.ai/artifact/FpUrE7DTH5uqFqhV4eC8ir.
 **Next:** once the owner picks a still, build its behaviour, then polish
 it against their notes. `career-desk.js` is retired or cut down at that
 point.
+
+**Stills 2 (11 Oct).** The owner picked the plain slot (C). Their other notes:
+- the two screens weren't aligned;
+- the shuffle button looked rubbish;
+- High Roller's towers were all over the felt.
+
+Stills E to H use the plain slot in all four, and screens that share one
+grid: same rows, centred, never wrapping. The two lines come three ways:
+a label over a figure, a big figure over a label, or one line with a lamp.
+
+There are three ways to deal again: a small machine lever by the deck, a
+croupier's rake lying under the cards, or holding the deck.
+
+The chips are one tidy row in the bottom-right corner, shaped as a
+pyramid, a stair or a level row. The bankroll sets the number of towers
+(1, 3, 5 or 7) and CoinWorld's change-making sets the chips' tiers.
+
+TUNE mixes the parts and sets the bankroll. The link is the same.
