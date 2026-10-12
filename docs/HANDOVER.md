@@ -72,8 +72,8 @@ invitations → play → Career money → more packets. Start from
 [`career/INVITATIONS_PLAN.md`](career/INVITATIONS_PLAN.md): Stage 1 (one
 DEV Back Room invitation) is built and awaits the owner's review, with
 the card preview. Next stages there: invitations in the save, packets,
-the hub in the game. The owner dislikes the preview's card designs (12
-Oct): ask what to change before reworking. Branch
+the hub in the game. Cards: the hub's own card, coloured by rarity
+(owner, 12 Oct); Stage 2 changes the save, so agree its shape first. Branch
 `claude/career-hub-cards-design-4e4x89` carries the hub, shop and album
 labs. Workflow: [`WORKFLOW.md`](WORKFLOW.md). Still open: the owner's verdict on the new Back Room (v0.67.0;
 minutes per hand unmeasured).
