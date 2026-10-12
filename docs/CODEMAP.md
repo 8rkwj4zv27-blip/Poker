@@ -1144,6 +1144,17 @@ meets the feeder.
   `setKey`, `keyEl`, `countIn`, `showBank`, `scale`, the wallet;
   `state`/`where` for the checks).
 
+## `collection-book-lab.html` — the card album, stills (isolated, 12 October 2026)
+
+Plan: `docs/career/COLLECTION_BOOK_PLAN.md`. The hub (`career-main-lab.html`'s
+injections) plus `js/collection-book-stills.js` + `css/collection-book.css`.
+Nothing moves: `STILLS` (closed, page 1, a card lit, turning, page 3) and
+`frame` (`felt`: sized to its four rows inside `.cm-felt`; `full`: the
+whole frame). `album` is 5 pages × 16 placeholder slots (`have`, `used`,
+`empty`); `place()` sizes the cards (`--cb-cw`, `--cb-k`) to fit four
+across. Its own TUNE key and sheet sit in `#home` (the hub's TUNE is
+hidden); a swipe steps the stills.
+
 ## `vending-lab.html` — the packet machine (isolated, 11 October 2026)
 
 Plan: `docs/career/VENDING_PLAN.md`; touch checks:

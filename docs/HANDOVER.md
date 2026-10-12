@@ -6,7 +6,7 @@ note"). Keep it to one screen: replace old lines rather than adding to them.
 If this note and the code disagree, the code wins.
 
 Build: `v0.67.1-dev · Hub hooks for the deck and P.I.P.`
-Updated: 11 October 2026 (isolated lab only)
+Updated: 12 October 2026 (isolated lab only)
 
 ## Where the game is
 
@@ -26,6 +26,8 @@ audit's complaints (dashboard rims, clipped result line, chip pile) are gone.
 
 ## Recent changes (newest first)
 
+- 12 Oct (no game change): the card album, stills (`collection-book-lab.html`,
+  [plan](career/COLLECTION_BOOK_PLAN.md)): a leather-bound book, 4 × 4.
 - 12 Oct (no game change): the Career hub rethought and built: the tray
   is the house's three cards (REDEAL), the felt is yours: packets torn open
   into one deck, its reveal, throw, tidy ([brief](career/CAREER_HUB_BRIEF.md), round 6).
@@ -37,8 +39,6 @@ audit's complaints (dashboard rims, clipped result line, chip pile) are gone.
 - 11 Oct (no game change): the desk lab ([plan](career/CAREER_HUB_DESK_PLAN.md))
   was rejected; stills of a simpler hub became `career-main-lab.html`:
   the table's deck deals cards, P.I.P. to tap or throw (v0.67.1 hooks).
-- 11 Oct (no game change): Pack Opening V3 (`pack-opening-lab.html`,
-  [plan](career/PACK_OPENING_V3_PLAN.md)) and one shared card inspect screen.
 
 ## Open items (verified, not scheduled)
 
@@ -68,12 +68,12 @@ own speech bubbles (`claude/tender-dijkstra-zso8dm`).
 
 ## Next
 
-**The card collection (CARDS)**, in a new session: start from
-[`career/COLLECTION_BRIEF.md`](career/COLLECTION_BRIEF.md) (what exists,
-what's been said, the open questions). Talk first, stills first. The hub
-([brief](career/CAREER_HUB_BRIEF.md), round 6) and the shop stay as they
-are. The owner has parked buy-ins, the economy and venues: don't add them.
-Then the collection save (owner's approval), Pattern Book sign-off, the
+**The card album (CARDS)**: the owner's look at the stills
+(https://claude.ai/artifact/USQHuBYFeXwdJDVi8g7HEV), then the
+moving lab (the drop, the cover, page turns, tap to light, tap to pull
+out). How the book is organised is open: don't design it unasked. The
+hub and the shop stay as they are; buy-ins, the economy and venues are
+parked. Then the collection save (owner's approval), Pattern Book sign-off, the
 real table hand-off; agree how this reshapes Events Releases 2 to 4
 (`docs/career/EVENTS_PLAN.md`). Still open: the owner's verdict on the
 new Back Room (v0.67.0; minutes per hand unmeasured).
