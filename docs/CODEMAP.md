@@ -1294,13 +1294,16 @@ placeholder cards, over the real game (phone-first; host
 `js/invitation-cards-lab-host.js`, injected `js/invitation-cards-lab.js` +
 `css/invitation-cards-lab.css`, in-memory storage).
 
-- `js/invitation-cards.js` (`window.InvitationCards`): `CATALOGUE` (the
-  proposed events; `live` names a real definition, the rest are
-  provisional, unknowns TBC), `cardHTML(entry)` (the hub's own TABLE EVENT
-  card from `js/pack-ritual-cards.js`, its picture borrowed from the hub
-  cards until the owner's art exists, coloured by rarity in
-  `css/invitation-cards.css`: Common cream, Uncommon green, Rare blue,
-  Legendary yellow), `describe(entry)` (the detail view's terms and rules).
+- `js/invitation-cards.js` (`window.InvitationCards`): `CATALOGUE` (live
+  events point at their definition; the three special-rules events are
+  TBC), `cardHTML(entry)` (the hub's TABLE EVENT card from
+  `js/pack-ritual-cards.js`, coloured and finished by rarity in
+  `css/invitation-cards.css`: Common cream, Uncommon green print, Rare
+  blue with silver and a lacquer sheen, Legendary gold foil with a slow
+  shimmer), `byEvent(id)`, `describe(entry)`.
+- `js/invitation-art.js` (`window.InvitationArt`): placeholder pixel
+  scenes, one per event on a 120 × 76 grid, apart from the words; the
+  owner's art replaces an entry.
 - Only an event the game really has offers PLAY (the Back Room
   invitation, through `devPlayCareerInvitation` with DEV switched on in
   the copy). Every other card launches nothing.

@@ -30,8 +30,7 @@
       '<div class="invl-filters">' + ['all'].concat(ORDER).map(r =>
         '<button class="ccl-key" type="button" data-filter="' + r + '">' + (r === 'all' ? 'ALL' : IC.RARITY[r].code) + '</button>').join('') + '</div>' +
       '<div class="invl-grid"></div>' +
-      '<p class="invl-note">PLAYABLE · DEV: plays in this copy. NOT BUILT YET: standard poker, still to build. ' +
-        'SPECIAL RULES: needs its own rules stage. PROVISIONAL: terms not settled (TBC).</p>' +
+      '<p class="invl-note">Tap a card to see it big. Every event but the three with special rules plays in this copy.</p>' +
       '</div>');
     root.addEventListener('click', e => {
       const f = e.target.closest('[data-filter]');
@@ -78,9 +77,11 @@
     if (!eventId || typeof careerEventById !== 'function' || !careerEventById(eventId)) return;
     DEV_MODE = true;
     hide();
-    // playing uses up a card (Stage 2): this copy gives itself one first
-    if (careerEventState(eventId) === 'available' && !careerInvitations().some(c=>c.eventId === eventId)) giveCareerInvitation(eventId, 'common');
-    if (!devPlayCareerInvitation()){
+    // playing uses up a card: this copy gives itself one for the event first
+    const busy = careerHasActiveEvent() || careerHasOpenCashSession();
+    const card = busy ? null : giveCareerInvitation(eventId);
+    if (card && playCareerInvitation(card.id)) careerDepartToTable(startCareerEvent);
+    else {
       show();
       root.querySelector('.invl-note').textContent = 'The table is busy: finish or abandon the event in play first.';
     }

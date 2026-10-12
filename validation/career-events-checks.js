@@ -2769,12 +2769,12 @@ check('Packets and the starter are closed outside DEV and the preview', ()=>{
 check('Invitation card preview: isolated, and only the live event can be played', ()=>{
   const indexHtml=fs.readFileSync(path.join(root,'index.html'),'utf8');
   const sw=fs.readFileSync(path.join(root,'sw.js'),'utf8');
-  ['invitation-cards'].forEach(n=>{ assert.ok(!indexHtml.includes(n),'index.html links '+n); assert.ok(!sw.includes(n),'sw.js precaches '+n); });
+  ['invitation-cards','invitation-art'].forEach(n=>{ assert.ok(!indexHtml.includes(n),'index.html links '+n); assert.ok(!sw.includes(n),'sw.js precaches '+n); });
   const host=fs.readFileSync(path.join(root,'js/invitation-cards-lab-host.js'),'utf8');
   assert.ok(host.includes('Storage.prototype') && host.includes('pwa-service-worker'),'the lab copy runs on in-memory storage');
   const { context }=makeContext(openCareer());
   context.window=context;
-  vm.runInContext(['js/pack-ritual-cards.js','js/invitation-cards.js'].map(f=>fs.readFileSync(path.join(root,f),'utf8')).join('\n'),context);
+  vm.runInContext(['js/pack-ritual-cards.js','js/invitation-art.js','js/invitation-cards.js'].map(f=>fs.readFileSync(path.join(root,f),'utf8')).join('\n'),context);
   const IC=context.InvitationCards;
   assert.strictEqual(IC.CATALOGUE.length,13);
   const count=r=>IC.CATALOGUE.filter(e=>e.rarity===r).length;
@@ -2782,9 +2782,9 @@ check('Invitation card preview: isolated, and only the live event can be played'
   IC.CATALOGUE.forEach(e=>{
     const d=IC.describe(e);
     // PLAY only for a card backed by a real definition the game can launch
-    assert.strictEqual(d.playable, e.status==='dev', e.id);
+    assert.strictEqual(d.playable, e.status==='live', e.id);
     if (e.live) assert.ok(context.careerEventById(e.live), e.id+' has a live definition');
-    else assert.ok(!e.live && e.status!=='dev', e.id+' is provisional');
+    else assert.ok(!e.live && e.status==='special', e.id+' waits for its own stage');
   });
   ['bounty-night','threes-company','pair-pressure'].forEach(id=>
     assert.strictEqual(IC.CATALOGUE.find(e=>e.id===id).status,'special',id));
@@ -2793,9 +2793,19 @@ check('Invitation card preview: isolated, and only the live event can be played'
   // the hub card's face: title, one line, top prize; rules stay off it
   const face=IC.cardHTML(back);
   ['ADMIT ONE','3 PLAYERS · 10 HANDS','TOP PRIZE','$60','<svg'].forEach(t=>assert.ok(face.includes(t),t));
+  // every live event has its own picture, and its card says what the definition says
+  IC.CATALOGUE.filter(e=>e.live).forEach(e=>{
+    const ev=context.careerEventById(e.live), html=IC.cardHTML(e);
+    assert.ok(html.includes('$'+ev.payouts[0].toLocaleString('en-US')), e.id+' prize');
+    assert.ok(html.includes(ev.playerCount+' PLAYERS'), e.id+' players');
+    assert.strictEqual(IC.byEvent(e.live),e);
+  });
+  // rare is lacquered, legendary foiled
+  assert.ok(IC.cardHTML(IC.CATALOGUE.find(e=>e.id==='final-table')).includes('data-finish="lacquer"'));
+  assert.ok(IC.cardHTML(IC.CATALOGUE.find(e=>e.id==='golden-ticket')).includes('data-finish="foil"'));
   assert.ok(!face.includes(back.rules),'no rules on the face');
   assert.ok(IC.cardHTML(IC.CATALOGUE.find(e=>e.id==='golden-ticket')).includes('data-inv-rarity="legendary"'));
-  assert.ok(IC.cardHTML(IC.CATALOGUE.find(e=>e.id==='full-house')).includes('>TBC<'));
+  assert.ok(IC.cardHTML(IC.CATALOGUE.find(e=>e.id==='bounty-night')).includes('>TBC<'),'special rules: prize not set');
 });
 
 process.stdout.write('\n' + passed + ' focused Career event checks passed.\n');
