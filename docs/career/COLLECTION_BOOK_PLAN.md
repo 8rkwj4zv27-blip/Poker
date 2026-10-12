@@ -1,7 +1,7 @@
 # The card album (CARDS): plan
 
 12 October 2026. Started from [`COLLECTION_BRIEF.md`](COLLECTION_BRIEF.md).
-Lab: `collection-book-lab.html` (moving, round 2).
+Lab: `collection-book-lab.html` (moving, round 3).
 Owner's link: https://claude.ai/artifact/USQHuBYFeXwdJDVi8g7HEV
 (re-stage with `validation/tools/lab-bundle.js` and republish to it).
 
@@ -58,10 +58,43 @@ next page turned underneath it and taps hit the old page's cards. Added:
 a pull tab each side of the page (left: back a page, right: on a page),
 dark at the first and last page.
 
+## Round 3: feel and the reader (built 12 Oct)
+
+The owner: "looking really good"; asked for a heavier, more physical
+book, a more fun page turn, a card-out-of-its-sleeve moment that feels
+like handling a collectable, and **hold a card to put it in the reader**:
+flick through your event cards and choose which game to play.
+
+- **ARRIVAL (TUNE): LIFT / THROW** (default THROW): carried up high and
+  tilted, a beat in the air, slammed down in five frames; a two-frame
+  squash on impact, a low boom, the machine shakes, the reel's digits
+  rattle, the keys bump, dust; it skids and settles square. The book
+  shows its thickness (the page block along the bottom edge).
+- **TURN (TUNE): FLAT / CURL** (default CURL): the page is laid as twelve
+  strips in a bowing chain, shaded where it faces away, in stepped
+  frames; the uncovered page's cards settle and dust puffs from the
+  binding. (A peel from where you hold it was tried and dropped: it put
+  steps in the page's edge.)
+- **Sleeves:** out: it catches, slides up in steps with a wobble as the
+  sheen shifts, pops free with a glint and the sleeve flashes; in: it
+  arrives tilted, the mouth opens, it slides down and tucks home with a
+  snap as the sheen settles.
+- **The reader (owner's rules):** hold a card you have; it comes out into
+  your fingers (the book dims); carry it to INSERT CARD and let go: half
+  in, the plate reads it, PLAY lights. Anywhere else: back into its
+  sleeve. A used-up card refuses. Flick a card up out of inspect: the
+  reader too. **The book stays open** with a card in the reader; carry
+  another up to swap (the first flies home); tap the card in the reader
+  and it flies back into its sleeve, tucked in. **PLAY:** the book shuts
+  and sinks, the card goes in (used up: its slot dims) and the machine
+  wheel rolls to the table (`machineWheelRig`; the real hand-off isn't
+  wired; tap the table to come back). CARDS with a card in the reader
+  sends it home first.
+
 ## Open
 
-- The owner's verdict on round 2: size, look, the drop, the turns,
-  corners or sleeves.
+- The owner's verdict on round 3: LIFT or THROW, FLAT or CURL, the
+  sleeves, the reader.
 - How the book is organised (see above); the inspect screen's rework and
   the card's history; then the save (owner's approval) and Pattern Book
   sign-off for the book as a new part.

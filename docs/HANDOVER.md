@@ -27,7 +27,7 @@ audit's complaints (dashboard rims, clipped result line, chip pile) are gone.
 ## Recent changes (newest first)
 
 - 12 Oct (no game change): the card album (`collection-book-lab.html`,
-  [plan](career/COLLECTION_BOOK_PLAN.md)): a leather-bound book, 3 × 3, moving.
+  [plan](career/COLLECTION_BOOK_PLAN.md)): a leather-bound book, 3 × 3; hold a card into the reader.
 - 12 Oct (no game change): the Career hub rethought and built: the tray
   is the house's three cards (REDEAL), the felt is yours: packets torn open
   into one deck, its reveal, throw, tidy ([brief](career/CAREER_HUB_BRIEF.md), round 6).
@@ -68,9 +68,9 @@ own speech bubbles (`claude/tender-dijkstra-zso8dm`).
 
 ## Next
 
-**The card album (CARDS)**: the owner's verdict on round 2, moving
-(https://claude.ai/artifact/USQHuBYFeXwdJDVi8g7HEV): size, look, the
-drop, the turns, corners or sleeves. How the book is organised and the
+**The card album (CARDS)**: the owner's verdict on round 3
+(https://claude.ai/artifact/USQHuBYFeXwdJDVi8g7HEV): LIFT or THROW,
+FLAT or CURL, the sleeves, hold-to-play into the reader. How the book is organised and the
 inspect rework are open: don't design them unasked. The hub and the shop
 stay as they are; buy-ins, the economy and venues are parked. Then the collection save (owner's approval), Pattern Book sign-off, the
 real table hand-off; agree how this reshapes Events Releases 2 to 4

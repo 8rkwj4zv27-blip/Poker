@@ -1150,23 +1150,33 @@ Plan: `docs/career/COLLECTION_BOOK_PLAN.md` (round 2). The hub
 (`career-main-lab.html`'s injections) plus `js/collection-book.js` +
 `css/collection-book.css` (`window.CareerAlbum`). The CARDS key calls
 `CareerAlbum.toggle()` (`key()` in `js/career-main.js`), and `keys()`
-leaves the keys alone while it's `out`.
+leaves the keys alone while it's `out`. The hub's feeder takes an album
+card through `CareerMain.feedOther(c, card, hooks)` (hooks `back`,
+`beforePlay`, `afterPlay`, read by `unfeed` and `play`).
 
 - **Where:** `.cb-layer` in `#cm`, before the console (same z, so the book
   comes up from behind it); `place()` fits it over the felt, from the
   cabinet to the console, and sizes the 3 × 3 cards (`--cb-cw`, `--cb-k`).
   `pose(y, lift)` moves the book and its shadow; `y0` is out of sight.
-- **In and out:** `bringUp` (rise, lift, drop, `thunk`), `putAway` (`shut`,
-  lift, sink); `darkKeys`.
-- **Cover and pages:** `openCover`/`shut`/`coverAt`; `turnAt(p, t)` (t 0
-  flat to 1 on the binding, with `.cb-cast` on the next page),
-  `finishTurn`, `riffle` (a tab), `tapTurn` (the pull tabs, `.cb-turn`),
+- **In and out:** `bringUp` (`drop` for LIFT, `slam` for THROW: `shake`,
+  `rattle`, `dust`), `putAway` (`shut`, lift, sink); `setKeys`. `Snd`: its
+  own boom, plastic and flap sounds.
+- **Cover and pages:** `openCover`/`shut`/`coverAt`; `turner(p)` → `set(t)`
+  (t 0 flat to 1 on the binding) / `end()`: FLAT one sheet, CURL twelve
+  cloned strips (`.cb-strip`) in a bowing chain; `.cb-cast` on the next
+  page; `finishTurn`, `landed`, `riffle` (a tab), `tapTurn` (the pull tabs, `.cb-turn`),
   `stackPages` (turned pages `hidden`: `.cb-page[hidden]` must stay `display:none`).
-- **Cards:** `light`/`unlight`; `takeOut` opens `CardInspect` through the
-  page's cards; with `sleeves`, `slide` pulls the face out of its sleeve
-  first and tucks it back after (`onClose`).
+- **Cards:** `light`/`unlight`; `setOut` (how far out of its place),
+  `pullOut`/`tuckIn` (the sleeve, or the corners), `refuse` (used up);
+  `takeOut` opens `CardInspect` through the page's cards (`swipeUp`: to
+  the reader).
+- **The reader:** `.cb-feed` is a stage laid over the felt, above the book:
+  the card in hand and the card in the reader. `hold` (320ms press) →
+  `carry` → `release` (`nearReader`: `feedIn`, a swap first; else
+  `flyHome`); `played` marks it used and `wheelToTable` rolls the machine
+  wheel to the table and back.
 - **Touch:** `down`/`move`/`up` on the layer: a drag on the cover or a
-  page turns it, a tap opens, riffles, lights or takes out.
+  page turns it, a hold takes a card, a tap opens, riffles, lights or takes out.
 - `album`: 5 pages × 9 placeholder slots (`have`, `used`, `empty`).
 
 ## `vending-lab.html` — the packet machine (isolated, 11 October 2026)

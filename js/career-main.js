@@ -325,6 +325,8 @@
     c.el.style.clipPath = '';
     c.body.sh?.style.removeProperty('visibility');
     fed = null; slotEl.classList.remove('is-fed'); plate('INSERT CARD'); keys();
+    // a card from elsewhere (the album) goes back where it came from
+    if (t.back){ drop(t); busy = false; return t.back(t); }
     S.cardReturn();
     const home = t.kind === 'house' ? placeAt(t.place) : fedFrom;
     await glide(c.body, { ...home, z:0, s }, 300, { arc:18, easing:ease.out });
@@ -337,6 +339,7 @@
     if (!fed || busy) return;
     busy = true;
     const t = fed, c = t.c;
+    if (t.beforePlay) await t.beforePlay();
     S.wheelCatch(); jolt(slotEl, 3);
     await teeth(c, lip().y - CH * s / 2 - 4, 3);
     S.wheelLock(); Haptic.tick(18, 0); jolt($('.cm-cabinet'), 3);
@@ -344,11 +347,21 @@
     pool = pool.filter(q => q !== t.card);
     if (pool.length < 4) fillPool();
     fed = null; slotEl.classList.remove('is-fed'); keys();
+    if (t.afterPlay){ plate('INSERT CARD'); busy = false; return t.afterPlay(t); }
     await wait(PO.reduced ? 0 : 700);
     plate('INSERT CARD');
     if (t.kind === 'house') await tossIn([t.place]);
     keys();
     busy = false;
+  }
+
+  // a card brought from elsewhere (the album): its body already on a stage
+  // laid exactly over the felt, so the feeder's own moves work on it.
+  // hooks: back(t) when it's taken out again, beforePlay/afterPlay(t)
+  function feedOther(c, card, hooks = {}, { placed = false } = {}){
+    const t = { kind:'card', card, c, ...hooks };
+    things.push(t);
+    return feed(t, { placed, from:{ x:c.body.x, y:c.body.y, r:c.body.r } });
   }
 
   /* ---------------- packets ---------------- */
@@ -643,6 +656,9 @@
     get busy(){ return busy; },
     get scale(){ return s; },
     keyEl, setKey, keys,
+    // the feeder, for the album: lip() in the felt's coordinates
+    feedOther, unfeed, play, lip:() => lip(), get fed(){ return fed; },
+    get feltEl(){ return felt; }, get mouthEl(){ return mouthEl; }, get slotEl(){ return slotEl; },
     addPackets, handOver, place, deckBack,
     // chips home: the reel counts them in
     countIn:v => countTo(wallet + v),
