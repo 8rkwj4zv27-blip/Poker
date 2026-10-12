@@ -594,7 +594,10 @@ check('4C', 'The four major result transitions are still reachable and unchanged
   const body = src.slice(src.indexOf('async function finishHand('), src.indexOf('function processLives('));
   assert.ok(/showBusted\(g, human\)/.test(body));
   assert.ok(/concludeGame\(\)/.test(body));
-  assert.strictEqual((body.match(/endCareerEvent\(g,\{place:careerFinishPlace\(g,human\)\}\)/g) || []).length, 2);
+  // placement measured from the table (careerFinish wraps careerFinishPlace);
+  // the hand-limit ending is the invitation events' (INVITATIONS_PLAN.md)
+  assert.strictEqual((body.match(/endCareerEvent\(g,careerFinish\(g,human\)\)/g) || []).length, 2);
+  assert.strictEqual((body.match(/endCareerEvent\(g,careerLimitFinish\(g,human\)\)/g) || []).length, 1);
 });
 
 /* ============================================================
