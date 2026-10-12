@@ -2335,7 +2335,9 @@ function endCareerEvent(g, result){
   if (!g || g.mode !== 'career') return;
   if (g._careerResultShown) return;
   if (!settleCareerEvent(result)) return;   // someone else already owns this ending
-  recordGameplayConclusion(g, result && result.place===1 ? 'win' : 'loss');
+  // From the settled record: a shared first place is a cash, not a win.
+  const settledOutcome = careerLastResult() && careerLastResult().outcome;
+  recordGameplayConclusion(g, settledOutcome === 'win' ? 'win' : 'loss');
   g._careerResultShown = true;
   g.over = true;
   // Snapshot every displayed value ONCE, immediately after settlement and
@@ -2376,6 +2378,9 @@ function buildCareerResultModel(g, settled){
     // immutable snapshot. Never g.players.length, which by the time a
     // result exists is the field MINUS everyone eliminated.
     field: Number.isInteger(ev.playerCount) && ev.playerCount > 0 ? ev.playerCount : null,
+    // Set when a hand-limited event ended at its limit with the player
+    // still seated: the result then names the limit, not a knock-out.
+    handLimit: careerHandLimitReached(g) && (g.players||[]).some(p=>p.isHuman && p.chips>0) ? ev.handLimit : null,
     // The chip tape (js/event-tape.js) and who was still sitting when the
     // player went out, for the bust-out order. Display data only.
     tape: typeof EventTape !== 'undefined' ? EventTape.snapshot(g) : null,
@@ -2477,7 +2482,9 @@ async function showCareerEventResult(g, model){
   // the stage — the same stage, the same travel and the same lock TABLE
   // CLEARED and RUN OVER use. Only a win mucks first; a bust has already
   // had its K.O. ceremony and rolls straight into its report.
-  setBanner(model.won
+  setBanner(model.handLimit
+    ? (model.won ? '<b>Event won.</b> Most chips after ' : '<b>Event over.</b> ') + model.handLimit + ' hands.'
+    : model.won
     ? '<b>Event won.</b> Every opponent is out.'
     : '<b>Event over.</b> You were eliminated.');
   await presentResultStage(g, careerStageModel(model), {
@@ -2930,7 +2937,9 @@ function careerStageModel(m){
     // and carries the same statement as its caption.
     detail:{
       kind: m.tape ? 'tape' : 'statement', label:'Result',
-      line: champion ? 'THE INVITATIONAL IS YOURS' : won ? 'EVERY OPPONENT IS OUT' : 'YOU WERE ELIMINATED',
+      line: champion ? 'THE INVITATIONAL IS YOURS'
+        : m.handLimit ? (won ? 'MOST CHIPS AFTER ' : 'TIME UP AFTER ') + m.handLimit + ' HANDS'
+        : won ? 'EVERY OPPONENT IS OUT' : 'YOU WERE ELIMINATED',
       sub: champion ? 'CHAMPION STATUS RECORDED' : won ? 'PRIZE CREDITED TO BANKROLL' : freeLoss ? 'NO BUY-IN LOST' : 'BUY-IN FORFEITED',
       tape: m.tape || null, won, place: m.place, alive: m.alive || []
     },

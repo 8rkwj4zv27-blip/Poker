@@ -1943,7 +1943,9 @@ function careerAbandonPressed(eventId){
   const event = careerActiveEventSnapshot();
   showConfirmDialog({
     title:'Abandon event?',
-    body:'Your $' + event.buyIn.toLocaleString() + ' buy-in is lost and the event ends immediately. This cannot be undone.',
+    body:(isCareerInvitation(event)
+      ? 'The invitation is used up and the event ends immediately, with no prize.'
+      : 'Your $' + event.buyIn.toLocaleString() + ' buy-in is lost and the event ends immediately.') + ' This cannot be undone.',
     confirmLabel:'Abandon', danger:true,
     onConfirm:()=>{
       settleCareerEvent('forfeit');   // clears active + the table save
