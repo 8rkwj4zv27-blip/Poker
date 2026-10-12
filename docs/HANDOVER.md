@@ -6,7 +6,7 @@ note"). Keep it to one screen: replace old lines rather than adding to them.
 If this note and the code disagree, the code wins.
 
 Build: `v0.67.1-dev · Hub hooks for the deck and P.I.P.`
-Updated: 12 October 2026 (isolated lab only)
+Updated: 12 October 2026 (DEV-only invitation event; no release)
 
 ## Where the game is
 
@@ -26,22 +26,21 @@ audit's complaints (dashboard rims, clipped result line, chip pile) are gone.
 
 ## Recent changes (newest first)
 
+- 12 Oct (DEV only, no release): Career invitations, Stage 1
+  ([plan](career/INVITATIONS_PLAN.md)): a 3-player, 10-hand Back Room
+  invitation from DEV, HAND n/10, ties shared, paid once; card preview
+  `invitation-cards-lab.html`: https://claude.ai/artifact/K4NmPQASrYC6RoJLepPRP2
 - 12 Oct (no game change): the card album (`collection-book-lab.html`,
   [plan](career/COLLECTION_BOOK_PLAN.md)): a leather-bound book, 3 × 3; hold a card into the reader.
 - 12 Oct (no game change): the Career hub rethought and built: the tray
   is the house's three cards (REDEAL), the felt is yours: packets torn open
   into one deck, its reveal, throw, tidy ([brief](career/CAREER_HUB_BRIEF.md), round 6).
-- 11 Oct (no game change): the packet machine, round 3 (owner's notes):
-  TUNE fix, select then add, a chip stream, a flat tray; the hub loses
-  P.I.P., gains a clean-up spot, one table size, a bag of chips to snip.
-- 11 Oct (no game change): the shop is a vending machine (owner's idea,
-  [plan](career/VENDING_PLAN.md)), moving: `vending-lab.html`.
-- 11 Oct (no game change): the desk lab ([plan](career/CAREER_HUB_DESK_PLAN.md))
-  was rejected; stills of a simpler hub became `career-main-lab.html`:
-  the table's deck deals cards, P.I.P. to tap or throw (v0.67.1 hooks).
+- 11 Oct (no game change): the packet machine, round 3 (owner's notes).
 
 ## Open items (verified, not scheduled)
 
+- Career: reloading between hands replays the hand just finished (the
+  end-of-hand save is its start checkpoint; never counted twice).
 - The owner's notes on the wooden-table hub with the packet machine: https://claude.ai/artifact/WKWLooBRqQNJGYqfbDf1B1
   (home screen: https://8rkwj4zv27-blip.github.io/Poker/packet-machine/, once merged; re-stage it with each change)
 - The v0.67.1 hub hooks (`DealerDeck.dealTo` etc., `CoachSet.hub`) are now
@@ -68,10 +67,13 @@ own speech bubbles (`claude/tender-dijkstra-zso8dm`).
 
 ## Next
 
-**From the labs to the game**, in new sessions: start from
-[`career/HUB_TO_GAME_BRIEF.md`](career/HUB_TO_GAME_BRIEF.md). Three jobs,
-one each: the cards and their events (ask what's unparked first), the
-inspect screen, then the hub into the game (plan first; the save needs
-the owner's approval). The hub, shop and album are liked: don't rework
-them. Still open: the owner's verdict on the new Back Room (v0.67.0;
+**Career is moving to invitations** (owner, 12 Oct): starter packet →
+invitations → play → Career money → more packets. Start from
+[`career/INVITATIONS_PLAN.md`](career/INVITATIONS_PLAN.md): Stage 1 (one
+DEV Back Room invitation) is built and awaits the owner's review, with
+the card preview. Next stages there: invitations in the save, packets,
+the hub in the game. The owner dislikes the preview's card designs (12
+Oct): ask what to change before reworking. Branch
+`claude/career-hub-cards-design-4e4x89` carries the hub, shop and album
+labs. Workflow: [`WORKFLOW.md`](WORKFLOW.md). Still open: the owner's verdict on the new Back Room (v0.67.0;
 minutes per hand unmeasured).
