@@ -66,8 +66,9 @@ through the collection; leave and settings.
    the clean-up spot, one table size, cards left on the felt after
    opening, wrappers and a bag of chips as things on the felt.
 6. **The wooden tray, stills** (`hub-tray-lab.html`, 12 Oct, this brief's
-   session): https://claude.ai/artifact/XTx3Xf8Web82Nc6BQNRw8H (republish
-   to the same link). The owner's direction after a brainstorm (other
+   session; retired once built, in git history on
+   `claude/youthful-thompson-8a3zes`):
+   https://claude.ai/artifact/XTx3Xf8Web82Nc6BQNRw8H. The owner's direction after a brainstorm (other
    games compared; the table-as-hub, jukebox, faces-first, split-flap and
    empty-felt ideas all turned down):
    - A clean felt; in its top third a small rectangular wooden tray with a
@@ -84,38 +85,41 @@ through the collection; leave and settings.
    - **Parked by the owner:** buy-ins and the economy, venues and "where
      you are": the hub is only the tickets for now.
    - The stills (TUNE): the hand, a card in the feeder, packets waiting,
-     an opened packet; a flush inlay or a sunk tray (never a brass lip);
-     names burnt into the wood or on paper tags that come and go with the
-     cards; the middle key with packets waiting OPEN or unlit.
+     an opened packet; inlay or sunk tray, burnt names or paper tags.
+   - **The owner's pick (12 Oct):** no names at all, a plain neat wooden
+     table, no stitched edging round it, the soft bevel kept. Build it as
+     the Career hub: cards moved by holding and dragging (with shadows),
+     a double tap puts everything back; any number of packets lie on the
+     table in one overlapping row. Built in `career-main.js` the same day.
 
-## The hub as it stands (in `vending-lab.html`)
+## The hub as it stands (in `vending-lab.html` and `career-main-lab.html`)
 
-- **Cabinet:** the bankroll reel full width; under it CRT · plain slot ·
-  CRT (IN HAND / PLAYED, or ENTRY / READY with a card fed).
-- **Felt:**
-  - The table's own deck, bottom left. Tap it for a card, which lands at
-    random, on top of whatever's there, and turns over. The first three
-    after a shuffle are chosen for a reason (the safe one, the step up, the
-    stretch) but never labelled. The deck's thickness shows the case left.
-  - The **clean-up spot**, bottom right: a faint printed card outline. Tap
-    it and every card slides in, squares up, goes back into the deck, and
-    the deck is shuffled by hand. It also clears the shop's things: the
-    chips and any shut bag count into the bankroll, the rubbish goes.
-  - Cards: drag to arrange, tap to inspect (the shared inspect screen),
-    drag up into the slot to feed it; PLAY then pays the entry (the game
-    would seat you here: not wired).
-  - Packets bought in the shop wait in a **pile** on a clear patch; tap
-    one and it's **opened on the felt** (the pack opening, embedded):
-    tear, pull the cards, reveal four, the hand is read as a poker hand,
-    then the four are **laid down among the other cards**. The empty
-    **wrapper** (ripped seam) and the torn **strip** stay as things to push
-    about or throw off the edge. The chips come in a clear **bag** with the
-    amount on a sticker: snip its corner and they spill; tap one, it bounces.
-  - One table size: packets, opened cards, wrappers and bags all match the
-    hub's cards.
-- **Console:** SHOP · PLAY · CARDS. SHOP rolls the machine down over the
-  screen row and felt (the console then reads LEAVE · HOLD TO BUY · TAKE).
-  CARDS does nothing yet ("rolls up": the collection, unbuilt).
+- **Cabinet:** the bankroll reel full width; under it the feeder (a plate
+  over a mouth a card wide), nothing else.
+- **Felt:** in its top third a small wooden table (the rail's wood, a soft
+  bevel); the rest is open felt.
+  - **Three cards** lie on the table, chosen from your case (one from the
+    cheapest third, one from the middle, one from the top; unlabelled).
+    **REDEAL** sweeps them off to the right and tosses three more in from
+    the left.
+  - **Anything on the felt** can be pressed and dragged about: it lifts and
+    its shadow drifts; let go and it slides and settles. **A double tap**
+    on the felt puts everything back in its place.
+  - **Tap a card** to inspect it; **flick it up** there (or drag or flick it
+    up from the table) and it goes half into the feeder: the plate reads
+    it, the middle key reads **PLAY**. Tap the card and it comes back out.
+    PLAY takes it in: it's used up, another is tossed into its place (the
+    game would seat you here: not wired; no buy-in).
+  - **Back from the shop** the cards are swept away and the packets you
+    sent lie on the table, one to a place, more in one overlapping row.
+    Tap one (or **OPEN**, the top one) and it's opened on the felt (the
+    pack opening, embedded); its chips count into the reel, the wrapper
+    and strip fall away, its four cards lie in a heap: **ADD** files them
+    into your case (into the CARDS key). Then the next packet, or three
+    cards again.
+- **Console:** SHOP · REDEAL / PLAY / OPEN / ADD · CARDS. SHOP rolls the
+  machine down (LEAVE · HOLD TO BUY · TAKE). CARDS does nothing yet (the
+  collection, unbuilt).
 
 ## What the owner has made clear (keep to these)
 

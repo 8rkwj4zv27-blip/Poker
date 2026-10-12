@@ -26,9 +26,9 @@ audit's complaints (dashboard rims, clipped result line, chip pile) are gone.
 
 ## Recent changes (newest first)
 
-- 12 Oct (no game change): Career hub rethink with the owner: a wooden
-  tray of three named cards, REDEAL, packets in the tray, ADD; stills in
-  `hub-tray-lab.html` ([brief](career/CAREER_HUB_BRIEF.md), round 6).
+- 12 Oct (no game change): the Career hub rethought and built as a wooden
+  table: three cards, REDEAL, drag about, double tap, the feeder and PLAY;
+  packets in a row, opened, ADD ([brief](career/CAREER_HUB_BRIEF.md), round 6).
 - 11 Oct (no game change): the packet machine, round 3 (owner's notes):
   TUNE fix, select then add, a chip stream, a flat tray; the hub loses
   P.I.P., gains a clean-up spot, one table size, a bag of chips to snip.
@@ -42,10 +42,10 @@ audit's complaints (dashboard rims, clipped result line, chip pile) are gone.
 
 ## Open items (verified, not scheduled)
 
-- The owner's notes on the moving packet machine: https://claude.ai/artifact/WKWLooBRqQNJGYqfbDf1B1
-  (home screen: https://8rkwj4zv27-blip.github.io/Poker/packet-machine/, on main; re-stage it with each change)
-- The owner's pick from the hub tray stills: https://claude.ai/artifact/XTx3Xf8Web82Nc6BQNRw8H
-  (inlay or sunk tray, burnt names or paper tags, OPEN or unlit)
+- The owner's notes on the wooden-table hub with the packet machine: https://claude.ai/artifact/WKWLooBRqQNJGYqfbDf1B1
+  (home screen: https://8rkwj4zv27-blip.github.io/Poker/packet-machine/, once merged; re-stage it with each change)
+- The v0.67.1 hub hooks (`DealerDeck.dealTo` etc., `CoachSet.hub`) are now
+  unused: remove them in the next release that touches those files.
 - Career Hub on small iPhones (375x667, SE/8): BUY IN sits below the
   screen. Fine on the owner's Pro Max.
 - Stale code comments still name archived labs or say "not loaded by the
@@ -69,11 +69,10 @@ own speech bubbles (`claude/tender-dijkstra-zso8dm`).
 ## Next
 
 The shop (packet machine) stays as it is. The Career hub is the wooden
-tray ([brief](career/CAREER_HUB_BRIEF.md), round 6): once the owner picks
-from the stills, build it moving (REDEAL's sweep and toss, swipe up into
-the feeder, PLAY, packets in the tray, the pile and ADD). The owner has
-parked buy-ins, the economy and venues for the hub: don't add them. Then
-the collection book, the collection save, Pattern Book sign-off, the real
-table hand-off; agree how this reshapes Events Releases 2 to 4
+table ([brief](career/CAREER_HUB_BRIEF.md), round 6), built in the lab:
+polish it from the owner's notes. The owner has parked buy-ins, the
+economy and venues for the hub: don't add them. Then the collection book
+(CARDS), the collection save, Pattern Book sign-off, the real table
+hand-off; agree how this reshapes Events Releases 2 to 4
 (`docs/career/EVENTS_PLAN.md`). Still open: the owner's verdict on the
 new Back Room (v0.67.0; minutes per hand unmeasured).

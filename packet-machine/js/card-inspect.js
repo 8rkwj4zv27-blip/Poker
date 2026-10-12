@@ -16,6 +16,9 @@
      key:   { label, sub, press(item, index, api) }   the big key; without
             press it closes. api.consume() posts the card into the machine
             (it's used up) instead of returning it.
+     swipeUp(item, index, api)   optional: flick the card up and it's
+            handed over; api.sendTo(pose) flies it to a point on the screen
+            (the Career hub's feeder) and closes, the source in its place.
    The screen lives on its own top layer, above whatever opened it: the
    card lifts, the house dims a step, and a drawer rises from below with
    a small CRT and the dashboard's key bay. The card does the talking (it
@@ -255,6 +258,23 @@
     c.body.remove(); unhide(item);
     busy = false;
   }
+  // the card flies off to a point on the screen (pose: page coordinates)
+  // and the screen closes; whatever opened it takes the card from there
+  async function sendTo(pose){
+    if (!cur) return;
+    const { c, item } = cur, r = ui.el.getBoundingClientRect();
+    cur = null; busy = true;
+    await faceUp(c);
+    S.cardDeal(); Haptic.tick(10);
+    ui.pips.innerHTML = '';
+    await Promise.all([
+      glide(c.body, { ...pose, x:pose.x - r.left, y:pose.y - r.top }, 300, { easing:ease.out }),
+      tween(240, e => { ui.drawer.style.transform = `translateY(${Math.round(e * 105)}%)`; ui.dim.style.opacity = snap(.66 * (1 - e), .11).toFixed(2); }, ease.in)
+    ]);
+    unhide(item); c.body.remove();
+    ui.el.hidden = true; ui.open = false; busy = false;
+    opts.onClose?.(idx);
+  }
   async function press(){
     if (!ui?.open || busy) return;
     if (!opts.key?.press) return close();
@@ -311,7 +331,7 @@
       // you're carrying it: it follows your finger and banks into the move
       const t = target();
       setBank(cur.c, q.yaw0 + clamp(dx * .35, -50, 50), dy * .5);
-      cur.c.body.set({ x:t.x + dx, y:t.y + clamp(dy * .4, -14, 60), r:clamp(dx * .04, -8, 8) });
+      cur.c.body.set({ x:t.x + dx, y:t.y + clamp(dy * .4, opts.swipeUp ? -90 : -14, 60), r:clamp(dx * .04, -8, 8) });
     }
   }
   function up(e, cancel){
@@ -325,6 +345,12 @@
     else if (q.mode === 'toy' && cur){
       // flick it down and it goes back where it came from
       if (dy > 70 && Math.abs(dx) < dy * .8 && fresh && q.vy > .4){ close(); return; }
+      // flick it up (where that means something) and it's handed over
+      if (opts.swipeUp && dy < -60 && Math.abs(dx) < -dy * .8 && fresh && q.vy < -.4){
+        busy = true;
+        opts.swipeUp(opts.items[idx], idx, { sendTo:p => { busy = false; return sendTo(p); }, close:() => { busy = false; return close(); } });
+        return;
+      }
       // flick it sideways (or carry it far enough) for the next card
       const W = ui.el.clientWidth;
       if (opts.items.length > 1 && Math.abs(dx) > Math.abs(dy) && ((fresh && Math.abs(q.vx) > .45) || Math.abs(dx) > W * .28)){ step(dx < 0 ? 1 : -1); return; }

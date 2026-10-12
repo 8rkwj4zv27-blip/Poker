@@ -613,7 +613,8 @@ the candidate runs alone. Not loaded by the game.
 
 (v0.67.1: `DealerDeck.dealTo`, `collect`, `shuffle`, `squareUp`, `puff`,
 `setCount` let another screen handle its cards with the table's hands;
-used by `career-main-lab.html`.)
+used by the Career hub labs until 12 Oct, when the hub became a wooden
+table with no deck: nothing calls them now.)
 
 The dealer's deck, the owner's order from `deck-lab.html` (recorded in
 `docs/ui/PATTERN_BOOK.md`, Dealer deck; `docs/ui/DEALER_PLAN.md`). A plain
@@ -1101,57 +1102,40 @@ case (the album), chips (riffle), a rare visitor. The pack scene's
 album's inspect shows your history with each design.
 Touch checks: `validation/career-hub-checks.cjs`.
 
-## `career-main-lab.html` — Career main hub, moving (isolated, 11 October 2026)
+## `career-main-lab.html` — the Career hub, a wooden table (isolated, 12 October 2026)
 
-This is round 2 of `docs/career/CAREER_HUB_DESK_PLAN.md`. It uses the same
-host as the pack lab and injects the card faces, `PO`, `EventCards`,
-`CardInspect` and `js/career-main.js` + `css/career-main.css`. The table's
-felt id and dealer station move onto the hub (`build`). The felt sits
-over the cabinet, so a carried card meets the slot.
+Plan: `docs/career/CAREER_HUB_BRIEF.md` (round 6). The hub on its own (the
+packet machine lab runs it with the shop). The same host as the pack lab
+injects the card faces, `PO`, `EventCards`, `CardInspect` and
+`js/career-main.js` + `css/career-main.css`. The felt sits over the
+cabinet, so a carried card meets the feeder.
 
-**Cabinet:** the reel and a slim row of CRT · plain slot · CRT.
-- `screen()`/`screens()` draw the CRTs three ways (TUNE); `say()` shows a
-  short message.
-- The slot's mouth is `--cm-card` wide.
-- `feed` clips a card into the mouth in four teeth; `play()` pays the
-  entry on the reel.
-
-**Cards:** `CardInspect.make` bodies.
-- **Deal:** `dealOne` flies the table's deal (`DealerDeck.dealTo`) to a
-  random `landing()`, on top of the pile. Then the real card appears and
-  turns over.
-- **The clean-up spot** (`.cm-pad`, a printed outline opposite the deck,
-  found by position since it lies under the felt's layers): `cleanUp`
-  slides every card into it, squares them, `DealerDeck.collect`s them,
-  then `squareUp`, `shuffleOrder` (the safe, step-up and stretch cards
-  first, unlabelled) and `DealerDeck.shuffle`; nothing dealt.
-- **Deck thickness:** the case left (`setCount`).
-- **Cards on the felt:** drag to arrange, tap to inspect, drag onto the
-  slot to feed. `raise` keeps whatever was put down or picked up last on
-  top (the shop's things share the count). `landing()` takes the first
-  clear place, or the least covered.
-
-**For the shop (lab):** `window.CareerMain` (`layDown` an opened hand onto
-the felt, `countIn`, `showBank`, `keyEl`, `raise`, `scale`, the wallet)
-and `window.CareerShop`, which, when present, takes the keys (`key`), the
-screens (`screens`), the felt's touches (`out`), clears its things with
-the clean-up (`sweep`) and keeps dealt cards off its pile and bags
-(`keepOff`).
-
-## `hub-tray-lab.html` — the Career hub as a wooden tray, stills (isolated, 12 October 2026)
-
-Plan: `docs/career/CAREER_HUB_BRIEF.md` (round 6). `js/hub-tray.js` +
-`css/hub-tray.css`, built on the hub's parts in `css/career-main.css`
-(rail, cabinet, felt, console) without `js/career-main.js`. Nothing moves.
-- **Build:** the reel and the feeder (a plate over a mouth, no CRTs); the
-  felt with the tray (wood in the rail's colours, the table's stitch round
-  it, three places named REGULAR · STEP UP · BIG ONE); SHOP · REDEAL ·
-  CARDS.
-- **Stills:** `draw` lays out one moment from `look.scene`: the hand, a
-  card hanging from the feeder (PLAY), packets waiting in the places
-  (OPEN, or unlit), an opened packet's cards piled on the felt (ADD).
-  `look.tray` (flush inlay or sunk), `look.names` (burnt in or paper tags).
-  Cards are `CardInspect.make`, packets `POPacket.Packet`.
+- **Cabinet:** the reel and the feeder (`.cm-slot`: a plate over a mouth
+  `--cm-card` wide); no CRTs. `plate()` reads the card in it.
+- **The table:** `.cm-wood` (rail-coloured wood, a soft bevel) with three
+  `.cm-place`s; `measure` sizes the cards to the felt, `placeAt`,
+  `rowAt` (packets: one to a place, more in an overlapping row) and
+  `heapAt` (an opened packet's cards) give each thing its `home`.
+- **Cards:** `CardInspect.make` bodies. `chooseThree` takes one from each
+  third of your case by prize (regular, step up, big one; unlabelled);
+  `tossIn` from off the left, `sweepOff` to the right; `redeal`.
+- **Feeder:** `feed` (a card carried or flicked up, or `swipeUp` out of
+  the inspect screen) takes it half in by `teeth`, clipped at the mouth;
+  `unfeed` (tap it) brings it out; `play` takes it the rest of the way:
+  used up, another tossed into its place (the table hand-off: not wired).
+- **Packets and the heap:** `addPackets` (from the shop: the cards swept
+  away, the packets dropped into the row), `open` hands one to
+  `CareerShop.open`; `layDown` puts the opened cards in a heap, `opened`
+  drops the wrapper and strip off the felt; `add` files the heap into
+  your case through the CARDS key, then the next packet or a fresh deal.
+- **Keys:** `keys()`/`setKey` (lit or unlit, the label flips): SHOP ·
+  REDEAL / PLAY / OPEN / ADD · CARDS. The shop has them while it's out.
+- **Touch:** press and drag anything (it lifts, its shadow drifts),
+  `tap` to inspect, open or unfeed (held 280ms for a second tap); two
+  taps on the felt `tidy` everything home.
+- **For the shop:** `window.CareerMain` (`addPackets`, `layDown`,
+  `opened`, `keys`, `setKey`, `keyEl`, `countIn`, `showBank`, `scale`,
+  the wallet; `state`/`where` for the checks).
 
 ## `vending-lab.html` — the packet machine (isolated, 11 October 2026)
 
@@ -1162,14 +1146,14 @@ opening embedded (`js/pack-opening.js`, `window.PO_EMBED` set first).
 - **Build:** `build` makes the drum (the space from the cabinet's screen
   row to the foot of the felt), the machine (Player Dashboard frame,
   checker case, sunk bays: the window, the tray, the side panel), the chip
-  layer, the hand layer, the hub pile and the opening's stage.
+  layer, the hand layer and the opening's stage.
   `sizeWindow` fits the rows (`GRID` 4 or 5 across, up to 4 rows) and
   gives the tray the rest; `stock` puts a front packet and a spare in each
   column (`ED`: placeholder editions and lamp odds).
 - **Roll:** `roll` steps the machine and the hub's faces a tooth at a time
   (transitions off); `boot` flickers the tube on and lights the keys.
-- **Keys:** `keys()`/`setKey` (lit or unlit, labels flip): SHOP · PLAY ·
-  CARDS on the hub, LEAVE · HOLD TO BUY (SEND) · TAKE while it's down.
+- **Keys:** `keys()` (the hub's `setKey`): the hub's own on the hub,
+  LEAVE · HOLD TO BUY (SEND) · TAKE while it's down.
 - **Measure:** `unmoved` reads the hub's faces where they sit, not where
   the roll has pushed them (so TUNE while the machine is down is safe).
 - **Choose / pay:** `choose` (a packet's first tap `peek`s: key glow, CRT,
@@ -1183,16 +1167,12 @@ opening embedded (`js/pack-opening.js`, `window.PO_EMBED` set first).
   `stick`/`thump` for a stuck one.
 - **Take:** `take`, `liftOut`, the hand's touches (turn, shake, flick or
   drag down → `send`), `putBack`, `putAway`.
-- **Hub:** `rollOut`, `dropPile` (at the table's size, on a `clearSpot`),
-  `pileDown` → `PackOpeningEmbed.openOwned`; `attachOpening` maps the
-  opening's narration onto the hub's CRTs and key; `bag` → `dropBag`,
-  `stow` → `CareerMain.layDown`, `done` leaves the wrapper and strip.
-- **Things on the felt:** `leave` hands a body to the hub's felt;
-  `feltDown/Move/Up` pick up, slide and throw them (off the edge: gone).
-  The bag (`drawBag`, `sticker`): drag across its top corner (`snipTo`)
-  and `spillBag` pours CoinWorld chips onto the felt; `bounceChip` on a
-  tap. `sweep` (from the hub's clean-up) clears the rubbish into the spot
-  and counts the chips and shut bags into the bankroll.
+- **Hub:** `rollOut` hands the packets sent to `CareerMain.addPackets`;
+  `openPacket` (the hub's `CareerShop.open`) runs
+  `PackOpeningEmbed.openOwned` on the felt; `attachOpening`: the opening's
+  key is the hub's middle key, its words go unsaid (no screens), `bag`
+  counts the chips into the reel, `stow` → `CareerMain.layDown`, `done` →
+  `CareerMain.opened`.
 
 ## `pack-opening-lab.html` — Pack Opening V3 (isolated, 11 October 2026)
 

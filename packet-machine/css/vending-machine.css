@@ -145,26 +145,13 @@
 .vm-hand.is-live{ pointer-events:auto; touch-action:none; }
 .vm-dim{ position:absolute; inset:0; background:#06030a; opacity:0; }
 .vm-hand > .vm-stage{ z-index:1; }
-.vm-pile, .vm-open{ position:absolute; z-index:3; pointer-events:none; }
-.vm-pile .po-body{ pointer-events:auto; cursor:pointer; }
+.vm-open{ position:absolute; z-index:3; pointer-events:none; }
 .vm-open{ z-index:5; touch-action:none; user-select:none; -webkit-user-select:none; }
 .vm-open.is-live{ pointer-events:auto; }
 
-/* the things left on the hub's felt */
-.vm-bag, .vm-bit{ image-rendering:pixelated; image-rendering:crisp-edges; cursor:grab; }
-#cm .cm-felt .vm-loose{ cursor:grab; }
-
-/* the hub's keys while the machine is down */
-#cm .cm-keys .vm-long{ font-size:9px; letter-spacing:.02em; }
-/* a key with nothing to do is unlit: its label goes dark, the key itself
-   stays as it is (no greying out) */
-#cm .cm-keys button.vm-unlit{ color:rgba(20,12,8,.32); text-shadow:none; }
-#cm .cm-keys button.vm-flip{ transform:scaleY(.25); }
-#cm .cm-keys .is-ready{ filter:brightness(1.15); }
-/* the opening's moments on the hub: the house lights dip, the CRTs flash */
+/* the opening's moments on the hub: the house lights dip */
 #cm .cm-rail, #cm .cm-cabinet, #cm .cm-console{ transition:filter .3s steps(3); }
 #cm.is-dipped .cm-rail, #cm.is-dipped .cm-cabinet, #cm.is-dipped .cm-console{ filter:brightness(.5); }
-#cm .cm-crt.is-legend{ animation:po-crt 1.3s steps(1) both; }
 .crt .crt-figure.vm-fig-sm{ font-size:10px; }
 
 /* the lab's sheet */

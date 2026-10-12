@@ -121,6 +121,15 @@ panel, red panelling).
   spot (places are tried wholly on the felt; those two are no-go, cards
   and bags only a last resort). The touch checks assert it.
 
+## Round 5 (12 Oct): the hub becomes a wooden table
+
+The hub was rethought (`CAREER_HUB_BRIEF.md`, round 6). The shop is
+unchanged, but what it leaves on the hub changed: the packets sent lie
+on the hub's wooden table in a row (no pile, no clear patch), opened
+there; the chips count straight into the reel (no bag to snip); the
+wrapper and strip fall away; the cards wait in a heap for ADD. The
+clean-up spot, the deck and the CRTs are gone.
+
 ## Open
 
 - The opening reveals four cards now; five things (cards or chips) need
