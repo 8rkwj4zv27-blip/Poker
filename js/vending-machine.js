@@ -88,29 +88,36 @@ window.PO_EMBED = true;
     hubCrt('l', 'IN HAND', String(M.cards)); hubCrt('r', 'WAITING', String(pile.length), 'live');
     return true;
   }
-  function midKey(label, on = true){
-    const b = M.keyEl('play');
-    b.textContent = label; b.disabled = !on;
-    b.classList.toggle('vm-long', label.length > 9);
+  // a key: its label, lit (it'll do something) or unlit (dark, like a
+  // lamp that's off); a new label flips over, a step at a time
+  function setKey(b, label, on = true){
+    b.disabled = !on;
+    b.classList.toggle('vm-unlit', !on);
+    if (b.dataset.label === label) return;
+    b.dataset.label = label;
+    const put = () => { b.textContent = label; b.classList.toggle('vm-long', label.length > 9); };
+    if (PO.reduced || !b.textContent){ put(); return; }
+    b.classList.add('vm-flip');
+    setTimeout(() => { put(); b.classList.remove('vm-flip'); }, 60);
   }
+  const midKey = (label, on = true) => setKey(M.keyEl('play'), label, on);
+  // on the hub: SHOP · PLAY · CARDS; while the machine is down the console
+  // is the machine's: LEAVE · BUY (or SEND) · TAKE
   function keys(){
-    const shop = M.keyEl('shop'), cards = M.keyEl('cards'), down = mode !== 'hub' && mode !== 'opening';
-    shop.classList.toggle('is-pressed', down); shop.classList.toggle('vm-latched', down);
-    shop.disabled = mode === 'rolling' || mode === 'opening' || mode === 'paying' || mode === 'dispensing' || mode === 'stuck';
-    cards.disabled = mode !== 'hub';
-    if (mode === 'hub'){ midKey('PLAY'); return; }
-    if (mode === 'idle'){
-      if (tray.length && !order.length) midKey('TAKE');
-      else midKey(order.length ? 'HOLD TO BUY' : 'PICK ONE', order.length > 0);
-    }
-    if (mode === 'paying' || mode === 'dispensing' || mode === 'stuck' || mode === 'rolling') midKey('…', false);
+    const shop = M.keyEl('shop'), cards = M.keyEl('cards');
+    if (mode === 'hub'){ setKey(shop, 'SHOP'); setKey(cards, 'CARDS'); midKey('PLAY'); return; }
+    if (mode === 'opening'){ setKey(shop, 'SHOP', false); setKey(cards, 'CARDS', false); return; }
+    const still = mode === 'idle' || mode === 'taking';
+    setKey(shop, 'LEAVE', still);
+    setKey(cards, 'TAKE', mode === 'idle' && tray.length > 0);
     if (mode === 'taking') midKey('SEND');
+    else midKey('HOLD TO BUY', mode === 'idle' && order.length > 0);
   }
   // the hub asks first: while the machine is down (or a packet's open) the keys are ours
   function key(k){
     if (k === 'shop'){ if (mode === 'hub') rollIn(); else if (mode === 'idle' || mode === 'taking') rollOut(); return true; }
     if (mode === 'hub') return false;
-    if (k === 'play' && mode === 'idle' && tray.length && !order.length){ take(); return true; }
+    if (k === 'cards' && mode === 'idle' && tray.length){ take(); return true; }
     if (k === 'play' && mode === 'taking'){ send(0, 1.2); return true; }
     return true;   // HOLD TO BUY and the opening's key are held, not clicked (see build)
   }

@@ -42,6 +42,9 @@ async function run(width, height, reducedMotion){
     await tune('stuck', 'next');
     await tap(...await centre('[data-key="shop"]'));
     let s = await until(q => q.mode === 'idle', 'the machine');
+    const labels = () => fr.evaluate(() => ['shop', 'play', 'cards'].map(k => { const b = document.querySelector(`[data-key="${k}"]`); return b.textContent + (b.disabled ? ':off' : ''); }).join(' · '));
+    await page.waitForTimeout(200);
+    assert.equal(await labels(), 'LEAVE · HOLD TO BUY:off · TAKE:off', 'the console is the machine\'s');
     assert.ok(s.k > .3, 'packets a readable size (' + s.k + ')');
     // TUNE while it's down: it stays where it is, and the keys still work
     const spot = async () => fr.evaluate(() => { const v = document.querySelector('.vm').getBoundingClientRect(), r = document.querySelector('.cm-cabinet').getBoundingClientRect(), c = document.querySelector('.cm-console').getBoundingClientRect(); return { top:v.top, bottom:v.bottom, cab:r.bottom, con:c.top }; });
@@ -105,8 +108,9 @@ async function run(width, height, reducedMotion){
     }
     assert.equal(s.tray, 2, 'both packets in the tray');
 
-    // PUSH: one comes out; flicked down, it's sent and the next comes out
-    await tap(...await centre('.vm-flap'));
+    // TAKE (as PUSH): one comes out; flicked down, it's sent and the next comes out
+    assert.equal(await labels(), 'LEAVE · HOLD TO BUY:off · TAKE', 'TAKE lit with packets in the tray');
+    await tap(...await centre('[data-key="cards"]'));
     await until(q => q.inHand, 'a packet in hand');
     await page.waitForTimeout(500);
     const hb = await g.locator('.vm-hand .vm-packet').first().boundingBox();
@@ -120,6 +124,8 @@ async function run(width, height, reducedMotion){
     await page.waitForTimeout(500);
     await tap(...await centre('[data-key="shop"]'));
     s = await until(q => q.mode === 'hub' && q.pile === 2, 'the hub and the pile');
+    await page.waitForTimeout(200);
+    assert.equal(await labels(), 'SHOP · PLAY · CARDS', 'and the hub\'s again');
     await page.waitForTimeout(900);
     assert.match(await g.locator('.cm-crt-r').textContent(), /WAITING\s*2/, 'the screen counts them');
 
@@ -151,6 +157,7 @@ async function run(width, height, reducedMotion){
     await page.waitForTimeout(900);
     const [cx, cy] = await fr.evaluate(() => VendingLab.chipPoint());
     await tap(ifr.x + cx, ifr.y + cy);
+    console.log('after chip', (await st()).mode, cx, cy, JSON.stringify(await fr.evaluate(() => document.querySelector('.vm-pile').getBoundingClientRect())));
 
     // the clean-up spot: every card back in the deck, the chips in the bankroll
     await until(q => !q.busy, 'the hub still');
@@ -161,7 +168,9 @@ async function run(width, height, reducedMotion){
       for (let i = 1; i < 25; i++){ const x = r.left + r.width * ((i * 7) % 10 + .5) / 10, y = r.top + r.height * ((i * 3) % 10 + .5) / 10, e = document.elementFromPoint(x, y); if (!e.closest('.vm-loose, .cm-card, .vm-pile')) return [x, y]; }
       return [r.left + r.width / 2, r.top + r.height / 2];
     });
+    console.log('pad at', qx, qy, (await st()).mode);
     await tap(ifr.x + qx, ifr.y + qy);
+    await page.waitForTimeout(100); console.log('after pad', (await st()).mode);
     s = await until(q => q.cards === 0 && q.chips === 0 && !q.loose.length && !q.busy, 'the felt cleared', 20000);
     assert.equal(s.deck, s.pool, 'every card back in the deck');
     assert.ok(s.wallet > wallet0, 'the chips counted into the bankroll');

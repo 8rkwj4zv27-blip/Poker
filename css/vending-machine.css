@@ -155,9 +155,11 @@
 #cm .cm-felt .vm-loose{ cursor:grab; }
 
 /* the hub's keys while the machine is down */
-#cm .cm-keys .vm-latched{ translate:0 3px; filter:brightness(.82); }
 #cm .cm-keys .vm-long{ font-size:9px; letter-spacing:.02em; }
-#cm .cm-keys button:disabled{ filter:saturate(.4) brightness(.7); }
+/* a key with nothing to do is unlit: its label goes dark, the key itself
+   stays as it is (no greying out) */
+#cm .cm-keys button.vm-unlit{ color:rgba(20,12,8,.32); text-shadow:none; }
+#cm .cm-keys button.vm-flip{ transform:scaleY(.25); }
 #cm .cm-keys .is-ready{ filter:brightness(1.15); }
 /* the opening's moments on the hub: the house lights dip, the CRTs flash */
 #cm .cm-rail, #cm .cm-cabinet, #cm .cm-console{ transition:filter .3s steps(3); }
