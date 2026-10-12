@@ -68,11 +68,12 @@ own speech bubbles (`claude/tender-dijkstra-zso8dm`).
 
 ## Next
 
-The shop (packet machine) stays as it is. The Career hub is the wooden
-table ([brief](career/CAREER_HUB_BRIEF.md), round 6), built in the lab:
-polish it from the owner's notes. The owner has parked buy-ins, the
-economy and venues for the hub: don't add them. Then the collection book
-(CARDS), the collection save, Pattern Book sign-off, the real table
-hand-off; agree how this reshapes Events Releases 2 to 4
+**The card collection (CARDS)**, in a new session: start from
+[`career/COLLECTION_BRIEF.md`](career/COLLECTION_BRIEF.md) (what exists,
+what's been said, the open questions). Talk first, stills first. The hub
+([brief](career/CAREER_HUB_BRIEF.md), round 6) and the shop stay as they
+are. The owner has parked buy-ins, the economy and venues: don't add them.
+Then the collection save (owner's approval), Pattern Book sign-off, the
+real table hand-off; agree how this reshapes Events Releases 2 to 4
 (`docs/career/EVENTS_PLAN.md`). Still open: the owner's verdict on the
 new Back Room (v0.67.0; minutes per hand unmeasured).
