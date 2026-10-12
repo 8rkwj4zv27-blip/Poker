@@ -26,6 +26,7 @@ audit's complaints (dashboard rims, clipped result line, chip pile) are gone.
 
 ## Recent changes (newest first)
 
+- 12 Oct (DEV, no release): invitations Stage 2: owned cards in the save.
 - 12 Oct (DEV only, no release): Career invitations, Stage 1
   ([plan](career/INVITATIONS_PLAN.md)): a 3-player, 10-hand Back Room
   invitation from DEV, HAND n/10, ties shared, paid once; card preview
@@ -70,10 +71,9 @@ own speech bubbles (`claude/tender-dijkstra-zso8dm`).
 **Career is moving to invitations** (owner, 12 Oct): starter packet →
 invitations → play → Career money → more packets. Start from
 [`career/INVITATIONS_PLAN.md`](career/INVITATIONS_PLAN.md): Stage 1 (one
-DEV Back Room invitation) is built and awaits the owner's review, with
-the card preview. Next stages there: invitations in the save, packets,
-the hub in the game. Cards: the hub's own card, coloured by rarity
-(owner, 12 Oct); Stage 2 changes the save, so agree its shape first. Branch
+DEV Back Room invitation) and Stage 2 (cards in the save) are built and
+await the owner's play, with the card preview. Next: Stage 3, packets;
+then the hub. Cards: the hub's card, coloured by rarity (owner). Branch
 `claude/career-hub-cards-design-4e4x89` carries the hub, shop and album
 labs. Workflow: [`WORKFLOW.md`](WORKFLOW.md). Still open: the owner's verdict on the new Back Room (v0.67.0;
 minutes per hand unmeasured).

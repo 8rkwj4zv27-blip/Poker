@@ -2549,6 +2549,11 @@ check('A refused play changes nothing: event or cash table open, unknown card', 
   const { api, storage }=makeContext(openCareer());
   const a=api.give('back-room-invite','common'), b=api.give('back-room-invite','common');
   assert.strictEqual(api.play('inv-nope'),false);
+  // a card for a normal event, pushed in by other means, is never played
+  api.getCareer().invitations.push({ id:'inv-odd', eventId:'back-room-five', rarity:'common', roster:null, addedAt:0 });
+  assert.strictEqual(api.play('inv-odd'),false);
+  assert.strictEqual(api.getCareer().active,null);
+  api.getCareer().invitations.pop();
   api.play(a.id);
   const before=clone(storage.get('felt.career'));
   assert.strictEqual(api.play(b.id),false,'an event is already in progress');

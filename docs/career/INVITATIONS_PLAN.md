@@ -1,7 +1,6 @@
 # Invitations: Career as packets of event invitations (plan)
 
-Written 12 October 2026 with the owner. Status: **Stage 1 done, Stage 2
-in progress** (DEV only, not released). Nothing here is decided beyond what it says the
+Written 12 October 2026 with the owner. Status: **Stages 1 and 2 done** (DEV only, not released). Nothing here is decided beyond what it says the
 owner decided. Builds on the hub, shop, packet opening and album labs
 (`career/HUB_TO_GAME_BRIEF.md`), which are kept as they are.
 
@@ -154,4 +153,24 @@ At most 200 cards. A save without the list is an empty collection.
 9. DEV only. `npm test` green; the real flow in an emulated iPhone: give a
    card, play it, reload mid-event, finish; the count of cards is right
    throughout.
+
+### Results (12 Oct 2026)
+
+- `npm test`: 25 of 25 (and the quick run, 22 of 22, after the review
+  fixes). Eight new checks in `career-events-checks` (132 in all), one in
+  `save-data-checks` (a backup carries the cards).
+- Independent review (commit `c551bdd`): nothing blocking. Four minor
+  findings fixed: a card for a normal event is refused outright; the DEV
+  key plays a Back Room card specifically; GIVE is off while at a table;
+  the preview gives itself a card only when it can play it.
+- Real flow, emulated iPhone (12 of 12): no cards at start, GIVE then PLAY
+  used the card up (the event records it), a reload mid-event brought no
+  card back and resumed hand 5, ten hands paid 2nd ($30) once.
+
+## Next: Stage 3, packets
+
+Starter packet; buying a packet takes the money and stores its cards in
+one write (opening it is presentation only, so a reload never re-rolls);
+the pity packet (three basic Commons, once per shortfall). Prices and
+contents are proposals until simulated.
 

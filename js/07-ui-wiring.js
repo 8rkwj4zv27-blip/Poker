@@ -870,7 +870,7 @@ function giveCareerInvitation(eventId, rarity){
 }
 function careerCanPlayInvitation(id){
   const card = careerInvitationById(id);
-  return !!card && careerCanEnterEvent(card.eventId);
+  return !!card && isCareerInvitation(careerEventById(card.eventId)) && careerCanEnterEvent(card.eventId);
 }
 /* Plays one card: it leaves the collection and its event becomes active in
    ONE felt.career write, so no crash can lose a card or play one twice. */

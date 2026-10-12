@@ -79,7 +79,7 @@
     DEV_MODE = true;
     hide();
     // playing uses up a card (Stage 2): this copy gives itself one first
-    if (careerEventState(eventId) !== 'active' && !careerInvitations().length) giveCareerInvitation(eventId, 'common');
+    if (careerEventState(eventId) === 'available' && !careerInvitations().some(c=>c.eventId === eventId)) giveCareerInvitation(eventId, 'common');
     if (!devPlayCareerInvitation()){
       show();
       root.querySelector('.invl-note').textContent = 'The table is busy: finish or abandon the event in play first.';

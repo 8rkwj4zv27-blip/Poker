@@ -516,7 +516,7 @@ function devGiveCareerInvitation(){
 function devPlayCareerInvitation(){
   if (!DEV_MODE) return false;
   const state = careerEventState(DEV_INVITATION_ID);
-  const card = careerInvitations()[0];
+  const card = careerInvitations().find(c=>c.eventId === DEV_INVITATION_ID);
   const launch = state === 'active' ? continueCareerEvent
     : card && playCareerInvitation(card.id) ? startCareerEvent : null;
   if (!launch) return false;
@@ -721,7 +721,7 @@ function refreshDevPanel(){
     invite.disabled = onTable || !(state === 'active' || (state === 'available' && careerInvitations().length));
   }
   const give = $('dev-career-invite-give');
-  if (give) give.disabled = careerInvitations().length >= CAREER_INVITATIONS_LIMIT;
+  if (give) give.disabled = onTable || careerInvitations().length >= CAREER_INVITATIONS_LIMIT;
   const bankrollInput = $('dev-bankroll-input');
   const bankrollApply = $('dev-bankroll-apply');
   if (bankrollInput){
