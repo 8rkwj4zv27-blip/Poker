@@ -516,7 +516,7 @@
     jolt(b, 2); Haptic.tick(8);
     if (k === 'play') return { play, add:addAll, open:() => open(), redeal }[mid()]();
     // CARDS: the album comes up (collection-book-lab.html); elsewhere not built yet
-    if (window.CareerAlbum) return CareerAlbum.toggle();
+    if (k === 'cards' && window.CareerAlbum) return CareerAlbum.toggle();
     Foil.thud(.3);
   }
 
