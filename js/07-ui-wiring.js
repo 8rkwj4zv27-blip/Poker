@@ -795,6 +795,9 @@ function migrateCareer(raw){
   // The cards the player owns survive any repair of the rest of the save.
   const invitations = normalizeCareerInvitations(raw.invitations);
   if (invitations.length) migrated.invitations = invitations;
+  const packets = normalizeCareerPackets(raw.packets);
+  if (packets.length) migrated.packets = packets;
+  if (raw.starterGiven === true) migrated.starterGiven = true;
   return migrated;
 }
 function isValidCareer(c){
@@ -819,9 +822,17 @@ let career = (function(){
   const migrated = isValidCareer(raw) ? raw : migrateCareer(raw);
   if (raw && !isValidCareer(raw)) Store.set(CAREER_KEY, migrated);
   // A damaged card list is cleaned once; a save without one stays untouched.
-  else if (raw && raw.invitations !== undefined){
-    const clean = normalizeCareerInvitations(raw.invitations);
-    if (JSON.stringify(clean) !== JSON.stringify(raw.invitations)){ raw.invitations = clean; Store.set(CAREER_KEY, raw); }
+  else if (raw){
+    let dirty = false;
+    if (raw.invitations !== undefined){
+      const clean = normalizeCareerInvitations(raw.invitations);
+      if (JSON.stringify(clean) !== JSON.stringify(raw.invitations)){ raw.invitations = clean; dirty = true; }
+    }
+    if (raw.packets !== undefined){
+      const clean = normalizeCareerPackets(raw.packets);
+      if (JSON.stringify(clean) !== JSON.stringify(raw.packets)){ raw.packets = clean; dirty = true; }
+    }
+    if (dirty) Store.set(CAREER_KEY, raw);
   }
   return migrated;
 })();
@@ -855,16 +866,22 @@ function normalizeCareerInvitations(value){
 function careerInvitations(){ return Array.isArray(career.invitations) ? career.invitations : []; }
 function careerInvitationById(id){ return careerInvitations().find(card=>card.id === id) || null; }
 
-/* Gives the player one card. DEV only until packets exist (Stage 3). */
+/* A new card for an event: its opponents are drawn now, so the face shows
+   the people you'll play. Saves nothing. */
+function makeCareerInvitation(event, rarity){
+  return {
+    id:'inv-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2,8),
+    eventId:event.id, rarity, roster:generateCareerRoster(event), addedAt:Date.now()
+  };
+}
+
+/* Gives the player one card (DEV; the game gives cards through packets). */
 function giveCareerInvitation(eventId, rarity){
   const event = careerEventById(eventId);
   if (rarity === undefined && event) rarity = event.rarity;
   if (!isCareerInvitation(event) || !CAREER_INVITATION_RARITIES.includes(rarity)) return null;
   if (careerInvitations().length >= CAREER_INVITATIONS_LIMIT) return null;
-  const card = {
-    id:'inv-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2,8),
-    eventId:event.id, rarity, roster:generateCareerRoster(event), addedAt:Date.now()
-  };
+  const card = makeCareerInvitation(event, rarity);
   career.invitations = careerInvitations().concat([card]);
   saveCareer();
   return card;
@@ -873,6 +890,109 @@ function careerCanPlayInvitation(id){
   const card = careerInvitationById(id);
   return !!card && isCareerInvitation(careerEventById(card.eventId)) && careerCanEnterEvent(card.eventId);
 }
+/* ---------------- PACKETS (Stage 3) ----------------
+   `career.packets` holds the unopened packets, each with its cards already
+   decided (drawn at purchase), so opening is presentation only and a
+   reload can never re-roll one. `career.starterGiven` marks the starter
+   packet, once per Career. Additive and tolerant, like the cards. */
+function normalizeCareerPacket(raw){
+  if (!raw || typeof raw !== 'object' || typeof raw.id !== 'string' || !raw.id) return null;
+  if (!CAREER_PACKETS[raw.kind] || !Array.isArray(raw.cards)) return null;
+  const cards = normalizeCareerInvitations(raw.cards);
+  if (!cards.length || cards.length !== raw.cards.length) return null;
+  return { id:raw.id, kind:raw.kind, cards, at:Number.isSafeInteger(raw.at) && raw.at >= 0 ? raw.at : 0 };
+}
+function normalizeCareerPackets(value){
+  if (!Array.isArray(value)) return [];
+  const seen = new Set();
+  return value.map(normalizeCareerPacket)
+    .filter(packet=>packet && !seen.has(packet.id) && seen.add(packet.id))
+    .slice(0, CAREER_PACKETS_LIMIT);
+}
+function careerPackets(){ return Array.isArray(career.packets) ? career.packets : []; }
+function careerPacketById(id){ return careerPackets().find(packet=>packet.id === id) || null; }
+function careerCheapestPacket(){
+  return Math.min(...Object.values(CAREER_PACKETS).map(p=>p.price).filter(price=>price > 0));
+}
+function rollCareerRarity(table, random){
+  const entries = Object.entries(table), total = entries.reduce((n,[,w])=>n+w,0);
+  let r = random() * total;
+  for (const [rarity, weight] of entries){ if ((r -= weight) < 0) return rarity; }
+  return entries[entries.length - 1][0];
+}
+/* A packet's cards, drawn now: its fixed cards, then one per slot. */
+function rollCareerPacket(kind, random){
+  const def = CAREER_PACKETS[kind];
+  if (!def) return null;
+  const rnd = typeof random === 'function' ? random : Math.random;
+  const cards = (def.fixed || []).map(id=>careerEventById(id)).filter(Boolean)
+    .map(event=>makeCareerInvitation(event, event.rarity));
+  def.slots.forEach(table=>{
+    const rarity = rollCareerRarity(table, rnd);
+    const pool = CAREER_INVITATION_EVENTS.filter(event=>event.rarity === rarity);
+    const event = pool[Math.floor(rnd() * pool.length)] || pool[0];
+    if (event) cards.push(makeCareerInvitation(event, rarity));
+  });
+  // ids made in the same millisecond still differ
+  cards.forEach((card, i)=>{ card.id += '-' + i; });
+  return { id:'pkt-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2,8), kind, cards, at:Date.now() };
+}
+function addCareerPacket(packet){
+  career.packets = careerPackets().concat([packet]);
+}
+/* Buys a packet: the price leaves the bankroll and the packet, its cards
+   already drawn, arrives in ONE write. */
+function buyCareerPacket(kind){
+  const def = CAREER_PACKETS[kind];
+  if (!careerInvitationsOpen() || !def || !(def.price > 0)) return null;
+  if (career.bankroll < def.price || careerPackets().length >= CAREER_PACKETS_LIMIT) return null;
+  const packet = rollCareerPacket(kind);
+  if (!packet || !packet.cards.length) return null;
+  career.bankroll -= def.price;
+  addCareerPacket(packet);
+  saveCareer();
+  return packet;
+}
+/* Opens a packet: its cards join the collection and the packet is gone, in
+   ONE write. Refused if the cards wouldn't fit. */
+function openCareerPacket(id){
+  const packet = careerPacketById(id);
+  if (!careerInvitationsOpen() || !packet) return null;
+  if (careerInvitations().length + packet.cards.length > CAREER_INVITATIONS_LIMIT) return null;
+  career.invitations = careerInvitations().concat(packet.cards);
+  career.packets = careerPackets().filter(other=>other.id !== id);
+  saveCareer();
+  return packet.cards;
+}
+/* The starter packet: once per Career. */
+function giveCareerStarterPacket(){
+  if (!careerInvitationsOpen() || career.starterGiven === true) return null;
+  const packet = rollCareerPacket('starter');
+  career.starterGiven = true;
+  addCareerPacket(packet);
+  saveCareer();
+  return packet;
+}
+/* The pity packet is due only when the player is stuck: no cards, no
+   unopened packet, nothing in play, and too little for a packet. Holding
+   it ends that state, so one shortfall can never earn two. */
+function careerPityDue(){
+  return careerInvitationsOpen() && !careerInvitations().length && !careerPackets().length
+    && !career.active && !career.cash && career.bankroll < careerCheapestPacket();
+}
+function giveCareerPityPacket(){
+  if (!careerPityDue()) return null;
+  const packet = rollCareerPacket('pity');
+  addCareerPacket(packet);
+  saveCareer();
+  return packet;
+}
+/* What the hub calls on each visit: the starter packet the first time,
+   the pity packet when stuck. Returns what was given, if anything. */
+function careerHubArrivals(){
+  return [giveCareerStarterPacket(), giveCareerPityPacket()].filter(Boolean);
+}
+
 /* Plays one card: it leaves the collection and its event becomes active in
    ONE felt.career write, so no crash can lose a card or play one twice. */
 function playCareerInvitation(id){

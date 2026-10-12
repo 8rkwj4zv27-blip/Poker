@@ -221,3 +221,28 @@ Back Room, Face to Face, Closing Time and one Uncommon. **Pity packet**
 (three random Commons): given when you hold no cards, no unopened packet,
 no event in progress, and less than the cheapest packet; holding it ends
 the shortfall, so it can't be given twice for one.
+
+## Stage 3: packets (overnight run)
+
+**The save:** `career.packets` (unopened packets: kind, the cards inside,
+when) and `career.starterGiven`, inside `felt.career`; additive, no
+version change.
+
+### Acceptance checks
+
+1. A save without packets loads unchanged and isn't rewritten.
+2. Buying takes exactly the price and stores the packet with its cards in
+   **one** write; refused (nothing changes) when the money is short.
+3. A packet's cards are decided at purchase: a reload before opening
+   finds the same cards; opening moves them into your cards in one write
+   and the packet is gone; it can't be opened twice.
+4. A House Packet holds three Commons and one Uncommon or better, each a
+   real invitation event of that rarity.
+5. The starter packet is given once per Career, never again (reloads,
+   visits).
+6. The pity packet is given only when you hold no cards, no unopened
+   packet, have no event or cash table open and less than the cheapest
+   packet; it is never given twice for one shortfall (repeat visits,
+   reloads); a new shortfall later gets a new one.
+7. Damaged packets are dropped on load without touching the rest.
+8. Preview/DEV only; `npm test` green.

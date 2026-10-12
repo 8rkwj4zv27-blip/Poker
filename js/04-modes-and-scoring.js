@@ -535,6 +535,19 @@ const CAREER_INVITATION_EVENTS = Object.freeze([
 const CAREER_INVITATION_RARITIES = Object.freeze(['common','uncommon','rare','legendary']);
 // the most invitations a player can hold (docs/career/INVITATIONS_PLAN.md)
 const CAREER_INVITATIONS_LIMIT = 200;
+/* PACKETS (docs/career/INVITATIONS_PLAN.md, Stage 3; provisional). Each
+   slot is a rarity table (weights); a slot's event is drawn evenly among
+   the invitation events of the rarity rolled. `fixed` cards come first. */
+const CAREER_PACKETS = Object.freeze({
+  house:Object.freeze({ id:'house', name:'HOUSE PACKET', price:150,
+    slots:Object.freeze([{common:1},{common:1},{common:1},{uncommon:78,rare:20,legendary:2}]) }),
+  starter:Object.freeze({ id:'starter', name:'STARTER PACKET', price:0,
+    fixed:Object.freeze(['back-room-invite','face-to-face','closing-time']), slots:Object.freeze([{uncommon:1}]) }),
+  pity:Object.freeze({ id:'pity', name:'PITY PACKET', price:0,
+    slots:Object.freeze([{common:1},{common:1},{common:1}]) })
+});
+// the most unopened packets a player can hold
+const CAREER_PACKETS_LIMIT = 50;
 const CAREER_EVENTS = Object.freeze(CAREER_EVENT_LIST.concat(CAREER_INVITATION_EVENTS).reduce((registry,event)=>{
   registry[event.id] = event;
   return registry;

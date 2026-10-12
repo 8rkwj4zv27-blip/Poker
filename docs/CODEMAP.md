@@ -215,7 +215,9 @@ money function: `enterCareerEvent`, `settleCareerEvent`, `startCareerEvent`,
 `continueCareerEvent`, `startCareerCashSession`/`endCareerCashSession`,
 `saveCareer`; the invitations the player owns (`career.invitations`,
 `giveCareerInvitation`, `playCareerInvitation`: a card is used up in the
-same write that starts its event; `docs/career/INVITATIONS_PLAN.md`). **This is the one place Career's money rules are enforced** —
+same write that starts its event; packets: `buyCareerPacket`,
+`openCareerPacket`, `careerHubArrivals` for the starter and pity packets;
+`docs/career/INVITATIONS_PLAN.md`). **This is the one place Career's money rules are enforced** —
 buy-in debited and persisted before the table exists; settlement guarded
 against duplicate credit; `felt.career` is the sole authoritative ledger.
 Don't duplicate a transaction path elsewhere.

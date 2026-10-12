@@ -568,6 +568,8 @@ function initDevPanel(){
         '<div class="dev-subtitle">3 PLAYERS · 10 HANDS · $60/$30/$15 · PAYS THIS CAREER</div>' +
         '<button id="dev-career-invite-give" type="button">GIVE A BACK ROOM INVITATION</button>' +
         '<button id="dev-career-invite-play" type="button">PLAY AN INVITATION</button>' +
+        '<button id="dev-career-packet-buy" type="button">BUY A HOUSE PACKET ($150)</button>' +
+        '<button id="dev-career-packet-open" type="button">OPEN A PACKET</button>' +
       '</div>' +
       '<div id="dev-career-bankroll">' +
         '<div class="dev-section-title">CAREER BANKROLL</div>' +
@@ -682,6 +684,8 @@ function initDevPanel(){
   $('dev-end-table').onclick = devEndTable;
   $('dev-career-invite-play').onclick = devPlayCareerInvitation;
   $('dev-career-invite-give').onclick = devGiveCareerInvitation;
+  $('dev-career-packet-buy').onclick = ()=>{ buyCareerPacket('house'); refreshDevPanel(); };
+  $('dev-career-packet-open').onclick = ()=>{ const p = careerPackets()[0]; if (p) openCareerPacket(p.id); refreshDevPanel(); };
   const runArcadeDevTest=fn=>()=>{
     fn();
     panel.classList.add('collapsed');
@@ -722,6 +726,9 @@ function refreshDevPanel(){
   }
   const give = $('dev-career-invite-give');
   if (give) give.disabled = onTable || careerInvitations().length >= CAREER_INVITATIONS_LIMIT;
+  const buy = $('dev-career-packet-buy'), open = $('dev-career-packet-open');
+  if (buy) buy.disabled = onTable || careerBankroll() < CAREER_PACKETS.house.price;
+  if (open){ open.disabled = onTable || !careerPackets().length; open.textContent = 'OPEN A PACKET (' + careerPackets().length + ' HELD)'; }
   const bankrollInput = $('dev-bankroll-input');
   const bankrollApply = $('dev-bankroll-apply');
   if (bankrollInput){
