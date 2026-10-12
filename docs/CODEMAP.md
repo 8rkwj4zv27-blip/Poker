@@ -1282,3 +1282,24 @@ show where you are; `key.press` with `api.consume()` uses a card up.
 The pack scene opens it from the hand and from the card just turned.
 Also owns `.ec-lip`, the brass lip.
 Touch checks: `validation/pack-opening-checks.cjs`.
+
+## `invitation-cards-lab.html` — invitation card preview (isolated, 12 October 2026)
+
+Plan: `docs/career/INVITATIONS_PLAN.md`. The proposed 13-event catalogue as
+placeholder cards, over the real game (phone-first; host
+`js/invitation-cards-lab-host.js`, injected `js/invitation-cards-lab.js` +
+`css/invitation-cards-lab.css`, in-memory storage).
+
+- `js/invitation-cards.js` (`window.InvitationCards`): `CATALOGUE` (the
+  proposed events; `live` names a real definition, the rest are
+  provisional, unknowns TBC), `cardHTML(entry)` (one layout on the event
+  cards' stock, `css/pack-ritual-cards.css`, plus
+  `css/invitation-cards.css`; rarity as `data-inv-rarity` so the stock's
+  rare/legendary rebuilds don't apply; The Golden Ticket `data-gold`),
+  `describe(entry)` (the detail view's terms).
+- `js/invitation-art.js` (`window.InvitationArt`): the placeholder
+  symbols, one per `art` key, kept apart from the words so the owner's
+  artwork replaces them one by one.
+- Only an event the game really has offers PLAY (the Back Room
+  invitation, through `devPlayCareerInvitation` with DEV switched on in
+  the copy). Every other card launches nothing.
