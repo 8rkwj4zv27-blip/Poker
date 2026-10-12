@@ -68,11 +68,10 @@ own speech bubbles (`claude/tender-dijkstra-zso8dm`).
 
 ## Next
 
-**The card album (CARDS)**: the owner's verdict on round 3
-(https://claude.ai/artifact/USQHuBYFeXwdJDVi8g7HEV): LIFT or THROW,
-FLAT or CURL, the sleeves, hold-to-play into the reader. How the book is organised and the
-inspect rework are open: don't design them unasked. The hub and the shop
-stay as they are; buy-ins, the economy and venues are parked. Then the collection save (owner's approval), Pattern Book sign-off, the
-real table hand-off; agree how this reshapes Events Releases 2 to 4
-(`docs/career/EVENTS_PLAN.md`). Still open: the owner's verdict on the
-new Back Room (v0.67.0; minutes per hand unmeasured).
+**From the labs to the game**, in new sessions: start from
+[`career/HUB_TO_GAME_BRIEF.md`](career/HUB_TO_GAME_BRIEF.md). Three jobs,
+one each: the cards and their events (ask what's unparked first), the
+inspect screen, then the hub into the game (plan first; the save needs
+the owner's approval). The hub, shop and album are liked: don't rework
+them. Still open: the owner's verdict on the new Back Room (v0.67.0;
+minutes per hand unmeasured).

@@ -1,5 +1,7 @@
 # The card collection (CARDS): brief for a new session
 
+> **Historical.** The collection was designed from this brief as the card album (12 October 2026): see `COLLECTION_BOOK_PLAN.md`, and `HUB_TO_GAME_BRIEF.md` for what's next. Index of current docs: `docs/README.md`.
+
 12 October 2026. A handover to start the collection screen with the
 owner. **Talk first; nothing here is decided** except where it says the
 owner decided it. The Career hub and the shop are in a good place and are
