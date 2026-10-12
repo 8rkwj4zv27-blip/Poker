@@ -126,6 +126,12 @@ async function run(width, height, reducedMotion){
     s = await until(q => q.mode === 'hub' && q.pile === 2, 'the hub and the pile');
     await page.waitForTimeout(200);
     assert.equal(await labels(), 'SHOP · PLAY · CARDS', 'and the hub\'s again');
+    // the pile lands clear of the deck and the clean-up spot
+    const clash = await fr.evaluate(() => {
+      const p = document.querySelector('.vm-pile').getBoundingClientRect();
+      return ['.cm-pad', '.cm-station'].filter(q => { const r = document.querySelector(q).getBoundingClientRect(); return p.left < r.right && p.right > r.left && p.top < r.bottom && p.bottom > r.top; });
+    });
+    assert.deepEqual(clash, [], 'the pile is off the deck and the clean-up spot');
     await page.waitForTimeout(900);
     assert.match(await g.locator('.cm-crt-r').textContent(), /WAITING\s*2/, 'the screen counts them');
 

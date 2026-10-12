@@ -1106,17 +1106,22 @@ window.PO_EMBED = true;
   }
   // somewhere on the felt clear of the cards out, the deck, the clean-up
   // spot, the packets waiting and the bags (f: the felt where it sits still)
+  // (the deck and the clean-up spot are never covered if there's any way
+  // round it; cards, bags and the pile only as a last resort. Every place
+  // tried lies wholly on the felt, so nothing moves it after it's chosen.)
   function clearSpot(w, h, f = M.felt.getBoundingClientRect()){
     const W = f.width || f.w, H = f.height || f.h, o = M.felt.getBoundingClientRect();
-    const busy = [...M.felt.querySelectorAll('.cm-card, .cm-pad, .cm-station, .vm-bag')].map(e => e.getBoundingClientRect())
-      .map(r => ({ left:r.left - o.left, right:r.right - o.left, top:r.top - o.top, bottom:r.bottom - o.top }));
-    if (pileKids.length){ const r = pileEl.getBoundingClientRect(); busy.push({ left:r.left - o.left, right:r.right - o.left, top:r.top - o.top, bottom:r.bottom - o.top }); }
-    let best = null, least = 1e9;
-    for (let i = 0; i < 40; i++){
-      const x = rr(w * .7, W - w * .7), y = rr(h * .7, H - h * .7);
-      const over = busy.reduce((a, r) => a + Math.max(0, Math.min(x + w / 2, r.right) - Math.max(x - w / 2, r.left)) * Math.max(0, Math.min(y + h / 2, r.bottom) - Math.max(y - h / 2, r.top)), 0);
-      if (over < least){ least = over; best = { x, y }; }
-      if (!over) break;
+    const box = (r, m = 0) => ({ left:r.left - o.left - m, right:r.right - o.left + m, top:r.top - o.top - m, bottom:r.bottom - o.top + m });
+    const hard = [...M.felt.querySelectorAll('.cm-pad, .cm-station')].map(e => box(e.getBoundingClientRect(), 8));
+    const soft = [...M.felt.querySelectorAll('.cm-card, .vm-bag')].map(e => box(e.getBoundingClientRect()));
+    if (pileKids.length) soft.push(box(pileEl.getBoundingClientRect()));
+    const over = (x, y, list) => list.reduce((a, r) => a + Math.max(0, Math.min(x + w / 2, r.right) - Math.max(x - w / 2, r.left)) * Math.max(0, Math.min(y + h / 2, r.bottom) - Math.max(y - h / 2, r.top)), 0);
+    const x0 = Math.min(w / 2, W / 2), x1 = Math.max(W - w / 2, W / 2), y0 = Math.min(h / 2, H / 2), y1 = Math.max(H - h / 2, H / 2);
+    let best = null, least = Infinity;
+    for (let i = 0; i < 80; i++){
+      const x = rr(x0, x1), y = rr(y0, y1), score = over(x, y, hard) * 1000 + over(x, y, soft);
+      if (score < least){ least = score; best = { x, y }; }
+      if (!score) break;
     }
     return best;
   }
