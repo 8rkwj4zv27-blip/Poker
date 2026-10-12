@@ -73,9 +73,8 @@ The shop (packet machine) is in a good place. The Career hub is to be
 rethought with the owner in a new session: start from
 [`career/CAREER_HUB_BRIEF.md`](career/CAREER_HUB_BRIEF.md) (what's built,
 what was rejected, the open questions). Talk first; nothing is decided.
-Then the collection book; then into Career: the collection save, a pack
-economy simulation, Pattern Book sign-off for the new parts, the real
-table hand-off. Agree with the owner how this reshapes Events Releases 2
+Then the collection book, the collection save, a pack economy simulation,
+Pattern Book sign-off, the real table hand-off. Agree with the owner how this reshapes Events Releases 2
 to 4 (`docs/career/EVENTS_PLAN.md`) before building either. Still open:
 the owner's verdict on the new Back Room (v0.67.0; minutes per hand
 unmeasured).
