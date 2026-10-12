@@ -1153,6 +1153,8 @@ opening embedded (`js/pack-opening.js`, `window.PO_EMBED` set first).
   column (`ED`: placeholder editions and lamp odds).
 - **Roll:** `roll` steps the machine and the hub's faces a tooth at a time
   (transitions off); `boot` flickers the tube on and lights the keys.
+- **Keys:** `keys()`/`setKey` (lit or unlit, labels flip): SHOP · PLAY ·
+  CARDS on the hub, LEAVE · HOLD TO BUY (SEND) · TAKE while it's down.
 - **Measure:** `unmoved` reads the hub's faces where they sit, not where
   the roll has pushed them (so TUNE while the machine is down is safe).
 - **Choose / pay:** `choose` (a packet's first tap `peek`s: key glow, CRT,

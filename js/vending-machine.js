@@ -1290,8 +1290,8 @@ window.PO_EMBED = true;
       },
       chipPoint(){
         const at = c => [c.x, c.y - c.z - c.d * .5];
-        const c = chips.find(q => { const [x, y] = at(q), e = document.elementFromPoint(x, y); return q.state === 'rest' && !e.closest('.vm-pile, .cm-card, .vm-loose, .cm-station, .cm-pad'); }) || chips[0];
-        return at(c);
+        const c = chips.find(q => { const [x, y] = at(q), e = document.elementFromPoint(x, y); return q.state === 'rest' && !e.closest('.vm-pile, .cm-card, .vm-loose, .cm-station, .cm-pad'); });
+        return c ? at(c) : null;
       }
     };
   }

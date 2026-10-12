@@ -111,6 +111,12 @@ panel, red panelling).
 - On the home screen: `packet-machine/` on main (a self-contained copy,
   re-staged with each change): https://8rkwj4zv27-blip.github.io/Poker/packet-machine/
 
+- The console while the machine is down is the machine's: LEAVE (rolls
+  it away) · HOLD TO BUY (SEND with a packet in hand) · TAKE (as PUSH).
+  No latched SHOP, no greyed keys: a key with nothing to do is unlit (its
+  label goes dark); labels flip over as the machine comes and goes. The
+  red CLEAR stays on the machine.
+
 ## Open
 
 - The opening reveals four cards now; five things (cards or chips) need

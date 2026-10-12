@@ -155,9 +155,9 @@ async function run(width, height, reducedMotion){
     await touch.end();
     s = await until(q => q.loose.includes('bag:open') && q.chips > 0, 'the chips spilled');
     await page.waitForTimeout(900);
-    const [cx, cy] = await fr.evaluate(() => VendingLab.chipPoint());
-    await tap(ifr.x + cx, ifr.y + cy);
-    console.log('after chip', (await st()).mode, cx, cy, JSON.stringify(await fr.evaluate(() => document.querySelector('.vm-pile').getBoundingClientRect())));
+    // a chip in the clear (if every one landed under something, there's none to tap)
+    const cp = await fr.evaluate(() => VendingLab.chipPoint());
+    if (cp) await tap(ifr.x + cp[0], ifr.y + cp[1]);
 
     // the clean-up spot: every card back in the deck, the chips in the bankroll
     await until(q => !q.busy, 'the hub still');
@@ -168,9 +168,7 @@ async function run(width, height, reducedMotion){
       for (let i = 1; i < 25; i++){ const x = r.left + r.width * ((i * 7) % 10 + .5) / 10, y = r.top + r.height * ((i * 3) % 10 + .5) / 10, e = document.elementFromPoint(x, y); if (!e.closest('.vm-loose, .cm-card, .vm-pile')) return [x, y]; }
       return [r.left + r.width / 2, r.top + r.height / 2];
     });
-    console.log('pad at', qx, qy, (await st()).mode);
     await tap(ifr.x + qx, ifr.y + qy);
-    await page.waitForTimeout(100); console.log('after pad', (await st()).mode);
     s = await until(q => q.cards === 0 && q.chips === 0 && !q.loose.length && !q.busy, 'the felt cleared', 20000);
     assert.equal(s.deck, s.pool, 'every card back in the deck');
     assert.ok(s.wallet > wallet0, 'the chips counted into the bankroll');
