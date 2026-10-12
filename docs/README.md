@@ -30,7 +30,7 @@ Last sorted: 7 October 2026 (v0.66.1).
 | [`career/CAREER_HUB_DESK_PLAN.md`](career/CAREER_HUB_DESK_PLAN.md) | The Career desk: Career's main screen as a felt desk (slot, three cards, matchbooks, lamp, bell, shop, album). Rejected in round 2; stills of a simpler hub with the owner |
 | [`career/VENDING_PLAN.md`](career/VENDING_PLAN.md) | The packet machine: Career's shop as a vending machine that rolls in on the wheel; the moving lab |
 | [`career/CAREER_HUB_BRIEF.md`](career/CAREER_HUB_BRIEF.md) | The Career hub: every round, the owner's verdicts, and the hub as built (the tray is the house's, the felt is yours) |
-| [`career/COLLECTION_BOOK_PLAN.md`](career/COLLECTION_BOOK_PLAN.md) | The card album: the owner's decisions (a leather-bound book, four rows of four, bright / dim / empty), the stills lab and what's open |
+| [`career/COLLECTION_BOOK_PLAN.md`](career/COLLECTION_BOOK_PLAN.md) | The card album: the owner's decisions (a leather-bound book over the table, three rows of three, bright / dim / empty), the moving lab and what's open |
 | [`career/COLLECTION_BRIEF.md`](career/COLLECTION_BRIEF.md) | The card collection (CARDS): what exists, what's been said, the open questions; the brief for the next session |
 | [`career/PACK_OPENING_V3_PLAN.md`](career/PACK_OPENING_V3_PLAN.md) | Pack opening rebuild ("The Squeeze"): audit, reference games, plan; approved, slice 1 built |
 | [`career/PACKS_PLAN.md`](career/PACKS_PLAN.md) | Career as packs of event cards: a vending machine, the rip, the ticket case (8 Oct 2026). Visual lab first (`pack-lab.html`) |

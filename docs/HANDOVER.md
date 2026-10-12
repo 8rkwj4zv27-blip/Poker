@@ -26,8 +26,8 @@ audit's complaints (dashboard rims, clipped result line, chip pile) are gone.
 
 ## Recent changes (newest first)
 
-- 12 Oct (no game change): the card album, stills (`collection-book-lab.html`,
-  [plan](career/COLLECTION_BOOK_PLAN.md)): a leather-bound book, 4 × 4.
+- 12 Oct (no game change): the card album (`collection-book-lab.html`,
+  [plan](career/COLLECTION_BOOK_PLAN.md)): a leather-bound book, 3 × 3, moving.
 - 12 Oct (no game change): the Career hub rethought and built: the tray
   is the house's three cards (REDEAL), the felt is yours: packets torn open
   into one deck, its reveal, throw, tidy ([brief](career/CAREER_HUB_BRIEF.md), round 6).
@@ -68,12 +68,11 @@ own speech bubbles (`claude/tender-dijkstra-zso8dm`).
 
 ## Next
 
-**The card album (CARDS)**: the owner's look at the stills
-(https://claude.ai/artifact/USQHuBYFeXwdJDVi8g7HEV), then the
-moving lab (the drop, the cover, page turns, tap to light, tap to pull
-out). How the book is organised is open: don't design it unasked. The
-hub and the shop stay as they are; buy-ins, the economy and venues are
-parked. Then the collection save (owner's approval), Pattern Book sign-off, the
+**The card album (CARDS)**: the owner's verdict on round 2, moving
+(https://claude.ai/artifact/USQHuBYFeXwdJDVi8g7HEV): size, look, the
+drop, the turns, corners or sleeves. How the book is organised and the
+inspect rework are open: don't design them unasked. The hub and the shop
+stay as they are; buy-ins, the economy and venues are parked. Then the collection save (owner's approval), Pattern Book sign-off, the
 real table hand-off; agree how this reshapes Events Releases 2 to 4
 (`docs/career/EVENTS_PLAN.md`). Still open: the owner's verdict on the
 new Back Room (v0.67.0; minutes per hand unmeasured).

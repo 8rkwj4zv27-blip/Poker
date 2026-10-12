@@ -1144,16 +1144,29 @@ meets the feeder.
   `setKey`, `keyEl`, `countIn`, `showBank`, `scale`, the wallet;
   `state`/`where` for the checks).
 
-## `collection-book-lab.html` — the card album, stills (isolated, 12 October 2026)
+## `collection-book-lab.html` — the card album (isolated, 12 October 2026)
 
-Plan: `docs/career/COLLECTION_BOOK_PLAN.md`. The hub (`career-main-lab.html`'s
-injections) plus `js/collection-book-stills.js` + `css/collection-book.css`.
-Nothing moves: `STILLS` (closed, page 1, a card lit, turning, page 3) and
-`frame` (`felt`: sized to its four rows inside `.cm-felt`; `full`: the
-whole frame). `album` is 5 pages × 16 placeholder slots (`have`, `used`,
-`empty`); `place()` sizes the cards (`--cb-cw`, `--cb-k`) to fit four
-across. Its own TUNE key and sheet sit in `#home` (the hub's TUNE is
-hidden); a swipe steps the stills.
+Plan: `docs/career/COLLECTION_BOOK_PLAN.md` (round 2). The hub
+(`career-main-lab.html`'s injections) plus `js/collection-book.js` +
+`css/collection-book.css` (`window.CareerAlbum`). The CARDS key calls
+`CareerAlbum.toggle()` (`key()` in `js/career-main.js`), and `keys()`
+leaves the keys alone while it's `out`.
+
+- **Where:** `.cb-layer` in `#cm`, before the console (same z, so the book
+  comes up from behind it); `place()` fits it over the felt, from the
+  cabinet to the console, and sizes the 3 × 3 cards (`--cb-cw`, `--cb-k`).
+  `pose(y, lift)` moves the book and its shadow; `y0` is out of sight.
+- **In and out:** `bringUp` (rise, lift, drop, `thunk`), `putAway` (`shut`,
+  lift, sink); `darkKeys`.
+- **Cover and pages:** `openCover`/`shut`/`coverAt`; `turnAt(p, t)` (t 0
+  flat to 1 on the binding, with `.cb-cast` on the next page),
+  `finishTurn`, `riffle` (a tab), `stackPages`.
+- **Cards:** `light`/`unlight`; `takeOut` opens `CardInspect` through the
+  page's cards; with `sleeves`, `slide` pulls the face out of its sleeve
+  first and tucks it back after (`onClose`).
+- **Touch:** `down`/`move`/`up` on the layer: a drag on the cover or a
+  page turns it, a tap opens, riffles, lights or takes out.
+- `album`: 5 pages × 9 placeholder slots (`have`, `used`, `empty`).
 
 ## `vending-lab.html` — the packet machine (isolated, 11 October 2026)
 

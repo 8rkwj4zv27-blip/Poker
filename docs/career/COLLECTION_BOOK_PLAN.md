@@ -1,7 +1,7 @@
 # The card album (CARDS): plan
 
 12 October 2026. Started from [`COLLECTION_BRIEF.md`](COLLECTION_BRIEF.md).
-Lab: `collection-book-lab.html` (stills, nothing moves yet).
+Lab: `collection-book-lab.html` (moving, round 2).
 Owner's link: https://claude.ai/artifact/USQHuBYFeXwdJDVi8g7HEV
 (re-stage with `validation/tools/lab-bundle.js` and republish to it).
 
@@ -25,25 +25,35 @@ Owner's link: https://claude.ai/artifact/USQHuBYFeXwdJDVi8g7HEV
 - Pulling a card onto the felt takes it out of what the house deals:
   accepted ("okay"). Not in the stills.
 
-## The stills (round 1)
+## Round 1: stills (owner's notes, 12 Oct)
 
-Each one on the felt (the hub showing round the book) or full screen;
-the owner asked to see both. TUNE picks the still; a swipe steps on.
+Five stills, on the felt or full screen. The owner: full screen "looks
+shit", but on the felt was too small; the page turn went under the tabs;
+the gold corners were too much; 4 × 4 too many; the book too noisy.
 
-1. Just landed, closed: cognac leather, spine bands, gilt tooling, brass
-   corners, a spade plaque (no words).
-2. Page 1: velvet page, sunk slots with brass photo corners, gilt page
-   edges, tab 1 raised.
-3. A card lit after the first tap.
-4. A page halfway through turning, page 2 under it.
-5. Page 3, tab 3 raised.
+## Round 2: moving (built 12 Oct)
 
-The 80 cards are placeholders (fuller at the front, emptier at the back).
+- **Size:** over the table and felt, from under INSERT CARD to above the
+  keys; the reel, the feeder and the keys stay in view.
+- **3 × 3**, the cards about the size of the tray's.
+- **Calmer:** plain leather, one stitch line, a flat velvet page, quiet
+  gilt edges, leather tabs with the number pressed in, a blind-pressed
+  spade on the cover; the corners holding each card are leather.
+- **Motion:** CARDS: up from behind the console, lifting, then dropped
+  (thunk, the cabinet jolts, dust). Drag the cover open (or tap). Drag a
+  page left: it follows the finger and lifts over the tabs; past halfway
+  (or flicked) it falls over, else drops back; drag right to turn back.
+  A tab: the pages riffle to it. Tap a card: it lifts and lights; again:
+  out to the inspect screen (as it is), back into its place after. CARDS
+  again: the cover shuts, the book lifts and sinks away. SHOP and the
+  middle key are dark while it's out.
+- **Option (TUNE): SLEEVES:** each card in a thin plastic sleeve; it slides
+  out of the top before inspect and is tucked back in after.
 
 ## Open
 
-- Felt or full screen; the leather, the velvet, the tabs; how pages turn.
-- How closing works (the cover shut and the book sinks back?), especially
-  full screen, where the CARDS key is covered.
-- The organisation of the book (see above); then the moving lab, the save
-  (owner's approval) and Pattern Book sign-off for the book as a new part.
+- The owner's verdict on round 2: size, look, the drop, the turns,
+  corners or sleeves.
+- How the book is organised (see above); the inspect screen's rework and
+  the card's history; then the save (owner's approval) and Pattern Book
+  sign-off for the book as a new part.

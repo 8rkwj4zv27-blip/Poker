@@ -94,9 +94,10 @@
   const keyEl = k => $(`[data-key="${k}"]`);
   const MID = { play:'PLAY', add:'ADD TO\nCOLLECTION', open:'OPEN', redeal:'REDEAL' };
   const mid = () => fed ? 'play' : of('card').length ? 'add' : of('pk').length ? 'open' : 'redeal';
-  // (the shop has the keys while it's out, and while a packet is torn open)
+  // (the shop has the keys while it's out, and while a packet is torn open;
+  // the album darkens them while it's out)
   function keys(){
-    if (window.CareerShop?.out) return;
+    if (window.CareerShop?.out || window.CareerAlbum?.out) return;
     setKey(keyEl('shop'), 'SHOP'); setKey(keyEl('cards'), 'CARDS');
     setKey(keyEl('play'), MID[mid()]);
     keyEl('play').classList.toggle('is-ready', !!fed);
@@ -501,7 +502,8 @@
     if (window.CareerShop?.key(k, b)) return;   // the shop's keys while it's out
     jolt(b, 2); Haptic.tick(8);
     if (k === 'play') return { play, add:addAll, open:() => open(), redeal }[mid()]();
-    // CARDS (the collection rolls up from below): not built yet
+    // CARDS: the album comes up (collection-book-lab.html); elsewhere not built yet
+    if (window.CareerAlbum) return CareerAlbum.toggle();
     Foil.thud(.3);
   }
 
