@@ -1160,7 +1160,8 @@ leaves the keys alone while it's `out`.
   lift, sink); `darkKeys`.
 - **Cover and pages:** `openCover`/`shut`/`coverAt`; `turnAt(p, t)` (t 0
   flat to 1 on the binding, with `.cb-cast` on the next page),
-  `finishTurn`, `riffle` (a tab), `stackPages`.
+  `finishTurn`, `riffle` (a tab), `tapTurn` (the pull tabs, `.cb-turn`),
+  `stackPages` (turned pages `hidden`: `.cb-page[hidden]` must stay `display:none`).
 - **Cards:** `light`/`unlight`; `takeOut` opens `CardInspect` through the
   page's cards; with `sleeves`, `slide` pulls the face out of its sleeve
   first and tucks it back after (`onClose`).

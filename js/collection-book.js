@@ -10,7 +10,8 @@
      but used up is very dim; one not found yet is an empty slot.
    - Drag a page left and it follows your finger, lifting over the tabs;
      past halfway it falls over, short of that it drops back. Drag right
-     for the page before. Tap a numbered tab: the pages riffle over to it.
+     for the page before. Or tap the pull tab on the right (on a page) or
+     the left (back one). Tap a numbered tab: the pages riffle over to it.
    - Tap a card: it lifts a little and lights. Tap it again: it comes out
      to the inspect screen, and goes back into its place when you're done.
      With SLEEVES (the lab's option) each card sits in a thin plastic
@@ -66,6 +67,8 @@
         <div class="cb-board"><i class="cb-hinge"></i></div>
         <div class="cb-tabs">${Array.from({ length:PAGES }, (_, i) => `<b class="cb-tab" data-p="${i}">${i + 1}</b>`).join('')}</div>
         <div class="cb-block"><div class="cb-stack"></div><div class="cb-leaves"></div></div>
+        <button class="cb-turn is-back" type="button" aria-label="Back a page"></button>
+        <button class="cb-turn is-next" type="button" aria-label="Next page"></button>
         <div class="cb-cover"><i class="cb-spine"></i><b class="cb-mark">&spades;</b></div>
       </div>
       <div class="cb-fx"></div>`;
@@ -117,6 +120,8 @@
     });
     castEl.style.opacity = '0';
     tabsEl.querySelectorAll('.cb-tab').forEach(t => t.classList.toggle('is-at', +t.dataset.p === cur));
+    layer.querySelector('.cb-turn.is-back').classList.toggle('is-off', cur === 0);
+    layer.querySelector('.cb-turn.is-next').classList.toggle('is-off', cur === PAGES - 1);
   }
 
   /* ---------------- where it sits: over the table ---------------- */
@@ -231,6 +236,7 @@
   // over (forward) from t, or back down (dir -1) from t
   async function finishTurn(p, from, over, ms = 300){
     const to = over ? 1 : 0;
+    mode = 'moving';
     if (over) Foil.flutter();
     await tween(PO.reduced ? 1 : ms * Math.abs(to - from) + 40, e => turnAt(p, mix(from, to, e)), over ? ease.in : ease.out);
     if (over === (p === cur)){
@@ -239,6 +245,7 @@
       Foil.rustle(.25); Haptic.tick(6);
     }
     stackPages();
+    mode = 'open';
   }
   // a tab: the pages riffle over (or back) one after another
   async function riffle(to){
@@ -255,6 +262,16 @@
     })));
     cur = to; stackPages();
     Foil.rustle(.3); Haptic.tick(8);
+    mode = 'open';
+  }
+  // a pull tab: one page on, or one back, turned for you
+  async function tapTurn(d){
+    if (d > 0 ? cur === PAGES - 1 : cur === 0){ Foil.thud(.25); Haptic.tick(6); return; }
+    mode = 'moving';
+    unlight();
+    Foil.rustle(.2);
+    if (d > 0) await finishTurn(cur, 0, true, 420);
+    else { turnAt(cur - 1, 1); await finishTurn(cur - 1, 1, false, 420); }
     mode = 'open';
   }
   const range = (a, b) => Array.from({ length:b - a }, (_, i) => a + i);
@@ -311,7 +328,7 @@
   let ptr = null;
   function down(e){
     if (ptr || mode === 'moving' || mode === 'away' || CardInspect.isOpen) return;
-    const what = mode === 'closed' ? 'cover' : e.target.closest('.cb-tab') ? 'tab' : e.target.closest('.cb-block') ? 'page' : null;
+    const what = mode === 'closed' ? 'cover' : e.target.closest('.cb-turn') ? 'turn' : e.target.closest('.cb-tab') ? 'tab' : e.target.closest('.cb-block') ? 'page' : null;
     if (!what) return;
     ptr = { id:e.pointerId, x:e.clientX, y:e.clientY, t:performance.now(), what, el:e.target, drag:null, vx:0, lx:e.clientX, lt:performance.now() };
     layer.setPointerCapture?.(e.pointerId);
@@ -351,6 +368,7 @@
     if (cancel || performance.now() - p.t > 600) return;
     // a tap
     if (p.what === 'cover') return openCover();
+    if (p.what === 'turn') return tapTurn(p.el.closest('.cb-turn').classList.contains('is-next') ? 1 : -1);
     if (p.what === 'tab') return riffle(+p.el.closest('.cb-tab').dataset.p);
     const slot = p.el.closest('.cb-slot');
     if (!slot || slot.classList.contains('is-empty')) return unlight();

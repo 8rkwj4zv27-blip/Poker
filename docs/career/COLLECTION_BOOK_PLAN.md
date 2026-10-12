@@ -50,6 +50,14 @@ the gold corners were too much; 4 × 4 too many; the book too noisy.
 - **Option (TUNE): SLEEVES:** each card in a thin plastic sleeve; it slides
   out of the top before inspect and is tucked back in after.
 
+## Round 2, fixes (owner's notes, 12 Oct)
+
+The owner liked the book, the sleeves and inspect. Fixed: a turned page
+stayed on screen (its `hidden` was overridden by `display:grid`), so the
+next page turned underneath it and taps hit the old page's cards. Added:
+a pull tab each side of the page (left: back a page, right: on a page),
+dark at the first and last page.
+
 ## Open
 
 - The owner's verdict on round 2: size, look, the drop, the turns,

@@ -38,6 +38,7 @@
 .cb-leaves{ position:absolute; inset:0 var(--cb-stack) var(--cb-stack) 0; perspective:1400px; perspective-origin:0 50%; }
 .cb-page{ position:absolute; inset:0; display:grid; place-items:center; box-sizing:border-box; border:2px solid var(--cb-ink); border-radius:2px 4px 4px 2px;
   background:var(--cb-velvet); transform-origin:0 50%; backface-visibility:hidden; -webkit-backface-visibility:hidden; }
+.cb-page[hidden], .cb-cover[hidden]{ display:none; }
 .cb-gutter{ position:absolute; left:0; top:0; bottom:0; width:12px; pointer-events:none; background:linear-gradient(90deg, rgba(0,0,0,.4), transparent); }
 .cb-cast{ position:absolute; inset:0; pointer-events:none; opacity:0; border-radius:2px 4px 4px 2px;
   background:linear-gradient(90deg, rgba(0,0,0,.7), rgba(0,0,0,.3) 35%, transparent 70%); }
@@ -64,6 +65,21 @@
   background:linear-gradient(118deg, rgba(255,255,255,.015) 0 30%, rgba(255,255,255,.075) 36%, rgba(255,255,255,.015) 44% 100%); }
 .cb-sleeve::before{ content:''; position:absolute; left:2px; right:2px; top:0; height:2px; background:rgba(255,255,255,.16); }
 .cb-slot.is-empty .cb-sleeve{ opacity:.6; }
+
+/* the two pull tabs: back a page (over the binding) and on a page (the
+   right edge); dark at the first and last page */
+.cb-turn{ position:absolute; z-index:4; top:50%; width:20px; height:52px; margin-top:-26px; padding:0; border:2px solid var(--cb-ink); background:var(--cb-hide-hi);
+  box-shadow:inset 2px 2px 0 #95533a,inset -2px -2px 0 var(--cb-hide-lo); cursor:pointer; -webkit-tap-highlight-color:transparent; }
+.cb-turn::before{ content:''; position:absolute; left:50%; top:50%; width:6px; height:10px; margin:-5px 0 0 -3px; background:#efdcb4; }
+.cb-turn.is-back{ left:calc(var(--cb-board) + var(--cb-hinge) - 18px); border-radius:5px 0 0 5px; }
+.cb-turn.is-back::before{ clip-path:polygon(100% 0,0 50%,100% 100%); }
+.cb-turn.is-next{ right:-6px; border-radius:0 5px 5px 0; }
+.cb-turn.is-next::before{ clip-path:polygon(0 0,100% 50%,0 100%); }
+.cb-turn:active{ translate:0 1px; }
+.cb-turn.is-off{ background:var(--cb-hide-lo); box-shadow:none; }
+.cb-turn.is-off::before{ background:#1e0b05; }
+/* a bigger target than it looks: 44px+ */
+.cb-turn::after{ content:''; position:absolute; inset:-6px -14px; }
 
 /* ---------------- the cover ---------------- */
 .cb-cover{ position:absolute; inset:0; z-index:5; border:3px solid var(--cb-ink); border-radius:8px; transform-origin:0 50%; background:var(--cb-hide);
