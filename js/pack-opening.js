@@ -25,12 +25,12 @@
    next thing. Memory-only: no game saves, no Career transactions.
 
    EMBEDDED (window.PO_EMBED, set by js/vending-machine.js): no table of its
-   own. The shop hands it one packet on the hub's felt (offer), and the
-   hub's reel, CRTs and key stand in for the machine around the felt.
-   Everything is sized to the hub's table (L.tableS). The chips come out
-   in a bag (cfg.bag); after the hand is read it's laid down on the hub's
-   table (cfg.stow), and the wrapper and the strip are left there too
-   (cfg.done), then it waits.
+   own. The Career hub hands it one packet (openOwned) and its reel and
+   middle key stand in for the machine around the felt. Everything is
+   sized to the hub's table (L.tableS). It runs the tear and the pull;
+   the chips count in (cfg.bag); once the cards are out, face down, they
+   are handed to the hub with the wrapper and the strip (cfg.handOver),
+   to be turned over whenever the player likes.
    ============================================================ */
 (() => {
   'use strict';
@@ -45,9 +45,10 @@
   const EMBED = !!window.PO_EMBED;
   // embedded: the host's machine (ui) and its hooks (cfg); see attach()
   let ui = null, cfg = null, nudgeEl = null;
-  // where the hand, its squaring and the wrapper sit (fractions of the felt)
-  // tableS (embedded): the host table's scale, which everything left on it shares
-  const L = { handY:.83, squareY:.8, wrapY:.56, railLift:0, tableS:0 };
+  // where the hand, its squaring, the wrapper and the torn strip sit
+  // (fractions of the felt); tableS (embedded): the host table's scale,
+  // which everything left on it shares
+  const L = { handY:.83, squareY:.8, wrapY:.56, flapY:.13, railLift:0, tableS:0 };
 
   let root, stage, W = 0, H = 0, phase = 'boot', lock = false;
   let packets = [], chosen = null, deck = null, flap = null, wallet = 5000, packNo = 0;
@@ -477,7 +478,7 @@
     p.open = true; p.tear = 1; p.draw();
     const f = focus(), side = p.dir;
     // the strip flies off the way you tore it and lands on the felt
-    glide(flap, { x:side > 0 ? W * .74 : W * .26, y:H * .13, r:side * 168, z:0, s:L.tableS || Math.min(1.25, focusS() * .6) }, 560, { arc:70, easing:ease.out })
+    glide(flap, { x:side > 0 ? W * .74 : W * .26, y:H * L.flapY, r:side * 168, z:0, s:L.tableS || Math.min(1.25, focusS() * .6) }, 560, { arc:70, easing:ease.out })
       .then(() => { Foil.crinkle(); puff(stage, flap.x, flap.y + 8, AW * flap.s * .6, { n:4 }); squash(flap, .1); });
     // the packet springs back and puffs open; the cards jostle up into the mouth
     S.hatchOpen();
@@ -560,8 +561,17 @@
     }
     S.deckSettle();
     await wrapper;
+    if (EMBED) return handOver();
     startTicks();
     enterDeck();
+  }
+  // embedded: the cards are out, face down; the host takes them, the
+  // wrapper and the strip, and the opening waits for the next packet
+  function handOver(){
+    const left = { cards:contents.slice(), deck, wrapper:chosen, flap };
+    deck = rc = flap = chosen = null; packets = []; fan = []; contents = []; revealed = 0;
+    lock = false; phase = 'idle';
+    cfg.handOver(left);
   }
 
   /* ---------------- 6 · the reveal ----------------
@@ -898,7 +908,6 @@
     S.arcadeReward(h.tier);
     if (h.tier !== 'strong') lamps();
     // embedded: a beat to read it, then the hand is laid down on the host's table
-    if (EMBED){ key('…', '', false); await wait(PO.reduced ? 200 : 1100); phase = 'haul'; return keep(); }
     lock = false; phase = 'haul';
     figure(String(fan.length).padStart(2, '0'), 'IN HAND');
     key('KEEP', chosen ? 'FLICK THE WRAPPER · TAP A CARD' : 'TAP A CARD TO LOOK');
@@ -1029,10 +1038,9 @@
     if (phase !== 'haul') return;
     lock = true; phase = 'keeping';
     nudge(false);
-    if (EMBED) return keepEmbedded();
     fan.forEach(c => c.el.querySelector('.po-new')?.remove());
     if (chosen && !chosen.tossed){ await tossWrapper(0, 0); }
-    status('KEEPING THEM', String(fan.length) + (EMBED ? ' INTO YOUR DECK' : ' INTO THE COLLECTION'));
+    status('KEEPING THEM', String(fan.length) + ' INTO THE COLLECTION');
     // square the hand: two taps, like the dealer's deck
     const sq = { x:W / 2, y:H * L.squareY, s:handSpot(0).s, z:0, sx:1, sy:1 };
     S.cardReturn();
@@ -1042,7 +1050,6 @@
     fan.forEach(c => c.body.set({ r:0 }));
     S.deckSettle(); jolt(stage.el, 1); Haptic.tick(14, 0);
     await wait(120);
-    if (EMBED) return keepEmbedded();
     // into the slot: up to it, then down behind its lip
     const slot = $('po-slot'), sr = slot.getBoundingClientRect(), st = stage.el.getBoundingClientRect();
     const sx = sr.left - st.left + sr.width / 2, sy = sr.top - st.top + sr.height / 2;
@@ -1065,20 +1072,6 @@
     deck = rc = null; packets = []; chosen = null;
     lock = false;
     dealIn();
-  }
-
-  // embedded: the hand is laid down on the host's table, and the empty
-  // wrapper and the torn strip are left there with it, as things
-  async function keepEmbedded(){
-    const cards = fan.slice();
-    cards.forEach(c => c.el.querySelector('.po-new')?.remove());
-    clearShown();
-    fan = [];
-    await cfg.stow(cards);
-    const left = { cards:cards.map(c => c.card), wrapper:chosen && !chosen.tossed ? chosen : null, flap };
-    deck = rc = flap = chosen = null; packets = [];
-    lock = false; phase = 'idle';
-    cfg.done?.(left);
   }
 
   /* ---------------- the faces of the machine ----------------
@@ -1567,9 +1560,9 @@
      ui      status(t, s) figure(n, l) key(l, s, on) keySub(s) bank(v)
              bankEl() flash(): the host's reel, screens and key
      wallet, setWallet(v), focus(W, H) (where a packet on offer sits),
-     layout  overrides for L (handY, squareY, wrapY, railLift, tableS)
-     onPutBack(p) onBought(p) bag({ x, y, series }) stow(fan)
-     done({ cards, wrapper, flap }): the host's hooks */
+     layout  overrides for L (handY, squareY, wrapY, flapY, railLift, tableS)
+     onPutBack(p) onBought(p) bag({ x, y, series })
+     handOver({ cards, deck, wrapper, flap }): the host's hooks */
   function attach(c){
     cfg = c; ui = c.ui; root = c.root; stage = c.stage;
     Object.assign(L, c.layout || {});

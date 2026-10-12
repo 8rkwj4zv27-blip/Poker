@@ -21,11 +21,11 @@
      sticks: the glass shimmers; tap the machine (twice) to knock it free.
    - Take: tap PUSH (or the key): the flap swings in, a packet comes out
      to you; turn it, shake it; flick it down to send it to the hub.
-   - Back on the hub (SHOP again): the packets you sent drop onto the
-     hub's wooden table in a row (js/career-main.js); tap one there and
-     this opens it on the felt with the pack opening (js/pack-opening.js,
-     embedded). Its chips count straight into the reel; its cards are
-     handed to the hub, which lays them in a heap for ADD.
+   - Back on the hub (LEAVE): the packets you sent drop onto the hub's
+     felt in a row (js/career-main.js); tap one there and this opens it
+     on the felt with the pack opening (js/pack-opening.js, embedded): the
+     tear and the pull. Its chips count straight into the reel; its cards,
+     face down, the wrapper and the strip are handed to the hub's felt.
    Lab money, nothing saved.
    ============================================================ */
 window.PO_EMBED = true;
@@ -839,15 +839,16 @@ window.PO_EMBED = true;
       },
       wallet:() => M.wallet, setWallet:v => { M.wallet = v; },
       focus:() => null,
-      layout:{ handY:.66, squareY:.66, wrapY:.42, railLift:66 },
+      // the wrapper and the strip land on the open felt, clear of the tray and the packets
+      layout:{ handY:.66, squareY:.66, wrapY:.7, flapY:.64, railLift:66 },
       onPutBack(){}, onBought(){},
       // the packet's chips count straight into the reel
       bag:({ series }) => wait(PO.reduced ? 0 : 500).then(() => { S.chipCollect?.(.6); return M.countIn(BAG[series] || 40); }),
-      stow:fan => M.layDown(fan),
-      done({ wrapper, flap }){
+      // the cards are out, face down: the hub takes them and the wrapper
+      handOver(left){
         mode = 'hub';
         openEl.classList.remove('is-live');
-        M.opened([wrapper?.body, flap]);
+        M.handOver(left);
         keys();
       }
     });

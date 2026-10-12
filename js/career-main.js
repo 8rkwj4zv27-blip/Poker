@@ -2,24 +2,28 @@
    CAREER MAIN — the Career hub: a wooden table on the felt (lab only).
 
    The owner's design (12 Oct, docs/career/CAREER_HUB_BRIEF.md, round 6):
-   the cabinet is the bankroll reel and the card feeder, nothing else. On
-   the felt, in its top third, a small wooden table with a soft bevel;
-   three cards lie on it (tonight's choice: the regular one, a step up,
-   the big one; never labelled). The console: SHOP · the middle key ·
-   CARDS. The middle key says what it will do:
-   - REDEAL: the three are swept off the felt and three more are tossed in.
-   - PLAY: a card is in the feeder (dragged or flicked up into it, or
-     swiped up out of the inspect screen): it hangs half in; PLAY takes it
-     the rest of the way (the game would seat you: not wired). Tap the
-     card in the feeder and it comes back out.
-   - OPEN: back from the shop, the packets you sent lie on the table in a
-     row, each on the one before; tap one (or OPEN for the top one) and
-     it's opened on the felt (js/pack-opening.js, run by the shop).
-   - ADD: an opened packet's cards lie in a pile on the felt; ADD squares
-     them up and files them into your collection (the CARDS key).
-   Everything on the felt can be picked up and moved about (press and
-   drag: it lifts, its shadow drifts); a double tap anywhere on the felt
-   puts everything back where it was. Tap a card to inspect it.
+   the cabinet is the bankroll reel and the card feeder, nothing else.
+   The rule: the tray is the house's, the felt is yours.
+   - The tray (a small wooden table in the felt's top third) holds the
+     house's three cards, dealt from your case: the regular one, a step
+     up, the big one (never labelled). REDEAL deals three others.
+   - The felt is yours: whatever you put there stays. Packets back from
+     the shop lie in a row; tap one and it's torn open and its cards slide
+     out face down into your pile, the wrapper and the strip left lying
+     about. Open them in any order, as many as you like, and turn the
+     cards over whenever you like (tap one: the inspect screen; tap the
+     card there to turn it, swipe to the next).
+   - Anything can be picked up, slid about and thrown. A card thrown off
+     the felt goes into your collection (the CARDS key, with a chime); a
+     wrapper or strip thrown off is gone; a sealed packet bounces back
+     off the rail. A double tap on empty felt tidies the lot: the loose
+     cards into the collection, the rubbish away, the packets lined up,
+     the house's cards back in the tray.
+   - Any face-up card carried or flicked up to the feeder (or swiped up
+     out of the inspect screen) goes half in; PLAY takes it the rest of
+     the way (the game would seat you: not wired); tap it to take it out.
+   The middle key: PLAY (a card in the feeder) · ADD TO COLLECTION (cards
+   lying loose) · OPEN (packets waiting) · REDEAL.
    ============================================================ */
 (() => {
   'use strict';
@@ -36,16 +40,20 @@
 
   let root, felt, stage, woodEl, slotEl, mouthEl, plateEl;
   let s = 1;                 // the cards' scale on the felt
-  let phase = 'hand';        // hand · packets · opening · opened
   let busy = false;
-  let pool = [];             // your case: every card you can play
-  const hand = [];           // the cards on the table: { kind:'hand', card, c, place, home }
-  const packets = [];        // the packets waiting: { kind:'pk', p, home }
-  const heap = [];           // an opened packet's cards: { kind:'heap', card, c, home }
-  let fed = null;            // the hand card in the feeder
+  let pool = [];             // your case: the cards the house deals you from
+  // everything on the felt: house (the tray's cards), card (yours, loose:
+  // face down until turned), pk (a sealed packet), junk (a wrapper, a strip)
+  const things = [];
+  let fed = null, fedFrom = null;   // the card in the feeder, and where it came from
   let zTop = 60;
   const $ = q => root.querySelector(q);
   const raise = el => { el.style.zIndex = String(++zTop); };
+  const bodyOf = t => t.c ? t.c.body : t.p ? t.p.body : t.body;
+  const elOf = t => t.c ? t.c.el : t.p ? t.p.el : t.body.el;
+  const of = kind => things.filter(t => t.kind === kind);
+  const isCard = t => t.kind === 'house' || t.kind === 'card';
+  const faceUp = t => isCard(t) && t.c.el.dataset.side === 'face';
 
   /* ---------------- the cabinet ---------------- */
   function reel(n){
@@ -68,26 +76,26 @@
   const plate = text => { plateEl.textContent = text; };
 
   /* ---------------- the keys ---------------- */
-  // a key: its label, lit (it'll do something) or unlit (its label goes
-  // dark, like a lamp that's off); a new label flips over
+  // a key: its label (a line break for two lines), lit (it'll do
+  // something) or unlit (its label goes dark); a new label flips over
   function setKey(b, label, on = true){
     b.disabled = !on;
     b.classList.toggle('cm-unlit', !on);
     if (b.dataset.label === label) return;
     b.dataset.label = label;
-    const put = () => { b.textContent = label; b.classList.toggle('cm-long', label.length > 9); };
+    const put = () => { b.textContent = label; b.classList.toggle('cm-two', label.includes('\n')); b.classList.toggle('cm-long', !label.includes('\n') && label.length > 9); };
     if (PO.reduced || !b.textContent){ put(); return; }
     b.classList.add('cm-flip');
     setTimeout(() => { put(); b.classList.remove('cm-flip'); }, 60);
   }
   const keyEl = k => $(`[data-key="${k}"]`);
-  // what the middle key does now (the shop has the keys while it's out,
-  // and while a packet is being opened)
+  const MID = { play:'PLAY', add:'ADD TO\nCOLLECTION', open:'OPEN', redeal:'REDEAL' };
+  const mid = () => fed ? 'play' : of('card').length ? 'add' : of('pk').length ? 'open' : 'redeal';
+  // (the shop has the keys while it's out, and while a packet is torn open)
   function keys(){
     if (window.CareerShop?.out) return;
     setKey(keyEl('shop'), 'SHOP'); setKey(keyEl('cards'), 'CARDS');
-    const mid = phase === 'opened' ? 'ADD' : phase === 'packets' ? 'OPEN' : fed ? 'PLAY' : 'REDEAL';
-    setKey(keyEl('play'), mid, phase !== 'opening');
+    setKey(keyEl('play'), MID[mid()]);
     keyEl('play').classList.toggle('is-ready', !!fed);
   }
 
@@ -109,7 +117,7 @@
       <footer class="cm-console"><div class="cm-console-case"><div class="ec-bay"><div class="actions-row cm-keys"><button class="btn-check" type="button" data-key="shop">SHOP</button><button class="btn-raise" type="button" data-key="play">REDEAL</button><button class="btn-check" type="button" data-key="cards">CARDS</button></div></div></div></footer>
       <section class="po-sheet cm-sheet" id="cm-sheet" hidden aria-label="Tune">
         <h2>CAREER</h2>
-        <p>REDEAL for three more. Drag a card about, or up into the feeder; tap it to look (swipe it up from there to feed it); PLAY takes it. Double tap the felt to put everything back.</p>
+        <p>The tray is the house's, the felt is yours. REDEAL for three more. Pick anything up and move it, or throw it: cards thrown off go into your collection. Tap a card to look at it (and turn it over); flick it up into the feeder, PLAY. Double tap empty felt to tidy up.</p>
         <h3>BANKROLL</h3>${seg('bank', Object.fromEntries(BANKS.map(b => [b, money(b)])))}
         <div class="cm-seg"><button class="pc-button pc-button-secondary" id="cm-done">DONE</button></div>
       </section>`;
@@ -140,7 +148,7 @@
   function marks(){ root.querySelectorAll('.cm-seg[data-key] button').forEach(b => b.setAttribute('aria-pressed', String(+b.dataset.v === wallet))); }
 
   /* ---------------- where things go ---------------- */
-  // three cards across the table, as big as the felt allows
+  // three cards across the tray, as big as the felt allows
   function measure(){
     s = Math.min(1.3, (felt.clientWidth - 64) / (CW * 3 + 28));
     root.style.setProperty('--cm-card', Math.round(CW * s) + 'px');
@@ -148,25 +156,19 @@
   }
   const local = r => { const f = felt.getBoundingClientRect(); return { x:r.left + r.width / 2 - f.left, y:r.top + r.height / 2 - f.top }; };
   const SKEW = [-2, 1, -1];
-  function placeAt(i){ return { ...local($(`.cm-place[data-i="${i}"]`).getBoundingClientRect()), r:SKEW[i] }; }
-  // the packets: one to a place, or more in a row, each lying on the one before
+  const placeAt = i => ({ ...local($(`.cm-place[data-i="${i}"]`).getBoundingClientRect()), r:SKEW[i] });
+  const below = () => { const t = woodEl.getBoundingClientRect(), f = felt.getBoundingClientRect(); return t.bottom - f.top; };
+  // packets: a row on the felt under the tray, each on the one before
   const pkScale = () => CH * s / POPacket.AH;
   function rowAt(i, n){
-    const a = placeAt(0), b = placeAt(2), gap = (b.x - a.x) / 2;
-    const step = n > 1 ? Math.min(gap, (b.x - a.x) / (n - 1)) : 0;
-    return { x:(a.x + b.x) / 2 + (i - (n - 1) / 2) * step, y:a.y };
+    const W = felt.clientWidth, w = POPacket.AW * pkScale(), y = below() + CH * s / 2 + 14;
+    const span = W - w - 24, step = n > 1 ? Math.min(w * 1.1, span / (n - 1)) : 0;
+    return { x:W / 2 + (i - (n - 1) / 2) * step, y };
   }
-  // an opened packet's cards: a loose heap on the open felt
-  const HEAP = [[-34, 10, -14], [-8, -6, -4], [20, 4, 9], [40, -2, 18], [-20, 22, 6], [8, 18, -10]];
-  function heapAt(i){
-    const t = woodEl.getBoundingClientRect(), f = felt.getBoundingClientRect(), top = t.bottom - f.top;
-    const [dx, dy, r] = HEAP[i % HEAP.length];
-    return { x:felt.clientWidth / 2 + dx * s, y:top + (felt.clientHeight - top) * .48 + dy * s, r };
-  }
-  function homes(){
-    hand.forEach(h => { h.home = placeAt(h.place); });
-    packets.forEach((k, i) => { k.home = { ...rowAt(i, packets.length), r:k.tilt }; });
-    heap.forEach((h, i) => { h.home = heapAt(i); });
+  // your pile: the opened cards land in a loose heap low on the felt
+  function pileAt(){
+    const top = below() + CH * s + 30, H = felt.clientHeight;
+    return { x:felt.clientWidth / 2 + rr(-30, 30), y:top + (H - top) * .5 + rr(-20, 20), r:rr(-24, 24) };
   }
   // the feeder's lower lip, where a card comes out, in the felt's coordinates
   function lip(){ const r = mouthEl.getBoundingClientRect(), f = felt.getBoundingClientRect(); return { x:r.left + r.width / 2 - f.left, y:r.bottom - 4 - f.top }; }
@@ -180,36 +182,38 @@
       ['table', 'common', 'back-room-heads-up'], ['bomb', 'rare', 'pub-open'], ['freezeout', 'common', 'card-club-six']];
     pool = ids.map(a => EventCards.make(...a));
   }
-  // the three for the table: one from the bottom third of your case by
-  // prize (the regular one), one from the middle (a step up), one from the
-  // top (the big one); not the ones just swept away, if there's a choice
-  function chooseThree(not = []){
-    const by = pool.slice().sort((a, b) => a.prize - b.prize), n = by.length, out = [];
-    [[0, 1 / 3], [1 / 3, 2 / 3], [2 / 3, 1]].forEach(([a, b]) => {
-      const band = by.slice(Math.floor(a * n), Math.max(Math.floor(a * n) + 1, Math.ceil(b * n))).filter(c => !out.includes(c));
+  // one from each third of your case by prize (the regular one, a step up,
+  // the big one), never one already out, and not one just swept away if
+  // there's a choice
+  function chooseFor(places, not = []){
+    const out = of('house').map(h => h.card), by = pool.slice().sort((a, b) => a.prize - b.prize), n = by.length;
+    return places.map(i => {
+      const a = Math.floor(i / 3 * n), band = by.slice(a, Math.max(a + 1, Math.ceil((i + 1) / 3 * n))).filter(c => !out.includes(c));
       const fresh = band.filter(c => !not.includes(c));
       const c = pick(fresh.length ? fresh : band.length ? band : by.filter(q => !out.includes(q)));
       if (c) out.push(c);
+      return c;
     });
-    return out;
   }
 
-  /* ---------------- cards on the table ---------------- */
-  function cardBody(card, pose){
-    const c = CardInspect.make(stage, card, { side:'face' });
+  /* ---------------- cards ---------------- */
+  function cardBody(card, pose, side = 'face'){
+    const c = CardInspect.make(stage, card, { side });
+    if (side === 'back') CardInspect.setBank(c, 180);
     c.el.classList.add('cm-card');
     c.body.set({ z:0, sx:1, sy:1, alpha:1, s, ...pose });
     c.body.render(performance.now());
     raise(c.el);
     return c;
   }
-  // tossed in from off the left of the felt, one after another, onto the table
-  async function tossIn(cards, places = [0, 1, 2]){
-    await Promise.all(cards.map((card, k) => wait(PO.reduced ? 0 : k * 110).then(async () => {
-      const place = places[k], to = placeAt(place);
+  // the house's cards, tossed in from off the left onto the tray
+  async function tossIn(places, not){
+    const cards = chooseFor(places, not);
+    await Promise.all(places.map((place, k) => wait(PO.reduced ? 0 : k * 110).then(async () => {
+      const card = cards[k]; if (!card) return;
+      const to = placeAt(place);
       const c = cardBody(card, { x:-CW * s, y:to.y + rr(30, 70), r:rr(-40, -20), z:30 });
-      const h = { kind:'hand', card, c, place, home:to };
-      hand.push(h);
+      things.push({ kind:'house', card, c, place });
       S.cardDeal(); Foil.flutter();
       await glide(c.body, { ...to, z:0 }, 380, { arc:26, easing:ease.out });
       S.cardLanded(); Haptic.tick(6);
@@ -217,23 +221,57 @@
       squash(c.body, .05, 160);
     })));
   }
-  // swept off the right of the felt, back into your case
-  async function sweepOff(list){
-    const W = felt.clientWidth;
-    await Promise.all(list.map((h, k) => wait(PO.reduced ? 0 : k * 70).then(async () => {
+  // the places in the tray with no house card in them
+  const emptyPlaces = () => [0, 1, 2].filter(i => !of('house').some(h => h.place === i));
+  async function refill(){ const e = emptyPlaces(); if (e.length) await tossIn(e); }
+  function drop(t){ const i = things.indexOf(t); if (i >= 0) things.splice(i, 1); }
+  async function redeal(){
+    if (busy || fed) return;
+    busy = true;
+    S.cardReturn(); Haptic.tick(10);
+    const out = of('house'), was = out.map(h => h.card), W = felt.clientWidth;
+    out.forEach(drop);
+    await Promise.all(out.map((h, k) => wait(PO.reduced ? 0 : k * 70).then(async () => {
       raise(h.c.el); Foil.flutter();
       await glide(h.c.body, { x:W + CW * s, y:h.c.body.y + rr(-24, 24), r:h.c.body.r + rr(20, 40), z:6 }, 280, { easing:ease.in });
       h.c.body.remove();
     })));
-  }
-  async function redeal(){
-    if (busy || phase !== 'hand' || fed) return;
-    busy = true;
-    S.cardReturn(); Haptic.tick(10);
-    const was = hand.map(h => h.card);
-    await sweepOff(hand.splice(0));
     await wait(PO.reduced ? 0 : 80);
-    await tossIn(chooseThree(was));
+    await tossIn([0, 1, 2], was);
+    keys();
+    busy = false;
+  }
+
+  /* ---------------- into the collection ---------------- */
+  // the chime of a card going into the collection: the CARDS key takes it
+  function filed(){
+    const k = keyEl('cards');
+    jolt(k, 2); Haptic.tick(8, 0);
+    S.cardReturn(); Foil.note(9, .35);
+    setTimeout(() => Foil.note(13, .3), PO.reduced ? 0 : 80);
+  }
+  // a card goes into your collection: yours join your case; the house's
+  // were in it already, and another is tossed into the tray
+  function collect(t){
+    drop(t);
+    if (t.kind === 'card') pool.push(t.card);
+    filed();
+  }
+  // ADD TO COLLECTION: every loose card squares up and goes in through the
+  // CARDS key, one after another
+  async function addAll(){
+    if (busy) return;
+    const list = of('card');
+    if (!list.length) return;
+    busy = true;
+    const k = keyEl('cards'), to = local(k.getBoundingClientRect());
+    await Promise.all(list.map((t, i) => wait(PO.reduced ? 0 : i * 70).then(async () => {
+      raise(t.c.el); S.cardDeal();
+      await glide(t.c.body, { x:to.x, y:to.y, s:s * .4, r:0, z:12, alpha:.4 }, 300, { arc:30, easing:ease.in });
+      t.c.body.remove();
+      collect(t);
+    })));
+    keys();
     busy = false;
   }
 
@@ -252,156 +290,176 @@
       await wait(PO.reduced ? 0 : 50);
     }
   }
-  // a card goes up to the feeder and is taken half in
-  async function feed(h, { placed = false } = {}){
-    if (fed || busy || phase !== 'hand') return;
+  // a face-up card goes up to the feeder and is taken half in
+  async function feed(t, { placed = false, from = null } = {}){
+    if (fed || busy || !faceUp(t)) return;
     busy = true;
-    const m = lip(), c = h.c, below = m.y + CH * s / 2 + 2;
-    fed = h; keys();
-    c.el.style.zIndex = '90';
+    const m = lip(), c = t.c, b = c.body;
+    fed = t; fedFrom = from || { x:b.x, y:b.y, r:b.r };
+    keys();
+    c.el.style.zIndex = '900';
     c.body.sh?.style.setProperty('visibility', 'hidden');
-    if (!placed){ S.cardDeal(); await glide(c.body, { x:m.x, y:below, r:0, s, z:0 }, 240, { easing:ease.out }); }
+    if (!placed){ S.cardDeal(); await glide(b, { x:m.x, y:m.y + CH * s / 2 + 2, r:0, s, z:0 }, 240, { easing:ease.out }); }
     await teeth(c, m.y, 2);
     S.wheelLock(); Haptic.tick(14, 0); jolt($('.cm-cabinet'), 2);
-    const d = EventCards.describe(h.card);
+    const d = EventCards.describe(t.card);
     plate((d.venue + ' · ' + d.title).toUpperCase());
     slotEl.classList.add('is-fed');
     busy = false;
   }
-  // tap the card in the feeder: it comes back out and goes home
+  // tap the card in the feeder: it comes back out, to where it was
   async function unfeed(){
     if (!fed || busy) return;
     busy = true;
-    const h = fed, c = h.c, m = lip();
+    const t = fed, c = t.c, m = lip();
     await teeth(c, m.y + CH * s / 2 + 2, 2);
     c.el.style.clipPath = '';
     c.body.sh?.style.removeProperty('visibility');
     fed = null; slotEl.classList.remove('is-fed'); plate('INSERT CARD'); keys();
     S.cardReturn();
-    await glide(c.body, { ...h.home, z:0, s }, 300, { arc:18, easing:ease.out });
+    const home = t.kind === 'house' ? placeAt(t.place) : fedFrom;
+    await glide(c.body, { ...home, z:0, s }, 300, { arc:18, easing:ease.out });
     raise(c.el); S.cardLanded(); squash(c.body, .05, 140);
     busy = false;
   }
   // PLAY: the rest of the way in. The game would seat you at its table
-  // here (not wired); the card is used up and another takes its place.
+  // here (not wired); the card is used up. A house card is replaced.
   async function play(){
     if (!fed || busy) return;
     busy = true;
-    const h = fed, c = h.c;
+    const t = fed, c = t.c;
     S.wheelCatch(); jolt(slotEl, 3);
     await teeth(c, lip().y - CH * s / 2 - 4, 3);
     S.wheelLock(); Haptic.tick(18, 0); jolt($('.cm-cabinet'), 3);
-    c.body.remove();
-    hand.splice(hand.indexOf(h), 1);
-    pool = pool.filter(q => q !== h.card);
+    c.body.remove(); drop(t);
+    pool = pool.filter(q => q !== t.card);
     if (pool.length < 4) fillPool();
     fed = null; slotEl.classList.remove('is-fed'); keys();
     await wait(PO.reduced ? 0 : 700);
     plate('INSERT CARD');
-    const others = hand.map(q => q.card), fresh = chooseThree(others).filter(q => !others.includes(q));
-    await tossIn([fresh[h.place] || fresh[0] || pick(pool)], [h.place]);
+    if (t.kind === 'house') await tossIn([t.place]);
+    keys();
     busy = false;
   }
 
-  /* ---------------- packets on the table ---------------- */
-  // back from the shop: the cards are swept away and the packets you sent
-  // drop onto the table, in a row, each on the one before
+  /* ---------------- packets ---------------- */
+  // back from the shop: the packets you sent drop onto the felt in a row
   async function addPackets(series){
     if (!series.length) return;
     busy = true;
-    if (fed){ fed.c.el.style.clipPath = ''; fed = null; slotEl.classList.remove('is-fed'); plate('INSERT CARD'); }
-    if (hand.length){ S.cardReturn(); await sweepOff(hand.splice(0)); }
-    if (phase === 'hand') phase = 'packets';
-    keys();
-    const n = packets.length + series.length;
-    packets.forEach((k, i) => { k.home = { ...rowAt(i, n), r:k.tilt }; glide(k.p.body, { ...k.home, z:0 }, 220, { easing:ease.out }); });
-    for (const id of series){
+    const n0 = of('pk').length, n = n0 + series.length;
+    for (const [k, id] of series.entries()){
       const p = new POPacket.Packet(stage, id, 0);
       p.tagEl.hidden = true; p.el.classList.add('cm-pk');
-      const k = { kind:'pk', p, tilt:rr(-4, 4) };
-      k.home = { ...rowAt(packets.length, n), r:k.tilt };
-      packets.push(k);
-      p.body.set({ x:k.home.x, y:-POPacket.AH * pkScale(), s:pkScale(), r:k.tilt - 30, z:30, sx:1, sy:1, alpha:1 });
+      const to = { ...rowAt(n0 + k, n), r:rr(-4, 4) };
+      things.push({ kind:'pk', p, series:id });
+      p.body.set({ x:to.x, y:-POPacket.AH * pkScale(), s:pkScale(), r:to.r - 30, z:30, sx:1, sy:1, alpha:1 });
       p.body.render(performance.now());
       raise(p.el);
       await p.ready;
       S.cardDeal(); Foil.flutter();
-      await glide(p.body, { ...k.home, z:0 }, 300, { easing:ease.in });
+      await glide(p.body, { ...to, z:0 }, 300, { easing:ease.in });
       S.cardLanded(); Foil.thud(.4); Haptic.tick(8);
-      puff(stage, k.home.x, k.home.y + CH * s * .45, CW * s, { n:4, colour:'#3a2414' });
+      puff(stage, to.x, to.y + CH * s * .45, CW * s, { n:4 });
       squash(p.body, .08, 180);
+      keys();
       await wait(PO.reduced ? 0 : 70);
     }
     busy = false;
   }
-  // tap a packet (or OPEN for the one on top): it's opened on the felt
-  function open(k){
-    if (busy || phase !== 'packets' || !window.CareerShop) return;
-    k = k || packets[packets.length - 1];
-    if (!k) return;
-    packets.splice(packets.indexOf(k), 1);
-    phase = 'opening'; keys();
-    homes();
-    packets.forEach(q => glide(q.p.body, { ...q.home, z:0 }, 220, { easing:ease.out }));
-    window.CareerShop.open(k.p);
+  // a sealed packet, tapped (or OPEN: the last one down): torn open on the felt
+  function open(t){
+    if (busy || !window.CareerShop) return;
+    t = t || of('pk').at(-1);
+    if (!t) return;
+    drop(t);
+    window.CareerShop.open(t.p);
   }
-  // the opened packet's cards: laid down in a heap on the open felt
-  async function layDown(cards){
-    heap.length = 0;
-    await Promise.all(cards.map((c, i) => wait(PO.reduced ? 0 : i * 110).then(async () => {
-      const a = c.body.stage.el.getBoundingClientRect(), b = felt.getBoundingClientRect();
-      c.body.set({ x:c.body.x + a.left - b.left, y:c.body.y + a.top - b.top });
-      stage.objects.append(c.el); if (c.body.sh) stage.shadows.append(c.body.sh);
-      c.body.stage = stage;
-      c.el.classList.add('cm-card');
-      const h = { kind:'heap', card:c.card, c, home:heapAt(i) };
-      heap.push(h); raise(c.el);
-      S.cardDeal(); Foil.flutter();
-      await glide(c.body, { ...h.home, s, z:0, sx:1, sy:1 }, 300, { arc:20, easing:ease.out });
-      S.cardLanded(); Haptic.tick(6);
-      squash(c.body, .05, 160);
-    })));
-  }
-  // the opening is over: the empty wrapper and the torn strip fall away off
-  // the felt, and the heap waits for ADD
-  function opened(rubbish){
-    const H = felt.clientHeight;
-    rubbish.filter(Boolean).forEach((b, i) => wait(PO.reduced ? 0 : i * 60).then(() => {
-      Foil.crinkle();
-      return glide(b, { y:b.y + H * .8, r:b.r + rr(-120, 120), z:10, alpha:0 }, 520, { easing:ease.in, arc:20 });
-    }).then(() => b.remove()));
-    phase = heap.length ? 'opened' : packets.length ? 'packets' : 'hand';
+  // the cards are out (face down, still in a little deck) with the
+  // wrapper and the strip: they're yours, on the felt. The cards slide off
+  // the deck onto your pile.
+  function handOver({ cards, deck, wrapper, flap }){
+    const into = b => {
+      const a = b.stage.el.getBoundingClientRect(), f = felt.getBoundingClientRect();
+      b.set({ x:b.x + a.left - f.left, y:b.y + a.top - f.top });
+      stage.objects.append(b.el); if (b.sh) stage.shadows.append(b.sh);
+      b.stage = stage; raise(b.el);
+    };
+    if (flap){ into(flap); things.push({ kind:'junk', body:flap }); }
+    if (wrapper){ into(wrapper.body); things.push({ kind:'junk', body:wrapper.body, p:wrapper }); }
+    let x = felt.clientWidth / 2, y = felt.clientHeight / 2, r = 0, ds = s;
+    if (deck){ into(deck); x = deck.x; y = deck.y; r = deck.r; ds = deck.s; deck.remove(); }
+    cards.forEach((card, i) => {
+      const c = cardBody(card, { x, y:y - i, r, s:ds }, 'back');
+      things.push({ kind:'card', card, c });
+      const to = pileAt();
+      wait(PO.reduced ? 0 : 80 + i * 90).then(() => {
+        raise(c.el); S.cardDeal(); Foil.flutter();
+        return glide(c.body, { ...to, s, z:0 }, 320, { arc:18, easing:ease.out });
+      }).then(() => { S.cardLanded(); squash(c.body, .05, 140); });
+    });
     keys();
-    if (phase === 'hand') dealFresh();
   }
-  // ADD: the heap squares up and goes into your collection (the CARDS key)
-  async function add(){
-    if (busy || phase !== 'opened') return;
+
+  /* ---------------- turning cards over ---------------- */
+  // the shared inspect screen, through every card on the felt (the tapped
+  // one first): face-down cards come up face down; tap to turn them
+  function inspect(t){
+    const list = [t, ...things.filter(q => isCard(q) && q !== t && q !== fed).sort((a, b) => +elOf(b).style.zIndex - +elOf(a).style.zIndex)];
+    CardInspect.open({
+      host:document.getElementById('home'),
+      items:list.map(q => ({ card:q.card, source:() => q.c.el, down:!faceUp(q), thing:q })),
+      index:0,
+      // turned over on the screen: it lies face up on the felt too
+      onTurn(item){
+        const q = item.thing;
+        q.c.el.dataset.side = 'face'; CardInspect.setBank(q.c, 0); CardInspect.flat(q.c);
+        const tier = q.card.tier;
+        if (tier >= 3){ S.arcadeReward('jackpot'); jolt($('.cm-cabinet'), 3); }
+        else if (tier === 2){ Foil.note(14, .4); setTimeout(() => Foil.note(18, .3), 120); }
+        else S.cardFlip(false);
+        Haptic.tick(tier >= 2 ? 18 : 6);
+      },
+      swipeUp:async (item, idx, api) => {
+        const q = item.thing, m = lip(), f = felt.getBoundingClientRect(), b = q.c.body;
+        if (fed || busy || !faceUp(q)) return api.close();
+        const from = { x:b.x, y:b.y, r:b.r };
+        // on its way up: the card on the felt waits under the feeder for it
+        b.set({ x:m.x, y:m.y + CH * s / 2 + 2, r:0, z:0, s });
+        b.render(performance.now());
+        await api.sendTo({ x:f.left + m.x, y:f.top + m.y + CH * s / 2 + 2, s, r:0, z:0 });
+        feed(q, { placed:true, from });
+      }
+    });
+  }
+
+  /* ---------------- tidying up ---------------- */
+  // a double tap on empty felt: the loose cards into the collection, the
+  // rubbish off the felt, the packets back in a row, the house's cards to
+  // the tray (and any empty place filled)
+  async function tidy(){
+    if (busy) return;
     busy = true;
-    const list = heap.splice(0), mid = heapAt(1);
-    S.cardReturn();
-    await Promise.all(list.map((h, i) => { raise(h.c.el); return glide(h.c.body, { x:mid.x, y:mid.y - i, r:i % 2 ? 2 : -2, z:0, s }, 220); }));
-    S.deckSettle(); Haptic.tick(10, 0);
-    await wait(PO.reduced ? 0 : 140);
+    S.cardReturn(); Haptic.tick(10);
+    const H = felt.clientHeight, cards = of('card'), junk = of('junk'), pks = of('pk');
     const k = keyEl('cards'), to = local(k.getBoundingClientRect());
-    await Promise.all(list.map((h, i) => wait(PO.reduced ? 0 : i * 70).then(async () => {
-      S.cardDeal();
-      await glide(h.c.body, { x:to.x, y:to.y, s:s * .4, r:0, z:12, alpha:.4 }, 300, { arc:30, easing:ease.in });
-      h.c.body.remove();
-      pool.push(h.card);
-      jolt(k, 2); S.counterTick(true); Haptic.tick(8, 0);
-    })));
-    S.stageLock();
-    phase = packets.length ? 'packets' : 'hand';
+    await Promise.all([
+      ...cards.map((t, i) => wait(PO.reduced ? 0 : i * 60).then(async () => {
+        raise(t.c.el);
+        await glide(t.c.body, { x:to.x, y:to.y, s:s * .4, r:0, z:12, alpha:.4 }, 300, { arc:30, easing:ease.in });
+        t.c.body.remove(); collect(t);
+      })),
+      ...junk.map((t, i) => wait(PO.reduced ? 0 : i * 50).then(async () => {
+        drop(t); Foil.crinkle();
+        await glide(t.body, { y:H + 120, r:t.body.r + rr(-90, 90), z:10, alpha:0 }, 420, { easing:ease.in });
+        t.body.remove();
+      })),
+      ...pks.map((t, i) => glide(t.p.body, { ...rowAt(i, pks.length), r:rr(-4, 4), z:0 }, 280, { arc:10, easing:ease.out }).then(() => squash(t.p.body, .05, 120))),
+      ...of('house').filter(h => h !== fed).map(h => glide(h.c.body, { ...placeAt(h.place), z:0 }, 260, { arc:10, easing:ease.out }).then(() => squash(h.c.body, .04, 120)))
+    ]);
+    S.cardLanded();
+    await refill();
     keys();
-    busy = false;
-    if (phase === 'hand') dealFresh();
-  }
-  async function dealFresh(){
-    if (hand.length) return;
-    busy = true;
-    await wait(PO.reduced ? 0 : 200);
-    await tossIn(chooseThree());
     busy = false;
   }
 
@@ -410,51 +468,27 @@
     const k = b.dataset.key;
     if (window.CareerShop?.key(k, b)) return;   // the shop's keys while it's out
     jolt(b, 2); Haptic.tick(8);
-    if (k === 'play'){
-      if (phase === 'opened') return add();
-      if (phase === 'packets') return open();
-      if (fed) return play();
-      return redeal();
-    }
+    if (k === 'play') return { play, add:addAll, open:() => open(), redeal }[mid()]();
     // CARDS (the collection rolls up from below): not built yet
     Foil.thud(.3);
   }
 
-  /* ---------------- moving things about ---------------- */
-  // everything back where it was: the cards to their places, the packets
-  // to their row, the heap to its heap
-  async function tidy(){
-    const all = [...hand.filter(h => h !== fed), ...packets, ...heap];
-    if (!all.length) return;
-    S.cardReturn(); Haptic.tick(10);
-    await Promise.all(all.map((t, i) => {
-      const b = t.c ? t.c.body : t.p.body;
-      return wait(PO.reduced ? 0 : i * 30).then(() => glide(b, { ...t.home, z:0 }, 260, { arc:10, easing:ease.out })).then(() => squash(b, .04, 120));
-    }));
-    S.cardLanded();
-  }
-  const bodyOf = t => t.c ? t.c.body : t.p.body;
+  /* ---------------- touch: pick up, slide, throw ---------------- */
   function thingAt(e){
-    const el = e.target.closest('.cm-card, .cm-pk');
-    if (!el) return null;
-    return [...hand, ...packets, ...heap].find(t => (t.c ? t.c.el : t.p.el) === el) || null;
+    const el = e.target.closest('.cm-card, .cm-pk, .po-packet, .po-flap, .po-body');
+    return el ? things.find(t => elOf(t) === el) || null : null;
   }
   function overFeeder(cx, cy){
     const m = slotEl.getBoundingClientRect();
     return cx > m.left - 16 && cx < m.right + 16 && cy < m.bottom + 34;
   }
-  let ptr = null, lastTap = null, tapT = 0;
+  let ptr = null, lastTap = null;
   const at = e => { const f = felt.getBoundingClientRect(); return { x:e.clientX - f.left, y:e.clientY - f.top }; };
   function down(e){
     if (ptr || e.button > 0 || CardInspect.isOpen || window.CareerShop?.out) return;
-    const p = at(e), now = performance.now();
-    const t = thingAt(e);
+    const p = at(e), now = performance.now(), t = thingAt(e);
     ptr = { id:e.pointerId, t, x0:p.x, y0:p.y, x:p.x, y:p.y, at:now, hist:[{ ...p, t:now }], mode:'press' };
-    if (t && !busy){
-      const b = bodyOf(t);
-      ptr.dx = b.x - p.x; ptr.dy = b.y - p.y;
-      Haptic.tick(4);
-    }
+    if (t && !busy){ const b = bodyOf(t); ptr.dx = b.x - p.x; ptr.dy = b.y - p.y; Haptic.tick(4); }
     try { felt.setPointerCapture(e.pointerId); } catch (_) {}
     e.preventDefault();
   }
@@ -470,14 +504,15 @@
       q.mode = 'drag';
       const b = bodyOf(q.t);
       raise(b.el); b.set({ live:true });
+      q.r0 = b.r; q.s0 = b.s;
       glide(b, { z:10, s:b.s * 1.05 }, 90, { easing:ease.out });
-      S.cardReturn(); Foil.scrape?.();
+      if (q.t.kind === 'junk') Foil.crinkle(); else S.cardReturn();
       felt.classList.add('is-carrying');
     }
     if (q.mode === 'drag'){
       const b = bodyOf(q.t), v = vel(q);
-      b.set({ x:p.x + q.dx, y:p.y + q.dy, r:clamp((q.t.home?.r || 0) + v.x / 120, -16, 16) });
-      if (q.t.kind === 'hand') slotEl.classList.toggle('is-near', overFeeder(e.clientX, e.clientY));
+      b.set({ x:p.x + q.dx, y:p.y + q.dy, r:clamp(q.r0 + v.x / 120, q.r0 - 16, q.r0 + 16) });
+      if (faceUp(q.t)) slotEl.classList.toggle('is-near', !fed && overFeeder(e.clientX, e.clientY));
     }
   }
   function vel(q){
@@ -491,58 +526,69 @@
     felt.classList.remove('is-carrying'); slotEl.classList.remove('is-near');
     if (cancel) return;
     if (q.mode === 'press') return tap(q);
-    const t = q.t, b = bodyOf(t), v = vel(q);
+    const t = q.t, b = bodyOf(t), v = vel(q), W = felt.clientWidth, H = felt.clientHeight;
     b.set({ live:false });
-    // carried up to the feeder, or flicked up at it: it goes in
-    if (t.kind === 'hand' && phase === 'hand' && !fed && (overFeeder(e.clientX, e.clientY) || (v.fresh && v.y < -900 && q.y0 - q.y > 40))){
+    const vx = v.fresh ? v.x : 0, vy = v.fresh ? v.y : 0, fast = Math.hypot(vx, vy) > 800;
+    const rest = t.kind === 'pk' ? pkScale() : t.kind === 'junk' ? q.s0 : s;
+    // carried up to the feeder, or flicked up at it: a face-up card goes in
+    if (faceUp(t) && !fed && (overFeeder(e.clientX, e.clientY) || (fast && vy < -700 && q.y0 - q.y > 40))){
       b.set({ s });
-      feed(t);
+      feed(t, { from:{ x:q.x0 + q.dx, y:q.y0 + q.dy, r:q.r0 } });
+      return;
+    }
+    // thrown off the felt: a card into your collection, the rubbish gone;
+    // a sealed packet hits the rail and comes back
+    const tx = b.x + vx * .25, ty = b.y + vy * .25;
+    if (fast && (tx < -20 || tx > W + 20 || ty < -20 || ty > H + 20)){
+      const T = 360, x0 = b.x, y0 = b.y, r0 = b.r, spin = Math.sign(vx || 1);
+      if (t.kind === 'pk'){
+        const x = clamp(tx, 30, W - 30), y = clamp(ty, 30, H - 30);
+        glide(b, { x:clamp(b.x + vx * .12, 10, W - 10), y:clamp(b.y + vy * .12, 10, H - 10), z:4 }, 120, { easing:ease.out })
+          .then(() => { Foil.thud(.6); Haptic.tick(14); jolt(felt, 2); return glide(b, { x:mix(x, W / 2, .2), y:mix(y, H / 2, .2), r:b.r + spin * 30, z:0, s:rest }, 300, { easing:ease.out }); })
+          .then(() => { squash(b, .08, 160); S.cardLanded(); });
+        return;
+      }
+      drop(t);
+      Foil.flutter(); Haptic.tick(8);
+      tween(T, (e2, k) => b.set({ x:x0 + vx * k * T / 1000, y:y0 + vy * k * T / 1000, z:6 + Math.sin(k * Math.PI) * 20, r:r0 + spin * 220 * k, alpha:1 - Math.max(0, k - .5) * 2 }), ease.lin).then(() => {
+        b.remove();
+        if (isCard(t)){
+          collect(t);
+          if (t.kind === 'house') refill().then(keys);
+        } else Foil.crinkle();
+        keys();
+      });
+      keys();
       return;
     }
     // let go: it slides on a little and settles where it lands
-    const W = felt.clientWidth, H = felt.clientHeight, hw = CW * s / 2, hh = CH * s / 2;
-    const vx = v.fresh ? v.x : 0, vy = v.fresh ? v.y : 0;
+    const hw = CW * s / 2, hh = CH * s / 2;
     const x = clamp(b.x + vx * .08, hw * .6, W - hw * .6), y = clamp(b.y + vy * .08, hh * .5, H - hh * .5);
-    glide(b, { x, y, r:clamp(b.r + vx / 200, -24, 24), s:t.kind === 'pk' ? pkScale() : s, z:0 }, 220, { easing:ease.out })
-      .then(() => { squash(b, .05, 160); S.cardLanded(); Haptic.tick(5); });
+    glide(b, { x, y, r:clamp(b.r + vx / 200, b.r - 24, b.r + 24), s:rest, z:0 }, 220, { easing:ease.out })
+      .then(() => { squash(b, .05, 160); if (t.kind === 'junk') Foil.crinkle(); else S.cardLanded(); Haptic.tick(5); });
   }
-  // a tap; two quick taps on the felt put everything back
+  // a tap on something does its thing at once; two quick taps on empty
+  // felt tidy everything up
   function tap(q){
-    const now = performance.now();
-    if (lastTap && now - lastTap.at < 300 && Math.hypot(q.x - lastTap.x, q.y - lastTap.y) < 40){
-      clearTimeout(tapT); lastTap = null;
-      if (!busy) tidy();
+    const t = q.t;
+    if (!t){
+      const now = performance.now();
+      if (lastTap && now - lastTap.at < 320 && Math.hypot(q.x - lastTap.x, q.y - lastTap.y) < 40){ lastTap = null; tidy(); return; }
+      lastTap = { at:now, x:q.x, y:q.y };
       return;
     }
-    lastTap = { at:now, x:q.x, y:q.y };
-    clearTimeout(tapT);
-    const t = q.t;
-    if (!t) return;
-    tapT = setTimeout(() => {
-      lastTap = null;
-      if (busy) return;
-      if (t === fed) return unfeed();
-      if (t.kind === 'pk') return open(t);
-      inspect(t);
-    }, 280);
-  }
-  // the shared inspect screen; swipe a hand card up out of it into the feeder
-  function inspect(t){
-    const list = t.kind === 'hand' ? hand.filter(h => h !== fed).sort((a, b) => a.place - b.place) : heap.slice();
-    const canFeed = t.kind === 'hand' && phase === 'hand' && !fed;
-    CardInspect.open({
-      host:document.getElementById('home'),
-      items:list.map(h => ({ card:h.card, source:() => h.c.el })),
-      index:list.indexOf(t),
-      swipeUp:canFeed ? async (item, idx, api) => {
-        const h = list[idx], m = lip(), f = felt.getBoundingClientRect();
-        // it's on its way up: the card on the felt waits under the feeder for it
-        h.c.body.set({ x:m.x, y:m.y + CH * s / 2 + 2, r:0, z:0, s });
-        h.c.body.render(performance.now());
-        await api.sendTo({ x:f.left + m.x, y:f.top + m.y + CH * s / 2 + 2, s, r:0, z:0 });
-        feed(h, { placed:true });
-      } : null
-    });
+    lastTap = null;
+    if (busy) return;
+    if (t === fed) return unfeed();
+    if (t.kind === 'pk') return open(t);
+    if (t.kind === 'junk'){
+      // it hops on the felt, rustling
+      const b = t.body;
+      Foil.crinkle(); Haptic.tick(5);
+      glide(b, { z:8 }, 70, { easing:ease.out }).then(() => glide(b, { z:0 }, 110, { easing:ease.in })).then(() => squash(b, .08, 140));
+      return;
+    }
+    inspect(t);
   }
 
   /* ---------------- for the shop (js/vending-machine.js) ---------------- */
@@ -555,12 +601,20 @@
     get busy(){ return busy; },
     get scale(){ return s; },
     keyEl, setKey, keys,
-    addPackets, layDown, opened,
+    addPackets, handOver,
     // chips home: the reel counts them in
     countIn:v => countTo(wallet + v),
     // read-only, for the lab's checks
-    get state(){ return { phase, busy, fed:fed ? fed.place : null, hand:hand.map(h => h.place + ':' + h.card.uid), packets:packets.length, heap:heap.length, pool:pool.length }; },
-    where(kind, i){ const t = (kind === 'hand' ? hand.slice().sort((a, b) => a.place - b.place) : kind === 'pk' ? packets : heap)[i]; if (!t) return null; const r = (t.c ? t.c.el : t.p.el).getBoundingClientRect(), b = bodyOf(t); return { x:r.left + r.width / 2, y:r.top + r.height / 2, bx:b.x, by:b.y, home:t.home }; }
+    get state(){
+      return { busy, fed:fed ? fed.kind : null, house:of('house').map(h => h.place + ':' + h.card.uid), cards:of('card').length,
+        down:of('card').filter(t => !faceUp(t)).length, packets:of('pk').length, junk:of('junk').length, pool:pool.length, mid:mid() };
+    },
+    where(kind, i){
+      const list = kind === 'house' ? of('house').sort((a, b) => a.place - b.place) : of(kind);
+      const t = list[i]; if (!t) return null;
+      const r = elOf(t).getBoundingClientRect(), b = bodyOf(t);
+      return { x:r.left + r.width / 2, y:r.top + r.height / 2, bx:b.x, by:b.y, home:t.kind === 'house' ? placeAt(t.place) : null };
+    }
   };
 
   /* ---------------- start ---------------- */
@@ -572,13 +626,19 @@
     fillPool();
     keys();
     await wait(400);
-    busy = true; await tossIn(chooseThree()); busy = false;
-    // the felt can change size (the TUNE sheet, the phone turning): things
-    // keep to their places
+    busy = true; await tossIn([0, 1, 2]); busy = false;
+    // the felt can change size (the TUNE sheet, the phone turning): the
+    // house's cards keep to the tray, everything else stays on the felt
     new ResizeObserver(() => {
-      measure(); homes();
+      measure();
       if (busy) return;
-      [...hand.filter(h => h !== fed), ...packets, ...heap].forEach(t => bodyOf(t).set({ ...t.home, s:t.kind === 'pk' ? pkScale() : s }));
+      const W = felt.clientWidth, H = felt.clientHeight;
+      things.forEach(t => {
+        if (t === fed) return;
+        const b = bodyOf(t);
+        if (t.kind === 'house') b.set({ ...placeAt(t.place), s });
+        else b.set({ x:clamp(b.x, 10, W - 10), y:clamp(b.y, 10, H - 10), s:t.kind === 'pk' ? pkScale() : t.kind === 'junk' ? b.s : s });
+      });
     }).observe(felt);
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', setup); else setup();

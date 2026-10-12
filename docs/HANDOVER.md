@@ -26,9 +26,9 @@ audit's complaints (dashboard rims, clipped result line, chip pile) are gone.
 
 ## Recent changes (newest first)
 
-- 12 Oct (no game change): the Career hub rethought and built as a wooden
-  table: three cards, REDEAL, drag about, double tap, the feeder and PLAY;
-  packets in a row, opened, ADD ([brief](career/CAREER_HUB_BRIEF.md), round 6).
+- 12 Oct (no game change): the Career hub rethought and built: the tray
+  is the house's three cards (REDEAL), the felt is yours: packets torn open,
+  cards face down to turn, throw, tidy ([brief](career/CAREER_HUB_BRIEF.md), round 6).
 - 11 Oct (no game change): the packet machine, round 3 (owner's notes):
   TUNE fix, select then add, a chip stream, a flat tray; the hub loses
   P.I.P., gains a clean-up spot, one table size, a bag of chips to snip.

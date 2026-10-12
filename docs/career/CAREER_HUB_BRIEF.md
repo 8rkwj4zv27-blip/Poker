@@ -91,35 +91,50 @@ through the collection; leave and settings.
      the Career hub: cards moved by holding and dragging (with shadows),
      a double tap puts everything back; any number of packets lie on the
      table in one overlapping row. Built in `career-main.js` the same day.
+   - **Then (same day):** the felt is the player's. Packets land on the
+     felt; opening only tears them, the cards slide out face down to be
+     turned whenever; ADD is optional (ADD TO COLLECTION); the wrappers
+     stay; thrown cards go into the collection with a chime; no gold rim
+     on PLAY; one plain board (the faint box was gone-card shading).
 
 ## The hub as it stands (in `vending-lab.html` and `career-main-lab.html`)
 
+**The rule (owner, 12 Oct): the tray is the house's, the felt is yours.**
+Complete freedom over the order things happen in.
+
 - **Cabinet:** the bankroll reel full width; under it the feeder (a plate
   over a mouth a card wide), nothing else.
-- **Felt:** in its top third a small wooden table (the rail's wood, a soft
-  bevel); the rest is open felt.
-  - **Three cards** lie on the table, chosen from your case (one from the
-    cheapest third, one from the middle, one from the top; unlabelled).
-    **REDEAL** sweeps them off to the right and tosses three more in from
-    the left.
-  - **Anything on the felt** can be pressed and dragged about: it lifts and
-    its shadow drifts; let go and it slides and settles. **A double tap**
-    on the felt puts everything back in its place.
-  - **Tap a card** to inspect it; **flick it up** there (or drag or flick it
-    up from the table) and it goes half into the feeder: the plate reads
-    it, the middle key reads **PLAY**. Tap the card and it comes back out.
-    PLAY takes it in: it's used up, another is tossed into its place (the
-    game would seat you here: not wired; no buy-in).
-  - **Back from the shop** the cards are swept away and the packets you
-    sent lie on the table, one to a place, more in one overlapping row.
-    Tap one (or **OPEN**, the top one) and it's opened on the felt (the
-    pack opening, embedded); its chips count into the reel, the wrapper
-    and strip fall away, its four cards lie in a heap: **ADD** files them
-    into your case (into the CARDS key). Then the next packet, or three
-    cards again.
-- **Console:** SHOP · REDEAL / PLAY / OPEN / ADD · CARDS. SHOP rolls the
-  machine down (LEAVE · HOLD TO BUY · TAKE). CARDS does nothing yet (the
-  collection, unbuilt).
+- **The tray** (a small wooden table in the felt's top third, one plain
+  board, a soft bevel) holds the house's three cards from your case (one
+  from each third by prize; unlabelled). **REDEAL** sweeps them off and
+  tosses three more in.
+- **The felt is yours;** whatever is put there stays:
+  - **Packets** back from the shop drop into a row on the felt. Tap one
+    (or **OPEN**, the last one down): it's torn open (the tear and the
+    pull of the pack opening) and its four cards slide out **face down**
+    onto your pile. The wrapper and the strip stay on the felt; the chips
+    count into the reel. Open as many as you like before turning any.
+  - **Tap a card:** the inspect screen, through every card on the felt;
+    face-down ones come up face down, tap to turn (a rare chimes, a
+    legendary hits the jackpot sound); swipe to the next.
+  - **Pick anything up and move it** (it lifts, its shadow drifts) or
+    **throw it**: a card thrown off the felt goes into your collection
+    (it chimes into the CARDS key); a wrapper or strip is gone; a sealed
+    packet bounces back off the rail.
+  - **A double tap on empty felt** tidies: the loose cards into the
+    collection, the rubbish away, the packets back in a row, the house's
+    cards back in the tray.
+- **The feeder:** any face-up card carried or flicked up to it (or swiped
+  up out of the inspect screen) goes half in; the plate reads it; **PLAY**
+  takes it (used up; a house card is replaced; the game would seat you
+  here: not wired; no buy-in). Tap it to take it back out.
+- **Console:** SHOP · the middle key · CARDS. The middle key: **PLAY** (a
+  card in the feeder) · **ADD TO COLLECTION** (loose cards on the felt;
+  two lines) · **OPEN** (packets waiting) · **REDEAL**. SHOP rolls the
+  machine down (LEAVE · HOLD TO BUY · TAKE). CARDS does nothing yet.
+- **Later, with the owner's go-ahead:** the table kept between games (new
+  save data: where everything lies); pulling cards out of the collection
+  onto the felt (with the collection book).
 
 ## What the owner has made clear (keep to these)
 

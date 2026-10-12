@@ -1104,38 +1104,43 @@ Touch checks: `validation/career-hub-checks.cjs`.
 
 ## `career-main-lab.html` — the Career hub, a wooden table (isolated, 12 October 2026)
 
-Plan: `docs/career/CAREER_HUB_BRIEF.md` (round 6). The hub on its own (the
-packet machine lab runs it with the shop). The same host as the pack lab
-injects the card faces, `PO`, `EventCards`, `CardInspect` and
-`js/career-main.js` + `css/career-main.css`. The felt sits over the
-cabinet, so a carried card meets the feeder.
+Plan: `docs/career/CAREER_HUB_BRIEF.md` (round 6: the tray is the house's,
+the felt is yours). The hub on its own (the packet machine lab runs it
+with the shop). The same host as the pack lab injects the card faces,
+`PO`, `EventCards`, `CardInspect` and `js/career-main.js` +
+`css/career-main.css`. The felt sits over the cabinet, so a carried card
+meets the feeder.
 
 - **Cabinet:** the reel and the feeder (`.cm-slot`: a plate over a mouth
   `--cm-card` wide); no CRTs. `plate()` reads the card in it.
-- **The table:** `.cm-wood` (rail-coloured wood, a soft bevel) with three
-  `.cm-place`s; `measure` sizes the cards to the felt, `placeAt`,
-  `rowAt` (packets: one to a place, more in an overlapping row) and
-  `heapAt` (an opened packet's cards) give each thing its `home`.
-- **Cards:** `CardInspect.make` bodies. `chooseThree` takes one from each
-  third of your case by prize (regular, step up, big one; unlabelled);
-  `tossIn` from off the left, `sweepOff` to the right; `redeal`.
-- **Feeder:** `feed` (a card carried or flicked up, or `swipeUp` out of
-  the inspect screen) takes it half in by `teeth`, clipped at the mouth;
-  `unfeed` (tap it) brings it out; `play` takes it the rest of the way:
-  used up, another tossed into its place (the table hand-off: not wired).
-- **Packets and the heap:** `addPackets` (from the shop: the cards swept
-  away, the packets dropped into the row), `open` hands one to
-  `CareerShop.open`; `layDown` puts the opened cards in a heap, `opened`
-  drops the wrapper and strip off the felt; `add` files the heap into
-  your case through the CARDS key, then the next packet or a fresh deal.
-- **Keys:** `keys()`/`setKey` (lit or unlit, the label flips): SHOP ·
-  REDEAL / PLAY / OPEN / ADD · CARDS. The shop has them while it's out.
-- **Touch:** press and drag anything (it lifts, its shadow drifts),
-  `tap` to inspect, open or unfeed (held 280ms for a second tap); two
-  taps on the felt `tidy` everything home.
-- **For the shop:** `window.CareerMain` (`addPackets`, `layDown`,
-  `opened`, `keys`, `setKey`, `keyEl`, `countIn`, `showBank`, `scale`,
-  the wallet; `state`/`where` for the checks).
+- **Things:** one list, `things`, one stacking order (`raise`): `house`
+  (the tray's three), `card` (yours, loose; face down until turned), `pk`
+  (a sealed packet), `junk` (a wrapper, a strip). `placeAt` (the tray),
+  `rowAt` (packets, under the tray), `pileAt` (opened cards).
+- **The house:** `chooseFor` takes one from each third of your case by
+  prize; `tossIn`, `redeal`, `refill` (an empty place).
+- **Packets:** `addPackets` (from the shop: into the row); `open` hands one
+  to `CareerShop.open`; `handOver` takes the face-down deck (as separate
+  face-down cards onto the pile), the wrapper and the strip onto the felt.
+- **Turning over:** `inspect` opens `CardInspect` through every card on the
+  felt (`down` items); `onTurn` lays it face up on the felt, with a chime
+  by rarity.
+- **Collection:** `collect` (a card thrown off, or `addAll`, ADD TO
+  COLLECTION) joins your case, with `filed()`'s chime on the CARDS key.
+- **Feeder:** `feed` (a face-up card carried or flicked up, or `swipeUp`
+  from the inspect screen) half in by `teeth`, clipped at the mouth;
+  `unfeed` (tap it); `play` (used up; a house card is replaced; the table
+  hand-off is not wired).
+- **Touch:** press and drag anything (it lifts, its shadow drifts); `up`
+  throws (off the felt: a card is `collect`ed, junk gone, a packet hits
+  the rail and comes back); `tap` inspects, opens, unfeeds or hops junk;
+  two taps on empty felt `tidy`.
+- **Keys:** `keys()`/`setKey` (lit or unlit, the label flips; a line break
+  sets two lines, `.cm-two`): SHOP · PLAY / ADD TO COLLECTION / OPEN /
+  REDEAL (`mid()`) · CARDS. The shop has them while it's out.
+- **For the shop:** `window.CareerMain` (`addPackets`, `handOver`, `keys`,
+  `setKey`, `keyEl`, `countIn`, `showBank`, `scale`, the wallet;
+  `state`/`where` for the checks).
 
 ## `vending-lab.html` — the packet machine (isolated, 11 October 2026)
 
@@ -1169,10 +1174,10 @@ opening embedded (`js/pack-opening.js`, `window.PO_EMBED` set first).
   drag down → `send`), `putBack`, `putAway`.
 - **Hub:** `rollOut` hands the packets sent to `CareerMain.addPackets`;
   `openPacket` (the hub's `CareerShop.open`) runs
-  `PackOpeningEmbed.openOwned` on the felt; `attachOpening`: the opening's
-  key is the hub's middle key, its words go unsaid (no screens), `bag`
-  counts the chips into the reel, `stow` → `CareerMain.layDown`, `done` →
-  `CareerMain.opened`.
+  `PackOpeningEmbed.openOwned` on the felt (the tear and the pull);
+  `attachOpening`: the opening's key is the hub's middle key, its words go
+  unsaid (no screens), `bag` counts the chips into the reel, `handOver` →
+  `CareerMain.handOver` (the cards face down, the wrapper, the strip).
 
 ## `pack-opening-lab.html` — Pack Opening V3 (isolated, 11 October 2026)
 
@@ -1190,11 +1195,12 @@ stack / front canvas keep the cards inside.
 `js/pack-opening.js` also runs embedded (`window.PO_EMBED`): no table of
 its own, `PackOpeningEmbed.attach(cfg)` puts the opening on a host's felt
 (its reel, screens and key), `offer(packet)` starts at the packet on offer;
-`openOwned(packet)` opens one the host already owns (the packet machine's
-pile), sized to the host's table (`layout({ tableS })`). Embedded, the
-chips come out in a bag (`cfg.bag`), the hand is read and then laid down
-on the host's felt (`stow`), and the wrapper and strip are handed over
-(`done`).
+`openOwned(packet)` opens one the host already owns (a packet on the
+Career hub's felt), sized to the host's table (`layout({ tableS, wrapY,
+flapY })`). Embedded it runs only the tear and the pull: the chips count
+in (`cfg.bag`) and `handOver` gives the host the face-down deck, the
+wrapper and the strip (`cfg.handOver`); the reveal and the haul are the
+lab's own.
 `js/pack-opening.js`: the scene and state (deal, move and throw packets,
 select and turn, hold to buy, tear, draw; then the reveal: tap, flick or
 squeeze the deck, four tier moments, Legendary dip/slam/CRT flash and an

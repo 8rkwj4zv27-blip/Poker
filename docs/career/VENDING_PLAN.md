@@ -130,6 +130,13 @@ there; the chips count straight into the reel (no bag to snip); the
 wrapper and strip fall away; the cards wait in a heap for ADD. The
 clean-up spot, the deck and the CRTs are gone.
 
+Then (same day), the felt became the player's: packets land on the felt
+in a row; opening one only tears it and pulls the cards, which slide out
+face down onto the player's pile (`PackOpeningEmbed` hands them over with
+the wrapper and the strip, which stay); cards are turned over later on the
+inspect screen. The pack opening's own reveal and haul still run in
+`pack-opening-lab.html`.
+
 ## Open
 
 - The opening reveals four cards now; five things (cards or chips) need
