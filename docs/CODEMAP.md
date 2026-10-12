@@ -296,12 +296,14 @@ from the GitHub Pages site.
 
 ## `hub-lab.html` + `js/hub-lab-host.js` + `js/hub-lab.js` + `css/hub-lab.css` — Hub Lab
 
-Round 3 of the packs work (`docs/career/PACKS_PLAN.md`): Career opens on
-tonight's tickets. Phone-first like `pack-lab.html`; Career's screen
-becomes the hub (`#hb` inside `#career`). Six real catalogue events dealt
-from a deck, styled by kind, carried on springs in one layer over the
-hub, fed into a slot and on to a real table (`enterCareerEvent` +
-`careerDepartToTable`). `hub-lab-app.html` + `hub-lab.webmanifest` are its
+Round 4 of the packs work (`docs/career/PACKS_PLAN.md`): three tickets
+from a six-event lab pool, a top machine head/reader, selection with a
+separate printed brief, and short upward flick or cost-labelled FEED IT.
+Phone-first; `#hb` replaces the visible Career screen in the lab. Paper
+uses springs and opacity shading, the reader takes five stepped bites,
+then `enterCareerEvent` debits once and `careerDepartToTable` launches
+the real table. Risky entries can cancel; paid tables offer CONTINUE.
+TUNE provides poses, brief comparison, motion/speed/bankroll fixtures. `hub-lab-app.html` + `hub-lab.webmanifest` are its
 home-screen version. Lab only; nothing loads in the game.
 
 ## `js/home-boot.js` + `css/home-boot.css` — Home Boot (live)

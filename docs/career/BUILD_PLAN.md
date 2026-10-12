@@ -6,13 +6,23 @@ Expansion promoted: 2026-08-25
 
 Poker Faces V2 Career pass completed: 2026-09-21
 
+## Owner-directed sequence override — Hub polish lab — 2026-10-08
+
+The owner authorised a further Hub lab pass after reviewing Claude's work:
+three invitations on felt, selection with a printed brief, upward flick/feed
+into a top reader. See `PACKS_PLAN.md`, Round 4. Review this composition and
+interaction before the Vendor, then the Case; only subsequently agree how
+this changes Events Releases 2–4. This pass changes lab presentation only,
+with no production promotion, catalogue/economy or collection save work.
+The Back Room Release 1 phone pacing playtest remains open.
+
 ## Owner-directed sequence override — Events rework — 2026-10-08
 
 The owner approved `EVENTS_PLAN.md`. It runs in this order, one release at
 a time, each measured with `validation/tools/event-sim.js` before and
 after:
 
-1. **Back Room** (the Immediate next task): opponent skill 20, 50-big-blind
+1. **Back Room** (shipped in v0.67.0; phone pacing review remains): opponent skill 20, 50-big-blind
    stacks, blinds every 15 hands, a new 5-HAND Top-2 ticket; event skill
    carried by the event and its snapshot.
 2. **Heat gauge** on the ticket reader: lab, Pattern Book, then the game.

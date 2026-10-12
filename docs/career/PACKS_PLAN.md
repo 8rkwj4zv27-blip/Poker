@@ -90,7 +90,7 @@ Home-screen version: `pack-lab-app.html` (+ `pack-lab.webmanifest`). Once on
 open it in Safari, Share, Add to Home Screen. It opens full screen like the
 game, on in-memory storage (never the game's save), fresh each launch.
 
-## Round 3 (8 Oct 2026): the Career hub, tickets dealt
+## Round 3 (8 Oct 2026): the Career hub, tickets dealt — superseded by Round 4
 
 The owner on the Card Lab: the cards were hard to read, the art too
 abstract and "very AI", and the hand awkward; picking cards up, the foil
@@ -112,3 +112,52 @@ and the shimmer were good. Decided:
 - Link: https://claude.ai/artifact/2yG9jqdsRWqgXqCRitTqbM (home-screen, once
   on `main`: https://8rkwj4zv27-blip.github.io/Poker/hub-lab-app.html).
 - Next: the Vendor and the Case screens to this standard.
+
+
+## Round 4 (8 Oct 2026): three invitations and the top reader
+
+Owner-authorised Hub polish, following review of the handover and Claude
+conversation. The three-ticket composition supersedes Round 3's two rows of
+three and tabbed reasons. This is a presentation lab, not a collecting/economy
+implementation or a production promotion.
+
+- One top machine head: back/settings keys, bankroll drums, shared CRT,
+  quiet played/won/circuit record, and a ticket mouth at its lower edge.
+- Three larger invitations on felt: an admission ticket, Harry's private
+  playing-card invitation, and a Turbo machine slip. The existing portraits
+  are temporary art windows for the owner's artwork, not final card art.
+- Selection lifts one ticket forward and parks the other two behind it.
+  A separate paper brief prints real field/stack/blind cadence/payout/roster
+  terms. FACE ONLY in TUNE is a comparison, not the default.
+- Short upward flick or FEED IT (with explicit entry cost), then alignment,
+  five roller bites, the authoritative Career debit, bankroll roll and the
+  real table. A deliberate drag into the mouth also works. Slow off-slot
+  drags, diagonal gestures and cancelled touches return without paying.
+- Risky entries retain the real confirmation dialog. Cancelling returns
+  the ticket; insufficient bankroll disables entry. Returning with an active
+  event displays ENTRY ALREADY PAID / CONTINUE EVENT and cannot charge again.
+- No animated CSS filters. Paper uses controlled spring motion, hardware
+  uses steps, and shadow lift uses a separate layer. Reduced Motion removes
+  travel and kinetic flicks; FEED IT and direct slot placement remain usable.
+- TUNE lives inside the game with 44px keys: PLAY / REST / SELECTED /
+  AT THE SLOT, paper brief / face only, motion, speed and bankroll fixtures.
+  `?pose=rest|selected|feed` renders the same layout as still studies;
+  `?hub=1` opens the interactive Hub directly. Default launch starts Home.
+
+Validation: before/after `npm test`; rendered 320×700, 375×667, 390×844 and
+430×932; real emulated touch for paid key entry, fast flick, slow drag,
+diagonal release and cancellation at the reader; risky cancel/confirm and
+repeat entry; low bankroll; reduced motion; paid-event resume; native
+storage sentinels for Career/settings. Review report:
+`docs/career/HUB_ROUND4_REVIEW.md`.
+
+Delivery: source is on `codex/hub-reader-polish`; the private Artifact bundle
+is staged using the normal bundler. This session has no Claude Artifact
+publisher, so the Round 3 link above still shows Round 3. Do not describe it
+as updated. Review Round 4 through the local preview/screenshots until it
+can be republished to that same link.
+
+Next: owner reviews the card composition and feed feel on an actual phone.
+Then decide any corrections before starting the Vendor. The Case, pack
+prices, rarity, duplicates, collection saves and new event rules remain out
+of this pass. The live Hub's small-iPhone BUY IN issue remains open.
