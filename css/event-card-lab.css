@@ -1,0 +1,102 @@
+/* Isolated experiment. Hub materials and shared CRT / key / cartridge
+   finishes are reused. Classification never changes card anatomy. */
+#career.ecl-on > :not(#event-card-lab){display:none!important}
+#career.ecl-on{overflow:hidden}
+.ecl{gap:10px}
+.ecl .hb-top{grid-template-rows:44px 44px;gap:8px;padding:6px 8px 8px}
+.ecl .hb-rail{grid-template-columns:44px minmax(0,1fr) 64px}
+.ecl .hb-key{min-height:44px;min-width:44px}
+.ecl .hb-plate{font-size:9px;letter-spacing:.04em}
+.ecl .hb-felt{padding:8px 8px 12px;gap:6px}
+.ecl .hb-felt-head{min-height:44px;gap:6px;padding:0}
+.ecl .hb-label{font-size:7px;letter-spacing:.04em}
+.ecl .hb-redeal{height:44px;font-size:7px}
+.ecl .hb-deal{min-height:180px}
+.ecl .hb-hint{opacity:1;font:12px/1 var(--font-px);letter-spacing:.03em;bottom:6px}
+.ecl .hb-console{padding:7px 7px 0;gap:6px}
+.ecl .hb-slot{grid-template-columns:12px 1fr 1fr;gap:8px;padding:1px 4px}
+.ecl .hb-mouth{grid-column:2;height:14px;width:100%;min-width:100px}
+.ecl .hb-slot-word{grid-column:3;font-size:6px;line-height:1.4}
+.ecl .hb-readout{min-height:40px;padding:5px 8px}
+.ecl .hb-readout .crt-line{white-space:normal}
+.ecl .hb-cradle{padding:9px 7px 23px}
+.ecl .hb-cradle::before{height:56px}
+.ecl .hb-buy{min-height:56px;font-size:12px;padding:8px 16px}
+.ecl .hb-buy:not(:disabled) .pc-lamp{animation:none}
+.ecl .hb-buy small{font-size:10px;letter-spacing:.05em}
+.ecl .hb-slot.is-ready .hb-slot-lamp{animation:none}
+.ecl .hb-slot.is-near .hb-mouth{box-shadow:inset 0 3px 0 #000,0 0 0 2px var(--pc-lamp-amber)}
+.ecl .hb-slot.is-read .hb-slot-lamp{box-shadow:none}
+
+/* One stock / art aperture / title / category / terms / rarity footer.
+   Width and height are laid out afresh for inspection; text isn't enlarged
+   from a tiny bitmap via scale(). All art apertures remain 8:5. */
+.ecl-card{position:absolute;left:0;top:0;pointer-events:auto;touch-action:none;user-select:none;-webkit-user-select:none;transform-origin:50% 50%;padding:0;border:0;background:none;color:var(--card-ink);cursor:grab;will-change:transform;container-type:inline-size;--stock:#e9ddb3;--stock-lo:#9d9069;--trim:#4e4938;--venue:#304b39;--venue-ink:#e2d7ad}
+.ecl-card[data-venue="pub"]{--venue:#7b2734;--venue-ink:#f0cb8b}
+.ecl-card[data-venue="cardclub"]{--venue:#174d40;--venue-ink:#e2c981}
+.ecl-card[data-venue="casino"]{--venue:#17161a;--venue-ink:#efcf76}
+.ecl-card[data-venue="highroller"]{--venue:#2b2a31;--venue-ink:#ded7c8}
+.ecl-card[data-venue="invitational"]{--venue:#4b1020;--venue-ink:#f2d27d}
+.ecl-stock{position:absolute;inset:0;display:flex;flex-direction:column;gap:3px;padding:6px;overflow:hidden;border:2px solid var(--trim);border-radius:3px;background:repeating-linear-gradient(0deg,rgba(70,57,26,.027) 0 1px,transparent 1px 5px),var(--stock);box-shadow:inset 0 0 0 1px #f6ebc4,0 3px 0 var(--stock-lo),0 5px 0 #0b0805}
+.ecl-card.is-selected .ecl-stock{box-shadow:inset 0 0 0 1px #f6ebc4,0 3px 0 var(--stock-lo),0 7px 0 #0b0805,0 12px 10px rgba(0,0,0,.25)}
+.ecl-card.is-held{cursor:grabbing}
+.ecl-card.is-selected::before{content:'';position:absolute;inset:-6px;background:linear-gradient(#e8b83a,#e8b83a) left top/8px 2px no-repeat,linear-gradient(#e8b83a,#e8b83a) right top/8px 2px no-repeat,linear-gradient(#e8b83a,#e8b83a) left bottom/8px 2px no-repeat,linear-gradient(#e8b83a,#e8b83a) right bottom/8px 2px no-repeat;pointer-events:none}
+.ecl-card:focus-visible{outline:3px solid #f2b431;outline-offset:8px}
+.ecl-shade{position:absolute;inset:0;background:#080906;border-radius:3px;opacity:0;pointer-events:none;transition:opacity .16s steps(3,end)}
+.ecl-card.is-dim .ecl-shade{opacity:.42}
+.ecl-venue{display:flex;align-items:center;justify-content:center;min-height:16px;flex:0 0 auto;background:var(--venue);color:var(--venue-ink);border-bottom:2px solid #151815;font:700 clamp(10px,6cqw,13px)/1 var(--font-px);letter-spacing:.05em;white-space:nowrap}
+.ecl-art{position:relative;flex:0 0 auto;aspect-ratio:8/5;width:100%;display:flex;align-items:center;justify-content:center;overflow:hidden;background:var(--pc-felt);border:2px solid #151815;box-shadow:inset 0 2px 0 rgba(0,0,0,.3)}
+.ecl-art img{height:82%;width:auto;max-width:90%;object-fit:contain;image-rendering:pixelated;pointer-events:none}
+.ecl-art.is-placeholder{background:var(--pc-recess)}
+.ecl-art.is-placeholder img{display:none}
+.ecl-art.is-placeholder::after{content:'YOUR ART';color:#c4b587;font:11px/1 var(--font-px);letter-spacing:.12em}
+.ecl-title{flex:1 1 auto;display:flex;align-items:center;justify-content:center;margin:0;min-height:20px;font:400 clamp(8px,5.3cqw,13px)/1.25 var(--font-hdr);text-align:center;text-wrap:balance;color:#22201c}
+.ecl-category{display:flex;align-items:center;justify-content:center;gap:5px;min-height:14px;flex:0 0 auto;border-top:1px solid rgba(79,64,31,.25);font:700 clamp(11px,6cqw,14px)/1 var(--font-px);letter-spacing:.08em;color:#3b392c}
+.ecl-category i{font-style:normal;font-family:var(--font-px);font-size:14px;width:14px;line-height:1}
+.ecl-terms{display:none;grid-template-columns:1fr 1fr;gap:4px;flex:0 0 auto;padding:5px 0 3px;border-top:2px dashed rgba(79,64,31,.3)}
+.ecl-card.is-selected .ecl-terms{display:grid}
+.ecl-terms span{display:flex;flex-direction:column;gap:3px;text-align:center}
+.ecl-terms span + span{border-left:1px solid rgba(79,64,31,.3)}
+.ecl-terms small{font:700 11px/1 var(--font-px);letter-spacing:.03em;color:#5f5b4b}
+.ecl-terms b{font:400 clamp(9px,4.8cqw,12px)/1.1 var(--font-hdr);white-space:nowrap}
+.ecl-footer{display:flex;align-items:center;justify-content:space-between;flex:0 0 auto;min-height:14px;border-top:1px solid rgba(79,64,31,.25);font:700 clamp(10px,6cqw,12px)/1 var(--font-px);letter-spacing:.02em;color:#5f5b4b}
+.ecl-grade{display:flex;align-items:center;gap:3px}
+.ecl-grade i{font-style:normal;font-size:11px;color:#796b43;letter-spacing:-3px;margin-right:3px}
+.ecl-number{font-size:10px;font-weight:400}
+.ecl-card:not(.is-selected) .ecl-stock{gap:1px;padding:4px}
+.ecl-card:not(.is-selected) .ecl-venue{min-height:13px;font-size:10px}
+.ecl-card:not(.is-selected) .ecl-title{min-height:18px;font-size:clamp(8px,8.1cqw,9px);line-height:1.15}
+.ecl-card:not(.is-selected) .ecl-category{min-height:12px;font-size:10px}
+.ecl-card:not(.is-selected) .ecl-footer{min-height:12px;font-size:9px}
+.ecl-card:not(.is-selected) .ecl-number{font-size:9px}
+
+/* Rarity is a finishing process. Never a category colour or a venue. */
+.ecl-card[data-rarity="uncommon"]{--trim:#766341}
+.ecl-card[data-rarity="uncommon"] .ecl-stock{background:repeating-linear-gradient(0deg,rgba(70,57,26,.027) 0 1px,transparent 1px 5px),#eee2bb}
+.ecl-card:is([data-rarity="rare"],[data-rarity="legendary"]){--trim:#8d6818}
+.ecl-card:is([data-rarity="rare"],[data-rarity="legendary"]) .ecl-stock::before{content:'';position:absolute;inset:2px;border:1px solid #d7b45c;border-radius:1px;pointer-events:none}
+.ecl-card[data-rarity="legendary"] .ecl-stock{background:repeating-linear-gradient(0deg,rgba(70,57,26,.025) 0 1px,transparent 1px 5px),#f0e4c0}
+.ecl-card[data-rarity="legendary"] .ecl-grade{color:#715419;text-shadow:0 1px 0 #fff0bd}
+.ecl-card[data-rarity="legendary"] .ecl-stock::before{border-color:#f2d27a;box-shadow:0 1px 0 #8d6818}
+.ecl-foil{position:absolute;inset:0;pointer-events:none;overflow:hidden;border-radius:3px;display:none}
+.ecl-card[data-rarity="legendary"] .ecl-foil{display:block}
+.ecl-foil::before,.ecl-foil::after{content:'';position:absolute;left:0;right:0;height:3px;background:linear-gradient(100deg,#a17b29 10%,#d7b45c 38%,#fff0bd 48%,#d7b45c 58%,#a17b29 85%);background-size:240% 100%;background-position:var(--ecl-glint,50%) 0}
+.ecl-foil::before{top:0}
+.ecl-foil::after{bottom:0}
+.ecl-card.is-selected .ecl-foil::before,.ecl-card.is-selected .ecl-foil::after{animation:eclFoil 5s steps(18,end) 1}
+@keyframes eclFoil{0%,100%{background-position:0% 0}40%,65%{background-position:100% 0}}
+
+/* Lab controls use the Hub sheet and actual choice-row key family. */
+.ecl-scrim{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:8998}
+.ecl-sheet[hidden],.ecl-scrim[hidden]{display:none!important}
+.ecl-sheet{transform:none;padding-bottom:env(safe-area-inset-bottom,0px)}
+.ecl-sheet .hbl-body{padding-bottom:16px}
+.ecl-sheet .hbl-seg{flex-wrap:wrap}
+.ecl-sheet select{width:100%;min-height:44px;margin:5px 0 0;padding:8px;border:2px solid #080405;border-radius:2px;background:#34171a;color:#f3e6c4;font:15px/1 var(--font-px)}
+.ecl-sheet label{display:block;margin-top:12px;font-size:14px}
+.ecl-sheet .ecl-presets{display:grid;grid-template-columns:1fr 1fr;gap:4px}
+.ecl-sheet .ecl-presets button{min-height:44px;padding:5px;border:2px solid #080405;border-radius:2px;background:#34171a;color:#f3e6c4;font:13px/1.15 var(--font-px)}
+.ecl-sheet button:focus-visible,.ecl-sheet select:focus-visible{outline:2px solid #e8b83a;outline-offset:2px}
+@media(max-height:720px){.ecl{gap:8px}.ecl .hb-top{grid-template-rows:44px 38px;gap:5px}.ecl .hb-label{font-size:6px}.ecl .hb-felt{padding-top:4px}.ecl .hb-readout{min-height:34px}.ecl .hb-buy{min-height:50px;font-size:11px}.ecl .hb-cradle::before{height:50px}.ecl .hb-buy small{font-size:9px}.ecl-stock{gap:2px;padding:5px}.ecl-terms{padding:3px 0 2px}.ecl-terms small{font-size:10px}}
+@media(prefers-reduced-motion:reduce){.ecl *, .ecl-sheet{animation:none!important;transition:none!important}}
+[data-motion="off"] .ecl *,[data-motion="off"] .ecl-sheet{animation:none!important;transition:none!important}

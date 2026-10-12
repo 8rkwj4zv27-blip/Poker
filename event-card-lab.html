@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#140709">
+  <link rel="icon" href="data:,">
+  <title>Career Event Card Visual System Lab</title>
+  <style>
+    html,body{height:100%;margin:0;background:#140709;overflow:hidden}
+    #hb-game{position:fixed;inset:0;margin:auto;width:min(100vw,430px);height:100%;border:0;display:block;background:#0C1510}
+  </style>
+</head>
+<body>
+  <!-- Reuse the Hub Lab host: storage is replaced BEFORE any game script,
+       the service worker is stripped, and the production page is only a copy. -->
+  <iframe id="hb-game" title="Event card lab — isolated Poker Faces copy" allow="autoplay"></iframe>
+  <script type="application/json" id="lab-inject">{"css":["css/hub-lab.css","css/event-card-lab.css"],"js":["js/event-card-lab-model.js","js/event-card-lab.js"],"v":"1"}</script>
+  <script src="js/hub-lab-host.js?v=1"></script>
+</body>
+</html>

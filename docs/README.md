@@ -27,6 +27,7 @@ Last sorted: 7 October 2026 (v0.66.1).
 | [`career/BUILD_PLAN.md`](career/BUILD_PLAN.md) | Career phase sequence and scope |
 | [`career/EVENTS_PLAN.md`](career/EVENTS_PLAN.md) | The events rework (8 Oct 2026): easier start, harder top, ladders, formats, heat gauge. In progress |
 | [`career/PACKS_PLAN.md`](career/PACKS_PLAN.md) | Career as packs of event cards: a vending machine, the rip, the ticket case (8 Oct 2026). Visual lab first (`pack-lab.html`) |
+| [`career/EVENT_CARD_LAB.md`](career/EVENT_CARD_LAB.md) | Isolated card visual experiment (9 Oct 2026): independent rarity, category and venue; screenshots and Gauntlet findings; awaiting owner review |
 | [`ai/AI_PLAN.md`](ai/AI_PLAN.md) | The opponent AI: tier ladder and baselines |
 
 ## P.I.P. (current reference)
