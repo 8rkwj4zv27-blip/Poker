@@ -47,7 +47,7 @@ function nextKey(){
   if (vis(nextHand)) return '#btn-next-hand';
   const flipped = document.getElementById('console-flip').classList.contains('flipped');
   const award = document.getElementById('btn-award-pot-console');
-  if (flipped) return vis(award) && /award/i.test(award.textContent) ? '#btn-award-pot-console' : null;
+  if (flipped) return vis(award) && !/new run/i.test(award.textContent) ? '#btn-award-pot-console' : null;
   const row = document.getElementById('actions-row');
   if (row && !row.classList.contains('disabled') && vis(document.getElementById('btn-checkcall'))) return '#btn-checkcall';
   return null;
@@ -107,6 +107,8 @@ async function limitScenario(base){
       await boot(page, base, false);
       out.afterReloadActive = await page.evaluate(() => career.active && JSON.parse(JSON.stringify(career.active.snapshot)));
       await devKey(page);
+      // the resumed table deals once its entrance has run
+      await page.waitForFunction(n => game.handNumber > n, out.reloadAt.saved, { timeout:30000 }).catch(() => {});
       out.resumedHand = await page.evaluate(() => game.handNumber);
       out.resumedEvent = await page.evaluate(() => ({ handLimit:game.event.handLimit, payouts:game.event.payouts, funding:game.event.funding }));
     }
@@ -125,14 +127,35 @@ async function limitScenario(base){
   return out;
 }
 
+// CLEAR: between hands the table is trimmed to one opponent (DEV CLEAR
+// TABLE); then, hand by hand, that opponent is forced all in and the deal
+// rigged for you (DEV KO NEXT + WIN HAND) until they are knocked out.
+async function knockOutAll(page){
+  const t0 = Date.now();
+  while (await page.evaluate(() => !!career.active)){
+    await page.evaluate(() => {
+      const left = () => game.players.filter(p => !p.isHuman && !p.eliminated).length;
+      if (left() > 1 && betweenHands()) devClearTable();
+      if (left() === 1 && handInProgress() && game.phase === 'preflop' && !game._scenarioArmed){
+        game._scenarioArmed = true; devKoNext(); devWinHand();
+      }
+      if (betweenHands()) game._scenarioArmed = false;
+    });
+    const key = await page.evaluate(nextKey);
+    if (key) await page.tap(key, { timeout:2000 }).catch(() => {});
+    if (Date.now() - t0 > 10 * 60000) throw new Error('CLEAR timed out');
+    await page.waitForTimeout(200);
+  }
+}
+
 async function earlyScenario(base, devFn){
   const out = {};
   out.errors = await withPage({ width:390, height:844 }, async page => {
     await boot(page, base, true);
     await devKey(page);
     await page.waitForFunction(() => document.getElementById('actions-row') && !document.getElementById('actions-row').classList.contains('disabled'), null, { timeout:60000 }).catch(() => {});
-    await page.evaluate(fn => window[fn](), devFn);
-    await playUntil(page, () => !career.active, []);
+    if (devFn === 'knockOutAll') await knockOutAll(page);
+    else { await page.evaluate(fn => window[fn](), devFn); await playUntil(page, () => !career.active, []); }
     out.final = await page.evaluate(() => ({ hand:game.handNumber, bankroll:career.bankroll, result:career.lastResult }));
     await boot(page, base, false);
     out.afterReload = await page.evaluate(() => career.bankroll);
@@ -160,7 +183,12 @@ async function earlyScenario(base, devFn){
       assert.deepStrictEqual(L.resumedEvent, { handLimit:10, payouts:PAYOUTS, funding:'house' });
     });
     report('the HAND readout shows the hand being played', () => {
-      L.readouts.forEach(r => { const [h, text] = r.split('='); assert.strictEqual(text, h + '/10', r); });
+      // sampled between the deal and the next redraw it may still show the
+      // hand before; it never shows anything else, and every hand shows
+      const shown = new Set();
+      L.readouts.forEach(r => { const [h, text] = r.split('='); assert.ok([h + '/10', (h - 1) + '/10'].includes(text), r);
+        if (text === h + '/10') shown.add(+h); });
+      for (let h = 1; h <= L.final.hand; h++) assert.ok(shown.has(h), 'hand ' + h + ' shown');
     });
     report('never more than ten hands; ten when nobody was knocked out', () => {
       assert.ok(L.final.hand <= 10);
@@ -184,7 +212,7 @@ async function earlyScenario(base, devFn){
       assert.strictEqual(L.afterFinalReload.active, null);
       assert.strictEqual(L.final.tableSave, null);
     });
-    for (const [name, fn] of [['BUST', 'devBustMe'], ['CLEAR', 'devClearTable']]){
+    for (const [name, fn] of [['BUST', 'devBustMe'], ['CLEAR', 'knockOutAll']]){
       const E = await earlyScenario(base, fn);
       console.log(name, JSON.stringify(E));
       report(name + ': no JavaScript errors', () => assert.deepStrictEqual(E.errors, []));

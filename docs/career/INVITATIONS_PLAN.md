@@ -104,6 +104,21 @@ continue it. No packets, no invitations in the save, no hub loop.
 9. Only reachable through DEV; nothing changes for a player without it,
    and existing saves load unchanged.
 
-### Results
+### Results (12 Oct 2026)
 
-(Filled in when the stage is checked.)
+- `npm test`: 25 of 25 suites pass. New checks in `career-events-checks`
+  (catalogue, DEV gate, ties, entry, settle once, reload) and
+  `career-result-checks` (hand limit, chip placing, ties, limit wording).
+- Independent review (a separate agent, commit `60caa0c`): nothing
+  blocking; its three minor findings (result wording at the limit, the
+  abandon message, play metrics for a shared first) are fixed.
+- Real flow, emulated iPhone (`validation/tools/invitation-scenario.js`,
+  11 of 11): ten hands played with real taps, a reload during hand 5 came
+  back to hand 5 on the same terms, the event ended after hand 10 (2nd on
+  chips, $30, credited once and not again after a reload); an early
+  knock-out paid 3rd ($15); an early clearance paid 1st ($60) at hand 2.
+- Not yet: the owner playing it on the phone; minutes per hand.
+- Card preview: https://claude.ai/artifact/K4NmPQASrYC6RoJLepPRP2, on the
+  hub's own card coloured by rarity (owner, 12 Oct: Common cream,
+  Uncommon green, Rare blue, Legendary yellow; little text, rules on the
+  inspect screen later).
