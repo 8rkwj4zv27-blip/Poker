@@ -388,7 +388,7 @@ window.PO_EMBED = true;
   async function payChips(due){
     const cols = chipsFor(due), from = M.wallet, n = cols.length;
     const reel = rel(M.reelEl), slit = vq('.vm-slit');
-    const gap = PO.reduced ? 0 : 250;
+    const gap = PO.reduced ? 0 : 300;
     let went = 0;
     crt('PAID', money(0), 'OF ' + money(due), 'money');
     await Promise.all(cols.map((col, i) => wait(i * gap).then(() => feed(col, reel, slit, i)).then(() => {
@@ -411,45 +411,65 @@ window.PO_EMBED = true;
     clip.append(el); chipsEl.append(clip);
     return { clip, el, f, d, h, x:0, y:0, rot:0, tilt:1, frame:-1 };
   }
-  // (x, y) is the middle of the chip itself (edge-on, its band sits low in the sprite)
+  // (x, y) is the middle of the chip itself (edge-on, its band sits low in
+  // the sprite); k its size (nearer is bigger); lit how much light it gets;
+  // (ox, oy) where its clip box sits
   function drawChip(c){
     if (c.frame !== c.tilt){ c.frame = c.tilt; c.el.style.backgroundImage = c.f.front[c.tilt]; }
-    const oy = c.tilt >= 5 ? .69 : c.tilt >= 3 ? .62 : .56;
+    const oy = c.tilt >= 5 ? .69 : c.tilt >= 3 ? .62 : .56, k = c.k || 1;
     c.el.style.transformOrigin = `50% ${oy * 100}%`;
-    c.el.style.transform = `translate(${Math.round(c.x - c.d / 2)}px,${Math.round(c.y - c.h * oy)}px) rotate(${snap(c.rot, 15)}deg)`;
+    c.el.style.transform = `translate(${Math.round(c.x - (c.ox || 0) - c.d / 2)}px,${Math.round(c.y - (c.oy || 0) - c.h * oy)}px) rotate(${snap(c.rot, 15)}deg) scale(${snap(k, .05)})`;
+    const lit = c.lit ?? 1;
+    if (lit !== c.litWas){ c.litWas = lit; c.el.style.filter = lit < 1 ? `brightness(${snap(lit, .1).toFixed(1)})` : ''; }
   }
-  // one chip, one movement: up out of the reel, over, and down onto the
-  // slot, face showing and spinning, then turning up onto its edge as it
-  // comes down to the slit; it pushes in, catches, and CHUNK
+  // one chip, one unbroken movement, never still: up out of the reel, over
+  // and down, face showing and spinning, turning onto its edge as it lines
+  // up with the slit in front of it; it meets the plate and is pushed in
+  // (only what's inside the slit's opening shows, going darker and smaller
+  // as it goes), then it rolls down the chute inside and CLUNKs into the box
+  const FLY = .74, MEET = .8;   // where the flight ends and the push begins (of the whole)
   async function feed(col, reel, slit, i){
     const d = vm.classList.contains('is-compact') ? 26 : 30;
     const c = chipEl(col, d);
-    const sl = rel(slit), sx = sl.x + sl.w / 2, top = sl.y;
-    // the slit's lip hides whatever's gone in
-    c.clip.style.height = Math.round(top + 1) + 'px';
-    const x0 = reel.x + reel.w * rr(.3, .7), y0 = reel.y + reel.h * .5, y1 = top - d * .55;
-    const cx = mix(x0, sx, .75), cy = Math.min(y0, top) - 60;
+    c.clip.style.height = '100%';
+    const sl = rel(slit), sx = sl.x + sl.w / 2, sy = sl.y + sl.h / 2;
+    const x0 = reel.x + reel.w * rr(.3, .7), y0 = reel.y + reel.h * .5;
+    const cx = mix(x0, sx, .85), cy = Math.min(y0, sl.y) - 70;
     const spin = (i % 2 ? 1 : -1) * rr(200, 320);
-    S.chipBounce(.35); Haptic.tick(4);
-    await tween(PO.reduced ? 1 : 560, (e, t) => {
-      const u = 1 - e;
-      c.x = u * u * x0 + 2 * u * e * cx + e * e * sx;
-      c.y = u * u * y0 + 2 * u * e * cy + e * e * y1;
-      if (t < .55){ c.tilt = t < .3 ? 1 : 2; c.rot = spin * (1 - t / .55); }
-      else { const k = (t - .55) / .45; c.tilt = Math.min(5, 3 + Math.floor(k * 3)); c.rot = 90 * Math.min(1, k * 1.15); }
-      drawChip(c);
-    }, ease.inOut);
-    c.tilt = 5; c.rot = 90; c.x = sx; c.y = y1; drawChip(c);
     const plate = vq('.vm-plate'), ring = vq('.vm-ring');
-    // thumbed in: it seats in the slit's lip, a third of the way, and
-    // sticks there against the spring for a beat
-    Foil.scrape(); Haptic.tick(4, 40);
-    ring.style.translate = '0 1px';
-    await tween(PO.reduced ? 1 : 80, e => { c.y = mix(y1, top - d * .2, e); drawChip(c); }, ease.out);
-    if (!PO.reduced){ for (const dx of [1, -1, 0]){ c.x = sx + dx; drawChip(c); await wait(22); } }
-    // the thumb shoves: the spring gives and it's gone into the machine
-    S.chipClink(.5); Haptic.tick(10, 0);
-    await tween(PO.reduced ? 1 : 70, e => { c.y = mix(top - d * .2, top + d * .9, e); drawChip(c); }, ease.in);
+    let met = false, inside = false;
+    S.chipBounce(.35); Haptic.tick(4);
+    await tween(PO.reduced ? 1 : 840, (e, t) => {
+      if (t < FLY){
+        // the flight: a curve that comes down onto the slit from above, eased
+        // out of the reel but arriving at speed (a thumb doesn't stop short)
+        const q0 = t / FLY, u = q0 * q0 * (2 - q0) * .7 + q0 * .3, v = 1 - u;
+        c.x = v * v * x0 + 2 * v * u * cx + u * u * sx;
+        c.y = v * v * y0 + 2 * v * u * cy + u * u * sy;
+        const q = t / FLY;
+        if (q < .55){ c.tilt = q < .3 ? 1 : 2; c.rot = spin * (1 - q / .55); }
+        else { const k = (q - .55) / .45; c.tilt = Math.min(5, 3 + Math.floor(k * 3)); c.rot = 90 * Math.min(1, k * 1.2); }
+        // nearer the viewer as it comes in: a touch bigger than at the plate
+        c.k = 1 + .14 * Math.sin(Math.min(1, q * 1.1) * Math.PI / 2);
+      } else if (t < MEET){
+        // it meets the plate: the last of the nearness goes, the rim gives
+        const k = (t - FLY) / (MEET - FLY);
+        c.x = sx; c.y = sy + 1 - k; c.tilt = 5; c.rot = 90; c.k = 1.14 - .12 * ease.out(k);
+        if (!met){ met = true; Foil.scrape(); S.chipClink(.45); Haptic.tick(6, 40); ring.style.translate = '0 1px'; }
+      } else {
+        // pushed in: only what's in the slit's opening shows, going darker
+        // and smaller as it goes deeper, and then it's gone
+        if (!inside){
+          inside = true; Haptic.tick(10, 0);
+          Object.assign(c.clip.style, { left:sl.x + 'px', top:sl.y + 'px', width:sl.w + 'px', height:sl.h + 'px', right:'auto' });
+          c.ox = sl.x; c.oy = sl.y;
+        }
+        // (deeper is a little higher, as everything here is seen from above)
+        const k = ease.out((t - MEET) / (1 - MEET));
+        c.x = sx; c.y = sy - 4 * k; c.k = 1.02 - .5 * k; c.lit = 1 - .85 * k;
+      }
+      drawChip(c);
+    }, ease.lin);
     c.clip.remove();
     ring.style.translate = '';
     slit.classList.add('is-lit'); setTimeout(() => slit.classList.remove('is-lit'), 60);

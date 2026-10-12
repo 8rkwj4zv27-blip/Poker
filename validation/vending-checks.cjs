@@ -78,6 +78,19 @@ async function run(width, height, reducedMotion){
 
     // HOLD TO BUY: the chips go in, the packets drop; the first one sticks
     const [kx, ky] = await centre('[data-key="play"]');
+    // every chip, every frame: none may hang still in the air while it's showing
+    await fr.evaluate(() => {
+      const seen = new Map(), out = window.__chips = { worst:0, frames:0, n:0 };
+      (function look(now){
+        document.querySelectorAll('.vm-chip').forEach(el => {
+          const t = el.style.transform, s = seen.get(el);
+          if (!s){ seen.set(el, { t, at:now }); out.n++; return; }
+          if (t !== s.t){ s.t = t; s.at = now; } else out.worst = Math.max(out.worst, now - s.at);
+        });
+        out.frames++;
+        if (out.frames < 1500) requestAnimationFrame(look);
+      })(performance.now());
+    });
     await touch.start(kx, ky); await page.waitForTimeout(560); await touch.end();
     await until(q => q.stuck, 'a stuck packet');
     const [wx, wy] = await centre('.vm-window');
@@ -86,6 +99,10 @@ async function run(width, height, reducedMotion){
     await tap(wx, wy);
     s = await until(q => q.mode === 'idle', 'the drop');
     assert.equal(s.wallet, before - 400, 'the bankroll paid the total');
+    if (!reducedMotion){
+      const ch = await fr.evaluate(() => window.__chips);
+      assert.ok(ch.n >= 2 && ch.worst < 90, 'no chip hangs still on its way in (' + JSON.stringify(ch) + ')');
+    }
     assert.equal(s.tray, 2, 'both packets in the tray');
 
     // PUSH: one comes out; flicked down, it's sent and the next comes out

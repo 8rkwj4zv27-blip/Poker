@@ -100,9 +100,14 @@ panel, red panelling).
 
 - The packet you're looking at is lit; the ones you can't afford (with
   what's already in the basket) go dim, their price tags too.
-- The coin slot: the chip seats in the lip, sticks against the spring for
-  a beat, is shoved in, rolls down the chute inside (four ticks, the plate
-  trembling) and CLUNKs into the box.
+- The coin slot, second go (the owner: every coin paused in the same
+  place, floating above the slot): one unbroken movement per chip, never
+  still. It flies in, turns onto its edge lined up with the slit, meets
+  the plate at speed and is pushed in (only what's inside the slit's
+  opening shows, smaller and darker as it goes deeper), then rolls down
+  the chute inside (four ticks, the plate trembling) and CLUNKs into the
+  box. The touch checks measure every chip every frame: none may hold a
+  position for more than about five frames.
 - On the home screen: `packet-machine/` on main (a self-contained copy,
   re-staged with each change): https://8rkwj4zv27-blip.github.io/Poker/packet-machine/
 
