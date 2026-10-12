@@ -213,7 +213,9 @@ Screen navigation and all Career money/transaction logic.
 menu-launch sequence (`stageInitialRunArrival` etc.), and every Career
 money function: `enterCareerEvent`, `settleCareerEvent`, `startCareerEvent`,
 `continueCareerEvent`, `startCareerCashSession`/`endCareerCashSession`,
-`saveCareer`. **This is the one place Career's money rules are enforced** —
+`saveCareer`; the invitations the player owns (`career.invitations`,
+`giveCareerInvitation`, `playCareerInvitation`: a card is used up in the
+same write that starts its event; `docs/career/INVITATIONS_PLAN.md`). **This is the one place Career's money rules are enforced** —
 buy-in debited and persisted before the table exists; settlement guarded
 against duplicate credit; `felt.career` is the sole authoritative ledger.
 Don't duplicate a transaction path elsewhere.
@@ -956,9 +958,9 @@ path — see the file's own header comment. The panel itself is absent from
 the DOM when `DEV_MODE` is false (`?dev` in the URL, or the setting).
 Useful for reaching a specific game state (forced all-ins, rigged deals,
 Career bankroll presets) without playing there manually. CAREER INVITATION
-starts or continues the Stage 1 Back Room invitation
-(`devPlayCareerInvitation`, `docs/career/INVITATIONS_PLAN.md`); it pays
-the real Career bankroll.
+gives a Back Room invitation card and plays one (or continues it)
+(`devGiveCareerInvitation`, `devPlayCareerInvitation`,
+`docs/career/INVITATIONS_PLAN.md`); it pays the real Career bankroll.
 
 ## `js/09-controls.js` (~400 lines)
 

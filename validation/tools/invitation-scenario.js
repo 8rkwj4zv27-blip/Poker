@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 "use strict";
-/* The Stage 1 invitation event, played for real in an emulated iPhone
+/* The Stage 1-2 invitation event, from a card, played for real in an emulated iPhone
    (docs/career/INVITATIONS_PLAN.md). Not part of `npm test` (it needs
    Playwright and Chromium, like the play-test).
 
@@ -68,8 +68,14 @@ async function boot(page, base, fresh){
   await page.evaluate(() => { const s = document.querySelector('.tour-skip'); if (s) s.click(); });
 }
 // presses the real DEV key (start or continue)
-async function devKey(page){
+const cards = page => page.evaluate(() => careerInvitations().length);
+// presses the real DEV keys: GIVE (a new event only) then PLAY / CONTINUE
+async function devKey(page, give = true){
   await page.evaluate(() => { const p = document.getElementById('dev-panel'); if (p) p.classList.remove('collapsed'); });
+  if (give){
+    await page.$eval('#dev-career-invite-give', b => b.scrollIntoView());
+    await page.tap('#dev-career-invite-give');
+  }
   await page.waitForSelector('#dev-career-invite-play:not([disabled])', { timeout:5000 });
   await page.$eval('#dev-career-invite-play', b => b.scrollIntoView());
   await page.tap('#dev-career-invite-play');
@@ -97,7 +103,9 @@ async function limitScenario(base){
   const out = {};
   out.errors = await withPage({ width:430, height:932 }, async page => {
     await boot(page, base, true);
+    out.cardsAtStart = await cards(page);
     await devKey(page);
+    out.afterPlay = await page.evaluate(() => ({ cards:careerInvitations().length, from:career.active && career.active.invitationId }));
     const log = [];
     // play into hand 5, then reload with the table at its checkpoint
     await playUntil(page, () => !career.active || game.handNumber >= 5, log);
@@ -106,7 +114,8 @@ async function limitScenario(base){
       out.reloadAt = { live: before.hand, saved: before.saved && before.saved.handNumber, savedEvent: before.saved && before.saved.event };
       await boot(page, base, false);
       out.afterReloadActive = await page.evaluate(() => career.active && JSON.parse(JSON.stringify(career.active.snapshot)));
-      await devKey(page);
+      out.cardsAfterReload = await cards(page);
+      await devKey(page, false);
       // the resumed table deals once its entrance has run
       await page.waitForFunction(n => game.handNumber > n, out.reloadAt.saved, { timeout:30000 }).catch(() => {});
       out.resumedHand = await page.evaluate(() => game.handNumber);
@@ -177,6 +186,12 @@ async function earlyScenario(base, devFn){
       assert.ok(L.reloadAt, 'the event ended before hand 5');
       assert.strictEqual(L.reloadAt.saved, L.reloadAt.live - 1);
       assert.strictEqual(L.resumedHand, L.reloadAt.live);
+    });
+    report('a card is given, then used up by playing it (Stage 2)', () => {
+      assert.strictEqual(L.cardsAtStart, 0);
+      assert.strictEqual(L.afterPlay.cards, 0);
+      assert.ok(/^inv-/.test(L.afterPlay.from), 'the event records the card it came from');
+      assert.strictEqual(L.cardsAfterReload, 0, 'no card comes back on a reload');
     });
     report('reload: the event keeps its terms', () => {
       assert.strictEqual(L.afterReloadActive.handLimit, 10);

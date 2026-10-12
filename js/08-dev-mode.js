@@ -495,22 +495,30 @@ function devSetCareerBankroll(value){
   renderCareerScreen();
   return true;
 }
-/* DEV-only: the Stage 1 invitation event (docs/career/INVITATIONS_PLAN.md).
-   Entered through the real Career entry, so it plays, saves, resumes and
-   settles like any event: no entry fee, and its prize is credited to THIS
-   Career's bankroll. Continues it instead if it is the event in progress. */
+/* DEV-only: invitations (docs/career/INVITATIONS_PLAN.md, Stages 1-2).
+   GIVE adds a Back Room invitation to THIS Career's cards; PLAY uses up the
+   first card through the real Career entry (no entry fee; its prize is
+   credited to this Career's bankroll), or continues the event in progress. */
 const DEV_INVITATION_ID = 'back-room-invite';
 function devCareerInvitationLabel(){
-  const state = careerEventState(DEV_INVITATION_ID);
+  const state = careerEventState(DEV_INVITATION_ID), owned = careerInvitations().length;
   return state === 'active' ? 'CONTINUE BACK ROOM INVITE'
-    : state === 'available' ? 'PLAY BACK ROOM INVITE · 10 HANDS'
-    : 'BACK ROOM INVITE · FINISH THE TABLE IN PLAY FIRST';
+    : !owned ? 'PLAY · NO INVITATIONS (GIVE ONE)'
+    : state === 'available' ? 'PLAY AN INVITATION (' + owned + ' HELD)'
+    : 'PLAY · FINISH THE TABLE IN PLAY FIRST';
+}
+function devGiveCareerInvitation(){
+  if (!DEV_MODE) return null;
+  const card = giveCareerInvitation(DEV_INVITATION_ID, 'common');
+  refreshDevPanel();
+  return card;
 }
 function devPlayCareerInvitation(){
   if (!DEV_MODE) return false;
   const state = careerEventState(DEV_INVITATION_ID);
+  const card = careerInvitations()[0];
   const launch = state === 'active' ? continueCareerEvent
-    : state === 'available' && enterCareerEvent(DEV_INVITATION_ID) ? startCareerEvent : null;
+    : card && playCareerInvitation(card.id) ? startCareerEvent : null;
   if (!launch) return false;
   careerDepartToTable(launch);
   return true;
@@ -558,7 +566,8 @@ function initDevPanel(){
       '<div id="dev-career-invite">' +
         '<div class="dev-section-title">CAREER INVITATION</div>' +
         '<div class="dev-subtitle">3 PLAYERS · 10 HANDS · $60/$30/$15 · PAYS THIS CAREER</div>' +
-        '<button id="dev-career-invite-play" type="button">PLAY BACK ROOM INVITE · 10 HANDS</button>' +
+        '<button id="dev-career-invite-give" type="button">GIVE A BACK ROOM INVITATION</button>' +
+        '<button id="dev-career-invite-play" type="button">PLAY AN INVITATION</button>' +
       '</div>' +
       '<div id="dev-career-bankroll">' +
         '<div class="dev-section-title">CAREER BANKROLL</div>' +
@@ -672,6 +681,7 @@ function initDevPanel(){
   });
   $('dev-end-table').onclick = devEndTable;
   $('dev-career-invite-play').onclick = devPlayCareerInvitation;
+  $('dev-career-invite-give').onclick = devGiveCareerInvitation;
   const runArcadeDevTest=fn=>()=>{
     fn();
     panel.classList.add('collapsed');
@@ -707,8 +717,11 @@ function refreshDevPanel(){
   const invite = $('dev-career-invite-play');
   if (invite){
     invite.textContent = devCareerInvitationLabel();
-    invite.disabled = onTable || !['active','available'].includes(careerEventState(DEV_INVITATION_ID));
+    const state = careerEventState(DEV_INVITATION_ID);
+    invite.disabled = onTable || !(state === 'active' || (state === 'available' && careerInvitations().length));
   }
+  const give = $('dev-career-invite-give');
+  if (give) give.disabled = careerInvitations().length >= CAREER_INVITATIONS_LIMIT;
   const bankrollInput = $('dev-bankroll-input');
   const bankrollApply = $('dev-bankroll-apply');
   if (bankrollInput){

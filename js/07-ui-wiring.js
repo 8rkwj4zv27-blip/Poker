@@ -669,7 +669,9 @@ function normalizeActiveCareerEvent(active){
   const full = active.snapshot || active.event;
   if (isValidCareerEventSnapshot(full)){
     const snapshot = Object.assign({}, full);
-    return withCareerRoster({ eventId:snapshot.id, snapshot }, active.roster);
+    const kept = withCareerRoster({ eventId:snapshot.id, snapshot }, active.roster);
+    if (typeof active.invitationId === 'string' && active.invitationId) kept.invitationId = active.invitationId;
+    return kept;
   }
   // An incomplete snapshot: either version 1 (which knew only Back Room and
   // stored eventId/buyIn/prize at the TOP level) or a version-2 snapshot
@@ -790,6 +792,9 @@ function migrateCareer(raw){
     if (wonStake && wonStake.id === INVITATIONAL_EVENT_ID) migrated.champion = true;
   }
   applyEquivalentUnlocks(migrated.unlocks);
+  // The cards the player owns survive any repair of the rest of the save.
+  const invitations = normalizeCareerInvitations(raw.invitations);
+  if (invitations.length) migrated.invitations = invitations;
   return migrated;
 }
 function isValidCareer(c){
@@ -813,9 +818,74 @@ let career = (function(){
   const raw = Store.get(CAREER_KEY, null);
   const migrated = isValidCareer(raw) ? raw : migrateCareer(raw);
   if (raw && !isValidCareer(raw)) Store.set(CAREER_KEY, migrated);
+  // A damaged card list is cleaned once; a save without one stays untouched.
+  else if (raw && raw.invitations !== undefined){
+    const clean = normalizeCareerInvitations(raw.invitations);
+    if (JSON.stringify(clean) !== JSON.stringify(raw.invitations)){ raw.invitations = clean; Store.set(CAREER_KEY, raw); }
+  }
   return migrated;
 })();
 function saveCareer(){ Store.set(CAREER_KEY, career); }
+
+/* ============================================================
+   INVITATIONS — the cards the player owns (docs/career/INVITATIONS_PLAN.md,
+   Stage 2). `career.invitations` is a list inside felt.career, additive and
+   tolerant like the roster book: no save-version change, and a save
+   without it simply owns no cards. A card is one future table: its event,
+   its rarity and the opponents drawn when it was given. Playing a card
+   removes it in the same write that makes its event active.
+   ============================================================ */
+function normalizeCareerInvitation(raw){
+  if (!raw || typeof raw !== 'object' || typeof raw.id !== 'string' || !raw.id) return null;
+  const event = careerEventById(raw.eventId);
+  if (!isCareerInvitation(event) || !CAREER_INVITATION_RARITIES.includes(raw.rarity)) return null;
+  return {
+    id:raw.id, eventId:event.id, rarity:raw.rarity,
+    roster:normalizeCareerRoster(raw.roster, event),
+    addedAt:Number.isSafeInteger(raw.addedAt) && raw.addedAt >= 0 ? raw.addedAt : 0
+  };
+}
+function normalizeCareerInvitations(value){
+  if (!Array.isArray(value)) return [];
+  const seen = new Set();
+  return value.map(normalizeCareerInvitation)
+    .filter(card=>card && !seen.has(card.id) && seen.add(card.id))
+    .slice(0, CAREER_INVITATIONS_LIMIT);
+}
+function careerInvitations(){ return Array.isArray(career.invitations) ? career.invitations : []; }
+function careerInvitationById(id){ return careerInvitations().find(card=>card.id === id) || null; }
+
+/* Gives the player one card. DEV only until packets exist (Stage 3). */
+function giveCareerInvitation(eventId, rarity){
+  const event = careerEventById(eventId);
+  if (!isCareerInvitation(event) || !CAREER_INVITATION_RARITIES.includes(rarity)) return null;
+  if (careerInvitations().length >= CAREER_INVITATIONS_LIMIT) return null;
+  const card = {
+    id:'inv-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2,8),
+    eventId:event.id, rarity, roster:generateCareerRoster(event), addedAt:Date.now()
+  };
+  career.invitations = careerInvitations().concat([card]);
+  saveCareer();
+  return card;
+}
+function careerCanPlayInvitation(id){
+  const card = careerInvitationById(id);
+  return !!card && careerCanEnterEvent(card.eventId);
+}
+/* Plays one card: it leaves the collection and its event becomes active in
+   ONE felt.career write, so no crash can lose a card or play one twice. */
+function playCareerInvitation(id){
+  if (!careerCanPlayInvitation(id)) return false;
+  const card = careerInvitationById(id);
+  const event = careerEventById(card.eventId);
+  const snapshot = careerEventSnapshot(event);
+  career.active = withCareerRoster({ eventId:snapshot.id, snapshot }, card.roster || generateCareerRoster(event));
+  career.active.invitationId = card.id;
+  career.invitations = careerInvitations().filter(other=>other.id !== id);
+  career.lastResult = null;
+  saveCareer();
+  return true;
+}
 
 /* ============================================================
    THE ROSTER BOOK — Career's one authority on who is at which table.
@@ -976,6 +1046,8 @@ function careerCanEnterEvent(eventId){
    never produce a second charge. */
 function enterCareerEvent(eventId){
   if (!careerCanEnterEvent(eventId)) return false;
+  // An invitation event is played from a card (playCareerInvitation).
+  if (isCareerInvitation(careerEventById(eventId))) return false;
   const event = careerEventById(eventId);
   const snapshot = careerEventSnapshot(event);
   // The field the directory was ADVERTISING becomes the field that is

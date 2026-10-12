@@ -339,6 +339,10 @@ const CAREER_INVITATION_EVENTS = Object.freeze([
     unlockRequirement:null
   })
 ]);
+// an invitation's rarity says how scarce it is; it never changes the prize
+const CAREER_INVITATION_RARITIES = Object.freeze(['common','uncommon','rare','legendary']);
+// the most invitations a player can hold (docs/career/INVITATIONS_PLAN.md)
+const CAREER_INVITATIONS_LIMIT = 200;
 const CAREER_EVENTS = Object.freeze(CAREER_EVENT_LIST.concat(CAREER_INVITATION_EVENTS).reduce((registry,event)=>{
   registry[event.id] = event;
   return registry;

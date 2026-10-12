@@ -1,7 +1,7 @@
 # Invitations: Career as packets of event invitations (plan)
 
-Written 12 October 2026 with the owner. Status: **Stage 1 in progress**
-(DEV only, not released). Nothing here is decided beyond what it says the
+Written 12 October 2026 with the owner. Status: **Stage 1 done, Stage 2
+in progress** (DEV only, not released). Nothing here is decided beyond what it says the
 owner decided. Builds on the hub, shop, packet opening and album labs
 (`career/HUB_TO_GAME_BRIEF.md`), which are kept as they are.
 
@@ -122,3 +122,36 @@ continue it. No packets, no invitations in the save, no hub loop.
   hub's own card coloured by rarity (owner, 12 Oct: Common cream,
   Uncommon green, Rare blue, Legendary yellow; little text, rules on the
   inspect screen later).
+
+## Stage 2: invitations in the save (owner approved the shape, 12 Oct)
+
+**Scope:** the invitations you own, kept in the Career save, and playing
+one uses it up. DEV only: DEV keys give a Back Room invitation and play
+one. No packets, no hub.
+
+**The save:** `career.invitations`, a list inside the existing
+`felt.career` (no new saved key, no save-version change; backups carry it
+because they copy `felt.career` whole). Each card: `id`, `eventId`,
+`rarity`, `roster` (the opponents drawn when it was given), `addedAt`.
+At most 200 cards. A save without the list is an empty collection.
+
+### Acceptance checks
+
+1. A save written before this (no list) loads exactly as before, holds no
+   cards, and is not rewritten just by loading.
+2. A card given is saved with its event, rarity and opponents; a reload
+   keeps it unchanged.
+3. Playing a card removes it and starts its event in **one** save write;
+   the card's opponents are the ones seated.
+4. Playing is refused, changing nothing, when another event or the cash
+   table is open, the card is unknown, or its event isn't an invitation.
+5. A card can't be played twice: after a play, a reload finds the card
+   gone and the event in progress.
+6. Invitation events can't be entered without a card.
+7. Damaged entries (unknown event, bad rarity, duplicate id) are dropped
+   on load without touching anything else in the save.
+8. A backup made after giving a card restores it.
+9. DEV only. `npm test` green; the real flow in an emulated iPhone: give a
+   card, play it, reload mid-event, finish; the count of cards is right
+   throughout.
+
