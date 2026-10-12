@@ -137,6 +137,10 @@ the wrapper and the strip, which stay); cards are turned over later on the
 inspect screen. The pack opening's own reveal and haul still run in
 `pack-opening-lab.html`.
 
+Then the reveal came back to the hub: every packet's cards go face down
+into one deck; tapping it runs the pack opening's reveal on it (a session),
+each card turned is put down in neat rows; tapping elsewhere ends it.
+
 ## Open
 
 - The opening reveals four cards now; five things (cards or chips) need

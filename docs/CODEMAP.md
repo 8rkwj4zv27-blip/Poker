@@ -1114,20 +1114,22 @@ meets the feeder.
 - **Cabinet:** the reel and the feeder (`.cm-slot`: a plate over a mouth
   `--cm-card` wide); no CRTs. `plate()` reads the card in it.
 - **Things:** one list, `things`, one stacking order (`raise`): `house`
-  (the tray's three), `card` (yours, loose; face down until turned), `pk`
-  (a sealed packet), `junk` (a wrapper, a strip). `placeAt` (the tray),
-  `rowAt` (packets, under the tray), `pileAt` (opened cards).
+  (the tray's three), `card` (yours, turned over), `pk` (a sealed packet),
+  `deck` (every opened packet's cards, face down), `junk` (a wrapper, a
+  strip). `placeAt` (the tray), `rowAt` (packets, under the tray),
+  `neatAt` (turned cards: overlapping rows clear of the deck, `DECK_X`).
 - **The house:** `chooseFor` takes one from each third of your case by
   prize; `tossIn`, `redeal`, `refill` (an empty place).
 - **Packets:** `addPackets` (from the shop: into the row); `open` hands one
-  to `CareerShop.open`; `handOver` takes the face-down deck (as separate
-  face-down cards onto the pile), the wrapper and the strip onto the felt.
-- **Turning over:** `inspect` opens `CardInspect` through every card on the
-  felt (`down` items); `onTurn` lays it face up on the felt, with a chime
-  by rarity.
+  to `CareerShop.open`; `handOver` takes the face-down deck (merged into
+  yours, `stackDeck`), the wrapper and the strip onto the felt (`onto`).
+- **The reveal:** a touch on the deck goes to `CareerShop.reveal` (the
+  pack opening's own reveal runs on it, the touch passed on); `place` puts
+  each card turned in its `neatAt` place; `deckBack` takes the deck back.
+- **Looking:** `inspect` opens `CardInspect` through every card on the felt.
 - **Collection:** `collect` (a card thrown off, or `addAll`, ADD TO
   COLLECTION) joins your case, with `filed()`'s chime on the CARDS key.
-- **Feeder:** `feed` (a face-up card carried or flicked up, or `swipeUp`
+- **Feeder:** `feed` (a card let go over it, not thrown, or `swipeUp`
   from the inspect screen) half in by `teeth`, clipped at the mouth;
   `unfeed` (tap it); `play` (used up; a house card is replaced; the table
   hand-off is not wired).
@@ -1177,7 +1179,11 @@ opening embedded (`js/pack-opening.js`, `window.PO_EMBED` set first).
   `PackOpeningEmbed.openOwned` on the felt (the tear and the pull);
   `attachOpening`: the opening's key is the hub's middle key, its words go
   unsaid (no screens), `bag` counts the chips into the reel, `handOver` →
-  `CareerMain.handOver` (the cards face down, the wrapper, the strip).
+  `CareerMain.handOver` (the cards face down, the wrapper, the strip);
+  `reveal` starts `PackOpeningEmbed.session` on the hub's deck and passes
+  the touch on (`down`); `place` → `CareerMain.place`, `deckBack` →
+  `CareerMain.deckBack`; a tap off the felt `putDown`s; `quiet` stops the
+  press that ends a reveal also pressing the hub's key.
 
 ## `pack-opening-lab.html` — Pack Opening V3 (isolated, 11 October 2026)
 
@@ -1199,8 +1205,11 @@ its own, `PackOpeningEmbed.attach(cfg)` puts the opening on a host's felt
 Career hub's felt), sized to the host's table (`layout({ tableS, wrapY,
 flapY })`). Embedded it runs only the tear and the pull: the chips count
 in (`cfg.bag`) and `handOver` gives the host the face-down deck, the
-wrapper and the strip (`cfg.handOver`); the reveal and the haul are the
-lab's own.
+wrapper and the strip, scattered (`cfg.handOver`). `session({ deck, cards
+})` runs the reveal on the host's deck (`down(e)` passes on the touch):
+each card turned is `stow`ed to the host (`cfg.place`), and a tap off the
+deck (or `putDown`) ends it (`endSession` → `cfg.deckBack`). The haul is
+the lab's own.
 `js/pack-opening.js`: the scene and state (deal, move and throw packets,
 select and turn, hold to buy, tear, draw; then the reveal: tap, flick or
 squeeze the deck, four tier moments, Legendary dip/slam/CRT flash and an

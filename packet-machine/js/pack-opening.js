@@ -29,8 +29,12 @@
    middle key stand in for the machine around the felt. Everything is
    sized to the hub's table (L.tableS). It runs the tear and the pull;
    the chips count in (cfg.bag); once the cards are out, face down, they
-   are handed to the hub with the wrapper and the strip (cfg.handOver),
-   to be turned over whenever the player likes.
+   are handed to the hub as a deck with the wrapper and the strip, which
+   land somewhere different each time (cfg.handOver). When the player taps
+   the hub's deck (all the packets' cards in one), the reveal runs on it
+   (session): each card turned is handed to the hub to put down
+   (cfg.place); tapping the deck again turns the next, tapping anywhere
+   else gives the deck back (cfg.deckBack).
    ============================================================ */
 (() => {
   'use strict';
@@ -48,7 +52,7 @@
   // where the hand, its squaring, the wrapper and the torn strip sit
   // (fractions of the felt); tableS (embedded): the host table's scale,
   // which everything left on it shares
-  const L = { handY:.83, squareY:.8, wrapY:.56, flapY:.13, railLift:0, tableS:0 };
+  const L = { handY:.83, squareY:.8, wrapY:.56, flapY:.13, deckX:.83, deckY:.62, railLift:0, tableS:0 };
 
   let root, stage, W = 0, H = 0, phase = 'boot', lock = false;
   let packets = [], chosen = null, deck = null, flap = null, wallet = 5000, packNo = 0;
@@ -66,7 +70,7 @@
   const home = p => ({ x:W * p.home.fx, y:H * p.home.fy, s:rowS(), r:p.home.r, z:0, alpha:1, sx:1, sy:1 });
   const focus = () => ({ x:W / 2, y:H * .45, s:focusS(), r:0, z:4, alpha:1, sx:1, sy:1, ...(cfg?.focus?.(W, H) || {}) });
   const aside = k => ({ x:k ? W * .9 : W * .1, y:H * .1, s:rowS() * .62, r:k ? 12 : -12, z:0, alpha:.75 });
-  const deckSpot = () => ({ x:W * .83, y:H * .62, z:0, r:4, s:L.tableS || Math.min(1.2, focusS() * .6), sx:1, sy:1 });
+  const deckSpot = () => ({ x:W * L.deckX, y:H * L.deckY, z:0, r:4, s:L.tableS || Math.min(1.2, focusS() * .6), sx:1, sy:1 });
   const wrapperSpot = () => ({ x:W * .16, y:H * L.wrapY, z:0, r:-27, s:L.tableS || Math.min(1, focusS() * .46), sx:1, sy:1 });
 
   /* ---------------- the machine around the felt ---------------- */
@@ -478,7 +482,9 @@
     p.open = true; p.tear = 1; p.draw();
     const f = focus(), side = p.dir;
     // the strip flies off the way you tore it and lands on the felt
-    glide(flap, { x:side > 0 ? W * .74 : W * .26, y:H * L.flapY, r:side * 168, z:0, s:L.tableS || Math.min(1.25, focusS() * .6) }, 560, { arc:70, easing:ease.out })
+    // (embedded, on a table that keeps them: somewhere a little different each time)
+    const jx = EMBED ? (Math.random() - .5) * W * .3 : 0, jy = EMBED ? (Math.random() - .5) * H * .16 : 0;
+    glide(flap, { x:(side > 0 ? W * .74 : W * .26) + jx, y:H * L.flapY + jy, r:side * 168 + (EMBED ? (Math.random() - .5) * 140 : 0), z:0, s:L.tableS || Math.min(1.25, focusS() * .6) }, 560, { arc:70, easing:ease.out })
       .then(() => { Foil.crinkle(); puff(stage, flap.x, flap.y + 8, AW * flap.s * .6, { n:4 }); squash(flap, .1); });
     // the packet springs back and puffs open; the cards jostle up into the mouth
     S.hatchOpen();
@@ -545,7 +551,9 @@
     const d = deckSpot();
     // embedded: the chips come out with the cards, in a bag, and drop to the felt
     if (EMBED) cfg.bag?.({ x:p.body.x, y:p.body.y - AH * p.body.s * .42, series:p.series });
-    const wrapper = glide(p.body, wrapperSpot(), 480, { arc:10 }).then(async () => {
+    const ws = wrapperSpot();
+    if (EMBED) Object.assign(ws, { x:ws.x + Math.random() * W * .3, y:ws.y + (Math.random() - .5) * H * .14, r:(Math.random() - .5) * 120 });
+    const wrapper = glide(p.body, ws, 480, { arc:10 }).then(async () => {
       Foil.crinkle();
       await tween(260, e => { p.slump = e; p.draw(); });
       if (!EMBED){ p.chips = true; p.draw(); S.chipBounce(.55); }
@@ -564,6 +572,28 @@
     if (EMBED) return handOver();
     startTicks();
     enterDeck();
+  }
+  // embedded: the host's deck, tapped: the reveal runs on it, from where
+  // it lies; the touch that started it is passed on (down)
+  function session({ deck:d, cards }){
+    if (phase !== 'idle' || !cards.length) return false;
+    measure();
+    const a = d.stage.el.getBoundingClientRect(), b = stage.el.getBoundingClientRect();
+    d.set({ x:d.x + a.left - b.left, y:d.y + a.top - b.top });
+    stage.objects.append(d.el); if (d.sh) stage.shadows.append(d.sh);
+    d.stage = stage;
+    deck = d; contents = cards.slice(); revealed = 0; fan = []; rc = null;
+    lock = false; phase = 'deck';
+    enterDeck();
+    return true;
+  }
+  // the deck goes back to the host with whatever's left in it
+  function endSession(){
+    const left = { deck, cards:contents.slice(revealed) };
+    deck = rc = null; contents = []; revealed = 0; fan = [];
+    pointer = null;
+    lock = false; phase = 'idle';
+    cfg.deckBack(left);
   }
   // embedded: the cards are out, face down; the host takes them, the
   // wrapper and the strip, and the opening waits for the next packet
@@ -595,7 +625,7 @@
 
   function enterDeck(){
     lock = false;
-    if (revealed >= contents.length){ enterHaul(); return; }
+    if (revealed >= contents.length){ if (EMBED) return endSession(); enterHaul(); return; }
     phase = 'deck';
     status(revealed ? 'NEXT CARD' : 'FOUR CARDS, FACE DOWN', 'TAP TO TURN · HOLD TO SQUEEZE');
     figure(String(contents.length - revealed).padStart(2, '0'), 'TO REVEAL');
@@ -674,7 +704,7 @@
     revealed++;
     lock = false; phase = 'shown';
     const last = revealed >= contents.length;
-    key(last ? 'INTO YOUR HAND' : 'NEXT CARD', last ? 'THE LAST ONE' : 'OR TAP THE DECK');
+    key(last ? (EMBED ? 'PUT IT DOWN' : 'INTO YOUR HAND') : 'NEXT CARD', last ? 'THE LAST ONE' : 'OR TAP THE DECK');
     idleAt = performance.now();
   }
 
@@ -827,6 +857,8 @@
     card.extras.forEach(x => x.remove()); card.extras = [];
     stage.objects.querySelector('.po-dip')?.remove();
     card.el.classList.remove('is-aura');
+    // embedded: the host puts it down on its table
+    if (EMBED){ root.classList.remove('is-dipped'); cfg.place(card); return; }
     const i = fan.length; fan.push(card);
     card.el.style.zIndex = 20 + i;
     S.cardReturn();
@@ -1266,9 +1298,13 @@
     }
     else if (phase === 'shown' && rc && e.target.closest('.ec-card') === rc.el){ rc.spin?.(); pointer.mode = 'shownPress'; pointer.card = rc; pointer.yaw0 = rc.yaw || 0; }
     else if (phase === 'shown'){
-      stow(); enterDeck();
+      stow();
+      // embedded: a tap anywhere but the deck puts the card down and gives the deck back
+      if (EMBED && !(onDeck && revealed < contents.length)){ pointer.mode = null; endSession(); return; }
+      enterDeck();
       if (phase === 'deck' && onDeck) deckPress(pointer); else pointer.mode = null;
     }
+    else if (EMBED && phase === 'deck' && !onDeck){ pointer.mode = null; endSession(); return; }
     else if (phase === 'haul'){
       const cel = e.target.closest('.ec-card'), card = cel && fan.find(c => c.el === cel);
       // a card in your hand rises under your finger
@@ -1560,9 +1596,10 @@
      ui      status(t, s) figure(n, l) key(l, s, on) keySub(s) bank(v)
              bankEl() flash(): the host's reel, screens and key
      wallet, setWallet(v), focus(W, H) (where a packet on offer sits),
-     layout  overrides for L (handY, squareY, wrapY, flapY, railLift, tableS)
+     layout  overrides for L (handY, squareY, wrapY, flapY, deckX, deckY, railLift, tableS)
      onPutBack(p) onBought(p) bag({ x, y, series })
-     handOver({ cards, deck, wrapper, flap }): the host's hooks */
+     handOver({ cards, deck, wrapper, flap }) place(card) deckBack({ deck, cards }):
+     the host's hooks */
   function attach(c){
     cfg = c; ui = c.ui; root = c.root; stage = c.stage;
     Object.assign(L, c.layout || {});
@@ -1617,7 +1654,9 @@
   }
   if (EMBED){
     window.PackOpeningEmbed = {
-      attach, offer, putBack, openOwned,
+      attach, offer, putBack, openOwned, session, down:e => onDown(e),
+      // a tap off the felt altogether: the card turned goes down, the deck back
+      putDown(){ if (phase === 'shown' && !lock){ stow(); endSession(); } },
       // the host's table can change size between openings
       layout(o){ Object.assign(L, o); },
       keyDown:onKeyDown, keyUp:onKeyUp,

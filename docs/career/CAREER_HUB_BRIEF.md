@@ -96,6 +96,12 @@ through the collection; leave and settings.
      turned whenever; ADD is optional (ADD TO COLLECTION); the wrappers
      stay; thrown cards go into the collection with a chime; no gold rim
      on PLAY; one plain board (the faint box was gone-card shading).
+   - **Then:** the reveal back (the owner: "the same as looking at cards
+     from one packet, but with way more cards"): one face-down deck, tap
+     it to turn the next, tap elsewhere to put the card down; cards laid
+     in neat rows; the feeder only takes a dragged card; wrappers and
+     strips land at random. The poker-hand reading (a pack-lab flourish
+     shown only on the old hub screens) is dropped.
 
 ## The hub as it stands (in `vending-lab.html` and `career-main-lab.html`)
 
@@ -111,12 +117,18 @@ Complete freedom over the order things happen in.
 - **The felt is yours;** whatever is put there stays:
   - **Packets** back from the shop drop into a row on the felt. Tap one
     (or **OPEN**, the last one down): it's torn open (the tear and the
-    pull of the pack opening) and its four cards slide out **face down**
-    onto your pile. The wrapper and the strip stay on the felt; the chips
-    count into the reel. Open as many as you like before turning any.
-  - **Tap a card:** the inspect screen, through every card on the felt;
-    face-down ones come up face down, tap to turn (a rare chimes, a
-    legendary hits the jackpot sound); swipe to the next.
+    pull of the pack opening) and its four cards go **face down into one
+    deck** (every packet's cards in the same deck, the newest underneath).
+    The wrapper and the strip stay, landing somewhere different each time;
+    the chips count into the reel. Open as many as you like first.
+  - **Tap the deck** whenever you like: the top card turns over with the
+    pack opening's own reveal (hold the deck to squeeze the corner; rares
+    glint and hop; a legendary dims the house and slams). **Tap the deck
+    again** and that card goes down and the next turns; **tap anywhere
+    else** and it just goes down, and the deck waits. Each card goes down
+    in the next place of a neat arrangement (rows, each a little over the
+    last, clear of the deck), where you can move it.
+  - **Tap a card on the felt** to inspect it.
   - **Pick anything up and move it** (it lifts, its shadow drifts) or
     **throw it**: a card thrown off the felt goes into your collection
     (it chimes into the CARDS key); a wrapper or strip is gone; a sealed
@@ -124,8 +136,8 @@ Complete freedom over the order things happen in.
   - **A double tap on empty felt** tidies: the loose cards into the
     collection, the rubbish away, the packets back in a row, the house's
     cards back in the tray.
-- **The feeder:** any face-up card carried or flicked up to it (or swiped
-  up out of the inspect screen) goes half in; the plate reads it; **PLAY**
+- **The feeder:** a card dragged up and let go over it (or swiped up out
+  of the inspect screen) goes half in; a card thrown flies past it; the plate reads it; **PLAY**
   takes it (used up; a house card is replaced; the game would seat you
   here: not wired; no buy-in). Tap it to take it back out.
 - **Console:** SHOP · the middle key · CARDS. The middle key: **PLAY** (a

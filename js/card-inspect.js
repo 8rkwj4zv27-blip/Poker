@@ -7,7 +7,7 @@
    setTurn / setBank / spin / flat / faceUp   the toy: turn it, bank it,
                                    flick it and it spins with momentum
    CardInspect.open({ items, index, key, onClose })
-     items: [{ card, source:() => element, locked, lines, down }]  what you can swipe
+     items: [{ card, source:() => element, locked, lines }]  what you can swipe
             through (lines: the CRT's own lines, e.g. the album's history;
             a line can be { t, money:true })
             through; the card rises from its source and goes back to it
@@ -19,8 +19,6 @@
      swipeUp(item, index, api)   optional: flick the card up and it's
             handed over; api.sendTo(pose) flies it to a point on the screen
             (the Career hub's feeder) and closes, the source in its place.
-     down:  the card comes up face down; tap it to turn it over. The first
-            time its face shows, onTurn(item) (item.seen is then true).
    The screen lives on its own top layer, above whatever opened it: the
    card lifts, the house dims a step, and a drawer rises from below with
    a small CRT and the dashboard's key bay. The card does the talking (it
@@ -189,9 +187,7 @@
 
   async function enter(i, dir){
     const item = opts.items[i];
-    const hidden = item.down && !item.seen;
-    const c = make(ui.stage, item.card, { side:hidden ? 'back' : 'face' });
-    if (hidden) setBank(c, 180);
+    const c = make(ui.stage, item.card, { side:'face' });
     c.el.classList.add('ci-card');
     if (item.locked) c.el.classList.add('is-locked');
     fill(item); // first: the drawer's height decides how big the card can be
@@ -204,12 +200,6 @@
     await glide(c.body, to, from ? 300 : 220, { arc:from ? 28 : 6, easing:from ? ease.out : ease.back });
     squash(c.body, .05, 160); S.cardLanded();
   }
-  // a face-down card turned over for the first time
-  function seen(){
-    if (!cur || !cur.item.down || cur.item.seen || cur.c.el.dataset.side !== 'face') return;
-    cur.item.seen = true;
-    opts.onTurn?.(cur.item);
-  }
   // which card of the run this is: a row of pixel pips under the card
   function pips(i, to){
     const n = opts.items.length;
@@ -217,11 +207,9 @@
     ui.pips.style.top = Math.round(to.y + CH * to.s / 2 + 12) + 'px';
   }
   async function leave(dir){
-    seen();
     const { c, item } = cur;
     cur = null;
-    // a flicked card flies as it is; one you haven't turned goes back face down
-    if (dir) c.spin?.(); else if (!item.down || item.seen) await faceUp(c);
+    if (dir) c.spin?.(); else await faceUp(c); // a flicked card flies as it is
     // closing, it goes home to its source; swapping, it's thrown off the side
     const home = dir ? null : poseOf(item);
     const to = home ? { ...home, z:0 } : { x:dir > 0 ? -CW * c.body.s : ui.el.clientWidth + CW * c.body.s, r:-dir * 18, z:6 };
@@ -353,14 +341,12 @@
     try { ui.el.releasePointerCapture(e.pointerId); } catch (_) {}
     if (cancel || !ui.open) return;
     const dx = q.x - q.x0, dy = q.y - q.y0, tap = Math.hypot(dx, dy) < 8, fresh = performance.now() - (q.tm || 0) < 60;
-    // a face-down card's first tap turns it over (even with motion reduced)
-    if (q.mode === 'card' && tap && cur){ if (cur.item.down && !cur.item.seen){ S.cardFlip(false); faceUp(cur.c).then(seen); } else spin(cur.c, .9, seen); }
+    if (q.mode === 'card' && tap && cur) spin(cur.c, .9);
     else if (q.mode === 'toy' && cur){
       // flick it down and it goes back where it came from
       if (dy > 70 && Math.abs(dx) < dy * .8 && fresh && q.vy > .4){ close(); return; }
       // flick it up (where that means something) and it's handed over
-      seen();
-      if (opts.swipeUp && (!cur.item.down || cur.item.seen) && dy < -60 && Math.abs(dx) < -dy * .8 && fresh && q.vy < -.4){
+      if (opts.swipeUp && dy < -60 && Math.abs(dx) < -dy * .8 && fresh && q.vy < -.4){
         busy = true;
         opts.swipeUp(opts.items[idx], idx, { sendTo:p => { busy = false; return sendTo(p); }, close:() => { busy = false; return close(); } });
         return;

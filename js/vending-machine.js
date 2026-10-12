@@ -26,6 +26,7 @@
      on the felt with the pack opening (js/pack-opening.js, embedded): the
      tear and the pull. Its chips count straight into the reel; its cards,
      face down, the wrapper and the strip are handed to the hub's felt.
+     Touch the hub's deck and the reveal runs on it here (reveal).
    Lab money, nothing saved.
    ============================================================ */
 window.PO_EMBED = true;
@@ -87,7 +88,11 @@ window.PO_EMBED = true;
     else midKey('HOLD TO BUY', mode === 'idle' && order.length > 0);
   }
   // the hub asks first: while the machine is down (or a packet's open) the keys are ours
+  // the press that ends a reveal mustn't also press the hub's own key
+  // (the click lands after the reveal has handed the deck back)
+  let quiet = 0;
   function key(k){
+    if (performance.now() - quiet < 400) return true;
     if (k === 'shop'){ if (mode === 'hub') rollIn(); else if (mode === 'idle' || mode === 'taking') rollOut(); return true; }
     if (mode === 'hub') return false;
     if (k === 'cards' && mode === 'idle' && tray.length){ take(); return true; }
@@ -823,6 +828,16 @@ window.PO_EMBED = true;
     E.layout({ tableS:M.scale });
     E.openOwned(p);
   }
+  // the hub's deck, touched: the reveal runs on it on the felt, and the
+  // touch that started it carries on there (a tap turns one, a hold squeezes)
+  function reveal(deck, cards, e){
+    E.layout({ tableS:M.scale });
+    if (!E.session({ deck, cards })) return false;
+    mode = 'opening'; keys();
+    openEl.classList.add('is-live');
+    E.down(e);
+    return true;
+  }
   function attachOpening(){
     E = window.PackOpeningEmbed;
     if (!E) return;
@@ -839,8 +854,9 @@ window.PO_EMBED = true;
       },
       wallet:() => M.wallet, setWallet:v => { M.wallet = v; },
       focus:() => null,
-      // the wrapper and the strip land on the open felt, clear of the tray and the packets
-      layout:{ handY:.66, squareY:.66, wrapY:.7, flapY:.64, railLift:66 },
+      // the wrapper and the strip land on the open felt, clear of the tray;
+      // the deck to one side
+      layout:{ handY:.66, squareY:.66, wrapY:.62, flapY:.6, deckX:.84, deckY:.56, railLift:66 },   // (deckX: CareerMain's DECK_X)
       onPutBack(){}, onBought(){},
       // the packet's chips count straight into the reel
       bag:({ series }) => wait(PO.reduced ? 0 : 500).then(() => { S.chipCollect?.(.6); return M.countIn(BAG[series] || 40); }),
@@ -849,6 +865,14 @@ window.PO_EMBED = true;
         mode = 'hub';
         openEl.classList.remove('is-live');
         M.handOver(left);
+        keys();
+      },
+      // a card turned over: the hub puts it down; the deck handed back
+      place:card => M.place(card),
+      deckBack(left){
+        mode = 'hub'; quiet = performance.now();
+        openEl.classList.remove('is-live');
+        M.deckBack(left);
         keys();
       }
     });
@@ -902,8 +926,13 @@ window.PO_EMBED = true;
     if (!M || !window.PackOpeningEmbed) return;
     build(); sheet();
     E.applyTune();
+    // a card just turned over: a tap anywhere off the felt (but the keys)
+    // puts it down too
+    root.addEventListener('pointerdown', e => {
+      if (mode === 'opening' && !openEl.contains(e.target) && !e.target.closest('.cm-keys, #ci, #cm-sheet')) E.putDown();
+    }, true);
     window.CareerShop = {
-      key, open:openPacket,
+      key, open:openPacket, reveal,
       get out(){ return mode !== 'hub'; }
     };
     layout(); keys();

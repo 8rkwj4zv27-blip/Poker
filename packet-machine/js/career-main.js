@@ -8,19 +8,22 @@
      house's three cards, dealt from your case: the regular one, a step
      up, the big one (never labelled). REDEAL deals three others.
    - The felt is yours: whatever you put there stays. Packets back from
-     the shop lie in a row; tap one and it's torn open and its cards slide
-     out face down into your pile, the wrapper and the strip left lying
-     about. Open them in any order, as many as you like, and turn the
-     cards over whenever you like (tap one: the inspect screen; tap the
-     card there to turn it, swipe to the next).
+     the shop lie in a row; tap one and it's torn open: its cards go face
+     down into your deck (every packet's cards in one), the wrapper and
+     the strip left lying about. Open as many as you like. Tap the deck
+     whenever you like and the top card turns over (the pack opening's
+     own reveal: hold to squeeze, rares glint, a legendary slams); tap the
+     deck again and that card goes down and the next turns, tap anywhere
+     else and it just goes down: in the next place of a neat arrangement,
+     each card a little over the last. Tap a card to inspect it.
    - Anything can be picked up, slid about and thrown. A card thrown off
      the felt goes into your collection (the CARDS key, with a chime); a
      wrapper or strip thrown off is gone; a sealed packet bounces back
      off the rail. A double tap on empty felt tidies the lot: the loose
      cards into the collection, the rubbish away, the packets lined up,
      the house's cards back in the tray.
-   - Any face-up card carried or flicked up to the feeder (or swiped up
-     out of the inspect screen) goes half in; PLAY takes it the rest of
+   - A card dragged up to the feeder (or swiped up out of the inspect
+     screen) goes half in; PLAY takes it the rest of
      the way (the game would seat you: not wired); tap it to take it out.
    The middle key: PLAY (a card in the feeder) · ADD TO COLLECTION (cards
    lying loose) · OPEN (packets waiting) · REDEAL.
@@ -42,8 +45,9 @@
   let s = 1;                 // the cards' scale on the felt
   let busy = false;
   let pool = [];             // your case: the cards the house deals you from
-  // everything on the felt: house (the tray's cards), card (yours, loose:
-  // face down until turned), pk (a sealed packet), junk (a wrapper, a strip)
+  // everything on the felt: house (the tray's cards), card (yours,
+  // turned over), pk (a sealed packet), deck (the face-down cards from the
+  // packets opened), junk (a wrapper, a strip)
   const things = [];
   let fed = null, fedFrom = null;   // the card in the feeder, and where it came from
   let zTop = 60;
@@ -53,7 +57,6 @@
   const elOf = t => t.c ? t.c.el : t.p ? t.p.el : t.body.el;
   const of = kind => things.filter(t => t.kind === kind);
   const isCard = t => t.kind === 'house' || t.kind === 'card';
-  const faceUp = t => isCard(t) && t.c.el.dataset.side === 'face';
 
   /* ---------------- the cabinet ---------------- */
   function reel(n){
@@ -117,7 +120,7 @@
       <footer class="cm-console"><div class="cm-console-case"><div class="ec-bay"><div class="actions-row cm-keys"><button class="btn-check" type="button" data-key="shop">SHOP</button><button class="btn-raise" type="button" data-key="play">REDEAL</button><button class="btn-check" type="button" data-key="cards">CARDS</button></div></div></div></footer>
       <section class="po-sheet cm-sheet" id="cm-sheet" hidden aria-label="Tune">
         <h2>CAREER</h2>
-        <p>The tray is the house's, the felt is yours. REDEAL for three more. Pick anything up and move it, or throw it: cards thrown off go into your collection. Tap a card to look at it (and turn it over); flick it up into the feeder, PLAY. Double tap empty felt to tidy up.</p>
+        <p>The tray is the house's, the felt is yours. REDEAL for three more. Tap the deck to turn a card over; tap it again for the next, or anywhere else to put the card down. Pick anything up and move it, or throw it: cards thrown off go into your collection. Drag a card up into the feeder, PLAY. Double tap empty felt to tidy up.</p>
         <h3>BANKROLL</h3>${seg('bank', Object.fromEntries(BANKS.map(b => [b, money(b)])))}
         <div class="cm-seg"><button class="pc-button pc-button-secondary" id="cm-done">DONE</button></div>
       </section>`;
@@ -165,10 +168,16 @@
     const span = W - w - 24, step = n > 1 ? Math.min(w * 1.1, span / (n - 1)) : 0;
     return { x:W / 2 + (i - (n - 1) / 2) * step, y };
   }
-  // your pile: the opened cards land in a loose heap low on the felt
-  function pileAt(){
-    const top = below() + CH * s + 30, H = felt.clientHeight;
-    return { x:felt.clientWidth / 2 + rr(-30, 30), y:top + (H - top) * .5 + rr(-20, 20), r:rr(-24, 24) };
+  // cards turned over go down in rows under the packets, each a little
+  // over the last, clear of where the deck lands (on the right); when the
+  // rows are full they start again, a step along
+  const DECK_X = .84;
+  function neatAt(i){
+    const W = felt.clientWidth, H = felt.clientHeight, w = CW * s, h = CH * s;
+    const top = below() + h + 34, sx = w * .55, sy = h * .34, right = W * DECK_X - w * .6;
+    const cols = Math.max(1, Math.floor((right - 10 - w) / sx) + 1), rows = Math.max(1, Math.floor((H - 10 - top - h) / sy) + 1);
+    const k = i % (cols * rows), lap = Math.floor(i / (cols * rows));
+    return { x:10 + w / 2 + (k % cols) * sx + lap * 8, y:Math.min(H - h / 2 - 4, top + h / 2 + Math.floor(k / cols) * sy) + lap * 6, r:((i * 7) % 5 - 2) * .6 };
   }
   // the feeder's lower lip, where a card comes out, in the felt's coordinates
   function lip(){ const r = mouthEl.getBoundingClientRect(), f = felt.getBoundingClientRect(); return { x:r.left + r.width / 2 - f.left, y:r.bottom - 4 - f.top }; }
@@ -197,9 +206,8 @@
   }
 
   /* ---------------- cards ---------------- */
-  function cardBody(card, pose, side = 'face'){
-    const c = CardInspect.make(stage, card, { side });
-    if (side === 'back') CardInspect.setBank(c, 180);
+  function cardBody(card, pose){
+    const c = CardInspect.make(stage, card, { side:'face' });
     c.el.classList.add('cm-card');
     c.body.set({ z:0, sx:1, sy:1, alpha:1, s, ...pose });
     c.body.render(performance.now());
@@ -290,9 +298,9 @@
       await wait(PO.reduced ? 0 : 50);
     }
   }
-  // a face-up card goes up to the feeder and is taken half in
+  // a card goes up to the feeder and is taken half in
   async function feed(t, { placed = false, from = null } = {}){
-    if (fed || busy || !faceUp(t)) return;
+    if (fed || busy || !isCard(t)) return;
     busy = true;
     const m = lip(), c = t.c, b = c.body;
     fed = t; fedFrom = from || { x:b.x, y:b.y, r:b.r };
@@ -375,54 +383,77 @@
     drop(t);
     window.CareerShop.open(t.p);
   }
-  // the cards are out (face down, still in a little deck) with the
-  // wrapper and the strip: they're yours, on the felt. The cards slide off
-  // the deck onto your pile.
+  // a body from another stage onto the felt, where it is on the screen
+  function onto(b){
+    const a = b.stage.el.getBoundingClientRect(), f = felt.getBoundingClientRect();
+    b.set({ x:b.x + a.left - f.left, y:b.y + a.top - f.top });
+    stage.objects.append(b.el); if (b.sh) stage.shadows.append(b.sh);
+    b.stage = stage; raise(b.el);
+  }
+  // the deck's thickness: the cards stepped down under the top one
+  function stackDeck(d){
+    const kids = [...d.body.el.children], n = kids.length;
+    kids.forEach((k, i) => { k.style.transform = `translate(0px,${Math.round(Math.min((n - 1 - i) * .6, 12))}px)`; });
+  }
+  // the cards are out, face down in a little deck, with the wrapper and
+  // the strip: they're yours, on the felt. The deck joins yours (its
+  // cards under the ones already there).
   function handOver({ cards, deck, wrapper, flap }){
-    const into = b => {
-      const a = b.stage.el.getBoundingClientRect(), f = felt.getBoundingClientRect();
-      b.set({ x:b.x + a.left - f.left, y:b.y + a.top - f.top });
-      stage.objects.append(b.el); if (b.sh) stage.shadows.append(b.sh);
-      b.stage = stage; raise(b.el);
-    };
-    if (flap){ into(flap); things.push({ kind:'junk', body:flap }); }
-    if (wrapper){ into(wrapper.body); things.push({ kind:'junk', body:wrapper.body, p:wrapper }); }
-    let x = felt.clientWidth / 2, y = felt.clientHeight / 2, r = 0, ds = s;
-    if (deck){ into(deck); x = deck.x; y = deck.y; r = deck.r; ds = deck.s; deck.remove(); }
-    cards.forEach((card, i) => {
-      const c = cardBody(card, { x, y:y - i, r, s:ds }, 'back');
-      things.push({ kind:'card', card, c });
-      const to = pileAt();
-      wait(PO.reduced ? 0 : 80 + i * 90).then(() => {
-        raise(c.el); S.cardDeal(); Foil.flutter();
-        return glide(c.body, { ...to, s, z:0 }, 320, { arc:18, easing:ease.out });
-      }).then(() => { S.cardLanded(); squash(c.body, .05, 140); });
+    if (flap){ onto(flap); things.push({ kind:'junk', body:flap }); }
+    if (wrapper){ onto(wrapper.body); things.push({ kind:'junk', body:wrapper.body, p:wrapper }); }
+    if (!deck) return keys();
+    onto(deck);
+    const mine = of('deck')[0];
+    if (!mine){
+      const d = { kind:'deck', body:deck, cards:cards.slice(), home:{ x:deck.x, y:deck.y, r:deck.r } };
+      things.push(d); stackDeck(d); keys();
+      return;
+    }
+    // onto your deck: it squares up into it
+    busy = true;
+    raise(mine.body.el);
+    glide(deck, { x:mine.body.x, y:mine.body.y + 4, r:mine.body.r, z:0 }, 260, { arc:12, easing:ease.out }).then(() => {
+      mine.body.el.prepend(...deck.el.children);
+      deck.remove();
+      mine.cards.push(...cards);
+      stackDeck(mine);
+      S.deckSettle(); squash(mine.body, .06, 140); Haptic.tick(10);
+      busy = false; keys();
     });
+  }
+  // a card turned over at the deck: you put it down, in the next place
+  function place(card){
+    onto(card.body);
+    card.el.classList.add('cm-card');
+    const t = { kind:'card', card:card.card, c:card };
+    things.push(t);
+    const to = neatAt(of('card').length - 1);
+    S.cardReturn();
+    glide(card.body, { ...to, s, z:0, sx:1, sy:1 }, 300, { arc:16, easing:ease.out }).then(() => { S.cardLanded(); squash(card.body, .05, 140); Haptic.tick(6); });
+    keys();
+  }
+  // the reveal's over: the deck comes back with what's left in it
+  function deckBack({ deck, cards }){
+    if (deck && cards.length){
+      onto(deck);
+      const d = { kind:'deck', body:deck, cards, home:{ x:deck.x, y:deck.y, r:deck.r } };
+      things.push(d);
+    }
     keys();
   }
 
-  /* ---------------- turning cards over ---------------- */
+  /* ---------------- looking at cards ---------------- */
   // the shared inspect screen, through every card on the felt (the tapped
-  // one first): face-down cards come up face down; tap to turn them
+  // one first); swipe one up out of it into the feeder
   function inspect(t){
     const list = [t, ...things.filter(q => isCard(q) && q !== t && q !== fed).sort((a, b) => +elOf(b).style.zIndex - +elOf(a).style.zIndex)];
     CardInspect.open({
       host:document.getElementById('home'),
-      items:list.map(q => ({ card:q.card, source:() => q.c.el, down:!faceUp(q), thing:q })),
+      items:list.map(q => ({ card:q.card, source:() => q.c.el, thing:q })),
       index:0,
-      // turned over on the screen: it lies face up on the felt too
-      onTurn(item){
-        const q = item.thing;
-        q.c.el.dataset.side = 'face'; CardInspect.setBank(q.c, 0); CardInspect.flat(q.c);
-        const tier = q.card.tier;
-        if (tier >= 3){ S.arcadeReward('jackpot'); jolt($('.cm-cabinet'), 3); }
-        else if (tier === 2){ Foil.note(14, .4); setTimeout(() => Foil.note(18, .3), 120); }
-        else S.cardFlip(false);
-        Haptic.tick(tier >= 2 ? 18 : 6);
-      },
       swipeUp:async (item, idx, api) => {
         const q = item.thing, m = lip(), f = felt.getBoundingClientRect(), b = q.c.body;
-        if (fed || busy || !faceUp(q)) return api.close();
+        if (fed || busy) return api.close();
         const from = { x:b.x, y:b.y, r:b.r };
         // on its way up: the card on the felt waits under the feeder for it
         b.set({ x:m.x, y:m.y + CH * s / 2 + 2, r:0, z:0, s });
@@ -435,8 +466,8 @@
 
   /* ---------------- tidying up ---------------- */
   // a double tap on empty felt: the loose cards into the collection, the
-  // rubbish off the felt, the packets back in a row, the house's cards to
-  // the tray (and any empty place filled)
+  // rubbish off the felt, the packets back in a row, the deck back where it
+  // was, the house's cards to the tray (and any empty place filled)
   async function tidy(){
     if (busy) return;
     busy = true;
@@ -455,6 +486,7 @@
         t.body.remove();
       })),
       ...pks.map((t, i) => glide(t.p.body, { ...rowAt(i, pks.length), r:rr(-4, 4), z:0 }, 280, { arc:10, easing:ease.out }).then(() => squash(t.p.body, .05, 120))),
+      ...of('deck').map(d => glide(d.body, { ...d.home, z:0 }, 280, { arc:10, easing:ease.out })),
       ...of('house').filter(h => h !== fed).map(h => glide(h.c.body, { ...placeAt(h.place), z:0 }, 260, { arc:10, easing:ease.out }).then(() => squash(h.c.body, .04, 120)))
     ]);
     S.cardLanded();
@@ -475,7 +507,7 @@
 
   /* ---------------- touch: pick up, slide, throw ---------------- */
   function thingAt(e){
-    const el = e.target.closest('.cm-card, .cm-pk, .po-packet, .po-flap, .po-body');
+    const el = e.target.closest('.cm-card, .cm-pk, .po-packet, .po-deck, .po-flap, .po-body');
     return el ? things.find(t => elOf(t) === el) || null : null;
   }
   function overFeeder(cx, cy){
@@ -487,6 +519,14 @@
   function down(e){
     if (ptr || e.button > 0 || CardInspect.isOpen || window.CareerShop?.out) return;
     const p = at(e), now = performance.now(), t = thingAt(e);
+    // the deck: the reveal takes the touch from here (tap: turn one over;
+    // hold: squeeze the corner)
+    if (t && t.kind === 'deck'){
+      if (busy || fed || !window.CareerShop) return;
+      drop(t); lastTap = null;
+      if (!window.CareerShop.reveal(t.body, t.cards, e)) things.push(t);
+      return;
+    }
     ptr = { id:e.pointerId, t, x0:p.x, y0:p.y, x:p.x, y:p.y, at:now, hist:[{ ...p, t:now }], mode:'press' };
     if (t && !busy){ const b = bodyOf(t); ptr.dx = b.x - p.x; ptr.dy = b.y - p.y; Haptic.tick(4); }
     try { felt.setPointerCapture(e.pointerId); } catch (_) {}
@@ -512,7 +552,7 @@
     if (q.mode === 'drag'){
       const b = bodyOf(q.t), v = vel(q);
       b.set({ x:p.x + q.dx, y:p.y + q.dy, r:clamp(q.r0 + v.x / 120, q.r0 - 16, q.r0 + 16) });
-      if (faceUp(q.t)) slotEl.classList.toggle('is-near', !fed && overFeeder(e.clientX, e.clientY));
+      if (isCard(q.t)) slotEl.classList.toggle('is-near', !fed && overFeeder(e.clientX, e.clientY));
     }
   }
   function vel(q){
@@ -530,8 +570,8 @@
     b.set({ live:false });
     const vx = v.fresh ? v.x : 0, vy = v.fresh ? v.y : 0, fast = Math.hypot(vx, vy) > 800;
     const rest = t.kind === 'pk' ? pkScale() : t.kind === 'junk' ? q.s0 : s;
-    // carried up to the feeder, or flicked up at it: a face-up card goes in
-    if (faceUp(t) && !fed && (overFeeder(e.clientX, e.clientY) || (fast && vy < -700 && q.y0 - q.y > 40))){
+    // carried up to the feeder and let go there (a card thrown past it flies on): it goes in
+    if (isCard(t) && !fed && !fast && overFeeder(e.clientX, e.clientY)){
       b.set({ s });
       feed(t, { from:{ x:q.x0 + q.dx, y:q.y0 + q.dy, r:q.r0 } });
       return;
@@ -601,19 +641,19 @@
     get busy(){ return busy; },
     get scale(){ return s; },
     keyEl, setKey, keys,
-    addPackets, handOver,
+    addPackets, handOver, place, deckBack,
     // chips home: the reel counts them in
     countIn:v => countTo(wallet + v),
     // read-only, for the lab's checks
     get state(){
       return { busy, fed:fed ? fed.kind : null, house:of('house').map(h => h.place + ':' + h.card.uid), cards:of('card').length,
-        down:of('card').filter(t => !faceUp(t)).length, packets:of('pk').length, junk:of('junk').length, pool:pool.length, mid:mid() };
+        deck:of('deck')[0]?.cards.length || 0, packets:of('pk').length, junk:of('junk').length, pool:pool.length, mid:mid() };
     },
     where(kind, i){
       const list = kind === 'house' ? of('house').sort((a, b) => a.place - b.place) : of(kind);
       const t = list[i]; if (!t) return null;
       const r = elOf(t).getBoundingClientRect(), b = bodyOf(t);
-      return { x:r.left + r.width / 2, y:r.top + r.height / 2, bx:b.x, by:b.y, home:t.kind === 'house' ? placeAt(t.place) : null };
+      return { x:r.left + r.width / 2, y:r.top + r.height / 2, bx:b.x, by:b.y, home:t.kind === 'house' ? placeAt(t.place) : t.home || null };
     }
   };
 
