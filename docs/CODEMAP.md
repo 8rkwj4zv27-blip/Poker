@@ -1138,6 +1138,21 @@ screens (`screens`), the felt's touches (`out`), clears its things with
 the clean-up (`sweep`) and keeps dealt cards off its pile and bags
 (`keepOff`).
 
+## `hub-tray-lab.html` — the Career hub as a wooden tray, stills (isolated, 12 October 2026)
+
+Plan: `docs/career/CAREER_HUB_BRIEF.md` (round 6). `js/hub-tray.js` +
+`css/hub-tray.css`, built on the hub's parts in `css/career-main.css`
+(rail, cabinet, felt, console) without `js/career-main.js`. Nothing moves.
+- **Build:** the reel and the feeder (a plate over a mouth, no CRTs); the
+  felt with the tray (wood in the rail's colours, the table's stitch round
+  it, three places named REGULAR · STEP UP · BIG ONE); SHOP · REDEAL ·
+  CARDS.
+- **Stills:** `draw` lays out one moment from `look.scene`: the hand, a
+  card hanging from the feeder (PLAY), packets waiting in the places
+  (OPEN, or unlit), an opened packet's cards piled on the felt (ADD).
+  `look.tray` (flush inlay or sunk), `look.names` (burnt in or paper tags).
+  Cards are `CardInspect.make`, packets `POPacket.Packet`.
+
 ## `vending-lab.html` — the packet machine (isolated, 11 October 2026)
 
 Plan: `docs/career/VENDING_PLAN.md`; touch checks:

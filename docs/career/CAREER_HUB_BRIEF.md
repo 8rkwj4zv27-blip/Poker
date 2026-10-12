@@ -65,6 +65,28 @@ through the collection; leave and settings.
 5. **With the shop** (`vending-lab.html`, rounds 1 to 4): the hub gained
    the clean-up spot, one table size, cards left on the felt after
    opening, wrappers and a bag of chips as things on the felt.
+6. **The wooden tray, stills** (`hub-tray-lab.html`, 12 Oct, this brief's
+   session): https://claude.ai/artifact/XTx3Xf8Web82Nc6BQNRw8H (republish
+   to the same link). The owner's direction after a brainstorm (other
+   games compared; the table-as-hub, jukebox, faces-first, split-flap and
+   empty-felt ideas all turned down):
+   - A clean felt; in its top third a small rectangular wooden tray with a
+     stitched seam, three cards laid in it, named **REGULAR · STEP UP ·
+     BIG ONE**. No visible deck, no clean-up spot, no CRTs (the cabinet is
+     the reel and the feeder).
+   - The middle key is **REDEAL** (free, unlimited): the three are swept
+     off screen and three more tossed in. Tap a card to inspect it; swipe
+     it up into the feeder; the middle key reads **PLAY** to accept it.
+   - After the shop the tray holds the **packets** to open instead of the
+     cards. An opened packet's cards lie piled on the felt and the middle
+     key reads **ADD** (after each packet): they're gathered into the
+     collection. No wrappers, strips or bags left on the felt.
+   - **Parked by the owner:** buy-ins and the economy, venues and "where
+     you are": the hub is only the tickets for now.
+   - The stills (TUNE): the hand, a card in the feeder, packets waiting,
+     an opened packet; a flush inlay or a sunk tray (never a brass lip);
+     names burnt into the wood or on paper tags that come and go with the
+     cards; the middle key with packets waiting OPEN or unlit.
 
 ## The hub as it stands (in `vending-lab.html`)
 

@@ -26,6 +26,9 @@ audit's complaints (dashboard rims, clipped result line, chip pile) are gone.
 
 ## Recent changes (newest first)
 
+- 12 Oct (no game change): Career hub rethink with the owner: a wooden
+  tray of three named cards, REDEAL, packets in the tray, ADD; stills in
+  `hub-tray-lab.html` ([brief](career/CAREER_HUB_BRIEF.md), round 6).
 - 11 Oct (no game change): the packet machine, round 3 (owner's notes):
   TUNE fix, select then add, a chip stream, a flat tray; the hub loses
   P.I.P., gains a clean-up spot, one table size, a bag of chips to snip.
@@ -35,18 +38,14 @@ audit's complaints (dashboard rims, clipped result line, chip pile) are gone.
   was rejected; stills of a simpler hub became `career-main-lab.html`:
   the table's deck deals cards, P.I.P. to tap or throw (v0.67.1 hooks).
 - 11 Oct (no game change): Pack Opening V3 (`pack-opening-lab.html`,
-  [plan](career/PACK_OPENING_V3_PLAN.md)): the packet, the reveal, the haul,
-  a polish pass; then one shared card inspect screen (`js/card-inspect.js`,
-  simplified on the owner's notes) used by the pack, album and hub.
-- 8 Oct (no game change): Hub Lab (`hub-lab.html`): Career opens on
-  tonight's tickets, dealt and styled by kind, fed into a slot.
+  [plan](career/PACK_OPENING_V3_PLAN.md)) and one shared card inspect screen.
 
 ## Open items (verified, not scheduled)
 
 - The owner's notes on the moving packet machine: https://claude.ai/artifact/WKWLooBRqQNJGYqfbDf1B1
   (home screen: https://8rkwj4zv27-blip.github.io/Poker/packet-machine/, on main; re-stage it with each change)
-- The owner's verdict on the moving hub: https://claude.ai/artifact/FpUrE7DTH5uqFqhV4eC8ir
-  (and the pack lab: https://claude.ai/artifact/2A5hyH5pufRp7Tdj513SQp)
+- The owner's pick from the hub tray stills: https://claude.ai/artifact/XTx3Xf8Web82Nc6BQNRw8H
+  (inlay or sunk tray, burnt names or paper tags, OPEN or unlit)
 - Career Hub on small iPhones (375x667, SE/8): BUY IN sits below the
   screen. Fine on the owner's Pro Max.
 - Stale code comments still name archived labs or say "not loaded by the
@@ -69,12 +68,12 @@ own speech bubbles (`claude/tender-dijkstra-zso8dm`).
 
 ## Next
 
-The shop (packet machine) is in a good place. The Career hub is to be
-rethought with the owner in a new session: start from
-[`career/CAREER_HUB_BRIEF.md`](career/CAREER_HUB_BRIEF.md) (what's built,
-what was rejected, the open questions). Talk first; nothing is decided.
-Then the collection book, the collection save, a pack economy simulation,
-Pattern Book sign-off, the real table hand-off. Agree with the owner how this reshapes Events Releases 2
-to 4 (`docs/career/EVENTS_PLAN.md`) before building either. Still open:
-the owner's verdict on the new Back Room (v0.67.0; minutes per hand
-unmeasured).
+The shop (packet machine) stays as it is. The Career hub is the wooden
+tray ([brief](career/CAREER_HUB_BRIEF.md), round 6): once the owner picks
+from the stills, build it moving (REDEAL's sweep and toss, swipe up into
+the feeder, PLAY, packets in the tray, the pile and ADD). The owner has
+parked buy-ins, the economy and venues for the hub: don't add them. Then
+the collection book, the collection save, Pattern Book sign-off, the real
+table hand-off; agree how this reshapes Events Releases 2 to 4
+(`docs/career/EVENTS_PLAN.md`). Still open: the owner's verdict on the
+new Back Room (v0.67.0; minutes per hand unmeasured).
