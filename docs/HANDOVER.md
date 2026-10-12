@@ -44,6 +44,7 @@ audit's complaints (dashboard rims, clipped result line, chip pile) are gone.
 ## Open items (verified, not scheduled)
 
 - The owner's notes on the moving packet machine: https://claude.ai/artifact/WKWLooBRqQNJGYqfbDf1B1
+  (home screen: https://8rkwj4zv27-blip.github.io/Poker/packet-machine/, on main; re-stage it with each change)
 - The owner's verdict on the moving hub: https://claude.ai/artifact/FpUrE7DTH5uqFqhV4eC8ir
   (and the pack lab: https://claude.ai/artifact/2A5hyH5pufRp7Tdj513SQp)
 - Career Hub on small iPhones (375x667, SE/8): BUY IN sits below the

@@ -96,6 +96,16 @@ panel, red panelling).
   felt (tap one, it bounces) until the clean-up, which counts them (and
   any bag still shut) into the bankroll.
 
+## Round 4 (12 Oct): reading the window, and the coin slot
+
+- The packet you're looking at is lit; the ones you can't afford (with
+  what's already in the basket) go dim, their price tags too.
+- The coin slot: the chip seats in the lip, sticks against the spring for
+  a beat, is shoved in, rolls down the chute inside (four ticks, the plate
+  trembling) and CLUNKs into the box.
+- On the home screen: `packet-machine/` on main (a self-contained copy,
+  re-staged with each change): https://8rkwj4zv27-blip.github.io/Poker/packet-machine/
+
 ## Open
 
 - The opening reveals four cards now; five things (cards or chips) need

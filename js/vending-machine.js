@@ -275,7 +275,20 @@ window.PO_EMBED = true;
     c.dataset.ink = ink || '';
     c.innerHTML = `<span class="crt-caption">${cap}</span><span class="crt-figure${fig.length > 5 ? ' vm-fig-sm' : ''}">${fig}</span><span class="vm-total">${line || ''}</span>`;
   }
+  // the window reads at a glance: the one you're looking at lit up, the
+  // ones you can't afford (with what's in the basket) dimmed
+  function shade(){
+    const left = M.wallet - total();
+    slots.forEach(s => {
+      if (!s.p) return;
+      const dear = mode !== 'paying' && mode !== 'dispensing' && mode !== 'stuck' && ED[s.id].price > left && !s.count;
+      s.p.el.classList.toggle('is-lit', sel === s);
+      s.p.el.classList.toggle('is-dear', dear && sel !== s);
+      s.keyEl?.parentNode.classList.toggle('is-dear', dear);
+    });
+  }
   function panel(){
+    shade();
     if (mode === 'paying') return;
     if (!shown){ crt('PICK A', 'PACKET', order.length ? 'TOTAL ' + money(total()) : (tray.length ? tray.length + ' IN TRAY' : '')); lamps(null); return; }
     const d = ED[shown];
@@ -427,16 +440,29 @@ window.PO_EMBED = true;
       drawChip(c);
     }, ease.inOut);
     c.tilt = 5; c.rot = 90; c.x = sx; c.y = y1; drawChip(c);
-    // pushed in: it goes a third of the way and catches
+    const plate = vq('.vm-plate'), ring = vq('.vm-ring');
+    // thumbed in: it seats in the slit's lip, a third of the way, and
+    // sticks there against the spring for a beat
     Foil.scrape(); Haptic.tick(4, 40);
-    await tween(PO.reduced ? 1 : 100, e => { c.y = mix(y1, top - d * .12, e); drawChip(c); }, ease.out);
-    c.x = sx + 1; drawChip(c);
-    if (!PO.reduced) await wait(40);
-    // CHUNK: the mechanism takes it
-    S.wheelBolt(); S.chipCollect(.7); Haptic.tick(18, 0);
-    jolt(vq('.vm-plate'), 2);
-    slit.classList.add('is-lit'); setTimeout(() => slit.classList.remove('is-lit'), 130);
+    ring.style.translate = '0 1px';
+    await tween(PO.reduced ? 1 : 80, e => { c.y = mix(y1, top - d * .2, e); drawChip(c); }, ease.out);
+    if (!PO.reduced){ for (const dx of [1, -1, 0]){ c.x = sx + dx; drawChip(c); await wait(22); } }
+    // the thumb shoves: the spring gives and it's gone into the machine
+    S.chipClink(.5); Haptic.tick(10, 0);
+    await tween(PO.reduced ? 1 : 70, e => { c.y = mix(top - d * .2, top + d * .9, e); drawChip(c); }, ease.in);
     c.clip.remove();
+    ring.style.translate = '';
+    slit.classList.add('is-lit'); setTimeout(() => slit.classList.remove('is-lit'), 60);
+    // inside: it rolls down the chute, tick, tick, tick, and CLUNKs into the box
+    for (const [ms, k] of PO.reduced ? [] : [[70, .5], [60, .4], [55, .3], [50, .22]]){
+      await wait(ms);
+      try { CoinWorld.sfx('roll', k); } catch (e) { S.chipBounce(.16); }
+      Haptic.tick(3, 40);
+      plate.style.translate = `0 ${k > .35 ? 1 : 0}px`;
+    }
+    plate.style.translate = '';
+    S.wheelBolt(); S.chipCollect(.7); Haptic.tick(18, 0);
+    jolt(plate, 2); jolt(vm, 1);
   }
 
   /* ---------------- the drop ---------------- */
@@ -464,6 +490,7 @@ window.PO_EMBED = true;
     const motor = S.wheelMotor();
     motor.set(.55); jolt(vm, 1);
     const p = s.p, b = p.body, f = frontPose(s);
+    p.el.classList.remove('is-lit', 'is-dear');
     // it tips forward off the shelf: its top comes down at you
     p.el.style.zIndex = '40';
     await tween(PO.reduced ? 1 : 170, e => b.set({ sy:1 - .3 * e, y:f.y + 7 * e, s:f.s * (1 + .04 * e), r:f.r * (1 - e) }), ease.in);
@@ -1181,7 +1208,7 @@ window.PO_EMBED = true;
       }
       marks();
     });
-    s.querySelector('#vm-credit').onclick = () => { M.wallet = M.wallet + 5000; };
+    s.querySelector('#vm-credit').onclick = () => { M.wallet = M.wallet + 5000; if (mode === 'idle') panel(); };
     marks();
   }
   function marks(){

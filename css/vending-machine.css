@@ -52,6 +52,10 @@
 .vm-window > .vm-stage{ z-index:2; }
 .vm-window > .vm-fall{ z-index:5; }
 .vm-stage .po-shadow{ background:#0a0304; }
+/* the packet you're looking at is lit; the ones you can't afford go dim */
+.vm-show .vm-packet.is-lit{ filter:brightness(1.18) drop-shadow(0 0 5px rgba(255,226,150,.55)); }
+.vm-show .vm-packet.is-dear{ filter:brightness(.42) saturate(.55); }
+.vm-cell.is-dear .vm-tag{ color:#7d7462; }
 /* a shelf's rail: steel, a black price tag and a cream key under each packet */
 .vm-rail{ position:absolute; left:0; right:0; z-index:4; box-sizing:border-box; border-top:2px solid var(--dash-ink);
   background:linear-gradient(#dcdfd9 0 2px,#b8bcb6 2px 8px,#8d918b 8px calc(100% - 4px),#5d605c calc(100% - 4px)); box-shadow:0 2px 0 rgba(0,0,0,.5);
