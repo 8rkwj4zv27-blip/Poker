@@ -42,6 +42,7 @@ reached `main`. Releases before v0.39.8 are recorded in
 
 ## v0.67 — 8 October 2026
 
+- **v0.67.1** No change at the table: the dealer deck, P.I.P.'s set and his talk can be borrowed by another screen (the Career hub lab deals with the table's deck, and P.I.P. sits on it).
 - **v0.67.0** The Back Room builds a stack: a new 5-HAND ticket that pays 1st and 2nd, deeper stacks (1,000 chips) and slower blinds in every Back Room event, and gentler opponents there. Tickets already bought keep their terms.
 
 ## v0.66 — 6 October 2026

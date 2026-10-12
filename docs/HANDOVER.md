@@ -3,10 +3,10 @@
 The note one session leaves for the next. **Read this first; update it last**,
 in the same pull request as the change (rules in `CLAUDE.md`, "Handover
 note"). Keep it to one screen: replace old lines rather than adding to them.
-If this note and the code disagree, the code wins: fix the note.
+If this note and the code disagree, the code wins.
 
-Build: `v0.67.0-dev · Back Room builds a stack`
-Updated: 8 October 2026
+Build: `v0.67.1-dev · Hub hooks for the deck and P.I.P.`
+Updated: 11 October 2026 (isolated lab only)
 
 ## Where the game is
 
@@ -18,7 +18,7 @@ Intro, end screens); opponents with personalities, moods and sparse table
 talk; P.I.P. the coach (tap only, with the end-of-hand report); Settings and
 the Workshop (skins); save data (back up, restore, start over).
 
-Checked on 8 Oct 2026 (v0.67.0) on emulated iPhones: all 25 test suites
+Play-test passed on v0.67.1 (11 Oct). Checked on 8 Oct (v0.67.0): all 25 test suites
 and the play-test pass; a real Career buy-in to the new 5-HAND, hands,
 reload and CONTINUE work. On 7 Oct the table, dashboard, showdown, Home and
 Career Hub all rendered cleanly. The 25 Sept visual
@@ -26,22 +26,27 @@ audit's complaints (dashboard rims, clipped result line, chip pile) are gone.
 
 ## Recent changes (newest first)
 
+- 11 Oct (no game change): the packet machine, round 3 (owner's notes):
+  TUNE fix, select then add, a chip stream, a flat tray; the hub loses
+  P.I.P., gains a clean-up spot, one table size, a bag of chips to snip.
+- 11 Oct (no game change): the shop is a vending machine (owner's idea,
+  [plan](career/VENDING_PLAN.md)), moving: `vending-lab.html`.
+- 11 Oct (no game change): the desk lab ([plan](career/CAREER_HUB_DESK_PLAN.md))
+  was rejected; stills of a simpler hub became `career-main-lab.html`:
+  the table's deck deals cards, P.I.P. to tap or throw (v0.67.1 hooks).
+- 11 Oct (no game change): Pack Opening V3 (`pack-opening-lab.html`,
+  [plan](career/PACK_OPENING_V3_PLAN.md)): the packet, the reveal, the haul,
+  a polish pass; then one shared card inspect screen (`js/card-inspect.js`,
+  simplified on the owner's notes) used by the pack, album and hub.
 - 8 Oct (no game change): Hub Lab (`hub-lab.html`): Career opens on
   tonight's tickets, dealt and styled by kind, fed into a slot.
-- 8 Oct (no game change): Career as packs of cards, brainstormed with
-  the owner (`docs/career/PACKS_PLAN.md`); the visual lab `pack-lab.html`
-  (vending machine, rip, reveal, ticket case, feed into a real table).
-- v0.67.0 The Back Room builds a stack (Events Release 1): a new 5-HAND
-  Top-2 ticket, 1,000-chip stacks, blinds every 15 hands, opponents at
-  skill 20 (events now carry a `skill`). Tickets already bought keep
-  their terms.
-- 8 Oct (no game change): the events rework planned with the owner
-  (`docs/career/EVENTS_PLAN.md`); `validation/tools/event-sim.js` plays
-  whole Career events to measure it.
-- v0.66.1 Tab reads just "Poker Faces", with the new icon.
 
 ## Open items (verified, not scheduled)
 
+- The owner's notes on the moving packet machine: https://claude.ai/artifact/WKWLooBRqQNJGYqfbDf1B1
+  (home screen: https://8rkwj4zv27-blip.github.io/Poker/packet-machine/, on main; re-stage it with each change)
+- The owner's verdict on the moving hub: https://claude.ai/artifact/FpUrE7DTH5uqFqhV4eC8ir
+  (and the pack lab: https://claude.ai/artifact/2A5hyH5pufRp7Tdj513SQp)
 - Career Hub on small iPhones (375x667, SE/8): BUY IN sits below the
   screen. Fine on the owner's Pro Max.
 - Stale code comments still name archived labs or say "not loaded by the
@@ -64,10 +69,12 @@ own speech bubbles (`claude/tender-dijkstra-zso8dm`).
 
 ## Next
 
-Packs are Career's direction (owner, 8 Oct). Next: the owner plays the
-Hub Lab (`docs/career/PACKS_PLAN.md`, Round 3: Career opens on tonight's
-tickets); then the Vendor and the Case screens to the same standard.
-Agree with the owner how this reshapes Events Releases 2 to 4
-(`docs/career/EVENTS_PLAN.md`) before building either. Still open: the
-owner's verdict on the new Back Room (v0.67.0; minutes per hand
+The shop (packet machine) is in a good place. The Career hub is to be
+rethought with the owner in a new session: start from
+[`career/CAREER_HUB_BRIEF.md`](career/CAREER_HUB_BRIEF.md) (what's built,
+what was rejected, the open questions). Talk first; nothing is decided.
+Then the collection book, the collection save, a pack economy simulation,
+Pattern Book sign-off, the real table hand-off. Agree with the owner how this reshapes Events Releases 2
+to 4 (`docs/career/EVENTS_PLAN.md`) before building either. Still open:
+the owner's verdict on the new Back Room (v0.67.0; minutes per hand
 unmeasured).

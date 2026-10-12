@@ -611,6 +611,10 @@ the candidate runs alone. Not loaded by the game.
 
 ## `js/dealer-deck.js` + `css/dealer-deck.css` — Dealer deck (live, v0.45.0)
 
+(v0.67.1: `DealerDeck.dealTo`, `collect`, `shuffle`, `squareUp`, `puff`,
+`setCount` let another screen handle its cards with the table's hands;
+used by `career-main-lab.html`.)
+
 The dealer's deck, the owner's order from `deck-lab.html` (recorded in
 `docs/ui/PATTERN_BOOK.md`, Dealer deck; `docs/ui/DEALER_PLAN.md`). A plain
 deck made of the same card as the ones dealt off it (one card-back recipe
@@ -677,6 +681,9 @@ The Coach on the table (`docs/coach/COACH_PLAN.md`; Pattern Book: Coach).
 the lift on and off in 2.5D, his aux lead, the boot, picking him up and
 throwing him round the screen (a joke, v0.57.3); he follows the table
 (there whenever it's showing and he's switched on, gone when it isn't).
+v0.67.1: `CoachSet.hub(el)` lets another screen's felt host him instead
+(opposite its dealer station, no lead, there while that felt shows), and
+`CoachTalk.sayText` is exported; a tap on him there is the hub's.
 `coach-talk.js`: his bubble, voice and lines, the talk slider (Settings →
 Coach talk, `settings.coachTalk`); hears the game through `applyAction`
 and `updateCoach` and by watching `game.handNumber` / `game.phase`.
@@ -955,6 +962,17 @@ hint (`checkOrientation()`), then calls `initHeroFaces()` and
 file leaves a game whose buttons do nothing. It was the bottom of
 `08-dev-mode.js` until v0.64.5 (audit finding F2), moved unchanged.
 
+## `pack-ritual-lab.html` — Pack Ritual (isolated, 11 October 2026)
+
+`js/pack-ritual-host.js` runs a memory-only current-game copy with
+`js/pack-ritual.js`, `js/pack-ritual-art.js`, `js/pack-ritual-cards.js` and
+`css/pack-ritual.css`, `css/pack-ritual-cards.css`. Choose/buy/tear/extract,
+physical card handling, rarity reveals, inspection, production CoinWorld
+chips and session collection. Full handover/feedback/verification:
+`docs/career/PACK_RITUAL_HANDOVER.md`. Browser checks:
+`validation/pack-ritual-touch-checks.cjs`, captures under
+`validation/pack-ritual-captures/`. Not loaded by production; no real saves.
+
 ## Labs vs. production — do not confuse the two
 
 Every `*-lab.html` page in the root (19 of them after the 5 Oct 2026
@@ -1062,3 +1080,153 @@ often each kind of player wins, cashes and profits (see
 - `docs/ui/handover/` — the visual-system handover of 23 August 2026,
   written before that work reached the game. Historical; `docs/README.md` lists which docs are current. To run
   the game locally see the top-level `README.md`.
+
+## `career-hub-lab.html` — the Career desk (isolated, 11 October 2026)
+
+Plan: `docs/career/CAREER_HUB_DESK_PLAN.md`. The page is the pack lab's
+(same host, same injected files) plus `js/career-hub-lab-boot.js`, which
+sets `CAREER_LAB` so the pack scene opens on the desk and its table becomes
+the packet shop (brass hatches: `dispense`, `restock`).
+`js/career-desk.js` (CareerDesk) + `css/career-desk.css`: the desk. The
+pack scene hosts it and hands it `CareerLab` (wallet, case `held`, album
+`found`, `history`, `venues`, `door`, `keyPlay`, `record`). On it: the
+slot (carry a card up and it bites under the plate; PAY: chips into the
+slot via CoinWorld, four ratchet teeth, the IN PLAY marker, a simulated
+table, winnings as chips out of the slot; a first venue win flies the next
+matchbook out), three suggested cards (`suggest`: NEW, NEXT STEP, BIG ONE,
+SAFE BET, A STRETCH, HOUSE), matchbooks (tap opens, hold strikes), the
+banker's lamp (pull; the felt's hidden print), the bell (the shop), the
+case (the album), chips (riffle), a rare visitor. The pack scene's
+`door()` rolls between the desk, the shop and the album (`roll`); the
+album's inspect shows your history with each design.
+Touch checks: `validation/career-hub-checks.cjs`.
+
+## `career-main-lab.html` — Career main hub, moving (isolated, 11 October 2026)
+
+This is round 2 of `docs/career/CAREER_HUB_DESK_PLAN.md`. It uses the same
+host as the pack lab and injects the card faces, `PO`, `EventCards`,
+`CardInspect` and `js/career-main.js` + `css/career-main.css`. The table's
+felt id and dealer station move onto the hub (`build`). The felt sits
+over the cabinet, so a carried card meets the slot.
+
+**Cabinet:** the reel and a slim row of CRT · plain slot · CRT.
+- `screen()`/`screens()` draw the CRTs three ways (TUNE); `say()` shows a
+  short message.
+- The slot's mouth is `--cm-card` wide.
+- `feed` clips a card into the mouth in four teeth; `play()` pays the
+  entry on the reel.
+
+**Cards:** `CardInspect.make` bodies.
+- **Deal:** `dealOne` flies the table's deal (`DealerDeck.dealTo`) to a
+  random `landing()`, on top of the pile. Then the real card appears and
+  turns over.
+- **The clean-up spot** (`.cm-pad`, a printed outline opposite the deck,
+  found by position since it lies under the felt's layers): `cleanUp`
+  slides every card into it, squares them, `DealerDeck.collect`s them,
+  then `squareUp`, `shuffleOrder` (the safe, step-up and stretch cards
+  first, unlabelled) and `DealerDeck.shuffle`; nothing dealt.
+- **Deck thickness:** the case left (`setCount`).
+- **Cards on the felt:** drag to arrange, tap to inspect, drag onto the
+  slot to feed. `raise` keeps whatever was put down or picked up last on
+  top (the shop's things share the count). `landing()` takes the first
+  clear place, or the least covered.
+
+**For the shop (lab):** `window.CareerMain` (`layDown` an opened hand onto
+the felt, `countIn`, `showBank`, `keyEl`, `raise`, `scale`, the wallet)
+and `window.CareerShop`, which, when present, takes the keys (`key`), the
+screens (`screens`), the felt's touches (`out`), clears its things with
+the clean-up (`sweep`) and keeps dealt cards off its pile and bags
+(`keepOff`).
+
+## `vending-lab.html` — the packet machine (isolated, 11 October 2026)
+
+Plan: `docs/career/VENDING_PLAN.md`; touch checks:
+`validation/vending-checks.cjs`. The Career main hub (`js/career-main.js`)
+with `js/vending-machine.js` + `css/vending-machine.css` and the pack
+opening embedded (`js/pack-opening.js`, `window.PO_EMBED` set first).
+- **Build:** `build` makes the drum (the space from the cabinet's screen
+  row to the foot of the felt), the machine (Player Dashboard frame,
+  checker case, sunk bays: the window, the tray, the side panel), the chip
+  layer, the hand layer, the hub pile and the opening's stage.
+  `sizeWindow` fits the rows (`GRID` 4 or 5 across, up to 4 rows) and
+  gives the tray the rest; `stock` puts a front packet and a spare in each
+  column (`ED`: placeholder editions and lamp odds).
+- **Roll:** `roll` steps the machine and the hub's faces a tooth at a time
+  (transitions off); `boot` flickers the tube on and lights the keys.
+- **Keys:** `keys()`/`setKey` (lit or unlit, labels flip): SHOP · PLAY ·
+  CARDS on the hub, LEAVE · HOLD TO BUY (SEND) · TAKE while it's down.
+- **Measure:** `unmoved` reads the hub's faces where they sit, not where
+  the roll has pushed them (so TUNE while the machine is down is safe).
+- **Choose / pay:** `choose` (a packet's first tap `peek`s: key glow, CRT,
+  lamps; then it adds), `clearAll`, `holdBuy` → `buy` → `payChips`: a
+  stream of `feed`s, each one movement from the reel to the slit (the
+  chip's own CoinWorld frames, turned onto its edge on the way down,
+  clipped at the slit, CHUNK).
+- **Drop:** `dispense` (relay, blink, motor, tip, `restock`), `fall` (end
+  over end, into the tray's stage), `land` at `restFor` (the tray seen
+  straight on: the bottom, or on the ones there), `nudgeAround`, `knock`;
+  `stick`/`thump` for a stuck one.
+- **Take:** `take`, `liftOut`, the hand's touches (turn, shake, flick or
+  drag down → `send`), `putBack`, `putAway`.
+- **Hub:** `rollOut`, `dropPile` (at the table's size, on a `clearSpot`),
+  `pileDown` → `PackOpeningEmbed.openOwned`; `attachOpening` maps the
+  opening's narration onto the hub's CRTs and key; `bag` → `dropBag`,
+  `stow` → `CareerMain.layDown`, `done` leaves the wrapper and strip.
+- **Things on the felt:** `leave` hands a body to the hub's felt;
+  `feltDown/Move/Up` pick up, slide and throw them (off the edge: gone).
+  The bag (`drawBag`, `sticker`): drag across its top corner (`snipTo`)
+  and `spillBag` pours CoinWorld chips onto the felt; `bounceChip` on a
+  tap. `sweep` (from the hub's clean-up) clears the rubbish into the spot
+  and counts the chips and shut bags into the bankroll.
+
+## `pack-opening-lab.html` — Pack Opening V3 (isolated, 11 October 2026)
+
+Plan and owner decisions: `docs/career/PACK_OPENING_V3_PLAN.md`. The host
+(`js/pack-opening-host.js`) runs a memory-only copy of the current game.
+`js/pack-opening-core.js` (PO): one rAF loop, skippable tweens
+(`PO.finishAll`), bodies whose pose steps at 14 fps, pixel shadows,
+felt puffs, jolts, foil/paper sounds, and a safe proxy onto `Sound`.
+`js/pack-opening-packet.js` (POPacket): rasterises the approved packet art
+(`js/pack-ritual-art.js`) and redraws it a column at a time: the tear,
+the peeling flap, the mouth, the Legendary light, the slumped wrapper,
+the foil shimmer (a band masked to bare-foil pixels) and the turn (a
+narrowing face, a crimped edge, the near side taller). Back canvas / card
+stack / front canvas keep the cards inside.
+`js/pack-opening.js` also runs embedded (`window.PO_EMBED`): no table of
+its own, `PackOpeningEmbed.attach(cfg)` puts the opening on a host's felt
+(its reel, screens and key), `offer(packet)` starts at the packet on offer;
+`openOwned(packet)` opens one the host already owns (the packet machine's
+pile), sized to the host's table (`layout({ tableS })`). Embedded, the
+chips come out in a bag (`cfg.bag`), the hand is read and then laid down
+on the host's felt (`stow`), and the wrapper and strip are handed over
+(`done`).
+`js/pack-opening.js`: the scene and state (deal, move and throw packets,
+select and turn, hold to buy, tear, draw; then the reveal: tap, flick or
+squeeze the deck, four tier moments, Legendary dip/slam/CRT flash and an
+event flourish, the cards into the rail; then the haul: the held hand with
+NEW pips, the wrapper flicked away spilling CoinWorld chips, KEEP into the
+collection slot with COUNT IN, restock). Card faces come from
+`js/pack-ritual-cards.js` + `css/pack-ritual-cards.css`, laid out at 2x
+and scaled into the card. Slice 4 polish: `PO.Haptic` (vibrate, or the
+iOS switch-label tick), the price tag's pendulum (`swingTags`), packet
+collisions, the prize count-up, the last-card beat, `handName`. The TUNE
+sheet's DOORS open two placeholder screens (the album, the hub desk) to
+prove the inspect screen is shared.
+`js/event-cards.js` (EventCards): what a card is (owner, 11 Oct): one real
+Career event (`careerEventById`) plus its opponents drawn once
+(`generateCareerRoster`, kept for the buy-in; not shown); rarity scales
+the prize (`MULT`, placeholder); `pack(series)` deals four;
+`describe(card)` gives the inspect screen its few lines.
+`js/card-inspect.js` + `css/card-inspect.css` (CardInspect): the shared
+card part. `make` builds the card object (back, face, fold flap, edge,
+shade); `setTurn`/`setBank`/`spin`/`flat`/`faceUp` are the toy; `open`
+mounts the inspect screen in the host screen (`#home`, later
+`#career-hub`) so its keys take that screen's styles: the card rises from
+its source and does the talking (event, rarity, top prize); a leather
+drawer brings a small CRT (where and what; entry and seats; 2ND PAYS only
+when it does) and the dashboard's key bay (`.actions-row`: gold ◄ BACK ►,
+green BUY IN). Flick the card sideways, swipe, or ◄ ► for the next; pips
+show where you are; `key.press` with `api.consume()` uses a card up.
+The pack scene opens it from the hand and from the card just turned.
+Also owns `.ec-lip`, the brass lip.
+Touch checks: `validation/pack-opening-checks.cjs`.

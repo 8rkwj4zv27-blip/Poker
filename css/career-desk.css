@@ -1,0 +1,103 @@
+/* ============================================================
+   THE CAREER DESK — js/career-desk.js (lab only)
+   A felt desk under a banker's lamp: the brass slot at the top, tonight's
+   three cards on a lip, matchbooks, the lamp, the case, the bell, chips.
+   ============================================================ */
+#po .po-hub{ padding:0; overflow:clip; }
+.hd{ position:absolute; inset:0; overflow:clip; touch-action:none; user-select:none; -webkit-user-select:none; }
+.hd button{ margin:0; padding:0; border:0; background:none; cursor:pointer; -webkit-tap-highlight-color:transparent; }
+.hd svg{ display:block; width:100%; height:auto; image-rendering:pixelated; }
+
+/* the lamp's light on the felt, in hard rings; off, the felt shows its secret */
+.hd-pool{ position:absolute; inset:0; pointer-events:none; z-index:0;
+  background:radial-gradient(circle at calc(100% - 38px) 150px,rgba(255,222,150,.18) 0 38px,rgba(255,222,150,.12) 38px 62px,rgba(255,222,150,.06) 62px 82px,rgba(255,222,150,.03) 82px 98px,rgba(255,222,150,.01) 98px 110px,transparent 110px); }
+.hd-dim{ position:absolute; inset:0; z-index:7; pointer-events:none; background:#06030a; opacity:0; transition:opacity .25s steps(3); }
+.hd.is-dark .hd-dim{ opacity:.5; }
+.hd.is-dark .hd-pool{ opacity:0; }
+.hd.is-away .hd-dim{ opacity:.62; }
+.hd-print{ position:absolute; z-index:8; left:0; right:0; top:67%; display:flex; flex-direction:column; align-items:center; gap:6px; pointer-events:none; opacity:0; transition:opacity .4s steps(4); }
+.hd-print .hd-eye{ width:96px; }
+.hd-print b{ font:7px/1 var(--font-hdr); font-weight:400; letter-spacing:.24em; color:#8ff0b4; }
+.hd.is-dark .hd-print{ opacity:.4; transition-delay:.15s; }
+
+/* THE SLOT: a brass plate with a dark slit; its lamp wakes as a card nears */
+.hd-slot{ position:absolute; z-index:5; left:14%; right:14%; top:4px; height:42px; box-sizing:border-box;
+  border:2px solid var(--px-ink); border-radius:6px; background:linear-gradient(#e6b84a,#c08a26); box-shadow:inset 0 2px 0 #fff1c4,inset 0 -3px 0 #7a4b0c,0 4px 0 rgba(0,0,0,.45); }
+.hd-slit{ position:absolute; left:7%; right:7%; bottom:4px; height:7px; background:#0b0506; border:2px solid #4a2a08; border-radius:2px; box-shadow:inset 0 3px 0 #000; }
+.hd-slot-print{ position:absolute; left:0; right:0; top:8px; text-align:center; font:7px/1 var(--font-hdr); font-weight:400; color:#5a3a12; letter-spacing:.08em; }
+.hd-slot-lamp{ position:absolute; right:6px; top:6px; width:6px; height:6px; background:#5b2a1a; box-shadow:0 0 0 2px var(--px-ink); }
+.hd.is-near .hd-slot-lamp, .hd.is-reading .hd-slot-lamp{ background:#ffd36b; box-shadow:0 0 0 2px var(--px-ink),0 0 8px 2px rgba(255,211,107,.6); }
+.hd.is-near .hd-slit{ border-color:#ffd36b; }
+.hd.is-playing .hd-slot-lamp{ animation:hd-lamp .36s steps(1) infinite; }
+@keyframes hd-lamp{ 50%{ background:#ffd36b; box-shadow:0 0 0 2px var(--px-ink),0 0 8px 2px rgba(255,211,107,.6); } }
+.hd.is-near .hd-slot-print{ animation:hd-blink .4s steps(1) infinite; }
+@keyframes hd-blink{ 50%{ color:#fff1c4; } }
+/* tonight's cards live on their own layers; anything above the slit is inside the machine */
+.hd-stage, .hd-stage > div{ position:absolute; inset:0; pointer-events:none; }
+.hd-stage{ z-index:3; clip-path:inset(4px 0 0 0); }
+.ec-card.is-marker{ filter:brightness(.75); }
+.ec-card.is-marker.is-lost .hd-tab{ background:#3a2a2a; color:#c9b9a0; }
+.hd-objects{ z-index:2; } .hd-fx{ z-index:4; }
+.hd .po-body{ pointer-events:auto; }
+.hd-lip{ position:absolute; z-index:2; left:7%; right:7%; }
+/* why it's on the desk tonight: a paper index tab */
+.hd-tab{ position:absolute; z-index:11; left:6px; top:-11px; padding:3px 4px 2px; background:#efe3bd; color:#3b2416; border:1px solid #2a1810; border-bottom:0;
+  font:6px/1 var(--font-hdr); font-weight:400; letter-spacing:.05em; white-space:nowrap; pointer-events:none; }
+.hd-tab.is-new{ background:#c8322b; color:#F3E6C4; }
+.ec-card.is-biting .hd-tab{ display:none; }
+/* the house's own cards: they never run out */
+.ec-card.is-house::after{ content:"HOUSE"; position:absolute; z-index:10; right:-4px; bottom:6px; padding:3px 3px 2px; background:#d9a93b; color:#3b2416; border:1px solid #2a1810;
+  font:6px/1 var(--font-hdr); letter-spacing:.06em; box-shadow:1px 1px 0 #2a1810; }
+
+/* matchbooks: one for every venue you've reached */
+.hd-matches{ position:absolute; z-index:2; left:18px; top:58px; display:flex; gap:5px; }
+.hd-match{ position:relative; width:32px; height:45px; filter:drop-shadow(2px 2px 0 #04140C); }
+.hd-match.is-open{ margin-top:-16px; height:61px; }
+.hd-match.is-empty{ box-sizing:border-box; border:2px dashed rgba(127,192,140,.25); border-radius:2px; filter:none; }
+.hd-match.is-new{ animation:hd-new .5s steps(2) 3; }
+@keyframes hd-new{ 50%{ translate:0 -3px; } }
+.hd-match:active{ translate:0 1px; }
+/* strike one: a little pixel flame, then smoke */
+.hd-flame{ position:absolute; left:3px; top:-24px; width:10px; height:18px; background:#ffd36b; box-shadow:0 4px 0 #ff9a3c,0 -2px 0 #fff1c4,0 0 18px 12px rgba(255,190,90,.4); clip-path:polygon(50% 0,100% 60%,80% 100%,20% 100%,0 60%); animation:hd-flame .2s steps(2) infinite; pointer-events:none; }
+.hd-flame.is-out{ background:#8a8a8a; box-shadow:none; opacity:.5; animation:none; translate:0 -6px; transition:translate .5s steps(3),opacity .5s steps(3); }
+@keyframes hd-flame{ 50%{ transform:scaleX(.7) translateY(-1px); } }
+.hd-match-fly{ position:absolute; z-index:9; left:0; top:0; width:32px; height:45px; pointer-events:none; }
+
+/* the banker's lamp, with a chain to pull */
+.hd-lamp{ position:absolute; z-index:2; right:12px; top:54px; width:52px; filter:drop-shadow(3px 3px 0 #04140C); }
+.hd-chain{ position:absolute; left:40px; top:26px; width:2px; height:26px; background:repeating-linear-gradient(#e6b84a 0 2px,#7a4b0c 2px 4px); transform-origin:50% 0; }
+.hd-chain::after{ content:""; position:absolute; left:-3px; bottom:-6px; width:8px; height:7px; background:#e6b84a; box-shadow:0 0 0 2px #1a0f0a,inset -2px -2px 0 #7a4b0c; }
+.hd-lamp.is-pulled .hd-chain{ animation:hd-pull .5s steps(5); }
+@keyframes hd-pull{ 25%{ height:34px; } 55%{ height:24px; rotate:6deg; } 80%{ rotate:-4deg; } }
+.hd.is-dark .hd-lamp svg rect[fill="#2f6b45"]{ fill:#1d3a28; }
+
+/* the bottom of the desk: your chips, the case, the bell */
+.hd-chips{ position:absolute; z-index:2; left:8px; bottom:18px; width:112px; height:74px; }
+.hd-case{ position:absolute; z-index:2; left:50%; bottom:18px; width:96px; translate:-50% 0; filter:drop-shadow(3px 3px 0 #04140C); }
+.hd-case-n{ position:absolute; right:-6px; top:-6px; min-width:14px; padding:3px 2px 2px; background:#F3E6C4; color:#2a1810; border:1px solid #2a1810; font:8px/1 var(--font-hdr); font-weight:400; text-align:center; box-shadow:1px 1px 0 #2a1810; }
+.hd-case.is-open svg{ animation:hd-hop .22s steps(2); }
+.hd-bell{ position:absolute; z-index:2; right:16px; bottom:20px; width:72px; filter:drop-shadow(3px 3px 0 #04140C); }
+.hd-bell.is-rung svg{ animation:hd-ding .3s steps(3); }
+@keyframes hd-ding{ 30%{ translate:0 2px; } 60%{ translate:0 -1px; } }
+@keyframes hd-hop{ 50%{ translate:0 -4px; } }
+
+/* someone looks in, now and then */
+.hd-visitor{ position:absolute; z-index:6; left:0; top:calc(55% + 92px); width:76px; translate:-100% 0; transition:translate .3s steps(4); filter:drop-shadow(4px 4px 0 #04140C); }
+.hd-v-face{ display:block; box-shadow:0 0 0 2px #04140C,inset 0 0 0 1px rgba(255,255,255,.18); }
+.hd-glove{ position:absolute; right:-14px; bottom:-6px; width:24px !important; rotate:-12deg; }
+.hd-visitor.is-in{ translate:-14% 0; }
+.hd-visitor.is-ducking{ translate:-100% 0; transition-duration:.1s; }
+.hd-visitor .hd-v-face > span{ display:block; width:100%; }
+.hd-v-face img, .hd-v-face svg{ display:block; width:100%; height:auto; image-rendering:pixelated; border:3px solid #151815; }
+.hd-v-alt{ display:none !important; }
+.hd-visitor.is-glance .hd-v-rest{ display:none !important; } .hd-visitor.is-glance .hd-v-alt{ display:block !important; }
+
+@media (max-height:700px){
+  .hd-matches{ top:52px; } .hd-match{ width:24px; height:34px; } .hd-match.is-open{ height:46px; margin-top:-12px; }
+  .hd-lamp{ width:52px; top:50px; } .hd-chain{ left:40px; top:26px; height:24px; }
+  .hd-case{ width:72px; bottom:10px; } .hd-bell{ width:54px; bottom:12px; } .hd-chips{ height:56px; bottom:10px; }
+  .hd-visitor{ width:52px; top:calc(55% + 70px); }
+}
+@media (prefers-reduced-motion:reduce){
+  .hd-flame, .hd-match.is-new, .hd.is-near .hd-slot-print{ animation:none; }
+}
