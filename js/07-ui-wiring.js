@@ -858,6 +858,7 @@ function careerInvitationById(id){ return careerInvitations().find(card=>card.id
 /* Gives the player one card. DEV only until packets exist (Stage 3). */
 function giveCareerInvitation(eventId, rarity){
   const event = careerEventById(eventId);
+  if (rarity === undefined && event) rarity = event.rarity;
   if (!isCareerInvitation(event) || !CAREER_INVITATION_RARITIES.includes(rarity)) return null;
   if (careerInvitations().length >= CAREER_INVITATIONS_LIMIT) return null;
   const card = {
@@ -1021,9 +1022,9 @@ function careerEventState(eventId){
   // stays resumable even if bankroll (which cannot actually move while an
   // event is active) later reads as ineligible.
   if (event.id === SECOND_CHANCE_EVENT_ID && !isSecondChanceEligible(career.bankroll)) return 'hidden';
-  // Invitation events are DEV only until the hub is wired in
-  // (docs/career/INVITATIONS_PLAN.md, Stage 1).
-  if (isCareerInvitation(event) && !(typeof DEV_MODE !== 'undefined' && DEV_MODE)) return 'hidden';
+  // Invitation events are for DEV and the New Career preview only
+  // (docs/career/INVITATIONS_PLAN.md).
+  if (isCareerInvitation(event) && !careerInvitationsOpen()) return 'hidden';
   if (!careerEventUnlocked(event)) return 'locked';
   if (career.bankroll < event.buyIn) return 'unaffordable';
   return 'available';
@@ -1036,6 +1037,12 @@ function careerEventState(eventId){
 /* A house-funded invitation event (CAREER_INVITATION_EVENTS). It stays
    out of the old Career record: no venue unlocks, no events counters. */
 function isCareerInvitation(event){ return !!event && event.funding === 'house'; }
+/* Invitations are open in DEV, and in the New Career preview (a game copy
+   that sets window.CAREER_PREVIEW); the live Career never sees them. */
+function careerInvitationsOpen(){
+  return (typeof DEV_MODE !== 'undefined' && !!DEV_MODE)
+    || (typeof window !== 'undefined' && !!window && window.CAREER_PREVIEW === true);
+}
 
 function careerCanEnterEvent(eventId){
   return careerEventState(eventId) === 'available';

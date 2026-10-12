@@ -2503,6 +2503,28 @@ check('A reload keeps an invitation in progress on its own terms', ()=>{
   assert.strictEqual(api.state('back-room-invite'),'active');
 });
 
+check('The sample invitation catalogue: valid, house-funded, rarities and prizes in order', ()=>{
+  const { api }=makeContext(openCareer());
+  const ids=clone(api.invitations.map(e=>e.id));
+  assert.deepStrictEqual(ids,['back-room-invite','full-house','closing-time','face-to-face','deep-pockets',
+    'sponsored-night','last-stack-wins','private-game','final-table','golden-ticket']);
+  api.invitations.forEach(e=>{
+    assert.ok(api.isValidSnapshot(api.snapshot(e)), e.id);
+    assert.ok(api.isInvitation(e) && e.buyIn===0, e.id+' house-funded');
+    assert.ok(['common','uncommon','rare','legendary'].includes(e.rarity), e.id+' rarity');
+    assert.ok(e.payouts.length<=e.playerCount, e.id+' paid places fit the field');
+    e.payouts.forEach((p,i)=>i && assert.ok(p<=e.payouts[i-1], e.id+' prizes fall by place'));
+    assert.ok(!api.events.includes(e), e.id+' not in the venue directory');
+    // a card can be given and played for every one of them
+    const { api:a2 }=makeContext(openCareer());
+    const card=a2.give(e.id);
+    assert.strictEqual(card.rarity,e.rarity);
+    assert.strictEqual(card.roster.length,e.playerCount-1, e.id+' opponents drawn');
+    assert.ok(a2.play(card.id), e.id+' plays');
+  });
+  assert.strictEqual(api.eventById('final-table').handLimit,undefined,'Final Table plays to the end');
+});
+
 /* ---------------- Stage 2: invitations in the save ---------------- */
 check('A save from before Stage 2 loads unchanged, owns no cards, and is not rewritten', ()=>{
   // a current (v6) save as written before cards existed
