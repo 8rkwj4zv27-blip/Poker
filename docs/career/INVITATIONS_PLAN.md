@@ -174,3 +174,50 @@ one write (opening it is presentation only, so a reload never re-rolls);
 the pity packet (three basic Commons, once per shortfall). Prices and
 contents are proposals until simulated.
 
+
+## Overnight run (approved by the owner, 12 Oct 2026, late)
+
+Goal for the morning: the hub, the shop (packets), the album and the
+sample events working together as **New Career (preview)**, kept apart
+from the live Career; a link to try on the phone plus this branch. No
+merge, no release.
+
+- **Sample events:** the standard-poker ones (Full House, Closing Time,
+  Face to Face, Deep Pockets, Sponsored Night, Last Stack Wins, The Private
+  Game, Final Table, The Golden Ticket) besides the Back Room. Bounty
+  Night, Three's Company and Pair Pressure wait for their own stages.
+- **Packets:** starter packet, buying with Career money, opening, the pity
+  packet. Contents decided and saved at purchase.
+- **Cards:** the hub card's shape, made nicer and collectable, with cool
+  placeholder art (owner: "have fun"). Common cream, Uncommon green, Rare
+  blue, Legendary yellow.
+- **Save:** packets and the starter marker go inside `felt.career`, like
+  the cards.
+- **Checks per stage:** acceptance checks first, a separate review agent,
+  `npm test`, the whole loop on emulated iPhones (three sizes) with
+  reloads. Commit and push after every stage; a blocker is written down
+  and the run moves on.
+
+### Provisional numbers (the owner's to change; not simulated yet)
+
+House-funded, 1,000-chip stacks unless noted. Skill on the 0-100 dial.
+
+| Event | Rarity | Players | Length | Prizes | Notes |
+|---|---|---|---|---|---|
+| Back Room | Common | 3 | 10 hands | $60 / $30 / $15 | skill 20 |
+| Full House | Common | 6 | 10 hands | $90 / $45 / $25 | skill 20 |
+| Closing Time | Common | 4 | 20 hands | $120 / $60 / $30 | blinds up every 10, skill 25 |
+| Face to Face | Common | 2 | 10 hands | $50 / $20 | skill 20 |
+| Deep Pockets | Common | 4 | 10 hands | $80 / $40 | 2,000-chip stacks, skill 25 |
+| Sponsored Night | Uncommon | 4 | 10 hands | $150 / $75 / $40 | skill 30 |
+| Last Stack Wins | Uncommon | 4 | 10 hands | $200 | skill 30 |
+| The Private Game | Rare | 4 | 20 hands | $400 / $200 | blinds up every 10, skill 40 |
+| Final Table | Rare | 6 | elimination | $500 / $250 / $120 | 600 chips, blinds every 6, skill 40 |
+| The Golden Ticket | Legendary | 3 | 10 hands | $2,000 | skill 45 |
+
+Packets: **House Packet $150, four cards** (three Commons, one Uncommon or
+better: Uncommon 78%, Rare 20%, Legendary 2%). **Starter** (free, once):
+Back Room, Face to Face, Closing Time and one Uncommon. **Pity packet**
+(three random Commons): given when you hold no cards, no unopened packet,
+no event in progress, and less than the cheapest packet; holding it ends
+the shortfall, so it can't be given twice for one.
