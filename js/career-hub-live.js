@@ -33,6 +33,15 @@
         });
       });
     });
+    // A DEV invitation event in progress (docs/career/INVITATIONS_PLAN.md)
+    // has no ticket in the rack; it is listed so it can be continued or
+    // abandoned from here too.
+    const invited = careerActiveEventSnapshot();
+    if (invited && isCareerInvitation(invited) && !all.some(entry => entry.id === invited.id)){
+      const room = CAREER_ROOMS.find(r => r.venue === invited.venue) || CAREER_ROOMS[0];
+      const event = careerEventById(invited.id) || invited;
+      all.push({ id:invited.id, venue:invited.venue, title:careerEventTitle(event), key:room.key, event:invited, cash:false, state:'active' });
+    }
     return all;
   }
 
@@ -65,8 +74,10 @@
   function formatNote(entry){
     if (entry.cash) return 'Play hand by hand. Cash out between hands.';
     if (entry.id === SECOND_CHANCE_EVENT_ID) return 'One life. First place wins; no venue unlock.';
-    if (entry.event.playerCount === 2) return 'One opponent, one life. Winner takes all.';
     const paid = careerPayouts(entry.event).length;
+    if (entry.event.handLimit) return entry.event.handLimit + ' hands, then most chips wins. '
+      + (paid >= entry.event.playerCount ? 'Every place paid.' : 'Top ' + paid + ' paid.');
+    if (entry.event.playerCount === 2) return 'One opponent, one life. Winner takes all.';
     return paid === 1 ? 'One life. Last player standing wins.'
       : 'One life. Top ' + paid + ' paid; first opens the next room.';
   }

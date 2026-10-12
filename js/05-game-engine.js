@@ -2188,10 +2188,21 @@ async function finishHand(outcome){
     // is the ONLY function permitted to start result presentation. The
     // placement is measured from the table (careerFinishPlace), never
     // inferred from a win/loss value — a paid second place depends on it.
-    if (human.chips<=0){ endCareerEvent(g,{place:careerFinishPlace(g,human)}); return; }
+    if (human.chips<=0){ endCareerEvent(g,careerFinish(g,human)); return; }
     if (aiRemaining.length===0){
       await sleep(motionOff() ? 0 : ELIMINATION_CONFIG.clearedBeatMs);
-      endCareerEvent(g,{place:careerFinishPlace(g,human)});
+      endCareerEvent(g,careerFinish(g,human));
+      return;
+    }
+    // A hand-limited invitation ends once its last hand has fully settled
+    // (pots paid, K.O.s resolved above). handNumber counts hands dealt, and
+    // the checkpoint is taken before the deal, so a reload replays a hand
+    // rather than counting it twice.
+    if (careerHandLimitReached(g)){
+      setBanner('<b>Hand ' + g.handNumber + ' of ' + g.event.handLimit + '.</b> Final count.');
+      render();
+      await sleep(motionOff() ? 0 : ELIMINATION_CONFIG.clearedBeatMs);
+      endCareerEvent(g,careerLimitFinish(g,human));
       return;
     }
     if (shouldPresentChampionshipFinalTable(g, aiRemaining.length + 1)){
@@ -2276,6 +2287,37 @@ function careerFinishPlace(g, human){
     p.chips <= 0 && startOf(p) > 0 && startOf(p) > startOf(human)).length;
   // Clamped so no arithmetic slip can hand settlement an impossible place.
   return Math.min(g.players.length, Math.max(1, survivors + sameHandAhead + 1));
+}
+
+/* Invitation events (house-funded) also report an exact tie: `tie` players
+   share places place..place+tie-1, and settlement splits those prizes
+   (careerPrizeForFinish). A tie on a bust is a same-hand K.O. from an
+   exactly equal starting stack — the case careerFinishPlace() resolves in
+   the player's favour; here the places are shared instead. Every other
+   event keeps careerFinishPlace() alone. */
+function careerFinish(g, human){
+  const place = careerFinishPlace(g, human);
+  if (!g || !g.event || g.event.funding !== 'house' || place === null || human.chips > 0) return { place };
+  const startOf = p => Number.isFinite(p._handStartChips) ? p._handStartChips : p.chips;
+  const level = g.players.filter(p => p !== human && p.chips <= 0
+    && startOf(p) > 0 && startOf(p) === startOf(human)).length;
+  return { place, tie:1 + level };
+}
+
+/* True once a hand-limited event has played its last hand. */
+function careerHandLimitReached(g){
+  return !!g && g.mode === 'career' && !!g.event && isCareerHandLimit(g.event.handLimit)
+    && g.handNumber >= g.event.handLimit;
+}
+
+/* Your place when the hand limit ends the event with you still seated.
+   Survivors rank by chips; anyone already knocked out ranks below every
+   survivor. Opponents with exactly your chips share your place. */
+function careerLimitFinish(g, human){
+  const alive = g.players.filter(p => p !== human && p.chips > 0 && !p.eliminated);
+  const ahead = alive.filter(p => p.chips > human.chips).length;
+  const level = alive.filter(p => p.chips === human.chips).length;
+  return { place:ahead + 1, tie:level + 1 };
 }
 
 /* The Invitational stays one continuous six-player freezeout. Crossing to
@@ -2459,7 +2501,7 @@ function concludeGame(){
   // endCareerEvent() no-ops unless it genuinely owns the settlement.
   if (game.mode==='career'){
     const human = game.players.find(p=>p.id==='you');
-    endCareerEvent(game, {place:careerFinishPlace(game, human)});
+    endCareerEvent(game, careerFinish(game, human));
     return;
   }
   game.over = true;

@@ -10,6 +10,7 @@ Last sorted: 7 October 2026 (v0.66.1).
 | --- | --- |
 | [`HANDOVER.md`](HANDOVER.md) | One screen: the build, where the game is, open items and what's next. Read first, update last |
 | [`../CLAUDE.md`](../CLAUDE.md) | The project's rules for every contributor, human or AI |
+| [`WORKFLOW.md`](WORKFLOW.md) | How a stage is built and checked: acceptance checks, build, independent review, tests and the real flow, fix, stop |
 | [`QUICKMAP.md`](QUICKMAP.md) | One page: which file owns what. Read before searching the code |
 | [`CODEMAP.md`](CODEMAP.md) | The detail, one section per file; Labs vs. production; test suites |
 | [`career/STATUS.md`](career/STATUS.md) | What's shipped in Career and its next task |
@@ -30,6 +31,7 @@ Last sorted: 7 October 2026 (v0.66.1).
 | [`career/CAREER_HUB_DESK_PLAN.md`](career/CAREER_HUB_DESK_PLAN.md) | The Career desk: Career's main screen as a felt desk (slot, three cards, matchbooks, lamp, bell, shop, album). Rejected in round 2; stills of a simpler hub with the owner |
 | [`career/VENDING_PLAN.md`](career/VENDING_PLAN.md) | The packet machine: Career's shop as a vending machine that rolls in on the wheel; the moving lab |
 | [`career/CAREER_HUB_BRIEF.md`](career/CAREER_HUB_BRIEF.md) | The Career hub: every round, the owner's verdicts, and the hub as built (the tray is the house's, the felt is yours) |
+| [`career/INVITATIONS_PLAN.md`](career/INVITATIONS_PLAN.md) | Career as packets of event invitations (12 Oct 2026): the loop, the proposed first catalogue, Stage 1 (one DEV-playable Back Room invitation) and its acceptance checks. In progress |
 | [`career/HUB_TO_GAME_BRIEF.md`](career/HUB_TO_GAME_BRIEF.md) | From the labs to the game: the cards and events, the inspect screen, the hub into the game; where everything is; the brief for the next sessions |
 | [`career/COLLECTION_BOOK_PLAN.md`](career/COLLECTION_BOOK_PLAN.md) | The card album: the owner's decisions (a leather-bound book over the table, three rows of three, bright / dim / empty), the moving lab and what's open |
 | [`career/COLLECTION_BRIEF.md`](career/COLLECTION_BRIEF.md) | Historical: the brief the card album was designed from |

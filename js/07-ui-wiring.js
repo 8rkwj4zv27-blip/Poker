@@ -951,6 +951,9 @@ function careerEventState(eventId){
   // stays resumable even if bankroll (which cannot actually move while an
   // event is active) later reads as ineligible.
   if (event.id === SECOND_CHANCE_EVENT_ID && !isSecondChanceEligible(career.bankroll)) return 'hidden';
+  // Invitation events are DEV only until the hub is wired in
+  // (docs/career/INVITATIONS_PLAN.md, Stage 1).
+  if (isCareerInvitation(event) && !(typeof DEV_MODE !== 'undefined' && DEV_MODE)) return 'hidden';
   if (!careerEventUnlocked(event)) return 'locked';
   if (career.bankroll < event.buyIn) return 'unaffordable';
   return 'available';
@@ -960,6 +963,10 @@ function careerEventState(eventId){
    that when the event board grows past one event every choice is disabled
    by the same test. While career.active is set, NO event may be entered or
    paid for — the player must continue or abandon the one they are in. */
+/* A house-funded invitation event (CAREER_INVITATION_EVENTS). It stays
+   out of the old Career record: no venue unlocks, no events counters. */
+function isCareerInvitation(event){ return !!event && event.funding === 'house'; }
+
 function careerCanEnterEvent(eventId){
   return careerEventState(eventId) === 'available';
 }
@@ -985,7 +992,7 @@ function enterCareerEvent(eventId){
   // active and the buy-in is debited, so the increment cannot desynchronise
   // from either. A rejected entry returned above without reaching this, and
   // a resume never calls this at all.
-  career.eventsPlayed = normalizeCareerCounter(career.eventsPlayed) + 1;
+  if (!isCareerInvitation(snapshot)) career.eventsPlayed = normalizeCareerCounter(career.eventsPlayed) + 1;
   saveCareer();
   return true;
 }
@@ -1102,15 +1109,21 @@ function endCareerCashSession(g, reason){
    The legacy 'win'/'loss'/'forfeit' strings remain accepted so an older call
    site can never silently mean something new: 'win' is first place, 'loss'
    is a bust with no known placement, and neither can pay a placed prize it
-   was not told about. */
+   was not told about.
+
+   `tie` (house-funded events only) is how many players share places
+   place..place+tie-1 exactly; anything that doesn't fit the field is 1. */
 function normalizeCareerSettlement(result, snapshot){
-  if (result === 'forfeit') return { forfeit:true, place:null };
+  if (result === 'forfeit') return { forfeit:true, place:null, tie:1 };
   const seats = snapshot && Number.isInteger(snapshot.playerCount) ? snapshot.playerCount : 0;
   const valid = place => Number.isInteger(place) && place >= 1 && place <= seats;
-  if (result === 'win')  return { forfeit:false, place: valid(1) ? 1 : null };
-  if (result === 'loss') return { forfeit:false, place: null };
+  if (result === 'win')  return { forfeit:false, place: valid(1) ? 1 : null, tie:1 };
+  if (result === 'loss') return { forfeit:false, place: null, tie:1 };
   const place = (result && typeof result === 'object') ? result.place : null;
-  return { forfeit:false, place: valid(place) ? place : null };
+  if (!valid(place)) return { forfeit:false, place:null, tie:1 };
+  const tie = isCareerInvitation(snapshot) && Number.isInteger(result.tie)
+    && result.tie >= 1 && place + result.tie - 1 <= seats ? result.tie : 1;
+  return { forfeit:false, place, tie };
 }
 
 /* Returns true ONLY if this call performed the settlement. endCareerEvent()
@@ -1127,15 +1140,17 @@ function settleCareerEvent(result){
   if (!career.active) return false;
   const stake = career.active.snapshot;
   const settlement = normalizeCareerSettlement(result, stake);
-  const prize = settlement.forfeit ? 0 : careerPrizeForPlace(stake, settlement.place);
-  const won = !settlement.forfeit && settlement.place === 1;
+  const prize = settlement.forfeit ? 0 : careerPrizeForFinish(stake, settlement.place, settlement.tie);
+  // A shared first place is a cash, not an outright win.
+  const won = !settlement.forfeit && settlement.place === 1 && settlement.tie === 1;
+  const invitation = isCareerInvitation(stake);
   const firstChampionship = won && stake.id === INVITATIONAL_EVENT_ID && !career.champion;
   const outcome = settlement.forfeit ? 'forfeit'
     : won ? 'win'
     : prize > 0 ? 'cash'
     : 'loss';
   career.bankroll += prize;
-  if (won){
+  if (won && !invitation){
     // Same guard as the unlock above: settleCareerEvent() returns early
     // unless career.active is set, and clears it below, so a repeated
     // settlement call cannot increment this twice. A cash, a bust and a
@@ -1164,6 +1179,8 @@ function settleCareerEvent(result){
     delta: prize > 0 ? prize : -stake.buyIn,
     bankroll: career.bankroll
   };
+  // An exact tie, recorded only when there was one (house-funded events).
+  if (settlement.tie > 1) career.lastResult.tie = settlement.tie;
   career.active = null;
   // The seated field dies with the event it was seated in; the directory
   // draws a fresh one for that event on the next visit.

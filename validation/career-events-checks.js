@@ -159,6 +159,10 @@ function makeContext(initialCareer){
       lastResult:careerLastResult,
       payouts:careerPayouts,
       prizeForPlace:careerPrizeForPlace,
+      prizeForFinish:careerPrizeForFinish,
+      isInvitation:isCareerInvitation,
+      invitations:CAREER_INVITATION_EVENTS,
+      setDev:value=>{ DEV_MODE=value; },
       payoutSummary:careerPayoutSummary,
       requirementText:careerRequirementText,
       entryLabel:careerEntryLabel,
@@ -735,7 +739,8 @@ check('Career table persistence and DEV completion stay descriptor-driven', ()=>
     .forEach(copy=>assert.ok(wiringSource.includes(copy), copy));
   assert.ok(devSource.includes("if (g.mode === 'career') endCareerEvent(g, {place:1})"));
   // Placement must reach settlement from the table, not from a win/loss value.
-  assert.ok(engineSource.includes('endCareerEvent(g,{place:careerFinishPlace(g,human)})'));
+  assert.ok(engineSource.includes('endCareerEvent(g,careerFinish(g,human))'));
+  assert.ok(engineSource.includes('endCareerEvent(g,careerLimitFinish(g,human))'));
   assert.ok(!/endCareerEvent\((g|game), *'(win|loss)'\)/.test(engineSource + devSource));
   assert.ok(!/CAREER_EVENT\b/.test(engineSource + wiringSource + devSource));
 });
@@ -2371,6 +2376,123 @@ check('Production never loads a Lab, and the Ticket Lab loads no game logic', ()
   const machineSource = fs.readFileSync(path.join(root, 'css/06-machine-system.css'), 'utf8');
   ['.cdir{','.cdir-cassette{','.cdir-tray{','.cpi{'].forEach(rule=>
     assert.ok(machineSource.includes(rule), rule));
+});
+
+/* ---------------- Invitation events (docs/career/INVITATIONS_PLAN.md, Stage 1) ---------------- */
+check('The Back Room invitation is a house-funded, hand-limited event outside the directory', ()=>{
+  const { api }=makeContext(openCareer());
+  const event=api.eventById('back-room-invite');
+  assert.ok(event && api.invitations.includes(event));
+  assert.ok(!api.events.includes(event), 'not in the venue directory');
+  assert.ok(!api.roomEvents('BACK ROOM').includes(event));
+  assert.deepStrictEqual({players:event.playerCount,buyIn:event.buyIn,payouts:clone(event.payouts),
+    handLimit:event.handLimit,funding:event.funding},
+    {players:3,buyIn:0,payouts:[60,30,15],handLimit:10,funding:'house'});
+  const snap=api.snapshot(event);
+  assert.strictEqual(snap.handLimit,10);
+  assert.strictEqual(snap.funding,'house');
+  assert.ok(api.isValidSnapshot(snap));
+  // house funding is only ever free to enter, and a hand limit is a whole number of hands
+  assert.ok(!api.isValidSnapshot(Object.assign({},snap,{buyIn:100})));
+  assert.ok(!api.isValidSnapshot(Object.assign({},snap,{funding:'sponsor'})));
+  [0,-1,2.5,'10'].forEach(v=>assert.ok(!api.isValidSnapshot(Object.assign({},snap,{handLimit:v})), String(v)));
+  // the entry-funded rule still holds for every directory event
+  api.events.forEach(e=>assert.ok(!api.isInvitation(e), e.id));
+});
+
+check('Invitations are DEV only: hidden and unenterable without the flag', ()=>{
+  const { api }=makeContext(openCareer());
+  api.setDev(false);
+  assert.strictEqual(api.state('back-room-invite'),'hidden');
+  assert.strictEqual(api.enter('back-room-invite'),false);
+  assert.strictEqual(api.getCareer().active,null);
+  api.setDev(true);
+  assert.strictEqual(api.state('back-room-invite'),'available');
+});
+
+check('Exact ties share the places they cover, rounded down; entry-funded events ignore ties', ()=>{
+  const { api }=makeContext(openCareer());
+  const inv=api.eventById('back-room-invite'), old=api.eventById('back-room-five');
+  assert.strictEqual(api.prizeForFinish(inv,1,1),60);
+  assert.strictEqual(api.prizeForFinish(inv,2,2),22);   // (30+15)/2 = 22.5 -> 22
+  assert.strictEqual(api.prizeForFinish(inv,1,2),45);   // (60+30)/2
+  assert.strictEqual(api.prizeForFinish(inv,1,3),35);   // (60+30+15)/3
+  assert.strictEqual(api.prizeForFinish(inv,3,1),15);
+  assert.strictEqual(api.prizeForFinish(old,1,2),350);  // unchanged rule
+});
+
+check('Entering an invitation takes no money and leaves the old Career record alone', ()=>{
+  const { api, calls }=makeContext(openCareer());
+  const before=clone(api.getCareer());
+  assert.strictEqual(api.enter('back-room-invite'),true);
+  const c=api.getCareer();
+  assert.strictEqual(c.bankroll,before.bankroll);
+  assert.strictEqual(c.eventsPlayed,before.eventsPlayed);
+  assert.strictEqual(c.active.snapshot.handLimit,10);
+  assert.deepStrictEqual(clone(c.active.snapshot.payouts),[60,30,15]);
+  api.start();
+  assert.strictEqual(calls.launches.pop().opponents,2);
+});
+
+check('An invitation settles once: tied 2nd pays $22, no unlock, no counters', ()=>{
+  const { api, storage }=makeContext(openCareer({'back-room-freezeout':true}));
+  const unlocks=clone(api.getCareer().unlocks);
+  api.enter('back-room-invite');
+  assert.strictEqual(api.settle({place:2,tie:2}),true);
+  let c=api.getCareer();
+  assert.strictEqual(c.bankroll,522);
+  assert.strictEqual(c.active,null);
+  assert.deepStrictEqual(clone(c.unlocks),unlocks);
+  assert.deepStrictEqual({outcome:c.lastResult.outcome,place:c.lastResult.place,prize:c.lastResult.prize,tie:c.lastResult.tie},
+    {outcome:'cash',place:2,prize:22,tie:2});
+  // the credit and active:null are one durable write
+  assert.strictEqual(storage.get('felt.career').bankroll,522);
+  assert.strictEqual(storage.get('felt.career').active,null);
+  // a second settlement (a repeated call, or after a reload) credits nothing
+  assert.strictEqual(api.settle({place:1}),false);
+  assert.strictEqual(api.getCareer().bankroll,522);
+  const reloaded=makeContext(storage.get('felt.career')).api;
+  assert.strictEqual(reloaded.settle({place:1}),false);
+  assert.strictEqual(reloaded.getCareer().bankroll,522);
+});
+
+check('An invitation win pays first place and still unlocks nothing', ()=>{
+  const { api }=makeContext(openCareer({'back-room-freezeout':true}));
+  const before=clone(api.getCareer());
+  api.enter('back-room-invite');
+  api.settle({place:1});
+  const c=api.getCareer();
+  assert.strictEqual(c.bankroll,before.bankroll+60);
+  assert.strictEqual(c.lastResult.outcome,'win');
+  assert.strictEqual(c.eventsWon,before.eventsWon);
+  assert.deepStrictEqual(clone(c.unlocks),before.unlocks);
+  assert.strictEqual(c.lastResult.tie,undefined);
+});
+
+check('A shared first is a cash; impossible ties are treated as no tie', ()=>{
+  let { api }=makeContext(openCareer());
+  api.enter('back-room-invite'); api.settle({place:1,tie:2});
+  assert.deepStrictEqual([api.getCareer().lastResult.outcome,api.getCareer().lastResult.prize],['cash',45]);
+  ({ api }=makeContext(openCareer()));
+  api.enter('back-room-invite'); api.settle({place:3,tie:2});      // beyond the field
+  assert.strictEqual(api.getCareer().lastResult.prize,15);
+  ({ api }=makeContext(openCareer()));
+  api.enter('back-room-invite'); api.settle({place:2,tie:'2'});    // not a number
+  assert.strictEqual(api.getCareer().lastResult.prize,30);
+  ({ api }=makeContext(openCareer()));
+  api.enter('back-room-freezeout'); api.settle({place:1,tie:2});   // old event: tie ignored
+  assert.deepStrictEqual([api.getCareer().lastResult.outcome,api.getCareer().lastResult.prize],['win',300]);
+});
+
+check('A reload keeps an invitation in progress on its own terms', ()=>{
+  const first=makeContext(openCareer());
+  first.api.enter('back-room-invite');
+  const saved=first.storage.get('felt.career');
+  const { api }=makeContext(saved);
+  const c=api.getCareer();
+  assert.deepStrictEqual(clone(c.active.snapshot),clone(saved.active.snapshot));
+  assert.strictEqual(c.active.snapshot.handLimit,10);
+  assert.strictEqual(api.state('back-room-invite'),'active');
 });
 
 process.stdout.write('\n' + passed + ' focused Career event checks passed.\n');

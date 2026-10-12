@@ -116,7 +116,10 @@ didn't land. Don't assume residents exist without checking the code first.
 Game *formats*, not game *state*. `TOURNAMENT_FORMATS` (turbo/deep/headsup
 descriptors), `BLIND_LEVELS`, the Career event catalogue (`CAREER_ROOMS`,
 `CAREER_EVENT_LIST`, per-event descriptors with an optional opponent
-`skill`, carried into snapshots), Career naming/threat helpers
+`skill`, carried into snapshots; `CAREER_INVITATION_EVENTS`, the DEV-only
+invitation events with a `handLimit` and a house-funded prize, kept out of
+the directory, with `careerPrizeForFinish` sharing tied places, see
+`docs/career/INVITATIONS_PLAN.md`), Career naming/threat helpers
 (`careerEventTitle`, `careerThreatOf`), and the scoring/award system (the
 objective award catalogue — `POT WINNINGS`, `BIG WIN`, `MONSTER HAND`,
 `K.O.`, `EVENT WON`/`TABLE CLEARED` — see `docs/scoring/SCORING_SPEC.md` for
@@ -132,7 +135,8 @@ setup — accepts `opts.roster` for Career's pinned field), `applyAction()`
 (`startNewHand`, `finishHand`, `resolveEliminations`), Career table
 persistence (`saveCareerTable`/`loadCareerTable`/`restoreTable`),
 `careerFinishPlace()` (placement is measured from the table, never
-inferred), and the shared result-stage model (`careerStageModel`,
+inferred; `careerFinish`/`careerLimitFinish`/`careerHandLimitReached` add
+the invitation events' ten-hand limit and exact ties), and the shared result-stage model (`careerStageModel`,
 `resultStageHTML` — one chassis for `TABLE CLEARED`/`RUN OVER`/`EVENT WON`/
 `EVENT LOST`). If a poker rule or Career settlement number looks wrong,
 it's almost certainly in here.
@@ -951,7 +955,10 @@ The DEV panel. Every control drives real production functions
 path — see the file's own header comment. The panel itself is absent from
 the DOM when `DEV_MODE` is false (`?dev` in the URL, or the setting).
 Useful for reaching a specific game state (forced all-ins, rigged deals,
-Career bankroll presets) without playing there manually.
+Career bankroll presets) without playing there manually. CAREER INVITATION
+starts or continues the Stage 1 Back Room invitation
+(`devPlayCareerInvitation`, `docs/career/INVITATIONS_PLAN.md`); it pays
+the real Career bankroll.
 
 ## `js/09-controls.js` (~400 lines)
 

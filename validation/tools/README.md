@@ -125,6 +125,19 @@ screenshot with `--shots`), so an intermittent bug arrives with its cause.
 Run it before and after any change to files players download. Not part of
 `npm test`, which needs nothing but Node.
 
+## `invitation-scenario.js` — the Stage 1 invitation, played for real
+
+```
+node validation/tools/invitation-scenario.js [--shots DIR]
+```
+
+The Back Room invitation (`docs/career/INVITATIONS_PLAN.md`) started from
+the real DEV key and played with real taps in an emulated iPhone: a reload
+mid-event, the HAND n/10 readout, the end after ten completed hands, the
+placing against the chips, the prize credited once (and not again after a
+reload); then an early knock-out and an early table clearance. About ten
+minutes. Not part of `npm test`.
+
 ## `event-sim.js` — whole Career events, measured
 
 ```
