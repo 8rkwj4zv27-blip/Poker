@@ -898,8 +898,9 @@ function careerCanPlayInvitation(id){
 function normalizeCareerPacket(raw){
   if (!raw || typeof raw !== 'object' || typeof raw.id !== 'string' || !raw.id) return null;
   if (!CAREER_PACKETS[raw.kind] || !Array.isArray(raw.cards)) return null;
+  // a card whose event has gone is dropped; the packet keeps the rest
   const cards = normalizeCareerInvitations(raw.cards);
-  if (!cards.length || cards.length !== raw.cards.length) return null;
+  if (!cards.length) return null;
   return { id:raw.id, kind:raw.kind, cards, at:Number.isSafeInteger(raw.at) && raw.at >= 0 ? raw.at : 0 };
 }
 function normalizeCareerPackets(value){
@@ -937,9 +938,12 @@ function rollCareerPacket(kind, random){
   cards.forEach((card, i)=>{ card.id += '-' + i; });
   return { id:'pkt-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2,8), kind, cards, at:Date.now() };
 }
-function addCareerPacket(packet){
-  career.packets = careerPackets().concat([packet]);
+function addCareerPacket(packet, { front = false } = {}){
+  career.packets = front ? [packet].concat(careerPackets()) : careerPackets().concat([packet]);
 }
+// a packet as its definition promises: every fixed card and every slot
+const fullCareerPacket = packet => !!packet
+  && packet.cards.length === (CAREER_PACKETS[packet.kind].fixed || []).length + CAREER_PACKETS[packet.kind].slots.length;
 /* Buys a packet: the price leaves the bankroll and the packet, its cards
    already drawn, arrives in ONE write. */
 function buyCareerPacket(kind){
@@ -947,7 +951,7 @@ function buyCareerPacket(kind){
   if (!careerInvitationsOpen() || !def || !(def.price > 0)) return null;
   if (career.bankroll < def.price || careerPackets().length >= CAREER_PACKETS_LIMIT) return null;
   const packet = rollCareerPacket(kind);
-  if (!packet || !packet.cards.length) return null;
+  if (!fullCareerPacket(packet)) return null;
   career.bankroll -= def.price;
   addCareerPacket(packet);
   saveCareer();
@@ -969,7 +973,8 @@ function giveCareerStarterPacket(){
   if (!careerInvitationsOpen() || career.starterGiven === true) return null;
   const packet = rollCareerPacket('starter');
   career.starterGiven = true;
-  addCareerPacket(packet);
+  // first in the list, so the packet limit can never trim it away
+  addCareerPacket(packet, { front:true });
   saveCareer();
   return packet;
 }

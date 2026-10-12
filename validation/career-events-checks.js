@@ -2750,9 +2750,11 @@ check('Packets: a save without them loads unchanged; damaged ones are dropped on
   const good=first.api.buy('house');
   const saved=first.storage.get('felt.career');
   saved.packets=[good, Object.assign({},good), {id:'p2',kind:'mystery',cards:good.cards},
-    {id:'p3',kind:'house',cards:[]}, {id:'p4',kind:'house',cards:[{id:'x',eventId:'back-room-five',rarity:'common'}]}, 7];
+    {id:'p3',kind:'house',cards:[]}, {id:'p4',kind:'house',cards:[{id:'x',eventId:'back-room-five',rarity:'common'}]},
+    {id:'p5',kind:'house',cards:[good.cards[0],{id:'gone',eventId:'retired-event',rarity:'common'}]}, 7];
   const { api, storage }=makeContext(saved);
-  assert.deepStrictEqual(clone(api.packets()).map(p=>p.id),[good.id]);
+  assert.deepStrictEqual(clone(api.packets()).map(p=>p.id),[good.id,'p5']);
+  assert.strictEqual(api.packets()[1].cards.length,1,'a paid packet keeps its good cards');
   assert.strictEqual(storage.get('felt.career').bankroll,saved.bankroll);
 });
 
