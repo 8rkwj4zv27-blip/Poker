@@ -117,6 +117,10 @@ panel, red panelling).
   label goes dark); labels flip over as the machine comes and goes. The
   red CLEAR stays on the machine.
 
+- The pile of waiting packets never lands on the deck or the clean-up
+  spot (places are tried wholly on the felt; those two are no-go, cards
+  and bags only a last resort). The touch checks assert it.
+
 ## Open
 
 - The opening reveals four cards now; five things (cards or chips) need
