@@ -2,11 +2,12 @@
    INVITATION CARDS (lab) — one reusable face for every invitation event
    (docs/career/INVITATIONS_PLAN.md, the proposed first catalogue).
 
-   Built on the event cards' stock (css/pack-ritual-cards.css: the card's
-   proportions, type, cut corners and rarity trim; css/invitation-cards.css
-   adds the invitation's rows). The picture is a separate slot
-   (js/invitation-art.js), so the owner's artwork replaces it without
-   touching any words.
+   The hub's own event card (js/pack-ritual-cards.js, the TABLE EVENT
+   layout: header, title, art, one line, top prize, footer), recoloured by
+   rarity (owner, 12 Oct 2026): Common cream, Uncommon green, Rare blue,
+   Legendary yellow (css/invitation-cards.css). The picture is a slot of its
+   own; until the owner's artwork exists it borrows the hub cards' art.
+   Full rules belong on the card inspect screen, not the face.
 
    Every word comes from an event definition:
    - an event the game can play reads the LIVE definition the table is
@@ -19,7 +20,7 @@
    ============================================================ */
 (() => {
   'use strict';
-  const RARITY = { common:{ name:'Common', code:'C' }, uncommon:{ name:'Uncommon', code:'UC' },
+  const RARITY = { common:{ name:'Common', code:'C' }, uncommon:{ name:'Uncommon', code:'U' },
     rare:{ name:'Rare', code:'R' }, legendary:{ name:'Legendary', code:'L' } };
 
   /* The proposed catalogue (owner, 12 Oct 2026). `live` names a definition
@@ -27,33 +28,44 @@
      'dev' — playable now, in DEV only; 'standard' — standard poker, not
      built yet; 'special' — needs its own rules stage before it can exist. */
   const CATALOGUE = [
-    { id:'back-room', live:'back-room-invite', rarity:'common', art:'back-room', status:'dev',
+    { id:'back-room', live:'back-room-invite', rarity:'common', status:'dev',
       rules:'Ten hands. Most chips wins; every place is paid.' },
-    { id:'full-house', title:'FULL HOUSE', rarity:'common', art:'full-house', status:'standard',
+    { id:'full-house', title:'FULL HOUSE', rarity:'common', status:'standard',
       players:6, hands:10, paid:3, rules:'A full table for ten hands. Most chips wins.' },
-    { id:'closing-time', title:'CLOSING TIME', rarity:'common', art:'closing-time', status:'standard',
+    { id:'closing-time', title:'CLOSING TIME', rarity:'common', status:'standard',
       players:4, hands:20, paid:3, rules:'Twenty hands before the lights come up.' },
-    { id:'face-to-face', title:'FACE TO FACE', rarity:'common', art:'face-to-face', status:'standard',
+    { id:'face-to-face', title:'FACE TO FACE', rarity:'common', status:'standard',
       players:2, hands:10, paid:2, rules:'One opponent, ten hands. Both places paid.' },
-    { id:'deep-pockets', title:'DEEP POCKETS', rarity:'common', art:'deep-pockets', status:'standard',
+    { id:'deep-pockets', title:'DEEP POCKETS', rarity:'common', status:'standard',
       players:4, hands:10, rules:'Deeper starting stacks: room to play your hands.' },
-    { id:'sponsored-night', title:'SPONSORED NIGHT', rarity:'uncommon', art:'sponsored-night', status:'standard',
+    { id:'sponsored-night', title:'SPONSORED NIGHT', rarity:'uncommon', status:'standard',
       rules:'Standard poker. A sponsor boosts the placement prizes.' },
-    { id:'last-stack-wins', title:'LAST STACK WINS', rarity:'uncommon', art:'last-stack-wins', status:'standard',
+    { id:'last-stack-wins', title:'LAST STACK WINS', rarity:'uncommon', status:'standard',
       players:4, hands:10, paid:1, rules:'Ten hands. Only the biggest stack is paid.' },
-    { id:'bounty-night', title:'BOUNTY NIGHT', rarity:'uncommon', art:'bounty-night', status:'special',
+    { id:'bounty-night', title:'BOUNTY NIGHT', rarity:'uncommon', status:'special',
       rules:'Placement prizes, plus a bonus for each player you knock out.' },
-    { id:'threes-company', title:'THREE’S COMPANY', rarity:'rare', art:'threes-company', status:'special',
+    { id:'threes-company', title:'THREE’S COMPANY', rarity:'rare', status:'special',
       rules:'Three hole cards each. Best five from any mix of yours and the board.' },
-    { id:'private-game', title:'THE PRIVATE GAME', rarity:'rare', art:'private-game', status:'standard',
+    { id:'private-game', title:'THE PRIVATE GAME', rarity:'rare', status:'standard',
       players:4, hands:20, paid:2, rules:'A quiet back table. Generous prizes, top two paid.' },
-    { id:'final-table', title:'FINAL TABLE', rarity:'rare', art:'final-table', status:'standard',
+    { id:'final-table', title:'FINAL TABLE', rarity:'rare', status:'standard',
       players:6, hands:'elimination', paid:3, rules:'Shallow stacks, rising blinds, play to the last player.' },
-    { id:'pair-pressure', title:'PAIR PRESSURE', rarity:'rare', art:'pair-pressure', status:'special',
+    { id:'pair-pressure', title:'PAIR PRESSURE', rarity:'rare', status:'special',
       rules:'Exactly one pair beats every other hand. The rest rank as normal.' },
-    { id:'golden-ticket', title:'THE GOLDEN TICKET', rarity:'legendary', art:'golden-ticket', status:'standard', gold:true,
+    { id:'golden-ticket', title:'THE GOLDEN TICKET', rarity:'legendary', status:'standard',
       players:3, hands:10, paid:1, rules:'Standard poker for an extraordinary jackpot. Winner takes all.' }
   ];
+
+  // which hub card's picture stands in until the owner's art exists
+  const ART_FROM = { special:'wild', elimination:'freezeout', bounty:'bomb', standard:'table' };
+  function artOf(entry){
+    const kind = entry.id === 'bounty-night' ? ART_FROM.bounty : entry.status === 'special' ? ART_FROM.special
+      : entry.hands === 'elimination' ? ART_FROM.elimination : ART_FROM.standard;
+    const L = window.PokerCollectibleLab, def = L.cards.find(c => c.kind === kind);
+    const html = L.cardHTML(L.specimen(def, 'common'));
+    const m = html.match(/<div class="ccl-art">(<svg[\s\S]*?<\/svg>)/);
+    return m ? m[1] : '';
+  }
 
   const money = n => '$' + Number(n).toLocaleString('en-US');
   const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;' }[c]));
@@ -77,34 +89,26 @@
     if (t.paid === 1) return 'WINNER TAKES ALL';
     return t.players && t.paid >= t.players ? 'EVERY PLACE PAID' : 'TOP ' + t.paid + ' PAID';
   }
-  const STATUS = { dev:'PLAYABLE · DEV', standard:'NOT BUILT YET', special:'SPECIAL RULES' };
-  // the terms strip: one line, players · length; TERMS TBC when neither is set
+  // the face's one line: players · length; TERMS TBC when neither is set
   function termsText(t){
     return !t.players && !t.hands ? 'TERMS TBC' : playersText(t.players) + ' · ' + handsText(t.hands);
   }
 
-  /* The face: the event cards' rows, with the type strip split into the
-     terms and a one-line rule. */
+  /* The face: the hub card, with this event's words and its rarity colour. */
   function cardHTML(entry){
-    const t = terms(entry), rarity = RARITY[entry.rarity];
-    const prize = t.payouts
-      ? '<small>PRIZES</small><strong class="inv-payouts" data-n="' + t.payouts.length + '">' + t.payouts.map(money).join(' ') + '</strong>'
-      : '<small>' + esc(paidText(t)) + '</small><strong class="inv-tbc">PRIZES TBC</strong>';
-    // data-inv-rarity, not the stock's data-rarity: the stock rebuilds rare
-    // and legendary cards in its own layouts; invitations keep one layout
-    // and take only the stock's rarity trim (css/invitation-cards.css).
-    return '<div class="ccl-object inv-object" data-kind="invite" data-inv-rarity="' + entry.rarity + '" data-material="paper" data-finish="paper"' +
-      (entry.gold ? ' data-gold="true"' : '') + ' data-status="' + entry.status + '">' +
-      '<div class="ccl-stock"><article class="ccl-card inv-card" data-kind="invite" data-finish="paper"' +
-      ' aria-label="' + esc(t.title + ', ' + rarity.name + ', ' + playersText(t.players) + ', ' + handsText(t.hands)) + '">' +
+    const t = terms(entry), rarity = RARITY[entry.rarity], line = termsText(t);
+    const top = t.payouts ? money(t.payouts[0]) : 'TBC';
+    const no = String(CATALOGUE.indexOf(entry) + 1).padStart(3, '0') + '·' + rarity.code;
+    return '<div class="ccl-object inv-object" data-kind="table" data-inv-rarity="' + entry.rarity + '" data-material="paper" data-finish="paper">' +
+      '<div class="ccl-stock"><article class="ccl-card inv-card" data-kind="table" data-finish="paper"' +
+      ' aria-label="' + esc(t.title + ', ' + rarity.name + ', top prize ' + top) + '">' +
       '<header class="ccl-card-header"><span class="ccl-rarity-index" aria-label="' + rarity.name + '">' + rarity.code + '</span>' +
-        '<span class="ccl-header-legend">' + esc(t.venue) + '</span></header>' +
+        '<span class="ccl-header-legend">ADMIT ONE</span></header>' +
       '<h2 class="ccl-card-title">' + esc(t.title) + '</h2>' +
-      '<div class="ccl-art">' + InvitationArt.get(entry.art) + '</div>' +
-      '<div class="ccl-type inv-terms"' + (termsText(t).length > 20 ? ' data-long="true"' : '') + '>' + esc(termsText(t)) + '</div>' +
-      '<p class="inv-rule">' + esc(entry.rules) + '</p>' +
-      '<div class="ccl-prize">' + prize + '</div>' +
-      '<footer class="ccl-card-footer"><span>' + (t.provisional ? 'PROVISIONAL' : rarity.name.toUpperCase()) + '</span><span>' + STATUS[entry.status] + '</span></footer>' +
+      '<div class="ccl-art">' + artOf(entry) + '</div>' +
+      '<div class="ccl-type"' + (line.length > 20 ? ' data-long="true"' : '') + '>' + esc(line) + '</div>' +
+      '<div class="ccl-prize"><small>TOP PRIZE</small><strong' + (t.payouts ? '' : ' class="inv-tbc"') + '>' + top + '</strong></div>' +
+      '<footer class="ccl-card-footer"><span>' + rarity.name.toUpperCase() + '</span><span>' + no + '</span></footer>' +
       '</article></div></div>';
   }
 

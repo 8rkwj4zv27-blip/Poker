@@ -1,39 +1,21 @@
 /* ============================================================
-   INVITATION CARDS (lab) — js/invitation-cards.js. The event cards' stock
-   (css/pack-ritual-cards.css) with the invitation's rows: the type strip
-   becomes the terms (players · hands) and a one-line rule sits under it.
-   Rarity keeps the stock's restrained trim; The Golden Ticket is gold.
+   INVITATION CARDS (lab) — js/invitation-cards.js. The hub's own event
+   card (css/pack-ritual-cards.css, the TABLE EVENT layout), coloured by
+   rarity (owner, 12 Oct 2026): Common cream, Uncommon green, Rare blue,
+   Legendary yellow. Only the card's colour tokens change.
    ============================================================ */
-.inv-card{ grid-template-rows:10% 13% 33% 7% 12% 17% 8%; }
-.inv-card .ccl-card-title{ font-size:6.6cqw; line-height:1.15; padding:0 6px; }
-.inv-card .inv-terms{ margin-top:3px; font-size:3.9cqw; letter-spacing:.02em; white-space:nowrap; }
-.inv-card .inv-terms[data-long="true"]{ font-size:3.3cqw; letter-spacing:0; }
-.inv-rule{
-  position:relative; z-index:2; margin:2px 9px 0; display:flex; align-items:center; justify-content:center;
-  font:3.5cqw/1.35 var(--font-hdr); color:var(--muted); text-align:center; overflow:hidden;
+.inv-object[data-inv-rarity="common"]{
+  --stock:#eee2bb; --ink:#282b21; --muted:#6e664a; --trim:#788362; --panel:#d4cba4; --edge:#ac9d70; --rarity:#285e40; --rarity-hi:#6c8c58;
 }
-.inv-card .ccl-prize strong.inv-payouts[data-n="2"],.inv-card .ccl-prize strong.inv-payouts[data-n="3"]{ font-size:7.4cqw; letter-spacing:-.05em; }
-.inv-card .ccl-prize strong.inv-tbc{ font-size:6.2cqw; color:var(--muted); }
-.inv-card .ccl-card-footer{ font-size:3.2cqw; gap:4px; white-space:nowrap; }
-.inv-card .ccl-card-footer span:last-child{ text-align:right; }
-/* Rarity: the stock's trims (css/pack-ritual-cards.css), restrained: rim,
-   rarity badge and an inner line; no foil, sheen or rebuilt layout. */
-.inv-object[data-inv-rarity="uncommon"]{ --rarity:#2b857b; --rarity-hi:#a0d9b9; }
-.inv-object[data-inv-rarity="uncommon"] .ccl-card{ box-shadow:inset 0 0 0 1px #d4e2b9,inset 0 0 0 3px #2b857b,inset 0 0 0 4px #94c2a6,inset 0 -3px var(--edge); }
-.inv-object[data-inv-rarity="rare"]{ --rarity:#2156a4; --rarity-hi:#8bb5d1; }
-.inv-object[data-inv-rarity="rare"] .ccl-card{ border-width:3px; box-shadow:inset 0 0 0 1px #dfe9db,inset 0 0 0 3px #3565a2,inset 0 0 0 4px #b8cbd1,inset 0 -3px #6c92a5; }
-.inv-object[data-inv-rarity="legendary"]{ --rarity:#35283e; --rarity-hi:#f3e2b1; }
-.inv-object[data-inv-rarity="legendary"] .ccl-card{ border:3px solid transparent; border-image:linear-gradient(115deg,#e5c895 0 18%,#90c4c1 18% 39%,#d6a5c0 39% 62%,#9fafd2 62% 81%,#d4d69f 81%) 1; }
-.inv-object[data-inv-rarity="uncommon"] .ccl-rarity-index{ font-size:5.1cqw; }
-/* THE GOLDEN TICKET: gold stock, deep gold trim, brown ink */
-.inv-object[data-gold="true"]{
-  --stock:#e9c86c; --ink:#3a2410; --muted:#6e4a1c; --trim:#9a6e22; --panel:#3a2a12; --edge:#8a5f1a;
-  --rarity:#7a5214; --rarity-hi:#f6dc8c;
+.inv-object[data-inv-rarity="uncommon"]{
+  --stock:#cfe2c0; --ink:#1f3324; --muted:#4f6b52; --trim:#5f8a62; --panel:#b6cfa6; --edge:#7f9f74; --rarity:#2f6e45; --rarity-hi:#8cc29a;
 }
-.inv-object[data-gold="true"] .ccl-card{
-  border:3px solid #7a5214; border-image:none;
-  background:linear-gradient(135deg,#f3d887 0 22%,#e2bb58 22% 48%,#efcf76 48% 70%,#d9ad48 70%);
-  box-shadow:inset 0 0 0 1px #fff0b5,inset 0 0 0 3px #9a6e22,inset 0 0 0 4px #f6dc8c,inset 0 -3px #8a5f1a;
+.inv-object[data-inv-rarity="rare"]{
+  --stock:#cfdeea; --ink:#1b2e45; --muted:#4b6680; --trim:#5d82a6; --panel:#b3c8dc; --edge:#7d9bb6; --rarity:#2156a4; --rarity-hi:#8bb5d1;
 }
-.inv-object[data-gold="true"] .ccl-rarity-index{ background:#3a2410; border:2px solid #f6dc8c; border-image:none; color:#f6dc8c; }
-.inv-object[data-gold="true"] .ccl-prize{ background:#fff3c22e; border-block:2px solid #9a6e22; }
+.inv-object[data-inv-rarity="legendary"]{
+  --stock:#f0d98a; --ink:#3a2a10; --muted:#7a5a20; --trim:#a8812e; --panel:#e2c46e; --edge:#a8812e; --rarity:#8a6418; --rarity-hi:#f6e2a0;
+}
+.inv-card .ccl-type{ white-space:nowrap; }
+.inv-card .ccl-type[data-long="true"]{ font-size:3.6cqw; }
+.inv-card .ccl-prize strong.inv-tbc{ color:var(--muted); }

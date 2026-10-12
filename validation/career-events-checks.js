@@ -2498,12 +2498,12 @@ check('A reload keeps an invitation in progress on its own terms', ()=>{
 check('Invitation card preview: isolated, and only the live event can be played', ()=>{
   const indexHtml=fs.readFileSync(path.join(root,'index.html'),'utf8');
   const sw=fs.readFileSync(path.join(root,'sw.js'),'utf8');
-  ['invitation-cards','invitation-art'].forEach(n=>{ assert.ok(!indexHtml.includes(n),'index.html links '+n); assert.ok(!sw.includes(n),'sw.js precaches '+n); });
+  ['invitation-cards'].forEach(n=>{ assert.ok(!indexHtml.includes(n),'index.html links '+n); assert.ok(!sw.includes(n),'sw.js precaches '+n); });
   const host=fs.readFileSync(path.join(root,'js/invitation-cards-lab-host.js'),'utf8');
   assert.ok(host.includes('Storage.prototype') && host.includes('pwa-service-worker'),'the lab copy runs on in-memory storage');
   const { context }=makeContext(openCareer());
   context.window=context;
-  vm.runInContext(['js/invitation-art.js','js/invitation-cards.js'].map(f=>fs.readFileSync(path.join(root,f),'utf8')).join('\n'),context);
+  vm.runInContext(['js/pack-ritual-cards.js','js/invitation-cards.js'].map(f=>fs.readFileSync(path.join(root,f),'utf8')).join('\n'),context);
   const IC=context.InvitationCards;
   assert.strictEqual(IC.CATALOGUE.length,13);
   const count=r=>IC.CATALOGUE.filter(e=>e.rarity===r).length;
@@ -2519,11 +2519,12 @@ check('Invitation card preview: isolated, and only the live event can be played'
     assert.strictEqual(IC.CATALOGUE.find(e=>e.id===id).status,'special',id));
   const back=IC.CATALOGUE.find(e=>e.id==='back-room');
   assert.strictEqual(IC.describe(back).prizes,'$60 / $30 / $15');
-  assert.ok(IC.cardHTML(back).includes('3 PLAYERS · 10 HANDS'));
-  assert.ok(IC.cardHTML(IC.CATALOGUE.find(e=>e.id==='golden-ticket')).includes('data-gold="true"'));
-  assert.ok(IC.cardHTML(IC.CATALOGUE.find(e=>e.id==='full-house')).includes('PRIZES TBC'));
-  // the words and the picture are separate files
-  assert.ok(!fs.readFileSync(path.join(root,'js/invitation-art.js'),'utf8').includes('PLAYERS'));
+  // the hub card's face: title, one line, top prize; rules stay off it
+  const face=IC.cardHTML(back);
+  ['ADMIT ONE','3 PLAYERS · 10 HANDS','TOP PRIZE','$60','<svg'].forEach(t=>assert.ok(face.includes(t),t));
+  assert.ok(!face.includes(back.rules),'no rules on the face');
+  assert.ok(IC.cardHTML(IC.CATALOGUE.find(e=>e.id==='golden-ticket')).includes('data-inv-rarity="legendary"'));
+  assert.ok(IC.cardHTML(IC.CATALOGUE.find(e=>e.id==='full-house')).includes('>TBC<'));
 });
 
 process.stdout.write('\n' + passed + ' focused Career event checks passed.\n');

@@ -1292,14 +1292,11 @@ placeholder cards, over the real game (phone-first; host
 
 - `js/invitation-cards.js` (`window.InvitationCards`): `CATALOGUE` (the
   proposed events; `live` names a real definition, the rest are
-  provisional, unknowns TBC), `cardHTML(entry)` (one layout on the event
-  cards' stock, `css/pack-ritual-cards.css`, plus
-  `css/invitation-cards.css`; rarity as `data-inv-rarity` so the stock's
-  rare/legendary rebuilds don't apply; The Golden Ticket `data-gold`),
-  `describe(entry)` (the detail view's terms).
-- `js/invitation-art.js` (`window.InvitationArt`): the placeholder
-  symbols, one per `art` key, kept apart from the words so the owner's
-  artwork replaces them one by one.
+  provisional, unknowns TBC), `cardHTML(entry)` (the hub's own TABLE EVENT
+  card from `js/pack-ritual-cards.js`, its picture borrowed from the hub
+  cards until the owner's art exists, coloured by rarity in
+  `css/invitation-cards.css`: Common cream, Uncommon green, Rare blue,
+  Legendary yellow), `describe(entry)` (the detail view's terms and rules).
 - Only an event the game really has offers PLAY (the Back Room
   invitation, through `devPlayCareerInvitation` with DEV switched on in
   the copy). Every other card launches nothing.
