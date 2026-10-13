@@ -349,6 +349,13 @@ window.PO_EMBED = true;
     M.keyEl('play').classList.remove('is-ready');
     if (mode !== 'idle' || !order.length) return;
     const due = total();
+    // the preview: the Career's money and room decide, before anything is bought
+    if (LINK){ M.wallet = LINK.bank(); M.showBank(M.wallet); }
+    if (LINK && order.length > LINK.room()){
+      crt('FULL', 'NO ROOM', 'FOR ' + order.length + ' MORE', 'danger');
+      Foil.thud(.5); Haptic.tick(20, 0); setTimeout(panel, 1400);
+      return;
+    }
     if (due > M.wallet){
       crt('SHORT', money(due - M.wallet), 'TOTAL ' + money(due), 'danger');
       Foil.thud(.5); Haptic.tick(20, 0); jolt(vq('.vm-crt'), 2);
@@ -358,9 +365,11 @@ window.PO_EMBED = true;
     // the preview: every packet ordered is bought from the Career first (the
     // money and the packet saved in one write each); the chips then show it
     if (LINK){
-      for (let n = 0; n < order.length; n++){
-        if (!LINK.buy()){ crt('SHORT', money(due), 'TOTAL ' + money(due), 'danger'); Foil.thud(.5); setTimeout(panel, 1400); return; }
-      }
+      let bought = 0;
+      while (bought < order.length && LINK.buy()) bought++;
+      // (should the save refuse part-way, only what was bought drops)
+      if (bought < order.length) order.splice(bought);
+      if (!bought){ M.wallet = LINK.bank(); M.showBank(M.wallet); crt('SHORT', money(due), 'TOTAL ' + money(due), 'danger'); Foil.thud(.5); setTimeout(panel, 1400); return; }
     }
     mode = 'paying'; keys();
     await payChips(due);
@@ -837,7 +846,13 @@ window.PO_EMBED = true;
     mode = 'opening'; keys();
     openEl.classList.add('is-live');
     E.layout({ tableS:M.scale });
-    E.openOwned(p);
+    // (the save can still refuse it: the packet goes back to the felt)
+    Promise.resolve(E.openOwned(p)).then(ok => {
+      if (ok !== false) return;
+      p.body.remove();
+      mode = 'hub'; openEl.classList.remove('is-live'); keys();
+      M.refresh?.();
+    });
   }
   // the hub's deck, touched: the reveal runs on it on the felt, and the
   // touch that started it carries on there (a tap turns one, a hold squeezes)
@@ -900,9 +915,11 @@ window.PO_EMBED = true;
       <h3>THE WINDOW</h3>${seg('cols', { 4:'4 ACROSS', 5:'5 ACROSS' })}${seg('rows', { 4:'4 ROWS', 3:'3 ROWS' })}
       <h3>PAINT ON THE GLASS</h3>${seg('paint', { on:'CARD PACKETS', off:'OFF' })}
       <h3>A PACKET STICKS</h3>${seg('stuck', { never:'NEVER', sometimes:'NOW AND THEN', next:'THE NEXT ONE' })}
-      <h3>NEXT PACKET OPENED HOLDS</h3>${seg('contents', { surprise:'SURPRISE', legendary:'A LEGEND', none:'NO LEGEND' })}
+      ${LINK ? '' : `<h3>NEXT PACKET OPENED HOLDS</h3>${seg('contents', { surprise:'SURPRISE', legendary:'A LEGEND', none:'NO LEGEND' })}`}
       <h3>SPEED</h3>${seg('speed', { 1:'REAL', 0.5:'HALF', 0.25:'QUARTER' })}
-      <div class="vm-seg"><button class="pc-button pc-button-secondary" id="vm-credit">+$5,000</button></div>`);
+      ${LINK ? '' : '<div class="vm-seg"><button class="pc-button pc-button-secondary" id="vm-credit">+$5,000</button></div>'}`);
+    // (the preview spends the Career's own money: no lab money, no forced pulls)
+    if (LINK) s.querySelector('p').textContent = s.querySelector('p').textContent.replace(' Lab money, nothing saved.', ' Your Career\'s money: every packet is saved.');
     s.querySelectorAll('[data-vm] button').forEach(b => b.onclick = () => {
       const k = b.parentNode.dataset.vm, v = b.dataset.v;
       if (k === 'contents' || k === 'speed'){ E.tune[k] = isNaN(+v) ? v : +v; E.applyTune(); }
@@ -913,7 +930,7 @@ window.PO_EMBED = true;
       }
       marks();
     });
-    s.querySelector('#vm-credit').onclick = () => { M.wallet = M.wallet + 5000; if (mode === 'idle') panel(); };
+    if (!LINK) s.querySelector('#vm-credit').onclick = () => { M.wallet = M.wallet + 5000; if (mode === 'idle') panel(); };
     marks();
   }
   function marks(){

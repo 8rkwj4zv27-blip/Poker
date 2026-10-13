@@ -28,6 +28,10 @@
     pool:() => careerInvitations().map(toCard).filter(Boolean),
     // a purchase: the money goes and the packet arrives in one write
     buy:() => buyCareerPacket('house'),
+    // how many more packets the Career has room for
+    room:() => CAREER_PACKETS_LIMIT - careerPackets().length,
+    // whether a packet on the felt can be opened (its cards fit)
+    canOpen:id => { const p = careerPackets().find(q => q.id === id); return !!p && careerInvitations().length + p.cards.length <= CAREER_INVITATIONS_LIMIT; },
     packetIds:() => careerPackets().map(p => p.id),
     // a packet torn open on the felt: its cards join yours (one write)
     open(id){ const cards = openCareerPacket(id); return cards ? cards.map(toCard).filter(Boolean) : null; },
@@ -58,42 +62,19 @@
     }
   };
 
-  // Back from a table: the drum turns the results away and the hub comes
-  // round (the game's returnToCareer, with the hub in place of the old
-  // Career screen), and the hub catches up with the bankroll and cards.
-  function backToHub(){
-    if (careerReturnInFlight || (game && game._careerReturnDone)) return;
-    careerReturnInFlight = true;
-    clearTimeout(autoDealT);
-    endQuickResolve();
-    closeOverlays();
-    if (game){ game.over = true; game._careerReturnDone = true; }
-    pendingHumanPlayer = null;
-    coachToken++;
-    rollBackTo($('table-screen'), $('home'),
-      () => { $('home').classList.remove('hidden'); window.CareerMain?.refresh?.(); },
-      () => {
-        hideResultCard();
-        exitResultsConsole();
-        clearCompletedEventConsole();
-        setArcadeMode(false);
-        const felt = $('felt');
-        if (felt) felt.classList.remove('results-mode', 'tone-negative');
-        $('btn-new-table').textContent = 'New Table';
-        $('btn-new-table').classList.add('hidden');
-        $('table-screen').classList.add('hidden');
-        applyTheme();
-        careerReturnInFlight = false;
-      });
-  }
-  returnToCareer = backToHub;
-  // the results key names where it goes
-  enterCareerResultsConsole = onBack => activateResultsConsole(onBack, 'BACK TO THE HUB', 'career-return-mode', true);
-  // anything else that would show the old Career screen shows the hub
+  // The preview has no old Career screen: every way back to it (an event
+  // finished, a table left mid-event, the menu) turns to the hub instead,
+  // with the drum, and the hub catches up with the bankroll and cards.
+  const realRollBackTo = rollBackTo;
+  rollBackTo = (from, to, reveal, settle) => realRollBackTo(from, to === $('career') ? $('home') : to, reveal, settle);
   showCareerScreen = () => {
-    $('career').classList.add('hidden');
-    $('table-screen').classList.add('hidden');
+    ['career', 'setup', 'rankings', 'awards', 'table-screen'].forEach(id => $(id)?.classList.add('hidden'));
     $('home').classList.remove('hidden');
     window.CareerMain?.refresh?.();
   };
+  // a table left mid-event comes back to the menu, which here is the hub
+  const realMenu = reconstructMainMenu;
+  reconstructMainMenu = (...args) => { const r = realMenu(...args); window.CareerMain?.refresh?.(); return r; };
+  // the results key names where it goes
+  enterCareerResultsConsole = onBack => activateResultsConsole(onBack, 'BACK TO THE HUB', 'career-return-mode', true);
 })();

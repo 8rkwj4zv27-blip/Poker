@@ -366,12 +366,13 @@
     await teeth(c, lip().y - CH * s / 2 - 4, 3);
     S.wheelLock(); Haptic.tick(18, 0); jolt($('.cm-cabinet'), 3);
     c.body.remove(); drop(t);
-    pool = pool.filter(q => q !== t.card);
+    pool = pool.filter(q => q.uid !== t.card.uid);
     if (LINK){
       fed = null; slotEl.classList.remove('is-fed'); plate('INSERT CARD'); keys();
       busy = false;
       t.linkPlayed?.();
-      LINK.play(t.card);
+      // (refused after all: the card is still yours, and comes back)
+      if (!LINK.play(t.card)){ plate('TABLE BUSY'); refresh(); }
       return;
     }
     if (pool.length < 4) fillPool();
@@ -425,6 +426,8 @@
     if (busy || !window.CareerShop) return;
     t = t || of('pk').at(-1);
     if (!t) return;
+    // the preview: a packet whose cards wouldn't fit stays where it is
+    if (LINK && !LINK.canOpen(t.p.pktId)){ plate('COLLECTION FULL'); jolt(slotEl, 2); Foil.thud(.3); setTimeout(() => plate('INSERT CARD'), 1400); return; }
     drop(t);
     window.CareerShop.open(t.p);
   }

@@ -1636,7 +1636,7 @@
     // the New Career preview: the packet's cards are the ones drawn when it
     // was bought, and tearing it open moves them into your cards (saved)
     const saved = window.CareerLink && p.pktId ? CareerLink.open(p.pktId) : null;
-    if (window.CareerLink && !saved) return;
+    if (window.CareerLink && !saved) return false;
     wallet = cfg.wallet(); measure();
     packets = [p]; chosen = p; packNo++;
     pull = 0; deck = flap = rc = null; fan = [];
