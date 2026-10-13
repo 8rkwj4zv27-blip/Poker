@@ -76,10 +76,12 @@
     const d = { venue:ev.venue, title:ev.title || ev.name, seats:ev.playerCount, entry:ev.buyIn, payouts:card.payouts };
     if (card.invId){
       const money = n => '$' + Math.round(n).toLocaleString('en-US');
-      const length = ev.handLimit ? ev.handLimit + ' HANDS' : 'TO THE LAST';
+      const length = ev.handLimit ? ev.handLimit + ' HANDS' : 'KNOCKOUT';
       d.plate = d.title;
       d.lines = [d.title, ev.playerCount + ' PLAYERS · ' + length,
         { t:(card.payouts.length === 1 ? 'WINNER TAKES ' : 'PAYS ') + card.payouts.map(money).join(' / '), money:true }];
+      // a hand-limited invitation also pays for the chips you finish with
+      if (ev.chipBonus) d.lines.push({ t:'+ $1 PER ' + ev.chipBonus + ' CHIPS AT THE END', money:true });
     }
     return d;
   }

@@ -2475,6 +2475,45 @@ check('An invitation settles once: tied 2nd pays $22, no unlock, no counters', (
   assert.strictEqual(reloaded.getCareer().bankroll,522);
 });
 
+check('A hand-limited invitation pays its place plus $1 per chipBonus chips; an old snapshot pays no bonus', ()=>{
+  let { api }=makeContext(openCareer());
+  assert.strictEqual(api.eventById('back-room-invite').chipBonus,100);
+  api.play(api.give('back-room-invite','common').id);
+  assert.strictEqual(api.getCareer().active.snapshot.chipBonus,100);
+  assert.strictEqual(api.settle({place:2,tie:1,chips:1250}),true);
+  let r=api.getCareer().lastResult;
+  assert.deepStrictEqual({prize:r.prize,bonus:r.bonus,chips:r.chips,outcome:r.outcome},{prize:42,bonus:12,chips:1250,outcome:'cash'});
+  assert.strictEqual(api.getCareer().bankroll,542);
+  // an event started before the bonus existed keeps the terms it started on
+  ({ api }=makeContext(openCareer()));
+  api.play(api.give('back-room-invite','common').id);
+  delete api.getCareer().active.snapshot.chipBonus;
+  api.settle({place:1,tie:1,chips:2400});
+  r=api.getCareer().lastResult;
+  assert.strictEqual(r.prize,60); assert.strictEqual(r.bonus,undefined);
+  // more chips than the table holds is never money
+  ({ api }=makeContext(openCareer()));
+  api.play(api.give('back-room-invite','common').id);
+  api.settle({place:1,tie:1,chips:999999});
+  assert.strictEqual(api.getCareer().lastResult.prize,60);
+  // a malformed bonus never validates
+  const snap=api.snapshot(api.eventById('back-room-invite'));
+  [0,-5,2.5,'100'].forEach(v=>assert.ok(!api.isValidSnapshot(Object.assign({},snap,{chipBonus:v})), String(v)));
+});
+
+check('Face to Face and Last Stack Wins are winner-takes-all knock-outs with rising blinds', ()=>{
+  const { api }=makeContext(openCareer());
+  ['face-to-face','last-stack-wins'].forEach(id=>{
+    const e=api.eventById(id);
+    assert.strictEqual(e.handLimit,undefined,id);
+    assert.strictEqual(e.chipBonus,undefined,id);
+    assert.strictEqual(e.payouts.length,1,id);
+    assert.ok(e.handsPerBlindLevel<=4,id);
+    assert.ok(api.isValidSnapshot(api.snapshot(e)),id);
+  });
+  assert.deepStrictEqual(clone(api.eventById('face-to-face').payouts),[60]);
+});
+
 check('An invitation win pays first place and still unlocks nothing', ()=>{
   const { api }=makeContext(openCareer({'back-room-freezeout':true}));
   const before=clone(api.getCareer());

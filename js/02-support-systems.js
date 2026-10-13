@@ -717,6 +717,9 @@ const DEFAULT_SETTINGS = {
   cardHolder:'brass',
   // Settings → Dealing (js/deal-styles.js): { on, rarity, scope }; null = FLICK alone
   dealStyles:null,
+  // the event clock's place on the felt (js/event-clock.js): {x, y} as
+  // fractions of the felt; null = it finds a clear spot itself
+  eventClock:null,
   // Settings → The table (js/table-room.js): { pot, potroom, you, pile, their,
   // lift, fade, mark, pods, coins }; null = the owner's picks (TableRoom.DEFAULTS)
   tableRoom:null,

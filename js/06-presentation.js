@@ -3710,27 +3710,10 @@ function runHumanPotSmashCeremony(g, outcome, potN, preWinChips){
   });
 }
 
-/* HAND n/LIMIT: a hand-limited Career invitation's progress
-   (docs/career/INVITATIONS_PLAN.md), a small instrument on the felt built
-   from the dashboard's parts (instrument label, shared CRT). Shows the hand
-   being played; absent at every other table. */
+/* The event clock on the felt (js/event-clock.js): HAND n/N in a
+   hand-limited invitation, the time played in a knock-out. */
 function renderHandLimit(g){
-  const feltEl = $('felt');
-  let plate = $('hand-limit');
-  const limit = g.mode === 'career' && g.event && isCareerHandLimit(g.event.handLimit) ? g.event.handLimit : 0;
-  if (!limit || !feltEl){ if (plate) plate.remove(); return; }
-  if (!plate){
-    plate = document.createElement('div');
-    plate.id = 'hand-limit';
-    plate.className = 'hand-limit';
-    plate.innerHTML = '<span class="instrument-label">Hand</span>' +
-      '<div class="hand-limit-screen crt-screen crt" data-crt-quiet data-ink="live"></div>';
-    feltEl.appendChild(plate);
-  }
-  const hand = Math.min(limit, Math.max(1, g.handNumber || 1));
-  const screen = plate.querySelector('.hand-limit-screen');
-  if (screen.textContent !== hand + '/' + limit) screen.textContent = hand + '/' + limit;
-  plate.setAttribute('aria-label', 'Hand ' + hand + ' of ' + limit);
+  if (typeof EventClock !== 'undefined') EventClock.update(g);
 }
 
 function render(){

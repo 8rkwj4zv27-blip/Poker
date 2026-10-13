@@ -1,0 +1,28 @@
+/* ============================================================
+   EVENT CLOCK — js/event-clock.js: the little CRT on the felt in a Career
+   invitation (HAND n/N, or the time played in a knock-out). Built from
+   the dashboard's parts: the machine case, an instrument label and the
+   shared CRT (docs/ui/PATTERN_BOOK.md, "CRT screens"). It moves by
+   transform only, a whole pixel at a time.
+   ============================================================ */
+#felt .event-clock{
+  position:absolute; left:0; top:0; z-index:4;
+  display:flex; flex-direction:column; align-items:center; gap:3px; padding:4px 6px 5px;
+  border:2px solid var(--px-ink); border-radius:4px; background:var(--machine-case);
+  box-shadow:inset 1px 1px 0 rgba(255,255,255,.07),inset -1px -1px 0 rgba(0,0,0,.3),0 3px 0 rgba(0,0,0,.35);
+  touch-action:none; user-select:none; -webkit-user-select:none; cursor:grab;
+}
+#felt .event-clock .instrument-label{ color:var(--crt-action-ink); }
+#felt .event-clock-screen{
+  min-width:58px; padding:3px 6px; text-align:center;
+  font-family:var(--font-hdr); font-size:11px; line-height:1.3;
+}
+/* in the hand: lifted off the felt, its shadow longer */
+#felt .event-clock.is-held{ z-index:30; cursor:grabbing; box-shadow:inset 1px 1px 0 rgba(255,255,255,.07),inset -1px -1px 0 rgba(0,0,0,.3),0 9px 0 rgba(0,0,0,.28); margin-top:-6px; }
+/* set down: a two-step squash */
+#felt .event-clock.is-down{ animation:event-clock-down 140ms steps(2,end); }
+@keyframes event-clock-down{ 50%{ margin-top:2px; } }
+/* not while the table powers up, nor once the result stage has the felt */
+#table-screen.ti-primed #felt .event-clock,
+#felt.results-mode .event-clock{ display:none; }
+[data-motion="off"] #felt .event-clock.is-down{ animation:none; }

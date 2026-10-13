@@ -73,7 +73,7 @@
     return { title:entry.title, venue:'INVITATION', players:entry.players || null, hands:entry.hands || null,
       paid:entry.paid || null, payouts:null, provisional:true, note:'Terms not settled.' };
   }
-  const handsText = h => h === 'elimination' ? 'ELIMINATION' : h ? h + ' HANDS' : 'HANDS TBC';
+  const handsText = h => h === 'elimination' ? 'KNOCKOUT' : h ? h + ' HANDS' : 'HANDS TBC';
   const playersText = n => n ? n + ' PLAYERS' : 'PLAYERS TBC';
   function paidText(t){
     if (!t.paid) return 'PAID PLACES TBC';
@@ -91,7 +91,7 @@
   const LEGEND = { common:'ADMIT ONE', uncommon:'INVITATION', rare:'RESERVED', legendary:'BY INVITATION' };
   // a rule for an event the game has, from its definition
   function ruleOf(t){
-    const length = t.hands === 'elimination' ? 'Play to the last player.' : t.hands + ' hands, then most chips wins.';
+    const length = t.hands === 'elimination' ? 'Play to the last player.' : t.hands + ' hands, then most chips wins; every chip you keep pays too.';
     return length + ' ' + paidText(t).charAt(0) + paidText(t).slice(1).toLowerCase() + '.';
   }
 

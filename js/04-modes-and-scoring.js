@@ -313,7 +313,11 @@ const CAREER_EVENT_LIST = Object.freeze([
    an invitation card, not bought: no entry, and the prize is put up by the
    house (`funding:'house'`), so the payouts-add-up-to-the-entries rule
    below applies only to entry-funded events. `handLimit` ends the event
-   after that many COMPLETED hands, placing the survivors by chips. Kept
+   after that many COMPLETED hands, placing the survivors by chips; such an
+   event also pays `chipBonus`: $1 for every that-many chips you finish
+   with, on top of your place (owner, 13 Oct: every hand counts to the
+   end). An event with no hand limit is a knock-out, played to the last
+   player. Kept
    out of CAREER_EVENT_LIST, so the venue directory, unlocks and records
    never see them; DEV only until the hub is wired in (careerEventState).
    Payouts are temporary. */
@@ -331,9 +335,10 @@ const CAREER_INVITATION_EVENTS = Object.freeze([
     payouts:Object.freeze([60,30,15]),
     stack:1000,
     initialBlindLevel:0,
-    handsPerBlindLevel:15,
+    handsPerBlindLevel:3,
     difficulty:'medium',
     skill:20,
+    chipBonus:100,
     handLimit:10,
     funding:'house',
     rarity:'common',
@@ -356,9 +361,10 @@ const CAREER_INVITATION_EVENTS = Object.freeze([
     payouts:Object.freeze([90,45,25]),
     stack:1000,
     initialBlindLevel:0,
-    handsPerBlindLevel:15,
+    handsPerBlindLevel:3,
     difficulty:'medium',
     skill:20,
+    chipBonus:100,
     handLimit:10,
     funding:'house',
     unlockRequirement:null
@@ -377,9 +383,10 @@ const CAREER_INVITATION_EVENTS = Object.freeze([
     payouts:Object.freeze([120,60,30]),
     stack:1000,
     initialBlindLevel:0,
-    handsPerBlindLevel:10,
+    handsPerBlindLevel:5,
     difficulty:'medium',
     skill:25,
+    chipBonus:100,
     handLimit:20,
     funding:'house',
     unlockRequirement:null
@@ -389,19 +396,18 @@ const CAREER_INVITATION_EVENTS = Object.freeze([
     venue:'INVITATION',
     name:'FACE TO FACE',
     title:'FACE TO FACE',
-    format:'10 Hands',
+    format:'Knockout',
     rarity:'common',
     playerCount:2,
     opponentCount:1,
     buyIn:0,
-    prize:50,
-    payouts:Object.freeze([50,20]),
-    stack:1000,
+    prize:60,
+    payouts:Object.freeze([60]),
+    stack:2000,
     initialBlindLevel:0,
-    handsPerBlindLevel:15,
+    handsPerBlindLevel:4,
     difficulty:'medium',
     skill:20,
-    handLimit:10,
     funding:'house',
     unlockRequirement:null
   }),
@@ -419,9 +425,10 @@ const CAREER_INVITATION_EVENTS = Object.freeze([
     payouts:Object.freeze([80,40]),
     stack:2000,
     initialBlindLevel:0,
-    handsPerBlindLevel:15,
+    handsPerBlindLevel:3,
     difficulty:'medium',
     skill:25,
+    chipBonus:200,
     handLimit:10,
     funding:'house',
     unlockRequirement:null
@@ -440,9 +447,10 @@ const CAREER_INVITATION_EVENTS = Object.freeze([
     payouts:Object.freeze([150,75,40]),
     stack:1000,
     initialBlindLevel:0,
-    handsPerBlindLevel:15,
+    handsPerBlindLevel:3,
     difficulty:'medium',
     skill:30,
+    chipBonus:100,
     handLimit:10,
     funding:'house',
     unlockRequirement:null
@@ -452,7 +460,7 @@ const CAREER_INVITATION_EVENTS = Object.freeze([
     venue:'INVITATION',
     name:'LAST STACK WINS',
     title:'LAST STACK WINS',
-    format:'10 Hands',
+    format:'Knockout',
     rarity:'uncommon',
     playerCount:4,
     opponentCount:3,
@@ -461,10 +469,9 @@ const CAREER_INVITATION_EVENTS = Object.freeze([
     payouts:Object.freeze([200]),
     stack:1000,
     initialBlindLevel:0,
-    handsPerBlindLevel:15,
+    handsPerBlindLevel:4,
     difficulty:'medium',
     skill:30,
-    handLimit:10,
     funding:'house',
     unlockRequirement:null
   }),
@@ -482,9 +489,10 @@ const CAREER_INVITATION_EVENTS = Object.freeze([
     payouts:Object.freeze([400,200]),
     stack:1000,
     initialBlindLevel:0,
-    handsPerBlindLevel:10,
+    handsPerBlindLevel:5,
     difficulty:'medium',
     skill:40,
+    chipBonus:100,
     handLimit:20,
     funding:'house',
     unlockRequirement:null
@@ -523,9 +531,10 @@ const CAREER_INVITATION_EVENTS = Object.freeze([
     payouts:Object.freeze([2000]),
     stack:1000,
     initialBlindLevel:0,
-    handsPerBlindLevel:15,
+    handsPerBlindLevel:3,
     difficulty:'medium',
     skill:45,
+    chipBonus:100,
     handLimit:10,
     funding:'house',
     unlockRequirement:null
@@ -712,9 +721,16 @@ function careerEventSnapshot(event){
   if (isCareerEventSkill(event.skill)) snapshot.skill = event.skill;
   if (isCareerHandLimit(event.handLimit)) snapshot.handLimit = event.handLimit;
   if (event.funding === 'house') snapshot.funding = 'house';
+  if (isCareerChipBonus(event.chipBonus)) snapshot.chipBonus = event.chipBonus;
   return snapshot;
 }
 function isCareerHandLimit(value){ return Number.isInteger(value) && value >= 1; }
+/* $1 for every `value` chips finished with (invitation events only). */
+function isCareerChipBonus(value){ return Number.isInteger(value) && value >= 1; }
+function careerChipBonus(event, chips){
+  return event && event.funding === 'house' && isCareerChipBonus(event.chipBonus) && Number.isFinite(chips) && chips > 0
+    ? Math.floor(chips / event.chipBonus) : 0;
+}
 /* An event's opponent skill, 0-100 on the AI's skill dial. */
 function isCareerEventSkill(value){
   return Number.isFinite(value) && value >= 0 && value <= 100;
@@ -736,6 +752,7 @@ function isValidCareerEventSnapshot(event){
   // prize, which is only ever free to enter.
   if (event.handLimit !== undefined && !isCareerHandLimit(event.handLimit)) return false;
   if (event.funding !== undefined && !(event.funding === 'house' && event.buyIn === 0)) return false;
+  if (event.chipBonus !== undefined && !(isCareerChipBonus(event.chipBonus) && event.funding === 'house')) return false;
   // The payouts/prize invariant. A snapshot written before multi-place
   // payouts existed has no `payouts` at all and is deliberately rejected
   // here, which is exactly what routes it through the migration path.

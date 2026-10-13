@@ -1317,7 +1317,9 @@ function endCareerCashSession(g, reason){
    was not told about.
 
    `tie` (house-funded events only) is how many players share places
-   place..place+tie-1 exactly; anything that doesn't fit the field is 1. */
+   place..place+tie-1 exactly; anything that doesn't fit the field is 1.
+   `chips` (house-funded events only) is what you finished with, for the
+   chip bonus: a whole number no bigger than every chip at the table, else 0. */
 function normalizeCareerSettlement(result, snapshot){
   if (result === 'forfeit') return { forfeit:true, place:null, tie:1 };
   const seats = snapshot && Number.isInteger(snapshot.playerCount) ? snapshot.playerCount : 0;
@@ -1328,7 +1330,10 @@ function normalizeCareerSettlement(result, snapshot){
   if (!valid(place)) return { forfeit:false, place:null, tie:1 };
   const tie = isCareerInvitation(snapshot) && Number.isInteger(result.tie)
     && result.tie >= 1 && place + result.tie - 1 <= seats ? result.tie : 1;
-  return { forfeit:false, place, tie };
+  const table = seats * (Number.isFinite(snapshot.stack) ? snapshot.stack : 0);
+  const chips = isCareerInvitation(snapshot) && Number.isInteger(result.chips)
+    && result.chips >= 0 && result.chips <= table ? result.chips : 0;
+  return { forfeit:false, place, tie, chips };
 }
 
 /* Returns true ONLY if this call performed the settlement. endCareerEvent()
@@ -1345,7 +1350,9 @@ function settleCareerEvent(result){
   if (!career.active) return false;
   const stake = career.active.snapshot;
   const settlement = normalizeCareerSettlement(result, stake);
-  const prize = settlement.forfeit ? 0 : careerPrizeForFinish(stake, settlement.place, settlement.tie);
+  // the place's prize, and an invitation's chip bonus on top
+  const bonus = settlement.forfeit ? 0 : careerChipBonus(stake, settlement.chips);
+  const prize = settlement.forfeit ? 0 : careerPrizeForFinish(stake, settlement.place, settlement.tie) + bonus;
   // A shared first place is a cash, not an outright win.
   const won = !settlement.forfeit && settlement.place === 1 && settlement.tie === 1;
   const invitation = isCareerInvitation(stake);
@@ -1384,8 +1391,10 @@ function settleCareerEvent(result){
     delta: prize > 0 ? prize : -stake.buyIn,
     bankroll: career.bankroll
   };
-  // An exact tie, recorded only when there was one (house-funded events).
+  // An exact tie, recorded only when there was one (house-funded events);
+  // the chip bonus (in the prize), only when one was paid.
   if (settlement.tie > 1) career.lastResult.tie = settlement.tie;
+  if (bonus > 0){ career.lastResult.bonus = bonus; career.lastResult.chips = settlement.chips; }
   career.active = null;
   // The seated field dies with the event it was seated in; the directory
   // draws a fresh one for that event on the next visit.

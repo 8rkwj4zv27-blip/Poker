@@ -481,3 +481,20 @@ stock, not machine keys. The owner approved the red tab in chat on
 | Flip tab | DETAILS on the front, EVENT on the back: the reinforced tab in the venue's paper and mark colours. | `.ch2-card-flip` |
 | Tab row | The front's last grid row. Unpaid: DETAILS alone at its usual width. Paid: the two tabs share the row at the same size. The ticket and the console never change height. | `.ch2-card-keys` |
 | Red tab | The paid ticket's way out (ABANDON, or CASH OUT at the cash table), beside DETAILS. It is the flip tab in red with cream print and only shows on `.is-paid`. Abandon still asks for confirmation. | `.ch2-card-flip.ch2-card-quit` |
+
+## Event clock (v0.71.0, awaiting the owner's sign-off on device)
+
+The small instrument on the felt in a Career invitation, replacing the
+fixed HAND n/10 plate that sat on the top seat's face at 2 and 6 players
+(owner, 13 Oct 2026). `js/event-clock.js` + `css/event-clock.css`. Built
+from existing parts: the machine case, an instrument label and the shared
+CRT (`.crt-screen.crt`, `data-ink="live"`), so no new finish.
+
+| Part | The finish |
+|---|---|
+| What it reads | `HAND n/N` in a hand-limited invitation; `TIME MM:SS`, the time played, in a knock-out (kept with the table's save). Nothing at any other table. |
+| Where it sits | The free spot nearest the middle of the gap between the seats (with their bet squares) and the board's tray. It never covers a seat, a bet square, the tray, the deck, P.I.P. or the pot; if one arrives under it, it moves to the nearest clear spot (four stepped frames). |
+| Moving it | Pick it up and carry it (it lifts, its shadow longer); let go and it sets down with a two-step squash and a card's landing sound. Flick it: it slides on the felt, knocks off the rails and tumbles in 15° steps until it stops. Dropped on something, it's nudged clear. Where you leave it is kept (`settings.eventClock`, fractions of the felt) unless it would cover a seat at another table. A touch on it never reaches the table. |
+| Hidden | While the table powers up, and once the result stage has the felt. |
+| Reduced Motion | No slide or tumble: it sets down where you let go. |
+| Checked | `validation/tools/table-sweep.js`: every invitation at three phone sizes, nothing overlapping; dropped, flicked, tapped, reloaded. |

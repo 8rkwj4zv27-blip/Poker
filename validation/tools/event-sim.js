@@ -24,6 +24,8 @@
      --players N      seats including you, instead of the event's
      --payouts a,b    prize per place instead of the event's
      --buy-in N       entry instead of the event's
+     --hand-limit N   a hand limit instead of the event's (0: none, a knock-out)
+     --chip-bonus N   $1 per N chips you finish with, instead of the event's
      --seed N         repeatable run (default 1)
      --json           machine-readable output
 
@@ -78,9 +80,12 @@ async function playEvent(A, rnd, cfg, you){
   let button = 0, hands = 0, aiFirst = null, youShare = null;
 
   const limit = cfg.event.handLimit || 1000;
+  // with three hands to go: who leads (is the event still in doubt?)
+  let leaderAt3 = null;
   while (all.filter(p => p.chips > 0).length > 1 && hands < limit){
     const players = all.filter(p => p.chips > 0);
     const n = players.length;
+    if (cfg.event.handLimit && hands === limit - 3) leaderAt3 = players.slice().sort((a, b) => b.chips - a.chips)[0];
     if (n === 2 && youShare === null && players.some(p => p.you))
       youShare = players.find(p => p.you).chips / players.reduce((a, p) => a + p.chips, 0);
     const [sb, bb] = cfg.levels[Math.min(cfg.levels.length-1, cfg.firstLevel + Math.floor(hands / cfg.perLevel))];
@@ -189,7 +194,10 @@ async function playEvent(A, rnd, cfg, you){
   // level on chips at the limit: the places are shared from the highest
   const place = me.chips > 0 ? alive.findIndex(p => p.chips === me.chips) + 1 : places.indexOf(me) + 1;
   const tie = me.chips > 0 ? alive.filter(p => p.chips === me.chips).length : 1;
-  return { place, tie, hands, aiFirst, youShare };
+  const leader = places[0];
+  return { place, tie, chips:me.chips, hands, aiFirst, youShare,
+    // led with three to go and won; you were behind with three to go
+    leaderHeld: leaderAt3 ? leaderAt3 === leader : null, behindAt3: leaderAt3 ? leaderAt3 !== me : null };
 }
 
 if (!isMainThread){
@@ -226,7 +234,9 @@ function arg(name, fallback){
     perLevel: num(arg('per-level'), event.handsPerBlindLevel),
     skill: arg('skill') === undefined ? undefined : Number(arg('skill')),
     players: num(arg('players'), event.playerCount),
+    chipBonus: num(arg('chip-bonus'), event.chipBonus || 0),
   };
+  if (arg('hand-limit') !== undefined) cfg.event.handLimit = Number(arg('hand-limit')) || undefined;
   const payouts = arg('payouts') ? arg('payouts').split(',').map(Number) : event.payouts.slice();
   const buyIn = num(arg('buy-in'), event.buyIn);
   const N = num(arg('events'), 600);
@@ -246,7 +256,7 @@ function arg(name, fallback){
     const placeShare = q => r.filter(x => x.place === q).length / k;
     // a shared place splits the prizes of the places it covers (the game's
     // careerPrizeForFinish, for house-funded events)
-    const prizeOf = x => { let t = 0; for (let j = 0; j < x.tie; j++) t += payouts[x.place-1+j] || 0; return Math.floor(t / x.tie); };
+    const prizeOf = x => { let t = 0; for (let j = 0; j < x.tie; j++) t += payouts[x.place-1+j] || 0; return Math.floor(t / x.tie) + (cfg.chipBonus ? Math.floor(x.chips / cfg.chipBonus) : 0); };
     const net = r.reduce((a, x) => a + prizeOf(x), 0) / k - buyIn;
     const aiFirst = r.filter(x => x.aiFirst);
     const behind = aiFirst.filter(x => x.youShare !== null && x.youShare < 0.4);
@@ -258,6 +268,10 @@ function arg(name, fallback){
       netPerEvent: net, hands: r.reduce((a, x) => a + x.hands, 0) / k,
       aiKnocksOutFirst: aiFirst.length / k,
       winFromBehindHeadsUp: behind.length ? behind.filter(x => x.place === 1).length / behind.length : null,
+      // with three hands to go, how often the leader goes on to win (the
+      // lower, the longer it's in doubt), and how often you came from behind
+      leaderHeld: (() => { const a = r.filter(x => x.leaderHeld !== null); return a.length ? a.filter(x => x.leaderHeld).length / a.length : null; })(),
+      comeback: (() => { const a = r.filter(x => x.behindAt3); return a.length ? a.filter(x => x.place === 1 && x.tie === 1).length / a.length : null; })(),
     });
   }
 
@@ -271,10 +285,12 @@ function arg(name, fallback){
   console.log('\n== ' + id + ' · ' + cfg.players + ' players · ' + cfg.stack + ' chips (' +
     Math.round(cfg.stack / table.bigBlind) + ' bb) · blinds up every ' + cfg.perLevel + ' hands · AI ' +
     table.aiSkill + ' · $' + buyIn + ' in, pays ' + payouts.map(p => '$' + p).join('/'));
-  console.log('you         win  cash  $/event  hands  places 1st..last          AI KOs first  win from behind HU');
+  if (cfg.event.handLimit) console.log('hand limit ' + cfg.event.handLimit + (cfg.chipBonus ? ' · $1 per ' + cfg.chipBonus + ' chips' : ''));
+  console.log('you         win  cash  $/event  hands  places 1st..last          AI KOs first  win from behind HU  leader@-3 holds  comeback');
   for (const x of results){
     console.log(x.you.padEnd(10) + pct(x.win) + '  ' + pct(x.cash) + '  ' + ((x.netPerEvent >= 0 ? '+' : '') +
       Math.round(x.netPerEvent)).padStart(6) + '  ' + String(Math.round(x.hands)).padStart(5) + '  ' +
-      x.places.map(pct).join(' ').padEnd(26) + pct(x.aiKnocksOutFirst).padStart(12) + pct(x.winFromBehindHeadsUp).padStart(19));
+      x.places.map(pct).join(' ').padEnd(26) + pct(x.aiKnocksOutFirst).padStart(12) + pct(x.winFromBehindHeadsUp).padStart(19) +
+      pct(x.leaderHeld).padStart(17) + pct(x.comeback).padStart(10));
   }
 })().catch(e => { console.error(e); process.exit(1); });
