@@ -125,6 +125,32 @@ screenshot with `--shots`), so an intermittent bug arrives with its cause.
 Run it before and after any change to files players download. Not part of
 `npm test`, which needs nothing but Node.
 
+## `new-career-scenario.js` — New Career (preview), the whole loop
+
+```
+node validation/tools/new-career-scenario.js [--sizes 390x844,375x667] [--shots DIR]
+```
+
+`career-preview-lab.html` played with real touch: the starter packet torn
+open, its cards turned and added, REDEAL, a card fed and PLAYed, the real
+table (a DEV knock-out keeps it short), BACK TO THE HUB with the prize
+counted in, a House Packet bought, a reload, the album, and the pity
+packet (once, not twice). Each step is checked against the save. About
+eight minutes a size. Not part of `npm test`.
+
+## `invitation-scenario.js` — the Stage 1 invitation, played for real
+
+```
+node validation/tools/invitation-scenario.js [--shots DIR]
+```
+
+The Back Room invitation (`docs/career/INVITATIONS_PLAN.md`) started from
+the real DEV key and played with real taps in an emulated iPhone: a reload
+mid-event, the HAND n/10 readout, the end after ten completed hands, the
+placing against the chips, the prize credited once (and not again after a
+reload); then an early knock-out and an early table clearance. About ten
+minutes. Not part of `npm test`.
+
 ## `event-sim.js` — whole Career events, measured
 
 ```

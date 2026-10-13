@@ -96,6 +96,18 @@ check('a backup restores exactly what was there', () => {
   assert.strictEqual(dump(), before);
 });
 
+check('a backup carries the Career invitations (inside felt.career)', () => {
+  fill();
+  const card = { id:'inv-1', eventId:'back-room-invite', rarity:'common', roster:null, addedAt:1 };
+  const career = JSON.parse(storage['felt.career']);
+  career.invitations = [card];
+  storage['felt.career'] = JSON.stringify(career);
+  const save = SaveData.snapshot();
+  delete storage['felt.career'];
+  SaveData.write(SaveData.parse(JSON.stringify(save)));
+  same(JSON.parse(storage['felt.career']).invitations, [card]);
+});
+
 check('a save code round-trips too, names with symbols included', () => {
   fill();
   const save = SaveData.snapshot();

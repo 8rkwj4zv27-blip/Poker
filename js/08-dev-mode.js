@@ -495,6 +495,34 @@ function devSetCareerBankroll(value){
   renderCareerScreen();
   return true;
 }
+/* DEV-only: invitations (docs/career/INVITATIONS_PLAN.md, Stages 1-2).
+   GIVE adds a Back Room invitation to THIS Career's cards; PLAY uses up the
+   first card through the real Career entry (no entry fee; its prize is
+   credited to this Career's bankroll), or continues the event in progress. */
+const DEV_INVITATION_ID = 'back-room-invite';
+function devCareerInvitationLabel(){
+  const state = careerEventState(DEV_INVITATION_ID), owned = careerInvitations().length;
+  return state === 'active' ? 'CONTINUE BACK ROOM INVITE'
+    : !owned ? 'PLAY · NO INVITATIONS (GIVE ONE)'
+    : state === 'available' ? 'PLAY AN INVITATION (' + owned + ' HELD)'
+    : 'PLAY · FINISH THE TABLE IN PLAY FIRST';
+}
+function devGiveCareerInvitation(){
+  if (!DEV_MODE) return null;
+  const card = giveCareerInvitation(DEV_INVITATION_ID, 'common');
+  refreshDevPanel();
+  return card;
+}
+function devPlayCareerInvitation(){
+  if (!DEV_MODE) return false;
+  const state = careerEventState(DEV_INVITATION_ID);
+  const card = careerInvitations().find(c=>c.eventId === DEV_INVITATION_ID);
+  const launch = state === 'active' ? continueCareerEvent
+    : card && playCareerInvitation(card.id) ? startCareerEvent : null;
+  if (!launch) return false;
+  careerDepartToTable(launch);
+  return true;
+}
 function initDevPanel(){
   if (!DEV_MODE) return;
   if ($('dev-panel')) return;
@@ -534,6 +562,14 @@ function initDevPanel(){
           '<button data-dev-opponents="5" type="button">5 OPP</button>' +
           '<button data-dev-opponents="6" type="button">6 OPP</button>' +
         '</div>' +
+      '</div>' +
+      '<div id="dev-career-invite">' +
+        '<div class="dev-section-title">CAREER INVITATION</div>' +
+        '<div class="dev-subtitle">3 PLAYERS · 10 HANDS · $60/$30/$15 · PAYS THIS CAREER</div>' +
+        '<button id="dev-career-invite-give" type="button">GIVE A BACK ROOM INVITATION</button>' +
+        '<button id="dev-career-invite-play" type="button">PLAY AN INVITATION</button>' +
+        '<button id="dev-career-packet-buy" type="button">BUY A HOUSE PACKET ($150)</button>' +
+        '<button id="dev-career-packet-open" type="button">OPEN A PACKET</button>' +
       '</div>' +
       '<div id="dev-career-bankroll">' +
         '<div class="dev-section-title">CAREER BANKROLL</div>' +
@@ -646,6 +682,10 @@ function initDevPanel(){
     button.onclick = ()=>applyDevBankroll(button.dataset.devBankroll);
   });
   $('dev-end-table').onclick = devEndTable;
+  $('dev-career-invite-play').onclick = devPlayCareerInvitation;
+  $('dev-career-invite-give').onclick = devGiveCareerInvitation;
+  $('dev-career-packet-buy').onclick = ()=>{ buyCareerPacket('house'); refreshDevPanel(); };
+  $('dev-career-packet-open').onclick = ()=>{ const p = careerPackets()[0]; if (p) openCareerPacket(p.id); refreshDevPanel(); };
   const runArcadeDevTest=fn=>()=>{
     fn();
     panel.classList.add('collapsed');
@@ -678,6 +718,17 @@ function refreshDevPanel(){
   $('dev-controls').classList.toggle('hidden', !onTable || game.over);
   $('dev-arcade-controls').classList.toggle('hidden', !rewardable);
   const careerActive = careerHasActiveEvent() || careerHasOpenCashSession();
+  const invite = $('dev-career-invite-play');
+  if (invite){
+    invite.textContent = devCareerInvitationLabel();
+    const state = careerEventState(DEV_INVITATION_ID);
+    invite.disabled = onTable || !(state === 'active' || (state === 'available' && careerInvitations().length));
+  }
+  const give = $('dev-career-invite-give');
+  if (give) give.disabled = onTable || careerInvitations().length >= CAREER_INVITATIONS_LIMIT;
+  const buy = $('dev-career-packet-buy'), open = $('dev-career-packet-open');
+  if (buy) buy.disabled = onTable || careerBankroll() < CAREER_PACKETS.house.price;
+  if (open){ open.disabled = onTable || !careerPackets().length; open.textContent = 'OPEN A PACKET (' + careerPackets().length + ' HELD)'; }
   const bankrollInput = $('dev-bankroll-input');
   const bankrollApply = $('dev-bankroll-apply');
   if (bankrollInput){

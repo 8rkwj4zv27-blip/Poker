@@ -669,7 +669,9 @@ function normalizeActiveCareerEvent(active){
   const full = active.snapshot || active.event;
   if (isValidCareerEventSnapshot(full)){
     const snapshot = Object.assign({}, full);
-    return withCareerRoster({ eventId:snapshot.id, snapshot }, active.roster);
+    const kept = withCareerRoster({ eventId:snapshot.id, snapshot }, active.roster);
+    if (typeof active.invitationId === 'string' && active.invitationId) kept.invitationId = active.invitationId;
+    return kept;
   }
   // An incomplete snapshot: either version 1 (which knew only Back Room and
   // stored eventId/buyIn/prize at the TOP level) or a version-2 snapshot
@@ -790,6 +792,12 @@ function migrateCareer(raw){
     if (wonStake && wonStake.id === INVITATIONAL_EVENT_ID) migrated.champion = true;
   }
   applyEquivalentUnlocks(migrated.unlocks);
+  // The cards the player owns survive any repair of the rest of the save.
+  const invitations = normalizeCareerInvitations(raw.invitations);
+  if (invitations.length) migrated.invitations = invitations;
+  const packets = normalizeCareerPackets(raw.packets);
+  if (packets.length) migrated.packets = packets;
+  if (raw.starterGiven === true) migrated.starterGiven = true;
   return migrated;
 }
 function isValidCareer(c){
@@ -813,9 +821,197 @@ let career = (function(){
   const raw = Store.get(CAREER_KEY, null);
   const migrated = isValidCareer(raw) ? raw : migrateCareer(raw);
   if (raw && !isValidCareer(raw)) Store.set(CAREER_KEY, migrated);
+  // A damaged card list is cleaned once; a save without one stays untouched.
+  else if (raw){
+    let dirty = false;
+    if (raw.invitations !== undefined){
+      const clean = normalizeCareerInvitations(raw.invitations);
+      if (JSON.stringify(clean) !== JSON.stringify(raw.invitations)){ raw.invitations = clean; dirty = true; }
+    }
+    if (raw.packets !== undefined){
+      const clean = normalizeCareerPackets(raw.packets);
+      if (JSON.stringify(clean) !== JSON.stringify(raw.packets)){ raw.packets = clean; dirty = true; }
+    }
+    if (dirty) Store.set(CAREER_KEY, raw);
+  }
   return migrated;
 })();
 function saveCareer(){ Store.set(CAREER_KEY, career); }
+
+/* ============================================================
+   INVITATIONS — the cards the player owns (docs/career/INVITATIONS_PLAN.md,
+   Stage 2). `career.invitations` is a list inside felt.career, additive and
+   tolerant like the roster book: no save-version change, and a save
+   without it simply owns no cards. A card is one future table: its event,
+   its rarity and the opponents drawn when it was given. Playing a card
+   removes it in the same write that makes its event active.
+   ============================================================ */
+function normalizeCareerInvitation(raw){
+  if (!raw || typeof raw !== 'object' || typeof raw.id !== 'string' || !raw.id) return null;
+  const event = careerEventById(raw.eventId);
+  if (!isCareerInvitation(event) || !CAREER_INVITATION_RARITIES.includes(raw.rarity)) return null;
+  return {
+    id:raw.id, eventId:event.id, rarity:raw.rarity,
+    roster:normalizeCareerRoster(raw.roster, event),
+    addedAt:Number.isSafeInteger(raw.addedAt) && raw.addedAt >= 0 ? raw.addedAt : 0
+  };
+}
+function normalizeCareerInvitations(value){
+  if (!Array.isArray(value)) return [];
+  const seen = new Set();
+  return value.map(normalizeCareerInvitation)
+    .filter(card=>card && !seen.has(card.id) && seen.add(card.id))
+    .slice(0, CAREER_INVITATIONS_LIMIT);
+}
+function careerInvitations(){ return Array.isArray(career.invitations) ? career.invitations : []; }
+function careerInvitationById(id){ return careerInvitations().find(card=>card.id === id) || null; }
+
+/* A new card for an event: its opponents are drawn now, so the face shows
+   the people you'll play. Saves nothing. */
+function makeCareerInvitation(event, rarity){
+  return {
+    id:'inv-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2,8),
+    eventId:event.id, rarity, roster:generateCareerRoster(event), addedAt:Date.now()
+  };
+}
+
+/* Gives the player one card (DEV; the game gives cards through packets). */
+function giveCareerInvitation(eventId, rarity){
+  const event = careerEventById(eventId);
+  if (rarity === undefined && event) rarity = event.rarity;
+  if (!isCareerInvitation(event) || !CAREER_INVITATION_RARITIES.includes(rarity)) return null;
+  if (careerInvitations().length >= CAREER_INVITATIONS_LIMIT) return null;
+  const card = makeCareerInvitation(event, rarity);
+  career.invitations = careerInvitations().concat([card]);
+  saveCareer();
+  return card;
+}
+function careerCanPlayInvitation(id){
+  const card = careerInvitationById(id);
+  return !!card && isCareerInvitation(careerEventById(card.eventId)) && careerCanEnterEvent(card.eventId);
+}
+/* ---------------- PACKETS (Stage 3) ----------------
+   `career.packets` holds the unopened packets, each with its cards already
+   decided (drawn at purchase), so opening is presentation only and a
+   reload can never re-roll one. `career.starterGiven` marks the starter
+   packet, once per Career. Additive and tolerant, like the cards. */
+function normalizeCareerPacket(raw){
+  if (!raw || typeof raw !== 'object' || typeof raw.id !== 'string' || !raw.id) return null;
+  if (!CAREER_PACKETS[raw.kind] || !Array.isArray(raw.cards)) return null;
+  // a card whose event has gone is dropped; the packet keeps the rest
+  const cards = normalizeCareerInvitations(raw.cards);
+  if (!cards.length) return null;
+  return { id:raw.id, kind:raw.kind, cards, at:Number.isSafeInteger(raw.at) && raw.at >= 0 ? raw.at : 0 };
+}
+function normalizeCareerPackets(value){
+  if (!Array.isArray(value)) return [];
+  const seen = new Set();
+  return value.map(normalizeCareerPacket)
+    .filter(packet=>packet && !seen.has(packet.id) && seen.add(packet.id))
+    .slice(0, CAREER_PACKETS_LIMIT);
+}
+function careerPackets(){ return Array.isArray(career.packets) ? career.packets : []; }
+function careerPacketById(id){ return careerPackets().find(packet=>packet.id === id) || null; }
+function careerCheapestPacket(){
+  return Math.min(...Object.values(CAREER_PACKETS).map(p=>p.price).filter(price=>price > 0));
+}
+function rollCareerRarity(table, random){
+  const entries = Object.entries(table), total = entries.reduce((n,[,w])=>n+w,0);
+  let r = random() * total;
+  for (const [rarity, weight] of entries){ if ((r -= weight) < 0) return rarity; }
+  return entries[entries.length - 1][0];
+}
+/* A packet's cards, drawn now: its fixed cards, then one per slot. */
+function rollCareerPacket(kind, random){
+  const def = CAREER_PACKETS[kind];
+  if (!def) return null;
+  const rnd = typeof random === 'function' ? random : Math.random;
+  const cards = (def.fixed || []).map(id=>careerEventById(id)).filter(Boolean)
+    .map(event=>makeCareerInvitation(event, event.rarity));
+  def.slots.forEach(table=>{
+    const rarity = rollCareerRarity(table, rnd);
+    const pool = CAREER_INVITATION_EVENTS.filter(event=>event.rarity === rarity);
+    const event = pool[Math.floor(rnd() * pool.length)] || pool[0];
+    if (event) cards.push(makeCareerInvitation(event, rarity));
+  });
+  // ids made in the same millisecond still differ
+  cards.forEach((card, i)=>{ card.id += '-' + i; });
+  return { id:'pkt-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2,8), kind, cards, at:Date.now() };
+}
+function addCareerPacket(packet, { front = false } = {}){
+  career.packets = front ? [packet].concat(careerPackets()) : careerPackets().concat([packet]);
+}
+// a packet as its definition promises: every fixed card and every slot
+const fullCareerPacket = packet => !!packet
+  && packet.cards.length === (CAREER_PACKETS[packet.kind].fixed || []).length + CAREER_PACKETS[packet.kind].slots.length;
+/* Buys a packet: the price leaves the bankroll and the packet, its cards
+   already drawn, arrives in ONE write. */
+function buyCareerPacket(kind){
+  const def = CAREER_PACKETS[kind];
+  if (!careerInvitationsOpen() || !def || !(def.price > 0)) return null;
+  if (career.bankroll < def.price || careerPackets().length >= CAREER_PACKETS_LIMIT) return null;
+  const packet = rollCareerPacket(kind);
+  if (!fullCareerPacket(packet)) return null;
+  career.bankroll -= def.price;
+  addCareerPacket(packet);
+  saveCareer();
+  return packet;
+}
+/* Opens a packet: its cards join the collection and the packet is gone, in
+   ONE write. Refused if the cards wouldn't fit. */
+function openCareerPacket(id){
+  const packet = careerPacketById(id);
+  if (!careerInvitationsOpen() || !packet) return null;
+  if (careerInvitations().length + packet.cards.length > CAREER_INVITATIONS_LIMIT) return null;
+  career.invitations = careerInvitations().concat(packet.cards);
+  career.packets = careerPackets().filter(other=>other.id !== id);
+  saveCareer();
+  return packet.cards;
+}
+/* The starter packet: once per Career. */
+function giveCareerStarterPacket(){
+  if (!careerInvitationsOpen() || career.starterGiven === true) return null;
+  const packet = rollCareerPacket('starter');
+  career.starterGiven = true;
+  // first in the list, so the packet limit can never trim it away
+  addCareerPacket(packet, { front:true });
+  saveCareer();
+  return packet;
+}
+/* The pity packet is due only when the player is stuck: no cards, no
+   unopened packet, nothing in play, and too little for a packet. Holding
+   it ends that state, so one shortfall can never earn two. */
+function careerPityDue(){
+  return careerInvitationsOpen() && !careerInvitations().length && !careerPackets().length
+    && !career.active && !career.cash && career.bankroll < careerCheapestPacket();
+}
+function giveCareerPityPacket(){
+  if (!careerPityDue()) return null;
+  const packet = rollCareerPacket('pity');
+  addCareerPacket(packet);
+  saveCareer();
+  return packet;
+}
+/* What the hub calls on each visit: the starter packet the first time,
+   the pity packet when stuck. Returns what was given, if anything. */
+function careerHubArrivals(){
+  return [giveCareerStarterPacket(), giveCareerPityPacket()].filter(Boolean);
+}
+
+/* Plays one card: it leaves the collection and its event becomes active in
+   ONE felt.career write, so no crash can lose a card or play one twice. */
+function playCareerInvitation(id){
+  if (!careerCanPlayInvitation(id)) return false;
+  const card = careerInvitationById(id);
+  const event = careerEventById(card.eventId);
+  const snapshot = careerEventSnapshot(event);
+  career.active = withCareerRoster({ eventId:snapshot.id, snapshot }, card.roster || generateCareerRoster(event));
+  career.active.invitationId = card.id;
+  career.invitations = careerInvitations().filter(other=>other.id !== id);
+  career.lastResult = null;
+  saveCareer();
+  return true;
+}
 
 /* ============================================================
    THE ROSTER BOOK — Career's one authority on who is at which table.
@@ -951,6 +1147,9 @@ function careerEventState(eventId){
   // stays resumable even if bankroll (which cannot actually move while an
   // event is active) later reads as ineligible.
   if (event.id === SECOND_CHANCE_EVENT_ID && !isSecondChanceEligible(career.bankroll)) return 'hidden';
+  // Invitation events are for DEV and the New Career preview only
+  // (docs/career/INVITATIONS_PLAN.md).
+  if (isCareerInvitation(event) && !careerInvitationsOpen()) return 'hidden';
   if (!careerEventUnlocked(event)) return 'locked';
   if (career.bankroll < event.buyIn) return 'unaffordable';
   return 'available';
@@ -960,6 +1159,16 @@ function careerEventState(eventId){
    that when the event board grows past one event every choice is disabled
    by the same test. While career.active is set, NO event may be entered or
    paid for — the player must continue or abandon the one they are in. */
+/* A house-funded invitation event (CAREER_INVITATION_EVENTS). It stays
+   out of the old Career record: no venue unlocks, no events counters. */
+function isCareerInvitation(event){ return !!event && event.funding === 'house'; }
+/* Invitations are open in DEV, and in the New Career preview (a game copy
+   that sets window.CAREER_PREVIEW); the live Career never sees them. */
+function careerInvitationsOpen(){
+  return (typeof DEV_MODE !== 'undefined' && !!DEV_MODE)
+    || (typeof window !== 'undefined' && !!window && window.CAREER_PREVIEW === true);
+}
+
 function careerCanEnterEvent(eventId){
   return careerEventState(eventId) === 'available';
 }
@@ -969,6 +1178,8 @@ function careerCanEnterEvent(eventId){
    never produce a second charge. */
 function enterCareerEvent(eventId){
   if (!careerCanEnterEvent(eventId)) return false;
+  // An invitation event is played from a card (playCareerInvitation).
+  if (isCareerInvitation(careerEventById(eventId))) return false;
   const event = careerEventById(eventId);
   const snapshot = careerEventSnapshot(event);
   // The field the directory was ADVERTISING becomes the field that is
@@ -985,7 +1196,7 @@ function enterCareerEvent(eventId){
   // active and the buy-in is debited, so the increment cannot desynchronise
   // from either. A rejected entry returned above without reaching this, and
   // a resume never calls this at all.
-  career.eventsPlayed = normalizeCareerCounter(career.eventsPlayed) + 1;
+  if (!isCareerInvitation(snapshot)) career.eventsPlayed = normalizeCareerCounter(career.eventsPlayed) + 1;
   saveCareer();
   return true;
 }
@@ -1102,15 +1313,21 @@ function endCareerCashSession(g, reason){
    The legacy 'win'/'loss'/'forfeit' strings remain accepted so an older call
    site can never silently mean something new: 'win' is first place, 'loss'
    is a bust with no known placement, and neither can pay a placed prize it
-   was not told about. */
+   was not told about.
+
+   `tie` (house-funded events only) is how many players share places
+   place..place+tie-1 exactly; anything that doesn't fit the field is 1. */
 function normalizeCareerSettlement(result, snapshot){
-  if (result === 'forfeit') return { forfeit:true, place:null };
+  if (result === 'forfeit') return { forfeit:true, place:null, tie:1 };
   const seats = snapshot && Number.isInteger(snapshot.playerCount) ? snapshot.playerCount : 0;
   const valid = place => Number.isInteger(place) && place >= 1 && place <= seats;
-  if (result === 'win')  return { forfeit:false, place: valid(1) ? 1 : null };
-  if (result === 'loss') return { forfeit:false, place: null };
+  if (result === 'win')  return { forfeit:false, place: valid(1) ? 1 : null, tie:1 };
+  if (result === 'loss') return { forfeit:false, place: null, tie:1 };
   const place = (result && typeof result === 'object') ? result.place : null;
-  return { forfeit:false, place: valid(place) ? place : null };
+  if (!valid(place)) return { forfeit:false, place:null, tie:1 };
+  const tie = isCareerInvitation(snapshot) && Number.isInteger(result.tie)
+    && result.tie >= 1 && place + result.tie - 1 <= seats ? result.tie : 1;
+  return { forfeit:false, place, tie };
 }
 
 /* Returns true ONLY if this call performed the settlement. endCareerEvent()
@@ -1127,15 +1344,17 @@ function settleCareerEvent(result){
   if (!career.active) return false;
   const stake = career.active.snapshot;
   const settlement = normalizeCareerSettlement(result, stake);
-  const prize = settlement.forfeit ? 0 : careerPrizeForPlace(stake, settlement.place);
-  const won = !settlement.forfeit && settlement.place === 1;
+  const prize = settlement.forfeit ? 0 : careerPrizeForFinish(stake, settlement.place, settlement.tie);
+  // A shared first place is a cash, not an outright win.
+  const won = !settlement.forfeit && settlement.place === 1 && settlement.tie === 1;
+  const invitation = isCareerInvitation(stake);
   const firstChampionship = won && stake.id === INVITATIONAL_EVENT_ID && !career.champion;
   const outcome = settlement.forfeit ? 'forfeit'
     : won ? 'win'
     : prize > 0 ? 'cash'
     : 'loss';
   career.bankroll += prize;
-  if (won){
+  if (won && !invitation){
     // Same guard as the unlock above: settleCareerEvent() returns early
     // unless career.active is set, and clears it below, so a repeated
     // settlement call cannot increment this twice. A cash, a bust and a
@@ -1164,6 +1383,8 @@ function settleCareerEvent(result){
     delta: prize > 0 ? prize : -stake.buyIn,
     bankroll: career.bankroll
   };
+  // An exact tie, recorded only when there was one (house-funded events).
+  if (settlement.tie > 1) career.lastResult.tie = settlement.tie;
   career.active = null;
   // The seated field dies with the event it was seated in; the directory
   // draws a fresh one for that event on the next visit.
@@ -1926,7 +2147,9 @@ function careerAbandonPressed(eventId){
   const event = careerActiveEventSnapshot();
   showConfirmDialog({
     title:'Abandon event?',
-    body:'Your $' + event.buyIn.toLocaleString() + ' buy-in is lost and the event ends immediately. This cannot be undone.',
+    body:(isCareerInvitation(event)
+      ? 'The invitation is used up and the event ends immediately, with no prize.'
+      : 'Your $' + event.buyIn.toLocaleString() + ' buy-in is lost and the event ends immediately.') + ' This cannot be undone.',
     confirmLabel:'Abandon', danger:true,
     onConfirm:()=>{
       settleCareerEvent('forfeit');   // clears active + the table save

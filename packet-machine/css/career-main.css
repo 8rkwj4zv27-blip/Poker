@@ -10,49 +10,57 @@ body.cm-lab #home{ display:flex!important; position:fixed; inset:0; padding:10px
 #home #cm .cm-icon{ width:52px; height:40px; min-width:44px; font:9px/1.2 var(--font-hdr); }
 .cm-title{ flex:1; text-align:center; font:10px/1 var(--font-hdr); color:#e9dcb4; letter-spacing:.12em; }
 
-/* the top cabinet: the reel full width; the slot between two CRTs, all slim */
+/* the top cabinet: the reel full width; under it the feeder, centred */
 .cm-cabinet{ flex:none; display:flex; flex-direction:column; gap:8px; padding:8px; border:3px solid var(--pc-edge-lo); border-radius:8px;
   background:var(--pc-leather-lo); box-shadow:inset 3px 3px 0 var(--pc-leather),inset -3px -3px 0 #160509; }
 .cm-bank{ height:48px; }
-.cm-row{ display:grid; grid-template-columns:1fr auto 1fr; gap:8px; align-items:stretch; }
-.cm-crt-l, .cm-crt-r{ min-width:0; display:flex; }
-/* both screens share one grid: the same rows at the same heights, centred, never wrapping */
-.cm-crt{ flex:1; min-width:0; display:grid; place-content:center; justify-items:center; gap:5px; padding:4px; text-align:center; white-space:nowrap; }
+.cm-row{ display:flex; justify-content:center; }
 
-/* the slot: a plain machined mouth exactly a card wide (--cm-card) */
-.cm-slot{ position:relative; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:5px; box-sizing:border-box; padding:6px 10px 5px;
-  border:3px solid var(--px-ink); border-radius:6px; background:linear-gradient(#3b2a22,#24170f); box-shadow:inset 0 2px 0 #5a4030,inset 0 -3px 0 #120a07,0 3px 0 rgba(0,0,0,.5); }
-.cm-mouth{ position:relative; width:calc(var(--cm-card,92px) + 8px); height:20px; box-sizing:border-box; background:#050203; border:3px solid #120a07; border-radius:3px; box-shadow:inset 0 4px 0 #000,0 1px 0 #5a4030; overflow:hidden; }
+/* the feeder: a plate over a plain machined mouth, a card wide (--cm-card) */
+.cm-slot{ display:flex; flex-direction:column; align-items:center; gap:5px; box-sizing:border-box; padding:5px 12px 7px;
+  border:3px solid var(--px-ink); border-radius:6px; background:linear-gradient(#3b2a22,#24170f);
+  box-shadow:inset 0 2px 0 #5a4030,inset 0 -3px 0 #120a07,0 3px 0 rgba(0,0,0,.5); }
+.cm-plate{ font:7px/1 var(--font-hdr); font-weight:400; color:#c9b38a; letter-spacing:.1em; white-space:nowrap; }
+.cm-mouth{ position:relative; width:calc(var(--cm-card,100px) + 10px); height:18px; box-sizing:border-box; background:#050203;
+  border:3px solid #120a07; border-radius:3px; box-shadow:inset 0 4px 0 #000,0 1px 0 #5a4030; overflow:hidden; }
 .cm-throat{ position:absolute; left:3px; right:3px; top:50%; height:2px; background:#1a0d06; }
-.cm-slot-label{ font:7px/1 var(--font-hdr); font-weight:400; color:#c9b38a; letter-spacing:.1em; }
 /* a card carried near: the throat warms; a card in: it glows steady */
 .cm-slot.is-near .cm-throat{ background:#c98c16; box-shadow:0 0 6px 1px rgba(242,194,60,.6); }
 .cm-slot.is-fed .cm-throat{ background:#f2c23c; box-shadow:0 0 8px 2px rgba(242,194,60,.7); }
-.cm-slot.is-fed .cm-slot-label{ color:#f6d06b; }
+.cm-slot.is-fed .cm-plate{ color:#f6d06b; }
 
-/* the felt: the table's own, only cards on it. It sits over the cabinet,
-   so a card carried up meets the slot (and goes in, clipped at the mouth) */
-.cm-felt{ position:relative; z-index:2; flex:1; min-height:200px; margin:14px 14px 12px; isolation:isolate; touch-action:none; user-select:none; -webkit-user-select:none; }
+/* the felt: the table's own. It sits over the cabinet, so a card carried
+   up meets the feeder (and goes in, clipped at the mouth) */
+.cm-felt{ position:relative; z-index:2; flex:1; min-height:200px; margin:12px 14px 12px; isolation:isolate; touch-action:none; user-select:none; -webkit-user-select:none; }
 .cm-felt .po-objects{ z-index:2; }
 .cm-felt > .felt.is-carrying > .po-objects{ z-index:7; }
-.cm-felt .ec-card{ cursor:grab; }
-/* where a dealt card is headed: the deck's flight needs an element there */
-.cm-landing{ position:absolute; visibility:hidden; pointer-events:none; }
+.cm-felt .po-body{ cursor:grab; }
 
-/* the table's dealer deck, bottom left, bigger; tap for a card, hold to sweep */
-#home #cm .dealer-station.cm-station{ left:52px; top:auto; bottom:12px; transform:translateX(-50%) scale(1.35); transform-origin:50% 100%; pointer-events:auto; cursor:pointer; }
-#home #cm .dealer-station.cm-station .dealer-deck{ pointer-events:none; }
-#home #cm .dealer-station.cm-station.is-pressed{ translate:0 2px; }
-/* the deck's flying cards: the game hides them whenever the table isn't
-   showing; here the hub is where they fly */
-html:has(#cm) body.cm-lab .fly-card{ display:block !important; }
+/* the wooden table in the felt's top third: wood the colour of the
+   table's rail, a soft bevel, three places for the cards */
+.cm-table{ position:absolute; left:50%; top:22px; transform:translateX(-50%); z-index:1; }
+.cm-wood{ display:grid; grid-template-columns:repeat(3,auto); gap:10px; padding:10px; border-radius:5px;
+  background:
+    repeating-linear-gradient(180deg, transparent 0 7px, rgba(0,0,0,.10) 7px 9px, transparent 9px 13px, rgba(255,226,170,.06) 13px 14px, transparent 14px 23px, rgba(0,0,0,.08) 23px 24px),
+    var(--rail);
+  border:2px solid var(--px-ink);
+  box-shadow:inset 0 3px 0 var(--rail-hi),inset 3px 0 0 rgba(255,226,170,.12),inset 0 -3px 0 var(--rail-lo),inset -3px 0 0 rgba(0,0,0,.18),0 3px 0 rgba(0,0,0,.35); }
+.cm-place{ display:block; width:var(--cm-card,100px); height:var(--cm-card-h,146px); border-radius:6px; }
 
 /* the keys in a console like the dashboard's: a case, then the bay */
 .cm-console{ flex:none; position:relative; z-index:3; }
 .cm-console-case{ padding:8px; border:3px solid var(--px-ink); border-radius:14px; background:var(--pc-leather-lo);
   box-shadow:inset 3px 3px 0 var(--pc-leather),inset -3px -3px 0 #160509,0 4px 0 rgba(0,0,0,.55); }
 .cm-keys{ display:grid; grid-template-columns:1fr 1.3fr 1fr; gap:10px; padding-top:0; }
-.cm-keys .is-ready{ filter:brightness(1.18); box-shadow:0 0 0 2px var(--pc-lamp-amber,#f2c23c); }
+/* a card in the feeder: PLAY lights up (its own bevel left as it is) */
+#cm .cm-keys .is-ready{ filter:brightness(1.15) saturate(1.1); }
+#cm .cm-keys .cm-long{ font-size:9px; letter-spacing:.02em; }
+/* a two-line label, set smaller with room round it */
+#cm .cm-keys .cm-two{ white-space:pre-line; font-size:8px; line-height:1.55; letter-spacing:.08em; padding-top:2px; padding-bottom:2px; }
+/* a key with nothing to do is unlit: its label goes dark, the key itself
+   stays as it is (no greying out); a new label flips over */
+#cm .cm-keys button.cm-unlit{ color:rgba(20,12,8,.32); text-shadow:none; }
+#cm .cm-keys button.cm-flip{ transform:scaleY(.25); }
 
 /* the lab's sheet */
 .cm-sheet{ position:absolute; left:0; right:0; bottom:0; z-index:200; padding:16px 14px 18px; background:var(--pc-leather-lo); border:3px solid var(--pc-edge-lo); box-shadow:0 -4px #8b493f; max-height:82%; overflow:auto; }
@@ -68,7 +76,3 @@ html:has(#cm) body.cm-lab .fly-card{ display:block !important; }
   .cm-bank{ height:42px; }
   #home #cm.lobby-card{ gap:6px; padding:8px; }
 }
-/* the clean-up spot: a card outline printed on the felt, opposite the deck */
-#cm .cm-pad{ position:absolute; right:14px; bottom:12px; z-index:1; box-sizing:border-box; border-radius:7px; cursor:pointer; touch-action:none;
-  border:2px solid rgba(214,236,196,.2); outline:1px solid rgba(214,236,196,.12); outline-offset:3px; }
-#cm .cm-pad.is-pressed{ background:rgba(214,236,196,.06); translate:0 1px; }

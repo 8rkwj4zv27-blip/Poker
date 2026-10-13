@@ -2188,10 +2188,21 @@ async function finishHand(outcome){
     // is the ONLY function permitted to start result presentation. The
     // placement is measured from the table (careerFinishPlace), never
     // inferred from a win/loss value — a paid second place depends on it.
-    if (human.chips<=0){ endCareerEvent(g,{place:careerFinishPlace(g,human)}); return; }
+    if (human.chips<=0){ endCareerEvent(g,careerFinish(g,human)); return; }
     if (aiRemaining.length===0){
       await sleep(motionOff() ? 0 : ELIMINATION_CONFIG.clearedBeatMs);
-      endCareerEvent(g,{place:careerFinishPlace(g,human)});
+      endCareerEvent(g,careerFinish(g,human));
+      return;
+    }
+    // A hand-limited invitation ends once its last hand has fully settled
+    // (pots paid, K.O.s resolved above). handNumber counts hands dealt, and
+    // the checkpoint is taken before the deal, so a reload replays a hand
+    // rather than counting it twice.
+    if (careerHandLimitReached(g)){
+      setBanner('<b>Hand ' + g.handNumber + ' of ' + g.event.handLimit + '.</b> Final count.');
+      render();
+      await sleep(motionOff() ? 0 : ELIMINATION_CONFIG.clearedBeatMs);
+      endCareerEvent(g,careerLimitFinish(g,human));
       return;
     }
     if (shouldPresentChampionshipFinalTable(g, aiRemaining.length + 1)){
@@ -2278,6 +2289,37 @@ function careerFinishPlace(g, human){
   return Math.min(g.players.length, Math.max(1, survivors + sameHandAhead + 1));
 }
 
+/* Invitation events (house-funded) also report an exact tie: `tie` players
+   share places place..place+tie-1, and settlement splits those prizes
+   (careerPrizeForFinish). A tie on a bust is a same-hand K.O. from an
+   exactly equal starting stack — the case careerFinishPlace() resolves in
+   the player's favour; here the places are shared instead. Every other
+   event keeps careerFinishPlace() alone. */
+function careerFinish(g, human){
+  const place = careerFinishPlace(g, human);
+  if (!g || !g.event || g.event.funding !== 'house' || place === null || human.chips > 0) return { place };
+  const startOf = p => Number.isFinite(p._handStartChips) ? p._handStartChips : p.chips;
+  const level = g.players.filter(p => p !== human && p.chips <= 0
+    && startOf(p) > 0 && startOf(p) === startOf(human)).length;
+  return { place, tie:1 + level };
+}
+
+/* True once a hand-limited event has played its last hand. */
+function careerHandLimitReached(g){
+  return !!g && g.mode === 'career' && !!g.event && isCareerHandLimit(g.event.handLimit)
+    && g.handNumber >= g.event.handLimit;
+}
+
+/* Your place when the hand limit ends the event with you still seated.
+   Survivors rank by chips; anyone already knocked out ranks below every
+   survivor. Opponents with exactly your chips share your place. */
+function careerLimitFinish(g, human){
+  const alive = g.players.filter(p => p !== human && p.chips > 0 && !p.eliminated);
+  const ahead = alive.filter(p => p.chips > human.chips).length;
+  const level = alive.filter(p => p.chips === human.chips).length;
+  return { place:ahead + 1, tie:level + 1 };
+}
+
 /* The Invitational stays one continuous six-player freezeout. Crossing to
    three (or, after a multi-K.O. hand, two) remaining earns one theatrical
    beat only; no stacks, seats, blinds, cards or payouts are reset. The bit
@@ -2293,7 +2335,9 @@ function endCareerEvent(g, result){
   if (!g || g.mode !== 'career') return;
   if (g._careerResultShown) return;
   if (!settleCareerEvent(result)) return;   // someone else already owns this ending
-  recordGameplayConclusion(g, result && result.place===1 ? 'win' : 'loss');
+  // From the settled record: a shared first place is a cash, not a win.
+  const settledOutcome = careerLastResult() && careerLastResult().outcome;
+  recordGameplayConclusion(g, settledOutcome === 'win' ? 'win' : 'loss');
   g._careerResultShown = true;
   g.over = true;
   // Snapshot every displayed value ONCE, immediately after settlement and
@@ -2334,6 +2378,9 @@ function buildCareerResultModel(g, settled){
     // immutable snapshot. Never g.players.length, which by the time a
     // result exists is the field MINUS everyone eliminated.
     field: Number.isInteger(ev.playerCount) && ev.playerCount > 0 ? ev.playerCount : null,
+    // Set when a hand-limited event ended at its limit with the player
+    // still seated: the result then names the limit, not a knock-out.
+    handLimit: careerHandLimitReached(g) && (g.players||[]).some(p=>p.isHuman && p.chips>0) ? ev.handLimit : null,
     // The chip tape (js/event-tape.js) and who was still sitting when the
     // player went out, for the bust-out order. Display data only.
     tape: typeof EventTape !== 'undefined' ? EventTape.snapshot(g) : null,
@@ -2435,7 +2482,9 @@ async function showCareerEventResult(g, model){
   // the stage — the same stage, the same travel and the same lock TABLE
   // CLEARED and RUN OVER use. Only a win mucks first; a bust has already
   // had its K.O. ceremony and rolls straight into its report.
-  setBanner(model.won
+  setBanner(model.handLimit
+    ? (model.won ? '<b>Event won.</b> Most chips after ' : '<b>Event over.</b> ') + model.handLimit + ' hands.'
+    : model.won
     ? '<b>Event won.</b> Every opponent is out.'
     : '<b>Event over.</b> You were eliminated.');
   await presentResultStage(g, careerStageModel(model), {
@@ -2459,7 +2508,7 @@ function concludeGame(){
   // endCareerEvent() no-ops unless it genuinely owns the settlement.
   if (game.mode==='career'){
     const human = game.players.find(p=>p.id==='you');
-    endCareerEvent(game, {place:careerFinishPlace(game, human)});
+    endCareerEvent(game, careerFinish(game, human));
     return;
   }
   game.over = true;
@@ -2888,7 +2937,9 @@ function careerStageModel(m){
     // and carries the same statement as its caption.
     detail:{
       kind: m.tape ? 'tape' : 'statement', label:'Result',
-      line: champion ? 'THE INVITATIONAL IS YOURS' : won ? 'EVERY OPPONENT IS OUT' : 'YOU WERE ELIMINATED',
+      line: champion ? 'THE INVITATIONAL IS YOURS'
+        : m.handLimit ? (won ? 'MOST CHIPS AFTER ' : 'TIME UP AFTER ') + m.handLimit + ' HANDS'
+        : won ? 'EVERY OPPONENT IS OUT' : 'YOU WERE ELIMINATED',
       sub: champion ? 'CHAMPION STATUS RECORDED' : won ? 'PRIZE CREDITED TO BANKROLL' : freeLoss ? 'NO BUY-IN LOST' : 'BUY-IN FORFEITED',
       tape: m.tape || null, won, place: m.place, alive: m.alive || []
     },

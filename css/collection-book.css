@@ -1,0 +1,128 @@
+/* ============================================================
+   THE CARD ALBUM — js/collection-book.js (lab only)
+   A plain leather book over the hub's table: one stitch line, a velvet
+   page, sunk slots held by leather corners (or thin plastic sleeves),
+   quiet gilt page edges, leather tabs with the number pressed in.
+   It sits in #cm between the felt (z 2) and the console (z 3, later in
+   the page), so it comes up from behind the console.
+   ============================================================ */
+.cb-layer{ position:absolute; z-index:3; display:none; touch-action:none; user-select:none; -webkit-user-select:none;
+  --cb-hide:#5e2c1b; --cb-hide-hi:#7a3f27; --cb-hide-lo:#331409; --cb-ink:#1a0a05;
+  --cb-velvet:#3a1118; --cb-velvet-lo:#22080d; --cb-velvet-hi:#4d1a23;
+  --cb-edge:#b8955a; --cb-edge-lo:#8a6d3e;
+  --cb-board:10px; --cb-hinge:14px; --cb-tabs:24px; --cb-stack:5px; --cb-thick:6px; }
+.cb-layer.is-out{ display:block; }
+.cb-shadow{ position:absolute; inset:0; border-radius:8px; background:rgba(0,0,0,.45); transform-origin:50% 50%; }
+.cb-book{ position:absolute; inset:0; transform-origin:50% 50%; perspective:1600px; perspective-origin:0 50%; }
+.cb-fx{ position:absolute; inset:0; z-index:6; pointer-events:none; }
+
+/* ---------------- the book's thickness: the page block seen at the bottom edge ---------------- */
+.cb-thick{ position:absolute; left:3px; right:2px; bottom:0; height:calc(var(--cb-thick) + 10px); box-sizing:border-box; border:3px solid var(--cb-ink); border-top:0; border-radius:0 0 8px 8px;
+  background:repeating-linear-gradient(0deg, var(--cb-edge) 0 2px, var(--cb-edge-lo) 2px 3px); box-shadow:inset 0 -3px 0 var(--cb-hide-lo); }
+.cb-book.is-dim .cb-leaves{ filter:brightness(.72); }
+
+/* ---------------- the board, the hinge, the stitch ---------------- */
+.cb-board{ position:absolute; inset:0 0 var(--cb-thick); border:3px solid var(--cb-ink); border-radius:8px; background:var(--cb-hide);
+  box-shadow:inset 2px 2px 0 var(--cb-hide-hi),inset -2px -2px 0 var(--cb-hide-lo); }
+.cb-board::after{ content:''; position:absolute; inset:4px; border:1px dashed rgba(214,170,110,.28); border-radius:5px; pointer-events:none; }
+.cb-hinge{ position:absolute; left:0; top:0; bottom:0; width:calc(var(--cb-board) + var(--cb-hinge)); border-right:2px solid var(--cb-ink); border-radius:5px 0 0 5px; background:var(--cb-hide-lo); }
+
+/* ---------------- the tabs ---------------- */
+.cb-tabs{ position:absolute; z-index:2; left:calc(var(--cb-board) + var(--cb-hinge) + 12px); right:calc(var(--cb-board) + 12px); top:var(--cb-board); height:var(--cb-tabs);
+  display:flex; justify-content:space-around; align-items:flex-end; }
+.cb-tab{ width:44px; height:16px; box-sizing:border-box; padding-top:4px; border:2px solid var(--cb-ink); border-bottom:0; border-radius:5px 5px 0 0;
+  background:var(--cb-hide-lo); text-align:center; font:8px/1 var(--font-hdr); font-weight:400; color:#1e0b05; text-shadow:0 1px 0 var(--cb-hide-hi); cursor:pointer; }
+.cb-tab.is-at{ height:24px; padding-top:7px; background:var(--cb-hide-hi); box-shadow:inset 2px 2px 0 #95533a; color:#efdcb4; text-shadow:0 1px 0 var(--cb-ink); }
+
+/* ---------------- the pages ---------------- */
+.cb-block{ position:absolute; z-index:3; left:calc(var(--cb-board) + var(--cb-hinge)); right:var(--cb-board); top:calc(var(--cb-board) + var(--cb-tabs)); bottom:calc(var(--cb-board) + var(--cb-thick)); }
+.cb-stack{ position:absolute; inset:var(--cb-stack) 0 0 var(--cb-stack); border:2px solid var(--cb-ink); border-radius:2px 4px 4px 2px;
+  background:repeating-linear-gradient(90deg, var(--cb-edge) 0 3px, var(--cb-edge-lo) 3px 4px); }
+.cb-stack::after{ content:''; position:absolute; left:0; right:0; bottom:0; height:var(--cb-stack);
+  background:repeating-linear-gradient(0deg, var(--cb-edge) 0 3px, var(--cb-edge-lo) 3px 4px); }
+.cb-leaves{ position:absolute; inset:0 var(--cb-stack) var(--cb-stack) 0; perspective:1400px; perspective-origin:0 50%; }
+.cb-page{ position:absolute; inset:0; display:grid; place-items:center; box-sizing:border-box; border:2px solid var(--cb-ink); border-radius:2px 4px 4px 2px;
+  background:var(--cb-velvet); transform-origin:0 50%; backface-visibility:hidden; -webkit-backface-visibility:hidden; }
+.cb-page[hidden], .cb-cover[hidden]{ display:none; }
+.cb-gutter{ position:absolute; left:0; top:0; bottom:0; width:12px; pointer-events:none; background:linear-gradient(90deg, rgba(0,0,0,.4), transparent); }
+.cb-cast{ position:absolute; inset:0; pointer-events:none; opacity:0; border-radius:2px 4px 4px 2px;
+  background:linear-gradient(90deg, rgba(0,0,0,.7), rgba(0,0,0,.3) 35%, transparent 70%); }
+.cb-grid{ display:grid; grid-template-columns:repeat(3, var(--cb-cw)); grid-auto-rows:var(--cb-ch); gap:var(--cb-gy) var(--cb-gx); margin-left:6px; }
+
+/* ---------------- the slots ---------------- */
+.cb-slot{ position:relative; border-radius:3px; background:var(--cb-velvet-lo); box-shadow:inset 2px 2px 0 #12040a,inset -1px -1px 0 var(--cb-velvet-hi); }
+.cb-slot.is-lit{ z-index:3; }
+.cb-face{ position:absolute; inset:0; z-index:1; filter:drop-shadow(1px 2px 0 #12040a); transition:translate 90ms steps(2), filter 90ms steps(2); }
+.cb-face .ccl-object{ position:absolute; left:0; top:0; width:164px; transform:scale(var(--cb-k)); transform-origin:0 0; }
+.cb-face .ccl-stock{ filter:none; }
+/* found but used up: very dim */
+.cb-slot.is-used .cb-face{ filter:brightness(.28) saturate(.2) drop-shadow(1px 2px 0 #12040a); }
+/* tapped once: it lifts a little and lights */
+.cb-slot.is-lit .cb-face{ translate:0 -4px; filter:brightness(1.12) drop-shadow(0 0 6px rgba(242,194,60,.75)) drop-shadow(1px 5px 0 #12040a); }
+/* the leather corners that hold a card */
+.cb-pc{ position:absolute; z-index:2; width:12px; height:12px; background:var(--cb-hide); box-shadow:inset 1px 1px 0 var(--cb-hide-hi); }
+.cb-pc.is-tl{ left:-2px; top:-2px; clip-path:polygon(0 0,100% 0,0 100%); }
+.cb-pc.is-tr{ right:-2px; top:-2px; clip-path:polygon(0 0,100% 0,100% 100%); }
+.cb-pc.is-bl{ left:-2px; bottom:-2px; clip-path:polygon(0 0,100% 100%,0 100%); }
+.cb-pc.is-br{ right:-2px; bottom:-2px; clip-path:polygon(100% 0,100% 100%,0 100%); }
+/* or a thin plastic sleeve: a faint sheen, its open top edge catching the light */
+.cb-sleeve{ position:absolute; inset:-3px; z-index:2; pointer-events:none; border-radius:3px; border:1px solid rgba(230,220,240,.14);
+  background:linear-gradient(118deg, rgba(255,255,255,.015) 0 30%, rgba(255,255,255,.075) 36%, rgba(255,255,255,.015) 44% 100%); }
+.cb-sleeve::before{ content:''; position:absolute; left:2px; right:2px; top:0; height:2px; background:rgba(255,255,255,.16); }
+.cb-slot.is-empty .cb-sleeve{ opacity:.6; }
+
+/* the two pull tabs: back a page (over the binding) and on a page (the
+   right edge); dark at the first and last page */
+.cb-turn{ position:absolute; z-index:4; top:50%; width:20px; height:52px; margin-top:-26px; padding:0; border:2px solid var(--cb-ink); background:var(--cb-hide-hi);
+  box-shadow:inset 2px 2px 0 #95533a,inset -2px -2px 0 var(--cb-hide-lo); cursor:pointer; -webkit-tap-highlight-color:transparent; }
+.cb-turn::before{ content:''; position:absolute; left:50%; top:50%; width:6px; height:10px; margin:-5px 0 0 -3px; background:#efdcb4; }
+.cb-turn.is-back{ left:calc(var(--cb-board) + var(--cb-hinge) - 18px); border-radius:5px 0 0 5px; }
+.cb-turn.is-back::before{ clip-path:polygon(100% 0,0 50%,100% 100%); }
+.cb-turn.is-next{ right:-6px; border-radius:0 5px 5px 0; }
+.cb-turn.is-next::before{ clip-path:polygon(0 0,100% 50%,0 100%); }
+.cb-turn:active{ translate:0 1px; }
+.cb-turn.is-off{ background:var(--cb-hide-lo); box-shadow:none; }
+.cb-turn.is-off::before{ background:#1e0b05; }
+/* a bigger target than it looks: 44px+ */
+.cb-turn::after{ content:''; position:absolute; inset:-6px -14px; }
+
+/* ---------------- the cover ---------------- */
+.cb-cover{ position:absolute; inset:0 0 var(--cb-thick); z-index:5; border:3px solid var(--cb-ink); border-radius:8px; transform-origin:0 50%; background:var(--cb-hide);
+  box-shadow:inset 2px 2px 0 var(--cb-hide-hi),inset -2px -2px 0 var(--cb-hide-lo); backface-visibility:hidden; -webkit-backface-visibility:hidden; }
+.cb-cover::after{ content:''; position:absolute; inset:6px 6px 6px 26px; border:1px dashed rgba(214,170,110,.3); border-radius:4px; pointer-events:none; }
+.cb-spine{ position:absolute; left:0; top:0; bottom:0; width:18px; border-right:2px solid var(--cb-ink); border-radius:5px 0 0 5px; background:var(--cb-hide-lo); }
+.cb-mark{ position:absolute; left:calc(50% + 9px); top:50%; transform:translate(-50%,-50%); font:44px/1 var(--font-hdr); font-weight:400; color:var(--cb-hide-lo); text-shadow:0 2px 0 var(--cb-hide-hi); }
+
+.cb-sheet{ z-index:300; }
+
+/* ---------------- the curl: strips of the page in a bowing chain ---------------- */
+.cb-strip{ transform-origin:0 50%; pointer-events:none; backface-visibility:visible; -webkit-backface-visibility:visible; }
+.cb-strip .cb-face{ transition:none; }
+.cb-shade{ position:absolute; inset:0; z-index:5; pointer-events:none; }
+/* past the binding you see the page's back: plain velvet, the sleeves' backs */
+.cb-strip.is-back{ background:var(--cb-velvet-hi); }
+.cb-strip.is-back .cb-grid{ visibility:hidden; }
+/* the page uncovered: its cards settle in their places */
+.cb-page.is-settle .cb-face{ animation:cb-settle .24s steps(3) both; }
+@keyframes cb-settle{ 0%{ translate:0 -2px; } 50%{ translate:0 1px; } 100%{ translate:0 0; } }
+
+/* ---------------- the sleeve, handled ---------------- */
+.cb-sleeve{ background-size:100% 220%; background-position:0 0; }
+/* flexing as the card slides: the sheen shifts */
+.cb-sleeve.is-flex{ background-position:0 30%; border-color:rgba(230,220,240,.22); }
+/* the card pops free: the empty sleeve flashes as it flattens */
+.cb-sleeve.is-flash{ animation:cb-flash .16s steps(2) both; }
+@keyframes cb-flash{ 0%{ background-color:rgba(255,255,255,.10); } 100%{ background-color:transparent; } }
+/* its mouth opens for a card coming back */
+.cb-sleeve.is-open::before{ top:-2px; height:3px; background:rgba(255,255,255,.32); }
+/* tucked home: the sheen sweeps down as the plastic settles */
+.cb-sleeve.is-settle{ animation:cb-sweep .28s steps(5) both; }
+@keyframes cb-sweep{ 0%{ background-position:0 60%; } 100%{ background-position:0 0; } }
+/* a glint across the card's face as it comes free */
+.cb-glint{ position:absolute; inset:0; z-index:3; pointer-events:none; overflow:hidden; }
+.cb-glint::before{ content:''; position:absolute; top:-20%; bottom:-20%; width:22%; left:-30%; background:rgba(255,248,225,.55); transform:skewX(-18deg); animation:cb-glint .3s steps(5) both; }
+@keyframes cb-glint{ to{ left:110%; } }
+
+/* ---------------- the stage over the felt: the card in hand, the card in the reader ---------------- */
+.cb-feed{ position:absolute; z-index:4; pointer-events:none; }
+.cb-feed .ec-card{ pointer-events:auto; }

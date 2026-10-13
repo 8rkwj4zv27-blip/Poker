@@ -702,3 +702,18 @@ body #home #home-settings{ background:var(--theme-case-raised); color:var(--ink)
 }
 [data-motion="off"] .crt-screen,[data-motion="off"] .crt-refresh,[data-motion="off"] .crt-cursor{ animation:none; }
 [data-motion="off"] .quick-bet{ transition:none; }
+
+/* HAND n/LIMIT on the felt (js/06-presentation.js renderHandLimit): a
+   hand-limited Career invitation's progress, in the dashboard's own parts. */
+#felt .hand-limit{
+  position:absolute; left:50%; top:3%; transform:translateX(-50%); z-index:2;
+  display:flex; flex-direction:column; align-items:center; gap:3px; padding:4px 6px 5px;
+  border:2px solid var(--px-ink); background:var(--machine-case);
+  box-shadow:inset 1px 1px 0 rgba(255,255,255,.07),0 3px 0 rgba(0,0,0,.35);
+  pointer-events:none;
+}
+#felt .hand-limit .instrument-label{ color:var(--crt-action-ink); }
+#felt .hand-limit-screen{
+  min-width:52px; padding:3px 6px; text-align:center;
+  font-family:var(--font-hdr); font-size:11px; line-height:1.3;
+}

@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#140709">
+  <link rel="icon" href="data:,">
+  <title>New Career</title>
+  <!-- New Career (preview), docs/career/INVITATIONS_PLAN.md: the real game,
+       full screen, with the Career hub, the shop, the packet opening and
+       the album wired to a real Career save (js/career-link.js). The copy
+       keeps its own save (prefix "ncp:" in this page's storage), never the
+       game's. -->
+  <style>
+    html,body{ height:100%; margin:0; background:#140709; overflow:hidden; }
+    #ncp-game{
+      position:fixed; top:env(safe-area-inset-top,0px); left:50%;
+      width:min(100vw,430px); height:calc(100% - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px));
+      transform:translateX(-50%); border:0; display:block; background:#0C1510;
+    }
+    @media (min-width:600px){ #ncp-game{ box-shadow:0 0 0 3px #080405,0 20px 60px rgba(0,0,0,.6); } }
+  </style>
+</head>
+<body>
+  <iframe id="ncp-game" title="New Career (preview)" allow="autoplay"></iframe>
+  <script type="application/json" id="lab-inject">{"css":["css/pack-ritual-cards.css","css/invitation-cards.css","css/pack-opening.css","css/card-inspect.css","css/career-main.css","css/vending-machine.css","css/collection-book.css"],"js":["js/pack-ritual-art.js","js/pack-ritual-cards.js","js/invitation-art.js","js/invitation-cards.js","js/pack-opening-core.js","js/pack-opening-packet.js","js/event-cards.js","js/card-inspect.js","js/career-link.js","js/career-main.js","js/vending-machine.js","js/collection-book.js","js/pack-opening.js"],"strip":["js/home-boot.js"],"persist":"ncp:","v":"1"}</script>
+  <script src="js/career-preview-host.js?v=1"></script>
+</body>
+</html>

@@ -10,6 +10,7 @@ Last sorted: 7 October 2026 (v0.66.1).
 | --- | --- |
 | [`HANDOVER.md`](HANDOVER.md) | One screen: the build, where the game is, open items and what's next. Read first, update last |
 | [`../CLAUDE.md`](../CLAUDE.md) | The project's rules for every contributor, human or AI |
+| [`WORKFLOW.md`](WORKFLOW.md) | How a stage is built and checked: acceptance checks, build, independent review, tests and the real flow, fix, stop |
 | [`QUICKMAP.md`](QUICKMAP.md) | One page: which file owns what. Read before searching the code |
 | [`CODEMAP.md`](CODEMAP.md) | The detail, one section per file; Labs vs. production; test suites |
 | [`career/STATUS.md`](career/STATUS.md) | What's shipped in Career and its next task |
@@ -26,6 +27,15 @@ Last sorted: 7 October 2026 (v0.66.1).
 | [`career/CAREER_DESIGN.md`](career/CAREER_DESIGN.md) | Career product rules and economy |
 | [`career/BUILD_PLAN.md`](career/BUILD_PLAN.md) | Career phase sequence and scope |
 | [`career/EVENTS_PLAN.md`](career/EVENTS_PLAN.md) | The events rework (8 Oct 2026): easier start, harder top, ladders, formats, heat gauge. In progress |
+| [`career/PACK_RITUAL_HANDOVER.md`](career/PACK_RITUAL_HANDOVER.md) | Current isolated opening study, owner feedback, evidence and Opus handover (`codex/pack-ritual`) |
+| [`career/CAREER_HUB_DESK_PLAN.md`](career/CAREER_HUB_DESK_PLAN.md) | The Career desk: Career's main screen as a felt desk (slot, three cards, matchbooks, lamp, bell, shop, album). Rejected in round 2; stills of a simpler hub with the owner |
+| [`career/VENDING_PLAN.md`](career/VENDING_PLAN.md) | The packet machine: Career's shop as a vending machine that rolls in on the wheel; the moving lab |
+| [`career/CAREER_HUB_BRIEF.md`](career/CAREER_HUB_BRIEF.md) | The Career hub: every round, the owner's verdicts, and the hub as built (the tray is the house's, the felt is yours) |
+| [`career/INVITATIONS_PLAN.md`](career/INVITATIONS_PLAN.md) | Career as packets of event invitations (12 Oct 2026): the loop, the proposed first catalogue, Stage 1 (one DEV-playable Back Room invitation) and its acceptance checks. In progress |
+| [`career/HUB_TO_GAME_BRIEF.md`](career/HUB_TO_GAME_BRIEF.md) | From the labs to the game: the cards and events, the inspect screen, the hub into the game; where everything is; the brief for the next sessions |
+| [`career/COLLECTION_BOOK_PLAN.md`](career/COLLECTION_BOOK_PLAN.md) | The card album: the owner's decisions (a leather-bound book over the table, three rows of three, bright / dim / empty), the moving lab and what's open |
+| [`career/COLLECTION_BRIEF.md`](career/COLLECTION_BRIEF.md) | Historical: the brief the card album was designed from |
+| [`career/PACK_OPENING_V3_PLAN.md`](career/PACK_OPENING_V3_PLAN.md) | Pack opening rebuild ("The Squeeze"): audit, reference games, plan; approved, slice 1 built |
 | [`career/PACKS_PLAN.md`](career/PACKS_PLAN.md) | Career as packs of event cards: a vending machine, the rip, the ticket case (8 Oct 2026). Visual lab first (`pack-lab.html`) |
 | [`ai/AI_PLAN.md`](ai/AI_PLAN.md) | The opponent AI: tier ladder and baselines |
 

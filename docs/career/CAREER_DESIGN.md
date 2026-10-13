@@ -20,7 +20,11 @@ The owner approved the rework in `EVENTS_PLAN.md`:
   hands, and a new five-player Top-2 ticket. Skill then climbs smoothly up
   the venues (proposed 20 / 35 / 50 / 65 / 80 / 90). This supersedes the
   "AI progression" list below as each venue's release lands.
-- **No overlay.** Payouts still add up exactly to the entries.
+- **No overlay** for events bought with an entry: their payouts add up
+  exactly to the entries. *Proposed 12 Oct 2026 (prototype, DEV only):*
+  invitation events have no entry and a prize the house puts up
+  (`funding:'house'`, `career/INVITATIONS_PLAN.md`); this rule does not
+  apply to them, and other modes are unaffected.
 - **A heat gauge on the ticket reader** shows how good a ticket's
   opponents are (a new part: lab and Pattern Book first).
 - **Venue ladders** (warm-up, main event, headliner) and **new formats**

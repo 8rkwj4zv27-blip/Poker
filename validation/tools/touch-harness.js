@@ -40,8 +40,8 @@ function findChromium() {
    touchscreen device (hasTouch/isMobile) since the game's pointer handling
    branches on that. */
 async function withPage(opts, fn) {
-  const { width = 430, height = 932, reducedMotion = false } = opts || {};
-  const browser = await chromium.launch({ executablePath: findChromium() });
+  const { width = 430, height = 932, reducedMotion = false, executablePath } = opts || {};
+  const browser = await chromium.launch({ executablePath: executablePath || findChromium() });
   try {
     const ctx = await browser.newContext({
       viewport: { width, height },

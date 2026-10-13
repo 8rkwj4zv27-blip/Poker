@@ -1,0 +1,36 @@
+/* INVITATION CARDS LAB (js/invitation-cards-lab.js): the gallery over the
+   game copy. Lab only; the cards themselves are css/invitation-cards.css. */
+.invl{
+  position:fixed; inset:0; z-index:9000; overflow-y:auto; -webkit-overflow-scrolling:touch;
+  padding:max(12px,env(safe-area-inset-top)) 16px max(20px,env(safe-area-inset-bottom));
+  background:repeating-conic-gradient(#4b1b25 0 25%,#451822 0 50%) 0 0/4px 4px;
+  color:#ecd493;
+}
+.invl[hidden],.invl-reopen[hidden]{ display:none; }
+.invl-head{ display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:12px; }
+.invl-brand{ display:grid; gap:6px; font:13px/1.2 var(--font-hdr); color:#ecd493; }
+.invl-brand small{ font:7px/1.4 var(--font-hdr); color:#c9a68a; letter-spacing:.04em; }
+.invl-filters{ display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:7px; margin-bottom:14px; }
+.invl-filters .ccl-key{ font-size:8px; padding:8px 2px; }
+.invl .ccl-key[aria-pressed="true"]{ background:#d6b35e; transform:translateY(3px); box-shadow:inset 2px 2px #967135,inset -1px -1px #ead492,0 1px #14090d; }
+.invl-grid{ display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:16px 12px; }
+.invl-pick{ display:block; width:100%; min-height:44px; padding:0; border:0; background:none; cursor:pointer; touch-action:manipulation; }
+.invl-pick:active{ transform:translateY(-3px) rotate(-1deg); }
+.invl-note{ margin:18px 2px 4px; font:7px/1.7 var(--font-hdr); color:#c9a68a; }
+.invl-sheet{
+  position:fixed; inset:auto 0 0 0; z-index:9001; max-height:92%; overflow-y:auto;
+  padding:16px 16px max(16px,env(safe-area-inset-bottom));
+  background:repeating-conic-gradient(#431b25 0 25%,#401923 0 50%) 0 0/4px 4px;
+  border-top:4px solid #16090d; box-shadow:inset 0 2px #975666,0 -10px 30px #000a;
+}
+.invl-sheet-card{ width:min(64%,260px); margin:0 auto 14px; }
+.invl-readout{ padding:10px 12px; border:3px solid #080b08; background:#0a1510; color:#b6e0af; font:8px/1.8 var(--font-hdr); }
+.invl-row{ display:flex; justify-content:space-between; gap:10px; }
+.invl-row span{ color:#82a68b; }
+.invl-row b{ font-weight:400; text-align:right; }
+.invl-rules{ margin:8px 0 0; font:13px/1.35 var(--font-px); color:#d8ecc8; }
+.invl-small{ margin:6px 0 0; font:6px/1.5 var(--font-hdr); color:#82a68b; }
+.invl-verdict{ margin:12px 2px 0; font:7px/1.7 var(--font-hdr); color:#f0b98f; }
+.invl-keys{ display:flex; gap:10px; justify-content:center; margin-top:14px; }
+.invl-keys .ccl-key{ font-size:8px; min-width:96px; }
+.invl-reopen{ position:fixed; z-index:8999; top:max(8px,env(safe-area-inset-top)); left:8px; font-size:8px; }

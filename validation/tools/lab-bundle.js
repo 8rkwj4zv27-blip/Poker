@@ -83,6 +83,25 @@ const SHIM = `(function(){
     try{ Object.defineProperty(P, 'length', { configurable:true, get:function(){ return Object.keys(mem).length; } }); }catch(e){}
     if (navigator.serviceWorker){ try{ navigator.serviceWorker.register = function(){ return Promise.reject(new Error('lab')); }; }catch(e){} }
   })();`;
+// A lab whose inject names `persist` (a key prefix) keeps its save across
+// reloads: the copy's storage is written through to the page's own
+// localStorage under that prefix (the published link's own origin, never
+// the game's), and falls back to memory where storage is refused.
+const PERSIST_SHIM = prefix => `(function(){
+    var P = Storage.prototype, g = P.getItem, st = P.setItem, rm = P.removeItem, kf = P.key, pre = ${JSON.stringify(prefix)};
+    var mem = Object.create(null);
+    try{ var n = localStorage.length; for (var i = 0; i < n; i++){ var k = kf.call(localStorage, i); if (k && k.indexOf(pre) === 0) mem[k.slice(pre.length)] = g.call(localStorage, k); } }catch(e){}
+    if (!('felt.settings' in mem)) mem['felt.settings'] = JSON.stringify({ sound:true, seenIntro:true, seenTour:true });
+    var put = function(k, v){ try{ st.call(localStorage, pre + k, v); }catch(e){} };
+    var del = function(k){ try{ rm.call(localStorage, pre + k); }catch(e){} };
+    P.getItem = function(k){ k = String(k); return k in mem ? mem[k] : null; };
+    P.setItem = function(k, v){ k = String(k); v = String(v); mem[k] = v; put(k, v); };
+    P.removeItem = function(k){ k = String(k); delete mem[k]; del(k); };
+    P.clear = function(){ Object.keys(mem).forEach(del); mem = Object.create(null); };
+    P.key = function(i){ var k = Object.keys(mem)[i]; return k === undefined ? null : k; };
+    try{ Object.defineProperty(P, 'length', { configurable:true, get:function(){ return Object.keys(mem).length; } }); }catch(e){}
+    if (navigator.serviceWorker){ try{ navigator.serviceWorker.register = function(){ return Promise.reject(new Error('lab')); }; }catch(e){} }
+  })();`;
 let gameOut = game;
 if (inject){
   const sw = /<script id="pwa-service-worker">[\s\S]*?<\/script>/;
@@ -94,7 +113,7 @@ if (inject){
             .replace(new RegExp('<script src="' + esc + '[^"]*"><\\/script>\\s*', 'g'), '');
   }, game);
   gameOut = strip.replace(sw, '')
-    .replace(/<head>/i, '<head><script>' + SHIM + '<\/script>')
+    .replace(/<head>/i, '<head><script>' + (inject.persist ? PERSIST_SHIM(inject.persist) : SHIM) + '<\/script>')
     .replace(/<\/body>/i, inject.css.map(f => '<link rel="stylesheet" href="' + f + '?v=' + v + '">').join('') +
       inject.js.map(f => '<script src="' + f + '?v=' + v + '"><\/script>').join('') + '</body>');
 }

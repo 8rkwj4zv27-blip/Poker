@@ -309,7 +309,246 @@ const CAREER_EVENT_LIST = Object.freeze([
     unlockRequirement:null
   })
 ]);
-const CAREER_EVENTS = Object.freeze(CAREER_EVENT_LIST.reduce((registry,event)=>{
+/* INVITATION EVENTS (docs/career/INVITATIONS_PLAN.md, Stage 1). Played from
+   an invitation card, not bought: no entry, and the prize is put up by the
+   house (`funding:'house'`), so the payouts-add-up-to-the-entries rule
+   below applies only to entry-funded events. `handLimit` ends the event
+   after that many COMPLETED hands, placing the survivors by chips. Kept
+   out of CAREER_EVENT_LIST, so the venue directory, unlocks and records
+   never see them; DEV only until the hub is wired in (careerEventState).
+   Payouts are temporary. */
+const CAREER_INVITATION_EVENTS = Object.freeze([
+  Object.freeze({
+    id:'back-room-invite',
+    venue:'BACK ROOM',
+    name:'BACK ROOM INVITATION',
+    title:'BACK ROOM',
+    format:'10 Hands',
+    playerCount:3,
+    opponentCount:2,
+    buyIn:0,
+    prize:60,
+    payouts:Object.freeze([60,30,15]),
+    stack:1000,
+    initialBlindLevel:0,
+    handsPerBlindLevel:15,
+    difficulty:'medium',
+    skill:20,
+    handLimit:10,
+    funding:'house',
+    rarity:'common',
+    unlockRequirement:null
+  }),
+  /* The sample catalogue (owner, 12 Oct 2026; INVITATIONS_PLAN.md,
+     "Provisional numbers"): standard poker only. Prizes and terms are
+     provisional until simulated. */
+  Object.freeze({
+    id:'full-house',
+    venue:'INVITATION',
+    name:'FULL HOUSE',
+    title:'FULL HOUSE',
+    format:'10 Hands',
+    rarity:'common',
+    playerCount:6,
+    opponentCount:5,
+    buyIn:0,
+    prize:90,
+    payouts:Object.freeze([90,45,25]),
+    stack:1000,
+    initialBlindLevel:0,
+    handsPerBlindLevel:15,
+    difficulty:'medium',
+    skill:20,
+    handLimit:10,
+    funding:'house',
+    unlockRequirement:null
+  }),
+  Object.freeze({
+    id:'closing-time',
+    venue:'INVITATION',
+    name:'CLOSING TIME',
+    title:'CLOSING TIME',
+    format:'20 Hands',
+    rarity:'common',
+    playerCount:4,
+    opponentCount:3,
+    buyIn:0,
+    prize:120,
+    payouts:Object.freeze([120,60,30]),
+    stack:1000,
+    initialBlindLevel:0,
+    handsPerBlindLevel:10,
+    difficulty:'medium',
+    skill:25,
+    handLimit:20,
+    funding:'house',
+    unlockRequirement:null
+  }),
+  Object.freeze({
+    id:'face-to-face',
+    venue:'INVITATION',
+    name:'FACE TO FACE',
+    title:'FACE TO FACE',
+    format:'10 Hands',
+    rarity:'common',
+    playerCount:2,
+    opponentCount:1,
+    buyIn:0,
+    prize:50,
+    payouts:Object.freeze([50,20]),
+    stack:1000,
+    initialBlindLevel:0,
+    handsPerBlindLevel:15,
+    difficulty:'medium',
+    skill:20,
+    handLimit:10,
+    funding:'house',
+    unlockRequirement:null
+  }),
+  Object.freeze({
+    id:'deep-pockets',
+    venue:'INVITATION',
+    name:'DEEP POCKETS',
+    title:'DEEP POCKETS',
+    format:'10 Hands',
+    rarity:'common',
+    playerCount:4,
+    opponentCount:3,
+    buyIn:0,
+    prize:80,
+    payouts:Object.freeze([80,40]),
+    stack:2000,
+    initialBlindLevel:0,
+    handsPerBlindLevel:15,
+    difficulty:'medium',
+    skill:25,
+    handLimit:10,
+    funding:'house',
+    unlockRequirement:null
+  }),
+  Object.freeze({
+    id:'sponsored-night',
+    venue:'INVITATION',
+    name:'SPONSORED NIGHT',
+    title:'SPONSORED NIGHT',
+    format:'10 Hands',
+    rarity:'uncommon',
+    playerCount:4,
+    opponentCount:3,
+    buyIn:0,
+    prize:150,
+    payouts:Object.freeze([150,75,40]),
+    stack:1000,
+    initialBlindLevel:0,
+    handsPerBlindLevel:15,
+    difficulty:'medium',
+    skill:30,
+    handLimit:10,
+    funding:'house',
+    unlockRequirement:null
+  }),
+  Object.freeze({
+    id:'last-stack-wins',
+    venue:'INVITATION',
+    name:'LAST STACK WINS',
+    title:'LAST STACK WINS',
+    format:'10 Hands',
+    rarity:'uncommon',
+    playerCount:4,
+    opponentCount:3,
+    buyIn:0,
+    prize:200,
+    payouts:Object.freeze([200]),
+    stack:1000,
+    initialBlindLevel:0,
+    handsPerBlindLevel:15,
+    difficulty:'medium',
+    skill:30,
+    handLimit:10,
+    funding:'house',
+    unlockRequirement:null
+  }),
+  Object.freeze({
+    id:'private-game',
+    venue:'INVITATION',
+    name:'THE PRIVATE GAME',
+    title:'THE PRIVATE GAME',
+    format:'20 Hands',
+    rarity:'rare',
+    playerCount:4,
+    opponentCount:3,
+    buyIn:0,
+    prize:400,
+    payouts:Object.freeze([400,200]),
+    stack:1000,
+    initialBlindLevel:0,
+    handsPerBlindLevel:10,
+    difficulty:'medium',
+    skill:40,
+    handLimit:20,
+    funding:'house',
+    unlockRequirement:null
+  }),
+  Object.freeze({
+    id:'final-table',
+    venue:'INVITATION',
+    name:'FINAL TABLE',
+    title:'FINAL TABLE',
+    format:'Elimination',
+    rarity:'rare',
+    playerCount:6,
+    opponentCount:5,
+    buyIn:0,
+    prize:500,
+    payouts:Object.freeze([500,250,120]),
+    stack:600,
+    initialBlindLevel:0,
+    handsPerBlindLevel:6,
+    difficulty:'medium',
+    skill:40,
+    funding:'house',
+    unlockRequirement:null
+  }),
+  Object.freeze({
+    id:'golden-ticket',
+    venue:'INVITATION',
+    name:'THE GOLDEN TICKET',
+    title:'THE GOLDEN TICKET',
+    format:'10 Hands',
+    rarity:'legendary',
+    playerCount:3,
+    opponentCount:2,
+    buyIn:0,
+    prize:2000,
+    payouts:Object.freeze([2000]),
+    stack:1000,
+    initialBlindLevel:0,
+    handsPerBlindLevel:15,
+    difficulty:'medium',
+    skill:45,
+    handLimit:10,
+    funding:'house',
+    unlockRequirement:null
+  })
+]);
+// an invitation's rarity says how scarce it is; it never changes the prize
+const CAREER_INVITATION_RARITIES = Object.freeze(['common','uncommon','rare','legendary']);
+// the most invitations a player can hold (docs/career/INVITATIONS_PLAN.md)
+const CAREER_INVITATIONS_LIMIT = 200;
+/* PACKETS (docs/career/INVITATIONS_PLAN.md, Stage 3; provisional). Each
+   slot is a rarity table (weights); a slot's event is drawn evenly among
+   the invitation events of the rarity rolled. `fixed` cards come first. */
+const CAREER_PACKETS = Object.freeze({
+  house:Object.freeze({ id:'house', name:'HOUSE PACKET', price:150,
+    slots:Object.freeze([{common:1},{common:1},{common:1},{uncommon:78,rare:20,legendary:2}]) }),
+  starter:Object.freeze({ id:'starter', name:'STARTER PACKET', price:0,
+    fixed:Object.freeze(['back-room-invite','face-to-face','closing-time']), slots:Object.freeze([{uncommon:1}]) }),
+  pity:Object.freeze({ id:'pity', name:'PITY PACKET', price:0,
+    slots:Object.freeze([{common:1},{common:1},{common:1}]) })
+});
+// the most unopened packets a player can hold
+const CAREER_PACKETS_LIMIT = 50;
+const CAREER_EVENTS = Object.freeze(CAREER_EVENT_LIST.concat(CAREER_INVITATION_EVENTS).reduce((registry,event)=>{
   registry[event.id] = event;
   return registry;
 }, {}));
@@ -471,8 +710,11 @@ function careerEventSnapshot(event){
       : null
   };
   if (isCareerEventSkill(event.skill)) snapshot.skill = event.skill;
+  if (isCareerHandLimit(event.handLimit)) snapshot.handLimit = event.handLimit;
+  if (event.funding === 'house') snapshot.funding = 'house';
   return snapshot;
 }
+function isCareerHandLimit(value){ return Number.isInteger(value) && value >= 1; }
 /* An event's opponent skill, 0-100 on the AI's skill dial. */
 function isCareerEventSkill(value){
   return Number.isFinite(value) && value >= 0 && value <= 100;
@@ -490,12 +732,18 @@ function isValidCareerEventSnapshot(event){
   // Optional: a ticket bought before events carried a skill has none, and
   // plays its named difficulty.
   if (event.skill !== undefined && !isCareerEventSkill(event.skill)) return false;
+  // Optional, invitation events only: a hand limit, and a house-funded
+  // prize, which is only ever free to enter.
+  if (event.handLimit !== undefined && !isCareerHandLimit(event.handLimit)) return false;
+  if (event.funding !== undefined && !(event.funding === 'house' && event.buyIn === 0)) return false;
   // The payouts/prize invariant. A snapshot written before multi-place
   // payouts existed has no `payouts` at all and is deliberately rejected
   // here, which is exactly what routes it through the migration path.
   const payouts = normalizeCareerPayouts(event.payouts);
   if (!payouts) return false;
   if (event.prize !== payouts[0]) return false;
+  // Entry-funded events pay out exactly the entries. A house-funded
+  // invitation has no entry (checked above), so this never applies to it.
   if (event.buyIn > 0 && payouts.reduce((sum,amount)=>sum+amount,0) !== event.buyIn * event.playerCount) return false;
   return true;
 }
@@ -529,6 +777,18 @@ function careerPrizeForPlace(event, place){
   if (!Number.isInteger(place) || place < 1) return 0;
   const amount = careerPayouts(event)[place-1];
   return Number.isFinite(amount) && amount > 0 ? amount : 0;
+}
+
+/* Money for a finish that may be an exact tie: `tie` players share places
+   place..place+tie-1. In a house-funded event they split those places'
+   prizes evenly, rounded DOWN to the whole dollar (the house funded it, so
+   the odd dollar is simply not paid). An entry-funded event keeps its
+   existing rule: the place alone. */
+function careerPrizeForFinish(event, place, tie){
+  if (!event || event.funding !== 'house' || !Number.isInteger(tie) || tie <= 1) return careerPrizeForPlace(event, place);
+  let total = 0;
+  for (let k = 0; k < tie; k++) total += careerPrizeForPlace(event, place + k);
+  return Math.floor(total / tie);
 }
 
 /* Already-paid financial terms always beat the live catalogue. A save
