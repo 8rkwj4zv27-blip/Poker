@@ -246,3 +246,48 @@ version change.
    reloads); a new shortfall later gets a new one.
 7. Damaged packets are dropped on load without touching the rest.
 8. Preview/DEV only; `npm test` green.
+
+## Stage 4: New Career (preview) (overnight run, 13 Oct 2026)
+
+`career-preview-lab.html` (link: https://claude.ai/artifact/Un9apWuFRzV7TDArv9yp7A):
+the real game, booting into the hub, with the shop, the opening and the
+album on a real Career save of its own (kept across reloads, never the
+game's). The connector is `js/career-link.js`; the labs use it only when
+it's there.
+
+### Acceptance checks
+
+1. A fresh Career: $500 and the starter packet, once.
+2. Opening a packet saves its cards as yours; it can't be opened twice.
+3. REDEAL deals only cards you own.
+4. PLAY uses the card up as its event starts at the real table.
+5. Back at the hub, the prize is credited once and the reel agrees.
+6. The shop buys a House Packet with the bankroll, saved with its cards.
+7. A reload keeps everything.
+8. The album shows what you hold.
+9. Broke and cardless: one pity packet, never two.
+10. No JavaScript errors; the labs still pass their own checks; the live
+    game unchanged for players (`npm test`, the play-test).
+
+### Results (13 Oct 2026)
+
+- `validation/tools/new-career-scenario.js`, real touch: all eleven steps
+  pass at 390x844 (full motion), 375x667 and 430x932 (reduced motion),
+  and against the staged bundle as published.
+- `npm test` 25 of 25; the play-test passes (320x700, 390x844, 430x932);
+  the shop lab's and the opening lab's own checks pass (three sizes each).
+- Independent reviews: Stage 3 (nothing blocking; three minor fixed) and
+  Stage 4 (two blocking found and fixed: lab money in the shop, a stuck
+  shop if the save refused an opening; minor ones fixed). A review of the
+  fixes themselves was not run.
+- Not done: the owner playing it; hand timing on a real phone; the
+  economy simulated; the Pattern Book sign-off for the new parts.
+
+### Open questions for the owner
+
+- **Pity packet:** it comes back after every shortfall, so finishing last
+  with all three of its cards earns another (house events cost nothing).
+  Fine, or limit it?
+- **Buying during an event left in progress** is allowed (the event's
+  prize is the house's, so nothing is at stake). Fine?
+- Prices, prizes and packet odds are the provisional ones above.

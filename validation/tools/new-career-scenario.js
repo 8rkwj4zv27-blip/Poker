@@ -13,7 +13,7 @@
    what you hold → broke and cardless: one pity packet, not two (a second
    visit, a reload). Every step is checked against the save itself.
 
-     node validation/tools/new-career-scenario.js [--sizes 390x844,375x667] [--shots DIR]
+     node validation/tools/new-career-scenario.js [--sizes 390x844,375x667] [--shots DIR] [--root BUNDLE]
 */
 const http = require('http');
 const fs = require('fs');
@@ -21,7 +21,9 @@ const path = require('path');
 const assert = require('assert');
 const { withPage } = require('./touch-harness');
 
-const ROOT = path.resolve(__dirname, '..', '..');
+const arg0 = (name, fallback) => { const i = process.argv.indexOf('--' + name); return i > 0 ? process.argv[i + 1] : fallback; };
+// --root: a staged bundle (validation/tools/lab-bundle.js), as published
+const ROOT = path.resolve(arg0('root', path.join(__dirname, '..', '..')));
 const arg = (name, fallback) => { const i = process.argv.indexOf('--' + name); return i > 0 ? process.argv[i + 1] : fallback; };
 const SIZES = arg('sizes', '390x844,375x667,430x932').split(',').map(s => s.split('x').map(Number));
 const SHOTS = arg('shots', null);
@@ -139,13 +141,13 @@ async function run(base, width, height, reducedMotion){
     // 5. knocked out (DEV BUST ME, between actions), then BACK TO THE HUB: the prize counted in once
     const bank0 = (await save()).bank;
     await fr.evaluate(() => { DEV_MODE = true; });
-    await until(async () => fr.evaluate(() => handInProgress() && game.players.find(p => p.isHuman).inHand), 'a hand in progress');
-    await fr.evaluate(() => devBustMe());
+    // BUST ME acts on your turn: armed whenever it's yours and you still have chips
     await until(async () => {
+      await fr.evaluate(() => { if (handInProgress() && pendingHumanPlayer && game.players.find(p => p.isHuman).chips > 0) devBustMe(); });
       const key = await fr.evaluate(nextKey);
       if (key){ const [x, y] = await centre(key); await tap(x, y); }
       return !(await save()).active;
-    }, 'the event settled', 180000);
+    }, 'the event settled', 400000);
     const result = await fr.evaluate(() => career.lastResult);
     await until(async () => fr.evaluate(() => { const b = document.getElementById('btn-award-pot-console'); return b && b.offsetParent && /hub/i.test(b.textContent); }), 'BACK TO THE HUB', 90000);
     // (the key takes a press only once the result has finished showing)

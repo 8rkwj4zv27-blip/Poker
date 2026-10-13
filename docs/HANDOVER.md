@@ -6,7 +6,7 @@ note"). Keep it to one screen: replace old lines rather than adding to them.
 If this note and the code disagree, the code wins.
 
 Build: `v0.67.1-dev · Hub hooks for the deck and P.I.P.`
-Updated: 12 October 2026 (DEV-only invitation event; no release)
+Updated: 13 October 2026 (New Career preview built overnight; no release)
 
 ## Where the game is
 
@@ -26,6 +26,8 @@ audit's complaints (dashboard rims, clipped result line, chip pile) are gone.
 
 ## Recent changes (newest first)
 
+- 13 Oct (preview, no release): New Career: hub, shop, album on a real
+  save, ten sample events, packets: https://claude.ai/artifact/Un9apWuFRzV7TDArv9yp7A
 - 12 Oct (DEV, no release): invitations Stage 2: owned cards in the save.
 - 12 Oct (DEV only, no release): Career invitations, Stage 1
   ([plan](career/INVITATIONS_PLAN.md)): a 3-player, 10-hand Back Room
@@ -36,7 +38,6 @@ audit's complaints (dashboard rims, clipped result line, chip pile) are gone.
 - 12 Oct (no game change): the Career hub rethought and built: the tray
   is the house's three cards (REDEAL), the felt is yours: packets torn open
   into one deck, its reveal, throw, tidy ([brief](career/CAREER_HUB_BRIEF.md), round 6).
-- 11 Oct (no game change): the packet machine, round 3 (owner's notes).
 
 ## Open items (verified, not scheduled)
 
@@ -68,12 +69,10 @@ own speech bubbles (`claude/tender-dijkstra-zso8dm`).
 
 ## Next
 
-**Career is moving to invitations** (owner, 12 Oct): starter packet →
-invitations → play → Career money → more packets. Start from
-[`career/INVITATIONS_PLAN.md`](career/INVITATIONS_PLAN.md): Stage 1 (one
-DEV Back Room invitation) and Stage 2 (cards in the save) are built and
-await the owner's play, with the card preview. Next: Stage 3, packets;
-then the hub. Cards: the hub's card, coloured by rarity (owner). Branch
-`claude/career-hub-cards-design-4e4x89` carries the hub, shop and album
-labs. Workflow: [`WORKFLOW.md`](WORKFLOW.md). Still open: the owner's verdict on the new Back Room (v0.67.0;
+**Career is moving to invitations** (owner, 12 Oct). Stages 1-4 of
+[`career/INVITATIONS_PLAN.md`](career/INVITATIONS_PLAN.md) are built (DEV
+and the New Career preview only) and await the owner's play; its "Open
+questions" need answers. Next, once approved: the economy simulated, the
+Pattern Book sign-off, then New Career into the game. Branch
+`claude/career-hub-cards-design-4e4x89`. Workflow: [`WORKFLOW.md`](WORKFLOW.md). Still open: the owner's verdict on the new Back Room (v0.67.0;
 minutes per hand unmeasured).

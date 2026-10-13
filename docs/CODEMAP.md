@@ -1307,3 +1307,28 @@ placeholder cards, over the real game (phone-first; host
 - Only an event the game really has offers PLAY (the Back Room
   invitation, through `devPlayCareerInvitation` with DEV switched on in
   the copy). Every other card launches nothing.
+
+## `career-preview-lab.html` — New Career (preview) (isolated, 13 October 2026)
+
+Plan: `docs/career/INVITATIONS_PLAN.md`, Stage 4. The real game in one
+frame (host `js/career-preview-host.js`), booting into the Career hub, with
+the hub (`js/career-main.js`), shop (`js/vending-machine.js`), opening
+(`js/pack-opening.js`) and album (`js/collection-book.js`) injected and
+wired to a real Career save. The copy's storage is written through to the
+page's own localStorage under `ncp:` (`persist` in the lab-inject; also in
+`validation/tools/lab-bundle.js`), so a reload carries on; it is never the
+game's save.
+
+- `js/career-link.js` (`window.CareerLink`): the connector. Sets
+  `window.CAREER_PREVIEW` (opens invitations, `careerInvitationsOpen`),
+  hands the labs the bankroll, your cards (`pool`, as
+  `EventCards.fromInvitation` cards), your packets, `buy`, `open`,
+  `canOpen`, `room`, `arrivals` (starter and pity), `play` (the card used
+  up, `careerDepartToTable(startCareerEvent)`), `resume`, `albumPages`;
+  maps every return to the old Career screen onto the hub (`rollBackTo`,
+  `showCareerScreen`, `reconstructMainMenu`), and labels the results key
+  BACK TO THE HUB. Each lab hook is `if (LINK)`/`window.CareerLink`
+  guarded, so the labs run alone as before.
+- Checked by `validation/tools/new-career-scenario.js` (the whole loop,
+  real touch, three sizes).
+
