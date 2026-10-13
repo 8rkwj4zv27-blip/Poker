@@ -404,7 +404,7 @@ body:has(#table-screen.hidden) .arcade-bank-flight{
   content:''; position:absolute; inset:0; z-index:-2; pointer-events:none;
   background:var(--bg-deep);
 }
-#home .lobby-card.pc-housing{
+:is(#home,#hub) .lobby-card.pc-housing{
   position:relative; z-index:2; width:100%; max-width:408px; height:auto; max-height:912px; min-height:0;
   /* flex-shrink:0 — the cabinet is a flex ITEM of #home, and by default it
      would shrink to the viewport on a short phone while its fixed-basis
@@ -605,12 +605,12 @@ body:has(#table-screen.hidden) .arcade-bank-flight{
 }
 #home.menu-launching .pc-slot-aperture::before{ opacity:1; }
 #home.menu-launching .pc-slot-door{ animation:pcSlotClose 700ms steps(9,end) both; }
-#home .pc-button-secondary{
+:is(#home,#hub) .pc-button-secondary{
   width:100%; min-height:47px; margin:0 0 12px; padding:10px 13px;
   background:#D2C28D; color:#30260D; font-size:9px; letter-spacing:.045em;
   box-shadow:0 4px 0 #72623C,0 6px 0 #090605,inset 2px 2px 0 #F9E8B4,inset -2px -2px 0 #8B7A4C;
 }
-#home .pc-button-secondary:active{ transform:translateY(4px); box-shadow:0 1px 0 #72623C,0 3px 0 #090605,inset 2px 2px 0 #F9E8B4; }
+:is(#home,#hub) .pc-button-secondary:active{ transform:translateY(4px); box-shadow:0 1px 0 #72623C,0 3px 0 #090605,inset 2px 2px 0 #F9E8B4; }
 /* The one secondary route is a plain slab with a single word on it. */
 
 /* The menu-resident OPPONENTS 4/5/6 step was removed with the menu
@@ -659,7 +659,7 @@ body:has(#table-screen.hidden) .arcade-bank-flight{
 
 @media (max-width:389px){
   #home{ padding-left:7px; padding-right:7px; }
-  #home .lobby-card.pc-housing{ padding:8px; gap:6px; }
+  :is(#home,#hub) .lobby-card.pc-housing{ padding:8px; gap:6px; }
   #home .hero .brand{ font-size:29px; }
   #home .hero-faces .hf{ width:54px; height:54px; }
   #home .pc-button-primary{ font-size:12px; min-height:62px; padding-left:28px; padding-right:28px; }
@@ -667,7 +667,7 @@ body:has(#table-screen.hidden) .arcade-bank-flight{
 }
 @media (max-height:820px){
   #home{ align-items:flex-start; }
-  #home .lobby-card.pc-housing{ height:auto; overflow:visible; }
+  :is(#home,#hub) .lobby-card.pc-housing{ height:auto; overflow:visible; }
   #home .hero{ min-height:292px; flex-basis:292px; }
   .pc-cast-drawer{ flex-basis:94px; }
   #home .hero-faces .hf{ width:52px; height:52px; }
@@ -676,7 +676,7 @@ body:has(#table-screen.hidden) .arcade-bank-flight{
    title well, face tray and stats give up height; the controls keep their
    full size. */
 @media (orientation:portrait) and (max-height:700px){
-  #home .lobby-card.pc-housing{ gap:5px; }
+  :is(#home,#hub) .lobby-card.pc-housing{ gap:5px; }
   #home .hero{ min-height:0; flex-basis:auto; padding:6px 8px 8px; gap:6px; }
   #home .pc-title-well{ flex:0 0 auto; padding:10px 10px 9px; }
   #home .hero .brand{ font-size:26px; }

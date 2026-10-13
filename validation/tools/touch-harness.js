@@ -28,11 +28,13 @@ const { chromium } = require('playwright');
 const fs = require('fs');
 const path = require('path');
 
+// The Claude Code cloud environment's Chromium; elsewhere (GitHub's
+// browser checks) Playwright's own, installed with `npx playwright install`.
 function findChromium() {
   const base = '/opt/pw-browsers';
+  if (!fs.existsSync(base)) return undefined;
   const dir = fs.readdirSync(base).find(d => d.startsWith('chromium-'));
-  if (!dir) throw new Error('No pre-installed Chromium found under ' + base);
-  return path.join(base, dir, 'chrome-linux', 'chrome');
+  return dir ? path.join(base, dir, 'chrome-linux', 'chrome') : undefined;
 }
 
 /* Wraps a page with a touch-event helper (CDP Input.dispatchTouchEvent) and

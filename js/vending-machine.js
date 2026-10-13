@@ -2,8 +2,8 @@
    THE PACKET MACHINE — Career's shop as a vending machine (lab only).
 
    The owner's design (11 Oct, docs/career/VENDING_PLAN.md). SHOP on the
-   hub: the space under the reel turns like the game's drum, a tooth at a
-   time, and the machine rolls down and locks; its tube flickers on and
+   hub: the space under the reel turns on the game's own drum
+   (js/machine-wheel.js), and the machine rolls down and locks; its tube flickers on and
    the keys light row by row. Built like the Player Dashboard: one moulded
    frame, the checker case, sunk bays.
    - Choose: tap a packet to look at it: its key glows, the credit CRT
@@ -156,14 +156,8 @@ window.PO_EMBED = true;
 
   /* ---------------- layout ---------------- */
   // the drum: from the top of the cabinet's screen row to the foot of the felt
-  // (measured where the hub's faces sit, not where the roll has pushed them)
-  function unmoved(el){
-    const r = rel(el), t = /(-?[\d.]+)px$/.exec(el.style.translate || '');
-    if (t) r.y -= +t[1];
-    return r;
-  }
   function region(){
-    const row = unmoved($('.cm-row')), cab = rel($('.cm-cabinet')), felt = unmoved($('.cm-felt'));
+    const row = rel($('.cm-row')), cab = rel($('.cm-cabinet')), felt = rel($('.cm-felt'));
     return { x:cab.x, y:row.y - 4, w:cab.w, h:felt.y + felt.h + 6 - (row.y - 4) };
   }
   function layout(){
@@ -171,7 +165,7 @@ window.PO_EMBED = true;
     Object.assign(drum.style, { left:r.x + 'px', top:r.y + 'px', width:r.w + 'px', height:r.h + 'px' });
     const con = rel($('.cm-console'));
     Object.assign(handEl.style, { left:'0', top:'0', width:'100%', height:Math.round(con.y - 4) + 'px' });
-    const f = unmoved($('.cm-felt'));
+    const f = rel($('.cm-felt'));
     Object.assign(openEl.style, { left:f.x + 'px', top:f.y + 'px', width:f.w + 'px', height:f.h + 'px' });
     vm.classList.toggle('is-compact', r.h < 520);
     vm.classList.toggle('no-paint', !look.paint);
@@ -752,36 +746,34 @@ window.PO_EMBED = true;
   }
 
   /* ---------------- the roll: the hub turns away, the machine comes down ---------------- */
+  // The game's own drum (js/machine-wheel.js), turned in the space under
+  // the reel: the hub's screen row and felt ride it as one face, the
+  // machine is the other. In like a stage change, out like going back.
   const hubFaces = () => [$('.cm-row'), $('.cm-felt')];
   async function roll(dir){
-    const H = drum.clientHeight, teeth = 8, faces = hubFaces();
-    // the teeth are steps: nothing may smooth them (the hub's parts have transitions of their own)
-    faces.forEach(f => { if (f){ f.style.visibility = ''; f.style.transition = 'none'; } });
-    S.wheelRelease(); Haptic.tick(8);
-    jolt($('.cm-cabinet'), 1);
-    if (!PO.reduced) await wait(90);
-    const set = y => {
-      // dir 1: the machine comes down from the top; the hub goes down and away
-      vm.style.transform = `translateY(${Math.round(y)}px)`;
-      const hubY = dir > 0 ? y + H : y + H;
-      faces.forEach(f => { if (f) f.style.translate = `0 ${Math.round(hubY)}px`; });
-    };
-    const from = dir > 0 ? -H : 0, to = dir > 0 ? 0 : -H;
-    if (!PO.reduced){
-      for (let t = 1; t <= teeth; t++){
-        const y = mix(from, to, ease.inOut(t / teeth));
-        set(y); S.wheelTooth(.5 + t / teeth * .4, false); Haptic.tick(3, 20);
-        await wait(52);
-      }
-      if (dir > 0){
-        set(10); S.wheelCatch(); await wait(50);
-        set(-3); await wait(40);
-      }
+    const [row, felt] = hubFaces();
+    // the hub's parts have transitions of their own: nothing may smooth the drum
+    [row, felt].forEach(f => { f.style.visibility = ''; f.style.transition = 'none'; });
+    if (!PO.reduced && typeof machineWheelRig === 'function'){
+      const P = MACHINE_WHEEL_CONFIG.profiles[dir > 0 ? 'stage' : 'back'];
+      const rig = machineWheelRig(drum, { back:false });
+      try {
+        if (dir > 0){
+          rig.park(vm, .6, 1);
+          rig.claim(felt, 0); rig.link(felt, [row]);
+          await rig.release(felt, P, 1);
+          await rig.roll(felt, vm, P, 1);
+          await rig.lock(vm, P);
+        } else {
+          rig.claim(vm, 0);
+          await rig.release(vm, P, -1);
+          rig.park(felt, .6, -1); rig.link(felt, [row]);
+          await rig.roll(vm, felt, P, -1);
+          await rig.lock(felt, P);
+        }
+      } finally { rig.destroy(); }
     }
-    set(to);
-    S.wheelLock(); Haptic.tick(16, 0);
-    jolt($('.cm-cabinet'), dir > 0 ? 3 : 2);
-    if (dir > 0) faces.forEach(f => { if (f) f.style.visibility = 'hidden'; });
+    if (dir > 0) [row, felt].forEach(f => { f.style.visibility = 'hidden'; });
   }
   async function rollIn(){
     if (mode !== 'hub') return;
@@ -790,7 +782,6 @@ window.PO_EMBED = true;
     drum.hidden = false; drum.style.pointerEvents = 'auto';
     vm.classList.add('is-off');
     layout();
-    vm.style.transform = `translateY(${-drum.clientHeight}px)`;
     unpeek(); panel(); crt('', '', '');
     await roll(1);
     await boot();
@@ -827,7 +818,6 @@ window.PO_EMBED = true;
     vm.classList.add('is-off'); S.bootFilament();
     await wait(PO.reduced ? 0 : 120);
     await roll(-1);
-    hubFaces().forEach(f => { if (f) f.style.translate = ''; });
     void root.offsetHeight;
     requestAnimationFrame(() => hubFaces().forEach(f => { if (f) f.style.transition = ''; }));
     drum.hidden = true; drum.style.pointerEvents = '';
@@ -905,7 +895,7 @@ window.PO_EMBED = true;
     });
   }
 
-  /* ---------------- the lab's sheet ---------------- */
+  /* ---------------- the lab's sheet (only in the lab) ---------------- */
   function sheet(){
     const s = $('#cm-sheet');
     s.querySelector('h2').textContent = 'CAREER · THE PACKET MACHINE';
@@ -915,11 +905,9 @@ window.PO_EMBED = true;
       <h3>THE WINDOW</h3>${seg('cols', { 4:'4 ACROSS', 5:'5 ACROSS' })}${seg('rows', { 4:'4 ROWS', 3:'3 ROWS' })}
       <h3>PAINT ON THE GLASS</h3>${seg('paint', { on:'CARD PACKETS', off:'OFF' })}
       <h3>A PACKET STICKS</h3>${seg('stuck', { never:'NEVER', sometimes:'NOW AND THEN', next:'THE NEXT ONE' })}
-      ${LINK ? '' : `<h3>NEXT PACKET OPENED HOLDS</h3>${seg('contents', { surprise:'SURPRISE', legendary:'A LEGEND', none:'NO LEGEND' })}`}
+      <h3>NEXT PACKET OPENED HOLDS</h3>${seg('contents', { surprise:'SURPRISE', legendary:'A LEGEND', none:'NO LEGEND' })}
       <h3>SPEED</h3>${seg('speed', { 1:'REAL', 0.5:'HALF', 0.25:'QUARTER' })}
-      ${LINK ? '' : '<div class="vm-seg"><button class="pc-button pc-button-secondary" id="vm-credit">+$5,000</button></div>'}`);
-    // (the preview spends the Career's own money: no lab money, no forced pulls)
-    if (LINK) s.querySelector('p').textContent = s.querySelector('p').textContent.replace(' Lab money, nothing saved.', ' Your Career\'s money: every packet is saved.');
+      <div class="vm-seg"><button class="pc-button pc-button-secondary" id="vm-credit">+$5,000</button></div>`);
     s.querySelectorAll('[data-vm] button').forEach(b => b.onclick = () => {
       const k = b.parentNode.dataset.vm, v = b.dataset.v;
       if (k === 'contents' || k === 'speed'){ E.tune[k] = isNaN(+v) ? v : +v; E.applyTune(); }
@@ -930,7 +918,7 @@ window.PO_EMBED = true;
       }
       marks();
     });
-    if (!LINK) s.querySelector('#vm-credit').onclick = () => { M.wallet = M.wallet + 5000; if (mode === 'idle') panel(); };
+    s.querySelector('#vm-credit').onclick = () => { M.wallet = M.wallet + 5000; if (mode === 'idle') panel(); };
     marks();
   }
   function marks(){
@@ -953,7 +941,7 @@ window.PO_EMBED = true;
   function setup(){
     M = window.CareerMain;
     if (!M || !window.PackOpeningEmbed) return;
-    build(); sheet();
+    build(); if (!LINK) sheet();   // the lab's controls stay in the lab
     E.applyTune();
     // a card just turned over: a tap anywhere off the felt (but the keys)
     // puts it down too

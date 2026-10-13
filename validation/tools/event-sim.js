@@ -9,6 +9,11 @@
    chosen skill (a stand-in for a player of that strength), or by the
    plain probe:abc seat. Used for docs/career/EVENTS_PLAN.md.
 
+   Invitation events (docs/career/INVITATIONS_PLAN.md) too: a hand limit
+   ends the event with the survivors placed by chips, an exact tie shares
+   the places and splits their prizes, as the game settles it.
+   validation/tools/invitation-economy.js runs this over the catalogue.
+
    node validation/tools/event-sim.js <event-id> [options]
      --you L          who plays you: skills 0-100 and/or "abc", comma
                       separated (default 30,50,80)
@@ -42,7 +47,7 @@ function loadEvents(){
   const body = src.slice(src.indexOf('const BLIND_LEVELS'), src.indexOf('function careerRosterSeats'));
   const ctx = {};
   vm.createContext(ctx);
-  vm.runInContext(body + '\nglobalThis.OUT = { BLIND_LEVELS, CAREER_EVENT_LIST };', ctx);
+  vm.runInContext(body + '\nglobalThis.OUT = { BLIND_LEVELS, CAREER_EVENT_LIST, CAREER_INVITATION_EVENTS, CAREER_PACKETS, CAREER_START_BANKROLL };', ctx);
   return ctx.OUT;
 }
 
@@ -72,7 +77,8 @@ async function playEvent(A, rnd, cfg, you){
   const order = [];            // bust order, worst place first
   let button = 0, hands = 0, aiFirst = null, youShare = null;
 
-  while (all.filter(p => p.chips > 0).length > 1 && hands < 1000){
+  const limit = cfg.event.handLimit || 1000;
+  while (all.filter(p => p.chips > 0).length > 1 && hands < limit){
     const players = all.filter(p => p.chips > 0);
     const n = players.length;
     if (n === 2 && youShare === null && players.some(p => p.you))
@@ -176,8 +182,14 @@ async function playEvent(A, rnd, cfg, you){
     if (out.length && aiFirst === null) aiFirst = !out.some(p => p.you);
     order.push(...out);
   }
-  const places = all.filter(p => p.chips > 0).concat(order.slice().reverse());
-  return { place: places.findIndex(p => p.you) + 1, hands, aiFirst, youShare };
+  // the survivors by chips (only a hand limit leaves more than one)
+  const alive = all.filter(p => p.chips > 0).sort((a, b) => b.chips - a.chips);
+  const places = alive.concat(order.slice().reverse());
+  const me = places.find(p => p.you);
+  // level on chips at the limit: the places are shared from the highest
+  const place = me.chips > 0 ? alive.findIndex(p => p.chips === me.chips) + 1 : places.indexOf(me) + 1;
+  const tie = me.chips > 0 ? alive.filter(p => p.chips === me.chips).length : 1;
+  return { place, tie, hands, aiFirst, youShare };
 }
 
 if (!isMainThread){
@@ -199,10 +211,11 @@ function arg(name, fallback){
 
 (async () => {
   const id = process.argv[2];
-  const { BLIND_LEVELS, CAREER_EVENT_LIST } = loadEvents();
-  const event = CAREER_EVENT_LIST.find(e => e.id === id);
+  const { BLIND_LEVELS, CAREER_EVENT_LIST, CAREER_INVITATION_EVENTS } = loadEvents();
+  const EVENTS = CAREER_EVENT_LIST.concat(CAREER_INVITATION_EVENTS);
+  const event = EVENTS.find(e => e.id === id);
   if (!event){
-    console.error('event-sim: give an event id: ' + CAREER_EVENT_LIST.map(e => e.id).join(', '));
+    console.error('event-sim: give an event id: ' + EVENTS.map(e => e.id).join(', '));
     process.exit(1);
   }
   const num = (v, d) => v === undefined ? d : Number(v);
@@ -231,12 +244,16 @@ function arg(name, fallback){
     const r = parts.flat();
     const k = r.length;
     const placeShare = q => r.filter(x => x.place === q).length / k;
-    const net = r.reduce((a, x) => a + (payouts[x.place-1] || 0), 0) / k - buyIn;
+    // a shared place splits the prizes of the places it covers (the game's
+    // careerPrizeForFinish, for house-funded events)
+    const prizeOf = x => { let t = 0; for (let j = 0; j < x.tie; j++) t += payouts[x.place-1+j] || 0; return Math.floor(t / x.tie); };
+    const net = r.reduce((a, x) => a + prizeOf(x), 0) / k - buyIn;
     const aiFirst = r.filter(x => x.aiFirst);
     const behind = aiFirst.filter(x => x.youShare !== null && x.youShare < 0.4);
     results.push({
       you: you === 'abc' ? 'abc' : 'skill ' + you, events: k,
-      win: placeShare(1), cash: r.filter(x => payouts[x.place-1] > 0).length / k,
+      win: r.filter(x => x.place === 1 && x.tie === 1).length / k, cash: r.filter(x => prizeOf(x) > 0).length / k,
+      prizes: r.map(prizeOf),
       places: Array.from({ length: cfg.players }, (_, i) => placeShare(i+1)),
       netPerEvent: net, hands: r.reduce((a, x) => a + x.hands, 0) / k,
       aiKnocksOutFirst: aiFirst.length / k,

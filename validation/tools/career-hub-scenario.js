@@ -21,7 +21,8 @@ async function main() {
 
   const errors = await withPage({ width, height }, async (page, touch) => {
     await page.goto(BASE + '/index.html');
-    await page.evaluate(() => localStorage.clear());
+    // the classic Career (Settings → Career → Classic): the ticket-reader Hub
+    await page.evaluate(() => { localStorage.clear(); localStorage.setItem('felt.settings', JSON.stringify({ newCareer:false })); });
     await page.reload();
     await page.waitForTimeout(600);
     await page.evaluate(() => showCareerScreen());

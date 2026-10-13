@@ -136,9 +136,23 @@ save planted first: the menu's Career key opens the hub, the starter packet torn
 open, its cards turned and added, REDEAL, a card fed and PLAYed, the real
 table (a DEV knock-out keeps it short), BACK TO THE HUB with the prize
 counted in, a House Packet bought, a reload, the album, and the pity
-packet (once, not twice), the hub's back key to the menu, and the classic
-save untouched. Each step is checked against the save. About
-eight minutes a size. Not part of `npm test`.
+packet (once, not twice) opened with its three cards, an event left
+mid-way (back to the hub, CONTINUE) and ABANDONed, the hub's back key to
+the menu, every one of those screen changes on the drum, and the classic
+save untouched. Each step is checked against the save; `SCENARIO_LIVE=1`
+prints the steps as they pass. About eight minutes a size.
+
+## `browser-checks.js` — every browser check, one after another
+
+```
+npm run browser-checks
+```
+
+The suites and scenarios that need Playwright and Chromium: the four lab
+suites (`validation/*.cjs`), the play-test, the new Career scenario and the
+invitation scenario. Serves the repo on 8768 itself. GitHub runs it on
+every pull request (`.github/workflows/tests.yml`, with Playwright
+installed there for the run only; the game has no dependencies).
 
 ## `invitation-scenario.js` — the Stage 1 invitation, played for real
 
@@ -150,8 +164,9 @@ The Back Room invitation (`docs/career/INVITATIONS_PLAN.md`) started from
 the real DEV key and played with real taps in an emulated iPhone: a reload
 mid-event, the HAND n/10 readout, the end after ten completed hands, the
 placing against the chips, the prize credited once (and not again after a
-reload); then an early knock-out and an early table clearance. About ten
-minutes. Not part of `npm test`.
+reload); then an early knock-out and an early table clearance. On the
+classic Career's save (it sets Settings → Career → Classic). About ten
+minutes.
 
 ## `event-sim.js` — whole Career events, measured
 
@@ -160,7 +175,9 @@ node validation/tools/event-sim.js back-room-freezeout
 node validation/tools/event-sim.js back-room-freezeout --stack 1000 --per-level 15 --skill 20
 ```
 
-Plays complete events from the real catalogue (`CAREER_EVENT_LIST`):
+Plays complete events from the real catalogue (`CAREER_EVENT_LIST`, and
+the invitations: a hand limit places the survivors by chips, an exact tie
+splits the shared places' prizes):
 stacks carry over, blinds rise on the event's schedule, players bust and
 places are paid from its payout table. "You" are the game's AI at a skill
 (`--you 30,50,80`, or `abc`). Prints, for each: how often you win and
@@ -169,3 +186,16 @@ often an opponent knocks the other out first. Override any setting
 (`--stack`, `--per-level`, `--skill`, `--players`, `--payouts`,
 `--buy-in`) to measure a proposal before building it. About 1,500 events
 take a few minutes. Not part of `npm test`.
+
+## `invitation-economy.js` — the new Career's money
+
+```
+node validation/tools/invitation-economy.js [--you 20,40,70] [--events 300] [--careers 2000] [--json]
+```
+
+Plays every invitation event with `event-sim.js` at a few skills, then
+prices each packet from its cards' average prizes (drawn as the game draws
+them, `CAREER_PACKETS`) and runs whole Careers: $500 and the starter, every
+card played, a House Packet whenever the bankroll allows, the pity packet
+at rock bottom; the bankroll after 10, 25, 50 and 100 events. Read-only.
+About half an hour (the real AI).

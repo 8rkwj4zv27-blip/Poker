@@ -30,9 +30,17 @@
     pub:     { 'foil-base':'#c29a5a', 'foil-light':'#efd29a', 'foil-dark':'#8a6230', print:'#6a3a14', 'print-dark':'#46250c', ink:'#f6e2b4' },
     casino:  { 'foil-base':'#9fb0c8', 'foil-light':'#dfe8f4', 'foil-dark':'#62738f', print:'#1f3a6e', 'print-dark':'#14264a', ink:'#e6eefa' },
     highroller:{ 'foil-base':'#c9a646', 'foil-light':'#f6dc8a', 'foil-dark':'#86691e', print:'#1c1a17', 'print-dark':'#0e0d0b', ink:'#f3d27a' },
-    wild:    { 'foil-base':'#7fc4b8', 'foil-light':'#c8f0e4', 'foil-dark':'#4a8c84', print:'#6a1e5a', 'print-dark':'#46123c', ink:'#ffd6f2' }
+    wild:    { 'foil-base':'#7fc4b8', 'foil-light':'#c8f0e4', 'foil-dark':'#4a8c84', print:'#6a1e5a', 'print-dark':'#46123c', ink:'#ffd6f2' },
+    // the Career's free packets: the starter, and the one the house gives
+    // you at rock bottom (faded and battered)
+    starter: { 'foil-base':'#92b0a1', 'foil-light':'#d4e4c8', 'foil-dark':'#5b8275', print:'#2a5a3c', 'print-dark':'#1a3a26', ink:'#f0e6b8' },
+    pity:    { 'foil-base':'#a59e8e', 'foil-light':'#cfc8b4', 'foil-dark':'#6e6758', print:'#5a4a3e', 'print-dark':'#3a3029', ink:'#d8ccaa' }
   };
-  const NAME = { alley:'ALLEY', highroller:'HI-ROLLER' };
+  const NAME = { alley:'ALLEY', highroller:'HI-ROLLER', pity:'ON THE' };
+  const SUB = { pity:'HOUSE' };
+  // what the back says is inside (the lab's packets carry a bag of chips)
+  const INSIDE = { pity:'3 CARDS' };
+  const inside = series => INSIDE[series] || (window.CareerLink ? '4 CARDS' : '4 + 1');
   const canvas = (w, h) => { const c = document.createElement('canvas'); c.width = w; c.height = h; return c; };
 
   /* Text in the game's pixel face, hard-thresholded so no pixel is soft. */
@@ -69,13 +77,14 @@
         pixelText(x, 'POKER', 0, 27, pal.ink, pal['print-dark']);
         pixelText(x, 'FACES', 0, 37, pal.ink, pal['print-dark']);
         pixelText(x, NAME[series] || series.toUpperCase(), 0, 108, pal.ink, pal['print-dark']);
-        pixelText(x, 'EDITION', 0, 119, pal['foil-light'], pal['print-dark']);
+        pixelText(x, SUB[series] || 'EDITION', 0, 119, pal['foil-light'], pal['print-dark']);
+        if (series === 'pity') batter(x, pal);
       } else {
         pixelText(x, 'POKER', 0, 40, pal.ink, pal['print-dark']);
         pixelText(x, 'FACES', 0, 50, pal.ink, pal['print-dark']);
         pixelText(x, 'HOUSE', 0, 84, pal['foil-light'], pal['print-dark']);
         pixelText(x, 'SEALED', 0, 94, pal['foil-light'], pal['print-dark']);
-        pixelText(x, '4 + 1', 0, 112, pal.ink, pal['print-dark']);
+        pixelText(x, inside(series), 0, 112, pal.ink, pal['print-dark']);
       }
       return c;
     };
@@ -83,6 +92,19 @@
     const out = { front, back, pal, mask:{ front:foilMask(front, pal), back:foilMask(back, pal) } };
     artCache.set(series, out);
     return out;
+  }
+
+  /* The rock-bottom packet has been about: a crease across it (worn
+     through to the foil) and the print scuffed in places. Hard pixels in
+     the palette's own colours, so the foil still knows what shines. */
+  function batter(x, pal){
+    const dot = (px, py, col) => { x.fillStyle = col; x.fillRect(px, py, 1, 1); };
+    for (let px = 6; px < 90; px++){
+      const py = Math.round(126 - px * .9);
+      dot(px, py, pal['foil-dark']); if (px % 3) dot(px, py + 1, pal['foil-light']);
+    }
+    [[18, 30], [19, 30], [70, 58], [71, 59], [24, 118], [25, 118], [62, 126], [80, 44], [14, 96], [15, 97]]
+      .forEach(([px, py]) => dot(px, py, pal['foil-base']));
   }
 
   /* Which pixels are bare foil (they shine) and which are printed (a

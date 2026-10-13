@@ -40,6 +40,10 @@ reached `main`. Releases before v0.39.8 are recorded in
   and a tool that plays whole Career events to measure it
   (`validation/tools/event-sim.js`).
 
+## v0.70 — 13 October 2026
+
+- **v0.70.0** New Career polish. The hub is a screen of its own, so every move turns the machine's drum like the rest of the game: Career from the menu, back to the menu, the shop rolling in and out (now on the same drum), PLAY to the table and back. Every invitation finish gets the full result screen in its own words (no buy-in, no events board; shared places shown as "=2ND"; OUTLASTED counts real knock-outs), and a paid knock-out keeps its game-over moment. Back at the hub the card slot says how it went. ABANDON EVENT (under the hub's MORE key) gives up an event in progress. The starter packet is green and the rock-bottom packet is a battered ON THE HOUSE with three cards; the shop's lamps no longer promise an Uncommon. The hub's back key, the table's top seats and the card viewer's back key clear the iPhone's status bar. P.I.P. gets out of the way of a result and no longer calls an event "the run". The hub's TUNE key (which opened a lab's options) is now MORE: how to play, ABANDON and START OVER. The packet machine home-screen copy is retired (the game has it).
+
 ## v0.69 — 13 October 2026
 
 - **v0.69.0** The new Career in the game. Career on the menu now opens the new hub: invitation cards in four rarities, ten sample events, the starter, House and pity packets, the packet machine and the album. It starts fresh at $500 on its own save. Settings → Career switches back to the classic Career (venues and tickets), whose save is kept as it was; switching restarts the game. The separate New Career home-screen app from v0.68.0 is gone.

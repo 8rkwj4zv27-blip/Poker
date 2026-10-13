@@ -1,9 +1,10 @@
 # From the labs to the game: brief for the next sessions
 
-> **Partly superseded (12 Oct 2026):** the owner's updated Career direction
-> (invitations, packets, house-funded prizes) and job 1 below continue in
-> [`INVITATIONS_PLAN.md`](INVITATIONS_PLAN.md). The rest is still the record
-> of where the labs are.
+> **Historical.** The labs reached the game: the new Career (hub, shop,
+> opening, album, invitation cards) is live since v0.69.0, and an
+> invitation's prize is its event's own (rarity no longer raises it).
+> What's current is in [`INVITATIONS_PLAN.md`](INVITATIONS_PLAN.md),
+> `docs/CODEMAP.md` and `docs/HANDOVER.md`.
 
 12 October 2026. Written at the end of the album session for whoever
 picks up next. **Talk first; nothing below is decided** except where it

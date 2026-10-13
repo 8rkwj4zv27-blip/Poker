@@ -2371,6 +2371,12 @@ function buildCareerResultModel(g, settled){
     eventName: ev.name || 'CAREER EVENT',
     prize: Number.isFinite(record.prize) && record.prize > 0 ? record.prize : 0,
     buyIn: ev.buyIn || 0,
+    // An invitation (house-funded): no buy-in, its own wording, and every
+    // finish on the full stage (careerStageModel)
+    invitation: ev.funding === 'house',
+    topPrize: Number.isFinite(ev.prize) ? ev.prize : 0,
+    // how many shared the place (house-funded events only)
+    tie: Number.isInteger(record.tie) && record.tie > 1 ? record.tie : 1,
     bankroll: careerBankroll(),                                  // read once, post-settlement
     eventScore: reward ? Math.max(0, Math.round(reward.score||0)) : 0,
     hands: g.handNumber || 0,
@@ -2385,7 +2391,9 @@ function buildCareerResultModel(g, settled){
     // player went out, for the bust-out order. Display data only.
     tape: typeof EventTape !== 'undefined' ? EventTape.snapshot(g) : null,
     alive: (g.players||[]).filter(p=>!p.isHuman && !p.eliminated && p.chips>0)
-      .map(p=>({ name:p.name, fc:Number.isInteger(p.faceColorIdx) ? p.faceColorIdx : null }))
+      .map(p=>({ name:p.name, fc:Number.isInteger(p.faceColorIdx) ? p.faceColorIdx : null })),
+    // You busted (the K.O. beat runs even when the place paid)
+    bust: (g.players||[]).some(p=>p.isHuman && p.chips<=0)
   };
 }
 
@@ -2442,7 +2450,9 @@ function careerResultHTML(model){
    the same way showBusted does — real ceremony for the K.O., plain report
    after it. */
 async function showCareerEventResult(g, model){
-  if (model.cashed){
+  // An invitation pays most places, so every finish there is an outcome of
+  // the event and turns the stage (careerStageModel)
+  if (model.cashed && !model.invitation){
     // A non-winning cash keeps its restrained plain card and does not turn
     // the stage. It is a paid place, not an outcome of the event, so it
     // stays deliberately below both a win and a bust in presentation
@@ -2484,6 +2494,8 @@ async function showCareerEventResult(g, model){
   // had its K.O. ceremony and rolls straight into its report.
   setBanner(model.handLimit
     ? (model.won ? '<b>Event won.</b> Most chips after ' : '<b>Event over.</b> ') + model.handLimit + ' hands.'
+    : model.cashed
+    ? '<b>Event over.</b> You finished ' + ordinal(model.place || 2) + '.'
     : model.won
     ? '<b>Event won.</b> Every opponent is out.'
     : '<b>Event over.</b> You were eliminated.');
@@ -2895,6 +2907,7 @@ function runOverModelNoXP(g){
    non-winning paid place keeps its restrained plain card
    (careerResultHTML) and does not turn the stage. */
 function careerStageModel(m){
+  if (m.invitation) return invitationStageModel(m);
   const money=n=>'$'+Math.abs(Math.round(n)).toLocaleString();
   const won=m.won;
   // A loss whose captured buy-in is exactly zero (a free event, e.g. Second
@@ -2946,6 +2959,47 @@ function careerStageModel(m){
     progress: champion
       ? { label:'CAREER CHAMPION', value:'', next:'NEXT: DEFEND THE TITLE' }
       : { label: won ? 'EVENT COMPLETE' : 'EVENT ENDED', value:'', next:'NEXT: EVENTS BOARD' }
+  };
+}
+
+/* An invitation's finish, any place: the card was the entry, so there is
+   no buy-in to report. The hero is what the place paid; a shared place
+   reads with "=" and says the prizes were split; OUTLASTED counts the
+   players actually knocked out before the end. */
+function invitationStageModel(m){
+  const money=n=>'$'+Math.abs(Math.round(n)).toLocaleString();
+  const paid = m.prize > 0;
+  const place = m.place ? (m.tie > 1 ? '=' : '') + ordinal(m.place).toUpperCase() : '—';
+  const out = m.field ? Math.max(0, m.field - 1 - (m.alive || []).length) : null;
+  return {
+    tone: paid ? 'positive' : 'negative',
+    bust: m.bust,
+    eyebrow:m.eventName,
+    title: m.won ? 'EVENT WON' : paid ? 'CASHED' : 'EVENT LOST',   // (CASHED, as CLEARED: the event's name is above it)
+    hero:{
+      label:'Prize',
+      reel: paid ? { text:money(m.prize), prefix:'+' } : { text:'$0', prefix:'' },
+      carryLabel:'BANKROLL',
+      carryValue:money(m.bankroll)
+    },
+    instruments:[
+      { kind:'big', label:'Finish', value:place },
+      { kind:'big', label:'Outlasted', value: out === null ? '—' : String(out) }
+    ],
+    recapPages:[[
+      { label:'Hands', value:String(m.hands) },
+      { label:'Field', value:m.field ? String(m.field) : '—' },
+      { label:'Top prize', value:money(m.topPrize) }
+    ]],
+    lamp:null,
+    detail:{
+      kind: m.tape ? 'tape' : 'statement', label:'Result',
+      line: m.handLimit ? (m.won ? 'MOST CHIPS AFTER ' : 'TIME UP AFTER ') + m.handLimit + ' HANDS'
+        : m.won ? 'EVERY OPPONENT IS OUT' : 'YOU WERE ELIMINATED',
+      sub: m.tie > 1 ? 'PLACE SHARED, PRIZES SPLIT' : paid ? 'PRIZE CREDITED TO BANKROLL' : 'THE INVITATION IS SPENT',
+      tape: m.tape || null, won:m.won, place: m.place, alive: m.alive || []
+    },
+    progress:{ label: m.won ? 'EVENT COMPLETE' : 'EVENT ENDED', value:'', next:'NEXT: THE HUB' }
   };
 }
 

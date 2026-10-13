@@ -28,12 +28,12 @@
    The live-table FOLD/CALL/CHECK/RAISE family keeps its own press and
    is deliberately not touched here.
    ============================================================ */
-#home .pc-button,
+:is(#home,#hub) .pc-button,
 #home .home-row .btn-secondary{
   transition:transform 150ms cubic-bezier(.34,1.56,.64,1),box-shadow 120ms ease-out;
 }
 
-#home .pc-button:active,
+:is(#home,#hub) .pc-button:active,
 #home .home-row .btn-secondary:active{
   transition:transform 50ms linear,box-shadow 50ms linear;
 }
@@ -61,7 +61,7 @@
   text-shadow:0 1px 0 rgba(255,255,255,.30);
 }
 
-#home .pc-button-secondary,#home .home-row .btn-secondary,.btn-secondary,.segmented button,.table-save,.pc-label,.pc-product-mark,.pc-product-mark small,.pc-cast-index,.sheet h3,.drawer-head h3,.sg-section-label,.instrument-label,.blind-indicator,.field-label,.card-label,.stepper-val .cap{
+:is(#home,#hub) .pc-button-secondary,#home .home-row .btn-secondary,.btn-secondary,.segmented button,.table-save,.pc-label,.pc-product-mark,.pc-product-mark small,.pc-cast-index,.sheet h3,.drawer-head h3,.sg-section-label,.instrument-label,.blind-indicator,.field-label,.card-label,.stepper-val .cap{
   text-shadow:none;
 }
 

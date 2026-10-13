@@ -4,7 +4,7 @@
    two-step bevel, a hard shadow), the checker case inside it, and sunk
    bays for each part. The window, the tray and the side panel are bays.
    ============================================================ */
-#home #cm.lobby-card{ position:relative; }
+:is(#home,#hub) #cm.lobby-card{ position:relative; }
 
 /* the drum: the space under the reel the machine rolls into */
 .vm-drum{ position:absolute; z-index:4; overflow:clip; pointer-events:none; }

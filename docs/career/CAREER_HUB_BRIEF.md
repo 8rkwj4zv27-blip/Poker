@@ -17,8 +17,8 @@ unless the owner says so. Nothing here is in the game yet.
 - **To see the current hub and shop:** the packet machine lab
   (`vending-lab.html`). The hub is what loads; SHOP rolls the machine in.
   - Claude link: https://claude.ai/artifact/WKWLooBRqQNJGYqfbDf1B1
-  - Home screen (on `main`, a self-contained copy in `packet-machine/`):
-    https://8rkwj4zv27-blip.github.io/Poker/packet-machine/
+  - The home-screen copy (`packet-machine/`) is archived (v0.70.0): the
+    hub and shop are in the game itself (Career, on NEW).
 - **Older links (stale, kept for reference):** the hub on its own,
   `career-main-lab.html`, at https://claude.ai/artifact/FpUrE7DTH5uqFqhV4eC8ir
   (last published before P.I.P. was removed); the rejected props desk,
@@ -193,5 +193,5 @@ Complete freedom over the order things happen in.
 - `docs/career/VENDING_PLAN.md`: the shop's rounds and open items.
 - Touch checks: `node validation/vending-checks.cjs` (a server at the repo
   root on 8765). `npm test` was 25/25 at round 3.
-- The home-screen copy: re-stage `packet-machine/` on `main` from the lab
-  bundle (`validation/tools/lab-bundle.js`) through a pull request.
+- The home-screen copy (`packet-machine/`) was archived in v0.70.0; the
+  game itself runs the hub and the shop.

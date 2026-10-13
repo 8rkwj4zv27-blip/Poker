@@ -1,15 +1,16 @@
 /* ============================================================
    CAREER MAIN — js/career-main.js (the new Career's hub, and its lab)
    ============================================================ */
-body.cm-lab #home:not(.hidden){ display:flex!important; position:fixed; inset:0; padding:10px; overflow:clip; visibility:visible!important; opacity:1!important; transform:none!important; }
+body.cm-lab #home:not(.hidden){ display:flex!important; position:fixed; inset:0; padding:max(10px,var(--safe-top)) 10px max(10px,env(safe-area-inset-bottom,0px)); overflow:clip; visibility:visible!important; opacity:1!important; transform:none!important; }
 #home.cm-home > :not(#cm):not(#ci){ display:none!important; }
-/* in the game the hub is laid over the menu only while it's out (js/career-link.js) */
-#home:not(.cm-home) > #cm{ display:none!important; }
-#home #cm.lobby-card{ height:100%; max-height:none; margin:0; gap:8px; padding:10px; overflow:clip; display:flex; flex-direction:column; }
+/* in the game the hub is a screen of its own (js/career-link.js) */
+#hub{ align-items:center; overflow:clip; padding:max(10px,var(--safe-top)) 10px max(10px,env(safe-area-inset-bottom,0px));
+  background:repeating-conic-gradient(rgba(255,255,255,.016) 0% 25%, transparent 0% 50%) 0 0 / 10px 10px, var(--bg-deep); }
+:is(#home,#hub) #cm.lobby-card{ height:100%; max-height:none; margin:0; gap:8px; padding:10px; overflow:clip; display:flex; flex-direction:column; }
 
 /* the rail: back, the screen's name, the lab's key */
 .cm-rail{ display:flex; align-items:center; gap:8px; flex:none; }
-#home #cm .cm-icon{ width:52px; height:40px; min-width:44px; font:9px/1.2 var(--font-hdr); }
+:is(#home,#hub) #cm .cm-icon{ width:52px; height:40px; min-width:44px; font:9px/1.2 var(--font-hdr); }
 .cm-title{ flex:1; text-align:center; font:10px/1 var(--font-hdr); color:#e9dcb4; letter-spacing:.12em; }
 
 /* the top cabinet: the reel full width; under it the feeder, centred */
@@ -30,6 +31,10 @@ body.cm-lab #home:not(.hidden){ display:flex!important; position:fixed; inset:0;
 .cm-slot.is-near .cm-throat{ background:#c98c16; box-shadow:0 0 6px 1px rgba(242,194,60,.6); }
 .cm-slot.is-fed .cm-throat{ background:#f2c23c; box-shadow:0 0 8px 2px rgba(242,194,60,.7); }
 .cm-slot.is-fed .cm-plate{ color:#f6d06b; }
+/* back from an event: how it went, for a moment (js/career-main.js, result) */
+.cm-slot.is-result .cm-plate{ color:#f6d06b; animation:cm-result .5s steps(2) 3; }
+@keyframes cm-result{ 50%{ opacity:.35; } }
+@media (prefers-reduced-motion:reduce){ .cm-slot.is-result .cm-plate{ animation:none; } }
 
 /* the felt: the table's own. It sits over the cabinet, so a card carried
    up meets the feeder (and goes in, clipped at the mouth) */
@@ -76,5 +81,5 @@ body.cm-lab #home:not(.hidden){ display:flex!important; position:fixed; inset:0;
 
 @media (max-height:740px){
   .cm-bank{ height:42px; }
-  #home #cm.lobby-card{ gap:6px; padding:8px; }
+  :is(#home,#hub) #cm.lobby-card{ gap:6px; padding:8px; }
 }

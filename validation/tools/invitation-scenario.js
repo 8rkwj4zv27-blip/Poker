@@ -63,7 +63,9 @@ const readState = () => ({
 
 async function boot(page, base, fresh){
   await page.goto(base + '/index.html?dev');
-  if (fresh){ await page.evaluate(() => localStorage.clear()); await page.reload(); }
+  // on the classic Career's save (Settings → Career → Classic), where the
+  // DEV key seats the invitation
+  if (fresh){ await page.evaluate(() => { localStorage.clear(); localStorage.setItem('felt.settings', JSON.stringify({ newCareer:false })); }); await page.reload(); }
   await page.waitForTimeout(2500);
   await page.evaluate(() => { const s = document.querySelector('.tour-skip'); if (s) s.click(); });
 }
@@ -137,15 +139,23 @@ async function limitScenario(base){
 }
 
 // CLEAR: between hands the table is trimmed to one opponent (DEV CLEAR
-// TABLE); then, hand by hand, that opponent is forced all in and the deal
-// rigged for you (DEV KO NEXT + WIN HAND) until they are knocked out.
+// TABLE) and left shorter than you; then, hand by hand, that opponent is
+// forced all in and the deal rigged for you (DEV KO NEXT + WIN HAND) until
+// they are knocked out.
 async function knockOutAll(page){
   const t0 = Date.now();
   while (await page.evaluate(() => !!career.active)){
     await page.evaluate(() => {
       const left = () => game.players.filter(p => !p.isHuman && !p.eliminated).length;
       if (left() > 1 && betweenHands()) devClearTable();
-      if (left() === 1 && handInProgress() && game.phase === 'preflop' && !game._scenarioArmed){
+      // the last one must be shorter than you, or winning an all-in can't
+      // knock them out (chips moved between hands, the total kept)
+      if (left() === 1 && betweenHands()){
+        const me = game.players.find(p => p.isHuman), o = game.players.find(p => !p.isHuman && !p.eliminated);
+        if (o.chips >= me.chips){ const d = o.chips - Math.floor(me.chips / 2); o.chips -= d; me.chips += d; }
+      }
+      // (any street: the AI can be past the flop before the next look)
+      if (left() === 1 && handInProgress() && !game._scenarioArmed){
         game._scenarioArmed = true; devKoNext(); devWinHand();
       }
       if (betweenHands()) game._scenarioArmed = false;
@@ -157,14 +167,29 @@ async function knockOutAll(page){
   }
 }
 
+// BUST: DEV BUST ME acts only on a hand in progress, so it's armed on each
+// hand until you're out (a single press between hands does nothing)
+async function bustMe(page){
+  const t0 = Date.now();
+  while (await page.evaluate(() => !!career.active)){
+    await page.evaluate(() => {
+      if (handInProgress() && !game._scenarioArmed && game.players.find(p => p.isHuman).chips > 0){ game._scenarioArmed = true; devBustMe(); }
+      if (betweenHands()) game._scenarioArmed = false;
+    });
+    const key = await page.evaluate(nextKey);
+    if (key) await page.tap(key, { timeout:2000 }).catch(() => {});
+    if (Date.now() - t0 > 10 * 60000) throw new Error('BUST timed out');
+    await page.waitForTimeout(200);
+  }
+}
+
 async function earlyScenario(base, devFn){
   const out = {};
   out.errors = await withPage({ width:390, height:844 }, async page => {
     await boot(page, base, true);
     await devKey(page);
     await page.waitForFunction(() => document.getElementById('actions-row') && !document.getElementById('actions-row').classList.contains('disabled'), null, { timeout:60000 }).catch(() => {});
-    if (devFn === 'knockOutAll') await knockOutAll(page);
-    else { await page.evaluate(fn => window[fn](), devFn); await playUntil(page, () => !career.active, []); }
+    await (devFn === 'knockOutAll' ? knockOutAll(page) : bustMe(page));
     out.final = await page.evaluate(() => ({ hand:game.handNumber, bankroll:career.bankroll, result:career.lastResult }));
     await boot(page, base, false);
     out.afterReload = await page.evaluate(() => career.bankroll);

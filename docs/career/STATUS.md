@@ -13,6 +13,10 @@ research how something specific was built or decided, never by default.
   (invitation cards, packets, the shop, the album; ten sample events) on
   its own save (`felt.career.new`). CLASSIC is everything below, untouched
   on its own save. Plan and stages: `INVITATIONS_PLAN.md`.
+- **13 Oct 2026, v0.70.0: the polish pass** (Stage 6): the hub on its own
+  screen and every move on the drum, one result stage for every
+  invitation finish, the result on the hub, ABANDON, the starter and pity
+  wrappers, the safe area, the economy simulated.
 - Last checked: 7 October 2026, against v0.66.1. Since v0.64.4 (Abandon /
   Cash Out on the paid ticket) Career's only changes are the audit's file
   tidy and save data (v0.65.0), which backs up and restores the Career
@@ -129,22 +133,16 @@ Career save, event terms or economy changed.
 
 ## Immediate next task
 
-**Opus reviews and publishes the Pack Ritual lab for owner phone review**
-(`PACK_RITUAL_HANDOVER.md`, branch `codex/pack-ritual`), per the owner’s
-11 October handover request. Do not integrate it yet.
+**The owner plays the new Career on the phone (v0.70.0)** and decides the
+forward plan's first questions (`INVITATIONS_PLAN.md`, Stage 6, and the
+economy results there): what the new Career's goal is (the album and
+packet tiers was the recommendation), whether the classic Career retires
+once it has one, and how big the catalogue should be. Then the goal's
+design, priced from `validation/tools/invitation-economy.js`.
 
-The earlier pending task remains **Owner plays the Hub Lab** (`hub-lab.html`, `docs/career/PACKS_PLAN.md`,
-Round 3): packs are Career's direction; Career opens on tonight's
-tickets. Nothing in the game has changed. Then the Vendor and the Case
-screens; agree with the owner how this reshapes Releases 2 to 4 below.
-
-Before that, still open: **owner plays Release 1 on the phone** (v0.67.0, `docs/career/EVENTS_PLAN.md`):
-does the Back Room build a stack, and are its longer events still fun?
-Time a few real events (minutes per hand is unmeasured). Then **Release
-2, the heat gauge**: a phone-first lab for a needle meter on the ticket
-reader that reads an event's `skill`. Releases 3 and 4 (venue ladders,
-new formats) follow in that order. Also open:
-BUY IN below the screen on small iPhones (375x667), in `docs/HANDOVER.md`.
+The older pending items (the Pack Ritual lab review, the Hub Lab, Release
+2's heat gauge for the classic Career) are superseded by the invitations
+direction unless the owner revives them.
 
 ## How to test
 

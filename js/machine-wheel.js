@@ -108,11 +108,13 @@ function machineWheelRig(host, options){
   const H = host.clientHeight;
   const T = H + gap;
 
+  // (opts.back false: no drum behind the faces, for a host laid over the
+  // screen, where a face outside it shows through)
   const back = document.createElement('div');
   back.className = 'mw-back is-' + mode;
   back.setAttribute('aria-hidden', 'true');
   back.style.zIndex = z.back;
-  host.appendChild(back);
+  if (opts.back !== false) host.appendChild(back);
 
   const front = document.createElement('div');
   front.className = 'mw-front is-' + mode + (cfg.bolts ? ' has-bolts' : '');
@@ -152,6 +154,7 @@ function machineWheelRig(host, options){
     if (!c) return;
     const t = 'translate3d(0,' + c.y + 'px,0)';
     face.style.transform = t;
+    c.links.forEach(l => { l.el.style.transform = t; });
     c.shade.style.transform = t;
     // A face turned away from the viewer is darker; power is its lamp state.
     const turned = Math.min(1, Math.abs(c.y) / T) * .5;
@@ -164,7 +167,7 @@ function machineWheelRig(host, options){
     shade.style.borderRadius = getComputedStyle(face).borderRadius;
     shadeBox.appendChild(shade);
     claimed.set(face, {
-      shade, power: power || 0, y: 0,
+      shade, power: power || 0, y: 0, links: [],
       saved: { transform: face.style.transform, zIndex: face.style.zIndex, willChange: face.style.willChange }
     });
     face.style.zIndex = z.face;
@@ -181,6 +184,14 @@ function machineWheelRig(host, options){
     const c = claimed.get(face);
     if (!c) return;
     c.power = power;
+    paint(face);
+  }
+  // Parts that ride the drum with a face without being inside it (the
+  // hub's screen row and felt, for the shop): moved with it, never shaded.
+  function link(face, els){
+    const c = claimed.get(face);
+    if (!c) return;
+    els.forEach(el => { if (el) c.links.push({ el, transform: el.style.transform }); });
     paint(face);
   }
   function powerOf(face){
@@ -225,7 +236,7 @@ function machineWheelRig(host, options){
 
   return {
     get travel(){ return T; },
-    claim, place, setPower, powerOf,
+    claim, place, setPower, powerOf, link,
     hurry(){ hurried = true; },
     get hurried(){ return hurried; },
     wait,
@@ -381,6 +392,7 @@ function machineWheelRig(host, options){
         face.style.transform = c.saved.transform;
         face.style.zIndex = c.saved.zIndex;
         face.style.willChange = c.saved.willChange;
+        c.links.forEach(l => { l.el.style.transform = l.transform; });
       });
       claimed.clear();
       back.remove();
@@ -434,10 +446,15 @@ async function rollStageTransitionV2(populateFn, options){
   }
 }
 
+/* The Career's own screen: the classic Career screen, or the new Career's
+   hub (js/career-link.js puts its own screen here). The Career rolls below
+   ask for it when they run. */
+function careerScreenEl(){ return $('career'); }
+
 /* ---- V2 of enterCareerFromHome() (career-motion-live.js) ----
    Shares V1's in-flight flag and reset so the two can never overlap. */
 async function enterCareerFromHomeV2(){
-  const app = $('app'), home = $('home'), career = $('career'), key = $('open-career');
+  const app = $('app'), home = $('home'), career = careerScreenEl(), key = $('open-career');
   if (!app || !home || !career || !key || home.classList.contains('hidden')) { showCareerScreen(); return; }
   if (careerEntranceInFlight) return;
   if (motionOff()){ showCareerScreen(); return; }
@@ -472,6 +489,7 @@ async function enterCareerFromHomeV2(){
     showCareerScreen();
   } finally{
     if (rig) rig.destroy();
+    career.inert = false;
     resetCareerEntrance();
   }
 }
@@ -481,7 +499,7 @@ async function enterCareerFromHomeV2(){
    cover of the roll with its first deal held until the lights are up. A
    tap no longer jumps; it throws the drum round hard to its stop. */
 async function careerDepartToTableV2(launch, options = {}){
-  const app = $('app'), careerScreen = $('career'), table = $('table-screen');
+  const app = $('app'), careerScreen = careerScreenEl(), table = $('table-screen');
   if (!app || !careerScreen || !table || motionOff() || careerScreen.classList.contains('hidden')){
     launch();
     return;

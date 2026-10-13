@@ -254,7 +254,12 @@ so `wheel-v2-lab.html` can switch back to compare). Tuning lives in
 `MACHINE_WHEEL_CONFIG`; sounds are `Sound.wheel*` in the `Sound` module.
 `machineWheelBack()` turns the same drum the other way (profile `back`)
 for the back paths — Career->Home, Back to Events and Leave table call it
-through `rollBackTo()` in `07-ui-wiring.js`.
+through `rollBackTo()` in `07-ui-wiring.js`. `careerScreenEl()` is the
+Career's screen the Career rolls ask for (`#career`; the new Career's
+`js/career-link.js` points it at its hub, `#hub`). The rig also serves a
+part of a screen: `machineWheelRig(host, { back:false })` leaves out the
+drum behind the faces, and `link(face, els)` carries parts outside the host
+with a face (the shop: `js/vending-machine.js`, `roll`).
 
 ## `js/table-intro.js` + `css/table-intro.css` — Table Intro (live)
 
@@ -285,7 +290,7 @@ Both pairs are loaded by `index.html` (after `machine-wheel.js`) and
 precached by `sw.js`. `intro-lab.html` runs the real game sandboxed with
 NEW/OLD switches for each, for future tuning.
 
-## `pack-lab.html` + `js/pack-lab-host.js` + `js/pack-lab.js` + `js/pack-lab-art.js` + `js/pack-lab-sound.js` + `js/pack-lab-cards.js` + `css/pack-lab.css` — Pack Lab
+## `pack-lab.html` + `js/pack-lab-host.js` + `js/pack-lab.js` + `js/pack-lab-art.js` + `js/pack-lab-sound.js` + `js/pack-lab-cards.js` + `css/pack-lab.css` — Pack Lab (**archived**, v0.70.0)
 
 Career as packs of event cards (`docs/career/PACKS_PLAN.md`), the visual
 lab. Phone-first like `showdown-lab.html`: the real game in one frame, with
@@ -939,8 +944,8 @@ the old text) whenever anything rewrites it; `data-crt-quiet` opts out
 screen's own stylesheet; nothing else may style a CRT's glass or text —
 `validation/pattern-book-checks.js` reads every live stylesheet for that,
 and `validation/tools/crt-consistency.js` compares every part as drawn.
-`crt-lab.html` (+ `js/crt-lab.js`) is the Lab it was chosen in: every game
-CRT with five presets (`CRT.PRESETS`) and all dials. `pattern-book.html` is
+`crt-lab.html` (+ `js/crt-lab.js`, **archived** in v0.70.0) is the Lab it
+was chosen in: every game CRT with five presets (`CRT.PRESETS`) and all dials. `pattern-book.html` is
 the visual library (isolated like the Labs). Rules and the sign-off record:
 `docs/ui/PATTERN_BOOK.md`.
 
@@ -998,6 +1003,11 @@ used: bank-load, end-screens, workshop-skins, pip-report and the four coach
 labs (brain, face, rig, voice). The checkpoint branches are protected, so
 these were not added to one; they are as they were on `main` at `e64b215`:
 `git checkout e64b215 -- <file> [<file>…]`.
+On 13 Oct 2026 (v0.70.0) the CRT lab (`crt-lab.html`, `js/crt-lab.js`), the
+pack lab (`pack-lab.html`, `pack-lab-app.html`, `pack-lab.webmanifest`,
+`js/pack-lab*.js`, `css/pack-lab.css`; superseded by the new Career) and the
+`packet-machine/` home-screen copy went the same way: as on `main` at
+`be0749f`: `git checkout be0749f -- <file> [<file>…]`.
 Labs that a test suite reads (card-turn, card-flight-options, chip-motion,
 showdown-rail, deck, action-drum, career, ticket, dashboard-order,
 table-room) were kept: they double as fixtures for checks on the live game. (`pattern-book.html` is the design
@@ -1177,10 +1187,16 @@ card through `CareerMain.feedOther(c, card, hooks)` (hooks `back`,
   the card in hand and the card in the reader. `hold` (320ms press) →
   `carry` → `release` (`nearReader`: `feedIn`, a swap first; else
   `flyHome`); `played` marks it used and `wheelToTable` rolls the machine
-  wheel to the table and back.
+  wheel to the table and back (the lab; in the game PLAY is the Career's own,
+  `CareerLink.play`). The book arrives as an object (THROW, the game's
+  default), not on the drum: screens roll, objects land.
+- **The lab's sheet** (`labSheet`: LIFT/THROW, FLAT/CURL, corners or
+  sleeves) is built only in the lab; in the game the hub's MORE key is the
+  hub's own.
 - **Touch:** `down`/`move`/`up` on the layer: a drag on the cover or a
   page turns it, a hold takes a card, a tap opens, riffles, lights or takes out.
-- `album`: 5 pages × 9 placeholder slots (`have`, `used`, `empty`).
+- `album`: 5 pages × 9 slots (`have`, `used`, `empty`); in the game filled
+  from `CareerLink.albumPages()` (one place per event, catalogue order).
 
 ## `vending-lab.html` — the packet machine (isolated, 11 October 2026)
 
@@ -1195,8 +1211,10 @@ opening embedded (`js/pack-opening.js`, `window.PO_EMBED` set first).
   `sizeWindow` fits the rows (`GRID` 4 or 5 across, up to 4 rows) and
   gives the tray the rest; `stock` puts a front packet and a spare in each
   column (`ED`: placeholder editions and lamp odds).
-- **Roll:** `roll` steps the machine and the hub's faces a tooth at a time
-  (transitions off); `boot` flickers the tube on and lights the keys.
+- **Roll:** `roll` turns the game's drum (`machineWheelRig` on the drum,
+  `back:false`; the hub's screen row linked to its felt as one face): in
+  on the `stage` profile, out on `back`; `boot` flickers the tube on and
+  lights the keys. The lab's TUNE controls (`sheet`) are built only in the lab.
 - **Keys:** `keys()` (the hub's `setKey`): the hub's own on the hub,
   LEAVE · HOLD TO BUY (SEND) · TAKE while it's down.
 - **Measure:** `unmoved` reads the hub's faces where they sit, not where
@@ -1262,14 +1280,16 @@ sheet's DOORS open two placeholder screens (the album, the hub desk) to
 prove the inspect screen is shared.
 `js/event-cards.js` (EventCards): what a card is (owner, 11 Oct): one real
 Career event (`careerEventById`) plus its opponents drawn once
-(`generateCareerRoster`, kept for the buy-in; not shown); rarity scales
-the prize (`MULT`, placeholder); `pack(series)` deals four;
+(`generateCareerRoster`, kept for the buy-in; not shown); in the labs
+rarity scales the prize (`MULT`, placeholder), but an invitation's card
+(`fromInvitation`, the game) carries its event's own prizes; `pack(series)`
+deals four (the labs);
 `describe(card)` gives the inspect screen its few lines.
 `js/card-inspect.js` + `css/card-inspect.css` (CardInspect): the shared
 card part. `make` builds the card object (back, face, fold flap, edge,
 shade); `setTurn`/`setBank`/`spin`/`flat`/`faceUp` are the toy; `open`
-mounts the inspect screen in the host screen (`#home`, later
-`#career-hub`) so its keys take that screen's styles: the card rises from
+mounts the inspect screen in the host screen (the new Career's `#hub` in
+the game, `#home` in the labs) so its keys take that screen's styles: the card rises from
 its source and does the talking (event, rarity, top prize); a leather
 drawer brings a small CRT (where and what; entry and seats; 2ND PAYS only
 when it does) and the dashboard's key bay (`.actions-row`: gold ◄ BACK ►,
@@ -1302,7 +1322,7 @@ placeholder cards, over the real game (phone-first; host
 
 ## `js/career-link.js` — the new Career in the game (live, v0.69.0)
 
-Plan: `docs/career/INVITATIONS_PLAN.md`, Stage 5. Settings → Career
+Plan: `docs/career/INVITATIONS_PLAN.md`, Stages 5-6. Settings → Career
 (`settings.newCareer`, default NEW; `NEW_CAREER` in
 `js/02-support-systems.js` holds for the whole load, so switching reloads).
 The new Career keeps its own save: `CAREER_KEY` is `felt.career.new` and
@@ -1317,21 +1337,30 @@ the hub's parts never load.
   `pack-ritual-*.js` and their stylesheets.
 - `window.CareerLink`: the connector. Sets `window.CAREER_PREVIEW` (opens
   invitations, `careerInvitationsOpen`), hands the hub the bankroll, your
-  cards (`pool`, as `EventCards.fromInvitation` cards), your packets,
-  `buy`, `open`, `canOpen`, `room`, `arrivals` (starter and pity), `play`
-  (the card used up, `careerDepartToTable(startCareerEvent)`), `resume`,
-  `albumPages`, `wipe` (START OVER: the new Career's keys only).
-- `window.CareerHub`: the hub lives in `#home` over the menu; `show()` lays
-  it on (`cm-home` on `#home`, `cm-lab` on the body) and builds it the first
-  time (`CareerMain.start`, which fires `career-hub-built` for the shop and
-  album); the hub's back key (`#cm-back`) calls `hide()`.
-- Replaces `enterCareerFromHome` (the menu's Career key), `showCareerScreen`,
-  `rollBackTo` to the Career screen (the hub instead, with the drum) and
-  `reconstructMainMenu`; the results key reads BACK TO THE HUB.
+  cards (`pool`, as `EventCards.fromInvitation` cards), your packets
+  (`packetIds`, `kindOf`: the wrapper), `buy`, `open`, `canOpen`, `room`,
+  `arrivals` (starter and pity), `play` (the card used up,
+  `careerDepartToTable(startCareerEvent)`), `resume`, `abandon` (the game's
+  `careerAbandonPressed`, then the hub redraws), `lastResult` (the hub's
+  plate), `albumPages`, `wipe` (START OVER: the new Career's keys only).
+- `window.CareerHub`: the hub's own screen, `#hub` (made here, in `#app`
+  beside `#home` and `#career`); `show()` builds it the first time
+  (`CareerMain.start`, which fires `career-hub-built` for the shop and
+  album) and catches it up after that; `back()` (the hub's back key) rolls
+  the drum back to the menu.
+- Every way in and out turns the drum (`js/machine-wheel.js`):
+  `careerScreenEl` is pointed at `#hub`, so the menu's Career key
+  (`enterCareerFromHomeV2`) and PLAY (`careerDepartToTableV2`) roll it;
+  `showCareerScreen` shows it; `rollBackTo` sends the classic Career
+  screen's way back, and a table left mid-event, to the hub;
+  `showTableScreen` also hides it. The results key reads BACK TO THE HUB.
+- Styles: the menu's rules the hub shares (the housing, the secondary
+  keys, the bankroll reel) are written `:is(#home,#hub)` in their files.
 - A lab's framed copy of the game (`window.parent !== window`) brings its
   own parts, so none of this runs there.
 - Checked by `validation/tools/new-career-scenario.js` (the whole loop in
-  `index.html`, real touch, three sizes, the classic save untouched).
+  `index.html`, real touch, three sizes, every screen change on the drum,
+  leave and ABANDON, the pity packet opened, the classic save untouched).
 - Archived: `career-preview-lab.html` and its host, and the `new-career/`
   home-screen copy (v0.68.0) are in `main`'s history at `a28cf9b`.
 

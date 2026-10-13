@@ -761,7 +761,7 @@ const CoachLines = (() => {
   /* ================= a hand that hurt (owner 29 Sep 2026) =================
      You're out, or you lost a big pot: a short word, no lesson. The
      verdict and the lesson are still there if you tap him. */
-  add('comfort.out', 1, [['unlucky', 'Out. That one hurt. Tap me when you want to go over it.'], ['unlucky', 'That’s the run over. We’ll go again. Tap me if you want to look back at that hand.']]);
+  add('comfort.out', 1, [['unlucky', 'Out. That one hurt. Tap me when you want to go over it.'], ['unlucky', 'That’s us out of this one. We’ll go again. Tap me if you want to look back at that hand.']]);
   add('comfort.out.fine', 1, [['unlucky', 'Out, but you played that one fine. It just didn’t go your way.'], ['unlucky', 'Unlucky. The play was fine; the cards weren’t. We’ll go again.']]);
   add('comfort.hurt', 1, [['wince', 'That one hurt. Tap me if you want to go over it.'], ['unlucky', 'A big one to lose. We can look at it later. Tap me.']]);
   add('comfort.fine', 1, [['unlucky', 'Unlucky. You played that fine; it just didn’t go your way.'], ['unlucky', 'That hurts, but the play was fine. Shake it off.']]);
