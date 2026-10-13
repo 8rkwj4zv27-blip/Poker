@@ -100,7 +100,7 @@
     status(CAREER ? 'THE PACKET SHOP' : 'THE HOUSE DEALS', 'THREE SEALED PACKETS'); figure('03', 'PACKETS'); key('PICK A PACKET', 'TAP ONE TO TAKE A LOOK', false);
     packets = SERIES.map(d => new Packet(stage, d.id, d.price));
     await Promise.all(packets.map(p => p.ready));
-    packets.forEach(fillStack);
+    packets.forEach(p => fillStack(p));
     if (CAREER) return dispense();
     packets.forEach((p, i) => { p.home = slot(i); const h = home(p); p.el.style.zIndex = 12 - i; p.body.set({ ...h, x:h.x + (1 - i) * 30, y:-H * .35, z:40, r:h.r - 60 }); });
     await Promise.all(packets.map(async (p, i) => {
