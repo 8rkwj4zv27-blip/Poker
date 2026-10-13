@@ -23,11 +23,14 @@
    game's drum (js/machine-wheel.js) like any other screen change: the
    Career key, the hub's back key, PLAY, and back from the table.
    A lab's framed copy of the game brings its own parts, so none of this
-   runs there.
+   runs there (except in new-career-lab.html, the new Career's own lab).
    ============================================================ */
 (() => {
   'use strict';
-  if (!NEW_CAREER || window.parent !== window) return;
+  // (a lab's framed copy: off, unless the lab is the new Career's own,
+  // new-career-lab.html, which sets NEW_CAREER_LAB on its page)
+  const framed = (() => { try { return window.parent !== window && !window.parent.NEW_CAREER_LAB; } catch (e) { return true; } })();
+  if (!NEW_CAREER || framed) return;
   window.CAREER_PREVIEW = true;
   const toCard = inv => EventCards.fromInvitation(inv);
 
@@ -47,6 +50,9 @@
     // whether a packet on the felt can be opened (its cards fit)
     canOpen:id => { const p = careerPackets().find(q => q.id === id); return !!p && careerInvitations().length + p.cards.length <= CAREER_INVITATIONS_LIMIT; },
     packetIds:() => careerPackets().map(p => p.id),
+    // the cards kept on the hub's tray, and keeping them ([{ id, x }])
+    tray:() => careerTray(),
+    setTray:list => setCareerTray(list),
     // which packet it is: 'starter', 'house' or 'pity' (its wrapper)
     kindOf:id => careerPackets().find(p => p.id === id)?.kind || null,
     // a packet torn open on the felt: its cards join yours (one write)
@@ -133,7 +139,7 @@
 
   // The hub's parts, in order. sw.js precaches each with this same tag
   // (offline-list-checks.js holds the two together).
-  const V = '70-0';
+  const V = '71-0';
   const PARTS = {
     css:['css/pack-ritual-cards.css', 'css/invitation-cards.css', 'css/pack-opening.css', 'css/card-inspect.css',
       'css/career-main.css', 'css/vending-machine.css', 'css/collection-book.css'],

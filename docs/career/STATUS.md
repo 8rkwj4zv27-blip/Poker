@@ -13,6 +13,9 @@ research how something specific was built or decided, never by default.
   (invitation cards, packets, the shop, the album; ten sample events) on
   its own save (`felt.career.new`). CLASSIC is everything below, untouched
   on its own save. Plan and stages: `INVITATIONS_PLAN.md`.
+- **13 Oct 2026, v0.71.0** (Stage 7): the event clock, duels (Face to
+  Face, Last Stack Wins), rising blinds and a chip bonus in hand-count
+  events, the curated tray; phone lab `new-career-lab.html`.
 - **13 Oct 2026, v0.70.0: the polish pass** (Stage 6): the hub on its own
   screen and every move on the drum, one result stage for every
   invitation finish, the result on the hub, ABANDON, the starter and pity
@@ -133,9 +136,10 @@ Career save, event terms or economy changed.
 
 ## Immediate next task
 
-**The owner plays the new Career on the phone (v0.70.0)** and decides the
-forward plan's first questions (`INVITATIONS_PLAN.md`, Stage 6, and the
-economy results there): what the new Career's goal is (the album and
+**The owner signs off the event clock and the curated tray** from
+`new-career-lab.html` (v0.71.0, `INVITATIONS_PLAN.md` Stage 7), then
+decides the forward plan's first questions (Stage 6, and the economy
+results in Stage 7): what the new Career's goal is (the album and
 packet tiers was the recommendation), whether the classic Career retires
 once it has one, and how big the catalogue should be. Then the goal's
 design, priced from `validation/tools/invitation-economy.js`.

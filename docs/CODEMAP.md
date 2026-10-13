@@ -1117,8 +1117,9 @@ Touch checks: `validation/career-hub-checks.cjs`.
 
 ## `career-main-lab.html` — the Career hub, a wooden table (isolated, 12 October 2026)
 
-Plan: `docs/career/CAREER_HUB_BRIEF.md` (round 6: the tray is the house's,
-the felt is yours). The hub on its own (the packet machine lab runs it
+Plan: `docs/career/CAREER_HUB_BRIEF.md` (round 6), revised by the owner
+13 Oct 2026 (`docs/career/INVITATIONS_PLAN.md`, Stage 7: the tray is
+yours to curate). The hub on its own (the packet machine lab runs it
 with the shop). The same host as the pack lab injects the card faces,
 `PO`, `EventCards`, `CardInspect` and `js/career-main.js` +
 `css/career-main.css`. The felt sits over the cabinet, so a carried card
@@ -1126,13 +1127,22 @@ meets the feeder.
 
 - **Cabinet:** the reel and the feeder (`.cm-slot`: a plate over a mouth
   `--cm-card` wide); no CRTs. `plate()` reads the card in it.
-- **Things:** one list, `things`, one stacking order (`raise`): `house`
-  (the tray's three), `card` (yours, turned over), `pk` (a sealed packet),
-  `deck` (every opened packet's cards, face down), `junk` (a wrapper, a
-  strip). `placeAt` (the tray), `rowAt` (packets, under the tray),
-  `neatAt` (turned cards: overlapping rows clear of the deck, `DECK_X`).
-- **The house:** `chooseFor` takes one from each third of your case by
-  prize; `tossIn`, `redeal`, `refill` (an empty place).
+- **Things:** one list, `things`, one stacking order (`raise`): `tray`
+  (kept on the tray, `tx` along it), `card` (loose on the felt: `dealt` by
+  REDEAL, `fresh` from a packet, or carried in from the album), `pk` (a
+  sealed packet), `deck` (every opened packet's cards, face down), `junk`
+  (a wrapper, a strip). `trayAt`/`txOf` (the tray), `dealtAt` (REDEAL's
+  row under it), `rowAt` (packets), `neatAt` (fresh cards, clear of the
+  deck, `DECK_X`).
+- **The tray:** `settleCard` on every let-go: `overTray` half or more and
+  there's room (`TRAY_MAX`, `CAREER_TRAY_LIMIT` in the game) → kept,
+  `saveTray` (`CareerLink.setTray` → `career.tray`); less → loose (off the
+  tray if it was kept). `layTray` lays the saved tray (the first visit,
+  after a reload, `refresh`); the lab starts with three (`labTray`).
+- **REDEAL:** `redeal` takes back its own untouched `dealt` cards and
+  deals three more (`chooseFor`: one from each third of your case by
+  prize, never one on the table, `onTable`) under the tray, within
+  `FELT_MAX`.
 - **Packets:** `addPackets` (from the shop: into the row); `open` hands one
   to `CareerShop.open`; `handOver` takes the face-down deck (merged into
   yours, `stackDeck`), the wrapper and the strip onto the felt (`onto`).
@@ -1140,22 +1150,28 @@ meets the feeder.
   pack opening's own reveal runs on it, the touch passed on); `place` puts
   each card turned in its `neatAt` place; `deckBack` takes the deck back.
 - **Looking:** `inspect` opens `CardInspect` through every card on the felt.
-- **Collection:** `collect` (a card thrown off, or `addAll`, ADD TO
-  COLLECTION) joins your case, with `filed()`'s chime on the CARDS key.
+- **Collection:** `collect` (a card thrown off, `addAll` for the `fresh`
+  ones, ADD TO COLLECTION, or `tidy`) leaves the table for your case, with
+  `filed()`'s chime on the CARDS key; off the tray if it was kept.
+- **From the album:** `adopt(card, pointer, x, y, dx, dy)` takes a card
+  carried off the book under the same touch.
 - **Feeder:** `feed` (a card let go over it, not thrown, or `swipeUp`
   from the inspect screen) half in by `teeth`, clipped at the mouth;
-  `unfeed` (tap it); `play` (used up; a house card is replaced; the table
-  hand-off is not wired).
+  `unfeed` (tap it; a tray card goes back to its place); `play` (used up,
+  off the tray; in the game `CareerLink.play` seats you).
 - **Touch:** press and drag anything (it lifts, its shadow drifts); `up`
   throws (off the felt: a card is `collect`ed, junk gone, a packet hits
   the rail and comes back); `tap` inspects, opens, unfeeds or hops junk;
-  two taps on empty felt `tidy`.
+  two taps on empty felt `tidy` (the loose cards back to your case, the
+  tray left).
 - **Keys:** `keys()`/`setKey` (lit or unlit, the label flips; a line break
-  sets two lines, `.cm-two`): SHOP · PLAY / ADD TO COLLECTION / OPEN /
-  REDEAL (`mid()`) · CARDS. The shop has them while it's out.
-- **For the shop:** `window.CareerMain` (`addPackets`, `handOver`, `keys`,
-  `setKey`, `keyEl`, `countIn`, `showBank`, `scale`, the wallet;
-  `state`/`where` for the checks).
+  sets two lines, `.cm-two`): SHOP · PLAY / ADD TO COLLECTION (fresh
+  cards only) / OPEN / REDEAL (`mid()`) · CARDS. The shop has them while
+  it's out.
+- **For the shop and album:** `window.CareerMain` (`addPackets`,
+  `handOver`, `keys`, `setKey`, `keyEl`, `countIn`, `showBank`, `scale`,
+  the wallet, `adopt`, `onTable`; `state`/`where` (`tray`, `dealt`, `card`
+  …) for the checks).
 
 ## `collection-book-lab.html` — the card album (isolated, 12 October 2026)
 
@@ -1193,6 +1209,11 @@ card through `CareerMain.feedOther(c, card, hooks)` (hooks `back`,
 - **The lab's sheet** (`labSheet`: LIFT/THROW, FLAT/CURL, corners or
   sleeves) is built only in the lab; in the game the hub's MORE key is the
   hub's own.
+- **Onto the felt (the game):** `carry` past the book's edge (`offBook`)
+  → `handOff`: `CareerMain.adopt` takes the card under the same touch and
+  the book is put away. `freeCard` gives a place's card not already on
+  the table; a place whose cards are all out is `.is-table` (dimmed, ON
+  THE TABLE).
 - **Touch:** `down`/`move`/`up` on the layer: a drag on the cover or a
   page turns it, a hold takes a card, a tap opens, riffles, lights or takes out.
 - `album`: 5 pages × 9 slots (`have`, `used`, `empty`); in the game filled
@@ -1320,6 +1341,22 @@ placeholder cards, over the real game (phone-first; host
   invitation, through `devPlayCareerInvitation` with DEV switched on in
   the copy). Every other card launches nothing.
 
+## `js/event-clock.js` + `css/event-clock.css` — the event clock (live, v0.71.0)
+
+The little CRT on the felt in a Career invitation (`EventClock`), called
+from `renderHandLimit` (`06-presentation.js`) on every render. `readout`:
+HAND n/N (a hand limit) or TIME MM:SS (`game.clockMs`, ticked while the
+table shows and the event runs, carried by `serializeTable`/the table's
+restore). Placement: `place` (the saved spot, `settings.eventClock` as
+felt fractions, if `clear` of the `OBSTACLES`, else `auto`: the clear spot
+nearest the gap between the seats and the board's tray), `keepClear`
+(each render and every second: anything arrived under it, it moves),
+`nearest`/`nudge`. Touch: `down`/`move`/`up` (held: lifted), `flick`
+(slides with `FRICTION`, `BOUNCE` off the felt's edges, 15° tumble),
+`settle` (nudged clear, thud, `remember`). Hidden by CSS while the table
+is `ti-primed` and in `results-mode`. Pattern Book: "Event clock".
+Checked by `validation/tools/table-sweep.js`.
+
 ## `js/career-link.js` — the new Career in the game (live, v0.69.0)
 
 Plan: `docs/career/INVITATIONS_PLAN.md`, Stages 5-6. Settings → Career
@@ -1342,7 +1379,8 @@ the hub's parts never load.
   `arrivals` (starter and pity), `play` (the card used up,
   `careerDepartToTable(startCareerEvent)`), `resume`, `abandon` (the game's
   `careerAbandonPressed`, then the hub redraws), `lastResult` (the hub's
-  plate), `albumPages`, `wipe` (START OVER: the new Career's keys only).
+  plate), `albumPages`, `tray`/`setTray` (`career.tray`, the cards kept on
+  the hub's tray), `wipe` (START OVER: the new Career's keys only).
 - `window.CareerHub`: the hub's own screen, `#hub` (made here, in `#app`
   beside `#home` and `#career`); `show()` builds it the first time
   (`CareerMain.start`, which fires `career-hub-built` for the shop and
@@ -1357,7 +1395,9 @@ the hub's parts never load.
 - Styles: the menu's rules the hub shares (the housing, the secondary
   keys, the bankroll reel) are written `:is(#home,#hub)` in their files.
 - A lab's framed copy of the game (`window.parent !== window`) brings its
-  own parts, so none of this runs there.
+  own parts, so none of this runs there, unless the lab page sets
+  `NEW_CAREER_LAB` (`new-career-lab.html`, the new Career's own lab: the
+  real game on a made-up Career, `js/new-career-lab.js` its LAB sheet).
 - Checked by `validation/tools/new-career-scenario.js` (the whole loop in
   `index.html`, real touch, three sizes, every screen change on the drum,
   leave and ABANDON, the pity packet opened, the classic save untouched).

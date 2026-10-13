@@ -27,7 +27,8 @@ const CHECKS = [
   ['validation/tools/play-test.js'],
   ['validation/tools/new-career-scenario.js', '--sizes', '390x844'],
   ['validation/tools/invitation-scenario.js'],
-  ['validation/tools/table-sweep.js']
+  ['validation/tools/table-sweep.js'],
+  ['validation/tools/tray-scenario.js']
 ];
 
 const server = http.createServer((req, res) => {

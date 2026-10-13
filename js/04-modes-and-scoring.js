@@ -544,6 +544,8 @@ const CAREER_INVITATION_EVENTS = Object.freeze([
 const CAREER_INVITATION_RARITIES = Object.freeze(['common','uncommon','rare','legendary']);
 // the most invitations a player can hold (docs/career/INVITATIONS_PLAN.md)
 const CAREER_INVITATIONS_LIMIT = 200;
+// the most a player can keep on the hub's tray (js/career-main.js)
+const CAREER_TRAY_LIMIT = 12;
 /* PACKETS (docs/career/INVITATIONS_PLAN.md, Stage 3; provisional). Each
    slot is a rarity table (weights); a slot's event is drawn evenly among
    the invitation events of the rarity rolled. `fixed` cards come first. */

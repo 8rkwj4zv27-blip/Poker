@@ -131,16 +131,16 @@ async function run(base, width, height, reducedMotion){
     await mid();
     await until(async () => { const h = await hub(); return h.cards === 0 && !h.busy; }, 'the cards added');
     await page.waitForTimeout(300);
-    // REDEAL: three of your cards in the tray
+    // REDEAL: three of your cards onto the felt, under the tray
     await until(async () => (await label()) === 'REDEAL', 'REDEAL');
     await mid();
-    await until(async () => { const h = await hub(); return h.house.length === 3 && !h.busy; }, 'three of yours in the tray');
-    const tray = (await hub()).house.map(h => h.split(':')[1]);
+    await until(async () => { const h = await hub(); return h.dealt.length === 3 && !h.busy; }, 'three of yours dealt');
+    const tray = (await hub()).dealt;
     const ids = await fr.evaluate(() => careerInvitations().map(c => c.id));
     step('REDEAL deals only cards you own', tray.length === 3 && tray.every(id => ids.includes(id)), tray.join(' '));
 
     // 4. one dragged into the feeder and PLAYed: the card is used up, the table opens
-    const w0 = await where('house', 0);
+    const w0 = await where('dealt', 0);
     const [fx, fy] = await centre('.cm-mouth');
     await touch.drag(w0.x, w0.y, fx, fy + 20, 14, 16); await page.waitForTimeout(150); await touch.end();
     await until(async () => (await hub()).fed && !(await hub()).busy, 'a card in the feeder');

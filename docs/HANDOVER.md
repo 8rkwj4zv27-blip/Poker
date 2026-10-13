@@ -5,8 +5,8 @@ in the same pull request as the change (rules in `CLAUDE.md`, "Handover
 note"). Keep it to one screen: replace old lines rather than adding to them.
 If this note and the code disagree, the code wins.
 
-Build: `v0.70.0-dev · New Career polish`
-Updated: 13 October 2026 (v0.70.0: the New Career polish pass)
+Build: `v0.71.0-dev · Event clock, duels, the curated tray`
+Updated: 13 October 2026 (v0.71.0: event clock, duels, the curated tray)
 
 ## Where the game is
 
@@ -19,12 +19,16 @@ buy-in feed, Table Intro, end screens) under Settings → Career; opponents with
 talk; P.I.P. the coach (tap only, with the end-of-hand report); Settings and
 the Workshop (skins); save data (back up, restore, start over).
 
-Checked 13 Oct (v0.70.0): all 25 suites (`npm test`) and the seven
-browser checks (`npm run browser-checks`: the play-test, the new Career
-scenario, the lab suites) pass.
+Checked 13 Oct (v0.71.0): all 25 suites (`npm test`) and the nine
+browser checks (`npm run browser-checks`: the play-test, the scenarios,
+the table sweep, the lab suites) pass.
 
 ## Recent changes (newest first)
 
+- 13 Oct (v0.71.0): the event clock (no more counter on a face), duels
+  (Face to Face, Last Stack Wins), rising blinds + a chip bonus in
+  hand-count events, the curated tray; the table sweep; lab for the
+  owner's sign-off: `new-career-lab.html` (link in the plan, Stage 7).
 - 13 Oct (v0.70.0): the New Career polish pass (Stage 6 of the
   [plan](career/INVITATIONS_PLAN.md)): the hub on its own screen, every
   move on the drum (shop included); one result stage for every invitation
@@ -34,10 +38,6 @@ scenario, the lab suites) pass.
 - 13 Oct (v0.69.0): the new Career in the game: Career opens the hub on a
   fresh save of its own; Settings → Career goes back to the classic one.
   The v0.68.0 home-screen copy (`new-career/`) and the preview lab are gone.
-- 13 Oct (v0.68.0): New Career (preview): hub, shop, album on a real
-  save, ten sample events, packets (first as a separate home-screen app).
-- 12 Oct (DEV only): invitations Stage 1, a 10-hand Back Room from DEV;
-  cards: https://claude.ai/artifact/K4NmPQASrYC6RoJLepPRP2
 
 ## Open items (verified, not scheduled)
 
@@ -45,8 +45,9 @@ scenario, the lab suites) pass.
   Settings change applies after a reload); packets added to a felt that
   already has one can land on it; lab-only code still ships inside
   `pack-opening.js` and `vending-machine.js` (unreachable in the game).
-- New Career economy (`validation/tools/invitation-economy.js`, results
-  in the plan's Stage 6): money has no sink but the $150 House Packet.
+- New Career economy (plan, Stage 7): a House Packet returns 1.4-1.8× its
+  price and money has nothing else to buy. The opponents don't know about
+  a hand limit (no sitting on a lead, no late desperate shoves).
 - Career: reloading between hands replays the hand just finished (the
   end-of-hand save is its start checkpoint; never counted twice).
 - Career Hub on small iPhones (375x667, SE/8): BUY IN sits below the
@@ -59,8 +60,7 @@ scenario, the lab suites) pass.
   ones are not backed up. Don't delete branches unasked.
 - Rare engine errors under heavy CPU load at 320x700 (audit finding F1,
   `PHASE0_BASELINE.md`): never pinned or fixed.
-- Unmeasured: minutes per hand on the phone, and the upper venues'
-  economy (`docs/career/STATUS.md`).
+- Unmeasured: minutes per hand on the phone (the duels aim at ~18 hands).
 
 ## Parked by the owner (don't start unasked)
 
@@ -70,10 +70,10 @@ own speech bubbles (`claude/tender-dijkstra-zso8dm`).
 
 ## Next
 
-**Career is moving to invitations** (owner, 12 Oct). Stages 1-6 of
-[`career/INVITATIONS_PLAN.md`](career/INVITATIONS_PLAN.md) are live (the
-polish pass, v0.70.0). Next: the owner's verdict from the phone, then the
-forward plan's decisions (the new Career's goal: album and packet tiers
-recommended; retiring the classic Career; the catalogue's size), priced
-from the economy simulation; the Pattern Book sign-off for the hub's
-parts; then the special-rules events. Workflow: [`WORKFLOW.md`](WORKFLOW.md).
+**Career is moving to invitations** (owner, 12 Oct). Stages 1-7 of
+[`career/INVITATIONS_PLAN.md`](career/INVITATIONS_PLAN.md) are live
+(v0.71.0). Next: the owner's sign-off on the event clock and the tray
+from `new-career-lab.html`; then end screens per format (deferred by the
+owner), the new Career's goal (album + packet tiers recommended), retiring
+the classic Career, the catalogue's size; the special-rules events.
+Workflow: [`WORKFLOW.md`](WORKFLOW.md).

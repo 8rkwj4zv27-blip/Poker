@@ -119,16 +119,26 @@
     return Array.from({ length:PAGES }, (_, p) => Array.from({ length:PER }, (_, i) => {
       const e = list[p * PER + i];
       if (!e) return { state:'empty' };
-      return e.count ? { state:'have', card:e.cards[0], count:e.count } : { state:'used', card:e.design };
+      return e.count ? { state:'have', card:e.cards[0], cards:e.cards, count:e.count } : { state:'used', card:e.design };
     }));
   }
   const entry = slot => album[+slot.dataset.p][+slot.dataset.i];
+  // the card a place gives you: in the game, one of yours of that event
+  // that isn't already out on the table (the tray, the felt); null if
+  // they all are
+  function freeCard(x){
+    if (!LINK || !x.cards) return x.card;
+    const out = CareerMain.onTable();
+    return x.cards.find(c => !out.has(c.uid)) || null;
+  }
 
   /* ---------------- build ---------------- */
   const corners = '<i class="cb-pc is-tl"></i><i class="cb-pc is-tr"></i><i class="cb-pc is-bl"></i><i class="cb-pc is-br"></i>';
   function slotHTML(x, p, i){
     const face = x.card ? `<span class="cb-face">${PokerCollectibleLab.objectHTML(x.card.spec)}</span>` : '';
-    return `<div class="cb-slot is-${x.state}" data-p="${p}" data-i="${i}">${face}${opt.sleeves ? '<i class="cb-sleeve"></i>' : corners}</div>`;
+    // (every one of yours of this event out on the table: it says so)
+    const table = x.state === 'have' && LINK && !freeCard(x) ? ' is-table' : '';
+    return `<div class="cb-slot is-${x.state}${table}" data-p="${p}" data-i="${i}">${face}${opt.sleeves ? '<i class="cb-sleeve"></i>' : corners}</div>`;
   }
   function pagesHTML(){
     return album.map((pg, p) => `<div class="cb-page" data-p="${p}"><div class="cb-grid">${pg.map((x, i) => slotHTML(x, p, i)).join('')}</div><i class="cb-gutter"></i></div>`).join('');
@@ -623,9 +633,9 @@
     const m = CareerMain.mouthEl.getBoundingClientRect();
     return cx > m.left - 30 && cx < m.right + 30 && cy < m.bottom + 60;
   }
-  function feedIn(slot, c, placed = false){
+  function feedIn(slot, c, placed = false, card = freeCard(entry(slot))){
     fedSlot = slot;
-    return CareerMain.feedOther(c, entry(slot).card, {
+    return CareerMain.feedOther(c, card, {
       album:true,
       back:t => { flyHome(slot, t.c); },
       beforePlay:async () => { await putAway(); },
@@ -722,19 +732,20 @@
   async function hold(p, slot){
     p.held = { slot, ready:false };
     unlight();
-    if (entry(slot).state !== 'have'){ p.held = null; p.done = true; return refuse(slot); }
+    const card = entry(slot).state === 'have' ? freeCard(entry(slot)) : null;
+    if (!card){ p.held = null; p.done = true; return refuse(slot); }
     mode = 'moving';
     book.classList.add('is-dim');
     await pullOut(slot, .62, true);
     // now a card in your hand, on the stage over the book
-    const c = CardInspect.make(fstage, entry(slot).card, { side:'face' });
+    const c = CardInspect.make(fstage, card, { side:'face' });
     const at = slotPose(slot, .62);
     c.body.set({ ...at, z:10 });
     c.body.render(performance.now());
     hideFace(slot); setOut(slot, 0);
     Foil.flutter(); Haptic.tick(10);
     const fr = fstage.el.getBoundingClientRect();
-    p.held = { slot, c, dx:at.x - (p.cx - fr.left), dy:at.y - (p.cy - fr.top), ready:true };
+    p.held = { slot, c, card, dx:at.x - (p.cx - fr.left), dy:at.y - (p.cy - fr.top), ready:true };
     if (p.ended) return release(p);
     carry(p);
   }
@@ -742,6 +753,27 @@
     const h = p.held, fr = fstage.el.getBoundingClientRect();
     h.c.body.set({ x:p.cx - fr.left + h.dx, y:p.cy - fr.top + h.dy, r:clamp((p.vx || 0) * 6, -10, 10) });
     CareerMain.slotEl.classList.toggle('is-near', nearReader(p.cx, p.cy));
+    if (LINK && offBook(p) && !nearReader(p.cx, p.cy)) handOff(p);
+  }
+  // carried past the book's edge (its middle off the book): onto the felt
+  function offBook(p){
+    const b = book.getBoundingClientRect(), fr = fstage.el.getBoundingClientRect(), h = p.held;
+    const x = p.cx + h.dx, y = p.cy + h.dy;
+    return fr && (x < b.left || x > b.right || y < b.top || y > b.bottom);
+  }
+  // The felt takes the card under the same finger, and the book goes away
+  // (owner, 13 Oct 2026: pull cards out onto the felt for your spread).
+  function handOff(p){
+    const { slot, c, card, dx, dy } = p.held, fr = fstage.el.getBoundingClientRect();
+    if (!CareerMain.adopt(card, { pointerId:p.id }, p.cx - fr.left, p.cy - fr.top, dx, dy)) return;
+    ptr = null;
+    c.body.remove();
+    CareerMain.slotEl.classList.remove('is-near');
+    book.classList.remove('is-dim');
+    showFace(slot);
+    slot.classList.toggle('is-table', !freeCard(entry(slot)));
+    mode = 'open';
+    putAway().then(() => { fstage.el.classList.remove('is-out'); CareerMain.keys(); });
   }
   async function release(p){
     const { slot, c } = p.held;

@@ -3,10 +3,13 @@
 
    The owner's design (12 Oct, docs/career/CAREER_HUB_BRIEF.md, round 6):
    the cabinet is the bankroll reel and the card feeder, nothing else.
-   The rule: the tray is the house's, the felt is yours.
-   - The tray (a small wooden table in the felt's top third) holds the
-     house's three cards, dealt from your case: the regular one, a step
-     up, the big one (never labelled). REDEAL deals three others.
+   Revised by the owner, 13 Oct: the tray is yours to curate.
+   - The tray (a small wooden table in the felt's top third) keeps the
+     cards you choose, as many as you like up to TRAY_MAX, lying where you
+     put them: let a card go half or more over the tray and it's kept
+     there (in the game, saved). REDEAL deals three of your cards onto the
+     felt under it (the regular one, a step up, the big one), taking back
+     the three it dealt before if you haven't touched them.
    - The felt is yours: whatever you put there stays. Packets back from
      the shop lie in a row; tap one and it's torn open: its cards go face
      down into your deck (every packet's cards in one), the wrapper and
@@ -20,8 +23,8 @@
      the felt goes into your collection (the CARDS key, with a chime); a
      wrapper or strip thrown off is gone; a sealed packet bounces back
      off the rail. A double tap on empty felt tidies the lot: the loose
-     cards into the collection, the rubbish away, the packets lined up,
-     the house's cards back in the tray.
+     cards back into the collection, the rubbish away, the packets lined
+     up, the tray left as it is.
    - A card dragged up to the feeder (or swiped up out of the inspect
      screen) goes half in; PLAY takes it the rest of
      the way (the game would seat you: not wired); tap it to take it out.
@@ -47,9 +50,9 @@
   let root, felt, stage, woodEl, slotEl, mouthEl, plateEl;
   let s = 1;                 // the cards' scale on the felt
   let busy = false;
-  let pool = [];             // your case: the cards the house deals you from
-  // everything on the felt: house (the tray's cards), card (yours,
-  // turned over), pk (a sealed packet), deck (the face-down cards from the
+  let pool = [];             // your case: the cards REDEAL deals you from
+  // everything on the felt: tray (kept on the tray), card (loose on the
+  // felt: dealt, turned over, or brought from the album), pk (a sealed packet), deck (the face-down cards from the
   // packets opened), junk (a wrapper, a strip)
   const things = [];
   let fed = null, fedFrom = null;   // the card in the feeder, and where it came from
@@ -59,7 +62,7 @@
   const bodyOf = t => t.c ? t.c.body : t.p ? t.p.body : t.body;
   const elOf = t => t.c ? t.c.el : t.p ? t.p.el : t.body.el;
   const of = kind => things.filter(t => t.kind === kind);
-  const isCard = t => t.kind === 'house' || t.kind === 'card';
+  const isCard = t => t.kind === 'tray' || t.kind === 'card';
 
   /* ---------------- the cabinet ---------------- */
   function reel(n){
@@ -96,7 +99,9 @@
   }
   const keyEl = k => $(`[data-key="${k}"]`);
   const MID = { play:'PLAY', add:'ADD TO\nCOLLECTION', open:'OPEN', redeal:'REDEAL', resume:'CONTINUE' };
-  const mid = () => LINK?.active ? 'resume' : fed ? 'play' : of('card').length ? 'add' : of('pk').length ? 'open' : 'redeal';
+  // (ADD TO COLLECTION: only for cards just turned over from a packet)
+  const fresh = () => of('card').filter(t => t.fresh && t !== fed);
+  const mid = () => LINK?.active ? 'resume' : fed ? 'play' : fresh().length ? 'add' : of('pk').length ? 'open' : 'redeal';
   // (the shop has the keys while it's out, and while a packet is torn open;
   // the album darkens them while it's out)
   function keys(){
@@ -126,7 +131,7 @@
         <h2>CAREER</h2>
         ${LINK ? `<p>Your invitations are the cards. REDEAL lays three of them in the tray. Drag one up into INSERT CARD, then PLAY: the card is spent and you're seated. Tap a card to look at it. SHOP buys packets of more; CARDS opens your album. Packets on the felt: tap one, or OPEN.</p>
         <h3>THE NEW CAREER</h3><div class="cm-seg"><button class="pc-button pc-button-secondary" id="cm-abandon" hidden>ABANDON EVENT</button><button class="pc-button pc-button-secondary" id="cm-restart">START OVER</button></div>`
-          : `<p>The tray is the house's, the felt is yours. REDEAL for three more. Tap the deck to turn a card over; tap it again for the next, or anywhere else to put the card down. Pick anything up and move it, or throw it: cards thrown off go into your collection. Drag a card up into the feeder, PLAY. Double tap empty felt to tidy up.</p>
+          : `<p>The tray keeps the cards you put on it (half or more over it). REDEAL deals three onto the felt. Tap the deck to turn a card over; tap it again for the next, or anywhere else to put the card down. Pick anything up and move it, or throw it: cards thrown off go into your collection. Drag a card up into the feeder, PLAY. Double tap empty felt to tidy up.</p>
         <h3>BANKROLL</h3>${seg('bank', Object.fromEntries(BANKS.map(b => [b, money(b)])))}`}
         <div class="cm-seg"><button class="pc-button pc-button-secondary" id="cm-done">DONE</button></div>
       </section>`;
@@ -188,8 +193,6 @@
     root.style.setProperty('--cm-card-h', Math.round(CH * s) + 'px');
   }
   const local = r => { const f = felt.getBoundingClientRect(); return { x:r.left + r.width / 2 - f.left, y:r.top + r.height / 2 - f.top }; };
-  const SKEW = [-2, 1, -1];
-  const placeAt = i => ({ ...local($(`.cm-place[data-i="${i}"]`).getBoundingClientRect()), r:SKEW[i] });
   const below = () => { const t = woodEl.getBoundingClientRect(), f = felt.getBoundingClientRect(); return t.bottom - f.top; };
   // packets: a row on the felt under the tray, each on the one before
   const pkScale = () => CH * s / POPacket.AH;
@@ -222,24 +225,24 @@
       ['table', 'common', 'back-room-heads-up'], ['bomb', 'rare', 'pub-open'], ['freezeout', 'common', 'card-club-six']];
     pool = ids.map(a => EventCards.make(...a));
   }
-  // one from each third of your case by prize (the regular one, a step up,
-  // the big one), never one already out, and not one just swept away if
+  // three from your case for REDEAL, one from each third by prize (the
+  // regular one, a step up, the big one): never one already on the table
+  // (the tray, the felt, the feeder), and not one just swept away if
   // there's a choice
-  function chooseFor(places, not = []){
+  function chooseFor(n, not = []){
     if (LINK) fillPool();   // your cards as the save has them now
-    // never a card already out on the felt (the tray's, or one of yours lying loose)
-    const loose = new Set(of('card').map(t => t.card.uid));
-    const out = of('house').map(h => h.card), by = pool.filter(c => !loose.has(c.uid)).sort((a, b) => a.prize - b.prize), n = by.length;
-    const has = (list, c) => list.some(q => q.uid === c.uid);
-    const nots = not.filter(Boolean);
-    return places.map(i => {
-      const a = Math.floor(i / 3 * n), band = by.slice(a, Math.max(a + 1, Math.ceil((i + 1) / 3 * n))).filter(c => !has(out, c));
-      const fresh = band.filter(c => !has(nots, c));
-      const c = pick(fresh.length ? fresh : band.length ? band : by.filter(q => !has(out, q)));
-      if (c) out.push(c);
+    const out = onTable(), by = pool.filter(c => !out.has(c.uid)).sort((a, b) => a.prize - b.prize), N = by.length;
+    const taken = new Set(), nots = new Set(not.filter(Boolean).map(c => c.uid));
+    return Array.from({ length:n }, (_, i) => {
+      const a = Math.floor(i / n * N), band = by.slice(a, Math.max(a + 1, Math.ceil((i + 1) / n * N))).filter(c => !taken.has(c.uid));
+      const fresh = band.filter(c => !nots.has(c.uid));
+      const c = pick(fresh.length ? fresh : band.length ? band : by.filter(q => !taken.has(q.uid)));
+      if (c) taken.add(c.uid);
       return c;
-    });
+    }).filter(Boolean);
   }
+  // every card on the table: the tray's, the felt's, the feeder's
+  const onTable = () => new Set(things.filter(isCard).map(t => t.card.uid));
 
   /* ---------------- cards ---------------- */
   function cardBody(card, pose){
@@ -250,14 +253,42 @@
     raise(c.el);
     return c;
   }
-  // the house's cards, tossed in from off the left onto the tray
-  async function tossIn(places, not){
-    const cards = chooseFor(places, not);
-    await Promise.all(places.map((place, k) => wait(PO.reduced ? 0 : k * 110).then(async () => {
-      const card = cards[k]; if (!card) return;
-      const to = placeAt(place);
+
+  /* ---------------- the tray (owner, 13 Oct 2026) ----------------
+     The wooden tray keeps the cards you choose, as many as TRAY_MAX,
+     lying where you put them along it (overlapping like cards on a real
+     table: the last one down on top). A card let go with half or more of
+     it over the tray is kept there; less, and it's on the felt. In the
+     game the tray is saved (career.tray: each card and where it lies). */
+  const TRAY_MAX = LINK ? CAREER_TRAY_LIMIT : 12, FELT_MAX = 20;
+  const trayBox = () => { const r = woodEl.getBoundingClientRect(), f = felt.getBoundingClientRect(); return { x:r.left - f.left, y:r.top - f.top, w:r.width, h:r.height }; };
+  // a card on the tray, tx along it (0 left .. 1 right)
+  function trayAt(tx, uid = ''){
+    const r = trayBox(), w = CW * s;
+    const tilt = ([...uid].reduce((a, ch) => a + ch.charCodeAt(0), 0) % 5 - 2) * .7;
+    return { x:r.x + w / 2 + 6 + clamp(tx, 0, 1) * Math.max(0, r.w - w - 12), y:r.y + r.h / 2, r:tilt };
+  }
+  const txOf = x => { const r = trayBox(), w = CW * s; return clamp((x - r.x - w / 2 - 6) / Math.max(1, r.w - w - 12), 0, 1); };
+  // how much of a card at (x, y) lies over the tray
+  function overTray(x, y){
+    const r = trayBox(), w = CW * s, h = CH * s;
+    const ix = Math.max(0, Math.min(x + w / 2, r.x + r.w) - Math.max(x - w / 2, r.x));
+    const iy = Math.max(0, Math.min(y + h / 2, r.y + r.h) - Math.max(y - h / 2, r.y));
+    return ix * iy / (w * h);
+  }
+  function saveTray(){
+    if (!LINK) return;
+    LINK.setTray(of('tray').sort((a, b) => +elOf(a).style.zIndex - +elOf(b).style.zIndex).map(t => ({ id:t.card.uid, x:t.tx })));
+  }
+  // the kept cards laid on the tray (the first visit, and after a reload)
+  async function layTray(){
+    const kept = LINK ? LINK.tray() : [];
+    const mine = new Set(of('tray').map(t => t.card.uid));
+    const cards = kept.filter(k => !mine.has(k.id)).map(k => ({ k, card:pool.find(c => c.uid === k.id) })).filter(q => q.card);
+    await Promise.all(cards.map(({ k, card }, i) => wait(PO.reduced ? 0 : i * 90).then(async () => {
+      const to = trayAt(k.x, card.uid);
       const c = cardBody(card, { x:-CW * s, y:to.y + rr(30, 70), r:rr(-40, -20), z:30 });
-      things.push({ kind:'house', card, c, place });
+      things.push({ kind:'tray', card, c, tx:k.x });
       S.cardDeal(); Foil.flutter();
       await glide(c.body, { ...to, z:0 }, 380, { arc:26, easing:ease.out });
       S.cardLanded(); Haptic.tick(6);
@@ -265,26 +296,49 @@
       squash(c.body, .05, 160);
     })));
   }
-  // the places in the tray with no house card in them
-  const emptyPlaces = () => [0, 1, 2].filter(i => !of('house').some(h => h.place === i));
-  async function refill(){ const e = emptyPlaces(); if (e.length) await tossIn(e); }
-  function drop(t){ const i = things.indexOf(t); if (i >= 0) things.splice(i, 1); }
+  // the lab has no save: its tray starts with three of its cards
+  async function labTray(){
+    const cards = chooseFor(3);
+    cards.forEach((card, i) => {
+      const tx = cards.length > 1 ? i / (cards.length - 1) : .5, to = trayAt(tx, card.uid);
+      things.push({ kind:'tray', card, c:cardBody(card, { ...to }), tx });
+    });
+  }
+  // where REDEAL's three land: in a row on the felt, just under the tray
+  function dealtAt(i, n){
+    const r = trayBox(), w = CW * s, h = CH * s, W = felt.clientWidth;
+    const step = Math.min(w + 10, (W - w - 20) / Math.max(1, n - 1));
+    return { x:W / 2 + (i - (n - 1) / 2) * step, y:r.y + r.h + h / 2 + 14, r:(i - 1) * 1.5 };
+  }
+  // REDEAL: the three it dealt last time (if you haven't touched them) go
+  // back into your collection, and three others come down onto the felt
   async function redeal(){
     if (busy || fed) return;
     busy = true;
     S.cardReturn(); Haptic.tick(10);
-    const out = of('house'), was = out.map(h => h.card), W = felt.clientWidth;
-    out.forEach(drop);
-    await Promise.all(out.map((h, k) => wait(PO.reduced ? 0 : k * 70).then(async () => {
-      raise(h.c.el); Foil.flutter();
-      await glide(h.c.body, { x:W + CW * s, y:h.c.body.y + rr(-24, 24), r:h.c.body.r + rr(20, 40), z:6 }, 280, { easing:ease.in });
-      h.c.body.remove();
+    const old = of('card').filter(t => t.dealt), was = old.map(t => t.card), W = felt.clientWidth;
+    old.forEach(drop);
+    await Promise.all(old.map((t, k) => wait(PO.reduced ? 0 : k * 70).then(async () => {
+      raise(t.c.el); Foil.flutter();
+      await glide(t.c.body, { x:W + CW * s, y:t.c.body.y + rr(-24, 24), r:t.c.body.r + rr(20, 40), z:6 }, 280, { easing:ease.in });
+      t.c.body.remove();
     })));
     await wait(PO.reduced ? 0 : 80);
-    await tossIn([0, 1, 2], was);
+    const room = Math.max(0, FELT_MAX - of('card').length), cards = chooseFor(Math.min(3, room), was);
+    if (!cards.length && pool.length){ plate(room ? 'ALL ON THE TABLE' : 'FELT FULL'); setTimeout(() => { if (!fed) plate('INSERT CARD'); }, 1400); }
+    await Promise.all(cards.map((card, k) => wait(PO.reduced ? 0 : k * 110).then(async () => {
+      const to = dealtAt(k, cards.length);
+      const c = cardBody(card, { x:-CW * s, y:to.y + rr(30, 70), r:rr(-40, -20), z:30 });
+      things.push({ kind:'card', card, c, dealt:true });
+      S.cardDeal(); Foil.flutter();
+      await glide(c.body, { ...to, z:0 }, 380, { arc:26, easing:ease.out });
+      S.cardLanded(); Haptic.tick(6);
+      squash(c.body, .05, 160);
+    })));
     keys();
     busy = false;
   }
+  function drop(t){ const i = things.indexOf(t); if (i >= 0) things.splice(i, 1); }
 
   /* ---------------- into the collection ---------------- */
   // the chime of a card going into the collection: the CARDS key takes it
@@ -294,18 +348,20 @@
     S.cardReturn(); Foil.note(9, .35);
     setTimeout(() => Foil.note(13, .3), PO.reduced ? 0 : 80);
   }
-  // a card goes into your collection: yours join your case; the house's
-  // were in it already, and another is tossed into the tray
+  // a card goes into your collection (in the game it always was: it just
+  // leaves the table); one off the tray isn't kept there any more
   function collect(t){
     drop(t);
-    if (t.kind === 'card' && !LINK) pool.push(t.card);   // (the preview's pool is your saved cards already)
+    if (t.kind === 'tray') saveTray();
+    // (the lab: a card new to the case joins it; in the game the case is your saved cards already)
+    if (!LINK && !pool.some(c => c.uid === t.card.uid)) pool.push(t.card);
     filed();
   }
   // ADD TO COLLECTION: every loose card squares up and goes in through the
   // CARDS key, one after another
   async function addAll(){
     if (busy) return;
-    const list = of('card');
+    const list = fresh();
     if (!list.length) return;
     busy = true;
     const k = keyEl('cards'), to = local(k.getBoundingClientRect());
@@ -363,13 +419,13 @@
     // a card from elsewhere (the album) goes back where it came from
     if (t.back){ drop(t); busy = false; return t.back(t); }
     S.cardReturn();
-    const home = t.kind === 'house' ? placeAt(t.place) : fedFrom;
+    const home = t.kind === 'tray' ? trayAt(t.tx, t.card.uid) : fedFrom;
     await glide(c.body, { ...home, z:0, s }, 300, { arc:18, easing:ease.out });
     raise(c.el); S.cardLanded(); squash(c.body, .05, 140);
     busy = false;
   }
-  // PLAY: the rest of the way in. The game would seat you at its table
-  // here (not wired); the card is used up. A house card is replaced.
+  // PLAY: the rest of the way in, and you're seated (the lab: not wired);
+  // the card is used up, and off the tray if it was kept there.
   async function play(){
     if (!fed || busy) return;
     busy = true;
@@ -384,6 +440,7 @@
     await teeth(c, lip().y - CH * s / 2 - 4, 3);
     S.wheelLock(); Haptic.tick(18, 0); jolt($('.cm-cabinet'), 3);
     c.body.remove(); drop(t);
+    if (t.kind === 'tray') saveTray();
     pool = pool.filter(q => q.uid !== t.card.uid);
     if (LINK){
       fed = null; slotEl.classList.remove('is-fed'); plate('INSERT CARD'); keys();
@@ -398,9 +455,28 @@
     if (t.afterPlay){ plate('INSERT CARD'); busy = false; return t.afterPlay(t); }
     await wait(PO.reduced ? 0 : 700);
     plate('INSERT CARD');
-    if (t.kind === 'house') await tossIn([t.place]);
     keys();
     busy = false;
+  }
+
+  // A card carried out of the album, past the book's edge: the felt takes
+  // it under the same finger (x, y in the felt; dx, dy from the finger to
+  // the card's middle), and from here it's like any card you're holding:
+  // let go and the tray's rule decides. False if the felt is full or the
+  // card's already on the table.
+  function adopt(card, e, x, y, dx = 0, dy = 0){
+    if (onTable().has(card.uid)) return false;
+    if (of('card').length >= FELT_MAX){ plate('FELT FULL'); jolt(slotEl, 2); setTimeout(() => { if (!fed) plate('INSERT CARD'); }, 1400); return false; }
+    const now = performance.now(), c = cardBody(card, { x:x + dx, y:y + dy, z:10, s:s * 1.05 });
+    const t = { kind:'card', card, c };
+    things.push(t);
+    c.body.set({ live:true });
+    ptr = { id:e.pointerId, t, x0:x - 40, y0:y - 40, x, y, at:now, hist:[{ x, y, t:now }], mode:'drag', dx, dy, r0:0, s0:s };
+    felt.classList.add('is-carrying');
+    try { felt.setPointerCapture(e.pointerId); } catch (_) {}
+    S.cardReturn(); Haptic.tick(8);
+    keys();
+    return true;
   }
 
   // a card brought from elsewhere (the album): its body already on a stage
@@ -420,7 +496,7 @@
     const n0 = of('pk').length, n = n0 + series.length;
     for (const [k, given] of series.entries()){
       // the saved packet this one is (in the game): the first not yet on
-      // the felt, drawn as its own kind (the starter, the house's, the pity)
+      // the felt, drawn as its own kind (the starter, the House Packet, the pity)
       const pktId = LINK ? LINK.packetIds().find(pid => !of('pk').some(q => q.p.pktId === pid)) || null : null;
       const id = (pktId && LINK.kindOf(pktId)) || given;
       const p = new POPacket.Packet(stage, id, 0);
@@ -494,9 +570,9 @@
   function place(card){
     onto(card.body);
     card.el.classList.add('cm-card');
-    const t = { kind:'card', card:card.card, c:card };
+    const t = { kind:'card', card:card.card, c:card, fresh:true };
     things.push(t);
-    const to = neatAt(of('card').length - 1);
+    const to = neatAt(fresh().length - 1);
     S.cardReturn();
     glide(card.body, { ...to, s, z:0, sx:1, sy:1 }, 300, { arc:16, easing:ease.out }).then(() => { S.cardLanded(); squash(card.body, .05, 140); Haptic.tick(6); });
     keys();
@@ -534,14 +610,14 @@
   }
 
   /* ---------------- tidying up ---------------- */
-  // a double tap on empty felt: the loose cards into the collection, the
-  // rubbish off the felt, the packets back in a row, the deck back where it
-  // was, the house's cards to the tray (and any empty place filled)
+  // a double tap on empty felt: the loose cards back into the collection,
+  // the rubbish off the felt, the packets back in a row, the deck back
+  // where it was; the tray's cards squared up where they lie, and kept
   async function tidy(){
     if (busy) return;
     busy = true;
     S.cardReturn(); Haptic.tick(10);
-    const H = felt.clientHeight, cards = of('card'), junk = of('junk'), pks = of('pk');
+    const H = felt.clientHeight, cards = of('card').filter(t => t !== fed), junk = of('junk'), pks = of('pk');
     const k = keyEl('cards'), to = local(k.getBoundingClientRect());
     await Promise.all([
       ...cards.map((t, i) => wait(PO.reduced ? 0 : i * 60).then(async () => {
@@ -556,10 +632,9 @@
       })),
       ...pks.map((t, i) => glide(t.p.body, { ...rowAt(i, pks.length), r:rr(-4, 4), z:0 }, 280, { arc:10, easing:ease.out }).then(() => squash(t.p.body, .05, 120))),
       ...of('deck').map(d => glide(d.body, { ...d.home, z:0 }, 280, { arc:10, easing:ease.out })),
-      ...of('house').filter(h => h !== fed).map(h => glide(h.c.body, { ...placeAt(h.place), z:0 }, 260, { arc:10, easing:ease.out }).then(() => squash(h.c.body, .04, 120)))
+      ...of('tray').filter(h => h !== fed).map(h => glide(h.c.body, { ...trayAt(h.tx, h.card.uid), z:0 }, 260, { arc:10, easing:ease.out }).then(() => squash(h.c.body, .04, 120)))
     ]);
     S.cardLanded();
-    await refill();
     keys();
     busy = false;
   }
@@ -662,10 +737,8 @@
       Foil.flutter(); Haptic.tick(8);
       tween(T, (e2, k) => b.set({ x:x0 + vx * k * T / 1000, y:y0 + vy * k * T / 1000, z:6 + Math.sin(k * Math.PI) * 20, r:r0 + spin * 220 * k, alpha:1 - Math.max(0, k - .5) * 2 }), ease.lin).then(() => {
         b.remove();
-        if (isCard(t)){
-          collect(t);
-          if (t.kind === 'house') refill().then(keys);
-        } else Foil.crinkle();
+        if (isCard(t)) collect(t);
+        else Foil.crinkle();
         keys();
       });
       keys();
@@ -673,9 +746,32 @@
     }
     // let go: it slides on a little and settles where it lands
     const hw = CW * s / 2, hh = CH * s / 2;
-    const x = clamp(b.x + vx * .08, hw * .6, W - hw * .6), y = clamp(b.y + vy * .08, hh * .5, H - hh * .5);
+    let x = clamp(b.x + vx * .08, hw * .6, W - hw * .6), y = clamp(b.y + vy * .08, hh * .5, H - hh * .5);
+    if (isCard(t) && settleCard(t, x, y)) return;
+    if (isCard(t) && overTray(x, y) >= .5) y = trayBox().y + trayBox().h + hh + 6;   // (the tray's full: it lands under it)
     glide(b, { x, y, r:clamp(b.r + vx / 200, b.r - 24, b.r + 24), s:rest, z:0 }, 220, { easing:ease.out })
       .then(() => { squash(b, .05, 160); if (t.kind === 'junk') Foil.crinkle(); else S.cardLanded(); Haptic.tick(5); });
+  }
+  // A card let go: half or more of it over the tray and it's kept there
+  // (if there's room), where along the tray you let it go; less, and it's
+  // on the felt (taken off the tray if it was kept). Either way it's no
+  // longer one REDEAL dealt, nor a fresh one waiting to be added. True when
+  // it went onto the tray (it's on its way there).
+  function settleCard(t, x, y){
+    t.dealt = false;
+    const over = overTray(x, y) >= .5, room = t.kind === 'tray' || of('tray').length < TRAY_MAX;
+    if (over && room){
+      t.kind = 'tray'; t.fresh = false; t.tx = txOf(x);
+      const to = trayAt(t.tx, t.card.uid), b = t.c.body;
+      raise(t.c.el);
+      glide(b, { ...to, s, z:0 }, 200, { easing:ease.out })
+        .then(() => { squash(b, .05, 160); S.cardLanded(); Foil.thud(.25); Haptic.tick(7); puff(stage, to.x, to.y + CH * s * .45, CW * s, { n:3, colour:'#3a2414' }); });
+      saveTray(); keys();
+      return true;
+    }
+    if (over && !room){ plate('TRAY FULL'); jolt(woodEl, 2); setTimeout(() => { if (!fed) plate('INSERT CARD'); }, 1400); }
+    if (t.kind === 'tray'){ t.kind = 'card'; saveTray(); keys(); }
+    return false;
   }
   // a tap on something does its thing at once; two quick taps on empty
   // felt tidy everything up
@@ -714,6 +810,8 @@
     keyEl, setKey, keys,
     // the feeder, for the album: lip() in the felt's coordinates
     feedOther, unfeed, play, lip:() => lip(), get fed(){ return fed; },
+    // the album: a card carried out onto the felt, and which cards are out
+    adopt, onTable:() => onTable(),
     get feltEl(){ return felt; }, get mouthEl(){ return mouthEl; }, get slotEl(){ return slotEl; },
     addPackets, handOver, place, deckBack,
     // chips home: the reel counts them in
@@ -721,14 +819,15 @@
     refresh,
     // read-only, for the lab's checks
     get state(){
-      return { busy, fed:fed ? fed.kind : null, house:of('house').map(h => h.place + ':' + h.card.uid), cards:of('card').length,
+      return { busy, fed:fed ? fed.kind : null, tray:of('tray').sort((a, b) => a.tx - b.tx).map(h => h.card.uid), cards:of('card').length,
+        dealt:of('card').filter(t => t.dealt).map(t => t.card.uid), fresh:fresh().length,
         deck:of('deck')[0]?.cards.length || 0, packets:of('pk').length, junk:of('junk').length, pool:pool.length, mid:mid() };
     },
     where(kind, i){
-      const list = kind === 'house' ? of('house').sort((a, b) => a.place - b.place) : of(kind);
+      const list = kind === 'tray' ? of('tray').sort((a, b) => a.tx - b.tx) : kind === 'dealt' ? of('card').filter(t => t.dealt) : of(kind);
       const t = list[i]; if (!t) return null;
       const r = elOf(t).getBoundingClientRect(), b = bodyOf(t);
-      return { x:r.left + r.width / 2, y:r.top + r.height / 2, bx:b.x, by:b.y, home:t.kind === 'house' ? placeAt(t.place) : t.home || null };
+      return { x:r.left + r.width / 2, y:r.top + r.height / 2, bx:b.x, by:b.y, home:t.kind === 'tray' ? trayAt(t.tx, t.card.uid) : t.home || null };
     }
   };
 
@@ -751,9 +850,9 @@
       result();
       fillPool();
       const ids = pool.map(c => c.uid);
-      of('house').filter(h => !ids.includes(h.card.uid)).forEach(h => { h.c.body.remove(); drop(h); });
+      of('tray').filter(h => !ids.includes(h.card.uid)).forEach(h => { h.c.body.remove(); drop(h); });
       of('card').filter(t => !ids.includes(t.card.uid)).forEach(t => { t.c.body.remove(); drop(t); });
-      busy = true; await tossIn(emptyPlaces()); busy = false;
+      busy = true; await layTray(); busy = false;
       await layPackets();
       keys();
     } finally { refreshing = false; }
@@ -792,11 +891,14 @@
     document.dispatchEvent(new Event('career-hub-built'));
     await wait(400);
     await settled();
-    busy = true; await tossIn([0, 1, 2]); busy = false;
+    // the cards you keep, back on the tray (the lab: three of its own)
+    busy = true;
+    if (LINK) await layTray(); else await labTray();
+    busy = false;
     if (LINK){ await layPackets(); keys(); }
     ready = true;
     // the felt can change size (the TUNE sheet, the phone turning): the
-    // house's cards keep to the tray, everything else stays on the felt
+    // tray's cards keep to the tray, everything else stays on the felt
     new ResizeObserver(() => {
       if (!felt.clientWidth) return;   // the hub's screen hidden
       measure();
@@ -805,7 +907,7 @@
       things.forEach(t => {
         if (t === fed) return;
         const b = bodyOf(t);
-        if (t.kind === 'house') b.set({ ...placeAt(t.place), s });
+        if (t.kind === 'tray') b.set({ ...trayAt(t.tx, t.card.uid), s });
         else b.set({ x:clamp(b.x, 10, W - 10), y:clamp(b.y, 10, H - 10), s:t.kind === 'pk' ? pkScale() : t.kind === 'junk' ? b.s : s });
       });
     }).observe(felt);
