@@ -690,8 +690,7 @@ const CoachTalk = (() => {
     return items;
   }
   function onTap(){
-    // (on another screen's felt, that screen says what a tap on him gets)
-    try{ if (!CoachSet.on || CoachSet.busy || CoachSet.hubbed) return; }catch(e){ return; }
+    try{ if (!CoachSet.on || CoachSet.busy) return; }catch(e){ return; }
     explainGen++; holdUntil = 0;
     const g = game, me = human();
     try{ CoachSet.look('you'); }catch(e){}
@@ -1075,7 +1074,7 @@ const CoachTalk = (() => {
     if (v && v.lesson){ const t = lineFor(['tip.' + v.lesson]); if (t) takeaway = fill(t[2], v.ctx).replace(/^Tip:\s*/, ''); }
     return { summary, takeaway };
   }
-  return { apply, say, sayAt, sayAny, sayText, slots, debrief, labDebrief, verdictOf, reasonText, reportWords,
+  return { apply, say, sayAt, sayAny, slots, debrief, labDebrief, verdictOf, reasonText, reportWords,
     // (for labs and checks: a line as he'd say it, and whether a lesson's been taught)
     fillText:(text, ctx) => fill(text, ctx || {}), knows, learn:k => learnFrom('lesson.' + k), explain, sayAdvice, automaticReason, yourTurn, onTap, clear:() => clear(true), OPTIONS, DEFAULTS, LINES, get order(){ return Object.assign({}, O); } };
 })();

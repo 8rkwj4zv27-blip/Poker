@@ -619,11 +619,6 @@ the candidate runs alone. Not loaded by the game.
 
 ## `js/dealer-deck.js` + `css/dealer-deck.css` — Dealer deck (live, v0.45.0)
 
-(v0.67.1: `DealerDeck.dealTo`, `collect`, `shuffle`, `squareUp`, `puff`,
-`setCount` let another screen handle its cards with the table's hands;
-used by the Career hub labs until 12 Oct, when the hub became a wooden
-table with no deck: nothing calls them now.)
-
 The dealer's deck, the owner's order from `deck-lab.html` (recorded in
 `docs/ui/PATTERN_BOOK.md`, Dealer deck; `docs/ui/DEALER_PLAN.md`). A plain
 deck made of the same card as the ones dealt off it (one card-back recipe
@@ -690,9 +685,6 @@ The Coach on the table (`docs/coach/COACH_PLAN.md`; Pattern Book: Coach).
 the lift on and off in 2.5D, his aux lead, the boot, picking him up and
 throwing him round the screen (a joke, v0.57.3); he follows the table
 (there whenever it's showing and he's switched on, gone when it isn't).
-v0.67.1: `CoachSet.hub(el)` lets another screen's felt host him instead
-(opposite its dealer station, no lead, there while that felt shows), and
-`CoachTalk.sayText` is exported; a tap on him there is the hub's.
 `coach-talk.js`: his bubble, voice and lines, the talk slider (Settings →
 Coach talk, `settings.coachTalk`); hears the game through `applyAction`
 and `updateCoach` and by watching `game.handNumber` / `game.phase`.
@@ -1331,4 +1323,9 @@ game's save.
   guarded, so the labs run alone as before.
 - Checked by `validation/tools/new-career-scenario.js` (the whole loop,
   real touch, three sizes).
+- Home screen (v0.68.0): `new-career/` is this lab staged by
+  `validation/tools/lab-bundle.js` (its page renamed `index.html`, with a
+  web manifest and icons), at https://8rkwj4zv27-blip.github.io/Poker/new-career/.
+  Re-stage it after any change to the preview; the scenario runs on it with
+  `--root new-career --page index.html`.
 

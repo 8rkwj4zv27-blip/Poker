@@ -865,12 +865,7 @@ const DealerDeck = (() => {
       return ok;
     } finally { target.style.visibility = vis; setCount(Math.min(52, count + 1)); }
   }
-  // The Career hub (career-main-lab.html) handles its own cards with the
-  // table's hands: a card off the shoe to any element (dealTo), back onto
-  // the deck (collect), the hand shuffle and the squaring-up taps, and the
-  // deck's thickness (setCount, 0-52). Nothing here changes the table.
   const api = { DEFAULTS, BACKS, POINTS, apply, install, preview,
-    dealTo:(target, o) => fromShoe(target, o), collect, shuffle:kind => handShuffle(kind || O.shuffle), squareUp, puff, setCount,
     get flightFor(){ return flightFor; }, set flightFor(fn){ flightFor = typeof fn === 'function' ? fn : null; },
     get order(){ return Object.assign({}, O); }, get count(){ return count; } };
   return api;

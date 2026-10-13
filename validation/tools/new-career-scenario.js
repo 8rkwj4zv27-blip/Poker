@@ -13,7 +13,7 @@
    what you hold → broke and cardless: one pity packet, not two (a second
    visit, a reload). Every step is checked against the save itself.
 
-     node validation/tools/new-career-scenario.js [--sizes 390x844,375x667] [--shots DIR] [--root BUNDLE]
+     node validation/tools/new-career-scenario.js [--sizes 390x844,375x667] [--shots DIR] [--root BUNDLE] [--page index.html]
 */
 const http = require('http');
 const fs = require('fs');
@@ -24,6 +24,7 @@ const { withPage } = require('./touch-harness');
 const arg0 = (name, fallback) => { const i = process.argv.indexOf('--' + name); return i > 0 ? process.argv[i + 1] : fallback; };
 // --root: a staged bundle (validation/tools/lab-bundle.js), as published
 const ROOT = path.resolve(arg0('root', path.join(__dirname, '..', '..')));
+const PAGE = arg0('page', 'career-preview-lab.html'); // --page index.html for new-career/
 const arg = (name, fallback) => { const i = process.argv.indexOf('--' + name); return i > 0 ? process.argv[i + 1] : fallback; };
 const SIZES = arg('sizes', '390x844,375x667,430x932').split(',').map(s => s.split('x').map(Number));
 const SHOTS = arg('shots', null);
@@ -59,7 +60,7 @@ async function run(base, width, height, reducedMotion){
   const errors = await withPage({ width, height, reducedMotion }, async (page, touch) => {
     let fr, ifr;
     const boot = async fresh => {
-      await page.goto(base + '/career-preview-lab.html');
+      await page.goto(base + '/' + PAGE);
       if (fresh){ await page.evaluate(() => localStorage.clear()); await page.reload(); }
       await page.locator('#ncp-game').contentFrame().locator('#cm').waitFor({ timeout:30000 });
       fr = page.frames().find(f => f !== page.mainFrame());

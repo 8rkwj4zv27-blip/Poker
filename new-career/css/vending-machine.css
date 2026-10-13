@@ -1,0 +1,168 @@
+/* ============================================================
+   THE PACKET MACHINE — js/vending-machine.js (lab only)
+   Built like the Player Dashboard: one moulded frame (2px ink, a soft
+   two-step bevel, a hard shadow), the checker case inside it, and sunk
+   bays for each part. The window, the tray and the side panel are bays.
+   ============================================================ */
+#home #cm.lobby-card{ position:relative; }
+
+/* the drum: the space under the reel the machine rolls into */
+.vm-drum{ position:absolute; z-index:4; overflow:clip; pointer-events:none; }
+.vm-drum[hidden]{ display:none; }
+.vm{
+  /* the burgundy theme's dashboard materials, resolved here */
+  --machine-case:color-mix(in srgb,var(--panel-2) 78%,var(--theme-case-raised) 22%);
+  --machine-recess:color-mix(in srgb,var(--panel) 52%,black);
+  --dash-ink:#0B0D0A;
+  --dash-lo:color-mix(in srgb,var(--theme-case-raised) 46%,black);
+  --dash-mid-hi:color-mix(in srgb,var(--theme-case-raised) 50%,var(--theme-case-hi));
+  --dash-mid-lo:color-mix(in srgb,var(--theme-case-raised) 72%,black);
+  position:absolute; left:0; top:0; width:100%; height:100%; box-sizing:border-box; pointer-events:auto;
+  touch-action:none; user-select:none; -webkit-user-select:none; will-change:transform;
+  border:2px solid var(--dash-ink); border-radius:16px; padding:7px;
+  background:var(--theme-case-raised);
+  box-shadow:inset 1px 1px 0 var(--theme-case-hi),inset 3px 3px 0 var(--dash-mid-hi),
+    inset -2px -2px 0 var(--dash-lo),inset -4px -4px 0 var(--dash-mid-lo);
+}
+.vm-case{ position:relative; display:flex; gap:7px; height:100%; box-sizing:border-box; padding:7px; border-radius:10px;
+  background:repeating-conic-gradient(rgba(255,255,255,.035) 0 25%,transparent 0 50%) 0 0/6px 6px,var(--machine-case);
+  box-shadow:inset 0 0 0 2px var(--dash-ink); }
+/* a sunk bay, as on the dashboard */
+.vm-bay{ position:relative; box-sizing:border-box; border:2px solid var(--dash-ink); border-radius:7px; background-color:var(--machine-recess);
+  box-shadow:inset 0 5px 0 rgba(0,0,0,.62),inset 3px 0 0 rgba(0,0,0,.24),0 2px 0 color-mix(in srgb,var(--theme-case-hi) 45%,transparent),0 -2px 0 rgba(0,0,0,.32); }
+
+/* ---------------- the front: the window over the tray ---------------- */
+.vm-front{ flex:1; min-width:0; display:flex; flex-direction:column; gap:7px; }
+.vm-window{ flex:none; overflow:clip; }
+.vm-back{ position:absolute; inset:0;
+  background:
+    linear-gradient(to bottom,rgba(255,246,214,.34) 0 3px,rgba(255,240,200,.16) 3px 14px,rgba(255,236,190,.07) 14px 40px,rgba(0,0,0,0) 40px),
+    repeating-linear-gradient(90deg,rgba(0,0,0,.12) 0 2px,rgba(0,0,0,0) 2px 5px),
+    linear-gradient(to bottom,#5a1424,#420f1b 55%,#2c0911); }
+.vm-tube{ position:absolute; left:12px; right:12px; top:5px; height:4px; z-index:6; background:#fffbe9;
+  box-shadow:0 0 0 1px #b9b29a,0 2px 7px 1px rgba(255,248,220,.5); }
+.vm-tube::before, .vm-tube::after{ content:''; position:absolute; top:-2px; width:5px; height:8px; background:#8f8a7a; box-shadow:0 0 0 1px var(--dash-ink); }
+.vm-tube::before{ left:-6px; } .vm-tube::after{ right:-6px; }
+/* off: the tube is grey, the back unlit; booting: it flickers on */
+.vm.is-off .vm-tube{ background:#7e7a6c; box-shadow:0 0 0 1px #5a564a; }
+.vm.is-off .vm-back{ filter:brightness(.35); }
+.vm.is-off .vm-stage{ filter:brightness(.45); }
+.vm-stage{ position:absolute; inset:0; pointer-events:none; }
+.vm-stage .po-body{ pointer-events:auto; }
+.vm-window > .vm-stage{ z-index:2; }
+.vm-window > .vm-fall{ z-index:5; }
+.vm-stage .po-shadow{ background:#0a0304; }
+/* the packet you're looking at is lit; the ones you can't afford go dim */
+.vm-show .vm-packet.is-lit{ filter:brightness(1.18) drop-shadow(0 0 5px rgba(255,226,150,.55)); }
+.vm-show .vm-packet.is-dear{ filter:brightness(.42) saturate(.55); }
+.vm-cell.is-dear .vm-tag{ color:#7d7462; }
+/* a shelf's rail: steel, a black price tag and a cream key under each packet */
+.vm-rail{ position:absolute; left:0; right:0; z-index:4; box-sizing:border-box; border-top:2px solid var(--dash-ink);
+  background:linear-gradient(#dcdfd9 0 2px,#b8bcb6 2px 8px,#8d918b 8px calc(100% - 4px),#5d605c calc(100% - 4px)); box-shadow:0 2px 0 rgba(0,0,0,.5);
+  display:grid; align-items:center; }
+.vm-cell{ display:flex; align-items:center; justify-content:center; gap:2px; min-width:0; }
+.vm-tag{ padding:3px 2px 2px; letter-spacing:-.02em; box-sizing:border-box; background:#0e0b0b; border:2px solid #262220;
+  font:var(--vm-tag,7px)/1 var(--font-hdr); color:#f3ecd2; text-align:center; white-space:nowrap; }
+.vm-key{ position:relative; width:var(--vm-key,22px); height:16px; box-sizing:border-box; border:2px solid var(--dash-ink); border-radius:3px; cursor:pointer;
+  background:linear-gradient(#f6eed2 0 2px,#e4d9b0 2px calc(100% - 3px),#b0a378 calc(100% - 3px)); box-shadow:0 2px 0 #1a0a08; }
+.vm-key b{ position:absolute; left:3px; right:3px; top:2px; bottom:3px; display:grid; place-items:center; background:#3e3424; box-shadow:inset 0 1px 0 #241d12;
+  font:6px/1 var(--font-hdr); color:transparent; }
+.vm-key.is-on{ translate:0 1px; box-shadow:0 1px 0 #1a0a08; }
+.vm-key.is-on b{ background:#2a1d08; color:#ffd36b; text-shadow:0 0 4px rgba(255,200,80,.9); box-shadow:inset 0 0 4px rgba(255,190,60,.55); }
+.vm-key.is-sel b{ background:#4a3a1c; box-shadow:inset 0 0 5px rgba(255,200,90,.6); }
+.vm-key.is-flip b{ transform:scaleY(.2); }
+.vm-key.is-out b{ background:#5a1610; color:#ff7a66; }
+.vm-key.is-blink b{ background:#ffe49b; color:#5a3a06; }
+/* the glass: a glint or two, CARD PACKETS painted on it, and the shimmer */
+.vm-glass{ position:absolute; inset:0; z-index:7; pointer-events:none;
+  background:linear-gradient(118deg,transparent 0 8%,rgba(255,255,255,.12) 8% 10.5%,transparent 10.5% 14%,rgba(255,255,255,.06) 14% 15%,transparent 15% 72%,rgba(255,255,255,.07) 72% 73.5%,transparent 73.5%);
+  box-shadow:inset 0 0 0 1px rgba(230,240,240,.16); }
+.vm-paint{ position:absolute; left:0; right:0; top:14px; z-index:8; pointer-events:none; text-align:center; white-space:nowrap;
+  font:var(--vm-paint,16px)/1 var(--font-hdr); letter-spacing:.04em; color:#d8352c; opacity:.92;
+  text-shadow:0 2px 0 rgba(90,10,8,.85), 1px 0 0 rgba(255,150,130,.18); }
+.vm.no-paint .vm-paint{ display:none; }
+.vm.is-off .vm-paint{ opacity:.5; }
+.vm-shimmer{ position:absolute; inset:0; z-index:9; pointer-events:none; opacity:0;
+  background:linear-gradient(112deg,transparent 0 36%,rgba(255,255,255,.07) 36% 40%,rgba(255,255,255,.2) 40% 43%,rgba(255,255,255,.07) 43% 47%,transparent 47%) no-repeat;
+  background-size:240% 100%; }
+.vm.is-stuck .vm-shimmer{ opacity:1; animation:vm-shimmer 2.6s steps(26) infinite; }
+@keyframes vm-shimmer{ from{ background-position:120% 0; } to{ background-position:-120% 0; } }
+
+/* the tray: seen straight on, the packets lying on its bottom, behind a
+   ribbed, smoked plastic flap with PUSH on it */
+.vm-tray{ flex:1; min-height:56px; overflow:clip; background:
+  linear-gradient(to top,#2a1210 0 3px,rgba(0,0,0,0) 3px),
+  repeating-linear-gradient(90deg,rgba(255,255,255,.03) 0 3px,transparent 3px 14px),linear-gradient(#0d0405,#1f0b0b); }
+.vm-tray > .vm-stage{ inset:2px; }
+.vm-tray > .vm-floor{ z-index:2; }
+.vm-tray > .vm-tfall{ z-index:3; }
+.vm-flap{ position:absolute; inset:3px; z-index:5; transform-origin:50% 0; display:grid; place-items:center; cursor:pointer;
+  border:2px solid var(--dash-ink); border-radius:4px;
+  background:
+    repeating-linear-gradient(90deg,rgba(255,255,255,.09) 0 2px,rgba(255,255,255,.02) 2px 4px,rgba(0,0,0,.12) 4px 7px),
+    linear-gradient(rgba(70,40,36,.48),rgba(30,14,14,.62));
+  box-shadow:inset 0 2px 0 rgba(255,255,255,.2),inset 0 -3px 0 rgba(0,0,0,.4); }
+.vm-flap::before{ content:''; position:absolute; left:0; right:0; top:0; height:5px; background:linear-gradient(#a9aca6,#6e716c); border-bottom:1px solid var(--dash-ink); }
+.vm-flap b{ font:12px/1 var(--font-hdr); font-weight:400; color:rgba(244,232,206,.82); letter-spacing:.32em; padding-left:.32em; text-shadow:0 2px 0 rgba(0,0,0,.7); }
+
+/* ---------------- the side panel ---------------- */
+.vm-side{ flex:none; width:var(--vm-side,86px); display:flex; flex-direction:column; gap:7px; }
+.vm-crt{ flex:none; display:grid; gap:5px; justify-items:center; padding:8px 2px 7px; text-align:center; white-space:nowrap; }
+.vm-crt .crt-caption{ max-width:100%; overflow:hidden; }
+.vm-crt .vm-total{ font:6px/1 var(--font-hdr); color:var(--crt-ink-info,#c3c8ad); letter-spacing:.06em; }
+.vm-slot{ flex:none; height:70px; display:grid; place-items:center; }
+.vm-plate{ position:relative; width:48px; height:58px; box-sizing:border-box; border:2px solid var(--dash-ink); border-radius:8px;
+  background:linear-gradient(#e6e8e2 0 3px,#c3c6c0 3px 45%,#9a9e98 45% calc(100% - 4px),#5d605c calc(100% - 4px));
+  box-shadow:0 3px 0 rgba(0,0,0,.55),inset 0 0 0 1px #f4f6f0; }
+.vm-plate::before, .vm-plate::after{ content:''; position:absolute; left:50%; width:4px; height:4px; margin-left:-2px; background:#5d605c; box-shadow:inset 1px 1px 0 #2c2e2c; }
+.vm-plate::before{ top:4px; } .vm-plate::after{ bottom:5px; }
+.vm-ring{ position:absolute; left:50%; top:9px; width:30px; height:36px; margin-left:-15px; box-sizing:border-box; border:2px solid var(--dash-ink); border-radius:5px;
+  background:linear-gradient(#e0b54a 0 2px,#b98a2a 2px calc(100% - 2px),#7a4b0c calc(100% - 2px)); }
+.vm-slit{ position:absolute; left:50%; top:13px; width:20px; height:28px; margin-left:-10px; background:#050202; box-shadow:inset 2px 0 0 #000,1px 0 0 #6b430e; }
+.vm-slit.is-lit{ background:#3a2204; box-shadow:inset 0 0 6px 2px rgba(255,190,70,.75); }
+.vm-lamps{ flex:none; display:grid; gap:6px; padding:8px 8px 9px; }
+.vm-lamp-row{ display:grid; grid-template-columns:14px 1fr; align-items:center; gap:6px; font:7px/1 var(--font-hdr); color:#c9b38a; letter-spacing:.06em; }
+.vm-lamp{ width:12px; height:12px; box-sizing:border-box; border:2px solid #190c0b; background:#2c241a; box-shadow:0 2px 0 #100807,inset 1px 1px 0 rgba(255,255,255,.12); }
+.vm-lamp.is-steady{ background:var(--lc); box-shadow:0 2px 0 #100807,0 0 7px var(--lg),inset 1px 1px 0 var(--lh); }
+.vm-lamp.is-flicker{ background:var(--lc); box-shadow:0 2px 0 #100807,0 0 3px var(--lg),inset 1px 1px 0 var(--lh); animation:vm-flicker 1.6s steps(1) infinite; }
+@keyframes vm-flicker{ 0%,46%,58%,64%,100%{ opacity:.95; } 50%,61%{ opacity:.22; } }
+.vm-lamp-row[data-r="common"]{ --lc:#9fd1a2; --lh:#e1f5d8; --lg:rgba(150,220,150,.45); }
+.vm-lamp-row[data-r="uncommon"]{ --lc:#4fc0b0; --lh:#bff0e4; --lg:rgba(80,200,180,.45); }
+.vm-lamp-row[data-r="rare"]{ --lc:#5a8ee0; --lh:#cfe0ff; --lg:rgba(100,150,240,.5); }
+.vm-lamp-row[data-r="legendary"]{ --lc:#f2c23c; --lh:#fff1c4; --lg:rgba(242,194,60,.55); }
+.vm-clear{ flex:none; align-self:center; width:62px; height:26px; box-sizing:border-box; border:2px solid var(--dash-ink); border-radius:4px; cursor:pointer;
+  background:linear-gradient(#e0574b 0 3px,#b8352b 3px calc(100% - 4px),#7a1c16 calc(100% - 4px)); box-shadow:0 3px 0 #1a0606;
+  font:6px/1 var(--font-hdr); color:#ffe0d6; letter-spacing:.1em; display:grid; place-items:center; padding:0; }
+.vm-grille{ flex:1; min-height:24px; display:grid; padding:10px 9px; }
+.vm-grille i{ display:block; background:repeating-linear-gradient(to bottom,#050203 0 3px,transparent 3px 7px); box-shadow:inset 0 1px 0 rgba(0,0,0,.4); border-radius:2px; }
+.vm-clear.is-down{ translate:0 2px; box-shadow:0 1px 0 #1a0606; }
+
+/* ---------------- layers over the hub ---------------- */
+.vm-chips{ position:absolute; inset:0; z-index:12; pointer-events:none; overflow:clip; }
+.vm-chip-clip{ position:absolute; left:0; right:0; top:0; overflow:hidden; pointer-events:none; }
+.vm-chip{ position:absolute; left:0; top:0; background-size:100% 100%; image-rendering:pixelated; will-change:transform; filter:drop-shadow(1px 2px 0 rgba(0,0,0,.55)); }
+.vm-hand{ position:absolute; inset:0; z-index:11; pointer-events:none; }
+.vm-hand.is-live{ pointer-events:auto; touch-action:none; }
+.vm-dim{ position:absolute; inset:0; background:#06030a; opacity:0; }
+.vm-hand > .vm-stage{ z-index:1; }
+.vm-open{ position:absolute; z-index:3; pointer-events:none; }
+.vm-open{ z-index:5; touch-action:none; user-select:none; -webkit-user-select:none; }
+.vm-open.is-live{ pointer-events:auto; }
+
+/* the opening's moments on the hub: the house lights dip */
+#cm .cm-rail, #cm .cm-cabinet, #cm .cm-console{ transition:filter .3s steps(3); }
+#cm.is-dipped .cm-rail, #cm.is-dipped .cm-cabinet, #cm.is-dipped .cm-console{ filter:brightness(.5); }
+.crt .crt-figure.vm-fig-sm{ font-size:10px; }
+
+/* the lab's sheet */
+.vm-seg{ display:flex; flex-wrap:wrap; gap:6px; margin-top:6px; }
+.vm-seg button{ flex:1 1 22%; min-width:0; min-height:44px; margin:0; padding:4px; font-size:8px; line-height:1.3; }
+
+/* short screens */
+.vm.is-compact{ padding:5px; border-radius:12px; }
+.vm.is-compact .vm-case{ gap:5px; padding:5px; }
+.vm.is-compact .vm-front, .vm.is-compact .vm-side{ gap:5px; }
+.vm.is-compact .vm-slot{ height:60px; }
+.vm.is-compact .vm-plate{ height:52px; }
+.vm.is-compact .vm-lamps{ gap:4px; padding:6px; }
+@media (prefers-reduced-motion:reduce){ .vm.is-stuck .vm-shimmer, .vm-lamp.is-flicker{ animation:none; } }

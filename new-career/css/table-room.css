@@ -1,0 +1,44 @@
+/* ============================================================
+   TABLE ROOM (v0.52.0): room on the table for the bets. The owner's
+   picks from the Table Room Lab (docs/ui/TABLE_ROOM_PLAN.md), and the
+   player's own in Settings → The table. js/table-room.js sets the
+   variables on the root:
+     --tr-pot    how far the pot counter and its tray sit lower (px)
+     --tr-pods   the machines' size (a factor on their shipped scale)
+     --tr-fade   how dark a bet mark is; --tr-ink its corners
+     data-tr-mark="square" | "corners" | "none"
+   Loads after css/05-responsive-and-arcade.css and css/enemy-cards.css,
+   whose rules these extend.
+   ============================================================ */
+@media (orientation:portrait){
+  #felt .pot-area{ top:calc(77.5% + var(--tr-pot, 0px)); }
+}
+/* a short phone (the 667px SE) has no room under the pot counter: at most
+   10px lower, or it sits on your bet spot */
+@media (orientation:portrait) and (max-height:700px){
+  #felt .pot-area{ top:calc(77.5% + min(var(--tr-pot, 0px), 10px)); }
+}
+.felt .seat:not(.you){ scale:calc(.91 * var(--tr-pods, 1)); }
+@media (max-width:389px){
+  .felt.opponents-6 .seat:not(.you){ scale:calc(.87 * var(--tr-pods, 1)); }
+}
+
+/* the bet marks: a square of darker felt, or just its four corners */
+.felt .ec-square{ background:rgba(0,0,0,var(--tr-fade, .13)); }
+[data-tr-mark="none"] .felt .ec-square{ display:none; }
+[data-tr-mark="corners"] .felt .ec-square{
+  --tr-c:rgba(0,0,0,var(--tr-ink, .3));
+  border-radius:0;
+  background:
+    linear-gradient(var(--tr-c),var(--tr-c)) left top/8px 2px no-repeat,
+    linear-gradient(var(--tr-c),var(--tr-c)) left top/2px 8px no-repeat,
+    linear-gradient(var(--tr-c),var(--tr-c)) right top/8px 2px no-repeat,
+    linear-gradient(var(--tr-c),var(--tr-c)) right top/2px 8px no-repeat,
+    linear-gradient(var(--tr-c),var(--tr-c)) left bottom/8px 2px no-repeat,
+    linear-gradient(var(--tr-c),var(--tr-c)) left bottom/2px 8px no-repeat,
+    linear-gradient(var(--tr-c),var(--tr-c)) right bottom/8px 2px no-repeat,
+    linear-gradient(var(--tr-c),var(--tr-c)) right bottom/2px 8px no-repeat;
+}
+
+/* Settings → The table: the sheet's own segmented rows (no new part) */
+#settings-table-room .segmented.compact{ flex-wrap:wrap; }

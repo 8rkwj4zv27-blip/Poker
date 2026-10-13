@@ -40,9 +40,12 @@ reached `main`. Releases before v0.39.8 are recorded in
   and a tool that plays whole Career events to measure it
   (`validation/tools/event-sim.js`).
 
+## v0.68 — 13 October 2026
+
+- **v0.68.0** No change to the game you play. New Career (preview) gets its own home-screen app, `new-career/` (Share → Add to Home Screen), with its own save: invitation cards in four rarities, ten sample events, the starter, House and pity packets, the shop and the album. Inside the game, the invitation code sits behind DEV only (a HAND n/10 readout, prizes shared on a tie).
+
 ## v0.67 — 8 October 2026
 
-- **v0.67.1** No change at the table: the dealer deck, P.I.P.'s set and his talk can be borrowed by another screen (the Career hub lab deals with the table's deck, and P.I.P. sits on it).
 - **v0.67.0** The Back Room builds a stack: a new 5-HAND ticket that pays 1st and 2nd, deeper stacks (1,000 chips) and slower blinds in every Back Room event, and gentler opponents there. Tickets already bought keep their terms.
 
 ## v0.66 — 6 October 2026
