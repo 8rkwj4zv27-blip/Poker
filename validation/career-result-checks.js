@@ -36,6 +36,7 @@ const engineContext = {
   // back intact; the score-free screens the game shows now are checked in
   // their own context at the end of this file.
   ARCADE_XP_ON:true,
+  NEW_CAREER:false,
   careerBankroll:()=>600,
   arcadeProfile:{ highScore:4200 },
   makeArcadeRunState:()=>({ score:0, biggestReward:0, awardCounts:{}, newHighScore:false }),

@@ -247,7 +247,21 @@ version change.
 7. Damaged packets are dropped on load without touching the rest.
 8. Preview/DEV only; `npm test` green.
 
-## Stage 4: New Career (preview) (overnight run, 13 Oct 2026)
+## Stage 5: the new Career in the game (owner, 13 Oct 2026; v0.69.0)
+
+The owner wanted to test it in the real app: Career on the menu opens the
+hub. Settings → Career picks NEW (the default) or CLASSIC; the new Career
+starts fresh on its own save (`felt.career.new`, owner's choice), so the
+classic Career, its bankroll and venues are kept for when it's switched
+back. `js/career-link.js` loads the hub only on NEW. The preview lab and
+the `new-career/` home-screen copy (v0.68.0) are retired.
+
+Checked: `new-career-scenario.js` plays the whole loop in `index.html`
+(menu → Career → hub → … → back to the menu, a planted classic save
+untouched); `npm test`; the play-test; a CLASSIC load (old Career screen,
+no hub parts loaded) and the Settings switch both ways.
+
+## Stage 4: New Career (preview) (overnight run, 13 Oct 2026; retired by Stage 5)
 
 `career-preview-lab.html` (link: https://claude.ai/artifact/Un9apWuFRzV7TDArv9yp7A):
 the real game, booting into the hub, with the shop, the opening and the

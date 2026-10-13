@@ -1232,6 +1232,8 @@
     stopTicks?.();
     let acc = 0;
     stopTicks = every(dt => {
+      // embedded, the clock stops once no packet is out (the next opening starts it again)
+      if (EMBED && !packets.length){ nudge(false); stopTicks = null; return false; }
       swingTags(dt * PO.speed);
       acc += dt;
       if (acc < 1 / 7) return;
@@ -1669,7 +1671,8 @@
       keyDown:onKeyDown, keyUp:onKeyUp,
       keyCancel(){ keyFrom = null; keyHeld = false; if (phase === 'charging') releaseCharge(); },
       finish(){ PO.finishAll(); },
-      tune, applyTune:() => { PO.speed = tune.speed; PO.reduced = !tune.motion || matchMedia('(prefers-reduced-motion: reduce)').matches; try { settings.sound = tune.sound; } catch (e) {} Haptic.on = tune.haptics; },
+      // (in the game, the player's own sound, motion and haptics settings)
+      tune, applyTune:() => { if (window.CareerLink){ tune.sound = !!settings.sound; tune.motion = !settings.reduceMotion; tune.haptics = settings.haptics !== false; } PO.speed = tune.speed; PO.reduced = !tune.motion || matchMedia('(prefers-reduced-motion: reduce)').matches; try { settings.sound = tune.sound; } catch (e) {} Haptic.on = tune.haptics; },
       get state(){ return { phase, lock, wallet, packNo, hasLegend, chosen:chosen?.series ?? null, tear:chosen?.tear ?? 0, pull, deck:!!deck, contents:contents.map(c => c.rarity), revealed, fan:fan.length, chips:chips.length, wrapper:!!(chosen && chosen.open && !chosen.tossed), inspecting:CardInspect.isOpen, fold:rc?.fold ?? 0, shown:rc?.shown ? rc.spec.rarity : null }; }
     };
   } else if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', setup); else setup();

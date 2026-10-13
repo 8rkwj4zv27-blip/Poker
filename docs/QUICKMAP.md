@@ -25,7 +25,7 @@ so the installed iPhone app plays offline. A file not in `index.html` and
 | `06-presentation.js` | Rendering and animation only (`render()`); never changes poker state |
 | `coin-world.js`, `coin-table.js`, `coin-bank.js`, `bank-load.js` | Chips: the coin physics, the pot, your bank and how it fills |
 | `07-ui-wiring.js` | Screen changes, and all Career money and transactions |
-| `career-hub-live.js`, `career-motion-live.js`, `ticket-feed.js` | The Career Hub, its motion and the buy-in |
+| `career-hub-live.js`, `career-motion-live.js`, `ticket-feed.js` | The classic Career Hub, its motion and the buy-in |
 | `machine-wheel.js`, `table-intro.js` | The screen-change rolls, and the table powering up |
 | `08-dev-mode.js` | The DEV panel (`?dev`) |
 | `09-controls.js` | `wireUI()`: the main menu and every button. Must load right after 08 |
@@ -39,6 +39,8 @@ so the installed iPhone app plays offline. A file not in `index.html` and
 | `tutorial.js` | The first-run tour |
 | `workshop-rack.js`, `workshop.js` | Settings and the Workshop (skins) |
 | `save-data.js` | Settings → Save data: back up, restore, reset stats, start over |
+| `career-link.js` | The new Career (Settings → Career, `NEW_CAREER`): Career opens the hub; loads the hub's parts below and hands them the real save (`CareerLink`, `CareerHub`) |
+| (loaded by `career-link.js`) `career-main.js`, `vending-machine.js`, `pack-opening*.js`, `collection-book.js`, `invitation-cards.js`, `invitation-art.js`, `event-cards.js`, `card-inspect.js`, `pack-ritual-art.js`, `pack-ritual-cards.js` | The new Career's hub: the wooden table, the packet machine, the opening, the album, the invitation cards. Each also runs alone in its lab |
 
 Stylesheets in `css/` share these names. `01-` to `06-` are the base
 layers, and `career-hub-cabinet.css` and `result-cabinet.css` lay out the
@@ -52,11 +54,10 @@ Hub and the end screens.
 | `pack-ritual-lab.html`, `js/pack-ritual*.js`, `css/pack-ritual*.css` | Superseded pack opening study (reference; art and faces reused by V3); current-game components. See `career/PACK_RITUAL_HANDOVER.md` |
 | `pack-opening-lab.html`, `js/pack-opening*.js`, `css/pack-opening.css` | Pack Opening V3 lab (isolated): core motion, pixel-canvas packet, scene and the card reveal (faces from `js/pack-ritual-cards.js`). Plan `career/PACK_OPENING_V3_PLAN.md`; checks `validation/pack-opening-checks.cjs` |
 | `career-hub-lab.html`, `js/career-desk.js`, `css/career-desk.css`, `js/career-hub-lab-boot.js` | Career desk lab (isolated): Career's main screen as a felt desk, hosted by the pack scene. Plan `career/CAREER_HUB_DESK_PLAN.md`; checks `validation/career-hub-checks.cjs` |
-| `career-main-lab.html`, `js/career-main.js`, `css/career-main.css` | The Career hub (isolated): a wooden table on the felt, three cards, REDEAL, the feeder and PLAY; packets from the shop lie on it to open, their cards ADDed to your case |
-| `vending-lab.html`, `js/vending-machine.js`, `css/vending-machine.css` | The packet machine (isolated): Career's shop as a vending machine rolling in under the reel; choose, pay in chips, the drop, take and send; the opening on the hub's felt |
-| `collection-book-lab.html`, `js/collection-book.js`, `css/collection-book.css` | The card album (isolated, moving): CARDS brings a leather-bound book over the hub's table; three rows of three, bright / dim / empty slots, page turns (flat or curl), numbered tabs, tap to light and take out, hold to carry a card into the reader; corners or sleeves. Plan `career/COLLECTION_BOOK_PLAN.md` |
-| `career-preview-lab.html`, `js/career-link.js`, `js/career-preview-host.js` | New Career (preview): the hub, shop, opening and album labs wired to a real Career save (its own, kept across reloads) over the real game. Plan `career/INVITATIONS_PLAN.md`, Stage 4 |
-| `new-career/`, `packet-machine/` | Home-screen apps (Share → Add to Home Screen): self-contained copies staged by `validation/tools/lab-bundle.js` from `career-preview-lab.html` and the vending lab. New Career keeps its own save (`ncp:` keys); neither touches the game. Re-stage after a change |
+| `career-main-lab.html`, `js/career-main.js`, `css/career-main.css` | The Career hub (its lab; live in the new Career): a wooden table on the felt, three cards, REDEAL, the feeder and PLAY; packets from the shop lie on it to open, their cards ADDed to your case |
+| `vending-lab.html`, `js/vending-machine.js`, `css/vending-machine.css` | The packet machine (its lab; live in the new Career): Career's shop as a vending machine rolling in under the reel; choose, pay in chips, the drop, take and send; the opening on the hub's felt |
+| `collection-book-lab.html`, `js/collection-book.js`, `css/collection-book.css` | The card album (its lab; live in the new Career): CARDS brings a leather-bound book over the hub's table; three rows of three, bright / dim / empty slots, page turns (flat or curl), numbered tabs, tap to light and take out, hold to carry a card into the reader; corners or sleeves. Plan `career/COLLECTION_BOOK_PLAN.md` |
+| `packet-machine/` | A home-screen app (Share → Add to Home Screen): a self-contained copy of the vending lab staged by `validation/tools/lab-bundle.js`; it doesn't touch the game |
 | `invitation-cards-lab.html`, `js/invitation-cards*.js`, `js/invitation-art.js`, `css/invitation-cards*.css` | Lab: the invitation cards (the hub's card, coloured and finished by rarity, placeholder pixel art per event) over the game. Plan `career/INVITATIONS_PLAN.md` |
 | `js/event-cards.js`, `js/card-inspect.js`, `css/card-inspect.css` | Lab: what an event card is (event + drawn opponents + rarity prize), and the one shared card object and inspect screen (pack opening, album, hub) |
 | `pattern-book.html`, `docs/ui/PATTERN_BOOK.md` | The visual rule book |
@@ -67,7 +68,8 @@ Hub and the end screens.
 ## Saved data (never rename or reformat)
 
 `felt.settings`, `felt.stats`, `felt.table`, `felt.career`,
-`felt.career.table`, `felt.arcade`, `felt.finishes`,
+`felt.career.table`, `felt.career.new` and `felt.career.new.table` (the
+new Career's own save; Settings → Career), `felt.arcade`, `felt.finishes`,
 `felt.gameplay.metrics.v1`, `pip.coach`.
 
 A new saved key also joins `SaveData.KEYS` (`js/save-data.js`) so backups

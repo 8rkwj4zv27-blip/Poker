@@ -65,8 +65,20 @@ check('every precached file exists on disk',()=>{
   assert.deepStrictEqual(missing,[],'missing: '+missing.join(', '));
 });
 
-check('the only precached files index.html does not load are the page, the large icon and faces',()=>{
-  const loaded=new Set(indexRefs.map(bare));
+// the new Career's hub: js/career-link.js loads these itself (PARTS, tag V)
+const link=read('js/career-link.js');
+const linkTag=(/const V = '([^']+)'/.exec(link)||[])[1];
+const linkParts=[...((/const PARTS = \{([\s\S]*?)\};/.exec(link)||[])[1]||'').matchAll(/'((?:css|js)\/[^']+)'/g)].map(m=>m[1]);
+
+check('every part js/career-link.js loads is precached, with its tag',()=>{
+  assert.ok(linkTag && linkParts.length>10,'career-link PARTS not found');
+  const shellTag=new Map(shell.map(u=>[bare(u),tag(u)]));
+  const wrong=linkParts.filter(f=>shellTag.get(f)!==linkTag).map(f=>f+' (sw.js "'+(shellTag.get(f)||'missing')+'")');
+  assert.deepStrictEqual(wrong,[],'career-link part not precached as ?v='+linkTag+': '+wrong.join('; '));
+});
+
+check('the only precached files index.html does not load are the page, the large icon, faces and the hub',()=>{
+  const loaded=new Set(indexRefs.map(bare).concat(linkParts));
   const extra=shell.map(bare).filter(f=>!loaded.has(f) && f!=='' && f!=='index.html' && f!=='icon-512.png' && !f.startsWith('assets/faces/'));
   assert.deepStrictEqual(extra,[],'precached but never loaded: '+extra.join(', '));
 });

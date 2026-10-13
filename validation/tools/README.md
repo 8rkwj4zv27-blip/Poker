@@ -125,17 +125,19 @@ screenshot with `--shots`), so an intermittent bug arrives with its cause.
 Run it before and after any change to files players download. Not part of
 `npm test`, which needs nothing but Node.
 
-## `new-career-scenario.js` — New Career (preview), the whole loop
+## `new-career-scenario.js` — the new Career, the whole loop
 
 ```
 node validation/tools/new-career-scenario.js [--sizes 390x844,375x667] [--shots DIR]
 ```
 
-`career-preview-lab.html` played with real touch: the starter packet torn
+The game itself (`index.html`) played with real touch, a classic Career
+save planted first: the menu's Career key opens the hub, the starter packet torn
 open, its cards turned and added, REDEAL, a card fed and PLAYed, the real
 table (a DEV knock-out keeps it short), BACK TO THE HUB with the prize
 counted in, a House Packet bought, a reload, the album, and the pity
-packet (once, not twice). Each step is checked against the save. About
+packet (once, not twice), the hub's back key to the menu, and the classic
+save untouched. Each step is checked against the save. About
 eight minutes a size. Not part of `npm test`.
 
 ## `invitation-scenario.js` — the Stage 1 invitation, played for real

@@ -1300,32 +1300,38 @@ placeholder cards, over the real game (phone-first; host
   invitation, through `devPlayCareerInvitation` with DEV switched on in
   the copy). Every other card launches nothing.
 
-## `career-preview-lab.html` — New Career (preview) (isolated, 13 October 2026)
+## `js/career-link.js` — the new Career in the game (live, v0.69.0)
 
-Plan: `docs/career/INVITATIONS_PLAN.md`, Stage 4. The real game in one
-frame (host `js/career-preview-host.js`), booting into the Career hub, with
-the hub (`js/career-main.js`), shop (`js/vending-machine.js`), opening
-(`js/pack-opening.js`) and album (`js/collection-book.js`) injected and
-wired to a real Career save. The copy's storage is written through to the
-page's own localStorage under `ncp:` (`persist` in the lab-inject; also in
-`validation/tools/lab-bundle.js`), so a reload carries on; it is never the
-game's save.
+Plan: `docs/career/INVITATIONS_PLAN.md`, Stage 5. Settings → Career
+(`settings.newCareer`, default NEW; `NEW_CAREER` in
+`js/02-support-systems.js` holds for the whole load, so switching reloads).
+The new Career keeps its own save: `CAREER_KEY` is `felt.career.new` and
+`CAREER_TABLE_KEY` `felt.career.new.table` (07, 05); the classic keys are
+never read or written while it's on. On CLASSIC this file does nothing and
+the hub's parts never load.
 
-- `js/career-link.js` (`window.CareerLink`): the connector. Sets
-  `window.CAREER_PREVIEW` (opens invitations, `careerInvitationsOpen`),
-  hands the labs the bankroll, your cards (`pool`, as
-  `EventCards.fromInvitation` cards), your packets, `buy`, `open`,
-  `canOpen`, `room`, `arrivals` (starter and pity), `play` (the card used
-  up, `careerDepartToTable(startCareerEvent)`), `resume`, `albumPages`;
-  maps every return to the old Career screen onto the hub (`rollBackTo`,
-  `showCareerScreen`, `reconstructMainMenu`), and labels the results key
-  BACK TO THE HUB. Each lab hook is `if (LINK)`/`window.CareerLink`
-  guarded, so the labs run alone as before.
-- Checked by `validation/tools/new-career-scenario.js` (the whole loop,
-  real touch, three sizes).
-- Home screen (v0.68.0): `new-career/` is this lab staged by
-  `validation/tools/lab-bundle.js` (its page renamed `index.html`, with a
-  web manifest and icons), at https://8rkwj4zv27-blip.github.io/Poker/new-career/.
-  Re-stage it after any change to the preview; the scenario runs on it with
-  `--root new-career --page index.html`.
+- Loads the hub's parts (`PARTS`, tag `V`; `sw.js` precaches each with the
+  same tag, held together by `offline-list-checks.js`): `career-main.js`,
+  `vending-machine.js`, `collection-book.js`, `pack-opening*.js`,
+  `invitation-*.js`, `event-cards.js`, `card-inspect.js`,
+  `pack-ritual-*.js` and their stylesheets.
+- `window.CareerLink`: the connector. Sets `window.CAREER_PREVIEW` (opens
+  invitations, `careerInvitationsOpen`), hands the hub the bankroll, your
+  cards (`pool`, as `EventCards.fromInvitation` cards), your packets,
+  `buy`, `open`, `canOpen`, `room`, `arrivals` (starter and pity), `play`
+  (the card used up, `careerDepartToTable(startCareerEvent)`), `resume`,
+  `albumPages`, `wipe` (START OVER: the new Career's keys only).
+- `window.CareerHub`: the hub lives in `#home` over the menu; `show()` lays
+  it on (`cm-home` on `#home`, `cm-lab` on the body) and builds it the first
+  time (`CareerMain.start`, which fires `career-hub-built` for the shop and
+  album); the hub's back key (`#cm-back`) calls `hide()`.
+- Replaces `enterCareerFromHome` (the menu's Career key), `showCareerScreen`,
+  `rollBackTo` to the Career screen (the hub instead, with the drum) and
+  `reconstructMainMenu`; the results key reads BACK TO THE HUB.
+- A lab's framed copy of the game (`window.parent !== window`) brings its
+  own parts, so none of this runs there.
+- Checked by `validation/tools/new-career-scenario.js` (the whole loop in
+  `index.html`, real touch, three sizes, the classic save untouched).
+- Archived: `career-preview-lab.html` and its host, and the `new-career/`
+  home-screen copy (v0.68.0) are in `main`'s history at `a28cf9b`.
 
