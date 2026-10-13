@@ -41,6 +41,10 @@ audit's complaints (dashboard rims, clipped result line, chip pile) are gone.
 
 ## Open items (verified, not scheduled)
 
+- New Career (v0.69.0 review): no ABANDON for an event in progress (only
+  CONTINUE); Settings over the hub can offer "Reset current run" for a
+  Quick Deal save; the opening reads sound/motion/haptics once per load;
+  `invitation-scenario.js` and `career-hub-scenario.js` assume CLASSIC.
 - Career: reloading between hands replays the hand just finished (the
   end-of-hand save is its start checkpoint; never counted twice).
 - The owner's notes on the wooden-table hub with the packet machine: https://claude.ai/artifact/WKWLooBRqQNJGYqfbDf1B1

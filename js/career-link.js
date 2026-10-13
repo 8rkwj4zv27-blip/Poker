@@ -81,6 +81,9 @@
     // laid over the menu (the menu itself may still be hidden)
     lay(){ $('home').classList.add('cm-home'); document.body.classList.add('cm-lab'); },
     show(){
+      // the hub's parts still on their way: it comes out as soon as they're here
+      if (!window.CareerMain){ hub.pending = true; return; }
+      hub.pending = false;
       hub.lay();
       if (window.CareerMain?.root) window.CareerMain.refresh();
       else window.CareerMain?.start?.();

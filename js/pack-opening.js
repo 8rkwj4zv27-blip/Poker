@@ -1232,6 +1232,8 @@
     stopTicks?.();
     let acc = 0;
     stopTicks = every(dt => {
+      // embedded, the clock stops once no packet is out (the next opening starts it again)
+      if (EMBED && !packets.length){ nudge(false); stopTicks = null; return false; }
       swingTags(dt * PO.speed);
       acc += dt;
       if (acc < 1 / 7) return;

@@ -784,5 +784,9 @@
   window.CareerMain.start = () => { if (!started){ started = true; setup(); } };
   if (!LINK){
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', window.CareerMain.start); else window.CareerMain.start();
+  } else if (window.CareerHub?.pending){
+    // Career was pressed before this arrived
+    const go = () => window.CareerHub.show();
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', go); else setTimeout(go, 0);
   }
 })();
