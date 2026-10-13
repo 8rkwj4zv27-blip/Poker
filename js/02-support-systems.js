@@ -720,6 +720,9 @@ const DEFAULT_SETTINGS = {
   // Settings → The table (js/table-room.js): { pot, potroom, you, pile, their,
   // lift, fade, mark, pods, coins }; null = the owner's picks (TableRoom.DEFAULTS)
   tableRoom:null,
+  // Settings → Career: the new Career (invitation cards, packets, the hub;
+  // js/career-link.js) or the classic one
+  newCareer:true,
   sound:false, haptics:true, reduceMotion:false, highContrast:false, largeText:false,
   speed:'normal', autoDeal:true, lives:true, confirmAllIn:false,
   playerName:'You', avatarColour:'#D9A93B', opponentNames:'persona',
@@ -759,13 +762,17 @@ const DEFAULT_SETTINGS = {
 const DEFAULT_STATS = { hands:0, won:0, showdownsWon:0, biggestPot:0, net:0 };
 const SAVE_VERSION = 1;
 /* Bump on every release so the main-menu header shows what's actually installed. */
-const BUILD_VERSION = 'v0.68.0-dev · New Career preview';
+const BUILD_VERSION = 'v0.69.0-dev · New Career in the game';
 
 let settings = Object.assign({}, DEFAULT_SETTINGS, Store.get('felt.settings', {}));
 // The Settings menu cleanup dropped RELAXED from the Game Speed control
 // (now just NORMAL/FAST) — migrate anyone still on it so the segmented
 // control has a matching active state instead of showing nothing selected.
 if (settings.speed === 'relaxed') settings.speed = 'normal';
+// Which Career this load plays. The new and the classic Career keep
+// separate saves (CAREER_KEY, CAREER_TABLE_KEY), so the choice holds for
+// the whole load: switching it in Settings reloads the game.
+const NEW_CAREER = settings.newCareer !== false;
 // Tables seat at most six opponents (seven players): bigger tables never
 // fitted the phone. Bring an older, larger choice back inside the range.
 const MAX_OPPONENTS = 6;

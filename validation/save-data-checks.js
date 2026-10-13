@@ -59,6 +59,8 @@ function fill(){
   put('felt.table', { handNumber:7, players:[] });
   put('felt.career', { v:1, bankroll:4200, eventsPlayed:3, eventsWon:1, rosters:{} });
   put('felt.career.table', { eventId:'x' });
+  put('felt.career.new', { v:6, bankroll:365, invitations:[], packets:[], starterGiven:true });
+  put('felt.career.new.table', { eventId:'y' });
   put('felt.arcade', { highScore:9000, discovered:{ a:true }, counts:{ a:2 }, bestByEvent:{} });
   put('felt.finishes', { press:'soft' });
   put('felt.gameplay.metrics.v1', { v:1, formats:{} });
@@ -81,7 +83,8 @@ check('every storage key in the live code is in the backup', () => {
   files.forEach(f => {
     const src = read(f);
     for (const m of src.matchAll(/Store\.(?:get|set|remove)\('([^']+)'/g)) keys.add(m[1]);
-    for (const m of src.matchAll(/_KEY\s*=\s*'([^']+)'/g)) keys.add(m[1]);
+    // (a Career key names both saves: NEW_CAREER ? 'new' : 'classic')
+    for (const m of src.matchAll(/_KEY\s*=\s*(?:NEW_CAREER\s*\?\s*'([^']+)'\s*:\s*)?'([^']+)'/g)) [m[1], m[2]].filter(Boolean).forEach(k => keys.add(k));
   });
   keys.forEach(k => assert(SaveData.KEYS.includes(k), k + ' is saved by the game but missing from the backup'));
 });

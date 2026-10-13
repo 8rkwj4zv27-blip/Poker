@@ -1,19 +1,21 @@
 #!/usr/bin/env node
 "use strict";
-/* New Career (preview), the whole loop, played with real touch in an
-   emulated iPhone (career-preview-lab.html; docs/career/INVITATIONS_PLAN.md,
-   Stage 4). Not part of `npm test` (needs Playwright and Chromium).
+/* The new Career, the whole loop, played with real touch in an emulated
+   iPhone, in the game itself (index.html; docs/career/INVITATIONS_PLAN.md,
+   Stage 5). Not part of `npm test` (needs Playwright and Chromium).
 
-   A fresh Career: the starter packet on the felt → torn open → its four
+   A classic Career save is planted first and must come out untouched.
+   The menu's Career key opens the hub on a fresh new Career: the starter packet on the felt → torn open → its four
    cards turned and added → REDEAL deals three of yours → one dragged into
    the feeder and PLAYed → the real table (knocked out with DEV BUST ME, to
    keep it short; the full ten hands are invitation-scenario.js's job) →
    BACK TO THE HUB → the prize counted in → the shop: a House Packet bought
    with the bankroll → a reload: everything where it was → the album shows
    what you hold → broke and cardless: one pity packet, not two (a second
-   visit, a reload). Every step is checked against the save itself.
+   visit, a reload) → the hub's back key: the menu again → the classic
+   Career save as it was. Every step is checked against the save itself.
 
-     node validation/tools/new-career-scenario.js [--sizes 390x844,375x667] [--shots DIR] [--root BUNDLE] [--page index.html]
+     node validation/tools/new-career-scenario.js [--sizes 390x844,375x667] [--shots DIR]
 */
 const http = require('http');
 const fs = require('fs');
@@ -21,10 +23,7 @@ const path = require('path');
 const assert = require('assert');
 const { withPage } = require('./touch-harness');
 
-const arg0 = (name, fallback) => { const i = process.argv.indexOf('--' + name); return i > 0 ? process.argv[i + 1] : fallback; };
-// --root: a staged bundle (validation/tools/lab-bundle.js), as published
-const ROOT = path.resolve(arg0('root', path.join(__dirname, '..', '..')));
-const PAGE = arg0('page', 'career-preview-lab.html'); // --page index.html for new-career/
+const ROOT = path.resolve(__dirname, '..', '..');
 const arg = (name, fallback) => { const i = process.argv.indexOf('--' + name); return i > 0 ? process.argv[i + 1] : fallback; };
 const SIZES = arg('sizes', '390x844,375x667,430x932').split(',').map(s => s.split('x').map(Number));
 const SHOTS = arg('shots', null);
@@ -58,14 +57,25 @@ async function run(base, width, height, reducedMotion){
   const steps = [];
   const step = (name, ok, detail) => steps.push((ok ? 'ok    ' : 'FAIL  ') + name + (detail ? '  (' + detail + ')' : ''));
   const errors = await withPage({ width, height, reducedMotion }, async (page, touch) => {
-    let fr, ifr;
+    const fr = page.mainFrame(), ifr = { x:0, y:0 };
+    // a classic Career that must never be touched
+    const CLASSIC = JSON.stringify({ planted:true });
+    const classic = () => page.evaluate(() => [localStorage.getItem('felt.career'), localStorage.getItem('felt.career.table')]);
+    // the game, then Career from the menu: the hub over it
     const boot = async fresh => {
-      await page.goto(base + '/' + PAGE);
-      if (fresh){ await page.evaluate(() => localStorage.clear()); await page.reload(); }
-      await page.locator('#ncp-game').contentFrame().locator('#cm').waitFor({ timeout:30000 });
-      fr = page.frames().find(f => f !== page.mainFrame());
-      ifr = await page.locator('#ncp-game').boundingBox();
-      await fr.waitForFunction(() => window.CareerMain && CareerMain.ready && !CareerMain.state.busy, null, { timeout:30000 });
+      await page.goto(base + '/index.html');
+      if (fresh){
+        await page.evaluate(c => {
+          localStorage.clear();
+          localStorage.setItem('felt.settings', JSON.stringify({ seenIntro:true, seenTour:true }));
+          localStorage.setItem('felt.career', c);
+        }, CLASSIC);
+        await page.reload();
+      }
+      await page.waitForFunction(() => window.CareerHub && !document.getElementById('home').classList.contains('hidden'), null, { timeout:30000 });
+      await page.waitForTimeout(2500);   // the menu's boot
+      await tap(...await centre('#open-career'));
+      await fr.waitForFunction(() => window.CareerMain && CareerMain.ready && !CareerMain.state.busy && CareerHub.open, null, { timeout:30000 });
       await page.waitForTimeout(400);
     };
     const save = () => fr.evaluate(() => ({ bank:careerBankroll(), cards:careerInvitations().map(c => c.eventId), packets:careerPackets().map(p => p.kind),
@@ -77,7 +87,7 @@ async function run(base, width, height, reducedMotion){
       while (Date.now() - t < ms){ if (await fn()) return; await page.waitForTimeout(80); }
       throw new Error('waiting for ' + what + ': hub ' + JSON.stringify(await hub().catch(() => null)) + ' save ' + JSON.stringify(await save().catch(() => null)));
     };
-    const centre = async sel => { const r = await page.locator('#ncp-game').contentFrame().locator(sel).first().boundingBox(); assert.ok(r, sel + ' visible'); return [r.x + r.width / 2, r.y + r.height / 2]; };
+    const centre = async sel => { const r = await page.locator(sel).first().boundingBox(); assert.ok(r, sel + ' visible'); return [r.x + r.width / 2, r.y + r.height / 2]; };
     const tap = async (x, y) => { await touch.start(x, y); await page.waitForTimeout(30); await touch.end(); await page.waitForTimeout(80); };
     const where = async (k, i) => { const q = await fr.evaluate(([k, i]) => CareerMain.where(k, i), [k, i]); return q && { ...q, x:q.x + ifr.x, y:q.y + ifr.y }; };
     const mid = async () => tap(...await centre('[data-key="play"]'));
@@ -210,6 +220,15 @@ async function run(base, width, height, reducedMotion){
     await boot(false);
     const p2 = (await save()).packets;
     step('stuck: one pity packet, never two', p1.join() === 'pity' && p2.join() === 'pity' && (await hub()).packets === 1, p1.join() + ' / ' + p2.join());
+
+    // 10. the back key: the menu again, Career still there to open
+    await until(async () => !(await hub()).busy, 'the hub settled');
+    await tap(...await centre('#cm-back'));
+    await page.waitForTimeout(400);
+    const menu = await page.evaluate(() => ({ hub:CareerHub.open, key:!!document.getElementById('open-career').offsetParent, cm:!!document.getElementById('cm').offsetParent }));
+    step('BACK: the menu again', !menu.hub && menu.key && !menu.cm, JSON.stringify(menu));
+    const [c, t] = await classic();
+    step('the classic Career save untouched', c === CLASSIC && t === null, String(c));
   });
   step('no JavaScript errors', !errors.filter(e => !/vibrate|favicon|status of 404/.test(e)).length, errors.join(' · '));
   return steps;

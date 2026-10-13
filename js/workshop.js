@@ -125,6 +125,20 @@
   play.appendChild(row('Auto-continue', 'Deals the next hand by itself.', take('sw-autodeal')));
   play.appendChild(row('Award Pot', 'When the machine waits for your AWARD POT press before paying out.', take('sd-award-seg'), 'below'));
   play.appendChild(row('Confirm all-in', 'Asks before you push your whole stack.', take('sw-confirm-allin')));
+  // CAREER: the new one (invitation cards and packets, js/career-link.js)
+  // or the classic one. Each keeps its own save, so the game restarts to
+  // switch (NEW_CAREER holds for a whole load).
+  const careerSeg = el('div', 'segmented compact'); careerSeg.id = 'career-seg';
+  careerSeg.setAttribute('role', 'group'); careerSeg.setAttribute('aria-label', 'Career');
+  [['new', 'New'], ['classic', 'Classic']].forEach(([v, t]) => {
+    const k = el('button', (v === 'new') === NEW_CAREER ? 'active' : '', t); k.type = 'button'; k.dataset.v = v; careerSeg.appendChild(k);
+  });
+  careerSeg.addEventListener('click', e => {
+    const k = e.target.closest('button'); if (!k || (k.dataset.v === 'new') === NEW_CAREER) return;
+    settings.newCareer = k.dataset.v === 'new'; saveSettings();
+    location.reload();
+  });
+  play.appendChild(row('Career', 'New: invitation cards and packets. Classic: the venues. Each has its own save; switching restarts the game.', careerSeg));
 
   // HELP: the machine's instruments
   const help = plate('help', 'Help');

@@ -112,7 +112,7 @@
     root = document.createElement('main');
     root.id = 'cm'; root.className = 'lobby-card pc-housing';
     root.innerHTML = `
-      <header class="cm-rail"><button class="icon-btn cm-icon" type="button" aria-label="Back"><i class="ci-arrow is-left"></i></button><span class="cm-title">CAREER</span><button class="icon-btn cm-icon" id="cm-tune" type="button" aria-label="Tune">TUNE</button></header>
+      <header class="cm-rail"><button class="icon-btn cm-icon" id="cm-back" type="button" aria-label="Back"><i class="ci-arrow is-left"></i></button><span class="cm-title">CAREER</span><button class="icon-btn cm-icon" id="cm-tune" type="button" aria-label="Tune">TUNE</button></header>
       <div class="cm-cabinet">
         <div class="ch2-bankroll-housing cm-bank"><div class="ch2-bankroll-reel" id="cm-reel"></div></div>
         <div class="cm-row"><div class="cm-slot"><b class="cm-plate">INSERT CARD</b><div class="cm-mouth"><i class="cm-throat"></i></div></div></div>
@@ -125,26 +125,36 @@
       <section class="po-sheet cm-sheet" id="cm-sheet" hidden aria-label="Tune">
         <h2>CAREER</h2>
         <p>The tray is the house's, the felt is yours. REDEAL for three more. Tap the deck to turn a card over; tap it again for the next, or anywhere else to put the card down. Pick anything up and move it, or throw it: cards thrown off go into your collection. Drag a card up into the feeder, PLAY. Double tap empty felt to tidy up.</p>
-        ${LINK ? '<h3>THIS PREVIEW</h3><div class="cm-seg"><button class="pc-button pc-button-secondary" id="cm-restart">START OVER</button></div>'
+        ${LINK ? '<h3>THE NEW CAREER</h3><div class="cm-seg"><button class="pc-button pc-button-secondary" id="cm-restart">START OVER</button></div>'
           : '<h3>BANKROLL</h3>' + seg('bank', Object.fromEntries(BANKS.map(b => [b, money(b)])))}
         <div class="cm-seg"><button class="pc-button pc-button-secondary" id="cm-done">DONE</button></div>
       </section>`;
-    document.body.classList.add('cm-lab');
     const home = document.getElementById('home');
-    home.classList.add('cm-home'); home.classList.remove('hidden');
-    [...home.classList].filter(c => c.startsWith('hb-')).forEach(c => home.classList.remove(c));
+    // (in the game, js/career-link.js lays the hub over the menu and takes it off)
+    if (!LINK){
+      document.body.classList.add('cm-lab');
+      home.classList.add('cm-home'); home.classList.remove('hidden');
+      [...home.classList].filter(c => c.startsWith('hb-')).forEach(c => home.classList.remove(c));
+    }
     home.append(root);
     felt = $('.cm-felt > .felt');
     stage = { el:felt, objects:felt.querySelector('.po-objects'), shadows:felt.querySelector('.po-shadows'), fx:felt.querySelector('.po-fx') };
     woodEl = $('.cm-wood'); slotEl = $('.cm-slot'); mouthEl = $('.cm-mouth'); plateEl = $('.cm-plate');
     $('#cm-tune').onclick = () => { $('#cm-sheet').hidden = !$('#cm-sheet').hidden; };
     $('#cm-done').onclick = () => { $('#cm-sheet').hidden = true; };
-    // the preview's own save, wiped on a second tap (no confirm dialogs here)
+    // the new Career's own save, wiped on a second tap (the classic
+    // Career, settings and stats are left alone)
     if (LINK) $('#cm-restart').onclick = e => {
       const b = e.currentTarget;
       if (b.dataset.armed !== '1'){ b.dataset.armed = '1'; b.textContent = 'TAP AGAIN TO WIPE IT'; return; }
-      try { localStorage.clear(); } catch (err) {}
+      LINK.wipe();
       location.reload();
+    };
+    // back to the menu, once nothing is moving and the shop and album are away
+    $('#cm-back').onclick = () => {
+      if (!LINK || busy || window.CareerShop?.out || window.CareerAlbum?.out) return;
+      $('#cm-sheet').hidden = true;
+      window.CareerHub.hide();
     };
     root.querySelectorAll('.cm-seg[data-key] button').forEach(b => b.onclick = () => {
       wallet = +b.dataset.v;
@@ -747,6 +757,8 @@
     measure();
     fillPool();
     keys();
+    // the shop and the album build onto the hub (in the game, only now)
+    document.dispatchEvent(new Event('career-hub-built'));
     await wait(400);
     busy = true; await tossIn([0, 1, 2]); busy = false;
     if (LINK){ await layPackets(); keys(); }
@@ -754,6 +766,7 @@
     // the felt can change size (the TUNE sheet, the phone turning): the
     // house's cards keep to the tray, everything else stays on the felt
     new ResizeObserver(() => {
+      if (!felt.clientWidth) return;   // the hub taken off the menu
       measure();
       if (busy) return;
       const W = felt.clientWidth, H = felt.clientHeight;
@@ -765,5 +778,11 @@
       });
     }).observe(felt);
   }
-  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', setup); else setup();
+  // in the game the hub builds the first time Career is opened
+  // (js/career-link.js); alone in its lab, as soon as the page is up
+  let started = false;
+  window.CareerMain.start = () => { if (!started){ started = true; setup(); } };
+  if (!LINK){
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', window.CareerMain.start); else window.CareerMain.start();
+  }
 })();

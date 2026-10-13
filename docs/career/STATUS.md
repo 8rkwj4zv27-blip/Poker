@@ -8,6 +8,11 @@ research how something specific was built or decided, never by default.
 
 ## Current state
 
+- **13 Oct 2026, v0.69.0: Career is moving to invitations.** Settings →
+  Career is NEW by default: the menu's Career key opens the new hub
+  (invitation cards, packets, the shop, the album; ten sample events) on
+  its own save (`felt.career.new`). CLASSIC is everything below, untouched
+  on its own save. Plan and stages: `INVITATIONS_PLAN.md`.
 - Last checked: 7 October 2026, against v0.66.1. Since v0.64.4 (Abandon /
   Cash Out on the paid ticket) Career's only changes are the audit's file
   tidy and save data (v0.65.0), which backs up and restores the Career

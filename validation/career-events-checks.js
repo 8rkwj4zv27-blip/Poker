@@ -55,7 +55,7 @@ function makeTableContext(playerName){
     '\nglobalThis.__tableTest={ newGame, launchRoster:careerLaunchRoster, getGame:()=>game };', context);
   return context.__tableTest;
 }
-const careerCode = sliceBetween(wiringSource, "const CAREER_KEY = 'felt.career';", 'function startSinglePlayerRun');
+const careerCode = sliceBetween(wiringSource, "const CAREER_KEY = NEW_CAREER ? 'felt.career.new' : 'felt.career';", 'function startSinglePlayerRun');
 const devCareerBankrollCode = sliceBetween(devSource, 'function normalizeDevCareerBankroll', 'function initDevPanel');
 
 function clone(value){ return value == null ? value : JSON.parse(JSON.stringify(value)); }
@@ -84,6 +84,7 @@ function makeContext(initialCareer){
     return elements.get(id);
   };
   const context = {
+    NEW_CAREER:false,
     console,
     BLIND_LEVELS:[[10,20],[15,30],[25,50],[50,100]],
     Store:{
@@ -2766,10 +2767,11 @@ check('Packets and the starter are closed outside DEV and the preview', ()=>{
   assert.strictEqual(api.getCareer().starterGiven,undefined);
 });
 
-check('Invitation card preview: isolated, and only the live event can be played', ()=>{
+check('Invitation cards: loaded only by the new Career, and only the live event can be played', ()=>{
   const indexHtml=fs.readFileSync(path.join(root,'index.html'),'utf8');
   const sw=fs.readFileSync(path.join(root,'sw.js'),'utf8');
-  ['invitation-cards','invitation-art'].forEach(n=>{ assert.ok(!indexHtml.includes(n),'index.html links '+n); assert.ok(!sw.includes(n),'sw.js precaches '+n); });
+  const link=fs.readFileSync(path.join(root,'js/career-link.js'),'utf8');
+  ['invitation-cards','invitation-art'].forEach(n=>{ assert.ok(!indexHtml.includes(n),'index.html links '+n); assert.ok(sw.includes(n) && link.includes("'js/"+n+".js'"),'career-link loads and sw.js precaches '+n); });
   const host=fs.readFileSync(path.join(root,'js/invitation-cards-lab-host.js'),'utf8');
   assert.ok(host.includes('Storage.prototype') && host.includes('pwa-service-worker'),'the lab copy runs on in-memory storage');
   const { context }=makeContext(openCareer());

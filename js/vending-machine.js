@@ -972,5 +972,7 @@ window.PO_EMBED = true;
       slots:() => slots.map(s => ({ i:s.i, id:s.id, r:s.r, c:s.c, count:s.count }))
     };
   }
-  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', () => setTimeout(setup, 0)); else setTimeout(setup, 0);
+  // onto the hub once it's built (in the game, the first time Career opens)
+  const begin = () => { if (window.CareerMain?.root) setup(); else document.addEventListener('career-hub-built', setup, { once:true }); };
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', () => setTimeout(begin, 0)); else setTimeout(begin, 0);
 })();

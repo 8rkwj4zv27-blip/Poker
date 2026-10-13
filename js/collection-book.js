@@ -811,6 +811,7 @@
   };
   function start(){
     if (window.CareerMain && document.querySelector('#cm .cm-felt')) build();
+    else if (window.CareerLink) document.addEventListener('career-hub-built', () => requestAnimationFrame(start), { once:true });
     else requestAnimationFrame(start);
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start); else start();

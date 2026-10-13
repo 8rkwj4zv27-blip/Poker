@@ -554,7 +554,8 @@ async function launchSinglePlayerFromMenu(opponentCount){
    Table chips never touch the bankroll: chips are g.players[].chips, the
    bankroll is off-table money in 'felt.career'.
    ============================================================ */
-const CAREER_KEY = 'felt.career';
+// the new Career keeps its own save; the classic one stays as it was
+const CAREER_KEY = NEW_CAREER ? 'felt.career.new' : 'felt.career';
 /* Independent of the table SAVE_VERSION. Bumped 2 -> 3 for multi-place
    payouts: active snapshots gained `payouts`, the catalogue gained a third
    unlock entry, and lastResult gained place/prize. Two structurally

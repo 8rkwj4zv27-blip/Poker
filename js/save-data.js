@@ -29,9 +29,9 @@ const SaveData = (() => {
   const CODE_PREFIX = 'PF1:';
   // every key the game saves (docs/QUICKMAP.md, "Saved data")
   const KEYS = ['felt.settings', 'felt.stats', 'felt.table', 'felt.career', 'felt.career.table',
-    'felt.arcade', 'felt.finishes', 'felt.gameplay.metrics.v1', 'pip.coach'];
+    'felt.career.new', 'felt.career.new.table', 'felt.arcade', 'felt.finishes', 'felt.gameplay.metrics.v1', 'pip.coach'];
   const STATS_KEYS = ['felt.stats', 'felt.arcade', 'felt.gameplay.metrics.v1'];
-  const START_OVER_KEYS = STATS_KEYS.concat(['felt.career', 'felt.career.table', 'felt.table', 'pip.coach']);
+  const START_OVER_KEYS = STATS_KEYS.concat(['felt.career', 'felt.career.table', 'felt.career.new', 'felt.career.new.table', 'felt.table', 'pip.coach']);
 
   /* ---- the save itself ---- */
   function snapshot(){
@@ -53,7 +53,7 @@ const SaveData = (() => {
     const isObj = v => !!v && typeof v === 'object' && !Array.isArray(v);
     if ('felt.settings' in data && !isObj(data['felt.settings'])) return null;
     if ('felt.stats' in data && !isObj(data['felt.stats'])) return null;
-    if ('felt.career' in data && !(isObj(data['felt.career']) && Number.isFinite(data['felt.career'].bankroll))) return null;
+    if (['felt.career', 'felt.career.new'].some(k => k in data && !(isObj(data[k]) && Number.isFinite(data[k].bankroll)))) return null;
     return save;
   }
   // a restore replaces everything: a key the save doesn't have is cleared
@@ -71,6 +71,8 @@ const SaveData = (() => {
     const d = save.data, parts = [];
     const c = d['felt.career'];
     if (c) parts.push('Career bankroll $' + Math.round(c.bankroll).toLocaleString());
+    const n = d['felt.career.new'];
+    if (n) parts.push('New Career bankroll $' + Math.round(n.bankroll).toLocaleString());
     const s = d['felt.stats'];
     if (s && Number.isFinite(s.hands)) parts.push(s.hands.toLocaleString() + ' hands played');
     const when = new Date(save.savedAt);

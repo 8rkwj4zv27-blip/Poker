@@ -1,8 +1,10 @@
 /* ============================================================
-   CAREER MAIN — js/career-main.js (lab only)
+   CAREER MAIN — js/career-main.js (the new Career's hub, and its lab)
    ============================================================ */
 body.cm-lab #home{ display:flex!important; position:fixed; inset:0; padding:10px; overflow:clip; visibility:visible!important; opacity:1!important; transform:none!important; }
 #home.cm-home > :not(#cm):not(#ci){ display:none!important; }
+/* in the game the hub is laid over the menu only while it's out (js/career-link.js) */
+#home:not(.cm-home) > #cm{ display:none!important; }
 #home #cm.lobby-card{ height:100%; max-height:none; margin:0; gap:8px; padding:10px; overflow:clip; display:flex; flex-direction:column; }
 
 /* the rail: back, the screen's name, the lab's key */

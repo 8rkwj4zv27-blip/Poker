@@ -40,6 +40,10 @@ reached `main`. Releases before v0.39.8 are recorded in
   and a tool that plays whole Career events to measure it
   (`validation/tools/event-sim.js`).
 
+## v0.69 — 13 October 2026
+
+- **v0.69.0** The new Career in the game. Career on the menu now opens the new hub: invitation cards in four rarities, ten sample events, the starter, House and pity packets, the packet machine and the album. It starts fresh at $500 on its own save. Settings → Career switches back to the classic Career (venues and tickets), whose save is kept as it was; switching restarts the game. The separate New Career home-screen app from v0.68.0 is gone.
+
 ## v0.68 — 13 October 2026
 
 - **v0.68.0** No change to the game you play. New Career (preview) gets its own home-screen app, `new-career/` (Share → Add to Home Screen), with its own save: invitation cards in four rarities, ten sample events, the starter, House and pity packets, the shop and the album. Inside the game, the invitation code sits behind DEV only (a HAND n/10 readout, prizes shared on a tie).

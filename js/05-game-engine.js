@@ -434,7 +434,7 @@ function clearTableSave(){ Store.remove('felt.table'); }
    (see the note above serializeTable): no deck, board, hole cards or live
    betting state. Resuming re-deals the current hand. Exact current-hand
    resume is deferred work, not solved here. */
-const CAREER_TABLE_KEY = 'felt.career.table';
+const CAREER_TABLE_KEY = NEW_CAREER ? 'felt.career.new.table' : 'felt.career.table';
 
 function isValidCareerTableSave(save){
   if (!save || typeof save !== 'object') return false;
