@@ -61,6 +61,13 @@ function measure(){
   }
   const seats = parts('.seat');
   seats.forEach((a, i) => seats.slice(i + 1).forEach(b => { if (meet(box(a), box(b))) out.push('two seats overlap'); }));
+  // every face-up card's rank and suit in its top-left corner: the album's
+  // inspect screen once took the same class name (.ci) and spread the
+  // corner across the whole card, centring the rank (v0.71.0)
+  [...document.querySelectorAll('.card:not(.back) .ci')].filter(vis).forEach(n => {
+    const c = box(n.closest('.card')), r = box(n);
+    if (r.x < c.x - 1 || r.y < c.y - 1 || r.h > c.h * .7) out.push('a card\'s rank and suit are out of its corner');
+  });
   return { problems:out, clock:clock ? clock.textContent : null };
 }
 

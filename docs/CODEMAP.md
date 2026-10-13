@@ -524,6 +524,19 @@ Double-tap the dashboard case to check (`humanAct('check')`); facing a bet
 it refuses with a buzz and CAN'T KNOCK. The Dashboard V2 order's
 behaviour, ported from `js/dashboard-order.js`.
 
+## `card-faces-lab.html` + `js/card-faces-lab-host.js` + `js/card-faces-lab.js` + `css/card-faces-lab.css` — Card Faces Lab
+
+Phone lab (13 Oct 2026, owner's request) for the playing cards' fronts.
+The host loads the real game as in the Showdown Lab; the in-game script
+deals a quick game and adds a FACES key and sheet. Each candidate
+(CLASSIC, JUMBO, TAB, PRINTED, TINTED, BEVEL) is CSS keyed by
+`data-face` on `#app` (the live table) or on a specimen in the sheet,
+over the game's own card markup (`cardInner`/`cardClass`,
+`js/06-presentation.js`): zoom, transforms and percentages only, so every
+size the game sets keeps its proportions; the seats' small cards keep
+their big suit unscaled. Link: https://claude.ai/artifact/VcHxdi5WZeTFN77a5jJX6D.
+The pick ships as a `data-face` on the body beside `data-deck`.
+
 ## `action-drum-lab.html` + `js/action-drum-lab.js` — Action Drum (Lab)
 
 Where the drum was ordered (rounds 1–3). Runs the real game with a TUNE

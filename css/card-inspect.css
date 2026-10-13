@@ -45,12 +45,12 @@
   box-shadow:0 3px 0 rgba(0,0,0,.55); }
 
 /* ---- the inspect screen: its own top layer over whatever opened it ---- */
-.ci{ position:fixed; inset:0; z-index:400; touch-action:none; user-select:none; -webkit-user-select:none; overflow:hidden; }
-.ci[hidden]{ display:none; }
+.ci-root{ position:fixed; inset:0; z-index:400; touch-action:none; user-select:none; -webkit-user-select:none; overflow:hidden; }
+.ci-root[hidden]{ display:none; }
 .ci-dim{ position:absolute; inset:0; background:#06030a; opacity:0; }
 .ci-stage, .ci-stage > div{ position:absolute; inset:0; pointer-events:none; }
 .ci-objects{ z-index:2; } .ci-fx{ z-index:4; }
-.ci .po-body{ pointer-events:auto; }
+.ci-root .po-body{ pointer-events:auto; }
 .ci-back{ position:absolute; z-index:6; top:max(10px,var(--safe-top)); right:12px; width:60px; height:44px; font:9px/1.2 var(--font-hdr); }
 .ci-back[hidden]{ display:none; }
 /* a design you haven't pulled: a dark silhouette */

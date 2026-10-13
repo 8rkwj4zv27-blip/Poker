@@ -27,8 +27,8 @@ the table sweep, the lab suites) pass.
 
 - 13 Oct (v0.71.0): the event clock (no more counter on a face), duels
   (Face to Face, Last Stack Wins), rising blinds + a chip bonus in
-  hand-count events, the curated tray; the table sweep; lab for the
-  owner's sign-off: `new-career-lab.html` (link in the plan, Stage 7).
+  hand-count events, the curated tray, playing cards' corners (a class
+  clash since v0.69); the table sweep; `new-career-lab.html` (Stage 7).
 - 13 Oct (v0.70.0): the New Career polish pass (Stage 6 of the
   [plan](career/INVITATIONS_PLAN.md)): the hub on its own screen, every
   move on the drum (shop included); one result stage for every invitation
@@ -73,7 +73,8 @@ own speech bubbles (`claude/tender-dijkstra-zso8dm`).
 **Career is moving to invitations** (owner, 12 Oct). Stages 1-7 of
 [`career/INVITATIONS_PLAN.md`](career/INVITATIONS_PLAN.md) are live
 (v0.71.0). Next: the owner's sign-off on the event clock and the tray
-from `new-career-lab.html`; then end screens per format (deferred by the
+from `new-career-lab.html`, and a pick of card fronts from
+`card-faces-lab.html` (https://claude.ai/artifact/VcHxdi5WZeTFN77a5jJX6D); then end screens per format (deferred by the
 owner), the new Career's goal (album + packet tiers recommended), retiring
 the classic Career, the catalogue's size; the special-rules events.
 Workflow: [`WORKFLOW.md`](WORKFLOW.md).

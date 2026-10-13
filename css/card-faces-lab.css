@@ -1,0 +1,97 @@
+/* CARD FACES LAB — candidate fronts for the playing cards (card-faces-lab.html).
+   Lab only: never loaded by the game. Each design is CSS over the game's own
+   card (.card > .ci > .r + .s, and the .pip), keyed by data-face on the
+   game's #app (the live table) or on a specimen in the lab's sheet. Sizes
+   come from zoom, transforms and percentages, never new font sizes, so every
+   card size the game already sets (board, your two, the seats' small
+   ones, the hand guide) keeps its proportions. The rank and suit always
+   stay in the top-left corner: that's the part you read when cards
+   overlap. Suit colours are the game's tokens, so FOUR COLOUR still works. */
+
+/* ---- 2. JUMBO: a tall rank you read from across the room ---- */
+[data-face="jumbo"] .card:not(.back) .ci{ top:1px; left:3px; }
+[data-face="jumbo"] .card:not(.back) .r{ font-family:var(--font-px); font-weight:700; line-height:.9; zoom:1.6; }
+[data-face="jumbo"] .card:not(.back) .s{ zoom:1.2; }
+[data-face="jumbo"] .card:not(.back) .pip{ transform:scale(1.3); transform-origin:100% 100%; }
+[data-face="jumbo"] .card.small:not(.back) .r{ zoom:1.35; }
+[data-face="jumbo"] .card.small:not(.back) .s{ zoom:1; }
+
+/* ---- 3. TAB: the rank stamped in cream on a suit-coloured tab ---- */
+[data-face="tab"] .card:not(.back) .ci{ top:0; left:0; padding:3px 3px 2px; border-radius:1px 0 3px 0; background:currentColor;
+  box-shadow:inset -1px -1px 0 rgba(0,0,0,.25); }
+[data-face="tab"] .card:not(.back) .r,
+[data-face="tab"] .card:not(.back) .s{ color:var(--card-face); }
+[data-face="tab"] .card:not(.back) .pip{ transform:scale(1.15); transform-origin:100% 100%; }
+
+/* ---- 4. PRINTED: a real card's face, a printed frame and one big suit in the middle ---- */
+[data-face="printed"] .card:not(.back)::before{ content:''; position:absolute; inset:3px; border:1px solid currentColor; border-radius:1px; opacity:.28; pointer-events:none; }
+[data-face="printed"] .card:not(.back) .ci{ z-index:1; padding:0 1px 1px 0; background:var(--card-face); }
+[data-face="printed"] .card:not(.back) .r{ font-family:var(--font-px); font-weight:700; zoom:1.15; }
+[data-face="printed"] .card:not(.back) .pip{ right:auto; bottom:auto; left:60%; top:66%; transform:translate(-50%,-50%) scale(1.35); }
+/* the seats' small cards: no room for a middle suit, so it stays in the corner */
+[data-face="printed"] .card.small:not(.back)::before{ inset:2px; }
+[data-face="printed"] .card.small:not(.back) .pip{ left:auto; top:auto; right:2px; bottom:1px; transform:none; }
+
+/* ---- 5. TINTED: the face takes a wash of its suit, so colour reads first ---- */
+[data-face="tinted"] .card:not(.back){ --face-tint:currentColor; background:color-mix(in srgb, var(--card-face) 84%, var(--face-tint)); }
+/* black would only grey the card: spades and clubs get a cool slate wash
+   (with FOUR COLOUR on, clubs are green and take their own) */
+[data-face="tinted"] .card.spade:not(.back),
+body:not([data-deck="four"]) [data-face="tinted"] .card.club:not(.back){ --face-tint:#5F86A6; }
+[data-face="tinted"] .card:not(.back) .pip{ transform:scale(1.2); transform-origin:100% 100%; }
+[data-face="tinted"] #hud-mid .seat.you .seat-cards .card:not(.back):not(.card-turning){
+  background:linear-gradient(to top, rgba(40,8,12,.2) calc(var(--holder-bury, 11) * 1px), rgba(40,8,12,0) calc(var(--holder-bury, 11) * 1px + 14px)),
+    color-mix(in srgb, var(--card-face) 84%, var(--face-tint));
+}
+
+/* ---- 6. BEVEL: a chunky pixel tile, lit top-left and shaded bottom-right, on dithered card stock ---- */
+[data-face="bevel"] .card:not(.back){
+  background:repeating-conic-gradient(rgba(60,40,20,.05) 0% 25%, transparent 0% 50%) 0 0/2px 2px, var(--card-face);
+  box-shadow:0 3px 0 rgba(0,0,0,.5), inset 2px 2px 0 #FFFFFF, inset -2px -2px 0 rgba(90,70,40,.28);
+}
+[data-face="bevel"] .card:not(.back) .r{ text-shadow:1px 1px 0 rgba(0,0,0,.18); }
+[data-face="bevel"] .card:not(.back) .pip{ transform:scale(1.15); transform-origin:100% 100%; text-shadow:1px 1px 0 rgba(0,0,0,.18); }
+
+/* the small cards (the seats', the duel's, the hand guide's): no room to
+   grow the big suit in any design */
+[data-face] .card.small:not(.back) .pip{ transform:none; }
+
+/* ---- the lab's FACES key and sheet (inside the game copy) ---- */
+.cfl-key{
+  position:fixed; z-index:9000; right:0; top:46%; width:28px; min-height:64px; padding:6px 2px;
+  border:2px solid #080405; border-right:0; border-radius:4px 0 0 4px; background:#34171A; color:#E8B83A;
+  font:7px/1 var(--font-hdr); letter-spacing:.1em; writing-mode:vertical-rl; cursor:pointer; opacity:.9;
+  box-shadow:inset 0 2px 0 rgba(255,255,255,.08); -webkit-tap-highlight-color:transparent;
+}
+.cfl-sheet{
+  position:fixed; z-index:9001; left:0; right:0; bottom:0; max-height:82%; display:flex; flex-direction:column;
+  background:#24100F; border-top:3px solid #E8B83A; box-shadow:0 -10px 0 rgba(0,0,0,.35);
+  color:#F3E6C4; font-family:var(--font-px); font-size:14px;
+}
+.cfl-sheet[hidden]{ display:none; }
+.cfl-head{ display:flex; align-items:center; gap:8px; padding:8px 8px 8px 14px; background:#140709; border-bottom:2px solid #080405; }
+.cfl-head h2{ flex:1; margin:0; font:8px/1.4 var(--font-hdr); letter-spacing:.1em; color:#E8B83A; }
+.cfl-head button{ min-width:44px; min-height:44px; border:0; border-radius:2px; background:#34171A; color:#F3E6C4; font:12px var(--font-hdr); }
+.cfl-body{ overflow:auto; -webkit-overflow-scrolling:touch; padding:10px 12px calc(16px + env(safe-area-inset-bottom,0px)); display:flex; flex-direction:column; gap:8px; }
+.cfl-sub{ margin:0 2px 2px; font-size:12px; line-height:1.4; color:#B69A7A; }
+.cfl-pick{
+  display:flex; flex-direction:column; gap:8px; width:100%; padding:10px; text-align:left; cursor:pointer;
+  border:2px solid #080405; border-radius:3px; background:#34171A; color:#F3E6C4; font:inherit;
+  box-shadow:inset 0 2px 0 rgba(255,255,255,.06),0 3px 0 #080405; -webkit-tap-highlight-color:transparent;
+}
+.cfl-pick.is-on{ background:#3E2A12; border-color:#E8B83A; box-shadow:inset 0 0 0 1px #E8B83A,0 3px 0 #080405; }
+.cfl-name{ display:flex; justify-content:space-between; align-items:baseline; gap:8px; font:8px/1.4 var(--font-hdr); letter-spacing:.08em; color:#E8B83A; }
+.cfl-name em{ font:12px/1 var(--font-px); font-style:normal; color:#F3E6C4; }
+.cfl-note{ font-size:12px; line-height:1.35; color:#B69A7A; }
+.cfl-spec{ display:flex; align-items:flex-end; gap:5px; padding:8px; border-radius:3px; background:#174631; box-shadow:inset 0 2px 0 rgba(0,0,0,.35); overflow:hidden; }
+.cfl-spec .cfl-gap{ width:6px; flex:0 0 6px; }
+.cfl-spec .card.is-hole{ width:62px; height:88px; border-radius:4px; }
+.cfl-spec .card.is-hole .r{ font-size:21px; }
+.cfl-spec .card.small{ width:30px; height:43px; }
+.cfl-row{ display:grid; grid-template-columns:1fr 1fr; gap:6px; }
+.cfl-row button{
+  min-height:48px; padding:6px; border:2px solid #080405; border-radius:3px; background:#E8B83A; color:#080405;
+  font:7px/1.4 var(--font-hdr); letter-spacing:.04em; cursor:pointer; box-shadow:inset 0 2px 0 #FFE380,0 3px 0 #080405;
+}
+.cfl-row button.is-off{ background:#34171A; color:#B69A7A; box-shadow:inset 0 2px 0 rgba(255,255,255,.06),0 3px 0 #080405; }
+.cfl-row button:active,.cfl-pick:active{ transform:translateY(2px); }
