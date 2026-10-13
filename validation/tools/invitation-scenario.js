@@ -139,14 +139,21 @@ async function limitScenario(base){
 }
 
 // CLEAR: between hands the table is trimmed to one opponent (DEV CLEAR
-// TABLE); then, hand by hand, that opponent is forced all in and the deal
-// rigged for you (DEV KO NEXT + WIN HAND) until they are knocked out.
+// TABLE) and left shorter than you; then, hand by hand, that opponent is
+// forced all in and the deal rigged for you (DEV KO NEXT + WIN HAND) until
+// they are knocked out.
 async function knockOutAll(page){
   const t0 = Date.now();
   while (await page.evaluate(() => !!career.active)){
     await page.evaluate(() => {
       const left = () => game.players.filter(p => !p.isHuman && !p.eliminated).length;
       if (left() > 1 && betweenHands()) devClearTable();
+      // the last one must be shorter than you, or winning an all-in can't
+      // knock them out (chips moved between hands, the total kept)
+      if (left() === 1 && betweenHands()){
+        const me = game.players.find(p => p.isHuman), o = game.players.find(p => !p.isHuman && !p.eliminated);
+        if (o.chips >= me.chips){ const d = o.chips - Math.floor(me.chips / 2); o.chips -= d; me.chips += d; }
+      }
       // (any street: the AI can be past the flop before the next look)
       if (left() === 1 && handInProgress() && !game._scenarioArmed){
         game._scenarioArmed = true; devKoNext(); devWinHand();
