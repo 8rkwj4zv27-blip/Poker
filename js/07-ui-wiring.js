@@ -798,6 +798,8 @@ function migrateCareer(raw){
   if (invitations.length) migrated.invitations = invitations;
   const packets = normalizeCareerPackets(raw.packets);
   if (packets.length) migrated.packets = packets;
+  const tray = normalizeCareerTray(raw.tray, migrated.invitations || []);
+  if (tray.length) migrated.tray = tray;
   if (raw.starterGiven === true) migrated.starterGiven = true;
   return migrated;
 }
@@ -833,6 +835,10 @@ let career = (function(){
       const clean = normalizeCareerPackets(raw.packets);
       if (JSON.stringify(clean) !== JSON.stringify(raw.packets)){ raw.packets = clean; dirty = true; }
     }
+    if (raw.tray !== undefined){
+      const clean = normalizeCareerTray(raw.tray, raw.invitations || []);
+      if (JSON.stringify(clean) !== JSON.stringify(raw.tray)){ raw.tray = clean; dirty = true; }
+    }
     if (dirty) Store.set(CAREER_KEY, raw);
   }
   return migrated;
@@ -865,6 +871,28 @@ function normalizeCareerInvitations(value){
     .slice(0, CAREER_INVITATIONS_LIMIT);
 }
 function careerInvitations(){ return Array.isArray(career.invitations) ? career.invitations : []; }
+
+/* THE TRAY — the invitations the player keeps on the hub's tray (owner,
+   13 Oct 2026): [{ id, x }], x where the card lies along the tray (0 left
+   to 1 right). Additive and tolerant like the invitations: only cards the
+   player owns, each once, at most CAREER_TRAY_LIMIT; a save without it
+   keeps nothing on the tray. Playing a card takes it off. */
+function normalizeCareerTray(value, invitations){
+  if (!Array.isArray(value)) return [];
+  const owned = new Set((Array.isArray(invitations) ? invitations : []).map(card=>card && card.id));
+  const seen = new Set();
+  return value.filter(t=>t && typeof t === 'object' && typeof t.id === 'string' && owned.has(t.id) && !seen.has(t.id) && seen.add(t.id))
+    .map(t=>({ id:t.id, x:Number.isFinite(t.x) ? Math.round(Math.min(1, Math.max(0, t.x)) * 1000) / 1000 : .5 }))
+    .slice(0, CAREER_TRAY_LIMIT);
+}
+function careerTray(){ return normalizeCareerTray(career.tray, careerInvitations()); }
+function setCareerTray(list){
+  const tray = normalizeCareerTray(list, careerInvitations());
+  if (JSON.stringify(tray) === JSON.stringify(career.tray || [])) return tray;
+  if (tray.length) career.tray = tray; else delete career.tray;
+  saveCareer();
+  return tray;
+}
 function careerInvitationById(id){ return careerInvitations().find(card=>card.id === id) || null; }
 
 /* A new card for an event: its opponents are drawn now, so the face shows
@@ -1009,6 +1037,8 @@ function playCareerInvitation(id){
   career.active = withCareerRoster({ eventId:snapshot.id, snapshot }, card.roster || generateCareerRoster(event));
   career.active.invitationId = card.id;
   career.invitations = careerInvitations().filter(other=>other.id !== id);
+  // (off the tray too, in the same write)
+  if (career.tray){ career.tray = careerTray(); if (!career.tray.length) delete career.tray; }
   career.lastResult = null;
   saveCareer();
   return true;
@@ -1317,7 +1347,9 @@ function endCareerCashSession(g, reason){
    was not told about.
 
    `tie` (house-funded events only) is how many players share places
-   place..place+tie-1 exactly; anything that doesn't fit the field is 1. */
+   place..place+tie-1 exactly; anything that doesn't fit the field is 1.
+   `chips` (house-funded events only) is what you finished with, for the
+   chip bonus: a whole number no bigger than every chip at the table, else 0. */
 function normalizeCareerSettlement(result, snapshot){
   if (result === 'forfeit') return { forfeit:true, place:null, tie:1 };
   const seats = snapshot && Number.isInteger(snapshot.playerCount) ? snapshot.playerCount : 0;
@@ -1328,7 +1360,10 @@ function normalizeCareerSettlement(result, snapshot){
   if (!valid(place)) return { forfeit:false, place:null, tie:1 };
   const tie = isCareerInvitation(snapshot) && Number.isInteger(result.tie)
     && result.tie >= 1 && place + result.tie - 1 <= seats ? result.tie : 1;
-  return { forfeit:false, place, tie };
+  const table = seats * (Number.isFinite(snapshot.stack) ? snapshot.stack : 0);
+  const chips = isCareerInvitation(snapshot) && Number.isInteger(result.chips)
+    && result.chips >= 0 && result.chips <= table ? result.chips : 0;
+  return { forfeit:false, place, tie, chips };
 }
 
 /* Returns true ONLY if this call performed the settlement. endCareerEvent()
@@ -1345,7 +1380,9 @@ function settleCareerEvent(result){
   if (!career.active) return false;
   const stake = career.active.snapshot;
   const settlement = normalizeCareerSettlement(result, stake);
-  const prize = settlement.forfeit ? 0 : careerPrizeForFinish(stake, settlement.place, settlement.tie);
+  // the place's prize, and an invitation's chip bonus on top
+  const bonus = settlement.forfeit ? 0 : careerChipBonus(stake, settlement.chips);
+  const prize = settlement.forfeit ? 0 : careerPrizeForFinish(stake, settlement.place, settlement.tie) + bonus;
   // A shared first place is a cash, not an outright win.
   const won = !settlement.forfeit && settlement.place === 1 && settlement.tie === 1;
   const invitation = isCareerInvitation(stake);
@@ -1384,8 +1421,10 @@ function settleCareerEvent(result){
     delta: prize > 0 ? prize : -stake.buyIn,
     bankroll: career.bankroll
   };
-  // An exact tie, recorded only when there was one (house-funded events).
+  // An exact tie, recorded only when there was one (house-funded events);
+  // the chip bonus (in the prize), only when one was paid.
   if (settlement.tie > 1) career.lastResult.tie = settlement.tie;
+  if (bonus > 0){ career.lastResult.bonus = bonus; career.lastResult.chips = settlement.chips; }
   career.active = null;
   // The seated field dies with the event it was seated in; the directory
   // draws a fresh one for that event on the next visit.

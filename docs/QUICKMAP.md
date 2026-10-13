@@ -3,7 +3,7 @@
 The short version of [`CODEMAP.md`](CODEMAP.md). Read it after
 [`HANDOVER.md`](HANDOVER.md), before searching the code. Open
 `CODEMAP.md` only for the section about the file you are about to change
-(its headings are the file names). Last checked: 13 October 2026 (v0.70.0).
+(its headings are the file names). Last checked: 13 October 2026 (v0.71.0).
 
 ## How the game is put together
 
@@ -26,6 +26,7 @@ so the installed iPhone app plays offline. A file not in `index.html` and
 | `coin-world.js`, `coin-table.js`, `coin-bank.js`, `bank-load.js` | Chips: the coin physics, the pot, your bank and how it fills |
 | `07-ui-wiring.js` | Screen changes, and all Career money and transactions |
 | `career-hub-live.js`, `career-motion-live.js`, `ticket-feed.js` | The classic Career Hub, its motion and the buy-in |
+| `event-clock.js` | The event clock on the felt in a Career invitation: HAND n/N or the time played; finds a clear spot, can be picked up, moved and flicked (`settings.eventClock`) |
 | `machine-wheel.js`, `table-intro.js` | The screen-change rolls (every screen, the new Career's hub and shop included: `careerScreenEl()`), and the table powering up |
 | `08-dev-mode.js` | The DEV panel (`?dev`) |
 | `09-controls.js` | `wireUI()`: the main menu and every button. Must load right after 08 |
@@ -54,13 +55,13 @@ Hub and the end screens.
 | `pack-ritual-lab.html`, `js/pack-ritual*.js`, `css/pack-ritual*.css` | Superseded pack opening study (reference; art and faces reused by V3); current-game components. See `career/PACK_RITUAL_HANDOVER.md` |
 | `pack-opening-lab.html`, `js/pack-opening*.js`, `css/pack-opening.css` | Pack Opening V3 lab (isolated): core motion, pixel-canvas packet, scene and the card reveal (faces from `js/pack-ritual-cards.js`). Plan `career/PACK_OPENING_V3_PLAN.md`; checks `validation/pack-opening-checks.cjs` |
 | `career-hub-lab.html`, `js/career-desk.js`, `css/career-desk.css`, `js/career-hub-lab-boot.js` | Career desk lab (isolated): Career's main screen as a felt desk, hosted by the pack scene. Plan `career/CAREER_HUB_DESK_PLAN.md`; checks `validation/career-hub-checks.cjs` |
-| `career-main-lab.html`, `js/career-main.js`, `css/career-main.css` | The Career hub (its lab; live in the new Career): a wooden table on the felt, three cards, REDEAL, the feeder and PLAY; packets from the shop lie on it to open, their cards ADDed to your case |
+| `career-main-lab.html`, `js/career-main.js`, `css/career-main.css` | The Career hub (its lab; live in the new Career): a wooden tray on the felt that keeps the cards you put on it (`career.tray`), REDEAL onto the felt, the feeder and PLAY; packets from the shop lie on it to open, their cards ADDed to your case |
 | `vending-lab.html`, `js/vending-machine.js`, `css/vending-machine.css` | The packet machine (its lab; live in the new Career): Career's shop as a vending machine rolling in under the reel; choose, pay in chips, the drop, take and send; the opening on the hub's felt |
 | `collection-book-lab.html`, `js/collection-book.js`, `css/collection-book.css` | The card album (its lab; live in the new Career): CARDS brings a leather-bound book over the hub's table; three rows of three, bright / dim / empty slots, page turns (flat or curl), numbered tabs, tap to light and take out, hold to carry a card into the reader; corners or sleeves. Plan `career/COLLECTION_BOOK_PLAN.md` |
 | `invitation-cards-lab.html`, `js/invitation-cards*.js`, `js/invitation-art.js`, `css/invitation-cards*.css` | Lab: the invitation cards (the hub's card, coloured and finished by rarity, placeholder pixel art per event) over the game. Plan `career/INVITATIONS_PLAN.md` |
 | `js/event-cards.js`, `js/card-inspect.js`, `css/card-inspect.css` | Live in the new Career (and its labs): what an event card is (an invitation's event and its opponents; the prize is the event's own), and the one shared card object and inspect screen (pack opening, album, hub) |
 | `pattern-book.html`, `docs/ui/PATTERN_BOOK.md` | The visual rule book |
-| `validation/*.js` | `npm test` runs them all; one suite per feature. `validation/tools/` holds the play-test, the touch harness, the scenarios, and the AI, event and invitation-economy simulators |
+| `validation/*.js` | `npm test` runs them all; one suite per feature. `validation/tools/` holds the play-test, the touch harness, the scenarios, the table sweep, the browser-checks runner, and the AI, event and invitation-economy simulators |
 | `art-source/` | The owner's original art; the game does not load it |
 | `docs/` | Rules, plans, history: [`docs/README.md`](README.md) says which are current |
 

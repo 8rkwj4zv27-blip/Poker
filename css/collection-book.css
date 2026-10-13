@@ -57,6 +57,10 @@
 .cb-face .ccl-stock{ filter:none; }
 /* found but used up: very dim */
 .cb-slot.is-used .cb-face{ filter:brightness(.28) saturate(.2) drop-shadow(1px 2px 0 #12040a); }
+/* every one of yours of this event is out on the table (the tray, the felt) */
+.cb-slot.is-table .cb-face{ filter:brightness(.55) saturate(.6) drop-shadow(1px 2px 0 #12040a); }
+.cb-slot.is-table::after{ content:'ON THE TABLE'; position:absolute; left:50%; bottom:6%; transform:translateX(-50%); z-index:3;
+  padding:2px 3px; background:#1c3a2a; border:1px solid #0b1710; color:#cfe8d5; font:5px/1 var(--font-hdr); letter-spacing:.06em; white-space:nowrap; pointer-events:none; }
 /* tapped once: it lifts a little and lights */
 .cb-slot.is-lit .cb-face{ translate:0 -4px; filter:brightness(1.12) drop-shadow(0 0 6px rgba(242,194,60,.75)) drop-shadow(1px 5px 0 #12040a); }
 /* the leather corners that hold a card */

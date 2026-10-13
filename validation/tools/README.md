@@ -149,10 +149,37 @@ npm run browser-checks
 ```
 
 The suites and scenarios that need Playwright and Chromium: the four lab
-suites (`validation/*.cjs`), the play-test, the new Career scenario and the
-invitation scenario. Serves the repo on 8768 itself. GitHub runs it on
+suites (`validation/*.cjs`), the play-test, the new Career, invitation and
+tray scenarios, and the table sweep. Serves the repo on 8768 itself. GitHub runs it on
 every pull request (`.github/workflows/tests.yml`, with Playwright
 installed there for the run only; the game has no dependencies).
+
+## `table-sweep.js` — every invitation, every size, nothing on top of anything
+
+```
+node validation/tools/table-sweep.js [--sizes 390x844,375x667,430x932] [--events id,id] [--shots DIR]
+```
+
+Seats every Career invitation at each phone size (the game itself, a
+fresh new Career) and measures every pair of parts that must never
+overlap: the event clock against the seats, their bet squares, the
+board's tray, the deck and P.I.P.; the seats against each other. Then
+handles the clock with real touch (dropped on a seat, flicked, tapped,
+reloaded). `--shots` saves each table and one contact sheet. Run it for
+any change to the table's layout: it's how the clock that sat on a face
+(13 Oct 2026) would have been caught.
+
+## `tray-scenario.js` — the curated tray
+
+```
+node validation/tools/tray-scenario.js [--size 390x844]
+```
+
+REDEAL onto the felt, a card kept on the tray (half or more over it) and
+one not, REDEAL taking back only its own, the tray after a reload, the
+double tap, a kept card dragged off, a card carried out of the album onto
+the felt and the tray, the album's ON THE TABLE, a kept card PLAYed; each
+step checked against the save.
 
 ## `invitation-scenario.js` — the Stage 1 invitation, played for real
 
@@ -181,8 +208,12 @@ splits the shared places' prizes):
 stacks carry over, blinds rise on the event's schedule, players bust and
 places are paid from its payout table. "You" are the game's AI at a skill
 (`--you 30,50,80`, or `abc`). Prints, for each: how often you win and
-cash, your average profit per event, the event's length in hands, and how
-often an opponent knocks the other out first. Override any setting
+cash, your average profit per event (with any chip bonus), the event's
+length in hands, how often an opponent knocks the other out first, and
+for a hand-limited event how often the leader with three hands to go
+wins (`leader@-3 holds`) and how often you came from behind (`comeback`):
+how early it's decided. `--hand-limit 0` makes it a knock-out;
+`--chip-bonus N` pays $1 per N chips. Override any setting
 (`--stack`, `--per-level`, `--skill`, `--players`, `--payouts`,
 `--buy-in`) to measure a proposal before building it. About 1,500 events
 take a few minutes. Not part of `npm test`.

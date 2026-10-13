@@ -717,6 +717,9 @@ const DEFAULT_SETTINGS = {
   cardHolder:'brass',
   // Settings → Dealing (js/deal-styles.js): { on, rarity, scope }; null = FLICK alone
   dealStyles:null,
+  // the event clock's place on the felt (js/event-clock.js): {x, y} as
+  // fractions of the felt; null = it finds a clear spot itself
+  eventClock:null,
   // Settings → The table (js/table-room.js): { pot, potroom, you, pile, their,
   // lift, fade, mark, pods, coins }; null = the owner's picks (TableRoom.DEFAULTS)
   tableRoom:null,
@@ -762,7 +765,7 @@ const DEFAULT_SETTINGS = {
 const DEFAULT_STATS = { hands:0, won:0, showdownsWon:0, biggestPot:0, net:0 };
 const SAVE_VERSION = 1;
 /* Bump on every release so the main-menu header shows what's actually installed. */
-const BUILD_VERSION = 'v0.70.0-dev · New Career polish';
+const BUILD_VERSION = 'v0.71.0-dev · Event clock, duels, the curated tray';
 
 let settings = Object.assign({}, DEFAULT_SETTINGS, Store.get('felt.settings', {}));
 // The Settings menu cleanup dropped RELAXED from the Game Speed control

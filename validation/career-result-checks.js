@@ -107,7 +107,7 @@ check('Career result model captures the settled display values once', ()=>{
     outcome:'win', won:true, cashed:false, championship:false, firstChampionship:false,
     place:1, eventName:'BACK ROOM FREEZEOUT', prize:300,
     buyIn:100, bankroll:600, eventScore:5575, hands:7, field:3, handLimit:null,
-    invitation:false, topPrize:300, tie:1,
+    invitation:false, topPrize:300, tie:1, bonus:0, chips:null,
     // the event's chip tape (js/event-tape.js; not loaded here) and who
     // was still sitting, both display data for the result well
     tape:null, alive:[], bust:false
@@ -119,7 +119,7 @@ check('A non-winning cash models the credited prize, not the headline first priz
     outcome:'cash', won:false, cashed:true, championship:false, firstChampionship:false,
     place:2, eventName:'PUB CIRCUIT OPEN', prize:450,
     buyIn:300, bankroll:600, eventScore:4120, hands:23, field:5, handLimit:null,
-    invitation:false, topPrize:1050, tie:1,
+    invitation:false, topPrize:1050, tie:1, bonus:0, chips:null,
     tape:null, alive:[], bust:false
   });
   // The event's own first-place figure must never leak into a second place.
@@ -775,7 +775,8 @@ check('The hand limit is reached on the tenth completed hand, and only for limit
   assert.strictEqual(careerHandLimitReached(Object.assign({}, g, { event:{ playerCount:3 } })), false);
 });
 check('At the limit survivors rank by chips and knocked-out players rank below them', ()=>{
-  const at = (h, o) => { const g = invited(h, o); g.players.forEach(p=>{ p.eliminated = p.chips<=0; }); return plain(careerLimitFinish(g, g.human)); };
+  // (each finish also carries your chips, for the chip bonus)
+  const at = (h, o) => { const g = invited(h, o); g.players.forEach(p=>{ p.eliminated = p.chips<=0; }); const r = plain(careerLimitFinish(g, g.human)); assert.strictEqual(r.chips, g.human.chips); delete r.chips; return r; };
   assert.deepStrictEqual(at({start:1,chips:1500}, [{start:1,chips:900},{start:1,chips:600}]), {place:1,tie:1});
   assert.deepStrictEqual(at({start:1,chips:900}, [{start:1,chips:1500},{start:1,chips:600}]), {place:2,tie:1});
   assert.deepStrictEqual(at({start:1,chips:300}, [{start:1,chips:1500},{start:1,chips:1200}]), {place:3,tie:1});
@@ -784,7 +785,7 @@ check('At the limit survivors rank by chips and knocked-out players rank below t
   assert.deepStrictEqual(at({start:1,chips:2950}, [{start:0,chips:0},{start:0,chips:0}]), {place:1,tie:1});
 });
 check('Exact chip ties at the limit are reported, for settlement to share', ()=>{
-  const at = (h, o) => { const g = invited(h, o); return plain(careerLimitFinish(g, g.human)); };
+  const at = (h, o) => { const g = invited(h, o); const r = plain(careerLimitFinish(g, g.human)); delete r.chips; return r; };
   assert.deepStrictEqual(at({start:1,chips:750}, [{start:1,chips:1500},{start:1,chips:750}]), {place:2,tie:2});
   assert.deepStrictEqual(at({start:1,chips:1000}, [{start:1,chips:1000},{start:1,chips:1000}]), {place:1,tie:3});
   assert.deepStrictEqual(at({start:1,chips:1200}, [{start:1,chips:1200},{start:1,chips:600}]), {place:1,tie:2});
@@ -797,7 +798,7 @@ check('An early knock-out or clearance places as before; equal same-hand busts s
   g = invited({start:400,chips:0}, [{start:2200,chips:3000},{start:300,chips:0}]);
   assert.deepStrictEqual(plain(careerFinish(g, g.human)), {place:2,tie:1});
   g = invited({start:900,chips:3000}, [{start:1200,chips:0},{start:900,chips:0}]);
-  assert.deepStrictEqual(plain(careerFinish(g, g.human)), {place:1});
+  assert.deepStrictEqual(plain(careerFinish(g, g.human)), {place:1, chips:3000});
   // an entry-funded event keeps the old rule exactly: the better place, no tie
   g = invited({start:400,chips:0}, [{start:2200,chips:3000},{start:400,chips:0}], { funding:undefined });
   assert.deepStrictEqual(plain(careerFinish(g, g.human)), {place:2});
@@ -851,6 +852,18 @@ check('An invitation reports every finish on its own terms: no buy-in, shared pl
   assert.deepStrictEqual(plain(stage.hero.reel), { text:'$0', prefix:'' });
   assert.strictEqual(stage.detail.sub, 'THE INVITATION IS SPENT');
   assert.strictEqual(stage.instruments[1].value, '3');
+});
+
+check('An invitation pays its place plus a chip bonus, and the result says so', ()=>{
+  const ev = { name:'BACK ROOM INVITATION', buyIn:0, prize:60, payouts:[60,30,15], chipBonus:100 };
+  const g = invited({start:1,chips:1800}, [{start:1,chips:900},{start:1,chips:300}], ev);
+  g.players.forEach(p=>{ p.isHuman = p.id === 'you'; });
+  const stage = careerStageModel(buildCareerResultModel(g, { outcome:'win', place:1, prize:78, bonus:18, chips:1800 }));
+  assert.strictEqual(stage.hero.reel.text, '$78');
+  assert.deepStrictEqual(plain(stage.recapPages[0][2]), { label:'Chip bonus', value:'+$18' });
+  assert.strictEqual(stage.detail.sub, 'PLACE $60 + CHIPS $18');
+  // at the hand limit, the chips you finish with go to settlement
+  assert.strictEqual(careerLimitFinish(g, g.players.find(p=>p.isHuman)).chips, 1800);
 });
 
 process.stdout.write('\n' + passed + ' focused Career result and result-stage checks passed.\n');

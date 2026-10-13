@@ -3,12 +3,13 @@
    Start a server at the repo root (python3 -m http.server 8765), then:
      node validation/vending-checks.cjs
    VENDING_URL overrides the page. Real emulated touch through
-   validation/tools/touch-harness.js. The hub: the house's three cards in
-   the tray; one dragged away and a double tap on empty felt puts it back;
-   REDEAL deals three others; one dragged up goes half into the feeder
-   (PLAY), a tap brings it out; one thrown upwards flies off into the
-   collection, never into the feeder; one dragged up and PLAYed is used up
-   and replaced. The shop: SHOP rolls the machine down; TUNE changes while
+   validation/tools/touch-harness.js. The hub: three cards on the tray;
+   one dragged off is on the felt, and a double tap on empty felt sends
+   the felt's cards to the collection and leaves the tray; REDEAL deals
+   three onto the felt; one dragged up goes half into the feeder (PLAY), a
+   tap brings it out; one thrown upwards flies off into the collection,
+   never into the feeder; a tray card dragged up and PLAYed is used up and
+   off the tray. The shop: SHOP rolls the machine down; TUNE changes while
    it's down leave it where it is; a sold-out key does nothing; a key twice
    puts two in, a packet's first tap only looks at it and its second puts
    one in; CLEAR empties them, chosen again; HOLD TO BUY pays (the bankroll
@@ -33,7 +34,7 @@ async function run(width, height, reducedMotion){
     const g = page.locator('#pk-game').contentFrame();
     await g.locator('#cm').waitFor();
     const fr = page.frames()[1];
-    await fr.waitForFunction(() => window.VendingLab && window.CareerMain && CareerMain.state.house.length === 3 && !CareerMain.state.busy, null, { timeout:20000 });
+    await fr.waitForFunction(() => window.VendingLab && window.CareerMain && CareerMain.state.tray.length === 3 && !CareerMain.state.busy, null, { timeout:20000 });
     await page.evaluate(() => localStorage.setItem('vending-qa', 'untouched'));
     const st = () => fr.evaluate(() => VendingLab.state);
     const until = async (fn, what, ms = 30000) => {
@@ -57,51 +58,53 @@ async function run(width, height, reducedMotion){
     };
     const [mx, my] = await centre('[data-key="play"]');
     const keyLabels = () => fr.evaluate(() => ['shop', 'play', 'cards'].map(k => document.querySelector(`[data-key="${k}"]`).textContent.replace(/\n/g, ' ')).join(' · '));
-    const onWood = await fr.evaluate(() => { const w = document.querySelector('.cm-wood').getBoundingClientRect(); return [0, 1, 2].map(i => CareerMain.where('house', i)).every(p => p.x > w.left && p.x < w.right && p.y > w.top && p.y < w.bottom); });
+    // the tray (owner, 13 Oct 2026: yours to curate): the lab's three lie on it
+    const onWood = await fr.evaluate(() => { const w = document.querySelector('.cm-wood').getBoundingClientRect(); return [0, 1, 2].map(i => CareerMain.where('tray', i)).every(p => p && p.x > w.left && p.x < w.right && p.y > w.top && p.y < w.bottom); });
     assert.ok(onWood, 'the three cards lie on the table');
     assert.equal(await keyLabels(), 'SHOP · REDEAL · CARDS');
-    // dragged away, it stays where it's put; a double tap on empty felt puts it back
-    let w0 = await where('house', 0);
+    // dragged off the tray down the felt: it's on the felt now, not the tray;
+    // a double tap on empty felt sends the felt's cards to the collection and
+    // leaves the tray alone
+    let w0 = await where('tray', 0);
     await touch.drag(w0.x, w0.y, w0.x + 40, w0.y + 260, 12, 16); await touch.end();
     await page.waitForTimeout(600);
-    let w1 = await where('house', 0);
-    assert.ok(w1.by - w0.by > 150, 'a card dragged down the felt stays there');
+    let h = await hub();
+    assert.ok(h.tray.length === 2 && h.cards === 1, 'a card dragged off the tray is on the felt');
     const fe = await fr.evaluate(() => { const r = CareerMain.felt.getBoundingClientRect(); return [r.left + r.width * .85, r.bottom - 40]; });
     await tap(ifr.x + fe[0], ifr.y + fe[1]); await page.waitForTimeout(40); await tap(ifr.x + fe[0] + 2, ifr.y + fe[1] + 1);
-    await page.waitForTimeout(700);
-    w1 = await where('house', 0);
-    assert.ok(Math.hypot(w1.bx - w1.home.x, w1.by - w1.home.y) < 2, 'a double tap puts it back in its place');
-    // REDEAL: three others
-    const dealt = (await hub()).house.join();
+    h = await hubUntil(q => !q.busy && q.cards === 0, 'the felt cleared');
+    assert.equal(h.tray.length, 2, 'a double tap leaves the tray alone');
+    // REDEAL: three others onto the felt
     await tap(mx, my);
-    let h = await hubUntil(q => !q.busy && q.house.length === 3 && q.house.join() !== dealt, 'the redeal');
+    h = await hubUntil(q => !q.busy && q.dealt.length === 3, 'the redeal');
+    assert.equal(h.tray.length, 2, 'REDEAL leaves the tray alone');
     // where to drag a card to feed it: the feeder's mouth
     const [fx, fy] = await centre('.cm-mouth');
     // dragged up: half into the feeder, PLAY; a tap and it comes back out
-    w0 = await where('house', 1);
+    w0 = await where('dealt', 1);
     await touch.drag(w0.x, w0.y, fx, fy + 20, 14, 16); await page.waitForTimeout(120); await touch.end();
-    h = await hubUntil(q => q.fed === 'house' && !q.busy, 'a card in the feeder');
+    h = await hubUntil(q => q.fed === 'card' && !q.busy, 'a card in the feeder');
     assert.equal(await keyLabels(), 'SHOP · PLAY · CARDS');
     assert.notEqual(await g.locator('.cm-plate').textContent(), 'INSERT CARD', 'the plate reads the card');
     await page.waitForTimeout(500);
-    w0 = await where('house', 1);
-    await tap(w0.x, w0.y + 20);
+    const fedAt = await fr.evaluate(() => { const r = CareerMain.mouthEl.getBoundingClientRect(); return [r.left + r.width / 2, r.bottom + 30]; });
+    await tap(ifr.x + fedAt[0], ifr.y + fedAt[1]);
     h = await hubUntil(q => q.fed === null && !q.busy, 'the card back out');
     assert.equal(await keyLabels(), 'SHOP · REDEAL · CARDS');
     // thrown upwards: it flies off into the collection, not into the feeder
-    w0 = await where('house', 0);
+    w0 = await where('dealt', 0);
     await touch.flick(w0.x, w0.y, w0.x + 10, w0.y - 420, 5, 8);
-    h = await hubUntil(q => !q.busy && q.house.length === 3 && q.fed === null, 'the thrown card replaced');
-    // dragged up again and PLAYed: it's used up and another takes its place
+    h = await hubUntil(q => !q.busy && q.cards === 2 && q.fed === null, 'the thrown card gone');
+    // a tray card dragged up and PLAYed: it's used up, and off the tray
     await page.waitForTimeout(500);
     const pool0 = h.pool;
-    w0 = await where('house', 2);
+    w0 = await where('tray', 1);
     await touch.drag(w0.x, w0.y, fx, fy + 20, 14, 16); await page.waitForTimeout(120); await touch.end();
-    await hubUntil(q => q.fed === 'house' && !q.busy, 'a card in the feeder');
+    await hubUntil(q => q.fed === 'tray' && !q.busy, 'a card in the feeder');
     // (a tap straight after a flick only stops the fling in Chrome's touch emulation)
     await page.waitForTimeout(500);
     await tap(mx, my);
-    h = await hubUntil(q => !q.busy && q.fed === null && q.house.length === 3, 'a card in its place', 20000);
+    h = await hubUntil(q => !q.busy && q.fed === null && q.tray.length === 1, 'the card played', 20000);
     assert.equal(h.pool, pool0 - 1, 'the card played is used up');
 
     // SHOP: the machine rolls down and boots
@@ -191,9 +194,12 @@ async function run(width, height, reducedMotion){
     await tap(...await centre('[data-key="shop"]'));
     s = await until(q => q.mode === 'hub' && q.hub.packets === 2 && !q.hub.busy, 'the hub and the packets');
     await page.waitForTimeout(200);
-    assert.equal(s.hub.house.length, 3, 'the house\'s cards stay in the tray');
+    assert.equal(s.hub.tray.length, 1, 'the tray\'s cards stay on the tray');
     assert.equal(await keyLabels(), 'SHOP · OPEN · CARDS', 'and the hub\'s keys again');
 
+    // (REDEAL's cards still lie on the felt: a double tap sends them back)
+    await tap(ifr.x + fe[0], ifr.y + fe[1]); await page.waitForTimeout(40); await tap(ifr.x + fe[0] + 2, ifr.y + fe[1] + 1);
+    s = await until(q => q.hub.cards === 0 && !q.hub.busy, 'the felt cleared');
     // a packet tapped is torn open on the felt; the key runs the tear and the pull
     const pool1 = s.hub.pool, wallet0 = s.wallet;
     const tear = async () => {

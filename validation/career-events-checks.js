@@ -169,6 +169,10 @@ function makeContext(initialCareer){
       play:playCareerInvitation,
       canPlay:careerCanPlayInvitation,
       normalizeCards:normalizeCareerInvitations,
+      tray:careerTray,
+      setTray:setCareerTray,
+      normalizeTray:normalizeCareerTray,
+      trayLimit:CAREER_TRAY_LIMIT,
       cardLimit:CAREER_INVITATIONS_LIMIT,
       packets:careerPackets,
       packetDefs:CAREER_PACKETS,
@@ -2473,6 +2477,65 @@ check('An invitation settles once: tied 2nd pays $22, no unlock, no counters', (
   const reloaded=makeContext(storage.get('felt.career')).api;
   assert.strictEqual(reloaded.settle({place:1}),false);
   assert.strictEqual(reloaded.getCareer().bankroll,522);
+});
+
+check('The tray keeps only cards you own, each once, at most twelve, and a played card leaves it', ()=>{
+  const { api, storage }=makeContext(openCareer());
+  const cards=Array.from({length:14},()=>api.give('back-room-invite','common'));
+  // unknown ids, repeats and bad positions are dropped or clamped
+  const t=api.setTray([{id:cards[0].id,x:.25},{id:'nope',x:.5},{id:cards[0].id,x:.9},{id:cards[1].id,x:7},{id:cards[2].id}]);
+  assert.deepStrictEqual(clone(t),[{id:cards[0].id,x:.25},{id:cards[1].id,x:1},{id:cards[2].id,x:.5}]);
+  assert.deepStrictEqual(clone(storage.get('felt.career').tray),clone(t));
+  // never more than the limit
+  assert.strictEqual(api.setTray(cards.map((c,i)=>({id:c.id,x:i/13}))).length,api.trayLimit);
+  assert.strictEqual(api.trayLimit,12);
+  // played: off the tray in the same write as the event starting
+  api.setTray([{id:cards[0].id,x:.1},{id:cards[1].id,x:.2}]);
+  assert.strictEqual(api.play(cards[0].id),true);
+  assert.deepStrictEqual(clone(storage.get('felt.career').tray),[{id:cards[1].id,x:.2}]);
+  assert.ok(storage.get('felt.career').active);
+  // a save with no tray keeps nothing on it; garbage is nothing
+  assert.deepStrictEqual(clone(api.normalizeTray(undefined,[])),[]);
+  assert.deepStrictEqual(clone(api.normalizeTray('x',[])),[]);
+});
+
+check('A hand-limited invitation pays its place plus $1 per chipBonus chips; an old snapshot pays no bonus', ()=>{
+  let { api }=makeContext(openCareer());
+  assert.strictEqual(api.eventById('back-room-invite').chipBonus,100);
+  api.play(api.give('back-room-invite','common').id);
+  assert.strictEqual(api.getCareer().active.snapshot.chipBonus,100);
+  assert.strictEqual(api.settle({place:2,tie:1,chips:1250}),true);
+  let r=api.getCareer().lastResult;
+  assert.deepStrictEqual({prize:r.prize,bonus:r.bonus,chips:r.chips,outcome:r.outcome},{prize:42,bonus:12,chips:1250,outcome:'cash'});
+  assert.strictEqual(api.getCareer().bankroll,542);
+  // an event started before the bonus existed keeps the terms it started on
+  ({ api }=makeContext(openCareer()));
+  api.play(api.give('back-room-invite','common').id);
+  delete api.getCareer().active.snapshot.chipBonus;
+  api.settle({place:1,tie:1,chips:2400});
+  r=api.getCareer().lastResult;
+  assert.strictEqual(r.prize,60); assert.strictEqual(r.bonus,undefined);
+  // more chips than the table holds is never money
+  ({ api }=makeContext(openCareer()));
+  api.play(api.give('back-room-invite','common').id);
+  api.settle({place:1,tie:1,chips:999999});
+  assert.strictEqual(api.getCareer().lastResult.prize,60);
+  // a malformed bonus never validates
+  const snap=api.snapshot(api.eventById('back-room-invite'));
+  [0,-5,2.5,'100'].forEach(v=>assert.ok(!api.isValidSnapshot(Object.assign({},snap,{chipBonus:v})), String(v)));
+});
+
+check('Face to Face and Last Stack Wins are winner-takes-all knock-outs with rising blinds', ()=>{
+  const { api }=makeContext(openCareer());
+  ['face-to-face','last-stack-wins'].forEach(id=>{
+    const e=api.eventById(id);
+    assert.strictEqual(e.handLimit,undefined,id);
+    assert.strictEqual(e.chipBonus,undefined,id);
+    assert.strictEqual(e.payouts.length,1,id);
+    assert.ok(e.handsPerBlindLevel<=4,id);
+    assert.ok(api.isValidSnapshot(api.snapshot(e)),id);
+  });
+  assert.deepStrictEqual(clone(api.eventById('face-to-face').payouts),[60]);
 });
 
 check('An invitation win pays first place and still unlocks nothing', ()=>{

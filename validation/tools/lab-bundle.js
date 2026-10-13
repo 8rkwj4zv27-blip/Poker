@@ -51,10 +51,12 @@ refs(lab).forEach(f => files.add(f));
 const injectJson = (lab.match(/<script type="application\/json" id="lab-inject">([\s\S]*?)<\/script>/) || [])[1];
 const inject = injectJson ? JSON.parse(injectJson) : null;
 if (inject) inject.css.concat(inject.js).forEach(f => files.add(f));
-// files a lab script injects into the game copy (its candidate parts)
-refs(lab).filter(f => f.endsWith('.js')).forEach(f => {
+// files a script loads by name: a lab's candidate parts, and the game's
+// own (js/career-link.js loads the new Career's hub only when it's on)
+refs(lab).concat(refs(game), inject ? inject.js : []).filter(f => f.endsWith('.js') && fs.existsSync(path.join(ROOT, f))).forEach(f => {
   const src = read(f);
-  [...src.matchAll(/['"`=]((?:css|js)\/[A-Za-z0-9_.-]+\.(?:css|js))/g)].forEach(m => files.add(m[1]));
+  [...src.matchAll(/['"`=]((?:css|js)\/[A-Za-z0-9_.-]+\.(?:css|js))/g)]
+    .filter(m => fs.existsSync(path.join(ROOT, m[1]))).forEach(m => files.add(m[1]));
 });
 // assets the scripts and styles ask for by name (faces, chips)
 (function walk(dir){

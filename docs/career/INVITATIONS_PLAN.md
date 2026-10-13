@@ -1,6 +1,6 @@
 # Invitations: Career as packets of event invitations (plan)
 
-Written 12 October 2026 with the owner. Status: **Stages 1-5 live** (the new Career is the default Career since v0.69.0); **Stage 6**, the polish pass, in v0.70.0. Nothing here is decided beyond what it says the
+Written 12 October 2026 with the owner. Status: **Stages 1-7 live** (the new Career is the default Career since v0.69.0; the polish pass, v0.70.0; the event clock, duels and the curated tray, v0.71.0). Nothing here is decided beyond what it says the
 owner decided. Builds on the hub, shop, packet opening and album labs
 (`career/HUB_TO_GAME_BRIEF.md`), which are kept as they are.
 
@@ -246,6 +246,48 @@ version change.
    reloads); a new shortfall later gets a new one.
 7. Damaged packets are dropped on load without touching the rest.
 8. Preview/DEV only; `npm test` green.
+
+## Stage 7: the event clock, duels and the curated tray (owner, 13 Oct 2026; v0.71.0)
+
+The owner played v0.70.0: the HAND counter sat on the face at 2 and 6
+players (it was only ever checked at 3 and 4: hence
+`validation/tools/table-sweep.js`, every invitation at three phone
+sizes, which fails on any overlap), and head-to-head felt like a death
+march (a big loss with four hands left decided it).
+
+- **The event clock** (`js/event-clock.js`, Pattern Book "Event clock",
+  awaiting sign-off): HAND n/N, or the time played in a knock-out; finds
+  the clear spot nearest the gap between the seats and the board, and
+  moves off anything that arrives under it; pick it up, put it anywhere,
+  flick it; its place kept in `settings.eventClock`.
+- **The death march, measured** (`event-sim.js`'s new "leader@-3 holds"
+  and "comeback" columns). Back Room as it was: the leader with three
+  hands to go won 79%, you came back from behind 8%. With the blinds up
+  every 3 hands: 64% and 16%. So hand-count events now raise the blinds
+  (every 3 hands; every 5 in the 20-hand ones), and pay a **chip bonus**
+  on top of the place (owner's choice: place + chips): $1 per 100 chips
+  you finish with ($1 per 200 in Deep Pockets). A snapshot started before
+  keeps its old terms (no `chipBonus`, no bonus).
+- **Duels:** Face to Face is a winner-takes-all knock-out ($60; 2,000
+  chips, blinds every 4 hands: about 18 hands); Last Stack Wins is a
+  four-player knock-out ($200; blinds every 4: about 20 hands).
+- **The curated tray** (owner): `career.tray` ([{ id, x }], at most 12,
+  only cards you own; a played card leaves it in the same write). Half
+  or more over the tray when let go: kept. REDEAL deals three onto the
+  felt (taking back the three it dealt before, if untouched). A double tap
+  clears the felt, not the tray. A card carried off the album's book
+  lands on the felt (`CareerMain.adopt`); the album marks an event whose
+  cards are all on the table.
+- **The economy after** (`invitation-economy.js --events 300`): a House
+  Packet now returns $211 / $237 / $264 at skills 20 / 40 / 70 (was $183
+  / $200 / $219); after 100 events the median bankroll is $1,967 /
+  $2,692 / $3,309 (was $1,285 / $1,715 / $2,175). Good play is paid more,
+  and money grows faster: the goal (what money is for) is still the
+  forward plan's first decision.
+- Checked: `npm test`; the browser checks (now also the table sweep and
+  `tray-scenario.js`); `new-career-lab.html` for the owner's phone (link:
+  https://claude.ai/artifact/U1TtQZDgtw1ZkdapNkwLyy). Signed off by the
+  owner (13 Oct); the lab is archived (restore from commit c169377).
 
 ## Stage 6: the polish pass (owner, 13 Oct 2026; v0.70.0)
 

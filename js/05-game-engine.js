@@ -357,6 +357,8 @@ function serializeTable(g){
   // dropped, since a snapshot is only ever taken between hands.
   if (g.mode==='career' && g.event){
     snapshot.championshipFinalTableReached = g.championshipFinalTableReached === true;
+    // the time played in a knock-out invitation (js/event-clock.js)
+    if (Number.isFinite(g.clockMs) && g.clockMs > 0) snapshot.clockMs = Math.round(g.clockMs);
     snapshot.event = Object.assign(careerEventSnapshot(g.event), {
       reward: g.event.reward
         ? Object.assign({}, g.event.reward, { decisionSnapshots:[] })
@@ -595,6 +597,7 @@ function restoreTable(save){
       : normalizeOpponentCount(save.players.filter(p=>!p.isHuman).length);
   }
   if (save.mode==='career'){
+    if (Number.isFinite(save.clockMs) && save.clockMs > 0) game.clockMs = save.clockMs;
     const ev = normalizeCareerSavedEvent(save.event);
     if (ev) game.event = Object.assign({}, ev, {
       // Restore the accumulated TOTAL when the save carries a usable one;
@@ -2297,6 +2300,8 @@ function careerFinishPlace(g, human){
    event keeps careerFinishPlace() alone. */
 function careerFinish(g, human){
   const place = careerFinishPlace(g, human);
+  // (an invitation won by clearing the table: every chip is yours, for the bonus)
+  if (g && g.event && g.event.funding === 'house' && place !== null && human.chips > 0) return { place, chips:human.chips };
   if (!g || !g.event || g.event.funding !== 'house' || place === null || human.chips > 0) return { place };
   const startOf = p => Number.isFinite(p._handStartChips) ? p._handStartChips : p.chips;
   const level = g.players.filter(p => p !== human && p.chips <= 0
@@ -2317,7 +2322,7 @@ function careerLimitFinish(g, human){
   const alive = g.players.filter(p => p !== human && p.chips > 0 && !p.eliminated);
   const ahead = alive.filter(p => p.chips > human.chips).length;
   const level = alive.filter(p => p.chips === human.chips).length;
-  return { place:ahead + 1, tie:level + 1 };
+  return { place:ahead + 1, tie:level + 1, chips:human.chips };
 }
 
 /* The Invitational stays one continuous six-player freezeout. Crossing to
@@ -2377,6 +2382,9 @@ function buildCareerResultModel(g, settled){
     topPrize: Number.isFinite(ev.prize) ? ev.prize : 0,
     // how many shared the place (house-funded events only)
     tie: Number.isInteger(record.tie) && record.tie > 1 ? record.tie : 1,
+    // the chip bonus inside the prize, and the chips that earned it
+    bonus: Number.isFinite(record.bonus) && record.bonus > 0 ? record.bonus : 0,
+    chips: Number.isInteger(record.chips) ? record.chips : null,
     bankroll: careerBankroll(),                                  // read once, post-settlement
     eventScore: reward ? Math.max(0, Math.round(reward.score||0)) : 0,
     hands: g.handNumber || 0,
@@ -2963,7 +2971,8 @@ function careerStageModel(m){
 }
 
 /* An invitation's finish, any place: the card was the entry, so there is
-   no buy-in to report. The hero is what the place paid; a shared place
+   no buy-in to report. The hero is what it paid (the place, and any chip
+   bonus, which the recap and the sub-line break out); a shared place
    reads with "=" and says the prizes were split; OUTLASTED counts the
    players actually knocked out before the end. */
 function invitationStageModel(m){
@@ -2989,14 +2998,15 @@ function invitationStageModel(m){
     recapPages:[[
       { label:'Hands', value:String(m.hands) },
       { label:'Field', value:m.field ? String(m.field) : '—' },
-      { label:'Top prize', value:money(m.topPrize) }
+      m.bonus ? { label:'Chip bonus', value:'+' + money(m.bonus) } : { label:'Top prize', value:money(m.topPrize) }
     ]],
     lamp:null,
     detail:{
       kind: m.tape ? 'tape' : 'statement', label:'Result',
       line: m.handLimit ? (m.won ? 'MOST CHIPS AFTER ' : 'TIME UP AFTER ') + m.handLimit + ' HANDS'
         : m.won ? 'EVERY OPPONENT IS OUT' : 'YOU WERE ELIMINATED',
-      sub: m.tie > 1 ? 'PLACE SHARED, PRIZES SPLIT' : paid ? 'PRIZE CREDITED TO BANKROLL' : 'THE INVITATION IS SPENT',
+      sub: m.bonus ? 'PLACE ' + money(m.prize - m.bonus) + ' + CHIPS ' + money(m.bonus)
+        : m.tie > 1 ? 'PLACE SHARED, PRIZES SPLIT' : paid ? 'PRIZE CREDITED TO BANKROLL' : 'THE INVITATION IS SPENT',
       tape: m.tape || null, won:m.won, place: m.place, alive: m.alive || []
     },
     progress:{ label: m.won ? 'EVENT COMPLETE' : 'EVENT ENDED', value:'', next:'NEXT: THE HUB' }

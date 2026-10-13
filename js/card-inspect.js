@@ -112,7 +112,7 @@
   function build(){
     if (ui) return;
     const el = document.createElement('section');
-    el.className = 'ci'; el.id = 'ci'; el.hidden = true;
+    el.className = 'ci-root'; el.id = 'ci'; el.hidden = true;
     el.setAttribute('aria-label', 'Card details');
     el.innerHTML = `
       <i class="ci-dim"></i>
