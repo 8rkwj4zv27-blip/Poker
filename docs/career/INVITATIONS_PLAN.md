@@ -280,6 +280,46 @@ The owner's audit list (A-F), approved in one go:
   the `packet-machine/` copy archived; the two classic scenarios pin the
   classic Career; the browser suites run on GitHub.
 
+### The economy, simulated (13 Oct 2026)
+
+`node validation/tools/invitation-economy.js --events 300` (each event
+played 300 times by the game's AI at skills 20, 40 and 70; 2,000 whole
+Careers each). Average prize per event, and how often it pays:
+
+| Event | Rarity | Skill 20 | Skill 40 | Skill 70 |
+|---|---|---|---|---|
+| Back Room | C | $34, 100% | $37, 100% | $36, 100% |
+| Full House | C | $23, 50% | $30, 59% | $31, 65% |
+| Closing Time | C | $50, 77% | $53, 79% | $66, 90% |
+| Face to Face | C | $35, 100% | $37, 100% | $39, 100% |
+| Deep Pockets | C | $30, 51% | $33, 56% | $35, 61% |
+| Sponsored Night | UC | $66, 80% | $69, 82% | $75, 87% |
+| Last Stack Wins | UC | $47, 24% | $40, 20% | $43, 21% |
+| The Private Game | R | $136, 45% | $147, 53% | $163, 58% |
+| Final Table | R | $98, 38% | $165, 58% | $197, 66% |
+| The Golden Ticket | L | $580, 29% | $610, 31% | $647, 32% |
+
+A packet's worth (its cards' average prizes): House ($150) $183 / $200 /
+$219; starter $176-200; pity $103-124. Whole Careers, median bankroll
+(10th-90th percentile) after 100 events (about 1,200 hands): skill 20
+$1,285 ($570-2,900), skill 40 $1,715 ($910-3,400), skill 70 $2,175
+($1,375-3,735); a pity packet in well under 1 Career in 10.
+
+What it says:
+- **A House Packet pays back 1.2-1.5 times its price**, so the bankroll
+  creeps up (about $8-17 an event) and never falls for long: no money
+  machine, but no pressure either. There is nothing else to spend on.
+- **Skill barely shows**: the best player ends 100 events with under twice
+  what the weakest does. Events are short (10 hands) and most pay most
+  places, so luck dominates.
+- **Last Stack Wins (Uncommon) is worth less than three Commons** (winner
+  takes all, 4 players): an Uncommon that's a downgrade. Closing Time
+  (Common, 20 hands) out-earns it.
+- **Rock bottom almost never happens**: Back Room and Face to Face pay
+  every place, so even a losing player keeps buying.
+- Not changed here: the prices are the owner's call, with the goal (the
+  forward plan) deciding what money is for.
+
 ## Stage 5: the new Career in the game (owner, 13 Oct 2026; v0.69.0)
 
 The owner wanted to test it in the real app: Career on the menu opens the
