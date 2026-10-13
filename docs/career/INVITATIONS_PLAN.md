@@ -283,11 +283,12 @@ it's there.
 - Not done: the owner playing it; hand timing on a real phone; the
   economy simulated; the Pattern Book sign-off for the new parts.
 
-### Open questions for the owner
+### Owner answers (13 Oct 2026)
 
-- **Pity packet:** it comes back after every shortfall, so finishing last
-  with all three of its cards earns another (house events cost nothing).
-  Fine, or limit it?
-- **Buying during an event left in progress** is allowed (the event's
-  prize is the house's, so nothing is at stake). Fine?
+- **Pity packet:** it may come back after every shortfall. No game over
+  screen: being broke is rock bottom, and the house deals you back in.
+- **Buying during an event left in progress** is fine.
+
+### Still open
+
 - Prices, prizes and packet odds are the provisional ones above.
