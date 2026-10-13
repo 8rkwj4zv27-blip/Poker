@@ -104,12 +104,24 @@
   let seed = 11;
   const rand = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
   const rarity = () => { const r = rand(); return r < .5 ? 'common' : r < .78 ? 'uncommon' : r < .94 ? 'rare' : 'legendary'; };
-  const album = Array.from({ length:PAGES }, (_, p) => Array.from({ length:PER }, (_, i) => {
+  let album = Array.from({ length:PAGES }, (_, p) => Array.from({ length:PER }, (_, i) => {
     const found = rand() < FILL[p], used = rand() < .3;
     if (!found) return { state:'empty' };
     const card = EventCards.make(EventCards.KINDS[(i + p * 2) % 4], rarity(), VENUES[Math.floor(rand() * VENUES.length)], { roster:false });
     return { state:used ? 'used' : 'have', card };
   }));
+  // the New Career preview (js/career-link.js): one place per event, in
+  // catalogue order; an event you hold shows your card (bright, playable),
+  // one you don't shows its design dimmed. Rebuilt each time the book opens.
+  const LINK = window.CareerLink || null;
+  function fromLink(){
+    const list = LINK.albumPages();
+    return Array.from({ length:PAGES }, (_, p) => Array.from({ length:PER }, (_, i) => {
+      const e = list[p * PER + i];
+      if (!e) return { state:'empty' };
+      return e.count ? { state:'have', card:e.cards[0], count:e.count } : { state:'used', card:e.design };
+    }));
+  }
   const entry = slot => album[+slot.dataset.p][+slot.dataset.i];
 
   /* ---------------- build ---------------- */
@@ -252,6 +264,7 @@
     mode = 'moving';
     sheet.hidden = true;
     Snd.unlock();
+    if (LINK) album = fromLink();
     cur = 0; fillPages();
     coverEl.hidden = false; coverEl.style.transform = '';
     place();
@@ -613,7 +626,9 @@
       album:true,
       back:t => { flyHome(slot, t.c); },
       beforePlay:async () => { await putAway(); },
-      afterPlay:() => played(slot)
+      afterPlay:() => played(slot),
+      // the preview plays it for real: the book just lets go of it
+      linkPlayed:() => { fedSlot = null; fstage.el.classList.remove('is-out'); }
     }, { placed }).then(setKeys);
   }
   // out of the reader and home: it flies down to its sleeve and is tucked in

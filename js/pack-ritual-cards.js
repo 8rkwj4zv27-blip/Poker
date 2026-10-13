@@ -107,6 +107,11 @@
     </article></div>${externalEffects(card)}`;
   }
   function objectHTML(card, inspected = false) {
+    // an invitation from the Career save wears the invitation card
+    if (card.invite && card.entry && window.InvitationCards){
+      const html = InvitationCards.cardHTML(card.entry);
+      return inspected ? html.replace('class="ccl-object inv-object"', 'class="ccl-object inv-object is-inspected"') : html;
+    }
     return `<div class="ccl-object${inspected ? ' is-inspected' : ''}" data-kind="${card.kind}" data-rarity="${card.rarity}" data-material="${card.material}" data-finish="${card.finish}">${cardHTML(card)}</div>`;
   }
   window.PokerCollectibleLab = Object.freeze({cards,rarities,rarityKeys,specimen,cardHTML,objectHTML});

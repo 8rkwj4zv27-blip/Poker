@@ -1633,13 +1633,20 @@
   // of the felt sealed, ready to tear
   async function openOwned(p){
     if (phase !== 'idle') return;
+    // the New Career preview: the packet's cards are the ones drawn when it
+    // was bought, and tearing it open moves them into your cards (saved)
+    const saved = window.CareerLink && p.pktId ? CareerLink.open(p.pktId) : null;
+    if (window.CareerLink && !saved) return;
     wallet = cfg.wallet(); measure();
     packets = [p]; chosen = p; packNo++;
     pull = 0; deck = flap = rc = null; fan = [];
     p.yaw = 0; p.face = 'front'; p.body.set({ shx:1 });
     if (!p.cards.length) fillStack(p);
-    hasLegend = tune.contents === 'legendary' || tune.contents === 'double' || (tune.contents === 'surprise' && Math.random() < 1 / 3);
-    contents = EventCards.pack(p.series, { legend:hasLegend, double:tune.contents === 'double', event:tune.event }); revealed = 0;
+    if (saved){ contents = saved; hasLegend = saved.some(c => c.rarity === 'legendary'); revealed = 0; }
+    else {
+      hasLegend = tune.contents === 'legendary' || tune.contents === 'double' || (tune.contents === 'surprise' && Math.random() < 1 / 3);
+      contents = EventCards.pack(p.series, { legend:hasLegend, double:tune.contents === 'double', event:tune.event }); revealed = 0;
+    }
     lock = true; phase = 'bought';
     S.cardReturn(); Foil.rustle(.7);
     const f = focus();

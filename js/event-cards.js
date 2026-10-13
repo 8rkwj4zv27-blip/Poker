@@ -53,12 +53,37 @@
     return tiers.map(r => make(r === 'legendary' ? lkind() : kind(), r, pick(ids)));
   }
 
+  /* One of the player's invitations (the Career save,
+     docs/career/INVITATIONS_PLAN.md) as a card the hub, the opening, the
+     inspect screen and the album can hold: its face is the invitation card
+     (js/invitation-cards.js), its uid the invitation's id. */
+  function fromInvitation(inv){
+    const ev = inv && event(inv.eventId);
+    if (!ev || ev.id !== inv.eventId) return null;
+    let payouts = [];
+    try { payouts = careerPayouts(ev); } catch (e) {}
+    const tier = RARITIES.indexOf(inv.rarity);
+    const entry = window.InvitationCards ? InvitationCards.byEvent(ev.id) : null;
+    const spec = { invite:true, entry, eventId:ev.id, kind:'table', rarity:inv.rarity, tier, title:ev.title || ev.name,
+      prize:payouts[0] || 0, material:'paper', finish:'paper' };
+    return { uid:inv.id, invId:inv.id, kind:'table', rarity:inv.rarity, tier, eventId:ev.id, event:ev, payouts,
+      prize:payouts[0] || 0, roster:inv.roster || null, spec, design:ev.id };
+  }
+
   /* What the inspect screen prints about a card (the card prints the rest). */
   function describe(card){
     const ev = card.event;
-    return { venue:ev.venue, title:ev.title || ev.name, seats:ev.playerCount, entry:ev.buyIn, payouts:card.payouts };
+    const d = { venue:ev.venue, title:ev.title || ev.name, seats:ev.playerCount, entry:ev.buyIn, payouts:card.payouts };
+    if (card.invId){
+      const money = n => '$' + Math.round(n).toLocaleString('en-US');
+      const length = ev.handLimit ? ev.handLimit + ' HANDS' : 'TO THE LAST';
+      d.plate = d.title;
+      d.lines = [d.title, ev.playerCount + ' PLAYERS · ' + length,
+        { t:(card.payouts.length === 1 ? 'WINNER TAKES ' : 'PAYS ') + card.payouts.map(money).join(' / '), money:true }];
+    }
+    return d;
   }
 
   const designs = () => KINDS.flatMap(k => RARITIES.map(r => k + ':' + r));
-  window.EventCards = Object.freeze({ KINDS, RARITIES, MULT, SERIES, make, pack, describe, designs });
+  window.EventCards = Object.freeze({ KINDS, RARITIES, MULT, SERIES, make, pack, describe, designs, fromInvitation });
 })();

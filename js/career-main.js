@@ -39,7 +39,10 @@
   const pick = a => a[Math.floor(Math.random() * a.length)];
 
   const BANKS = [620, 12650, 186400];
-  let wallet = BANKS.includes(+state.bank) ? +state.bank : BANKS[1];
+  // in the New Career preview (js/career-link.js) the real Career stands
+  // in for the lab's placeholders: the bankroll, your cards, your packets
+  const LINK = window.CareerLink || null;
+  let wallet = LINK ? LINK.bank() : BANKS.includes(+state.bank) ? +state.bank : BANKS[1];
 
   let root, felt, stage, woodEl, slotEl, mouthEl, plateEl;
   let s = 1;                 // the cards' scale on the felt
@@ -92,8 +95,8 @@
     setTimeout(() => { put(); b.classList.remove('cm-flip'); }, 60);
   }
   const keyEl = k => $(`[data-key="${k}"]`);
-  const MID = { play:'PLAY', add:'ADD TO\nCOLLECTION', open:'OPEN', redeal:'REDEAL' };
-  const mid = () => fed ? 'play' : of('card').length ? 'add' : of('pk').length ? 'open' : 'redeal';
+  const MID = { play:'PLAY', add:'ADD TO\nCOLLECTION', open:'OPEN', redeal:'REDEAL', resume:'CONTINUE' };
+  const mid = () => LINK?.active ? 'resume' : fed ? 'play' : of('card').length ? 'add' : of('pk').length ? 'open' : 'redeal';
   // (the shop has the keys while it's out, and while a packet is torn open;
   // the album darkens them while it's out)
   function keys(){
@@ -122,7 +125,8 @@
       <section class="po-sheet cm-sheet" id="cm-sheet" hidden aria-label="Tune">
         <h2>CAREER</h2>
         <p>The tray is the house's, the felt is yours. REDEAL for three more. Tap the deck to turn a card over; tap it again for the next, or anywhere else to put the card down. Pick anything up and move it, or throw it: cards thrown off go into your collection. Drag a card up into the feeder, PLAY. Double tap empty felt to tidy up.</p>
-        <h3>BANKROLL</h3>${seg('bank', Object.fromEntries(BANKS.map(b => [b, money(b)])))}
+        ${LINK ? '<h3>THIS PREVIEW</h3><div class="cm-seg"><button class="pc-button pc-button-secondary" id="cm-restart">START OVER</button></div>'
+          : '<h3>BANKROLL</h3>' + seg('bank', Object.fromEntries(BANKS.map(b => [b, money(b)])))}
         <div class="cm-seg"><button class="pc-button pc-button-secondary" id="cm-done">DONE</button></div>
       </section>`;
     document.body.classList.add('cm-lab');
@@ -135,6 +139,13 @@
     woodEl = $('.cm-wood'); slotEl = $('.cm-slot'); mouthEl = $('.cm-mouth'); plateEl = $('.cm-plate');
     $('#cm-tune').onclick = () => { $('#cm-sheet').hidden = !$('#cm-sheet').hidden; };
     $('#cm-done').onclick = () => { $('#cm-sheet').hidden = true; };
+    // the preview's own save, wiped on a second tap (no confirm dialogs here)
+    if (LINK) $('#cm-restart').onclick = e => {
+      const b = e.currentTarget;
+      if (b.dataset.armed !== '1'){ b.dataset.armed = '1'; b.textContent = 'TAP AGAIN TO WIPE IT'; return; }
+      try { localStorage.clear(); } catch (err) {}
+      location.reload();
+    };
     root.querySelectorAll('.cm-seg[data-key] button').forEach(b => b.onclick = () => {
       wallet = +b.dataset.v;
       if (host) host.set({ bank:wallet });
@@ -186,6 +197,7 @@
   /* ---------------- your case ---------------- */
   // placeholder cards across the venues (the lab's own)
   function fillPool(){
+    if (LINK){ pool = LINK.pool(); return; }
     const ids = [['table', 'common', 'back-room-five'], ['freezeout', 'common', 'back-room-freezeout'], ['table', 'uncommon', 'pub-open'],
       ['bomb', 'uncommon', 'pub-turbo'], ['freezeout', 'rare', 'pub-freezeout'], ['table', 'rare', 'card-club-six'],
       ['bomb', 'common', 'card-club-deep'], ['table', 'legendary', 'casino-main'], ['freezeout', 'uncommon', 'back-room-heads-up'],
@@ -196,11 +208,16 @@
   // the big one), never one already out, and not one just swept away if
   // there's a choice
   function chooseFor(places, not = []){
-    const out = of('house').map(h => h.card), by = pool.slice().sort((a, b) => a.prize - b.prize), n = by.length;
+    if (LINK) fillPool();   // your cards as the save has them now
+    // never a card already out on the felt (the tray's, or one of yours lying loose)
+    const loose = new Set(of('card').map(t => t.card.uid));
+    const out = of('house').map(h => h.card), by = pool.filter(c => !loose.has(c.uid)).sort((a, b) => a.prize - b.prize), n = by.length;
+    const has = (list, c) => list.some(q => q.uid === c.uid);
+    const nots = not.filter(Boolean);
     return places.map(i => {
-      const a = Math.floor(i / 3 * n), band = by.slice(a, Math.max(a + 1, Math.ceil((i + 1) / 3 * n))).filter(c => !out.includes(c));
-      const fresh = band.filter(c => !not.includes(c));
-      const c = pick(fresh.length ? fresh : band.length ? band : by.filter(q => !out.includes(q)));
+      const a = Math.floor(i / 3 * n), band = by.slice(a, Math.max(a + 1, Math.ceil((i + 1) / 3 * n))).filter(c => !has(out, c));
+      const fresh = band.filter(c => !has(nots, c));
+      const c = pick(fresh.length ? fresh : band.length ? band : by.filter(q => !has(out, q)));
       if (c) out.push(c);
       return c;
     });
@@ -263,7 +280,7 @@
   // were in it already, and another is tossed into the tray
   function collect(t){
     drop(t);
-    if (t.kind === 'card') pool.push(t.card);
+    if (t.kind === 'card' && !LINK) pool.push(t.card);   // (the preview's pool is your saved cards already)
     filed();
   }
   // ADD TO COLLECTION: every loose card squares up and goes in through the
@@ -312,7 +329,7 @@
     await teeth(c, m.y, 2);
     S.wheelLock(); Haptic.tick(14, 0); jolt($('.cm-cabinet'), 2);
     const d = EventCards.describe(t.card);
-    plate((d.venue + ' · ' + d.title).toUpperCase());
+    plate((d.plate || d.venue + ' · ' + d.title).toUpperCase());
     slotEl.classList.add('is-fed');
     busy = false;
   }
@@ -339,12 +356,24 @@
     if (!fed || busy) return;
     busy = true;
     const t = fed, c = t.c;
+    // the preview plays only a card you own, and only when no table is open
+    if (LINK && !(t.card.invId && careerCanPlayInvitation(t.card.invId))){
+      busy = false; plate('TABLE BUSY'); jolt(slotEl, 2);
+      return setTimeout(() => { plate((EventCards.describe(t.card).plate || 'INSERT CARD').toUpperCase()); }, 1200);
+    }
     if (t.beforePlay) await t.beforePlay();
     S.wheelCatch(); jolt(slotEl, 3);
     await teeth(c, lip().y - CH * s / 2 - 4, 3);
     S.wheelLock(); Haptic.tick(18, 0); jolt($('.cm-cabinet'), 3);
     c.body.remove(); drop(t);
     pool = pool.filter(q => q !== t.card);
+    if (LINK){
+      fed = null; slotEl.classList.remove('is-fed'); plate('INSERT CARD'); keys();
+      busy = false;
+      t.linkPlayed?.();
+      LINK.play(t.card);
+      return;
+    }
     if (pool.length < 4) fillPool();
     fed = null; slotEl.classList.remove('is-fed'); keys();
     if (t.afterPlay){ plate('INSERT CARD'); busy = false; return t.afterPlay(t); }
@@ -373,6 +402,8 @@
     for (const [k, id] of series.entries()){
       const p = new POPacket.Packet(stage, id, 0);
       p.tagEl.hidden = true; p.el.classList.add('cm-pk');
+      // the saved packet this one is (the preview): the first not yet on the felt
+      if (LINK) p.pktId = LINK.packetIds().find(pid => !of('pk').some(q => q.p.pktId === pid)) || null;
       const to = { ...rowAt(n0 + k, n), r:rr(-4, 4) };
       things.push({ kind:'pk', p, series:id });
       p.body.set({ x:to.x, y:-POPacket.AH * pkScale(), s:pkScale(), r:to.r - 30, z:30, sx:1, sy:1, alpha:1 });
@@ -514,7 +545,7 @@
     const k = b.dataset.key;
     if (window.CareerShop?.key(k, b)) return;   // the shop's keys while it's out
     jolt(b, 2); Haptic.tick(8);
-    if (k === 'play') return { play, add:addAll, open:() => open(), redeal }[mid()]();
+    if (k === 'play') return { play, add:addAll, open:() => open(), redeal, resume:() => LINK.resume() }[mid()]();
     // CARDS: the album comes up (collection-book-lab.html); elsewhere not built yet
     if (k === 'cards' && window.CareerAlbum) return CareerAlbum.toggle();
     Foil.thud(.3);
@@ -654,6 +685,7 @@
     showBank(v){ $('#cm-reel').innerHTML = reel(v); },
     get reelEl(){ return $('#cm-reel'); },
     get busy(){ return busy; },
+    get ready(){ return ready; },
     get scale(){ return s; },
     keyEl, setKey, keys,
     // the feeder, for the album: lip() in the felt's coordinates
@@ -662,6 +694,7 @@
     addPackets, handOver, place, deckBack,
     // chips home: the reel counts them in
     countIn:v => countTo(wallet + v),
+    refresh,
     // read-only, for the lab's checks
     get state(){
       return { busy, fed:fed ? fed.kind : null, house:of('house').map(h => h.place + ':' + h.card.uid), cards:of('card').length,
@@ -675,7 +708,35 @@
     }
   };
 
+  /* ---------------- the preview: back from the table ---------------- */
+  // the bankroll counts to what the Career holds; the tray deals again from
+  // the cards you own now; packets you hold but haven't got on the felt
+  // (the starter, the pity packet, any bought) come down onto it
+  let refreshing = false;
+  async function refresh(){
+    if (!LINK || !root || refreshing) return;
+    refreshing = true;
+    try {
+      await wait(PO.reduced ? 0 : 300);
+      while (busy) await wait(100);
+      if (LINK.bank() !== wallet) await countTo(LINK.bank());
+      fillPool();
+      const ids = pool.map(c => c.uid);
+      of('house').filter(h => !ids.includes(h.card.uid)).forEach(h => { h.c.body.remove(); drop(h); });
+      of('card').filter(t => !ids.includes(t.card.uid)).forEach(t => { t.c.body.remove(); drop(t); });
+      busy = true; await tossIn(emptyPlaces()); busy = false;
+      await layPackets();
+      keys();
+    } finally { refreshing = false; }
+  }
+  async function layPackets(){
+    LINK.arrivals();
+    const missing = LINK.packetIds().filter(pid => !of('pk').some(q => q.p.pktId === pid));
+    if (missing.length) await addPackets(missing.map(() => 'house'));
+  }
+
   /* ---------------- start ---------------- */
+  let ready = false;          // set up, the first deal and any packets down
   async function setup(){
     build();
     marks();
@@ -685,6 +746,8 @@
     keys();
     await wait(400);
     busy = true; await tossIn([0, 1, 2]); busy = false;
+    if (LINK){ await layPackets(); keys(); }
+    ready = true;
     // the felt can change size (the TUNE sheet, the phone turning): the
     // house's cards keep to the tray, everything else stays on the felt
     new ResizeObserver(() => {

@@ -290,7 +290,7 @@
      only when there's something worth saying. The prize is on the card. */
   function fill(item){
     const d = EventCards.describe(item.card);
-    let lines = item.lines;
+    let lines = item.lines || (!item.locked && d.lines);
     if (!lines){
       lines = item.locked
         ? ['NOT YET FOUND', 'PULL ONE FROM A PACK']

@@ -36,7 +36,9 @@ window.PO_EMBED = true;
   const { Packet, AW, AH } = POPacket;
   // the editions (placeholders): price, and chances for C, UC, R, L
   // (s: always, f: maybe, o: never)
-  const ED = {
+  // the New Career preview (js/career-link.js) sells what the Career sells
+  const LINK = window.CareerLink || null;
+  const ED = LINK ? LINK.editions() : {
     alley:{ name:'ALLEY', price:50, odds:'sfoo' }, house:{ name:'HOUSE', price:100, odds:'sffo' },
     pub:{ name:'PUB', price:150, odds:'ssfo' }, club:{ name:'CLUB', price:300, odds:'ssff' },
     wild:{ name:'WILD', price:500, odds:'fsff' }, casino:{ name:'CASINO', price:750, odds:'fssf' },
@@ -236,7 +238,8 @@ window.PO_EMBED = true;
   function dim(p, v){ p.el.querySelectorAll('canvas').forEach(c => { c.style.filter = v >= 1 ? '' : `brightness(${v})`; }); }
   function stock(){
     slots.forEach(s => { s.p?.body.remove(); s.spare?.body.remove(); });
-    const show = stageOf(vq('.vm-show')), ids = GRID[G.C].slice(0, G.C * G.R);
+    // (the preview: every coil holds the one packet the Career sells)
+    const show = stageOf(vq('.vm-show')), ids = GRID[G.C].slice(0, G.C * G.R).map(id => LINK && id ? 'house' : id);
     slots = ids.map((id, i) => ({ i, id, r:Math.floor(i / G.C), c:i % G.C, count:0 }));
     vq('.vm-rails').innerHTML = Array.from({ length:G.R }, (_, r) => `<div class="vm-rail" style="top:${G.P + G.rowH * (r + 1) - G.RL}px;height:${G.RL}px;grid-template-columns:repeat(${G.C},1fr)">${
       slots.filter(s => s.r === r).map(s => `<span class="vm-cell"><span class="vm-tag">${s.id ? (G.colW < 62 ? String(ED[s.id].price) : ED[s.id].price.toLocaleString('en-US')) : '—'}</span><span class="vm-key${s.id ? '' : ' is-out'}" data-i="${s.i}"><b>${s.id ? '' : '×'}</b></span></span>`).join('')}</div>`).join('');
@@ -352,8 +355,16 @@ window.PO_EMBED = true;
       setTimeout(panel, 1400);
       return;
     }
+    // the preview: every packet ordered is bought from the Career first (the
+    // money and the packet saved in one write each); the chips then show it
+    if (LINK){
+      for (let n = 0; n < order.length; n++){
+        if (!LINK.buy()){ crt('SHORT', money(due), 'TOTAL ' + money(due), 'danger'); Foil.thud(.5); setTimeout(panel, 1400); return; }
+      }
+    }
     mode = 'paying'; keys();
     await payChips(due);
+    if (LINK){ M.wallet = LINK.bank(); M.showBank(M.wallet); }
     mode = 'dispensing'; keys();
     await dispenseAll();
     mode = 'idle'; unpeek();
@@ -859,7 +870,8 @@ window.PO_EMBED = true;
       layout:{ handY:.66, squareY:.66, wrapY:.62, flapY:.6, deckX:.84, deckY:.56, railLift:66 },   // (deckX: CareerMain's DECK_X)
       onPutBack(){}, onBought(){},
       // the packet's chips count straight into the reel
-      bag:({ series }) => wait(PO.reduced ? 0 : 500).then(() => { S.chipCollect?.(.6); return M.countIn(BAG[series] || 40); }),
+      // (the preview's packets hold cards only: no bag of chips)
+      bag:({ series }) => LINK ? Promise.resolve() : wait(PO.reduced ? 0 : 500).then(() => { S.chipCollect?.(.6); return M.countIn(BAG[series] || 40); }),
       // the cards are out, face down: the hub takes them and the wrapper
       handOver(left){
         mode = 'hub';
