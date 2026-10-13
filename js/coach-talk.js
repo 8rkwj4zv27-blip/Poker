@@ -1,7 +1,7 @@
 "use strict";
 
 /* ============================================================
-   COACH TALK (Coach Voice Lab, round 1: candidate, lab only)
+   COACH TALK: P.I.P.'s voice (live; chosen in the Coach Voice Lab)
 
    The coach speaks: a bubble from his little TV (the Speech Lab's card-
    stock bubble, typed on and growing to fit, or a dark-screen version in
@@ -24,8 +24,8 @@
    stale ones are dropped.
 
    Presentation only: reads public facts and your own cards, never an
-   opponent's hidden cards. Not loaded by the game; coach-voice-lab.html
-   injects it. CoachTalk.apply(order), CoachTalk.say(moment, ctx).
+   opponent's hidden cards. Loaded by index.html (tap only: the talk dials
+   are kept but hidden). CoachTalk.apply(order), CoachTalk.say(moment, ctx).
    ============================================================ */
 const CoachTalk = (() => {
   const $id = id => document.getElementById(id);
@@ -79,7 +79,7 @@ const CoachTalk = (() => {
     loseShowdown:[[1, 'unlucky', 'Didn’t go your way.'], [1, 'unlucky', 'They had it that time.'], [1, 'unlucky', 'Beaten that time.'], [1, 'calm', 'Their hand was better.']],
     loseBig:[[1, 'wince', 'That one hurt.'], [1, 'unlucky', 'Unlucky. That was a lot of chips.'], [1, 'wince', 'A big one to lose.'], [1, 'unlucky', 'Painful. Shake it off.']],
     oppOut:[[2, 'calm', '{name}’s out.'], [2, 'pleased', 'That’s {name} gone.'], [2, 'calm', '{name} is out of chips.']],
-    youOut:[[1, 'unlucky', 'That’s the run over. We’ll go again.'], [1, 'unlucky', 'Out. It happens.'], [1, 'calm', 'Out of chips. Next time.']]
+    youOut:[[1, 'unlucky', 'That’s us out of this one. We’ll go again.'], [1, 'unlucky', 'Out. It happens.'], [1, 'calm', 'Out of chips. Next time.']]
   };
 
   /* Which wording: every one of a moment's lines is used before any comes

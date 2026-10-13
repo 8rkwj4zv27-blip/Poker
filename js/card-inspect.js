@@ -11,7 +11,8 @@
             through (lines: the CRT's own lines, e.g. the album's history;
             a line can be { t, money:true })
             through; the card rises from its source and goes back to it
-     host:  the screen root it mounts in (default #home): the keys take
+     host:  the screen root it mounts in (default the new Career's #hub,
+            else #home): the keys take
             that screen's own styles, exactly as its other keys do
      key:   { label, sub, press(item, index, api) }   the big key; without
             press it closes. api.consume() posts the card into the machine
@@ -126,7 +127,7 @@
           <button class="btn-check ci-step" type="button" data-step="1" aria-label="Next card"><i class="ci-arrow"></i></button>
         </div></div>
       </div>`;
-    (document.getElementById('home') || document.body).append(el);
+    (document.getElementById('hub') || document.getElementById('home') || document.body).append(el);
     const st = el.querySelector('.ci-stage');
     ui = {
       el, dim:el.querySelector('.ci-dim'), drawer:el.querySelector('.ci-drawer'), pips:el.querySelector('.ci-pips'),
@@ -170,7 +171,7 @@
     build();
     if (ui.open) return;
     opts = o; idx = clamp(o.index || 0, 0, o.items.length - 1); ui.open = true; busy = true;
-    const host = o.host || document.getElementById('home') || document.body;
+    const host = o.host || document.getElementById('hub') || document.getElementById('home') || document.body;
     if (ui.el.parentNode !== host) host.append(ui.el);
     ui.el.hidden = false;
     ui.back.hidden = !o.key?.press;

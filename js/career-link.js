@@ -18,8 +18,10 @@
    touched. Nothing here keeps money, cards or packets of its own: every
    change is one of those functions, each a single save write.
 
-   The hub lives in #home, over the menu: open() lays it on (the classes
-   cm-home on #home, cm-lab on the body), the hub's back key takes it off.
+   The hub is a screen of its own (#hub, made here), beside the menu and
+   the classic Career screen, so every way in and out of it turns the
+   game's drum (js/machine-wheel.js) like any other screen change: the
+   Career key, the hub's back key, PLAY, and back from the table.
    A lab's framed copy of the game brings its own parts, so none of this
    runs there.
    ============================================================ */
@@ -30,8 +32,11 @@
   const toCard = inv => EventCards.fromInvitation(inv);
 
   window.CareerLink = {
-    // the shop sells what the Career sells: the House Packet
-    editions(){ return { house:{ name:'HOUSE', price:CAREER_PACKETS.house.price, odds:'ssff' } }; },
+    // the shop sells what the Career sells: the House Packet. Its lamps
+    // (C, UC, R, L; s lit: always, f blinking: maybe) say what it holds:
+    // three Commons always, and a fourth card that is usually Uncommon,
+    // sometimes Rare, rarely Legendary (CAREER_PACKETS.house)
+    editions(){ return { house:{ name:'HOUSE', price:CAREER_PACKETS.house.price, odds:'sfff' } }; },
     bank:() => careerBankroll(),
     // your case: the invitations you own, as cards
     pool:() => careerInvitations().map(toCard).filter(Boolean),
@@ -42,6 +47,8 @@
     // whether a packet on the felt can be opened (its cards fit)
     canOpen:id => { const p = careerPackets().find(q => q.id === id); return !!p && careerInvitations().length + p.cards.length <= CAREER_INVITATIONS_LIMIT; },
     packetIds:() => careerPackets().map(p => p.id),
+    // which packet it is: 'starter', 'house' or 'pity' (its wrapper)
+    kindOf:id => careerPackets().find(p => p.id === id)?.kind || null,
     // a packet torn open on the felt: its cards join yours (one write)
     open(id){ const cards = openCareerPacket(id); return cards ? cards.map(toCard).filter(Boolean) : null; },
     // the starter packet the first time, the pity packet when stuck
@@ -59,6 +66,11 @@
       return true;
     },
     get active(){ return careerActiveEventSnapshot(); },
+    // ABANDON: the event in progress given up, after the game's own
+    // confirmation (the card is already spent; no prize)
+    abandon(after){ if (careerHasActiveEvent()) careerAbandonPressed(career.active.eventId, after); },
+    // how the last event ended, for the hub's plate
+    get lastResult(){ return careerLastResult(); },
     // START OVER: the new Career's save alone, never the classic one's
     wipe(){ Store.remove(CAREER_KEY); Store.remove(CAREER_TABLE_KEY); },
     // the album: one place per event, in catalogue order; the cards you
@@ -73,59 +85,55 @@
     }
   };
 
-  // The hub over the menu, or not. The hub builds itself the first time
+  // The hub's screen. It builds itself the first time it's shown
   // (js/career-main.js, CareerMain.start); after that it catches up with
-  // the bankroll and the cards each time it's shown.
+  // the bankroll and the cards each time.
+  const screen = document.createElement('div');
+  screen.id = 'hub'; screen.className = 'screen hidden'; screen.setAttribute('aria-label', 'Career');
+  $('app').append(screen);
+  careerScreenEl = () => screen;
   const hub = window.CareerHub = {
-    get open(){ return $('home').classList.contains('cm-home'); },
-    // laid over the menu (the menu itself may still be hidden)
-    lay(){ $('home').classList.add('cm-home'); document.body.classList.add('cm-lab'); },
+    screen,
+    get open(){ return !screen.classList.contains('hidden'); },
     show(){
       // the hub's parts still on their way: it comes out as soon as they're here
       if (!window.CareerMain){ hub.pending = true; return; }
       hub.pending = false;
-      hub.lay();
-      if (window.CareerMain?.root) window.CareerMain.refresh();
-      else window.CareerMain?.start?.();
+      if (window.CareerMain.root) window.CareerMain.refresh();
+      else window.CareerMain.start();
     },
-    hide(){
-      $('home').classList.remove('cm-home');
-      document.body.classList.remove('cm-lab');
-      refreshCareerMenuButton();
+    // the hub's back key: the drum turned back to the menu
+    back(){
+      rollBackTo(screen, $('home'),
+        () => { $('home').classList.remove('hidden'); reconstructMainMenu(); },
+        () => { screen.classList.add('hidden'); });
     }
   };
 
-  // Career from the menu: the hub, with the key's own press
-  function enter(){
-    if (typeof pressFeelSounded !== 'function' || !pressFeelSounded($('open-career'))) Sound.buttonPress('allin');
-    haptic([25, 18, 42]);
+  // Every way to the classic Career screen comes to the hub instead: the
+  // Career key's drum (machine-wheel.js asks careerScreenEl()), an event
+  // finished, and a table left mid-event (that one went to the menu).
+  showCareerScreen = options => {
+    ['career', 'setup', 'rankings', 'awards', 'table-screen'].forEach(id => $(id)?.classList.add('hidden'));
+    if (!options || !options.keepHomeVisible) $('home').classList.add('hidden');
+    screen.classList.remove('hidden');
     hub.show();
-  }
-  // Every way back to the classic Career screen (an event finished, a
-  // table left mid-event) turns to the hub instead, with the drum.
+  };
+  const realShowTable = showTableScreen;
+  showTableScreen = () => { realShowTable(); screen.classList.add('hidden'); };
   const realRollBackTo = rollBackTo;
   rollBackTo = (from, to, reveal, settle) => {
-    if (to !== $('career')) return realRollBackTo(from, to, reveal, settle);
-    hub.lay();
-    return realRollBackTo(from, $('home'), reveal, settle);
+    const table = $('table-screen');
+    if (to === $('career') || (from === table && to === $('home') && game && game.mode === 'career'))
+      return realRollBackTo(from, screen, () => showCareerScreen(), settle);
+    return realRollBackTo(from, to, reveal, settle);
   };
-  // the menu's Career key (09-controls.js calls this; machine-wheel.js
-  // installed its own drum version before this loaded)
-  enterCareerFromHome = enter;
-  showCareerScreen = () => {
-    ['career', 'setup', 'rankings', 'awards', 'table-screen'].forEach(id => $(id)?.classList.add('hidden'));
-    $('home').classList.remove('hidden');
-    hub.show();
-  };
-  // a table left mid-event comes back to the menu: the hub, if it was out
-  const realMenu = reconstructMainMenu;
-  reconstructMainMenu = (...args) => { const r = realMenu(...args); if (hub.open) window.CareerMain?.refresh?.(); return r; };
   // the results key names where it goes
   enterCareerResultsConsole = onBack => activateResultsConsole(onBack, 'BACK TO THE HUB', 'career-return-mode', true);
 
   // The hub's parts, in order. sw.js precaches each with this same tag
   // (offline-list-checks.js holds the two together).
-  const V = '69-0';
+  const V = '70-0';
   const PARTS = {
     css:['css/pack-ritual-cards.css', 'css/invitation-cards.css', 'css/pack-opening.css', 'css/card-inspect.css',
       'css/career-main.css', 'css/vending-machine.css', 'css/collection-book.css'],

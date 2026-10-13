@@ -1,7 +1,5 @@
-# Runs every check suite (npm test) on each pull request and on main.
-# No dependencies to install: the suites need nothing but Node.
-# The iPhone play-test (npm run play-test) needs a browser and is run by
-# hand before merging changes to files players download.
+# Runs every check suite (npm test) on each pull request and on main:
+# they need nothing but Node. A second job runs the browser checks.
 name: Tests
 
 on:
@@ -23,3 +21,20 @@ jobs:
         with:
           node-version: 22
       - run: npm test
+
+  # The browser checks (npm run browser-checks): the play-test, the new
+  # Career scenario and the lab suites, with real touch in an emulated
+  # iPhone. Playwright and its Chromium are installed for this run only;
+  # the game itself still has no dependencies.
+  browser:
+    name: browser checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm install --no-save playwright@1.56.1
+      - run: npx playwright install --with-deps chromium
+      - run: npm run browser-checks

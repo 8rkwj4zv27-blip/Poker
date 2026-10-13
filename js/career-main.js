@@ -112,7 +112,7 @@
     root = document.createElement('main');
     root.id = 'cm'; root.className = 'lobby-card pc-housing';
     root.innerHTML = `
-      <header class="cm-rail"><button class="icon-btn cm-icon" id="cm-back" type="button" aria-label="Back"><i class="ci-arrow is-left"></i></button><span class="cm-title">CAREER</span><button class="icon-btn cm-icon" id="cm-tune" type="button" aria-label="Tune">TUNE</button></header>
+      <header class="cm-rail"><button class="icon-btn cm-icon" id="cm-back" type="button" aria-label="Back"><i class="ci-arrow is-left"></i></button><span class="cm-title">CAREER</span><button class="icon-btn cm-icon" id="cm-tune" type="button" aria-label="${LINK ? 'More' : 'Tune'}">${LINK ? 'MORE' : 'TUNE'}</button></header>
       <div class="cm-cabinet">
         <div class="ch2-bankroll-housing cm-bank"><div class="ch2-bankroll-reel" id="cm-reel"></div></div>
         <div class="cm-row"><div class="cm-slot"><b class="cm-plate">INSERT CARD</b><div class="cm-mouth"><i class="cm-throat"></i></div></div></div>
@@ -122,15 +122,17 @@
         <div class="po-shadows"></div><div class="po-objects"></div><div class="po-fx"></div>
       </div></section>
       <footer class="cm-console"><div class="cm-console-case"><div class="ec-bay"><div class="actions-row cm-keys"><button class="btn-check" type="button" data-key="shop">SHOP</button><button class="btn-raise" type="button" data-key="play">REDEAL</button><button class="btn-check" type="button" data-key="cards">CARDS</button></div></div></div></footer>
-      <section class="po-sheet cm-sheet" id="cm-sheet" hidden aria-label="Tune">
+      <section class="po-sheet cm-sheet" id="cm-sheet" hidden aria-label="${LINK ? 'More' : 'Tune'}">
         <h2>CAREER</h2>
-        <p>The tray is the house's, the felt is yours. REDEAL for three more. Tap the deck to turn a card over; tap it again for the next, or anywhere else to put the card down. Pick anything up and move it, or throw it: cards thrown off go into your collection. Drag a card up into the feeder, PLAY. Double tap empty felt to tidy up.</p>
-        ${LINK ? '<h3>THE NEW CAREER</h3><div class="cm-seg"><button class="pc-button pc-button-secondary" id="cm-restart">START OVER</button></div>'
-          : '<h3>BANKROLL</h3>' + seg('bank', Object.fromEntries(BANKS.map(b => [b, money(b)])))}
+        ${LINK ? `<p>Your invitations are the cards. REDEAL lays three of them in the tray. Drag one up into INSERT CARD, then PLAY: the card is spent and you're seated. Tap a card to look at it. SHOP buys packets of more; CARDS opens your album. Packets on the felt: tap one, or OPEN.</p>
+        <h3>THE NEW CAREER</h3><div class="cm-seg"><button class="pc-button pc-button-secondary" id="cm-abandon" hidden>ABANDON EVENT</button><button class="pc-button pc-button-secondary" id="cm-restart">START OVER</button></div>`
+          : `<p>The tray is the house's, the felt is yours. REDEAL for three more. Tap the deck to turn a card over; tap it again for the next, or anywhere else to put the card down. Pick anything up and move it, or throw it: cards thrown off go into your collection. Drag a card up into the feeder, PLAY. Double tap empty felt to tidy up.</p>
+        <h3>BANKROLL</h3>${seg('bank', Object.fromEntries(BANKS.map(b => [b, money(b)])))}`}
         <div class="cm-seg"><button class="pc-button pc-button-secondary" id="cm-done">DONE</button></div>
       </section>`;
-    const home = document.getElementById('home');
-    // (in the game, js/career-link.js lays the hub over the menu and takes it off)
+    // in the game the hub has a screen of its own (js/career-link.js);
+    // alone in its lab it takes over the menu's
+    const home = document.getElementById(LINK ? 'hub' : 'home');
     if (!LINK){
       document.body.classList.add('cm-lab');
       home.classList.add('cm-home'); home.classList.remove('hidden');
@@ -140,7 +142,10 @@
     felt = $('.cm-felt > .felt');
     stage = { el:felt, objects:felt.querySelector('.po-objects'), shadows:felt.querySelector('.po-shadows'), fx:felt.querySelector('.po-fx') };
     woodEl = $('.cm-wood'); slotEl = $('.cm-slot'); mouthEl = $('.cm-mouth'); plateEl = $('.cm-plate');
-    $('#cm-tune').onclick = () => { $('#cm-sheet').hidden = !$('#cm-sheet').hidden; };
+    $('#cm-tune').onclick = () => {
+      $('#cm-sheet').hidden = !$('#cm-sheet').hidden;
+      if (LINK) $('#cm-abandon').hidden = !LINK.active;
+    };
     $('#cm-done').onclick = () => { $('#cm-sheet').hidden = true; };
     // the new Career's own save, wiped on a second tap (the classic
     // Career, settings and stats are left alone)
@@ -150,11 +155,14 @@
       LINK.wipe();
       location.reload();
     };
+    // the event in progress given up (the game asks first), and the hub
+    // catches up: CONTINUE goes, the plate says so
+    if (LINK) $('#cm-abandon').onclick = () => { $('#cm-sheet').hidden = true; LINK.abandon(refresh); };
     // back to the menu, once nothing is moving and the shop and album are away
     $('#cm-back').onclick = () => {
       if (!LINK || busy || window.CareerShop?.out || window.CareerAlbum?.out) return;
       $('#cm-sheet').hidden = true;
-      window.CareerHub.hide();
+      window.CareerHub.back();
     };
     root.querySelectorAll('.cm-seg[data-key] button').forEach(b => b.onclick = () => {
       wallet = +b.dataset.v;
@@ -410,11 +418,14 @@
     if (!series.length) return;
     busy = true;
     const n0 = of('pk').length, n = n0 + series.length;
-    for (const [k, id] of series.entries()){
+    for (const [k, given] of series.entries()){
+      // the saved packet this one is (in the game): the first not yet on
+      // the felt, drawn as its own kind (the starter, the house's, the pity)
+      const pktId = LINK ? LINK.packetIds().find(pid => !of('pk').some(q => q.p.pktId === pid)) || null : null;
+      const id = (pktId && LINK.kindOf(pktId)) || given;
       const p = new POPacket.Packet(stage, id, 0);
       p.tagEl.hidden = true; p.el.classList.add('cm-pk');
-      // the saved packet this one is (the preview): the first not yet on the felt
-      if (LINK) p.pktId = LINK.packetIds().find(pid => !of('pk').some(q => q.p.pktId === pid)) || null;
+      if (LINK) p.pktId = pktId;
       const to = { ...rowAt(n0 + k, n), r:rr(-4, 4) };
       things.push({ kind:'pk', p, series:id });
       p.body.set({ x:to.x, y:-POPacket.AH * pkScale(), s:pkScale(), r:to.r - 30, z:30, sx:1, sy:1, alpha:1 });
@@ -506,7 +517,7 @@
   function inspect(t){
     const list = [t, ...things.filter(q => isCard(q) && q !== t && q !== fed).sort((a, b) => +elOf(b).style.zIndex - +elOf(a).style.zIndex)];
     CardInspect.open({
-      host:document.getElementById('home'),
+      host:root.parentNode,
       items:list.map(q => ({ card:q.card, source:() => q.c.el, thing:q })),
       index:0,
       swipeUp:async (item, idx, api) => {
@@ -726,13 +737,18 @@
   // the cards you own now; packets you hold but haven't got on the felt
   // (the starter, the pity packet, any bought) come down onto it
   let refreshing = false;
+  // (in the game, nothing moves on the hub while the drum is still turning
+  // it in: machine-wheel.js keeps the arriving screen inert until it locks)
+  async function settled(){ while (root.parentNode.inert) await wait(80); }
   async function refresh(){
     if (!LINK || !root || refreshing) return;
     refreshing = true;
     try {
       await wait(PO.reduced ? 0 : 300);
+      await settled();
       while (busy) await wait(100);
       if (LINK.bank() !== wallet) await countTo(LINK.bank());
+      result();
       fillPool();
       const ids = pool.map(c => c.uid);
       of('house').filter(h => !ids.includes(h.card.uid)).forEach(h => { h.c.body.remove(); drop(h); });
@@ -741,6 +757,20 @@
       await layPackets();
       keys();
     } finally { refreshing = false; }
+  }
+  // how the last event went, on the plate for a moment once you're back
+  // (only one finished since the hub was built)
+  let seen = null;
+  const ord = n => n + (n % 100 - n % 10 === 10 ? 'TH' : { 1:'ST', 2:'ND', 3:'RD' }[n % 10] || 'TH');
+  function result(){
+    const r = LINK.lastResult;
+    if (!r || r === seen) return;
+    seen = r;
+    const place = r.outcome === 'win' ? 'WON' : r.place ? (r.tie > 1 ? '=' : '') + ord(r.place) : 'OUT';
+    const text = r.outcome === 'forfeit' ? 'EVENT ABANDONED' : place + ' · ' + (r.prize > 0 ? '+' + money(r.prize) : 'NO PRIZE');
+    if (fed) return;
+    plate(text); slotEl.classList.add('is-result');
+    setTimeout(() => { slotEl.classList.remove('is-result'); if (!fed) plate('INSERT CARD'); }, 4000);
   }
   async function layPackets(){
     LINK.arrivals();
@@ -757,16 +787,18 @@
     measure();
     fillPool();
     keys();
+    if (LINK) seen = LINK.lastResult;
     // the shop and the album build onto the hub (in the game, only now)
     document.dispatchEvent(new Event('career-hub-built'));
     await wait(400);
+    await settled();
     busy = true; await tossIn([0, 1, 2]); busy = false;
     if (LINK){ await layPackets(); keys(); }
     ready = true;
     // the felt can change size (the TUNE sheet, the phone turning): the
     // house's cards keep to the tray, everything else stays on the felt
     new ResizeObserver(() => {
-      if (!felt.clientWidth) return;   // the hub taken off the menu
+      if (!felt.clientWidth) return;   // the hub's screen hidden
       measure();
       if (busy) return;
       const W = felt.clientWidth, H = felt.clientHeight;

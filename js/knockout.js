@@ -1217,10 +1217,11 @@ const Knockout = (function(){
   }
 
   /* presentResultStage, wrapped: the game-over beat before a bust's
-     result stage. Positive results pass straight through. */
+     result stage (an invitation's paid bust too: model.bust). Other
+     positive results pass straight through. */
   async function presentResultStageFx(g, model, opts){
     const wantsBeat = ['killer','hit','fuse','cards','lights'].some(k => O[k] !== '0') || O.damage !== 'buttons';
-    if (!model || model.tone !== 'negative' || quiet() || !wantsBeat || g._kofxOver || !g.players.some(p => p.isHuman && p.chips <= 0))
+    if (!model || (model.tone !== 'negative' && !model.bust) || quiet() || !wantsBeat || g._kofxOver || !g.players.some(p => p.isHuman && p.chips <= 0))
       return ORIG.stage.apply(this, arguments);
     g._kofxOver = true;
     clearTimeout(autoDealT);

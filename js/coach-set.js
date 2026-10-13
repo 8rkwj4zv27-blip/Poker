@@ -1,7 +1,7 @@
 "use strict";
 
 /* ============================================================
-   COACH SET (Coach Face Lab, round 3: candidate, lab only)
+   COACH SET: P.I.P.'s little TV (live; chosen in the Coach Face Lab)
 
    The owner, round 3: he's the little Poker Machine's soul, plugged into
    an old TV. Two small dots for eyes and a mouth. Pixel art, 2.5D like
@@ -24,8 +24,8 @@
    - Pick him up and throw him (a joke): he tumbles round the screen,
      knocks off its edges, lead still plugged in, and flies home.
 
-   Presentation only: nothing here reads a hand or game state. Not loaded
-   by the game; coach-face-lab.html injects it into its copy.
+   Presentation only: nothing here reads a hand or game state. Loaded by
+   index.html; the labs it was chosen in are archived (docs/CODEMAP.md).
    CoachSet.apply(order), CoachSet.power(on), CoachSet.setMood(m),
    CoachSet.look(target), CoachSet.talk(ms).
    ============================================================ */
@@ -1599,11 +1599,12 @@ const CoachSet = (() => {
     if (!tableShowing()){ if ((on || rope) && !busy) offNow(); return; }
     if (away) return;
     // the game's over and he's still sitting there: out of the result's way
-    // (a bust waits for the game over to blow him up, unless it never comes)
+    // (a bust waits for the game over to blow him up, unless a result card
+    // is already up without one)
     if (on && !busy && g && g.over){
       const me = g.players && g.players.find(p => p.isHuman);
       const felt = $id('felt');
-      if (!me || me.chips > 0 || (felt && felt.classList.contains('results-mode'))) stow();
+      if (!me || me.chips > 0 || (felt && felt.classList.contains('results-mode')) || $id('result-card')) stow();
       return;
     }
     if (key){ key.classList.toggle('is-on', on); key.setAttribute('aria-pressed', on ? 'true' : 'false'); }

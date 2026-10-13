@@ -167,7 +167,15 @@
       if (e.target.closest('.ec-card') && CareerMain.fed?.album && mode === 'open'){ e.stopPropagation(); CareerMain.unfeed(); }
     });
     fillPages();
-    // the lab's sheet, on the hub's own TUNE key
+    // the lab's sheet, on the hub's own TUNE key (only in the lab)
+    if (!LINK) labSheet();
+    layer.addEventListener('pointerdown', down);
+    layer.addEventListener('pointermove', move);
+    layer.addEventListener('pointerup', up);
+    layer.addEventListener('pointercancel', e => up(e, true));
+    new ResizeObserver(() => { if (mode !== 'away') place(); }).observe(cm);
+  }
+  function labSheet(){
     sheet = document.createElement('section');
     sheet.className = 'po-sheet cm-sheet cb-sheet'; sheet.hidden = true; sheet.setAttribute('aria-label', 'Tune');
     sheet.innerHTML = `
@@ -189,11 +197,6 @@
       marks();
     });
     marks();
-    layer.addEventListener('pointerdown', down);
-    layer.addEventListener('pointermove', move);
-    layer.addEventListener('pointerup', up);
-    layer.addEventListener('pointercancel', e => up(e, true));
-    new ResizeObserver(() => { if (mode !== 'away') place(); }).observe(cm);
   }
   function marks(){
     const now = { arrival:opt.arrival, turn:opt.turn, cards:opt.sleeves ? 'sleeves' : 'corners' };
@@ -262,7 +265,7 @@
   }
   async function bringUp(){
     mode = 'moving';
-    sheet.hidden = true;
+    if (sheet) sheet.hidden = true;
     Snd.unlock();
     if (LINK) album = fromLink();
     cur = 0; fillPages();

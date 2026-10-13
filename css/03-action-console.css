@@ -366,7 +366,7 @@ body{
     repeating-conic-gradient(var(--felt-1) 0 25%,var(--felt-2) 0 50%) 0 0/9px 9px;
   box-shadow:inset 0 0 0 6px var(--bg-deep),inset 0 0 0 9px var(--pc-leather-lo);
 }
-body #home .lobby-card.pc-housing{ box-shadow:inset 4px 4px 0 var(--pc-leather-hi),inset -5px -5px 0 var(--pc-leather-lo),0 0 0 2px var(--theme-rim),0 0 0 5px color-mix(in srgb,var(--pc-leather-hi) 70%,black),0 9px 0 #090406; }
+body :is(#home,#hub) .lobby-card.pc-housing{ box-shadow:inset 4px 4px 0 var(--pc-leather-hi),inset -5px -5px 0 var(--pc-leather-lo),0 0 0 2px var(--theme-rim),0 0 0 5px color-mix(in srgb,var(--pc-leather-hi) 70%,black),0 9px 0 #090406; }
 #home .pc-cast-drawer{ background:var(--pc-recess); }
 #home .hero-faces .hf{ background:var(--pc-display); }
 #home .text-input{ background:var(--pc-display); color:var(--pc-display-ink); }
@@ -381,7 +381,7 @@ body #home .lobby-card.pc-housing{ box-shadow:inset 4px 4px 0 var(--pc-leather-h
   background:var(--theme-case-raised);
   box-shadow:inset 4px 4px 0 var(--theme-case-hi),inset -4px -3px 0 color-mix(in srgb,var(--theme-case-raised) 55%,black),0 3px 0 var(--pc-edge-lo);
 }
-body #home .pc-button-secondary{
+body :is(#home,#hub) .pc-button-secondary{
   background:var(--theme-case-raised); color:var(--ink);
   box-shadow:0 4px 0 color-mix(in srgb,var(--theme-case-raised) 55%,black),0 6px 0 var(--pc-edge-lo),inset 2px 2px 0 var(--theme-case-hi),inset -2px -2px 0 rgba(0,0,0,.24);
 }
@@ -713,6 +713,8 @@ body #home #home-settings{ background:var(--theme-case-raised); color:var(--ink)
   pointer-events:none;
 }
 #felt .hand-limit .instrument-label{ color:var(--crt-action-ink); }
+/* the event's over: the result stage has the felt to itself */
+#felt.results-mode .hand-limit{ display:none; }
 #felt .hand-limit-screen{
   min-width:52px; padding:3px 6px; text-align:center;
   font-family:var(--font-hdr); font-size:11px; line-height:1.3;

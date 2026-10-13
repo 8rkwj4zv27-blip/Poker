@@ -63,7 +63,9 @@ const readState = () => ({
 
 async function boot(page, base, fresh){
   await page.goto(base + '/index.html?dev');
-  if (fresh){ await page.evaluate(() => localStorage.clear()); await page.reload(); }
+  // on the classic Career's save (Settings → Career → Classic), where the
+  // DEV key seats the invitation
+  if (fresh){ await page.evaluate(() => { localStorage.clear(); localStorage.setItem('felt.settings', JSON.stringify({ newCareer:false })); }); await page.reload(); }
   await page.waitForTimeout(2500);
   await page.evaluate(() => { const s = document.querySelector('.tour-skip'); if (s) s.click(); });
 }

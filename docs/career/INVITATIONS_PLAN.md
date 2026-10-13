@@ -1,6 +1,6 @@
 # Invitations: Career as packets of event invitations (plan)
 
-Written 12 October 2026 with the owner. Status: **Stages 1 and 2 done** (DEV only, not released). Nothing here is decided beyond what it says the
+Written 12 October 2026 with the owner. Status: **Stages 1-5 live** (the new Career is the default Career since v0.69.0); **Stage 6**, the polish pass, in v0.70.0. Nothing here is decided beyond what it says the
 owner decided. Builds on the hub, shop, packet opening and album labs
 (`career/HUB_TO_GAME_BRIEF.md`), which are kept as they are.
 
@@ -246,6 +246,39 @@ version change.
    reloads); a new shortfall later gets a new one.
 7. Damaged packets are dropped on load without touching the rest.
 8. Preview/DEV only; `npm test` green.
+
+## Stage 6: the polish pass (owner, 13 Oct 2026; v0.70.0)
+
+The owner's audit list (A-F), approved in one go:
+
+- **A. Quick fixes.** The hub clears the iPhone status bar (`--safe-top`),
+  and so do the table's top seats and the inspect screen's back key.
+  P.I.P. gets out of the way of a result card, and no longer says "the
+  run over" when you're knocked out of an event.
+- **B. One motion language.** The hub is a screen of its own (`#hub`), so
+  every screen change turns the game's drum: menu ↔ hub, hub ↔ shop (the
+  shop's own drum is gone: it's the shared engine, on part of the
+  screen), hub → table, table → hub. The album keeps its throw: screens
+  roll, objects land.
+- **C. The end of an event.** Every invitation finish turns the full
+  result stage (a paid bust keeps the K.O. beat): EVENT WON / CASHED /
+  EVENT LOST, the prize, the finish (`=2ND` when shared, "place shared, prizes
+  split"), OUTLASTED (players actually knocked out), the top prize; no
+  buy-in, no events board. Back at the hub the feeder's plate says how it
+  went (`3RD · +$15`). ABANDON EVENT under the hub's MORE key gives up an
+  event in progress (the game's own confirmation).
+- **D. Packets.** The starter (green, STARTER EDITION) and the rock-bottom
+  packet (faded, battered, ON THE HOUSE, three cards) have their own
+  wrappers; the shop's lamps say the fourth card is a maybe, not a
+  certain Uncommon. The catalogue's size, the special-rules events and the
+  owner's art wait for the owner (the forward plan).
+- **E. The economy, simulated:** `validation/tools/invitation-economy.js`
+  (results below). Prices are not changed here.
+- **F. Housekeeping.** The lab controls no longer reach the game (the hub's
+  TUNE key opened the album's lab sheet: it's MORE now, with how to play,
+  ABANDON and START OVER); stale docs corrected; the CRT and pack labs and
+  the `packet-machine/` copy archived; the two classic scenarios pin the
+  classic Career; the browser suites run on GitHub.
 
 ## Stage 5: the new Career in the game (owner, 13 Oct 2026; v0.69.0)
 

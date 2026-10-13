@@ -2142,8 +2142,9 @@ function careerCashOutPressed(){
 }
 
 /* The ONLY path that forfeits a buy-in. Confirmation is mandatory and the
-   consequence is stated plainly. */
-function careerAbandonPressed(eventId){
+   consequence is stated plainly. `after` redraws whoever asked (the new
+   Career's hub); the classic Career screen by default. */
+function careerAbandonPressed(eventId, after){
   if (!careerHasActiveEvent() || career.active.eventId !== eventId) return;
   const event = careerActiveEventSnapshot();
   showConfirmDialog({
@@ -2154,7 +2155,7 @@ function careerAbandonPressed(eventId){
     confirmLabel:'Abandon', danger:true,
     onConfirm:()=>{
       settleCareerEvent('forfeit');   // clears active + the table save
-      renderCareerScreen();
+      (after || renderCareerScreen)();
     }
   });
 }

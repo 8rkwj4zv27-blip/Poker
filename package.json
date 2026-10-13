@@ -5,6 +5,7 @@
   "scripts": {
     "test": "node validation/run-all.js",
     "test:quick": "node validation/run-all.js --quick",
-    "play-test": "node validation/tools/play-test.js"
+    "play-test": "node validation/tools/play-test.js",
+    "browser-checks": "node validation/tools/browser-checks.js"
   }
 }

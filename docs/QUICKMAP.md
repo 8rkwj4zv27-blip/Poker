@@ -3,7 +3,7 @@
 The short version of [`CODEMAP.md`](CODEMAP.md). Read it after
 [`HANDOVER.md`](HANDOVER.md), before searching the code. Open
 `CODEMAP.md` only for the section about the file you are about to change
-(its headings are the file names). Last checked: 6 October 2026 (v0.65.0).
+(its headings are the file names). Last checked: 13 October 2026 (v0.70.0).
 
 ## How the game is put together
 
@@ -26,7 +26,7 @@ so the installed iPhone app plays offline. A file not in `index.html` and
 | `coin-world.js`, `coin-table.js`, `coin-bank.js`, `bank-load.js` | Chips: the coin physics, the pot, your bank and how it fills |
 | `07-ui-wiring.js` | Screen changes, and all Career money and transactions |
 | `career-hub-live.js`, `career-motion-live.js`, `ticket-feed.js` | The classic Career Hub, its motion and the buy-in |
-| `machine-wheel.js`, `table-intro.js` | The screen-change rolls, and the table powering up |
+| `machine-wheel.js`, `table-intro.js` | The screen-change rolls (every screen, the new Career's hub and shop included: `careerScreenEl()`), and the table powering up |
 | `08-dev-mode.js` | The DEV panel (`?dev`) |
 | `09-controls.js` | `wireUI()`: the main menu and every button. Must load right after 08 |
 | `home-cast.js`, `home-boot.js` | The title screen's faces, and its switch-on |
@@ -39,7 +39,7 @@ so the installed iPhone app plays offline. A file not in `index.html` and
 | `tutorial.js` | The first-run tour |
 | `workshop-rack.js`, `workshop.js` | Settings and the Workshop (skins) |
 | `save-data.js` | Settings → Save data: back up, restore, reset stats, start over |
-| `career-link.js` | The new Career (Settings → Career, `NEW_CAREER`): Career opens the hub; loads the hub's parts below and hands them the real save (`CareerLink`, `CareerHub`) |
+| `career-link.js` | The new Career (Settings → Career, `NEW_CAREER`): the hub's own screen (`#hub`), every way in and out on the drum; loads the hub's parts below and hands them the real save (`CareerLink`, `CareerHub`) |
 | (loaded by `career-link.js`) `career-main.js`, `vending-machine.js`, `pack-opening*.js`, `collection-book.js`, `invitation-cards.js`, `invitation-art.js`, `event-cards.js`, `card-inspect.js`, `pack-ritual-art.js`, `pack-ritual-cards.js` | The new Career's hub: the wooden table, the packet machine, the opening, the album, the invitation cards. Each also runs alone in its lab |
 
 Stylesheets in `css/` share these names. `01-` to `06-` are the base
@@ -57,11 +57,10 @@ Hub and the end screens.
 | `career-main-lab.html`, `js/career-main.js`, `css/career-main.css` | The Career hub (its lab; live in the new Career): a wooden table on the felt, three cards, REDEAL, the feeder and PLAY; packets from the shop lie on it to open, their cards ADDed to your case |
 | `vending-lab.html`, `js/vending-machine.js`, `css/vending-machine.css` | The packet machine (its lab; live in the new Career): Career's shop as a vending machine rolling in under the reel; choose, pay in chips, the drop, take and send; the opening on the hub's felt |
 | `collection-book-lab.html`, `js/collection-book.js`, `css/collection-book.css` | The card album (its lab; live in the new Career): CARDS brings a leather-bound book over the hub's table; three rows of three, bright / dim / empty slots, page turns (flat or curl), numbered tabs, tap to light and take out, hold to carry a card into the reader; corners or sleeves. Plan `career/COLLECTION_BOOK_PLAN.md` |
-| `packet-machine/` | A home-screen app (Share → Add to Home Screen): a self-contained copy of the vending lab staged by `validation/tools/lab-bundle.js`; it doesn't touch the game |
 | `invitation-cards-lab.html`, `js/invitation-cards*.js`, `js/invitation-art.js`, `css/invitation-cards*.css` | Lab: the invitation cards (the hub's card, coloured and finished by rarity, placeholder pixel art per event) over the game. Plan `career/INVITATIONS_PLAN.md` |
-| `js/event-cards.js`, `js/card-inspect.js`, `css/card-inspect.css` | Lab: what an event card is (event + drawn opponents + rarity prize), and the one shared card object and inspect screen (pack opening, album, hub) |
+| `js/event-cards.js`, `js/card-inspect.js`, `css/card-inspect.css` | Live in the new Career (and its labs): what an event card is (an invitation's event and its opponents; the prize is the event's own), and the one shared card object and inspect screen (pack opening, album, hub) |
 | `pattern-book.html`, `docs/ui/PATTERN_BOOK.md` | The visual rule book |
-| `validation/*.js` | `npm test` runs them all; one suite per feature. `validation/tools/` holds the play-test, the touch harness and the AI and event simulators |
+| `validation/*.js` | `npm test` runs them all; one suite per feature. `validation/tools/` holds the play-test, the touch harness, the scenarios, and the AI, event and invitation-economy simulators |
 | `art-source/` | The owner's original art; the game does not load it |
 | `docs/` | Rules, plans, history: [`docs/README.md`](README.md) says which are current |
 

@@ -107,9 +107,10 @@ check('Career result model captures the settled display values once', ()=>{
     outcome:'win', won:true, cashed:false, championship:false, firstChampionship:false,
     place:1, eventName:'BACK ROOM FREEZEOUT', prize:300,
     buyIn:100, bankroll:600, eventScore:5575, hands:7, field:3, handLimit:null,
+    invitation:false, topPrize:300, tie:1,
     // the event's chip tape (js/event-tape.js; not loaded here) and who
     // was still sitting, both display data for the result well
-    tape:null, alive:[]
+    tape:null, alive:[], bust:false
   });
 });
 
@@ -118,7 +119,8 @@ check('A non-winning cash models the credited prize, not the headline first priz
     outcome:'cash', won:false, cashed:true, championship:false, firstChampionship:false,
     place:2, eventName:'PUB CIRCUIT OPEN', prize:450,
     buyIn:300, bankroll:600, eventScore:4120, hands:23, field:5, handLimit:null,
-    tape:null, alive:[]
+    invitation:false, topPrize:1050, tie:1,
+    tape:null, alive:[], bust:false
   });
   // The event's own first-place figure must never leak into a second place.
   assert.ok(!cashHTML.includes('1,050'));
@@ -352,14 +354,14 @@ check('Completed-event shutdown natively disables ordinary table controls', ()=>
   assert.ok(presentationSource.includes("row.classList.add('disabled')"));
   assert.ok(presentationSource.includes("frame.classList.add('event-complete')"));
 });
-check('Only a non-winning cash skips the shared result stage', ()=>{
+check('Only a non-winning cash outside an invitation skips the shared result stage', ()=>{
   const resultBlock = engineSource.match(/async function showCareerEventResult\(g, model\)\{[\s\S]*?\n\}\n/);
   assert.ok(resultBlock);
   const body = resultBlock[0];
   // A win and a bust are the two outcomes of the event and both turn the
   // stage. Only a paid non-winning place keeps the restrained plain card, so
   // the early return is guarded on model.cashed rather than on !model.won.
-  const branch = body.indexOf('if (model.cashed){');
+  const branch = body.indexOf('if (model.cashed && !model.invitation){');
   const earlyReturn = body.indexOf('return;', branch);
   const present = body.indexOf('presentResultStage');
   assert.ok(branch > 0 && earlyReturn > branch && present > earlyReturn);
@@ -809,6 +811,46 @@ check('An invitation that ends at its hand limit names the limit, not a knock-ou
   assert.strictEqual(careerStageModel(model).detail.line, 'MOST CHIPS AFTER 10 HANDS');
   g.handNumber = 4;   // ended early by a clearance: the old wording
   assert.strictEqual(careerStageModel(buildCareerResultModel(g, { outcome:'win', place:1, prize:60 })).detail.line, 'EVERY OPPONENT IS OUT');
+});
+
+check('An invitation reports every finish on its own terms: no buy-in, shared places, real knock-outs', ()=>{
+  const ev = { name:'BACK ROOM INVITATION', buyIn:0, prize:60, payouts:[60,30,15] };
+  // most chips after ten hands, nobody knocked out: OUTLASTED 0, not 2
+  let g = invited({start:1,chips:1500}, [{start:1,chips:900},{start:1,chips:600}], ev);
+  g.players.forEach(p=>{ p.isHuman = p.id === 'you'; });
+  let stage = careerStageModel(buildCareerResultModel(g, { outcome:'win', place:1, prize:60 }));
+  assert.strictEqual(stage.title, 'EVENT WON');
+  assert.strictEqual(stage.instruments[1].value, '0');
+  assert.strictEqual(stage.progress.next, 'NEXT: THE HUB');
+  assert.ok(!JSON.stringify(stage).includes('Buy-in') && !JSON.stringify(stage).includes('EVENTS BOARD'));
+  assert.deepStrictEqual(plain(stage.recapPages[0][2]), { label:'Top prize', value:'$60' });
+  // knocked out third: still paid, still the K.O. (bust), on the full stage
+  g = invited({start:400,chips:0}, [{start:1,chips:1800},{start:1,chips:1200}], ev);
+  g.handNumber = 6;
+  g.players.forEach(p=>{ p.isHuman = p.id === 'you'; });
+  let model = buildCareerResultModel(g, { outcome:'cash', place:3, prize:15 });
+  stage = careerStageModel(model);
+  assert.ok(model.invitation && model.bust);
+  assert.strictEqual(stage.title, 'CASHED');
+  assert.strictEqual(stage.tone, 'positive');
+  assert.strictEqual(stage.bust, true);
+  assert.strictEqual(stage.hero.reel.text, '$15');
+  assert.strictEqual(stage.instruments[1].value, '0');
+  assert.strictEqual(stage.detail.line, 'YOU WERE ELIMINATED');
+  // a shared second: "=2ND", and the prizes were split
+  g = invited({start:400,chips:0}, [{start:1,chips:2600},{start:400,chips:0}], ev);
+  g.players.forEach(p=>{ p.isHuman = p.id === 'you'; });
+  stage = careerStageModel(buildCareerResultModel(g, { outcome:'cash', place:2, tie:2, prize:22 }));
+  assert.strictEqual(stage.instruments[0].value, '=2ND');
+  assert.strictEqual(stage.detail.sub, 'PLACE SHARED, PRIZES SPLIT');
+  // an unpaid place: $0, signless, and the invitation is spent
+  g = invited({start:400,chips:0}, [{start:1,chips:2600},{start:1,chips:0},{start:1,chips:0},{start:1,chips:0}], Object.assign({}, ev, { payouts:[90,45] }));
+  g.players.forEach(p=>{ p.isHuman = p.id === 'you'; });
+  stage = careerStageModel(buildCareerResultModel(g, { outcome:'loss', place:4, prize:0 }));
+  assert.strictEqual(stage.title, 'EVENT LOST');
+  assert.deepStrictEqual(plain(stage.hero.reel), { text:'$0', prefix:'' });
+  assert.strictEqual(stage.detail.sub, 'THE INVITATION IS SPENT');
+  assert.strictEqual(stage.instruments[1].value, '3');
 });
 
 process.stdout.write('\n' + passed + ' focused Career result and result-stage checks passed.\n');

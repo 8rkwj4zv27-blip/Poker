@@ -55,7 +55,7 @@ function nextKey(){
 
 async function run(base, width, height, reducedMotion){
   const steps = [];
-  const step = (name, ok, detail) => steps.push((ok ? 'ok    ' : 'FAIL  ') + name + (detail ? '  (' + detail + ')' : ''));
+  const step = (name, ok, detail) => { const l = (ok ? 'ok    ' : 'FAIL  ') + name + (detail ? '  (' + detail + ')' : ''); steps.push(l); if (process.env.SCENARIO_LIVE) console.log(l); };
   const errors = await withPage({ width, height, reducedMotion }, async (page, touch) => {
     const fr = page.mainFrame(), ifr = { x:0, y:0 };
     // a classic Career that must never be touched
@@ -73,9 +73,11 @@ async function run(base, width, height, reducedMotion){
         await page.reload();
       }
       await page.waitForFunction(() => window.CareerHub && !document.getElementById('home').classList.contains('hidden'), null, { timeout:30000 });
+      // every turn of the game's drum, counted (machine-wheel.js)
+      await page.evaluate(() => { window.rolls = 0; const rig = machineWheelRig; machineWheelRig = (...a) => { window.rolls++; return rig(...a); }; });
       await page.waitForTimeout(2500);   // the menu's boot
       await tap(...await centre('#open-career'));
-      await fr.waitForFunction(() => window.CareerMain && CareerMain.ready && !CareerMain.state.busy && CareerHub.open, null, { timeout:30000 });
+      await fr.waitForFunction(() => window.CareerMain && CareerMain.ready && !CareerMain.state.busy && CareerHub.open && !CareerHub.screen.inert, null, { timeout:30000 });
       await page.waitForTimeout(400);
     };
     const save = () => fr.evaluate(() => ({ bank:careerBankroll(), cards:careerInvitations().map(c => c.eventId), packets:careerPackets().map(p => p.kind),
@@ -95,6 +97,9 @@ async function run(base, width, height, reducedMotion){
 
     // 1. a fresh Career: $500 and the starter packet on the felt
     await boot(true);
+    const rolls = {};
+    const rolled = async name => { rolls[name] = await page.evaluate(() => { const n = window.rolls; window.rolls = 0; return n; }); };
+    await rolled('menu → hub');
     let s = await save();
     step('a fresh Career: $500, the starter packet given once', s.bank === 500 && s.starter && s.packets.join() === 'starter' && (await hub()).packets === 1, JSON.stringify(s));
 
@@ -140,6 +145,7 @@ async function run(base, width, height, reducedMotion){
     await touch.drag(w0.x, w0.y, fx, fy + 20, 14, 16); await page.waitForTimeout(150); await touch.end();
     await until(async () => (await hub()).fed && !(await hub()).busy, 'a card in the feeder');
     await until(async () => (await label()) === 'PLAY', 'PLAY');
+    await page.evaluate(() => { window.rolls = 0; });
     await mid();
     await until(async () => (await save()).active, 'the event started');
     s = await save();
@@ -147,6 +153,7 @@ async function run(base, width, height, reducedMotion){
     await fr.waitForFunction(() => game && game.mode === 'career' && game.handNumber >= 1 && !document.getElementById('table-screen').classList.contains('hidden'), null, { timeout:40000 });
     const event = await fr.evaluate(() => ({ id:game.event.id, seats:game.players.length, roster:career.active.roster && career.active.roster.length }));
     step('the real table, seated for the card\'s event', event.seats >= 2 && event.id === s.active, JSON.stringify(event));
+    await rolled('hub → table');
     if (SHOTS) await page.screenshot({ path:path.join(SHOTS, width + 'x' + height + '-table.png') });
 
     // 5. knocked out (DEV BUST ME, between actions), then BACK TO THE HUB: the prize counted in once
@@ -161,15 +168,25 @@ async function run(base, width, height, reducedMotion){
     }, 'the event settled', 400000);
     const result = await fr.evaluate(() => career.lastResult);
     await until(async () => fr.evaluate(() => { const b = document.getElementById('btn-award-pot-console'); return b && b.offsetParent && /hub/i.test(b.textContent); }), 'BACK TO THE HUB', 90000);
+    // every finish of an invitation on the full stage, in its own words
+    const card = await fr.evaluate(() => { const c = document.getElementById('result-card'); return { stage:document.getElementById('felt').classList.contains('results-mode'), text:c ? c.textContent.toUpperCase() : '' }; });
+    step('the result on the full stage: no buy-in, no events board', card.stage && /EVENT WON|CASHED|EVENT LOST/.test(card.text) && !/BUY-IN|EVENTS BOARD/.test(card.text),
+      result.outcome + ' ' + result.place + ': ' + card.text.replace(/\s+/g, ' ').slice(0, 90));
+    await page.evaluate(() => { window.rolls = 0; });
     // (the key takes a press only once the result has finished showing)
     let pressed = 0;
     await until(async () => {
-      if (await fr.evaluate(() => !document.getElementById('home').classList.contains('hidden') && document.getElementById('table-screen').classList.contains('hidden'))) return true;
+      if (await fr.evaluate(() => CareerHub.open && document.getElementById('table-screen').classList.contains('hidden'))) return true;
       if (Date.now() - pressed > 2500 && await fr.evaluate(() => /hub/i.test(document.getElementById('btn-award-pot-console').textContent))){
         pressed = Date.now(); await tap(...await centre('#btn-award-pot-console'));
       }
       return false;
     }, 'the hub again', 60000);
+    await rolled('table → hub');
+    // the hub says how it went, on the feeder's plate
+    let plate = '';
+    await until(async () => { plate = await fr.evaluate(() => document.querySelector('.cm-plate').textContent); return plate !== 'INSERT CARD'; }, 'the result on the plate', 8000).catch(() => {});
+    step('the hub shows how the event went', /^(WON|=?\d+(ST|ND|RD|TH)|OUT) · /.test(plate), plate);
     await until(async () => !(await hub()).busy, 'the hub settled');
     await page.waitForTimeout(1500);
     s = await save();
@@ -178,8 +195,10 @@ async function run(base, width, height, reducedMotion){
     if (SHOTS) await page.screenshot({ path:path.join(SHOTS, width + 'x' + height + '-back.png') });
 
     // 6. the shop: a House Packet bought with the bankroll, dropped, taken, laid on the felt
+    await page.evaluate(() => { window.rolls = 0; });
     await tap(...await centre('[data-key="shop"]'));
     await until(async () => (await shop()).mode === 'idle', 'the shop open');
+    await rolled('hub → shop');
     const slot = await fr.evaluate(() => VendingLab.slots().find(q => q.id === 'house'));
     const k = await fr.evaluate(i => { const r = document.querySelector(`.vm-key[data-i="${i}"]`).getBoundingClientRect(); return [r.x + r.width / 2, r.y + r.height / 2]; }, slot.i);
     await tap(ifr.x + k[0], ifr.y + k[1]);
@@ -192,6 +211,7 @@ async function run(base, width, height, reducedMotion){
     step('bought: $150 and one House Packet, saved together', s.bank === bank1 - 150 && s.packets.join() === 'house', 'bank ' + bank1 + ' -> ' + s.bank);
     await tap(...await centre('[data-key="shop"]'));   // LEAVE: the packet comes to the felt
     await until(async () => { const q = await shop(); return q.mode === 'hub' && q.hub.packets === 1 && !q.hub.busy; }, 'the packet on the felt');
+    await rolled('shop → hub');
 
     // 7. a reload: the same bankroll, the same cards, the packet still sealed on the felt
     const before = await save();
@@ -211,6 +231,29 @@ async function run(base, width, height, reducedMotion){
     await tap(...await centre('[data-key="cards"]'));
     await until(async () => fr.evaluate(() => !CareerAlbum.out), 'the album away');
 
+    // 8b. an event left mid-way comes back to the hub (CONTINUE), and
+    // ABANDON gives it up: the card stays spent, no prize, the plate says so
+    const cards0 = (await save()).cards.length;
+    await fr.evaluate(() => CareerLink.play(CareerLink.pool()[0]));
+    await fr.waitForFunction(() => game && game.mode === 'career' && game.handNumber >= 1 && !document.getElementById('table-screen').classList.contains('hidden'), null, { timeout:40000 });
+    await page.waitForTimeout(800);
+    await fr.evaluate(() => leaveTable());
+    await until(async () => fr.evaluate(() => CareerHub.open && document.getElementById('table-screen').classList.contains('hidden') && !CareerMain.state.busy), 'the hub after leaving', 20000);
+    await until(async () => (await label()) === 'CONTINUE', 'CONTINUE', 10000).catch(() => {});
+    const cont = await label();
+    await tap(...await centre('#cm-tune'));
+    await page.waitForTimeout(300);
+    await tap(...await centre('#cm-abandon'));
+    await tap(...await centre('#confirm-dialog-yes'));
+    await until(async () => !(await save()).active, 'the event abandoned', 10000);
+    plate = '';
+    await until(async () => { plate = await fr.evaluate(() => document.querySelector('.cm-plate').textContent); return plate === 'EVENT ABANDONED'; }, 'ABANDONED on the plate', 8000).catch(() => {});
+    s = await save();
+    const bank2 = s.bank;
+    await until(async () => (await label()) !== 'CONTINUE', 'CONTINUE gone', 8000).catch(() => {});
+    step('left mid-event: back to the hub (CONTINUE); ABANDON gives it up', cont === 'CONTINUE' && !s.active && s.cards.length === cards0 - 1
+      && plate === 'EVENT ABANDONED' && (await label()) !== 'CONTINUE', cont + ' → ' + plate + ', bank ' + bank2);
+
     // 9. broke and cardless: one pity packet, not two (another visit, a reload)
     await fr.evaluate(() => { career.invitations = []; career.packets = []; career.bankroll = 20; saveCareer(); });
     await boot(false);
@@ -220,11 +263,27 @@ async function run(base, width, height, reducedMotion){
     await boot(false);
     const p2 = (await save()).packets;
     step('stuck: one pity packet, never two', p1.join() === 'pity' && p2.join() === 'pity' && (await hub()).packets === 1, p1.join() + ' / ' + p2.join());
+    // the rock-bottom packet: its own wrapper, and three cards inside
+    const wrapper = await fr.evaluate(() => CareerMain.where('pk', 0) && document.querySelector('.cm-pk') && careerPackets()[0].kind);
+    await mid();
+    await until(async () => (await shop()).open === 'sealed', 'the pity packet ready to tear');
+    for (let k = 0; k < 40; k++){
+      if ((await shop()).mode === 'hub') break;
+      if (!(await fr.evaluate(() => PackOpeningEmbed.state.lock))) await mid();
+      await page.waitForTimeout(300);
+    }
+    await until(async () => { const h = await hub(); return (await shop()).mode === 'hub' && !h.busy && h.deck > 0; }, 'its cards face down');
+    s = await save();
+    step('the pity packet opened: three Commons', wrapper === 'pity' && (await hub()).deck === 3 && s.cards.length === 3, (await hub()).deck + ' face down, ' + s.cards.join());
 
     // 10. the back key: the menu again, Career still there to open
     await until(async () => !(await hub()).busy, 'the hub settled');
+    await page.evaluate(() => { window.rolls = 0; });
     await tap(...await centre('#cm-back'));
-    await page.waitForTimeout(400);
+    await until(async () => page.evaluate(() => !CareerHub.open), 'the menu', 10000).catch(() => {});
+    await page.waitForTimeout(600);
+    await rolled('hub → menu');
+    step('every screen change turned the game\'s drum', Object.values(rolls).every(n => n >= 1), JSON.stringify(rolls));
     const menu = await page.evaluate(() => ({ hub:CareerHub.open, key:!!document.getElementById('open-career').offsetParent, cm:!!document.getElementById('cm').offsetParent }));
     step('BACK: the menu again', !menu.hub && menu.key && !menu.cm, JSON.stringify(menu));
     const [c, t] = await classic();

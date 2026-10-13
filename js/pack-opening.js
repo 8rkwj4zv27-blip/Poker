@@ -500,15 +500,15 @@
   const POPacket_pal = p => p.art.pal;
 
   /* ---------------- 5 · out of the mouth ---------------- */
-  function fillStack(p){
-    p.stackEl.innerHTML = Array.from({ length:CARDS }, () => '<div class="po-card ds-swatch" data-cb="crest"><div class="card back"></div></div>').join('');
+  function fillStack(p, n = CARDS){
+    p.stackEl.innerHTML = Array.from({ length:n }, () => '<div class="po-card ds-swatch" data-cb="crest"><div class="card back"></div></div>').join('');
     p.cards = [...p.stackEl.children];
     setStackLift(p, 0);
   }
   function setStackLift(p, lift){
     p.lift = lift;
     p.cards.forEach((c, i) => {
-      const k = CARDS - 1 - i; // 0 = the card nearest the front
+      const k = p.cards.length - 1 - i; // 0 = the card nearest the front
       const off = Math.floor((lift + pull * (1 - k * .09)) / 2) * 2;
       c.style.transform = `translate(${k % 2}px,${-off + k}px)`;
     });
@@ -627,7 +627,7 @@
     lock = false;
     if (revealed >= contents.length){ if (EMBED) return endSession(); enterHaul(); return; }
     phase = 'deck';
-    status(revealed ? 'NEXT CARD' : 'FOUR CARDS, FACE DOWN', 'TAP TO TURN · HOLD TO SQUEEZE');
+    status(revealed ? 'NEXT CARD' : (contents.length === 3 ? 'THREE' : 'FOUR') + ' CARDS, FACE DOWN', 'TAP TO TURN · HOLD TO SQUEEZE');
     figure(String(contents.length - revealed).padStart(2, '0'), 'TO REVEAL');
     key('TURN ONE OVER', 'OR HOLD THE DECK TO SQUEEZE');
     idleAt = performance.now();
@@ -1643,7 +1643,8 @@
     packets = [p]; chosen = p; packNo++;
     pull = 0; deck = flap = rc = null; fan = [];
     p.yaw = 0; p.face = 'front'; p.body.set({ shx:1 });
-    if (!p.cards.length) fillStack(p);
+    // (the rock-bottom packet holds three)
+    if (!p.cards.length) fillStack(p, saved ? saved.length : CARDS);
     if (saved){ contents = saved; hasLegend = saved.some(c => c.rarity === 'legendary'); revealed = 0; }
     else {
       hasLegend = tune.contents === 'legendary' || tune.contents === 'double' || (tune.contents === 'surprise' && Math.random() < 1 / 3);
@@ -1658,7 +1659,7 @@
     await squash(p.body, .1, 240);
     lock = false; phase = 'sealed';
     p.seamHint = 1; p.draw();
-    status('TEAR IT OPEN', 'DRAG ACROSS THE TOP SEAM'); figure('04', 'INSIDE'); key('OPEN IT', 'OR DRAG ACROSS THE SEAM');
+    status('TEAR IT OPEN', 'DRAG ACROSS THE TOP SEAM'); figure(String(contents.length).padStart(2, '0'), 'INSIDE'); key('OPEN IT', 'OR DRAG ACROSS THE SEAM');
     idleAt = performance.now();
   }
   if (EMBED){

@@ -51,7 +51,7 @@
 .ci-stage, .ci-stage > div{ position:absolute; inset:0; pointer-events:none; }
 .ci-objects{ z-index:2; } .ci-fx{ z-index:4; }
 .ci .po-body{ pointer-events:auto; }
-.ci-back{ position:absolute; z-index:6; top:calc(10px + env(safe-area-inset-top,0px)); right:12px; width:60px; height:44px; font:9px/1.2 var(--font-hdr); }
+.ci-back{ position:absolute; z-index:6; top:max(10px,var(--safe-top)); right:12px; width:60px; height:44px; font:9px/1.2 var(--font-hdr); }
 .ci-back[hidden]{ display:none; }
 /* a design you haven't pulled: a dark silhouette */
 .ec-card.is-locked .ec-face{ filter:brightness(0) opacity(.75); }
