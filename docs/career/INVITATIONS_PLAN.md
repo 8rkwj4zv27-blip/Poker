@@ -286,7 +286,8 @@ march (a big loss with four hands left decided it).
   forward plan's first decision.
 - Checked: `npm test`; the browser checks (now also the table sweep and
   `tray-scenario.js`); `new-career-lab.html` for the owner's phone (link:
-  https://claude.ai/artifact/U1TtQZDgtw1ZkdapNkwLyy).
+  https://claude.ai/artifact/U1TtQZDgtw1ZkdapNkwLyy). Signed off by the
+  owner (13 Oct); the lab is archived (restore from commit c169377).
 
 ## Stage 6: the polish pass (owner, 13 Oct 2026; v0.70.0)
 

@@ -524,7 +524,10 @@ Double-tap the dashboard case to check (`humanAct('check')`); facing a bet
 it refuses with a buzz and CAN'T KNOCK. The Dashboard V2 order's
 behaviour, ported from `js/dashboard-order.js`.
 
-## `card-faces-lab.html` + `js/card-faces-lab-host.js` + `js/card-faces-lab.js` + `css/card-faces-lab.css` — Card Faces Lab
+## `card-faces-lab.html` + `js/card-faces-lab-host.js` + `js/card-faces-lab.js` + `css/card-faces-lab.css` — Card Faces Lab — **archived 13 Oct 2026**
+
+The owner kept CLASSIC (13 Oct), so nothing shipped; the lab is off the
+branch (restore from commit 29d4817). What it was:
 
 Phone lab (13 Oct 2026, owner's request) for the playing cards' fronts.
 The host loads the real game as in the Showdown Lab; the in-game script
@@ -535,7 +538,6 @@ over the game's own card markup (`cardInner`/`cardClass`,
 `js/06-presentation.js`): zoom, transforms and percentages only, so every
 size the game sets keeps its proportions; the seats' small cards keep
 their big suit unscaled. Link: https://claude.ai/artifact/VcHxdi5WZeTFN77a5jJX6D.
-The pick ships as a `data-face` on the body beside `data-deck`.
 
 ## `action-drum-lab.html` + `js/action-drum-lab.js` — Action Drum (Lab)
 
@@ -1408,9 +1410,9 @@ the hub's parts never load.
 - Styles: the menu's rules the hub shares (the housing, the secondary
   keys, the bankroll reel) are written `:is(#home,#hub)` in their files.
 - A lab's framed copy of the game (`window.parent !== window`) brings its
-  own parts, so none of this runs there, unless the lab page sets
-  `NEW_CAREER_LAB` (`new-career-lab.html`, the new Career's own lab: the
-  real game on a made-up Career, `js/new-career-lab.js` its LAB sheet).
+  own parts, so none of this runs there. (`new-career-lab.html`, v0.71.0's
+  phone lab, let its copy run it; **archived** once the owner signed the
+  clock and tray off: restore from commit c169377.)
 - Checked by `validation/tools/new-career-scenario.js` (the whole loop in
   `index.html`, real touch, three sizes, every screen change on the drum,
   leave and ABANDON, the pity packet opened, the classic save untouched).

@@ -482,7 +482,7 @@ stock, not machine keys. The owner approved the red tab in chat on
 | Tab row | The front's last grid row. Unpaid: DETAILS alone at its usual width. Paid: the two tabs share the row at the same size. The ticket and the console never change height. | `.ch2-card-keys` |
 | Red tab | The paid ticket's way out (ABANDON, or CASH OUT at the cash table), beside DETAILS. It is the flip tab in red with cream print and only shows on `.is-paid`. Abandon still asks for confirmation. | `.ch2-card-flip.ch2-card-quit` |
 
-## Event clock (v0.71.0, awaiting the owner's sign-off on device)
+## Event clock (v0.71.0, signed off by the owner 13 Oct 2026)
 
 The small instrument on the felt in a Career invitation, replacing the
 fixed HAND n/10 plate that sat on the top seat's face at 2 and 6 players

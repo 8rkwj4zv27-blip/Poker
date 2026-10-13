@@ -23,14 +23,11 @@
    game's drum (js/machine-wheel.js) like any other screen change: the
    Career key, the hub's back key, PLAY, and back from the table.
    A lab's framed copy of the game brings its own parts, so none of this
-   runs there (except in new-career-lab.html, the new Career's own lab).
+   runs there.
    ============================================================ */
 (() => {
   'use strict';
-  // (a lab's framed copy: off, unless the lab is the new Career's own,
-  // new-career-lab.html, which sets NEW_CAREER_LAB on its page)
-  const framed = (() => { try { return window.parent !== window && !window.parent.NEW_CAREER_LAB; } catch (e) { return true; } })();
-  if (!NEW_CAREER || framed) return;
+  if (!NEW_CAREER || window.parent !== window) return;
   window.CAREER_PREVIEW = true;
   const toCard = inv => EventCards.fromInvitation(inv);
 
