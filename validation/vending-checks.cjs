@@ -51,6 +51,18 @@ async function run(width, height, reducedMotion){
     const hub = () => fr.evaluate(() => CareerMain.state);
     // where a thing is, on the page (the frame's own coordinates, offset)
     const where = async (k, i) => { const q = await fr.evaluate(([k, i]) => CareerMain.where(k, i), [k, i]); return { ...q, x:q.x + ifr.x, y:q.y + ifr.y }; };
+    // a card that has stopped sliding (dealt cards slide to a rest after
+    // the hub stops being busy: grabbing one mid-slide misses it)
+    const still = async (k, i) => {
+      let a = await where(k, i);
+      for (let n = 0; n < 40; n++){
+        await page.waitForTimeout(100);
+        const b = await where(k, i);
+        if (Math.abs(a.x - b.x) < .5 && Math.abs(a.y - b.y) < .5) return b;
+        a = b;
+      }
+      return a;
+    };
     const hubUntil = async (fn, what, ms = 20000) => {
       const t = Date.now();
       while (Date.now() - t < ms){ const h = await hub(); if (fn(h)) return h; await page.waitForTimeout(60); }
@@ -81,7 +93,7 @@ async function run(width, height, reducedMotion){
     // where to drag a card to feed it: the feeder's mouth
     const [fx, fy] = await centre('.cm-mouth');
     // dragged up: half into the feeder, PLAY; a tap and it comes back out
-    w0 = await where('dealt', 1);
+    w0 = await still('dealt', 1);
     await touch.drag(w0.x, w0.y, fx, fy + 20, 14, 16); await page.waitForTimeout(120); await touch.end();
     h = await hubUntil(q => q.fed === 'card' && !q.busy, 'a card in the feeder');
     assert.equal(await keyLabels(), 'SHOP · PLAY · CARDS');
@@ -98,7 +110,7 @@ async function run(width, height, reducedMotion){
     // a tray card dragged up and PLAYed: it's used up, and off the tray
     await page.waitForTimeout(500);
     const pool0 = h.pool;
-    w0 = await where('tray', 1);
+    w0 = await still('tray', 1);
     await touch.drag(w0.x, w0.y, fx, fy + 20, 14, 16); await page.waitForTimeout(120); await touch.end();
     await hubUntil(q => q.fed === 'tray' && !q.busy, 'a card in the feeder');
     // (a tap straight after a flick only stops the fling in Chrome's touch emulation)
@@ -252,8 +264,11 @@ async function run(width, height, reducedMotion){
     await touch.flick(ifr.x + c.x, ifr.y + c.y, ifr.x + c.x - 220, ifr.y + c.y + 20, 5, 8);
     s = await until(q => q.hub.cards === 1 && q.hub.pool === pool1 + 1 && !q.hub.busy, 'the card thrown off, into your collection');
     // ADD TO COLLECTION: the rest
-    // (a tap straight after a flick only stops the fling in Chrome's touch emulation)
-    await page.waitForTimeout(500);
+    // (a tap straight after a flick only stops the fling in Chrome's touch
+    // emulation, which can outlast half a second on the small phone; and
+    // the throw can knock the other card sliding: wait for it to rest)
+    await page.waitForTimeout(1500);
+    await still('card', 0);
     await tap(mx, my);
     s = await until(q => q.hub.cards === 0 && !q.hub.busy, 'the rest added');
     assert.equal(s.hub.pool, pool1 + 2);

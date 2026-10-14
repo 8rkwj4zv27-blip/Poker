@@ -26,6 +26,18 @@ async function run(width, height, reducedMotion){
       .catch(async () => { throw new Error('waiting for the desk, state ' + JSON.stringify(await state())); });
     const box = async sel => { const r = await g.locator(sel).first().boundingBox(); assert.ok(r, sel + ' visible'); return r; };
     const centre = r => [r.x + r.width / 2, r.y + r.height / 2];
+    // a part that has stopped moving (the packets slide in after the shop
+    // says choose: on a slow machine a tap can land where one was)
+    const settled = async sel => {
+      let a = await box(sel);
+      for (let n = 0; n < 40; n++){
+        await page.waitForTimeout(100);
+        const b = await box(sel);
+        if (Math.abs(a.x - b.x) < .5 && Math.abs(a.y - b.y) < .5) return b;
+        a = b;
+      }
+      return a;
+    };
     const tap = async (x, y) => { await touch.start(x, y); await page.waitForTimeout(30); await touch.end(); };
     await page.evaluate(() => localStorage.setItem('career-hub-qa', 'untouched'));
 
@@ -77,7 +89,7 @@ async function run(width, height, reducedMotion){
       .catch(async () => { throw new Error('waiting for ' + p + ', state ' + JSON.stringify(await state())); });
     await phase('choose');
     const held0 = (await state()).held;
-    await tap(...centre(await box('.po-packet[data-series=house] .po-pk-front'))); await phase('selected');
+    await tap(...centre(await settled('.po-packet[data-series=house] .po-pk-front'))); await phase('selected');
     const k = centre(await box('#po-key'));
     await touch.start(k[0], k[1]); await page.waitForTimeout(1000); await touch.end();
     await phase('sealed');
