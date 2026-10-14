@@ -10,7 +10,8 @@
       readout, the final placing against the chips, and that the prize was
       credited exactly once (also after another reload).
    2. BUST: knocked out early (DEV BUST ME): settles at once, at a paid place.
-   3. CLEAR: every opponent out early (DEV CLEAR TABLE): first place, $60.
+   3. CLEAR: every opponent out early (DEV CLEAR TABLE): first place, $60
+      and the chip bonus ($1 per 100 chips).
 
      node validation/tools/invitation-scenario.js [--shots DIR]
 */
@@ -55,7 +56,7 @@ function nextKey(){
 const readState = () => ({
   hand: game ? game.handNumber : null,
   phase: game ? game.phase : null,
-  readout: (document.querySelector('#hand-limit .hand-limit-screen') || {}).textContent || null,
+  readout: (document.querySelector('#event-clock .event-clock-screen') || {}).textContent || null,
   active: career.active ? career.active.eventId : null,
   bankroll: career.bankroll,
   saved: (() => { try { return JSON.parse(localStorage.getItem('felt.career.table')); } catch (e) { return null; } })()
@@ -96,9 +97,11 @@ async function playUntil(page, done, log, limitMs = 15 * 60000){
     await page.waitForTimeout(200);
   }
 }
-const expectedPrize = (place, tie) => {
+// the place's prize (shared on a tie), and the chip bonus on top: $1 for
+// every 100 chips you finish with (none on a bust)
+const expectedPrize = (place, tie, chips) => {
   let t = 0; for (let k = 0; k < tie; k++) t += PAYOUTS[place - 1 + k] || 0;
-  return Math.floor(t / tie);
+  return Math.floor(t / tie) + Math.floor((chips || 0) / 100);
 };
 
 async function limitScenario(base){
@@ -147,10 +150,13 @@ async function knockOutAll(page){
   while (await page.evaluate(() => !!career.active)){
     await page.evaluate(() => {
       const left = () => game.players.filter(p => !p.isHuman && !p.eliminated).length;
-      if (left() > 1 && betweenHands()) devClearTable();
+      // (only once the last pot is paid: DEV CLEAR during the showdown,
+      // before AWARD POT, zeroes a player the pot then pays)
+      const settled = () => betweenHands() && !game.pot && game.players.every(p => !p.betThisRound);
+      if (left() > 1 && settled()) devClearTable();
       // the last one must be shorter than you, or winning an all-in can't
       // knock them out (chips moved between hands, the total kept)
-      if (left() === 1 && betweenHands()){
+      if (left() === 1 && settled()){
         const me = game.players.find(p => p.isHuman), o = game.players.find(p => !p.isHuman && !p.eliminated);
         if (o.chips >= me.chips){ const d = o.chips - Math.floor(me.chips / 2); o.chips -= d; me.chips += d; }
       }
@@ -244,7 +250,7 @@ async function earlyScenario(base, devFn){
         assert.strictEqual(r.place, alive.filter(p => p.chips > me.chips).length + 1);
         assert.strictEqual(r.tie || 1, alive.filter(p => p.chips === me.chips).length + 1);
       }
-      assert.strictEqual(r.prize, expectedPrize(r.place, r.tie || 1));
+      assert.strictEqual(r.prize, expectedPrize(r.place, r.tie || 1, r.chips));
     });
     report('credited exactly once, and nothing more after a reload', () => {
       assert.strictEqual(L.final.bankroll, 500 + L.final.result.prize);
@@ -258,9 +264,11 @@ async function earlyScenario(base, devFn){
       report(name + ': no JavaScript errors', () => assert.deepStrictEqual(E.errors, []));
       report(name + ': settles early, paid once', () => {
         assert.ok(E.final.hand < 10);
-        if (name === 'CLEAR') assert.deepStrictEqual([E.final.result.place, E.final.result.prize], [1, 60]);
+        // first place's $60, and the chip bonus on top ($1 per 100 chips)
+        if (name === 'CLEAR') assert.deepStrictEqual([E.final.result.place, E.final.result.bonus, E.final.result.prize],
+          [1, Math.floor(E.final.result.chips / 100), 60 + Math.floor(E.final.result.chips / 100)]);
         else assert.ok([2, 3].includes(E.final.result.place));
-        assert.strictEqual(E.final.result.prize, expectedPrize(E.final.result.place, E.final.result.tie || 1));
+        assert.strictEqual(E.final.result.prize, expectedPrize(E.final.result.place, E.final.result.tie || 1, E.final.result.chips));
         assert.strictEqual(E.final.bankroll, 500 + E.final.result.prize);
         assert.strictEqual(E.afterReload, E.final.bankroll);
       });

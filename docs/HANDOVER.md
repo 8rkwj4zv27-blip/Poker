@@ -19,9 +19,9 @@ buy-in feed, Table Intro, end screens) under Settings → Career; opponents with
 talk; P.I.P. the coach (tap only, with the end-of-hand report); Settings and
 the Workshop (skins); save data (back up, restore, start over).
 
-Checked 13 Oct (v0.71.0): all 25 suites (`npm test`) and the nine
-browser checks (`npm run browser-checks`: the play-test, the scenarios,
-the table sweep, the lab suites) pass.
+Checked 14 Oct (v0.71.0): all 25 suites (`npm test`) and the nine
+browser checks (`npm run browser-checks`) pass; the invitation scenario
+now reads the event clock and counts the chip bonus (#99's CI failed).
 
 ## Recent changes (newest first)
 
