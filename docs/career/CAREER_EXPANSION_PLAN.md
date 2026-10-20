@@ -72,8 +72,10 @@ engaging it's a 5. Averaged and weighted to what you asked for: **6**.
 2. **The cost is badly under-called.** Seven new poker families (Draw,
    PLO, Pineapple, Short Deck, Hi/Lo, Fusion, Stud), each with its own
    deck, deal, streets, betting structure, evaluator, AI, coach and
-   portrait layout. The dashboard is built around two hole cards. This is
-   a year of work hiding behind "Gate 4, Gate 5".
+   portrait layout. The dashboard is built around two hole cards. Done
+   well, that's roughly 15-20 releases (about two months at this
+   project's pace), most of it opponent AI and phone layout, hiding
+   behind "Gate 4, Gate 5".
 3. **It rates the cheapest variant as expensive.** Short Deck needs no new
    dealing, streets or UI: a 36-card deck, a re-ranked evaluator and the
    AI's preflop table regenerated. It's the *cheapest* real variant, not
