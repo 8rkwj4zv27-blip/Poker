@@ -76,4 +76,7 @@ own speech bubbles (`claude/tender-dijkstra-zso8dm`).
 (v0.71.0). Next: end screens per format (deferred by the
 owner), the new Career's goal (album + packet tiers recommended), retiring
 the classic Career, the catalogue's size; the special-rules events.
+All of these are answered by one proposal awaiting the owner:
+[`career/CAREER_EXPANSION_PLAN.md`](career/CAREER_EXPANSION_PLAN.md)
+(Up the Stakes, 20 Oct; its section 6 lists the owner's decisions).
 Workflow: [`WORKFLOW.md`](WORKFLOW.md).

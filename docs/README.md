@@ -31,6 +31,7 @@ Last sorted: 7 October 2026 (v0.66.1).
 | [`career/CAREER_HUB_DESK_PLAN.md`](career/CAREER_HUB_DESK_PLAN.md) | The Career desk: Career's main screen as a felt desk (slot, three cards, matchbooks, lamp, bell, shop, album). Rejected in round 2; stills of a simpler hub with the owner |
 | [`career/VENDING_PLAN.md`](career/VENDING_PLAN.md) | The packet machine: Career's shop as a vending machine that rolls in on the wheel; the moving lab |
 | [`career/CAREER_HUB_BRIEF.md`](career/CAREER_HUB_BRIEF.md) | The Career hub: every round, the owner's verdicts, and the hub as built (the tray is the house's, the felt is yours) |
+| [`career/CAREER_EXPANSION_PLAN.md`](career/CAREER_EXPANSION_PLAN.md) | Up the Stakes (20 Oct 2026): the outside review assessed, the goal (THE BIG GAME), risk, three floors, formats then new games, releases R1-R8. Proposal, awaiting the owner |
 | [`career/INVITATIONS_PLAN.md`](career/INVITATIONS_PLAN.md) | Career as packets of event invitations (12 Oct 2026): the loop, the proposed first catalogue, Stages 1-6 (the new Career in the game, v0.69.0; the polish pass and the economy simulated, v0.70.0). In progress |
 | [`career/HUB_TO_GAME_BRIEF.md`](career/HUB_TO_GAME_BRIEF.md) | Historical: from the labs to the game (done in v0.69.0) |
 | [`career/COLLECTION_BOOK_PLAN.md`](career/COLLECTION_BOOK_PLAN.md) | The card album: the owner's decisions (a leather-bound book over the table, three rows of three, bright / dim / empty), the moving lab and what's open |
