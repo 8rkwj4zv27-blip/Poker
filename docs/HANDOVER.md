@@ -71,9 +71,9 @@ own speech bubbles (`claude/tender-dijkstra-zso8dm`).
 
 ## Next
 
-**Career is moving to invitations** (owner, 12 Oct). Stages 1-7 of
-[`career/INVITATIONS_PLAN.md`](career/INVITATIONS_PLAN.md) are live
-(v0.71.0). Next: end screens per format (deferred by the
-owner), the new Career's goal (album + packet tiers recommended), retiring
-the classic Career, the catalogue's size; the special-rules events.
+**Career's forward plan:** [`career/MEGA_PLAN.md`](career/MEGA_PLAN.md)
+(23 Oct, proposal awaiting the owner; supersedes *Up the Stakes*). Its
+first build would be M1: the rules module, Bounty Night, hand-limit-aware
+opponents and Career history. Still open: end screens per format
+(deferred), retiring the classic Career.
 Workflow: [`WORKFLOW.md`](WORKFLOW.md).
