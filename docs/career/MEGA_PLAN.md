@@ -5,7 +5,9 @@ Written 23 October 2026 against `main` at v0.71.0 (commit `906d844`).
 built.** It answers the owner's brief "Career Mode Mega Plan" (23 Oct),
 and supersedes the unmerged *Up the Stakes* proposal
 (`docs/career/CAREER_EXPANSION_PLAN.md` on `claude/elegant-knuth-dlchhv`)
-wherever the two disagree. No code, odds, prizes, saves or visuals were
+wherever the two disagree. **Its immediate roadmap (Section 9) is
+replaced by [`EVENT_EXPANSION_V1.md`](EVENT_EXPANSION_V1.md)** (23 Oct),
+which also drops The Ringer. No code, odds, prizes, saves or visuals were
 changed to write it.
 
 Where a number appears it's either **measured** (and says how) or a

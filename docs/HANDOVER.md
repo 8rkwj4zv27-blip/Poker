@@ -71,9 +71,8 @@ own speech bubbles (`claude/tender-dijkstra-zso8dm`).
 
 ## Next
 
-**Career's forward plan:** [`career/MEGA_PLAN.md`](career/MEGA_PLAN.md)
-(23 Oct, proposal awaiting the owner; supersedes *Up the Stakes*). Its
-first build would be M1: the rules module, Bounty Night, hand-limit-aware
-opponents and Career history. Still open: end screens per format
-(deferred), retiring the classic Career.
+**Career's next step:** [`career/EVENT_EXPANSION_V1.md`](career/EVENT_EXPANSION_V1.md)
+(23 Oct, awaiting the owner): M1 the album record and rules module, then
+Three Strikes first. The long view is [`career/MEGA_PLAN.md`](career/MEGA_PLAN.md).
+Still open: end screens per format (deferred), retiring the classic Career.
 Workflow: [`WORKFLOW.md`](WORKFLOW.md).
