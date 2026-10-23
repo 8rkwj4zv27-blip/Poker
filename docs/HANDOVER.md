@@ -71,8 +71,8 @@ own speech bubbles (`claude/tender-dijkstra-zso8dm`).
 
 ## Next
 
-**Career's next step:** [`career/EVENT_EXPANSION_V1.md`](career/EVENT_EXPANSION_V1.md)
-(23 Oct, awaiting the owner): M1 the album record and rules module, then
-Three Strikes first. The long view is [`career/MEGA_PLAN.md`](career/MEGA_PLAN.md).
+**Career's next step:** Stage One, [`career/COLLECTION_V2_PLAN.md`](career/COLLECTION_V2_PLAN.md)
+(23 Oct, awaiting the owner): C1 pull many cards out, C2 the 3D card lab.
+Then the events, [`career/EVENT_EXPANSION_V1.md`](career/EVENT_EXPANSION_V1.md).
 Still open: end screens per format (deferred), retiring the classic Career.
 Workflow: [`WORKFLOW.md`](WORKFLOW.md).

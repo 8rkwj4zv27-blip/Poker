@@ -11,6 +11,10 @@ This answers the owner's brief "Let's Start Building Career Variety"
 Game, floors and larger packet shelf continue alongside this work, but
 they don't block it. **The Ringer is removed**, at the owner's request.
 
+**Order changed (23 Oct):** [`COLLECTION_V2_PLAN.md`](COLLECTION_V2_PLAN.md)
+comes first and absorbs M1's album record and look; the event milestones
+here follow it.
+
 ---
 
 ## A. New ideas
