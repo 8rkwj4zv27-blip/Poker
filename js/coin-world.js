@@ -1389,34 +1389,6 @@
       return at;
     });
   }
-  /* THE RACK, added to: places for new coins on the rack as it stands
-     (nothing already there moves). Each goes on top of the stack the
-     rack's shape wants next (rackSlots' weights: taller at the back and in
-     the middle), so a win lands on the pile instead of re-sorting it.
-     Returns one place per colour, in the order given. */
-  function rackAdd(z,cols){
-    const g=rackGeom(z), n=z.list.length+cols.length;
-    let used=Math.min(2,g.rows.length); while (used<g.rows.length && n>.5*rowsCap(g.rows.slice(0,used))) used++;
-    const mid=(g.cols-1)/2, half=Math.max(1,mid), stacks=[];
-    g.rows.forEach(w=>{ for (let i=0;i<w.n;i++){ const x=w.x0+i*g.sp, off=Math.abs(x-(g.x0+mid*g.sp))/g.sp;
-      stacks.push({ x:Math.round(x), y:w.y, cap:w.cap, use:w.r<used, w:(1-.45*off/half)*(1+.4*w.r), h:0 }); } });
-    // each coin already there, or on its way to its place, counts on its stack
-    z.list.forEach(b=>{
-      const t=b.state==='rest' ? b : (b.target && b.target.slot ? b.target : (b.tx!=null ? { x:b.tx, y:b.ty, z:b.tz } : b));
-      let s=null, best=1e9;
-      stacks.forEach(q=>{ const dd=Math.hypot(q.x-t.x,q.y-t.y); if (dd<best){ best=dd; s=q; } });
-      if (s) s.h=Math.max(s.h,Math.round((t.z||0)/g.st)+1);
-    });
-    return cols.map(()=>{
-      let s=null, bv=1e9;
-      stacks.forEach(q=>{ if (!q.use || q.h>=q.cap) return; const v=(q.h+1)/q.w; if (v<bv){ bv=v; s=q; } });
-      if (!s) stacks.forEach(q=>{ if (q.h>=q.cap) return; const v=(q.h+1)/q.w; if (v<bv){ bv=v; s=q; } });
-      if (!s) s=stacks.reduce((a,q)=>q.h<a.h?q:a);
-      const at={ x:s.x, y:s.y, z:s.h*g.st, n:s.h };
-      s.h++;
-      return at;
-    });
-  }
   // every stack settled down onto what's under it (after coins leave it)
   function settleStacks(z){
     const st=STEP(), groups=new Map(), map=new Map();
@@ -1922,6 +1894,7 @@
     b.el.style.visibility=''; if (b.sh) b.sh.style.visibility='';
     if (b.opts.onStart){ const f=b.opts.onStart; b.opts.onStart=null; f(); }
     const t=b.target, s=b.next;
+    if (b.opts.jit){ b.opts.jit=false; b.x+=rr(-3,3); b.y+=rr(-2,2); }
     b.x0=b.x; b.y0=b.y; b.z0=b.z; b.t=0;
     if (s==='tidy' || s==='push'){ b.state=s; return; }
     if (s==='fall'){ b.state='air'; b.t=.1; return; }
@@ -2334,9 +2307,8 @@
       if (dist>=min || dist<.01) continue;
       const nx=dx/dist, ny=dy/dist, over=min-dist;
       // a stack (or a coin with one on it) stands firm; a lone coin can be
-      // knocked away, and a sliding one shares the push. Your bank's rack
-      // always stands firm: a win lands on it without shifting it.
-      const lone=q.z<1 && !q.claimed && !b.zone.rack && !b.zone.list.some(r=>r!==q && r!==b && r.state==='rest' && r.z>q.z+.5 && Math.abs(r.x-q.x)<b.d*.5 && Math.abs(r.y-q.y)<b.d*.4);
+      // knocked away, and a sliding one shares the push
+      const lone=q.z<1 && !q.claimed && !b.zone.list.some(r=>r!==q && r!==b && r.state==='rest' && r.z>q.z+.5 && Math.abs(r.x-q.x)<b.d*.5 && Math.abs(r.y-q.y)<b.d*.4);
       const qMoves=lone && OPT.knock!=='off';
       const share=qMoves && q.state==='slide'?.5:1;
       b.x+=nx*over*share; b.y+=ny*over*share/FORE;
@@ -2551,9 +2523,12 @@
       let T=flightT(dist)*(pl.T||1), flips=pl.flips, toss=false;
       if (kind==='test') T=Math.max(T,1.05);
       if (tossers.has(i)){ T=Math.max(.5,T*rr(1.7,2.1)); flips=rint(3,5); toss=true; }
-      if (OPT.hand==='bloom'||kind!=='lob'){ it.b.x+=rr(-3,3); it.b.y+=rr(-2,2); }
+      // (the little nudge off the hand is given as each coin leaves, in
+      // begin(): a coin still waiting its turn in a pile keeps its place,
+      // so the pot's towers stand until their chips fly)
+      const jit=OPT.hand==='bloom'||kind!=='lob';
       const loose=!it.to.slot&&!it.to.vanish&&!it.to.mouth&&!it.to.via;
-      return launch(it.b,it.to,{ big, combo, wait:pl.t+delay, T:eased()?undefined:T, i, mode:pl.mode, tumble:pl.tumble, grip:pl.grip, toss,
+      return launch(it.b,it.to,{ big, combo, wait:pl.t+delay, T:eased()?undefined:T, i, mode:pl.mode, tumble:pl.tumble, grip:pl.grip, toss, jit,
         jx:loose?rr(-6,6):0, jy:loose?rr(-3,3):0, flips, onStart:it.onStart }).then(()=>{ if (it.onLand) it.onLand(); });
     }));
   }
@@ -2575,7 +2550,7 @@
     Coin, sfx, rise,
     active, dirty, squashing, zones, spinCache, frameCache,
     makeChip, styleChip, setFrame, repaint, frames, spinFrame, coloursFor, betCoins, bankCoins, curve,
-    isTier, TIERS, tierName, rackSlots, rackCapacity, planZone, applyLayout, pileAdd, rackAdd, settleStacks, mergePile, LADDERS, PALETTES, CHIP_DESIGNS, composeTiers, chipFrameT, chipSpin,
+    isTier, TIERS, tierName, rackSlots, rackCapacity, planZone, applyLayout, pileAdd, settleStacks, mergePile, LADDERS, PALETTES, CHIP_DESIGNS, composeTiers, chipFrameT, chipSpin,
     PIECES, KINDS, isBar, isBig, pieceD, pieceH, stepOf, depthOf, clash, compose, valueOf, merge, mergePlan, barFrame, zoneBox, mergeQuiet,
     BankPile,
     body, removeBody, removeFromZone, toRest, finishRest, kick, ensureLayers, draw, snap, arrive, begin,
