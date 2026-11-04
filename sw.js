@@ -1,4 +1,4 @@
-const CACHE_NAME = 'poker-v71-0';
+const CACHE_NAME = 'poker-v71-1';
 const APP_SHELL = [
   './',
   './index.html',
@@ -10,7 +10,7 @@ const APP_SHELL = [
   './css/02-screens.css?v=64',
   './css/03-action-console.css?v=71-0',
   './css/04-overlays-and-modes.css?v=70-0',
-  './css/05-responsive-and-arcade.css?v=70-0',
+  './css/05-responsive-and-arcade.css?v=71-1',
   './css/06-machine-system.css?v=70-0',
   './css/career-hub-v2.css?v=70-0',
   './css/career-motion-live.css?v=4',
@@ -21,7 +21,7 @@ const APP_SHELL = [
   './css/home-boot.css?v=2',
   './css/press-feel.css?v=2',
   './css/finishes.css?v=3',
-  './css/dashboard.css?v=2',
+  './css/dashboard.css?v=71-1',
   './css/coin-world.css?v=3',
   './css/coin-bank.css?v=1',
   './css/coin-hoard.css?v=2',

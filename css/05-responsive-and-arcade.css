@@ -582,7 +582,7 @@
    lamps and committed amount are readings within it, not extra boxes. */
 #hud-right{ justify-content:center; gap:5px; padding:5px 4px; }
 #hud-right .hearts{ min-height:15px; }
-.blind-lamps{ min-height:18px; padding:2px 1px 4px; border-bottom:1px solid rgba(255,255,255,.08); }
+.blind-lamps{ min-height:18px; padding:2px 1px 4px; border-bottom:1px solid transparent; }
 #hud-right .bet-this-hand{
   min-height:44px; flex:0 0 auto; gap:4px; padding:4px 1px 2px;
   background:transparent; border:0; border-radius:0; box-shadow:none; animation:none;
