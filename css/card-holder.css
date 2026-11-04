@@ -56,9 +56,9 @@ html[data-holder="brass"] #hud-mid .seat.you::after{
 /* The cards' own 3px drop shadow used to hide behind the screen the lip
    sat on. With air under the lip it would peek out below it as dark
    blocks, and the lip hides the card feet anyway: faces at rest drop it,
-   on both holders (a shown card at the showdown keeps its glow). */
+   on both holders. */
 #hud-mid .seat.you .seat-cards{ filter:none; }
-#hud-mid .seat.you .seat-cards:not(.sd-shown) .card:not(.back):not(.card-turning){ box-shadow:inset 0 2px 0 #fff; }
+#hud-mid .seat.you .seat-cards .card:not(.back):not(.card-turning){ box-shadow:inset 0 2px 0 #fff; }
 
 /* Settings → The deck → Card holder: a small lip in each key */
 .holder-swatch{ display:flex; flex-direction:column; align-items:center; gap:5px; }

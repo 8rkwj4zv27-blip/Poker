@@ -160,7 +160,10 @@ it stands; tap to tidy into a pyramid; over 100 chips five of a colour
 are PRESSED into one, `mergePile`). Your bank is a rack in rows
 (`rackSlots`: a deep pyramid, four rows of four when full, 192 chips)
 in its own box (`css/coin-hoard.css`); wins stream in through a slot on
-its top edge, bets hop out of it. Settings → Bank (tubes etc.) is gone:
+its top edge and land on top of the rack as it stands (`rackAdd`; since
+v0.71.2 nothing already there moves, and between hands the bank only adds
+or lifts the difference, `topUpRack`), bets hop out of it. An opponent's
+pot flies home to their seat as one stack (`carryHome`). Settings → Bank (tubes etc.) is gone:
 the bank is always the chip pile (`bankStyle` stays saved, unused).
 
 
@@ -493,8 +496,8 @@ options. Injects only its controls; the screens are the game's own.
 
 ## `js/action-drum.js` + `css/action-drum.css` — the key bay's drum (live, v0.48.0)
 
-The bottom console's sides (FOLD/CHECK/RAISE, QUICK RESOLVE, AWARD POT +
-SHOW, the results keys) are faces of one four-sided drum that rolls down a
+The bottom console's sides (FOLD/CHECK/RAISE, QUICK RESOLVE, AWARD POT, the
+results keys) are faces of one four-sided drum that rolls down a
 side at each change, inside a fixed bezel over a dark well. It replaced
 the two nested CSS flips (`#console-flip`, `#actions-flip`), whose hidden
 faces iPhone Safari drew behind the live keys: no side is hidden by
