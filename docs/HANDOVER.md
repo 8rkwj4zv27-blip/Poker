@@ -42,8 +42,6 @@ the table sweep, the lab suites) pass.
 
 ## Open items (verified, not scheduled)
 
-- Your bank's rack reshuffles on a win, after a hand and after a bet; the
-  owner wants wins to land on top. Next up (first attempt: `e2f8af9`).
 - New Career: the opening reads sound/motion/haptics once per load (a
   Settings change applies after a reload); packets added to a felt that
   already has one can land on it; lab-only code still ships inside
