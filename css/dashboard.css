@@ -77,14 +77,17 @@
    the browser flattens the case and the cards into one layer, so a rim
    drawn above the case cut a line straight through the cards (v0.43.0).
    Its glow onto the case, which the case now hides, is redrawn below as
-   an inner glow along the case's top and sides. */
+   an inner glow along the case's top and sides. The channel runs from
+   the middle of the band right up to the case, so the lamp meets its
+   glow with no strip of bare frame between them. */
 #app .dash-frame::after{
   content:''; position:absolute; z-index:-1; pointer-events:none; box-sizing:border-box;
   left:calc(var(--dash-side) + var(--dash-band) / 2 - 2px); right:calc(var(--dash-side) + var(--dash-band) / 2 - 2px);
   top:calc(var(--dash-gap) + var(--dash-band) / 2 - 2px);
   bottom:calc(var(--dash-drop) * -1 + var(--dash-band) / 2 - 2px);
-  border:4px solid color-mix(in srgb,var(--dash-lamp) 55%,#030404);
-  border-radius:calc(var(--dash-rad) - 4px);
+  border:calc(var(--dash-band) / 2 + 2px) solid color-mix(in srgb,var(--dash-lamp) 55%,#030404);
+  /* corners follow both the frame outside and the case inside */
+  border-radius:calc(var(--dash-rad) - 1.5px);
   background:none;
 }
 #app .dash-frame[data-rim]::after{
@@ -141,11 +144,8 @@
     --dash-case-glow:color-mix(in srgb,var(--dash-lamp) var(--dash-glow-a),transparent);
     box-shadow:inset 0 9px 10px -7px var(--dash-case-glow), inset 9px 0 10px -7px var(--dash-case-glow), inset -9px 0 10px -7px var(--dash-case-glow);
   }
-  /* The seam between the instruments and the key bay: a dark, even groove. */
-  #app .dash-frame-base .action-console::before{
-    left:8px; right:8px; top:-1px; height:2px; border-radius:0;
-    background:var(--dash-ink); box-shadow:0 1px 0 color-mix(in srgb,var(--theme-case-hi) 30%,transparent);
-  }
+  /* No seam between the instruments and the key bay: one surface. */
+  #app .dash-frame-base .action-console::before{ content:none; }
   #app .dash-frame-base .console-flip{ border-radius:7px; }
 
   /* The win shake moves the whole machine, never the case alone: a

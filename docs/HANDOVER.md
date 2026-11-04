@@ -5,8 +5,8 @@ in the same pull request as the change (rules in `CLAUDE.md`, "Handover
 note"). Keep it to one screen: replace old lines rather than adding to them.
 If this note and the code disagree, the code wins.
 
-Build: `v0.71.0-dev · Event clock, duels, the curated tray`
-Updated: 13 October 2026 (v0.71.0: event clock, duels, the curated tray)
+Build: `v0.71.1-dev · Dashboard tidy`
+Updated: 4 November 2026 (v0.71.1: dashboard tidy)
 
 ## Where the game is
 
@@ -25,6 +25,8 @@ the table sweep, the lab suites) pass.
 
 ## Recent changes (newest first)
 
+- 4 Nov (v0.71.1): dashboard tidy: the rim lamp widened to meet its glow
+  (no green strip), no seam above the keys, no rule under SB / BB.
 - 13 Oct (v0.71.0): the event clock (no more counter on a face), duels
   (Face to Face, Last Stack Wins), rising blinds + a chip bonus in
   hand-count events, the curated tray, playing cards' corners (a class
@@ -36,9 +38,6 @@ the table sweep, the lab suites) pass.
   finish; the result on the hub; ABANDON; starter and pity wrappers; the
   safe area; MORE replaces the lab's TUNE; the economy simulated; the CRT
   and pack labs and `packet-machine/` archived; browser checks on GitHub.
-- 13 Oct (v0.69.0): the new Career in the game: Career opens the hub on a
-  fresh save of its own; Settings → Career goes back to the classic one.
-  The v0.68.0 home-screen copy (`new-career/`) and the preview lab are gone.
 
 ## Open items (verified, not scheduled)
 
