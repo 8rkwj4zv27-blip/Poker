@@ -114,9 +114,6 @@
 @keyframes sdHeatFlash{ 0%{ opacity:1; background:#FFF6DC; box-shadow:0 0 24px #FFE38A; } 100%{ opacity:0; } }
 .sd-ember{ width:3px; height:3px; background:var(--hc); box-shadow:0 0 4px var(--hc); }
 
-/* ---------------- SHOW ---------------- */
-.seat.you .seat-cards.sd-shown .card{ transform:translateY(-8px); box-shadow:0 0 0 2px var(--pc-lamp-amber),0 0 14px color-mix(in srgb,var(--pc-lamp-amber) 50%,transparent),0 5px 0 rgba(0,0,0,.5); transition:transform .18s steps(3,end); }
-
 /* Reduced Motion: the beats hold still (js/showdown.js also cuts their waits) */
 [data-motion="off"] .sd-dipper{ display:none; }
 [data-motion="off"] .sd-peek, [data-motion="off"] .sd-lift, [data-motion="off"] #console-face-award.sd-lit .btn-award-console:disabled,

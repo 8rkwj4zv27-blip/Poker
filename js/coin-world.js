@@ -1894,6 +1894,7 @@
     b.el.style.visibility=''; if (b.sh) b.sh.style.visibility='';
     if (b.opts.onStart){ const f=b.opts.onStart; b.opts.onStart=null; f(); }
     const t=b.target, s=b.next;
+    if (b.opts.jit){ b.opts.jit=false; b.x+=rr(-3,3); b.y+=rr(-2,2); }
     b.x0=b.x; b.y0=b.y; b.z0=b.z; b.t=0;
     if (s==='tidy' || s==='push'){ b.state=s; return; }
     if (s==='fall'){ b.state='air'; b.t=.1; return; }
@@ -2522,9 +2523,12 @@
       let T=flightT(dist)*(pl.T||1), flips=pl.flips, toss=false;
       if (kind==='test') T=Math.max(T,1.05);
       if (tossers.has(i)){ T=Math.max(.5,T*rr(1.7,2.1)); flips=rint(3,5); toss=true; }
-      if (OPT.hand==='bloom'||kind!=='lob'){ it.b.x+=rr(-3,3); it.b.y+=rr(-2,2); }
+      // (the little nudge off the hand is given as each coin leaves, in
+      // begin(): a coin still waiting its turn in a pile keeps its place,
+      // so the pot's towers stand until their chips fly)
+      const jit=OPT.hand==='bloom'||kind!=='lob';
       const loose=!it.to.slot&&!it.to.vanish&&!it.to.mouth&&!it.to.via;
-      return launch(it.b,it.to,{ big, combo, wait:pl.t+delay, T:eased()?undefined:T, i, mode:pl.mode, tumble:pl.tumble, grip:pl.grip, toss,
+      return launch(it.b,it.to,{ big, combo, wait:pl.t+delay, T:eased()?undefined:T, i, mode:pl.mode, tumble:pl.tumble, grip:pl.grip, toss, jit,
         jx:loose?rr(-6,6):0, jy:loose?rr(-3,3):0, flips, onStart:it.onStart }).then(()=>{ if (it.onLand) it.onLand(); });
     }));
   }

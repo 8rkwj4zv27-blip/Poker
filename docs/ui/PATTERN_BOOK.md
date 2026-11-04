@@ -310,7 +310,7 @@ faces iPhone Safari drew behind the live keys.
 
 | Part | Order | The finish |
 |---|---|---|
-| The drum | **DRUM · 4 SIDES**, **ALWAYS DOWN** | FOLD / CHECK / RAISE, QUICK RESOLVE, AWARD POT (with SHOW) and the results keys are sides of one four-sided drum; each change rolls it down one side. |
+| The drum | **DRUM · 4 SIDES**, **ALWAYS DOWN** | FOLD / CHECK / RAISE, QUICK RESOLVE, AWARD POT and the results keys are sides of one four-sided drum; each change rolls it down one side. |
 | The turn | **MEDIUM**, **CLUNK**, **CHUNKY · 20 FPS** | About a third of a second, stepped like the rest of the machine; it runs a little past and knocks back. No taps while it turns. Ticks and a catch (`Sound.wheelTooth`, `Sound.wheelCatch`). |
 | Shading, panels | **ON**, **WHILE IT TURNS** | Each side darkens as it turns away; a painted panel backs every side only while it turns, so at rest the keys sit in the well as before. |
 | The housing | bezel, **WINDOW WHILE IT TURNS** | The bay is a dark well with a fixed bezel over the drum (ink edge, a thin brass ring); the drum shows only through its opening, with dark lips top and bottom while it turns. The bay is 10px taller in portrait (101px; 94px on short phones), the room going between the instruments and the bezel. |

@@ -5,8 +5,8 @@ in the same pull request as the change (rules in `CLAUDE.md`, "Handover
 note"). Keep it to one screen: replace old lines rather than adding to them.
 If this note and the code disagree, the code wins.
 
-Build: `v0.71.1-dev · Dashboard tidy`
-Updated: 4 November 2026 (v0.71.1: dashboard tidy)
+Build: `v0.71.2-dev · Pot towers, no SHOW key`
+Updated: 4 November 2026 (v0.71.2: pot towers, no SHOW key)
 
 ## Where the game is
 
@@ -25,6 +25,8 @@ the table sweep, the lab suites) pass.
 
 ## Recent changes (newest first)
 
+- 4 Nov (v0.71.2): the pot's towers stand until their chips fly (AWARD
+  no longer jitters them into a heap); the fold-win SHOW key removed.
 - 4 Nov (v0.71.1): dashboard tidy: the rim lamp widened to meet its glow
   (no green strip), no seam above the keys, no rule under SB / BB.
 - 13 Oct (v0.71.0): the event clock (no more counter on a face), duels
@@ -33,14 +35,13 @@ the table sweep, the lab suites) pass.
   clash since v0.69); the table sweep. Owner signed off; classic card
   fronts kept (the card-faces and new-career labs archived).
 - 13 Oct (v0.70.0): the New Career polish pass (Stage 6 of the
-  [plan](career/INVITATIONS_PLAN.md)): the hub on its own screen, every
-  move on the drum (shop included); one result stage for every invitation
-  finish; the result on the hub; ABANDON; starter and pity wrappers; the
-  safe area; MORE replaces the lab's TUNE; the economy simulated; the CRT
-  and pack labs and `packet-machine/` archived; browser checks on GitHub.
+  [plan](career/INVITATIONS_PLAN.md)): the hub on its own screen, one
+  result stage for every invitation finish, ABANDON, the economy simulated.
 
 ## Open items (verified, not scheduled)
 
+- Your bank's rack reshuffles on a win, after a hand and after a bet; the
+  owner wants wins to land on top. Next up (first attempt: `e2f8af9`).
 - New Career: the opening reads sound/motion/haptics once per load (a
   Settings change applies after a reload); packets added to a felt that
   already has one can land on it; lab-only code still ships inside

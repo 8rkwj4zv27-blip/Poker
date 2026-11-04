@@ -24,7 +24,6 @@
                about the table and settle, then pick themselves up into
                the bank); their shove and gloat; the chop; your loss; the
                stack counting up coin by coin
-     fold win  a SHOW key for your cards
 
    The player's choices live in Settings → Showdown (settings.sd*): when
    the smash plays and its force, bounces, heat and pick-up, the win-chance
@@ -45,7 +44,7 @@ const Showdown = (function(){
   const ORDER = {
     lock:'console', runout:'called', river:'sweat', order:'casino', callout:'leader', losers:'lit', cards:'clear',
     verdict:'duel', stamp:'rail', kicker:'plate', split:'stamp', pots:'stacks', award:'each',
-    tiers:'on', smash:'cook', smashon:'monster', opp:'gloat', chop:'chop', loss:'dim', meters:'count', show:'key',
+    tiers:'on', smash:'cook', smashon:'monster', opp:'gloat', chop:'chop', loss:'dim', meters:'count',
     equity:'off', press:'always',
     cheat:'ember', ctime:'1000', csteps:'9', ccoins:'glow', crattle:'shiver', csparks:'embers', csound:'sizzle', cfull:'hold',
     cforce:'huge', cbounce:'lots', cwalls:'frame', croll:'on', cdir:'out', cstop:'90', cjolt:'small', ccool:'flight',
@@ -1164,9 +1163,7 @@ const Showdown = (function(){
       if (humanIn && !humanWonContested && !foldWin) lossBeat();
       if (main.cards) await hold(quiet() ? 0 : SHOWDOWN_RAIL_TIMING.readableHoldMs);
       showHudResultConsole(potResults);
-      if (foldWin && opt('show') === 'key' && main.winnerIds[0] === 'you') offerShow();
       await awardGate('Award Pot · ' + totalAmount.toLocaleString(), press, smashIn(shown));
-      closeShow();
       hideHudResultConsole();
       await clearShowdownRailPresentation(); clearVerdict();
       shown.forEach(settle);
@@ -1184,43 +1181,6 @@ const Showdown = (function(){
       ? { type:'showdown', potResults, contenders, winnerIds }
       : { type:'foldwin', winner:g.players.find(p => p.id === potResults[0].winnerIds[0]), amount:potResults[0].amount };
     await finishHand(outcome);
-  }
-
-  /* ---------------- 7 · SHOW (a fold win) ---------------- */
-  function offerShow(){
-    const second = $('btn-result-secondary'), face = $('console-face-award');
-    if (!second || !face) return;
-    face.classList.add('has-secondary');
-    second.classList.remove('hidden'); second.disabled = false;
-    second.textContent = 'Show';
-    second.onclick = () => { second.disabled = true; showCards(); };
-  }
-  function closeShow(){
-    const second = $('btn-result-secondary'), face = $('console-face-award');
-    if (face) face.classList.remove('has-secondary');
-    if (second){ second.onclick = null; second.classList.add('hidden'); second.disabled = false; second.textContent = 'Main Menu'; }
-  }
-  function showCards(){
-    const g = game, me = g.players.find(p => p.isHuman); if (!me) return;
-    Sound.buttonRelease && Sound.buttonRelease('award');
-    const cards = document.querySelector('#hud-mid .seat.you .seat-cards');
-    if (cards) cards.classList.add('sd-shown');
-    const res = g.board.length >= 3 ? evaluate7(me.hand.concat(g.board)) : null;
-    const pair = me.hand[0].value === me.hand[1].value;
-    const real = res ? (res.cat >= 2 || (res.cat === 1 && me.hand.some(c => c.value === res.tiebreak[0]) && res.tiebreak[0] >= 10))
-                     : (pair || Math.min(me.hand[0].value, me.hand[1].value) >= 11);
-    const txt = me.hand.map(c => RK(c.value) + c.suit).join(' ');
-    setBanner('<span class="crt-line-primary">YOU SHOW ' + esc(txt) + '</span><span class="crt-line-secondary">' + (real ? 'THE REAL THING' : 'A BLUFF!') + '</span>');
-    logMsg('You show ' + txt);
-    Sound.cardFlip && Sound.cardFlip(false);
-    g.players.forEach(p => {
-      if (p.isHuman || p.eliminated || !p.folded) return;
-      try{
-        playReactionSequence(p.id, real
-          ? [{ mood:pick(['relieved1','neutral2']), ms:500 }, { mood:'neutral1', ms:1600 }]
-          : [{ mood:'shocked1', ms:420 }, { mood:pick(['angry1','displeased1','furious']), ms:2200 }]);
-      }catch(err){}
-    });
   }
 
   /* ---------------- handleShowdown (production copy + the beats) ---------------- */
@@ -1355,7 +1315,7 @@ const Showdown = (function(){
     try{ coolCoins(0); shiverStop(); }catch(e){}
     const dock = $('your-seat-dock'); if (dock) dock.classList.remove('sd-lost');
     document.querySelectorAll('.sd-loser').forEach(el => el.classList.remove('sd-loser'));
-    document.querySelectorAll('.sd-shown,.sd-lift').forEach(el => el.classList.remove('sd-shown', 'sd-lift'));
+    document.querySelectorAll('.sd-lift').forEach(el => el.classList.remove('sd-lift'));
     const face = $('console-face-award'); if (face) face.classList.remove('sd-lit');
     const btn = $('btn-award-pot-console'); if (btn) btn.disabled = false;
     if (CW()) Object.keys(CW().zones).forEach(k => { if (k.startsWith('sd:')) delete CW().zones[k]; });

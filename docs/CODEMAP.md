@@ -493,8 +493,8 @@ options. Injects only its controls; the screens are the game's own.
 
 ## `js/action-drum.js` + `css/action-drum.css` — the key bay's drum (live, v0.48.0)
 
-The bottom console's sides (FOLD/CHECK/RAISE, QUICK RESOLVE, AWARD POT +
-SHOW, the results keys) are faces of one four-sided drum that rolls down a
+The bottom console's sides (FOLD/CHECK/RAISE, QUICK RESOLVE, AWARD POT, the
+results keys) are faces of one four-sided drum that rolls down a
 side at each change, inside a fixed bezel over a dark well. It replaced
 the two nested CSS flips (`#console-flip`, `#actions-flip`), whose hidden
 faces iPhone Safari drew behind the live keys: no side is hidden by

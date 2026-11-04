@@ -1,4 +1,4 @@
-const CACHE_NAME = 'poker-v71-1';
+const CACHE_NAME = 'poker-v71-2';
 const APP_SHELL = [
   './',
   './index.html',
@@ -30,10 +30,10 @@ const APP_SHELL = [
   './css/table-room.css?v=1',
   './css/knockout.css?v=63',
   './css/event-clock.css?v=71-0',
-  './css/showdown.css?v=1',
+  './css/showdown.css?v=71-2',
   './css/dealer-deck.css?v=4',
   './css/deal-styles.css?v=1',
-  './css/card-holder.css?v=1',
+  './css/card-holder.css?v=71-2',
   './css/action-drum.css?v=2',
   './css/knock-check.css?v=1',
   './css/award-key.css?v=1',
@@ -51,7 +51,7 @@ const APP_SHELL = [
   './js/04-modes-and-scoring.js?v=71-0',
   './js/05-game-engine.js?v=71-0',
   './js/06-presentation.js?v=71-0',
-  './js/coin-world.js?v=64-6',
+  './js/coin-world.js?v=71-2',
   './js/coin-table.js?v=64',
   './js/coin-bank.js?v=64-6',
   './js/bank-load.js?v=1',
@@ -73,7 +73,7 @@ const APP_SHELL = [
   './js/crt.js?v=2',
   './js/finishes.js?v=4',
   './js/press-feel.js?v=64-5',
-  './js/showdown.js?v=64-6',
+  './js/showdown.js?v=71-2',
   './js/event-tape.js?v=64-6',
   './js/dealer-deck.js?v=5',
   './js/deal-styles.js?v=2',
