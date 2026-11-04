@@ -361,12 +361,13 @@ const CoinTable = (function(){
   }
   const valueOf = list=>list.reduce((a,b)=>a+CW.valueOf(b.colour),0);
   // a piece the hoard gives up: the highest of its kind that nothing sits on
-  function topOf(z, col){
+  // (`onlyFree`: none at all rather than one with something on it)
+  function topOf(z, col, onlyFree){
     // (resting pieces first; one still falling in will do)
     let pool = z.list.filter(b=>b.state==='rest' && (!col || b.colour===col));
     if (!pool.length) pool = z.list.filter(b=>!col || b.colour===col);
     const free = pool.filter(b=>!z.list.some(q=>q!==b && q.state==='rest' && q.z>b.z+.5 && CW.clash(b.x,b.y,b.colour,b.d,q)));
-    return (free.length ? free : pool).sort((a,c)=>c.z-a.z)[0] || null;
+    return (free.length ? free : onlyFree ? [] : pool).sort((a,c)=>c.z-a.z)[0] || null;
   }
   function dropIn(z, col, delay, instant){
     const k = CW.zoneBox(z, CW.pieceD(col), col);
@@ -394,17 +395,22 @@ const CoinTable = (function(){
     hoardChain = hoardChain.then(()=>syncHoardNow(instant)).catch(e=>console.error(e));
     return hoardChain;
   }
-  /* THE RACK, settled to the stack: pieces the stack no longer has lift
-     off the tops (a richer one breaking into five when it must), past the
-     count five change up, and what's missing drops in; every coin goes to
-     its exact place (planZone), the others slide over to make room. */
+  /* THE RACK, settled to the stack. In play only the difference changes,
+     on the pile as it stands: what's missing drops on top, what the stack
+     no longer has lifts off the tops. Nothing already there moves, so the
+     bank piles up as you win. A cold load (`instant`), or a pile that
+     would overflow the box, is laid out afresh: lifts off the tops (a
+     richer one breaking into five when it must), past the count five
+     change up, what's missing drops in, every coin to its exact place
+     (planZone), the others sliding over to make room. */
   async function syncRack(instant){
     const h = human(), z = ensureHoard(); if (!h || !z) return;
     const T = CW.TIERS(), u = Math.max(1, (game && game.smallBlind) || 1), want = Math.round(h.chips/u);
-    // the mix of colours the stack earns (as many coins as its count allows,
-    // never more than the rack holds); each colour lifted or added to match
     // past all-gold-and-full the bank is simply full (the readout carries on)
     const most = CW.rackCapacity(z) * CW.valueOf(T[T.length-1]);
+    if (!instant && await topUpPile(z, T, Math.min(want, most), h.chips)) return;
+    // the mix of colours the stack earns (as many coins as its count allows,
+    // never more than the rack holds); each colour lifted or added to match
     const target = CW.composeTiers(Math.min(want, most), hoardCount(h.chips)).counts, adds = [];
     T.forEach((col,i)=>{
       let have = z.list.filter(b=>b.colour===col).length;
@@ -422,6 +428,40 @@ const CoinTable = (function(){
       moves.push(CW.launch(b, { x:o.s.x, y:o.s.y, z:o.s.z, zone:z, slot:true, d:CW.D() }, { mode:'fall', wait:i*40 }));
     });
     await within(Promise.all(moves), 5000/CW.OPT.speed);
+  }
+  // the in-play settle: false when the change won't fit in the box
+  async function topUpPile(z, T, want, chips){
+    let diff = want - valueOf(z.list);
+    const adds = [];
+    if (diff > 0){
+      const c = CW.composeTiers(diff, Math.max(1, hoardCount(chips)-z.list.length)).counts;
+      for (let i=T.length-1; i>=0; i--) for (let k=0; k<c[i]; k++) adds.push(T[i]);
+    }
+    if (z.list.length + adds.length > CW.rackCapacity(z)) return false;
+    for (let guard=0; diff<0 && guard<200; guard++){
+      // (only chips with nothing on them, so the pile never holes)
+      const col = T.slice().reverse().find(k=>CW.valueOf(k)<=-diff && topOf(z, k, true));
+      if (col){ lift(topOf(z, col, true)); diff += CW.valueOf(col); continue; }
+      // only richer chips free: one breaks into five of the next colour
+      // down, on top of the pile (the same value)
+      const big = T.slice(1).find(k=>topOf(z, k, true)); if (!big) break;
+      lift(topOf(z, big, true), true);
+      const down = T[T.indexOf(big)-1];
+      CW.pileAdd(z, [down,down,down,down,down]).forEach(s=>{
+        const b = CW.body(CW.makeChip(down), s.x, s.y, s.z, CW.D());
+        b.zone = z; z.list.push(b); b.target = {}; b.opts = {}; CW.finishRest(b);
+      });
+    }
+    const moves = CW.pileAdd(z, adds).map((s,i)=>{
+      const b = CW.body(CW.makeChip(adds[i]), s.x, s.y, 0, CW.D());
+      b.zone = z; z.list.push(b); b.target = {}; b.opts = {};
+      if (motionOff()){ b.z = s.z; CW.finishRest(b); return Promise.resolve(); }
+      // it drops in from above onto its tower
+      b.z = Math.min(s.z + 46, (z.room||80) - 16); b.vx = b.vy = b.vz = 0; b.fresh = true;
+      return CW.launch(b, { x:s.x, y:s.y, z:s.z, zone:z, slot:true, d:CW.D() }, { mode:'fall', wait:i*40 });
+    });
+    await within(Promise.all(moves), 5000/CW.OPT.speed);
+    return true;
   }
   async function syncHoardNow(instant){
     if (chipsOn()) return syncRack(instant);
@@ -704,11 +744,12 @@ const CoinTable = (function(){
     const kinds = piecesFor(amount, allin, z), items = [];
     if (p.isHuman && viewOn()) return betFromView(p, z, amount, allin, kinds);
     if (p.isHuman && hoardOn()){
-      // off the top of the hoard: the piece of each kind that's highest;
-      // one it hasn't got comes off the peak (settled after the hand)
+      // off the top of the hoard: the piece of each kind that's highest
+      // with nothing on it (so the pile never holes); one it hasn't got
+      // free comes off the peak (settled after the hand)
       const hz = ensureHoard(); if (!hz) return Promise.resolve();
       kinds.forEach(col=>{
-        let b = topOf(hz, col);
+        let b = topOf(hz, col, true);
         if (b) CW.removeFromZone(b);
         else { const t = topOf(hz), k = hz.box; b = CW.body(CW.makeChip(col), t ? t.x : (k.L+k.R)/2, t ? t.y : k.B, t ? t.z+4 : 4, CW.D()); b.fresh = true; }
         const sl = CW.OPT.bankIn==='slot' && slotAt();
@@ -717,8 +758,6 @@ const CoinTable = (function(){
       });
       // all in: nothing stays behind
       if (allin) hz.list.slice().forEach(b=>lift(b));
-      // the rack closes up behind the coins that left
-      if (chipsOn()) setTimeout(()=>CW.applyLayout(hz, CW.planZone(hz, []).map), 260/CW.OPT.speed);
       return within(CW.throwAll(items, kindOf(amount, allin, false), { big:allin }), 6000);
     }
     if (p.isHuman){
@@ -869,9 +908,11 @@ const CoinTable = (function(){
           five.forEach(b=>{ list.splice(list.indexOf(b),1); CW.removeBody(b); b.el.remove(); gone(); });
           list.push(nb); leaving++;
         }
-        // every coin's place on the rack, planned before it's thrown
-        const plan = CW.planZone(hz, list.map(b=>b.colour)); CW.applyLayout(hz, plan.map);
-        const at = new Map(list.map((b,i)=>[b, plan.extras[i]]));
+        // every coin's place on the pile as it stands, planned before it's
+        // thrown: on top of a tower, or a new one beside it (pileAdd, the
+        // pot's own). Nothing already in the bank moves.
+        const places = CW.pileAdd(hz, list.map(b=>b.colour));
+        const at = new Map(list.map((b,i)=>[b, places[i]]));
         list.sort((a,c)=>at.get(a).z-at.get(c).z);
         onto = (col,b)=>{ const s = at.get(b); return { x:s.x, y:s.y, z:s.z, zone:hz, slot:true, d:CW.D() }; };
       }
