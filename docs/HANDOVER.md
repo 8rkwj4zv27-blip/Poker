@@ -5,8 +5,8 @@ in the same pull request as the change (rules in `CLAUDE.md`, "Handover
 note"). Keep it to one screen: replace old lines rather than adding to them.
 If this note and the code disagree, the code wins.
 
-Build: `v0.71.2-dev · Pot towers, no SHOW key`
-Updated: 4 November 2026 (v0.71.2: pot towers, no SHOW key)
+Build: `v0.71.3-dev · The bank piles up`
+Updated: 4 November 2026 (v0.71.3: the bank piles up)
 
 ## Where the game is
 
@@ -25,6 +25,8 @@ the table sweep, the lab suites) pass.
 
 ## Recent changes (newest first)
 
+- 4 Nov (v0.71.3): the bank piles up: wins land on top (`pileAdd`), no
+  re-sort after a win, hand or bet (owner liked the towers building).
 - 4 Nov (v0.71.2): the pot's towers stand until their chips fly (AWARD
   no longer jitters them into a heap); the fold-win SHOW key removed.
 - 4 Nov (v0.71.1): dashboard tidy: the rim lamp widened to meet its glow
@@ -40,8 +42,6 @@ the table sweep, the lab suites) pass.
 
 ## Open items (verified, not scheduled)
 
-- Your bank's rack reshuffles on a win, after a hand and after a bet; the
-  owner wants wins to land on top. Next up (first attempt: `e2f8af9`).
 - New Career: the opening reads sound/motion/haptics once per load (a
   Settings change applies after a reload); packets added to a felt that
   already has one can land on it; lab-only code still ships inside

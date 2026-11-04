@@ -160,7 +160,9 @@ it stands; tap to tidy into a pyramid; over 100 chips five of a colour
 are PRESSED into one, `mergePile`). Your bank is a rack in rows
 (`rackSlots`: a deep pyramid, four rows of four when full, 192 chips)
 in its own box (`css/coin-hoard.css`); wins stream in through a slot on
-its top edge, bets hop out of it. Settings → Bank (tubes etc.) is gone:
+its top edge and pile up on top as it stands (`pileAdd`; since v0.71.3
+nothing already there moves, and between hands only the difference is
+added or lifted, `topUpPile`), bets hop off the tops. Settings → Bank (tubes etc.) is gone:
 the bank is always the chip pile (`bankStyle` stays saved, unused).
 
 
