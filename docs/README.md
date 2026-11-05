@@ -38,6 +38,7 @@ Last sorted: 7 October 2026 (v0.66.1).
 | [`career/PACK_OPENING_V3_PLAN.md`](career/PACK_OPENING_V3_PLAN.md) | Pack opening rebuild ("The Squeeze"): audit, reference games, plan; approved, slice 1 built |
 | [`career/PACKS_PLAN.md`](career/PACKS_PLAN.md) | Career as packs of event cards: a vending machine, the rip, the ticket case (8 Oct 2026). Its lab (`pack-lab.html`) is archived; the packet tiers it sketched are not built |
 | [`ai/AI_PLAN.md`](ai/AI_PLAN.md) | The opponent AI: tier ladder and baselines |
+| [`ui/CHIP_COLOURS_PLAN.md`](ui/CHIP_COLOURS_PLAN.md) | Chip colours: why bets are mostly white and red, the Chip Colours Lab and its link. In progress |
 
 ## P.I.P. (current reference)
 

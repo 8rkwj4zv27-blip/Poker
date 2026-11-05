@@ -28,7 +28,14 @@ const CoinTable = (function(){
   Object.assign(CW.OPT, { bank:'hoard', bankLabels:'off', bankChange:3 });
   const denomOn = ()=>CW.OPT.denom!=='off';
   // one small coin is the small blind this hand
-  const unit = ()=>Math.max(1, (game && game.smallBlind) || 1);
+  // what a white chip is worth: the small blind (today), or as the Chip
+  // Colours Lab dials it (CW.OPT.white: { div } a share of the small
+  // blind, or { fixed } an amount whatever the blinds)
+  const unit = ()=>{
+    const w = CW.OPT.white;
+    if (w && w.fixed) return w.fixed;
+    return Math.max(1, (game && game.smallBlind) || 1) / ((w && w.div) || 1);
+  };
   // the throw's kind reads the bet in big blinds, whatever the level
   const kindOf = (amount, allin, canShove)=>CW.kindFor(amount*CW.BB/Math.max(1,(game && game.bigBlind)||CW.BB), allin, canShove);
   let laid = null;           // layout key when zones/walls/tray are current
@@ -405,7 +412,7 @@ const CoinTable = (function(){
      (planZone), the others sliding over to make room. */
   async function syncRack(instant){
     const h = human(), z = ensureHoard(); if (!h || !z) return;
-    const T = CW.TIERS(), u = Math.max(1, (game && game.smallBlind) || 1), want = Math.round(h.chips/u);
+    const T = CW.TIERS(), u = unit(), want = Math.round(h.chips/u);
     // past all-gold-and-full the bank is simply full (the readout carries on)
     const most = CW.rackCapacity(z) * CW.valueOf(T[T.length-1]);
     if (!instant && await topUpPile(z, T, Math.min(want, most), h.chips)) return;
@@ -467,7 +474,7 @@ const CoinTable = (function(){
     if (chipsOn()) return syncRack(instant);
     const h = human(), z = ensureHoard(); if (!h || !z) return;
     const drops = [];
-    const u = Math.max(1, (game && game.smallBlind) || 1), want = Math.round(h.chips/u);
+    const u = unit(), want = Math.round(h.chips/u);
     // past what the box holds: the hoard is simply full (every kind at
     // its cap); the STACK readout keeps the figure
     const capUnits = chipsOn() ? Infinity : HOARD_CAP.gold + HOARD_CAP['gold-big']*5 + HOARD_CAP['gold-bar']*25;
