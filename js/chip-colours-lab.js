@@ -7,12 +7,12 @@
    Lab's host, js/showdown-lab-host.js, which keeps the picks across a
    reload). A TUNE key opens a bottom sheet:
 
-     WHITE CHIP      what a white chip is worth at 10/20 (today 10, the
-                     small blind); a cheaper white means more chips per
+     WHITE CHIP      what a white chip is worth at 10/20 (the game: 2,
+                     since v0.71.4; 10 before); a cheaper white means more chips per
                      bet, so the game's "five of a colour change up" step
                      brings in red, green, black and purple sooner
-     AS BLINDS RISE  chip values follow the blinds (today), or stay fixed
-                     so bigger stakes show richer colours
+     AS BLINDS RISE  chip values follow the blinds, or stay fixed (the
+                     game, since v0.71.4) so bigger stakes show richer colours
      MOST IN A BET   the most chips one bet throws (today 16)
      BLINDS          the next hand's blinds, every stack reset to 50 big
                      blinds, to watch the colours climb
@@ -24,7 +24,7 @@
    ============================================================ */
 (() => {
   const host = (() => { try{ return parent !== window && parent.__lab ? parent.__lab : null; }catch(e){ return null; } })();
-  const TODAY = { white:10, mode:'follow', cap:16, blinds:'10' };
+  const TODAY = { white:'2', mode:'fixed', cap:'16', blinds:'10' };
   const st = Object.assign({}, TODAY, (host && host.state.chip) || {});
   const CW = () => window.CoinWorld;
   const BLINDS = { '10':[10,20], '25':[25,50], '50':[50,100], '100':[100,200], '250':[250,500] };
@@ -57,8 +57,8 @@
 
   /* ---- the sheet ---- */
   const ROWS = [
-    ['white','WHITE CHIP IS WORTH', [['10','10 · TODAY'],['5','5'],['2','2'],['1','1']], 'At 10/20 blinds. The cheaper the white, the more chips each bet needs, so more of them change up into the other colours.'],
-    ['mode','AS BLINDS RISE', [['follow','VALUES FOLLOW · TODAY'],['fixed','FIXED VALUES']], 'FOLLOW: a raise of 3 big blinds looks the same at any stakes. FIXED: the same chips keep their value, so bigger blinds bring in richer colours.'],
+    ['white','WHITE CHIP IS WORTH', [['10','10'],['5','5'],['2','2 · TODAY'],['1','1']], 'At 10/20 blinds. The cheaper the white, the more chips each bet needs, so more of them change up into the other colours.'],
+    ['mode','AS BLINDS RISE', [['follow','VALUES FOLLOW'],['fixed','FIXED VALUES · TODAY']], 'FOLLOW: a raise of 3 big blinds looks the same at any stakes. FIXED: the same chips keep their value, so bigger blinds bring in richer colours.'],
     ['cap','MOST CHIPS IN ONE BET', [['16','16 · TODAY'],['12','12'],['20','20'],['24','24']], 'An all in throws up to 8 more.'],
     ['blinds','BLINDS FROM THE NEXT HAND', [['10','10/20'],['25','25/50'],['50','50/100'],['100','100/200'],['250','250/500']], 'Every stack is reset to 50 big blinds when they change.']
   ];

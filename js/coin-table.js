@@ -18,6 +18,10 @@ const CoinTable = (function(){
   'use strict';
   const CW = window.CoinWorld;
   Object.assign(CW.OPT, { denom:'on', betCap:16, allinCap:24, spotCap:30, potCap:100 });
+  // a white chip is worth 2, whatever the blinds (owner, Chip Colours Lab,
+  // v0.71.4): bets need more chips, so five of a colour change up sooner
+  // and every colour shows; bigger blinds bring the richer ones
+  Object.assign(CW.OPT, { white:{ fixed:2 } });
   // chips: the pot is always a pyramid, like the bank (owner)
   Object.assign(CW.OPT, { potShape:'pyramid' });
   // Lab 2 (coin-bank-lab.html): the bank's inside, js/coin-bank.js's View
@@ -28,9 +32,9 @@ const CoinTable = (function(){
   Object.assign(CW.OPT, { bank:'hoard', bankLabels:'off', bankChange:3 });
   const denomOn = ()=>CW.OPT.denom!=='off';
   // one small coin is the small blind this hand
-  // what a white chip is worth: the small blind (today), or as the Chip
-  // Colours Lab dials it (CW.OPT.white: { div } a share of the small
-  // blind, or { fixed } an amount whatever the blinds)
+  // what a white chip is worth (CW.OPT.white): { fixed } an amount
+  // whatever the blinds (the game: 2), or { div } a share of the small
+  // blind (the Chip Colours Lab; unset, the small blind itself)
   const unit = ()=>{
     const w = CW.OPT.white;
     if (w && w.fixed) return w.fixed;

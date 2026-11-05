@@ -1,6 +1,6 @@
 # Chip colours
 
-Started 5 November 2026. In progress: the lab is with the owner.
+Started 5 November 2026. Shipped in v0.71.4 (the owner's picks below).
 
 ## The ask
 
@@ -41,4 +41,6 @@ Owner's link: https://claude.ai/artifact/U4Kb9QQErSKGFDX6rovsZS
 
 ## Decisions
 
-None yet.
+5 Nov (owner, in the lab): white chip 2, values fixed, at most 16 chips
+in a bet. Shipped in v0.71.4 as `CoinWorld.OPT.white = { fixed:2 }`
+(`js/coin-table.js`). New colours between the six stay parked.
