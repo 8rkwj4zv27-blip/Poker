@@ -40,8 +40,9 @@ reached `main`. Releases before v0.39.8 are recorded in
   and a tool that plays whole Career events to measure it
   (`validation/tools/event-sim.js`).
 
-## v0.71 — 13 October and 4 November 2026
+## v0.71 — 13 October to 5 November 2026
 
+- **v0.71.4** Every chip colour. A white chip is now worth 2 whatever the blinds (it was one small blind), so bets, the pot and your bank show red, green, black and purple chips instead of mostly white and red, with about as many chips thrown as before. As the blinds rise the same bets bring in the richer colours. Picked in the Chip Colours Lab.
 - **v0.71.3** The bank piles up. Your winnings land on top of the chips already in your bank, building towers where they fall, and the bank no longer re-sorts itself into neat rows after every win, hand and bet. A bet takes chips off the tops; tap the bank to tidy it into a pyramid.
 - **v0.71.2** The pot's towers stand until their chips fly: pressing AWARD POT no longer knocks every tower askew into a loose heap first (each chip's little nudge now comes as it leaves). The SHOW key after a fold win is gone; the award key is the only one.
 - **v0.71.1** Dashboard tidy. The lit rim round your console runs straight into its glow: the thin green strip between them is gone, corners included. No more thin lines across the console above FOLD / CALL / RAISE, or under the SB / BB lamps.

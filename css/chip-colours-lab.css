@@ -1,0 +1,17 @@
+/* Chip Colours Lab (phone-first): the chip key and the example bets in
+   the sheet. The TUNE key and the sheet itself are the Showdown Lab's
+   (css/showdown-lab.css). Lab only: never loaded by the game. */
+.ccl-sheet{ height:78%; }
+.ccl-key{ display:grid; grid-template-columns:repeat(6,1fr); gap:4px; padding:8px 4px; background:#080405; border-radius:3px; }
+.ccl-keycell{ display:flex; flex-direction:column; align-items:center; gap:3px; text-align:center; }
+.ccl-keycell b{ font-family:var(--font-hdr); font-size:7px; font-weight:400; color:#F3E6C4; }
+.ccl-keycell small{ font-size:10px; color:#B69A7A; }
+.ccl-chip{ display:inline-block; width:16px; height:16px; border-radius:50%; background-size:100% 100%; image-rendering:pixelated; }
+.ccl-keycell .ccl-chip{ width:26px; height:26px; }
+.ccl-chip:not(.is-art){ box-shadow:inset 0 0 0 2px rgba(0,0,0,.35); }
+.ccl-t0:not(.is-art){ background:#f3eee2; } .ccl-t1:not(.is-art){ background:#d0362a; } .ccl-t2:not(.is-art){ background:#1f9a57; }
+.ccl-t3:not(.is-art){ background:#1d1d23; } .ccl-t4:not(.is-art){ background:#8a3cc0; } .ccl-t5:not(.is-art){ background:#d9a93a; }
+.ccl-bet{ display:flex; align-items:center; gap:8px; padding:7px 0; border-bottom:1px dashed rgba(182,154,122,.18); }
+.ccl-betname{ flex:0 0 112px; font-family:var(--font-hdr); font-size:7px; letter-spacing:.04em; line-height:1.5; color:#F3E6C4; }
+.ccl-betname small{ display:block; font-family:var(--font-px); font-size:11px; letter-spacing:0; color:#B69A7A; }
+.ccl-pile{ display:flex; flex-wrap:wrap; gap:2px; }

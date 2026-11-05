@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#140709">
+  <link rel="icon" href="data:,">
+  <title>Chip Colours Lab</title>
+  <!-- Phone-first Lab (docs/ui/CHIP_COLOURS_PLAN.md). The page is just the
+       real game, full screen; the lab's controls run inside it
+       (js/chip-colours-lab.js: a TUNE key and a bottom sheet). The host is
+       the Showdown Lab's (js/showdown-lab-host.js): it loads the game copy
+       and keeps the picks across a reload. Never linked from the game;
+       never touches a real save (the copy runs on in-memory storage). -->
+  <style>
+    html,body{ height:100%; margin:0; background:#140709; overflow:hidden; }
+    #sdl-game{
+      position:fixed; top:env(safe-area-inset-top,0px); left:50%;
+      width:min(100vw,430px); height:calc(100% - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px));
+      transform:translateX(-50%); border:0; display:block; background:#0C1510;
+    }
+    @media (min-width:600px){ #sdl-game{ box-shadow:0 0 0 3px #080405,0 20px 60px rgba(0,0,0,.6); } }
+  </style>
+</head>
+<body>
+  <iframe id="sdl-game" title="The Table (lab copy)" allow="autoplay"></iframe>
+  <!-- What goes into the game copy: the lab's controls (and the sheet's
+       look, shared with the Showdown Lab). Read by validation/tools/lab-bundle.js. -->
+  <script type="application/json" id="lab-inject">{"css":["css/showdown-lab.css","css/chip-colours-lab.css"],"js":["js/chip-colours-lab.js"],"strip":[],"v":"1"}</script>
+  <script src="js/showdown-lab-host.js?v=7"></script>
+</body>
+</html>

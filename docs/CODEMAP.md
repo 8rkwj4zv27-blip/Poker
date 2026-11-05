@@ -155,7 +155,8 @@ misdisplayed), it's here, not in `05-game-engine.js`.
 Since v0.46.0 the coins are POKER CHIPS (built in the Chip Lab, below;
 docs/ui/CHIP_PLAN.md rounds 4-7): one coin shape, its value in its colour
 on a x5 ladder (silver, red, green, black, purple, gold), design TINT,
-CASINO colours. The pot grows as one pile (`pileAdd`: bets land on it as
+CASINO colours. A white is worth 2 at any blinds (`CW.OPT.white`,
+`unit()`; one small blind before v0.71.4), so every colour shows. The pot grows as one pile (`pileAdd`: bets land on it as
 it stands; tap to tidy into a pyramid; over 100 chips five of a colour
 are PRESSED into one, `mergePile`). Your bank is a rack in rows
 (`rackSlots`: a deep pyramid, four rows of four when full, 192 chips)
