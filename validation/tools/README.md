@@ -230,3 +230,27 @@ them, `CAREER_PACKETS`) and runs whole Careers: $500 and the starter, every
 card played, a House Packet whenever the bankroll allows, the pity packet
 at rock bottom; the bankroll after 10, 25, 50 and 100 events. Read-only.
 About half an hour (the real AI).
+
+## `moments.js` — the moments library (every screen, photographed)
+
+```
+node validation/tools/moments.js --out <scratchpad>/moments [--size 390x844] [--only front,quickdeal,...]
+node validation/tools/moments.js --out <scratchpad>/moments --page-only
+```
+
+Walks the real game in an emulated iPhone and photographs every screen and
+moment a player sees: the menu, Settings, the Workshop, the first-run tour,
+a Quick Deal hand street by street, every way a hand ends (won, lost,
+split, fold win, all in, K.O.), table cleared, run over, P.I.P. and his
+report, the new Career (hub, packets, album, shop, an invitation won and
+lost), the classic Career and Custom Game. Each flow (`front`, `firstrun`,
+`quickdeal`, `endings`, `pip`, `career`, `classic`, `custom`) starts from
+its own fresh save; `--only` re-shoots some and keeps the rest. DEV helpers
+force the outcomes that can't be dealt on demand. About 25 minutes.
+
+Writes a JPEG per moment, `moments.json`, and `moments.html`, the gallery
+(`moments-page.html` with the list baked in) where the owner marks each
+moment and writes notes (kept in the Artifact's `db`, collection `notes`,
+readable with ArtifactData). Publish it as the owner's link: `file_path`
+`<out>/moments.html`, `root` `<out>`, `files` every `.jpg`, capabilities
+`{db:{}}`; re-publish to the same link after a new shoot.

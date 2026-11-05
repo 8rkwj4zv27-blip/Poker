@@ -34,7 +34,8 @@ function findChromium() {
   const base = '/opt/pw-browsers';
   if (!fs.existsSync(base)) return undefined;
   const dir = fs.readdirSync(base).find(d => d.startsWith('chromium-'));
-  return dir ? path.join(base, dir, 'chrome-linux', 'chrome') : undefined;
+  const exe = dir && ['chrome-linux', 'chrome-linux64'].map(d => path.join(base, dir, d, 'chrome')).find(f => fs.existsSync(f));
+  return exe || undefined;
 }
 
 /* Wraps a page with a touch-event helper (CDP Input.dispatchTouchEvent) and

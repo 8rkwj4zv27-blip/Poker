@@ -6,7 +6,7 @@ note"). Keep it to one screen: replace old lines rather than adding to them.
 If this note and the code disagree, the code wins.
 
 Build: `v0.71.3-dev · The bank piles up`
-Updated: 4 November 2026 (v0.71.3: the bank piles up)
+Updated: 5 November 2026 (the moments library)
 
 ## Where the game is
 
@@ -25,6 +25,9 @@ the table sweep, the lab suites) pass.
 
 ## Recent changes (newest first)
 
+- 5 Nov (tools, no release): the moments library (`tools/moments.js`), every
+  screen photographed; owner's notes in its `db` (`notes`):
+  https://claude.ai/artifact/YE8yzWEAMVrSzSBZRwy2Bs
 - 4 Nov (v0.71.3): the bank piles up: wins land on top (`pileAdd`), no
   re-sort after a win, hand or bet (owner liked the towers building).
 - 4 Nov (v0.71.2): the pot's towers stand until their chips fly (AWARD
@@ -36,9 +39,6 @@ the table sweep, the lab suites) pass.
   hand-count events, the curated tray, playing cards' corners (a class
   clash since v0.69); the table sweep. Owner signed off; classic card
   fronts kept (the card-faces and new-career labs archived).
-- 13 Oct (v0.70.0): the New Career polish pass (Stage 6 of the
-  [plan](career/INVITATIONS_PLAN.md)): the hub on its own screen, one
-  result stage for every invitation finish, ABANDON, the economy simulated.
 
 ## Open items (verified, not scheduled)
 

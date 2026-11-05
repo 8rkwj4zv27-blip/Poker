@@ -61,7 +61,7 @@ Hub and the end screens.
 | `invitation-cards-lab.html`, `js/invitation-cards*.js`, `js/invitation-art.js`, `css/invitation-cards*.css` | Lab: the invitation cards (the hub's card, coloured and finished by rarity, placeholder pixel art per event) over the game. Plan `career/INVITATIONS_PLAN.md` |
 | `js/event-cards.js`, `js/card-inspect.js`, `css/card-inspect.css` | Live in the new Career (and its labs): what an event card is (an invitation's event and its opponents; the prize is the event's own), and the one shared card object and inspect screen (pack opening, album, hub) |
 | `pattern-book.html`, `docs/ui/PATTERN_BOOK.md` | The visual rule book |
-| `validation/*.js` | `npm test` runs them all; one suite per feature. `validation/tools/` holds the play-test, the touch harness, the scenarios, the table sweep, the browser-checks runner, and the AI, event and invitation-economy simulators |
+| `validation/*.js` | `npm test` runs them all; one suite per feature. `validation/tools/` holds the play-test, the touch harness, the scenarios, the table sweep, the moments library (`moments.js`), the browser-checks runner, and the AI, event and invitation-economy simulators |
 | `art-source/` | The owner's original art; the game does not load it |
 | `docs/` | Rules, plans, history: [`docs/README.md`](README.md) says which are current |
 

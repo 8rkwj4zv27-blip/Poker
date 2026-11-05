@@ -1,0 +1,161 @@
+<title>Poker Faces Moments</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Silkscreen&family=VT323&family=IBM+Plex+Sans:wght@400;600&display=swap">
+<style>
+/* Layout: a velvet cabinet; one strip of tabs per part of the game; each moment a phone-sized print with its own note card beside/below. */
+:root{
+  --velvet:#2a0d14; --velvet-2:#3b1420; --felt:#1f4a32; --gold:#d9a93b; --cream:#efe4c8; --ink:#f3ead6; --muted:#c7b593;
+  --crt:#0d1a12; --crt-ink:#9fe3a8; --line:#5a2533; --good:#7fc79e; --warn:#e0a458; --bad:#e0716a;
+  --display:"Silkscreen", "Courier New", monospace; --crtface:"VT323", "Courier New", monospace;
+  --body:"IBM Plex Sans", system-ui, sans-serif;
+  color-scheme:dark;
+}
+html,body{background:var(--velvet);color:var(--ink)}
+body{font-family:var(--body);font-size:15px;line-height:1.45;padding-left:max(16px, env(safe-area-inset-left, 0px));padding-right:max(16px, env(safe-area-inset-right, 0px));padding-block:0 48px;
+  background-image:radial-gradient(circle at 1px 1px, rgba(255,255,255,.035) 1px, transparent 0);background-size:4px 4px}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top, 0px);z-index:10;background:var(--velvet)}
+.wrap{max-width:1100px;margin:0 auto}
+header.top{padding-block:22px 10px;display:grid;gap:8px}
+h1{font-family:var(--display);font-weight:400;font-size:clamp(26px,6vw,40px);color:var(--gold);margin:0;letter-spacing:.04em;text-shadow:3px 3px 0 #000;text-wrap:balance}
+.sub{color:var(--muted);max-width:62ch;margin:0}
+.readout{font-family:var(--crtface);font-size:20px;background:var(--crt);color:var(--crt-ink);border:3px solid #000;box-shadow:inset 0 0 0 2px #26402e, 3px 3px 0 #000;padding:4px 10px;display:flex;flex-wrap:wrap;gap:4px 18px;width:fit-content;max-width:100%}
+.readout b{font-weight:400;color:var(--gold)}
+nav.tabs{position:sticky;top:env(safe-area-inset-top, 0px);z-index:5;background:var(--velvet);padding-block:10px;display:flex;gap:6px;overflow-x:auto;border-bottom:3px solid #000;margin-bottom:18px;scrollbar-width:none}
+nav.tabs::-webkit-scrollbar{display:none}
+nav.tabs button{flex:none;font-family:var(--display);font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--cream);background:var(--velvet-2);border:2px solid #000;box-shadow:0 3px 0 #000;padding:10px 12px;min-height:44px;cursor:pointer;display:flex;gap:6px;align-items:center}
+nav.tabs button .n{font-family:var(--crtface);font-size:17px;color:var(--muted)}
+nav.tabs button[aria-pressed="true"]{background:var(--gold);color:#2a0d14;transform:translateY(2px);box-shadow:0 1px 0 #000}
+nav.tabs button[aria-pressed="true"] .n{color:#2a0d14}
+nav.tabs button:focus-visible, .chip:focus-visible, textarea:focus-visible{outline:3px solid var(--crt-ink);outline-offset:2px}
+section.group{display:grid;gap:22px}
+section.group[hidden]{display:none}
+.gh{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap}
+.gh h2{font-family:var(--display);font-weight:400;font-size:20px;color:var(--gold);margin:0}
+.gh p{margin:0;color:var(--muted)}
+.moments{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,300px),1fr));gap:22px}
+.m{display:grid;gap:10px;align-content:start;min-width:0}
+.print{background:#000;border:3px solid #000;box-shadow:4px 4px 0 #000, inset 0 0 0 2px var(--line);padding:6px;cursor:zoom-in}
+.print img{display:block;width:100%;height:auto;aspect-ratio:390/844;object-fit:cover;background:var(--felt)}
+.cap{display:flex;gap:8px;align-items:baseline}
+.cap .id{font-family:var(--crtface);font-size:17px;color:var(--muted);flex:none}
+.cap h3{margin:0;font-size:15px;font-weight:600;color:var(--cream)}
+.m .note{margin:0;color:var(--muted);font-size:13.5px}
+.verdict{display:flex;gap:6px;flex-wrap:wrap}
+.chip{font-family:var(--display);font-size:10.5px;letter-spacing:.05em;text-transform:uppercase;border:2px solid #000;background:var(--velvet-2);color:var(--cream);padding:8px 10px;min-height:44px;cursor:pointer;box-shadow:0 2px 0 #000}
+.chip[aria-pressed="true"][data-v="ok"]{background:var(--good);color:#10261a}
+.chip[aria-pressed="true"][data-v="tweak"]{background:var(--warn);color:#2a1606}
+.chip[aria-pressed="true"][data-v="redo"]{background:var(--bad);color:#2a0d0d}
+textarea{width:100%;box-sizing:border-box;min-height:64px;resize:vertical;font:inherit;font-size:14px;color:var(--crt-ink);background:var(--crt);border:2px solid #000;box-shadow:inset 0 0 0 2px #26402e;padding:8px}
+textarea::placeholder{color:#5f8a66}
+.saved{font-family:var(--crtface);font-size:16px;color:var(--muted);min-height:1em}
+.m.has-v .print{box-shadow:4px 4px 0 #000, inset 0 0 0 2px var(--gold)}
+.offline{font-size:13px;color:var(--warn)}
+dialog{padding:0;border:3px solid #000;background:#000;max-width:min(96vw,520px);max-height:96vh}
+dialog img{display:block;max-width:100%;max-height:calc(96vh - 60px);width:auto;margin:auto}
+dialog::backdrop{background:rgba(10,3,6,.88)}
+dialog .bar{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:6px;background:var(--velvet-2)}
+dialog .bar span{font-family:var(--display);font-size:11px;color:var(--cream);padding-left:6px}
+dialog button{font-family:var(--display);font-size:11px;min-height:44px;min-width:44px;background:var(--gold);border:2px solid #000;cursor:pointer}
+@media (prefers-reduced-motion: reduce){*{transition:none!important}}
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <h1>Poker Faces Moments</h1>
+    <p class="sub">Every screen and moment the player sees, photographed from the current build on an emulated iPhone (390×844). Tap a picture to see it full size. Mark each one and write what you want changed; your notes are saved here and I can read them back.</p>
+    <div class="readout" id="readout"><span>BUILD <b id="r-build">—</b></span><span>MOMENTS <b id="r-count">0</b></span><span>REVIEWED <b id="r-done">0</b></span></div>
+    <p class="offline" id="offline" hidden>Notes can't be saved in this view. You can still look through every moment.</p>
+  </header>
+  <nav class="tabs" id="tabs" aria-label="Parts of the game"></nav>
+  <main id="groups"></main>
+</div>
+<dialog id="zoom"><div class="bar"><span id="zoom-t"></span><button type="button" id="zoom-x">Close</button></div><img id="zoom-img" alt=""></dialog>
+
+<script type="application/json" id="data">__DATA__</script>
+<script>
+(function(){
+  const D = JSON.parse(document.getElementById('data').textContent);
+  const $ = id => document.getElementById(id);
+  const groups = []; const by = {};
+  D.moments.forEach(m => { if (!by[m.group]){ by[m.group] = []; groups.push(m.group); } by[m.group].push(m); });
+  $('r-build').textContent = D.build; $('r-count').textContent = D.moments.length;
+  const notes = {}; let db = null;
+  const els = {};
+  const tabs = $('tabs'), main = $('groups');
+  let cur = null; try { cur = localStorage.getItem('pf-moments-tab'); } catch(e){}
+  if (!by[cur]) cur = groups[0];
+  groups.forEach(g => {
+    const b = document.createElement('button'); b.type = 'button';
+    b.innerHTML = '<span></span><span class="n"></span>';
+    b.firstChild.textContent = g; b.lastChild.textContent = by[g].length;
+    b.onclick = () => show(g); b.dataset.g = g; tabs.appendChild(b);
+    const s = document.createElement('section'); s.className = 'group'; s.dataset.g = g;
+    const gh = document.createElement('div'); gh.className = 'gh';
+    const h = document.createElement('h2'); h.textContent = g; gh.appendChild(h);
+    if (D.groupNotes && D.groupNotes[g]){ const p = document.createElement('p'); p.textContent = D.groupNotes[g]; gh.appendChild(p); }
+    s.appendChild(gh);
+    const grid = document.createElement('div'); grid.className = 'moments'; s.appendChild(grid);
+    by[g].forEach(m => grid.appendChild(card(m)));
+    main.appendChild(s);
+  });
+  function show(g){
+    cur = g; try { localStorage.setItem('pf-moments-tab', g); } catch(e){}
+    tabs.querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', b.dataset.g === g));
+    main.querySelectorAll('section.group').forEach(s => s.hidden = s.dataset.g !== g);
+  }
+  function card(m){
+    const a = document.createElement('article'); a.className = 'm'; a.id = 'm-' + m.id;
+    const pr = document.createElement('div'); pr.className = 'print'; pr.tabIndex = 0; pr.setAttribute('role', 'button'); pr.setAttribute('aria-label', 'Enlarge ' + m.title);
+    const img = document.createElement('img'); img.loading = 'lazy'; img.src = m.file; img.alt = m.title; pr.appendChild(img);
+    const open = () => { $('zoom-img').src = m.file; $('zoom-t').textContent = m.title; $('zoom').showModal(); };
+    pr.onclick = open; pr.onkeydown = e => { if (e.key === 'Enter' || e.key === ' '){ e.preventDefault(); open(); } };
+    const cap = document.createElement('div'); cap.className = 'cap';
+    const id = document.createElement('span'); id.className = 'id'; id.textContent = m.id;
+    const h = document.createElement('h3'); h.textContent = m.title;
+    cap.append(h, id);
+    a.append(pr, cap);
+    if (m.note){ const p = document.createElement('p'); p.className = 'note'; p.textContent = m.note; a.appendChild(p); }
+    const v = document.createElement('div'); v.className = 'verdict';
+    [['ok','Good as is'],['tweak','Tweak'],['redo','Rethink']].forEach(([k, t]) => {
+      const c = document.createElement('button'); c.type = 'button'; c.className = 'chip'; c.dataset.v = k; c.textContent = t; c.setAttribute('aria-pressed', 'false');
+      c.onclick = () => { const n = notes[m.id] || {}; save(m, { verdict: n.verdict === k ? null : k }); };
+      v.appendChild(c);
+    });
+    const ta = document.createElement('textarea'); ta.id = 'note-' + m.id; ta.placeholder = 'What should change here?';
+    let t = 0; ta.oninput = () => { st.textContent = 'typing…'; clearTimeout(t); t = setTimeout(() => save(m, { text: ta.value }), 900); };
+    const st = document.createElement('div'); st.className = 'saved';
+    a.append(v, ta, st);
+    els[m.id] = { a, v, ta, st };
+    return a;
+  }
+  function paint(id){
+    const e = els[id], n = notes[id] || {};
+    if (!e) return;
+    e.v.querySelectorAll('.chip').forEach(c => c.setAttribute('aria-pressed', c.dataset.v === n.verdict));
+    if (document.activeElement !== e.ta && (n.text || '') !== e.ta.value) e.ta.value = n.text || '';
+    e.a.classList.toggle('has-v', !!n.verdict);
+    $('r-done').textContent = Object.values(notes).filter(x => x && (x.verdict || x.text)).length;
+  }
+  async function save(m, patch){
+    const e = els[m.id];
+    notes[m.id] = Object.assign({}, notes[m.id], patch); paint(m.id);
+    if (!db){ e.st.textContent = 'not saved (this view can\'t keep notes)'; return; }
+    try {
+      await db.collection('notes').doc(m.id).set({ id:m.id, title:m.title, group:m.group, verdict:notes[m.id].verdict || null, text:notes[m.id].text || '', at:new Date().toISOString() });
+      e.st.textContent = 'saved';
+    } catch(err){ e.st.textContent = 'couldn\'t save: ' + (err && err.message || 'try again'); }
+  }
+  $('zoom-x').onclick = () => $('zoom').close();
+  $('zoom').onclick = e => { if (e.target === $('zoom')) $('zoom').close(); };
+  show(cur);
+  (async () => {
+    try { db = window.claude && await window.claude.use('db'); } catch(e){ db = null; }
+    if (!db){ $('offline').hidden = false; return; }
+    db.collection('notes').onSnapshot(snap => {
+      (snap.docs || []).forEach(d => { const x = d.data(); if (x) notes[d.id] = { verdict:x.verdict || null, text:x.text || '' }; });
+      Object.keys(els).forEach(paint);
+    }, () => { $('offline').hidden = false; });
+  })();
+})();
+</script>

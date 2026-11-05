@@ -22,8 +22,8 @@ async function main() {
     console.error('Usage: node contact-sheet.js <shotsDir> <outFile.png> [prefix] [cols]');
     process.exit(1);
   }
-  const files = fs.readdirSync(shotsDir).filter(f => f.endsWith('.png') && f.startsWith(prefix)).sort();
-  if (!files.length) { console.error('No matching PNGs in ' + shotsDir); process.exit(1); }
+  const files = fs.readdirSync(shotsDir).filter(f => /\.(png|jpe?g)$/i.test(f) && f.startsWith(prefix)).sort();
+  if (!files.length) { console.error('No matching images in ' + shotsDir); process.exit(1); }
   const cols = Number(colsArg) || Math.min(6, files.length);
   const cellW = 215;
   const html = '<body style="margin:0;background:#000;display:grid;' +
