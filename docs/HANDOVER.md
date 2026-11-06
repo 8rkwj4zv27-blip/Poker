@@ -6,7 +6,7 @@ note"). Keep it to one screen: replace old lines rather than adding to them.
 If this note and the code disagree, the code wins.
 
 Build: `v0.71.3-dev · The bank piles up`
-Updated: 5 November 2026 (the moments library)
+Updated: 6 November 2026 (Design Language 2, slice 1 lab)
 
 ## Where the game is
 
@@ -25,6 +25,9 @@ the table sweep, the lab suites) pass.
 
 ## Recent changes (newest first)
 
+- 6 Nov (lab, no release): Design Language 2, slice 1 (`look-dev-lab.html`,
+  plan `ui/DESIGN_LANGUAGE_2_PLAN.md`): a hand in the new look, BEFORE/AFTER:
+  https://claude.ai/artifact/KbFvM26Y1b7EdkhzFPf24X
 - 5 Nov (tools, no release): the moments library (`tools/moments.js`), every
   screen photographed; owner's notes in its `db` (`notes`):
   https://claude.ai/artifact/YE8yzWEAMVrSzSBZRwy2Bs
@@ -34,11 +37,6 @@ the table sweep, the lab suites) pass.
   no longer jitters them into a heap); the fold-win SHOW key removed.
 - 4 Nov (v0.71.1): dashboard tidy: the rim lamp widened to meet its glow
   (no green strip), no seam above the keys, no rule under SB / BB.
-- 13 Oct (v0.71.0): the event clock (no more counter on a face), duels
-  (Face to Face, Last Stack Wins), rising blinds + a chip bonus in
-  hand-count events, the curated tray, playing cards' corners (a class
-  clash since v0.69); the table sweep. Owner signed off; classic card
-  fronts kept (the card-faces and new-career labs archived).
 
 ## Open items (verified, not scheduled)
 
@@ -71,9 +69,11 @@ own speech bubbles (`claude/tender-dijkstra-zso8dm`).
 
 ## Next
 
+**Design Language 2** (owner, 6 Nov): the owner judges the look-dev lab on the
+phone; once signed off, write `ui/DESIGN_LANGUAGE_2.md` and roll out (plan, Steps 2-3).
+
 **Career is moving to invitations** (owner, 12 Oct). Stages 1-7 of
-[`career/INVITATIONS_PLAN.md`](career/INVITATIONS_PLAN.md) are live
-(v0.71.0). Next: end screens per format (deferred by the
+[`career/INVITATIONS_PLAN.md`](career/INVITATIONS_PLAN.md) are live (v0.71.0). Next: end screens per format (deferred by the
 owner), the new Career's goal (album + packet tiers recommended), retiring
 the classic Career, the catalogue's size; the special-rules events.
 Workflow: [`WORKFLOW.md`](WORKFLOW.md).

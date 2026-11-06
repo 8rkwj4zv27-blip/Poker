@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#140709">
+  <link rel="icon" href="data:,">
+  <title>Look-Dev Lab</title>
+  <!-- Design Language 2, slice 1 (docs/ui/DESIGN_LANGUAGE_2_PLAN.md): a
+       whole hand in the new language, BEFORE/AFTER on one switch. The page
+       is just the real game, full screen; the lab's controls run inside it
+       (js/look-dev-lab.js: a TUNE key and a bottom sheet). The host script
+       is the Showdown Lab's (js/showdown-lab-host.js). Never linked from
+       the game; never touches a real save (in-memory storage). -->
+  <style>
+    html,body{ height:100%; margin:0; background:#140709; overflow:hidden; }
+    #sdl-game{
+      position:fixed; top:env(safe-area-inset-top,0px); left:50%;
+      width:min(100vw,430px); height:calc(100% - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px));
+      transform:translateX(-50%); border:0; display:block; background:#0C1510;
+    }
+    @media (min-width:600px){ #sdl-game{ box-shadow:0 0 0 3px #080405,0 20px 60px rgba(0,0,0,.6); } }
+  </style>
+</head>
+<body>
+  <iframe id="sdl-game" title="The Table (lab copy)" allow="autoplay"></iframe>
+  <script type="application/json" id="lab-inject">{"css":["css/showdown-lab.css","css/look-dev-lab.css"],"js":["js/look-dev-light.js","js/look-dev-lab.js"],"strip":[],"v":"1"}</script>
+  <script src="js/showdown-lab-host.js?v=7"></script>
+</body>
+</html>

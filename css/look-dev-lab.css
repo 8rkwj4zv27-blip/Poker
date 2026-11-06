@@ -1,0 +1,127 @@
+/* ============================================================
+   LOOK-DEV LAB — Design Language 2, slice 1 (lab only)
+
+   Everything here is scoped to switches on <html>, so the lab's BEFORE
+   (all off) is the game exactly as it ships:
+     data-ll="dom|gl|off"   the lamp (js/look-dev-light.js)
+     .dl2                   the new language: say it once, beats, idle life
+     data-type-*            the type audition (Machine / Print / Marquee)
+   The sheet's own look comes from css/showdown-lab.css (.sdl-*).
+   ============================================================ */
+
+/* ---------------- the lamp ---------------- */
+.ll-gl{ position:absolute; inset:0; width:100%; height:100%; border-radius:inherit; pointer-events:none;
+  image-rendering:pixelated; image-rendering:crisp-edges; }
+.ll-shadows, .ll-glints{ position:absolute; inset:0; pointer-events:none; }
+.ll-shadows i, .ll-glints i{ position:absolute; display:block; }
+.ll-shadows i{ background:#0b0605; }
+/* the glint: a narrow diagonal band of lamp light that slides with position */
+.ll-glints{ z-index:7; }
+.ll-glints i{ overflow:hidden; border-radius:3px; mix-blend-mode:screen;
+  background:linear-gradient(115deg, transparent calc(var(--llg,50%) - 9%), rgba(255,240,205,.0) calc(var(--llg,50%) - 6%),
+    rgba(255,240,205,.30) calc(var(--llg,50%) - 6%), rgba(255,240,205,.30) calc(var(--llg,50%) - 3%),
+    transparent calc(var(--llg,50%) - 3%), transparent calc(var(--llg,50%) + 1%),
+    rgba(255,240,205,.16) calc(var(--llg,50%) + 1%), rgba(255,240,205,.16) calc(var(--llg,50%) + 3%), transparent calc(var(--llg,50%) + 3%)); }
+/* the pool: stepped rings of light (pixel lighting, not a smooth gradient),
+   soft-light over everything on the cloth, so cards and seats are lit too;
+   the corners fall away into a stepped vignette */
+.ll-pool{ position:absolute; inset:0; border-radius:inherit; pointer-events:none; z-index:3;   /* on the cloth, under everything that sits on it */
+  opacity:calc(.55 + (var(--ll-gain,1) - 1) * 1.2);
+  background:radial-gradient(ellipse 62% 46% at var(--ll-lx,50%) var(--ll-ly,30%),
+    rgba(255,232,182,.40) 0 22%, rgba(255,232,182,.29) 22% 38%, rgba(255,232,182,.18) 38% 56%, rgba(255,232,182,.08) 56% 74%, transparent 74%);
+  mix-blend-mode:soft-light; }
+.ll-pool::before{ content:''; position:absolute; inset:0; border-radius:inherit; opacity:var(--ll-warm,0);
+  background:radial-gradient(ellipse 60% 44% at var(--ll-lx,50%) var(--ll-ly,30%), rgba(255,170,70,.75) 0 30%, rgba(255,170,70,.35) 30% 55%, transparent 55%);
+  mix-blend-mode:screen; }
+.ll-pool::after{ content:''; position:absolute; inset:0; border-radius:inherit;
+  background:radial-gradient(ellipse 78% 66% at var(--ll-lx,50%) 44%, transparent 0 62%, rgba(0,0,0,.18) 62% 74%, rgba(0,0,0,.34) 74% 86%, rgba(0,0,0,.5) 86%);
+  mix-blend-mode:multiply; opacity:calc(1.15 - var(--ll-gain,1) * .3); }
+.ll-spot{ position:absolute; width:150px; height:150px; margin:-75px 0 0 -75px; pointer-events:none; z-index:3; opacity:0;
+  transition:opacity .24s steps(3), left .3s steps(4), top .3s steps(4);
+  background:radial-gradient(circle, rgba(255,236,190,.42) 0 30%, rgba(255,236,190,.22) 30% 52%, rgba(255,236,190,.08) 52% 70%, transparent 70%);
+  mix-blend-mode:soft-light; }
+.ll-spot.is-on{ opacity:1; }
+html[data-ll="gl"] .ll-spot{ display:none; }          /* the cloth lights its own spot */
+html[data-ll="gl"] .ll-pool{ opacity:calc(.3 + (var(--ll-gain,1) - 1) * .8); }   /* the cloth carries the light; the pool only touches the objects */
+html[data-ll="gl"] #felt{ background:var(--felt-2); }
+html[data-ll="off"] .ll-pool, html[data-ll="off"] .ll-spot, html[data-ll="off"] .ll-shadows, html[data-ll="off"] .ll-glints{ display:none; }
+
+/* ---------------- say it once (the noise pass) ---------------- */
+/* the showdown: the hand is named once, on the rail over the winning five;
+   the beaten seats dim instead of saying BEATEN; no BEATS slip under the pot */
+html.dl2 .sd-duel{ display:none !important; }
+html.dl2 .seat[data-show-state="beaten"] .ec-read{ visibility:hidden; }
+html.dl2 .seat[data-show-state="beaten"] .seat-card{ filter:saturate(.55) brightness(.62); transition:filter .3s steps(3); }
+/* the console: YOU WIN and the number, nothing else (the rail names the hand) */
+html.dl2 #hud-result .hr-cat, html.dl2 #hud-result .hr-desc, html.dl2 #hud-result .hr-label{ display:none; }
+html.dl2 #hud-result .hr-name{ font-size:22px; letter-spacing:.06em; }
+html.dl2.ll-shown #hand-strength{ visibility:hidden; }   /* the rail already names the hand */
+
+/* ---------------- beats ---------------- */
+/* a card landing: a tiny squash and settle, on the 2-point grid */
+@keyframes ll-land{ 0%{ transform:translateY(-4px) scale(1.04); } 45%{ transform:translateY(0) scale(.97,1.03); } 70%{ transform:translateY(0) scale(1.01,.99); } 100%{ transform:none; } }
+html.dl2 .ll-land{ animation:ll-land .32s steps(6) both; }
+/* the flop lands on the cloth: the felt takes a one-pixel thump */
+@keyframes ll-thump{ 0%,100%{ transform:none; } 30%{ transform:translateY(2px); } }
+html.dl2 #felt.ll-thump{ animation:ll-thump .18s steps(3); }
+/* the showdown hit: one held frame, then a push in on the board */
+@keyframes ll-push{ 0%{ transform:scale(1); } 12%{ transform:scale(1.035); } 70%{ transform:scale(1.025); } 100%{ transform:scale(1); } }
+html.dl2 #felt.ll-push{ animation:ll-push 1.1s steps(11) both; transform-origin:50% 42%; }
+/* the hand readout grows with the hand */
+html.dl2 #hand-strength[data-ll-tier="2"]{ color:var(--crt-money, #f2c14e); }
+html.dl2 #hand-strength[data-ll-tier="3"]{ color:var(--crt-money, #f2c14e); text-shadow:0 0 6px rgba(242,193,78,.55); }
+html.dl2 #hand-strength.ll-grow{ animation:ll-grow .4s steps(4); }
+@keyframes ll-grow{ 0%{ transform:scale(1); } 40%{ transform:scale(1.12); } 100%{ transform:scale(1); } }
+
+/* the award: sparks off the pot toward your bank, gone when they land */
+.ll-spark{ position:fixed; width:4px; height:4px; background:#ffe9a6; box-shadow:0 0 0 2px rgba(255,190,80,.5); z-index:60; pointer-events:none;
+  animation:ll-spark var(--ll-t,.6s) steps(8) forwards; }
+@keyframes ll-spark{ 0%{ transform:translate(0,0); opacity:1; } 60%{ opacity:1; } 100%{ transform:translate(var(--ll-dx), var(--ll-dy)); opacity:0; } }
+
+/* ---------------- always a little alive ---------------- */
+/* the faces breathe (one art pixel, stepped), each on its own clock, and
+   now and then one of them twitches */
+@keyframes ll-breathe{ 0%,100%{ transform:translateY(0); } 50%{ transform:translateY(-2px); } }
+html.dl2.ll-idle #felt .seat:not(.folded):not(.out) .avatar img,
+html.dl2.ll-idle #felt .seat:not(.folded):not(.out) .avatar svg{ animation:ll-breathe 3.4s steps(2) infinite; }
+html.dl2.ll-idle #felt .seat:nth-child(2n) .avatar img{ animation-duration:3.9s; animation-delay:-1.2s; }
+html.dl2.ll-idle #felt .seat:nth-child(3n) .avatar img{ animation-duration:4.4s; animation-delay:-2.1s; }
+@keyframes ll-twitch{ 0%,100%{ transform:none; } 40%{ transform:scale(1.02,.92); } }
+html.dl2 #felt .avatar.ll-twitch img{ animation:ll-twitch .16s steps(2) !important; transform-origin:50% 60%; }
+
+/* ---------------- the type audition ---------------- */
+/* MARQUEE: the big headlines (YOU WIN, the stage titles) */
+html[data-type-marquee="jersey10"] #hud-result .hr-name{ font-family:'Jersey 10', var(--font-hdr); font-size:34px; letter-spacing:.04em; }
+html[data-type-marquee="silkscreen"] #hud-result .hr-name{ font-family:'Silkscreen', var(--font-hdr); font-size:24px; }
+html[data-type-marquee="sixtyfour"] #hud-result .hr-name{ font-family:'Sixtyfour', var(--font-hdr); font-size:20px; }
+/* MACHINE: the CRT readouts (line-height held, so the screens keep their size) */
+html[data-type-machine="vt323"] #banner, html[data-type-machine="vt323"] #hand-strength, html[data-type-machine="vt323"] .ec-read{ font-family:'VT323', var(--font-hdr); font-size:18px; line-height:1; letter-spacing:.02em; }
+html[data-type-machine="tiny5"] #banner, html[data-type-machine="tiny5"] #hand-strength, html[data-type-machine="tiny5"] .ec-read{ font-family:'Tiny5', var(--font-hdr); font-size:14px; line-height:1; letter-spacing:.04em; }
+html[data-type-machine="micro5"] #banner, html[data-type-machine="micro5"] #hand-strength, html[data-type-machine="micro5"] .ec-read{ font-family:'Micro 5', var(--font-hdr); font-size:20px; line-height:1; letter-spacing:.04em; }
+/* whatever the face, the two screens keep today's size, so nothing below them moves */
+html[data-type-machine] #banner{ height:var(--ll-banner-h, auto); overflow:hidden; box-sizing:border-box; }
+html[data-type-machine] #hand-strength{ height:var(--ll-hs-h, auto); overflow:hidden; box-sizing:border-box; }
+/* PRINT: tickets and cards (the table's ticket here, and the sheet's specimen) */
+html[data-type-print="jersey15"] .ti-ticket, html[data-type-print="jersey15"] .ti-ticket *{ font-family:'Jersey 15', var(--font-hdr) !important; letter-spacing:.03em; }
+html[data-type-print="dotgothic"] .ti-ticket, html[data-type-print="dotgothic"] .ti-ticket *{ font-family:'DotGothic16', var(--font-hdr) !important; }
+html[data-type-print="handjet"] .ti-ticket, html[data-type-print="handjet"] .ti-ticket *{ font-family:'Handjet', var(--font-hdr) !important; font-weight:600; letter-spacing:.04em; }
+
+/* ---------------- the sheet's extras ---------------- */
+.ll-fps{ position:fixed; left:calc(8px + env(safe-area-inset-left,0px)); top:calc(8px + env(safe-area-inset-top,0px)); z-index:9998;
+  font:12px/1 ui-monospace,monospace; color:#9fe3a8; background:rgba(0,0,0,.6); padding:4px 6px; pointer-events:none; }
+.ll-fps[hidden]{ display:none; }
+.ll-spec{ margin:10px auto 4px; width:min(100%, 260px); background:#efe2bf; color:#2a1a10; border:2px solid #000; box-shadow:3px 3px 0 #000, inset 0 0 0 3px #d9c79a;
+  padding:12px 14px; display:grid; gap:6px; text-align:center; }
+.ll-spec, .ll-spec *{ font-family:var(--ll-print, var(--font-hdr)) !important; }
+.ll-spec .s1{ font-size:11px; letter-spacing:.08em; opacity:.7; border-bottom:2px dashed #b9a679; padding-bottom:6px; }
+.ll-spec .s2{ font-size:26px; line-height:1.05; }
+.ll-spec .s3{ font-size:13px; letter-spacing:.04em; }
+.ll-spec .s4{ font-size:12px; letter-spacing:.06em; } .ll-spec .s4 b{ font-size:20px; }
+
+@media (prefers-reduced-motion: reduce){
+  html.dl2 .ll-land, html.dl2 #felt.ll-thump, html.dl2 #felt.ll-push, html.dl2 #hand-strength.ll-grow,
+  html.dl2.ll-idle #felt .seat .avatar img, .ll-spark{ animation:none !important; }
+}
+
+/* the TUNE key: a full 44pt target in this lab */
+.sdl-key{ height:44px; min-width:64px; }

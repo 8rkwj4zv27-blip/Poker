@@ -292,6 +292,21 @@ Both pairs are loaded by `index.html` (after `machine-wheel.js`) and
 precached by `sw.js`. `intro-lab.html` runs the real game sandboxed with
 NEW/OLD switches for each, for future tuning.
 
+## `look-dev-lab.html` + `js/look-dev-light.js` + `js/look-dev-lab.js` + `css/look-dev-lab.css` — Look-Dev Lab (Design Language 2, slice 1)
+
+A whole hand in the proposed new language (`docs/ui/DESIGN_LANGUAGE_2_PLAN.md`),
+with a BEFORE/AFTER switch so the same table can be compared. Phone-first like
+`showdown-lab.html` (shares its host `js/showdown-lab-host.js` and its sheet styles
+`css/showdown-lab.css`), injected with `lab-inject`, never touches a real save.
+`js/look-dev-light.js` (`LookLight`) is the lamp over the table: candidate A lays a
+stepped light pool, shadows thrown away from the lamp and sliding glints on their
+own layers (never as filters on the objects); candidate B draws the cloth itself
+on a WebGL 1 canvas, lit per pixel with an ordered dither; `pulse()` drives the
+drama. `js/look-dev-lab.js` is the TUNE sheet (THE LOOK, HANDS, TYPE), the beats
+(cards land and settle, the flop thumps, the showdown holds and pushes in, sparks
+to the bank), idle life, the type audition (Google Fonts, lab only) and dealt
+moments. The CSS keeps every change behind `html.dl2`, `data-ll` and `data-type-*`.
+
 ## `pack-lab.html` + `js/pack-lab-host.js` + `js/pack-lab.js` + `js/pack-lab-art.js` + `js/pack-lab-sound.js` + `js/pack-lab-cards.js` + `css/pack-lab.css` — Pack Lab (**archived**, v0.70.0)
 
 Career as packs of event cards (`docs/career/PACKS_PLAN.md`), the visual
@@ -1002,7 +1017,7 @@ chips and session collection. Full handover/feedback/verification:
 ## Labs vs. production — do not confuse the two
 
 Every `*-lab.html` page in the root (19 of them after the 5 Oct 2026
-archive), plus `card-flight-options.html`, and the `*-lab.js`,
+archive, plus `look-dev-lab.html`, 6 Nov), plus `card-flight-options.html`, and the `*-lab.js`,
 `*-lab-host.js` and `*-lab.css` files they load, are **isolated visual
 references and prototyping sandboxes**.
 
