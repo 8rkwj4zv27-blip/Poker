@@ -18,6 +18,13 @@
 
      node validation/tools/moments.js [--out DIR] [--size 390x844] [--only flow,flow]
      node validation/tools/moments.js --out DIR --page-only    (rebuild the gallery)
+     node validation/tools/moments.js --out DIR --video        (the motion clips)
+
+   --video plays the same flows again while Playwright records them (no
+   stills, so nothing stalls the motion), notes when each moment would have
+   been shot, and cuts the CLIPS below out of the recording with ffmpeg
+   (H.264 .mp4, which plays on an iPhone). Each clip joins the gallery in
+   its moment's group, after a stills run (moments.json) exists.
 */
 const http = require('http');
 const fs = require('fs');
@@ -30,15 +37,38 @@ const OUT = path.resolve(arg('out', 'moments'));
 const [W, H] = arg('size', '390x844').split('x').map(Number);
 const ONLY = arg('only', null);
 const PAGE_ONLY = process.argv.includes('--page-only');
+const VIDEO = process.argv.includes('--video');
+/* The motion clips: from one moment to another, with a little either side
+   (seconds). Each clip's poster is its first moment's still. */
+const CLIPS = [
+  { id:'clip-boot', group:'Main menu', title:'The cabinet switching on', from:'menu-boot', pre:1.2, to:'menu', post:0.3 },
+  { id:'clip-tour', group:'First run', title:'The first-run tour, tapped through', from:'tour-1', pre:2.5, to:'tour-7', post:1 },
+  { id:'clip-to-table', group:'Table arrival', title:'Menu → Quick Deal table → the deal', from:'qd-roll', pre:1, to:'hand-preflop', post:0.5 },
+  { id:'clip-streets', group:'A hand', title:'Checking through flop, turn and river', from:'hand-flop', pre:0.5, to:'win-showdown', post:0.3 },
+  { id:'clip-award', group:'Hand won', title:'Showdown won, AWARD POT, into the bank', from:'win-showdown', pre:0.5, to:'win-next', post:0.8 },
+  { id:'clip-fold', group:'Folding', title:'Folding, and the hand going on without you', from:'fold', pre:1, to:'fold-end', post:0.8 },
+  { id:'clip-allin', group:'All in', title:'All in: the runout and the pot paid', from:'allin-confirm', pre:0.3, to:'ko-4', post:0.8 },
+  { id:'clip-ko', group:'K.O.', title:'K.O. ejection', from:'ko-eject-1', pre:0.6, to:'ko-eject-5', post:1.5 },
+  { id:'clip-cleared', group:'Table cleared', title:'Table cleared → NEXT TABLE → table 2', from:'cleared-1', pre:0.8, to:'next-table-2', post:1.5 },
+  { id:'clip-runover', group:'Run over', title:'Busted → run over', from:'bust-showdown', pre:0.5, to:'runover-console', post:1 },
+  { id:'clip-pip', group:'P.I.P.', title:'P.I.P.\'s report playing through', from:'pip-keys', pre:0.3, to:'pip-report-2', post:1.5 },
+  { id:'clip-to-career', group:'Career', title:'Menu → Career hub', from:'nc-roll', pre:1, to:'nc-hub-first', post:0.5 },
+  { id:'clip-packet', group:'Packets', title:'Opening the starter packet', from:'nc-packet-sealed', pre:0.8, to:'nc-deck', post:0.5 },
+  { id:'clip-cards', group:'Packets', title:'Turning the cards and adding them', from:'nc-deck', pre:0.2, to:'nc-redeal', post:0.5 },
+  { id:'clip-play', group:'Career event', title:'Drag to the feeder, PLAY, to the table', from:'nc-dealt', pre:0.3, to:'nc-event-table', post:0.5 },
+  { id:'clip-event-won', group:'Career result', title:'Event won → back at the hub', from:'nc-won-1', pre:0.8, to:'nc-back-2', post:0.5 },
+  { id:'clip-album', group:'Album', title:'The album coming up', from:'nc-album', pre:1.5, to:'nc-album-card', post:0.8 },
+  { id:'clip-shop', group:'Shop', title:'The packet machine: choose, buy, the drop', from:'nc-shop', pre:1, to:'nc-hub-packet', post:0.5 }
+];
+const ffmpeg = () => ['/usr/bin/ffmpeg', '/usr/local/bin/ffmpeg'].find(f => fs.existsSync(f));
 // what the owner should know about a whole part of the game
 const GROUP_NOTES = {
   'A hand':'Quick Deal with Auto-Continue off, so every hand stops on NEXT HAND. Opponents\' table talk is switched off in the code right now (bubblesAllowed), so no talk bubbles appear anywhere.',
   'K.O.':'The ejection is the game\'s own K.O. animation (playElimination), started with the DEV preview. In a Quick Deal run an opponent whose stack hits $0 came back next hand with a new stack.',
   'Career result':'Wins and losses were forced with the DEV helpers (END TABLE, BUST ME), through the real result screens.',
-  'Classic Career':'The old Career, still under Settings → Career → Classic.'
 };
-const ORDER = ['Main menu', 'Settings', 'Workshop', 'First run', 'Table arrival', 'A hand', 'Hand won', 'Hand lost', 'Folding', 'All in', 'K.O.',
-  'At the table', 'Table cleared', 'Run over', 'P.I.P.', 'Career', 'Packets', 'Career event', 'Career result', 'Album', 'Shop', 'Classic Career', 'Custom Game', 'Stopped'];
+const ORDER = ['Main menu', 'Settings', 'Workshop', 'First run', 'Table arrival', 'Table sizes', 'A hand', 'Hand won', 'Hand lost', 'Folding', 'All in', 'K.O.',
+  'At the table', 'Table cleared', 'Run over', 'P.I.P.', 'Career', 'Packets', 'Career event', 'Career result', 'Album', 'Shop', 'Custom Game', 'Stopped'];
 
 /* The gallery: moments-page.html with the moments (in the game's order) baked in. */
 function writePage(){
@@ -46,6 +76,12 @@ function writePage(){
   const rank = g => { const i = ORDER.indexOf(g); return i < 0 ? 99 : i; };
   const ms = list.moments.map((m, i) => [m, i]).sort((a, b) => rank(a[0].group) - rank(b[0].group) || a[1] - b[1]).map(x => x[0]);
   const build = (fs.readFileSync(path.join(ROOT, 'js', '02-support-systems.js'), 'utf8').match(/BUILD_VERSION = '([^']+)'/) || [])[1] || '';
+  const clipFile = path.join(OUT, 'clips.json');
+  const clips = fs.existsSync(clipFile) ? JSON.parse(fs.readFileSync(clipFile, 'utf8')) : [];
+  clips.forEach(c => { // after the group's last still
+    let at = -1; ms.forEach((m, i) => { if (m.group === c.group) at = i; });
+    ms.splice(at + 1, 0, c);
+  });
   const data = JSON.stringify({ build:build.split(' ·')[0], size:list.size, taken:list.taken, groupNotes:GROUP_NOTES, moments:ms }).replace(/</g, '\\u003c');
   const page = fs.readFileSync(path.join(__dirname, 'moments-page.html'), 'utf8').replace('__DATA__', () => data);
   fs.writeFileSync(path.join(OUT, 'moments.html'), page);
@@ -67,10 +103,29 @@ function serve(){
 
 const moments = [];
 const log = [];
+const clipsMade = [];
+
+/* Cut every clip whose two moments this flow's recording holds. */
+function cutClips(webm, marks){
+  const { execFileSync } = require('child_process');
+  const bin = ffmpeg();
+  if (!bin){ log.push('no ffmpeg: clips not cut'); return; }
+  CLIPS.filter(c => marks[c.from] != null && marks[c.to] != null).forEach(c => {
+    const from = Math.max(0, marks[c.from] - c.pre), to = marks[c.to] + c.post;
+    const file = c.id + '.mp4';
+    try {
+      execFileSync(bin, ['-y', '-loglevel', 'error', '-ss', from.toFixed(2), '-to', to.toFixed(2), '-i', webm,
+        '-an', '-c:v', 'libx264', '-preset', 'veryfast', '-crf', '24', '-pix_fmt', 'yuv420p', '-movflags', '+faststart', path.join(OUT, file)]);
+      clipsMade.push({ id:c.id, group:c.group, title:c.title, note:'Motion: ' + (to - from).toFixed(1) + 's.', file, poster:c.from + '.jpg', video:true });
+      console.log('  clip ' + c.id + ' (' + (to - from).toFixed(1) + 's)');
+    } catch (e){ log.push('clip ' + c.id + ': ' + String(e.message).split('\n')[0]); }
+  });
+}
 
 /* The page helpers every flow shares. */
 function kit(page, touch, flow){
   const k = {
+    t0:Date.now(), marks:{},
     wait: ms => page.waitForTimeout(ms),
     js: (fn, a) => page.evaluate(fn, a),
     async until(fn, what, ms = 30000, a){
@@ -84,6 +139,7 @@ function kit(page, touch, flow){
       await touch.start(x, y); await page.waitForTimeout(40); await touch.end(); await page.waitForTimeout(120); },
     async tapXY(x, y){ await touch.start(x, y); await page.waitForTimeout(40); await touch.end(); await page.waitForTimeout(120); },
     async shot(id, group, title, note, opts){
+      if (VIDEO){ k.marks[id] = (Date.now() - k.t0) / 1000; return; }
       const file = id + '.jpg';
       await page.screenshot(Object.assign({ path:path.join(OUT, file), type:'jpeg', quality:82 }, opts || {}));
       moments.push({ id, group, title, note, file, flow });
@@ -528,24 +584,46 @@ const FLOWS = {
     await k.shot('nc-after-loss', 'Career', 'Back at the hub after a loss', '');
   },
 
-  // The classic Career (Settings → Career → Classic).
-  async classic(k){
-    await k.boot(Object.assign({}, SEEN, { newCareer:false }));
-    await k.wait(3800);
-    await k.shot('cc-menu', 'Classic Career', 'Menu (classic Career set)', '');
-    await k.tap('#open-career');
-    await k.wait(900);  await k.shot('cc-roll', 'Classic Career', 'Menu → the classic hub', '');
-    await k.wait(2200); await k.shot('cc-hub', 'Classic Career', 'The ticket-reader hub', 'Six venues on the rack, BUY IN.');
-    await k.tap('#ch2-primary').catch(() => {});
-    for (let i = 1; i <= 4; i++){ await k.wait(1000); await k.shot('cc-buyin-' + i, 'Classic Career', 'Buying in (' + i + ')', i === 1 ? 'The buy-in feed.' : ''); }
+  // The rest: a played-in menu, the new-table warning, each table size, the pity packet.
+  async extras(k){
+    const veteran = { hands:212, won:61, showdownsWon:30, biggestPot:4210, net:3150 };
+    await k.boot(Object.assign({}, SEEN), { 'felt.stats':JSON.stringify(veteran) });
+    await k.wait(4200);
+    await k.shot('menu-veteran', 'Main menu', 'Main menu, played in', 'The same menu after 212 hands (stats filled; example figures).');
+    // a table left mid-run: CONTINUE on the menu, and the warning on a new one
+    await k.js(() => startSinglePlayerRun());
     await k.until(yourTurn, 'your turn', 40000);
-    await k.wait(500);
-    await k.shot('cc-table', 'Classic Career', 'At a classic Career table', '');
-    await k.js(() => { DEV_MODE = true; devEndTable(); });
-    for (const [ms, n] of [[1500, 1], [2500, 2]]){ await k.wait(ms); await k.shot('cc-won-' + n, 'Classic Career', 'Event won (' + n + ')', ''); }
-    await k.soft(() => { const b = document.getElementById('btn-award-pot-console'); return b && b.offsetParent && !/award/i.test(b.textContent); }, 'the result key', 40000);
-    await k.wait(800);
-    await k.shot('cc-won-console', 'Classic Career', 'Event won: settled', '');
+    await k.js(() => { saveTable(); leaveTable(); });
+    await k.soft(() => !document.getElementById('home').classList.contains('hidden'), 'the menu', 20000);
+    await k.wait(2500);
+    await k.shot('menu-continue', 'Main menu', 'Main menu with a saved table', 'CONTINUE shows while a Quick Deal table is saved.');
+    await k.tap('#quick-play'); await k.wait(900);
+    await k.shot('confirm-newtable', 'Main menu', 'Start a new table? (warning)', 'Quick Deal while a table is saved.');
+    await k.js(() => closeOverlays()); await k.wait(600);
+    for (const n of [1, 2, 3, 6]){
+      await k.js(c => startSinglePlayerRun({ opponentCount:c }), n);
+      await k.until(yourTurn, 'your turn', 40000);
+      await k.wait(700);
+      await k.shot('size-' + n, 'Table sizes', n === 1 ? 'Heads-up (1 opponent)' : n + ' opponents', 'Your turn, first hand.');
+      await k.js(() => leaveTable());
+      await k.soft(() => !document.getElementById('home').classList.contains('hidden'), 'the menu', 20000);
+      await k.wait(1200);
+    }
+  },
+
+  // The new Career at rock bottom: broke and cardless, the pity packet.
+  async pity(k){
+    await k.boot(Object.assign({}, SEEN));
+    await k.wait(3800);
+    await k.tap('#open-career');
+    await k.until(() => window.CareerMain && CareerMain.ready && !CareerMain.state.busy && CareerHub.open, 'the hub', 30000);
+    await k.js(() => { career.invitations = []; career.packets = []; career.bankroll = 20; career.starterGiven = true; saveCareer(); });
+    await k.js(() => location.reload());
+    await k.wait(4000);
+    await k.tap('#open-career');
+    await k.until(() => window.CareerMain && CareerMain.ready && !CareerMain.state.busy && CareerHub.open, 'the hub', 30000);
+    await k.wait(2500);
+    await k.shot('nc-pity', 'Career', 'Hub: broke, with the pity packet', '$20 and no cards: one free packet on the felt.');
   },
 
   // Custom Game: cash and tournament tables, and going broke in each.
@@ -579,14 +657,27 @@ const FLOWS = {
   try {
     for (const name of names){
       console.log('flow ' + name);
-      const errors = await withPage({ width:W, height:H }, async (page, touch) => {
+      let rec = null;
+      const errors = await withPage({ width:W, height:H, recordVideo:VIDEO ? { dir:path.join(OUT, '.video'), size:{ width:W, height:H } } : null }, async (page, touch) => {
         const k = kit(page, touch, name); k.base = base;
+        if (VIDEO) rec = { k, video:page.video() };
         try { await FLOWS[name](k, page, touch); }
         catch (e){ log.push(name + ': stopped: ' + String(e.message || e).split('\n')[0]); await k.shot(name + '-stopped', 'Stopped', name + ' stopped here', String(e.message)).catch(() => {}); }
       });
+      if (rec) cutClips(await rec.video.path(), rec.k.marks);
       errors.filter(e => !/vibrate|favicon|404/.test(e)).forEach(e => log.push(name + ': ' + e));
     }
   } finally { server.close(); }
+  if (VIDEO){
+    const file = path.join(OUT, 'clips.json');
+    const keep = fs.existsSync(file) ? JSON.parse(fs.readFileSync(file, 'utf8')).filter(c => !clipsMade.some(n => n.id === c.id)) : [];
+    fs.writeFileSync(file, JSON.stringify(keep.concat(clipsMade), null, 1));
+    fs.rmSync(path.join(OUT, '.video'), { recursive:true, force:true });
+    console.log('\n' + clipsMade.length + ' clips → ' + OUT);
+    if (fs.existsSync(path.join(OUT, 'moments.json'))) writePage();
+    if (log.length) console.log('notes:\n  ' + log.join('\n  '));
+    return;
+  }
   // a re-run of some flows keeps the others' moments
   const file = path.join(OUT, 'moments.json');
   const old = ONLY && fs.existsSync(file) ? JSON.parse(fs.readFileSync(file, 'utf8')).moments.filter(m => !names.includes(m.flow)) : [];

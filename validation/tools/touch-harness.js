@@ -43,7 +43,7 @@ function findChromium() {
    touchscreen device (hasTouch/isMobile) since the game's pointer handling
    branches on that. */
 async function withPage(opts, fn) {
-  const { width = 430, height = 932, reducedMotion = false, executablePath } = opts || {};
+  const { width = 430, height = 932, reducedMotion = false, executablePath, recordVideo } = opts || {};
   const browser = await chromium.launch({ executablePath: executablePath || findChromium() });
   try {
     const ctx = await browser.newContext({
@@ -52,7 +52,9 @@ async function withPage(opts, fn) {
       isMobile: true,
       deviceScaleFactor: 2,
       serviceWorkers: 'block', // avoid a stale cached build shadowing local edits
-      reducedMotion: reducedMotion ? 'reduce' : 'no-preference'
+      reducedMotion: reducedMotion ? 'reduce' : 'no-preference',
+      // { dir, size }: Playwright records the page as a .webm (moments.js --video)
+      ...(recordVideo ? { recordVideo } : {})
     });
     const page = await ctx.newPage();
     page._errors = [];

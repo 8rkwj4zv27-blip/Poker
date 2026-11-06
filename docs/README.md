@@ -21,6 +21,7 @@ Last sorted: 7 October 2026 (v0.66.1).
 
 | Doc | What it is |
 | --- | --- |
+| [`ui/POLISH_AUDIT_PLAN.md`](ui/POLISH_AUDIT_PLAN.md) | The Polish Audit (6 Nov 2026): every screen scored and ranked from the moments library, then the tracks to chart-ready polish. In progress |
 | [`ui/PATTERN_BOOK.md`](ui/PATTERN_BOOK.md) | The visual rule book: same job, same finish (checked by `pattern-book-checks.js`) |
 | [`ui/VISUAL_SYSTEM.md`](ui/VISUAL_SYSTEM.md) | The machine visual system the Pattern Book grew from |
 | [`scoring/SCORING_SPEC.md`](scoring/SCORING_SPEC.md) | Authoritative scoring and award rules, Career and Single Player |

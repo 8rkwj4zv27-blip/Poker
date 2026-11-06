@@ -243,8 +243,8 @@ moment a player sees: the menu, Settings, the Workshop, the first-run tour,
 a Quick Deal hand street by street, every way a hand ends (won, lost,
 split, fold win, all in, K.O.), table cleared, run over, P.I.P. and his
 report, the new Career (hub, packets, album, shop, an invitation won and
-lost), the classic Career and Custom Game. Each flow (`front`, `firstrun`,
-`quickdeal`, `endings`, `pip`, `career`, `classic`, `custom`) starts from
+lost) and Custom Game. Each flow (`front`, `firstrun`,
+`quickdeal`, `endings`, `pip`, `career`, `custom`) starts from
 its own fresh save; `--only` re-shoots some and keeps the rest. DEV helpers
 force the outcomes that can't be dealt on demand. About 25 minutes.
 

@@ -36,7 +36,9 @@ section.group[hidden]{display:none}
 .moments{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,300px),1fr));gap:22px}
 .m{display:grid;gap:10px;align-content:start;min-width:0}
 .print{background:#000;border:3px solid #000;box-shadow:4px 4px 0 #000, inset 0 0 0 2px var(--line);padding:6px;cursor:zoom-in}
-.print img{display:block;width:100%;height:auto;aspect-ratio:390/844;object-fit:cover;background:var(--felt)}
+.print img,.print video{display:block;width:100%;height:auto;aspect-ratio:390/844;object-fit:cover;background:var(--felt)}
+.is-clip .print{cursor:default;box-shadow:4px 4px 0 #000, inset 0 0 0 2px var(--crt-ink)}
+.is-clip .cap h3::before{content:"▶ ";color:var(--crt-ink)}
 .cap{display:flex;gap:8px;align-items:baseline}
 .cap .id{font-family:var(--crtface);font-size:17px;color:var(--muted);flex:none}
 .cap h3{margin:0;font-size:15px;font-weight:600;color:var(--cream)}
@@ -63,7 +65,7 @@ dialog button{font-family:var(--display);font-size:11px;min-height:44px;min-widt
 <div class="wrap">
   <header class="top">
     <h1>Poker Faces Moments</h1>
-    <p class="sub">Every screen and moment the player sees, photographed from the current build on an emulated iPhone (390×844). Tap a picture to see it full size. Mark each one and write what you want changed; your notes are saved here and I can read them back.</p>
+    <p class="sub">Every screen and moment the player sees, photographed from the current build on an emulated iPhone (390×844), with clips (▶) of the moments that move. Tap a picture to see it full size. Mark each one and write what you want changed; your notes are saved here and I can read them back.</p>
     <div class="readout" id="readout"><span>BUILD <b id="r-build">—</b></span><span>MOMENTS <b id="r-count">0</b></span><span>REVIEWED <b id="r-done">0</b></span></div>
     <p class="offline" id="offline" hidden>Notes can't be saved in this view. You can still look through every moment.</p>
   </header>
@@ -106,10 +108,18 @@ dialog button{font-family:var(--display);font-size:11px;min-height:44px;min-widt
   }
   function card(m){
     const a = document.createElement('article'); a.className = 'm'; a.id = 'm-' + m.id;
-    const pr = document.createElement('div'); pr.className = 'print'; pr.tabIndex = 0; pr.setAttribute('role', 'button'); pr.setAttribute('aria-label', 'Enlarge ' + m.title);
-    const img = document.createElement('img'); img.loading = 'lazy'; img.src = m.file; img.alt = m.title; pr.appendChild(img);
-    const open = () => { $('zoom-img').src = m.file; $('zoom-t').textContent = m.title; $('zoom').showModal(); };
-    pr.onclick = open; pr.onkeydown = e => { if (e.key === 'Enter' || e.key === ' '){ e.preventDefault(); open(); } };
+    const pr = document.createElement('div'); pr.className = 'print';
+    if (m.video){
+      a.classList.add('is-clip');
+      const v = document.createElement('video'); v.src = m.file; v.controls = true; v.muted = true; v.playsInline = true; v.loop = true; v.preload = 'none';
+      if (m.poster) v.poster = m.poster;
+      v.setAttribute('aria-label', m.title); pr.appendChild(v);
+    } else {
+      pr.tabIndex = 0; pr.setAttribute('role', 'button'); pr.setAttribute('aria-label', 'Enlarge ' + m.title);
+      const img = document.createElement('img'); img.loading = 'lazy'; img.src = m.file; img.alt = m.title; pr.appendChild(img);
+      const open = () => { $('zoom-img').src = m.file; $('zoom-t').textContent = m.title; $('zoom').showModal(); };
+      pr.onclick = open; pr.onkeydown = e => { if (e.key === 'Enter' || e.key === ' '){ e.preventDefault(); open(); } };
+    }
     const cap = document.createElement('div'); cap.className = 'cap';
     const id = document.createElement('span'); id.className = 'id'; id.textContent = m.id;
     const h = document.createElement('h3'); h.textContent = m.title;
