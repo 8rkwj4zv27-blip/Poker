@@ -59,14 +59,29 @@ dialog::backdrop{background:rgba(10,3,6,.88)}
 dialog .bar{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:6px;background:var(--velvet-2)}
 dialog .bar span{font-family:var(--display);font-size:11px;color:var(--cream);padding-left:6px}
 dialog button{font-family:var(--display);font-size:11px;min-height:44px;min-width:44px;background:var(--gold);border:2px solid #000;cursor:pointer}
+.take{display:grid;gap:6px;border:2px solid #000;background:var(--velvet-2);box-shadow:inset 0 0 0 2px var(--line);padding:8px 10px}
+.take[hidden]{display:none}
+.take-head{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.take-who{font-family:var(--display);font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.take-v{font-family:var(--display);font-size:10.5px;letter-spacing:.05em;text-transform:uppercase;border:2px solid #000;padding:3px 7px}
+.take-v[data-v="ok"]{background:var(--good);color:#10261a}
+.take-v[data-v="tweak"]{background:var(--warn);color:#2a1606}
+.take-v[data-v="redo"]{background:var(--bad);color:#2a0d0d}
+.take-match{font-family:var(--crtface);font-size:17px;margin-left:auto}
+.take-match.same{color:var(--good)}
+.take-match.differ{color:var(--bad)}
+.take p{margin:0;font-size:13.5px;color:var(--cream)}
+.toggles{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.toggles .chip[aria-pressed="true"]{background:var(--gold);color:#2a0d14}
 @media (prefers-reduced-motion: reduce){*{transition:none!important}}
 </style>
 
 <div class="wrap">
   <header class="top">
     <h1>Poker Faces Moments</h1>
-    <p class="sub">Every screen and moment the player sees, photographed from the current build on an emulated iPhone (390×844), with clips (▶) of the moments that move. Tap a picture to see it full size. Mark each one and write what you want changed; your notes are saved here and I can read them back.</p>
-    <div class="readout" id="readout"><span>BUILD <b id="r-build">—</b></span><span>MOMENTS <b id="r-count">0</b></span><span>REVIEWED <b id="r-done">0</b></span></div>
+    <p class="sub">Every screen and moment the player sees, photographed from the current build on an emulated iPhone (390×844), with clips (▶) of the moments that move. Tap a picture to see it full size. Mark each one and write what you want changed; your notes are saved here and I can read them back. Claude's own verdict and comment sit under each moment; hide them if you'd rather mark blind first.</p>
+    <div class="readout" id="readout"><span>BUILD <b id="r-build">—</b></span><span>MOMENTS <b id="r-count">0</b></span><span>REVIEWED <b id="r-done">0</b></span><span>AGREE <b id="r-agree">0</b></span><span>DIFFER <b id="r-differ">0</b></span></div>
+    <div class="toggles"><button type="button" class="chip" id="show-takes" aria-pressed="true">Show Claude's takes</button><button type="button" class="chip" id="only-differ" aria-pressed="false">Only where we differ</button></div>
     <p class="offline" id="offline" hidden>Notes can't be saved in this view. You can still look through every moment.</p>
   </header>
   <nav class="tabs" id="tabs" aria-label="Parts of the game"></nav>
@@ -135,8 +150,10 @@ dialog button{font-family:var(--display);font-size:11px;min-height:44px;min-widt
     const ta = document.createElement('textarea'); ta.id = 'note-' + m.id; ta.placeholder = 'What should change here?';
     let t = 0; ta.oninput = () => { st.textContent = 'typing…'; clearTimeout(t); t = setTimeout(() => save(m, { text: ta.value }), 900); };
     const st = document.createElement('div'); st.className = 'saved';
-    a.append(v, ta, st);
-    els[m.id] = { a, v, ta, st };
+    const tk = document.createElement('div'); tk.className = 'take'; tk.hidden = true;
+    tk.innerHTML = '<div class="take-head"><span class="take-who">Claude</span><span class="take-v"></span><span class="take-match"></span></div><p></p>';
+    a.append(v, ta, st, tk);
+    els[m.id] = { a, v, ta, st, tk };
     return a;
   }
   function paint(id){
@@ -146,7 +163,28 @@ dialog button{font-family:var(--display);font-size:11px;min-height:44px;min-widt
     if (document.activeElement !== e.ta && (n.text || '') !== e.ta.value) e.ta.value = n.text || '';
     e.a.classList.toggle('has-v', !!n.verdict);
     $('r-done').textContent = Object.values(notes).filter(x => x && (x.verdict || x.text)).length;
+    const k = takes[id];
+    if (k){
+      e.tk.hidden = !showTakes;
+      const tv = e.tk.querySelector('.take-v'); tv.dataset.v = k.v; tv.textContent = LABEL[k.v] || k.v;
+      e.tk.querySelector('p').textContent = k.t;
+      const mt = e.tk.querySelector('.take-match');
+      mt.className = 'take-match' + (n.verdict ? (n.verdict === k.v ? ' same' : ' differ') : '');
+      mt.textContent = n.verdict ? (n.verdict === k.v ? '= you agree' : '≠ you said ' + LABEL[n.verdict]) : '';
+    }
+    let agree = 0, differ = 0;
+    Object.keys(takes).forEach(i => { const x = notes[i]; if (x && x.verdict) (x.verdict === takes[i].v ? agree++ : differ++); });
+    $('r-agree').textContent = agree; $('r-differ').textContent = differ;
+    e.a.hidden = onlyDiffer && !(n.verdict && k && n.verdict !== k.v);
   }
+  const LABEL = { ok:'Good as is', tweak:'Tweak', redo:'Rethink' };
+  let takes = {}, showTakes = true, onlyDiffer = false;
+  try { showTakes = localStorage.getItem('pf-moments-takes') !== 'off'; } catch(e){}
+  $('show-takes').setAttribute('aria-pressed', showTakes);
+  $('show-takes').onclick = () => { showTakes = !showTakes; $('show-takes').setAttribute('aria-pressed', showTakes);
+    try { localStorage.setItem('pf-moments-takes', showTakes ? 'on' : 'off'); } catch(e){}
+    Object.keys(els).forEach(paint); };
+  $('only-differ').onclick = () => { onlyDiffer = !onlyDiffer; $('only-differ').setAttribute('aria-pressed', onlyDiffer); Object.keys(els).forEach(paint); };
   async function save(m, patch){
     const e = els[m.id];
     notes[m.id] = Object.assign({}, notes[m.id], patch); paint(m.id);
@@ -166,6 +204,11 @@ dialog button{font-family:var(--display);font-size:11px;min-height:44px;min-widt
       (snap.docs || []).forEach(d => { const x = d.data(); if (x) notes[d.id] = { verdict:x.verdict || null, text:x.text || '' }; });
       Object.keys(els).forEach(paint);
     }, () => { $('offline').hidden = false; });
+    // Claude's own pass: one document, written by Claude (collection 'claude', doc 'takes')
+    db.collection('claude').doc('takes').onSnapshot(d => {
+      const x = d.exists && d.data(); takes = (x && x.takes) || {};
+      Object.keys(els).forEach(paint);
+    }, () => {});
   })();
 })();
 </script>

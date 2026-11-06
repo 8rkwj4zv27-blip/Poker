@@ -251,6 +251,8 @@ force the outcomes that can't be dealt on demand. About 25 minutes.
 Writes a JPEG per moment, `moments.json`, and `moments.html`, the gallery
 (`moments-page.html` with the list baked in) where the owner marks each
 moment and writes notes (kept in the Artifact's `db`, collection `notes`,
-readable with ArtifactData). Publish it as the owner's link: `file_path`
+readable with ArtifactData). Claude's own verdicts sit in one document,
+`claude/takes` (`{takes:{<id>:{v,t}}}`), shown under each moment with an
+agree/differ marker (hideable, for a blind pass). Publish it as the owner's link: `file_path`
 `<out>/moments.html`, `root` `<out>`, `files` every `.jpg`, capabilities
 `{db:{}}`; re-publish to the same link after a new shoot.
