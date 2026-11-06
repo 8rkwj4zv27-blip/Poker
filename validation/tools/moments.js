@@ -111,7 +111,7 @@ function cutClips(webm, marks){
   const bin = ffmpeg();
   if (!bin){ log.push('no ffmpeg: clips not cut'); return; }
   CLIPS.filter(c => marks[c.from] != null && marks[c.to] != null).forEach(c => {
-    const from = Math.max(0, marks[c.from] - c.pre), to = marks[c.to] + c.post;
+    const from = Math.max(0, marks[c.from] - c.pre), to = Math.min(marks[c.to] + c.post, from + 30);   // at most 30s
     const file = c.id + '.mp4';
     try {
       execFileSync(bin, ['-y', '-loglevel', 'error', '-ss', from.toFixed(2), '-to', to.toFixed(2), '-i', webm,
@@ -600,14 +600,23 @@ const FLOWS = {
     await k.tap('#quick-play'); await k.wait(900);
     await k.shot('confirm-newtable', 'Main menu', 'Start a new table? (warning)', 'Quick Deal while a table is saved.');
     await k.js(() => closeOverlays()); await k.wait(600);
-    for (const n of [1, 2, 3, 6]){
-      await k.js(c => startSinglePlayerRun({ opponentCount:c }), n);
+    // Quick Deal seats 4 to 6 opponents; smaller tables are Custom Game's (a cash table here)
+    for (const n of [1, 2, 3, 5, 6]){
+      if (n <= 3){
+        await k.boot(Object.assign({}, SEEN, { gameType:'cash', mode:'cash', opponents:n }));
+        await k.wait(3800);
+        await k.js(() => document.getElementById('deal-me-in').click());
+      } else {
+        await k.js(c => startSinglePlayerRun({ opponentCount:c }), n);
+      }
       await k.until(yourTurn, 'your turn', 40000);
-      await k.wait(700);
-      await k.shot('size-' + n, 'Table sizes', n === 1 ? 'Heads-up (1 opponent)' : n + ' opponents', 'Your turn, first hand.');
-      await k.js(() => leaveTable());
-      await k.soft(() => !document.getElementById('home').classList.contains('hidden'), 'the menu', 20000);
-      await k.wait(1200);
+      await k.wait(n > 3 ? 3000 : 700);   // a new Quick Deal run's intro card can still be up
+      await k.shot('size-' + n, 'Table sizes', (n === 1 ? 'Heads-up (1 opponent)' : n + ' opponents') + (n <= 3 ? ', Custom Game' : ', Quick Deal'), 'Your turn, first hand. The 4-opponent table is the Quick Deal hand above.');
+      if (n > 3){
+        await k.js(() => leaveTable());
+        await k.soft(() => !document.getElementById('home').classList.contains('hidden'), 'the menu', 20000);
+        await k.wait(1200);
+      }
     }
   },
 
