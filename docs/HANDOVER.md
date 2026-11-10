@@ -64,15 +64,16 @@ the table sweep, the lab suites) pass.
 
 ## Parked by the owner (don't start unasked)
 
-Career Phases 5/7/8 (smart event picks, resident relationships, boss
-seats); "Ask P.I.P." question keys, P.I.P. memory and stages; opponents'
-own speech bubbles (`claude/tender-dijkstra-zso8dm`).
+Career Phases 5/7/8 (event picks, resident relationships: raised again
+10 Nov, boss seats); "Ask P.I.P." keys, P.I.P. memory and stages;
+opponents' own speech bubbles (`claude/tender-dijkstra-zso8dm`).
 
 ## Next
 
-**Career is moving to invitations** (owner, 12 Oct). Stages 1-7 of
-[`career/INVITATIONS_PLAN.md`](career/INVITATIONS_PLAN.md) are live
-(v0.71.0). Next: end screens per format (deferred by the
+**Proposed 10 Nov:** [`NEXT_LEVEL_PLAN.md`](NEXT_LEVEL_PLAN.md), the big moves
+(owner decides its section 9 first). **Career is moving to invitations**
+(owner, 12 Oct). Stages 1-7 of [`career/INVITATIONS_PLAN.md`](career/INVITATIONS_PLAN.md)
+are live (v0.71.0). Next: end screens per format (deferred by the
 owner), the new Career's goal (album + packet tiers recommended), retiring
 the classic Career, the catalogue's size; the special-rules events.
 Workflow: [`WORKFLOW.md`](WORKFLOW.md).
