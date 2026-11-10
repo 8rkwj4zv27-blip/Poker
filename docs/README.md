@@ -21,7 +21,7 @@ Last sorted: 7 October 2026 (v0.66.1).
 
 | Doc | What it is |
 | --- | --- |
-| [`NEXT_LEVEL_PLAN.md`](NEXT_LEVEL_PLAN.md) | Big bold moves (10 Nov 2026): a lit WebGL Stage, rivals and callouts, showdown moments and FX, your machine's parts, Blackjack and mini games, tournaments, the glow-up; tidy, skills and tools first. Proposal, waiting for the owner's decisions |
+| [`NEXT_LEVEL_PLAN.md`](NEXT_LEVEL_PLAN.md) | Big bold moves (10 Nov 2026): a lit WebGL Stage, rivals and callouts, showdown moments and FX, your machine's parts, Blackjack and mini games, tournaments, the glow-up; tidy, skills and tools. Stage 1 (Light Lab) built; Rivals next |
 | [`ui/PATTERN_BOOK.md`](ui/PATTERN_BOOK.md) | The visual rule book: same job, same finish (checked by `pattern-book-checks.js`) |
 | [`ui/VISUAL_SYSTEM.md`](ui/VISUAL_SYSTEM.md) | The machine visual system the Pattern Book grew from |
 | [`scoring/SCORING_SPEC.md`](scoring/SCORING_SPEC.md) | Authoritative scoring and award rules, Career and Single Player |

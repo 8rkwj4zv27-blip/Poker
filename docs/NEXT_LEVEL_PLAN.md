@@ -9,8 +9,9 @@ events and tournament invitations, a proper showdown screen, more FX and
 chips and opponents that look amazing, and a dashboard the player can make
 their own. Plus a tidy-up, rules, skills and better use of Claude.
 
-**Status: proposal, waiting for the owner's decisions (section 9).**
-Nothing here is built yet. Stages are listed in the recommended order;
+**Status (10 Nov): the owner chose the Light Lab, then Rivals; WebGL by
+hand (no PixiJS for now). Stage 1 is built (below); the other decisions in
+section 9 are still open.** Stages are listed in the recommended order;
 each one ships on its own and follows `WORKFLOW.md`.
 
 ---
@@ -100,6 +101,12 @@ Goal: every later stage is cheaper and safer.
   keeping its save (`felt.career`) readable and backed up.
 
 ### Stage 1 — The Light Lab (a spike; a decision gate)
+
+**Built 10 Nov (owner: "build the Light Lab, then Rivals").** `light-lab.html`,
+hand-written WebGL (no dependency). Link for the phone:
+https://claude.ai/artifact/R7sMs3aMcMuecgfDrQ1cC4. Waiting for the owner's
+verdict (go / change / stop). Frame rate was not measured on a real iPhone
+(the cloud browser renders WebGL in software); the ABOUT tab shows it live.
 
 Goal: prove the lit Stage on the owner's iPhone before committing to it.
 

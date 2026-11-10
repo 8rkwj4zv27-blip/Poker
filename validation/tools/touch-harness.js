@@ -34,7 +34,9 @@ function findChromium() {
   const base = '/opt/pw-browsers';
   if (!fs.existsSync(base)) return undefined;
   const dir = fs.readdirSync(base).find(d => d.startsWith('chromium-'));
-  return dir ? path.join(base, dir, 'chrome-linux', 'chrome') : undefined;
+  if (!dir) return undefined;
+  // the folder is chrome-linux or chrome-linux64, by Playwright version
+  return ['chrome-linux64', 'chrome-linux'].map(d => path.join(base, dir, d, 'chrome')).find(f => fs.existsSync(f));
 }
 
 /* Wraps a page with a touch-event helper (CDP Input.dispatchTouchEvent) and

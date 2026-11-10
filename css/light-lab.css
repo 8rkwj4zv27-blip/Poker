@@ -1,0 +1,21 @@
+/* Light Lab (lab only: never loaded by the game). The Light Stage's two
+   canvases, the felt with the Stage on, and the few lab-only bits the
+   shared Showdown Lab sheet (css/showdown-lab.css) doesn't have. */
+.ls-stage{
+  position:absolute; z-index:0; pointer-events:none;
+  image-rendering:pixelated; image-rendering:crisp-edges;
+}
+.ls-domlight{
+  position:fixed; z-index:40; pointer-events:none; mix-blend-mode:soft-light;
+  image-rendering:pixelated; image-rendering:crisp-edges;
+}
+.ls-catch{ position:fixed; z-index:41; touch-action:none; cursor:grab; }
+/* the Stage draws the cloth, the rail and the stitching */
+.felt.ls-on{ background:none; border-color:transparent; box-shadow:none; }
+.felt.ls-on::before,.felt.ls-on::after{ display:none; }
+
+.ll-lights-key{ min-width:96px; }
+.ll-lights-key.is-off{ background:#34171A; color:#B69A7A; box-shadow:inset 0 2px 0 rgba(255,255,255,.08),0 3px 0 #080405; }
+.ll-notes{ margin:12px 0 0; padding-left:16px; font-size:12px; line-height:1.45; color:#B69A7A; }
+.ll-notes b{ font-family:var(--font-hdr); font-size:7px; font-weight:400; color:#F3E6C4; margin-right:4px; }
+.sdl-moments button.is-on{ background:#F3E6C4; }

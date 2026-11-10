@@ -25,6 +25,8 @@ the table sweep, the lab suites) pass.
 
 ## Recent changes (newest first)
 
+- 10 Nov (lab, no release): the Light Lab (`light-lab.html`): the real game
+  on a hand-written WebGL Stage under a lamp; link in `NEXT_LEVEL_PLAN.md`.
 - 5 Nov (v0.71.4): every chip colour: a white chip is worth 2 at any
   blinds (`CW.OPT.white`), so bets show all six colours (Chip Colours Lab).
 - 4 Nov (v0.71.3): the bank piles up: wins land on top (`pileAdd`), no
@@ -33,11 +35,6 @@ the table sweep, the lab suites) pass.
   no longer jitters them into a heap); the fold-win SHOW key removed.
 - 4 Nov (v0.71.1): dashboard tidy: the rim lamp widened to meet its glow
   (no green strip), no seam above the keys, no rule under SB / BB.
-- 13 Oct (v0.71.0): the event clock (no more counter on a face), duels
-  (Face to Face, Last Stack Wins), rising blinds + a chip bonus in
-  hand-count events, the curated tray, playing cards' corners (a class
-  clash since v0.69); the table sweep. Owner signed off; classic card
-  fronts kept (the card-faces and new-career labs archived).
 
 ## Open items (verified, not scheduled)
 
@@ -64,14 +61,14 @@ the table sweep, the lab suites) pass.
 
 ## Parked by the owner (don't start unasked)
 
-Career Phases 5/7/8 (event picks, resident relationships: raised again
-10 Nov, boss seats); "Ask P.I.P." keys, P.I.P. memory and stages;
+Career Phases 5/8 (event picks, boss seats; Phase 7's relationships are
+un-parked as Rivals, 10 Nov); "Ask P.I.P." keys, P.I.P. memory and stages;
 opponents' own speech bubbles (`claude/tender-dijkstra-zso8dm`).
 
 ## Next
 
-**Proposed 10 Nov:** [`NEXT_LEVEL_PLAN.md`](NEXT_LEVEL_PLAN.md), the big moves
-(owner decides its section 9 first). **Career is moving to invitations**
+**10 Nov:** [`NEXT_LEVEL_PLAN.md`](NEXT_LEVEL_PLAN.md): Light Lab built, waiting for
+the owner's verdict; Rivals (Stage 2) next. **Career is moving to invitations**
 (owner, 12 Oct). Stages 1-7 of [`career/INVITATIONS_PLAN.md`](career/INVITATIONS_PLAN.md)
 are live (v0.71.0). Next: end screens per format (deferred by the
 owner), the new Career's goal (album + packet tiers recommended), retiring

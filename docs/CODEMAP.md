@@ -624,6 +624,30 @@ The lab it was picked in: `bank-load-lab.html` + `js/bank-load-lab-host.js`
 + `js/bank-load-lab.js` (round 1; the TUNE sheet keeps every dial, on the
 Showdown Lab's pattern and sheet styles). **Archived 7 Oct 2026.**
 
+## `light-lab.html` + `js/light-lab-host.js` + `js/light-lab.js` + `js/light-stage.js` + `css/light-lab.css` — Light Lab
+
+Stage 1 of `docs/NEXT_LEVEL_PLAN.md` (10 Nov 2026): does a lit Stage make
+the table feel like a video game, and does it run on the owner's iPhone?
+Phone-first like `showdown-lab.html` (the real game in one frame; a Quick
+Deal table with four opponents starts at once and plays for real), and
+shares its sheet styles (`css/showdown-lab.css`). `js/light-stage.js`
+(`LightStage`) is plain WebGL 1, no dependencies: one canvas inside
+`#felt` (z-index 0, under the table's pieces; `.felt.ls-on` drops the CSS
+cloth, rail and stitching) draws the felt and rail at a low internal
+resolution (PIXEL SIZE 2/3/4) from a height field, so the weave, the
+rail's cushion and a gold printed line catch the light. Eight lights: the
+lamp (swing, flicker, height, colour; drag it with TOUCH: MOVE THE LAMP),
+one under each seat in its face's colour, and an event light for the
+MOMENTS (ALL IN, BIG HAND, SPOTLIGHT, POWER CUT, BLACKOUT). What stands on
+the felt (`STANDING`: seat cards, pot plate, board cards, deck, event
+clock) casts shadows away from the lamp. Light is banded with an ordered
+dither on the cloth. A second, fixed canvas (`.ls-domlight`, soft-light
+blend) lights those DOM pieces with the same lights and a lit edge facing
+the lamp. SHOWCASE bakes normal maps in the browser (`bake()`: shape plus
+brightness emboss) for a face tile, a chip stack and two cards drawn on
+the Stage. LIGHTS ON/OFF compares with today's table. Never loaded by the
+game. Link: https://claude.ai/artifact/R7sMs3aMcMuecgfDrQ1cC4
+
 ## `showdown-lab.html` + `js/showdown-lab-host.js` + `js/showdown-lab.js` + `css/showdown-lab.css` + candidate `css/showdown-beats.css` / `js/showdown-beats.js` — Showdown Lab
 
 The showdown pass (`docs/ui/SHOWDOWN_PLAN.md`), phone-first (round 4): the
