@@ -108,6 +108,13 @@ https://claude.ai/artifact/R7sMs3aMcMuecgfDrQ1cC4. Waiting for the owner's
 verdict (go / change / stop). Frame rate was not measured on a real iPhone
 (the cloud browser renders WebGL in software); the ABOUT tab shows it live.
 
+**Owner's verdict, 10 Nov: change, not stop.** Too dark ("seedy"), the
+shadows don't look good, and the cards and chips don't react to the light.
+Keep it, but lighting must add, not take away: a bright room by default,
+soft contact shadows, and light reacting on real sprites (normal maps), not
+laid over DOM pieces. The owner is weighing PixiJS and their own artwork;
+both come before Light Lab round 2.
+
 Goal: prove the lit Stage on the owner's iPhone before committing to it.
 
 - One lab: the felt, the lamp, one opponent face, a chip stack and two

@@ -67,8 +67,8 @@ opponents' own speech bubbles (`claude/tender-dijkstra-zso8dm`).
 
 ## Next
 
-**10 Nov:** [`NEXT_LEVEL_PLAN.md`](NEXT_LEVEL_PLAN.md): Light Lab built, waiting for
-the owner's verdict; Rivals (Stage 2) next. **Career is moving to invitations**
+**10 Nov:** [`NEXT_LEVEL_PLAN.md`](NEXT_LEVEL_PLAN.md): Light Lab round 1: too dark
+(owner); art and PixiJS first, then round 2. Rivals (Stage 2) queued. **Career is moving to invitations**
 (owner, 12 Oct). Stages 1-7 of [`career/INVITATIONS_PLAN.md`](career/INVITATIONS_PLAN.md)
 are live (v0.71.0). Next: end screens per format (deferred by the
 owner), the new Career's goal (album + packet tiers recommended), retiring
